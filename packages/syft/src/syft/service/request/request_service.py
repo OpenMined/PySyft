@@ -1,6 +1,8 @@
 # stdlib
+from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 # third party
@@ -15,6 +17,7 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
+from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
 from ..notification.notification_service import CreateNotification
 from ..notification.notification_service import NotificationService
@@ -28,12 +31,13 @@ from ..service import service_method
 from ..user.user import UserView
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
-from .request import Change, UserCodeStatusChange
+from .request import Change
 from .request import Request
 from .request import RequestInfo
 from .request import RequestInfoFilter
 from .request import RequestStatus
 from .request import SubmitRequest
+from .request import UserCodeStatusChange
 from .request_stash import RequestStash
 
 
@@ -99,8 +103,8 @@ class RequestService(AbstractService):
         except Exception as e:
             print("Failed to submit Request", e)
             raise e
-        
-    def expand_node(self, context, code_obj):
+
+    def expand_node(self, context: AuthedServiceContext, code_obj: UserCode):
         user_code_service = context.node.get_service("usercodeservice")
         nested_requests = user_code_service.solve_nested_requests(context, code_obj)
 
@@ -114,11 +118,9 @@ class RequestService(AbstractService):
             if isinstance(res, Err):
                 return res
             linked_obj = LinkedObject.from_obj(code, node_uid=context.node.id)
-            print()
             new_nested_requests[func_name] = (linked_obj, nested_dict)
-        
+
         return new_nested_requests
-        
 
     def resolve_nested_requests(self, context, request):
         # TODO: change this if we have more UserCode Changes
@@ -126,20 +128,21 @@ class RequestService(AbstractService):
             return request
 
         change = request.changes[0]
-        if isinstance(change, UserCodeStatusChange):    
+        if isinstance(change, UserCodeStatusChange):
             if change.nested_solved:
                 return request
             code_obj = change.linked_obj.resolve_with_context(context=context).ok()
-            nested_requests = {}
-            # recursively check what other UserCodes to approve            
-            nested_requests = self.expand_node(context, code_obj)
+            # recursively check what other UserCodes to approve
+            nested_requests: Dict[str : Tuple[LinkedObject, Dict]] = self.expand_node(
+                context, code_obj
+            )
             if isinstance(nested_requests, Err):
                 return SyftError(message=nested_requests.value)
             change.nested_solved = True
             code_obj.nested_codes = nested_requests
             change.linked_obj.update_with_context(context=context, obj=code_obj)
-                
-            request.changes = [change] 
+
+            request.changes = [change]
             new_request = self.save(context=context, request=request)
             return new_request
         return request
@@ -149,7 +152,7 @@ class RequestService(AbstractService):
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
-        requests = result.ok()    
+        requests = result.ok()
         return [self.resolve_nested_requests(context, request) for request in requests]
 
     @service_method(path="request.get_all_info", name="get_all_info")

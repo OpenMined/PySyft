@@ -131,7 +131,7 @@ class APICallMessageHandler(AbstractMessageHandler):
                 credentials=credentials,
                 role=role,
                 job_id=queue_item.job_id,
-                has_execute_permissions=queue_item.has_execute_permissions
+                has_execute_permissions=queue_item.has_execute_permissions,
             )
 
             result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)

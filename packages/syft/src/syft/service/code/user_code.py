@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 import ast
-from copy import deepcopy
 import datetime
 from enum import Enum
 import hashlib
@@ -28,8 +27,6 @@ from IPython.display import display
 from result import Err
 from typing_extensions import Self
 
-from ...store.linked_obj import LinkedObject
-
 # relative
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
@@ -42,6 +39,7 @@ from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
+from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -82,8 +80,8 @@ from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..response import SyftWarning
-from ..user.user_roles import ServiceRole
-from .code_parse import GlobalsVisitor, LaunchJobVisitor, get_nested_calls, reset_nested_calls
+from .code_parse import GlobalsVisitor
+from .code_parse import LaunchJobVisitor
 from .unparse import unparse
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
@@ -307,7 +305,6 @@ class UserCode(SyftObject):
     )  # tracks if the code calls domain.something, variable is set during parsing
     nested_requests: Dict[str, str] = {}
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
-    
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = []
@@ -574,18 +571,18 @@ class UserCode(SyftObject):
 
   Nested Requests:
   """
-        
-        md = "\n".join([f"{'  '*level}{substring}" for substring in md.split('\n')[:-1]])
-        for _, (obj, node) in self.nested_codes.items():
-            
+
+        md = "\n".join(
+            [f"{'  '*level}{substring}" for substring in md.split("\n")[:-1]]
+        )
+        for _, (obj, _) in self.nested_codes.items():
             code = obj.resolve
             md += "\n"
-            md += code._inner_repr(level=level+1)
-        
+            md += code._inner_repr(level=level + 1)
+
         return md
 
     def _repr_markdown_(self):
-        
         return as_markdown_code(self._inner_repr())
 
     @property
@@ -625,7 +622,7 @@ def upgrade_usercode_v1_to_v2():
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
-    __version__ = SYFT_OBJECT_VERSION_2 + 1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: Optional[UID]
     code: str
@@ -703,37 +700,6 @@ def syft_function_single_use(
         output_policy=SingleExecutionExactOutput(),
         share_results_with_owners=share_results_with_owners,
     )
-
-def get_nested_code(user_code: SubmitUserCode, api):
-    tree = ast.parse(inspect.getsource(user_code.local_function))
-
-    # look for domain arg
-    if "domain" in [arg.arg for arg in tree.body[0].args.args]:
-        reset_nested_calls()
-        v = LaunchJobVisitor()
-        v.visit(tree)
-        nested_calls = get_nested_calls()
-        print(nested_calls)
-        
-        ipython = get_ipython()
-        
-        nested_user_codes = {}
-        for func_name in nested_calls:
-            # print(func_name)
-            # check the nb scope
-            specs = ipython.object_inspect(func_name)
-            if specs['type_name'] != 'SubmitUserCode':
-                print("Local UserCode not defined")
-            nested_user_codes[func_name] = ipython.ev(func_name)
-            
-            # check the remote code objects
-            for code in api.services.code.get_all():
-                if code.service_func_name == func_name:
-                    print("UserCode with the same name found remotely")
-                    if func_name not in nested_user_codes:
-                        nested_user_codes[func_name] = func_name
-        return nested_user_codes
-    return {}
 
 
 def syft_function(
@@ -871,23 +837,23 @@ def new_check_code(context: TransformContext) -> TransformContext:
 
     return context
 
+
 def locate_launch_jobs(context: TransformContext) -> TransformContext:
-    import sys
+    # stdlib
     nested_requests = {}
     tree = ast.parse(context.output["raw_code"])
-    
+
     # look for domain arg
     if "domain" in [arg.arg for arg in tree.body[0].args.args]:
-        reset_nested_calls()
         v = LaunchJobVisitor()
         v.visit(tree)
         nested_calls = v.nested_calls
         for call in nested_calls:
             nested_requests[call] = "latest"
-            
-            
+
     context.output["nested_requests"] = nested_requests
     return context
+
 
 def compile_byte_code(parsed_code: str) -> Optional[PyCodeObject]:
     try:
@@ -1054,7 +1020,6 @@ class SecureContext:
 
         def launch_job(func: UserCode, **kwargs):
             # relative
-            from ... import UID
 
             kw2id = {}
             for k, v in kwargs.items():
@@ -1064,16 +1029,13 @@ class SecureContext:
                 kw2id[k] = ptr.id
             try:
                 # TODO: check permissions here
-                action = Action.syft_function_action_from_kwargs_and_id(
-                    kw2id, func.id
-                )
-
+                action = Action.syft_function_action_from_kwargs_and_id(kw2id, func.id)
 
                 job = node.add_action_to_queue(
                     action=action,
                     credentials=context.credentials,
                     parent_job_id=context.job_id,
-                    has_execute_permissions=True
+                    has_execute_permissions=True,
                 )
                 # set api in global scope to enable using .get(), .wait())
                 set_api_registry()
@@ -1176,7 +1138,6 @@ def execute_byte_code(
         _locals = locals()
         _globals = {}
 
-        user_code_service = context.node.get_service("usercodeservice")
         for service_func_name, (linked_obj, _) in code_item.nested_codes.items():
             code_obj = linked_obj.resolve_with_context(context=context)
             if isinstance(code_obj, Err):

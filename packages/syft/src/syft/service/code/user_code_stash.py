@@ -14,10 +14,10 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...util.telemetry import instrument
 from .user_code import CodeHashPartitionKey
-from .user_code import UserCode
-from .user_code import UserVerifyKeyPartitionKey
 from .user_code import ServiceFuncNamePartitionKey
 from .user_code import SubmitTimePartitionKey
+from .user_code import UserCode
+from .user_code import UserVerifyKeyPartitionKey
 
 
 @instrument
@@ -47,5 +47,6 @@ class UserCodeStash(BaseUIDStoreStash):
         self, credentials: SyftVerifyKey, service_func_name: str
     ) -> Result[Optional[UserCode], str]:
         qks = QueryKeys(qks=[ServiceFuncNamePartitionKey.with_obj(service_func_name)])
-        return self.query_all(credentials=credentials, qks=qks, order_by=SubmitTimePartitionKey)
-        
+        return self.query_all(
+            credentials=credentials, qks=qks, order_by=SubmitTimePartitionKey
+        )

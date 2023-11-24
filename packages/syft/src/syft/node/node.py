@@ -1057,7 +1057,9 @@ class Node(AbstractNode):
             return self.add_api_call_to_queue(api_call)
         return result
 
-    def add_action_to_queue(self, action, credentials, parent_job_id=None, has_execute_permissions=False):
+    def add_action_to_queue(
+        self, action, credentials, parent_job_id=None, has_execute_permissions=False
+    ):
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(node=self)
@@ -1071,7 +1073,7 @@ class Node(AbstractNode):
             worker_settings=worker_settings,
             args=[],
             kwargs={"action": action},
-            has_execute_permissions=has_execute_permissions
+            has_execute_permissions=has_execute_permissions,
         )
         return self.add_queueitem_to_queue(
             queue_item, credentials, action, parent_job_id

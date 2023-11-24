@@ -90,7 +90,17 @@ class QueueItem(SyftObject):
 @migrate(QueueItem, QueueItemV1)
 def downgrade_queueitem_v2_to_v1():
     return [
-        drop(["method", "service", "args", "kwargs", "job_id", "worker_settings", "has_execute_permissions"]),
+        drop(
+            [
+                "method",
+                "service",
+                "args",
+                "kwargs",
+                "job_id",
+                "worker_settings",
+                "has_execute_permissions",
+            ]
+        ),
     ]
 
 

@@ -2,7 +2,7 @@
 from enum import Enum
 import hashlib
 import inspect
-from typing import Any, Tuple
+from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -16,8 +16,6 @@ from result import Ok
 from result import Result
 from typing_extensions import Self
 
-from ...types.syft_migration import migrate
-
 # relative
 from ...abstract_node import NodeSideType
 from ...client.api import APIRegistry
@@ -26,11 +24,15 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2
+from ...types.syft_migration import migrate
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
-from ...types.transforms import TransformContext, drop, make_set_default
+from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
+from ...types.transforms import drop
 from ...types.transforms import generate_id
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
@@ -301,8 +303,8 @@ class Request(SyftObject):
             if isinstance(change, UserCodeStatusChange):
                 return change.codes
         return SyftError(
-                message="This type of request does not have code associated with it."
-            )
+            message="This type of request does not have code associated with it."
+        )
 
     @property
     def code(self) -> Any:
@@ -310,8 +312,8 @@ class Request(SyftObject):
             if isinstance(change, UserCodeStatusChange):
                 return change.code
         return SyftError(
-                message="This type of request does not have code associated with it."
-            )
+            message="This type of request does not have code associated with it."
+        )
 
     def get_results(self) -> Any:
         return self.code.get_results()
@@ -344,7 +346,7 @@ class Request(SyftObject):
 
         return request_status
 
-    def approve(self, disable_warnings: bool = False, approve_nested = False):
+    def approve(self, disable_warnings: bool = False, approve_nested=False):
         api = APIRegistry.api_for(
             self.node_uid,
             self.syft_client_verify_key,
@@ -354,7 +356,9 @@ class Request(SyftObject):
         message, is_enclave = None, False
 
         if len(self.codes) > 1 and not approve_nested:
-            return SyftError(message="Multiple codes detected, please use approve_nested=True")
+            return SyftError(
+                message="Multiple codes detected, please use approve_nested=True"
+            )
 
         for code in [self.code]:
             if code and not isinstance(code, SyftError):
@@ -767,6 +771,7 @@ class EnumMutation(ObjectMutation):
             return self.linked_obj.resolve
         return None
 
+
 @serializable()
 class UserCodeStatusChangeV1(Change):
     __canonical_name__ = "UserCodeStatusChange"
@@ -802,7 +807,7 @@ class UserCodeStatusChange(Change):
     @property
     def code(self):
         return self.link
-    
+
     @property
     def codes(self):
         def recursive_code(node):
@@ -811,20 +816,19 @@ class UserCodeStatusChange(Change):
                 codes.append(obj.resolve)
                 codes.extend(recursive_code(new_node))
             return codes
-        
+
         codes = [self.link]
         codes.extend(recursive_code(self.link.nested_codes))
         return codes
-        
+
     def nested_repr(self, node=None, level=0):
-        msg = ''
+        msg = ""
         if node is None:
             node = self.link.nested_codes
-        for service_func_name, (obj, new_node) in node.items():
-            msg = "├──" + "──"  * level + f"{service_func_name}<br>"
-            msg += self.nested_repr(node=new_node, level=level+1)
+        for service_func_name, (_, new_node) in node.items():
+            msg = "├──" + "──" * level + f"{service_func_name}<br>"
+            msg += self.nested_repr(node=new_node, level=level + 1)
         return msg
-
 
     def __repr_syft_nested__(self):
         msg = f"Request to change <b>{self.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>"
@@ -837,7 +841,6 @@ class UserCodeStatusChange(Change):
         else:
             msg += ". Nested Requests not resolved"
         return msg
-
 
     def _repr_markdown_(self) -> str:
         link = self.link
@@ -871,20 +874,19 @@ class UserCodeStatusChange(Change):
             )
         return SyftSuccess(message=f"{type(self)} valid")
 
-    def approve_nested_requests(self, context, node):
-        approved_nested_codes = {}
-        for key, node in node.items():
-            code_obj = node[0].resolve_with_context(context).ok()
-            new_node = node[1]
-            approved_nested_codes[key] = code_obj.id
-            
-            res = self.approve_nested_requests(context, new_node)
-            if isinstance(res, SyftError):
-                return res
-            code_obj.nested_codes = res
-            node[0].update_with_context(context, code_obj)
-                
-        return approved_nested_codes
+    # def get_nested_requests(self, context, code_tree: Dict[str: Tuple[LinkedObject, Dict]]):
+    #     approved_nested_codes = {}
+    #     for key, (linked_obj, new_code_tree) in code_tree.items():
+    #         code_obj = linked_obj.resolve_with_context(context).ok()
+    #         approved_nested_codes[key] = code_obj.id
+
+    #         res = self.get_nested_requests(context, new_code_tree)
+    #         if isinstance(res, SyftError):
+    #             return res
+    #         code_obj.nested_codes = res
+    #         linked_obj.update_with_context(context, code_obj)
+
+    #     return approved_nested_codes
 
     def mutate(self, obj: UserCode, context: ChangeContext, undo: bool) -> Any:
         reason: str = context.extra_kwargs.get("reason", "")
@@ -936,15 +938,14 @@ class UserCodeStatusChange(Change):
                 from ..enclave.enclave_service import propagate_inputs_to_enclave
 
                 user_code = res
-                import sys
-                
+
                 if self.is_enclave_request(user_code):
                     enclave_res = propagate_inputs_to_enclave(
                         user_code=res, context=context
                     )
                     if isinstance(enclave_res, SyftError):
                         return enclave_res
-                res = self.linked_obj.update_with_context(context, user_code)
+                self.linked_obj.update_with_context(context, user_code)
             else:
                 res = self.mutate(obj, context, undo=True)
                 if isinstance(res, SyftError):
@@ -969,11 +970,13 @@ class UserCodeStatusChange(Change):
             return self.linked_obj.resolve
         return None
 
+
 @migrate(UserCodeStatusChange, UserCodeStatusChangeV1)
 def downgrade_usercodestatuschange_v2_to_v1():
     return [
         drop("nested_solved"),
     ]
+
 
 @migrate(UserCodeStatusChangeV1, UserCodeStatusChange)
 def upgrade_usercodestatuschange_v1_to_v2():

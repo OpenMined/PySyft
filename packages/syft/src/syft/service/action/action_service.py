@@ -11,7 +11,6 @@ import numpy as np
 from result import Err
 from result import Ok
 from result import Result
-from ..policy.policy import retrieve_from_db
 
 # relative
 from ...serde.serializable import serializable
@@ -23,6 +22,7 @@ from ..blob_storage.service import BlobStorageService
 from ..code.user_code import UserCode
 from ..code.user_code import execute_byte_code
 from ..context import AuthedServiceContext
+from ..policy.policy import retrieve_from_db
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -184,7 +184,6 @@ class ActionService(AbstractService):
         kwargs: Dict[str, Any],
         result_id: Optional[UID] = None,
     ) -> Result[ActionObjectPointer, Err]:
-        
         if not context.has_execute_permissions:
             input_policy = code_item.input_policy
             filtered_kwargs = input_policy.filter_kwargs(
@@ -198,7 +197,6 @@ class ActionService(AbstractService):
         # update input policy to track any input state
         # code_item.input_policy = input_policy
 
-        
         if not context.has_execute_permissions:
             expected_input_kwargs = set()
             for _inp_kwarg in code_item.input_policy.inputs.values():
@@ -210,9 +208,10 @@ class ActionService(AbstractService):
                         )
                 expected_input_kwargs.update(keys)
 
-
             permitted_input_kwargs = list(filtered_kwargs.keys())
-            not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
+            not_approved_kwargs = set(expected_input_kwargs) - set(
+                permitted_input_kwargs
+            )
             if len(not_approved_kwargs) > 0:
                 return Err(
                     f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
@@ -278,7 +277,9 @@ class ActionService(AbstractService):
             result_blob_id = result_action_object.private.syft_blob_storage_entry_id
         else:
             result_blob_id = result_action_object.syft_blob_storage_entry_id
-        output_readers = output_policy.output_readers if not context.has_execute_permissions else []
+        output_readers = (
+            output_policy.output_readers if not context.has_execute_permissions else []
+        )
         read_permission = ActionPermission.READ
 
         result_action_object._set_obj_location_(

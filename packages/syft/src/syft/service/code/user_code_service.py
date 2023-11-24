@@ -29,7 +29,7 @@ from ..queue.queue_stash import QueueItem
 from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
-from ..response import SyftError, SyftInfo
+from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -69,28 +69,34 @@ class UserCodeService(AbstractService):
         return result
 
     @service_method(
-        path="code.get_by_service_func_name", 
-        name="get_by_service_func_name", 
-        roles=GUEST_ROLE_LEVEL
+        path="code.get_by_service_func_name",
+        name="get_by_service_func_name",
+        roles=GUEST_ROLE_LEVEL,
     )
-    def get_by_service_name(self, context: AuthedServiceContext, service_func_name: str):
-        result = self.stash.get_by_service_func_name(context.credentials, service_func_name=service_func_name)
+    def get_by_service_name(
+        self, context: AuthedServiceContext, service_func_name: str
+    ):
+        result = self.stash.get_by_service_func_name(
+            context.credentials, service_func_name=service_func_name
+        )
         if result.is_err():
             return SyftError(message=str(result.err()))
         return result.ok()
-        
+
     def solve_nested_requests(self, context: AuthedServiceContext, code: UserCode):
         nested_requests = code.nested_requests
         nested_codes = {}
         for service_func_name, version in nested_requests.items():
-            codes = self.get_by_service_name(context=context, service_func_name=service_func_name)
+            codes = self.get_by_service_name(
+                context=context, service_func_name=service_func_name
+            )
             if isinstance(codes, SyftError):
                 return codes
             if version == "latest":
                 nested_codes[service_func_name] = codes[-1]
             else:
                 nested_codes[service_func_name] = codes[int(version)]
-        
+
         return nested_codes
 
     def _request_code_execution(
@@ -156,11 +162,7 @@ class UserCodeService(AbstractService):
         reason: Optional[str] = "",
     ) -> Union[SyftSuccess, SyftError]:
         """Request Code execution on user code"""
-        request = self._request_code_execution(context=context, code=code, reason=reason)
-        # if request.ok().code.nested_requests != {}:
-        #     return SyftInfo(message="The function has nested function calls, which were attached to the request. To see them, check the <request_obj> or <request_obj>.code")
-        return request
-
+        return self._request_code_execution(context=context, code=code, reason=reason)
 
     @service_method(path="code.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(
@@ -300,18 +302,21 @@ class UserCodeService(AbstractService):
                 return code_result
             code: UserCode = code_result.ok()
 
+            output_policy = code.output_policy
             if not context.has_execute_permissions:
-                output_policy = code.output_policy
                 can_execute = self.is_execution_allowed(
                     code=code, context=context, output_policy=output_policy
                 )
                 if not can_execute:
                     if output_policy is None:
-                        return Err("UserCodeStatus.DENIED: Function has no output policy")
+                        return Err(
+                            "UserCodeStatus.DENIED: Function has no output policy"
+                        )
                     if not (is_valid := output_policy.valid):
                         if len(output_policy.output_history) > 0:
                             result = resolve_outputs(
-                                context=context, output_ids=output_policy.last_output_ids
+                                context=context,
+                                output_ids=output_policy.last_output_ids,
                             )
                             return Ok(result.as_empty())
                         else:
@@ -326,7 +331,6 @@ class UserCodeService(AbstractService):
             ] = action_service._user_code_execute(
                 context, code, kwarg2id, result_id=result_id
             )
-            print(result_action_object)
             output_result = action_service.set_result_to_store(
                 result_action_object, context, code.output_policy
             )
@@ -336,7 +340,8 @@ class UserCodeService(AbstractService):
             result = output_result.ok()
 
             # Apply Output Policy to the results and update the OutputPolicyState
-            
+
+            # this currently only works for nested syft_functions
             if not context.has_execute_permissions:
                 output_policy.apply_output(context=context, outputs=result)
                 code.output_policy = output_policy

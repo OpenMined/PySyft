@@ -891,22 +891,22 @@
           "action": "add"
         }
       },
+      "UserCodeStatusChange": {
+        "2": {
+          "version": 2,
+          "hash": "d83e0905ae882c824ba8fbbf455cd3881906bf8b2ebbfff07bcf471ef869cedc",
+          "action": "add"
+        }
+      },
       "SubmitUserCode": {
         "1": {
           "version": 1,
           "hash": "f572d32350d09e25b29572c591029d37a216818618c383094404f84bc9c15dd6",
           "action": "remove"
         },
-        "3": {
-          "version": 3,
-          "hash": "d165382af9182fa41ea7a1afc758d19975fb98a67de2b43931219f7e34da0598",
-          "action": "add"
-        }
-      },
-      "UserCodeStatusChange": {
         "2": {
           "version": 2,
-          "hash": "d83e0905ae882c824ba8fbbf455cd3881906bf8b2ebbfff07bcf471ef869cedc",
+          "hash": "9b29e060973a3de8d3564a2b7d2bb5c53745aa445bf257576994b613505d7194",
           "action": "add"
         }
       }
