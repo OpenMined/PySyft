@@ -157,8 +157,8 @@ class UserCodeService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Request Code execution on user code"""
         request = self._request_code_execution(context=context, code=code, reason=reason)
-        if request.ok().code.nested_requests != {}:
-            return SyftInfo(message="The function has nested function calls, which were attached to the request. To see them, check the <request_obj> or <request_obj>.code")
+        # if request.ok().code.nested_requests != {}:
+        #     return SyftInfo(message="The function has nested function calls, which were attached to the request. To see them, check the <request_obj> or <request_obj>.code")
         return request
 
 
