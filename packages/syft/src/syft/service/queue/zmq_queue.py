@@ -7,6 +7,7 @@ from random import randint
 import socketserver
 import threading
 import time
+from typing import Any
 from typing import DefaultDict
 from typing import Dict
 from typing import Optional
@@ -601,5 +602,5 @@ class ZMQConsumerView:
             "Queue": self.queue_name,
             "Identity": self.identity,
             "Status": self.status,
-            "Job id": self.worker_job_id.short() if self.worker_job_id else ""
+            "Job id": self.worker_job_id.short() if self.worker_job_id else "",
         }

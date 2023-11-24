@@ -1,10 +1,6 @@
 # stdlib
-from typing import Any
 from typing import List
 from typing import Union
-
-# syft absolute
-from syft.service.queue.zmq_queue import ZMQConsumerView
 
 # relative
 from ...serde.serializable import serializable
@@ -19,6 +15,7 @@ from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .queue_stash import QueueItem
 from .queue_stash import QueueStash
+from .zmq_queue import ZMQConsumerView
 
 
 @instrument
