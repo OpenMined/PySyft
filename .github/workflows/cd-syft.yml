@@ -134,7 +134,7 @@ jobs:
       #   uses: docker/build-push-action@v5
       #   with:
       #     context: ./packages
-      #     file: ./packages/grid/backend/syft_base_cpu.dockerfile
+      #     file: ./packages/grid/backend/worker_cpu.dockerfile
       #     platforms: ${{ steps.release_metadata.outputs.release_platform }}
       #     target: backend
       #     outputs: type=image,name=openmined/syft-base-cpu,push-by-digest=true,name-canonical=true,push=true
