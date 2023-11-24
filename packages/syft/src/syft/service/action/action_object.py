@@ -562,13 +562,42 @@ BASE_PASSTHROUGH_ATTRS = [
     "syft_resolved"
 ]
 
+@serializable()
+class ActionObjectV1(SyftObject):
+    """Action object for remote execution."""
 
+    __canonical_name__ = "ActionObject"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    __attr_searchable__: List[str] = []
+    syft_action_data_cache: Optional[Any] = None
+    syft_blob_storage_entry_id: Optional[UID] = None
+    syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
+
+    # Help with calculating history hash for code verification
+    syft_parent_hashes: Optional[Union[int, List[int]]]
+    syft_parent_op: Optional[str]
+    syft_parent_args: Optional[Any]
+    syft_parent_kwargs: Optional[Any]
+    syft_history_hash: Optional[int]
+    syft_internal_type: ClassVar[Type[Any]]
+    syft_node_uid: Optional[UID]
+    _syft_pre_hooks__: Dict[str, List] = {}
+    _syft_post_hooks__: Dict[str, List] = {}
+    syft_twin_type: TwinMode = TwinMode.NONE
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_action_data_type: Optional[Type]
+    syft_action_data_repr_: Optional[str]
+    syft_action_data_str_: Optional[str]
+    syft_has_bool_attr: Optional[bool]
+    syft_resolve_data: Optional[bool]
+    syft_created_at: Optional[DateTime]
 @serializable()
 class ActionObject(SyftObject):
     """Action object for remote execution."""
 
     __canonical_name__ = "ActionObject"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     __attr_searchable__: List[str] = []
     syft_action_data_cache: Optional[Any] = None
@@ -1777,8 +1806,21 @@ class ActionObject(SyftObject):
         return self._syft_output_action_object(self.__rrshift__(other))
 
 
+@migrate(ActionObject, ActionObjectV1)
+def downgrade_actionobject_v2_to_v1():
+    return [
+        drop("syft_resolved"),
+    ]
+
+
+@migrate(ActionObjectV1, ActionObject)
+def upgrade_actionobject_v1_to_v2():
+    return [
+        make_set_default("syft_resolved", True),
+    ]
+
 @serializable()
-class AnyActionObjectV1(ActionObject):
+class AnyActionObjectV1(ActionObjectV1):
     __canonical_name__ = "AnyActionObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -1808,12 +1850,16 @@ class AnyActionObject(ActionObject):
 def downgrade_anyactionobject_v2_to_v1():
     return [
         drop("syft_action_data_str"),
+        drop("syft_resolved"),
     ]
 
 
 @migrate(AnyActionObjectV1, AnyActionObject)
 def upgrade_anyactionobject_v1_to_v2():
-    return [make_set_default("syft_action_data_str", "")]
+    return [
+        make_set_default("syft_action_data_str", ""),
+        make_set_default("syft_resolved", True),
+    ]
 
 
 action_types[Any] = AnyActionObject
