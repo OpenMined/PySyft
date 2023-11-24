@@ -59,4 +59,4 @@ docker compose --env-file ./.env -p "$NODE_NAME" --profile blob-storage --profil
 rm -f file.tgz
 
 # Run the docker command for the Jupyter notebook using the specified PORT
-#docker run --rm -it --network=host "openmined/grid-node-jupyter:$VERSION" "jupyter" "notebook" "--port=$PORT" "--ip=0.0.0.0" "--allow-root"
+##docker run --rm -it --network=host "openmined/grid-node-jupyter:$VERSION" "jupyter" "notebook" "--port=$PORT" "--ip=0.0.0.0" "--allow-root"
