@@ -149,6 +149,34 @@ class Job(SyftObject):
         else:
             return ""
 
+    def restart(self, kill=False) -> None:
+        if kill:
+            self.kill()
+        if not self.has_parent:
+            # this is currently the limitation, we will need to implement
+            # killing toplevel jobs later
+            print("Can only kill nested jobs")
+        elif kill or (
+            self.status != JobStatus.PROCESSING and self.status != JobStatus.CREATED
+        ):
+            api = APIRegistry.api_for(
+                node_uid=self.node_uid,
+                user_verify_key=self.syft_client_verify_key,
+            )
+            call = SyftAPICall(
+                node_uid=self.node_uid,
+                path="job.restart",
+                args=[],
+                kwargs={"uid": self.id},
+                blocking=True,
+            )
+
+            api.make_call(call)
+        else:
+            print(
+                "Job is running or scheduled, if you want to kill it use job.kill() first"
+            )
+
     def kill(self) -> None:
         if self.job_pid is not None:
             api = APIRegistry.api_for(
