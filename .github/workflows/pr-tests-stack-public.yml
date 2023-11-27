@@ -34,7 +34,7 @@ jobs:
           echo "deleting ${GITHUB_WORKSPACE}/.git/config"
           rm ${GITHUB_WORKSPACE}/.git/config
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
