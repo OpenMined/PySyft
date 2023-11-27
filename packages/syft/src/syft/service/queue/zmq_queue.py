@@ -7,6 +7,7 @@ import threading
 import time
 from typing import DefaultDict
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Union
 
@@ -15,6 +16,7 @@ import zmq.green as zmq
 
 # relative
 from ...serde.serializable import serializable
+from ...service.action.action_object import ActionObject
 from ...service.context import AuthedServiceContext
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -31,6 +33,7 @@ from .base_queue import QueueClientConfig
 from .base_queue import QueueConfig
 from .base_queue import QueueConsumer
 from .base_queue import QueueProducer
+from .queue_stash import ActionQueueItem
 from .queue_stash import Status
 
 HEARTBEAT_LIVENESS = 3
@@ -42,6 +45,8 @@ PPP_READY = b"\x01"  # Signals worker is ready
 PPP_HEARTBEAT = b"\x02"  # Signals worker heartbeat
 
 lock = threading.Lock()
+
+MAX_RECURSION_NESTED_ACTIONOBJECTS = 5
 
 
 class Worker:
@@ -108,6 +113,71 @@ class ZMQProducer(QueueProducer):
         self.backend.close()
         self.context.term()
 
+    @property
+    def action_service(self):
+        return self.auth_context.node.get_service("ActionService")
+
+    def contains_unresolved_action_objects(self, arg, recursion=0):
+        """recursively check collections for unresolved action objects"""
+        if isinstance(arg, UID):
+            arg = self.action_service.get(self.auth_context, arg).ok()
+            return self.contains_unresolved_action_objects(arg, recursion=recursion + 1)
+        if isinstance(arg, ActionObject):
+            if not arg.syft_resolved:
+                res = self.action_service.get(self.auth_context, arg)
+                if res.is_err():
+                    return True
+                arg = res.ok()
+                if not arg.syft_resolved:
+                    return True
+            arg = arg.syft_action_data
+
+        try:
+            value = False
+            if isinstance(arg, List):
+                for elem in arg:
+                    value = self.contains_unresolved_action_objects(
+                        elem, recursion=recursion + 1
+                    )
+                    if value:
+                        return True
+            if isinstance(arg, Dict):
+                for elem in arg.values():
+                    value = self.contains_unresolved_action_objects(
+                        elem, recursion=recursion + 1
+                    )
+                    if value:
+                        return True
+            return value
+        except Exception as e:
+            print(e)
+            return True
+
+    def unwrap_nested_actionobjects(self, data):
+        """recursively unwraps nested action objects"""
+
+        if isinstance(data, List):
+            return [self.unwrap_nested_actionobjects(obj) for obj in data]
+        if isinstance(data, Dict):
+            return {
+                key: self.unwrap_nested_actionobjects(obj) for key, obj in data.items()
+            }
+        if isinstance(data, ActionObject):
+            return data.get()
+        return data
+
+    def preprocess_action_arg(self, arg):
+        res = self.action_service.get(context=self.auth_context, uid=arg)
+        if res.is_err():
+            return arg
+        action_object = res.ok()
+        data = action_object.syft_action_data
+        new_data = self.unwrap_nested_actionobjects(data)
+        new_action_object = ActionObject.from_obj(new_data, id=action_object.id)
+        res = self.action_service.set(
+            context=self.auth_context, action_object=new_action_object
+        )
+
     def read_items(self):
         while True:
             if self.stop:
@@ -125,58 +195,16 @@ class ZMQProducer(QueueProducer):
 
             for item in items:
                 if item.status == Status.CREATED:
-                    # des = deserialize(item.api_call.serialized_message, from_bytes=True)
-                    # args = des.args
-                    # kwargs = des.kwargs
-                    # import sys
-
-                    # action_service = self.auth_context.node.get_service("ActionService")
-
-                    # def check_for_job(arg):
-                    #     if isinstance(arg, ActionObject):
-                    #         arg = arg.get()
-                    #     if isinstance(arg, Job):
-                    #         arg.fetch()
-                    #         return arg.resolved
-                    #     try:
-                    #         if isinstance(arg, List):
-                    #             value = True
-                    #             for elem in arg:
-                    #                 value = value and check_for_job(elem)
-                    #             return value
-                    #         if isinstance(arg, Dict):
-                    #             value = True
-                    #             for elem in arg.values():
-                    #                 value = value and check_for_job(elem)
-                    #             return value
-                    #     except Exception as e:
-                    #         pass
-                    #     return True
-
-                    # new_args = []
-                    # for arg in args:
-                    #     new_arg = arg
-                    #     if isinstance(arg, UID):
-                    #         new_arg = action_service.get(self.auth_context, arg).ok()
-                    #     new_args.append(new_arg)
-
-                    # print("Kwargs:", kwargs, file=sys.stderr)
-                    # new_kwargs = {}
-                    # for kwarg in kwargs:
-                    #     new_kwarg = kwargs[kwarg]
-                    #     if isinstance(kwargs[kwarg], UID):
-                    #         new_kwarg = action_service.get(self.auth_context, kwargs[kwarg]).ok()
-                    #     new_kwargs[kwarg] = new_kwarg
-                    #     if kwarg == 'job_results':
-                    #         # print(job.resolve for job in new_kwarg.get())
-                    #         print("JOBS:", [job.resolve for job in new_kwarg.get()], file=sys.stderr )
-
-                    # print("Produder args:", check_for_job(new_args), file=sys.stderr)
-                    # print("Produder kwargs:", check_for_job(new_kwargs), file=sys.stderr)
-                    # print(items)
-
-                    # if not (check_for_job(new_args) and check_for_job(new_kwargs)):
-                    #     continue
+                    if isinstance(item, ActionQueueItem):
+                        action = item.kwargs["action"]
+                        if self.contains_unresolved_action_objects(
+                            action.args
+                        ) or self.contains_unresolved_action_objects(action.kwargs):
+                            continue
+                        for arg in action.args:
+                            self.preprocess_action_arg(arg)
+                        for _, arg in action.kwargs.items():
+                            self.preprocess_action_arg(arg)
 
                     msg_bytes = sy.serialize(item, to_bytes=True)
                     frames = [self.identity, b"", msg_bytes]

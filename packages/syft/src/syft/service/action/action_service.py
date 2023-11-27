@@ -22,6 +22,7 @@ from ..blob_storage.service import BlobStorageService
 from ..code.user_code import UserCode
 from ..code.user_code import execute_byte_code
 from ..context import AuthedServiceContext
+from ..policy.policy import retrieve_from_db
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -105,6 +106,50 @@ class ActionService(AbstractService):
             return Ok(action_object)
         return result.err()
 
+    @service_method(path="action.peek", name="peek", roles=GUEST_ROLE_LEVEL)
+    def peek(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        twin_mode: TwinMode = TwinMode.PRIVATE,
+    ) -> Result[Ok[ActionObject], Err[str]]:
+        """Get an object from the action store"""
+        return self._peek(context, uid, twin_mode)
+
+    def _peek(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        twin_mode: TwinMode = TwinMode.PRIVATE,
+        has_permission=False,
+    ) -> Result[Ok[ActionObject], Err[str]]:
+        """Get an object from the action store"""
+
+        result = self.store.get(
+            uid=uid, credentials=context.credentials, has_permission=has_permission
+        )
+
+        if result.is_ok():
+            obj = result.ok()
+            obj._set_obj_location_(
+                context.node.id,
+                context.credentials,
+            )
+            if isinstance(obj, TwinObject):
+                if twin_mode == TwinMode.PRIVATE:
+                    obj = obj.private.as_empty()
+                    obj.syft_point_to(context.node.id)
+                elif twin_mode == TwinMode.MOCK:
+                    obj = obj.mock.as_empty()
+                    obj.syft_point_to(context.node.id)
+                else:
+                    obj.mock.syft_point_to(context.node.id)
+                    obj.private.syft_point_to(context.node.id)
+            else:
+                obj = obj.as_empty()
+            return Ok(obj)
+        return result
+
     @service_method(path="action.get", name="get", roles=GUEST_ROLE_LEVEL)
     def get(
         self,
@@ -183,33 +228,38 @@ class ActionService(AbstractService):
         kwargs: Dict[str, Any],
         result_id: Optional[UID] = None,
     ) -> Result[ActionObjectPointer, Err]:
-        input_policy = code_item.input_policy
-        filtered_kwargs = input_policy.filter_kwargs(
-            kwargs=kwargs, context=context, code_item_id=code_item.id
-        )
+        if not context.has_execute_permissions:
+            input_policy = code_item.input_policy
+            filtered_kwargs = input_policy.filter_kwargs(
+                kwargs=kwargs, context=context, code_item_id=code_item.id
+            )
+            if isinstance(filtered_kwargs, SyftError) or filtered_kwargs.is_err():
+                return filtered_kwargs
+            filtered_kwargs = filtered_kwargs.ok()
+        else:
+            filtered_kwargs = retrieve_from_db(code_item.id, kwargs, context).ok()
         # update input policy to track any input state
         # code_item.input_policy = input_policy
 
-        expected_input_kwargs = set()
-        for _inp_kwarg in code_item.input_policy.inputs.values():
-            keys = _inp_kwarg.keys()
-            for k in keys:
-                if k not in kwargs:
-                    return Err(
-                        f"{code_item.service_func_name}() missing required keyword argument: '{k}'"
-                    )
-            expected_input_kwargs.update(keys)
+        if not context.has_execute_permissions:
+            expected_input_kwargs = set()
+            for _inp_kwarg in code_item.input_policy.inputs.values():
+                keys = _inp_kwarg.keys()
+                for k in keys:
+                    if k not in kwargs:
+                        return Err(
+                            f"{code_item.service_func_name}() missing required keyword argument: '{k}'"
+                        )
+                expected_input_kwargs.update(keys)
 
-        if isinstance(filtered_kwargs, SyftError) or filtered_kwargs.is_err():
-            return filtered_kwargs
-        filtered_kwargs = filtered_kwargs.ok()
-
-        permitted_input_kwargs = list(filtered_kwargs.keys())
-        not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
-        if len(not_approved_kwargs) > 0:
-            return Err(
-                f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
+            permitted_input_kwargs = list(filtered_kwargs.keys())
+            not_approved_kwargs = set(expected_input_kwargs) - set(
+                permitted_input_kwargs
             )
+            if len(not_approved_kwargs) > 0:
+                return Err(
+                    f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
+                )
 
         has_twin_inputs = False
 
@@ -261,8 +311,10 @@ class ActionService(AbstractService):
                     mock_obj=result_action_object_mock,
                 )
         except Exception as e:
+            # import traceback
+            # return Err(f"_user_code_execute failed. {e} {traceback.format_exc()}")
             return Err(f"_user_code_execute failed. {e}")
-        return result_action_object
+        return Ok(result_action_object)
 
     def set_result_to_store(self, result_action_object, context, output_policy):
         result_id = result_action_object.id
@@ -271,7 +323,9 @@ class ActionService(AbstractService):
             result_blob_id = result_action_object.private.syft_blob_storage_entry_id
         else:
             result_blob_id = result_action_object.syft_blob_storage_entry_id
-        output_readers = output_policy.output_readers
+        output_readers = (
+            output_policy.output_readers if not context.has_execute_permissions else []
+        )
         read_permission = ActionPermission.READ
 
         result_action_object._set_obj_location_(

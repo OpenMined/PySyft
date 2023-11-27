@@ -69,6 +69,7 @@ class QueueItem(SyftObject):
     kwargs: Dict[str, Any]
     job_id: Optional[UID]
     worker_settings: Optional[WorkerSettings]
+    has_execute_permissions: bool = False
 
     def __repr__(self) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"
@@ -90,7 +91,17 @@ class QueueItem(SyftObject):
 @migrate(QueueItem, QueueItemV1)
 def downgrade_queueitem_v2_to_v1():
     return [
-        drop(["method", "service", "args", "kwargs", "job_id", "worker_settings"]),
+        drop(
+            [
+                "method",
+                "service",
+                "args",
+                "kwargs",
+                "job_id",
+                "worker_settings",
+                "has_execute_permissions",
+            ]
+        ),
     ]
 
 
@@ -103,6 +114,7 @@ def upgrade_queueitem_v1_to_v2():
         make_set_default("kwargs", {}),
         make_set_default("job_id", None),
         make_set_default("worker_settings", None),
+        make_set_default("has_execute_permissions", False),
     ]
 
 

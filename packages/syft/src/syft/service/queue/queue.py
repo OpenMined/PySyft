@@ -115,7 +115,8 @@ class QueueManager(BaseQueueManager):
         return self._client.consumers
 
 
-def handle_message_multiprocessing(worker_settings, queue_item, credentials, job_item):
+def handle_message_multiprocessing(worker_settings, queue_item, credentials):
+    pass
     queue_config = worker_settings.queue_config
     queue_config.client_config.create_producer = False
     queue_config.client_config.n_consumers = 0
@@ -134,6 +135,8 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials, job
         migrate=False,
     )
 
+    job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).ok()
+
     # Set monitor thread for this job.
     monitor_thread = MonitorThread(queue_item, worker, credentials)
     monitor_thread.start()
@@ -149,6 +152,7 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials, job
             credentials=credentials,
             role=role,
             job_id=queue_item.job_id,
+            has_execute_permissions=queue_item.has_execute_permissions,
         )
 
         result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
@@ -235,9 +239,10 @@ class APICallMessageHandler(AbstractMessageHandler):
 
         p = multiprocessing.Process(
             target=handle_message_multiprocessing,
-            args=(worker_settings, queue_item, credentials, job_item),
+            args=(worker_settings, queue_item, credentials),
         )
         p.start()
         job_item.job_pid = p.pid
+
         worker.job_stash.set_result(credentials, job_item)
         p.join()

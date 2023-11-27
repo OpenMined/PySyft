@@ -35,6 +35,7 @@ class AuthedServiceContext(NodeServiceContext):
     role: ServiceRole = ServiceRole.NONE
     job_id: Optional[UID]
     extra_kwargs: Dict = {}
+    has_execute_permissions: bool = False
 
     def capabilities(self) -> List[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES.get(self.role, [])
