@@ -115,7 +115,25 @@ class QueueManager(BaseQueueManager):
         return self._client.consumers
 
 
-def handle_message_multiprocessing(worker, queue_item, credentials, job_item):
+def handle_message_multiprocessing(worker_settings, queue_item, credentials, job_item):
+    queue_config = worker_settings.queue_config
+    queue_config.client_config.create_producer = False
+    queue_config.client_config.n_consumers = 0
+    # relative
+    from ...node.node import Node
+
+    worker = Node(
+        id=worker_settings.id,
+        name=worker_settings.name,
+        signing_key=worker_settings.signing_key,
+        document_store_config=worker_settings.document_store_config,
+        action_store_config=worker_settings.action_store_config,
+        blob_storage_config=worker_settings.blob_store_config,
+        queue_config=queue_config,
+        is_subprocess=True,
+        migrate=False,
+    )
+
     # Set monitor thread for this job.
     monitor_thread = MonitorThread(queue_item, worker, credentials)
     monitor_thread.start()
@@ -217,7 +235,7 @@ class APICallMessageHandler(AbstractMessageHandler):
 
         p = multiprocessing.Process(
             target=handle_message_multiprocessing,
-            args=(worker, queue_item, credentials, job_item),
+            args=(worker_settings, queue_item, credentials, job_item),
         )
         p.start()
         job_item.job_pid = p.pid

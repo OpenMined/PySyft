@@ -152,6 +152,7 @@ class Job(SyftObject):
     def restart(self, kill=False) -> None:
         if kill:
             self.kill()
+        self.fetch()
         if not self.has_parent:
             # this is currently the limitation, we will need to implement
             # killing toplevel jobs later
