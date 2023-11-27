@@ -66,7 +66,7 @@ jobs:
 
       - name: Setup Python on arm64
         if: ${{ endsWith(matrix.runner, '-arm64') }}
-        uses: deadsnakes/action@v3.0.1
+        uses: deadsnakes/action@v3.1.0
         with:
           python-version: "3.11"
 
