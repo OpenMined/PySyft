@@ -18,5 +18,8 @@ class LaunchJobVisitor(ast.NodeVisitor):
 
     def visit_Call(self, node):
         if isinstance(node.func, ast.Attribute):
-            if node.func.value.id == "domain" and node.func.attr == "launch_job":
+            if (
+                getattr(node.func.value, "id", None) == "domain"
+                and node.func.attr == "launch_job"
+            ):
                 self.nested_calls.append(node.args[0].id)
