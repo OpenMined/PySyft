@@ -48,7 +48,7 @@ jobs:
       #     echo "deleting ${GITHUB_WORKSPACE}/.git/config"
       #     rm ${GITHUB_WORKSPACE}/.git/config
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # free 10GB of space
       - name: Remove unnecessary files
@@ -248,7 +248,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -320,7 +320,7 @@ jobs:
           echo "deleting ${GITHUB_WORKSPACE}/.git/config"
           rm ${GITHUB_WORKSPACE}/.git/config
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # free 10GB of space
       - name: Remove unnecessary files
@@ -527,7 +527,7 @@ jobs:
       - name: Permission to home directory
         run: |
           sudo chown -R $USER:$USER $HOME
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
