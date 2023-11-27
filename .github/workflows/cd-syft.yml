@@ -49,7 +49,7 @@ jobs:
       grid_version: ${{ steps.release_metadata.outputs.grid_version }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # actions/setup-python doesn't yet support ARM
       - name: Setup Python on x64
@@ -66,7 +66,7 @@ jobs:
 
       - name: Setup Python on arm64
         if: ${{ endsWith(matrix.runner, '-arm64') }}
-        uses: deadsnakes/action@v3.0.1
+        uses: deadsnakes/action@v3.1.0
         with:
           python-version: "3.11"
 
@@ -225,7 +225,7 @@ jobs:
         run: |
           sudo chown -R $USER:$USER $HOME
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
 
@@ -341,7 +341,7 @@ jobs:
 
       # Checkout Infra repo (nested)
       - name: Checkout Infra Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ secrets.INFRA_REPO }}
           ref: "main"
@@ -389,7 +389,7 @@ jobs:
 
       # Checkout to gh-pages and update helm repo
       - name: Checkout to gh-pages
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: gh-pages
           token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}

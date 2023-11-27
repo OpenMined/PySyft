@@ -48,7 +48,7 @@ jobs:
       #     echo "deleting ${GITHUB_WORKSPACE}/.git/config"
       #     rm ${GITHUB_WORKSPACE}/.git/config
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # free 10GB of space
       - name: Remove unnecessary files
@@ -102,19 +102,19 @@ jobs:
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: list --localonly
 
       - name: Install git
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
 
       - name: Install cmake
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
@@ -126,7 +126,7 @@ jobs:
 
       - name: Install visualcpp-build-tools
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install visualstudio2019-workload-vctools -y
 
@@ -248,7 +248,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -320,7 +320,7 @@ jobs:
           echo "deleting ${GITHUB_WORKSPACE}/.git/config"
           rm ${GITHUB_WORKSPACE}/.git/config
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # free 10GB of space
       - name: Remove unnecessary files
@@ -374,19 +374,19 @@ jobs:
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: list --localonly
 
       - name: Install git
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
 
       - name: Install cmake
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
@@ -398,7 +398,7 @@ jobs:
 
       - name: Install visualcpp-build-tools
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install visualstudio2019-workload-vctools -y
 
@@ -527,7 +527,7 @@ jobs:
       - name: Permission to home directory
         run: |
           sudo chown -R $USER:$USER $HOME
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
