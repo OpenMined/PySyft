@@ -17,17 +17,11 @@ ls -lisa $HOME/data
 ls -lisa $APPDIR/syft/
 ls -lisa $APPDIR/grid/
 
-MARKER="telemetry,data_science"
-if [[ ${SYFT_BASE_IMAGE} == "True" ]];
-then
-    MARKER="telemetry"
-fi
-
 if [[ ${DEV_MODE} == "True" ]];
 then
     echo "DEV_MODE Enabled"
     RELOAD="--reload"
-    pip install --user -e "$APPDIR/syft[${MARKER}]"
+    pip install --user -e "$APPDIR/syft[telemetry,data_science]"
 fi
 
 set +e
