@@ -21,7 +21,7 @@ spec:
           value: root
         - name: MONGO_INITDB_ROOT_PASSWORD
           value: example
-      image: docker.io/library/mongo:latest
+      image: docker.io/library/mongo:7.0.3
       imagePullPolicy: IfNotPresent
       resources: {}
       tty: true
