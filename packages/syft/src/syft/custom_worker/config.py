@@ -2,6 +2,7 @@
 from hashlib import sha256
 from pathlib import Path
 from typing import List
+from typing import Union
 
 # third party
 from packaging import version
@@ -85,7 +86,7 @@ class CustomWorkerConfig(SyftBaseModel):
         return cls.from_dict(config)
 
     @classmethod
-    def from_path(cls, path: Path | str) -> Self:
+    def from_path(cls, path: Union[Path, str]) -> Self:
         with open(path) as f:
             config = yaml.safe_load(f)
             return cls.from_dict(config)
