@@ -311,6 +311,7 @@ def deploy_to_python(
                     n_consumers=n_consumers,
                     create_producer=create_producer,
                     queue_port=queue_port,
+                    migrate=True,
                 )
             else:
                 # syft <= 0.8.1

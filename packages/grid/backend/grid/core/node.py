@@ -90,4 +90,5 @@ worker = worker_class(
     blob_storage_config=blob_storage_config,
     local_db=single_container_mode,
     queue_config=queue_config,
+    migrate=True,
 )
