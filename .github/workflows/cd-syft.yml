@@ -49,7 +49,7 @@ jobs:
       grid_version: ${{ steps.release_metadata.outputs.grid_version }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # actions/setup-python doesn't yet support ARM
       - name: Setup Python on x64
@@ -66,7 +66,7 @@ jobs:
 
       - name: Setup Python on arm64
         if: ${{ endsWith(matrix.runner, '-arm64') }}
-        uses: deadsnakes/action@v3.0.1
+        uses: deadsnakes/action@v3.1.0
         with:
           python-version: "3.11"
 
@@ -129,17 +129,17 @@ jobs:
           cache-from: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
           cache-to: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
 
-      - name: Build and push `syft-base-cpu` image to DockerHub
-        id: syft-base-cpu-build
-        uses: docker/build-push-action@v5
-        with:
-          context: ./packages
-          file: ./packages/grid/backend/syft_base_cpu.dockerfile
-          platforms: ${{ steps.release_metadata.outputs.release_platform }}
-          target: backend
-          outputs: type=image,name=openmined/syft-base-cpu,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }}
-          cache-to: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
+      # - name: Build and push `syft-base-cpu` image to DockerHub
+      #   id: syft-base-cpu-build
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: ./packages
+      #     file: ./packages/grid/backend/worker_cpu.dockerfile
+      #     platforms: ${{ steps.release_metadata.outputs.release_platform }}
+      #     target: backend
+      #     outputs: type=image,name=openmined/syft-base-cpu,push-by-digest=true,name-canonical=true,push=true
+      #     cache-from: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+      #     cache-to: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
 
       - name: Export digest for grid-backend
         run: |
@@ -225,7 +225,7 @@ jobs:
         run: |
           sudo chown -R $USER:$USER $HOME
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
 
@@ -341,7 +341,7 @@ jobs:
 
       # Checkout Infra repo (nested)
       - name: Checkout Infra Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ secrets.INFRA_REPO }}
           ref: "main"
@@ -389,7 +389,7 @@ jobs:
 
       # Checkout to gh-pages and update helm repo
       - name: Checkout to gh-pages
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: gh-pages
           token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}

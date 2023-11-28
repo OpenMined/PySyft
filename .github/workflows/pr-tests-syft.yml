@@ -46,7 +46,7 @@ jobs:
           echo "deleting ${GITHUB_WORKSPACE}/.git/config"
           rm ${GITHUB_WORKSPACE}/.git/config
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -90,7 +90,7 @@ jobs:
 
       - name: Docker on MacOS
         if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v2.1.0
+        uses: crazy-max/ghaction-setup-docker@v2.2.0
 
       - name: Run unit tests
         if: steps.changes.outputs.syft == 'true'
@@ -131,7 +131,7 @@ jobs:
           echo "deleting ${GITHUB_WORKSPACE}/.git/config"
           rm ${GITHUB_WORKSPACE}/.git/config
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -201,7 +201,7 @@ jobs:
       #   if: matrix.os == 'ubuntu-latest'
       #   run: |
       #     sudo chown -R $USER:$USER $HOME
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # free 10GB of space
       - name: Remove unnecessary files
@@ -265,7 +265,7 @@ jobs:
 
       - name: Docker on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v2.1.0
+        uses: crazy-max/ghaction-setup-docker@v2.2.0
 
       - name: Docker Compose on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
@@ -310,7 +310,7 @@ jobs:
       #   if: matrix.os == 'ubuntu-latest'
       #   run: |
       #     sudo chown -R $USER:$USER $HOME
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
