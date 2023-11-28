@@ -103,6 +103,7 @@ def run_uvicorn(
                 node_type=node_type,
                 node_side_type=node_side_type,
                 enable_warnings=enable_warnings,
+                migrate=True,
             )
         else:
             worker = worker_class(
@@ -112,6 +113,7 @@ def run_uvicorn(
                 node_type=node_type,
                 node_side_type=node_side_type,
                 enable_warnings=enable_warnings,
+                migrate=True,
             )
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)

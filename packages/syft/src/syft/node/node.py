@@ -260,7 +260,7 @@ class Node(AbstractNode):
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         dev_mode: bool = False,
-        migrate=True,
+        migrate: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -465,6 +465,7 @@ class Node(AbstractNode):
         create_producer: bool = False,
         queue_port: Optional[int] = None,
         dev_mode: bool = False,
+        migrate: bool = False,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
@@ -545,6 +546,7 @@ class Node(AbstractNode):
             blob_storage_config=blob_storage_config,
             queue_config=queue_config,
             dev_mode=dev_mode,
+            migrate=migrate,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:

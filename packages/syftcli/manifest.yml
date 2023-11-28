@@ -6,7 +6,7 @@ dockerTag: 0.8.3-beta.2
 images:
   - docker.io/openmined/grid-frontend:0.8.3-beta.2
   - docker.io/openmined/grid-backend:0.8.3-beta.2
-  - docker.io/library/mongo:latest
+  - docker.io/library/mongo:7.0.3
   - docker.io/traefik:v2.10
 
 configFiles:
