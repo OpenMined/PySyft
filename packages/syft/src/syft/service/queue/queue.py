@@ -11,12 +11,12 @@ from typing import Union
 import psutil
 from result import Err
 from result import Ok
-from ...service.context import AuthedServiceContext
 
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
+from ...service.context import AuthedServiceContext
 from ..job.job_stash import JobStatus
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -154,7 +154,9 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
             has_execute_permissions=queue_item.has_execute_permissions,
         )
 
-        from syft.node.node import AuthNodeContextRegistry
+        # relative
+        from ...node.node import AuthNodeContextRegistry
+
         AuthNodeContextRegistry.set_node_context(
             node_uid=worker.id,
             context=context,

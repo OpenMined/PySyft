@@ -10,6 +10,7 @@ from functools import partial
 import hashlib
 from multiprocessing import current_process
 import os
+from pathlib import Path
 import subprocess  # nosec
 import traceback
 from typing import Any
@@ -496,6 +497,12 @@ class Node(AbstractNode):
 
                 db.commit()
                 db.close()
+
+            # remove lock files for reading
+            # we should update this to partition locks per node
+            for f in Path("/tmp/sherlock").glob("*.json"):
+                if f.is_file():
+                    f.unlink()
 
             with contextlib.suppress(FileNotFoundError, PermissionError):
                 if os.path.exists(store_config.file_path):

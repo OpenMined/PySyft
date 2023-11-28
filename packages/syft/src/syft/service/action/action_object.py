@@ -303,7 +303,6 @@ passthrough_attrs = [
     "__include_fields__",  # pydantic
     "_calculate_keys",  # pydantic
     "_get_value",  # pydantic
-    "__reduce__",
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -317,7 +316,6 @@ dont_wrap_output_attrs = [
     "__bool__",
     "__len__",
     "syft_resolved",  # syft
-    "__reduce__",
 ]
 dont_make_side_effects = [
     "_repr_html_",
@@ -329,7 +327,6 @@ dont_make_side_effects = [
     "__len__",
     "shape",
     "syft_resolved",  # syft
-    "__reduce__",
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -1586,8 +1583,6 @@ class ActionObject(SyftObject):
             name: str
                 The name of the attribute to access.
         """
-        if name == "__reduce__":
-            raise AttributeError(name)
         # bypass certain attrs to prevent recursion issues
         if name.startswith("_syft") or name.startswith("syft"):
             return object.__getattribute__(self, name)

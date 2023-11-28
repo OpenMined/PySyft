@@ -21,7 +21,7 @@ def node():
         reset=True,
         n_consumers=3,
         create_producer=True,
-        queue_port=3322,
+        queue_port=3321,
     )
     # startup code here
     yield _node
@@ -68,7 +68,8 @@ def test_nested_jobs(node):
             batch_job = domain.launch_job(process_batch, batch=elem)
             job_results += [batch_job.result]
 
-        return domain.launch_job(aggregate_job, job_results=job_results)
+        result = domain.launch_job(aggregate_job, job_results=job_results)
+        return result.wait().get()
 
     process_all.code = dedent(process_all.code)
 
@@ -76,13 +77,17 @@ def test_nested_jobs(node):
     res = ds_client.code.request_code_execution(process_all)
     print(res)
     assert not isinstance(res, SyftError)
-    client.requests[-1].approve()
+    client.requests[-1].approve(approve_nested=True)
 
     job = ds_client.code.process_all(x=x_ptr, blocking=False)
 
     job.wait()
+    # stdlib
     from time import sleep
-    sleep(30)
+
+    sleep(3)
     assert len(job.subjobs) == 3
 
-    assert sum([j.wait().get() for j in job.subjobs]) == 5
+    sub_results = [j.wait().get() for j in job.subjobs]
+    assert set(sub_results) == {2, 3, 5}
+    assert job.wait().get() == 5
