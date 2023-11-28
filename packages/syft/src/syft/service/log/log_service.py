@@ -73,6 +73,23 @@ class LogService(AbstractService):
 
         return Ok(result.ok().stdout)
 
+    @service_method(path="log.restart", name="restart", roles=DATA_SCIENTIST_ROLE_LEVEL)
+    def restart(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+    ) -> Union[SyftSuccess, SyftError]:
+        result = self.stash.get_by_uid(context.credentials, uid)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        log = result.ok()
+        log.restart()
+        result = self.stash.update(context.credentials, log)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return SyftSuccess(message="Log Restart successful!")
+
     @service_method(path="log.get_error", name="get_error", roles=ADMIN_ROLE_LEVEL)
     def get_error(
         self, context: AuthedServiceContext, uid: UID

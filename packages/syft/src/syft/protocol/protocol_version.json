@@ -503,6 +503,11 @@
           "version": 1,
           "hash": "7b8723861837b0b7e948b2cf9244159d232185f3407dd6bef108346f941ddf6e",
           "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "e99cf5a78c6dd3a0adc37af3472c7c21570a9e747985dff540a2b06d24de6446",
+          "action": "add"
         }
       },
       "TwinObject": {

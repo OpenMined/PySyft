@@ -37,6 +37,7 @@ class Status(str, Enum):
     PROCESSING = "processing"
     ERRORED = "errored"
     COMPLETED = "completed"
+    INTERRUPTED = "interrupted"
 
 
 @serializable()

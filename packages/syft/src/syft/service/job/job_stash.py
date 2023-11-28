@@ -25,8 +25,12 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.markdown import as_markdown_code
 from ...util.telemetry import instrument
@@ -43,10 +47,11 @@ class JobStatus(str, Enum):
     PROCESSING = "processing"
     ERRORED = "errored"
     COMPLETED = "completed"
+    INTERRUPTED = "interrupted"
 
 
 @serializable()
-class Job(SyftObject):
+class JobV1(SyftObject):
     __canonical_name__ = "JobItem"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -61,6 +66,25 @@ class Job(SyftObject):
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
     action: Optional[Action] = None
+
+
+@serializable()
+class Job(SyftObject):
+    __canonical_name__ = "JobItem"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    id: UID
+    node_uid: UID
+    result: Optional[Any]
+    resolved: bool = False
+    status: JobStatus = JobStatus.CREATED
+    log_id: Optional[UID]
+    parent_job_id: Optional[UID]
+    n_iters: Optional[int] = 0
+    current_iter: Optional[int] = None
+    creation_time: Optional[str] = None
+    action: Optional[Action] = None
+    job_pid: Optional[int] = None
 
     __attr_searchable__ = ["parent_job_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
@@ -146,6 +170,51 @@ class Job(SyftObject):
                     return f"{self.current_iter}/{n_iters_str}"
         else:
             return ""
+
+    def restart(self, kill=False) -> None:
+        if kill:
+            self.kill()
+        self.fetch()
+        if not self.has_parent:
+            # this is currently the limitation, we will need to implement
+            # killing toplevel jobs later
+            print("Can only kill nested jobs")
+        elif kill or (
+            self.status != JobStatus.PROCESSING and self.status != JobStatus.CREATED
+        ):
+            api = APIRegistry.api_for(
+                node_uid=self.node_uid,
+                user_verify_key=self.syft_client_verify_key,
+            )
+            call = SyftAPICall(
+                node_uid=self.node_uid,
+                path="job.restart",
+                args=[],
+                kwargs={"uid": self.id},
+                blocking=True,
+            )
+
+            api.make_call(call)
+        else:
+            print(
+                "Job is running or scheduled, if you want to kill it use job.kill() first"
+            )
+
+    def kill(self) -> None:
+        if self.job_pid is not None:
+            api = APIRegistry.api_for(
+                node_uid=self.node_uid,
+                user_verify_key=self.syft_client_verify_key,
+            )
+
+            call = SyftAPICall(
+                node_uid=self.node_uid,
+                path="job.kill",
+                args=[],
+                kwargs={"id": self.id},
+                blocking=True,
+            )
+            api.make_call(call)
 
     def fetch(self) -> None:
         api = APIRegistry.api_for(
@@ -283,6 +352,18 @@ class Job(SyftObject):
         if self.resolved:
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
+
+
+@migrate(Job, JobV1)
+def downgrade_job_v2_to_v1():
+    return [
+        drop("job_pid"),
+    ]
+
+
+@migrate(JobV1, Job)
+def upgrade_job_v1_to_v2():
+    return [make_set_default("job_pid", None)]
 
 
 @instrument

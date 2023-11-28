@@ -697,6 +697,8 @@ class ActionObject(SyftObject):
                 self.syft_blob_storage_entry_id = (
                     blob_deposit_object.blob_storage_entry_id
                 )
+            else:
+                print("cannot save to blob storage")
 
             self.syft_action_data_type = type(data)
 

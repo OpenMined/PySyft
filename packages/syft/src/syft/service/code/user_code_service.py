@@ -25,7 +25,6 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..network.routes import route_to_connection
-from ..queue.queue_stash import QueueItem
 from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
@@ -356,12 +355,6 @@ class UserCodeService(AbstractService):
                     )
                 ):
                     return update_success.to_result()
-
-            # TODO: remove?
-            if not isinstance(result, TwinObject) and isinstance(
-                result.syft_action_data, QueueItem
-            ):
-                return Ok(result.syft_action_data)
 
             if isinstance(result, TwinObject):
                 return Ok(result.mock)
