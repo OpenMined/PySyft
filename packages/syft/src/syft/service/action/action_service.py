@@ -319,10 +319,6 @@ class ActionService(AbstractService):
     def set_result_to_store(self, result_action_object, context, output_policy):
         result_id = result_action_object.id
         # result_blob_id = result_action_object.syft_blob_storage_entry_id
-        if isinstance(result_action_object, TwinObject):
-            result_blob_id = result_action_object.private.syft_blob_storage_entry_id
-        else:
-            result_blob_id = result_action_object.syft_blob_storage_entry_id
         output_readers = (
             output_policy.output_readers if not context.has_execute_permissions else []
         )
@@ -335,6 +331,12 @@ class ActionService(AbstractService):
         blob_store_result = result_action_object._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
             return blob_store_result
+
+        # IMPORTANT: DO THIS ONLY AFTER ._save_to_blob_storage
+        if isinstance(result_action_object, TwinObject):
+            result_blob_id = result_action_object.private.syft_blob_storage_entry_id
+        else:
+            result_blob_id = result_action_object.syft_blob_storage_entry_id
 
         # pass permission information to the action store as extra kwargs
         context.extra_kwargs = {"has_result_read_permission": True}
