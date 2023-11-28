@@ -357,12 +357,6 @@ class UserCodeService(AbstractService):
                 ):
                     return update_success.to_result()
 
-            # TODO: remove?
-            if not isinstance(result, TwinObject) and isinstance(
-                result.syft_action_data, QueueItem
-            ):
-                return Ok(result.syft_action_data)
-
             if isinstance(result, TwinObject):
                 return Ok(result.mock)
             elif result.syft_action_data_type is Err:

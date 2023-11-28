@@ -79,7 +79,10 @@ def test_nested_jobs(node):
     client.requests[-1].approve()
 
     job = ds_client.code.process_all(x=x_ptr, blocking=False)
+
     job.wait()
+    from time import sleep
+    sleep(30)
     assert len(job.subjobs) == 3
 
     assert sum([j.wait().get() for j in job.subjobs]) == 5

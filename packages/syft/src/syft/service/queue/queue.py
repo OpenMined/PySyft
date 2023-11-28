@@ -11,12 +11,12 @@ from typing import Union
 import psutil
 from result import Err
 from result import Ok
+from ...service.context import AuthedServiceContext
 
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
-from ...service.context import AuthedServiceContext
 from ..job.job_stash import JobStatus
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -116,7 +116,6 @@ class QueueManager(BaseQueueManager):
 
 
 def handle_message_multiprocessing(worker_settings, queue_item, credentials):
-    pass
     queue_config = worker_settings.queue_config
     queue_config.client_config.create_producer = False
     queue_config.client_config.n_consumers = 0
@@ -153,6 +152,13 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
             role=role,
             job_id=queue_item.job_id,
             has_execute_permissions=queue_item.has_execute_permissions,
+        )
+
+        from syft.node.node import AuthNodeContextRegistry
+        AuthNodeContextRegistry.set_node_context(
+            node_uid=worker.id,
+            context=context,
+            user_verify_key=credentials,
         )
 
         result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
@@ -237,12 +243,20 @@ class APICallMessageHandler(AbstractMessageHandler):
         worker.queue_stash.set_result(credentials, queue_item)
         worker.job_stash.set_result(credentials, job_item)
 
+        # from threading import Thread
+        # p = Thread(
+        #     target=handle_message_multiprocessing,
+        #     args=(worker_settings, queue_item, credentials),
+        # )
+        # p.start()
+
         p = multiprocessing.Process(
             target=handle_message_multiprocessing,
             args=(worker_settings, queue_item, credentials),
         )
         p.start()
-        job_item.job_pid = p.pid
 
-        worker.job_stash.set_result(credentials, job_item)
+        # job_item.job_pid = p.pid
+        # worker.job_stash.set_result(credentials, job_item)
+
         p.join()
