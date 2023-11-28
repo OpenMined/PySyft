@@ -35,17 +35,17 @@ spec:
         - /etc/seaweedfs/start.sh
         env: # move this in values.yaml
         - name: S3_VOLUME_SIZE_MB
-          value: {{ .Values.seaweedfs.start_variables.S3_VOLUME_SIZE_MB }}
+          value: {{ .Values.seaweedfs.S3_VOLUME_SIZE_MB }}
         - name: S3_ROOT_USER
           secretKeyRef:
-              name: {{ .Values.secrets.seaweedfs.start_vars.seaweedfsecret }}
+              name: {{ .Values.secrets.seaweedfs.seaweedfsecret }}
               key: S3_ROOT_USER_SECRET
         - name: S3_ROOT_PWD
           secretKeyRef:
-              name: {{ .Values.secrets.seaweedfs.start_vars.seaweedfsecret }}
+              name: {{ .Values.secrets.seaweedfs.seaweedfsecret }}
               key: S3_ROOT_PWD_SECRET
         - name: S3_PORT
-          value: {{ .Values.seaweedfs.start_variables.S3_PORT }}
+          value: {{ .Values.seaweedfs.S3_PORT }}
         envFrom: null
         image: chrislusf/seaweedfs:3.57
         lifecycle: null
