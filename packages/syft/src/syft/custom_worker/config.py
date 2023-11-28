@@ -1,6 +1,8 @@
 # stdlib
 from hashlib import sha256
 from pathlib import Path
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Union
 
@@ -77,7 +79,7 @@ class CustomWorkerConfig(SyftBaseModel):
     version: str = "1"
 
     @classmethod
-    def from_dict(cls, config: dict) -> Self:
+    def from_dict(cls, config: Dict[str, Any]) -> Self:
         return cls(**config)
 
     @classmethod
