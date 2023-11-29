@@ -1,6 +1,7 @@
 # stdlib
 from collections import defaultdict
 import random
+import sys
 from time import sleep
 
 # third party
@@ -22,6 +23,7 @@ from syft.service.response import SyftSuccess
 
 
 @pytest.mark.flaky(reruns=5, reruns_delay=1)
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_zmq_client():
     hostname = "127.0.0.1"
 
@@ -101,6 +103,7 @@ def test_zmq_client():
 
 
 @pytest.mark.flaky(reruns=5, reruns_delay=1)
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_zmq_pub_sub(faker: Faker):
     received_messages = []
 
@@ -166,6 +169,7 @@ def test_zmq_pub_sub(faker: Faker):
 
 
 @pytest.mark.flaky(reruns=5, reruns_delay=1)
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_zmq_queue_manager() -> None:
     config = ZMQQueueConfig()
 
