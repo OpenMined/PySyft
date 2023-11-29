@@ -79,7 +79,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade  bump2version
+          pip install --upgrade  bump2version tox
 
       - name: Bump the Version
         id: bump-version
@@ -106,6 +106,14 @@ jobs:
             echo "short_release_platform=arm64" >> $GITHUB_OUTPUT
           fi
           echo "grid_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
+
+      # TODO: Optimize redundant bump protocol version checks
+      - name: Check and Bump Protocol Version
+        run: |
+          if [[ $(python packages/grid/VERSION) != *"beta"* ]]; then
+            export BUMP=True
+          fi
+          tox -e syft.protocol.check
 
       - name: Set up Docker Buildx
         id: buildx
