@@ -34,7 +34,6 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
 from ...service.response import SyftError
-from ...store.blob_storage import BlobRetrieval
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_migration import migrate
@@ -659,11 +658,13 @@ class ActionObject(SyftObject):
                         blob_retrieval_object,
                     )
                     return blob_retrieval_object
+                # relative
+                from ...store.blob_storage import BlobRetrieval
+
                 if isinstance(blob_retrieval_object, SyftError):
                     raise SyftException(
                         message=f"Failed to retrieve object from blob storage: {blob_retrieval_object.message}"
                     )
-
                 elif isinstance(blob_retrieval_object, BlobRetrieval):
                     # TODO: This change is temporary to for gateway to be compatible with the new blob storage
                     self.syft_action_data_cache = blob_retrieval_object.read()
