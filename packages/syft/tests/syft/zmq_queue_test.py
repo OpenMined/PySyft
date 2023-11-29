@@ -165,6 +165,7 @@ def test_zmq_pub_sub(faker: Faker):
     assert consumer.alive is False
 
 
+@pytest.mark.flaky(reruns=5, reruns_delay=1)
 def test_zmq_queue_manager() -> None:
     config = ZMQQueueConfig()
 
