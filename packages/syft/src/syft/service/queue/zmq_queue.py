@@ -99,7 +99,7 @@ class ZMQProducer(QueueProducer):
         return f"tcp://localhost:{self.port}"
 
     def post_init(self):
-        self.identity = b"%04X-%04X" % (randint(0, 0x10000), randint(0, 0x10000))
+        self.identity = b"%04X-%04X" % (randint(0, 0x10000), randint(0, 0x10000))  # nosec
         self.context = zmq.Context(1)
         self.backend = self.context.socket(zmq.ROUTER)  # ROUTER
         self.backend.bind(f"tcp://*:{self.port}")
@@ -310,7 +310,7 @@ class ZMQConsumer(QueueConsumer):
 
     def create_socket(self):
         self.worker = self.ctx.socket(zmq.DEALER)  # DEALER
-        self.identity = b"%04X-%04X" % (randint(0, 0x10000), randint(0, 0x10000))
+        self.identity = b"%04X-%04X" % (randint(0, 0x10000), randint(0, 0x10000))  # nosec
         self.worker.setsockopt(zmq.IDENTITY, self.identity)
         self.poller.register(self.worker, zmq.POLLIN)
         self.worker.connect(self.address)

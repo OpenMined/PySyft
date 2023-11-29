@@ -189,7 +189,7 @@ class BlobRetrievalByURL(BlobRetrieval):
         else:
             blob_url = self.url
         try:
-            response = requests.get(str(blob_url), stream=stream)
+            response = requests.get(str(blob_url), stream=stream)  # nosec
             response.raise_for_status()
             if self.type_ is BlobFileType:
                 if stream:

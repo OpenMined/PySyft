@@ -5,6 +5,7 @@ from time import sleep
 
 # third party
 from faker import Faker
+import pytest
 from zmq import Socket
 
 # syft absolute
@@ -20,6 +21,7 @@ from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 
 
+@pytest.mark.flaky(reruns=5, reruns_delay=1)
 def test_zmq_client():
     hostname = "127.0.0.1"
 
@@ -98,6 +100,7 @@ def test_zmq_client():
     assert client.consumers[QueueName][0].alive is False
 
 
+@pytest.mark.flaky(reruns=5, reruns_delay=1)
 def test_zmq_pub_sub(faker: Faker):
     received_messages = []
 

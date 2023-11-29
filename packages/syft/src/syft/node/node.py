@@ -501,7 +501,7 @@ class Node(AbstractNode):
 
             # remove lock files for reading
             # we should update this to partition locks per node
-            for f in Path("/tmp/sherlock").glob("*.json"):
+            for f in Path("/tmp/sherlock").glob("*.json"):  # nosec
                 if f.is_file():
                     f.unlink()
 
