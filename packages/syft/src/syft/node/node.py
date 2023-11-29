@@ -843,6 +843,19 @@ class Node(AbstractNode):
                 signed_result = client.connection.make_call(api_call)
                 result = debox_signed_syftapicall_response(signed_result=signed_result)
 
+                # relative
+                from ..store.blob_storage import BlobRetrievalByURL
+
+                # In the case of blob storage, the gateway downloads the result and then passes it to
+                # the proxy client
+                if isinstance(result, BlobRetrievalByURL):
+                    blob_route = client.api.connection.to_blob_route(
+                        result.url.url_path
+                    )
+                    result.url = blob_route
+                    final_res = result.read()
+                    return final_res
+
             return result
 
         return SyftError(message=(f"Node has no route to {node_uid}"))

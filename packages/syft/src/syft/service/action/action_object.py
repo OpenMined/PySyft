@@ -32,6 +32,7 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
 from ...service.response import SyftError
+from ...store.blob_storage import BlobRetrievalByURL
 from ...store.linked_obj import LinkedObject
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.datetime import DateTime
@@ -511,8 +512,18 @@ class ActionObject(SyftObject):
                         blob_retrieval_object,
                     )
                     return blob_retrieval_object
-                self.syft_action_data_cache = blob_retrieval_object.read()
-                self.syft_action_data_type = type(self.syft_action_data)
+
+                if isinstance(blob_retrieval_object, ActionObject):
+                    # In the case of gateway, we directly receive an action object
+                    self.syft_action_data_cache = blob_retrieval_object
+                    self.syft_action_data_type = type(self.syft_action_data)
+                elif isinstance(blob_retrieval_object, BlobRetrievalByURL):
+                    self.syft_action_data_cache = blob_retrieval_object.read()
+                    self.syft_action_data_type = type(self.syft_action_data)
+                else:
+                    return SyftError(
+                        f"Failed to retrieve object from blob storage, got {blob_retrieval_object}"
+                    )
 
     def _save_to_blob_storage_(self, data: Any) -> None:
         if not isinstance(data, ActionDataEmpty):
