@@ -33,7 +33,6 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
 from ...service.response import SyftError
 from ...store.blob_storage import BlobRetrieval
-from ...store.blob_storage import BlobRetrievalByURL
 from ...store.linked_obj import LinkedObject
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.datetime import DateTime
@@ -519,13 +518,13 @@ class ActionObject(SyftObject):
                         message=f"Failed to retrieve object from blob storage: {blob_retrieval_object.message}"
                     )
 
-                elif isinstance(
-                    blob_retrieval_object, (BlobRetrievalByURL, BlobRetrieval)
-                ):
+                elif isinstance(blob_retrieval_object, (BlobRetrieval)):
                     self.syft_action_data_cache = blob_retrieval_object.read()
                     self.syft_action_data_type = type(self.syft_action_data)
                 else:
                     # In the case of gateway, we directly receive the actual object
+                    # TODO: The ideal solution would be to stream the object from the domain through the gateway
+                    # Currently , we are just passing the object as it is, which would be fixed later.
                     self.syft_action_data_cache = blob_retrieval_object
                     self.syft_action_data_type = type(self.syft_action_data)
 
