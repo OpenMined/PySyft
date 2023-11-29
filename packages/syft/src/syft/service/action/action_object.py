@@ -518,7 +518,8 @@ class ActionObject(SyftObject):
                         message=f"Failed to retrieve object from blob storage: {blob_retrieval_object.message}"
                     )
 
-                elif isinstance(blob_retrieval_object, (BlobRetrieval)):
+                elif isinstance(blob_retrieval_object, BlobRetrieval):
+                    # TODO: This change is temporary to for gateway to be compatible with the new blob storage
                     self.syft_action_data_cache = blob_retrieval_object.read()
                     self.syft_action_data_type = type(self.syft_action_data)
                 else:
