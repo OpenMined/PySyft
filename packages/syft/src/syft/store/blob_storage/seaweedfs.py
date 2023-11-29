@@ -118,7 +118,7 @@ class SeaweedFSClientConfig(BlobStorageClientConfig):
     @property
     def mount_url(self) -> str:
         if self.mount_port is None:
-            raise ValueError("Seaweed should be configuer with a mount port to mount")
+            raise ValueError("Seaweed should be configured with a mount port to mount")
         return f"http://{self.host}:{self.mount_port}/configure_azure"
 
 
