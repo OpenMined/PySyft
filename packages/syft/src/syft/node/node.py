@@ -407,11 +407,11 @@ class Node(AbstractNode):
         self.blob_storage_client = config_.client_type(config=config_.client_config)
 
     def stop(self):
+        for p in self.queue_manager.producers.values():
+            p._stop()
         for consumer_list in self.queue_manager.consumers.values():
             for c in consumer_list:
-                c.stop = True
-        for p in self.queue_manager.producers.values():
-            p.stop = True
+                c._stop()
 
     def init_queue_manager(self, queue_config: Optional[QueueConfig]):
         queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
