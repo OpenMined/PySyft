@@ -107,6 +107,14 @@ jobs:
           fi
           echo "grid_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
 
+      # TODO: Optimize redundant bump protocol version checks
+      - name: Check and Bump Protocol Version
+        run: |
+          if [[ $(python packages/grid/VERSION) != *"beta"* ]]; then
+            export BUMP=True
+          fi
+          tox -e syft.protocol.check
+
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v3
