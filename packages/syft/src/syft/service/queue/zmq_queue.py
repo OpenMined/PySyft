@@ -54,6 +54,8 @@ PPP_HEARTBEAT = b"\x02"  # Signals worker heartbeat
 
 MAX_RECURSION_NESTED_ACTIONOBJECTS = 5
 
+lock = threading.Lock()
+
 
 def get_open_fds() -> int:
     """Get the number of open file descriptors for the current process."""
@@ -106,8 +108,6 @@ class WorkerQueue:
 
 @serializable()
 class ZMQProducer(QueueProducer):
-    lock = threading.Lock()
-
     def __init__(
         self, queue_name: str, queue_stash, port: int, context: AuthedServiceContext
     ) -> None:
@@ -257,7 +257,7 @@ class ZMQProducer(QueueProducer):
 
     def send(self, worker: bytes, message: bytes):
         message.insert(0, worker)
-        with self.lock:
+        with lock:
             self.backend.send_multipart(message)
 
     def _run(self):
@@ -278,7 +278,7 @@ class ZMQProducer(QueueProducer):
 
                 # Handle worker message
                 if socks.get(self.backend) == zmq.POLLIN:
-                    with self.lock:
+                    with lock:
                         frames = self.backend.recv_multipart()
                     if not frames:
                         print("error in producer")
@@ -302,7 +302,7 @@ class ZMQProducer(QueueProducer):
                     if time.time() >= heartbeat_at:
                         for worker in self.workers.queue:
                             msg = [worker, PPP_HEARTBEAT]
-                            with self.lock:
+                            with lock:
                                 self.backend.send_multipart(msg)
                         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
 
@@ -327,8 +327,6 @@ class ZMQProducer(QueueProducer):
 
 @serializable(attrs=["_subscriber"])
 class ZMQConsumer(QueueConsumer):
-    lock = threading.Lock()
-
     def __init__(
         self,
         message_handler: AbstractMessageHandler,
@@ -399,7 +397,7 @@ class ZMQConsumer(QueueConsumer):
                             print(self._stop, e, traceback.format_exc())
                             continue
                 if socks.get(self.worker) == zmq.POLLIN:
-                    with self.lock:
+                    with lock:
                         frames = self.worker.recv_multipart()
                     if not frames or len(frames) not in [1, 3]:
                         print(f"Worker error: Invalid message: {frames}")
@@ -407,7 +405,7 @@ class ZMQConsumer(QueueConsumer):
 
                     # get normal message
                     if len(frames) == 3:
-                        with self.lock:
+                        with lock:
                             self.worker.send_multipart(frames)
                         liveness = HEARTBEAT_LIVENESS
                         message = frames[2]
