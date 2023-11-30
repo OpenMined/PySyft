@@ -1,20 +1,24 @@
 # stdlib
+# stdlib
 from collections import OrderedDict
 from collections import defaultdict
-from time import sleep
+import os
 from random import randint
+import shutil
 import socketserver
+import subprocess
 import threading
 import time
+from time import sleep
 from typing import DefaultDict
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
 
-from zmq.error import ContextTerminated
-from zmq import LINGER
 # third party
+from zmq import LINGER
+from zmq.error import ContextTerminated
 import zmq.green as zmq
 
 # relative
@@ -43,18 +47,12 @@ HEARTBEAT_LIVENESS = 3
 HEARTBEAT_INTERVAL = 1
 INTERVAL_INIT = 1
 INTERVAL_MAX = 32
+DEFAULT_THREAD_TIMEOUT = 5
 
 PPP_READY = b"\x01"  # Signals worker is ready
 PPP_HEARTBEAT = b"\x02"  # Signals worker heartbeat
 
-lock = threading.Lock()
-
 MAX_RECURSION_NESTED_ACTIONOBJECTS = 5
-
-
-import os
-import shutil
-import subprocess
 
 
 def get_open_fds() -> int:
@@ -71,6 +69,7 @@ def get_open_fds() -> int:
 
     fds = list(filter(filter_fds, raw_procs.decode().split(os.linesep)))
     return len(fds)
+
 
 class Worker:
     def __init__(self, address):
@@ -107,6 +106,8 @@ class WorkerQueue:
 
 @serializable()
 class ZMQProducer(QueueProducer):
+    lock = threading.Lock()
+
     def __init__(
         self, queue_name: str, queue_stash, port: int, context: AuthedServiceContext
     ) -> None:
@@ -122,7 +123,10 @@ class ZMQProducer(QueueProducer):
         return f"tcp://localhost:{self.port}"
 
     def post_init(self):
-        self.identity = b"%04X-%04X" % (randint(0, 0x10000), randint(0, 0x10000))  # nosec
+        self.identity = b"%04X-%04X" % (
+            randint(0, 0x10000),
+            randint(0, 0x10000),
+        )  # nosec
         self.context = zmq.Context(1)
         self.backend = self.context.socket(zmq.ROUTER)  # ROUTER
         self.backend.bind(f"tcp://*:{self.port}")
@@ -130,17 +134,18 @@ class ZMQProducer(QueueProducer):
         self.poll_workers.register(self.backend, zmq.POLLIN)
         self.workers = WorkerQueue()
         self.message_queue = []
+        self.thread = None
 
-
-    def stop(self):
+    def close(self):
         self._stop = True
         try:
             self.poll_workers.unregister(self.backend)
         except Exception as e:
             print("failed to unregister poller", e)
-            pass
         self.backend.close()
         self.context.destroy()
+        if self.thread is not None:
+            self.thread.join(DEFAULT_THREAD_TIMEOUT)
 
     @property
     def action_service(self):
@@ -244,14 +249,6 @@ class ZMQProducer(QueueProducer):
                         print("Failed to update queue item")
 
     def run(self):
-        # stdlib
-
-        # self.thread = gevent.spawn(self._run)
-        # self.thread.start()
-
-        # self.producer_thread = gevent.spawn(self.read_items)
-        # self.producer_thread.start()
-
         self.thread = threading.Thread(target=self._run)
         self.thread.start()
 
@@ -260,7 +257,7 @@ class ZMQProducer(QueueProducer):
 
     def send(self, worker: bytes, message: bytes):
         message.insert(0, worker)
-        with lock:
+        with self.lock:
             self.backend.send_multipart(message)
 
     def _run(self):
@@ -281,7 +278,7 @@ class ZMQProducer(QueueProducer):
 
                 # Handle worker message
                 if socks.get(self.backend) == zmq.POLLIN:
-                    with lock:
+                    with self.lock:
                         frames = self.backend.recv_multipart()
                     if not frames:
                         print("error in producer")
@@ -305,24 +302,23 @@ class ZMQProducer(QueueProducer):
                     if time.time() >= heartbeat_at:
                         for worker in self.workers.queue:
                             msg = [worker, PPP_HEARTBEAT]
-                            with lock:
+                            with self.lock:
                                 self.backend.send_multipart(msg)
                         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
 
                 self.workers.purge()
             except Exception as e:
                 # this sleep is very important, because we may hit this when
-                # we stop the producer. Without this sleep it would start 
+                # we stop the producer. Without this sleep it would start
                 # spamming the poller, which results in too many open files
-                # which in turns causes all kinds of problems 
+                # which in turns causes all kinds of problems
                 sleep(0.5)
                 if not self._stop:
+                    # stdlib
                     import traceback
+
                     print(f"Error in producer {e}, {self.identity}")
                     print(traceback.format_exc())
-
-    def close(self):
-        self.backend.close()
 
     @property
     def alive(self):
@@ -346,9 +342,12 @@ class ZMQConsumer(QueueConsumer):
 
     def create_socket(self):
         self.worker = self.ctx.socket(zmq.DEALER)  # DEALER
-        self.identity = b"%04X-%04X" % (randint(0, 0x10000), randint(0, 0x10000))  # nosec
+        self.identity = b"%04X-%04X" % (
+            randint(0, 0x10000),
+            randint(0, 0x10000),
+        )  # nosec
         self.worker.setsockopt(zmq.IDENTITY, self.identity)
-        self.worker.setsockopt(LINGER, 0 )
+        self.worker.setsockopt(LINGER, 0)
         self.poller.register(self.worker, zmq.POLLIN)
         self.worker.connect(self.address)
         self.worker.send(PPP_READY)
@@ -359,15 +358,17 @@ class ZMQConsumer(QueueConsumer):
         self.create_socket()
         self.thread = None
 
-    def stop(self):
+    def close(self):
         self._stop = True
+        if self.thread is not None:
+            self.thread.join(timeout=DEFAULT_THREAD_TIMEOUT)
         try:
             self.poller.unregister(self.worker)
-        except Exception:
+        except Exception as e:
             print("failed to unregister poller", e)
-            pass
-        self.worker.close()
-        self.ctx.destroy()
+        finally:
+            self.worker.close()
+            self.ctx.destroy()
 
     def _run(self):
         liveness = HEARTBEAT_LIVENESS
@@ -390,11 +391,13 @@ class ZMQConsumer(QueueConsumer):
                         if isinstance(e, ContextTerminated) or self._stop:
                             return
                         else:
+                            # stdlib
                             import traceback
+
                             print(self._stop, e, traceback.format_exc())
                             continue
                 if socks.get(self.worker) == zmq.POLLIN:
-                    with lock:
+                    with self.lock:
                         frames = self.worker.recv_multipart()
                     if not frames or len(frames) not in [1, 3]:
                         print(f"Worker error: Invalid message: {frames}")
@@ -402,7 +405,7 @@ class ZMQConsumer(QueueConsumer):
 
                     # get normal message
                     if len(frames) == 3:
-                        with lock:
+                        with self.lock:
                             self.worker.send_multipart(frames)
                         liveness = HEARTBEAT_LIVENESS
                         message = frames[2]
@@ -448,17 +451,10 @@ class ZMQConsumer(QueueConsumer):
                     raise e
 
     def run(self):
-        # stdlib
-
         self.thread = threading.Thread(target=self._run)
         self.thread.start()
         # self.thread = gevent.spawn(self._run)
         # self.thread.start()
-
-    def close(self):
-        if self.thread is not None:
-            self.thread.kill()
-        self.worker.close()
 
     @property
     def alive(self):
@@ -599,14 +595,12 @@ class ZMQClient(QueueClient):
             for _, consumers in self.consumers.items():
                 for consumer in consumers:
                     # make sure look is stopped
-                    consumer.stop = True
-                    consumer._stop()
+                    consumer.close()
 
             for _, producer in self.producers.items():
                 # make sure loop is stopped
-                producer.stop = True
+                producer.close()
                 # close existing connection.
-                producer._stop()
         except Exception as e:
             return SyftError(message=f"Failed to close connection: {e}")
 

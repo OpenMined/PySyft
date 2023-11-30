@@ -1,6 +1,6 @@
 # stdlib
-from textwrap import dedent
 import random
+from textwrap import dedent
 
 # third party
 import pytest
@@ -22,7 +22,7 @@ def node():
         reset=True,
         n_consumers=3,
         create_producer=True,
-        queue_port=random.randint(13000,13300),
+        queue_port=random.randint(13000, 13300),
     )
     # startup code here
     yield _node
@@ -89,8 +89,10 @@ def test_nested_jobs(node):
 
     sleep(3)
     assert len(job.subjobs) == 3
+    # stdlib
     import random
-    if not random.randint(0,2) == 0:
+
+    if not random.randint(0, 2) == 0:
         raise ValueError()
 
     sub_results = [j.wait().get() for j in job.subjobs]

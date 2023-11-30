@@ -346,7 +346,7 @@ class Request(SyftObject):
 
         return request_status
 
-    def approve(self, disable_warnings: bool = False, approve_nested=False):
+    def approve(self, disable_warnings: bool = False, approve_nested: bool = False):
         api = APIRegistry.api_for(
             self.node_uid,
             self.syft_client_verify_key,
@@ -360,9 +360,8 @@ class Request(SyftObject):
                 message="Multiple codes detected, please use approve_nested=True"
             )
 
-        for code in [self.code]:
-            if code and not isinstance(code, SyftError):
-                is_enclave = getattr(code, "enclave_metadata", None) is not None
+        if self.code and not isinstance(self.code, SyftError):
+            is_enclave = getattr(self.code, "enclave_metadata", None) is not None
 
         if is_enclave:
             message = "On approval, the result will be released to the enclave."
@@ -438,7 +437,7 @@ class Request(SyftObject):
                 self.save(context=context)
                 return result
 
-            # If no error, then change successfully undoed.
+            # If no error, then change successfully undone.
             change_status.applied = False
             self.history.append(change_status)
 
@@ -448,7 +447,7 @@ class Request(SyftObject):
             return Err(result)
         # override object with latest changes.
         self = result
-        return Ok(SyftSuccess(message=f"Request {self.id} changes undoed."))
+        return Ok(SyftSuccess(message=f"Request {self.id} changes undone."))
 
     def save(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
         # relative
@@ -463,12 +462,12 @@ class Request(SyftObject):
 
         change = self.changes[0]
         if not change.is_type(UserCode):
-            raise Exception(
+            raise TypeError(
                 f"accept_by_depositing_result can only be run on {UserCode} not "
                 f"{change.linked_obj.object_type}"
             )
         if not type(change) == UserCodeStatusChange:
-            raise Exception(
+            raise TypeError(
                 f"accept_by_depositing_result can only be run on {UserCodeStatusChange} not "
                 f"{type(change)}"
             )
