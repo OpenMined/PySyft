@@ -130,6 +130,7 @@ class ZMQProducer(QueueProducer):
         self.context = zmq.Context(1)
         self.backend = self.context.socket(zmq.ROUTER)  # ROUTER
         self.backend.bind(f"tcp://*:{self.port}")
+        self.backend.setsockopt(LINGER, 1)
         self.poll_workers = zmq.Poller()
         self.poll_workers.register(self.backend, zmq.POLLIN)
         self.workers = WorkerQueue()
@@ -347,7 +348,7 @@ class ZMQConsumer(QueueConsumer):
             randint(0, 0x10000),
         )  # nosec
         self.worker.setsockopt(zmq.IDENTITY, self.identity)
-        self.worker.setsockopt(LINGER, 0)
+        self.worker.setsockopt(LINGER, 1)
         self.poller.register(self.worker, zmq.POLLIN)
         self.worker.connect(self.address)
         self.worker.send(PPP_READY)
@@ -435,7 +436,7 @@ class ZMQConsumer(QueueConsumer):
                         if interval < INTERVAL_MAX:
                             interval *= 2
                         self.poller.unregister(self.worker)
-                        self.worker.setsockopt(zmq.LINGER, 0)
+                        self.worker.setsockopt(zmq.LINGER, 1)
                         self.worker.close()
                         self.create_socket()
                         liveness = HEARTBEAT_LIVENESS
