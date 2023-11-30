@@ -1,4 +1,5 @@
 # stdlib
+import multiprocessing
 import threading
 import time
 from typing import Any
@@ -255,15 +256,15 @@ class APICallMessageHandler(AbstractMessageHandler):
         # )
         # p.start()
 
-        handle_message_multiprocessing(worker_settings, queue_item, credentials)
+        # handle_message_multiprocessing(worker_settings, queue_item, credentials)
 
-        # p = multiprocessing.Process(
-        #     target=,
-        #     args=(worker_settings, queue_item, credentials),
-        # )
-        # p.start()
+        p = multiprocessing.Process(
+            target=handle_message_multiprocessing,
+            args=(worker_settings, queue_item, credentials),
+        )
+        p.start()
 
         # job_item.job_pid = p.pid
         # worker.job_stash.set_result(credentials, job_item)
 
-        # p.join()
+        p.join()

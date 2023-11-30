@@ -2,11 +2,8 @@
 # stdlib
 from collections import OrderedDict
 from collections import defaultdict
-import os
 from random import randint
-import shutil
 import socketserver
-import subprocess
 import threading
 import time
 from time import sleep
@@ -55,22 +52,6 @@ PPP_HEARTBEAT = b"\x02"  # Signals worker heartbeat
 MAX_RECURSION_NESTED_ACTIONOBJECTS = 5
 
 lock = threading.Lock()
-
-
-def get_open_fds() -> int:
-    """Get the number of open file descriptors for the current process."""
-    lsof_path = shutil.which("lsof")
-    if lsof_path is None:
-        raise NotImplementedError("Didn't handle unavailable lsof.")
-    raw_procs = subprocess.check_output(
-        [lsof_path, "-w", "-Ff", "-p", str(os.getpid())]
-    )
-
-    def filter_fds(lsof_entry: str) -> bool:
-        return lsof_entry.startswith("f") and lsof_entry[1:].isdigit()
-
-    fds = list(filter(filter_fds, raw_procs.decode().split(os.linesep)))
-    return len(fds)
 
 
 class Worker:
@@ -124,8 +105,8 @@ class ZMQProducer(QueueProducer):
 
     def post_init(self):
         self.identity = b"%04X-%04X" % (
-            randint(0, 0x10000),
-            randint(0, 0x10000),
+            randint(0, 0x10000),  # nosec
+            randint(0, 0x10000),  # nosec
         )  # nosec
         self.context = zmq.Context(1)
         self.backend = self.context.socket(zmq.ROUTER)  # ROUTER
@@ -344,8 +325,8 @@ class ZMQConsumer(QueueConsumer):
     def create_socket(self):
         self.worker = self.ctx.socket(zmq.DEALER)  # DEALER
         self.identity = b"%04X-%04X" % (
-            randint(0, 0x10000),
-            randint(0, 0x10000),
+            randint(0, 0x10000),  # nosec
+            randint(0, 0x10000),  # nosec
         )  # nosec
         self.worker.setsockopt(zmq.IDENTITY, self.identity)
         self.worker.setsockopt(LINGER, 1)
