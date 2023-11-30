@@ -119,7 +119,7 @@ def producer():
     )
     yield producer
     # Cleanup code
-    if not producer.alive:
+    if producer.alive:
         producer.close()
 
 
@@ -133,7 +133,7 @@ def consumer(producer):
     )
     yield consumer
     # Cleanup code
-    if not consumer.alive:
+    if consumer.alive:
         consumer.close()
 
 
