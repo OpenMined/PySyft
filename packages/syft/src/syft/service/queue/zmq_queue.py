@@ -392,6 +392,7 @@ class ZMQConsumer(QueueConsumer):
                         else:
                             import traceback
                             print(self._stop, e, traceback.format_exc())
+                            continue
                 if socks.get(self.worker) == zmq.POLLIN:
                     with lock:
                         frames = self.worker.recv_multipart()
