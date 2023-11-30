@@ -52,6 +52,26 @@ lock = threading.Lock()
 MAX_RECURSION_NESTED_ACTIONOBJECTS = 5
 
 
+import os
+import shutil
+import subprocess
+
+
+def get_open_fds() -> int:
+    """Get the number of open file descriptors for the current process."""
+    lsof_path = shutil.which("lsof")
+    if lsof_path is None:
+        raise NotImplementedError("Didn't handle unavailable lsof.")
+    raw_procs = subprocess.check_output(
+        [lsof_path, "-w", "-Ff", "-p", str(os.getpid())]
+    )
+
+    def filter_fds(lsof_entry: str) -> bool:
+        return lsof_entry.startswith("f") and lsof_entry[1:].isdigit()
+
+    fds = list(filter(filter_fds, raw_procs.decode().split(os.linesep)))
+    return len(fds)
+
 class Worker:
     def __init__(self, address):
         self.address = address
@@ -334,14 +354,13 @@ class ZMQConsumer(QueueConsumer):
         self.worker.send(PPP_READY)
 
     def post_init(self):
-        self.ctx = zmq.Context.instance()
+        self.ctx = zmq.Context()
         self.poller = zmq.Poller()
         self.create_socket()
         self.thread = None
 
     def stop(self):
         self._stop = True
-        print("set stop to true")
         try:
             self.poller.unregister(self.worker)
         except Exception:
