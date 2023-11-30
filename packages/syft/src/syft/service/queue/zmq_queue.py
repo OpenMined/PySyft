@@ -327,6 +327,8 @@ class ZMQProducer(QueueProducer):
 
 @serializable(attrs=["_subscriber"])
 class ZMQConsumer(QueueConsumer):
+    lock = threading.Lock()
+
     def __init__(
         self,
         message_handler: AbstractMessageHandler,
