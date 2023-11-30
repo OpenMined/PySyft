@@ -23,6 +23,8 @@ from ..response import SyftSuccess
 from .base_queue import AbstractMessageHandler
 from .base_queue import BaseQueueManager
 from .base_queue import QueueConfig
+from .base_queue import QueueConsumer
+from .base_queue import QueueProducer
 from .queue_stash import QueueItem
 from .queue_stash import Status
 
@@ -78,7 +80,7 @@ class QueueManager(BaseQueueManager):
         self,
         message_handler: Type[AbstractMessageHandler],
         address: Optional[str] = None,
-    ):
+    ) -> QueueConsumer:
         consumer = self._client.add_consumer(
             message_handler=message_handler,
             queue_name=message_handler.queue_name,
@@ -91,7 +93,7 @@ class QueueManager(BaseQueueManager):
 
     def create_producer(
         self, queue_name: str, queue_stash, context: AuthedServiceContext
-    ):
+    ) -> QueueProducer:
         return self._client.add_producer(
             queue_name=queue_name, queue_stash=queue_stash, context=context
         )
