@@ -33,8 +33,8 @@ from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
-from .locks import FileLockingConfig
 from .locks import LockingConfig
+from .locks import NoLockingConfig
 
 
 def _repr_debug_(value: Any) -> str:
@@ -154,8 +154,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
             self._update(key, value)
         else:
             insert_sql = (
-                f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
-            )
+                f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"
+            )  # nosec
             data = _serialize(value, to_bytes=True)
             res = self._execute(insert_sql, [str(key), _repr_debug_(value), data])
             if res.is_err():
@@ -163,8 +163,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _update(self, key: UID, value: Any) -> None:
         insert_sql = (
-            f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
-        )
+            f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"
+        )  # nosec
         data = _serialize(value, to_bytes=True)
         res = self._execute(insert_sql, [str(key), _repr_debug_(value), data, str(key)])
         if res.is_err():
@@ -417,4 +417,4 @@ class SQLiteStoreConfig(StoreConfig):
     client_config: SQLiteStoreClientConfig
     store_type: Type[DocumentStore] = SQLiteDocumentStore
     backing_store: Type[KeyValueBackingStore] = SQLiteBackingStore
-    locking_config: LockingConfig = FileLockingConfig()
+    locking_config: LockingConfig = NoLockingConfig()

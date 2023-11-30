@@ -90,10 +90,6 @@ def test_nested_jobs(node):
     sleep(3)
     assert len(job.subjobs) == 3
     # stdlib
-    import random
-
-    if not random.randint(0, 2) == 0:
-        raise ValueError()
 
     sub_results = [j.wait().get() for j in job.subjobs]
     assert set(sub_results) == {2, 3, 5}

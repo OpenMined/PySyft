@@ -241,8 +241,12 @@ class APICallMessageHandler(AbstractMessageHandler):
         job_item.status = JobStatus.PROCESSING
         job_item.node_uid = worker.id
 
-        worker.queue_stash.set_result(credentials, queue_item)
-        worker.job_stash.set_result(credentials, job_item)
+        queue_result = worker.queue_stash.set_result(credentials, queue_item)
+        if isinstance(queue_result, SyftError):
+            raise Exception(message=f"{queue_result.err()}")
+        worker_result = worker.job_stash.set_result(credentials, job_item)
+        if isinstance(worker_result, SyftError):
+            raise Exception(message=f"{worker_result.err()}")
 
         # from threading import Thread
         # p = Thread(
