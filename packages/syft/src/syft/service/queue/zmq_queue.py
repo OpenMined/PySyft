@@ -1,6 +1,7 @@
 # stdlib
 from collections import OrderedDict
 from collections import defaultdict
+from time import sleep
 from random import randint
 import socketserver
 import threading
@@ -11,6 +12,8 @@ from typing import List
 from typing import Optional
 from typing import Union
 
+from zmq.error import ContextTerminated
+from zmq import LINGER
 # third party
 import zmq.green as zmq
 
@@ -92,7 +95,7 @@ class ZMQProducer(QueueProducer):
         self.queue_stash = queue_stash
         self.auth_context = context
         self.post_init()
-        self.stop = False
+        self._stop = False
 
     @property
     def address(self):
@@ -108,10 +111,16 @@ class ZMQProducer(QueueProducer):
         self.workers = WorkerQueue()
         self.message_queue = []
 
-    def _stop(self):
-        self.stop = True
+
+    def stop(self):
+        self._stop = True
+        try:
+            self.poll_workers.unregister(self.backend)
+        except Exception as e:
+            print("failed to unregister poller", e)
+            pass
         self.backend.close()
-        self.context.term()
+        self.context.destroy()
 
     @property
     def action_service(self):
@@ -180,8 +189,7 @@ class ZMQProducer(QueueProducer):
 
     def read_items(self):
         while True:
-            if self.stop:
-                self._stop()
+            if self._stop:
                 break
             # stdlib
             from time import sleep
@@ -239,8 +247,8 @@ class ZMQProducer(QueueProducer):
         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
         connecting_workers = set()
         while True:
-            if self.stop:
-                break
+            if self._stop:
+                return
             try:
                 socks = dict(self.poll_workers.poll(HEARTBEAT_INTERVAL * 1000))
 
@@ -283,7 +291,15 @@ class ZMQProducer(QueueProducer):
 
                 self.workers.purge()
             except Exception as e:
-                print(f"Error in producer {e}")
+                # this sleep is very important, because we may hit this when
+                # we stop the producer. Without this sleep it would start 
+                # spamming the poller, which results in too many open files
+                # which in turns causes all kinds of problems 
+                sleep(0.5)
+                if not self._stop:
+                    import traceback
+                    print(f"Error in producer {e}, {self.identity}")
+                    print(traceback.format_exc())
 
     def close(self):
         self.backend.close()
@@ -306,12 +322,13 @@ class ZMQConsumer(QueueConsumer):
         self.queue_name = queue_name
         self.post_init()
         self.id = UID()
-        self.stop = False
+        self._stop = False
 
     def create_socket(self):
         self.worker = self.ctx.socket(zmq.DEALER)  # DEALER
         self.identity = b"%04X-%04X" % (randint(0, 0x10000), randint(0, 0x10000))  # nosec
         self.worker.setsockopt(zmq.IDENTITY, self.identity)
+        self.worker.setsockopt(LINGER, 0 )
         self.poller.register(self.worker, zmq.POLLIN)
         self.worker.connect(self.address)
         self.worker.send(PPP_READY)
@@ -322,21 +339,40 @@ class ZMQConsumer(QueueConsumer):
         self.create_socket()
         self.thread = None
 
-    def _stop(self):
-        self.stop = True
+    def stop(self):
+        self._stop = True
+        print("set stop to true")
+        try:
+            self.poller.unregister(self.worker)
+        except Exception:
+            print("failed to unregister poller", e)
+            pass
         self.worker.close()
+        self.ctx.destroy()
 
     def _run(self):
         liveness = HEARTBEAT_LIVENESS
         interval = INTERVAL_INIT
         heartbeat_at = time.time() + HEARTBEAT_INTERVAL
         while True:
-            if self.stop:
-                self._stop()
-                break
+            if self._stop:
+                return
             try:
                 time.sleep(0.1)
-                socks = dict(self.poller.poll(HEARTBEAT_INTERVAL * 1000))
+                try:
+                    socks = dict(self.poller.poll(HEARTBEAT_INTERVAL * 1000))
+                except Exception as e:
+                    time.sleep(0.1)
+                    if isinstance(e, ContextTerminated) or self._stop:
+                        return
+                    else:
+                        # possibly file descriptor problem
+                        sleep(1.0)
+                        if isinstance(e, ContextTerminated) or self._stop:
+                            return
+                        else:
+                            import traceback
+                            print(self._stop, e, traceback.format_exc())
                 if socks.get(self.worker) == zmq.POLLIN:
                     with lock:
                         frames = self.worker.recv_multipart()
@@ -383,7 +419,8 @@ class ZMQConsumer(QueueConsumer):
                 # send heartbeat
                 if time.time() > heartbeat_at:
                     heartbeat_at = time.time() + HEARTBEAT_INTERVAL
-                    self.worker.send(PPP_HEARTBEAT)
+                    if not self._stop:
+                        self.worker.send(PPP_HEARTBEAT)
             except zmq.ZMQError as e:
                 if e.errno == zmq.ETERM:
                     print("Subscriber connection Terminated")
