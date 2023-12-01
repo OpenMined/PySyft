@@ -115,7 +115,7 @@ class QueueManager(BaseQueueManager):
 def handle_message_multiprocessing(worker_settings, queue_item, credentials):
     # this is a temp hack to prevent some multithreading issues
     time.sleep(0.5)
-    queue_config = worker_settings.queue_conf
+    queue_config = worker_settings.queue_config
     queue_config.client_config.create_producer = False
     queue_config.client_config.n_consumers = 0
     # relative
