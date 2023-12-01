@@ -12,7 +12,7 @@ RUN apk update && \
 COPY requirements.txt app.py /
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY --chmod=755 start.sh mount_command /
+COPY --chmod=755 start.sh mount_command.sh /
 
 ENTRYPOINT ["/bin/sh"]
 CMD ["/start.sh"]
