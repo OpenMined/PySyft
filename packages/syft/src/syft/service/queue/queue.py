@@ -86,9 +86,6 @@ class QueueManager(BaseQueueManager):
         )
         return consumer
 
-    def create_message_queue(self, queue_name: str):
-        return self._client.add_message_queue(queue_name)
-
     def create_producer(
         self, queue_name: str, queue_stash, context: AuthedServiceContext
     ):

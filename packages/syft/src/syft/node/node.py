@@ -365,28 +365,6 @@ class Node(AbstractNode):
         NodeRegistry.set_node_for(self.id, self)
 
     @property
-    def host_syft_location(self):
-        """e.g. /Users/<user>/workspace/pysyft"""
-        if not self.dev_mode:
-            raise ValueError("You can only get host location in dev mode")
-        # We set this variable in docker compose (from pwd)
-        env_val = os.environ.get("HOST_GRID_PATH", None)
-        # stdlib
-        from pathlib import Path
-
-        # if in docker
-        if env_val is not None:
-            return str(Path(env_val).parent.parent)
-        # if in python during development
-        else:
-            # syft absolute
-            import syft as sy
-
-            # /Users/<user>/workspace/PySyft/packages/syft/src/syft/__init__.py ->
-            # /Users/<user>/workspace/PySyft
-            return Path(sy.__file__).parent.parent.parent.parent.parent
-
-    @property
     def runs_in_docker(self):
         path = "/proc/self/cgroup"
         return (
