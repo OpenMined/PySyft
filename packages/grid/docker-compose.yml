@@ -236,6 +236,8 @@ services:
       - blob-storage
     depends_on:
       - proxy
+    env_file:
+      - .env
     image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}:${VERSION-latest}"
     environment:
       - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:-1024}
@@ -243,9 +245,6 @@ services:
       - S3_ROOT_PWD=${S3_ROOT_PWD:-admin}
       - S3_PORT=${S3_PORT:-8888}
       - SEAWEED_MOUNT_PORT=${SEAWEED_MOUNT_PORT:-4001}
-    entrypoint: ["/bin/sh"]
-    command:
-      - "/start.sh"
     volumes:
       - seaweedfs-data:/data
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
