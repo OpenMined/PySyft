@@ -267,9 +267,8 @@ class CreateBlobStorageEntry(SyftObject):
         if not path.is_file():
             raise SyftException(f"{fp} is not a file.")
 
-        if ".jsonl" in str(fp):
+        if fp.suffix.lower() == ".jsonl":
             mimetype = "application/json-lines"
-            # mimetype = "application/jsonl"
         if mimetype is None:
             mime_types = mimetypes.guess_type(fp)
             if len(mime_types) > 0 and mime_types[0] is not None:

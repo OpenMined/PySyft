@@ -658,8 +658,23 @@ class ActionObject(SyftObject):
                         blob_retrieval_object,
                     )
                     return blob_retrieval_object
-                self.syft_action_data_cache = blob_retrieval_object.read()
-                self.syft_action_data_type = type(self.syft_action_data)
+                # relative
+                from ...store.blob_storage import BlobRetrieval
+
+                if isinstance(blob_retrieval_object, SyftError):
+                    raise SyftException(
+                        message=f"Failed to retrieve object from blob storage: {blob_retrieval_object.message}"
+                    )
+                elif isinstance(blob_retrieval_object, BlobRetrieval):
+                    # TODO: This change is temporary to for gateway to be compatible with the new blob storage
+                    self.syft_action_data_cache = blob_retrieval_object.read()
+                    self.syft_action_data_type = type(self.syft_action_data)
+                else:
+                    # In the case of gateway, we directly receive the actual object
+                    # TODO: The ideal solution would be to stream the object from the domain through the gateway
+                    # Currently , we are just passing the object as it is, which would be fixed later.
+                    self.syft_action_data_cache = blob_retrieval_object
+                    self.syft_action_data_type = type(self.syft_action_data)
             else:
                 print("cannot reload cache")
 

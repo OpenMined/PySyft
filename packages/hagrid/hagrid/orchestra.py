@@ -8,13 +8,11 @@ import getpass
 import inspect
 import os
 import subprocess  # nosec
+from threading import Thread
 from typing import Any
 from typing import Callable
 from typing import Optional
 from typing import Union
-
-# third party
-import gevent
 
 # relative
 from .cli import str_to_bool
@@ -46,7 +44,6 @@ def read_stream(stream: subprocess.PIPE) -> None:
         if not line:
             break
         print(line, end="")
-        gevent.sleep(0)
 
 
 def to_snake_case(name: str) -> str:
@@ -448,12 +445,14 @@ def deploy_to_container(
     process = subprocess.Popen(  # nosec
         commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
     )
-    # Start gevent threads to read and print the output and error streams
-    stdout_thread = gevent.spawn(read_stream, process.stdout)
-    stderr_thread = gevent.spawn(read_stream, process.stderr)
-
-    # Wait for the threads to finish
-    gevent.joinall([stdout_thread, stderr_thread], raise_error=True)
+    # Start threads to read and print the output and error streams
+    stdout_thread = Thread(target=read_stream, args=(process.stdout,))
+    stderr_thread = Thread(target=read_stream, args=(process.stderr,))
+    # todo, raise errors
+    stdout_thread.start()
+    stderr_thread.start()
+    stdout_thread.join()
+    stderr_thread.join()
 
     if not cmd:
         return NodeHandle(
@@ -516,6 +515,7 @@ class Orchestra:
         deployment_type_enum: Optional[DeploymentType] = get_deployment_type(
             deployment_type=deploy_to
         )
+        print(deployment_type_enum)
         if not deployment_type_enum:
             return None
 

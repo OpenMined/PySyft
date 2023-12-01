@@ -72,6 +72,8 @@ from ..service.notification.notification_service import NotificationService
 from ..service.object_search.migration_state_service import MigrateStateService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
+from ..service.queue.base_queue import QueueConsumer
+from ..service.queue.base_queue import QueueProducer
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
 from ..service.queue.queue_service import QueueService
@@ -407,11 +409,11 @@ class Node(AbstractNode):
         self.blob_storage_client = config_.client_type(config=config_.client_config)
 
     def stop(self):
+        for p in self.queue_manager.producers.values():
+            p._stop()
         for consumer_list in self.queue_manager.consumers.values():
             for c in consumer_list:
-                c.stop = True
-        for p in self.queue_manager.producers.values():
-            p.stop = True
+                c._stop()
 
     def init_queue_manager(self, queue_config: Optional[QueueConfig]):
         queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
@@ -429,7 +431,7 @@ class Node(AbstractNode):
                     credentials=self.verify_key,
                     role=ServiceRole.ADMIN,
                 )
-                producer = self.queue_manager.create_producer(
+                producer: QueueProducer = self.queue_manager.create_producer(
                     queue_name=queue_name, queue_stash=self.queue_stash, context=context
                 )
                 producer.run()
@@ -444,7 +446,7 @@ class Node(AbstractNode):
             for _ in range(queue_config_.client_config.n_consumers):
                 if address is None:
                     raise ValueError("address unknown for consumers")
-                consumer = self.queue_manager.create_consumer(
+                consumer: QueueConsumer = self.queue_manager.create_consumer(
                     message_handler, address=address
                 )
                 consumer.run()
@@ -501,7 +503,7 @@ class Node(AbstractNode):
 
             # remove lock files for reading
             # we should update this to partition locks per node
-            for f in Path("/tmp/sherlock").glob("*.json"):
+            for f in Path("/tmp/sherlock").glob("*.json"):  # nosec
                 if f.is_file():
                     f.unlink()
 
@@ -976,6 +978,19 @@ class Node(AbstractNode):
             else:
                 signed_result = client.connection.make_call(api_call)
                 result = debox_signed_syftapicall_response(signed_result=signed_result)
+
+                # relative
+                from ..store.blob_storage import BlobRetrievalByURL
+
+                # In the case of blob storage, the gateway downloads the result and then passes it to
+                # the proxy client
+                if isinstance(result, BlobRetrievalByURL):
+                    blob_route = client.api.connection.to_blob_route(
+                        result.url.url_path
+                    )
+                    result.url = blob_route
+                    final_res = result.read()
+                    return final_res
 
             return result
 

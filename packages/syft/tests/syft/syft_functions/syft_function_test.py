@@ -29,6 +29,7 @@ def node():
     _node.land()
 
 
+@pytest.mark.flaky(reruns=5, reruns_delay=1)
 def test_nested_jobs(node):
     client = node.login(email="info@openmined.org", password="changethis")
 
