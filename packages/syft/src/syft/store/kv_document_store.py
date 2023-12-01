@@ -136,7 +136,9 @@ class KeyValueStorePartition(StorePartition):
                 pk_key = partition_key.key
                 if pk_key not in self.searchable_keys:
                     self.searchable_keys[pk_key] = defaultdict(list)
-        except BaseException as e:
+        except Exception as e:
+            print("ERROR: init_store", e)
+            raise e
             return Err(str(e))
 
         return Ok()

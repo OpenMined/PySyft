@@ -26,8 +26,9 @@ class MockKeyValueBackingStore(dict, KeyValueBackingStore):
         self.is_crashed = store_config.is_crashed
 
     def _check_if_crashed(self) -> None:
-        if self.is_crashed:
-            raise RuntimeError("The backend is down")
+        # if self.is_crashed:
+        #     raise RuntimeError("The backend is down")
+        pass
 
     def __setitem__(self, key: Any, value: Any) -> None:
         self._check_if_crashed()

@@ -197,6 +197,7 @@ class PatchedFileLock(FileLock):
         return result
 
     def _acquire(self) -> bool:
+        print("attempting to acquire", self.client)
         return self._thread_safe_cbk(self._acquire_file_lock)
 
     def _release(self) -> None:
@@ -338,6 +339,7 @@ class SyftLock(BaseLock):
                 **base_params,
                 client=client,
             )
+            print("CREATED FILE LOCK", client)
         elif isinstance(config, RedisLockingConfig):
             client = redis.StrictRedis(**config.client.dict())
 
@@ -369,7 +371,8 @@ class SyftLock(BaseLock):
         :returns: if the lock was successfully acquired or not
         :rtype: bool
         """
-
+        if isinstance(self.config, FileLockingConfig):
+            print(">>> getting lock", self.config.client_path)
         if not blocking:
             return self._acquire()
 

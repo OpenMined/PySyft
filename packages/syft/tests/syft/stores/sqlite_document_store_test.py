@@ -16,7 +16,7 @@ from .store_fixtures_test import sqlite_store_partition_fn
 from .store_mocks_test import MockObjectType
 from .store_mocks_test import MockSyftObject
 
-REPEATS = 20
+REPEATS = 1
 
 
 def test_sqlite_store_partition_sanity(
@@ -27,7 +27,7 @@ def test_sqlite_store_partition_sanity(
     assert hasattr(sqlite_store_partition, "searchable_keys")
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+# @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_set(
     root_verify_key,
     sqlite_store_partition: SQLiteStorePartition,

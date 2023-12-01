@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from copy import deepcopy
+import os
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -26,7 +27,7 @@ from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..types.uid import UID
-from ..util.util import thread_ident
+from ..util.util import proc_id, thread_ident
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
@@ -35,12 +36,33 @@ from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
 from .locks import FileLockingConfig
 from .locks import LockingConfig
+from .locks import NoLockingConfig
+from .locks import SyftLock
+from collections import defaultdict
+
+
+def cache_key(db_name: str) -> str:
+    db_connection_key = f"{db_name}_{thread_ident()}"
+    print("db_connection_key", db_connection_key)
+    return db_connection_key
 
 
 def _repr_debug_(value: Any) -> str:
     if hasattr(value, "_repr_debug_"):
         return str(value._repr_debug_())
     return repr(value)
+
+
+SQLITE_CONNECTION_POOL_DB: Dict[str, sqlite3.Connection] = {}
+SQLITE_CONNECTION_POOL_CUR: Dict[str, sqlite3.Cursor] = {}
+REF_COUNTS: Dict[str, int] = defaultdict(int)
+
+# relative
+from .locks import FileLockingConfig
+
+
+def get_connection() -> sqlite3.Connection:
+    pass
 
 
 @serializable(attrs=["index_name", "settings", "store_config"])
@@ -69,9 +91,24 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.settings = settings
         self.store_config = store_config
         self._ddtype = ddtype
-        self._db: Dict[int, sqlite3.Connection] = {}
-        self._cur: Dict[int, sqlite3.Cursor] = {}
+        self.file_path = self.store_config.client_config.file_path
+        # self._db: Dict[int, sqlite3.Connection] = {}
+        # self._cur: Dict[int, sqlite3.Cursor] = {}
+        print("index name", index_name)
+        print("settings", settings)
+        client_config = store_config.client_config
+
+        print("client_config", client_config)
+        print("store_config", store_config)
+        print("ddtype", ddtype)
+        self.db_filename = client_config.filename
+        client_config = self.store_config.client_config
+        lock_path = f"/tmp/sherlock/sqlite_locks/{client_config.filename}"
+        self.lock_config = FileLockingConfig(client_path=lock_path)
         self.create_table()
+        REF_COUNTS[cache_key(self.db_filename)] += 1
+        print("Current SQLITE_CONNECTION_POOL_DB", SQLITE_CONNECTION_POOL_DB, REF_COUNTS)
+
 
     @property
     def table_name(self) -> str:
@@ -83,50 +120,90 @@ class SQLiteBackingStore(KeyValueBackingStore):
         # there will be many threads handling incoming requests so we need to ensure
         # that different connections are used in each thread. By using a dict for the
         # _db and _cur we can ensure they are never shared
-        self.file_path = self.store_config.client_config.file_path
 
         path = Path(self.file_path)
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
 
-        self._db[thread_ident()] = sqlite3.connect(
+        connection = sqlite3.connect(
             self.file_path,
             timeout=self.store_config.client_config.timeout,
-            check_same_thread=self.store_config.client_config.check_same_thread,
+            check_same_thread=False,
+            # check_same_thread=self.store_config.client_config.check_same_thread,
         )
+        # connection.execute("PRAGMA locking_mode=EXCLUSIVE;")
+        # connection.execute("PRAGMA journal_mode=wal;")
+        SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)] = connection
 
         # TODO: Review OSX compatibility.
         # Set journal mode to WAL.
-        # self._db[thread_ident()].execute("pragma journal_mode=wal")
+        # self._db[get_identity()].execute("pragma journal_mode=wal")
 
     def create_table(self) -> None:
         try:
-            self.cur.execute(
-                f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
-                + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
-                + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
-            )
-            self.db.commit()
-        except sqlite3.OperationalError as e:
+            with SyftLock(self.lock_config):
+                self.cur.execute(
+                    f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
+                    + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
+                    + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
+                )
+                self.db.commit()
+        except Exception as e:
+            print("got exception", e)
+            if "disk I/O error" in str(e):
+                error = f"_execute DISK IO ERROR: {self.file_path}: exists: {os.path.exists(self.file_path)}"
+                raise Exception(error)
+
             if f"table {self.table_name} already exists" not in str(e):
                 raise e
+            # or "disk I/O error" in str(e):
+            if "Cannot operate on a closed database" in str(e):
+                print("!!!!!!!found closed db trying again")
+                with SyftLock(self.lock_config):
+                    # self._close()
+                    self._connect()
+                    try:
+                        self.cur.execute(
+                            f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
+                            + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
+                            + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
+                        )
+                        self.db.commit()
+                    except Exception as ee:
+                        print("!!>>failed a second time", ee)
+                        raise Exception("failed a second time" + str(ee))
 
     @property
     def db(self) -> sqlite3.Connection:
-        if thread_ident() not in self._db:
+        if cache_key(self.db_filename) not in SQLITE_CONNECTION_POOL_DB:
             self._connect()
-        return self._db[thread_ident()]
+        connection = SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
+        try:
+            connection.execute("SELECT 1")
+        except Exception as e:
+            print("did we fail to execute select 1", e)
+            raise e
+
+        # if connection.closed:
+        #     self._connect()
+        #     connection = SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
+        return connection
 
     @property
     def cur(self) -> sqlite3.Cursor:
-        if thread_ident() not in self._cur:
-            self._cur[thread_ident()] = self.db.cursor()
+        if cache_key(self.db_filename) not in SQLITE_CONNECTION_POOL_CUR:
+            SQLITE_CONNECTION_POOL_CUR[cache_key(self.db_filename)] = self.db.cursor()
 
-        return self._cur[thread_ident()]
+        return SQLITE_CONNECTION_POOL_CUR[cache_key(self.db_filename)]
 
     def _close(self) -> None:
         self._commit()
-        self.db.close()
+        REF_COUNTS[cache_key(self.db_filename)] -= 1
+        if REF_COUNTS[cache_key(self.db_filename)] <= 0:
+            self.db.close()
+            del SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
+        else:
+            print("dont close")
 
     def _commit(self) -> None:
         self.db.commit()
@@ -134,30 +211,43 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _execute(
         self, sql: str, *args: Optional[List[Any]]
     ) -> Result[Ok[sqlite3.Cursor], Err[str]]:
-        cursor: Optional[sqlite3.Cursor] = None
-        err = None
-        try:
-            cursor = self.cur.execute(sql, *args)
-        except BaseException as e:
-            self.db.rollback()  # Roll back all changes if an exception occurs.
-            err = Err(str(e))
-        else:
+        with SyftLock(self.lock_config):
+            cursor: Optional[sqlite3.Cursor] = None
+            err = None
+            try:
+                cursor = self.cur.execute(sql, *args)
+            except Exception as e:
+                if "disk I/O error" in str(e):
+                    error = f"_execute DISK IO ERROR: {self.file_path}: exists: {os.path.exists(self.file_path)}"
+                    raise Exception(error)
+            # self.db.rollback()  # Roll back all changes if an exception occurs.
+            # err = Err(str(e))
             self.db.commit()  # Commit if everything went ok
 
-        if err is not None:
-            return err
+            if err is not None:
+                print("Returning what error?", err)
+                return err
 
-        return Ok(cursor)
+            return Ok(cursor)
 
     def _set(self, key: UID, value: Any) -> None:
+        print("Calling set")
         if self._exists(key):
-            self._update(key, value)
+            try:
+                self._update(key, value)
+            except Exception as e:
+                print("failed calling UPDATE", e)
+                raise e
         else:
             insert_sql = (
                 f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
             )
             data = _serialize(value, to_bytes=True)
-            res = self._execute(insert_sql, [str(key), _repr_debug_(value), data])
+            try:
+                res = self._execute(insert_sql, [str(key), _repr_debug_(value), data])
+            except Exception as e:
+                print("failed calling execute", e)
+                raise e
             if res.is_err():
                 raise ValueError(res.err())
 
@@ -324,9 +414,10 @@ class SQLiteStorePartition(KeyValueStorePartition):
     def close(self) -> None:
         self.lock.acquire()
         try:
-            self.data._close()
-            self.unique_keys._close()
-            self.searchable_keys._close()
+            # self.data._close()
+            # self.unique_keys._close()
+            # self.searchable_keys._close()
+            pass
         except BaseException:
             pass
         self.lock.release()

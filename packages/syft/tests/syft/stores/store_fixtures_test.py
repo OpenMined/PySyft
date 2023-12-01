@@ -158,6 +158,9 @@ def sqlite_store_partition(
     root_verify_key, sqlite_workspace: Tuple[Path, str], request
 ):
     locking_config_name = request.param
+    print("What is this", locking_config_name, request)
+    # import sys
+    # sys.exit(1)
     return sqlite_store_partition_fn(
         root_verify_key, sqlite_workspace, locking_config_name=locking_config_name
     )
