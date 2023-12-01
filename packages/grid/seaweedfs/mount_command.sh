@@ -1,6 +1,4 @@
-echo "remote.configure -name=$1 -type=azure -azure.account_name=$2 \
-        -azure.account_key=$5" \
-        | weed shell
+echo "remote.configure -name=$1 -type=azure -azure.account_name=$2 -azure.account_key=$5" | weed shell
 
 echo "s3.bucket.create -name $3" | weed shell
 
