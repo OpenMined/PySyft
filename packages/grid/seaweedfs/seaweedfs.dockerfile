@@ -6,7 +6,6 @@ FROM ${DOCKER_IMAGE_SEAWEEDFS_ORIGINAL}:${SEAWEEDFS_VERSION}
 WORKDIR /
 
 RUN apk update && \
-    apk upgrade --available && \
     apk add --no-cache python3 py3-pip ca-certificates bash
 
 COPY requirements.txt app.py /
