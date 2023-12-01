@@ -7,6 +7,7 @@ import socketserver
 import threading
 import time
 from time import sleep
+import traceback
 from typing import DefaultDict
 from typing import Dict
 from typing import List
@@ -290,17 +291,15 @@ class ZMQProducer(QueueProducer):
 
                 self.workers.purge()
             except Exception as e:
-                # this sleep is very important, because we may hit this when
+                # this sleep is important, because we may hit this when
                 # we stop the producer. Without this sleep it would start
                 # spamming the poller, which results in too many open files
                 # which in turns causes all kinds of problems
                 sleep(0.5)
                 if not self._stop:
-                    # stdlib
-                    import traceback
-
-                    print(f"Error in producer {e}, {self.identity}")
-                    print(traceback.format_exc())
+                    print(
+                        f"Error in producer {e}, {self.identity} {traceback.format_exc()}"
+                    )
 
     @property
     def alive(self):
@@ -364,20 +363,13 @@ class ZMQConsumer(QueueConsumer):
                 try:
                     socks = dict(self.poller.poll(HEARTBEAT_INTERVAL * 1000))
                 except Exception as e:
-                    time.sleep(0.1)
+                    time.sleep(0.5)
                     if isinstance(e, ContextTerminated) or self._stop:
                         return
                     else:
                         # possibly file descriptor problem
-                        sleep(1.0)
-                        if isinstance(e, ContextTerminated) or self._stop:
-                            return
-                        else:
-                            # stdlib
-                            import traceback
-
-                            print(self._stop, e, traceback.format_exc())
-                            continue
+                        print(e, traceback.format_exc())
+                        continue
                 if socks.get(self.worker) == zmq.POLLIN:
                     with lock:
                         frames = self.worker.recv_multipart()
@@ -395,8 +387,6 @@ class ZMQConsumer(QueueConsumer):
                             self.message_handler.handle_message(message=message)
                         except Exception as e:
                             # stdlib
-                            import traceback
-
                             print(
                                 f"ERROR HANDLING MESSAGE {e}, {traceback.format_exc()}"
                             )
