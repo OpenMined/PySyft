@@ -515,7 +515,6 @@ class Orchestra:
         deployment_type_enum: Optional[DeploymentType] = get_deployment_type(
             deployment_type=deploy_to
         )
-        print(deployment_type_enum)
         if not deployment_type_enum:
             return None
 
