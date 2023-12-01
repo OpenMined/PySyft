@@ -15,6 +15,7 @@ services:
       target: "backend"
     profiles:
       - backend
+
   seaweedfs:
     build:
       context: ${RELATIVE_PATH}./seaweedfs
@@ -23,6 +24,9 @@ services:
       args:
         - DOCKER_IMAGE_SEAWEEDFS_ORIGINAL=${DOCKER_IMAGE_SEAWEEDFS_ORIGINAL}
         - SEAWEEDFS_VERSION=${SEAWEEDFS_VERSION}
+    profiles:
+      - blob-storage
+
   worker:
     build:
       context: ${RELATIVE_PATH}../
