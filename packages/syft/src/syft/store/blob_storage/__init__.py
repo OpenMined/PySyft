@@ -92,7 +92,15 @@ class BlobRetrieval(SyftObject):
     file_size: Optional[int]
 
     def read(self) -> Union[SyftObject, SyftError]:
-        pass
+        # we need both methods bcs of inheritrance
+        return self._read()
+
+    def _read(self):
+        with open(self.file_name, "rb") as f:
+            return f.read()
+
+    def _read_data(self, **kwargs):
+        return self._read()
 
 
 @migrate(BlobRetrieval, BlobRetrievalV1)
@@ -129,7 +137,12 @@ class SyftObjectRetrieval(BlobRetrieval):
         if self.type_ is BlobFileType:
             with open(self.file_name, "wb") as fp:
                 fp.write(self.syft_object)
-            return BlobFile(file_name=self.file_name)
+            return BlobFile(
+                file_name=self.file_name,
+                syft_blob_storage_entry_id=self.syft_blob_storage_entry_id,
+                syft_node_location=self.syft_node_location,
+                syft_client_verify_key=self.syft_client_verify_key,
+            )
         return deserialize(self.syft_object, from_bytes=True)
 
 
