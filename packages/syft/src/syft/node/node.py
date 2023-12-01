@@ -72,6 +72,8 @@ from ..service.notification.notification_service import NotificationService
 from ..service.object_search.migration_state_service import MigrateStateService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
+from ..service.queue.base_queue import QueueConsumer
+from ..service.queue.base_queue import QueueProducer
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
 from ..service.queue.queue_service import QueueService
@@ -407,7 +409,7 @@ class Node(AbstractNode):
                     credentials=self.verify_key,
                     role=ServiceRole.ADMIN,
                 )
-                producer = self.queue_manager.create_producer(
+                producer: QueueProducer = self.queue_manager.create_producer(
                     queue_name=queue_name, queue_stash=self.queue_stash, context=context
                 )
                 producer.run()
@@ -422,7 +424,7 @@ class Node(AbstractNode):
             for _ in range(queue_config_.client_config.n_consumers):
                 if address is None:
                     raise ValueError("address unknown for consumers")
-                consumer = self.queue_manager.create_consumer(
+                consumer: QueueConsumer = self.queue_manager.create_consumer(
                     message_handler, address=address
                 )
                 consumer.run()
