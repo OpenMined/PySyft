@@ -19,6 +19,9 @@ services:
     build:
       context: ${RELATIVE_PATH}./seaweedfs
       dockerfile: seaweedfs.dockerfile
+      args:
+        - DOCKER_IMAGE_SEAWEEDFS_ORIGINAL=${DOCKER_IMAGE_SEAWEEDFS_ORIGINAL}
+        - SEAWEEDFS_VERSION=${SEAWEEDFS_VERSION}
   worker:
     build:
       context: ${RELATIVE_PATH}../
