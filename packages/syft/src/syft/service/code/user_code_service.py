@@ -271,6 +271,8 @@ class UserCodeService(AbstractService):
 
             if isinstance(result, TwinObject):
                 return result.mock
+            elif result.is_mock:
+                return result
             else:
                 return result.as_empty()
         except Exception as e:
