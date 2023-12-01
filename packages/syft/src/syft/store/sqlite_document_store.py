@@ -104,8 +104,10 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.file_path = self.store_config.client_config.file_path
         self.db_filename = store_config.client_config.filename
 
-        # TODO: change to windows compatible temp dir
-        lock_path = f"/tmp/sherlock/sqlite_locks/{self.db_filename}"
+        # if tempfile.TemporaryDirectory() varies from process to process
+        # could this cause different locks on the same file
+        temp_dir = tempfile.TemporaryDirectory().name
+        lock_path = Path(temp_dir) / "sqlite_locks" / self.db_filename
         self.lock_config = FileLockingConfig(client_path=lock_path)
         self.create_table()
         REF_COUNTS[cache_key(self.db_filename)] += 1
