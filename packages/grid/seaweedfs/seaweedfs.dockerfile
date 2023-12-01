@@ -15,4 +15,4 @@ COPY ./app.py /app.py
 RUN chmod +x /start.sh
 RUN chmod +x /mount_command.sh
 
-CMD ["bash", "/seaweed.sh"]
+CMD ["bash", "/start.sh"]

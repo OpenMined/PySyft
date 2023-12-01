@@ -247,7 +247,6 @@ services:
     entrypoint: ["/bin/sh"]
     command:
       - "/start.sh"
-      # - "/seaweed.sh"
     volumes:
       - seaweedfs-data:/data
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml

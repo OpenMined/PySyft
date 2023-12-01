@@ -432,4 +432,3 @@ Syft is under active development and is not yet ready for pilots on private data
 <a href="https://www.flaticon.com/free-icons/person" title="person icons">Person icons created by Freepik - Flaticon</a>
 
 <!-- 🥇 -->
-
