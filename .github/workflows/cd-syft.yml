@@ -167,6 +167,18 @@ jobs:
           cache-from: type=registry,ref=openmined/grid-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
           cache-to: type=registry,ref=openmined/grid-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
 
+      - name: Build and push `grid-seaweedfs` image to DockerHub
+        id: grid-seaweedfs-build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./packages/grid/seaweedfs
+          file: ./packages/grid/seaweedfs/seaweedfs.dockerfile
+          platforms: ${{ steps.release_metadata.outputs.release_platform }}
+          outputs: type=image,name=openmined/grid-seaweedfs,push-by-digest=true,name-canonical=true,push=true
+          target: seaweedfs
+          cache-from: type=registry,ref=openmined/grid-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/grid-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
+
       - name: Export digest for grid-frontend
         run: |
           mkdir -p /tmp/digests/grid-frontend
