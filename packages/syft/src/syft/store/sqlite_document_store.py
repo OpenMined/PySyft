@@ -89,11 +89,14 @@ class SQLiteBackingStore(KeyValueBackingStore):
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
 
-        self._db[thread_ident()] = sqlite3.connect(
+        indent = thread_ident()
+        print(f"adding {indent}")
+        self._db[indent] = sqlite3.connect(
             self.file_path,
             timeout=self.store_config.client_config.timeout,
             check_same_thread=self.store_config.client_config.check_same_thread,
         )
+        print(f"new cache: {self._db.keys()}")
 
         # TODO: Review OSX compatibility.
         # Set journal mode to WAL.
@@ -113,7 +116,11 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     @property
     def db(self) -> sqlite3.Connection:
-        if thread_ident() not in self._db:
+        indent = thread_ident()
+        if indent not in self._db:
+            print(f"Creating new connection, {indent} not in cache for db obj {id(self)}: {self._db.keys()}")
+            import ipdb
+            ipdb.set_trace()
             self._connect()
         return self._db[thread_ident()]
 
@@ -125,6 +132,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return self._cur[thread_ident()]
 
     def _close(self) -> None:
+        print("calling closecloseclose")
         self._commit()
         self.db.close()
 
@@ -304,9 +312,11 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return iter(self.keys())
 
     def __del__(self):
+        print("Calling del")
         try:
             self._close()
         except BaseException:
+            print("Could not close connection")
             pass
 
 
