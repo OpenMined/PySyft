@@ -243,7 +243,6 @@ services:
       - S3_ROOT_PWD=${S3_ROOT_PWD:-admin}
       - S3_PORT=${S3_PORT:-8888}
       - SEAWEED_MOUNT_PORT=${SEAWEED_MOUNT_PORT:-4001}
-      - STACK_API_KEY=$STACK_API_KEY
     entrypoint: ["/bin/sh"]
     command:
       - "/start.sh"
