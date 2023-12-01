@@ -119,8 +119,8 @@ def producer():
     )
     yield producer
     # Cleanup code
-    if not producer.alive:
-        producer._stop()
+    if producer.alive:
+        producer.close()
 
 
 @pytest.fixture
@@ -133,8 +133,8 @@ def consumer(producer):
     )
     yield consumer
     # Cleanup code
-    if not consumer.alive:
-        consumer._stop()
+    if consumer.alive:
+        consumer.close()
 
 
 @pytest.mark.flaky(reruns=5, reruns_delay=1)
@@ -184,8 +184,8 @@ def test_zmq_pub_sub(faker: Faker, producer, consumer):
     assert first_message in received_messages
 
     # Close all socket connections
-    producer._stop()
-    consumer._stop()
+    producer.close()
+    consumer.close()
     assert producer.alive is False
     assert consumer.alive is False
 

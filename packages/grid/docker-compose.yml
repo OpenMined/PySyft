@@ -153,7 +153,7 @@ services:
       - CREATE_PRODUCER=true
       - N_CONSUMERS=0
       - HOST_GRID_PATH=${PWD}
-    command: "/app/grid/start.sh"
+    command: "./grid/start.sh"
     network_mode: service:proxy
     volumes:
       - ${BACKEND_STORAGE_PATH}:/storage

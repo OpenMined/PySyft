@@ -88,9 +88,6 @@ class QueueManager(BaseQueueManager):
         )
         return consumer
 
-    def create_message_queue(self, queue_name: str):
-        return self._client.add_message_queue(queue_name)
-
     def create_producer(
         self, queue_name: str, queue_stash, context: AuthedServiceContext
     ) -> QueueProducer:
@@ -118,6 +115,8 @@ class QueueManager(BaseQueueManager):
 
 
 def handle_message_multiprocessing(worker_settings, queue_item, credentials):
+    # this is a temp hack to prevent some multithreading issues
+    time.sleep(0.5)
     queue_config = worker_settings.queue_config
     queue_config.client_config.create_producer = False
     queue_config.client_config.n_consumers = 0
@@ -244,8 +243,12 @@ class APICallMessageHandler(AbstractMessageHandler):
         job_item.status = JobStatus.PROCESSING
         job_item.node_uid = worker.id
 
-        worker.queue_stash.set_result(credentials, queue_item)
-        worker.job_stash.set_result(credentials, job_item)
+        queue_result = worker.queue_stash.set_result(credentials, queue_item)
+        if isinstance(queue_result, SyftError):
+            raise Exception(message=f"{queue_result.err()}")
+        worker_result = worker.job_stash.set_result(credentials, job_item)
+        if isinstance(worker_result, SyftError):
+            raise Exception(message=f"{worker_result.err()}")
 
         # from threading import Thread
         # p = Thread(
@@ -254,13 +257,15 @@ class APICallMessageHandler(AbstractMessageHandler):
         # )
         # p.start()
 
+        # handle_message_multiprocessing(worker_settings, queue_item, credentials)
+
         p = multiprocessing.Process(
             target=handle_message_multiprocessing,
             args=(worker_settings, queue_item, credentials),
         )
         p.start()
 
-        # job_item.job_pid = p.pid
-        # worker.job_stash.set_result(credentials, job_item)
+        job_item.job_pid = p.pid
+        worker.job_stash.set_result(credentials, job_item)
 
         p.join()

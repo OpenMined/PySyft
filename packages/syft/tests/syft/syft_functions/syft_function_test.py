@@ -1,4 +1,6 @@
 # stdlib
+import random
+import sys
 from textwrap import dedent
 
 # third party
@@ -21,7 +23,7 @@ def node():
         reset=True,
         n_consumers=3,
         create_producer=True,
-        queue_port=3321,
+        queue_port=random.randint(13000, 13300),
     )
     # startup code here
     yield _node
@@ -30,6 +32,7 @@ def node():
 
 
 @pytest.mark.flaky(reruns=5, reruns_delay=1)
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_nested_jobs(node):
     client = node.login(email="info@openmined.org", password="changethis")
 
@@ -84,10 +87,9 @@ def test_nested_jobs(node):
 
     job.wait()
     # stdlib
-    from time import sleep
 
-    sleep(3)
     assert len(job.subjobs) == 3
+    # stdlib
 
     sub_results = [j.wait().get() for j in job.subjobs]
     assert set(sub_results) == {2, 3, 5}

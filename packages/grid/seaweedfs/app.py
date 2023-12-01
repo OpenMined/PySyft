@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 
 @app.route("/configure_azure", methods=["POST"])
-def test() -> str:
+def configure_azure() -> str:
     first_res = json.loads(request.data.decode("utf-8").replace("'", '"'))
     account_name = first_res["account_name"]
     account_key = first_res["account_key"]
