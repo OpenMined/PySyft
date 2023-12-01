@@ -26,9 +26,6 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from typing_extensions import Self
 
-# first party
-from packages.grid.backend.grid.core.config import Settings
-
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
@@ -351,9 +348,9 @@ class PythonConnection(NodeConnection):
     def to_blob_route(self, path: str, host=None) -> GridURL:
         # TODO: FIX!
         if host is not None:
-            return GridURL(host_or_ip=host, port=Settings.S3_PORT).with_path(path)
+            return GridURL(host_or_ip=host, port=8333).with_path(path)
         else:
-            return GridURL(port=Settings.S3_PORT).with_path(path)
+            return GridURL(port=8333).with_path(path)
 
     def get_api(
         self, credentials: SyftSigningKey, communication_protocol: int
