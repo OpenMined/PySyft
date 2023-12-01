@@ -872,6 +872,10 @@ def thread_ident() -> int:
     return threading.current_thread().ident
 
 
+def proc_id() -> int:
+    return os.getpid()
+
+
 def set_klass_module_to_syft(klass, module_name):
     if module_name not in sys.modules["syft"].__dict__:
         new_module = types.ModuleType(module_name)
