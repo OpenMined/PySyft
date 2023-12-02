@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import ast
+import datetime
 from enum import Enum
 import hashlib
 import inspect
@@ -10,6 +11,7 @@ from io import StringIO
 import itertools
 import sys
 import time
+import traceback
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -18,37 +20,51 @@ from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import Union
+from typing import final
 
 # third party
 from IPython.display import display
+from result import Err
 from typing_extensions import Self
 
 # relative
 from ...abstract_node import NodeType
+from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
+from ...client.client import PythonConnection
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
+from ...protocol.data_protocol import get_data_protocol
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
+from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftHashableObject
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
+from ...types.transforms import drop
 from ...types.transforms import generate_id
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
+from ..action.action_object import Action
+from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
+from ..job.job_stash import Job
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
+from ..policy.policy import EmpyInputPolicy
 from ..policy.policy import ExactMatch
 from ..policy.policy import InputPolicy
 from ..policy.policy import OutputPolicy
@@ -65,10 +81,13 @@ from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..response import SyftWarning
 from .code_parse import GlobalsVisitor
+from .code_parse import LaunchJobVisitor
 from .unparse import unparse
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
+ServiceFuncNamePartitionKey = PartitionKey(key="service_func_name", type_=str)
+SubmitTimePartitionKey = PartitionKey(key="submit_time", type_=DateTime)
 
 PyCodeObject = Any
 
@@ -228,7 +247,7 @@ class UserCodeStatusCollection(SyftHashableObject):
 
 
 @serializable()
-class UserCode(SyftObject):
+class UserCodeV1(SyftObject):
     # version
     __canonical_name__ = "UserCode"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -253,6 +272,39 @@ class UserCode(SyftObject):
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime]
+
+
+@serializable()
+class UserCode(SyftObject):
+    # version
+    __canonical_name__ = "UserCode"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    id: UID
+    node_uid: Optional[UID]
+    user_verify_key: SyftVerifyKey
+    raw_code: str
+    input_policy_type: Union[Type[InputPolicy], UserPolicy]
+    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    input_policy_state: bytes = b""
+    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
+    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    output_policy_state: bytes = b""
+    parsed_code: str
+    service_func_name: str
+    unique_func_name: str
+    user_unique_func_name: str
+    code_hash: str
+    signature: inspect.Signature
+    status: UserCodeStatusCollection
+    input_kwargs: List[str]
+    enclave_metadata: Optional[EnclaveMetadata] = None
+    submit_time: Optional[DateTime]
+    uses_domain = (
+        False
+    )  # tracks if the code calls domain.something, variable is set during parsing
+    nested_requests: Dict[str, str] = {}
+    nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
 
     __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
     __attr_unique__ = []
@@ -495,7 +547,7 @@ class UserCode(SyftObject):
 
         return wrapper
 
-    def _repr_markdown_(self):
+    def _inner_repr(self, level=0):
         shared_with_line = ""
         if len(self.output_readers) > 0:
             owners_string = " and ".join([f"*{x}*" for x in self.output_reader_names])
@@ -512,8 +564,26 @@ class UserCode(SyftObject):
     {shared_with_line}
     code:
 
-{self.raw_code}"""
-        return as_markdown_code(md)
+{self.raw_code}
+"""
+        if self.nested_codes != {}:
+            md += """
+
+  Nested Requests:
+  """
+
+        md = "\n".join(
+            [f"{'  '*level}{substring}" for substring in md.split("\n")[:-1]]
+        )
+        for _, (obj, _) in self.nested_codes.items():
+            code = obj.resolve
+            md += "\n"
+            md += code._inner_repr(level=level + 1)
+
+        return md
+
+    def _repr_markdown_(self):
+        return as_markdown_code(self._inner_repr())
 
     @property
     def show_code(self) -> CodeMarkdown:
@@ -530,11 +600,29 @@ class UserCode(SyftObject):
         ip.set_next_input(warning_message + self.raw_code)
 
 
+@migrate(UserCode, UserCodeV1)
+def downgrade_usercode_v2_to_v1():
+    return [
+        drop("uses_domain"),
+        drop("nested_requests"),
+        drop("nested_codes"),
+    ]
+
+
+@migrate(UserCodeV1, UserCode)
+def upgrade_usercode_v1_to_v2():
+    return [
+        make_set_default("uses_domain", False),
+        make_set_default("nested_requests", {}),
+        make_set_default("nested_codes", {}),
+    ]
+
+
 @serializable(without=["local_function"])
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: Optional[UID]
     code: str
@@ -615,10 +703,13 @@ def syft_function_single_use(
 
 
 def syft_function(
-    input_policy: Union[InputPolicy, UID],
+    input_policy: Optional[Union[InputPolicy, UID]] = None,
     output_policy: Optional[Union[OutputPolicy, UID]] = None,
     share_results_with_owners=False,
 ) -> SubmitUserCode:
+    if input_policy is None:
+        input_policy = EmpyInputPolicy()
+
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_type = SubmitUserPolicy.from_obj(input_policy)
     else:
@@ -676,10 +767,12 @@ def generate_unique_func_name(context: TransformContext) -> TransformContext:
 
 
 def process_code(
+    context,
     raw_code: str,
     func_name: str,
     original_func_name: str,
-    input_kwargs: List[str],
+    policy_input_kwargs: List[str],
+    function_input_kwargs: List[str],
 ) -> str:
     tree = ast.parse(raw_code)
 
@@ -690,11 +783,14 @@ def process_code(
     f = tree.body[0]
     f.decorator_list = []
 
-    keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in input_kwargs]
+    call_args = function_input_kwargs
+    if "domain" in function_input_kwargs:
+        context.output["uses_domain"] = True
+    call_stmt_keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in call_args]
     call_stmt = ast.Assign(
         targets=[ast.Name(id="result")],
         value=ast.Call(
-            func=ast.Name(id=original_func_name), args=[], keywords=keywords
+            func=ast.Name(id=original_func_name), args=[], keywords=call_stmt_keywords
         ),
         lineno=0,
     )
@@ -730,13 +826,32 @@ def new_check_code(context: TransformContext) -> TransformContext:
             input_keys += d.keys()
 
     processed_code = process_code(
+        context,
         raw_code=context.output["raw_code"],
         func_name=context.output["unique_func_name"],
         original_func_name=context.output["service_func_name"],
-        input_kwargs=input_keys,
+        policy_input_kwargs=input_keys,
+        function_input_kwargs=context.output["input_kwargs"],
     )
     context.output["parsed_code"] = processed_code
 
+    return context
+
+
+def locate_launch_jobs(context: TransformContext) -> TransformContext:
+    # stdlib
+    nested_requests = {}
+    tree = ast.parse(context.output["raw_code"])
+
+    # look for domain arg
+    if "domain" in [arg.arg for arg in tree.body[0].args.args]:
+        v = LaunchJobVisitor()
+        v.visit(tree)
+        nested_calls = v.nested_calls
+        for call in nested_calls:
+            nested_requests[call] = "latest"
+
+    context.output["nested_requests"] = nested_requests
     return context
 
 
@@ -760,7 +875,6 @@ def compile_code(context: TransformContext) -> TransformContext:
 
 def hash_code(context: TransformContext) -> TransformContext:
     code = context.output["code"]
-    del context.output["code"]
     context.output["raw_code"] = code
     code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
     context.output["code_hash"] = code_hash
@@ -842,6 +956,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         check_input_policy,
         check_output_policy,
         new_check_code,
+        locate_launch_jobs,
         add_credentials_for_key("user_verify_key"),
         add_custom_status,
         add_node_uid_for_key("node_uid"),
@@ -862,24 +977,195 @@ class UserCodeExecutionResult(SyftObject):
     result: Any
 
 
-def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
+class SecureContext:
+    def __init__(self, context):
+        node = context.node
+        job_service = node.get_service("jobservice")
+        action_service = node.get_service("actionservice")
+        user_service = node.get_service("userservice")
+
+        def job_set_n_iters(n_iters):
+            job = context.job
+            job.n_iters = n_iters
+            job_service.update(context, job)
+
+        def job_set_current_iter(current_iter):
+            job = context.job
+            job.current_iter = current_iter
+            job_service.update(context, job)
+
+        def job_increase_current_iter(current_iter):
+            job = context.job
+            job.current_iter += current_iter
+            job_service.update(context, job)
+
+        def set_api_registry():
+            user_signing_key = [
+                x.signing_key
+                for x in user_service.stash.partition.data.values()
+                if x.verify_key == context.credentials
+            ][0]
+            data_protcol = get_data_protocol()
+            user_api = node.get_api(context.credentials, data_protcol.latest_version)
+            user_api.signing_key = user_signing_key
+            # We hardcode a python connection here since we have access to the node
+            # TODO: this is not secure
+            user_api.connection = PythonConnection(node=node)
+
+            APIRegistry.set_api_for(
+                node_uid=node.id,
+                user_verify_key=context.credentials,
+                api=user_api,
+            )
+
+        def launch_job(func: UserCode, **kwargs):
+            # relative
+
+            kw2id = {}
+            for k, v in kwargs.items():
+                value = ActionObject.from_obj(v)
+                ptr = action_service.set(context, value)
+                ptr = ptr.ok()
+                kw2id[k] = ptr.id
+            try:
+                # TODO: check permissions here
+                action = Action.syft_function_action_from_kwargs_and_id(kw2id, func.id)
+
+                job = node.add_action_to_queue(
+                    action=action,
+                    credentials=context.credentials,
+                    parent_job_id=context.job_id,
+                    has_execute_permissions=True,
+                )
+                # set api in global scope to enable using .get(), .wait())
+                set_api_registry()
+
+                return job
+            except Exception as e:
+                print(f"ERROR {e}")
+                raise ValueError(f"error while launching job:\n{e}")
+
+        self.job_set_n_iters = job_set_n_iters
+        self.job_set_current_iter = job_set_current_iter
+        self.job_increase_current_iter = job_increase_current_iter
+        self.launch_job = launch_job
+        self.is_async = context.job is not None
+
+
+def execute_byte_code(
+    code_item: UserCode, kwargs: Dict[str, Any], context: AuthedServiceContext
+) -> Any:
     stdout_ = sys.stdout
     stderr_ = sys.stderr
 
     try:
+        # stdlib
+        import builtins as __builtin__
+
+        original_print = __builtin__.print
+
+        safe_context = SecureContext(context=context)
+
+        class LocalDomainClient:
+            def init_progress(self, n_iters):
+                if safe_context.is_async:
+                    safe_context.job_set_current_iter(0)
+                    safe_context.job_set_n_iters(n_iters)
+
+            def set_progress(self, to) -> None:
+                self._set_progress(to)
+
+            def increment_progress(self, n=1) -> None:
+                self._set_progress(by=n)
+
+            def _set_progress(self, to=None, by=None):
+                if safe_context.is_async is not None:
+                    if by is None and to is None:
+                        by = 1
+                    if to is None:
+                        safe_context.job_increase_current_iter(current_iter=by)
+                    else:
+                        safe_context.job_set_current_iter(to)
+
+            @final
+            def launch_job(self, func: UserCode, **kwargs):
+                return safe_context.launch_job(func, **kwargs)
+
+            def __setattr__(self, __name: str, __value: Any) -> None:
+                raise Exception("Attempting to alter read-only value")
+
+        if context.job is not None:
+            job_id = context.job_id
+            log_id = context.job.log_id
+
+            def print(*args, sep=" ", end="\n"):
+                def to_str(arg: Any) -> str:
+                    if isinstance(arg, bytes):
+                        return arg.decode("utf-8")
+                    if isinstance(arg, Job):
+                        return f"JOB: {arg.id}"
+                    if isinstance(arg, SyftError):
+                        return f"JOB: {arg.message}"
+                    if isinstance(arg, ActionObject):
+                        return str(arg.syft_action_data)
+                    return str(arg)
+
+                new_args = [to_str(arg) for arg in args]
+                new_str = sep.join(new_args) + end
+                log_service = context.node.get_service("LogService")
+                log_service.append(context=context, uid=log_id, new_str=new_str)
+                time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
+                return __builtin__.print(
+                    f"{time} FUNCTION LOG ({job_id}):",
+                    *new_args,
+                    end=end,
+                    sep=sep,
+                    file=sys.stderr,
+                )
+
+        else:
+            print = original_print
+
+        if code_item.uses_domain:
+            kwargs["domain"] = LocalDomainClient()
+
         stdout = StringIO()
         stderr = StringIO()
-
-        sys.stdout = stdout
-        sys.stderr = stderr
 
         # statisfy lint checker
         result = None
 
-        exec(code_item.byte_code)  # nosec
+        _locals = locals()
+        _globals = {}
+
+        for service_func_name, (linked_obj, _) in code_item.nested_codes.items():
+            code_obj = linked_obj.resolve_with_context(context=context)
+            if isinstance(code_obj, Err):
+                raise Exception(code_obj.err())
+            _globals[service_func_name] = code_obj.ok()
+        _globals["print"] = print
+        exec(code_item.parsed_code, _globals, locals())  # nosec
 
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
-        result = eval(evil_string, None, locals())  # nosec
+        try:
+            result = eval(evil_string, _globals, _locals)  # nosec
+        except Exception as e:
+            if context.job is not None:
+                error_msg = traceback_from_error(e, code_item)
+                time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
+                original_print(
+                    f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
+                )
+                log_service = context.node.get_service("LogService")
+                log_service.append(context=context, uid=log_id, new_err=error_msg)
+
+            result = Err(
+                f"Exception encountered while running {code_item.service_func_name}"
+                ", please contact the Node Admin for more info."
+            )
+
+        # reset print
+        print = original_print
 
         # restore stdout and stderr
         sys.stdout = stdout_
@@ -893,10 +1179,43 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
         )
 
     except Exception as e:
-        print("execute_byte_code failed", e, file=stderr_)
+        # stdlib
+
+        print = original_print
+        # print("execute_byte_code failed", e, file=stderr_)
+        print(traceback.format_exc())
+        print("execute_byte_code failed", e)
     finally:
         sys.stdout = stdout_
         sys.stderr = stderr_
+
+
+def traceback_from_error(e, code: UserCode):
+    """We do this because the normal traceback.format_exc() does not work well for exec,
+    it missed the references to the actual code"""
+    line_nr = 0
+    tb = e.__traceback__
+    while tb is not None:
+        line_nr = tb.tb_lineno - 1
+        tb = tb.tb_next
+
+    lines = code.parsed_code.split("\n")
+    start_line = max(0, line_nr - 2)
+    end_line = min(len(lines), line_nr + 2)
+    error_lines: str = [
+        e.replace("   ", f"    {i} ", 1)
+        if i != line_nr
+        else e.replace("   ", f"--> {i} ", 1)
+        for i, e in enumerate(lines)
+        if i >= start_line and i < end_line
+    ]
+    error_lines = "\n".join(error_lines)
+
+    error_msg = f"""
+Encountered while executing {code.service_func_name}:
+{traceback.format_exc()}
+{error_lines}"""
+    return error_msg
 
 
 def load_approved_policy_code(user_code_items: List[UserCode]) -> Any:

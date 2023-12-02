@@ -71,6 +71,7 @@ def run_uvicorn(
     node_type: Enum,
     host: str,
     port: int,
+    processes: int,
     reset: bool,
     dev_mode: bool,
     node_side_type: str,
@@ -96,21 +97,23 @@ def run_uvicorn(
 
             worker = worker_class.named(
                 name=name,
-                processes=0,
+                processes=processes,
                 reset=reset,
                 local_db=True,
                 node_type=node_type,
                 node_side_type=node_side_type,
                 enable_warnings=enable_warnings,
+                migrate=True,
             )
         else:
             worker = worker_class(
                 name=name,
-                processes=0,
+                processes=processes,
                 local_db=True,
                 node_type=node_type,
                 node_side_type=node_side_type,
                 enable_warnings=enable_warnings,
+                migrate=True,
             )
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)
@@ -160,6 +163,7 @@ def serve_node(
     node_side_type: NodeSideType = NodeSideType.HIGH_SIDE,
     host: str = "0.0.0.0",  # nosec
     port: int = 8080,
+    processes: int = 1,
     reset: bool = False,
     dev_mode: bool = False,
     tail: bool = False,
@@ -172,6 +176,7 @@ def serve_node(
             node_type,
             host,
             port,
+            processes,
             reset,
             dev_mode,
             node_side_type,
@@ -182,7 +187,11 @@ def serve_node(
     def stop():
         print(f"Stopping {name}")
         server_process.terminate()
-        server_process.join()
+        server_process.join(3)
+        if server_process.is_alive():
+            # this is needed because often the process is still alive
+            server_process.kill()
+            print("killed")
 
     def start():
         print(f"Starting {name} server on {host}:{port}")

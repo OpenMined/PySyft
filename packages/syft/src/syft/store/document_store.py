@@ -355,6 +355,7 @@ class StorePartition:
     def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
         locked = self.lock.acquire(blocking=True)
         if not locked:
+            print("FAILED TO LOCK")
             return Err("Failed to acquire lock for the operation")
 
         try:
