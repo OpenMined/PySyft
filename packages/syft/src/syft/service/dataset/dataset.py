@@ -777,10 +777,12 @@ def add_msg_creation_time(context: TransformContext) -> TransformContext:
     context.output["created_at"] = DateTime.now()
     return context
 
+
 def add_default_node_uid(context: TransformContext) -> TransformContext:
     if context.output["node_uid"] is None:
         context.output["node_uid"] = context.node.id
     return context
+
 
 @transform(CreateAsset, Asset)
 def createasset_to_asset() -> List[Callable]:
