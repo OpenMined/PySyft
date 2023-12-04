@@ -6,6 +6,8 @@ from typing import Optional
 from typing import Union
 
 # third party
+from result import Err
+from result import Ok
 from result import OkErr
 from result import Result
 
@@ -32,6 +34,7 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .user_code import SubmitUserCode
 from .user_code import UserCode
@@ -64,6 +67,37 @@ class UserCodeService(AbstractService):
         result = self.stash.set(context.credentials, code.to(UserCode, context=context))
         return result
 
+    @service_method(
+        path="code.get_by_service_func_name",
+        name="get_by_service_func_name",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def get_by_service_name(
+        self, context: AuthedServiceContext, service_func_name: str
+    ):
+        result = self.stash.get_by_service_func_name(
+            context.credentials, service_func_name=service_func_name
+        )
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return result.ok()
+
+    def solve_nested_requests(self, context: AuthedServiceContext, code: UserCode):
+        nested_requests = code.nested_requests
+        nested_codes = {}
+        for service_func_name, version in nested_requests.items():
+            codes = self.get_by_service_name(
+                context=context, service_func_name=service_func_name
+            )
+            if isinstance(codes, SyftError):
+                return codes
+            if version == "latest":
+                nested_codes[service_func_name] = codes[-1]
+            else:
+                nested_codes[service_func_name] = codes[int(version)]
+
+        return nested_codes
+
     def _request_code_execution(
         self,
         context: AuthedServiceContext,
@@ -71,10 +105,33 @@ class UserCodeService(AbstractService):
         reason: Optional[str] = "",
     ):
         user_code: UserCode = code.to(UserCode, context=context)
+        return self._request_code_execution_inner(context, user_code, reason)
+
+    def _request_code_execution_inner(
+        self,
+        context: AuthedServiceContext,
+        user_code: UserCode,
+        reason: Optional[str] = "",
+    ):
         if not all(
             x in user_code.input_owner_verify_keys for x in user_code.output_readers
         ):
             raise ValueError("outputs can only be distributed to input owners")
+
+        # check if the code with the same name and content already exists in the stash
+
+        find_results = self.stash.get_by_code_hash(
+            context.credentials, code_hash=user_code.code_hash
+        )
+        if find_results.is_err():
+            return SyftError(message=str(find_results.err()))
+        find_results = find_results.ok()
+
+        if find_results is not None:
+            return SyftError(
+                message="The code to be submitted (name and content) already exists"
+            )
+
         result = self.stash.set(context.credentials, user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -131,7 +188,9 @@ class UserCodeService(AbstractService):
             return result.ok()
         return SyftError(message=result.err())
 
-    @service_method(path="code.get_by_id", name="get_by_id")
+    @service_method(
+        path="code.get_by_id", name="get_by_id", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
     def get_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
@@ -214,10 +273,38 @@ class UserCodeService(AbstractService):
         else:
             return SyftError(message="Endpoint only supported for enclave code")
 
+    def is_execution_allowed(self, code, context, output_policy):
+        if not code.status.approved:
+            return code.status.get_status_message()
+        # Check if the user has permission to execute the code.
+        elif not (has_code_permission := self.has_code_permission(code, context)):
+            return has_code_permission
+        elif code.output_policy is None:
+            return SyftError("Output policy not approved", code)
+        elif not output_policy.valid:
+            return output_policy.valid
+        else:
+            return True
+
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
+        """Call a User Code Function"""
+        kwargs.pop("result_id", None)
+        result = self._call(context, uid, **kwargs)
+        if result.is_err():
+            return SyftError(message=result.err())
+        else:
+            return result.ok()
+
+    def _call(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        result_id: Optional[UID] = None,
+        **kwargs: Any,
+    ) -> Result[ActionObject, Err]:
         """Call a User Code Function"""
         try:
             # Unroll variables
@@ -226,57 +313,78 @@ class UserCodeService(AbstractService):
             # get code item
             code_result = self.stash.get_by_uid(context.credentials, uid=uid)
             if code_result.is_err():
-                return SyftError(message=code_result.err())
+                return code_result
             code: UserCode = code_result.ok()
 
-            if not code.status.approved:
-                return code.status.get_status_message()
-
-            # Check if the user has permission to execute the code.
-            if not (has_code_permission := self.has_code_permission(code, context)):
-                return has_code_permission
-
-            if (output_policy := code.output_policy) is None:
-                return SyftError("Output policy not approved", code)
-
-            # Check if the OutputPolicy is valid
-            if not (is_valid := output_policy.valid):
-                if len(output_policy.output_history) > 0:
-                    result = resolve_outputs(
-                        context=context, output_ids=output_policy.last_output_ids
-                    )
-                    return result.as_empty()
-                return is_valid
+            output_policy = code.output_policy
+            if not context.has_execute_permissions:
+                can_execute = self.is_execution_allowed(
+                    code=code, context=context, output_policy=output_policy
+                )
+                if not can_execute:
+                    if output_policy is None:
+                        return Err(
+                            "UserCodeStatus.DENIED: Function has no output policy"
+                        )
+                    if not (is_valid := output_policy.valid):
+                        if len(output_policy.output_history) > 0:
+                            result = resolve_outputs(
+                                context=context,
+                                output_ids=output_policy.last_output_ids,
+                            )
+                            return Ok(result.as_empty())
+                        else:
+                            return is_valid.to_result()
+                    return can_execute.to_result()
 
             # Execute the code item
             action_service = context.node.get_service("actionservice")
 
-            output_result: Result[
+            result_action_object: Result[
                 Union[ActionObject, TwinObject], str
-            ] = action_service._user_code_execute(context, code, kwarg2id)
+            ] = action_service._user_code_execute(
+                context, code, kwarg2id, result_id=result_id
+            )
+            if result_action_object.is_err():
+                return result_action_object
+            else:
+                result_action_object = result_action_object.ok()
+
+            output_result = action_service.set_result_to_store(
+                result_action_object, context, code.output_policy
+            )
 
             if output_result.is_err():
-                return SyftError(message=output_result.err())
+                return output_result
             result = output_result.ok()
 
             # Apply Output Policy to the results and update the OutputPolicyState
-            output_policy.apply_output(context=context, outputs=result)
-            code.output_policy = output_policy
-            if not (
-                update_success := self.update_code_state(
-                    context=context, code_item=code
-                )
-            ):
-                return update_success
+
+            # this currently only works for nested syft_functions
+            if not context.has_execute_permissions:
+                output_policy.apply_output(context=context, outputs=result)
+                code.output_policy = output_policy
+                if not (
+                    update_success := self.update_code_state(
+                        context=context, code_item=code
+                    )
+                ):
+                    return update_success.to_result()
 
             if isinstance(result, TwinObject):
-                return result.mock
+                return Ok(result.mock)
             elif result.is_mock:
-                return result
+                return Ok(result)
+            elif result.syft_action_data_type is Err:
+                # result contains the error but the request was handled correctly
+                return result.syft_action_data
             else:
-                return result.as_empty()
+                return Ok(result.as_empty())
         except Exception as e:
-            return SyftError(message=f"Failed to run. {e}")
+            # stdlib
+            import traceback
+
+            return Err(value=f"Failed to run. {e}, {traceback.format_exc()}")
 
     def has_code_permission(self, code_item, context):
         if not (

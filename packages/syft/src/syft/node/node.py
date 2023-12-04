@@ -10,6 +10,7 @@ from functools import partial
 import hashlib
 from multiprocessing import current_process
 import os
+from pathlib import Path
 import subprocess  # nosec
 import traceback
 from typing import Any
@@ -23,9 +24,6 @@ from typing import Union
 import uuid
 
 # third party
-import gevent
-import gipc
-from gipc.gipc import _GIPCDuplexHandle
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
@@ -64,6 +62,9 @@ from ..service.data_subject.data_subject_member_service import DataSubjectMember
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
+from ..service.job.job_service import JobService
+from ..service.job.job_stash import Job
+from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.network.network_service import NetworkService
@@ -71,11 +72,16 @@ from ..service.notification.notification_service import NotificationService
 from ..service.object_search.migration_state_service import MigrateStateService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
+from ..service.queue.base_queue import QueueConsumer
+from ..service.queue.base_queue import QueueProducer
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
+from ..service.queue.queue_service import QueueService
+from ..service.queue.queue_stash import ActionQueueItem
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
 from ..service.queue.zmq_queue import QueueConfig
+from ..service.queue.zmq_queue import ZMQClientConfig
 from ..service.queue.zmq_queue import ZMQQueueConfig
 from ..service.request.request_service import RequestService
 from ..service.response import SyftError
@@ -90,6 +96,7 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
+from ..service.worker.worker_service import WorkerService
 from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
@@ -132,6 +139,7 @@ NODE_NAME = "NODE_NAME"
 NODE_SIDE_TYPE = "NODE_SIDE_TYPE"
 
 DEFAULT_ROOT_EMAIL = "DEFAULT_ROOT_EMAIL"
+DEFAULT_ROOT_USERNAME = "DEFAULT_ROOT_USERNAME"
 DEFAULT_ROOT_PASSWORD = "DEFAULT_ROOT_PASSWORD"  # nosec
 
 
@@ -159,6 +167,10 @@ def get_default_root_email() -> Optional[str]:
     return get_env(DEFAULT_ROOT_EMAIL, "info@openmined.org")
 
 
+def get_default_root_username() -> Optional[str]:
+    return get_env(DEFAULT_ROOT_USERNAME, "Jane Doe")
+
+
 def get_default_root_password() -> Optional[str]:
     return get_env(DEFAULT_ROOT_PASSWORD, "changethis")  # nosec
 
@@ -184,6 +196,7 @@ signing_key_env = get_private_key_env()
 node_uid_env = get_node_uid_env()
 
 default_root_email = get_default_root_email()
+default_root_username = get_default_root_username()
 default_root_password = get_default_root_password()
 
 
@@ -237,6 +250,7 @@ class Node(AbstractNode):
         action_store_config: Optional[StoreConfig] = None,
         document_store_config: Optional[StoreConfig] = None,
         root_email: str = default_root_email,
+        root_username: str = default_root_username,
         root_password: str = default_root_password,
         processes: int = 0,
         is_subprocess: bool = False,
@@ -247,16 +261,19 @@ class Node(AbstractNode):
         queue_config: Optional[QueueConfig] = None,
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
+        dev_mode: bool = False,
+        migrate: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
+        self.dev_mode = dev_mode
         if node_uid_env is not None:
             self.id = UID.from_string(node_uid_env)
         else:
             if id is None:
                 id = UID()
             self.id = id
-        self.packages = get_venv_packages()
+        self.packages = ""
 
         self.signing_key = None
         if signing_key_env is not None:
@@ -275,10 +292,14 @@ class Node(AbstractNode):
         services = (
             [
                 UserService,
+                WorkerService,
                 SettingsService,
                 ActionService,
+                LogService,
                 DatasetService,
                 UserCodeService,
+                QueueService,
+                JobService,
                 RequestService,
                 DataSubjectService,
                 NetworkService,
@@ -317,7 +338,7 @@ class Node(AbstractNode):
         self._construct_services()
 
         create_admin_new(  # nosec B106
-            name="Jane Doe",
+            name=root_username,
             email=root_email,
             password=root_password,
             node=self,
@@ -334,15 +355,25 @@ class Node(AbstractNode):
 
         self.post_init()
         self.create_initial_settings(admin_email=root_email)
-        if not (self.is_subprocess or self.processes == 0):
-            self.init_queue_manager(queue_config=queue_config)
+
+        self.init_queue_manager(queue_config=queue_config)
 
         self.init_blob_storage(config=blob_storage_config)
 
         # Migrate data before any operation on db
-        self.find_and_migrate_data()
+        if migrate:
+            self.find_and_migrate_data()
 
         NodeRegistry.set_node_for(self.id, self)
+
+    @property
+    def runs_in_docker(self):
+        path = "/proc/self/cgroup"
+        return (
+            os.path.exists("/.dockerenv")
+            or os.path.isfile(path)
+            and any("docker" in line for line in open(path))
+        )
 
     def init_blob_storage(self, config: Optional[BlobStorageConfig] = None) -> None:
         if config is None:
@@ -355,21 +386,48 @@ class Node(AbstractNode):
         self.blob_store_config = config_
         self.blob_storage_client = config_.client_type(config=config_.client_config)
 
+    def stop(self):
+        for consumer_list in self.queue_manager.consumers.values():
+            for c in consumer_list:
+                c.close()
+        for p in self.queue_manager.producers.values():
+            p.close()
+
     def init_queue_manager(self, queue_config: Optional[QueueConfig]):
         queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
+        self.queue_config = queue_config_
 
         MessageHandlers = [APICallMessageHandler]
 
         self.queue_manager = QueueManager(config=queue_config_)
         for message_handler in MessageHandlers:
             queue_name = message_handler.queue_name
-            producer = self.queue_manager.create_producer(
-                queue_name=queue_name,
-            )
-            consumer = self.queue_manager.create_consumer(
-                message_handler, producer.address
-            )
-            consumer.run()
+            # client config
+            if getattr(queue_config_.client_config, "create_producer", True):
+                context = AuthedServiceContext(
+                    node=self,
+                    credentials=self.verify_key,
+                    role=ServiceRole.ADMIN,
+                )
+                producer: QueueProducer = self.queue_manager.create_producer(
+                    queue_name=queue_name, queue_stash=self.queue_stash, context=context
+                )
+                producer.run()
+                address = producer.address
+            else:
+                port = queue_config_.client_config.queue_port
+                if port is not None:
+                    address = f"tcp://localhost:{port}"
+                else:
+                    address = None
+
+            for _ in range(queue_config_.client_config.n_consumers):
+                if address is None:
+                    raise ValueError("address unknown for consumers")
+                consumer: QueueConsumer = self.queue_manager.create_consumer(
+                    message_handler, address=address
+                )
+                consumer.run()
 
     @classmethod
     def named(
@@ -383,6 +441,11 @@ class Node(AbstractNode):
         node_type: Union[str, NodeType] = NodeType.DOMAIN,
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
+        n_consumers: int = 0,
+        create_producer: bool = False,
+        queue_port: Optional[int] = None,
+        dev_mode: bool = False,
+        migrate: bool = False,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
@@ -416,6 +479,12 @@ class Node(AbstractNode):
                 db.commit()
                 db.close()
 
+            # remove lock files for reading
+            # we should update this to partition locks per node
+            for f in Path("/tmp/sherlock").glob("*.json"):  # nosec
+                if f.is_file():
+                    f.unlink()
+
             with contextlib.suppress(FileNotFoundError, PermissionError):
                 if os.path.exists(store_config.file_path):
                     os.unlink(store_config.file_path)
@@ -433,6 +502,17 @@ class Node(AbstractNode):
                 client_config=blob_client_config
             )
 
+        if queue_port is not None or n_consumers > 0 or create_producer:
+            queue_config = ZMQQueueConfig(
+                client_config=ZMQClientConfig(
+                    create_producer=create_producer,
+                    queue_port=queue_port,
+                    n_consumers=n_consumers,
+                )
+            )
+        else:
+            queue_config = None
+
         return cls(
             name=name,
             id=uid,
@@ -444,6 +524,9 @@ class Node(AbstractNode):
             node_side_type=node_side_type,
             enable_warnings=enable_warnings,
             blob_storage_config=blob_storage_config,
+            queue_config=queue_config,
+            dev_mode=dev_mode,
+            migrate=migrate,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -669,14 +752,17 @@ class Node(AbstractNode):
             )
         elif isinstance(action_store_config, MongoStoreConfig):
             self.action_store = MongoActionStore(
-                store_config=action_store_config,
-                root_verify_key=self.verify_key,
+                root_verify_key=self.verify_key, store_config=action_store_config
             )
         else:
             self.action_store = DictActionStore(root_verify_key=self.verify_key)
 
         self.action_store_config = action_store_config
         self.queue_stash = QueueStash(store=self.document_store)
+
+    @property
+    def job_stash(self):
+        return self.get_service("jobservice").stash
 
     def _construct_services(self):
         self.service_path_map = {}
@@ -687,10 +773,14 @@ class Node(AbstractNode):
                 kwargs["store"] = self.action_store
             store_services = [
                 UserService,
+                WorkerService,
                 SettingsService,
                 DatasetService,
                 UserCodeService,
+                LogService,
                 RequestService,
+                QueueService,
+                JobService,
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
@@ -794,13 +884,37 @@ class Node(AbstractNode):
 
         return True
 
+    def await_future(
+        self, credentials: SyftVerifyKey, uid: UID
+    ) -> Union[Optional[QueueItem], SyftError]:
+        # stdlib
+        from time import sleep
+
+        # relative
+        from ..service.queue.queue import Status
+
+        while True:
+            result = self.queue_stash.pop_on_complete(credentials, uid)
+            if not result.is_ok():
+                return result.err()
+            else:
+                res = result.ok()
+                if res.status == Status.COMPLETED:
+                    return res
+            sleep(0.1)
+
     def resolve_future(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Union[Optional[QueueItem], SyftError]:
         result = self.queue_stash.pop_on_complete(credentials, uid)
 
         if result.is_ok():
-            return result.ok()
+            queue_obj = result.ok()
+            queue_obj._set_obj_location_(
+                node_uid=self.id,
+                credentials=credentials,
+            )
+            return queue_obj
         return result.err()
 
     def forward_message(
@@ -867,17 +981,25 @@ class Node(AbstractNode):
         return role
 
     def handle_api_call(
-        self, api_call: Union[SyftAPICall, SignedSyftAPICall]
+        self,
+        api_call: Union[SyftAPICall, SignedSyftAPICall],
+        job_id: Optional[UID] = None,
+        check_call_location=True,
     ) -> Result[SignedSyftAPICall, Err]:
         # Get the result
-        result = self.handle_api_call_with_unsigned_result(api_call)
+        result = self.handle_api_call_with_unsigned_result(
+            api_call, job_id=job_id, check_call_location=check_call_location
+        )
         # Sign the result
         signed_result = SyftAPIData(data=result).sign(self.signing_key)
 
         return signed_result
 
     def handle_api_call_with_unsigned_result(
-        self, api_call: Union[SyftAPICall, SignedSyftAPICall]
+        self,
+        api_call: Union[SyftAPICall, SignedSyftAPICall],
+        job_id: Optional[UID] = None,
+        check_call_location=True,
     ) -> Result[Union[QueueItem, SyftObject], Err]:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return SyftError(
@@ -887,7 +1009,7 @@ class Node(AbstractNode):
             if not api_call.is_valid:
                 return SyftError(message="Your message signature is invalid")  # type: ignore
 
-        if api_call.message.node_uid != self.id:
+        if api_call.message.node_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
         if api_call.message.path == "queue":
             return self.resolve_future(
@@ -900,13 +1022,13 @@ class Node(AbstractNode):
         result = None
         is_blocking = api_call.message.blocking
 
-        if is_blocking or self.is_subprocess or self.processes == 0:
+        if is_blocking or self.is_subprocess:
             credentials: SyftVerifyKey = api_call.credentials
             api_call = api_call.message
 
             role = self.get_role_for_credentials(credentials=credentials)
             context = AuthedServiceContext(
-                node=self, credentials=credentials, role=role
+                node=self, credentials=credentials, role=role, job_id=job_id
             )
             AuthNodeContextRegistry.set_node_context(self.id, context, credentials)
 
@@ -934,21 +1056,99 @@ class Node(AbstractNode):
                     message=f"Exception calling {api_call.path}. {traceback.format_exc()}"
                 )
         else:
-            task_uid = UID()
-            item = QueueItem(id=task_uid, node_uid=self.id)
-            # 🟡 TODO 36: Needs distributed lock
-            self.queue_stash.set_placeholder(self.verify_key, item)
-
-            # Publisher system which pushes to a Queue
-            worker_settings = WorkerSettings.from_node(node=self)
-
-            message_bytes = _serialize(
-                [task_uid, api_call, worker_settings], to_bytes=True
-            )
-            self.queue_manager.send(message=message_bytes, queue_name="api_call")
-
-            return item
+            return self.add_api_call_to_queue(api_call)
         return result
+
+    def add_action_to_queue(
+        self, action, credentials, parent_job_id=None, has_execute_permissions=False
+    ):
+        job_id = UID()
+        task_uid = UID()
+        worker_settings = WorkerSettings.from_node(node=self)
+
+        queue_item = ActionQueueItem(
+            id=task_uid,
+            node_uid=self.id,
+            syft_client_verify_key=credentials,
+            syft_node_location=self.id,
+            job_id=job_id,
+            worker_settings=worker_settings,
+            args=[],
+            kwargs={"action": action},
+            has_execute_permissions=has_execute_permissions,
+        )
+        return self.add_queueitem_to_queue(
+            queue_item, credentials, action, parent_job_id
+        )
+
+    def add_queueitem_to_queue(
+        self, queue_item, credentials, action=None, parent_job_id=None
+    ):
+        log_id = UID()
+
+        result_obj = ActionObject.empty()
+        if action is not None:
+            result_obj.id = action.result_id
+            result_obj.syft_resolved = False
+
+        job = Job(
+            id=queue_item.job_id,
+            result=result_obj,
+            node_uid=self.id,
+            syft_client_verify_key=credentials,
+            syft_node_location=self.id,
+            log_id=log_id,
+            parent_job_id=parent_job_id,
+            action=action,
+        )
+
+        # 🟡 TODO 36: Needs distributed lock
+        self.queue_stash.set_placeholder(credentials, queue_item)
+        self.job_stash.set(credentials, job)
+
+        log_service = self.get_service("logservice")
+        role = self.get_role_for_credentials(credentials=credentials)
+        context = AuthedServiceContext(node=self, credentials=credentials, role=role)
+        result = log_service.add(context, log_id)
+        if isinstance(result, SyftError):
+            return result
+        return job
+
+    def add_api_call_to_queue(self, api_call, parent_job_id=None):
+        unsigned_call = api_call
+        if isinstance(api_call, SignedSyftAPICall):
+            unsigned_call = api_call.message
+
+        is_user_code = unsigned_call.path == "code.call"
+
+        service, method = unsigned_call.path.split(".")
+
+        action = None
+        if is_user_code:
+            action = Action.from_api_call(unsigned_call)
+            return self.add_action_to_queue(
+                action, api_call.credentials, parent_job_id=parent_job_id
+            )
+        else:
+            worker_settings = WorkerSettings.from_node(node=self)
+            queue_item = QueueItem(
+                id=UID(),
+                node_uid=self.id,
+                syft_client_verify_key=api_call.credentials,
+                syft_node_location=self.id,
+                job_id=UID(),
+                worker_settings=worker_settings,
+                service=service,
+                method=method,
+                args=unsigned_call.args,
+                kwargs=unsigned_call.kwargs,
+            )
+            return self.add_queueitem_to_queue(
+                queue_item,
+                api_call.credentials,
+                action=None,
+                parent_job_id=parent_job_id,
+            )
 
     def get_api(
         self,
@@ -1005,88 +1205,6 @@ class Node(AbstractNode):
                 return None
         except Exception as e:
             print("create_worker_metadata failed", e)
-
-
-def task_producer(
-    pipe: _GIPCDuplexHandle, api_call: SyftAPICall, blocking: bool
-) -> Any:
-    try:
-        result = None
-        with pipe:
-            pipe.put(api_call)
-            gevent.sleep(0)
-            if blocking:
-                try:
-                    result = pipe.get()
-                except EOFError:
-                    pass
-            pipe.close()
-        if blocking:
-            return result
-    except gipc.gipc.GIPCClosed:
-        pass
-    except Exception as e:
-        print("Exception in task_producer", e)
-
-
-def task_runner(
-    pipe: _GIPCDuplexHandle,
-    worker_settings: WorkerSettings,
-    task_uid: UID,
-    blocking: bool,
-) -> None:
-    worker = Node(
-        id=worker_settings.id,
-        name=worker_settings.name,
-        signing_key=worker_settings.signing_key,
-        document_store_config=worker_settings.document_store_config,
-        action_store_config=worker_settings.action_store_config,
-        blob_storage_config=worker_settings.blob_store_config,
-        is_subprocess=True,
-    )
-    try:
-        with pipe:
-            api_call = pipe.get()
-
-            result = worker.handle_api_call(api_call)
-            if blocking:
-                pipe.put(result)
-            else:
-                item = QueueItem(
-                    node_uid=worker.id, id=task_uid, result=result, resolved=True
-                )
-                worker.queue_stash.set_result(worker.verify_key, item)
-                worker.queue_stash.partition.close()
-            pipe.close()
-    except Exception as e:
-        print("Exception in task_runner", e)
-        raise e
-
-
-def queue_task(
-    api_call: SyftAPICall,
-    worker_settings: WorkerSettings,
-    task_uid: UID,
-    blocking: bool,
-) -> Optional[Any]:
-    with gipc.pipe(encoder=gipc_encoder, decoder=gipc_decoder, duplex=True) as (
-        cend,
-        pend,
-    ):
-        process = gipc.start_process(
-            task_runner, args=(cend, worker_settings, task_uid, blocking)
-        )
-        producer = gevent.spawn(task_producer, pend, api_call, blocking)
-        try:
-            process.join()
-        except KeyboardInterrupt:
-            producer.kill(block=True)
-            process.terminate()
-        process.join()
-
-    if blocking:
-        return producer.value
-    return None
 
 
 def create_admin_new(

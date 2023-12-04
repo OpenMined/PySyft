@@ -1,10 +1,12 @@
 # stdlib
+from collections import defaultdict
 import datetime
 import json
 from pathlib import Path
 import threading
 import time
 from typing import Callable
+from typing import Dict
 from typing import Optional
 import uuid
 
@@ -17,7 +19,8 @@ from sherlock.lock import RedisLock
 
 # relative
 from ..serde.serializable import serializable
-from ..util.logger import debug
+
+THREAD_FILE_LOCKS: Dict[int, Dict[str, int]] = defaultdict(dict)
 
 
 @serializable()
@@ -190,7 +193,8 @@ class PatchedFileLock(FileLock):
 
         try:
             result = cbk()
-        except BaseException:
+        except BaseException as e:
+            print(e)
             result = False
 
         self._lock_py_thread._release()
@@ -200,7 +204,8 @@ class PatchedFileLock(FileLock):
         return self._thread_safe_cbk(self._acquire_file_lock)
 
     def _release(self) -> None:
-        return self._thread_safe_cbk(self._release_file_lock)
+        res = self._thread_safe_cbk(self._release_file_lock)
+        return res
 
     def _acquire_file_lock(self) -> bool:
         if not self._lock_file_enabled:
@@ -217,6 +222,8 @@ class PatchedFileLock(FileLock):
                         break
                     except BaseException:
                         time.sleep(0.1)
+                    if _retry == 9:
+                        pass
 
                 now = self._now()
                 has_expired = self._has_expired(data, now)
@@ -382,11 +389,10 @@ class SyftLock(BaseLock):
                 elapsed = time.time() - start_time
             else:
                 return True
-        debug(
-            "Timeout elapsed after %s seconds "
-            "while trying to acquiring "
-            "lock." % self.timeout
+        print(
+            f"Timeout elapsed after {self.timeout} seconds while trying to acquiring lock."
         )
+        # third party
         return False
 
     def _acquire(self) -> bool:

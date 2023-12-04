@@ -118,6 +118,7 @@ class Settings(BaseSettings):
     S3_PRESIGNED_TIMEOUT_SECS: int = int(
         os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800)
     )  # 30 minutes in seconds
+    SEAWEED_MOUNT_PORT: int = int(os.getenv("SEAWEED_MOUNT_PORT", 4001))
 
     REDIS_HOST: str = str(os.getenv("REDIS_HOST", "redis"))
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
@@ -132,6 +133,13 @@ class Settings(BaseSettings):
     MONGO_PORT: int = int(os.getenv("MONGO_PORT", 0))
     MONGO_USERNAME: str = str(os.getenv("MONGO_USERNAME", ""))
     MONGO_PASSWORD: str = str(os.getenv("MONGO_PASSWORD", ""))
+    DEV_MODE: bool = True if os.getenv("DEV_MODE", "false").lower() == "true" else False
+    # ZMQ stuff
+    QUEUE_PORT: int = int(os.getenv("QUEUE_PORT", 0))
+    CREATE_PRODUCER: bool = (
+        True if os.getenv("CREATE_PRODUCER", "false").lower() == "true" else False
+    )
+    N_CONSUMERS: int = int(os.getenv("N_CONSUMERS", 0))
     SQLITE_PATH: str = os.path.expandvars("$HOME/data/db/")
     SINGLE_CONTAINER_MODE: bool = str_to_bool(os.getenv("SINGLE_CONTAINER_MODE", False))
 
@@ -139,7 +147,6 @@ class Settings(BaseSettings):
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False
     )
     ASSOCIATION_TIMEOUT: int = 10
-    DEV_MODE: bool = True if os.getenv("DEV_MODE", "false").lower() == "true" else False
 
     class Config:
         case_sensitive = True
