@@ -17,13 +17,17 @@ jobs:
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # free 10GB of space
       - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
 
       # Build the docker image for testing
       - name: Build a Docker image
@@ -53,7 +57,7 @@ jobs:
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Snyk CLI to check for security issues
         # Snyk can be used to break the build when it detects security issues.
         # In this case we want to upload the SAST issues to GitHub Code Scanning
@@ -64,9 +68,13 @@ jobs:
 
       # free 10GB of space
       - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
 
       # Build the docker image for testing
       - name: Build a Docker image
@@ -102,7 +110,7 @@ jobs:
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # Build the docker image for testing
       - name: Build a Docker image
@@ -133,7 +141,7 @@ jobs:
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Snyk CLI to check for security issues
         # Snyk can be used to break the build when it detects security issues.
         # In this case we want to upload the SAST issues to GitHub Code Scanning
@@ -169,154 +177,6 @@ jobs:
         with:
           sarif_file: snyk-code.sarif
 
-  scan-tailscale-trivy:
-    permissions:
-      contents: read # for actions/checkout to fetch code
-      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      # Build the docker image for testing
-      - name: Build a Docker image
-        shell: bash
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/tailscale.dockerfile packages/grid/vpn -t tailscale:${{ github.sha }} --no-cache
-        # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
-
-      - name: Run Trivy vulnerability scanner
-        continue-on-error: true
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: "tailscale:${{ github.sha }}"
-          format: "template"
-          template: "@/contrib/sarif.tpl"
-          output: "trivy-results.sarif"
-          severity: "CRITICAL,HIGH"
-          timeout: "10m0s"
-
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: "trivy-results.sarif"
-
-  scan-tailscale-snyk:
-    permissions:
-      contents: read # for actions/checkout to fetch code
-      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Snyk CLI to check for security issues
-        # Snyk can be used to break the build when it detects security issues.
-        # In this case we want to upload the SAST issues to GitHub Code Scanning
-        uses: snyk/actions/setup@master
-        env:
-          # This is where you will need to introduce the Snyk API token created with your Snyk account
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-      # Build the docker image for testing
-      - name: Build a Docker image
-        shell: bash
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/tailscale.dockerfile packages/grid/vpn -t tailscale:${{ github.sha }} --no-cache
-        # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
-
-      - name: Snyk auth
-        shell: bash
-        run: snyk config set api=$SNYK_TOKEN
-        env:
-          # This is where you will need to introduce the Snyk API token created with your Snyk account
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-      - name: Snyk Container test
-        continue-on-error: true
-        shell: bash
-        run: snyk container test tailscale:${{ github.sha }} --file=packages/grid/vpn/tailscale.dockerfile --sarif --sarif-file-output=snyk-code.sarif
-        env:
-          # This is where you will need to introduce the Snyk API token created with your Snyk account
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-        # Push the Snyk Code results into GitHub Code Scanning tab
-      - name: Upload result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: snyk-code.sarif
-
-  scan-headscale-trivy:
-    permissions:
-      contents: read # for actions/checkout to fetch code
-      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      # Build the docker image for testing
-      - name: Build a Docker image
-        shell: bash
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/headscale.dockerfile packages/grid/vpn -t headscale:${{ github.sha }} --no-cache
-        # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
-
-      - name: Run Trivy vulnerability scanner
-        continue-on-error: true
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: "headscale:${{ github.sha }}"
-          format: "template"
-          template: "@/contrib/sarif.tpl"
-          output: "trivy-results.sarif"
-          severity: "CRITICAL,HIGH"
-          timeout: "10m0s"
-
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: "trivy-results.sarif"
-
-  scan-headscale-snyk:
-    permissions:
-      contents: read # for actions/checkout to fetch code
-      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Snyk CLI to check for security issues
-        # Snyk can be used to break the build when it detects security issues.
-        # In this case we want to upload the SAST issues to GitHub Code Scanning
-        uses: snyk/actions/setup@master
-        env:
-          # This is where you will need to introduce the Snyk API token created with your Snyk account
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-      # Build the docker image for testing
-      - name: Build a Docker image
-        shell: bash
-        run: DOCKER_BUILDKIT=1 docker build -f packages/grid/vpn/headscale.dockerfile packages/grid/vpn -t headscale:${{ github.sha }} --no-cache
-        # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
-
-      - name: Snyk auth
-        shell: bash
-        run: snyk config set api=$SNYK_TOKEN
-        env:
-          # This is where you will need to introduce the Snyk API token created with your Snyk account
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-      - name: Snyk Container test
-        continue-on-error: true
-        shell: bash
-        run: snyk container test headscale:${{ github.sha }} --file=packages/grid/vpn/headscale.dockerfile --sarif --sarif-file-output=snyk-code.sarif
-        env:
-          # This is where you will need to introduce the Snyk API token created with your Snyk account
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-        # Push the Snyk Code results into GitHub Code Scanning tab
-      - name: Upload result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: snyk-code.sarif
-
   scan-syft-requirements:
     permissions:
       contents: read # for actions/checkout to fetch code
@@ -324,10 +184,10 @@ jobs:
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
@@ -359,7 +219,7 @@ jobs:
 
           #upload SBOM to github artifacts
       - name: Upload SBOM to GitHub Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: syft.sbom.json
           path: syft.sbom.json
@@ -371,7 +231,7 @@ jobs:
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       #Generate SBOM
       - name: Run Trivy vulnerability scanner
@@ -385,7 +245,7 @@ jobs:
 
         #Upload SBOM to GitHub Artifacts
       - name: Upload SBOM to GitHub Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: mongo-trivy-results.sbom.json
           path: mongo-trivy-results.sbom.json
@@ -413,7 +273,7 @@ jobs:
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Snyk CLI to check for security issues
         # Snyk can be used to break the build when it detects security issues.
         # In this case we want to upload the SAST issues to GitHub Code Scanning
@@ -450,7 +310,7 @@ jobs:
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       #Generate SBOM
       - name: Run Trivy vulnerability scanner
@@ -463,7 +323,7 @@ jobs:
           timeout: "10m0s"
           #Upload SBOM to GitHub Artifacts
       - name: Upload SBOM to GitHub Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: traefik-trivy-results.sbom.json
           path: traefik-trivy-results.sbom.json
@@ -492,7 +352,7 @@ jobs:
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Snyk CLI to check for security issues
         # Snyk can be used to break the build when it detects security issues.
         # In this case we want to upload the SAST issues to GitHub Code Scanning
@@ -529,7 +389,7 @@ jobs:
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       #Generate SBOM
       - name: Run Trivy vulnerability scanner
@@ -543,7 +403,7 @@ jobs:
 
         #Upload SBOM to GitHub Artifacts
       - name: Upload SBOM to GitHub Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: seaweedfs-trivy-results.sbom.json
           path: seaweedfs-trivy-results.sbom.json
@@ -571,7 +431,7 @@ jobs:
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Snyk CLI to check for security issues
         # Snyk can be used to break the build when it detects security issues.
         # In this case we want to upload the SAST issues to GitHub Code Scanning

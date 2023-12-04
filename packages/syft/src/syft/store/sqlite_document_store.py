@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from collections import defaultdict
 from copy import deepcopy
 from pathlib import Path
 import sqlite3
@@ -35,12 +36,43 @@ from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
 from .locks import FileLockingConfig
 from .locks import LockingConfig
+from .locks import SyftLock
+
+# here we can create a single connection per cache_key
+# since pytest is concurrent processes, we need to isolate each connection
+# by its filename and optionally the thread that its running in
+# we keep track of each SQLiteBackingStore init in REF_COUNTS
+# when it hits 0 we can close the connection and release the file descriptor
+SQLITE_CONNECTION_POOL_DB: Dict[str, sqlite3.Connection] = {}
+SQLITE_CONNECTION_POOL_CUR: Dict[str, sqlite3.Cursor] = {}
+REF_COUNTS: Dict[str, int] = defaultdict(int)
+
+
+def cache_key(db_name: str) -> str:
+    return f"{db_name}_{thread_ident()}"
 
 
 def _repr_debug_(value: Any) -> str:
     if hasattr(value, "_repr_debug_"):
         return str(value._repr_debug_())
     return repr(value)
+
+
+def raise_exception(table_name: str, e: Exception):
+    if "disk I/O error" in str(e):
+        message = f"Error usually related to concurrent writes. {str(e)}"
+        raise Exception(message)
+
+    if "Cannot operate on a closed database" in str(e):
+        message = (
+            "Error usually related to calling self.db.close()"
+            + f"before last SQLiteBackingStore.__del__ gets called. {str(e)}"
+        )
+        raise Exception(message)
+
+    # if its something else other than "table already exists" raise original e
+    if f"table {table_name} already exists" not in str(e):
+        raise e
 
 
 @serializable(attrs=["index_name", "settings", "store_config"])
@@ -69,9 +101,16 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.settings = settings
         self.store_config = store_config
         self._ddtype = ddtype
-        self._db: Dict[int, sqlite3.Connection] = {}
-        self._cur: Dict[int, sqlite3.Cursor] = {}
+        self.file_path = self.store_config.client_config.file_path
+        self.db_filename = store_config.client_config.filename
+
+        # if tempfile.TemporaryDirectory() varies from process to process
+        # could this cause different locks on the same file
+        temp_dir = tempfile.TemporaryDirectory().name
+        lock_path = Path(temp_dir) / "sqlite_locks" / self.db_filename
+        self.lock_config = FileLockingConfig(client_path=lock_path)
         self.create_table()
+        REF_COUNTS[cache_key(self.db_filename)] += 1
 
     @property
     def table_name(self) -> str:
@@ -83,45 +122,58 @@ class SQLiteBackingStore(KeyValueBackingStore):
         # there will be many threads handling incoming requests so we need to ensure
         # that different connections are used in each thread. By using a dict for the
         # _db and _cur we can ensure they are never shared
-        self.file_path = self.store_config.client_config.file_path
-        self._db[thread_ident()] = sqlite3.connect(
+
+        path = Path(self.file_path)
+        if not path.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+
+        connection = sqlite3.connect(
             self.file_path,
             timeout=self.store_config.client_config.timeout,
-            check_same_thread=self.store_config.client_config.check_same_thread,
+            check_same_thread=False,  # do we need this if we use the lock?
+            # check_same_thread=self.store_config.client_config.check_same_thread,
         )
-
         # TODO: Review OSX compatibility.
         # Set journal mode to WAL.
-        # self._db[thread_ident()].execute("pragma journal_mode=wal")
+        # connection.execute("pragma journal_mode=wal")
+        SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)] = connection
 
     def create_table(self) -> None:
         try:
-            self.cur.execute(
-                f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
-                + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
-                + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
-            )
-            self.db.commit()
-        except sqlite3.OperationalError as e:
-            if f"table {self.table_name} already exists" not in str(e):
-                raise e
+            with SyftLock(self.lock_config):
+                self.cur.execute(
+                    f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
+                    + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
+                    + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
+                )
+                self.db.commit()
+        except Exception as e:
+            raise_exception(self.table_name, e)
 
     @property
     def db(self) -> sqlite3.Connection:
-        if thread_ident() not in self._db:
+        if cache_key(self.db_filename) not in SQLITE_CONNECTION_POOL_DB:
             self._connect()
-        return self._db[thread_ident()]
+        return SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
 
     @property
     def cur(self) -> sqlite3.Cursor:
-        if thread_ident() not in self._cur:
-            self._cur[thread_ident()] = self.db.cursor()
+        if cache_key(self.db_filename) not in SQLITE_CONNECTION_POOL_CUR:
+            SQLITE_CONNECTION_POOL_CUR[cache_key(self.db_filename)] = self.db.cursor()
 
-        return self._cur[thread_ident()]
+        return SQLITE_CONNECTION_POOL_CUR[cache_key(self.db_filename)]
 
     def _close(self) -> None:
         self._commit()
-        self.db.close()
+        REF_COUNTS[cache_key(self.db_filename)] -= 1
+        if REF_COUNTS[cache_key(self.db_filename)] <= 0:
+            # once you close it seems like other object references can't re-use the
+            # same connection
+            self.db.close()
+            del SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
+        else:
+            # don't close yet because another SQLiteBackingStore is probably still open
+            pass
 
     def _commit(self) -> None:
         self.db.commit()
@@ -129,33 +181,42 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _execute(
         self, sql: str, *args: Optional[List[Any]]
     ) -> Result[Ok[sqlite3.Cursor], Err[str]]:
-        cursor: Optional[sqlite3.Cursor] = None
-        err = None
-        try:
-            cursor = self.cur.execute(sql, *args)
-        except BaseException as e:
-            self.db.rollback()  # Roll back all changes if an exception occurs.
-            err = Err(str(e))
-        else:
+        with SyftLock(self.lock_config):
+            cursor: Optional[sqlite3.Cursor] = None
+            err = None
+            try:
+                cursor = self.cur.execute(sql, *args)
+            except Exception as e:
+                raise_exception(self.table_name, e)
+
+            # TODO: Which exception is safe to rollback on?
+            # we should map out some more clear exceptions that can be returned
+            # rather than halting the program like disk I/O error etc
+            # self.db.rollback()  # Roll back all changes if an exception occurs.
+            # err = Err(str(e))
             self.db.commit()  # Commit if everything went ok
 
-        if err is not None:
-            return err
+            if err is not None:
+                return err
 
-        return Ok(cursor)
+            return Ok(cursor)
 
     def _set(self, key: UID, value: Any) -> None:
         if self._exists(key):
             self._update(key, value)
         else:
-            insert_sql = f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
+            insert_sql = (
+                f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
+            )
             data = _serialize(value, to_bytes=True)
             res = self._execute(insert_sql, [str(key), _repr_debug_(value), data])
             if res.is_err():
                 raise ValueError(res.err())
 
     def _update(self, key: UID, value: Any) -> None:
-        insert_sql = f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
+        insert_sql = (
+            f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
+        )
         data = _serialize(value, to_bytes=True)
         res = self._execute(insert_sql, [str(key), _repr_debug_(value), data, str(key)])
         if res.is_err():
@@ -283,7 +344,6 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return self._get_all().items()
 
     def pop(self, key: Any) -> Self:
-        # NOTE: not thread-safe
         value = self._get(key)
         self._delete(key)
         return value
@@ -298,6 +358,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         try:
             self._close()
         except BaseException:
+            print("Could not close connection")
             pass
 
 
@@ -315,9 +376,11 @@ class SQLiteStorePartition(KeyValueStorePartition):
     def close(self) -> None:
         self.lock.acquire()
         try:
-            self.data._close()
-            self.unique_keys._close()
-            self.searchable_keys._close()
+            # I think we don't want these now, because of the REF_COUNT?
+            # self.data._close()
+            # self.unique_keys._close()
+            # self.searchable_keys._close()
+            pass
         except BaseException:
             pass
         self.lock.release()

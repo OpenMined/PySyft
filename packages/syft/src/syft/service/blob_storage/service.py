@@ -74,7 +74,7 @@ class BlobStorageService(AbstractService):
         }
         # TODO: possible wrap this in try catch
         cfg = context.node.blob_store_config.client_config
-        init_request = requests.post(url=cfg.mount_url, json=args_dict)
+        init_request = requests.post(url=cfg.mount_url, json=args_dict)  # nosec
         print(init_request.content)
         # TODO check return code
 

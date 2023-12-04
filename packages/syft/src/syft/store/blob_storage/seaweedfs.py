@@ -39,7 +39,7 @@ from ...util.constants import DEFAULT_TIMEOUT
 
 READ_EXPIRATION_TIME = 1800  # seconds
 WRITE_EXPIRATION_TIME = 900  # seconds
-DEFAULT_CHUNK_SIZE = 1024**2  # 1 GB
+DEFAULT_CHUNK_SIZE = 1024**3  # 1 GB
 
 
 def _byte_chunks(bytes: BytesIO, size: int) -> Generator[bytes, None, None]:
@@ -118,7 +118,7 @@ class SeaweedFSClientConfig(BlobStorageClientConfig):
     @property
     def mount_url(self) -> str:
         if self.mount_port is None:
-            raise ValueError("Seaweed should be configuer with a mount port to mount")
+            raise ValueError("Seaweed should be configured with a mount port to mount")
         return f"http://{self.host}:{self.mount_port}/configure_azure"
 
 

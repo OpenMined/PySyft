@@ -1,5 +1,7 @@
 # stdlib
 from collections import defaultdict
+from collections.abc import MutableMapping
+from collections.abc import MutableSequence
 import hashlib
 import json
 import os
@@ -21,6 +23,7 @@ from ..serde.recursive import TYPE_BANK
 from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.response import SyftSuccess
+from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftBaseObject
 
 PROTOCOL_STATE_FILENAME = "protocol_version.json"
@@ -98,34 +101,38 @@ class DataProtocol:
     def build_state(self, stop_key: Optional[str] = None) -> dict:
         sorted_dict = sort_dict_naturally(self.protocol_history)
         state_dict = defaultdict(dict)
-        for k, _v in sorted_dict.items():
-            object_versions = sorted_dict[k]["object_versions"]
+        for protocol_number in sorted_dict:
+            object_versions = sorted_dict[protocol_number]["object_versions"]
             for canonical_name, versions in object_versions.items():
                 for version, object_metadata in versions.items():
                     action = object_metadata["action"]
                     version = object_metadata["version"]
                     hash_str = object_metadata["hash"]
                     state_versions = state_dict[canonical_name]
+                    state_version_hashes = [val[0] for val in state_versions.values()]
                     if action == "add" and (
                         str(version) in state_versions.keys()
-                        or hash_str in state_versions.values()
+                        or hash_str in state_version_hashes
                     ):
                         raise Exception(
                             f"Can't add {object_metadata} already in state {versions}"
                         )
                     elif action == "remove" and (
                         str(version) not in state_versions.keys()
-                        or hash_str not in state_versions.values()
+                        and hash_str not in state_version_hashes
                     ):
                         raise Exception(
                             f"Can't remove {object_metadata} missing from state {versions} for object {canonical_name}."
                         )
                     if action == "add":
-                        state_dict[canonical_name][str(version)] = hash_str
+                        state_dict[canonical_name][str(version)] = (
+                            hash_str,
+                            protocol_number,
+                        )
                     elif action == "remove":
                         del state_dict[canonical_name][str(version)]
             # stop early
-            if stop_key == k:
+            if stop_key == protocol_number:
                 return state_dict
         return state_dict
 
@@ -155,7 +162,7 @@ class DataProtocol:
                 if canonical_name not in state:
                     # new object so its an add
                     object_diff[canonical_name][str(version)] = {}
-                    object_diff[canonical_name][str(version)]["version"] = version
+                    object_diff[canonical_name][str(version)]["version"] = int(version)
                     object_diff[canonical_name][str(version)]["hash"] = hash_str
                     object_diff[canonical_name][str(version)]["action"] = "add"
                     continue
@@ -163,33 +170,45 @@ class DataProtocol:
                 versions = state[canonical_name]
                 if (
                     str(version) in versions.keys()
-                    and versions[str(version)] == hash_str
+                    and versions[str(version)][0] == hash_str
                 ):
                     # already there so do nothing
                     continue
                 elif str(version) in versions.keys():
+                    is_protocol_dev = versions[str(version)][1] == "dev"
+                    if is_protocol_dev:
+                        # force overwrite existing object so its an add
+                        object_diff[canonical_name][str(version)] = {}
+                        object_diff[canonical_name][str(version)]["version"] = int(
+                            version
+                        )
+                        object_diff[canonical_name][str(version)]["hash"] = hash_str
+                        object_diff[canonical_name][str(version)]["action"] = "add"
+                        continue
+
                     raise Exception(
                         f"{canonical_name} for class {cls.__name__} fqn {cls} "
                         + f"version {version} hash has changed. "
                         + f"{hash_str} not in {versions.values()}. "
                         + "Is a unique __canonical_name__ for this subclass missing? "
-                        + "If the class has changed you will need to bump the version number."
+                        + "If the class has changed you will need to define a new class with the changes, "
+                        + "with same __canonical_name__ and bump the __version__ number."
                     )
                 else:
                     # new object so its an add
                     object_diff[canonical_name][str(version)] = {}
-                    object_diff[canonical_name][str(version)]["version"] = version
+                    object_diff[canonical_name][str(version)]["version"] = int(version)
                     object_diff[canonical_name][str(version)]["hash"] = hash_str
                     object_diff[canonical_name][str(version)]["action"] = "add"
                     continue
 
         # now check for remove actions
         for canonical_name in state:
-            for version, hash_str in state[canonical_name].items():
+            for version, (hash_str, _) in state[canonical_name].items():
                 if canonical_name not in compare_dict:
                     # missing so its a remove
                     object_diff[canonical_name][str(version)] = {}
-                    object_diff[canonical_name][str(version)]["version"] = version
+                    object_diff[canonical_name][str(version)]["version"] = int(version)
                     object_diff[canonical_name][str(version)]["hash"] = hash_str
                     object_diff[canonical_name][str(version)]["action"] = "remove"
                     continue
@@ -197,7 +216,7 @@ class DataProtocol:
                 if str(version) not in versions.keys():
                     # missing so its a remove
                     object_diff[canonical_name][str(version)] = {}
-                    object_diff[canonical_name][str(version)]["version"] = version
+                    object_diff[canonical_name][str(version)]["version"] = int(version)
                     object_diff[canonical_name][str(version)]["hash"] = hash_str
                     object_diff[canonical_name][str(version)]["action"] = "remove"
                     continue
@@ -215,7 +234,27 @@ class DataProtocol:
                 if canonical_name not in object_versions:
                     object_versions[canonical_name] = {}
                 change_count += 1
-                object_versions[canonical_name][version] = version_metadata
+                action = version_metadata["action"]
+
+                # Allow removal of class that only been staged to dev
+                if (
+                    action == "remove"
+                    and str(version) in object_versions[canonical_name]
+                ):
+                    # Delete the whole class if only single version exists
+                    if len(object_versions[canonical_name]) == 1:
+                        del object_versions[canonical_name]
+                    else:
+                        # In case of multiple versions of the class only delete the selected
+                        del object_versions[canonical_name][str(version)]
+
+                else:  # Add or overwrite existing data in dev
+                    object_versions[canonical_name][str(version)] = version_metadata
+
+            # Sort the version dict
+            object_versions[canonical_name] = sort_dict_naturally(
+                object_versions.get(canonical_name, {})
+            )
 
         current_history["dev"]["object_versions"] = object_versions
 
@@ -235,8 +274,9 @@ class DataProtocol:
 
         keys = self.protocol_history.keys()
         if "dev" not in keys:
-            raise Exception(
-                "You can't bump the protocol if there are no staged changes."
+            print("You can't bump the protocol if there are no staged changes.")
+            return SyftError(
+                message="Failed to bump version as there are no staged changes."
             )
 
         highest_protocol = 0
@@ -254,7 +294,7 @@ class DataProtocol:
 
     def check_protocol(self) -> Result[SyftSuccess, SyftError]:
         if len(self.diff) != 0:
-            return SyftError(message="Protocol Changes Unstanged")
+            return SyftError(message="Protocol Changes Unstaged")
         else:
             return SyftSuccess(message="Protocol Stable")
 
@@ -319,20 +359,25 @@ def check_or_stage_protocol() -> Result[SyftSuccess, SyftError]:
 
 def debox_arg_and_migrate(arg: Any, protocol_state: dict):
     """Debox the argument based on whether it is iterable or single entity."""
-    box_to_result_type = None
-
-    if type(arg) in OkErr:
-        box_to_result_type = type(arg)
-        arg = arg.value
+    constructor = None
+    extra_args = []
 
     single_entity = False
-    is_tuple = isinstance(arg, tuple)
 
-    if isinstance(arg, (list, tuple)):
-        iterable_keys = range(len(arg))
-        arg = list(arg)
-    elif isinstance(arg, dict):
+    if isinstance(arg, OkErr):
+        constructor = type(arg)
+        arg = arg.value
+
+    if isinstance(arg, MutableMapping):
         iterable_keys = arg.keys()
+    elif isinstance(arg, MutableSequence):
+        iterable_keys = range(len(arg))
+    elif isinstance(arg, tuple):
+        iterable_keys = range(len(arg))
+        constructor = type(arg)
+        if isinstance(arg, DictTuple):
+            extra_args.append(arg.keys())
+        arg = list(arg)
     else:
         iterable_keys = range(1)
         arg = [arg]
@@ -352,9 +397,8 @@ def debox_arg_and_migrate(arg: Any, protocol_state: dict):
         arg[key] = _object
 
     wrapped_arg = arg[0] if single_entity else arg
-    wrapped_arg = tuple(wrapped_arg) if is_tuple else wrapped_arg
-    if box_to_result_type is not None:
-        wrapped_arg = box_to_result_type(wrapped_arg)
+    if constructor is not None:
+        wrapped_arg = constructor(wrapped_arg, *extra_args)
 
     return wrapped_arg
 

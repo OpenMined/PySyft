@@ -1,5 +1,7 @@
 # syft absolute
+from syft.abstract_node import NodeType
 from syft.node.domain import Domain
+from syft.node.enclave import Enclave
 from syft.node.gateway import Gateway
 from syft.node.node import get_enable_warnings
 from syft.node.node import get_node_name
@@ -18,63 +20,75 @@ from syft.store.sqlite_document_store import SQLiteStoreConfig
 # grid absolute
 from grid.core.config import settings
 
-mongo_client_config = MongoStoreClientConfig(
-    hostname=settings.MONGO_HOST,
-    port=settings.MONGO_PORT,
-    username=settings.MONGO_USERNAME,
-    password=settings.MONGO_PASSWORD,
-)
 
-mongo_store_config = MongoStoreConfig(client_config=mongo_client_config)
+def queue_config() -> ZMQQueueConfig:
+    queue_config = ZMQQueueConfig(
+        client_config=ZMQClientConfig(
+            create_producer=settings.CREATE_PRODUCER,
+            queue_port=settings.QUEUE_PORT,
+            n_consumers=settings.N_CONSUMERS,
+        )
+    )
+    return queue_config
 
 
-client_config = SQLiteStoreClientConfig(path="/storage/")
-sql_store_config = SQLiteStoreConfig(client_config=client_config)
+def mongo_store_config() -> MongoStoreConfig:
+    mongo_client_config = MongoStoreClientConfig(
+        hostname=settings.MONGO_HOST,
+        port=settings.MONGO_PORT,
+        username=settings.MONGO_USERNAME,
+        password=settings.MONGO_PASSWORD,
+    )
 
-node_type = get_node_type()
+    return MongoStoreConfig(client_config=mongo_client_config)
+
+
+def sql_store_config() -> SQLiteStoreConfig:
+    client_config = SQLiteStoreClientConfig(path=settings.SQLITE_PATH)
+    return SQLiteStoreConfig(client_config=client_config)
+
+
+def seaweedfs_config() -> SeaweedFSConfig:
+    seaweed_client_config = SeaweedFSClientConfig(
+        host=settings.S3_ENDPOINT,
+        port=settings.S3_PORT,
+        access_key=settings.S3_ROOT_USER,
+        secret_key=settings.S3_ROOT_PWD,
+        region=settings.S3_REGION,
+        default_bucket_name=get_node_uid_env(),
+        mount_port=settings.SEAWEED_MOUNT_PORT,
+    )
+
+    return SeaweedFSConfig(client_config=seaweed_client_config)
+
+
+node_type = NodeType(get_node_type())
 node_name = get_node_name()
 
 node_side_type = get_node_side_type()
 enable_warnings = get_enable_warnings()
 
-seaweed_client_config = SeaweedFSClientConfig(
-    host=settings.S3_ENDPOINT,
-    port=settings.S3_PORT,
-    access_key=settings.S3_ROOT_USER,
-    secret_key=settings.S3_ROOT_PWD,
-    region=settings.S3_REGION,
-    default_bucket_name=get_node_uid_env(),
-    mount_port=settings.SEAWEED_MOUNT_PORT,
+worker_classes = {
+    NodeType.DOMAIN: Domain,
+    NodeType.GATEWAY: Gateway,
+    NodeType.ENCLAVE: Enclave,
+}
+
+worker_class = worker_classes[node_type]
+
+single_container_mode = settings.SINGLE_CONTAINER_MODE
+store_config = sql_store_config() if single_container_mode else mongo_store_config()
+blob_storage_config = None if single_container_mode else seaweedfs_config()
+queue_config = queue_config()
+
+worker = worker_class(
+    name=node_name,
+    node_side_type=node_side_type,
+    action_store_config=store_config,
+    document_store_config=store_config,
+    enable_warnings=enable_warnings,
+    blob_storage_config=blob_storage_config,
+    local_db=single_container_mode,
+    queue_config=queue_config,
+    migrate=True,
 )
-
-blob_storage_config = SeaweedFSConfig(client_config=seaweed_client_config)
-
-queue_config = ZMQQueueConfig(
-    client_config=ZMQClientConfig(
-        create_producer=settings.CREATE_PRODUCER,
-        queue_port=settings.QUEUE_PORT,
-        n_consumers=settings.N_CONSUMERS,
-    )
-)
-
-
-if node_type == "gateway" or node_type == "network":
-    worker = Gateway(
-        name=node_name,
-        node_side_type=node_side_type,
-        action_store_config=sql_store_config,
-        document_store_config=mongo_store_config,
-        enable_warnings=enable_warnings,
-        blob_storage_config=blob_storage_config,
-    )
-else:
-    worker = Domain(
-        name=node_name,
-        node_side_type=node_side_type,
-        queue_config=queue_config,
-        action_store_config=mongo_store_config,
-        document_store_config=mongo_store_config,
-        enable_warnings=enable_warnings,
-        blob_storage_config=blob_storage_config,
-        dev_mode=settings.DEV_MODE,
-    )

@@ -103,6 +103,7 @@ def run_uvicorn(
                 node_type=node_type,
                 node_side_type=node_side_type,
                 enable_warnings=enable_warnings,
+                migrate=True,
             )
         else:
             worker = worker_class(
@@ -112,6 +113,7 @@ def run_uvicorn(
                 node_type=node_type,
                 node_side_type=node_side_type,
                 enable_warnings=enable_warnings,
+                migrate=True,
             )
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)
@@ -185,7 +187,11 @@ def serve_node(
     def stop():
         print(f"Stopping {name}")
         server_process.terminate()
-        server_process.join()
+        server_process.join(3)
+        if server_process.is_alive():
+            # this is needed because often the process is still alive
+            server_process.kill()
+            print("killed")
 
     def start():
         print(f"Starting {name} server on {host}:{port}")

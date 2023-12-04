@@ -8,13 +8,11 @@ import getpass
 import inspect
 import os
 import subprocess  # nosec
+from threading import Thread
 from typing import Any
 from typing import Callable
 from typing import Optional
 from typing import Union
-
-# third party
-import gevent
 
 # relative
 from .cli import str_to_bool
@@ -36,6 +34,8 @@ DEFAULT_PORT = 8080
 # Gevent used instead of threading module ,as we monkey patch gevent in syft
 # and this causes context switch error when we use normal threading in hagrid
 
+ClientAlias = Any  # we don't want to import Client in case it changes
+
 
 # Define a function to read and print a stream
 def read_stream(stream: subprocess.PIPE) -> None:
@@ -44,7 +44,6 @@ def read_stream(stream: subprocess.PIPE) -> None:
         if not line:
             break
         print(line, end="")
-        gevent.sleep(0)
 
 
 def to_snake_case(name: str) -> str:
@@ -164,7 +163,7 @@ class NodeHandle:
     def client(self) -> Any:
         if self.port:
             sy = get_syft_client()
-            return sy.login(url=self.url, port=self.port)  # type: ignore
+            return sy.login_as_guest(url=self.url, port=self.port)  # type: ignore
         elif self.deployment_type == DeploymentType.PYTHON:
             return self.python_node.get_guest_client(verbose=False)  # type: ignore
         else:
@@ -172,32 +171,19 @@ class NodeHandle:
                 f"client not implemented for the deployment type:{self.deployment_type}"
             )
 
-    def login_as_guest(self, **kwargs: Any) -> Optional[Any]:
-        client = self.client
-
-        session = client.login_as_guest(**kwargs)
-
-        if isinstance(session, SyftError):
-            return session
-
-        return session
+    def login_as_guest(self, **kwargs: Any) -> ClientAlias:
+        return self.client.login_as_guest(**kwargs)
 
     def login(
         self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
-    ) -> Optional[Any]:
-        client = self.client
-
+    ) -> ClientAlias:
         if not email:
             email = input("Email: ")
+
         if not password:
             password = getpass.getpass("Password: ")
 
-        session = client.login(email=email, password=password, **kwargs)
-
-        if isinstance(session, SyftError):
-            return session
-
-        return session
+        return self.client.login(email=email, password=password, **kwargs)
 
     def register(
         self,
@@ -322,6 +308,7 @@ def deploy_to_python(
                     n_consumers=n_consumers,
                     create_producer=create_producer,
                     queue_port=queue_port,
+                    migrate=True,
                 )
             else:
                 # syft <= 0.8.1
@@ -333,12 +320,17 @@ def deploy_to_python(
                 )
         else:
             raise NotImplementedError(f"node_type: {node_type_enum} is not supported")
+
+        def stop() -> None:
+            worker.stop()
+
         return NodeHandle(
             node_type=node_type_enum,
             deployment_type=deployment_type_enum,
             name=name,
             python_node=worker,
             node_side_type=node_side_type,
+            shutdown=stop,
         )
 
 
@@ -453,12 +445,14 @@ def deploy_to_container(
     process = subprocess.Popen(  # nosec
         commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
     )
-    # Start gevent threads to read and print the output and error streams
-    stdout_thread = gevent.spawn(read_stream, process.stdout)
-    stderr_thread = gevent.spawn(read_stream, process.stderr)
-
-    # Wait for the threads to finish
-    gevent.joinall([stdout_thread, stderr_thread], raise_error=True)
+    # Start threads to read and print the output and error streams
+    stdout_thread = Thread(target=read_stream, args=(process.stdout,))
+    stderr_thread = Thread(target=read_stream, args=(process.stderr,))
+    # todo, raise errors
+    stdout_thread.start()
+    stderr_thread.start()
+    stdout_thread.join()
+    stderr_thread.join()
 
     if not cmd:
         return NodeHandle(
@@ -603,6 +597,8 @@ class Orchestra:
                 land_output = shell(f"hagrid land {snake_name} --force")
             if "Removed" in land_output:
                 print(f" ✅ {snake_name} Container Removed")
+            elif "No resource found to remove for project" in land_output:
+                print(f" ✅ {snake_name} Container does not exist")
             else:
                 print(f"❌ Unable to remove container: {snake_name} :{land_output}")
 

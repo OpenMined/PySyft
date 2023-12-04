@@ -44,7 +44,7 @@ jobs:
       current_hash: ${{ steps.get_hash.outputs.current_hash }}
       previous_hash: ${{ steps.get_hash.outputs.previous_hash }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
       - name: Install checksumdir
@@ -59,7 +59,7 @@ jobs:
           previous_hash=$(cat ./scripts/hagrid_hash)
 
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 

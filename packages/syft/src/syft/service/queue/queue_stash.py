@@ -18,8 +18,12 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
@@ -33,10 +37,11 @@ class Status(str, Enum):
     PROCESSING = "processing"
     ERRORED = "errored"
     COMPLETED = "completed"
+    INTERRUPTED = "interrupted"
 
 
 @serializable()
-class QueueItem(SyftObject):
+class QueueItemV1(SyftObject):
     __canonical_name__ = "QueueItem"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -46,13 +51,25 @@ class QueueItem(SyftObject):
     resolved: bool = False
     status: Status = Status.CREATED
 
-    # TODO: set
+
+@serializable()
+class QueueItem(SyftObject):
+    __canonical_name__ = "QueueItem"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    id: UID
+    node_uid: UID
+    result: Optional[Any]
+    resolved: bool = False
+    status: Status = Status.CREATED
+
     method: str
     service: str
     args: List
     kwargs: Dict[str, Any]
     job_id: Optional[UID]
-    worker_settings: WorkerSettings
+    worker_settings: Optional[WorkerSettings]
+    has_execute_permissions: bool = False
 
     def __repr__(self) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"
@@ -69,6 +86,36 @@ class QueueItem(SyftObject):
         if self.is_action:
             return self.kwargs["action"]
         return SyftError(message="QueueItem not an Action")
+
+
+@migrate(QueueItem, QueueItemV1)
+def downgrade_queueitem_v2_to_v1():
+    return [
+        drop(
+            [
+                "method",
+                "service",
+                "args",
+                "kwargs",
+                "job_id",
+                "worker_settings",
+                "has_execute_permissions",
+            ]
+        ),
+    ]
+
+
+@migrate(QueueItemV1, QueueItem)
+def upgrade_queueitem_v1_to_v2():
+    return [
+        make_set_default("method", ""),
+        make_set_default("service", ""),
+        make_set_default("args", []),
+        make_set_default("kwargs", {}),
+        make_set_default("job_id", None),
+        make_set_default("worker_settings", None),
+        make_set_default("has_execute_permissions", False),
+    ]
 
 
 @serializable()

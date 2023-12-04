@@ -10,6 +10,7 @@ from functools import partial
 import hashlib
 from multiprocessing import current_process
 import os
+from pathlib import Path
 import subprocess  # nosec
 import traceback
 from typing import Any
@@ -65,12 +66,14 @@ from ..service.job.job_service import JobService
 from ..service.job.job_stash import Job
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
-from ..service.metadata.node_metadata import NodeMetadata
+from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
 from ..service.object_search.migration_state_service import MigrateStateService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
+from ..service.queue.base_queue import QueueConsumer
+from ..service.queue.base_queue import QueueProducer
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
 from ..service.queue.queue_service import QueueService
@@ -85,7 +88,7 @@ from ..service.response import SyftError
 from ..service.service import AbstractService
 from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
-from ..service.settings.settings import NodeSettings
+from ..service.settings.settings import NodeSettingsV2
 from ..service.settings.settings_service import SettingsService
 from ..service.settings.settings_stash import SettingsStash
 from ..service.user.user import User
@@ -259,6 +262,7 @@ class Node(AbstractNode):
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         dev_mode: bool = False,
+        migrate: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -356,29 +360,11 @@ class Node(AbstractNode):
 
         self.init_blob_storage(config=blob_storage_config)
 
+        # Migrate data before any operation on db
+        if migrate:
+            self.find_and_migrate_data()
+
         NodeRegistry.set_node_for(self.id, self)
-
-    @property
-    def host_syft_location(self):
-        """e.g. /Users/<user>/workspace/pysyft"""
-        if not self.dev_mode:
-            raise ValueError("You can only get host location in dev mode")
-        # We set this variable in docker compose (from pwd)
-        env_val = os.environ.get("HOST_GRID_PATH", None)
-        # stdlib
-        from pathlib import Path
-
-        # if in docker
-        if env_val is not None:
-            return str(Path(env_val).parent.parent)
-        # if in python during development
-        else:
-            # syft absolute
-            import syft as sy
-
-            # /Users/<user>/workspace/PySyft/packages/syft/src/syft/__init__.py ->
-            # /Users/<user>/workspace/PySyft
-            return Path(sy.__file__).parent.parent.parent.parent.parent
 
     @property
     def runs_in_docker(self):
@@ -400,6 +386,13 @@ class Node(AbstractNode):
         self.blob_store_config = config_
         self.blob_storage_client = config_.client_type(config=config_.client_config)
 
+    def stop(self):
+        for consumer_list in self.queue_manager.consumers.values():
+            for c in consumer_list:
+                c.close()
+        for p in self.queue_manager.producers.values():
+            p.close()
+
     def init_queue_manager(self, queue_config: Optional[QueueConfig]):
         queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
         self.queue_config = queue_config_
@@ -416,7 +409,7 @@ class Node(AbstractNode):
                     credentials=self.verify_key,
                     role=ServiceRole.ADMIN,
                 )
-                producer = self.queue_manager.create_producer(
+                producer: QueueProducer = self.queue_manager.create_producer(
                     queue_name=queue_name, queue_stash=self.queue_stash, context=context
                 )
                 producer.run()
@@ -428,10 +421,10 @@ class Node(AbstractNode):
                 else:
                     address = None
 
-            for _ in range(queue_config.client_config.n_consumers):
+            for _ in range(queue_config_.client_config.n_consumers):
                 if address is None:
                     raise ValueError("address unknown for consumers")
-                consumer = self.queue_manager.create_consumer(
+                consumer: QueueConsumer = self.queue_manager.create_consumer(
                     message_handler, address=address
                 )
                 consumer.run()
@@ -452,6 +445,7 @@ class Node(AbstractNode):
         create_producer: bool = False,
         queue_port: Optional[int] = None,
         dev_mode: bool = False,
+        migrate: bool = False,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
@@ -485,6 +479,12 @@ class Node(AbstractNode):
                 db.commit()
                 db.close()
 
+            # remove lock files for reading
+            # we should update this to partition locks per node
+            for f in Path("/tmp/sherlock").glob("*.json"):  # nosec
+                if f.is_file():
+                    f.unlink()
+
             with contextlib.suppress(FileNotFoundError, PermissionError):
                 if os.path.exists(store_config.file_path):
                     os.unlink(store_config.file_path)
@@ -510,6 +510,8 @@ class Node(AbstractNode):
                     n_consumers=n_consumers,
                 )
             )
+        else:
+            queue_config = None
 
         return cls(
             name=name,
@@ -524,6 +526,7 @@ class Node(AbstractNode):
             blob_storage_config=blob_storage_config,
             queue_config=queue_config,
             dev_mode=dev_mode,
+            migrate=migrate,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -542,9 +545,9 @@ class Node(AbstractNode):
         root_client.api.refresh_api_callback()
         return root_client
 
-    def _find_pending_migrations(self):
-        klasses_to_be_migrated = []
-
+    def _find_klasses_pending_for_migration(
+        self, object_types: List[SyftObject]
+    ) -> List[SyftObject]:
         context = AuthedServiceContext(
             node=self,
             credentials=self.verify_key,
@@ -552,38 +555,90 @@ class Node(AbstractNode):
         )
         migration_state_service = self.get_service(MigrateStateService)
 
-        canonical_name_version_map = []
+        klasses_to_be_migrated = []
 
-        # Track all object types from document store
-        for partition in self.document_store.partitions.values():
-            object_type = partition.settings.object_type
+        for object_type in object_types:
             canonical_name = object_type.__canonical_name__
             object_version = object_type.__version__
-            canonical_name_version_map.append((canonical_name, object_version))
 
-        # Track all object types from action store
-        action_object_types = [Action, ActionObject]
-        action_object_types.extend(ActionObject.__subclasses__())
-        for object_type in action_object_types:
-            canonical_name = object_type.__canonical_name__
-            object_version = object_type.__version__
-            canonical_name_version_map.append((canonical_name, object_version))
-
-        for canonical_name, current_version in canonical_name_version_map:
             migration_state = migration_state_service.get_state(context, canonical_name)
             if (
                 migration_state is not None
                 and migration_state.current_version != migration_state.latest_version
             ):
-                klasses_to_be_migrated.append(canonical_name)
+                klasses_to_be_migrated.append(object_type)
             else:
                 migration_state_service.register_migration_state(
                     context,
-                    current_version=current_version,
+                    current_version=object_version,
                     canonical_name=canonical_name,
                 )
 
         return klasses_to_be_migrated
+
+    def find_and_migrate_data(self):
+        # Track all object type that need migration for document store
+        context = AuthedServiceContext(
+            node=self,
+            credentials=self.verify_key,
+            role=ServiceRole.ADMIN,
+        )
+        document_store_object_types = [
+            partition.settings.object_type
+            for partition in self.document_store.partitions.values()
+        ]
+
+        object_pending_migration = self._find_klasses_pending_for_migration(
+            object_types=document_store_object_types
+        )
+
+        if object_pending_migration:
+            print(
+                "Object in Document Store that needs migration: ",
+                object_pending_migration,
+            )
+
+        # Migrate data for objects in document store
+        for object_type in object_pending_migration:
+            canonical_name = object_type.__canonical_name__
+            object_partition = self.document_store.partitions.get(canonical_name)
+            if object_partition is None:
+                continue
+
+            print(f"Migrating data for: {canonical_name} table.")
+            migration_status = object_partition.migrate_data(
+                to_klass=object_type, context=context
+            )
+            if migration_status.is_err():
+                raise Exception(
+                    f"Failed to migrate data for {canonical_name}. Error: {migration_status.err()}"
+                )
+
+        # Track all object types from action store
+        action_object_types = [Action, ActionObject]
+        action_object_types.extend(ActionObject.__subclasses__())
+        action_object_pending_migration = self._find_klasses_pending_for_migration(
+            action_object_types
+        )
+
+        if action_object_pending_migration:
+            print(
+                "Object in Action Store that needs migration: ",
+                action_object_pending_migration,
+            )
+
+        # Migrate data for objects in action store
+        for object_type in action_object_pending_migration:
+            canonical_name = object_type.__canonical_name__
+
+            migration_status = self.action_store.migrate_data(
+                to_klass=object_type, credentials=self.verify_key
+            )
+            if migration_status.is_err():
+                raise Exception(
+                    f"Failed to migrate data for {canonical_name}. Error: {migration_status.err()}"
+                )
+        print("Data Migrated to latest version !!!")
 
     @property
     def guest_client(self):
@@ -699,7 +754,6 @@ class Node(AbstractNode):
             self.action_store = MongoActionStore(
                 root_verify_key=self.verify_key, store_config=action_store_config
             )
-
         else:
             self.action_store = DictActionStore(root_verify_key=self.verify_key)
 
@@ -777,43 +831,35 @@ class Node(AbstractNode):
         return getattr(service_obj, method_name)
 
     @property
-    def metadata(self) -> NodeMetadata:
-        name = ""
-        deployed_on = ""
-        organization = ""
-        on_board = False
-        description = ""
-        signup_enabled = False
-        admin_email = ""
-        show_warnings = self.enable_warnings
-
+    def settings(self) -> NodeSettingsV2:
         settings_stash = SettingsStash(store=self.document_store)
         settings = settings_stash.get_all(self.signing_key.verify_key)
         if settings.is_ok() and len(settings.ok()) > 0:
             settings_data = settings.ok()[0]
-            name = settings_data.name
-            deployed_on = settings_data.deployed_on
-            organization = settings_data.organization
-            on_board = settings_data.on_board
-            description = settings_data.description
-            signup_enabled = settings_data.signup_enabled
-            admin_email = settings_data.admin_email
-            show_warnings = settings_data.show_warnings
+        return settings_data
 
-        return NodeMetadata(
+    @property
+    def metadata(self) -> NodeMetadataV3:
+        name = ""
+        organization = ""
+        description = ""
+        show_warnings = self.enable_warnings
+        settings_data = self.settings
+        name = settings_data.name
+        organization = settings_data.organization
+        description = settings_data.description
+        show_warnings = settings_data.show_warnings
+
+        return NodeMetadataV3(
             name=name,
             id=self.id,
             verify_key=self.verify_key,
             highest_version=SYFT_OBJECT_VERSION_1,
             lowest_version=SYFT_OBJECT_VERSION_1,
             syft_version=__version__,
-            deployed_on=deployed_on,
             description=description,
             organization=organization,
-            on_board=on_board,
             node_type=self.node_type.value,
-            signup_enabled=signup_enabled,
-            admin_email=admin_email,
             node_side_type=self.node_side_type.value,
             show_warnings=show_warnings,
         )
@@ -911,6 +957,19 @@ class Node(AbstractNode):
                 signed_result = client.connection.make_call(api_call)
                 result = debox_signed_syftapicall_response(signed_result=signed_result)
 
+                # relative
+                from ..store.blob_storage import BlobRetrievalByURL
+
+                # In the case of blob storage, the gateway downloads the result and then passes it to
+                # the proxy client
+                if isinstance(result, BlobRetrievalByURL):
+                    blob_route = client.api.connection.to_blob_route(
+                        result.url.url_path
+                    )
+                    result.url = blob_route
+                    final_res = result.read()
+                    return final_res
+
             return result
 
         return SyftError(message=(f"Node has no route to {node_uid}"))
@@ -982,7 +1041,9 @@ class Node(AbstractNode):
                         f"you have has no access to: {api_call.path}"
                     )  # type: ignore
                 else:
-                    return SyftError(message=f"API call not in registered services: {api_call.path}")  # type: ignore
+                    return SyftError(
+                        message=f"API call not in registered services: {api_call.path}"
+                    )  # type: ignore
 
             _private_api_path = user_config_registry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
@@ -998,7 +1059,9 @@ class Node(AbstractNode):
             return self.add_api_call_to_queue(api_call)
         return result
 
-    def add_action_to_queue(self, action, credentials, parent_job_id=None):
+    def add_action_to_queue(
+        self, action, credentials, parent_job_id=None, has_execute_permissions=False
+    ):
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(node=self)
@@ -1012,6 +1075,7 @@ class Node(AbstractNode):
             worker_settings=worker_settings,
             args=[],
             kwargs={"action": action},
+            has_execute_permissions=has_execute_permissions,
         )
         return self.add_queueitem_to_queue(
             queue_item, credentials, action, parent_job_id
@@ -1022,8 +1086,14 @@ class Node(AbstractNode):
     ):
         log_id = UID()
 
+        result_obj = ActionObject.empty()
+        if action is not None:
+            result_obj.id = action.result_id
+            result_obj.syft_resolved = False
+
         job = Job(
             id=queue_item.job_id,
+            result=result_obj,
             node_uid=self.id,
             syft_client_verify_key=credentials,
             syft_node_location=self.id,
@@ -1102,7 +1172,7 @@ class Node(AbstractNode):
     ) -> NodeServiceContext:
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
-    def create_initial_settings(self, admin_email: str) -> Optional[NodeSettings]:
+    def create_initial_settings(self, admin_email: str) -> Optional[NodeSettingsV2]:
         if self.name is None:
             self.name = random_name()
         try:
@@ -1116,8 +1186,11 @@ class Node(AbstractNode):
                 # as enclaves do not have superusers
                 if self.node_type == NodeType.ENCLAVE:
                     flags.CAN_REGISTER = True
-                new_settings = NodeSettings(
+                new_settings = NodeSettingsV2(
+                    id=self.id,
                     name=self.name,
+                    verify_key=self.verify_key,
+                    node_type=self.node_type,
                     deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
                     signup_enabled=flags.CAN_REGISTER,
                     admin_email=admin_email,

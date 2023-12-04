@@ -41,8 +41,8 @@ from .mode import EDITABLE_MODE
 from .nb_output import NBOutput
 from .version import __version__
 
-LATEST_STABLE_SYFT = "0.8.1"
-LATEST_BETA_SYFT = "0.8.2-beta.38"
+LATEST_STABLE_SYFT = "0.8.2"
+LATEST_BETA_SYFT = "0.8.3-beta.3"
 
 DOCKER_ERROR = """
 You are running an old version of docker, possibly on Linux. You need to install v2.
@@ -528,9 +528,10 @@ To start your docker service:\n
 2 - {WHITE}Ubuntu: {GREEN}sudo service docker start {NO_COLOR}
 -------------------------------------------------------------------------------------------------------\n
 """
-        error_msg += f"""{YELLOW}{BOLD}Std Output Logs{NO_COLOR}
-=================\n\n""" + "\n".join(
-            msg
+        error_msg += (
+            f"""{YELLOW}{BOLD}Std Output Logs{NO_COLOR}
+=================\n\n"""
+            + "\n".join(msg)
         )
 
     except Exception as e:  # nosec

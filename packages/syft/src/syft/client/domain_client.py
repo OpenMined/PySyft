@@ -29,6 +29,7 @@ from ..util.util import prompt_warning_message
 from .api import APIModule
 from .client import SyftClient
 from .client import login
+from .client import login_as_guest
 
 if TYPE_CHECKING:
     # relative
@@ -121,14 +122,19 @@ class DomainClient(SyftClient):
         url: Optional[str] = None,
         port: Optional[int] = None,
         handle: Optional[NodeHandle] = None,  # noqa: F821
-        **kwargs,
+        email: Optional[str] = None,
+        password: Optional[str] = None,
     ) -> None:
         if via_client is not None:
             client = via_client
         elif handle is not None:
             client = handle.client
         else:
-            client = login(url=url, port=port, **kwargs)
+            client = (
+                login_as_guest(url=url, port=port)
+                if email is None
+                else login(url=url, port=port, email=email, password=password)
+            )
             if isinstance(client, SyftError):
                 return client
 

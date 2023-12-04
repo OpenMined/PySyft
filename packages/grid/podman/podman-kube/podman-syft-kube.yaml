@@ -21,7 +21,7 @@ spec:
           value: root
         - name: MONGO_INITDB_ROOT_PASSWORD
           value: example
-      image: docker.io/library/mongo:latest
+      image: docker.io/library/mongo:7.0.3
       imagePullPolicy: IfNotPresent
       resources: {}
       tty: true
@@ -41,7 +41,7 @@ spec:
         - configMapRef:
             name: podman-syft-config
 
-      image: docker.io/openmined/grid-backend:0.8.2-beta.38
+      image: docker.io/openmined/grid-backend:0.8.3-beta.3
       imagePullPolicy: IfNotPresent
       resources: {}
       tty: true
@@ -57,7 +57,7 @@ spec:
       envFrom:
         - configMapRef:
             name: podman-syft-config
-      image: docker.io/openmined/grid-frontend:0.8.2-beta.38
+      image: docker.io/openmined/grid-frontend:0.8.3-beta.3
       imagePullPolicy: IfNotPresent
       resources: {}
       tty: true
