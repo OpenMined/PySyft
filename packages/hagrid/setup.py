@@ -26,7 +26,7 @@ packages = [
     "virtualenv",
     "PyYAML",
     "tqdm",
-    "gevent==22.10.2",
+    "gevent==23.9.1",
 ]
 
 if platform.system().lower() != "windows":
