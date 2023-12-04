@@ -9,7 +9,9 @@ import numpy as np
 # syft absolute
 import syft as sy
 from syft.service.action.action_object import ActionObject
+from syft.service.request.request import Request
 from syft.service.request.request import UserCodeStatusChange
+from syft.service.response import SyftError
 from syft.service.user.user import User
 
 
@@ -17,6 +19,13 @@ from syft.service.user.user import User
     input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
 )
 def test_func():
+    return 1
+
+
+@sy.syft_function(
+    input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
+)
+def test_func_2():
     return 1
 
 
@@ -36,6 +45,24 @@ def test_user_code(worker, guest_client: User) -> None:
 
     real_result = result.get()
     assert isinstance(real_result, int)
+
+
+def test_duplicated_user_code(worker, guest_client: User) -> None:
+    test_func()
+    result = guest_client.api.services.code.request_code_execution(test_func)
+    assert isinstance(result, Request)
+    assert len(guest_client.code.get_all()) == 1
+
+    # request the exact same code should return an error
+    result = guest_client.api.services.code.request_code_execution(test_func)
+    assert isinstance(result, SyftError)
+    assert len(guest_client.code.get_all()) == 1
+
+    # request the a different function name but same content will also succeed
+    test_func_2()
+    result = guest_client.api.services.code.request_code_execution(test_func_2)
+    assert isinstance(result, Request)
+    assert len(guest_client.code.get_all()) == 2
 
 
 def random_hash() -> str:

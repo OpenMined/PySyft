@@ -85,7 +85,7 @@ from .code_parse import LaunchJobVisitor
 from .unparse import unparse
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
-CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
+CodeHashPartitionKey = PartitionKey(key="code_hash", type_=str)
 ServiceFuncNamePartitionKey = PartitionKey(key="service_func_name", type_=str)
 SubmitTimePartitionKey = PartitionKey(key="submit_time", type_=DateTime)
 
@@ -273,6 +273,13 @@ class UserCodeV1(SyftObject):
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime]
 
+    __attr_searchable__ = [
+        "user_verify_key",
+        "status",
+        "service_func_name",
+        "code_hash",
+    ]
+
 
 @serializable()
 class UserCode(SyftObject):
@@ -306,7 +313,12 @@ class UserCode(SyftObject):
     nested_requests: Dict[str, str] = {}
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
 
-    __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
+    __attr_searchable__ = [
+        "user_verify_key",
+        "status",
+        "service_func_name",
+        "code_hash",
+    ]
     __attr_unique__ = []
     __repr_attrs__ = ["service_func_name", "input_owners", "code_status"]
 
