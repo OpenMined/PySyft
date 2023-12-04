@@ -71,6 +71,8 @@ class DomainClient(SyftClient):
             asset = dataset.asset_list[i]
             dataset.asset_list[i] = add_default_uploader(user, asset)
 
+        dataset.syft_client_verify_key = self.verify_key
+
         dataset._check_asset_must_contain_mock()
         dataset_size = 0
 
