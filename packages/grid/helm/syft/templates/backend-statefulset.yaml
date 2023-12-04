@@ -49,6 +49,8 @@ spec:
           value: {{ .Values.node.settings.versionHash }}
         - name: NODE_TYPE
           value: {{ .Values.node.settings.nodeType }}
+        - name: NODE_SIDE_TYPE
+          value: {{ .Values.node.settings.nodeSideType }}
         - name: NODE_NAME
           value: {{ .Values.node.settings.nodeName }}
         - name: STACK_API_KEY
