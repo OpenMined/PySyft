@@ -243,27 +243,56 @@ class APICallMessageHandler(AbstractMessageHandler):
         job_item.status = JobStatus.PROCESSING
         job_item.node_uid = worker.id
 
-        queue_result = worker.queue_stash.set_result(credentials, queue_item)
-        if isinstance(queue_result, SyftError):
-            raise Exception(message=f"{queue_result.err()}")
-        worker_result = worker.job_stash.set_result(credentials, job_item)
-        if isinstance(worker_result, SyftError):
-            raise Exception(message=f"{worker_result.err()}")
+        worker.queue_stash.set_result(credentials, queue_item)
+        worker.job_stash.set_result(credentials, job_item)
 
-        # from threading import Thread
-        # p = Thread(
-        #     target=handle_message_multiprocessing,
-        #     args=(worker_settings, queue_item, credentials),
-        # )
-        # p.start()
+        status = Status.COMPLETED
+        job_status = JobStatus.COMPLETED
 
-        # handle_message_multiprocessing(worker_settings, queue_item, credentials)
+        try:
+            call_method = getattr(
+                worker.get_service(queue_item.service), queue_item.method
+            )
 
-        p = multiprocessing.Process(
-            target=handle_message_multiprocessing,
-            args=(worker_settings, queue_item, credentials),
-        )
-        p.start()
+            role = worker.get_role_for_credentials(credentials=credentials)
+            context = AuthedServiceContext(
+                node=worker,
+                credentials=credentials,
+                role=role,
+                job_id=queue_item.job_id,
+            )
+
+            result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
+
+            if isinstance(result, Ok):
+                result = result.ok()
+            elif isinstance(result, SyftError) or isinstance(result, Err):
+                status = Status.ERRORED
+                job_status = JobStatus.ERRORED
+        except Exception as e:  # nosec
+            status = Status.ERRORED
+            job_status = JobStatus.ERRORED
+            # stdlib 
+
+            raise e
+            # result = SyftError(
+            #     message=f"Failed with exception: {e}, {traceback.format_exc()}"
+            # )
+            # print("HAD AN ERROR WHILE HANDLING MESSAGE", result.message)
+
+        queue_item.result = result
+        queue_item.resolved = True
+        queue_item.status = status
+
+        # get new job item to get latest iter status
+        job_item = worker.job_stash.get_by_uid(credentials, job_item.id).ok()
+
+        # if result.is_ok():
+
+        job_item.node_uid = worker.id
+        job_item.result = result
+        job_item.resolved = True
+        job_item.status = job_status
 
         job_item.job_pid = p.pid
         worker.job_stash.set_result(credentials, job_item)
