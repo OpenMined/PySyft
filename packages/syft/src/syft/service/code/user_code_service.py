@@ -117,6 +117,21 @@ class UserCodeService(AbstractService):
             x in user_code.input_owner_verify_keys for x in user_code.output_readers
         ):
             raise ValueError("outputs can only be distributed to input owners")
+
+        # check if the code with the same name and content already exists in the stash
+
+        find_results = self.stash.get_by_code_hash(
+            context.credentials, code_hash=user_code.code_hash
+        )
+        if find_results.is_err():
+            return SyftError(message=str(find_results.err()))
+        find_results = find_results.ok()
+
+        if find_results is not None:
+            return SyftError(
+                message="The code to be submitted (name and content) already exists"
+            )
+
         result = self.stash.set(context.credentials, user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
