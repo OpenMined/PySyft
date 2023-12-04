@@ -361,7 +361,7 @@ spec:
         - name: MONGO_INITDB_ROOT_PASSWORD
           value: example
         envFrom: null
-        image: mongo:7.0.2
+        image: mongo:7.0.3
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -580,7 +580,7 @@ spec:
         - name: S3_PORT
           value: '8333'
         envFrom: null
-        image: chrislusf/seaweedfs:3.57
+        image: chrislusf/seaweedfs:3.59
         lifecycle: null
         livenessProbe: null
         name: container-0

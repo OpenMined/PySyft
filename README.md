@@ -23,7 +23,7 @@ $ pip install -U syft
 ```python
 # from Jupyter / Python
 import syft as sy
-sy.requires(">=0.8.1,<0.8.2")
+sy.requires(">=0.8.2,<0.8.3")
 node = sy.orchestra.launch(name="my-domain", port=8080, dev_mode=True, reset=True)
 ```
 
@@ -38,22 +38,22 @@ Starting syft-node server on 0.0.0.0:8080
 
 ```python
 import syft as sy
-sy.requires(">=0.8.1,<0.8.2")
+sy.requires(">=0.8.2,<0.8.3")
 domain_client = sy.login(port=8080, email="info@openmined.org", password="changethis")
 ```
 
 ## PySyft in 10 minutes
 
-📝 <a href="/notebooks/api">API Example Notebooks</a>
+📝 <a href="notebooks/api">API Example Notebooks</a>
 
-- <a href="/notebooks/api/0.8/00-load-data.ipynb">00-load-data.ipynb</a>
-- <a href="/notebooks/api/0.8/01-submit-code.ipynb">01-submit-code.ipynb</a>
-- <a href="/notebooks/api/0.8/02-review-code-and-approve.ipynb">02-review-code-and-approve.ipynb</a>
-- <a href="/notebooks/api/0.8/03-data-scientist-download-result.ipynb">03-data-scientist-download-result.ipynb</a>
-- <a href="/notebooks/api/0.8/04-jax-example.ipynb">04-jax-example.ipynb</a>
-- <a href="/notebooks/api/0.8/05-custom-policy.ipynb">05-custom-policy.ipynb</a>
-- <a href="/notebooks/api/0.8/06-multiple-code-requests.ipynb">06-multiple-code-requests.ipynb</a>
-- <a href="/notebooks/api/0.8/07-domain-register-control-flow.ipynb">07-domain-register-control-flow.ipynb</a>
+- <a href="notebooks/api/0.8/00-load-data.ipynb">00-load-data.ipynb</a>
+- <a href="notebooks/api/0.8/01-submit-code.ipynb">01-submit-code.ipynb</a>
+- <a href="notebooks/api/0.8/02-review-code-and-approve.ipynb">02-review-code-and-approve.ipynb</a>
+- <a href="notebooks/api/0.8/03-data-scientist-download-result.ipynb">03-data-scientist-download-result.ipynb</a>
+- <a href="notebooks/api/0.8/04-jax-example.ipynb">04-jax-example.ipynb</a>
+- <a href="notebooks/api/0.8/05-custom-policy.ipynb">05-custom-policy.ipynb</a>
+- <a href="notebooks/api/0.8/06-multiple-code-requests.ipynb">06-multiple-code-requests.ipynb</a>
+- <a href="notebooks/api/0.8/07-domain-register-control-flow.ipynb">07-domain-register-control-flow.ipynb</a>
 
 ## Deploy Kubernetes Helm Chart
 
@@ -81,7 +81,7 @@ SYFT_VERSION="<paste the chart version number>"
 #### 4. Provisioning Helm Charts
 
 ```sh
-$ helm install my-domain openmined/syft --version $SYFT_VERSION --namespace syft --create-namespace
+$ helm install my-domain openmined/syft --version $SYFT_VERSION --namespace syft --create-namespace --set ingress.ingressClass=traefik
 ```
 
 ### Azure or GCP Ingress
@@ -119,11 +119,12 @@ $ helm install ... --set ingress.ingressClass="gce"
 # Versions
 
 `0.9.0` - Coming soon...  
-`0.8.2` (Beta) - `dev` branch 👈🏽 <a href="https://github.com/OpenMined/PySyft/tree/dev/notebooks/api/0.8">API</a> - Coming soon...  
-`0.8.1` (Stable) - <a href="https://github.com/OpenMined/PySyft/tree/0.8.1/notebooks/api/0.8">API</a>
+`0.8.3` (Beta) - `dev` branch 👈🏽 <a href="https://github.com/OpenMined/PySyft/tree/dev/notebooks/api/0.8">API</a> - Coming soon...  
+`0.8.2` (Stable) - <a href="https://github.com/OpenMined/PySyft/tree/0.8.2/notebooks/api/0.8">API</a>
 
 Deprecated:
 
+- `0.8.1` - <a href="https://github.com/OpenMined/PySyft/tree/0.8.1/notebooks/api/0.8">API</a>
 - `0.8.0` - <a href="https://github.com/OpenMined/PySyft/tree/0.8/notebooks/api/0.8">API</a>
 - `0.7.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science-dev">Course 3 Updated</a>
 - `0.6.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science">Course 3</a>
@@ -183,11 +184,11 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 <tr>
 <td valign="top">
 
-- <a href="/notebooks/quickstart/data-owner/00-deploy-domain.ipynb">Deploy a Domain Server</a>
-- <a href="/notebooks/quickstart/data-owner/01-upload-data.ipynb">Upload Private Data</a>
-- <a href="/notebooks/quickstart/data-owner/02-create-account-configure-pb.ipynb">Create Accounts</a>
+- <a href="notebooks/quickstart/data-owner/00-deploy-domain.ipynb">Deploy a Domain Server</a>
+- <a href="notebooks/quickstart/data-owner/01-upload-data.ipynb">Upload Private Data</a>
+- <a href="notebooks/quickstart/data-owner/02-create-account-configure-pb.ipynb">Create Accounts</a>
 - Manage Privacy Budget</a>
-- <a href="/notebooks/quickstart/data-owner/03-join-network.ipynb">Join a Network</a>
+- <a href="notebooks/quickstart/data-owner/03-join-network.ipynb">Join a Network</a>
 - Learn how PETs streamline Data Policies
 
 </td>

@@ -79,7 +79,10 @@ class DataProtocol:
         return hashlib.sha256(json.dumps(obj_meta_info).encode()).hexdigest()
 
     def read_history(self) -> Dict:
-        return json.loads(self.file_path.read_text())
+        try:
+            return json.loads(self.file_path.read_text())
+        except Exception:
+            return {}
 
     def save_history(self, history: dict) -> None:
         self.file_path.write_text(json.dumps(history, indent=2) + "\n")
@@ -250,7 +253,7 @@ class DataProtocol:
 
             # Sort the version dict
             object_versions[canonical_name] = sort_dict_naturally(
-                object_versions[canonical_name]
+                object_versions.get(canonical_name, {})
             )
 
         current_history["dev"]["object_versions"] = object_versions
@@ -271,8 +274,9 @@ class DataProtocol:
 
         keys = self.protocol_history.keys()
         if "dev" not in keys:
-            raise Exception(
-                "You can't bump the protocol if there are no staged changes."
+            print("You can't bump the protocol if there are no staged changes.")
+            return SyftError(
+                message="Failed to bump version as there are no staged changes."
             )
 
         highest_protocol = 0

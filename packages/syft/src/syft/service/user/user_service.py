@@ -412,7 +412,7 @@ class UserService(AbstractService):
             else self.get_role_for_credentials(new_user.created_by)
         )
         can_user_register = (
-            context.node.metadata.signup_enabled
+            context.node.settings.signup_enabled
             or request_user_role in DATA_OWNER_ROLE_LEVEL
         )
 

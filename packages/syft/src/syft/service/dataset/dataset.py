@@ -176,7 +176,7 @@ class Asset(SyftObject):
             mock_table_line = itables.to_html_datatable(
                 df=self.mock.syft_action_data, css=itables_css
             )
-        elif isinstance(self.data, pd.DataFrame):
+        elif isinstance(self.mock, pd.DataFrame):
             mock_table_line = itables.to_html_datatable(df=self.mock, css=itables_css)
         else:
             mock_table_line = self.mock
@@ -603,7 +603,7 @@ class DatasetPageView(SyftObject):
     __canonical_name__ = "DatasetPageView"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    datasets: DictTuple[str, Dataset]
+    datasets: DictTuple
     total: int
 
 

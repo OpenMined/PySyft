@@ -36,7 +36,7 @@ jobs:
       previous_hash: ${{ steps.get-hashes.outputs.previous_hash }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
 
@@ -58,7 +58,7 @@ jobs:
         run: echo ${{steps.get-hashes.outputs.previous_hash}}
 
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
@@ -112,10 +112,10 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
@@ -148,7 +148,7 @@ jobs:
       contents: write # For tag and release notes.
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Deployed Version
         run: echo ${{needs.deploy-syft-cli.outputs.deployed_version}}

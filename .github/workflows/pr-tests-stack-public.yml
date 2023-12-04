@@ -34,7 +34,7 @@ jobs:
           echo "deleting ${GITHUB_WORKSPACE}/.git/config"
           rm ${GITHUB_WORKSPACE}/.git/config
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -45,7 +45,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -78,19 +78,19 @@ jobs:
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: list --localonly
 
       - name: Install git
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
 
       - name: Install cmake
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
@@ -102,7 +102,7 @@ jobs:
 
       - name: Install visualcpp-build-tools
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install visualstudio2019-workload-vctools -y
 
@@ -115,17 +115,9 @@ jobs:
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
-      - name: Fix Colima issue on MacOS Runners
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-          brew update
-          brew reinstall qemu
-
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v2.0.0
+        uses: crazy-max/ghaction-setup-docker@v2.2.0
 
       - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'

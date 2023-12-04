@@ -160,6 +160,12 @@ class DomainClient(SyftClient):
         return None
 
     @property
+    def worker(self) -> Optional[APIModule]:
+        if self.api.has_service("worker"):
+            return self.api.services.worker
+        return None
+
+    @property
     def requests(self) -> Optional[APIModule]:
         if self.api.has_service("request"):
             return self.api.services.request
