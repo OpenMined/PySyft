@@ -313,7 +313,12 @@ class UserCode(SyftObject):
     nested_requests: Dict[str, str] = {}
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
 
-    __attr_searchable__ = ["user_verify_key", "status", "service_func_name", "code_hash"]
+    __attr_searchable__ = [
+        "user_verify_key",
+        "status",
+        "service_func_name",
+        "code_hash",
+    ]
     __attr_unique__ = []
     __repr_attrs__ = ["service_func_name", "input_owners", "code_status"]
 
