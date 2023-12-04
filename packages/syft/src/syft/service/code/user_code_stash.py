@@ -38,7 +38,7 @@ class UserCodeStash(BaseUIDStoreStash):
         return self.query_one(credentials=credentials, qks=qks)
 
     def get_by_code_hash(
-        self, credentials: SyftVerifyKey, code_hash: int
+        self, credentials: SyftVerifyKey, code_hash: str
     ) -> Result[Optional[UserCode], str]:
         qks = QueryKeys(qks=[CodeHashPartitionKey.with_obj(code_hash)])
         return self.query_one(credentials=credentials, qks=qks)

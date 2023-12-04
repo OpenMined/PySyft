@@ -187,7 +187,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
@@ -219,7 +219,7 @@ jobs:
 
           #upload SBOM to github artifacts
       - name: Upload SBOM to GitHub Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: syft.sbom.json
           path: syft.sbom.json
@@ -245,7 +245,7 @@ jobs:
 
         #Upload SBOM to GitHub Artifacts
       - name: Upload SBOM to GitHub Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: mongo-trivy-results.sbom.json
           path: mongo-trivy-results.sbom.json
@@ -323,7 +323,7 @@ jobs:
           timeout: "10m0s"
           #Upload SBOM to GitHub Artifacts
       - name: Upload SBOM to GitHub Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: traefik-trivy-results.sbom.json
           path: traefik-trivy-results.sbom.json
@@ -403,7 +403,7 @@ jobs:
 
         #Upload SBOM to GitHub Artifacts
       - name: Upload SBOM to GitHub Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: seaweedfs-trivy-results.sbom.json
           path: seaweedfs-trivy-results.sbom.json
