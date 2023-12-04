@@ -8,6 +8,8 @@ from syft.node.node import get_node_name
 from syft.node.node import get_node_side_type
 from syft.node.node import get_node_type
 from syft.node.node import get_node_uid_env
+from syft.service.queue.zmq_queue import ZMQClientConfig
+from syft.service.queue.zmq_queue import ZMQQueueConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSClientConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSConfig
 from syft.store.mongo_client import MongoStoreClientConfig
@@ -17,6 +19,17 @@ from syft.store.sqlite_document_store import SQLiteStoreConfig
 
 # grid absolute
 from grid.core.config import settings
+
+
+def queue_config() -> ZMQQueueConfig:
+    queue_config = ZMQQueueConfig(
+        client_config=ZMQClientConfig(
+            create_producer=settings.CREATE_PRODUCER,
+            queue_port=settings.QUEUE_PORT,
+            n_consumers=settings.N_CONSUMERS,
+        )
+    )
+    return queue_config
 
 
 def mongo_store_config() -> MongoStoreConfig:
@@ -42,7 +55,8 @@ def seaweedfs_config() -> SeaweedFSConfig:
         access_key=settings.S3_ROOT_USER,
         secret_key=settings.S3_ROOT_PWD,
         region=settings.S3_REGION,
-        bucket_name=get_node_uid_env(),
+        default_bucket_name=get_node_uid_env(),
+        mount_port=settings.SEAWEED_MOUNT_PORT,
     )
 
     return SeaweedFSConfig(client_config=seaweed_client_config)
@@ -63,9 +77,9 @@ worker_classes = {
 worker_class = worker_classes[node_type]
 
 single_container_mode = settings.SINGLE_CONTAINER_MODE
-
 store_config = sql_store_config() if single_container_mode else mongo_store_config()
 blob_storage_config = None if single_container_mode else seaweedfs_config()
+queue_config = queue_config()
 
 worker = worker_class(
     name=node_name,
@@ -75,4 +89,6 @@ worker = worker_class(
     enable_warnings=enable_warnings,
     blob_storage_config=blob_storage_config,
     local_db=single_container_mode,
+    queue_config=queue_config,
+    migrate=True,
 )

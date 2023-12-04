@@ -63,8 +63,7 @@ class LinkedObject(SyftObject):
         result = context.node.get_service(self.service_type).stash.update(
             credentials, obj
         )
-        if result.is_ok():
-            return result
+        return result
 
     @classmethod
     def from_obj(
