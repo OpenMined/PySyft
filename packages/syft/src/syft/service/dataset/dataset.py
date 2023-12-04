@@ -413,13 +413,13 @@ class CreateAsset(SyftObject):
             return SyftError(
                 message=f"set_obj type {type(self.data)} must match set_mock type {type(self.mock)}"
             )
-        if not _is_action_data_empty(self.mock):
-            data_shape = get_shape_or_len(self.data)
-            mock_shape = get_shape_or_len(self.mock)
-            if data_shape != mock_shape:
-                return SyftError(
-                    message=f"set_obj shape {data_shape} must match set_mock shape {mock_shape}"
-                )
+        # if not _is_action_data_empty(self.mock):
+        #     data_shape = get_shape_or_len(self.data)
+        #     mock_shape = get_shape_or_len(self.mock)
+        #     if data_shape != mock_shape:
+        #         return SyftError(
+        #             message=f"set_obj shape {data_shape} must match set_mock shape {mock_shape}"
+        #         )
         total_size_mb = get_mb_size(self.data) + get_mb_size(self.mock)
         if total_size_mb > DATA_SIZE_WARNING_LIMIT:
             print(
@@ -438,7 +438,10 @@ def get_shape_or_len(obj: Any) -> Optional[Union[Tuple[int, ...], int]]:
             return shape
     len_attr = getattr(obj, "__len__", None)
     if len_attr is not None:
-        return len_attr()
+        len_value = len_attr()
+        if isinstance(len_value, int):
+            return (len_value,)
+        return len_value
     return None
 
 
@@ -752,6 +755,7 @@ def infer_shape(context: TransformContext) -> TransformContext:
     if context.output["shape"] is None:
         if not _is_action_data_empty(context.obj.mock):
             context.output["shape"] = get_shape_or_len(context.obj.mock)
+    print(context.output["shape"])
     return context
 
 
@@ -773,6 +777,10 @@ def add_msg_creation_time(context: TransformContext) -> TransformContext:
     context.output["created_at"] = DateTime.now()
     return context
 
+def add_default_node_uid(context: TransformContext) -> TransformContext:
+    if context.output["node_uid"] is None:
+        context.output["node_uid"] = context.node.id
+    return context
 
 @transform(CreateAsset, Asset)
 def createasset_to_asset() -> List[Callable]:
@@ -782,6 +790,7 @@ def createasset_to_asset() -> List[Callable]:
         infer_shape,
         create_and_store_twin,
         set_data_subjects,
+        add_default_node_uid,
     ]
 
 
