@@ -153,7 +153,7 @@ class HTTPConnection(NodeConnection):
     def api_url(self) -> GridURL:
         return self.url.with_path(self.routes.ROUTE_API_CALL.value)
 
-    def to_blob_route(self, path: str) -> GridURL:
+    def to_blob_route(self, path: str, **kwargs) -> GridURL:
         _path = self.routes.ROUTE_BLOB_STORE.value + path
         return self.url.with_path(_path)
 
@@ -344,6 +344,13 @@ class PythonConnection(NodeConnection):
             return response
         else:
             return self.node.metadata.to(NodeMetadataJSON)
+
+    def to_blob_route(self, path: str, host=None) -> GridURL:
+        # TODO: FIX!
+        if host is not None:
+            return GridURL(host_or_ip=host, port=8333).with_path(path)
+        else:
+            return GridURL(port=8333).with_path(path)
 
     def get_api(
         self, credentials: SyftSigningKey, communication_protocol: int
@@ -601,6 +608,12 @@ class SyftClient:
         )
 
         return result
+
+    @property
+    def jobs(self) -> Optional[APIModule]:
+        if self.api.has_service("job"):
+            return self.api.services.job
+        return None
 
     @property
     def users(self) -> Optional[APIModule]:

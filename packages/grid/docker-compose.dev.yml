@@ -60,6 +60,7 @@ services:
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
     environment:
       - DEV_MODE=True
+      - WATCHFILES_FORCE_POLLING=true
     stdin_open: true
     tty: true
 
@@ -82,8 +83,8 @@ services:
   seaweedfs:
     profiles:
       - blob-storage
-    # volumes:
-    #   - ./data/seaweedfs:/data
+    volumes:
+      - ./data/seaweedfs:/data
     ports:
       - "9333" # admin web port
       - "8888" # filer web port

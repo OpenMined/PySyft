@@ -15,7 +15,10 @@ services:
       target: "backend"
     profiles:
       - backend
-
+  seaweedfs:
+    build:
+      context: ${RELATIVE_PATH}./seaweedfs
+      dockerfile: seaweedfs.dockerfile
   worker:
     build:
       context: ${RELATIVE_PATH}../

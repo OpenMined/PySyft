@@ -69,12 +69,16 @@ class SeaweedFSBlobDeposit(BlobDeposit):
         etags = []
 
         try:
+            no_lines = 0
             for part_no, (byte_chunk, url) in enumerate(
                 zip(_byte_chunks(data, DEFAULT_CHUNK_SIZE), self.urls),
                 start=1,
             ):
+                no_lines += byte_chunk.count(b"\n")
                 if api is not None:
-                    blob_url = api.connection.to_blob_route(url.url_path)
+                    blob_url = api.connection.to_blob_route(
+                        url.url_path, host=url.host_or_ip
+                    )
                 else:
                     blob_url = url
                 response = requests.put(
@@ -92,8 +96,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
             syft_client_verify_key=self.syft_client_verify_key,
         )
         return mark_write_complete_method(
-            etags=etags,
-            uid=self.blob_storage_entry_id,
+            etags=etags, uid=self.blob_storage_entry_id, no_lines=no_lines
         )
 
 
@@ -101,15 +104,22 @@ class SeaweedFSBlobDeposit(BlobDeposit):
 class SeaweedFSClientConfig(BlobStorageClientConfig):
     host: str
     port: int
+    mount_port: Optional[int] = None
     access_key: str
     secret_key: str
     region: str
-    bucket_name: str
+    default_bucket_name: str = "defaultbucket"
 
     @property
     def endpoint_url(self) -> str:
         grid_url = GridURL(host_or_ip=self.host, port=self.port)
         return grid_url.url
+
+    @property
+    def mount_url(self) -> str:
+        if self.mount_port is None:
+            raise ValueError("Seaweed should be configured with a mount port to mount")
+        return f"http://{self.host}:{self.mount_port}/configure_azure"
 
 
 @serializable()
@@ -126,18 +136,18 @@ class SeaweedFSClient(BlobStorageClient):
                 config=Config(signature_version="s3v4"),
                 region_name=self.config.region,
             ),
-            bucket_name=self.config.bucket_name,
+            default_bucket_name=self.config.default_bucket_name,
         )
 
 
 @serializable()
 class SeaweedFSConnection(BlobStorageConnection):
     client: S3BaseClient
-    bucket_name: str
+    default_bucket_name: str
 
-    def __init__(self, client: S3BaseClient, bucket_name: str):
+    def __init__(self, client: S3BaseClient, default_bucket_name: str):
         self.client = client
-        self.bucket_name = bucket_name
+        self.default_bucket_name = default_bucket_name
 
     def __enter__(self) -> Self:
         return self
@@ -145,11 +155,15 @@ class SeaweedFSConnection(BlobStorageConnection):
     def __exit__(self, *exc) -> None:
         self.client.close()
 
-    def read(self, fp: SecureFilePathLocation, type_: Optional[Type]) -> BlobRetrieval:
+    def read(
+        self, fp: SecureFilePathLocation, type_: Optional[Type], bucket_name=None
+    ) -> BlobRetrieval:
+        if bucket_name is None:
+            bucket_name = self.default_bucket_name
         try:
             url = self.client.generate_presigned_url(
                 ClientMethod="get_object",
-                Params={"Bucket": self.bucket_name, "Key": fp.path},
+                Params={"Bucket": bucket_name, "Key": fp.path},
                 ExpiresIn=READ_EXPIRATION_TIME,
             )
 
@@ -165,7 +179,7 @@ class SeaweedFSConnection(BlobStorageConnection):
         try:
             file_name = obj.file_name
             result = self.client.create_multipart_upload(
-                Bucket=self.bucket_name,
+                Bucket=self.default_bucket_name,
                 Key=file_name,
             )
             upload_id = result["UploadId"]
@@ -183,7 +197,7 @@ class SeaweedFSConnection(BlobStorageConnection):
                 self.client.generate_presigned_url(
                     ClientMethod="upload_part",
                     Params={
-                        "Bucket": self.bucket_name,
+                        "Bucket": self.default_bucket_name,
                         "Key": obj.location.path,
                         "UploadId": obj.location.upload_id,
                         "PartNumber": i + 1,
@@ -203,7 +217,7 @@ class SeaweedFSConnection(BlobStorageConnection):
     ) -> Union[SyftError, SyftSuccess]:
         try:
             self.client.complete_multipart_upload(
-                Bucket=self.bucket_name,
+                Bucket=self.default_bucket_name,
                 Key=blob_entry.location.path,
                 MultipartUpload={"Parts": etags},
                 UploadId=blob_entry.location.upload_id,
@@ -217,7 +231,7 @@ class SeaweedFSConnection(BlobStorageConnection):
         fp: SecureFilePathLocation,
     ) -> Union[SyftSuccess, SyftError]:
         try:
-            self.client.delete_object(Bucket=self.bucket_name, Key=fp.path)
+            self.client.delete_object(Bucket=self.default_bucket_name, Key=fp.path)
             return SyftSuccess(message="Successfully deleted file.")
         except BotoClientError as e:
             return SyftError(message=str(e))
