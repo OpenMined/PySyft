@@ -68,7 +68,7 @@ from .code_parse import GlobalsVisitor
 from .unparse import unparse
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
-CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
+CodeHashPartitionKey = PartitionKey(key="code_hash", type_=str)
 
 PyCodeObject = Any
 
@@ -254,7 +254,12 @@ class UserCode(SyftObject):
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime]
 
-    __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
+    __attr_searchable__ = [
+        "user_verify_key",
+        "status",
+        "service_func_name",
+        "code_hash",
+    ]
     __attr_unique__ = []
     __repr_attrs__ = ["service_func_name", "input_owners", "code_status"]
 
