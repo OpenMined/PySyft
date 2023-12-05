@@ -49,7 +49,7 @@ images:
     buildArgs:
       SEAWEEDFS_VERSION: ${SEAWEEDFS_VERSION}
     dockerfile: ./seaweedfs/seaweedfs.dockerfile
-    context: ../
+    context: ./seaweedfs
     tags:
       - dev-latest
       - "${VERSION}"
