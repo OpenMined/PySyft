@@ -167,6 +167,12 @@ jobs:
           cache-from: type=registry,ref=openmined/grid-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
           cache-to: type=registry,ref=openmined/grid-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
 
+      - name: Export digest for grid-frontend
+        run: |
+          mkdir -p /tmp/digests/grid-frontend
+          digest="${{ steps.grid-frontend-build.outputs.digest }}"
+          touch "/tmp/digests/grid-frontend/${digest#sha256:}"
+
       - name: Build and push `grid-seaweedfs` image to DockerHub
         id: grid-seaweedfs-build
         uses: docker/build-push-action@v5
@@ -178,13 +184,13 @@ jobs:
           cache-from: type=registry,ref=openmined/grid-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform }}
           cache-to: type=registry,ref=openmined/grid-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
 
-      - name: Export digest for grid-frontend
+      - name: Export digest for grid-seaweedfs
         run: |
-          mkdir -p /tmp/digests/grid-frontend
-          digest="${{ steps.grid-frontend-build.outputs.digest }}"
-          touch "/tmp/digests/grid-frontend/${digest#sha256:}"
+          mkdir -p /tmp/digests/grid-seaweedfs
+          digest="${{ steps.grid-seaweedfs-build.outputs.digest }}"
+          touch "/tmp/digests/grid-seaweedfs/${digest#sha256:}"
 
-      - name: Upload digest for grid-backend and grid-frontend
+      - name: Upload digest for grid-backend, grid-frontend and grid-seaweedfs
         uses: actions/upload-artifact@v3
         with:
           name: digests-${{ steps.release_metadata.outputs.grid_version }}
