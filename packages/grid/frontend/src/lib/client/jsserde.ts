@@ -18,10 +18,10 @@ export class JSSerde {
         return capnp.Int64.fromNumber(number).buffer.reverse().buffer
       },
       function (buffer) {
-        var buffer_array = new Uint8Array(buffer) // Not sure why but first byte is always zero, so we need to remove it.
+        const buffer_array = new Uint8Array(buffer) // Not sure why but first byte is always zero, so we need to remove it.
         buffer_array.reverse() // Little endian / big endian
         if (buffer.byteLength < 8) {
-          var array64 = new Uint8Array(8)
+          const array64 = new Uint8Array(8)
           array64.set(new Uint8Array(buffer_array))
           buffer = array64.buffer
         } else {
@@ -42,9 +42,9 @@ export class JSSerde {
           number = number * -1
         }
         hex_str += "0x"
-        let exponent = 10
+        const exponent = 10
 
-        let n_1 = number / 2 ** exponent
+        const n_1 = number / 2 ** exponent
         hex_str += Math.trunc(n_1).toString(16)
         hex_str += "."
 
@@ -62,8 +62,8 @@ export class JSSerde {
       },
       function (buffer) {
         const hex_str = new TextDecoder().decode(buffer)
-        var aggr = 0
-        var [signal, int_n, hex_dec_n, exp] = hex_str
+        let aggr = 0
+        let [signal, int_n, hex_dec_n, exp] = hex_str
           .replaceAll(".", " ")
           .replaceAll("0x", " ")
           .replaceAll("p", " ")
@@ -138,11 +138,11 @@ export class JSSerde {
         rs.setFullyQualifiedName("syft.types.uid.UID")
 
         fields.set(0, "value")
-        let serializedObj = this.serialize(uuidParse(uuid.value))
+        const serializedObj = this.serialize(uuidParse(uuid.value))
 
-        let dataList = this.createDataList(1)
+        const dataList = this.createDataList(1)
 
-        let dataStruct = this.createData(serializedObj.byteLength)
+        const dataStruct = this.createData(serializedObj.byteLength)
         dataStruct.copyBuffer(serializedObj)
         dataList.set(0, dataStruct)
         data.set(0, dataList)
@@ -164,7 +164,7 @@ export class JSSerde {
       null,
       {},
     ]
-    this.type_bank["builtins.list"] = [
+    ;(this.type_bank["builtins.list"] = [
       true,
       (list) => {
         const message = new capnp.Message()
@@ -172,16 +172,16 @@ export class JSSerde {
         const listStruct = rs.initValues(list.length)
         let count = 0
         for (let index = 0; index < list.length; index++) {
-          let serializedObj = this.serialize(list[index])
-          let chunks = this.splitChunks(serializedObj)
-          let chunkList = this.serializeChunks(chunks)
+          const serializedObj = this.serialize(list[index])
+          const chunks = this.splitChunks(serializedObj)
+          const chunkList = this.serializeChunks(chunks)
           listStruct.set(count, chunkList)
           count += 1
         }
         return message.toArrayBuffer()
       },
       (buffer) => {
-        var iter = []
+        const iter = []
         const message = new capnp.Message(buffer, false)
         const rs = message.getRoot(Iterable)
         const values = rs.getValues()
@@ -195,20 +195,27 @@ export class JSSerde {
       },
       null,
       {},
-    ]
-    this.type_bank["builtins.NoneType"] = [
-      true,
-      // eslint-disable-next-line
-      function (NoneType) {
-        return new Uint8Array([49]).buffer
-      },
-      // eslint-disable-next-line
-      function (buffer) {
-        return undefined
-      },
-      null,
-      {},
-    ]
+    ]),
+      (this.type_bank["builtins.set"] = [
+        true,
+        this.type_bank["builtins.list"][1],
+        this.type_bank["builtins.list"][2],
+        null,
+        {},
+      ]),
+      (this.type_bank["builtins.NoneType"] = [
+        true,
+        // eslint-disable-next-line
+        function (NoneType) {
+          return new Uint8Array([49]).buffer
+        },
+        // eslint-disable-next-line
+        function (buffer) {
+          return undefined
+        },
+        null,
+        {},
+      ])
     this.type_bank["nacl.signing.SigningKey"] = [
       true,
       (key) => {
@@ -259,15 +266,15 @@ export class JSSerde {
         let count = 0
         dict.forEach((value, key) => {
           // Saving Key
-          let serializedKey = this.serialize(key)
-          let keyDataStruct = this.createData(serializedKey.byteLength)
+          const serializedKey = this.serialize(key)
+          const keyDataStruct = this.createData(serializedKey.byteLength)
           keyDataStruct.copyBuffer(serializedKey)
           keys.set(count, keyDataStruct)
 
           // Saving Values
-          let serializedValue = this.serialize(value)
-          let chunks = this.splitChunks(serializedValue)
-          let chunkList = this.serializeChunks(chunks)
+          const serializedValue = this.serialize(value)
+          const chunks = this.splitChunks(serializedValue)
+          const chunkList = this.serializeChunks(chunks)
           values.set(count, chunkList)
 
           count += 1
@@ -276,7 +283,7 @@ export class JSSerde {
       },
       (buffer) => {
         // Initialize an empty object to store the key-value pairs.
-        var kv_iter = {}
+        const kv_iter = {}
 
         // Create a capnp.Message object from the input buffer and get the root object of type KVIterable.
         const message = new capnp.Message(buffer, false)
@@ -350,18 +357,25 @@ export class JSSerde {
         }
       },
     ]
+    this.type_bank["syft.types.dicttuple.DictTuple"] = [
+      true,
+      this.type_bank["builtins.dict"][1],
+      this.type_bank["builtins.dict"][2],
+      null,
+      {},
+    ]
   }
 
   createData(length) {
-    let newDataMsg = new capnp.Message()
-    let dataRoot = newDataMsg.initRoot(DataBox)
+    const newDataMsg = new capnp.Message()
+    const dataRoot = newDataMsg.initRoot(DataBox)
     dataRoot.initValue(length)
     return dataRoot.getValue()
   }
 
   createDataList(length) {
-    let newDataList = new capnp.Message()
-    let dataListRoot = newDataList.initRoot(DataList)
+    const newDataList = new capnp.Message()
+    const dataListRoot = newDataList.initRoot(DataList)
     dataListRoot.initValues(length)
     return dataListRoot.getValues()
   }
@@ -481,7 +495,7 @@ export class JSSerde {
 
     // Loop over each property of the object
     let count = 0
-    for (let attr in newObj) {
+    for (const attr in newObj) {
       // Serialize the property's value and store it in the Cap'n Proto message
       txt.set(count, attr)
       const serializedObj = this.serialize(newObj[attr])
@@ -591,6 +605,9 @@ export class JSSerde {
     const size = fieldsName.getLength()
     const fqn = rs.getFullyQualifiedName()
     const objSerdeProps = this.type_bank[fqn]
+
+    // console.log({ fieldsName, fqn, objSerdeProps })
+
     if (size < 1) {
       // If the data is a blob, deserialize the blob and return it
       const blob = rs.getNonrecursiveBlob()
