@@ -1,4 +1,5 @@
 # stdlib
+from datetime import datetime
 from hashlib import sha256
 from pathlib import Path
 from typing import Any
@@ -13,7 +14,12 @@ from typing_extensions import Self
 import yaml
 
 # relative
+from ..node.credentials import SyftVerifyKey
+from ..serde.serializable import serializable
 from ..types.base import SyftBaseModel
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SyftObject
+from ..types.uid import UID
 
 PYTHON_DEFAULT_VER = "3.11"
 PYTHON_MIN_VER = version.parse("3.10")
@@ -74,7 +80,12 @@ class CustomBuildConfig(SyftBaseModel):
         return sep.join(self.custom_cmds)
 
 
-class CustomWorkerConfig(SyftBaseModel):
+class WorkerConfig(SyftBaseModel):
+    pass
+
+
+@serializable()
+class CustomWorkerConfig(WorkerConfig):
     build: CustomBuildConfig
     version: str = "1"
 
@@ -95,3 +106,37 @@ class CustomWorkerConfig(SyftBaseModel):
 
     def get_signature(self) -> str:
         return sha256(self.json(sort_keys=True).encode()).hexdigest()
+
+
+@serializable()
+class DockerWorkerConfig(WorkerConfig):
+    raw_dockerfile: str
+
+    @classmethod
+    def from_dockerfile(cls, path: Union[Path, str]) -> Self:
+        with open(path) as f:
+            return cls(raw_dockerfile=f.read())
+
+
+class SyftWorkerTag(SyftBaseModel):
+    repo: str
+    name: str
+    tag: str
+
+    @classmethod
+    def from_str(cls, full_str: str):
+        repo, tag = full_str.split("/")
+        name, tag = tag.split(":")
+        return cls(repo=repo, name=name, tag=tag)
+
+
+class SyftWorkerImage(SyftObject):
+    __canonical_name__ = "SyftWorkerImage"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    config: WorkerConfig
+    image_tag: SyftWorkerTag
+    hash: str
+    created_at: datetime
+    created_by: SyftVerifyKey
