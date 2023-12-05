@@ -238,6 +238,14 @@ jobs:
             -t openmined/grid-frontend:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
             $(printf 'openmined/grid-frontend@sha256:%s ' *)
 
+      - name: Create manifest list and push for grid-seaweedfs
+        working-directory: /tmp/digests/grid-seaweedfs
+        run: |
+          docker buildx imagetools create  \
+            -t openmined/grid-seaweedfs:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
+            -t openmined/grid-seaweedfs:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
+            $(printf 'openmined/grid-seaweedfs@sha256:%s ' *)
+
   deploy-syft:
     needs: [merge-docker-images]
     if: always() &&  needs.merge-docker-images.result == 'success'
