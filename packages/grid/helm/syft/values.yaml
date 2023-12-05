@@ -27,6 +27,7 @@ node:
     nodeName: "mynode"
     nodeType: "domain"
     versionHash: "abc"
+    nodeSideType: "high"
 
 ingress:
   ingressClass: ""

@@ -36,6 +36,7 @@ template_variables = {
     "NODE_TYPE": "node.settings",
     "VERSION_HASH": "node.settings",
     "NODE_NAME": "node.settings",
+    "NODE_SIDE_TYPE": "node.settings",
 }
 
 
