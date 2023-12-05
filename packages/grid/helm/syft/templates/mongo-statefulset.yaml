@@ -36,7 +36,7 @@ spec:
         - name: MONGO_INITDB_ROOT_PASSWORD
           value: {{ .Values.secrets.db.mongo.mongoInitdbRootPassword }}
         envFrom: null
-        image: mongo:7.0.3
+        image: mongo:7.0.2
         lifecycle: null
         livenessProbe: null
         name: container-0
