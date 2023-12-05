@@ -44,6 +44,15 @@ images:
     tags:
       - dev-latest
       - "${VERSION}"
+  seaweedfs:
+    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
+    buildArgs:
+      SEAWEEDFS_VERSION: ${SEAWEEDFS_VERSION}
+    dockerfile: ./seaweedfs/seaweedfs.dockerfile
+    context: ../
+    tags:
+      - dev-latest
+      - "${VERSION}"
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
