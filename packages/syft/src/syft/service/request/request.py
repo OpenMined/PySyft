@@ -24,11 +24,15 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
+from ...types.transforms import drop
 from ...types.transforms import generate_id
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
@@ -241,7 +245,6 @@ class Request(SyftObject):
             )
 
         metadata = api.services.metadata.get_metadata()
-        admin_email = metadata.admin_email
         node_name = api.node_name.capitalize() if api.node_name is not None else ""
 
         email_str = (
@@ -263,11 +266,11 @@ class Request(SyftObject):
                 <p><strong>Request time: </strong>{self.request_time}</p>
                 {updated_at_line}
                 {shared_with_line}
-                <p><strong>Changes: </strong> {str_changes}</p>
                 <p><strong>Status: </strong>{self.status}</p>
                 <p><strong>Requested on: </strong> {node_name} of type <strong> \
-                    {metadata.node_type.value.capitalize()}</strong> owned by {admin_email}</p>
+                    {metadata.node_type.value.capitalize()}</strong></p>
                 <p><strong>Requested by:</strong> {self.requesting_user_name} {email_str} {institution_str}</p>
+                <p><strong>Changes: </strong> {str_changes}</p>
             </div>
 
             """
@@ -295,11 +298,19 @@ class Request(SyftObject):
         }
 
     @property
+    def codes(self) -> Any:
+        for change in self.changes:
+            if isinstance(change, UserCodeStatusChange):
+                return change.codes
+        return SyftError(
+            message="This type of request does not have code associated with it."
+        )
+
+    @property
     def code(self) -> Any:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
-                return change.link
-
+                return change.code
         return SyftError(
             message="This type of request does not have code associated with it."
         )
@@ -335,18 +346,22 @@ class Request(SyftObject):
 
         return request_status
 
-    def approve(self, disable_warnings: bool = False):
+    def approve(self, disable_warnings: bool = False, approve_nested: bool = False):
         api = APIRegistry.api_for(
             self.node_uid,
             self.syft_client_verify_key,
         )
         # TODO: Refactor so that object can also be passed to generate warnings
         metadata = api.connection.get_node_metadata(api.signing_key)
-        code = self.code
         message, is_enclave = None, False
 
-        if code and not isinstance(code, SyftError):
-            is_enclave = getattr(code, "enclave_metadata", None) is not None
+        if len(self.codes) > 1 and not approve_nested:
+            return SyftError(
+                message="Multiple codes detected, please use approve_nested=True"
+            )
+
+        if self.code and not isinstance(self.code, SyftError):
+            is_enclave = getattr(self.code, "enclave_metadata", None) is not None
 
         if is_enclave:
             message = "On approval, the result will be released to the enclave."
@@ -422,7 +437,7 @@ class Request(SyftObject):
                 self.save(context=context)
                 return result
 
-            # If no error, then change successfully undoed.
+            # If no error, then change successfully undone.
             change_status.applied = False
             self.history.append(change_status)
 
@@ -432,7 +447,7 @@ class Request(SyftObject):
             return Err(result)
         # override object with latest changes.
         self = result
-        return Ok(SyftSuccess(message=f"Request {self.id} changes undoed."))
+        return Ok(SyftSuccess(message=f"Request {self.id} changes undone."))
 
     def save(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
         # relative
@@ -447,12 +462,12 @@ class Request(SyftObject):
 
         change = self.changes[0]
         if not change.is_type(UserCode):
-            raise Exception(
+            raise TypeError(
                 f"accept_by_depositing_result can only be run on {UserCode} not "
                 f"{change.linked_obj.object_type}"
             )
         if not type(change) == UserCodeStatusChange:
-            raise Exception(
+            raise TypeError(
                 f"accept_by_depositing_result can only be run on {UserCodeStatusChange} not "
                 f"{type(change)}"
             )
@@ -757,7 +772,7 @@ class EnumMutation(ObjectMutation):
 
 
 @serializable()
-class UserCodeStatusChange(Change):
+class UserCodeStatusChangeV1(Change):
     __canonical_name__ = "UserCodeStatusChange"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -771,8 +786,60 @@ class UserCodeStatusChange(Change):
         "link.status.approved",
     ]
 
+
+@serializable()
+class UserCodeStatusChange(Change):
+    __canonical_name__ = "UserCodeStatusChange"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    value: UserCodeStatus
+    linked_obj: LinkedObject
+    nested_solved: bool = False
+    match_type: bool = True
+    __repr_attrs__ = [
+        "link.service_func_name",
+        "link.input_policy_type.__canonical_name__",
+        "link.output_policy_type.__canonical_name__",
+        "link.status.approved",
+    ]
+
+    @property
+    def code(self):
+        return self.link
+
+    @property
+    def codes(self):
+        def recursive_code(node):
+            codes = []
+            for _, (obj, new_node) in node.items():
+                codes.append(obj.resolve)
+                codes.extend(recursive_code(new_node))
+            return codes
+
+        codes = [self.link]
+        codes.extend(recursive_code(self.link.nested_codes))
+        return codes
+
+    def nested_repr(self, node=None, level=0):
+        msg = ""
+        if node is None:
+            node = self.link.nested_codes
+        for service_func_name, (_, new_node) in node.items():
+            msg = "├──" + "──" * level + f"{service_func_name}<br>"
+            msg += self.nested_repr(node=new_node, level=level + 1)
+        return msg
+
     def __repr_syft_nested__(self):
-        return f"Request to change <b>{self.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>"
+        msg = f"Request to change <b>{self.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>"
+        if self.nested_solved:
+            if self.link.nested_codes == {}:
+                msg += ". No nested requests"
+            else:
+                msg += ".<br><br>This change requests the following nested functions calls:<br>"
+                msg += self.nested_repr()
+        else:
+            msg += ". Nested Requests not resolved"
+        return msg
 
     def _repr_markdown_(self) -> str:
         link = self.link
@@ -806,6 +873,20 @@ class UserCodeStatusChange(Change):
             )
         return SyftSuccess(message=f"{type(self)} valid")
 
+    # def get_nested_requests(self, context, code_tree: Dict[str: Tuple[LinkedObject, Dict]]):
+    #     approved_nested_codes = {}
+    #     for key, (linked_obj, new_code_tree) in code_tree.items():
+    #         code_obj = linked_obj.resolve_with_context(context).ok()
+    #         approved_nested_codes[key] = code_obj.id
+
+    #         res = self.get_nested_requests(context, new_code_tree)
+    #         if isinstance(res, SyftError):
+    #             return res
+    #         code_obj.nested_codes = res
+    #         linked_obj.update_with_context(context, code_obj)
+
+    #     return approved_nested_codes
+
     def mutate(self, obj: UserCode, context: ChangeContext, undo: bool) -> Any:
         reason: str = context.extra_kwargs.get("reason", "")
         if not undo:
@@ -815,6 +896,8 @@ class UserCodeStatusChange(Change):
                 node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
+            if isinstance(res, SyftError):
+                return res
         else:
             res = obj.status.mutate(
                 value=(UserCodeStatus.DENIED, reason),
@@ -854,6 +937,7 @@ class UserCodeStatusChange(Change):
                 from ..enclave.enclave_service import propagate_inputs_to_enclave
 
                 user_code = res
+
                 if self.is_enclave_request(user_code):
                     enclave_res = propagate_inputs_to_enclave(
                         user_code=res, context=context
@@ -884,3 +968,17 @@ class UserCodeStatusChange(Change):
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
+
+
+@migrate(UserCodeStatusChange, UserCodeStatusChangeV1)
+def downgrade_usercodestatuschange_v2_to_v1():
+    return [
+        drop("nested_solved"),
+    ]
+
+
+@migrate(UserCodeStatusChangeV1, UserCodeStatusChange)
+def upgrade_usercodestatuschange_v1_to_v2():
+    return [
+        make_set_default("nested_solved", True),
+    ]

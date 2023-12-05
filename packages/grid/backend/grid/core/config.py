@@ -14,6 +14,30 @@ from pydantic import EmailStr
 from pydantic import HttpUrl
 from pydantic import validator
 
+_truthy = {"yes", "y", "true", "t", "on", "1"}
+_falsy = {"no", "n", "false", "f", "off", "0"}
+
+
+def _distutils_strtoint(s: str) -> int:
+    """implements the deprecated distutils.util.strtoint"""
+    ls = s.lower()
+    if ls in _truthy:
+        return 1
+    if ls in _falsy:
+        return 0
+    raise ValueError(f"invalid truth value '{s}'")
+
+
+def str_to_int(bool_str: Any) -> int:
+    try:
+        return _distutils_strtoint(str(bool_str))
+    except ValueError:
+        return 0
+
+
+def str_to_bool(bool_str: Any) -> bool:
+    return bool(str_to_int(bool_str))
+
 
 class Settings(BaseSettings):
     API_V2_STR: str = "/api/v2"
@@ -94,6 +118,7 @@ class Settings(BaseSettings):
     S3_PRESIGNED_TIMEOUT_SECS: int = int(
         os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800)
     )  # 30 minutes in seconds
+    SEAWEED_MOUNT_PORT: int = int(os.getenv("SEAWEED_MOUNT_PORT", 4001))
 
     REDIS_HOST: str = str(os.getenv("REDIS_HOST", "redis"))
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
@@ -108,13 +133,20 @@ class Settings(BaseSettings):
     MONGO_PORT: int = int(os.getenv("MONGO_PORT", 0))
     MONGO_USERNAME: str = str(os.getenv("MONGO_USERNAME", ""))
     MONGO_PASSWORD: str = str(os.getenv("MONGO_PASSWORD", ""))
+    DEV_MODE: bool = True if os.getenv("DEV_MODE", "false").lower() == "true" else False
+    # ZMQ stuff
+    QUEUE_PORT: int = int(os.getenv("QUEUE_PORT", 0))
+    CREATE_PRODUCER: bool = (
+        True if os.getenv("CREATE_PRODUCER", "false").lower() == "true" else False
+    )
+    N_CONSUMERS: int = int(os.getenv("N_CONSUMERS", 0))
     SQLITE_PATH: str = os.path.expandvars("$HOME/data/db/")
+    SINGLE_CONTAINER_MODE: bool = str_to_bool(os.getenv("SINGLE_CONTAINER_MODE", False))
 
     TEST_MODE: bool = (
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False
     )
     ASSOCIATION_TIMEOUT: int = 10
-    DEV_MODE: bool = True if os.getenv("DEV_MODE", "false").lower() == "true" else False
 
     class Config:
         case_sensitive = True

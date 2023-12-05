@@ -5,7 +5,7 @@ import platform
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "0.3.78"
+__version__ = "0.3.91"
 
 DATA_FILES = {"img": ["hagrid/img/*.png"], "hagrid": ["*.yml"]}
 
@@ -26,7 +26,7 @@ packages = [
     "virtualenv",
     "PyYAML",
     "tqdm",
-    "gevent==22.10.2",
+    "gevent>=22.10.2",
 ]
 
 if platform.system().lower() != "windows":

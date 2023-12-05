@@ -32,6 +32,7 @@ if settings.BACKEND_CORS_ORIGINS:
     )
 
 app.include_router(api_router, prefix=settings.API_V2_STR)
+print("Included routes, app should now be reachable")
 
 
 if settings.DEV_MODE:

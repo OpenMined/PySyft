@@ -1,42 +1,37 @@
 manifestVersion: 0.1
-hagrid_version: 0.3.78
-syft_version: 0.8.2-beta.40
-dockerTag: 0.8.2-beta.40
+hagrid_version: 0.3.91
+syft_version: 0.8.3-beta.3
+dockerTag: 0.8.3-beta.3
 baseUrl: https://raw.githubusercontent.com/OpenMined/PySyft/
-hash: a12a0ca8d82b4b0c12289feeccadb7c1f8375d3f
+hash: 391bb3d6a3e83995563be169e67a7acfa230492e
 target_dir: ~/.hagrid/PySyft/
 files:
   grid:
     path: packages/grid/
     common:
-      - rabbitmq/rabbitmq.conf
-      - redis/redis.conf
-      - seaweedfs/filer.toml
-      - seaweedfs/start.sh
-      - default.env
+    - rabbitmq/rabbitmq.conf
+    - redis/redis.conf
+    - seaweedfs/filer.toml
+    - seaweedfs/start.sh
+    - default.env
     docker:
-      - default.env
-      - docker-compose.build.yml
-      - docker-compose.dev.yml
-      - docker-compose.pull.yml
-      - docker-compose.test.yml
-      - docker-compose.tls.yml
-      - docker-compose.yml
-      - traefik/docker/dynamic-tls.yml
-      - traefik/docker/dynamic.yml
-      - traefik/docker/traefik-tls.template.yml
-      - traefik/docker/traefik.yml
+    - default.env
+    - docker-compose.build.yml
+    - docker-compose.dev.yml
+    - docker-compose.pull.yml
+    - docker-compose.test.yml
+    - docker-compose.tls.yml
+    - docker-compose.yml
+    - traefik/docker/dynamic-tls.yml
+    - traefik/docker/dynamic.yml
+    - traefik/docker/traefik-tls.template.yml
+    - traefik/docker/traefik.yml
     k8s:
-      - devspace.yaml
-      - traefik/k8s/dynamic.yml
-      - traefik/k8s/traefik.yml
-    worker:
-      - worker/docker-compose.yml
-      - worker/docker-compose.dev.yml
-      - worker/docker-compose.pull.yml
-      - worker/docker-compose.build.yml
+    - devspace.yaml
+    - traefik/k8s/dynamic.yml
+    - traefik/k8s/traefik.yml
     podman:
-      - podman/podman-kube/podman-syft-kube-config.yaml
-      - podman/podman-kube/podman-syft-kube.yaml
-      - podman/podman-kube/traefik/conf/dynamic.yml
-      - podman/podman-kube/traefik/traefik.yml
+    - podman/podman-kube/podman-syft-kube-config.yaml
+    - podman/podman-kube/podman-syft-kube.yaml
+    - podman/podman-kube/traefik/conf/dynamic.yml
+    - podman/podman-kube/traefik/traefik.yml

@@ -13,9 +13,11 @@ from result import Result
 from ...abstract_node import NodeType
 from ...client.client import HTTPConnection
 from ...client.client import PythonConnection
+from ...client.client import SyftClient
 from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
+from ...service.settings.settings import NodeSettingsV2
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -29,7 +31,7 @@ from ...types.transforms import transform_method
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
-from ..metadata.node_metadata import NodeMetadata
+from ..metadata.node_metadata import NodeMetadataV3
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -81,8 +83,8 @@ class NetworkStash(BaseUIDStoreStash):
             return SyftError(message=valid.err())
         existing = self.get_by_uid(credentials=credentials, uid=peer.id)
         if existing.is_ok() and existing.ok():
-            existing = existing.ok()
-            existing.update_routes(peer.node_routes)
+            existing: NodePeer = existing.ok()
+            existing.update_routes(new_routes=peer.node_routes)
             result = self.update(credentials, existing)
             return result
         else:
@@ -140,7 +142,9 @@ class NetworkService(AbstractService):
         # Step 2: Send the Node Peer to the remote node
         # Also give them their own to validate that it belongs to them
         # random challenge prevents replay attacks
-        remote_client = remote_node_route.client_with_context(context=context)
+        remote_client: SyftClient = remote_node_route.client_with_context(
+            context=context
+        )
         random_challenge = secrets.token_bytes(16)
 
         remote_res = remote_client.api.services.network.add_peer(
@@ -181,7 +185,6 @@ class NetworkService(AbstractService):
         verify_key: SyftVerifyKey,
     ) -> Union[bytes, SyftError]:
         """Add a Network Node Peer"""
-
         # Using the verify_key of the peer to verify the signature
         # It is also our single source of truth for the peer
         if peer.verify_key != context.credentials:
@@ -198,7 +201,7 @@ class NetworkService(AbstractService):
             )
 
         try:
-            remote_client = peer.client_with_context(context=context)
+            remote_client: SyftClient = peer.client_with_context(context=context)
             random_challenge = secrets.token_bytes(16)
             remote_res = remote_client.api.services.network.ping(
                 challenge=random_challenge
@@ -361,6 +364,7 @@ def from_grid_url(context: TransformContext) -> TransformContext:
     context.output["port"] = url.port
     context.output["private"] = False
     context.output["proxy_target_uid"] = context.obj.proxy_target_uid
+    context.output["priority"] = 1
     return context
 
 
@@ -398,8 +402,15 @@ def node_route_to_http_connection(
     return HTTPConnection(url=url, proxy_target_uid=obj.proxy_target_uid)
 
 
-@transform(NodeMetadata, NodePeer)
+@transform(NodeMetadataV3, NodePeer)
 def metadata_to_peer() -> List[Callable]:
+    return [
+        keep(["id", "name", "verify_key", "node_type", "admin_email"]),
+    ]
+
+
+@transform(NodeSettingsV2, NodePeer)
+def settings_to_peer() -> List[Callable]:
     return [
         keep(["id", "name", "verify_key", "node_type", "admin_email"]),
     ]

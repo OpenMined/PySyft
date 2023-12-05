@@ -246,7 +246,7 @@ class DomainRegistry:
             domain_dict["version"] = metadata.syft_version
             route = None
             if len(domain.node_routes) > 0:
-                route = domain.node_routes[0]
+                route = domain.pick_highest_priority_route()
             domain_dict["host_or_ip"] = route.host_or_ip if route else "-"
             domain_dict["protocol"] = route.protocol if route else "-"
             domain_dict["port"] = route.port if route else "-"

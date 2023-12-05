@@ -4,16 +4,22 @@ from typing import List
 from typing import Optional
 from typing import Union
 
+# third party
+import requests
+
 # relative
 from ...serde.serializable import serializable
+from ...service.action.action_object import ActionObject
 from ...store.blob_storage import BlobRetrieval
 from ...store.blob_storage.on_disk import OnDiskBlobDeposit
 from ...store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ...store.document_store import DocumentStore
 from ...store.document_store import UIDPartitionKey
+from ...types.blob_storage import BlobFileType
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import BlobStorageMetadata
 from ...types.blob_storage import CreateBlobStorageEntry
+from ...types.blob_storage import SecureFilePathLocation
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -44,6 +50,82 @@ class BlobStorageService(AbstractService):
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
+
+    @service_method(path="blob_storage.mount_azure", name="mount_azure")
+    def mount_azure(
+        self,
+        context: AuthedServiceContext,
+        account_name: str,
+        account_key: str,
+        container_name: str,
+        bucket_name: str,
+    ):
+        # stdlib
+        import sys
+
+        # TODO: fix arguments
+
+        args_dict = {
+            "account_name": account_name,
+            "account_key": account_key,
+            "container_name": container_name,
+            "remote_name": f"{account_name}{container_name}",
+            "bucket_name": bucket_name,
+        }
+        # TODO: possible wrap this in try catch
+        cfg = context.node.blob_store_config.client_config
+        init_request = requests.post(url=cfg.mount_url, json=args_dict)  # nosec
+        print(init_request.content)
+        # TODO check return code
+
+        print(bucket_name, file=sys.stderr)
+
+        res = context.node.blob_storage_client.connect().client.list_objects(
+            Bucket=bucket_name
+        )
+        print(res)
+        objects = res["Contents"]
+        file_sizes = [object["Size"] for object in objects]
+        file_paths = [object["Key"] for object in objects]
+        secure_file_paths = [
+            SecureFilePathLocation(path=file_path) for file_path in file_paths
+        ]
+
+        for sfp, file_size in zip(secure_file_paths, file_sizes):
+            blob_storage_entry = BlobStorageEntry(
+                location=sfp,
+                uploaded_by=context.credentials,
+                file_size=file_size,
+                type_=BlobFileType,
+                bucket_name=bucket_name,
+            )
+            self.stash.set(context.credentials, blob_storage_entry)
+
+        return SyftSuccess(message="Mounting Azure Successful!")
+
+    @service_method(
+        path="blob_storage.get_files_from_bucket", name="get_files_from_bucket"
+    )
+    def get_files_from_bucket(self, context: AuthedServiceContext, bucket_name: str):
+        result = self.stash.find_all(context.credentials, bucket_name=bucket_name)
+        if result.is_err():
+            return result
+        bse_list = result.ok()
+        # stdlib
+        import sys
+
+        print(bse_list, file=sys.stderr)
+        blob_files = []
+        for bse in bse_list:
+            self.stash.set(obj=bse, credentials=context.credentials)
+            blob_file = ActionObject.empty()
+            blob_file.syft_blob_storage_entry_id = bse.id
+            blob_file.syft_client_verify_key = context.credentials
+            blob_file.syft_node_location = context.node.id
+            blob_file.reload_cache()
+            blob_files.append(blob_file.syft_action_data)
+
+        return blob_files
 
     @service_method(path="blob_storage.get_by_uid", name="get_by_uid")
     def get_blob_storage_entry_by_uid(
@@ -79,7 +161,12 @@ class BlobStorageService(AbstractService):
                 return SyftError(message=f"No blob storage entry exists for uid: {uid}")
 
             with context.node.blob_storage_client.connect() as conn:
-                return conn.read(obj.location, obj.type_)
+                res: BlobRetrieval = conn.read(
+                    obj.location, obj.type_, bucket_name=obj.bucket_name
+                )
+                res.syft_blob_storage_entry_id = uid
+                res.file_size = obj.file_size
+                return res
         return SyftError(message=result.err())
 
     @service_method(
@@ -147,6 +234,7 @@ class BlobStorageService(AbstractService):
         context: AuthedServiceContext,
         uid: UID,
         etags: List,
+        no_lines: Optional[int] = 0,
     ) -> Union[SyftError, SyftSuccess]:
         result = self.stash.get_by_uid(
             credentials=context.credentials,
@@ -159,6 +247,14 @@ class BlobStorageService(AbstractService):
 
         if obj is None:
             return SyftError(message=f"No blob storage entry exists for uid: {uid}")
+
+        obj.no_lines = no_lines
+        result = self.stash.update(
+            credentials=context.credentials,
+            obj=obj,
+        )
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
 
         with context.node.blob_storage_client.connect() as conn:
             result = conn.complete_multipart_upload(obj, etags)

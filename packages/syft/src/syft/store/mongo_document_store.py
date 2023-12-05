@@ -26,6 +26,7 @@ from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
 from ..service.action.action_permissions import ActionPermission
+from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import StorableObjectType
@@ -230,6 +231,9 @@ class MongoStorePartition(StorePartition):
 
         return Ok(self._permissions)
 
+    def set(self, *args, **kwargs):
+        return self._set(*args, **kwargs)
+
     def _set(
         self,
         credentials: SyftVerifyKey,
@@ -356,6 +360,11 @@ class MongoStorePartition(StorePartition):
             credentials=credentials, qks=qks, order_by=order_by
         )
 
+    @property
+    def data(self):
+        values: List = self._all(credentials=None, has_permission=True).ok()
+        return {v.id: v for v in values}
+
     def _get_all_from_store(
         self,
         credentials: SyftVerifyKey,
@@ -382,7 +391,9 @@ class MongoStorePartition(StorePartition):
         # TODO: maybe do this in loop before this
         res = []
         for s in syft_objs:
-            if self.has_permission(ActionObjectREAD(uid=s.id, credentials=credentials)):
+            if has_permission or self.has_permission(
+                ActionObjectREAD(uid=s.id, credentials=credentials)
+            ):
                 res.append(s)
         return Ok(res)
 
@@ -561,6 +572,42 @@ class MongoStorePartition(StorePartition):
             return 0
         collection: MongoCollection = collection_status.ok()
         return collection.count_documents(filter={})
+
+    def _migrate_data(
+        self, to_klass: SyftObject, context: AuthedServiceContext, has_permission: bool
+    ) -> Result[bool, str]:
+        credentials = context.credentials
+        has_permission = (credentials == self.root_verify_key) or has_permission
+        collection_status = self.collection
+        if collection_status.is_err():
+            return collection_status
+        collection: MongoCollection = collection_status.ok()
+
+        if has_permission:
+            storage_objs = collection.find({})
+            for storage_obj in storage_objs:
+                obj = self.storage_type(storage_obj)
+                transform_context = TransformContext(output={}, obj=obj)
+                value = obj.to(self.settings.object_type, transform_context)
+                key = obj.get("_id")
+                try:
+                    migrated_value = value.migrate_to(to_klass.__version__, context)
+                except Exception:
+                    return Err(f"Failed to migrate data to {to_klass} for qk: {key}")
+                qk = self.settings.store_key.with_obj(key)
+                result = self._update(
+                    credentials,
+                    qk=qk,
+                    obj=migrated_value,
+                    has_permission=has_permission,
+                )
+
+                if result.is_err():
+                    return result.err()
+
+            return Ok(True)
+
+        return Err("You don't have permissions to migrate data.")
 
 
 @serializable()

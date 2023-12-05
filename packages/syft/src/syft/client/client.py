@@ -41,8 +41,8 @@ from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..service.context import NodeServiceContext
-from ..service.metadata.node_metadata import NodeMetadata
 from ..service.metadata.node_metadata import NodeMetadataJSON
+from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.user.user import UserCreate
@@ -153,7 +153,7 @@ class HTTPConnection(NodeConnection):
     def api_url(self) -> GridURL:
         return self.url.with_path(self.routes.ROUTE_API_CALL.value)
 
-    def to_blob_route(self, path: str) -> GridURL:
+    def to_blob_route(self, path: str, **kwargs) -> GridURL:
         _path = self.routes.ROUTE_BLOB_STORE.value + path
         return self.url.with_path(_path)
 
@@ -344,6 +344,13 @@ class PythonConnection(NodeConnection):
             return response
         else:
             return self.node.metadata.to(NodeMetadataJSON)
+
+    def to_blob_route(self, path: str, host=None) -> GridURL:
+        # TODO: FIX!
+        if host is not None:
+            return GridURL(host_or_ip=host, port=8333).with_path(path)
+        else:
+            return GridURL(port=8333).with_path(path)
 
     def get_api(
         self, credentials: SyftSigningKey, communication_protocol: int
@@ -597,10 +604,16 @@ class SyftClient:
         result = self.api.services.network.exchange_credentials_with(
             self_node_route=self_node_route,
             remote_node_route=remote_node_route,
-            remote_node_verify_key=client.metadata.to(NodeMetadata).verify_key,
+            remote_node_verify_key=client.metadata.to(NodeMetadataV3).verify_key,
         )
 
         return result
+
+    @property
+    def jobs(self) -> Optional[APIModule]:
+        if self.api.has_service("job"):
+            return self.api.services.job
+        return None
 
     @property
     def users(self) -> Optional[APIModule]:

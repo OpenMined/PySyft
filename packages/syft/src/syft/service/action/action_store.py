@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import threading
 from typing import List
 from typing import Optional
 
@@ -29,6 +30,8 @@ from .action_permissions import ActionObjectPermission
 from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionObjectWRITE
 from .action_permissions import ActionPermission
+
+lock = threading.RLock()
 
 
 class ActionStore:
@@ -246,6 +249,32 @@ class KeyValueActionStore(ActionStore):
     def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
         for permission in permissions:
             self.add_permission(permission)
+
+    def migrate_data(self, to_klass: SyftObject, credentials: SyftVerifyKey):
+        has_root_permission = credentials == self.root_verify_key
+
+        if has_root_permission:
+            for key, value in self.data.items():
+                try:
+                    if value.__canonical_name__ != to_klass.__canonical_name__:
+                        continue
+                    migrated_value = value.migrate_to(to_klass.__version__)
+                except Exception as e:
+                    return Err(
+                        f"Failed to migrate data to {to_klass} for qk: {key}. Exception: {e}"
+                    )
+                result = self.set(
+                    uid=key,
+                    credentials=credentials,
+                    syft_object=migrated_value,
+                )
+
+                if result.is_err():
+                    return result.err()
+
+            return Ok(True)
+
+        return Err("You don't have permissions to migrate data.")
 
 
 @serializable()

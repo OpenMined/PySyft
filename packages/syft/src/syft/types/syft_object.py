@@ -1,11 +1,14 @@
 # stdlib
 from collections import defaultdict
 from collections.abc import Mapping
+from collections.abc import MutableMapping
+from collections.abc import MutableSequence
 from collections.abc import Set
 from hashlib import sha256
 import inspect
 from inspect import Signature
 import re
+import traceback
 import types
 from typing import Any
 from typing import Callable
@@ -38,6 +41,7 @@ from ..util.notebook_ui.notebook_addons import create_table_template
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
+from .dicttuple import DictTuple
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
@@ -49,6 +53,16 @@ MappingIntStrAny = Mapping[IntStr, Any]
 
 SYFT_OBJECT_VERSION_1 = 1
 SYFT_OBJECT_VERSION_2 = 2
+SYFT_OBJECT_VERSION_3 = 3
+
+supported_object_versions = [
+    SYFT_OBJECT_VERSION_1,
+    SYFT_OBJECT_VERSION_2,
+    SYFT_OBJECT_VERSION_3,
+]
+
+HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
+LOWEST_SYFT_OBJECT_VERSION = min(supported_object_versions)
 
 
 # These attributes are dynamically added based on node/client
@@ -316,7 +330,7 @@ class SyftMigrationRegistry:
 
         raise Exception(
             f"No migration found for class type: {type_from} to "
-            "version: {version_to} in the migration registry."
+            f"version: {version_to} in the migration registry."
         )
 
 
@@ -765,7 +779,9 @@ def list_dict_repr_html(self) -> str:
             )
 
     except Exception as e:
-        print(f"error representing {type(self)} of objects. {e}")
+        print(
+            f"error representing {type(self)} of objects. {e}, {traceback.format_exc()}"
+        )
         pass
 
     # stdlib
@@ -778,6 +794,7 @@ def list_dict_repr_html(self) -> str:
 aggressive_set_attr(type([]), "_repr_html_", list_dict_repr_html)
 aggressive_set_attr(type({}), "_repr_html_", list_dict_repr_html)
 aggressive_set_attr(type(set()), "_repr_html_", list_dict_repr_html)
+aggressive_set_attr(tuple, "_repr_html_", list_dict_repr_html)
 
 
 class StorableObjectType:
@@ -838,20 +855,25 @@ recursive_serde_register_type(PartialSyftObject)
 
 
 def attach_attribute_to_syft_object(result: Any, attr_dict: Dict[str, Any]) -> Any:
-    box_to_result_type = None
-
-    if type(result) in OkErr:
-        box_to_result_type = type(result)
-        result = result.value
+    constructor = None
+    extra_args = []
 
     single_entity = False
-    is_tuple = isinstance(result, tuple)
 
-    if isinstance(result, (list, tuple)):
-        iterable_keys = range(len(result))
-        result = list(result)
-    elif isinstance(result, Mapping):
+    if isinstance(result, OkErr):
+        constructor = type(result)
+        result = result.value
+
+    if isinstance(result, MutableMapping):
         iterable_keys = result.keys()
+    elif isinstance(result, MutableSequence):
+        iterable_keys = range(len(result))
+    elif isinstance(result, tuple):
+        iterable_keys = range(len(result))
+        constructor = type(result)
+        if isinstance(result, DictTuple):
+            extra_args.append(result.keys())
+        result = list(result)
     else:
         iterable_keys = range(1)
         result = [result]
@@ -872,8 +894,7 @@ def attach_attribute_to_syft_object(result: Any, attr_dict: Dict[str, Any]) -> A
         result[key] = _object
 
     wrapped_result = result[0] if single_entity else result
-    wrapped_result = tuple(wrapped_result) if is_tuple else wrapped_result
-    if box_to_result_type is not None:
-        wrapped_result = box_to_result_type(wrapped_result)
+    if constructor is not None:
+        wrapped_result = constructor(wrapped_result, *extra_args)
 
     return wrapped_result
