@@ -46,6 +46,7 @@ images:
       - "${VERSION}"
   seaweedfs:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
+    buildKit: {}
     buildArgs:
       SEAWEEDFS_VERSION: ${SEAWEEDFS_VERSION}
     dockerfile: ./seaweedfs/seaweedfs.dockerfile
