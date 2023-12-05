@@ -124,11 +124,16 @@ class JobService(AbstractService):
             return SyftError(message=res.err())
 
         job = res.ok()
-        if job.job_pid is not None:
+        if job.job_pid is not None and job.status == JobStatus.PROCESSING:
             job.status = JobStatus.INTERRUPTED
             res = self.stash.update(context.credentials, obj=job)
             if res.is_err():
                 return SyftError(message=res.err())
+            return SyftSuccess(message="Job killed successfully!")
+        else:
+            return SyftError(
+                message="Job is not running or isn't running in multiprocessing mode"
+            )
 
         res = res.ok()
         return SyftSuccess(message="Great Success!")
