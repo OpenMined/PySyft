@@ -44,6 +44,16 @@ images:
     tags:
       - dev-latest
       - "${VERSION}"
+  seaweedfs:
+    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
+    buildKit: {}
+    buildArgs:
+      SEAWEEDFS_VERSION: ${SEAWEEDFS_VERSION}
+    dockerfile: ./seaweedfs/seaweedfs.dockerfile
+    context: ./seaweedfs
+    tags:
+      - dev-latest
+      - "${VERSION}"
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
@@ -135,6 +145,8 @@ deployments:
                 value: "${NODE_TYPE}"
               - name: NODE_NAME
                 value: "${NODE_NAME}"
+              - name: NODE_SIDE_TYPE
+                value: "${NODE_SIDE_TYPE}"
               - name: STACK_API_KEY
                 value: "changeme"
               - name: PORT
@@ -209,10 +221,7 @@ deployments:
         repo: https://charts.devspace.sh
       values:
         containers:
-          - image: "${DOCKER_IMAGE_SEAWEEDFS}:${SEAWEEDFS_VERSION}"
-            command:
-              - sh
-              - /etc/seaweedfs/start.sh
+          - image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}:${VERSION}"
             env:
               - name: S3_VOLUME_SIZE_MB
                 value: "${S3_VOLUME_SIZE_MB}"
@@ -222,6 +231,8 @@ deployments:
                 value: "${S3_ROOT_PWD}"
               - name: S3_PORT
                 value: "${S3_PORT}"
+              - name: SEAWEED_MOUNT_PORT
+                value: "${SEAWEED_MOUNT_PORT}"
             volumeMounts:
               - containerPath: /etc/seaweedfs/filer.toml
                 volume:
@@ -249,6 +260,7 @@ deployments:
           ports:
             - port: "8888" # filer
             - port: "8333" # S3
+            - port: "4001" # mount azure
 
   frontend:
     helm:
