@@ -235,6 +235,7 @@ def deploy_to_python(
     node_side_type: NodeSideType,
     enable_warnings: bool,
     n_consumers: int,
+    thread_workers: bool,
     create_producer: bool = False,
     queue_port: Optional[int] = None,
 ) -> Optional[NodeHandle]:
@@ -306,6 +307,7 @@ def deploy_to_python(
                     node_side_type=node_side_type,
                     enable_warnings=enable_warnings,
                     n_consumers=n_consumers,
+                    thread_workers=thread_workers,
                     create_producer=create_producer,
                     queue_port=queue_port,
                     migrate=True,
@@ -488,6 +490,7 @@ class Orchestra:
         render: bool = False,
         enable_warnings: bool = False,
         n_consumers: int = 0,
+        thread_workers: bool = False,
         create_producer: bool = False,
         queue_port: Optional[int] = None,
     ) -> Optional[NodeHandle]:
@@ -533,6 +536,7 @@ class Orchestra:
                 node_side_type=node_side_type_enum,
                 enable_warnings=enable_warnings,
                 n_consumers=n_consumers,
+                thread_workers=thread_workers,
                 create_producer=create_producer,
                 queue_port=queue_port,
             )
