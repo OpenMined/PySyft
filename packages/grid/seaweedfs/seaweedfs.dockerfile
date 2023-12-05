@@ -13,5 +13,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chmod=755 start.sh mount_command.sh /
 
-ENTRYPOINT ["/bin/sh"]
-CMD ["/start.sh"]
+ENTRYPOINT ["/start.sh"]
