@@ -13,16 +13,16 @@ jobs:
 
       - name: "Check Architecture"
         run: |
-          uname -a
+          sleep 10000
 
-  Test-Github-ARC-arm64:
-    # You need to use the INSTALLATION_NAME from the previous step
-    runs-on: sh-arc-linux-arm64
-    steps:
-      - name: "Test Github ARC"
-        run: |
-          echo "🎉 This job uses runner scale set runners!"
+  # Test-Github-ARC-arm64:
+  #   # You need to use the INSTALLATION_NAME from the previous step
+  #   runs-on: sh-arc-linux-arm64
+  #   steps:
+  #     - name: "Test Github ARC"
+  #       run: |
+  #         echo "🎉 This job uses runner scale set runners!"
 
-      - name: "Check Architecture"
-        run: |
-          uname -a
+  #     - name: "Check Architecture"
+  #       run: |
+  #         uname -a
