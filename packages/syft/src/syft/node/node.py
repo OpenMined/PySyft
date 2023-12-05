@@ -43,8 +43,6 @@ from ..exceptions.exception import PySyftException
 from ..external import OBLV
 from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
-from ..serde.deserialize import _deserialize
-from ..serde.serialize import _serialize
 from ..service.action.action_object import Action
 from ..service.action.action_object import ActionObject
 from ..service.action.action_service import ActionService
@@ -122,14 +120,6 @@ from .worker_settings import WorkerSettings
 # if user code needs to be serded and its not available we can call this to refresh
 # the code for a specific node UID and thread
 CODE_RELOADER: Dict[int, Callable] = {}
-
-
-def gipc_encoder(obj):
-    return _serialize(obj, to_bytes=True)
-
-
-def gipc_decoder(obj_bytes):
-    return _deserialize(obj_bytes, from_bytes=True)
 
 
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"

@@ -135,6 +135,8 @@ deployments:
                 value: "${NODE_TYPE}"
               - name: NODE_NAME
                 value: "${NODE_NAME}"
+              - name: NODE_SIDE_TYPE
+                value: "${NODE_SIDE_TYPE}"
               - name: STACK_API_KEY
                 value: "changeme"
               - name: PORT
