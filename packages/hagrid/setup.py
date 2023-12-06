@@ -5,7 +5,7 @@ import platform
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "0.3.91"
+__version__ = "0.3.93"
 
 DATA_FILES = {"img": ["hagrid/img/*.png"], "hagrid": ["*.yml"]}
 
@@ -26,14 +26,12 @@ packages = [
     "virtualenv",
     "PyYAML",
     "tqdm",
-    "gevent>=22.10.2",
+    "gevent>=22.10.2,<=23.9.1",
 ]
 
 if platform.system().lower() != "windows":
     packages.extend(["ansible", "ansible-core"])
 
-# Pillow binary wheels for Apple Silicon on Python 3.8 don't seem to work well
-# try using Python 3.9+ for HAGrid on Apple Silicon
 setup(
     name="hagrid",
     description="Happy Automation for Grid",

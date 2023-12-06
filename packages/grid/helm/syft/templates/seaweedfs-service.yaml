@@ -19,6 +19,10 @@ spec:
     port: 8333
     protocol: TCP
     targetPort: 8333
+  - name: port-2
+    port: 4001
+    protocol: TCP
+    targetPort: 4001
   selector:
     app.kubernetes.io/component: seaweedfs
     app.kubernetes.io/name: devspace-app
