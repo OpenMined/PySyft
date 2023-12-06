@@ -3,10 +3,10 @@ import io
 import json
 from typing import Iterator
 from typing import Optional
-from typing import Self
 
 # third party
 import docker
+from typing_extensions import Self
 
 # relative
 from ...custom_worker.config import DockerWorkerConfig
