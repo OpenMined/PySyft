@@ -20,6 +20,10 @@ db:
       mongoPort: "'27017'"
       mongoHost: "mongo"
 
+container:
+  registry: "docker.io"
+  syft_version: 0.8.3-beta.4
+
 node:
   settings:
     tls: false

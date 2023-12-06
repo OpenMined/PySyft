@@ -43,7 +43,7 @@ spec:
         - name: SEAWEED_MOUNT_PORT
           value: '4001'
         envFrom: null
-        image: docker.io/openmined/grid-seaweedfs:0.8.3-beta.4
+        image: {{ .Values.container.registry }}/openmined/grid-seaweedfs:{{ .Values.container.syft_version }}
         lifecycle: null
         livenessProbe: null
         name: container-0
