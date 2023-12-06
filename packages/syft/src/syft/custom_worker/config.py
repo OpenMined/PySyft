@@ -112,10 +112,6 @@ class DockerWorkerConfig(WorkerConfig):
         with open(path) as f:
             return cls(dockerfile=f.read())
 
-    @classmethod
-    def from_str(cls, content: str) -> Self:
-        return cls(dockerfile=content)
-
     def __eq__(self, __value: object) -> bool:
         if not isinstance(__value, DockerWorkerConfig):
             return False
