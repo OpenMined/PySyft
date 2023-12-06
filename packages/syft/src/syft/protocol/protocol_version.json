@@ -892,6 +892,13 @@
           "hash": "a0bba2b7792c9e08c453e9e256f0ac6e6185610726566bcd50b057ae83b42d9a",
           "action": "add"
         }
+      },
+      "SyftWorkerImage": {
+        "1": {
+          "version": 1,
+          "hash": "0a3bee797a66548e2eede5c0e5d2050d8d5e1083331aeaaaf823c6446fbccde2",
+          "action": "add"
+        }
       }
     }
   }

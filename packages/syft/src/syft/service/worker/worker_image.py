@@ -1,21 +1,19 @@
 # stdlib
-from datetime import datetime
 import io
 import json
-from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Iterator
 from typing import Optional
 
 # third party
 import docker
-import pydantic
 
 # relative
 from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...node.credentials import SyftVerifyKey
+from ...serde.serializable import serializable
 from ...types.base import SyftBaseModel
+from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
@@ -36,6 +34,7 @@ def parse_output(log_iterator: Iterator) -> str:
     return log
 
 
+@serializable()
 class ContainerImageRegistry(SyftBaseModel):
     url: str
     tls_enabled: bool
@@ -44,7 +43,14 @@ class ContainerImageRegistry(SyftBaseModel):
         tls_enabled = True if "https" in full_str else False
         return cls(url=full_str, tls_enabled=tls_enabled)
 
+    def __hash__(self) -> int:
+        return hash(self.url + str(self.tls_enabled))
 
+    def __str__(self) -> str:
+        return self.url
+
+
+@serializable()
 class SyftWorkerImageTag(SyftBaseModel):
     registry: Optional[ContainerImageRegistry]
     repo: str
@@ -57,57 +63,37 @@ class SyftWorkerImageTag(SyftBaseModel):
 
         if len(args) == 3:
             registry = ContainerImageRegistry.from_url(args[0])
-            repo = "/".join(args[1::])
+            repo = "/".join(args[1:])
         else:
             registry = None
             repo = "/".join(args)
         return cls(repo=repo, registry=registry, tag=tag)
 
+    @property
+    def full_tag(self):
+        return f"{self.repo}:{self.tag}"
 
+    def __hash__(self) -> int:
+        return hash(self.repo + self.tag + str(hash(self.registry)))
+
+
+@serializable()
 class SyftWorkerImage(SyftObject):
     __canonical_name__ = "SyftWorkerImage"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __attr_unique__ = ["image_tag"]
-    __attr_searchable__ = ["image_tag", "hash", "created_by"]
+    __attr_unique__ = ["image_tag", "config"]
+    __attr_searchable__ = ["image_tag", "image_hash", "created_by"]
 
     id: UID
     config: WorkerConfig
-    image_tag: SyftWorkerImageTag
-    hash: str
-    created_at: datetime
+    image_tag: Optional[SyftWorkerImageTag]
+    image_hash: Optional[str]
+    created_at: DateTime = DateTime.now()
     created_by: SyftVerifyKey
 
 
-class BuildContext:
-    path: Optional[Path]
-
-    @pydantic.validator("path")
-    def val_path(cls, v: Optional[str]):
-        if v is None:
-            temp_dir = TemporaryDirectory()
-            v = temp_dir.name
-        if isinstance(v, str):
-            v = Path(v)
-
-        return v
-
-    def build_from_url(url: str):
-        pass
-
-    def from_local_context(url: str):
-        pass
-
-
-def save_dockerfile_to_path(path: Path, file_name: str, data: str):
-    full_path = path / file_name
-    with open(full_path, "w") as fp:
-        fp.write(data)
-
-
-def build_using_docker(
-    build_context: BuildContext, worker_image: SyftWorkerImage, pull: bool = True
-):
+def build_using_docker(worker_image: SyftWorkerImage, push: bool = True):
     if not isinstance(worker_image.config, DockerWorkerConfig):
         # Handle this to worker with CustomWorkerConfig later
         return SyftError("We only support DockerWorkerConfig")
@@ -118,12 +104,14 @@ def build_using_docker(
 
         # docker build -f <dockerfile> <buildargs> <path>
         result = client.images.build(
-            path=build_context.path,
             fileobj=file_obj,
             rm=True,
-            tag=worker_image.image_tag.tag,
+            tag=worker_image.image_tag.full_tag,
         )
+        worker_image.image_hash = result[0].id
         log = parse_output(result[1])
-        return SyftSuccess(message=f"Build {worker_image} succeeded.\n{log}")
+        return worker_image, SyftSuccess(
+            message=f"Build {worker_image} succeeded.\n{log}"
+        )
     except docker.errors.BuildError as e:
-        return SyftError(message=f"Failed to build {worker_image}. {e}")
+        return worker_image, SyftError(message=f"Failed to build {worker_image}. {e}")

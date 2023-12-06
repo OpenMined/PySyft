@@ -3,7 +3,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
-from .image import SyftWorkerImage
+from .worker_image import SyftWorkerImage
 
 
 @serializable()
