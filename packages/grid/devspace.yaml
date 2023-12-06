@@ -15,13 +15,13 @@ pipelines:
     run: |-
       run_dependencies --all
       ensure_pull_secrets --all
-      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.3-beta.3 -t dev-latest
+      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.3-beta.5 -t dev-latest
       create_deployments --all
 
 vars:
   DEVSPACE_ENV_FILE: "default.env"
   CONTAINER_REGISTRY: "docker.io"
-  VERSION: "0.8.3-beta.3"
+  VERSION: "0.8.3-beta.5"
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
@@ -41,6 +41,16 @@ images:
     dockerfile: ./frontend/frontend.dockerfile
     target: "grid-ui-production"
     context: ./frontend
+    tags:
+      - dev-latest
+      - "${VERSION}"
+  seaweedfs:
+    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
+    buildKit: {}
+    buildArgs:
+      SEAWEEDFS_VERSION: ${SEAWEEDFS_VERSION}
+    dockerfile: ./seaweedfs/seaweedfs.dockerfile
+    context: ./seaweedfs
     tags:
       - dev-latest
       - "${VERSION}"
@@ -211,10 +221,7 @@ deployments:
         repo: https://charts.devspace.sh
       values:
         containers:
-          - image: "${DOCKER_IMAGE_SEAWEEDFS}:${SEAWEEDFS_VERSION}"
-            command:
-              - sh
-              - /etc/seaweedfs/start.sh
+          - image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}:${VERSION}"
             env:
               - name: S3_VOLUME_SIZE_MB
                 value: "${S3_VOLUME_SIZE_MB}"
@@ -224,6 +231,8 @@ deployments:
                 value: "${S3_ROOT_PWD}"
               - name: S3_PORT
                 value: "${S3_PORT}"
+              - name: SEAWEED_MOUNT_PORT
+                value: "${SEAWEED_MOUNT_PORT}"
             volumeMounts:
               - containerPath: /etc/seaweedfs/filer.toml
                 volume:
@@ -251,6 +260,7 @@ deployments:
           ports:
             - port: "8888" # filer
             - port: "8333" # S3
+            - port: "4001" # mount azure
 
   frontend:
     helm:
@@ -282,11 +292,12 @@ dev:
     ports:
       - port: "27017"
   seaweedfs:
-    imageSelector: "${DOCKER_IMAGE_SEAWEEDFS}:${SEAWEEDFS_VERSION}"
+    imageSelector: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
     ports:
       - port: "9333" # admin
       - port: "8888" # filer
       - port: "8333" # S3
+      - port: "4001" # mount azure
   backend:
     imageSelector: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}"
     env:
