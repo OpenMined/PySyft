@@ -15,7 +15,7 @@ pipelines:
     run: |-
       run_dependencies --all
       ensure_pull_secrets --all
-      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.3-beta.4 -t dev-latest
+      build_images --all
       create_deployments --all
 
 vars:
@@ -35,6 +35,7 @@ images:
     tags:
       - dev-latest
       - "${VERSION}"
+      - "${devspace.git.commit}"
   frontend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
     buildKit:
@@ -45,6 +46,7 @@ images:
     tags:
       - dev-latest
       - "${VERSION}"
+      - "${devspace.git.commit}"
   seaweedfs:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
     buildKit: {}
@@ -55,6 +57,7 @@ images:
     tags:
       - dev-latest
       - "${VERSION}"
+      - "${devspace.git.commit}"
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
