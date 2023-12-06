@@ -97,7 +97,7 @@ profiles:
   - name: gateway
     patches:
       - op: replace
-        path: deployments.syft.helm.values.node.setting.nodeType
+        path: deployments.syft.helm.values.node.settings.nodeType
         value: "gateway"
 
 commands:
