@@ -62,8 +62,9 @@ deployments:
       chart:
         name: ./helm/syft
       values:
-        container.registry: "${CONTAINER_REGISTRY}"
-        container.syft_version: "${VERSION}"
+        container:
+          registry: ${CONTAINER_REGISTRY}
+          syft_version: "dev-latest"
 
 dev:
   mongo:
