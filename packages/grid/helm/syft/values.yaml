@@ -22,7 +22,7 @@ db:
 
 container:
   registry: "docker.io"
-  syft_version: 0.8.3-beta.4
+  syft_version: 0.8.3-beta.5
 
 node:
   settings:
