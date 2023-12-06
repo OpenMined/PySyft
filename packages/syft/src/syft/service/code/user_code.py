@@ -655,13 +655,23 @@ class SubmitUserCode(SyftObject):
         return self.input_policy_init_kwargs
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        class EphemeralDomain():
+            def launch_job(self, func, **kwargs):
+                print("Launching:", func)
+                return func(**kwargs)
+                
         # only run this on the client side
         if self.local_function:
-            tree = ast.parse(inspect.getsource(self.local_function))
+            new_function_str = process_code(
+                raw_code=self.code,
+                func_name=self.func_name,
+                original_func_name=self.func_name,
+                function_input_kwargs=self.input_kwargs
+            )
 
-            # check there are no globals
-            v = GlobalsVisitor()
-            v.visit(tree)
+            # # check there are no globals
+            # v = GlobalsVisitor()
+            # v.visit(tree)
 
             # filtered_args = []
             filtered_kwargs = {}
@@ -676,7 +686,43 @@ class SubmitUserCode(SyftObject):
                 print("Warning: The result you see is computed on PRIVATE data.")
             elif on_mock_data:
                 print("Warning: The result you see is computed on MOCK data.")
-            return self.local_function(**filtered_kwargs)
+            _locals = {
+                "filtered_kwargs": filtered_kwargs,
+            }
+            if "domain" in self.input_kwargs:
+                # local_domain = kwargs['domain']
+                tree = ast.parse(inspect.getsource(self.local_function))
+                filtered_kwargs['domain'] = EphemeralDomain()
+                v = LaunchJobVisitor()
+                v.visit(tree)
+                nested_calls = v.nested_calls
+                print(list(globals().keys()))
+                print(list(locals().keys()))
+                try:
+                    ipython = get_ipython()
+                except Exception:
+                    ipython = None
+                    pass
+
+                for call in nested_calls:
+                    if ipython is not None:
+                        specs = ipython.object_inspect(call)
+                        # Look for nested job locally
+                        if specs['type_name'] == 'SubmitUserCode':
+                            # Get the function in the local scope from the jupyter
+                            _locals[call] = ipython.ev(call)
+                    if call not in _locals:
+                        # # Not in a jupyter notebook or call not found locally
+                        # res = local_domain.code.get_by_service_name(call)
+                        # if isinstance(res, SyftError):
+                        #     return res
+                        # _locals[call] = res
+                        raise Exception("funciton not found locally")
+                        
+            print(_locals)
+            exec(new_function_str, _locals, _locals)  # nosec
+            return eval(f"{self.func_name}(**filtered_kwargs)", _locals, _locals)
+            # return self.local_function(**filtered_kwargs)
         else:
             raise NotImplementedError
 
@@ -779,11 +825,9 @@ def generate_unique_func_name(context: TransformContext) -> TransformContext:
 
 
 def process_code(
-    context,
     raw_code: str,
     func_name: str,
     original_func_name: str,
-    policy_input_kwargs: List[str],
     function_input_kwargs: List[str],
 ) -> str:
     tree = ast.parse(raw_code)
@@ -796,8 +840,6 @@ def process_code(
     f.decorator_list = []
 
     call_args = function_input_kwargs
-    if "domain" in function_input_kwargs:
-        context.output["uses_domain"] = True
     call_stmt_keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in call_args]
     call_stmt = ast.Assign(
         targets=[ast.Name(id="result")],
@@ -837,12 +879,13 @@ def new_check_code(context: TransformContext) -> TransformContext:
         for d in input_kwargs.values():
             input_keys += d.keys()
 
+    if "domain" in context.output["input_kwargs"]:
+        context.output["uses_domain"] = True
+    
     processed_code = process_code(
-        context,
         raw_code=context.output["raw_code"],
         func_name=context.output["unique_func_name"],
         original_func_name=context.output["service_func_name"],
-        policy_input_kwargs=input_keys,
         function_input_kwargs=context.output["input_kwargs"],
     )
     context.output["parsed_code"] = processed_code
