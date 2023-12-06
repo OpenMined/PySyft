@@ -292,11 +292,12 @@ dev:
     ports:
       - port: "27017"
   seaweedfs:
-    imageSelector: "${DOCKER_IMAGE_SEAWEEDFS}:${SEAWEEDFS_VERSION}"
+    imageSelector: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
     ports:
       - port: "9333" # admin
       - port: "8888" # filer
       - port: "8333" # S3
+      - port: "4001" # mount azure
   backend:
     imageSelector: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}"
     env:
