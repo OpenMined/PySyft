@@ -15,7 +15,7 @@ pipelines:
     run: |-
       run_dependencies --all
       ensure_pull_secrets --all
-      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.3-beta.5 -t dev-latest
+      build_images --all
       create_deployments --all
 
 vars:
