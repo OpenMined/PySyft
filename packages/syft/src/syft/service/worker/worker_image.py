@@ -3,6 +3,7 @@ import io
 import json
 from typing import Iterator
 from typing import Optional
+from typing import Self
 
 # third party
 import docker
@@ -24,7 +25,7 @@ from ..response import SyftSuccess
 def parse_output(log_iterator: Iterator) -> str:
     log = ""
     for line in log_iterator:
-        for item in list(line.values()):
+        for item in line.values():
             if isinstance(item, str):
                 log += item
             elif isinstance(item, dict):
@@ -40,8 +41,7 @@ class ContainerImageRegistry(SyftBaseModel):
     tls_enabled: bool
 
     def from_url(cls, full_str: str):
-        tls_enabled = True if "https" in full_str else False
-        return cls(url=full_str, tls_enabled=tls_enabled)
+        return cls(url=full_str, tls_enabled=full_str.startswith("https"))
 
     def __hash__(self) -> int:
         return hash(self.url + str(self.tls_enabled))
@@ -57,7 +57,7 @@ class SyftWorkerImageTag(SyftBaseModel):
     tag: str
 
     @classmethod
-    def from_str(cls, full_str: str):
+    def from_str(cls, full_str: str) -> Self:
         repo_url, tag = full_str.rsplit(":", 1)
         args = repo_url.rsplit("/", 2)
 
@@ -70,7 +70,7 @@ class SyftWorkerImageTag(SyftBaseModel):
         return cls(repo=repo, registry=registry, tag=tag)
 
     @property
-    def full_tag(self):
+    def full_tag(self) -> str:
         return f"{self.repo}:{self.tag}"
 
     def __hash__(self) -> int:
