@@ -22,6 +22,7 @@ vars:
   DEVSPACE_ENV_FILE: "default.env"
   CONTAINER_REGISTRY: "docker.io"
   VERSION: "0.8.3-beta.4"
+  NODE_NAME: "mynode"
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
@@ -65,6 +66,10 @@ deployments:
         container:
           registry: ${CONTAINER_REGISTRY}
           syft_version: "dev-latest"
+        node:
+          settings:
+            nodeName: ${NODE_NAME}
+            nodeType: "domain"
 
 dev:
   mongo:
@@ -91,10 +96,9 @@ dev:
 profiles:
   - name: gateway
     patches:
-      - op: remove
-        path: deployments.seaweedfs
-      - op: remove
-        path: deployments.seaweedfs-config
+      - op: replace
+        path: deployments.syft.helm.values.node.setting.nodeType
+        value: "gateway"
 
 commands:
   start:
