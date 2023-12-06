@@ -58,11 +58,17 @@ jobs:
         with:
           python-version: "3.11"
 
+      # Currently psutil package requires gcc to be installed on arm
+      # for building psutil from source
+      # as linux/aarch64 wheels not avaialble for psutil
+      # We could remove once we have aarch64 wheels
+      # https://github.com/giampaolo/psutil/issues/1972
       - name: Install Metadata packages for arm64
         if: ${{ endsWith(matrix.runner, '-arm64') }}
         run: |
           sudo apt update -y
           sudo apt install software-properties-common -y
+          sudo apt install gcc -y
 
       - name: Setup Python on arm64
         if: ${{ endsWith(matrix.runner, '-arm64') }}
