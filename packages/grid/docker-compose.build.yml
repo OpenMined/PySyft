@@ -5,9 +5,30 @@ services:
       context: ${RELATIVE_PATH}./frontend
       dockerfile: frontend.dockerfile
       target: "${FRONTEND_TARGET:-grid-ui-development}"
+    profiles:
+      - frontend
 
   backend:
     build:
       context: ${RELATIVE_PATH}../
       dockerfile: ./grid/backend/backend.dockerfile
       target: "backend"
+    profiles:
+      - backend
+
+  seaweedfs:
+    build:
+      context: ${RELATIVE_PATH}./seaweedfs
+      dockerfile: seaweedfs.dockerfile
+      args:
+        - SEAWEEDFS_VERSION=${SEAWEEDFS_VERSION}
+    profiles:
+      - blob-storage
+
+  worker:
+    build:
+      context: ${RELATIVE_PATH}../
+      dockerfile: ./grid/backend/backend.dockerfile
+      target: "backend"
+    profiles:
+      - worker

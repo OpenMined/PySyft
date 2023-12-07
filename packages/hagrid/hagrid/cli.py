@@ -142,9 +142,6 @@ def get_compose_src_path(
     else:
         path = deployment_dir(node_name)
 
-    if kwargs["deployment_type"] == "single_container":
-        path = path + "/worker"
-
     os.makedirs(path, exist_ok=True)
     return path
 
@@ -1279,7 +1276,7 @@ def create_launch_cmd(
     parsed_kwargs["trace"] = False
     if ("trace" not in kwargs or kwargs["trace"] is None) and parsed_kwargs["dev"]:
         # default to trace on in dev mode
-        parsed_kwargs["trace"] = True
+        parsed_kwargs["trace"] = False
     elif "trace" in kwargs:
         parsed_kwargs["trace"] = str_to_bool(cast(str, kwargs["trace"]))
 
@@ -2142,6 +2139,8 @@ def create_launch_docker_cmd(
             **kwargs,
         )
 
+    single_container_mode = kwargs["deployment_type"] == "single_container"
+
     enable_oblv = bool(kwargs["oblv"])
     print("  - NAME: " + str(snake_name))
     print("  - TEMPLATE DIR: " + template_grid_dir)
@@ -2202,6 +2201,7 @@ def create_launch_docker_cmd(
         "ENABLE_OBLV": str(enable_oblv).lower(),
         "CREDENTIALS_VOLUME": host_path,
         "NODE_SIDE_TYPE": kwargs["node_side_type"],
+        "SINGLE_CONTAINER_MODE": single_container_mode,
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:
@@ -2323,21 +2323,25 @@ def create_launch_docker_cmd(
     except Exception:  # nosec
         pass
 
-    if kwargs["deployment_type"] == "single_container":
-        return create_launch_worker_cmd(cmd=cmd, kwargs=kwargs, build=build, tail=tail)
+    if single_container_mode:
+        cmd += " --profile worker"
+    else:
+        cmd += " --profile backend"
+        cmd += " --profile proxy"
+        cmd += " --profile mongo"
 
-    if str(node_type.input) in ["network", "gateway"]:
-        cmd += " --profile network"
+        if str(node_type.input) in ["network", "gateway"]:
+            cmd += " --profile network"
 
-    if use_blob_storage:
-        cmd += " --profile blob-storage"
+        if use_blob_storage:
+            cmd += " --profile blob-storage"
 
-    # no frontend container so expect bad gateway on the / route
-    if not bool(kwargs["headless"]):
-        cmd += " --profile frontend"
+        # no frontend container so expect bad gateway on the / route
+        if not bool(kwargs["headless"]):
+            cmd += " --profile frontend"
 
-    if "trace" in kwargs and kwargs["trace"]:
-        cmd += " --profile telemetry"
+        if "trace" in kwargs and kwargs["trace"]:
+            cmd += " --profile telemetry"
 
     final_commands = {}
     final_commands["Pulling"] = pull_command(cmd, kwargs)
@@ -2347,25 +2351,6 @@ def create_launch_docker_cmd(
         cmd += " --file docker-compose.tls.yml"
     if "test" in kwargs and kwargs["test"] is True:
         cmd += " --file docker-compose.test.yml"
-
-    if build:
-        my_build_command = build_command(cmd)
-        final_commands["Building"] = my_build_command
-
-    dev_mode = kwargs.get("dev", False)
-    final_commands["Launching"] = deploy_command(cmd, tail, dev_mode)
-    return final_commands
-
-
-def create_launch_worker_cmd(
-    cmd: str,
-    kwargs: TypeDict[str, Any],
-    build: bool,
-    tail: bool = True,
-) -> TypeDict[str, TypeList[str]]:
-    final_commands = {}
-    final_commands["Pulling"] = pull_command(cmd, kwargs)
-    cmd += " --file docker-compose.yml"
 
     if build:
         my_build_command = build_command(cmd)
@@ -3279,16 +3264,9 @@ def create_land_docker_cmd(verb: GrammarVerb, prune_volumes: bool = False) -> st
     """
     node_name = verb.get_named_term_type(name="node_name")
     snake_name = str(node_name.snake_input)
-    containers = shell("docker ps --format '{{.Names}}' | " + f"grep {snake_name}")
 
-    # Check if the container name belongs to worker container
-    grid_path = GRID_SRC_PATH()
-    if "proxy" in containers:
-        path = grid_path
-        env_var = ";export $(cat .env | sed 's/#.*//g' | xargs);"
-    else:
-        path = grid_path + "/worker"
-        env_var = ";export $(cat ../.env | sed 's/#.*//g' | xargs);"
+    path = GRID_SRC_PATH()
+    env_var = ";export $(cat .env | sed 's/#.*//g' | xargs);"
 
     cmd = ""
     cmd += "docker compose"

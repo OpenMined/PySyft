@@ -10,6 +10,8 @@ services:
     restart: always
     hostname: ${NODE_NAME?Variable not set}
     image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}
+    profiles:
+      - proxy
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
       - default
@@ -76,11 +78,51 @@ services:
   #   volumes:
   #     - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
 
+  worker:
+    restart: always
+    image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
+    profiles:
+      - worker
+    env_file:
+      - .env
+    environment:
+      - SERVICE_NAME=worker
+      - RELEASE=${RELEASE:-production}
+      - VERSION=${VERSION}
+      - VERSION_HASH=${VERSION_HASH}
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - NODE_NAME=${NODE_NAME?Variable not set}
+      - STACK_API_KEY=${STACK_API_KEY}
+      - PORT=${HTTP_PORT}
+      - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+      - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+      - CONTAINER_HOST=${CONTAINER_HOST}
+      - TRACE=False # TODO: Trace Mode is set to False, until jaegar is integrated
+      - JAEGER_HOST=${JAEGER_HOST}
+      - JAEGER_PORT=${JAEGER_PORT}
+      - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
+      - DEV_MODE=${DEV_MODE}
+      - NODE_SIDE_TYPE=${NODE_SIDE_TYPE}
+      - ENABLE_WARNINGS=${ENABLE_WARNINGS}
+    ports:
+      - "${HTTP_PORT}:${HTTP_PORT}"
+    volumes:
+      - credentials-data:/root/data/creds/
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    labels:
+      - "orgs.openmined.syft=this is a syft worker container"
+
   backend:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
+    profiles:
+      - backend
     depends_on:
       - proxy
+      - mongo
     env_file:
       - .env
     environment:
@@ -106,9 +148,17 @@ services:
       - ENABLE_OBLV=${ENABLE_OBLV}
       - DEFAULT_ROOT_EMAIL=${DEFAULT_ROOT_EMAIL}
       - DEFAULT_ROOT_PASSWORD=${DEFAULT_ROOT_PASSWORD}
+      - BACKEND_STORAGE_PATH=${BACKEND_STORAGE_PATH}
+      - QUEUE_PORT=${QUEUE_PORT}
+      - CREATE_PRODUCER=true
+      - N_CONSUMERS=0
+      - HOST_GRID_PATH=${PWD}
+    command: "./grid/start.sh"
     network_mode: service:proxy
     volumes:
+      - ${BACKEND_STORAGE_PATH}:/storage
       - ${CREDENTIALS_VOLUME}:/root/data/creds/
+      - /var/run/docker.sock:/var/run/docker.sock
     stdin_open: true
     tty: true
     labels:
@@ -186,18 +236,17 @@ services:
       - blob-storage
     depends_on:
       - proxy
-    image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}:${SEAWEEDFS_VERSION}"
+    env_file:
+      - .env
+    image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}:${VERSION-latest}"
     environment:
       - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:-1024}
       - S3_ROOT_USER=${S3_ROOT_USER:-admin}
       - S3_ROOT_PWD=${S3_ROOT_PWD:-admin}
       - S3_PORT=${S3_PORT:-8888}
-    entrypoint: ["/bin/sh"]
-    command:
-      - "/etc/seaweedfs/start.sh"
+      - SEAWEED_MOUNT_PORT=${SEAWEED_MOUNT_PORT:-4001}
     volumes:
-      - seaweedfs-data:/data/blob
-      - seaweedfs-data-2:/data
+      - seaweedfs-data:/data
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
       - ./seaweedfs/start.sh:/etc/seaweedfs/start.sh
     labels:
@@ -205,6 +254,8 @@ services:
 
   mongo:
     image: "${MONGO_IMAGE}:${MONGO_VERSION}"
+    profiles:
+      - mongo
     restart: always
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
@@ -244,9 +295,6 @@ volumes:
   credentials-data:
   # app-redis-data:
   seaweedfs-data:
-    labels:
-      orgs.openmined.syft: "this is a syft seaweedfs volume"
-  seaweedfs-data-2:
     labels:
       orgs.openmined.syft: "this is a syft seaweedfs volume"
   mongo-data:

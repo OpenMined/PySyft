@@ -1,9 +1,10 @@
 #! /usr/bin/env bash
 set -e
 
+pip install nltk
 echo "Running start.sh with RELEASE=${RELEASE} and $(id)"
-
 export GEVENT_MONKEYPATCH="False"
+
 APP_MODULE=grid.main:app
 LOG_LEVEL=${LOG_LEVEL:-info}
 HOST=${HOST:-0.0.0.0}
@@ -21,7 +22,7 @@ if [[ ${DEV_MODE} == "True" ]];
 then
     echo "DEV_MODE Enabled"
     RELOAD="--reload"
-    pip install --user -e "$APPDIR/syft[telemetry]"
+    pip install --user -e "$APPDIR/syft[telemetry,data_science]"
 fi
 
 set +e

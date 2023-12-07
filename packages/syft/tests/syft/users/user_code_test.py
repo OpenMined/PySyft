@@ -9,7 +9,9 @@ import numpy as np
 # syft absolute
 import syft as sy
 from syft.service.action.action_object import ActionObject
+from syft.service.request.request import Request
 from syft.service.request.request import UserCodeStatusChange
+from syft.service.response import SyftError
 from syft.service.user.user import User
 
 
@@ -17,6 +19,13 @@ from syft.service.user.user import User
     input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
 )
 def test_func():
+    return 1
+
+
+@sy.syft_function(
+    input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
+)
+def test_func_2():
     return 1
 
 
@@ -36,6 +45,24 @@ def test_user_code(worker, guest_client: User) -> None:
 
     real_result = result.get()
     assert isinstance(real_result, int)
+
+
+def test_duplicated_user_code(worker, guest_client: User) -> None:
+    test_func()
+    result = guest_client.api.services.code.request_code_execution(test_func)
+    assert isinstance(result, Request)
+    assert len(guest_client.code.get_all()) == 1
+
+    # request the exact same code should return an error
+    result = guest_client.api.services.code.request_code_execution(test_func)
+    assert isinstance(result, SyftError)
+    assert len(guest_client.code.get_all()) == 1
+
+    # request the a different function name but same content will also succeed
+    test_func_2()
+    result = guest_client.api.services.code.request_code_execution(test_func_2)
+    assert isinstance(result, Request)
+    assert len(guest_client.code.get_all()) == 2
 
 
 def random_hash() -> str:
@@ -84,3 +111,37 @@ def test_scientist_can_list_code_assets(worker: sy.Worker, faker: Faker) -> None
     )
 
     assert status_change.linked_obj.resolve.assets[0] == asset_input
+
+
+@sy.syft_function()
+def test_inner_func():
+    return 1
+
+
+@sy.syft_function(
+    input_policy=sy.ExactMatch(), output_policy=sy.SingleExecutionExactOutput()
+)
+def test_outer_func(domain):
+    job = domain.launch_job(test_inner_func)
+    return job
+
+
+def test_nested_requests(worker, guest_client: User):
+    guest_client.api.services.code.submit(test_inner_func)
+    guest_client.api.services.code.request_code_execution(test_outer_func)
+
+    root_domain_client = worker.root_client
+    request = root_domain_client.requests[-1]
+    assert request.code.nested_requests == {"test_inner_func": "latest"}
+    root_domain_client.api.services.request.apply(request.id)
+    request = root_domain_client.requests[-1]
+
+    codes = root_domain_client.code
+    inner = codes[0] if codes[0].service_func_name == "test_inner_func" else codes[1]
+    outer = codes[0] if codes[0].service_func_name == "test_outer_func" else codes[1]
+    assert list(request.code.nested_codes.keys()) == ["test_inner_func"]
+    (linked_obj, node) = request.code.nested_codes["test_inner_func"]
+    assert node == {}
+    assert linked_obj.resolve.id == inner.id
+    assert outer.status.approved
+    assert not inner.status.approved

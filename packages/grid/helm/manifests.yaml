@@ -65,13 +65,15 @@ spec:
         - name: RELEASE
           value: production
         - name: VERSION
-          value: 0.8.2-beta.40
+          value: 0.8.3-beta.3
         - name: VERSION_HASH
           value: unknown
         - name: NODE_TYPE
           value: domain
         - name: NODE_NAME
           value: default_node_name
+        - name: NODE_SIDE_TYPE
+          value: high
         - name: STACK_API_KEY
           value: changeme
         - name: PORT
@@ -101,7 +103,7 @@ spec:
         - name: DEFAULT_ROOT_PASSWORD
           value: changethis
         envFrom: null
-        image: docker.io/openmined/grid-backend:0.8.2-beta.40
+        image: docker.io/openmined/grid-backend:0.8.3-beta.3
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -218,7 +220,7 @@ spec:
         command: null
         env:
         - name: VERSION
-          value: 0.8.2-beta.40
+          value: 0.8.3-beta.3
         - name: VERSION_HASH
           value: unknown
         - name: NODE_TYPE
@@ -226,7 +228,7 @@ spec:
         - name: NEXT_PUBLIC_API_URL
           value: ${NEXT_PUBLIC_API_URL}
         envFrom: null
-        image: docker.io/openmined/grid-frontend:0.8.2-beta.40
+        image: docker.io/openmined/grid-frontend:0.8.3-beta.3
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -361,7 +363,7 @@ spec:
         - name: MONGO_INITDB_ROOT_PASSWORD
           value: example
         envFrom: null
-        image: mongo:7.0.2
+        image: mongo:7.0.3
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -531,6 +533,10 @@ spec:
     port: 8333
     protocol: TCP
     targetPort: 8333
+  - name: port-2
+    port: 4001
+    protocol: TCP
+    targetPort: 4001
   selector:
     app.kubernetes.io/component: seaweedfs
     app.kubernetes.io/name: devspace-app
@@ -567,9 +573,7 @@ spec:
       affinity: null
       containers:
       - args: null
-        command:
-        - sh
-        - /etc/seaweedfs/start.sh
+        command: null
         env:
         - name: S3_VOLUME_SIZE_MB
           value: '1024'
@@ -579,8 +583,10 @@ spec:
           value: admin
         - name: S3_PORT
           value: '8333'
+        - name: SEAWEED_MOUNT_PORT
+          value: '4001'
         envFrom: null
-        image: chrislusf/seaweedfs:3.57
+        image: docker.io/openmined/grid-seaweedfs:0.8.3-beta.3
         lifecycle: null
         livenessProbe: null
         name: container-0

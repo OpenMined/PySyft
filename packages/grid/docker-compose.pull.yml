@@ -7,16 +7,30 @@ services:
   #   image: rabbitmq:${RABBITMQ_VERSION?Variable not Set}${RABBITMQ_MANAGEMENT:-}
 
   seaweedfs:
-    image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}:${SEAWEEDFS_VERSION}"
+    image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}:${VERSION-latest}"
+    profiles:
+      - blob-storage
 
   # docker-host:
   #   image: qoomon/docker-host
 
   proxy:
     image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}
+    profiles:
+      - proxy
 
   mongo:
     image: "${MONGO_IMAGE}:${MONGO_VERSION}"
+    profiles:
+      - mongo
 
   jaeger:
     image: jaegertracing/all-in-one:1.37
+    profiles:
+      - telemetry
+
+  # Temporary fix until we refactor pull, build, launch UI step during hagrid launch
+  worker:
+    image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
+    profiles:
+      - worker

@@ -30,9 +30,7 @@ spec:
       affinity: null
       containers:
       - args: null
-        command:
-        - sh
-        - /etc/seaweedfs/start.sh
+        command: null
         env:
         - name: S3_VOLUME_SIZE_MB
           value: '1024'
@@ -42,8 +40,10 @@ spec:
           value: admin
         - name: S3_PORT
           value: '8333'
+        - name: SEAWEED_MOUNT_PORT
+          value: '4001'
         envFrom: null
-        image: chrislusf/seaweedfs:3.57
+        image: docker.io/openmined/grid-seaweedfs:0.8.3-beta.3
         lifecycle: null
         livenessProbe: null
         name: container-0
