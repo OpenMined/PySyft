@@ -1,15 +1,19 @@
 # stdlib
 from enum import Enum
 from typing import List
+from typing import Optional
 
 # relative
+from ...serde.serializable import serializable
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 
 
 class WorkerStatus(Enum):
+    PENDING = "Pending"
     RUNNING = "Running"
     STOPPED = "Stopped"
     RESTARTED = "Restarted"
@@ -27,8 +31,8 @@ class SyftWorker(SyftObject):
     id: UID
     name: str
     container_id: str
-    created_at: DateTime
-    sha_hash: str
+    created_at: DateTime = DateTime.now()
+    image_hash: str
     healthcheck: WorkerHealth
     status: WorkerStatus
 
@@ -46,3 +50,9 @@ class WorkerPool(SyftObject):
 class WorkerOrchestrationType:
     DOCKER = "docker"
     K8s = "k8s"
+
+
+@serializable()
+class ContainerSpawnStatus(SyftBaseObject):
+    worker: SyftWorker
+    error: Optional[str]
