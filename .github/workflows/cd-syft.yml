@@ -1,8 +1,8 @@
 name: CD - Syft
 
 on:
-  schedule:
-    - cron: "00 12 * * */7" # At 12:00 UTC on every seven days
+  # schedule:
+  # - cron: "00 12 * * */7" # At 12:00 UTC on every seven days
 
   workflow_dispatch:
     inputs:
@@ -87,14 +87,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade  bump2version tox
 
-      - name: Bump the Version
-        id: bump-version
-        run: |
-          ls **/VERSION | xargs -I {} python {}
-          cat packages/grid/devspace.yaml | grep '0\.'
-          bump2version prenum --allow-dirty --no-commit
-          ls **/VERSION | xargs -I {} python {}
-          cat packages/grid/devspace.yaml | grep '0\.'
+      # - name: Bump the Version
+      #   id: bump-version
+      #   run: |
+      #     ls **/VERSION | xargs -I {} python {}
+      #     cat packages/grid/devspace.yaml | grep '0\.'
+      #     bump2version prenum --allow-dirty --no-commit
+      #     ls **/VERSION | xargs -I {} python {}
+      #     cat packages/grid/devspace.yaml | grep '0\.'
 
       - name: Generate Release Metadata
         id: release_metadata
@@ -289,16 +289,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade tox setuptools wheel twine bump2version PyYAML
 
-      - name: Bump the Version
-        id: bump-version
-        run: |
-          ls **/VERSION | xargs -I {} python {}
-          cat packages/grid/devspace.yaml | grep '0\.'
-          bump2version prenum --allow-dirty --no-commit
-          tox -e lint || true
-          ls **/VERSION | xargs -I {} python {}
-          cat packages/grid/devspace.yaml | grep '0\.'
-          python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
+      # - name: Bump the Version
+      #   id: bump-version
+      #   run: |
+      #     ls **/VERSION | xargs -I {} python {}
+      #     cat packages/grid/devspace.yaml | grep '0\.'
+      #     bump2version prenum --allow-dirty --no-commit
+      #     tox -e lint || true
+      #     ls **/VERSION | xargs -I {} python {}
+      #     cat packages/grid/devspace.yaml | grep '0\.'
+      #     python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
 
       - name: Check Protocol Version
         run: |
@@ -352,13 +352,13 @@ jobs:
         run: |
           python scripts/convert_to_pypi_readme.py --input-file  packages/syft/README.md --output-file packages/syft/PYPI.md --version ${{ steps.release_checks.outputs.future_stable_version }}
 
-      - name: Commit changes to Syft
-        uses: EndBug/add-and-commit@v9
-        with:
-          author_name: ${{ secrets.OM_BOT_NAME }}
-          author_email: ${{ secrets.OM_BOT_EMAIL }}
-          message: "[syft]bump version"
-          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION','packages/syft/PYPI.md', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml','packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py', 'packages/grid/podman/podman-kube/podman-syft-kube.yaml' ,'packages/grid/podman/podman-kube/podman-syft-kube-config.yaml', 'packages/syftcli/manifest.yml', 'packages/syft/src/syft/protocol/protocol_version.json', 'packages/grid/backend/worker_cpu.dockerfile']"
+      # - name: Commit changes to Syft
+      #   uses: EndBug/add-and-commit@v9
+      #   with:
+      #     author_name: ${{ secrets.OM_BOT_NAME }}
+      #     author_email: ${{ secrets.OM_BOT_EMAIL }}
+      #     message: "[syft]bump version"
+      #     add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION','packages/syft/PYPI.md', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml','packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py', 'packages/grid/podman/podman-kube/podman-syft-kube.yaml' ,'packages/grid/podman/podman-kube/podman-syft-kube-config.yaml', 'packages/syftcli/manifest.yml', 'packages/syft/src/syft/protocol/protocol_version.json', 'packages/grid/backend/worker_cpu.dockerfile']"
 
       - name: Scheduled Build and Publish
         if: github.event_name == 'schedule'
