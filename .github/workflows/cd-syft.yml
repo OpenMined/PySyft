@@ -24,430 +24,430 @@ on:
 jobs:
   call-pr-tests-linting:
     if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/pr-tests-linting.yml@${{ github.ref_name }}
+    uses: OpenMined/PySyft/.github/workflows/pr-tests-linting.yml@${{ github.head_ref }}
 
   call-pr-tests-syft:
     if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/pr-tests-syft.yml@${{ github.ref_name }}
+    uses: OpenMined/PySyft/.github/workflows/pr-tests-syft.yml@${{ github.head_ref }}
 
   call-pr-tests-stack:
     if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@${{ github.ref_name }}
+    uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@${{ github.head_ref }}
     secrets: inherit
 
-  build-and-push-docker-images:
-    needs: [call-pr-tests-linting, call-pr-tests-syft, call-pr-tests-stack]
-    if: always() && (needs.call-pr-tests-linting.result == 'success' && needs.call-pr-tests-syft.result == 'success' && needs.call-pr-tests-stack.result == 'success' || github.event.inputs.skip_tests == 'true')
+  # build-and-push-docker-images:
+  #   needs: [call-pr-tests-linting, call-pr-tests-syft, call-pr-tests-stack]
+  #   if: always() && (needs.call-pr-tests-linting.result == 'success' && needs.call-pr-tests-syft.result == 'success' && needs.call-pr-tests-stack.result == 'success' || github.event.inputs.skip_tests == 'true')
 
-    strategy:
-      matrix:
-        runner: [sh-arc-linux-x64, sh-arc-linux-arm64]
-    runs-on: ${{ matrix.runner }}
+  #   strategy:
+  #     matrix:
+  #       runner: [sh-arc-linux-x64, sh-arc-linux-arm64]
+  #   runs-on: ${{ matrix.runner }}
 
-    outputs:
-      release_tag: ${{ steps.release_metadata.outputs.release_tag }}
-      grid_version: ${{ steps.release_metadata.outputs.grid_version }}
+  #   outputs:
+  #     release_tag: ${{ steps.release_metadata.outputs.release_tag }}
+  #     grid_version: ${{ steps.release_metadata.outputs.grid_version }}
 
-    steps:
-      - uses: actions/checkout@v4
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      # actions/setup-python doesn't yet support ARM
-      - name: Setup Python on x64
-        if: ${{ !endsWith(matrix.runner, '-arm64') }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+  #     # actions/setup-python doesn't yet support ARM
+  #     - name: Setup Python on x64
+  #       if: ${{ !endsWith(matrix.runner, '-arm64') }}
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: "3.11"
 
-      # Currently psutil package requires gcc to be installed on arm
-      # for building psutil from source
-      # as linux/aarch64 wheels not avaialble for psutil
-      # We could remove once we have aarch64 wheels
-      # https://github.com/giampaolo/psutil/issues/1972
-      - name: Install Metadata packages for arm64
-        if: ${{ endsWith(matrix.runner, '-arm64') }}
-        run: |
-          sudo apt update -y
-          sudo apt install software-properties-common -y
-          sudo apt install gcc -y
+  #     # Currently psutil package requires gcc to be installed on arm
+  #     # for building psutil from source
+  #     # as linux/aarch64 wheels not avaialble for psutil
+  #     # We could remove once we have aarch64 wheels
+  #     # https://github.com/giampaolo/psutil/issues/1972
+  #     - name: Install Metadata packages for arm64
+  #       if: ${{ endsWith(matrix.runner, '-arm64') }}
+  #       run: |
+  #         sudo apt update -y
+  #         sudo apt install software-properties-common -y
+  #         sudo apt install gcc -y
 
-      - name: Setup Python on arm64
-        if: ${{ endsWith(matrix.runner, '-arm64') }}
-        uses: deadsnakes/action@v3.1.0
-        with:
-          python-version: "3.11"
+  #     - name: Setup Python on arm64
+  #       if: ${{ endsWith(matrix.runner, '-arm64') }}
+  #       uses: deadsnakes/action@v3.1.0
+  #       with:
+  #         python-version: "3.11"
 
-      - name: Check python version
-        run: |
-          python --version
-          python3 --version
-          which python
+  #     - name: Check python version
+  #       run: |
+  #         python --version
+  #         python3 --version
+  #         which python
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade  bump2version tox
+  #     - name: Install dependencies
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         pip install --upgrade  bump2version tox
 
-      # - name: Bump the Version
-      #   id: bump-version
-      #   run: |
-      #     ls **/VERSION | xargs -I {} python {}
-      #     cat packages/grid/devspace.yaml | grep '0\.'
-      #     bump2version prenum --allow-dirty --no-commit
-      #     ls **/VERSION | xargs -I {} python {}
-      #     cat packages/grid/devspace.yaml | grep '0\.'
+  #     # - name: Bump the Version
+  #     #   id: bump-version
+  #     #   run: |
+  #     #     ls **/VERSION | xargs -I {} python {}
+  #     #     cat packages/grid/devspace.yaml | grep '0\.'
+  #     #     bump2version prenum --allow-dirty --no-commit
+  #     #     ls **/VERSION | xargs -I {} python {}
+  #     #     cat packages/grid/devspace.yaml | grep '0\.'
 
-      - name: Generate Release Metadata
-        id: release_metadata
-        run: |
-          if [[ $(python packages/grid/VERSION) == *"beta"* ]]; then
-            echo "release_tag=beta" >> $GITHUB_OUTPUT
-          else
-            echo "release_tag=latest" >> $GITHUB_OUTPUT
-          fi
-          if [[ ${{matrix.runner}} == *"x64"* ]]; then
-            echo "release_platform=linux/amd64" >> $GITHUB_OUTPUT
-            echo "short_release_platform=amd64" >> $GITHUB_OUTPUT
-          else
-            echo "release_platform=linux/arm64" >> $GITHUB_OUTPUT
-            echo "short_release_platform=arm64" >> $GITHUB_OUTPUT
-          fi
-          echo "grid_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
-          echo "seaweedfs_version=$(grep 'SEAWEEDFS_VERSION' packages/grid/default.env | cut -d '=' -f2)" >> $GITHUB_OUTPUT
+  #     - name: Generate Release Metadata
+  #       id: release_metadata
+  #       run: |
+  #         if [[ $(python packages/grid/VERSION) == *"beta"* ]]; then
+  #           echo "release_tag=beta" >> $GITHUB_OUTPUT
+  #         else
+  #           echo "release_tag=latest" >> $GITHUB_OUTPUT
+  #         fi
+  #         if [[ ${{matrix.runner}} == *"x64"* ]]; then
+  #           echo "release_platform=linux/amd64" >> $GITHUB_OUTPUT
+  #           echo "short_release_platform=amd64" >> $GITHUB_OUTPUT
+  #         else
+  #           echo "release_platform=linux/arm64" >> $GITHUB_OUTPUT
+  #           echo "short_release_platform=arm64" >> $GITHUB_OUTPUT
+  #         fi
+  #         echo "grid_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
+  #         echo "seaweedfs_version=$(grep 'SEAWEEDFS_VERSION' packages/grid/default.env | cut -d '=' -f2)" >> $GITHUB_OUTPUT
 
-      # TODO: Optimize redundant bump protocol version checks
-      - name: Check and Bump Protocol Version
-        run: |
-          if [[ $(python packages/grid/VERSION) != *"beta"* ]]; then
-            export BUMP=True
-          fi
-          tox -e syft.protocol.check
+  #     # TODO: Optimize redundant bump protocol version checks
+  #     - name: Check and Bump Protocol Version
+  #       run: |
+  #         if [[ $(python packages/grid/VERSION) != *"beta"* ]]; then
+  #           export BUMP=True
+  #         fi
+  #         tox -e syft.protocol.check
 
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v3
+  #     - name: Set up Docker Buildx
+  #       id: buildx
+  #       uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_LOGIN }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+  #     - name: Login to Docker
+  #       uses: docker/login-action@v3
+  #       with:
+  #         username: ${{ secrets.DOCKER_LOGIN }}
+  #         password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push `grid-backend` image to DockerHub
-        id: grid-backend-build
-        uses: docker/build-push-action@v5
-        with:
-          context: ./packages
-          file: ./packages/grid/backend/backend.dockerfile
-          platforms: ${{ steps.release_metadata.outputs.release_platform }}
-          target: backend
-          outputs: type=image,name=openmined/grid-backend,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
-          cache-to: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
+  #     - name: Build and push `grid-backend` image to DockerHub
+  #       id: grid-backend-build
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         context: ./packages
+  #         file: ./packages/grid/backend/backend.dockerfile
+  #         platforms: ${{ steps.release_metadata.outputs.release_platform }}
+  #         target: backend
+  #         outputs: type=image,name=openmined/grid-backend,push-by-digest=true,name-canonical=true,push=true
+  #         cache-from: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+  #         cache-to: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
 
-      # - name: Build and push `syft-base-cpu` image to DockerHub
-      #   id: syft-base-cpu-build
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: ./packages
-      #     file: ./packages/grid/backend/worker_cpu.dockerfile
-      #     platforms: ${{ steps.release_metadata.outputs.release_platform }}
-      #     target: backend
-      #     outputs: type=image,name=openmined/syft-base-cpu,push-by-digest=true,name-canonical=true,push=true
-      #     cache-from: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }}
-      #     cache-to: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
+  #     # - name: Build and push `syft-base-cpu` image to DockerHub
+  #     #   id: syft-base-cpu-build
+  #     #   uses: docker/build-push-action@v5
+  #     #   with:
+  #     #     context: ./packages
+  #     #     file: ./packages/grid/backend/worker_cpu.dockerfile
+  #     #     platforms: ${{ steps.release_metadata.outputs.release_platform }}
+  #     #     target: backend
+  #     #     outputs: type=image,name=openmined/syft-base-cpu,push-by-digest=true,name-canonical=true,push=true
+  #     #     cache-from: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+  #     #     cache-to: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
 
-      - name: Export digest for grid-backend
-        run: |
-          mkdir -p /tmp/digests/grid-backend
-          digest="${{ steps.grid-backend-build.outputs.digest }}"
-          touch "/tmp/digests/grid-backend/${digest#sha256:}"
+  #     - name: Export digest for grid-backend
+  #       run: |
+  #         mkdir -p /tmp/digests/grid-backend
+  #         digest="${{ steps.grid-backend-build.outputs.digest }}"
+  #         touch "/tmp/digests/grid-backend/${digest#sha256:}"
 
-      - name: Build and push `grid-frontend` image to DockerHub
-        id: grid-frontend-build
-        uses: docker/build-push-action@v5
-        with:
-          context: ./packages/grid/frontend
-          file: ./packages/grid/frontend/frontend.dockerfile
-          platforms: ${{ steps.release_metadata.outputs.release_platform }}
-          outputs: type=image,name=openmined/grid-frontend,push-by-digest=true,name-canonical=true,push=true
-          target: grid-ui-development
-          cache-from: type=registry,ref=openmined/grid-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
-          cache-to: type=registry,ref=openmined/grid-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
+  #     - name: Build and push `grid-frontend` image to DockerHub
+  #       id: grid-frontend-build
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         context: ./packages/grid/frontend
+  #         file: ./packages/grid/frontend/frontend.dockerfile
+  #         platforms: ${{ steps.release_metadata.outputs.release_platform }}
+  #         outputs: type=image,name=openmined/grid-frontend,push-by-digest=true,name-canonical=true,push=true
+  #         target: grid-ui-development
+  #         cache-from: type=registry,ref=openmined/grid-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+  #         cache-to: type=registry,ref=openmined/grid-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
 
-      - name: Export digest for grid-frontend
-        run: |
-          mkdir -p /tmp/digests/grid-frontend
-          digest="${{ steps.grid-frontend-build.outputs.digest }}"
-          touch "/tmp/digests/grid-frontend/${digest#sha256:}"
+  #     - name: Export digest for grid-frontend
+  #       run: |
+  #         mkdir -p /tmp/digests/grid-frontend
+  #         digest="${{ steps.grid-frontend-build.outputs.digest }}"
+  #         touch "/tmp/digests/grid-frontend/${digest#sha256:}"
 
-      - name: Build and push `grid-seaweedfs` image to DockerHub
-        id: grid-seaweedfs-build
-        uses: docker/build-push-action@v5
-        with:
-          context: ./packages/grid/seaweedfs
-          file: ./packages/grid/seaweedfs/seaweedfs.dockerfile
-          platforms: ${{ steps.release_metadata.outputs.release_platform }}
-          build-args: |
-            SEAWEEDFS_VERSION=${{ steps.release_metadata.outputs.seaweedfs_version }}
-          outputs: type=image,name=openmined/grid-seaweedfs,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=registry,ref=openmined/grid-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform }}
-          cache-to: type=registry,ref=openmined/grid-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
+  #     - name: Build and push `grid-seaweedfs` image to DockerHub
+  #       id: grid-seaweedfs-build
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         context: ./packages/grid/seaweedfs
+  #         file: ./packages/grid/seaweedfs/seaweedfs.dockerfile
+  #         platforms: ${{ steps.release_metadata.outputs.release_platform }}
+  #         build-args: |
+  #           SEAWEEDFS_VERSION=${{ steps.release_metadata.outputs.seaweedfs_version }}
+  #         outputs: type=image,name=openmined/grid-seaweedfs,push-by-digest=true,name-canonical=true,push=true
+  #         cache-from: type=registry,ref=openmined/grid-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+  #         cache-to: type=registry,ref=openmined/grid-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
 
-      - name: Export digest for grid-seaweedfs
-        run: |
-          mkdir -p /tmp/digests/grid-seaweedfs
-          digest="${{ steps.grid-seaweedfs-build.outputs.digest }}"
-          touch "/tmp/digests/grid-seaweedfs/${digest#sha256:}"
+  #     - name: Export digest for grid-seaweedfs
+  #       run: |
+  #         mkdir -p /tmp/digests/grid-seaweedfs
+  #         digest="${{ steps.grid-seaweedfs-build.outputs.digest }}"
+  #         touch "/tmp/digests/grid-seaweedfs/${digest#sha256:}"
 
-      - name: Upload digest for grid-backend, grid-frontend and grid-seaweedfs
-        uses: actions/upload-artifact@v3
-        with:
-          name: digests-${{ steps.release_metadata.outputs.grid_version }}
-          path: /tmp/digests/*
-          if-no-files-found: error
-          retention-days: 1
+  #     - name: Upload digest for grid-backend, grid-frontend and grid-seaweedfs
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: digests-${{ steps.release_metadata.outputs.grid_version }}
+  #         path: /tmp/digests/*
+  #         if-no-files-found: error
+  #         retention-days: 1
 
-  #Used to merge x64 and arm64 into one docker image
-  merge-docker-images:
-    needs: [build-and-push-docker-images]
-    if: always() && (needs.build-and-push-docker-images.result == 'success')
+  # #Used to merge x64 and arm64 into one docker image
+  # merge-docker-images:
+  #   needs: [build-and-push-docker-images]
+  #   if: always() && (needs.build-and-push-docker-images.result == 'success')
 
-    runs-on: sh-arc-linux-x64
+  #   runs-on: sh-arc-linux-x64
 
-    steps:
-      - name: Download digests
-        uses: actions/download-artifact@v3
-        with:
-          name: digests-${{ needs.build-and-push-docker-images.outputs.grid_version }}
-          path: /tmp/digests
+  #   steps:
+  #     - name: Download digests
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: digests-${{ needs.build-and-push-docker-images.outputs.grid_version }}
+  #         path: /tmp/digests
 
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v3
+  #     - name: Set up Docker Buildx
+  #       id: buildx
+  #       uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_LOGIN }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+  #     - name: Login to Docker
+  #       uses: docker/login-action@v3
+  #       with:
+  #         username: ${{ secrets.DOCKER_LOGIN }}
+  #         password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Create manifest list and push for grid-backend
-        working-directory: /tmp/digests/grid-backend
-        run: |
-          docker buildx imagetools create  \
-            -t openmined/grid-backend:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
-            -t openmined/grid-backend:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
-            $(printf 'openmined/grid-backend@sha256:%s ' *)
+  #     - name: Create manifest list and push for grid-backend
+  #       working-directory: /tmp/digests/grid-backend
+  #       run: |
+  #         docker buildx imagetools create  \
+  #           -t openmined/grid-backend:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
+  #           -t openmined/grid-backend:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
+  #           $(printf 'openmined/grid-backend@sha256:%s ' *)
 
-      - name: Create manifest list and push for grid-frontend
-        working-directory: /tmp/digests/grid-frontend
-        run: |
-          docker buildx imagetools create  \
-            -t openmined/grid-frontend:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
-            -t openmined/grid-frontend:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
-            $(printf 'openmined/grid-frontend@sha256:%s ' *)
+  #     - name: Create manifest list and push for grid-frontend
+  #       working-directory: /tmp/digests/grid-frontend
+  #       run: |
+  #         docker buildx imagetools create  \
+  #           -t openmined/grid-frontend:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
+  #           -t openmined/grid-frontend:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
+  #           $(printf 'openmined/grid-frontend@sha256:%s ' *)
 
-      - name: Create manifest list and push for grid-seaweedfs
-        working-directory: /tmp/digests/grid-seaweedfs
-        run: |
-          docker buildx imagetools create  \
-            -t openmined/grid-seaweedfs:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
-            -t openmined/grid-seaweedfs:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
-            $(printf 'openmined/grid-seaweedfs@sha256:%s ' *)
+  #     - name: Create manifest list and push for grid-seaweedfs
+  #       working-directory: /tmp/digests/grid-seaweedfs
+  #       run: |
+  #         docker buildx imagetools create  \
+  #           -t openmined/grid-seaweedfs:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
+  #           -t openmined/grid-seaweedfs:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
+  #           $(printf 'openmined/grid-seaweedfs@sha256:%s ' *)
 
-  deploy-syft:
-    needs: [merge-docker-images]
-    if: always() &&  needs.merge-docker-images.result == 'success'
+  # deploy-syft:
+  #   needs: [merge-docker-images]
+  #   if: always() &&  needs.merge-docker-images.result == 'success'
 
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write # For tag and release notes.
-    steps:
-      - name: Permission to home directory
-        run: |
-          sudo chown -R $USER:$USER $HOME
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write # For tag and release notes.
+  #   steps:
+  #     - name: Permission to home directory
+  #       run: |
+  #         sudo chown -R $USER:$USER $HOME
 
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
 
-      # free 10GB of space
-      - name: Remove unnecessary files
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          docker image prune --all --force
-          docker builder prune --all --force
-          docker system prune --all --force
+  #     # free 10GB of space
+  #     - name: Remove unnecessary files
+  #       run: |
+  #         sudo rm -rf /usr/share/dotnet
+  #         sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+  #         docker image prune --all --force
+  #         docker builder prune --all --force
+  #         docker system prune --all --force
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade tox setuptools wheel twine bump2version PyYAML
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: "3.11"
+  #     - name: Install dependencies
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         pip install --upgrade tox setuptools wheel twine bump2version PyYAML
 
-      # - name: Bump the Version
-      #   id: bump-version
-      #   run: |
-      #     ls **/VERSION | xargs -I {} python {}
-      #     cat packages/grid/devspace.yaml | grep '0\.'
-      #     bump2version prenum --allow-dirty --no-commit
-      #     tox -e lint || true
-      #     ls **/VERSION | xargs -I {} python {}
-      #     cat packages/grid/devspace.yaml | grep '0\.'
-      #     python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
+  #     # - name: Bump the Version
+  #     #   id: bump-version
+  #     #   run: |
+  #     #     ls **/VERSION | xargs -I {} python {}
+  #     #     cat packages/grid/devspace.yaml | grep '0\.'
+  #     #     bump2version prenum --allow-dirty --no-commit
+  #     #     tox -e lint || true
+  #     #     ls **/VERSION | xargs -I {} python {}
+  #     #     cat packages/grid/devspace.yaml | grep '0\.'
+  #     #     python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
 
-      - name: Check Protocol Version
-        run: |
-          tox -e syft.protocol.check
+  #     - name: Check Protocol Version
+  #       run: |
+  #         tox -e syft.protocol.check
 
-      - name: Build Helm Chart
-        shell: bash
-        run: |
-          # install k3d
-          K3D_VERSION=v5.6.0
-          wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
-          mv k3d-linux-amd64 k3d
-          chmod +x k3d
-          export PATH=`pwd`:$PATH
-          k3d version
+  #     - name: Build Helm Chart
+  #       shell: bash
+  #       run: |
+  #         # install k3d
+  #         K3D_VERSION=v5.6.0
+  #         wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
+  #         mv k3d-linux-amd64 k3d
+  #         chmod +x k3d
+  #         export PATH=`pwd`:$PATH
+  #         k3d version
 
-          #Install Devspace
-          DEVSPACE_VERSION=v6.3.3
-          curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
-          chmod +x devspace
-          devspace version
+  #         #Install Devspace
+  #         DEVSPACE_VERSION=v6.3.3
+  #         curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
+  #         chmod +x devspace
+  #         devspace version
 
-          # Install helm
-          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-          helm version
+  #         # Install helm
+  #         curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  #         helm version
 
-          tox -e syft.build.helm
-          tox -e syft.package.helm
+  #         tox -e syft.build.helm
+  #         tox -e syft.package.helm
 
-      # Check if the version is a pre-release
-      - name: Check if the version is a pre-release and modify version string
-        id: release_checks
-        run: |
-          if [[ $(python packages/grid/VERSION) == *"beta"* ]]; then
-            echo "is_pre_release=true" >> $GITHUB_OUTPUT
-            echo "github_release_version=$(python packages/grid/VERSION |  sed 's/-beta./b/')" >> $GITHUB_OUTPUT
-          else
-            echo "is_pre_release=false" >> $GITHUB_OUTPUT
-            echo "github_release_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
-          fi
-          echo "future_stable_version=$(python packages/grid/VERSION |   sed 's/-beta.*//')" >> $GITHUB_OUTPUT
+  #     # Check if the version is a pre-release
+  #     - name: Check if the version is a pre-release and modify version string
+  #       id: release_checks
+  #       run: |
+  #         if [[ $(python packages/grid/VERSION) == *"beta"* ]]; then
+  #           echo "is_pre_release=true" >> $GITHUB_OUTPUT
+  #           echo "github_release_version=$(python packages/grid/VERSION |  sed 's/-beta./b/')" >> $GITHUB_OUTPUT
+  #         else
+  #           echo "is_pre_release=false" >> $GITHUB_OUTPUT
+  #           echo "github_release_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
+  #         fi
+  #         echo "future_stable_version=$(python packages/grid/VERSION |   sed 's/-beta.*//')" >> $GITHUB_OUTPUT
 
-      - name: Check and Bump Protocol Version
-        run: |
-          if [[ "${{ steps.release_checks.outputs.is_pre_release }}" == "false" ]]; then
-            export BUMP=True
-          fi
-          tox -e syft.protocol.check
+  #     - name: Check and Bump Protocol Version
+  #       run: |
+  #         if [[ "${{ steps.release_checks.outputs.is_pre_release }}" == "false" ]]; then
+  #           export BUMP=True
+  #         fi
+  #         tox -e syft.protocol.check
 
-      - name: Update PyPI Readme
-        run: |
-          python scripts/convert_to_pypi_readme.py --input-file  packages/syft/README.md --output-file packages/syft/PYPI.md --version ${{ steps.release_checks.outputs.future_stable_version }}
+  #     - name: Update PyPI Readme
+  #       run: |
+  #         python scripts/convert_to_pypi_readme.py --input-file  packages/syft/README.md --output-file packages/syft/PYPI.md --version ${{ steps.release_checks.outputs.future_stable_version }}
 
-      # - name: Commit changes to Syft
-      #   uses: EndBug/add-and-commit@v9
-      #   with:
-      #     author_name: ${{ secrets.OM_BOT_NAME }}
-      #     author_email: ${{ secrets.OM_BOT_EMAIL }}
-      #     message: "[syft]bump version"
-      #     add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION','packages/syft/PYPI.md', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml','packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py', 'packages/grid/podman/podman-kube/podman-syft-kube.yaml' ,'packages/grid/podman/podman-kube/podman-syft-kube-config.yaml', 'packages/syftcli/manifest.yml', 'packages/syft/src/syft/protocol/protocol_version.json', 'packages/grid/backend/worker_cpu.dockerfile']"
+  #     # - name: Commit changes to Syft
+  #     #   uses: EndBug/add-and-commit@v9
+  #     #   with:
+  #     #     author_name: ${{ secrets.OM_BOT_NAME }}
+  #     #     author_email: ${{ secrets.OM_BOT_EMAIL }}
+  #     #     message: "[syft]bump version"
+  #     #     add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION','packages/syft/PYPI.md', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml','packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py', 'packages/grid/podman/podman-kube/podman-syft-kube.yaml' ,'packages/grid/podman/podman-kube/podman-syft-kube-config.yaml', 'packages/syftcli/manifest.yml', 'packages/syft/src/syft/protocol/protocol_version.json', 'packages/grid/backend/worker_cpu.dockerfile']"
 
-      - name: Scheduled Build and Publish
-        if: github.event_name == 'schedule'
-        run: |
-          tox -e syft.publish
-          twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
+  #     - name: Scheduled Build and Publish
+  #       if: github.event_name == 'schedule'
+  #       run: |
+  #         tox -e syft.publish
+  #         twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
 
-      - name: Manual Build and Publish
-        if: github.event_name != 'schedule'
-        run: |
-          tox -e syft.publish
-          if [[ "${{ github.event.inputs.release_platform }}" == "REAL_PYPI" ]]; then
-            twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
-          fi
-          if [[ "${{ github.event.inputs.release_platform }}" == "TEST_PYPI" ]]; then
-            twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
-          fi
-          if [[ "${{ github.event.inputs.release_platform }}" == "REAL_AND_TEST_PYPI" ]]; then
-            twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
-            twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
-          fi
+  #     - name: Manual Build and Publish
+  #       if: github.event_name != 'schedule'
+  #       run: |
+  #         tox -e syft.publish
+  #         if [[ "${{ github.event.inputs.release_platform }}" == "REAL_PYPI" ]]; then
+  #           twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
+  #         fi
+  #         if [[ "${{ github.event.inputs.release_platform }}" == "TEST_PYPI" ]]; then
+  #           twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
+  #         fi
+  #         if [[ "${{ github.event.inputs.release_platform }}" == "REAL_AND_TEST_PYPI" ]]; then
+  #           twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
+  #           twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
+  #         fi
 
-      # Checkout Infra repo (nested)
-      - name: Checkout Infra Repo
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ secrets.INFRA_REPO }}
-          ref: "main"
-          token: ${{ secrets.INFRA_BOT_COMMIT_TOKEN }}
-          path: infrastructure
+  #     # Checkout Infra repo (nested)
+  #     - name: Checkout Infra Repo
+  #       uses: actions/checkout@v4
+  #       with:
+  #         repository: ${{ secrets.INFRA_REPO }}
+  #         ref: "main"
+  #         token: ${{ secrets.INFRA_BOT_COMMIT_TOKEN }}
+  #         path: infrastructure
 
-      # This step will copy the generated K8s manifest files to the correct directory in Infra repo
-      - name: Copy files to Infra Repo
-        run: |
-          if $is_pre_release; then
-            rm -rf infrastructure/gitops/environments/pre-release/.
-            cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/pre_release/
-          else
-            rm -rf infrastructure/gitops/environments/stable/.
-            cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/stable/
-          fi
+  #     # This step will copy the generated K8s manifest files to the correct directory in Infra repo
+  #     - name: Copy files to Infra Repo
+  #       run: |
+  #         if $is_pre_release; then
+  #           rm -rf infrastructure/gitops/environments/pre-release/.
+  #           cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/pre_release/
+  #         else
+  #           rm -rf infrastructure/gitops/environments/stable/.
+  #           cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/stable/
+  #         fi
 
-      - name: Commit changes to Infra Repo
-        uses: EndBug/add-and-commit@v9
-        with:
-          author_name: ${{ secrets.OM_BOT_NAME }}
-          author_email: ${{ secrets.OM_BOT_EMAIL }}
-          message: "Update K8s Manifests from Syft Repo"
-          add: "."
-          push: "origin main"
-          cwd: "./infrastructure/"
+  #     - name: Commit changes to Infra Repo
+  #       uses: EndBug/add-and-commit@v9
+  #       with:
+  #         author_name: ${{ secrets.OM_BOT_NAME }}
+  #         author_email: ${{ secrets.OM_BOT_EMAIL }}
+  #         message: "Update K8s Manifests from Syft Repo"
+  #         add: "."
+  #         push: "origin main"
+  #         cwd: "./infrastructure/"
 
-      - name: Create SyftCLI Config assets
-        run: |
-          pip install pyyaml
-          python scripts/create_syftcli_config.py
+  #     - name: Create SyftCLI Config assets
+  #       run: |
+  #         pip install pyyaml
+  #         python scripts/create_syftcli_config.py
 
-      - name: GitHub Release
-        if: github.event.inputs.release_platform  != 'TEST_PYPI'
-        uses: softprops/action-gh-release@v1
-        with:
-          name: v${{ steps.release_checks.outputs.github_release_version }}
-          generate_release_notes: true
-          prerelease: ${{ steps.release_checks.outputs.is_pre_release }}
-          files: |
-            ./packages/syftcli/manifest.yml
-            ./build/syftcli-config/*
-            ./packages/hagrid/hagrid/manifest_template.yml
-          tag_name: v${{ steps.release_checks.outputs.github_release_version }}
+  #     - name: GitHub Release
+  #       if: github.event.inputs.release_platform  != 'TEST_PYPI'
+  #       uses: softprops/action-gh-release@v1
+  #       with:
+  #         name: v${{ steps.release_checks.outputs.github_release_version }}
+  #         generate_release_notes: true
+  #         prerelease: ${{ steps.release_checks.outputs.is_pre_release }}
+  #         files: |
+  #           ./packages/syftcli/manifest.yml
+  #           ./build/syftcli-config/*
+  #           ./packages/hagrid/hagrid/manifest_template.yml
+  #         tag_name: v${{ steps.release_checks.outputs.github_release_version }}
 
-      # Checkout to gh-pages and update helm repo
-      - name: Checkout to gh-pages
-        uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
-          path: ghpages
+  #     # Checkout to gh-pages and update helm repo
+  #     - name: Checkout to gh-pages
+  #       uses: actions/checkout@v4
+  #       with:
+  #         ref: gh-pages
+  #         token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
+  #         path: ghpages
 
-      - name: Copy helm repo files from Syft Repo
-        run: |
-          rm -rf ghpages/helm/*
-          cp -R packages/grid/helm/repo/. ghpages/helm/
+  #     - name: Copy helm repo files from Syft Repo
+  #       run: |
+  #         rm -rf ghpages/helm/*
+  #         cp -R packages/grid/helm/repo/. ghpages/helm/
 
-      - name: Commit changes to gh-pages
-        uses: EndBug/add-and-commit@v9
-        with:
-          author_name: ${{ secrets.OM_BOT_NAME }}
-          author_email: ${{ secrets.OM_BOT_EMAIL }}
-          message: "Update Helm package from Syft Repo"
-          add: "helm/"
-          push: "origin gh-pages"
-          cwd: "./ghpages/"
+  #     - name: Commit changes to gh-pages
+  #       uses: EndBug/add-and-commit@v9
+  #       with:
+  #         author_name: ${{ secrets.OM_BOT_NAME }}
+  #         author_email: ${{ secrets.OM_BOT_EMAIL }}
+  #         message: "Update Helm package from Syft Repo"
+  #         add: "helm/"
+  #         push: "origin gh-pages"
+  #         cwd: "./ghpages/"
