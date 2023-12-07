@@ -35,6 +35,7 @@ from ...types.uid import UID
 from ...util.markdown import as_markdown_code
 from ...util.telemetry import instrument
 from ..action.action_object import Action
+from ..action.action_object import AnyActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftError
 from ..response import SyftNotReady
@@ -330,7 +331,7 @@ class Job(SyftObject):
     """
         return as_markdown_code(md)
 
-    def wait(self):
+    def wait(self, wait_nested_promises=True):
         # stdlib
         from time import sleep
 
@@ -342,6 +343,11 @@ class Job(SyftObject):
             sleep(2)
             if self.resolved:
                 break
+
+        if wait_nested_promises:
+            while isinstance(self.resolve, SyftNotReady):
+                sleep(2)
+
         return self.resolve
 
     @property
@@ -350,7 +356,15 @@ class Job(SyftObject):
             self.fetch()
 
         if self.resolved:
-            return self.result
+            promise = self.result
+            promise_result = promise.get()
+            while isinstance(promise_result, AnyActionObject):
+                promise = promise_result
+                promise_result = promise_result.get()
+
+            if isinstance(promise_result, SyftError):
+                return SyftNotReady(message=f"{self.id} not ready yet.")
+            return promise
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
 
