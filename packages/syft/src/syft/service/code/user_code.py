@@ -669,14 +669,7 @@ class SubmitUserCode(SyftObject):
                 function_input_kwargs=self.input_kwargs
             )
 
-            # # check there are no globals
-            # v = GlobalsVisitor()
-            # v.visit(tree)
-
-            # filtered_args = []
             filtered_kwargs = {}
-            # for arg in args:
-            #     filtered_args.append(debox_asset(arg))
             on_private_data, on_mock_data = False, False
             for k, v in kwargs.items():
                 filtered_kwargs[k], arg_type = debox_asset(v)
@@ -690,14 +683,11 @@ class SubmitUserCode(SyftObject):
                 "filtered_kwargs": filtered_kwargs,
             }
             if "domain" in self.input_kwargs:
-                # local_domain = kwargs['domain']
                 tree = ast.parse(inspect.getsource(self.local_function))
                 filtered_kwargs['domain'] = EphemeralDomain()
                 v = LaunchJobVisitor()
                 v.visit(tree)
                 nested_calls = v.nested_calls
-                print(list(globals().keys()))
-                print(list(locals().keys()))
                 try:
                     ipython = get_ipython()
                 except Exception:
@@ -717,11 +707,11 @@ class SubmitUserCode(SyftObject):
                         # if isinstance(res, SyftError):
                         #     return res
                         # _locals[call] = res
-                        raise Exception("funciton not found locally")
-                        
-            print(_locals)
+                        raise Exception(f"Funciton {call} not found locally \
+                            or not a SubmitUserCode")
+
             exec(new_function_str, _locals, _locals)  # nosec
-            return eval(f"{self.func_name}(**filtered_kwargs)", _locals, _locals)
+            return eval(f"{self.func_name}(**filtered_kwargs)", {}, _locals)
             # return self.local_function(**filtered_kwargs)
         else:
             raise NotImplementedError
