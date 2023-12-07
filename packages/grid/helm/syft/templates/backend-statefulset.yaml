@@ -1,8 +1,6 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  annotations:
-    helm.sh/chart: component-chart-0.9.1
   labels:
     app.kubernetes.io/component: backend
     app.kubernetes.io/managed-by: Helm
@@ -19,8 +17,6 @@ spec:
   serviceName: backend-headless
   template:
     metadata:
-      annotations:
-        helm.sh/chart: component-chart-0.9.1
       labels:
         app.kubernetes.io/component: backend
         app.kubernetes.io/managed-by: Helm
@@ -111,8 +107,6 @@ spec:
       volumes: null
   volumeClaimTemplates:
   - metadata:
-      annotations:
-        helm.sh/chart: component-chart-0.9.1
       labels:
         app.kubernetes.io/component: backend
         app.kubernetes.io/managed-by: Helm
