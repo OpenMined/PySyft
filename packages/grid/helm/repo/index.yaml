@@ -2,8 +2,40 @@ apiVersion: v1
 entries:
   syft:
   - apiVersion: v2
+    appVersion: 0.8.3-beta.6
+    created: "2023-12-07T10:48:49.937177133Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.9.1
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 126d0411170611573c965a7cd0691b2d53d32d62457b37cfb6b720bcb6a5930c
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.3-beta.6.tgz
+    version: 0.8.3-beta.6
+  - apiVersion: v2
+    appVersion: 0.8.3-beta.5
+    created: "2023-12-07T10:48:49.93658253Z"
+    dependencies:
+    - name: component-chart
+      repository: https://charts.devspace.sh
+      version: 0.9.1
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 6fb34879b22cbae4290deb0fb2ade1da835b52ea2d2c9b0b602f252b90c5e5e9
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.3-beta.5.tgz
+    version: 0.8.3-beta.5
+  - apiVersion: v2
     appVersion: 0.8.3-beta.4
-    created: "2023-12-06T04:57:54.440808695Z"
+    created: "2023-12-07T10:48:49.93598975Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -19,7 +51,7 @@ entries:
     version: 0.8.3-beta.4
   - apiVersion: v2
     appVersion: 0.8.3-beta.3
-    created: "2023-12-06T04:57:54.440082803Z"
+    created: "2023-12-07T10:48:49.93529497Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -35,7 +67,7 @@ entries:
     version: 0.8.3-beta.3
   - apiVersion: v2
     appVersion: 0.8.3-beta.2
-    created: "2023-12-06T04:57:54.439519987Z"
+    created: "2023-12-07T10:48:49.934679418Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -51,7 +83,7 @@ entries:
     version: 0.8.3-beta.2
   - apiVersion: v2
     appVersion: 0.8.3-beta.1
-    created: "2023-12-06T04:57:54.438937554Z"
+    created: "2023-12-07T10:48:49.93409873Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -67,7 +99,7 @@ entries:
     version: 0.8.3-beta.1
   - apiVersion: v2
     appVersion: 0.8.2
-    created: "2023-12-06T04:57:54.438259161Z"
+    created: "2023-12-07T10:48:49.933468781Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -83,7 +115,7 @@ entries:
     version: 0.8.2
   - apiVersion: v2
     appVersion: 0.8.2-beta.60
-    created: "2023-12-06T04:57:54.436928063Z"
+    created: "2023-12-07T10:48:49.931897163Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -99,7 +131,7 @@ entries:
     version: 0.8.2-beta.60
   - apiVersion: v2
     appVersion: 0.8.2-beta.59
-    created: "2023-12-06T04:57:54.436084109Z"
+    created: "2023-12-07T10:48:49.93101201Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -115,7 +147,7 @@ entries:
     version: 0.8.2-beta.59
   - apiVersion: v2
     appVersion: 0.8.2-beta.58
-    created: "2023-12-06T04:57:54.435424081Z"
+    created: "2023-12-07T10:48:49.930300239Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -131,7 +163,7 @@ entries:
     version: 0.8.2-beta.58
   - apiVersion: v2
     appVersion: 0.8.2-beta.57
-    created: "2023-12-06T04:57:54.434762479Z"
+    created: "2023-12-07T10:48:49.929636427Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -147,7 +179,7 @@ entries:
     version: 0.8.2-beta.57
   - apiVersion: v2
     appVersion: 0.8.2-beta.56
-    created: "2023-12-06T04:57:54.434091921Z"
+    created: "2023-12-07T10:48:49.928945305Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -163,7 +195,7 @@ entries:
     version: 0.8.2-beta.56
   - apiVersion: v2
     appVersion: 0.8.2-beta.55
-    created: "2023-12-06T04:57:54.433424098Z"
+    created: "2023-12-07T10:48:49.928276854Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -179,7 +211,7 @@ entries:
     version: 0.8.2-beta.55
   - apiVersion: v2
     appVersion: 0.8.2-beta.54
-    created: "2023-12-06T04:57:54.432706231Z"
+    created: "2023-12-07T10:48:49.927613052Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -195,7 +227,7 @@ entries:
     version: 0.8.2-beta.54
   - apiVersion: v2
     appVersion: 0.8.2-beta.53
-    created: "2023-12-06T04:57:54.432016456Z"
+    created: "2023-12-07T10:48:49.926914015Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -211,7 +243,7 @@ entries:
     version: 0.8.2-beta.53
   - apiVersion: v2
     appVersion: 0.8.2-beta.52
-    created: "2023-12-06T04:57:54.431205705Z"
+    created: "2023-12-07T10:48:49.926068586Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -227,7 +259,7 @@ entries:
     version: 0.8.2-beta.52
   - apiVersion: v2
     appVersion: 0.8.2-beta.51
-    created: "2023-12-06T04:57:54.429780143Z"
+    created: "2023-12-07T10:48:49.924480381Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -243,7 +275,7 @@ entries:
     version: 0.8.2-beta.51
   - apiVersion: v2
     appVersion: 0.8.2-beta.50
-    created: "2023-12-06T04:57:54.429106398Z"
+    created: "2023-12-07T10:48:49.923814255Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -259,7 +291,7 @@ entries:
     version: 0.8.2-beta.50
   - apiVersion: v2
     appVersion: 0.8.2-beta.49
-    created: "2023-12-06T04:57:54.428395544Z"
+    created: "2023-12-07T10:48:49.923146556Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -275,7 +307,7 @@ entries:
     version: 0.8.2-beta.49
   - apiVersion: v2
     appVersion: 0.8.2-beta.48
-    created: "2023-12-06T04:57:54.427723684Z"
+    created: "2023-12-07T10:48:49.922413946Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -291,7 +323,7 @@ entries:
     version: 0.8.2-beta.48
   - apiVersion: v2
     appVersion: 0.8.2-beta.47
-    created: "2023-12-06T04:57:54.427053005Z"
+    created: "2023-12-07T10:48:49.921738763Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -307,7 +339,7 @@ entries:
     version: 0.8.2-beta.47
   - apiVersion: v2
     appVersion: 0.8.2-beta.46
-    created: "2023-12-06T04:57:54.426476834Z"
+    created: "2023-12-07T10:48:49.921098054Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -323,7 +355,7 @@ entries:
     version: 0.8.2-beta.46
   - apiVersion: v2
     appVersion: 0.8.2-beta.45
-    created: "2023-12-06T04:57:54.425850408Z"
+    created: "2023-12-07T10:48:49.920527365Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -339,7 +371,7 @@ entries:
     version: 0.8.2-beta.45
   - apiVersion: v2
     appVersion: 0.8.2-beta.44
-    created: "2023-12-06T04:57:54.425265811Z"
+    created: "2023-12-07T10:48:49.919945405Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -355,7 +387,7 @@ entries:
     version: 0.8.2-beta.44
   - apiVersion: v2
     appVersion: 0.8.2-beta.43
-    created: "2023-12-06T04:57:54.424559265Z"
+    created: "2023-12-07T10:48:49.91934414Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -371,7 +403,7 @@ entries:
     version: 0.8.2-beta.43
   - apiVersion: v2
     appVersion: 0.8.2-beta.42
-    created: "2023-12-06T04:57:54.42310434Z"
+    created: "2023-12-07T10:48:49.917932398Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -387,7 +419,7 @@ entries:
     version: 0.8.2-beta.42
   - apiVersion: v2
     appVersion: 0.8.2-beta.41
-    created: "2023-12-06T04:57:54.422240108Z"
+    created: "2023-12-07T10:48:49.917230285Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -403,7 +435,7 @@ entries:
     version: 0.8.2-beta.41
   - apiVersion: v2
     appVersion: 0.8.2-beta.40
-    created: "2023-12-06T04:57:54.421565713Z"
+    created: "2023-12-07T10:48:49.91638708Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -419,7 +451,7 @@ entries:
     version: 0.8.2-beta.40
   - apiVersion: v2
     appVersion: 0.8.2-beta.39
-    created: "2023-12-06T04:57:54.42096245Z"
+    created: "2023-12-07T10:48:49.915823554Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -435,7 +467,7 @@ entries:
     version: 0.8.2-beta.39
   - apiVersion: v2
     appVersion: 0.8.2-beta.38
-    created: "2023-12-06T04:57:54.420347346Z"
+    created: "2023-12-07T10:48:49.915238989Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -451,7 +483,7 @@ entries:
     version: 0.8.2-beta.38
   - apiVersion: v2
     appVersion: 0.8.2-beta.37
-    created: "2023-12-06T04:57:54.419749674Z"
+    created: "2023-12-07T10:48:49.91456046Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -467,7 +499,7 @@ entries:
     version: 0.8.2-beta.37
   - apiVersion: v2
     appVersion: 0.8.1
-    created: "2023-12-06T04:57:54.419128048Z"
+    created: "2023-12-07T10:48:49.913952191Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -481,4 +513,4 @@ entries:
     urls:
     - https://openmined.github.io/PySyft/helm/syft-0.8.1.tgz
     version: 0.8.1
-generated: "2023-12-06T04:57:54.418394471Z"
+generated: "2023-12-07T10:48:49.913222066Z"
