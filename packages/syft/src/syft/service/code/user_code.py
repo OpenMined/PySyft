@@ -23,6 +23,7 @@ from typing import Union
 from typing import final
 
 # third party
+from IPython import get_ipython
 from IPython.display import display
 from result import Err
 from typing_extensions import Self
@@ -605,9 +606,6 @@ class UserCode(SyftObject):
         warning_message = """# WARNING: \n# Before you submit
 # change the name of the function \n# for no duplicates\n\n"""
 
-        # third party
-        from IPython import get_ipython
-
         ip = get_ipython()
         ip.set_next_input(warning_message + self.raw_code)
 
@@ -655,66 +653,68 @@ class SubmitUserCode(SyftObject):
         return self.input_policy_init_kwargs
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        class EphemeralDomain():
+        class EphemeralDomain:
             def launch_job(self, func, **kwargs):
                 print("Launching:", func)
                 return func(**kwargs)
-                
+
         # only run this on the client side
-        if self.local_function:
-            new_function_str = process_code(
-                raw_code=self.code,
-                func_name=self.func_name,
-                original_func_name=self.func_name,
-                function_input_kwargs=self.input_kwargs
-            )
-
-            filtered_kwargs = {}
-            on_private_data, on_mock_data = False, False
-            for k, v in kwargs.items():
-                filtered_kwargs[k], arg_type = debox_asset(v)
-                on_private_data = on_private_data or arg_type == ArgumentType.PRIVATE
-                on_mock_data = on_mock_data or arg_type == ArgumentType.MOCK
-            if on_private_data:
-                print("Warning: The result you see is computed on PRIVATE data.")
-            elif on_mock_data:
-                print("Warning: The result you see is computed on MOCK data.")
-            _locals = {
-                "filtered_kwargs": filtered_kwargs,
-            }
-            if "domain" in self.input_kwargs:
-                tree = ast.parse(inspect.getsource(self.local_function))
-                filtered_kwargs['domain'] = EphemeralDomain()
-                v = LaunchJobVisitor()
-                v.visit(tree)
-                nested_calls = v.nested_calls
-                try:
-                    ipython = get_ipython()
-                except Exception:
-                    ipython = None
-                    pass
-
-                for call in nested_calls:
-                    if ipython is not None:
-                        specs = ipython.object_inspect(call)
-                        # Look for nested job locally
-                        if specs['type_name'] == 'SubmitUserCode':
-                            # Get the function in the local scope from the jupyter
-                            _locals[call] = ipython.ev(call)
-                    if call not in _locals:
-                        # # Not in a jupyter notebook or call not found locally
-                        # res = local_domain.code.get_by_service_name(call)
-                        # if isinstance(res, SyftError):
-                        #     return res
-                        # _locals[call] = res
-                        raise Exception(f"Funciton {call} not found locally \
-                            or not a SubmitUserCode")
-
-            exec(new_function_str, _locals, _locals)  # nosec
-            return eval(f"{self.func_name}(**filtered_kwargs)", {}, _locals)
-            # return self.local_function(**filtered_kwargs)
-        else:
+        if not self.local_function:
             raise NotImplementedError
+
+        new_function_str = process_code(
+            raw_code=self.code,
+            func_name=self.func_name,
+            original_func_name=self.func_name,
+            function_input_kwargs=self.input_kwargs,
+        )
+
+        filtered_kwargs = {}
+        on_private_data, on_mock_data = False, False
+        for k, v in kwargs.items():
+            filtered_kwargs[k], arg_type = debox_asset(v)
+            on_private_data = on_private_data or arg_type == ArgumentType.PRIVATE
+            on_mock_data = on_mock_data or arg_type == ArgumentType.MOCK
+        if on_private_data:
+            print("Warning: The result you see is computed on PRIVATE data.")
+        elif on_mock_data:
+            print("Warning: The result you see is computed on MOCK data.")
+        _locals = {
+            "filtered_kwargs": filtered_kwargs,
+        }
+        if "domain" in self.input_kwargs:
+            tree = ast.parse(inspect.getsource(self.local_function))
+            filtered_kwargs["domain"] = EphemeralDomain()
+            v = LaunchJobVisitor()
+            v.visit(tree)
+            nested_calls = v.nested_calls
+            try:
+                ipython = get_ipython()
+            except Exception:
+                ipython = None
+                pass
+
+            for call in nested_calls:
+                if ipython is not None:
+                    specs = ipython.object_inspect(call)
+                    # Look for nested job locally
+                    if specs["type_name"] == "SubmitUserCode":
+                        # Get the function in the local scope from the jupyter
+                        _locals[call] = ipython.ev(call)
+                if call not in _locals:
+                    # # Not in a jupyter notebook or call not found locally
+                    # res = local_domain.code.get_by_service_name(call)
+                    # if isinstance(res, SyftError):
+                    #     return res
+                    # _locals[call] = res
+                    raise Exception(
+                        f"Funciton {call} not found locally \
+                        or not a SubmitUserCode"
+                    )
+
+        exec(new_function_str, _locals, _locals)  # nosec
+        return eval(f"{self.func_name}(**filtered_kwargs)", {}, _locals)
+        # return self.local_function(**filtered_kwargs)
 
     @property
     def input_owner_verify_keys(self) -> List[str]:
@@ -871,7 +871,7 @@ def new_check_code(context: TransformContext) -> TransformContext:
 
     if "domain" in context.output["input_kwargs"]:
         context.output["uses_domain"] = True
-    
+
     processed_code = process_code(
         raw_code=context.output["raw_code"],
         func_name=context.output["unique_func_name"],
