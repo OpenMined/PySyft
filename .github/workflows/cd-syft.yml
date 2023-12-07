@@ -24,17 +24,17 @@ on:
 jobs:
   call-pr-tests-linting:
     if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/pr-tests-linting.yml@${{ github.head_ref }}
+    uses: OpenMined/PySyft/.github/workflows/pr-tests-linting.yml@${GITHUB_HEAD_REF}
     secrets: inherit
 
   call-pr-tests-syft:
     if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/pr-tests-syft.yml@${{ github.head_ref }}
+    uses: OpenMined/PySyft/.github/workflows/pr-tests-syft.yml@${GITHUB_HEAD_REF}
     secrets: inherit
 
   call-pr-tests-stack:
     if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@${{ github.head_ref }}
+    uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@${GITHUB_HEAD_REF}
     secrets: inherit
 
   # build-and-push-docker-images:
