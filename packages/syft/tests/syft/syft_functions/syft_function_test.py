@@ -72,8 +72,8 @@ def test_nested_jobs(node):
             batch_job = domain.launch_job(process_batch, batch=elem)
             job_results += [batch_job.result]
 
-        result = domain.launch_job(aggregate_job, job_results=job_results)
-        return result.wait().get()
+        job = domain.launch_job(aggregate_job, job_results=job_results)
+        return job.result
 
     process_all.code = dedent(process_all.code)
 
