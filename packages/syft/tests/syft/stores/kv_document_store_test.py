@@ -125,6 +125,29 @@ def test_kv_store_partition_delete(
     assert len(kv_store_partition.all(root_verify_key).ok()) == 0
 
 
+def test_kv_store_partition_delete_and_recreate(
+    root_verify_key, worker, kv_store_partition: KeyValueStorePartition
+) -> None:
+    obj = MockSyftObject(data="bogus")
+    for _ in range(2):
+        # running it multiple items ensures we can recreate it again once its delete from store.
+
+        # Add an object
+        kv_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
+
+        assert len(kv_store_partition.all(root_verify_key).ok()) == 1
+
+        # Delete object
+        key = kv_store_partition.settings.store_key.with_obj(obj)
+        res = kv_store_partition.delete(root_verify_key, key)
+
+        assert res.is_ok()
+        assert len(kv_store_partition.all(root_verify_key).ok()) == 0
+        assert len(kv_store_partition.data) == len(kv_store_partition.permissions)
+
+    assert len(kv_store_partition.all(root_verify_key).ok()) == 0
+
+
 def test_kv_store_partition_update(
     root_verify_key, kv_store_partition: KeyValueStorePartition
 ) -> None:
