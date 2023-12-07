@@ -119,33 +119,29 @@ class SyftWorkerImageService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def delete(
-        self, context: AuthedServiceContext, uid: UID, clear_image: bool = False
+        self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
-        # TODO: Clean up any images present in the local registry.
-        if clear_image:
-            #  Delete Docker image given image tag
-            res = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
-            if res.is_err():
-                return SyftError(message=f"{res.err()}")
-            image: SyftWorkerImage = res.ok()
-            image_tag: SyftWorkerImageTag = image.image_tag
-            full_tag: str = image_tag.full_tag
-            try:
-                client = docker.from_env()
-                client.images.remove(image=full_tag)
-            except docker.errors.ImageNotFound:
-                return SyftError(message=f"Image {full_tag} not found.")
-            except Exception as e:
-                return SyftError(
-                    message=f"Failed to delete image {full_tag}. Error: {e}"
-                )
+        #  Delete Docker image given image tag
+        res = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
+        if res.is_err():
+            return SyftError(message=f"{res.err()}")
+        image: SyftWorkerImage = res.ok()
+        image_tag: SyftWorkerImageTag = image.image_tag
+        full_tag: str = image_tag.full_tag
+        try:
+            client = docker.from_env()
+            client.images.remove(image=full_tag)
+        except docker.errors.ImageNotFound:
+            return SyftError(message=f"Image {full_tag} not found.")
+        except Exception as e:
+            return SyftError(message=f"Failed to delete image {full_tag}. Error: {e}")
 
         result = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
         if result.is_err():
             return SyftError(message=f"{result.err()}")
 
-        returned_message: str = result.ok().message
-        if clear_image:
-            returned_message += f". Image {full_tag} deleted successfully."
+        returned_message: str = (
+            result.ok().message + f". Image {full_tag} deleted successfully."
+        )
 
         return SyftSuccess(message=returned_message)
