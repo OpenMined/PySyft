@@ -82,7 +82,7 @@ class SyftWorkerImage(SyftObject):
     __canonical_name__ = "SyftWorkerImage"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __attr_unique__ = ["image_tag", "config"]
+    __attr_unique__ = ["config"]
     __attr_searchable__ = ["image_tag", "image_hash", "created_by"]
 
     id: UID
