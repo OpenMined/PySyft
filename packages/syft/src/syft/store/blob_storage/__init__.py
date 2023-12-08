@@ -173,7 +173,7 @@ class BlobRetrievalByURL(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    url: GridURL
+    url: Union[GridURL, str]
 
     def read(self) -> Union[SyftObject, SyftError]:
         if self.type_ is BlobFileType:
@@ -195,7 +195,7 @@ class BlobRetrievalByURL(BlobRetrieval):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-        if api is not None:
+        if api is not None and isinstance(self.url, GridURL):
             blob_url = api.connection.to_blob_route(
                 self.url.url_path, host=self.url.host_or_ip
             )
