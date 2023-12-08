@@ -85,7 +85,7 @@ spec:
         - name: DEFAULT_ROOT_EMAIL
           value: {{ .Values.secrets.syft.defaultRootEmail }}
         - name: DEFAULT_ROOT_PASSWORD
-        valueFrom:
+          valueFrom:
             secretKeyRef:
               name: {{ .Values.secrets.syft.syftsecret }}
               key: defaultRootPassword

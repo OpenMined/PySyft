@@ -6,7 +6,7 @@ secrets:
   syft:
     syftsecret: "syftsecret"
     # stackApiKey: "changeme"
-    # defaultRootEmail: "info@openmined.org"
+    defaultRootEmail: "info@openmined.org"
     # defaultRootPassword: "changethis"
   db:
     mongo:

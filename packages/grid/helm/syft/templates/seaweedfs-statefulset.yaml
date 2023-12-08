@@ -31,13 +31,15 @@ spec:
         - name: S3_VOLUME_SIZE_MB
           value: "{{ .Values.seaweedfs.S3_VOLUME_SIZE_MB }}"
         - name: S3_ROOT_USER
-          secretKeyRef:
-              name: {{ .Values.secrets.seaweedfs.seaweedfsecret }}
-              key: S3_ROOT_USER_SECRET
+          valueFrom:
+            secretKeyRef:
+                name: {{ .Values.secrets.seaweedfs.seaweedfsecret }}
+                key: S3_ROOT_USER_SECRET
         - name: S3_ROOT_PWD
-          secretKeyRef:
-              name: {{ .Values.secrets.seaweedfs.seaweedfsecret }}
-              key: S3_ROOT_PWD_SECRET
+          valueFrom:
+            secretKeyRef:
+                name: {{ .Values.secrets.seaweedfs.seaweedfsecret }}
+                key: S3_ROOT_PWD_SECRET
         - name: S3_PORT
           value: "{{ .Values.seaweedfs.S3_PORT }}"
         - name: SEAWEED_MOUNT_PORT
