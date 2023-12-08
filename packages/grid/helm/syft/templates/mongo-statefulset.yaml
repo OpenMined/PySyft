@@ -31,12 +31,12 @@ spec:
           valueFrom:
             secretKeyRef:
               name: {{ .Values.secrets.db.mongo.mongosecret }}
-              key: mongoInitdbRootUsername
+              key: mongo-username-secret
         - name: MONGO_INITDB_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
               name: {{ .Values.secrets.db.mongo.mongosecret }}
-              key: mongoInitdbRootPassword
+              key: mongo-password-secret
         envFrom: null
         image: mongo:7.0.3
         lifecycle: null

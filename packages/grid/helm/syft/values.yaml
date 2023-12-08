@@ -6,7 +6,6 @@ secrets:
   syft:
     syftsecret: "syftsecret"
     # stackApiKey: "changeme"
-    defaultRootEmail: "info@openmined.org"
     # defaultRootPassword: "changethis"
   db:
     mongo:
@@ -44,6 +43,7 @@ node:
     nodeType: "domain"
     versionHash: "abc"
     nodeSideType: "high"
+    defaultRootEmail: "info@openmined.org"
 
 ingress:
   ingressClass: ""

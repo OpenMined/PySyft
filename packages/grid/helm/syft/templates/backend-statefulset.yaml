@@ -83,7 +83,7 @@ spec:
         - name: ENABLE_OBLV
           value: 'false'
         - name: DEFAULT_ROOT_EMAIL
-          value: {{ .Values.secrets.syft.defaultRootEmail }}
+          value: {{ .Values.node.settings.defaultRootEmail }}
         - name: DEFAULT_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
