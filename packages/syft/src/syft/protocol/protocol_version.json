@@ -757,13 +757,6 @@
           "hash": "a0bba2b7792c9e08c453e9e256f0ac6e6185610726566bcd50b057ae83b42d9a",
           "action": "add"
         }
-      },
-      "SyftWorkerImage": {
-        "1": {
-          "version": 1,
-          "hash": "0a3bee797a66548e2eede5c0e5d2050d8d5e1083331aeaaaf823c6446fbccde2",
-          "action": "add"
-        }
       }
     }
   },
@@ -975,6 +968,17 @@
         "1": {
           "version": 1,
           "hash": "f498e61ec6d2ec916b7e1f25a67dc468f17c59239e77194cebf8b512993cb555",
+          "action": "add"
+        }
+      }
+    }
+  },
+  "dev": {
+    "object_versions": {
+      "SyftWorkerImage": {
+        "1": {
+          "version": 1,
+          "hash": "fd1067b0bb9a6e630a224162ed92f4746d4d5869bc104923ec48c4b9d597594c",
           "action": "add"
         }
       }
