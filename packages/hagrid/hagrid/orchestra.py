@@ -31,6 +31,7 @@ except Exception:  # nosec
     pass
 
 DEFAULT_PORT = 8080
+DEFAULT_URL = "http://localhost"
 # Gevent used instead of threading module ,as we monkey patch gevent in syft
 # and this causes context switch error when we use normal threading in hagrid
 
@@ -341,12 +342,13 @@ def deploy_to_k8s(
     node_side_type: NodeSideType,
 ) -> NodeHandle:
     node_port = int(os.environ.get("NODE_PORT", f"{DEFAULT_PORT}"))
+    node_url = str(os.environ.get("NODE_URL", f"{DEFAULT_URL}"))
     return NodeHandle(
         node_type=node_type_enum,
         deployment_type=deployment_type_enum,
         name=name,
         port=node_port,
-        url="http://localhost",
+        url=node_url,
         node_side_type=node_side_type,
     )
 
