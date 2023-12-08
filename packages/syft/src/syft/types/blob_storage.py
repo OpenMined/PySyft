@@ -1,4 +1,6 @@
 # stdlib
+from datetime import datetime
+from datetime import timedelta
 import mimetypes
 from pathlib import Path
 from queue import Queue
@@ -13,6 +15,9 @@ from typing import Type
 from typing import Union
 
 # third party
+from azure.storage.blob import BlobSasPermissions
+from azure.storage.blob import generate_blob_sas
+from botocore.client import ClientError as BotoClientError
 from typing_extensions import Self
 
 # relative
@@ -24,6 +29,7 @@ from ..service.action.action_object import BASE_PASSTHROUGH_ATTRS
 from ..service.action.action_types import action_types
 from ..service.response import SyftException
 from ..service.service import from_api_or_context
+from ..types.grid_url import GridURL
 from ..types.transforms import drop
 from ..types.transforms import keep
 from ..types.transforms import make_set_default
@@ -34,6 +40,8 @@ from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SYFT_OBJECT_VERSION_2
 from .syft_object import SyftObject
 from .uid import UID
+
+READ_EXPIRATION_TIME = 1800  # seconds
 
 
 @serializable()
@@ -155,13 +163,83 @@ class SecureFilePathLocation(SyftObject):
     def __repr__(self) -> str:
         return f"{self.path}"
 
-
+    def generate_url(self, connection, type_):
+        raise NotImplementedError
+    
 @serializable()
-class SeaweedSecureFilePathLocation(SecureFilePathLocation):
+class SeaweedSecureFilePathLocationV1(SecureFilePathLocation):
     __canonical_name__ = "SeaweedSecureFilePathLocation"
     __version__ = SYFT_OBJECT_VERSION_1
 
     upload_id: str
+
+@serializable()
+class SeaweedSecureFilePathLocation(SecureFilePathLocation):
+    __canonical_name__ = "SeaweedSecureFilePathLocation"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    upload_id: str
+    bucket_name: str
+
+    def generate_url(self, connection, type_):
+        try:
+            url = connection.client.generate_presigned_url(
+                ClientMethod="get_object",
+                Params={"Bucket": self.bucket_name, "Key": self.path},
+                ExpiresIn=READ_EXPIRATION_TIME,
+            )
+
+            # relative
+            from ..store.blob_storage import BlobRetrievalByURL
+
+            return BlobRetrievalByURL(
+                url=GridURL.from_url(url), file_name=Path(self.path).name, type_=type_
+            )
+        except BotoClientError as e:
+            raise SyftException(e)
+        
+@migrate(SeaweedSecureFilePathLocationV1, SeaweedSecureFilePathLocation)
+def upgrade_seaweedsecurefilepathlocation_v1_to_v2():
+    return [
+        make_set_default("bucket_name", "")
+    ]
+
+@migrate(SeaweedSecureFilePathLocation, SeaweedSecureFilePathLocationV1)
+def downgrade_seaweedsecurefilepathlocation_v2_to_v1():
+    return [
+        drop(["bucket_name"]),
+    ]
+
+
+@serializable()
+class AzureSecureFilePathLocation(SecureFilePathLocation):
+    __canonical_name__ = "AzureSecureFilePathLocation"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    # upload_id: str
+    azure_profile_name: str  # Used by Seaweedfs to refer to a remote config
+    bucket_name: str
+
+    def generate_url(self, connection, type_, bucket_name):
+        # SAS is almost the same thing as the presigned url
+        config = connection.config.remote_profiles[self.azure_profile_name]
+        account_name = config.account_name
+        container_name = config.container_name
+        blob_name = self.path
+        sas_blob = generate_blob_sas(
+            account_name=account_name,
+            container_name=container_name,
+            blob_name=blob_name,
+            account_key=config.account_key,
+            permission=BlobSasPermissions(read=True),
+            expiry=datetime.utcnow() + timedelta(hours=48),
+        )
+        url = f"https://{config.account_name}.blob.core.windows.net/{container_name}/{blob_name}?{sas_blob}"
+
+        # relative
+        from ..store.blob_storage import BlobRetrievalByURL
+
+        return BlobRetrievalByURL(url=url, file_name=Path(self.path).name, type_=type_)
 
 
 @serializable()
