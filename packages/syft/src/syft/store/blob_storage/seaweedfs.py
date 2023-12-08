@@ -1,7 +1,7 @@
 # stdlib
 from io import BytesIO
 import math
-from pathlib import Path
+from typing import Dict
 from typing import Generator
 from typing import List
 from typing import Optional
@@ -19,14 +19,13 @@ from typing_extensions import Self
 # relative
 from . import BlobDeposit
 from . import BlobRetrieval
-from . import BlobRetrievalByURL
 from . import BlobStorageClient
 from . import BlobStorageClientConfig
 from . import BlobStorageConfig
 from . import BlobStorageConnection
 from ...serde.serializable import serializable
+from ...service.blob_storage.remote_profile import AzureRemoteProfile
 from ...service.response import SyftError
-from ...service.response import SyftException
 from ...service.response import SyftSuccess
 from ...service.service import from_api_or_context
 from ...types.blob_storage import BlobStorageEntry
@@ -37,7 +36,6 @@ from ...types.grid_url import GridURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...util.constants import DEFAULT_TIMEOUT
 
-READ_EXPIRATION_TIME = 1800  # seconds
 WRITE_EXPIRATION_TIME = 900  # seconds
 DEFAULT_CHUNK_SIZE = 1024**3  # 1 GB
 
@@ -109,6 +107,7 @@ class SeaweedFSClientConfig(BlobStorageClientConfig):
     secret_key: str
     region: str
     default_bucket_name: str = "defaultbucket"
+    remote_profiles: Dict[str, AzureRemoteProfile] = {}
 
     @property
     def endpoint_url(self) -> str:
@@ -137,6 +136,7 @@ class SeaweedFSClient(BlobStorageClient):
                 region_name=self.config.region,
             ),
             default_bucket_name=self.config.default_bucket_name,
+            config=self.config,
         )
 
 
@@ -144,10 +144,17 @@ class SeaweedFSClient(BlobStorageClient):
 class SeaweedFSConnection(BlobStorageConnection):
     client: S3BaseClient
     default_bucket_name: str
+    config: SeaweedFSClientConfig
 
-    def __init__(self, client: S3BaseClient, default_bucket_name: str):
+    def __init__(
+        self,
+        client: S3BaseClient,
+        default_bucket_name: str,
+        config: SeaweedFSClientConfig,
+    ):
         self.client = client
         self.default_bucket_name = default_bucket_name
+        self.config = config
 
     def __enter__(self) -> Self:
         return self
@@ -160,18 +167,7 @@ class SeaweedFSConnection(BlobStorageConnection):
     ) -> BlobRetrieval:
         if bucket_name is None:
             bucket_name = self.default_bucket_name
-        try:
-            url = self.client.generate_presigned_url(
-                ClientMethod="get_object",
-                Params={"Bucket": bucket_name, "Key": fp.path},
-                ExpiresIn=READ_EXPIRATION_TIME,
-            )
-
-            return BlobRetrievalByURL(
-                url=GridURL.from_url(url), file_name=Path(fp.path).name, type_=type_
-            )
-        except BotoClientError as e:
-            raise SyftException(e)
+        return fp.generate_url(self, type_, bucket_name)
 
     def allocate(
         self, obj: CreateBlobStorageEntry
