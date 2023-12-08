@@ -36,6 +36,7 @@ template_variables = {
     "NODE_TYPE": "node.settings",
     "VERSION_HASH": "node.settings",
     "NODE_NAME": "node.settings",
+    "NODE_SIDE_TYPE": "node.settings",
 }
 
 
@@ -120,8 +121,10 @@ def add_secrets(helm_chart_template_dir: str) -> None:
     with open(syft_secrets_path, "w") as fp:
         with open(syft_secrets_source) as fp2:
             fp.write(fp2.read())
-    
-    seeweedfs_secrets_path = os.path.join(helm_chart_template_dir, "seaweedfs_secrets.yaml")
+
+    seeweedfs_secrets_path = os.path.join(
+        helm_chart_template_dir, "seaweedfs_secrets.yaml"
+    )
     seeweedfs_secrets_source = os.path.join("k8s/manifests", "seaweedfs_secrets.txt")
     with open(seeweedfs_secrets_path, "w") as fp:
         with open(seeweedfs_secrets_source) as fp2:

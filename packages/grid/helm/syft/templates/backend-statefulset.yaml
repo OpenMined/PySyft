@@ -50,13 +50,15 @@ spec:
         - name: RELEASE
           value: production
         - name: VERSION
-          value: 0.8.2-beta.40
+          value: 0.8.3-beta.3
         - name: VERSION_HASH
           value: {{ .Values.node.settings.versionHash }}
         - name: NODE_TYPE
           value: {{ .Values.node.settings.nodeType }}
         - name: NODE_NAME
           value: {{ .Values.node.settings.nodeName }}
+        - name: NODE_SIDE_TYPE
+          value: {{ .Values.node.settings.nodeSideType }}
         - name: STACK_API_KEY
           valueFrom:
             secretKeyRef:
@@ -92,7 +94,7 @@ spec:
               name: {{ .Values.secrets.syft.syftsecret }}
               key: defaultRootPassword
         envFrom: null
-        image: docker.io/openmined/grid-backend:0.8.2-beta.40
+        image: docker.io/openmined/grid-backend:0.8.3-beta.3
         lifecycle: null
         livenessProbe: null
         name: container-0

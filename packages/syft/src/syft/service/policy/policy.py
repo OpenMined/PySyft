@@ -146,7 +146,6 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
             uid = v.id
         if isinstance(v, Asset):
             uid = v.action_id
-
         if not isinstance(uid, UID):
             raise Exception(f"Input {k} must have a UID not {type(v)}")
 
@@ -233,8 +232,11 @@ def retrieve_from_db(
     )
     if context.node.node_type == NodeType.DOMAIN:
         for var_name, arg_id in allowed_inputs.items():
-            kwarg_value = action_service.get(
-                context=root_context, uid=arg_id, twin_mode=TwinMode.NONE
+            kwarg_value = action_service._get(
+                context=root_context,
+                uid=arg_id,
+                twin_mode=TwinMode.NONE,
+                has_permission=True,
             )
             if kwarg_value.is_err():
                 return SyftError(message=kwarg_value.err())
@@ -265,7 +267,7 @@ def allowed_ids_only(
             node_id=context.node.id,
             verify_key=context.node.signing_key.verify_key,
         )
-        allowed_inputs = allowed_inputs[node_identity]
+        allowed_inputs = allowed_inputs.get(node_identity, {})
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {}
         for key in allowed_inputs.values():
@@ -429,6 +431,11 @@ class UserOutputPolicy(OutputPolicy):
 
 class UserInputPolicy(InputPolicy):
     __canonical_name__ = "UserInputPolicy"
+    pass
+
+
+class EmpyInputPolicy(InputPolicy):
+    __canonical_name__ = "EmptyInputPolicy"
     pass
 
 

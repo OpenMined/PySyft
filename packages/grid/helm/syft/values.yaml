@@ -30,6 +30,7 @@ db:
 seaweedfs:
   S3_VOLUME_SIZE_MB: '1024'
   S3_PORT: '8333'
+  SEAWEED_MOUNT_PORT: '4001'
 
 node:
   settings:
@@ -38,6 +39,7 @@ node:
     nodeName: "mynode"
     nodeType: "domain"
     versionHash: "abc"
+    nodeSideType: "high"
 
 ingress:
   ingressClass: ""

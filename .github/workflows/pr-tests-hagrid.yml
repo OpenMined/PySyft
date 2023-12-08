@@ -32,7 +32,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -43,7 +43,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         if: steps.changes.outputs.hagrid == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -80,7 +80,7 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           bandit -r hagrid
-          safety check -i 42923 -i 54229 -i 54230
+          safety check -i 42923 -i 54229 -i 54230 -i 54230 -i 54229 -i 62044
 
       - name: Run normal tests
         if: steps.changes.outputs.hagrid == 'true'

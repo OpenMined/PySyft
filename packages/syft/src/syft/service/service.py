@@ -478,3 +478,5 @@ def from_api_or_context(
             _private_api_path,
         )
         return partial(service_method, node_context)
+    else:
+        print("Could not get method from api or context")

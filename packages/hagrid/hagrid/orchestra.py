@@ -8,13 +8,11 @@ import getpass
 import inspect
 import os
 import subprocess  # nosec
+from threading import Thread
 from typing import Any
 from typing import Callable
 from typing import Optional
 from typing import Union
-
-# third party
-import gevent
 
 # relative
 from .cli import str_to_bool
@@ -33,6 +31,7 @@ except Exception:  # nosec
     pass
 
 DEFAULT_PORT = 8080
+DEFAULT_URL = "http://localhost"
 # Gevent used instead of threading module ,as we monkey patch gevent in syft
 # and this causes context switch error when we use normal threading in hagrid
 
@@ -46,7 +45,6 @@ def read_stream(stream: subprocess.PIPE) -> None:
         if not line:
             break
         print(line, end="")
-        gevent.sleep(0)
 
 
 def to_snake_case(name: str) -> str:
@@ -237,6 +235,9 @@ def deploy_to_python(
     local_db: bool,
     node_side_type: NodeSideType,
     enable_warnings: bool,
+    n_consumers: int,
+    create_producer: bool = False,
+    queue_port: Optional[int] = None,
 ) -> Optional[NodeHandle]:
     sy = get_syft_client()
     if sy is None:
@@ -264,6 +265,7 @@ def deploy_to_python(
                 host=host,
                 port=port,
                 reset=reset,
+                processes=processes,
                 dev_mode=dev_mode,
                 tail=tail,
                 node_type=node_type_enum,
@@ -296,6 +298,7 @@ def deploy_to_python(
             sig = inspect.signature(worker_class.named)
             if "node_type" in sig.parameters.keys():
                 worker = worker_class.named(
+                    dev_mode=dev_mode,
                     name=name,
                     processes=processes,
                     reset=reset,
@@ -303,6 +306,10 @@ def deploy_to_python(
                     node_type=node_type_enum,
                     node_side_type=node_side_type,
                     enable_warnings=enable_warnings,
+                    n_consumers=n_consumers,
+                    create_producer=create_producer,
+                    queue_port=queue_port,
+                    migrate=True,
                 )
             else:
                 # syft <= 0.8.1
@@ -314,12 +321,17 @@ def deploy_to_python(
                 )
         else:
             raise NotImplementedError(f"node_type: {node_type_enum} is not supported")
+
+        def stop() -> None:
+            worker.stop()
+
         return NodeHandle(
             node_type=node_type_enum,
             deployment_type=deployment_type_enum,
             name=name,
             python_node=worker,
             node_side_type=node_side_type,
+            shutdown=stop,
         )
 
 
@@ -330,12 +342,13 @@ def deploy_to_k8s(
     node_side_type: NodeSideType,
 ) -> NodeHandle:
     node_port = int(os.environ.get("NODE_PORT", f"{DEFAULT_PORT}"))
+    node_url = str(os.environ.get("NODE_URL", f"{DEFAULT_URL}"))
     return NodeHandle(
         node_type=node_type_enum,
         deployment_type=deployment_type_enum,
         name=name,
         port=node_port,
-        url="http://localhost",
+        url=node_url,
         node_side_type=node_side_type,
     )
 
@@ -434,12 +447,14 @@ def deploy_to_container(
     process = subprocess.Popen(  # nosec
         commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
     )
-    # Start gevent threads to read and print the output and error streams
-    stdout_thread = gevent.spawn(read_stream, process.stdout)
-    stderr_thread = gevent.spawn(read_stream, process.stderr)
-
-    # Wait for the threads to finish
-    gevent.joinall([stdout_thread, stderr_thread], raise_error=True)
+    # Start threads to read and print the output and error streams
+    stdout_thread = Thread(target=read_stream, args=(process.stdout,))
+    stderr_thread = Thread(target=read_stream, args=(process.stderr,))
+    # todo, raise errors
+    stdout_thread.start()
+    stderr_thread.start()
+    stdout_thread.join()
+    stderr_thread.join()
 
     if not cmd:
         return NodeHandle(
@@ -474,6 +489,9 @@ class Orchestra:
         verbose: bool = False,
         render: bool = False,
         enable_warnings: bool = False,
+        n_consumers: int = 0,
+        create_producer: bool = False,
+        queue_port: Optional[int] = None,
     ) -> Optional[NodeHandle]:
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"
@@ -516,6 +534,9 @@ class Orchestra:
                 local_db=local_db,
                 node_side_type=node_side_type_enum,
                 enable_warnings=enable_warnings,
+                n_consumers=n_consumers,
+                create_producer=create_producer,
+                queue_port=queue_port,
             )
 
         elif deployment_type_enum == DeploymentType.K8S:
@@ -587,7 +608,7 @@ class Orchestra:
     def reset(name: str, deployment_type_enum: DeploymentType) -> None:
         if deployment_type_enum == DeploymentType.PYTHON:
             sy = get_syft_client()
-            _ = sy.Worker.named(name, processes=1, reset=True)  # type: ignore
+            _ = sy.Worker.named(name=name, processes=1, reset=True)  # type: ignore
         elif (
             deployment_type_enum == DeploymentType.CONTAINER_STACK
             or deployment_type_enum == DeploymentType.SINGLE_CONTAINER
