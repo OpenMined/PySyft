@@ -28,9 +28,9 @@ db:
       mongoHost: "mongo"
 
 seaweedfs:
-  S3_VOLUME_SIZE_MB: '1024'
-  S3_PORT: '8333'
-  SEAWEED_MOUNT_PORT: '4001'
+  S3_VOLUME_SIZE_MB: 1024
+  S3_PORT: 8333
+  SEAWEED_MOUNT_PORT: 4001
 
 container:
   registry: "docker.io"

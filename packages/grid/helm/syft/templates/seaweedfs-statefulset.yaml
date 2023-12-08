@@ -29,7 +29,7 @@ spec:
         command: null
         env:
         - name: S3_VOLUME_SIZE_MB
-          value: {{ .Values.seaweedfs.S3_VOLUME_SIZE_MB }}
+          value: "{{ .Values.seaweedfs.S3_VOLUME_SIZE_MB }}"
         - name: S3_ROOT_USER
           secretKeyRef:
               name: {{ .Values.secrets.seaweedfs.seaweedfsecret }}
@@ -39,9 +39,9 @@ spec:
               name: {{ .Values.secrets.seaweedfs.seaweedfsecret }}
               key: S3_ROOT_PWD_SECRET
         - name: S3_PORT
-          value: {{ .Values.seaweedfs.S3_PORT }}
+          value: "{{ .Values.seaweedfs.S3_PORT }}"
         - name: SEAWEED_MOUNT_PORT
-          value: {{ .Values.seaweedfs.SEAWEED_MOUNT_PORT }}
+          value: "{{ .Values.seaweedfs.SEAWEED_MOUNT_PORT }}"
         envFrom: null
         image: {{ .Values.container.registry }}/openmined/grid-seaweedfs:{{ .Values.container.syft_version }}
         lifecycle: null
