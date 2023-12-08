@@ -55,7 +55,17 @@ class SyftWorkerPoolService(AbstractService):
             number (int): number of SyftWorker that needs to be created in the pool
         """
 
-        result = self.image_stash.get_by_uid(context=context.credentials, uid=image_uid)
+        result = self.stash.get_by_name(context.credentials, pool_name=name)
+
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+
+        if result.ok() is not None:
+            return SyftError(message=f"Worker Pool with name: {name} already exists !!")
+
+        result = self.image_stash.get_by_uid(
+            credentials=context.credentials, uid=image_uid
+        )
         if result.is_err():
             return SyftError(
                 message=f"Failed to retrieve Worker Image with id: {image_uid}. Error: {result.err()}"
@@ -70,9 +80,11 @@ class SyftWorkerPoolService(AbstractService):
             orchestration=WorkerOrchestrationType.DOCKER,
         )
 
-        workers = []
-        for container_status in container_statuses:
-            workers.append(container_status.worker)
+        workers = [
+            container_status.worker
+            for container_status in container_statuses
+            if container_status.worker
+        ]
 
         worker_pool = WorkerPool(
             name=name,
@@ -80,9 +92,25 @@ class SyftWorkerPoolService(AbstractService):
             max_count=number,
             workers=workers,
         )
-        result = self.stash.set(context.credentials, worker_pool)
+        result = self.stash.set(credentials=context.credentials, obj=worker_pool)
 
         if result.is_err():
             return SyftError(message=f"Failed to save Worker Pool: {result.err()}")
 
         return container_statuses
+
+    @service_method(
+        path="worker_pool.get_all",
+        name="get_all",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def get_all(
+        self, context: AuthedServiceContext
+    ) -> Union[List[WorkerPool], SyftError]:
+        # TODO: During get_all, we should dynamically make a call to docker to get the status of the containers
+        # and update the status of the workers in the pool.
+        result = self.stash.get_all(credentials=context.credentials)
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+
+        return result.ok()

@@ -16,14 +16,14 @@ from .worker_pool import WorkerStatus
 
 
 def run_container_using_docker(
-    image_tag: SyftWorkerImageTag,
-    worker_name: str,
+    image_tag: SyftWorkerImageTag, worker_name: str, debug: bool = False
 ) -> ContainerSpawnStatus:
     client = docker.from_env()
 
     # start container
     container = None
     error_message = None
+    worker = None
     try:
         container = client.containers.run(
             image_tag.full_tag,
@@ -37,20 +37,26 @@ def run_container_using_docker(
             if container.status == "exited"
             else WorkerStatus.PENDING
         )
+        worker = SyftWorker(
+            name=worker_name,
+            container_id=container.id,
+            image_hash=container.image.id,
+            status=status,
+        )
     except Exception as e:
-        status = WorkerStatus.STOPPED
         error_message = f"Failed to run command in container. {worker_name} {image_tag}. {e}. {sys.stderr}"
         if container:
+            worker = SyftWorker(
+                name=worker_name,
+                container_id=container.id,
+                image_hash=container.image.id,
+                status=WorkerStatus.STOPPED,
+            )
             container.stop()
 
-    worker = SyftWorker(
-        name=worker_name,
-        container_id=container.id,
-        image_hash=container.image.id,
-        status=status,
+    return ContainerSpawnStatus(
+        worker_name=worker_name, worker=worker, error=error_message
     )
-
-    return ContainerSpawnStatus(worker=worker, error=error_message)
 
 
 def run_containers(
@@ -67,7 +73,9 @@ def run_containers(
 
     for worker_count in range(1, number + 1):
         worker_name = f"{pool_name}-{worker_count}"
-        spawn_result = run_container_using_docker(worker_name, image_tag=image_tag)
+        spawn_result = run_container_using_docker(
+            worker_name=worker_name, image_tag=image_tag
+        )
         results.append(spawn_result)
 
     return results

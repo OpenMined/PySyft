@@ -96,11 +96,11 @@ class SyftWorkerImageService(AbstractService):
         return result
 
     @service_method(
-        path="worker_image.list",
-        name="list",
+        path="worker_image.get_all",
+        name="get_all",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def list(
+    def get_all(
         self, context: AuthedServiceContext
     ) -> Union[List[SyftWorkerImage], SyftError]:
         """
