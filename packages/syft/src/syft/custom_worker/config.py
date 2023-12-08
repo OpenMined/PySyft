@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -106,11 +107,12 @@ class CustomWorkerConfig(WorkerConfig):
 @serializable()
 class DockerWorkerConfig(WorkerConfig):
     dockerfile: str
+    file_name: Optional[str]
 
     @classmethod
     def from_path(cls, path: Union[Path, str]) -> Self:
         with open(path) as f:
-            return cls(dockerfile=f.read())
+            return cls(dockerfile=f.read(), file_name=Path(path).name)
 
     def __eq__(self, __value: object) -> bool:
         if not isinstance(__value, DockerWorkerConfig):

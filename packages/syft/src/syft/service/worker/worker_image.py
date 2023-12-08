@@ -18,6 +18,8 @@ from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
 from ..response import SyftError
 from ..response import SyftSuccess
 
@@ -91,6 +93,24 @@ class SyftWorkerImage(SyftObject):
     image_hash: Optional[str]
     created_at: DateTime = DateTime.now()
     created_by: SyftVerifyKey
+    dockerfile_name: Optional[str]
+
+    __repr_attrs__ = ["dockerfile_name", "image_tag", "image_hash", "created_at"]
+
+    def _repr_html_(self) -> str:
+        return f"""
+            <style>
+            .syft-contributor {{color: {SURFACE[options.color_theme]};}}
+            </style>
+            <div class='syft-worker-image' style='line-height:25%'>
+                <h3>SyftWorkerImage</h3>
+                <p><strong>ID: </strong>{self.id}</p>
+                <p><strong>Name: </strong>{self.config.file_name}</p>
+                <p><strong>Tag: </strong>{self.image_tag}</p>
+                <p><strong>Hash: </strong>{self.image_hash}</p>
+                <p><strong>Created Date: </strong>{str(self.created_at)}</p>
+            </div>
+            """
 
 
 def build_using_docker(worker_image: SyftWorkerImage, push: bool = True):
