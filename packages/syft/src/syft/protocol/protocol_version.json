@@ -833,7 +833,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "8059ee03016c4d74e408dad9529e877f91829672e0cc42d8cfff9c8e14058adc",
+          "hash": "c78a998aa1c6d9700c775ca65a4efc9c6ae2d2ffdf677219f7b004e635b2be42",
           "action": "add"
         }
       },
@@ -954,6 +954,34 @@
         "1": {
           "version": 1,
           "hash": "776fc7cf7498b93e656a00fff03b86160d1b63e508e2143ac7932e7e38021b0c",
+          "action": "add"
+        }
+      },
+      "SeaweedSecureFilePathLocation": {
+        "2": {
+          "version": 2,
+          "hash": "35ad807e2282b97a6022649b2efa186d0c1705e2eb8f3753d55efda1b6510a9a",
+          "action": "add"
+        }
+      },
+      "AzureSecureFilePathLocation": {
+        "1": {
+          "version": 1,
+          "hash": "1bb15f3f9d7082779f1c9f58de94011487924cb8a8c9c2ec18fd7c161c27fd0e",
+          "action": "add"
+        }
+      },
+      "RemoteConfig": {
+        "1": {
+          "version": 1,
+          "hash": "ad7bc4780a8ad52e14ce68601852c93d2fe07bda489809cad7cae786d2461754",
+          "action": "add"
+        }
+      },
+      "AzureRemoteConfig": {
+        "1": {
+          "version": 1,
+          "hash": "c05c6caa27db4e385c642536d4b0ecabc0c71e91220d2e6ce21a2761ca68a673",
           "action": "add"
         }
       }
