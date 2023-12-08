@@ -163,7 +163,7 @@ class SecureFilePathLocation(SyftObject):
     def __repr__(self) -> str:
         return f"{self.path}"
 
-    def generate_url(self, connection, type_):
+    def generate_url(self, *args):
         raise NotImplementedError
     
 @serializable()
@@ -179,13 +179,12 @@ class SeaweedSecureFilePathLocation(SecureFilePathLocation):
     __version__ = SYFT_OBJECT_VERSION_2
 
     upload_id: str
-    bucket_name: str
 
-    def generate_url(self, connection, type_):
+    def generate_url(self, connection, type_, bucket_name):
         try:
             url = connection.client.generate_presigned_url(
                 ClientMethod="get_object",
-                Params={"Bucket": self.bucket_name, "Key": self.path},
+                Params={"Bucket": bucket_name, "Key": self.path},
                 ExpiresIn=READ_EXPIRATION_TIME,
             )
 
@@ -220,7 +219,7 @@ class AzureSecureFilePathLocation(SecureFilePathLocation):
     azure_profile_name: str  # Used by Seaweedfs to refer to a remote config
     bucket_name: str
 
-    def generate_url(self, connection, type_, bucket_name):
+    def generate_url(self, connection, type_, *args):
         # SAS is almost the same thing as the presigned url
         config = connection.config.remote_profiles[self.azure_profile_name]
         account_name = config.account_name
