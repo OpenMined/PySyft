@@ -499,7 +499,7 @@ class Orchestra:
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"
             thread_workers = True
-        
+
         # syft 0.8.1
         if node_type == "python":
             node_type = NodeType.DOMAIN
