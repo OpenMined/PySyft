@@ -2,8 +2,6 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  annotations:
-    helm.sh/chart: component-chart-0.9.1
   labels:
     app.kubernetes.io/component: seaweedfs
     app.kubernetes.io/managed-by: Helm
@@ -20,8 +18,6 @@ spec:
   serviceName: seaweedfs-headless
   template:
     metadata:
-      annotations:
-        helm.sh/chart: component-chart-0.9.1
       labels:
         app.kubernetes.io/component: seaweedfs
         app.kubernetes.io/managed-by: Helm
@@ -47,7 +43,7 @@ spec:
         - name: SEAWEED_MOUNT_PORT
           value: {{ .Values.seaweedfs.SEAWEED_MOUNT_PORT }}
         envFrom: null
-        image: docker.io/openmined/grid-seaweedfs:0.8.3-beta.3
+        image: {{ .Values.container.registry }}/openmined/grid-seaweedfs:{{ .Values.container.syft_version }}
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -87,8 +83,6 @@ spec:
         name: seaweedfs-config
   volumeClaimTemplates:
   - metadata:
-      annotations:
-        helm.sh/chart: component-chart-0.9.1
       labels:
         app.kubernetes.io/component: seaweedfs
         app.kubernetes.io/managed-by: Helm

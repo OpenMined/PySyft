@@ -65,7 +65,7 @@ spec:
         - name: RELEASE
           value: production
         - name: VERSION
-          value: 0.8.3-beta.3
+          value: 0.8.3-beta.4
         - name: VERSION_HASH
           value: unknown
         - name: NODE_TYPE
@@ -103,7 +103,7 @@ spec:
         - name: DEFAULT_ROOT_PASSWORD
           value: changethis
         envFrom: null
-        image: docker.io/openmined/grid-backend:0.8.3-beta.3
+        image: docker.io/openmined/grid-backend:0.8.3-beta.4
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -220,7 +220,7 @@ spec:
         command: null
         env:
         - name: VERSION
-          value: 0.8.3-beta.3
+          value: 0.8.3-beta.4
         - name: VERSION_HASH
           value: unknown
         - name: NODE_TYPE
@@ -228,7 +228,7 @@ spec:
         - name: NEXT_PUBLIC_API_URL
           value: ${NEXT_PUBLIC_API_URL}
         envFrom: null
-        image: docker.io/openmined/grid-frontend:0.8.3-beta.3
+        image: docker.io/openmined/grid-frontend:0.8.3-beta.4
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -586,7 +586,7 @@ spec:
         - name: SEAWEED_MOUNT_PORT
           value: '4001'
         envFrom: null
-        image: docker.io/openmined/grid-seaweedfs:0.8.3-beta.3
+        image: docker.io/openmined/grid-seaweedfs:0.8.3-beta.4
         lifecycle: null
         livenessProbe: null
         name: container-0

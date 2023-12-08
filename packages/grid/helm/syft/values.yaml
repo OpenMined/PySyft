@@ -32,6 +32,10 @@ seaweedfs:
   S3_PORT: '8333'
   SEAWEED_MOUNT_PORT: '4001'
 
+container:
+  registry: "docker.io"
+  syft_version: 0.8.4-beta.1
+
 node:
   settings:
     tls: false

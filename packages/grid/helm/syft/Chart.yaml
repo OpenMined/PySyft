@@ -5,8 +5,3 @@ type: application
 version: "0.8.4-beta.1"
 appVersion: "0.8.4-beta.1"
 icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
-
-dependencies:
-  - name: component-chart
-    version: "0.9.1"
-    repository: "https://charts.devspace.sh"
