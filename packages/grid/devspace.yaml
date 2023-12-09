@@ -73,8 +73,8 @@ deployments:
           settings:
             nodeName: ${NODE_NAME}
             nodeType: "domain"
-        configuration:
-          devmode: True
+        # configuration:
+        #   devmode: True
 
 dev:
   mongo:

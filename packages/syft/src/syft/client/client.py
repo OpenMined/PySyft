@@ -677,7 +677,7 @@ class SyftClient:
         # If SYFT_LOGIN_{NODE_NAME}_PASSWORD is set, use that as the password
         # for the login. This is useful for CI/CD environments to test password
         # randomization that is implemented by helm charts
-        if self.name is not None:
+        if self.name is not None and email == "info@openmined.org":
             pass_env_var = f"SYFT_LOGIN_{self.name}_PASSWORD"
             if pass_env_var in os.environ:
                 password = os.environ[pass_env_var]
