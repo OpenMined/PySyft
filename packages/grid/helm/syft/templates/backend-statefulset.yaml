@@ -89,6 +89,17 @@ spec:
             secretKeyRef:
               name: {{ .Values.secrets.syft.syftsecret }}
               key: defaultRootPassword
+        - name: S3_ROOT_USER
+          value: "{{ .Values.seaweedfs.S3_ROOT_USER }}"
+        - name: S3_ROOT_PWD
+          valueFrom:
+            secretKeyRef:
+                name: {{ .Values.secrets.seaweedfs.seaweedfsecret }}
+                key: S3_ROOT_PWD_SECRET
+        - name: S3_PORT
+          value: "{{ .Values.seaweedfs.S3_PORT }}"
+        - name: SEAWEED_MOUNT_PORT
+          value: "{{ .Values.seaweedfs.SEAWEED_MOUNT_PORT }}"
         envFrom: null
         image: {{ .Values.container.registry }}/openmined/grid-backend:{{ .Values.container.syft_version }}
         lifecycle: null
