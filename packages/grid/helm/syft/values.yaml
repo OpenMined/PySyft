@@ -25,6 +25,7 @@ db:
     settings:
       mongoPort: "'27017'"
       mongoHost: "mongo"
+      mongoUsername: "root"
 
 seaweedfs:
   S3_VOLUME_SIZE_MB: 1024
