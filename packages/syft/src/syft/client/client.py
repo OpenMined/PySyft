@@ -5,6 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from getpass import getpass
 import json
+import os
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -673,6 +674,14 @@ class SyftClient:
         register: bool = False,
         **kwargs: Any,
     ) -> Self:
+        # If SYFT_LOGIN_{NODE_NAME}_PASSWORD is set, use that as the password
+        # for the login. This is useful for CI/CD environments to test password
+        # randomization that is implemented by helm charts
+        if self.name is not None:
+            pass_env_var = f"SYFT_LOGIN_{self.name}_PASSWORD"
+            if pass_env_var in os.environ:
+                password = os.environ[pass_env_var]
+
         if email is None:
             email = input("Email: ")
         if password is None:
