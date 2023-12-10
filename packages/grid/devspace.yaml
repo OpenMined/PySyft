@@ -21,8 +21,8 @@ pipelines:
 vars:
   DEVSPACE_ENV_FILE: "default.env"
   CONTAINER_REGISTRY: "docker.io"
-  VERSION: "0.8.4-beta.1"
   NODE_NAME: "mynode"
+  VERSION: "0.8.4-beta.2"
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
