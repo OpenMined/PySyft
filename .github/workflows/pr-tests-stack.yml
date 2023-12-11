@@ -69,7 +69,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -259,7 +259,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -341,7 +341,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -537,7 +537,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
