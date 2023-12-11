@@ -15,13 +15,14 @@ pipelines:
     run: |-
       run_dependencies --all
       ensure_pull_secrets --all
-      build_images --all -t $(git rev-parse --short=6 HEAD) -t 0.8.4-beta.1 -t dev-latest
+      build_images --all
       create_deployments --all
 
 vars:
   DEVSPACE_ENV_FILE: "default.env"
   CONTAINER_REGISTRY: "docker.io"
-  VERSION: "0.8.4-beta.1"
+  NODE_NAME: "mynode"
+  VERSION: "0.8.4-beta.3"
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
@@ -34,6 +35,7 @@ images:
     tags:
       - dev-latest
       - "${VERSION}"
+      - "${devspace.git.commit}"
   frontend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
     buildKit:
@@ -44,6 +46,7 @@ images:
     tags:
       - dev-latest
       - "${VERSION}"
+      - "${devspace.git.commit}"
   seaweedfs:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
     buildKit: {}
@@ -54,237 +57,24 @@ images:
     tags:
       - dev-latest
       - "${VERSION}"
+      - "${devspace.git.commit}"
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
-  grid-stack-ingress:
-    kubectl:
-      manifests:
-        - k8s/manifests/ingress.yaml
-
-  traefik-main-config:
-    kubectl:
-      manifests:
-        - "k8s/manifests/traefik-domain.yaml"
-
-  seaweedfs-config:
-    kubectl:
-      manifests:
-        - "k8s/manifests/seaweedfs.yaml"
-
-  proxy:
+  syft:
     helm:
-      upgradeArgs:
-        - --dependency-update
       chart:
-        name: component-chart
-        repo: https://charts.devspace.sh
+        name: ./helm/syft
       values:
-        containers:
-          - image: "${DOCKER_IMAGE_TRAEFIK}:${TRAEFIK_VERSION}"
-            volumeMounts:
-              - containerPath: /etc/traefik
-                volume:
-                  name: traefik-conf
-            env:
-              - name: SERVICE_NAME
-                value: "proxy"
-        volumes:
-          - name: traefik-conf
-            configMap:
-              name: traefik-main-config
-        service:
-          name: "proxy"
-          ports:
-            - name: proxy
-              port: 80
-            # - name: api
-            #   port: 4000
-
-  backend:
-    helm:
-      upgradeArgs:
-        - --dependency-update
-      chart:
-        name: component-chart
-        repo: https://charts.devspace.sh
-      values:
-        # PodSecurityContext (uncomment for rootless "syftuser")
-        # securityContext:
-        #   runAsNonRoot: true
-        #   runAsUser: 1000
-        #   runAsGroup: 1000
-        #   fsGroup: 1000
-        #   fsGroupChangePolicy: "Always"
-        containers:
-          - image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}:${VERSION}"
-            volumeMounts:
-              - containerPath: /root/data/creds/
-                volume:
-                  name: credentials-data
-                  subPath: /credentials-data
-                  readOnly: false
-            env:
-              - name: MONGO_PORT
-                value: "${MONGO_PORT}"
-              - name: MONGO_HOST
-                value: "${MONGO_HOST}"
-              - name: MONGO_USERNAME
-                value: "${MONGO_USERNAME}"
-              - name: MONGO_PASSWORD
-                value: "${MONGO_PASSWORD}"
-              - name: SERVICE_NAME
-                value: "backend"
-              - name: RELEASE
-                value: "${RELEASE}"
-              - name: VERSION
-                value: "${VERSION}"
-              - name: VERSION_HASH
-                value: "${VERSION_HASH}"
-              - name: NODE_TYPE
-                value: "${NODE_TYPE}"
-              - name: NODE_NAME
-                value: "${NODE_NAME}"
-              - name: NODE_SIDE_TYPE
-                value: "${NODE_SIDE_TYPE}"
-              - name: STACK_API_KEY
-                value: "changeme"
-              - name: PORT
-                value: "${HTTP_PORT}"
-              - name: IGNORE_TLS_ERRORS
-                value: "${IGNORE_TLS_ERRORS}"
-              - name: HTTP_PORT
-                value: "${HTTP_PORT}"
-              - name: HTTPS_PORT
-                value: "${HTTPS_PORT}"
-              - name: CONTAINER_HOST
-                value: "k8s"
-              - name: TRACE
-                value: "${TRACE}"
-              - name: JAEGER_HOST
-                value: "${JAEGER_HOST}"
-              - name: JAEGER_PORT
-                value: "${JAEGER_PORT}"
-              - name: DEV_MODE
-                value: "${DEV_MODE}"
-              - name: DOMAIN_CONNECTION_PORT
-                value: "${DOMAIN_CONNECTION_PORT}"
-              - name: ENABLE_OBLV
-                value: "${ENABLE_OBLV}"
-              - name: DEFAULT_ROOT_EMAIL
-                value: "${DEFAULT_ROOT_EMAIL}"
-              - name: DEFAULT_ROOT_PASSWORD
-                value: "${DEFAULT_ROOT_PASSWORD}"
-        volumes:
-          - name: credentials-data
-            size: "100Mi"
-        service:
-          name: "backend"
-          ports:
-            - port: "${HTTP_PORT}"
-
-  mongo:
-    helm:
-      upgradeArgs:
-        - --dependency-update
-      chart:
-        name: component-chart
-        repo: https://charts.devspace.sh
-      values:
-        containers:
-          - image: "${MONGO_IMAGE}:${MONGO_VERSION}"
-            env:
-              - name: MONGO_INITDB_ROOT_USERNAME
-                value: "${MONGO_USERNAME}"
-              - name: MONGO_INITDB_ROOT_PASSWORD
-                value: "${MONGO_PASSWORD}"
-            volumeMounts:
-              - containerPath: /data/db
-                volume:
-                  name: mongo-data
-                  subPath: /
-                  readOnly: false
-        volumes:
-          - name: mongo-data
-            size: "5Gi"
-        service:
-          name: mongo
-          ports:
-            - port: "27017"
-
-  seaweedfs:
-    helm:
-      upgradeArgs:
-        - --dependency-update
-      chart:
-        name: component-chart
-        repo: https://charts.devspace.sh
-      values:
-        containers:
-          - image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}:${VERSION}"
-            env:
-              - name: S3_VOLUME_SIZE_MB
-                value: "${S3_VOLUME_SIZE_MB}"
-              - name: S3_ROOT_USER
-                value: "${S3_ROOT_USER}"
-              - name: S3_ROOT_PWD
-                value: "${S3_ROOT_PWD}"
-              - name: S3_PORT
-                value: "${S3_PORT}"
-              - name: SEAWEED_MOUNT_PORT
-                value: "${SEAWEED_MOUNT_PORT}"
-            volumeMounts:
-              - containerPath: /etc/seaweedfs/filer.toml
-                volume:
-                  name: seaweedfs-config
-                  subPath: /filer.toml
-                  readOnly: false
-              - containerPath: /etc/seaweedfs/start.sh
-                volume:
-                  name: seaweedfs-config
-                  subPath: /start.sh
-                  readOnly: false
-              - containerPath: /data/blob
-                volume:
-                  name: seaweedfs-data
-                  subPath: /
-                  readOnly: false
-        volumes:
-          - name: seaweedfs-data
-            size: "5Gi"
-          - name: seaweedfs-config
-            configMap:
-              name: seaweedfs-config
-        service:
-          name: seaweedfs
-          ports:
-            - port: "8888" # filer
-            - port: "8333" # S3
-            - port: "4001" # mount azure
-
-  frontend:
-    helm:
-      upgradeArgs:
-        - --dependency-update
-      chart:
-        name: component-chart
-        repo: https://charts.devspace.sh
-      values:
-        containers:
-          - image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}:${VERSION}"
-            env:
-              - name: VERSION
-                value: "${VERSION}"
-              - name: VERSION_HASH
-                value: "${VERSION_HASH}"
-              - name: NODE_TYPE
-                value: "${NODE_TYPE}"
-              - name: NEXT_PUBLIC_API_URL
-                value: "${NEXT_PUBLIC_API_URL}"
-        service:
-          name: "frontend"
-          ports:
-            - port: "80"
+        container:
+          registry: ${CONTAINER_REGISTRY}
+          syft_version: "dev-latest"
+        node:
+          settings:
+            nodeName: ${NODE_NAME}
+            nodeType: "domain"
+        # configuration:
+        #   devmode: True
 
 dev:
   mongo:
@@ -311,10 +101,9 @@ dev:
 profiles:
   - name: gateway
     patches:
-      - op: remove
-        path: deployments.seaweedfs
-      - op: remove
-        path: deployments.seaweedfs-config
+      - op: replace
+        path: deployments.syft.helm.values.node.settings.nodeType
+        value: "gateway"
 
 commands:
   start:

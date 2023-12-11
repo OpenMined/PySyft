@@ -2,8 +2,6 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  annotations:
-    helm.sh/chart: component-chart-0.9.1
   labels:
     app.kubernetes.io/component: seaweedfs
     app.kubernetes.io/managed-by: Helm
@@ -20,8 +18,6 @@ spec:
   serviceName: seaweedfs-headless
   template:
     metadata:
-      annotations:
-        helm.sh/chart: component-chart-0.9.1
       labels:
         app.kubernetes.io/component: seaweedfs
         app.kubernetes.io/managed-by: Helm
@@ -33,17 +29,20 @@ spec:
         command: null
         env:
         - name: S3_VOLUME_SIZE_MB
-          value: '1024'
+          value: "{{ .Values.seaweedfs.S3_VOLUME_SIZE_MB }}"
         - name: S3_ROOT_USER
-          value: admin
+          value: "{{ .Values.seaweedfs.S3_ROOT_USER }}"
         - name: S3_ROOT_PWD
-          value: admin
+          valueFrom:
+            secretKeyRef:
+                name: {{ .Values.secrets.seaweedfs.seaweedfsecret }}
+                key: S3_ROOT_PWD_SECRET
         - name: S3_PORT
-          value: '8333'
+          value: "{{ .Values.seaweedfs.S3_PORT }}"
         - name: SEAWEED_MOUNT_PORT
-          value: '4001'
+          value: "{{ .Values.seaweedfs.SEAWEED_MOUNT_PORT }}"
         envFrom: null
-        image: docker.io/openmined/grid-seaweedfs:0.8.3-beta.3
+        image: {{ .Values.container.registry }}/openmined/grid-seaweedfs:{{ .Values.container.syft_version }}
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -83,8 +82,6 @@ spec:
         name: seaweedfs-config
   volumeClaimTemplates:
   - metadata:
-      annotations:
-        helm.sh/chart: component-chart-0.9.1
       labels:
         app.kubernetes.io/component: seaweedfs
         app.kubernetes.io/managed-by: Helm
