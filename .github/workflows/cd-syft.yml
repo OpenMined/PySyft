@@ -54,7 +54,7 @@ jobs:
       # actions/setup-python doesn't yet support ARM
       - name: Setup Python on x64
         if: ${{ !endsWith(matrix.runner, '-arm64') }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -281,7 +281,7 @@ jobs:
           docker system prune --all --force
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Install dependencies
