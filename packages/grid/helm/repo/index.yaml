@@ -238,38 +238,6 @@ entries:
     - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.56.tgz
     version: 0.8.2-beta.56
   - apiVersion: v2
-    appVersion: 0.8.2-beta.55
-    created: "2023-12-10T17:06:06.109926044Z"
-    dependencies:
-    - name: component-chart
-      repository: https://charts.devspace.sh
-      version: 0.9.1
-    description: Perform numpy-like analysis on data that remains in someone elses
-      server
-    digest: 5fc95afb6ebd029694d8b7d9e4270c2f6458d13e74a3e0ef27b39564dfe377e5
-    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
-    name: syft
-    type: application
-    urls:
-    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.55.tgz
-    version: 0.8.2-beta.55
-  - apiVersion: v2
-    appVersion: 0.8.2-beta.54
-    created: "2023-12-10T17:06:06.108417964Z"
-    dependencies:
-    - name: component-chart
-      repository: https://charts.devspace.sh
-      version: 0.9.1
-    description: Perform numpy-like analysis on data that remains in someone elses
-      server
-    digest: 58b872dbf50a04f7a2896561d7cbf148318e0ac0aeee336b799d16f26a5c9862
-    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
-    name: syft
-    type: application
-    urls:
-    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.54.tgz
-    version: 0.8.2-beta.54
-  - apiVersion: v2
     appVersion: 0.8.2-beta.53
     created: "2023-12-10T17:06:06.107567746Z"
     dependencies:
@@ -445,22 +413,6 @@ entries:
     urls:
     - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.43.tgz
     version: 0.8.2-beta.43
-  - apiVersion: v2
-    appVersion: 0.8.2-beta.42
-    created: "2023-12-10T17:06:06.099598929Z"
-    dependencies:
-    - name: component-chart
-      repository: https://charts.devspace.sh
-      version: 0.9.1
-    description: Perform numpy-like analysis on data that remains in someone elses
-      server
-    digest: b0bebaa84e6e3588369ba9267169adb6e1f408f30be617e9b1f745a862fb4913
-    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
-    name: syft
-    type: application
-    urls:
-    - https://openmined.github.io/PySyft/helm/syft-0.8.2-beta.42.tgz
-    version: 0.8.2-beta.42
   - apiVersion: v2
     appVersion: 0.8.2-beta.41
     created: "2023-12-10T17:06:06.09875352Z"
