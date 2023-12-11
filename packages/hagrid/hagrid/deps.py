@@ -42,7 +42,7 @@ from .nb_output import NBOutput
 from .version import __version__
 
 LATEST_STABLE_SYFT = "0.8.3"
-LATEST_BETA_SYFT = "0.8.4-beta.1"
+LATEST_BETA_SYFT = "0.8.4-beta.3"
 
 DOCKER_ERROR = """
 You are running an old version of docker, possibly on Linux. You need to install v2.

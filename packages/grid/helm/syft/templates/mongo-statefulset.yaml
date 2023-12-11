@@ -1,8 +1,6 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  annotations:
-    helm.sh/chart: component-chart-0.9.1
   labels:
     app.kubernetes.io/component: mongo
     app.kubernetes.io/managed-by: Helm
@@ -19,8 +17,6 @@ spec:
   serviceName: mongo-headless
   template:
     metadata:
-      annotations:
-        helm.sh/chart: component-chart-0.9.1
       labels:
         app.kubernetes.io/component: mongo
         app.kubernetes.io/managed-by: Helm
@@ -32,9 +28,12 @@ spec:
         command: null
         env:
         - name: MONGO_INITDB_ROOT_USERNAME
-          value: {{ .Values.secrets.db.mongo.mongoInitdbRootUsername }}
+          value: {{ .Values.db.mongo.settings.mongoUsername }}
         - name: MONGO_INITDB_ROOT_PASSWORD
-          value: {{ .Values.secrets.db.mongo.mongoInitdbRootPassword }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.db.mongo.mongosecret }}
+              key: mongo-password-secret
         envFrom: null
         image: mongo:7.0.3
         lifecycle: null
@@ -65,8 +64,6 @@ spec:
       volumes: null
   volumeClaimTemplates:
   - metadata:
-      annotations:
-        helm.sh/chart: component-chart-0.9.1
       labels:
         app.kubernetes.io/component: mongo
         app.kubernetes.io/managed-by: Helm

@@ -110,6 +110,7 @@ services:
       - "${HTTP_PORT}:${HTTP_PORT}"
     volumes:
       - credentials-data:/root/data/creds/
+      - /var/run/docker.sock:/var/run/docker.sock
     extra_hosts:
       - "host.docker.internal:host-gateway"
     labels:

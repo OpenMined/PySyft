@@ -127,22 +127,26 @@ class SyftWorkerImageService(AbstractService):
         if res.is_err():
             return SyftError(message=f"{res.err()}")
         image: SyftWorkerImage = res.ok()
-        image_tag: SyftWorkerImageTag = image.image_tag
-        full_tag: str = image_tag.full_tag
-        try:
-            client = docker.from_env()
-            client.images.remove(image=full_tag)
-        except docker.errors.ImageNotFound:
-            return SyftError(message=f"Image {full_tag} not found.")
-        except Exception as e:
-            return SyftError(message=f"Failed to delete image {full_tag}. Error: {e}")
+
+        if image and image.image_tag:
+            try:
+                full_tag: str = image.image_tag.full_tag
+                client = docker.from_env()
+                client.images.remove(image=full_tag)
+            except docker.errors.ImageNotFound:
+                return SyftError(message=f"Image {full_tag} not found.")
+            except Exception as e:
+                return SyftError(
+                    message=f"Failed to delete image {full_tag}. Error: {e}"
+                )
 
         result = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
+
         if result.is_err():
             return SyftError(message=f"{result.err()}")
 
         returned_message: str = (
-            result.ok().message + f". Image {full_tag} deleted successfully."
+            result.ok().message + f". Image {uid} deleted successfully."
         )
 
         return SyftSuccess(message=returned_message)
