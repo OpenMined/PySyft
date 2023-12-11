@@ -42,6 +42,9 @@ class ContainerImageRegistry(SyftBaseModel):
     url: str
     tls_enabled: bool
 
+    __repr_attrs__ = ["url"]
+
+    @classmethod
     def from_url(cls, full_str: str):
         return cls(url=full_str, tls_enabled=full_str.startswith("https"))
 
@@ -51,6 +54,17 @@ class ContainerImageRegistry(SyftBaseModel):
     def __str__(self) -> str:
         return self.url
 
+    def _repr_html_(self) -> str:
+        return f"""
+            <style>
+            .syft-container-image-registry {{color: {SURFACE[options.color_theme]};}}
+            </style>
+            <div class='syft-container-image-registry style='line-height:25%'>
+                <h3>ContainerImageRegistry</h3>
+                <p><strong>URL: </strong>{self.url}</p>
+            </div>
+            """
+
 
 @serializable()
 class SyftWorkerImageTag(SyftBaseModel):
@@ -58,11 +72,12 @@ class SyftWorkerImageTag(SyftBaseModel):
     repo: str
     tag: str
 
+    __repr_attrs__ = ["registry", "repo", "tag"]
+
     @classmethod
     def from_str(cls, full_str: str) -> Self:
         repo_url, tag = full_str.rsplit(":", 1)
         args = repo_url.rsplit("/", 2)
-
         if len(args) == 3:
             registry = ContainerImageRegistry.from_url(args[0])
             repo = "/".join(args[1:])
@@ -77,6 +92,25 @@ class SyftWorkerImageTag(SyftBaseModel):
 
     def __hash__(self) -> int:
         return hash(self.repo + self.tag + str(hash(self.registry)))
+
+    def __str__(self) -> str:
+        if self.registry is None:
+            return f"url: None, repo: {self.repo}, tag: {self.tag}"
+        else:
+            return f"url: {self.registry.url}, repo: {self.repo}, tag: {self.tag}"
+
+    def _repr_html_(self) -> str:
+        return f"""
+            <style>
+            .syft-worker-image-tag {{color: {SURFACE[options.color_theme]};}}
+            </style>
+            <div class='syft-worker-image-tag style='line-height:25%'>
+                <h3>SyftWorkerImage</h3>
+                <p><strong>Registry: </strong>{str(self.registry)}</p>
+                <p><strong>Repo: </strong>{self.repo}</p>
+                <p><strong>Tag: </strong>{self.tag}</p>
+            </div>
+            """
 
 
 @serializable()
@@ -98,15 +132,20 @@ class SyftWorkerImage(SyftObject):
     __repr_attrs__ = ["dockerfile_name", "image_tag", "image_hash", "created_at"]
 
     def _repr_html_(self) -> str:
+        if self.image_tag is None:
+            tag_str = "None"
+        else:
+            tag_str = f"url: {self.image_tag.registry}, repo: {self.image_tag.repo}, tag: {self.image_tag.tag}"
+
         return f"""
             <style>
-            .syft-contributor {{color: {SURFACE[options.color_theme]};}}
+            .syft-worker-image {{color: {SURFACE[options.color_theme]};}}
             </style>
             <div class='syft-worker-image' style='line-height:25%'>
                 <h3>SyftWorkerImage</h3>
                 <p><strong>ID: </strong>{self.id}</p>
                 <p><strong>Name: </strong>{self.config.file_name}</p>
-                <p><strong>Tag: </strong>{self.image_tag}</p>
+                <p><strong>Tag: </strong>{tag_str}</p>
                 <p><strong>Hash: </strong>{self.image_hash}</p>
                 <p><strong>Created Date: </strong>{str(self.created_at)}</p>
             </div>
