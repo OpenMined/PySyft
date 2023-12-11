@@ -94,6 +94,8 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
+from ..service.worker.worker_image_service import SyftWorkerImageService
+from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_service import WorkerService
 from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
@@ -302,6 +304,8 @@ class Node(AbstractNode):
                 MetadataService,
                 BlobStorageService,
                 MigrateStateService,
+                SyftWorkerImageService,
+                SyftWorkerPoolService,
             ]
             if services is None
             else services
@@ -782,6 +786,8 @@ class Node(AbstractNode):
                 MetadataService,
                 BlobStorageService,
                 MigrateStateService,
+                SyftWorkerImageService,
+                SyftWorkerPoolService,
             ]
 
             if OBLV:

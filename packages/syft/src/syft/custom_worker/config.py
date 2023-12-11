@@ -13,6 +13,7 @@ from typing_extensions import Self
 import yaml
 
 # relative
+from ..serde.serializable import serializable
 from ..types.base import SyftBaseModel
 
 PYTHON_DEFAULT_VER = "3.11"
@@ -74,7 +75,12 @@ class CustomBuildConfig(SyftBaseModel):
         return sep.join(self.custom_cmds)
 
 
-class CustomWorkerConfig(SyftBaseModel):
+class WorkerConfig(SyftBaseModel):
+    pass
+
+
+@serializable()
+class CustomWorkerConfig(WorkerConfig):
     build: CustomBuildConfig
     version: str = "1"
 
@@ -95,3 +101,21 @@ class CustomWorkerConfig(SyftBaseModel):
 
     def get_signature(self) -> str:
         return sha256(self.json(sort_keys=True).encode()).hexdigest()
+
+
+@serializable()
+class DockerWorkerConfig(WorkerConfig):
+    dockerfile: str
+
+    @classmethod
+    def from_path(cls, path: Union[Path, str]) -> Self:
+        with open(path) as f:
+            return cls(dockerfile=f.read())
+
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, DockerWorkerConfig):
+            return False
+        return self.dockerfile == __value.dockerfile
+
+    def __hash__(self) -> int:
+        return hash(self.dockerfile)
