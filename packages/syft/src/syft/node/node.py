@@ -436,6 +436,7 @@ class Node(AbstractNode):
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         n_consumers: int = 0,
+        thread_workers: bool = False,
         create_producer: bool = False,
         queue_port: Optional[int] = None,
         dev_mode: bool = False,
@@ -502,11 +503,11 @@ class Node(AbstractNode):
                     create_producer=create_producer,
                     queue_port=queue_port,
                     n_consumers=n_consumers,
-                )
+                ),
+                thread_workers=thread_workers,
             )
         else:
             queue_config = None
-
         return cls(
             name=name,
             id=uid,
