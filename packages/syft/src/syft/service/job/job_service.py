@@ -132,11 +132,9 @@ class JobService(AbstractService):
             return SyftSuccess(message="Job killed successfully!")
         else:
             return SyftError(
-                message="Job is not running or isn't running in multiprocessing mode"
+                message="Job is not running or isn't running in multiprocessing mode."
+                "Killing threads is currently not supported"
             )
-
-        res = res.ok()
-        return SyftSuccess(message="Great Success!")
 
     @service_method(
         path="job.get_subjobs",
