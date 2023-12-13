@@ -132,7 +132,6 @@ class SyftWorkerPoolService(AbstractService):
         result = self.stash.get_by_name(context.credentials, pool_name=pool_name)
         if result.is_err():
             return SyftError(message=f"{result.err()}")
-
         if result.ok() is None:
             return SyftError(
                 message=f"Worker Pool with name: {pool_name} does not exist !!"
@@ -152,17 +151,16 @@ class SyftWorkerPoolService(AbstractService):
         worker_status = self.get_worker_status(
             context=context, pool_name=pool_name, worker_id=found_worker.id
         )
-
-        # third party
-        # import ipdb
-
-        # ipdb.set_trace()
-
         if isinstance(worker_status, SyftError):
             return worker_status
         elif worker_status != WorkerStatus.PENDING:
+            for worker in worker_pool.workers:
+                if worker.id == worker_id:
+                    worker.status = worker_status
+                    break
             result = self.stash.update(
-                credentials=context.credentials, obj=found_worker.id
+                credentials=context.credentials,
+                obj=worker_pool,
             )
             if result.is_err():
                 return SyftError(message=f"{result.err()}")
