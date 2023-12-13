@@ -44,7 +44,6 @@ class QueueConsumer:
 @serializable()
 class QueueProducer:
     address: str
-    queue_name: str
 
     def send(
         self,

@@ -43,12 +43,23 @@ from .queue_stash import Status
 
 HEARTBEAT_LIVENESS = 3
 HEARTBEAT_INTERVAL = 1
+RECONNECT_INTERVAL = 2
 INTERVAL_INIT = 1
 INTERVAL_MAX = 32
 DEFAULT_THREAD_TIMEOUT = 5
 
 PPP_READY = b"\x01"  # Signals worker is ready
 PPP_HEARTBEAT = b"\x02"  # Signals worker heartbeat
+
+
+class MDP:
+    W_WORKER = b"MDPW01"
+    W_READY = b"0x01"
+    W_REQUEST = b"0x02"
+    W_REPLY = b"0x03"
+    W_HEARTBEAT = b"0x04"
+    W_DISCONNECT = b"0x05"
+
 
 MAX_RECURSION_NESTED_ACTIONOBJECTS = 5
 
@@ -94,7 +105,6 @@ class ZMQProducer(QueueProducer):
         self, queue_name: str, queue_stash, port: int, context: AuthedServiceContext
     ) -> None:
         self.port = port
-        self.queue_name = queue_name
         self.queue_stash = queue_stash
         self.auth_context = context
         self.post_init()
@@ -313,6 +323,7 @@ class ZMQConsumer(QueueConsumer):
         message_handler: AbstractMessageHandler,
         address: str,
         queue_name: str,
+        verbose: bool = True,
     ) -> None:
         self.address = address
         self.message_handler = message_handler
@@ -320,23 +331,31 @@ class ZMQConsumer(QueueConsumer):
         self.post_init()
         self.id = UID()
         self._stop = False
+        self.worker = None
+        self.verbose = verbose
 
-    def create_socket(self):
-        self.worker = self.ctx.socket(zmq.DEALER)  # DEALER
-        self.identity = b"%04X-%04X" % (
-            randint(0, 0x10000),  # nosec
-            randint(0, 0x10000),  # nosec
-        )  # nosec
-        self.worker.setsockopt(zmq.IDENTITY, self.identity)
-        self.worker.setsockopt(LINGER, 1)
-        self.poller.register(self.worker, zmq.POLLIN)
+    def reconnect_to_producer(self):
+        """Connect or reconnect to producer"""
+        if self.worker:
+            self.poller.unregister(self.worker)
+            self.worker.close()
+        self.worker = self.ctx.socket(zmq.DEALER)
+        self.worker.linger = 0
         self.worker.connect(self.address)
-        self.worker.send(PPP_READY)
+        self.poller.register(self.worker, zmq.POLLIN)
+
+        if self.verbose:
+            print(f"I: <{self.id}> connecting to broker at {self.address}")
+
+        # Register queue with the producer
+        self.send_to_producer(MDP.W_READY, self.queue_name, [])
+
+        # If liveness hits zero, queue is considered disconnected
+        self.liveness = HEARTBEAT_LIVENESS
+        self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
 
     def post_init(self):
-        self.ctx = zmq.Context()
-        self.poller = zmq.Poller()
-        self.create_socket()
+        self.reconnect_to_producer()
         self.thread = None
 
     def close(self):
@@ -351,86 +370,109 @@ class ZMQConsumer(QueueConsumer):
             self.worker.close()
             self.ctx.destroy()
 
+    def send_to_producer(
+        self,
+        command: str,
+        option: Optional[bytes] = None,
+        msg: Optional[Union[bytes, list]] = None,
+    ):
+        """Send message to producer.
+
+        If no msg is provided, creates one internally
+        """
+        if msg is None:
+            msg = []
+        elif not isinstance(msg, list):
+            msg = [msg]
+
+        if option:
+            msg = [option] + msg
+
+        msg = [b"", MDP.W_WORKER, command] + msg
+        if self.verbose:
+            print("I: sending %s to broker", command)
+        self.worker.send_multipart(msg)
+
     def _run(self):
-        liveness = HEARTBEAT_LIVENESS
-        interval = INTERVAL_INIT
-        heartbeat_at = time.time() + HEARTBEAT_INTERVAL
-        while True:
-            if self._stop:
-                return
-            try:
-                time.sleep(0.1)
+        """Send reply, if any, to producer and wait for next request."""
+        try:
+            while True:
+                if self._stop:
+                    return
+
                 try:
-                    socks = dict(self.poller.poll(HEARTBEAT_INTERVAL * 1000))
+                    items = self.poller.poll(self.timeout)
                 except Exception as e:
-                    time.sleep(0.5)
                     if isinstance(e, ContextTerminated) or self._stop:
                         return
                     else:
-                        # possibly file descriptor problem
                         print(e, traceback.format_exc())
                         continue
-                if socks.get(self.worker) == zmq.POLLIN:
-                    with lock:
-                        frames = self.worker.recv_multipart()
-                    if not frames or len(frames) not in [1, 3]:
-                        print(f"Worker error: Invalid message: {frames}")
-                        break  # Interrupted
 
-                    # get normal message
-                    if len(frames) == 3:
-                        with lock:
-                            self.worker.send_multipart(frames)
-                        liveness = HEARTBEAT_LIVENESS
-                        message = frames[2]
+                if items:
+                    # Message format:
+                    # [b"", "<header>", "<command>", "<queue_name>", "<actual_msg_bytes>"]
+                    msg = self.worker.recv_multipart()
+                    if self.verbose:
+                        print("I: received message from producer: ")
+                    self.liveness = HEARTBEAT_LIVENESS
+
+                    if len(msg) < 3:
+                        print(f"Invalid message frame. {msg}")
+                        continue
+
+                    empty = msg.pop(0)  # noqa: F841
+                    header = msg.pop(0)  # noqa: F841
+
+                    command = msg.pop(0)
+
+                    if command == MDP.W_REQUEST:
+                        # Call Message Handler
                         try:
-                            self.message_handler.handle_message(message=message)
+                            queue_name = msg.pop(0)
+                            if queue_name == self.queue_name:
+                                self.message_handler.handle_message(message=msg)
                         except Exception as e:
-                            # stdlib
                             print(
-                                f"ERROR HANDLING MESSAGE {e}, {traceback.format_exc()}"
+                                f"ERROR HANDLING MESSAGE: {e}, {traceback.format_exc()}"
                             )
-                    # process heartbeat
-                    elif len(frames) == 1 and frames[0] == PPP_HEARTBEAT:
-                        liveness = HEARTBEAT_LIVENESS
-                    # process wrong message
-                    interval = INTERVAL_INIT
-                # process silence
+                    elif command == MDP.W_HEARTBEAT:
+                        pass
+                    elif command == MDP.W_DISCONNECT:
+                        self.reconnect_to_broker()
+                    else:
+                        print("E: invalid input message: ")
                 else:
-                    liveness -= 1
-                    if liveness == 0:
-                        print(
-                            f"Heartbeat failure, worker can't reach queue, reconnecting in {interval}s"
-                        )
-                        time.sleep(interval)
+                    self.liveness -= 1
+                    if self.liveness == 0:
+                        if self.verbose:
+                            print("W: disconnected from broker - retrying...")
+                        try:
+                            time.sleep(RECONNECT_INTERVAL)
+                        except Exception as e:
+                            print(e, traceback.format_exc())
+                            break
+                        self.reconnect_to_broker()
 
-                        if interval < INTERVAL_MAX:
-                            interval *= 2
-                        self.poller.unregister(self.worker)
-                        self.worker.setsockopt(zmq.LINGER, 1)
-                        self.worker.close()
-                        self.create_socket()
-                        liveness = HEARTBEAT_LIVENESS
-                # send heartbeat
-                if time.time() > heartbeat_at:
-                    heartbeat_at = time.time() + HEARTBEAT_INTERVAL
-                    if not self._stop:
-                        self.worker.send(PPP_HEARTBEAT)
-            except zmq.ZMQError as e:
-                if e.errno == zmq.ETERM:
-                    print("Subscriber connection Terminated")
-                else:
-                    raise e
+                # Send HEARTBEAT if it's time
+                if time.time() > self.heartbeat_at:
+                    self.send_to_producer(MDP.W_HEARTBEAT)
+                    self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
+        except zmq.ZMQError as e:
+            if e.errno == zmq.ETERM:
+                print("Consumer connection Terminated")
+            else:
+                raise e
+
+        print("W: interrupt received, killing worker...")
 
     def run(self):
         self.thread = threading.Thread(target=self._run)
         self.thread.start()
-        # self.thread = gevent.spawn(self._run)
-        # self.thread.start()
 
     @property
     def alive(self):
-        return not self.worker.closed
+        return not self.worker.closed and self.liveness
 
 
 @serializable()
