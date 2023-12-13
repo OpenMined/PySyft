@@ -1,8 +1,8 @@
 # stdlib
 # stdlib
+from binascii import hexlify
 from collections import OrderedDict
 from collections import defaultdict
-from random import randint
 import socketserver
 import threading
 import time
@@ -15,6 +15,7 @@ from typing import Optional
 from typing import Union
 
 # third party
+from zmq import HEARTBEAT_TIMEOUT
 from zmq import LINGER
 from zmq.error import ContextTerminated
 import zmq.green as zmq
@@ -67,9 +68,18 @@ lock = threading.Lock()
 
 
 class Worker:
-    def __init__(self, address):
+    def __init__(self, address: str, identity: bytes, service: str):
+        self.identity = identity
         self.address = address
+        self.service = service
         self.expiry = time.time() + HEARTBEAT_INTERVAL * HEARTBEAT_LIVENESS
+
+
+class Service:
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.requests = []
+        self.waiting = []  # List of waiting workers
 
 
 class WorkerQueue:
@@ -101,9 +111,9 @@ class WorkerQueue:
 
 @serializable()
 class ZMQProducer(QueueProducer):
-    def __init__(
-        self, queue_name: str, queue_stash, port: int, context: AuthedServiceContext
-    ) -> None:
+    INTERNAL_SERVICE_PREFIX = b"mmi."
+
+    def __init__(self, queue_stash, port: int, context: AuthedServiceContext) -> None:
         self.port = port
         self.queue_stash = queue_stash
         self.auth_context = context
@@ -115,18 +125,18 @@ class ZMQProducer(QueueProducer):
         return f"tcp://localhost:{self.port}"
 
     def post_init(self):
-        self.identity = b"%04X-%04X" % (
-            randint(0, 0x10000),  # nosec
-            randint(0, 0x10000),  # nosec
-        )  # nosec
+        """Initialize producer state."""
+
+        self.services = {}
+        self.workers = {}
+        self.waiting: List[Worker] = []
+        self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
         self.context = zmq.Context(1)
-        self.backend = self.context.socket(zmq.ROUTER)  # ROUTER
-        self.backend.bind(f"tcp://*:{self.port}")
+        self.backend = self.context.socket(zmq.ROUTER)
         self.backend.setsockopt(LINGER, 1)
         self.poll_workers = zmq.Poller()
         self.poll_workers.register(self.backend, zmq.POLLIN)
-        self.workers = WorkerQueue()
-        self.message_queue = []
+        self.bind(f"tcp://*:{self.port}")
         self.thread = None
 
     def close(self):
@@ -209,9 +219,6 @@ class ZMQProducer(QueueProducer):
         while True:
             if self._stop:
                 break
-            # stdlib
-            from time import sleep
-
             sleep(1)
             items = self.queue_stash.get_all(
                 self.queue_stash.partition.root_verify_key
@@ -253,63 +260,158 @@ class ZMQProducer(QueueProducer):
         with lock:
             self.backend.send_multipart(message)
 
+    def bind(self, endpoint):
+        """Bind producer to endpoint."""
+        self.backend.bind(endpoint)
+        print("I: MDP producer/0.1.1 is active at %s", endpoint)
+
+    def send_heartbeats(self):
+        """Send heartbeats to idle workers if it's time"""
+        if time.time() > self.heartbeat_at:
+            for worker in self.waiting:
+                self.send_to_worker(worker, MDP.W_HEARTBEAT, None, None)
+            self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
+
+    def purge_workers(self):
+        """Look for & kill expired workers.
+
+        Workers are oldest to most recent, so we stop at the first alive worker.
+        """
+        while self.waiting:
+            w = self.waiting[0]
+            if w.expiry < time.time():
+                print("I: deleting expired worker: %s", w.identity)
+                self.delete_worker(w, False)
+                self.waiting.pop(0)
+            else:
+                break
+
+    def worker_waiting(self, worker: Worker):
+        """This worker is now waiting for work."""
+        # Queue to broker and service waiting lists
+        self.waiting.append(worker)
+        worker.service.waiting.append(worker)
+        worker.expiry = time.time() + HEARTBEAT_TIMEOUT
+        self.dispatch(worker.service, None)
+
+    def dispatch(self, service: Service, msg: bytes):
+        """Dispatch requests to waiting workers as possible"""
+        if msg is not None:  # Queue message if any
+            service.requests.append(msg)
+        self.purge_workers()
+        while service.waiting and service.requests:
+            msg = service.requests.pop(0)
+            worker = service.waiting.pop(0)
+            self.waiting.remove(worker)
+            self.send_to_worker(worker, MDP.W_REQUEST, None, msg)
+
+    def send_to_worker(
+        self,
+        worker: Worker,
+        command: MDP,
+        option: bytes,
+        msg: Optional[Union[bytes, list]] = None,
+    ):
+        """Send message to worker.
+
+        If message is provided, sends that message.
+        """
+
+        if msg is None:
+            msg = []
+        elif not isinstance(msg, list):
+            msg = [msg]
+
+        # Stack routing and protocol envelopes to start of message
+        # and routing envelope
+        if option is not None:
+            msg = [option] + msg
+        msg = [worker.address, b"", MDP.W_WORKER, command] + msg
+
+        print("I: sending %r to worker", command)
+        with lock:
+            self.backend.send_multipart(msg)
+
     def _run(self):
-        heartbeat_at = time.time() + HEARTBEAT_INTERVAL
-        connecting_workers = set()
         while True:
             if self._stop:
                 return
-            try:
-                socks = dict(self.poll_workers.poll(HEARTBEAT_INTERVAL * 1000))
 
-                if len(self.message_queue) != 0:
-                    if not self.workers.is_empty():
-                        frames = self.message_queue.pop()
-                        worker_address = self.workers.next()
-                        connecting_workers.add(worker_address)
-                        self.send(worker_address, frames)
+            if len(self.message_queue) != 0:
+                if len(self.workers) > 0:
+                    frames = self.message_queue.pop()
+                    queue_name = frames[0]
+                    message = frames[1:]
+                    service: Service = self.services.get(queue_name)
+                    worker: Worker = service.waiting.pop(0)
+                    # worker = self.waiting.pop()
+                    self.send_to_worker(worker, command=MDP.W_REQUEST, msg=message)
 
-                # Handle worker message
-                if socks.get(self.backend) == zmq.POLLIN:
-                    with lock:
-                        frames = self.backend.recv_multipart()
-                    if not frames:
-                        print("error in producer")
-                        break
+            items = self.poll_workers.poll(HEARTBEAT_INTERVAL)
 
-                    # Validate control message, or return reply to client
-                    msg = frames[1:]
-                    address = frames[0]
-                    if len(msg) == 1:
-                        if address not in connecting_workers:
-                            self.workers.ready(Worker(address))
-                            if msg[0] not in (PPP_READY, PPP_HEARTBEAT):
-                                print("E: Invalid message from worker: %s" % msg)
-                    else:
-                        if address in connecting_workers:
-                            connecting_workers.remove(address)
-                        # got response message from worker
-                        pass
+            if items:
+                msg = self.backend.recv_multipart()
 
-                    # Send heartbeats to idle workers if it's time
-                    if time.time() >= heartbeat_at:
-                        for worker in self.workers.queue:
-                            msg = [worker, PPP_HEARTBEAT]
-                            with lock:
-                                self.backend.send_multipart(msg)
-                        heartbeat_at = time.time() + HEARTBEAT_INTERVAL
+                address = msg.pop(0)
+                empty = msg.pop(0)  # noqa: F841
+                header = msg.pop(0)
 
-                self.workers.purge()
-            except Exception as e:
-                # this sleep is important, because we may hit this when
-                # we stop the producer. Without this sleep it would start
-                # spamming the poller, which results in too many open files
-                # which in turns causes all kinds of problems
-                sleep(0.5)
-                if not self._stop:
-                    print(
-                        f"Error in producer {e}, {self.identity} {traceback.format_exc()}"
-                    )
+                if header == MDP.W_WORKER:
+                    self.process_worker(address)
+                else:
+                    print("E: Invalid message.")
+
+            self.purge_workers()
+            self.send_heartbeats()
+
+    def require_worker(self, address):
+        """Finds the worker (creates if necessary)."""
+        identity = hexlify(address)
+        # Instead of getting a worker, we get a WorkerQueue
+        # Otherwise if doesn't exist then add a WorkerQueue and a Worker to it
+        # From the WorkerQueue get the next worker
+        worker = self.workers.get(identity)
+        if worker is None:
+            worker = Worker(identity, address, HEARTBEAT_TIMEOUT)
+            self.workers[identity] = worker
+            if self.verbose:
+                print("I: registering new worker: %s", identity)
+
+    def process_worker(self, address: str, msg: List[bytes]):
+        command = msg.pop(0)
+
+        worker_ready = hexlify(address) in self.workers
+
+        worker = self.require_worker(address)
+
+        if MDP.W_READY == command:
+            service = msg.pop(0)
+            if worker_ready:
+                self.delete_worker(worker, True)
+            else:
+                # Attach worker to service and mark as idle
+                worker.service = service
+                self.worker_waiting(worker)
+
+        elif MDP.W_HEARTBEAT == command:
+            if worker_ready:
+                worker.expiry = time.time() + HEARTBEAT_TIMEOUT
+            else:
+                self.delete_worker(worker, True)
+        elif MDP.W_DISCONNECT == command:
+            self.delete_worker(worker, False)
+        else:
+            print("E: Invalid message....")
+
+    def delete_worker(self, worker, disconnect):
+        """Deletes worker from all data structures, and deletes worker."""
+        assert worker is not None
+        if disconnect:
+            self.send_to_worker(worker, MDP.W_DISCONNECT, None, None)
+
+        if worker.service is not None:
+            worker.service.waiting.remove(worker)
+        self.workers.pop(worker.identity)
 
     @property
     def alive(self):
@@ -439,7 +541,7 @@ class ZMQConsumer(QueueConsumer):
                     elif command == MDP.W_HEARTBEAT:
                         pass
                     elif command == MDP.W_DISCONNECT:
-                        self.reconnect_to_broker()
+                        self.reconnect_to_producer()
                     else:
                         print("E: invalid input message: ")
                 else:
@@ -452,7 +554,7 @@ class ZMQConsumer(QueueConsumer):
                         except Exception as e:
                             print(e, traceback.format_exc())
                             break
-                        self.reconnect_to_broker()
+                        self.reconnect_to_producer()
 
                 # Send HEARTBEAT if it's time
                 if time.time() > self.heartbeat_at:
