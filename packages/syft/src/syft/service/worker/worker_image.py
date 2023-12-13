@@ -20,6 +20,7 @@ from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..response import SyftError
 from ..response import SyftSuccess
+from .image_registry import SyftImageRegistry
 
 
 def parse_output(log_iterator: Iterator) -> str:
@@ -36,23 +37,8 @@ def parse_output(log_iterator: Iterator) -> str:
 
 
 @serializable()
-class ContainerImageRegistry(SyftBaseModel):
-    url: str
-    tls_enabled: bool
-
-    def from_url(cls, full_str: str):
-        return cls(url=full_str, tls_enabled=full_str.startswith("https"))
-
-    def __hash__(self) -> int:
-        return hash(self.url + str(self.tls_enabled))
-
-    def __str__(self) -> str:
-        return self.url
-
-
-@serializable()
 class SyftWorkerImageTag(SyftBaseModel):
-    registry: Optional[ContainerImageRegistry]
+    registry: Optional[SyftImageRegistry | UID]
     repo: str
     tag: str
 
@@ -62,7 +48,7 @@ class SyftWorkerImageTag(SyftBaseModel):
         args = repo_url.rsplit("/", 2)
 
         if len(args) == 3:
-            registry = ContainerImageRegistry.from_url(args[0])
+            registry = SyftImageRegistry.from_url(args[0])
             repo = "/".join(args[1:])
         else:
             registry = None
