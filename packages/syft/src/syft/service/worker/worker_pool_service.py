@@ -184,7 +184,6 @@ class SyftWorkerPoolService(AbstractService):
         )
       
     @service_method( 
-        add_worker_details_api
         path="worker_pool.get_worker",
         name="get_worker",
         roles=DATA_OWNER_ROLE_LEVEL,
