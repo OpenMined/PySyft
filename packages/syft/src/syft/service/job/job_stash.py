@@ -200,7 +200,7 @@ class Job(SyftObject):
                 "Job is running or scheduled, if you want to kill it use job.kill() first"
             )
 
-    def kill(self) -> None:
+    def kill(self) -> Union[None, SyftError]:
         if self.job_pid is not None:
             api = APIRegistry.api_for(
                 node_uid=self.node_uid,
@@ -215,6 +215,10 @@ class Job(SyftObject):
                 blocking=True,
             )
             api.make_call(call)
+        else:
+            return SyftError(
+                message="Job is not running or isn't running in multiprocessing mode."
+            )
 
     def fetch(self) -> None:
         api = APIRegistry.api_for(
