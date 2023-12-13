@@ -468,7 +468,7 @@ def upgrade_zmqclientconfig_v1_to_v2():
     return [
         make_set_default("queue_port", None),
         make_set_default("create_producer", False),
-        make_set_default("n_consumsers", 0),
+        make_set_default("n_consumers", 0),
     ]
 
 
