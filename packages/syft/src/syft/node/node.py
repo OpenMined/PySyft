@@ -759,6 +759,10 @@ class Node(AbstractNode):
     def job_stash(self):
         return self.get_service("jobservice").stash
 
+    @property
+    def worker_stash(self):
+        return self.get_service("workerservice").stash
+
     def _construct_services(self):
         self.service_path_map = {}
 
