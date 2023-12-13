@@ -12,6 +12,7 @@ from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
+from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
@@ -122,6 +123,68 @@ class SyftWorkerPoolService(AbstractService):
         return result.ok()
 
     @service_method(
+        path="worker_pool.delete_worker",
+        name="delete_worker",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def delete_worker(
+        self,
+        context: AuthedServiceContext,
+        worker_pool_id: UID,
+        worker_id: UID,
+        force: bool = False,
+    ) -> Union[SyftSuccess, SyftError]:
+        worker_pool = self.stash.get_by_uid(
+            credentials=context.credentials, uid=worker_pool_id
+        )
+        if worker_pool.is_err():
+            return SyftError(message=f"{worker_pool.err()}")
+
+        worker_pool: WorkerPool = worker_pool.ok()
+        worker = None
+        for w in worker_pool.workers:
+            if w.id == worker_id:
+                worker = w
+                break
+        if worker is None:
+            return SyftError(
+                message=f"Worker with id: {worker_id} not found in pool: {worker_pool.name}"
+            )
+
+        # delete the worker using docker client sdk
+        docker_client = docker.from_env()
+        docker_container = docker_client.containers.get(worker.container_id)
+        try:
+            # stop the container
+            docker_container.stop()
+            # Remove the container and its volumes
+            docker_container.remove(force=force, v=True)
+        except docker.errors.APIError as e:
+            if "removal of container" in str(e) and "is already in progress" in str(e):
+                # If the container is already being removed, ignore the error
+                pass
+            else:
+                # If it's a different error, return it
+                return SyftError(
+                    message=f"Failed to delete worker with id: {worker_id}. Error: {e}"
+                )
+        except Exception as e:
+            return SyftError(
+                message=f"Failed to delete worker with id: {worker_id}. Error: {e}"
+            )
+
+        # remove the worker from the pool
+        worker_pool.workers.remove(worker)
+        result = self.stash.update(context.credentials, obj=worker_pool)
+        if result.is_err():
+            return SyftError(message=f"Failed to update worker pool: {result.err()}")
+
+        return SyftSuccess(
+            message=f"Worker with id: {worker_id} deleted successfully from pool: {worker_pool.name}"
+        )
+      
+    @service_method( 
+        add_worker_details_api
         path="worker_pool.get_worker",
         name="get_worker",
         roles=DATA_OWNER_ROLE_LEVEL,
@@ -212,3 +275,6 @@ class SyftWorkerPoolService(AbstractService):
         client.close()
 
         return found_worker.status
+
+
+

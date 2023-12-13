@@ -250,22 +250,23 @@ class APICallMessageHandler(AbstractMessageHandler):
         if isinstance(worker_result, SyftError):
             raise Exception(message=f"{worker_result.err()}")
 
-        # from threading import Thread
-        # p = Thread(
-        #     target=handle_message_multiprocessing,
-        #     args=(worker_settings, queue_item, credentials),
-        # )
-        # p.start()
+        if queue_config.thread_workers:
+            # stdlib
+            from threading import Thread
 
-        # handle_message_multiprocessing(worker_settings, queue_item, credentials)
+            p = Thread(
+                target=handle_message_multiprocessing,
+                args=(worker_settings, queue_item, credentials),
+            )
+            p.start()
+        else:
+            p = multiprocessing.Process(
+                target=handle_message_multiprocessing,
+                args=(worker_settings, queue_item, credentials),
+            )
+            p.start()
 
-        p = multiprocessing.Process(
-            target=handle_message_multiprocessing,
-            args=(worker_settings, queue_item, credentials),
-        )
-        p.start()
-
-        job_item.job_pid = p.pid
-        worker.job_stash.set_result(credentials, job_item)
+            job_item.job_pid = p.pid
+            worker.job_stash.set_result(credentials, job_item)
 
         p.join()
