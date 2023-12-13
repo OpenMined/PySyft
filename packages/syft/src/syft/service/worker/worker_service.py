@@ -8,11 +8,7 @@ import docker
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionSettings
-from ...store.document_store import SYFT_OBJECT_VERSION_1
-from ...store.document_store import SyftObject
 from ...store.document_store import SyftSuccess
 from ...types.datetime import DateTime
 from ...util.telemetry import instrument
@@ -21,33 +17,8 @@ from ..service import AuthedServiceContext
 from ..service import SyftError
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
-
-
-@serializable()
-class DockerWorker(SyftObject):
-    # version
-    __canonical_name__ = "ContainerImage"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    __attr_searchable__ = ["container_id"]
-    __attr_unique__ = ["container_id"]
-    __repr_attrs__ = ["container_id", "created_at"]
-
-    container_id: str
-    created_at: DateTime
-
-
-@instrument
-@serializable()
-class WorkerStash(BaseUIDStoreStash):
-    object_type = DockerWorker
-    settings: PartitionSettings = PartitionSettings(
-        name=DockerWorker.__canonical_name__, object_type=DockerWorker
-    )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
-
+from .worker import DockerWorker
+from .worker_stash import WorkerStash
 
 # def get_default_env_vars(context: AuthedServiceContext):
 #     if context.node.runs_in_docker:
@@ -165,6 +136,7 @@ def create_new_container_from_existing(
     environment = dict([e.split("=", 1) for e in environment])
     environment["CREATE_PRODUCER"] = "false"
     environment["N_CONSUMERS"] = 1
+    environment["DOCKER_WORKER_NAME"] = worker_name
     environment["DEFAULT_ROOT_USERNAME"] = worker_name
     environment["DEFAULT_ROOT_EMAIL"] = f"{worker_name}@openmined.org"
     environment["PORT"] = str(8003 + WORKER_NUM)
