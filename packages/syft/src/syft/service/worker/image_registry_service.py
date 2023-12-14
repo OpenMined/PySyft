@@ -57,6 +57,8 @@ class SyftImageRegistryService(AbstractService):
         uid: UID = None,
         url: str = None,
     ) -> Union[SyftSuccess, SyftError]:
+        # FIXME - we need to make sure that there are no workers running an image bound to this registry
+
         # if url is provided, get uid from url
         if url:
             res = self.stash.delete_by_url(context.credentials, url)

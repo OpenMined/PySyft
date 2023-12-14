@@ -119,3 +119,6 @@ class DockerWorkerConfig(WorkerConfig):
 
     def __hash__(self) -> int:
         return hash(self.dockerfile)
+
+    def __str__(self) -> str:
+        return self.dockerfile

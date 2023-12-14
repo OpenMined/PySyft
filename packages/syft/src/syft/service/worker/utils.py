@@ -20,12 +20,18 @@ def run_container_using_docker(
     client: docker.DockerClient,
     image_tag: SyftWorkerImageTag,
     worker_name: str,
+    username=None,
+    password=None,
+    registry_url: str = None,
 ) -> ContainerSpawnStatus:
     # start container
     container = None
     error_message = None
     worker = None
     try:
+        if registry_url and username and password:
+            client.login(username=username, password=password, registry=registry_url)
+
         container = client.containers.run(
             image_tag.full_tag,
             name=worker_name,
@@ -66,6 +72,8 @@ def run_containers(
     worker_image: SyftWorkerImage,
     number: int,
     orchestration: WorkerOrchestrationType,
+    username: str = None,
+    password: str = None,
 ) -> List[ContainerSpawnStatus]:
     image_tag = worker_image.image_tag
 
@@ -80,6 +88,9 @@ def run_containers(
                 client=client,
                 worker_name=worker_name,
                 image_tag=image_tag,
+                registry_url=image_tag.registry,
+                username=username,
+                password=password,
             )
             results.append(spawn_result)
 
