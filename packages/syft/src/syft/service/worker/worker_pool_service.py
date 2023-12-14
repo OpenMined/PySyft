@@ -261,13 +261,20 @@ class SyftWorkerPoolService(AbstractService):
         client = docker.from_env()
         worker_status = client.containers.get(found_worker.container_id).status
 
+        # third party
+        import ipdb
+
+        ipdb.set_trace()
+
+        print("current worker status: ", worker_status)
+
         if worker_status == "running":
             found_worker.status = WorkerStatus.RUNNING
         elif worker_status in ["paused", "removing", "exited", "dead"]:
             found_worker.status = WorkerStatus.STOPPED
-        elif worker_status["State"]["Status"] == "restarting":
+        elif worker_status == "restarting":
             found_worker.status = WorkerStatus.RESTARTED
-        elif worker_status["State"]["Status"] == "created":
+        elif worker_status == "created":
             found_worker.status = WorkerStatus.PENDING
 
         client.close()
