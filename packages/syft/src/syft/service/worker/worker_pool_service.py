@@ -261,18 +261,26 @@ class SyftWorkerPoolService(AbstractService):
             return SyftError(
                 message=f"Worker with id: {worker_id} not found in pool: {worker_pool.name}"
             )
+        try:
+            client = docker.from_env()
+            worker_status = client.containers.get(worker.container_id).status
+            if worker_status == "running":
+                worker.status = WorkerStatus.RUNNING
+            elif worker_status in ["paused", "removing", "exited", "dead"]:
+                worker.status = WorkerStatus.STOPPED
+            elif worker_status == "restarting":
+                worker.status = WorkerStatus.RESTARTED
+            elif worker_status == "created":
+                worker.status = WorkerStatus.PENDING
 
-        client = docker.from_env()
-        worker_status = client.containers.get(worker.container_id).status
-        if worker_status == "running":
-            worker.status = WorkerStatus.RUNNING
-        elif worker_status in ["paused", "removing", "exited", "dead"]:
-            worker.status = WorkerStatus.STOPPED
-        elif worker_status == "restarting":
-            worker.status = WorkerStatus.RESTARTED
-        elif worker_status == "created":
-            worker.status = WorkerStatus.PENDING
-
-        client.close()
+            client.close()
+        except docker.errors.NotFound as e:
+            return SyftError(
+                message=f"Container with: {worker.container_id} not found. Error: {e}"
+            )
+        except docker.errors.APIError as e:
+            return SyftError(
+                message=f"Failed to get status of container: {worker.container_id}. Error: {e}"
+            )
 
         return worker.status
