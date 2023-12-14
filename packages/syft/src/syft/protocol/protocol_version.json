@@ -271,7 +271,7 @@
       "BlobRetrievalByURL": {
         "1": {
           "version": 1,
-          "hash": "8059ee03016c4d74e408dad9529e877f91829672e0cc42d8cfff9c8e14058adc",
+          "hash": "18fd860cb9de296532fc9ff075932e6a4377cc8f043dd88ed4f620517321077d",
           "action": "add"
         }
       },
@@ -833,7 +833,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "c78a998aa1c6d9700c775ca65a4efc9c6ae2d2ffdf677219f7b004e635b2be42",
+          "hash": "8059ee03016c4d74e408dad9529e877f91829672e0cc42d8cfff9c8e14058adc",
           "action": "add"
         }
       },
@@ -1007,6 +1007,18 @@
         "1": {
           "version": 1,
           "hash": "c05c6caa27db4e385c642536d4b0ecabc0c71e91220d2e6ce21a2761ca68a673",
+          "action": "add"
+        }
+      },
+      "BlobRetrievalByURL": {
+        "2": {
+          "version": 2,
+          "hash": "8059ee03016c4d74e408dad9529e877f91829672e0cc42d8cfff9c8e14058adc",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "0b664100ea08413ca4ef04665ca910c2cf9535539617ea4ba33687d05cdfe747",
           "action": "add"
         }
       }
