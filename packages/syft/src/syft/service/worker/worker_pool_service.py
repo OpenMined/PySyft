@@ -195,22 +195,24 @@ class SyftWorkerPoolService(AbstractService):
             return SyftError(message=f"{result.err()}")
         if result.ok() is None:
             return SyftError(
-                message=f"Worker Pool with name: {pool_name} does not exist !!"
+                message=f"Worker Pool with name: {pool_name} was not found"
             )
 
         worker_pool = result.ok()
 
-        found_worker = None
-        for worker in worker_pool.workers:
-            if worker.id == worker_id:
-                found_worker = worker
+        worker = None
+        for w in worker_pool.workers:
+            if w.id == worker_id:
+                worker = w
                 break
 
-        if found_worker is None:
-            return SyftError(message=f"Worker with id: {worker_id} does not exist !!")
+        if worker is None:
+            return SyftError(
+                message=f"Worker with id: {worker_id} not found in pool: {worker_pool.name}"
+            )
 
         worker_status = self.get_worker_status(
-            context=context, pool_name=pool_name, worker_id=found_worker.id
+            context=context, pool_name=pool_name, worker_id=worker.id
         )
         if isinstance(worker_status, SyftError):
             return worker_status
@@ -226,9 +228,9 @@ class SyftWorkerPoolService(AbstractService):
             if result.is_err():
                 return SyftError(message=f"{result.err()}")
             else:
-                return found_worker
+                return worker
         else:
-            return found_worker
+            return worker
 
     @service_method(
         path="worker_pool.get_worker_status",
@@ -244,31 +246,33 @@ class SyftWorkerPoolService(AbstractService):
 
         if result.ok() is None:
             return SyftError(
-                message=f"Worker Pool with name: {pool_name} does not exist !!"
+                message=f"Worker Pool with name: {pool_name} was not found"
             )
 
         worker_pool = result.ok()
 
-        found_worker = None
-        for worker in worker_pool.workers:
-            if worker.id == worker_id:
-                found_worker = worker
+        worker = None
+        for w in worker_pool.workers:
+            if w.id == worker_id:
+                worker = w
                 break
 
-        if found_worker is None:
-            return SyftError(message=f"Worker with id: {worker_id} does not exist !!")
+        if worker is None:
+            return SyftError(
+                message=f"Worker with id: {worker_id} not found in pool: {worker_pool.name}"
+            )
 
         client = docker.from_env()
-        worker_status = client.containers.get(found_worker.container_id).status
+        worker_status = client.containers.get(worker.container_id).status
         if worker_status == "running":
-            found_worker.status = WorkerStatus.RUNNING
+            worker.status = WorkerStatus.RUNNING
         elif worker_status in ["paused", "removing", "exited", "dead"]:
-            found_worker.status = WorkerStatus.STOPPED
+            worker.status = WorkerStatus.STOPPED
         elif worker_status == "restarting":
-            found_worker.status = WorkerStatus.RESTARTED
+            worker.status = WorkerStatus.RESTARTED
         elif worker_status == "created":
-            found_worker.status = WorkerStatus.PENDING
+            worker.status = WorkerStatus.PENDING
 
         client.close()
 
-        return found_worker.status
+        return worker.status
