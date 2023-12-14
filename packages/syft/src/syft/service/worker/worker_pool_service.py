@@ -1,9 +1,13 @@
 # stdlib
 from typing import List
+from typing import Optional
+from typing import Tuple
 from typing import Union
+from typing import cast
 
 # third party
 import docker
+from docker.models.containers import Container
 
 # relative
 from ...serde.serializable import serializable
@@ -18,6 +22,7 @@ from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .utils import run_containers
 from .worker_image_stash import SyftWorkerImageStash
 from .worker_pool import ContainerSpawnStatus
+from .worker_pool import SyftWorker
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerPool
 from .worker_pool_stash import SyftWorkerPoolStash
@@ -131,26 +136,19 @@ class SyftWorkerPoolService(AbstractService):
         worker_id: UID,
         force: bool = False,
     ) -> Union[SyftSuccess, SyftError]:
-        worker_pool = self.stash.get_by_uid(
-            credentials=context.credentials, uid=worker_pool_id
+        worker_pool_worker = self._get_worker_pool_and_worker(
+            context, worker_pool_id, worker_id
         )
-        if worker_pool.is_err():
-            return SyftError(message=f"{worker_pool.err()}")
+        if isinstance(worker_pool_worker, SyftError):
+            return worker_pool_worker
 
-        worker_pool: WorkerPool = worker_pool.ok()
-        worker = None
-        for w in worker_pool.workers:
-            if w.id == worker_id:
-                worker = w
-                break
-        if worker is None:
-            return SyftError(
-                message=f"Worker with id: {worker_id} not found in pool: {worker_pool.name}"
-            )
+        worker_pool, worker = worker_pool_worker
 
         # delete the worker using docker client sdk
-        docker_client = docker.from_env()
-        docker_container = docker_client.containers.get(worker.container_id)
+        docker_container = _get_worker_container(worker)
+        if isinstance(docker_container, SyftError):
+            return docker_container
+
         try:
             # stop the container
             docker_container.stop()
@@ -178,4 +176,97 @@ class SyftWorkerPoolService(AbstractService):
 
         return SyftSuccess(
             message=f"Worker with id: {worker_id} deleted successfully from pool: {worker_pool.name}"
+        )
+
+    @service_method(
+        path="worker_pool.worker_logs",
+        name="worker_logs",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def worker_logs(
+        self,
+        context: AuthedServiceContext,
+        worker_pool_id: UID,
+        worker_id: UID,
+    ) -> Union[bytes, SyftError]:
+        worker_pool_worker = self._get_worker_pool_and_worker(
+            context, worker_pool_id, worker_id
+        )
+        if isinstance(worker_pool_worker, SyftError):
+            return worker_pool_worker
+
+        _, worker = worker_pool_worker
+
+        docker_container = _get_worker_container(worker)
+        if isinstance(docker_container, SyftError):
+            return docker_container
+
+        try:
+            return docker_container.logs()
+        except docker.errors.APIError as e:
+            return SyftError(
+                f"Failed to get worker {worker.id} container logs. Error {e}"
+            )
+
+    def _get_worker_pool(
+        self,
+        context: AuthedServiceContext,
+        worker_pool_id: UID,
+    ) -> Union[WorkerPool, SyftError]:
+        worker_pool = self.stash.get_by_uid(
+            credentials=context.credentials, uid=worker_pool_id
+        )
+
+        return (
+            SyftError(message=f"{worker_pool.err()}")
+            if worker_pool.is_err()
+            else cast(WorkerPool, worker_pool.ok())
+        )
+
+    def _get_worker_pool_and_worker(
+        self, context: AuthedServiceContext, worker_pool_id: UID, worker_id: UID
+    ) -> Union[Tuple[WorkerPool, SyftWorker], SyftError]:
+        worker_pool = self._get_worker_pool(context, worker_pool_id)
+        if isinstance(worker_pool, SyftError):
+            return worker_pool
+
+        worker = _get_worker(worker_pool, worker_id)
+        if isinstance(worker, SyftError):
+            return worker
+
+        return worker_pool, worker
+
+
+def _get_worker_opt(worker_pool: WorkerPool, worker_id: UID) -> Optional[SyftWorker]:
+    try:
+        return next(worker for worker in worker_pool.workers if worker.id == worker_id)
+    except StopIteration:
+        return None
+
+
+def _get_worker(
+    worker_pool: WorkerPool, worker_id: UID
+) -> Union[SyftWorker, SyftError]:
+    worker = _get_worker_opt(worker_pool, worker_id)
+    return (
+        worker
+        if worker is not None
+        else SyftError(
+            message=f"Worker with id: {worker_id} not found in pool: {worker_pool.name}"
+        )
+    )
+
+
+def _get_worker_container(
+    worker: SyftWorker, docker_client: Optional[docker.DockerClient] = None
+) -> Union[Container, SyftError]:
+    docker_client = docker_client if docker_client is not None else docker.from_env()
+    try:
+        return cast(Container, docker_client.containers.get(worker.container_id))
+    except docker.errors.NotFound as e:
+        return SyftError(f"Worker {worker.id} container not found. Error {e}")
+    except docker.errors.APIError as e:
+        return SyftError(
+            f"Unable to access worker {worker.id} container. "
+            + f"Container server error {e}"
         )
