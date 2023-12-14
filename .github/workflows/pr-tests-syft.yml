@@ -57,7 +57,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         if: steps.changes.outputs.syft == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -75,7 +75,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
-        uses: buildjet/cache@v3
+        uses: actions/cache@v3
         if: steps.changes.outputs.syft == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -142,7 +142,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -160,7 +160,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
-        uses: buildjet/cache@v3
+        uses: actions/cache@v3
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -222,7 +222,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -240,7 +240,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
-        uses: buildjet/cache@v3
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -320,7 +320,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         if: steps.changes.outputs.syft == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -338,7 +338,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
-        uses: buildjet/cache@v3
+        uses: actions/cache@v3
         if: steps.changes.outputs.syft == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}

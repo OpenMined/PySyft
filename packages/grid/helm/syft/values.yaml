@@ -4,21 +4,38 @@
 
 secrets:
   syft:
-    stackApiKey: "changeme"
-    defaultRootEmail: "info@openmined.org"
-    defaultRootPassword: "changethis"
+    syftsecret: "syftsecret"
+    # stackApiKey: "changeme"
+    # defaultRootPassword: "changethis"
   db:
     mongo:
-      mongoPassword: "example"
-      mongoInitdbRootPassword: "example"
-      mongoUsername: "root"
-      mongoInitdbRootUsername: "root"
+      # mongoPassword: "example"
+      # mongoInitdbRootPassword: "example"
+      # mongoUsername: "root"
+      # mongoInitdbRootUsername: "root"
+      mongosecret: "mongosecret"
+  seaweedfs:
+    seaweedfsecret: "seaweedfsecret"
+
+configuration:
+  devmode: false
 
 db:
   mongo:
     settings:
       mongoPort: "'27017'"
       mongoHost: "mongo"
+      mongoUsername: "root"
+
+seaweedfs:
+  S3_VOLUME_SIZE_MB: 1024
+  S3_PORT: 8333
+  SEAWEED_MOUNT_PORT: 4001
+  S3_ROOT_USER: "admin"
+
+container:
+  registry: "docker.io"
+  syft_version: 0.8.4-beta.3
 
 node:
   settings:
@@ -28,6 +45,7 @@ node:
     nodeType: "domain"
     versionHash: "abc"
     nodeSideType: "high"
+    defaultRootEmail: "info@openmined.org"
 
 ingress:
   ingressClass: ""
