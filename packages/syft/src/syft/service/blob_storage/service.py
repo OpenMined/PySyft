@@ -15,11 +15,11 @@ from ...store.blob_storage.on_disk import OnDiskBlobDeposit
 from ...store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ...store.document_store import DocumentStore
 from ...store.document_store import UIDPartitionKey
-from ...types.blob_storage import AzureSecureFilePathLocation, BlobFileType
+from ...types.blob_storage import AzureSecureFilePathLocation
+from ...types.blob_storage import BlobFileType
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import BlobStorageMetadata
 from ...types.blob_storage import CreateBlobStorageEntry
-from ...types.blob_storage import SecureFilePathLocation
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -69,7 +69,7 @@ class BlobStorageService(AbstractService):
         # TODO: fix arguments
 
         remote_name = f"{account_name}{container_name}"
-        remote_name = ''.join(ch for ch in remote_name if ch.isalnum())
+        remote_name = "".join(ch for ch in remote_name if ch.isalnum())
         args_dict = {
             "account_name": account_name,
             "account_key": account_key,
@@ -99,17 +99,18 @@ class BlobStorageService(AbstractService):
         res = context.node.blob_storage_client.connect().client.list_objects(
             Bucket=bucket_name
         )
-        import pdb 
-        pdb.set_trace()
+        # stdlib
         objects = res["Contents"]
         file_sizes = [object["Size"] for object in objects]
         file_paths = [object["Key"] for object in objects]
         secure_file_paths = [
             AzureSecureFilePathLocation(
-                path=file_path, 
+                path=file_path,
                 azure_profile_name=remote_name,
                 bucket_name=bucket_name,
-            ) for file_path in file_paths for file_path in file_paths
+            )
+            for file_path in file_paths
+            for file_path in file_paths
         ]
 
         for sfp, file_size in zip(secure_file_paths, file_sizes):

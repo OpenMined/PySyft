@@ -1,12 +1,10 @@
-# syft absolute
-from syft.types.syft_object import SYFT_OBJECT_VERSION_1
-from syft.types.syft_object import SyftObject
-
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftObject
 
 
 @serializable()
