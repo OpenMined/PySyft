@@ -376,6 +376,19 @@ class Node(AbstractNode):
         self.blob_store_config = config_
         self.blob_storage_client = config_.client_type(config=config_.client_config)
 
+        # relative
+        from ..store.blob_storage.seaweedfs import SeaweedFSConfig
+
+        if isinstance(config, SeaweedFSConfig):
+            blob_storage_service = self.get_service(BlobStorageService)
+            remote_profiles = blob_storage_service.remote_profile_stash.get_all(
+                credentials=self.signing_key.verify_key, has_permission=True
+            ).ok()
+            for remote_profile in remote_profiles:
+                self.blob_store_config.client_config.remote_profiles[
+                    remote_profile.profile_name
+                ] = remote_profile
+
     def stop(self):
         for consumer_list in self.queue_manager.consumers.values():
             for c in consumer_list:

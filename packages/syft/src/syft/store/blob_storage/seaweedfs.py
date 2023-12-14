@@ -167,6 +167,8 @@ class SeaweedFSConnection(BlobStorageConnection):
     ) -> BlobRetrieval:
         if bucket_name is None:
             bucket_name = self.default_bucket_name
+        # this will generate the url, the SecureFilePathLocation also handles the logic
+        # that decides whether to use a direct connection to azure/aws/gcp or via seaweed
         return fp.generate_url(self, type_, bucket_name)
 
     def allocate(
