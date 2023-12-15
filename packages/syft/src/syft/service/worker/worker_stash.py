@@ -29,7 +29,7 @@ class WorkerStash(BaseUIDStoreStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    def get_worker_id_by_name(
+    def get_worker_by_name(
         self, credentials: SyftVerifyKey, worker_name: str
     ) -> Result[Optional[DockerWorker], str]:
         qks = QueryKeys(qks=[WorkerContainerNamePartitionKey.with_obj(worker_name)])
