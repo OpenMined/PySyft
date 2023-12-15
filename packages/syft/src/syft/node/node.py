@@ -738,10 +738,10 @@ class Node(AbstractNode):
 
         # We add the python id of the current node in order
         # to create one connection per Node object in MongoClientCache
-        # so that we avoid closing the connection from a 
+        # so that we avoid closing the connection from a
         # different thread through the garbage collection
         if isinstance(self.document_store_config, MongoStoreConfig):
-            self.document_store_config.client_config.node_obj_python_id = id(self) 
+            self.document_store_config.client_config.node_obj_python_id = id(self)
 
         self.document_store = document_store(
             root_verify_key=self.verify_key,
@@ -768,10 +768,10 @@ class Node(AbstractNode):
         elif isinstance(action_store_config, MongoStoreConfig):
             # We add the python id of the current node in order
             # to create one connection per Node object in MongoClientCache
-            # so that we avoid closing the connection from a 
+            # so that we avoid closing the connection from a
             # different thread through the garbage collection
-            action_store_config.client_config.node_obj_python_id = id(self) 
-            
+            action_store_config.client_config.node_obj_python_id = id(self)
+
             self.action_store = MongoActionStore(
                 root_verify_key=self.verify_key, store_config=action_store_config
             )

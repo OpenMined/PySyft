@@ -42,6 +42,7 @@ from .syft_object import SyftObject
 from .uid import UID
 
 READ_EXPIRATION_TIME = 1800  # seconds
+DEFAULT_CHUNK_SIZE = 10000 * 1024
 
 
 @serializable()
@@ -65,7 +66,7 @@ class BlobFile(SyftObject):
 
     __repr_attrs__ = ["id", "file_name"]
 
-    def read(self, stream=False, chunk_size=512, force=False):
+    def read(self, stream=False, chunk_size=DEFAULT_CHUNK_SIZE, force=False):
         # get blob retrieval object from api + syft_blob_storage_entry_id
         read_method = from_api_or_context(
             "blob_storage.read", self.syft_node_location, self.syft_client_verify_key
@@ -80,9 +81,29 @@ class BlobFile(SyftObject):
 
         return sy.ActionObject.from_path(path=path).send(client).syft_action_data
 
-    def _iter_lines(self, chunk_size=512):
-        """Synchronous version of the async iter_lines"""
-        return self.read(stream=True, chunk_size=chunk_size)
+    def _iter_lines(self, chunk_size=DEFAULT_CHUNK_SIZE):
+        """Synchronous version of the async iter_lines. This implementation
+        is also optimized in terms of splitting chunks, making it faster for
+        larger lines"""
+        pending = None
+        for chunk in self.read(stream=True, chunk_size=chunk_size):
+            if b"\n" in chunk:
+                if pending is not None:
+                    chunk = pending + chunk
+                lines = chunk.splitlines()
+                if lines and lines[-1] and chunk and lines[-1][-1] == chunk[-1]:
+                    pending = lines.pop()
+                else:
+                    pending = None
+                yield from lines
+            else:
+                if pending is None:
+                    pending = chunk
+                else:
+                    pending = pending + chunk
+
+        if pending is not None:
+            yield pending
 
     def read_queue(self, queue, chunk_size, progress=False, buffer_lines=10000):
         total_read = 0
@@ -103,7 +124,7 @@ class BlobFile(SyftObject):
         # Put anything not a string at the end
         queue.put(0)
 
-    def iter_lines(self, chunk_size=512, progress=False):
+    def iter_lines(self, chunk_size=DEFAULT_CHUNK_SIZE, progress=False):
         item_queue: Queue = Queue()
         threading.Thread(
             target=self.read_queue,

@@ -61,6 +61,7 @@ from ...types.blob_storage import BlobFile
 from ...types.blob_storage import BlobFileType
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
+from ...types.blob_storage import DEFAULT_CHUNK_SIZE
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.grid_url import GridURL
 from ...types.syft_migration import migrate
@@ -71,6 +72,9 @@ from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import UID
+
+DEFAULT_TIMEOUT = 10
+MAX_RETRIES = 20
 
 
 @serializable()
@@ -169,48 +173,35 @@ class BlobRetrievalByURLV1(BlobRetrievalV1):
     url: GridURL
 
 
-def generate(blob_url, chunk_size):
-    max_tries = 20
-    pending = None
-    start_byte = 0
-    for attempt in range(max_tries):
+def syft_iter_content(
+    blob_url, chunk_size, max_retries=MAX_RETRIES, timeout=DEFAULT_TIMEOUT
+):
+    """custom iter content with smart retries (start from last byte read)"""
+    current_byte = 0
+    for attempt in range(max_retries):
         try:
-            headers = {'Range': f'bytes={start_byte}-'}
-            with requests.get(str(blob_url), stream=True, headers=headers, timeout=(10, 10)) as response:
+            headers = {"Range": f"bytes={current_byte}-"}
+            with requests.get(
+                str(blob_url), stream=True, headers=headers, timeout=(timeout, timeout)
+            ) as response:
                 response.raise_for_status()
                 for chunk in response.iter_content(
                     chunk_size=chunk_size, decode_unicode=False
                 ):
-                    start_byte += len(chunk)
-                    if b'\n' in chunk:
-                        if pending is not None:
-                            chunk = pending + chunk
-
-                        lines = chunk.splitlines()
-
-                        if lines and lines[-1] and chunk and lines[-1][-1] == chunk[-1]:
-                            pending = lines.pop()
-                        else:
-                            pending = None
-
-                        yield from lines
-                    else:
-                        if pending is None:
-                            pending = chunk
-                        else:
-                            pending = pending + chunk
-
-                if pending is not None:
-                    yield pending
+                    current_byte += len(chunk)
+                    yield chunk
                 return
-                
+
         except requests.exceptions.RequestException as e:
-            if attempt < max_tries:
-                print(start_byte)
-                print(f"Attempt {attempt}/{max_tries} failed: {e}. Retrying...")
+            if attempt < max_retries:
+                print(
+                    f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying..."
+                )
             else:
                 print(f"Max retries reached. Failed with error: {e}")
                 raise
+
+
 class BlobRetrievalByURLV2(BlobRetrievalV1):
     __canonical_name__ = "BlobRetrievalByURL"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -237,7 +228,7 @@ class BlobRetrievalByURL(BlobRetrieval):
         else:
             return self._read_data()
 
-    def _read_data(self, stream=False, chunk_size=512):
+    def _read_data(self, stream=False, chunk_size=DEFAULT_CHUNK_SIZE):
         # relative
         from ...client.api import APIRegistry
 
@@ -252,14 +243,17 @@ class BlobRetrievalByURL(BlobRetrieval):
         else:
             blob_url = self.url
         try:
-            response = requests.get(str(blob_url), stream=stream)  # nosec
-            response.raise_for_status()
             if self.type_ is BlobFileType:
-                if stream:        
-                    return generate(blob_url, chunk_size)
+                if stream:
+                    return syft_iter_content(blob_url, chunk_size)
                 else:
+                    response = requests.get(str(blob_url), stream=False)  # nosec
+                    response.raise_for_status()
                     return response.content
-            return deserialize(response.content, from_bytes=True)
+            else:
+                response = requests.get(str(blob_url), stream=stream)  # nosec
+                response.raise_for_status()
+                return deserialize(response.content, from_bytes=True)
         except requests.RequestException as e:
             return SyftError(message=f"Failed to retrieve with Error: {e}")
 
