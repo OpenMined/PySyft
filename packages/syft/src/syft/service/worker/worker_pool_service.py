@@ -185,49 +185,42 @@ class SyftWorkerPoolService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def get_worker(
-        self, context: AuthedServiceContext, pool_name: str, worker_id: UID
+        self, context: AuthedServiceContext, worker_pool_id: UID, worker_id: UID
     ) -> Union[SyftWorker, SyftError]:
-        result = self.stash.get_by_name(context.credentials, pool_name=pool_name)
-        if result.is_err():
-            return SyftError(message=f"{result.err()}")
-        if result.ok() is None:
-            return SyftError(
-                message=f"Worker Pool with name: {pool_name} was not found"
-            )
+        worker_pool_worker = self._get_worker_pool_and_worker(
+            context, worker_pool_id, worker_id
+        )
+        if isinstance(worker_pool_worker, SyftError):
+            return worker_pool_worker
 
-        worker_pool = result.ok()
-
-        worker = None
-        for w in worker_pool.workers:
-            if w.id == worker_id:
-                worker = w
-                break
-
-        if worker is None:
-            return SyftError(
-                message=f"Worker with id: {worker_id} not found in pool: {worker_pool.name}"
-            )
+        worker_pool, worker = worker_pool_worker
 
         worker_status = self.get_worker_status(
-            context=context, pool_name=pool_name, worker_id=worker.id
+            context=context, worker_pool_id=worker_pool_id, worker_id=worker.id
         )
         if isinstance(worker_status, SyftError):
             return worker_status
-        elif worker_status != WorkerStatus.PENDING:
+
+        if worker_status != WorkerStatus.PENDING:
             for worker in worker_pool.workers:
                 if worker.id == worker_id:
                     worker.status = worker_status
                     break
+
             result = self.stash.update(
                 credentials=context.credentials,
                 obj=worker_pool,
             )
-            if result.is_err():
-                return SyftError(message=f"{result.err()}")
-            else:
-                return worker
-        else:
-            return worker
+
+            return (
+                SyftError(
+                    message=f"Failed to update worker status. Error: {result.err()}"
+                )
+                if result.is_err()
+                else worker
+            )
+
+        return worker
 
     @service_method(
         path="worker_pool.get_worker_status",
@@ -235,50 +228,30 @@ class SyftWorkerPoolService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def get_worker_status(
-        self, context: AuthedServiceContext, pool_name: str, worker_id: UID
+        self, context: AuthedServiceContext, worker_pool_id: str, worker_id: UID
     ) -> Union[WorkerStatus, SyftError]:
-        result = self.stash.get_by_name(context.credentials, pool_name=pool_name)
-        if result.is_err():
-            return SyftError(message=f"{result.err()}")
+        worker_pool_worker = self._get_worker_pool_and_worker(
+            context, worker_pool_id, worker_id
+        )
+        if isinstance(worker_pool_worker, SyftError):
+            return worker_pool_worker
 
-        if result.ok() is None:
-            return SyftError(
-                message=f"Worker Pool with name: {pool_name} was not found"
-            )
+        _, worker = worker_pool_worker
 
-        worker_pool = result.ok()
+        docker_container = _get_worker_container(worker)
+        if isinstance(docker_container, SyftError):
+            return docker_container
 
-        worker = None
-        for w in worker_pool.workers:
-            if w.id == worker_id:
-                worker = w
-                break
+        worker_status = docker_container.status
 
-        if worker is None:
-            return SyftError(
-                message=f"Worker with id: {worker_id} not found in pool: {worker_pool.name}"
-            )
-        try:
-            client = docker.from_env()
-            worker_status = client.containers.get(worker.container_id).status
-            if worker_status == "running":
-                worker.status = WorkerStatus.RUNNING
-            elif worker_status in ["paused", "removing", "exited", "dead"]:
-                worker.status = WorkerStatus.STOPPED
-            elif worker_status == "restarting":
-                worker.status = WorkerStatus.RESTARTED
-            elif worker_status == "created":
-                worker.status = WorkerStatus.PENDING
-
-            client.close()
-        except docker.errors.NotFound as e:
-            return SyftError(
-                message=f"Container with: {worker.container_id} not found. Error: {e}"
-            )
-        except docker.errors.APIError as e:
-            return SyftError(
-                message=f"Failed to get status of container: {worker.container_id}. Error: {e}"
-            )
+        if worker_status == "running":
+            worker.status = WorkerStatus.RUNNING
+        elif worker_status in ["paused", "removing", "exited", "dead"]:
+            worker.status = WorkerStatus.STOPPED
+        elif worker_status == "restarting":
+            worker.status = WorkerStatus.RESTARTED
+        elif worker_status == "created":
+            worker.status = WorkerStatus.PENDING
 
         return worker.status
 
