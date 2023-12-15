@@ -207,7 +207,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         else:
             insert_sql = (
                 f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
-            )
+            )  # nosec
             data = _serialize(value, to_bytes=True)
             res = self._execute(insert_sql, [str(key), _repr_debug_(value), data])
             if res.is_err():
@@ -216,7 +216,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _update(self, key: UID, value: Any) -> None:
         insert_sql = (
             f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
-        )
+        )  # nosec
         data = _serialize(value, to_bytes=True)
         res = self._execute(insert_sql, [str(key), _repr_debug_(value), data, str(key)])
         if res.is_err():
