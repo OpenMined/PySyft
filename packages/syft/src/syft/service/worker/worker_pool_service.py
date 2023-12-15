@@ -188,7 +188,8 @@ class SyftWorkerPoolService(AbstractService):
         context: AuthedServiceContext,
         worker_pool_id: UID,
         worker_id: UID,
-    ) -> Union[bytes, SyftError]:
+        raw: bool = False,
+    ) -> Union[bytes, str, SyftError]:
         worker_pool_worker = self._get_worker_pool_and_worker(
             context, worker_pool_id, worker_id
         )
@@ -202,11 +203,13 @@ class SyftWorkerPoolService(AbstractService):
             return docker_container
 
         try:
-            return docker_container.logs()
+            logs = cast(bytes, docker_container.logs())
         except docker.errors.APIError as e:
             return SyftError(
                 f"Failed to get worker {worker.id} container logs. Error {e}"
             )
+
+        return logs if raw else logs.decode(errors="ignore")
 
     def _get_worker_pool(
         self,
