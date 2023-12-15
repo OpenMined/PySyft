@@ -391,11 +391,16 @@ class ZMQProducer(QueueProducer):
         worker = self.require_worker(address)
 
         if MDP.W_READY == command:
-            service = msg.pop(0)
+            service_name = msg.pop(0)
             if worker_ready:
                 self.delete_worker(worker, True)
             else:
                 # Attach worker to service and mark as idle
+                if service_name not in self.services:
+                    service = Service(service_name)
+                    self.services[service_name] = service
+                else:
+                    service = self.services.get(service_name)
                 worker.service = service
                 self.worker_waiting(worker)
 
