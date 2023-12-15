@@ -995,6 +995,13 @@
           "hash": "e28c4101c75d48dc10529382f0661a792371ad8342290ef8becb58f0b2b2812a",
           "action": "add"
         }
+      },
+      "QueueConsumerItem": {
+        "1": {
+          "version": 1,
+          "hash": "cfbabd63d33957168a69c1205af5a7b71866ece7bac4b4b77a6a50ab3bb67de7",
+          "action": "add"
+        }
       }
     }
   }
