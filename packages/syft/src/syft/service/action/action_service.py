@@ -116,6 +116,32 @@ class ActionService(AbstractService):
         """Get an object from the action store"""
         return self._get(context, uid, twin_mode)
 
+    @service_method(
+        path="action.resolve_links", name="resolve_links", roles=GUEST_ROLE_LEVEL
+    )
+    def resolve_links(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        twin_mode: TwinMode = TwinMode.PRIVATE,
+    ) -> Result[Ok[ActionObject], Err[str]]:
+        """Get an object from the action store"""
+        # relative
+        from .action_data_empty import ActionDataLink
+
+        result = self._get(context, uid, twin_mode)
+        if result.is_ok():
+            obj = result.ok()
+            if isinstance(obj.syft_action_data, ActionDataLink):
+                nested_result = self.resolve_links(
+                    context, obj.syft_action_data.action_object_id.id, twin_mode
+                )
+                return nested_result
+            else:
+                return result
+        else:
+            return result
+
     def _get(
         self,
         context: AuthedServiceContext,
@@ -124,6 +150,9 @@ class ActionService(AbstractService):
         has_permission=False,
     ) -> Result[ActionObject, str]:
         """Get an object from the action store"""
+        # relative
+        from .action_data_empty import ActionDataLink
+
         result = self.store.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission
         )
@@ -133,6 +162,18 @@ class ActionService(AbstractService):
                 context.node.id,
                 context.credentials,
             )
+            # Resolve graph links
+            if isinstance(obj.syft_action_data, ActionDataLink):
+                result = self._get(
+                    context,
+                    obj.syft_action_data.action_object_id.id,
+                    twin_mode,
+                    has_permission,
+                )
+                if result.is_ok():
+                    obj = result.ok()
+                else:
+                    return result
             if isinstance(obj, TwinObject):
                 if twin_mode == TwinMode.PRIVATE:
                     obj = obj.private
@@ -234,7 +275,10 @@ class ActionService(AbstractService):
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
                 exec_result = execute_byte_code(code_item, filtered_kwargs, context)
-                result_action_object = wrap_result(result_id, exec_result.result)
+                if isinstance(exec_result.result, ActionObject):
+                    result_action_object = ActionObject.link(exec_result.result.id)
+                else:
+                    result_action_object = wrap_result(result_id, exec_result.result)
             else:
                 # twins
                 private_kwargs = filter_twin_kwargs(

@@ -49,6 +49,7 @@ from ...util.logger import debug
 from ..response import SyftException
 from ..service import from_api_or_context
 from .action_data_empty import ActionDataEmpty
+from .action_data_empty import ActionDataLink
 from .action_data_empty import ActionFileData
 from .action_permissions import ActionPermission
 from .action_types import action_type_for_object
@@ -551,6 +552,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "_repr_debug_",
     "as_empty",
     "get",
+    "is_linked",
     "_save_to_blob_storage",
     "_save_to_blob_storage_",
     "syft_action_data",
@@ -1208,6 +1210,16 @@ class ActionObject(SyftObject):
         return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
 
     @staticmethod
+    def link(
+        id: Optional[UID] = None,
+    ) -> ActionObject:
+        link = ActionDataLink(action_object_id=id)
+        res = ActionObject.from_obj(
+            syft_action_data=link,
+        )
+        return res
+
+    @staticmethod
     def empty(
         syft_internal_type: Type[Any] = NoneType,
         id: Optional[UID] = None,
@@ -1618,6 +1630,10 @@ class ActionObject(SyftObject):
         # Handle anything else
         res = self._syft_wrap_attribute_for_methods(name)
         return res
+
+    @property
+    def is_link(self) -> bool:
+        return isinstance(self.syft_action_data, ActionDataLink)
 
     def __setattr__(self, name: str, value: Any) -> Any:
         defined_on_self = name in self.__dict__ or name in self.__private_attributes__
