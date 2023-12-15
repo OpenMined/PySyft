@@ -26,6 +26,7 @@ from .base_queue import BaseQueueManager
 from .base_queue import QueueConfig
 from .base_queue import QueueConsumer
 from .base_queue import QueueProducer
+from .consumer_stash import ConsumerStash
 from .queue_stash import QueueItem
 from .queue_stash import Status
 
@@ -80,12 +81,14 @@ class QueueManager(BaseQueueManager):
     def create_consumer(
         self,
         message_handler: Type[AbstractMessageHandler],
+        consumer_stash: ConsumerStash,
         address: Optional[str] = None,
     ) -> QueueConsumer:
         consumer = self._client.add_consumer(
             message_handler=message_handler,
             queue_name=message_handler.queue_name,
             address=address,
+            consumer_stash=consumer_stash,
         )
         return consumer
 
