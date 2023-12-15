@@ -71,6 +71,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
+from ...types.transforms import str_url_to_grid_url
 from ...types.uid import UID
 
 DEFAULT_TIMEOUT = 10
@@ -109,7 +110,7 @@ class BlobRetrieval(SyftObject):
 
 
 @migrate(BlobRetrieval, BlobRetrievalV1)
-def downgrade_blobretrival_v2_to_v1():
+def downgrade_blobretrieval_v2_to_v1():
     return [
         drop(["syft_blob_storage_entry_id", "file_size"]),
     ]
@@ -258,19 +259,31 @@ class BlobRetrievalByURL(BlobRetrieval):
             return SyftError(message=f"Failed to retrieve with Error: {e}")
 
 
-@migrate(BlobRetrievalByURL, BlobRetrievalByURLV1)
+@migrate(BlobRetrievalByURLV2, BlobRetrievalByURLV1)
 def downgrade_blobretrivalbyurl_v2_to_v1():
     return [
         drop(["syft_blob_storage_entry_id", "file_size"]),
     ]
 
 
-@migrate(BlobRetrievalByURLV1, BlobRetrievalByURL)
+@migrate(BlobRetrievalByURLV1, BlobRetrievalByURLV2)
 def upgrade_blobretrivalbyurl_v1_to_v2():
     return [
         make_set_default("syft_blob_storage_entry_id", None),
         make_set_default("file_size", 1),
     ]
+
+
+@migrate(BlobRetrievalByURL, BlobRetrievalByURLV2)
+def downgrade_blobretrivalbyurl_v3_to_v2():
+    return [
+        str_url_to_grid_url,
+    ]
+
+
+@migrate(BlobRetrievalByURLV2, BlobRetrievalByURL)
+def upgrade_blobretrivalbyurl_v2_to_v3():
+    return []
 
 
 @serializable()
