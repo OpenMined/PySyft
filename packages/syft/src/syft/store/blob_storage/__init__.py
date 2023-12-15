@@ -168,6 +168,49 @@ class BlobRetrievalByURLV1(BlobRetrievalV1):
     url: GridURL
 
 
+def generate(blob_url, chunk_size):
+    max_tries = 20
+    pending = None
+    start_byte = 0
+    for attempt in range(max_tries):
+        try:
+            headers = {'Range': f'bytes={start_byte}-'}
+            with requests.get(str(blob_url), stream=True, headers=headers, timeout=(10, 10)) as response:
+                response.raise_for_status()
+                for chunk in response.iter_content(
+                    chunk_size=chunk_size, decode_unicode=False
+                ):
+                    start_byte += len(chunk)
+                    if b'\n' in chunk:
+                        if pending is not None:
+                            chunk = pending + chunk
+
+                        lines = chunk.splitlines()
+
+                        if lines and lines[-1] and chunk and lines[-1][-1] == chunk[-1]:
+                            pending = lines.pop()
+                        else:
+                            pending = None
+
+                        yield from lines
+                    else:
+                        if pending is None:
+                            pending = chunk
+                        else:
+                            pending = pending + chunk
+
+                if pending is not None:
+                    yield pending
+                return
+                
+        except requests.exceptions.RequestException as e:
+            if attempt < max_tries:
+                print(start_byte)
+                print(f"Attempt {attempt}/{max_tries} failed: {e}. Retrying...")
+            else:
+                print(f"Max retries reached. Failed with error: {e}")
+                raise
+
 @serializable()
 class BlobRetrievalByURL(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
@@ -205,8 +248,8 @@ class BlobRetrievalByURL(BlobRetrieval):
             response = requests.get(str(blob_url), stream=stream)  # nosec
             response.raise_for_status()
             if self.type_ is BlobFileType:
-                if stream:
-                    return response.iter_lines(chunk_size=chunk_size)
+                if stream:        
+                    return generate(blob_url, chunk_size)
                 else:
                     return response.content
             return deserialize(response.content, from_bytes=True)
