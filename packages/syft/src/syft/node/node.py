@@ -756,11 +756,11 @@ class Node(AbstractNode):
         self.queue_stash = QueueStash(store=self.document_store)
 
     @property
-    def job_stash(self):
+    def job_stash(self) -> JobStash:
         return self.get_service("jobservice").stash
 
     @property
-    def worker_stash(self):
+    def worker_stash(self) -> WorkerStash:
         return self.get_service("workerservice").stash
 
     def _construct_services(self):
