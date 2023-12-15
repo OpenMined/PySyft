@@ -1,5 +1,6 @@
 # stdlib
 import multiprocessing
+import os
 import threading
 import time
 from typing import Any
@@ -25,6 +26,7 @@ from .base_queue import BaseQueueManager
 from .base_queue import QueueConfig
 from .base_queue import QueueConsumer
 from .base_queue import QueueProducer
+from .consumer_stash import ConsumerStash
 from .queue_stash import QueueItem
 from .queue_stash import Status
 
@@ -79,12 +81,14 @@ class QueueManager(BaseQueueManager):
     def create_consumer(
         self,
         message_handler: Type[AbstractMessageHandler],
+        consumer_stash: ConsumerStash,
         address: Optional[str] = None,
     ) -> QueueConsumer:
         consumer = self._client.add_consumer(
             message_handler=message_handler,
             queue_name=message_handler.queue_name,
             address=address,
+            consumer_stash=consumer_stash,
         )
         return consumer
 
@@ -232,6 +236,7 @@ class APICallMessageHandler(AbstractMessageHandler):
             is_subprocess=True,
             migrate=False,
         )
+
         # otherwise it reads it from env, resulting in the wrong credentials
         worker.id = worker_settings.id
         worker.signing_key = worker_settings.signing_key
@@ -245,6 +250,16 @@ class APICallMessageHandler(AbstractMessageHandler):
 
         job_item.status = JobStatus.PROCESSING
         job_item.node_uid = worker.id
+
+        try:
+            worker_name = os.getenv("DOCKER_WORKER_NAME", None)
+            docker_worker = worker.worker_stash.get_worker_by_name(
+                credentials, worker_name
+            ).ok()
+            job_item.job_worker_id = str(docker_worker.container_id)
+        except Exception:
+            job_item.job_worker_id = str(worker.id)
+        job_item.job_consumer_id = str(consumer_id)
 
         queue_result = worker.queue_stash.set_result(credentials, queue_item)
         if isinstance(queue_result, SyftError):

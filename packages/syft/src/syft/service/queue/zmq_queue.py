@@ -39,6 +39,8 @@ from .base_queue import QueueClientConfig
 from .base_queue import QueueConfig
 from .base_queue import QueueConsumer
 from .base_queue import QueueProducer
+from .consumer_stash import ConsumerItem
+from .consumer_stash import ConsumerStash
 from .queue_stash import ActionQueueItem
 from .queue_stash import Status
 
@@ -314,6 +316,7 @@ class ZMQConsumer(QueueConsumer):
         message_handler: AbstractMessageHandler,
         address: str,
         queue_name: str,
+        consumer_stash: Optional[ConsumerStash] = None,
     ) -> None:
         self.address = address
         self.message_handler = message_handler
@@ -323,14 +326,7 @@ class ZMQConsumer(QueueConsumer):
         self.post_init()
         self.id = UID()
         self._stop = False
-
-    def _coll_repr_(self):
-        return {
-            "id": self.id,
-            "status": self.status,
-            "queue": self.queue_name,
-            "connection_address": self.address,
-        }
+        self.consumer_stash = consumer_stash
 
     def create_socket(self):
         self.worker = self.ctx.socket(zmq.DEALER)  # DEALER
@@ -362,9 +358,28 @@ class ZMQConsumer(QueueConsumer):
             self.worker.close()
             self.ctx.destroy()
 
-    def get_job_id(self, message: Frame):
+    def associate_job(self, message: Frame):
         action_queue_item: ActionQueueItem = _deserialize(message, from_bytes=True)
-        return action_queue_item.job_id
+        self.job_id = action_queue_item.job_id
+        self._set_consumer_job()
+
+    def clear_job(self):
+        self.job_id = ""
+        self._set_consumer_job()
+
+    def _set_consumer_job(self):
+        res = self.consumer_stash.get_by_consumer_id(
+            self.consumer_stash.partition.root_verify_key, str(self.id)
+        )
+
+        if res.is_err():
+            return  # log/report?
+
+        consumer_obj: ConsumerItem = res.ok()
+        consumer_obj.job_id = self.job_id or ""
+        self.consumer_stash.set(
+            self.consumer_stash.partition.root_verify_key, obj=consumer_obj
+        )
 
     def _run(self):
         liveness = HEARTBEAT_LIVENESS
@@ -386,9 +401,6 @@ class ZMQConsumer(QueueConsumer):
                         print(e, traceback.format_exc())
                         continue
                 if socks.get(self.worker) == zmq.POLLIN:
-                    if self.is_reconnecting:
-                        self.is_reconnecting = False
-
                     with lock:
                         frames = self.worker.recv_multipart()
                     if not frames or len(frames) not in [1, 3]:
@@ -402,7 +414,7 @@ class ZMQConsumer(QueueConsumer):
                         liveness = HEARTBEAT_LIVENESS
                         message = frames[2]
                         try:
-                            self.job_id = self.get_job_id(message)
+                            self.associate_job(message)
                             self.message_handler.handle_message(
                                 message=message, consumer_id=self.id
                             )
@@ -412,7 +424,7 @@ class ZMQConsumer(QueueConsumer):
                                 f"ERROR HANDLING MESSAGE {e}, {traceback.format_exc()}"
                             )
                         finally:
-                            self.job_id = None
+                            self.clear_job()
                     # process heartbeat
                     elif len(frames) == 1 and frames[0] == PPP_HEARTBEAT:
                         liveness = HEARTBEAT_LIVENESS
@@ -433,7 +445,6 @@ class ZMQConsumer(QueueConsumer):
                         self.worker.setsockopt(zmq.LINGER, 1)
                         self.worker.close()
                         self.create_socket()
-                        self.is_reconnecting = True
                         liveness = HEARTBEAT_LIVENESS
                 # send heartbeat
                 if time.time() > heartbeat_at:
@@ -451,14 +462,6 @@ class ZMQConsumer(QueueConsumer):
         self.thread.start()
         # self.thread = gevent.spawn(self._run)
         # self.thread.start()
-
-    @property
-    def status(self) -> str:
-        if self.is_reconnecting:
-            return "RECONNECTING"
-        if self.job_id:
-            return f"PROCESSING {self.job_id}"
-        return "IDLE"
 
     @property
     def alive(self):
@@ -552,6 +555,7 @@ class ZMQClient(QueueClient):
         self,
         queue_name: str,
         message_handler: AbstractMessageHandler,
+        consumer_stash,
         address: Optional[str] = None,
     ) -> ZMQConsumer:
         """Add a consumer to a queue
@@ -567,6 +571,7 @@ class ZMQClient(QueueClient):
             queue_name=queue_name,
             message_handler=message_handler,
             address=address,
+            consumer_stash=consumer_stash
         )
         self.consumers[queue_name].append(consumer)
 

@@ -73,6 +73,9 @@ from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
 from ..service.queue.base_queue import QueueConsumer
 from ..service.queue.base_queue import QueueProducer
+from ..service.queue.consumer_stash import ConsumerItem
+from ..service.queue.consumer_stash import ConsumerService
+from ..service.queue.consumer_stash import ConsumerStash
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
 from ..service.queue.queue_service import QueueService
@@ -287,6 +290,7 @@ class Node(AbstractNode):
             [
                 UserService,
                 WorkerService,
+                ConsumerService,
                 SettingsService,
                 ActionService,
                 LogService,
@@ -421,8 +425,25 @@ class Node(AbstractNode):
                 if address is None:
                     raise ValueError("address unknown for consumers")
                 consumer: QueueConsumer = self.queue_manager.create_consumer(
-                    message_handler, address=address
+                    message_handler,
+                    address=address,
+                    consumer_stash=self.consumer_stash,
                 )
+
+                # Registers consumer in consumer_stash
+                container_name = os.getenv("DOCKER_WORKER_NAME", None)
+                worker_id = (
+                    self.worker_stash.get_worker_by_name(
+                        self.verify_key, container_name
+                    ).ok().container_id
+                    if container_name
+                    else ""
+                )
+                consumer_obj = ConsumerItem(
+                    worker_id=worker_id, consumer_id=str(consumer.id), job_id=""
+                )
+                self.consumer_stash.set(self.verify_key, obj=consumer_obj)
+
                 consumer.run()
 
     @classmethod
@@ -765,6 +786,10 @@ class Node(AbstractNode):
     def worker_stash(self) -> WorkerStash:
         return self.get_service("workerservice").stash
 
+    @property
+    def consumer_stash(self) -> ConsumerStash:
+        return self.get_service("consumerservice").stash
+
     def _construct_services(self):
         self.service_path_map = {}
 
@@ -775,6 +800,7 @@ class Node(AbstractNode):
             store_services = [
                 UserService,
                 WorkerService,
+                ConsumerService,
                 SettingsService,
                 DatasetService,
                 UserCodeService,
