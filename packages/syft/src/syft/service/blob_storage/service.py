@@ -99,8 +99,6 @@ class BlobStorageService(AbstractService):
         res = context.node.blob_storage_client.connect().client.list_objects(
             Bucket=bucket_name
         )
-        import pdb 
-        pdb.set_trace()
         objects = res["Contents"]
         file_sizes = [object["Size"] for object in objects]
         file_paths = [object["Key"] for object in objects]
