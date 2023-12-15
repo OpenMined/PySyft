@@ -28,6 +28,7 @@ from ...store.document_store import UIDPartitionKey
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
@@ -69,7 +70,7 @@ class JobV1(SyftObject):
 
 
 @serializable()
-class Job(SyftObject):
+class JobV2(SyftObject):
     __canonical_name__ = "JobItem"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -85,6 +86,27 @@ class Job(SyftObject):
     creation_time: Optional[str] = None
     action: Optional[Action] = None
     job_pid: Optional[int] = None
+
+
+@serializable()
+class Job(SyftObject):
+    __canonical_name__ = "JobItem"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    id: UID
+    node_uid: UID
+    result: Optional[Any]
+    resolved: bool = False
+    status: JobStatus = JobStatus.CREATED
+    log_id: Optional[UID]
+    parent_job_id: Optional[UID]
+    n_iters: Optional[int] = 0
+    current_iter: Optional[int] = None
+    creation_time: Optional[str] = None
+    action: Optional[Action] = None
+    job_pid: Optional[int] = None
+    job_consumer_id: Optional[str] = None
+    job_worker_id: Optional[str] = None
 
     __attr_searchable__ = ["parent_job_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
@@ -299,7 +321,8 @@ class Job(SyftObject):
             logs = logs
 
         return {
-            "status": f"{self.action_display_name}: {self.status}",
+            "status": f"{self.action_display_name}: {self.status}"
+            + (f"\n(@{self.job_worker_id})" if self.job_worker_id else ""),
             "progress": self.progress,
             "eta": self.eta_string,
             "created": f"{self.creation_time[:-7]} by {self.owner.email}",
@@ -356,6 +379,19 @@ class Job(SyftObject):
         if self.resolved:
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
+
+
+@migrate(Job, JobV2)
+def downgrade_job_v3_to_v2():
+    return [drop(["job_consumer_id", "job_worker_id"])]
+
+
+@migrate(JobV2, Job)
+def upgrade_job_v2_to_v3():
+    return [
+        make_set_default("job_consumer_id", None),
+        make_set_default("job_worker_id", None),
+    ]
 
 
 @migrate(Job, JobV1)
