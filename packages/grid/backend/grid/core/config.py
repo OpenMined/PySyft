@@ -142,6 +142,7 @@ class Settings(BaseSettings):
     N_CONSUMERS: int = int(os.getenv("N_CONSUMERS", 0))
     SQLITE_PATH: str = os.path.expandvars("$HOME/data/db/")
     SINGLE_CONTAINER_MODE: bool = str_to_bool(os.getenv("SINGLE_CONTAINER_MODE", False))
+    CONSUMER_SERVICE_NAME = str(os.getenv("CONSUMER_SERVICE_NAME", "default"))
 
     TEST_MODE: bool = (
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False

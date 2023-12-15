@@ -79,12 +79,14 @@ class QueueManager(BaseQueueManager):
     def create_consumer(
         self,
         message_handler: Type[AbstractMessageHandler],
+        service_name: str,
         address: Optional[str] = None,
     ) -> QueueConsumer:
         consumer = self._client.add_consumer(
             message_handler=message_handler,
             queue_name=message_handler.queue_name,
             address=address,
+            service_name=service_name,
         )
         return consumer
 

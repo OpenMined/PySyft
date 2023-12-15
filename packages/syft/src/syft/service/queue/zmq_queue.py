@@ -21,6 +21,7 @@ from zmq.error import ContextTerminated
 import zmq.green as zmq
 
 # relative
+from ...serde import serialize
 from ...serde.serializable import serializable
 from ...service.action.action_object import ActionObject
 from ...service.context import AuthedServiceContext
@@ -113,9 +114,12 @@ class WorkerQueue:
 class ZMQProducer(QueueProducer):
     INTERNAL_SERVICE_PREFIX = b"mmi."
 
-    def __init__(self, queue_stash, port: int, context: AuthedServiceContext) -> None:
+    def __init__(
+        self, queue_name: str, queue_stash, port: int, context: AuthedServiceContext
+    ) -> None:
         self.port = port
         self.queue_stash = queue_stash
+        self.queue_name = queue_name
         self.auth_context = context
         self.post_init()
         self._stop = False
@@ -223,8 +227,6 @@ class ZMQProducer(QueueProducer):
             items = self.queue_stash.get_all(
                 self.queue_stash.partition.root_verify_key
             ).ok()
-            # syft absolute
-            import syft as sy
 
             for item in items:
                 if item.status == Status.CREATED:
@@ -239,14 +241,15 @@ class ZMQProducer(QueueProducer):
                         for _, arg in action.kwargs.items():
                             self.preprocess_action_arg(arg)
 
-                    msg_bytes = sy.serialize(item, to_bytes=True)
-                    frames = [self.identity, b"", msg_bytes]
+                    msg_bytes = serialize(item, to_bytes=True)
+                    identity = hexlify(self.address)
+                    frames = [identity, f"{item.worker_pool_name}", b"", msg_bytes]
                     # adds to queue for main loop
                     self.message_queue = [frames] + self.message_queue
                     item.status = Status.PROCESSING
                     res = self.queue_stash.update(item.syft_client_verify_key, item)
                     if not res.is_ok():
-                        print("Failed to update queue item")
+                        print(f"Failed to update queue item: {item}")
 
     def run(self):
         self.thread = threading.Thread(target=self._run)
@@ -340,12 +343,15 @@ class ZMQProducer(QueueProducer):
             if len(self.message_queue) != 0:
                 if len(self.workers) > 0:
                     frames = self.message_queue.pop()
-                    queue_name = frames[0]
-                    message = frames[1:]
-                    service: Service = self.services.get(queue_name)
-                    worker: Worker = service.waiting.pop(0)
-                    # worker = self.waiting.pop()
-                    self.send_to_worker(worker, command=MDP.W_REQUEST, msg=message)
+                    _ = frames.pop(0)  # identity
+                    service_name = frames.pop(0)
+                    service: Service = self.services.get(service_name)
+                    worker: Worker = service.waiting.pop()
+                    if worker:
+                        self.send_to_worker(worker, command=MDP.W_REQUEST, msg=frames)
+                    else:
+                        # Re-queue things if worker is not available
+                        pass
 
             items = self.poll_workers.poll(HEARTBEAT_INTERVAL)
 
@@ -357,7 +363,7 @@ class ZMQProducer(QueueProducer):
                 header = msg.pop(0)
 
                 if header == MDP.W_WORKER:
-                    self.process_worker(address)
+                    self.process_worker(address, msg)
                 else:
                     print("E: Invalid message.")
 
@@ -366,7 +372,7 @@ class ZMQProducer(QueueProducer):
 
     def require_worker(self, address):
         """Finds the worker (creates if necessary)."""
-        identity = hexlify(address)
+        identity = str(UID())
         # Instead of getting a worker, we get a WorkerQueue
         # Otherwise if doesn't exist then add a WorkerQueue and a Worker to it
         # From the WorkerQueue get the next worker
@@ -425,10 +431,12 @@ class ZMQConsumer(QueueConsumer):
         message_handler: AbstractMessageHandler,
         address: str,
         queue_name: str,
+        service_name: str,
         verbose: bool = True,
     ) -> None:
         self.address = address
         self.message_handler = message_handler
+        self.service_name = service_name
         self.queue_name = queue_name
         self.post_init()
         self.id = UID()
@@ -450,7 +458,7 @@ class ZMQConsumer(QueueConsumer):
             print(f"I: <{self.id}> connecting to broker at {self.address}")
 
         # Register queue with the producer
-        self.send_to_producer(MDP.W_READY, self.queue_name, [])
+        self.send_to_producer(MDP.W_READY, self.service_name, [])
 
         # If liveness hits zero, queue is considered disconnected
         self.liveness = HEARTBEAT_LIVENESS
@@ -531,9 +539,7 @@ class ZMQConsumer(QueueConsumer):
                     if command == MDP.W_REQUEST:
                         # Call Message Handler
                         try:
-                            queue_name = msg.pop(0)
-                            if queue_name == self.queue_name:
-                                self.message_handler.handle_message(message=msg)
+                            self.message_handler.handle_message(message=msg)
                         except Exception as e:
                             print(
                                 f"ERROR HANDLING MESSAGE: {e}, {traceback.format_exc()}"
@@ -598,6 +604,7 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     # port issue causing tests to randomly fail
     create_producer: bool = False
     n_consumers: int = 0
+    consumer_service: str = "default"
 
 
 @migrate(ZMQClientConfig, ZMQClientConfigV1)
@@ -664,6 +671,7 @@ class ZMQClient(QueueClient):
         self,
         queue_name: str,
         message_handler: AbstractMessageHandler,
+        service_name: str,
         address: Optional[str] = None,
     ) -> ZMQConsumer:
         """Add a consumer to a queue
@@ -679,6 +687,7 @@ class ZMQClient(QueueClient):
             queue_name=queue_name,
             message_handler=message_handler,
             address=address,
+            service_name=service_name,
         )
         self.consumers[queue_name].append(consumer)
 

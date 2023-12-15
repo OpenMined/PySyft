@@ -27,6 +27,7 @@ def queue_config() -> ZMQQueueConfig:
             create_producer=settings.CREATE_PRODUCER,
             queue_port=settings.QUEUE_PORT,
             n_consumers=settings.N_CONSUMERS,
+            consumer_service=settings.CONSUMER_SERVICE_NAME,
         )
     )
     return queue_config

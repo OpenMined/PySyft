@@ -70,6 +70,7 @@ class QueueItem(SyftObject):
     job_id: Optional[UID]
     worker_settings: Optional[WorkerSettings]
     has_execute_permissions: bool = False
+    worker_pool_name: str
 
     def __repr__(self) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"

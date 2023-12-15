@@ -416,10 +416,11 @@ class Node(AbstractNode):
                     address = None
 
             for _ in range(queue_config_.client_config.n_consumers):
+                service_name = queue_config_.client_config.consumer_service
                 if address is None:
                     raise ValueError("address unknown for consumers")
                 consumer: QueueConsumer = self.queue_manager.create_consumer(
-                    message_handler, address=address
+                    message_handler, address=address, service_name=service_name
                 )
                 consumer.run()
 
@@ -436,6 +437,7 @@ class Node(AbstractNode):
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         n_consumers: int = 0,
+        consumer_service: str = "default",
         thread_workers: bool = False,
         create_producer: bool = False,
         queue_port: Optional[int] = None,
@@ -503,6 +505,7 @@ class Node(AbstractNode):
                     create_producer=create_producer,
                     queue_port=queue_port,
                     n_consumers=n_consumers,
+                    consumer_service=consumer_service,
                 ),
                 thread_workers=thread_workers,
             )
