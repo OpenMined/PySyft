@@ -617,6 +617,12 @@ class SyftClient:
         return None
 
     @property
+    def consumers(self) -> Optional[APIModule]:
+        if self.api.has_service('consumer'):
+            return self.api.services.consumer
+        return None
+
+    @property
     def users(self) -> Optional[APIModule]:
         if self.api.has_service("user"):
             return self.api.services.user
