@@ -62,6 +62,7 @@ from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
 from ..service.job.job_service import JobService
 from ..service.job.job_stash import Job
+from ..service.job.job_stash import JobStash
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadataV3
@@ -97,6 +98,7 @@ from ..service.user.user_stash import UserStash
 from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_service import WorkerService
+from ..service.worker.worker_stash import WorkerStash
 from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
