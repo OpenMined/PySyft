@@ -254,7 +254,7 @@ class APICallMessageHandler(AbstractMessageHandler):
                 credentials, worker_name
             ).ok()
             job_item.job_worker_id = str(docker_worker.container_id)
-        except Exception as e:
+        except Exception:
             job_item.job_worker_id = str(worker.id)
         job_item.job_consumer_id = str(consumer_id)
 

@@ -30,6 +30,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
+from ...types.syft_object import short_uid
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import UID
@@ -322,7 +323,16 @@ class Job(SyftObject):
 
         return {
             "status": f"{self.action_display_name}: {self.status}"
-            + (f"\n(@{self.job_worker_id})" if self.job_worker_id else ""),
+            + (
+                f"\nconsumer {short_uid(self.job_consumer_id)}"
+                if self.job_consumer_id
+                else ""
+            )
+            + (
+                f"\nworker {short_uid(self.job_worker_id)}"
+                if self.job_worker_id
+                else ""
+            ),
             "progress": self.progress,
             "eta": self.eta_string,
             "created": f"{self.creation_time[:-7]} by {self.owner.email}",
@@ -471,7 +481,11 @@ class JobStash(BaseStash):
 
     def get_active(self, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
         qks = QueryKeys(
-            qks=[PartitionKey(key="status", type_=JobStatus).with_obj(JobStatus.PROCESSING)]
+            qks=[
+                PartitionKey(key="status", type_=JobStatus).with_obj(
+                    JobStatus.PROCESSING
+                )
+            ]
         )
         return self.query_all(credentials=credentials, qks=qks)
 
