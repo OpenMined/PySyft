@@ -210,7 +210,7 @@ class APICallMessageHandler(AbstractMessageHandler):
     queue_name = "api_call"
 
     @staticmethod
-    def handle_message(message: bytes):
+    def handle_message(message: bytes, consumer_id: str):
         # relative
         from ...node.node import Node
 
