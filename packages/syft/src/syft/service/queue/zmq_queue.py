@@ -1,5 +1,4 @@
 # stdlib
-# stdlib
 from collections import OrderedDict
 from collections import defaultdict
 from random import randint
@@ -15,11 +14,13 @@ from typing import Optional
 from typing import Union
 
 # third party
+from zmq import Frame
 from zmq import LINGER
 from zmq.error import ContextTerminated
 import zmq.green as zmq
 
 # relative
+from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...service.action.action_object import ActionObject
 from ...service.context import AuthedServiceContext
@@ -317,9 +318,19 @@ class ZMQConsumer(QueueConsumer):
         self.address = address
         self.message_handler = message_handler
         self.queue_name = queue_name
+        self.job_id = None
+        self.is_reconnecting = False
         self.post_init()
         self.id = UID()
         self._stop = False
+
+    def _coll_repr_(self):
+        return {
+            "id": self.id,
+            "status": self.status,
+            "queue": self.queue_name,
+            "connection_address": self.address,
+        }
 
     def create_socket(self):
         self.worker = self.ctx.socket(zmq.DEALER)  # DEALER
@@ -351,6 +362,10 @@ class ZMQConsumer(QueueConsumer):
             self.worker.close()
             self.ctx.destroy()
 
+    def get_job_id(self, message: Frame):
+        action_queue_item: ActionQueueItem = _deserialize(message, from_bytes=True)
+        return action_queue_item.job_id
+
     def _run(self):
         liveness = HEARTBEAT_LIVENESS
         interval = INTERVAL_INIT
@@ -371,6 +386,9 @@ class ZMQConsumer(QueueConsumer):
                         print(e, traceback.format_exc())
                         continue
                 if socks.get(self.worker) == zmq.POLLIN:
+                    if self.is_reconnecting:
+                        self.is_reconnecting = False
+
                     with lock:
                         frames = self.worker.recv_multipart()
                     if not frames or len(frames) not in [1, 3]:
@@ -384,12 +402,17 @@ class ZMQConsumer(QueueConsumer):
                         liveness = HEARTBEAT_LIVENESS
                         message = frames[2]
                         try:
-                            self.message_handler.handle_message(message=message)
+                            self.job_id = self.get_job_id(message)
+                            self.message_handler.handle_message(
+                                message=message, consumer_id=self.id
+                            )
                         except Exception as e:
                             # stdlib
                             print(
                                 f"ERROR HANDLING MESSAGE {e}, {traceback.format_exc()}"
                             )
+                        finally:
+                            self.job_id = None
                     # process heartbeat
                     elif len(frames) == 1 and frames[0] == PPP_HEARTBEAT:
                         liveness = HEARTBEAT_LIVENESS
@@ -410,6 +433,7 @@ class ZMQConsumer(QueueConsumer):
                         self.worker.setsockopt(zmq.LINGER, 1)
                         self.worker.close()
                         self.create_socket()
+                        self.is_reconnecting = True
                         liveness = HEARTBEAT_LIVENESS
                 # send heartbeat
                 if time.time() > heartbeat_at:
@@ -427,6 +451,14 @@ class ZMQConsumer(QueueConsumer):
         self.thread.start()
         # self.thread = gevent.spawn(self._run)
         # self.thread.start()
+
+    @property
+    def status(self) -> str:
+        if self.is_reconnecting:
+            return "RECONNECTING"
+        if self.job_id:
+            return f"PROCESSING {self.job_id}"
+        return "IDLE"
 
     @property
     def alive(self):
