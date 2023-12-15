@@ -875,7 +875,7 @@
       "SyftWorkerImage": {
         "1": {
           "version": 1,
-          "hash": "79a166e1b2b6d176699ab44be58efafd07a8851c2a9315c328dc9cd18b188748",
+          "hash": "d8d92b5e31f3dce7fa3be49fcbf255a85c0764a0917abceac2c41459c46dc1c0",
           "action": "add"
         }
       },

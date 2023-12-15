@@ -127,29 +127,9 @@ class SyftWorkerImage(SyftObject):
     image_hash: Optional[str]
     created_at: DateTime = DateTime.now()
     created_by: SyftVerifyKey
-    dockerfile_name: Optional[str]
+    source_file: Optional[str]
 
-    __repr_attrs__ = ["dockerfile_name", "image_tag", "image_hash", "created_at"]
-
-    def _repr_html_(self) -> str:
-        if self.image_tag is None:
-            tag_str = "None"
-        else:
-            tag_str = f"url: {self.image_tag.registry}, repo: {self.image_tag.repo}, tag: {self.image_tag.tag}"
-
-        return f"""
-            <style>
-            .syft-worker-image {{color: {SURFACE[options.color_theme]};}}
-            </style>
-            <div class='syft-worker-image' style='line-height:25%'>
-                <h3>SyftWorkerImage</h3>
-                <p><strong>ID: </strong>{self.id}</p>
-                <p><strong>Name: </strong>{self.config.file_name}</p>
-                <p><strong>Tag: </strong>{tag_str}</p>
-                <p><strong>Hash: </strong>{self.image_hash}</p>
-                <p><strong>Created Date: </strong>{str(self.created_at)}</p>
-            </div>
-            """
+    __repr_attrs__ = ["image_tag", "image_hash", "created_at"]
 
 
 def build_using_docker(worker_image: SyftWorkerImage, push: bool = True):
