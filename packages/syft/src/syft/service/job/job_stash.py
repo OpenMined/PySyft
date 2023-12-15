@@ -108,7 +108,7 @@ class Job(SyftObject):
     job_consumer_id: Optional[str] = None
     job_worker_id: Optional[str] = None
 
-    __attr_searchable__ = ["parent_job_id"]
+    __attr_searchable__ = ["parent_job_id", "job_worker_id", "status"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
 
     @pydantic.root_validator()
@@ -468,3 +468,15 @@ class JobStash(BaseStash):
         if result.is_ok():
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
         return result
+
+    def get_active(self, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
+        qks = QueryKeys(
+            qks=[PartitionKey(key="status", type_=JobStatus).with_obj(JobStatus.PROCESSING)]
+        )
+        return self.query_all(credentials=credentials, qks=qks)
+
+    def get_by_worker(self, credentials: SyftVerifyKey, worker_id: str):
+        qks = QueryKeys(
+            qks=[PartitionKey(key="job_worker_id", type_=str).with_obj(worker_id)]
+        )
+        return self.query_all(credentials=credentials, qks=qks)

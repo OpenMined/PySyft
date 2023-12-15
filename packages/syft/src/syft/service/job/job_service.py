@@ -149,3 +149,10 @@ class JobService(AbstractService):
             return SyftError(message=res.err())
         else:
             return res.ok()
+
+    @service_method(path="job.get_active", name="get_active", roles=DATA_SCIENTIST_ROLE_LEVEL)
+    def get_active(self, context: AuthedServiceContext) -> Result[List[Job], SyftError]:
+        res = self.stash.get_active(context.credentials)
+        if res.is_err():
+            return SyftError(message=res.err())
+        return res.ok()
