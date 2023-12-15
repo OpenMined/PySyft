@@ -185,7 +185,9 @@ class WorkerService(AbstractService):
             global WORKER_NUM
             WORKER_NUM += 1
             res = start_worker_container(WORKER_NUM, context)
-            obj = DockerWorker(container_id=res.id, created_at=DateTime.now())
+            obj = DockerWorker(
+                container_name=res.name, container_id=res.id, created_at=DateTime.now()
+            )
             result = self.stash.set(context.credentials, obj)
             if result.is_err():
                 return SyftError(message=f"Failed to start worker. {result.err()}")
