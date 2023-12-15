@@ -120,6 +120,7 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
     queue_config = worker_settings.queue_config
     queue_config.client_config.create_producer = False
     queue_config.client_config.n_consumers = 0
+
     # relative
     from ...node.node import Node
 
@@ -140,13 +141,12 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
     # Set monitor thread for this job.
     monitor_thread = MonitorThread(queue_item, worker, credentials)
     monitor_thread.start()
-    status = Status.COMPLETED
-    job_status = JobStatus.COMPLETED
 
     try:
         call_method = getattr(worker.get_service(queue_item.service), queue_item.method)
 
         role = worker.get_role_for_credentials(credentials=credentials)
+
         context = AuthedServiceContext(
             node=worker,
             credentials=credentials,
@@ -167,6 +167,8 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
         result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
 
         if isinstance(result, Ok):
+            status = Status.COMPLETED
+            job_status = JobStatus.COMPLETED
             result = result.ok()
         elif isinstance(result, SyftError) or isinstance(result, Err):
             status = Status.ERRORED
@@ -198,6 +200,7 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
 
     worker.queue_stash.set_result(credentials, queue_item)
     worker.job_stash.set_result(credentials, job_item)
+
     # Finish monitor thread
     monitor_thread.stop()
 
