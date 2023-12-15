@@ -107,7 +107,7 @@ class BlobStorageService(AbstractService):
                 path=file_path, 
                 azure_profile_name=remote_name,
                 bucket_name=bucket_name,
-            ) for file_path in file_paths for file_path in file_paths
+            ) for file_path in file_paths
         ]
 
         for sfp, file_size in zip(secure_file_paths, file_sizes):
