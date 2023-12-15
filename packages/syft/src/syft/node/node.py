@@ -94,6 +94,8 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
+from ..service.worker.worker_image_service import SyftWorkerImageService
+from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_service import WorkerService
 from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
@@ -302,6 +304,8 @@ class Node(AbstractNode):
                 MetadataService,
                 BlobStorageService,
                 MigrateStateService,
+                SyftWorkerImageService,
+                SyftWorkerPoolService,
             ]
             if services is None
             else services
@@ -376,6 +380,19 @@ class Node(AbstractNode):
         self.blob_store_config = config_
         self.blob_storage_client = config_.client_type(config=config_.client_config)
 
+        # relative
+        from ..store.blob_storage.seaweedfs import SeaweedFSConfig
+
+        if isinstance(config, SeaweedFSConfig):
+            blob_storage_service = self.get_service(BlobStorageService)
+            remote_profiles = blob_storage_service.remote_profile_stash.get_all(
+                credentials=self.signing_key.verify_key, has_permission=True
+            ).ok()
+            for remote_profile in remote_profiles:
+                self.blob_store_config.client_config.remote_profiles[
+                    remote_profile.profile_name
+                ] = remote_profile
+
     def stop(self):
         for consumer_list in self.queue_manager.consumers.values():
             for c in consumer_list:
@@ -432,6 +449,7 @@ class Node(AbstractNode):
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         n_consumers: int = 0,
+        thread_workers: bool = False,
         create_producer: bool = False,
         queue_port: Optional[int] = None,
         dev_mode: bool = False,
@@ -498,11 +516,11 @@ class Node(AbstractNode):
                     create_producer=create_producer,
                     queue_port=queue_port,
                     n_consumers=n_consumers,
-                )
+                ),
+                thread_workers=thread_workers,
             )
         else:
             queue_config = None
-
         return cls(
             name=name,
             id=uid,
@@ -795,6 +813,8 @@ class Node(AbstractNode):
                 MetadataService,
                 BlobStorageService,
                 MigrateStateService,
+                SyftWorkerImageService,
+                SyftWorkerPoolService,
             ]
 
             if OBLV:

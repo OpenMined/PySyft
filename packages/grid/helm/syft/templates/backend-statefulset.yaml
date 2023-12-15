@@ -1,8 +1,6 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  annotations:
-    helm.sh/chart: component-chart-0.9.1
   labels:
     app.kubernetes.io/component: backend
     app.kubernetes.io/managed-by: Helm
@@ -19,8 +17,6 @@ spec:
   serviceName: backend-headless
   template:
     metadata:
-      annotations:
-        helm.sh/chart: component-chart-0.9.1
       labels:
         app.kubernetes.io/component: backend
         app.kubernetes.io/managed-by: Helm
@@ -36,15 +32,18 @@ spec:
         - name: MONGO_HOST
           value: {{ .Values.db.mongo.settings.mongoHost }}
         - name: MONGO_USERNAME
-          value: {{ .Values.secrets.db.mongo.mongoUsername }}
+          value: {{ .Values.db.mongo.settings.mongoUsername }}
         - name: MONGO_PASSWORD
-          value: {{ .Values.secrets.db.mongo.mongoPassword }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.db.mongo.mongosecret }}
+              key: mongo-password-secret
         - name: SERVICE_NAME
           value: backend
         - name: RELEASE
           value: production
         - name: VERSION
-          value: 0.8.3-beta.3
+          value: {{ .Values.container.syft_version }}
         - name: VERSION_HASH
           value: {{ .Values.node.settings.versionHash }}
         - name: NODE_TYPE
@@ -54,7 +53,10 @@ spec:
         - name: NODE_SIDE_TYPE
           value: {{ .Values.node.settings.nodeSideType }}
         - name: STACK_API_KEY
-          value: {{ .Values.secrets.syft.stackApiKey }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.syft.syftsecret }}
+              key: stackApiKey
         - name: PORT
           value: '80'
         - name: IGNORE_TLS_ERRORS
@@ -78,11 +80,25 @@ spec:
         - name: ENABLE_OBLV
           value: 'false'
         - name: DEFAULT_ROOT_EMAIL
-          value: {{ .Values.secrets.syft.defaultRootEmail }}
+          value: {{ .Values.node.settings.defaultRootEmail }}
         - name: DEFAULT_ROOT_PASSWORD
-          value: {{ .Values.secrets.syft.defaultRootPassword }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.syft.syftsecret }}
+              key: defaultRootPassword
+        - name: S3_ROOT_USER
+          value: "{{ .Values.seaweedfs.S3_ROOT_USER }}"
+        - name: S3_ROOT_PWD
+          valueFrom:
+            secretKeyRef:
+                name: {{ .Values.secrets.seaweedfs.seaweedfsecret }}
+                key: S3_ROOT_PWD_SECRET
+        - name: S3_PORT
+          value: "{{ .Values.seaweedfs.S3_PORT }}"
+        - name: SEAWEED_MOUNT_PORT
+          value: "{{ .Values.seaweedfs.SEAWEED_MOUNT_PORT }}"
         envFrom: null
-        image: docker.io/openmined/grid-backend:0.8.3-beta.3
+        image: {{ .Values.container.registry }}/openmined/grid-backend:{{ .Values.container.syft_version }}
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -111,8 +127,6 @@ spec:
       volumes: null
   volumeClaimTemplates:
   - metadata:
-      annotations:
-        helm.sh/chart: component-chart-0.9.1
       labels:
         app.kubernetes.io/component: backend
         app.kubernetes.io/managed-by: Helm

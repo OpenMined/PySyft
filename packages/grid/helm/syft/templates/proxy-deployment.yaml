@@ -1,8 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    helm.sh/chart: component-chart-0.9.1
   labels:
     app.kubernetes.io/component: proxy
     app.kubernetes.io/managed-by: Helm
@@ -19,8 +17,6 @@ spec:
     type: Recreate
   template:
     metadata:
-      annotations:
-        helm.sh/chart: component-chart-0.9.1
       labels:
         app.kubernetes.io/component: proxy
         app.kubernetes.io/managed-by: Helm

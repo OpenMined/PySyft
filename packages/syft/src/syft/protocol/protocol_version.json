@@ -833,7 +833,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "c78a998aa1c6d9700c775ca65a4efc9c6ae2d2ffdf677219f7b004e635b2be42",
+          "hash": "8059ee03016c4d74e408dad9529e877f91829672e0cc42d8cfff9c8e14058adc",
           "action": "add"
         }
       },
@@ -957,6 +957,31 @@
           "action": "add"
         }
       },
+      "SyftWorker": {
+        "1": {
+          "version": 1,
+          "hash": "dfb3aba52b0223c16251148503e24606c73b1f3f2dfe5fbfac477899adf27420",
+          "action": "add"
+        }
+      },
+      "WorkerPool": {
+        "1": {
+          "version": 1,
+          "hash": "f498e61ec6d2ec916b7e1f25a67dc468f17c59239e77194cebf8b512993cb555",
+          "action": "add"
+        }
+      }
+    }
+  },
+  "dev": {
+    "object_versions": {
+      "SyftWorkerImage": {
+        "1": {
+          "version": 1,
+          "hash": "fd1067b0bb9a6e630a224162ed92f4746d4d5869bc104923ec48c4b9d597594c",
+          "action": "add"
+        }
+      },
       "SeaweedSecureFilePathLocation": {
         "2": {
           "version": 2,
@@ -982,6 +1007,18 @@
         "1": {
           "version": 1,
           "hash": "c05c6caa27db4e385c642536d4b0ecabc0c71e91220d2e6ce21a2761ca68a673",
+          "action": "add"
+        }
+      },
+      "BlobRetrievalByURL": {
+        "2": {
+          "version": 2,
+          "hash": "8059ee03016c4d74e408dad9529e877f91829672e0cc42d8cfff9c8e14058adc",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "0b664100ea08413ca4ef04665ca910c2cf9535539617ea4ba33687d05cdfe747",
           "action": "add"
         }
       }

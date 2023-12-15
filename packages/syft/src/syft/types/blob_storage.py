@@ -165,13 +165,15 @@ class SecureFilePathLocation(SyftObject):
 
     def generate_url(self, *args):
         raise NotImplementedError
-    
+
+
 @serializable()
 class SeaweedSecureFilePathLocationV1(SecureFilePathLocation):
     __canonical_name__ = "SeaweedSecureFilePathLocation"
     __version__ = SYFT_OBJECT_VERSION_1
 
     upload_id: str
+
 
 @serializable()
 class SeaweedSecureFilePathLocation(SecureFilePathLocation):
@@ -196,12 +198,12 @@ class SeaweedSecureFilePathLocation(SecureFilePathLocation):
             )
         except BotoClientError as e:
             raise SyftException(e)
-        
+
+
 @migrate(SeaweedSecureFilePathLocationV1, SeaweedSecureFilePathLocation)
 def upgrade_seaweedsecurefilepathlocation_v1_to_v2():
-    return [
-        make_set_default("bucket_name", "")
-    ]
+    return [make_set_default("bucket_name", "")]
+
 
 @migrate(SeaweedSecureFilePathLocation, SeaweedSecureFilePathLocationV1)
 def downgrade_seaweedsecurefilepathlocation_v2_to_v1():

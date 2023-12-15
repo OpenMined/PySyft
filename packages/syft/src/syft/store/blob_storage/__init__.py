@@ -66,6 +66,7 @@ from ...types.grid_url import GridURL
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
@@ -210,11 +211,17 @@ def generate(blob_url, chunk_size):
             else:
                 print(f"Max retries reached. Failed with error: {e}")
                 raise
+class BlobRetrievalByURLV2(BlobRetrievalV1):
+    __canonical_name__ = "BlobRetrievalByURL"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    url: GridURL
+
 
 @serializable()
 class BlobRetrievalByURL(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     url: Union[GridURL, str]
 
