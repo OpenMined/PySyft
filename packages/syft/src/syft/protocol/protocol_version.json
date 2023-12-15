@@ -981,6 +981,20 @@
           "hash": "fd1067b0bb9a6e630a224162ed92f4746d4d5869bc104923ec48c4b9d597594c",
           "action": "add"
         }
+      },
+      "ContainerImage": {
+        "2": {
+          "version": 2,
+          "hash": "0b3fe432b58142897a95e8d783992cb36cc6556b05d54b4e6f52b1a40461ae21",
+          "action": "add"
+        }
+      },
+      "JobItem": {
+        "3": {
+          "version": 3,
+          "hash": "e28c4101c75d48dc10529382f0661a792371ad8342290ef8becb58f0b2b2812a",
+          "action": "add"
+        }
       }
     }
   }
