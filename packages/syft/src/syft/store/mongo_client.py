@@ -139,6 +139,7 @@ class MongoClient:
     client: PyMongoClient = None
 
     def __init__(self, config: MongoStoreClientConfig, cache: bool = True) -> None:
+        self.config=config
         if config.client is not None:
             self.client = config.client
         elif cache:
@@ -236,3 +237,4 @@ class MongoClient:
 
     def close(self):
         self.client.close()
+        MongoClientCache.__client_cache__.pop(hash(str(self.config)), None)
