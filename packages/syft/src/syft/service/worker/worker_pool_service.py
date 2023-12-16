@@ -1,4 +1,6 @@
 # stdlib
+import contextlib
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -146,28 +148,14 @@ class SyftWorkerPoolService(AbstractService):
         worker_pool, worker = worker_pool_worker
 
         # delete the worker using docker client sdk
-        docker_container = _get_worker_container(worker)
-        if isinstance(docker_container, SyftError):
-            return docker_container
+        with contextlib.closing(docker.from_env()) as client:
+            docker_container = _get_worker_container(client, worker)
+            if isinstance(docker_container, SyftError):
+                return docker_container
 
-        try:
-            # stop the container
-            docker_container.stop()
-            # Remove the container and its volumes
-            docker_container.remove(force=force, v=True)
-        except docker.errors.APIError as e:
-            if "removal of container" in str(e) and "is already in progress" in str(e):
-                # If the container is already being removed, ignore the error
-                pass
-            else:
-                # If it's a different error, return it
-                return SyftError(
-                    message=f"Failed to delete worker with id: {worker_id}. Error: {e}"
-                )
-        except Exception as e:
-            return SyftError(
-                message=f"Failed to delete worker with id: {worker_id}. Error: {e}"
-            )
+            stopped = _stop_worker_container(worker, docker_container, force)
+            if stopped is not None:
+                return stopped
 
         # remove the worker from the pool
         worker_pool.workers.remove(worker)
@@ -195,10 +183,21 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_pool, worker = worker_pool_worker
 
-        worker_status = _get_worker_container_status(worker)
+        with contextlib.closing(docker.from_env()) as client:
+            container = _get_worker_container(client, worker)
+            if isinstance(container, SyftError):
+                return container
+
+            container_status = container.status
+
+        worker_status = _CONTAINER_STATUS_TO_WORKER_STATUS.get(container_status)
+        if worker_status is None:
+            return SyftError(message=f"Unknown container status: {container_status}")
+
         if isinstance(worker_status, SyftError):
             return worker_status
-        elif worker_status != WorkerStatus.PENDING:
+
+        if worker_status != WorkerStatus.PENDING:
             worker.status = worker_status
 
             result = self.stash.update(
@@ -247,16 +246,17 @@ class SyftWorkerPoolService(AbstractService):
 
         _, worker = worker_pool_worker
 
-        docker_container = _get_worker_container(worker)
-        if isinstance(docker_container, SyftError):
-            return docker_container
+        with contextlib.closing(docker.from_env()) as client:
+            docker_container = _get_worker_container(client, worker)
+            if isinstance(docker_container, SyftError):
+                return docker_container
 
-        try:
-            logs = cast(bytes, docker_container.logs())
-        except docker.errors.APIError as e:
-            return SyftError(
-                f"Failed to get worker {worker.id} container logs. Error {e}"
-            )
+            try:
+                logs = cast(bytes, docker_container.logs())
+            except docker.errors.APIError as e:
+                return SyftError(
+                    f"Failed to get worker {worker.id} container logs. Error {e}"
+                )
 
         return logs if raw else logs.decode(errors="ignore")
 
@@ -310,11 +310,11 @@ def _get_worker(
 
 
 def _get_worker_container(
-    worker: SyftWorker, docker_client: Optional[docker.DockerClient] = None
+    client: docker.DockerClient,
+    worker: SyftWorker,
 ) -> Union[Container, SyftError]:
-    docker_client = docker_client if docker_client is not None else docker.from_env()
     try:
-        return cast(Container, docker_client.containers.get(worker.container_id))
+        return cast(Container, client.containers.get(worker.container_id))
     except docker.errors.NotFound as e:
         return SyftError(f"Worker {worker.id} container not found. Error {e}")
     except docker.errors.APIError as e:
@@ -324,24 +324,39 @@ def _get_worker_container(
         )
 
 
-def _get_worker_container_status(
-    worker: SyftWorker, docker_client: Optional[docker.DockerClient] = None
-) -> Union[WorkerStatus, SyftError]:
-    container = _get_worker_container(worker, docker_client)
-    if isinstance(container, SyftError):
-        return container
+_CONTAINER_STATUS_TO_WORKER_STATUS: Dict[str, WorkerStatus] = dict(
+    [
+        ("running", WorkerStatus.RUNNING),
+        *(
+            (status, WorkerStatus.STOPPED)
+            for status in ["paused", "removing", "exited", "dead"]
+        ),
+        ("restarting", WorkerStatus.RESTARTED),
+        ("created", WorkerStatus.PENDING),
+    ]
+)
 
-    container_status = container.status
-    syft_container_status = None
-    if container_status == "running":
-        syft_container_status = WorkerStatus.RUNNING
-    elif container_status in ["paused", "removing", "exited", "dead"]:
-        syft_container_status = WorkerStatus.STOPPED
-    elif container_status == "restarting":
-        syft_container_status = WorkerStatus.RESTARTED
-    elif container_status == "created":
-        syft_container_status = WorkerStatus.PENDING
-    else:
-        return SyftError(message=f"Unknown container status: {container_status}")
 
-    return syft_container_status
+def _stop_worker_container(
+    worker: SyftWorker,
+    container: Container,
+    force: bool,
+) -> Optional[SyftError]:
+    try:
+        # stop the container
+        container.stop()
+        # Remove the container and its volumes
+        container.remove(force=force, v=True)
+    except docker.errors.APIError as e:
+        if "removal of container" in str(e) and "is already in progress" in str(e):
+            # If the container is already being removed, ignore the error
+            return
+        else:
+            # If it's a different error, return it
+            return SyftError(
+                message=f"Failed to delete worker with id: {worker.id}. Error: {e}"
+            )
+    except Exception as e:
+        return SyftError(
+            message=f"Failed to delete worker with id: {worker.id}. Error: {e}"
+        )
