@@ -1,4 +1,5 @@
 # stdlib
+import contextlib
 import socket
 from typing import List
 from typing import Union
@@ -260,19 +261,19 @@ class WorkerService(AbstractService):
         if isinstance(workers, SyftWorker):
             workers = [workers]
 
-        client = docker.from_env()
-        for w in workers:
-            result = self.stash.delete_by_uid(context.credentials, uid=w.id)
+        with contextlib.closing(docker.from_env()) as client:
+            for w in workers:
+                result = self.stash.delete_by_uid(context.credentials, uid=w.id)
 
-            if result.is_err():
-                return SyftError(message=f"Failed to stop workers {result.err()}")
+                if result.is_err():
+                    return SyftError(message=f"Failed to stop workers {result.err()}")
 
-            # stop container
-            try:
-                client.containers.list(filters={"id": w.container_id})[0].stop()
-                # also prune here?
-            except Exception as e:
-                # we dont throw an error here because apparently the container was already killed
-                print(f"Failed to kill container {e}")
+                # stop container
+                try:
+                    client.containers.list(filters={"id": w.container_id})[0].stop()
+                    # also prune here?
+                except Exception as e:
+                    # we dont throw an error here because apparently the container was already killed
+                    print(f"Failed to kill container {e}")
 
         return SyftSuccess(message=f"{len(workers)} workers stopped")

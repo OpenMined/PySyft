@@ -1,4 +1,5 @@
 # stdlib
+import contextlib
 from typing import List
 from typing import Optional
 from typing import Union
@@ -81,7 +82,12 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"Failed to create tag: {e}")
 
         worker_image.image_tag = image_tag
-        worker_image, result = build_using_docker(worker_image=worker_image, push=push)
+        with contextlib.closing(docker.from_env()) as client:
+            worker_image, result = build_using_docker(
+                client=client,
+                worker_image=worker_image,
+                push=push,
+            )
 
         if isinstance(result, SyftError):
             return result
@@ -130,8 +136,8 @@ class SyftWorkerImageService(AbstractService):
         if image and image.image_tag:
             try:
                 full_tag: str = image.image_tag.full_tag
-                client = docker.from_env()
-                client.images.remove(image=full_tag)
+                with contextlib.closing(docker.from_env()) as client:
+                    client.images.remove(image=full_tag)
             except docker.errors.ImageNotFound:
                 return SyftError(message=f"Image {full_tag} not found.")
             except Exception as e:
