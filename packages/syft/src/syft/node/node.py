@@ -380,6 +380,19 @@ class Node(AbstractNode):
         self.blob_store_config = config_
         self.blob_storage_client = config_.client_type(config=config_.client_config)
 
+        # relative
+        from ..store.blob_storage.seaweedfs import SeaweedFSConfig
+
+        if isinstance(config, SeaweedFSConfig):
+            blob_storage_service = self.get_service(BlobStorageService)
+            remote_profiles = blob_storage_service.remote_profile_stash.get_all(
+                credentials=self.signing_key.verify_key, has_permission=True
+            ).ok()
+            for remote_profile in remote_profiles:
+                self.blob_store_config.client_config.remote_profiles[
+                    remote_profile.profile_name
+                ] = remote_profile
+
     def stop(self):
         for consumer_list in self.queue_manager.consumers.values():
             for c in consumer_list:
@@ -726,6 +739,13 @@ class Node(AbstractNode):
         document_store = document_store_config.store_type
         self.document_store_config = document_store_config
 
+        # We add the python id of the current node in order
+        # to create one connection per Node object in MongoClientCache
+        # so that we avoid closing the connection from a
+        # different thread through the garbage collection
+        if isinstance(self.document_store_config, MongoStoreConfig):
+            self.document_store_config.client_config.node_obj_python_id = id(self)
+
         self.document_store = document_store(
             root_verify_key=self.verify_key,
             store_config=document_store_config,
@@ -749,6 +769,12 @@ class Node(AbstractNode):
                 root_verify_key=self.verify_key,
             )
         elif isinstance(action_store_config, MongoStoreConfig):
+            # We add the python id of the current node in order
+            # to create one connection per Node object in MongoClientCache
+            # so that we avoid closing the connection from a
+            # different thread through the garbage collection
+            action_store_config.client_config.node_obj_python_id = id(self)
+
             self.action_store = MongoActionStore(
                 root_verify_key=self.verify_key, store_config=action_store_config
             )
