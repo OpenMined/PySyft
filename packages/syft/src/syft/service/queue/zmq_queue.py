@@ -242,10 +242,18 @@ class ZMQProducer(QueueProducer):
                             self.preprocess_action_arg(arg)
 
                     msg_bytes = serialize(item, to_bytes=True)
-                    identity = hexlify(self.address)
-                    frames = [identity, f"{item.worker_pool_name}", b"", msg_bytes]
-                    # adds to queue for main loop
-                    self.message_queue = [frames] + self.message_queue
+
+                    service_name = item.worker_pool_name
+                    service: Service = self.services.get(service_name)
+
+                    # Skip adding message if corresponding service/pool
+                    # is not registered.
+                    if service is None:
+                        continue
+
+                    # append request message to the corresponding service
+                    # This list is processed in dispatch method.
+                    service.requests.append(msg_bytes)
                     item.status = Status.PROCESSING
                     res = self.queue_stash.update(item.syft_client_verify_key, item)
                     if not res.is_ok():
@@ -303,6 +311,7 @@ class ZMQProducer(QueueProducer):
             service.requests.append(msg)
         self.purge_workers()
         while service.waiting and service.requests:
+            # One worker consuming only one message at a time.
             msg = service.requests.pop(0)
             worker = service.waiting.pop(0)
             self.waiting.remove(worker)
@@ -339,19 +348,6 @@ class ZMQProducer(QueueProducer):
         while True:
             if self._stop:
                 return
-
-            if len(self.message_queue) != 0:
-                if len(self.workers) > 0:
-                    frames = self.message_queue.pop()
-                    _ = frames.pop(0)  # identity
-                    service_name = frames.pop(0)
-                    service: Service = self.services.get(service_name)
-                    worker: Worker = service.waiting.pop()
-                    if worker:
-                        self.send_to_worker(worker, command=MDP.W_REQUEST, msg=frames)
-                    else:
-                        # Re-queue things if worker is not available
-                        pass
 
             items = self.poll_workers.poll(HEARTBEAT_INTERVAL)
 
@@ -506,7 +502,8 @@ class ZMQConsumer(QueueConsumer):
         msg = [b"", MDP.W_WORKER, command] + msg
         if self.verbose:
             print("I: sending %s to broker", command)
-        self.worker.send_multipart(msg)
+        with lock:
+            self.worker.send_multipart(msg)
 
     def _run(self):
         """Send reply, if any, to producer and wait for next request."""
@@ -571,6 +568,7 @@ class ZMQConsumer(QueueConsumer):
                 if time.time() > self.heartbeat_at:
                     self.send_to_producer(MDP.W_HEARTBEAT)
                     self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
+
         except zmq.ZMQError as e:
             if e.errno == zmq.ETERM:
                 print("Consumer connection Terminated")
