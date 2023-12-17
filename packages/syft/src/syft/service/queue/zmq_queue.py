@@ -1,7 +1,6 @@
 # stdlib
 # stdlib
 from binascii import hexlify
-from collections import OrderedDict
 from collections import defaultdict
 import socketserver
 import threading
@@ -54,7 +53,7 @@ PPP_READY = b"\x01"  # Signals worker is ready
 PPP_HEARTBEAT = b"\x02"  # Signals worker heartbeat
 
 
-class MDP:
+class QueueMsgProtocol:
     W_WORKER = b"MDPW01"
     W_READY = b"0x01"
     W_REQUEST = b"0x02"
@@ -81,33 +80,6 @@ class Service:
         self.name = name
         self.requests = []
         self.waiting = []  # List of waiting workers
-
-
-class WorkerQueue:
-    def __init__(self):
-        self.queue = OrderedDict()
-
-    def ready(self, worker):
-        self.queue.pop(worker.address, None)
-        self.queue[worker.address] = worker
-
-    def purge(self):
-        """Look for & kill expired workers."""
-        t = time.time()
-        expired = []
-        for address, worker in self.queue.items():
-            if t > worker.expiry:  # Worker expired
-                expired.append(address)
-        for address in expired:
-            print("Idle worker expired: %s" % address)
-            self.queue.pop(address, None)
-
-    def next(self):
-        address, worker = self.queue.popitem(False)
-        return address
-
-    def is_empty(self):
-        return len(self.queue) == 0
 
 
 @serializable()
@@ -280,7 +252,7 @@ class ZMQProducer(QueueProducer):
         """Send heartbeats to idle workers if it's time"""
         if time.time() > self.heartbeat_at:
             for worker in self.waiting:
-                self.send_to_worker(worker, MDP.W_HEARTBEAT, None, None)
+                self.send_to_worker(worker, QueueMsgProtocol.W_HEARTBEAT, None, None)
             self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
 
     def purge_workers(self):
@@ -315,12 +287,12 @@ class ZMQProducer(QueueProducer):
             msg = service.requests.pop(0)
             worker = service.waiting.pop(0)
             self.waiting.remove(worker)
-            self.send_to_worker(worker, MDP.W_REQUEST, None, msg)
+            self.send_to_worker(worker, QueueMsgProtocol.W_REQUEST, None, msg)
 
     def send_to_worker(
         self,
         worker: Worker,
-        command: MDP,
+        command: QueueMsgProtocol,
         option: bytes,
         msg: Optional[Union[bytes, list]] = None,
     ):
@@ -338,7 +310,7 @@ class ZMQProducer(QueueProducer):
         # and routing envelope
         if option is not None:
             msg = [option] + msg
-        msg = [worker.address, b"", MDP.W_WORKER, command] + msg
+        msg = [worker.address, b"", QueueMsgProtocol.W_WORKER, command] + msg
 
         print("I: sending %r to worker", command)
         with lock:
@@ -358,7 +330,7 @@ class ZMQProducer(QueueProducer):
                 empty = msg.pop(0)  # noqa: F841
                 header = msg.pop(0)
 
-                if header == MDP.W_WORKER:
+                if header == QueueMsgProtocol.W_WORKER:
                     self.process_worker(address, msg)
                 else:
                     print("E: Invalid message.")
@@ -369,9 +341,6 @@ class ZMQProducer(QueueProducer):
     def require_worker(self, address):
         """Finds the worker (creates if necessary)."""
         identity = str(UID())
-        # Instead of getting a worker, we get a WorkerQueue
-        # Otherwise if doesn't exist then add a WorkerQueue and a Worker to it
-        # From the WorkerQueue get the next worker
         worker = self.workers.get(identity)
         if worker is None:
             worker = Worker(identity, address, HEARTBEAT_TIMEOUT)
@@ -386,7 +355,7 @@ class ZMQProducer(QueueProducer):
 
         worker = self.require_worker(address)
 
-        if MDP.W_READY == command:
+        if QueueMsgProtocol.W_READY == command:
             service_name = msg.pop(0)
             if worker_ready:
                 self.delete_worker(worker, True)
@@ -400,12 +369,12 @@ class ZMQProducer(QueueProducer):
                 worker.service = service
                 self.worker_waiting(worker)
 
-        elif MDP.W_HEARTBEAT == command:
+        elif QueueMsgProtocol.W_HEARTBEAT == command:
             if worker_ready:
                 worker.expiry = time.time() + HEARTBEAT_TIMEOUT
             else:
                 self.delete_worker(worker, True)
-        elif MDP.W_DISCONNECT == command:
+        elif QueueMsgProtocol.W_DISCONNECT == command:
             self.delete_worker(worker, False)
         else:
             print("E: Invalid message....")
@@ -414,7 +383,7 @@ class ZMQProducer(QueueProducer):
         """Deletes worker from all data structures, and deletes worker."""
         assert worker is not None
         if disconnect:
-            self.send_to_worker(worker, MDP.W_DISCONNECT, None, None)
+            self.send_to_worker(worker, QueueMsgProtocol.W_DISCONNECT, None, None)
 
         if worker.service is not None:
             worker.service.waiting.remove(worker)
@@ -459,7 +428,7 @@ class ZMQConsumer(QueueConsumer):
             print(f"I: <{self.id}> connecting to broker at {self.address}")
 
         # Register queue with the producer
-        self.send_to_producer(MDP.W_READY, self.service_name, [])
+        self.send_to_producer(QueueMsgProtocol.W_READY, self.service_name, [])
 
         # If liveness hits zero, queue is considered disconnected
         self.liveness = HEARTBEAT_LIVENESS
@@ -499,7 +468,7 @@ class ZMQConsumer(QueueConsumer):
         if option:
             msg = [option] + msg
 
-        msg = [b"", MDP.W_WORKER, command] + msg
+        msg = [b"", QueueMsgProtocol.W_WORKER, command] + msg
         if self.verbose:
             print("I: sending %s to broker", command)
         with lock:
@@ -538,7 +507,7 @@ class ZMQConsumer(QueueConsumer):
 
                     command = msg.pop(0)
 
-                    if command == MDP.W_REQUEST:
+                    if command == QueueMsgProtocol.W_REQUEST:
                         # Call Message Handler
                         try:
                             self.message_handler.handle_message(message=msg)
@@ -546,9 +515,9 @@ class ZMQConsumer(QueueConsumer):
                             print(
                                 f"ERROR HANDLING MESSAGE: {e}, {traceback.format_exc()}"
                             )
-                    elif command == MDP.W_HEARTBEAT:
+                    elif command == QueueMsgProtocol.W_HEARTBEAT:
                         pass
-                    elif command == MDP.W_DISCONNECT:
+                    elif command == QueueMsgProtocol.W_DISCONNECT:
                         self.reconnect_to_producer()
                     else:
                         print("E: invalid input message: ")
@@ -566,7 +535,7 @@ class ZMQConsumer(QueueConsumer):
 
                 # Send HEARTBEAT if it's time
                 if time.time() > self.heartbeat_at:
-                    self.send_to_producer(MDP.W_HEARTBEAT)
+                    self.send_to_producer(QueueMsgProtocol.W_HEARTBEAT)
                     self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
 
         except zmq.ZMQError as e:
