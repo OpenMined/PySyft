@@ -200,7 +200,7 @@ jobs:
           touch "/tmp/digests/grid-seaweedfs/${digest#sha256:}"
 
       - name: Upload digest for grid-backend, grid-frontend and grid-seaweedfs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: digests-${{ steps.release_metadata.outputs.grid_version }}
           path: /tmp/digests/*
