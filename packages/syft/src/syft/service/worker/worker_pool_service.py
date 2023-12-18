@@ -195,13 +195,10 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_pool, worker = worker_pool_worker
 
-        worker_status = self.get_worker_status(
-            context=context, worker_pool_id=worker_pool_id, worker_id=worker.id
-        )
+        worker_status = _get_worker_container_status(worker)
         if isinstance(worker_status, SyftError):
             return worker_status
-
-        if worker_status != WorkerStatus.PENDING:
+        elif worker_status != WorkerStatus.PENDING:
             for worker in worker_pool.workers:
                 if worker.id == worker_id:
                     worker.status = worker_status
@@ -228,32 +225,9 @@ class SyftWorkerPoolService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def get_worker_status(
-        self, context: AuthedServiceContext, worker_pool_id: str, worker_id: UID
+        self, context: AuthedServiceContext, worker_pool_id: UID, worker_id: UID
     ) -> Union[WorkerStatus, SyftError]:
-        worker_pool_worker = self._get_worker_pool_and_worker(
-            context, worker_pool_id, worker_id
-        )
-        if isinstance(worker_pool_worker, SyftError):
-            return worker_pool_worker
-
-        _, worker = worker_pool_worker
-
-        docker_container = _get_worker_container(worker)
-        if isinstance(docker_container, SyftError):
-            return docker_container
-
-        worker_status = docker_container.status
-
-        if worker_status == "running":
-            worker.status = WorkerStatus.RUNNING
-        elif worker_status in ["paused", "removing", "exited", "dead"]:
-            worker.status = WorkerStatus.STOPPED
-        elif worker_status == "restarting":
-            worker.status = WorkerStatus.RESTARTED
-        elif worker_status == "created":
-            worker.status = WorkerStatus.PENDING
-
-        return worker.status
+        return self.get_worker(context, worker_pool_id, worker_id).status
 
     @service_method(
         path="worker_pool.worker_logs",
@@ -350,3 +324,26 @@ def _get_worker_container(
             f"Unable to access worker {worker.id} container. "
             + f"Container server error {e}"
         )
+
+
+def _get_worker_container_status(
+    worker: SyftWorker, docker_client: Optional[docker.DockerClient] = None
+) -> Union[WorkerStatus, SyftError]:
+    container = _get_worker_container(worker, docker_client)
+    if isinstance(container, SyftError):
+        return container
+
+    container_status = container.status
+    syft_container_status = None
+    if container_status == "running":
+        syft_container_status = WorkerStatus.RUNNING
+    elif container_status in ["paused", "removing", "exited", "dead"]:
+        syft_container_status = WorkerStatus.STOPPED
+    elif container_status == "restarting":
+        syft_container_status = WorkerStatus.RESTARTED
+    elif container_status == "created":
+        syft_container_status = WorkerStatus.PENDING
+    else:
+        return SyftError(message=f"Unknown container status: {container_status}")
+
+    return syft_container_status
