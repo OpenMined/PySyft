@@ -981,6 +981,46 @@
           "hash": "6a2fa1e6269f04752648f8418af61461efcc91da2cfdd84b9e6875f2f86f6d46",
           "action": "add"
         }
+      },
+      "SeaweedSecureFilePathLocation": {
+        "2": {
+          "version": 2,
+          "hash": "3ca49db7536a33d5712485164e95406000df9af2aed78e9f9fa2bb2bbbb34fe6",
+          "action": "add"
+        }
+      },
+      "AzureSecureFilePathLocation": {
+        "1": {
+          "version": 1,
+          "hash": "1bb15f3f9d7082779f1c9f58de94011487924cb8a8c9c2ec18fd7c161c27fd0e",
+          "action": "add"
+        }
+      },
+      "RemoteConfig": {
+        "1": {
+          "version": 1,
+          "hash": "ad7bc4780a8ad52e14ce68601852c93d2fe07bda489809cad7cae786d2461754",
+          "action": "add"
+        }
+      },
+      "AzureRemoteConfig": {
+        "1": {
+          "version": 1,
+          "hash": "c05c6caa27db4e385c642536d4b0ecabc0c71e91220d2e6ce21a2761ca68a673",
+          "action": "add"
+        }
+      },
+      "BlobRetrievalByURL": {
+        "2": {
+          "version": 2,
+          "hash": "8059ee03016c4d74e408dad9529e877f91829672e0cc42d8cfff9c8e14058adc",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "0b664100ea08413ca4ef04665ca910c2cf9535539617ea4ba33687d05cdfe747",
+          "action": "add"
+        }
       }
     }
   }
