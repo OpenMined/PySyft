@@ -6,6 +6,7 @@ from enum import Enum
 import inspect
 from io import BytesIO
 from pathlib import Path
+import time
 import traceback
 import types
 from typing import Any
@@ -552,7 +553,8 @@ BASE_PASSTHROUGH_ATTRS = [
     "_repr_debug_",
     "as_empty",
     "get",
-    "is_linked",
+    "is_link",
+    "wait",
     "_save_to_blob_storage",
     "_save_to_blob_storage_",
     "syft_action_data",
@@ -1208,6 +1210,23 @@ class ActionObject(SyftObject):
 
     def as_empty_data(self) -> ActionDataEmpty:
         return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
+
+    def wait(self):
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+
+        data = api.services.action.get(self.syft_action_data.id)
+        if isinstance(data, ActionDataLink):
+            while not api.services.action.is_resolved(self.syft_action_data.id).ok():
+                time.sleep(0.1)
+            return self
+        else:
+            return self
 
     @staticmethod
     def link(
