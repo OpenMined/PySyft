@@ -6,3 +6,6 @@ sphinx-autoapi==1.8.4
 sphinx-code-include==1.1.1
 sphinx-copybutton==0.4.0
 sphinx-panels==0.6.0
+certifi>=2023.7.22 # not directly required, pinned by Snyk to avoid a vulnerability
+pygments>=2.15.0 # not directly required, pinned by Snyk to avoid a vulnerability
+requests>=2.31.0 # not directly required, pinned by Snyk to avoid a vulnerability
