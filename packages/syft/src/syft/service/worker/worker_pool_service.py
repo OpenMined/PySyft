@@ -1,5 +1,6 @@
 # stdlib
 import contextlib
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -346,17 +347,19 @@ def _stop_worker_container(
         # stop the container
         container.stop()
         # Remove the container and its volumes
-        container.remove(force=force, v=True)
-    except docker.errors.APIError as e:
-        if "removal of container" in str(e) and "is already in progress" in str(e):
-            # If the container is already being removed, ignore the error
-            return
-        else:
-            # If it's a different error, return it
-            return SyftError(
-                message=f"Failed to delete worker with id: {worker.id}. Error: {e}"
-            )
+        _remove_worker_container(container, force=force, v=True)
     except Exception as e:
         return SyftError(
             message=f"Failed to delete worker with id: {worker.id}. Error: {e}"
         )
+
+
+def _remove_worker_container(container: Container, **kwargs: Any) -> None:
+    try:
+        container.remove(**kwargs)
+    except docker.errors.NotFound:
+        return
+    except docker.errors.APIError as e:
+        if "removal of container" in str(e) and "is already in progress" in str(e):
+            # If the container is already being removed, ignore the error
+            return
