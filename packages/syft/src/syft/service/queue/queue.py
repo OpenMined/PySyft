@@ -11,12 +11,18 @@ from typing import Union
 import psutil
 from result import Err
 from result import Ok
+from result import Result
 
 # relative
 from ...node.credentials import SyftVerifyKey
+from ...node.node import get_syft_worker_uid
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
+from ...types.datetime import DateTime
+from ...types.uid import UID
+from ..job.job_stash import Job
+from ..job.job_stash import JobStash
 from ..job.job_stash import JobStatus
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -81,12 +87,16 @@ class QueueManager(BaseQueueManager):
         message_handler: Type[AbstractMessageHandler],
         service_name: str,
         address: Optional[str] = None,
+        syft_worker_id: Optional[UID] = None,
+        container_short_id: Optional[UID] = None,
     ) -> QueueConsumer:
         consumer = self._client.add_consumer(
             message_handler=message_handler,
             queue_name=message_handler.queue_name,
             address=address,
             service_name=service_name,
+            container_short_id=container_short_id,
+            syft_worker_id=syft_worker_id,
         )
         return consumer
 
@@ -204,6 +214,32 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
     monitor_thread.stop()
 
 
+def evaluate_can_run_job(
+    job_id: UID, job_stash: JobStash, credentials: SyftVerifyKey
+) -> Result[Job, str]:
+    """Evaluate if a Job can be executed by the user.
+
+    A Job cannot be executed if any of the following are met:
+    - User doesn't have permission to the job.
+    - Job is either marked Completed or result is available.
+    - Job is Cancelled or Interrupted.
+    """
+    res = job_stash.get_by_uid(credentials, job_id)
+
+    # User doesn't have access to job
+    if res.is_err():
+        return res
+
+    job_item = res.ok()
+
+    if job_item.status == JobStatus.COMPLETED or job_item.resolved:
+        return Err(f"Job: {job_id} already Completed.")
+    elif job_item.status == JobStatus.INTERRUPTED:
+        return Err(f"Job interrupted. Job Id: {job_id}")
+
+    return Ok(job_item)
+
+
 @serializable()
 class APICallMessageHandler(AbstractMessageHandler):
     queue_name = "api_call"
@@ -237,16 +273,21 @@ class APICallMessageHandler(AbstractMessageHandler):
 
         credentials = queue_item.syft_client_verify_key
 
-        res = worker.job_stash.get_by_uid(credentials, queue_item.job_id)
+        res = evaluate_can_run_job(queue_item.job_id, worker.job_stash, credentials)
         if res.is_err():
             raise Exception(res.value)
-        job_item = res.ok()
+        job_item: Job = res.ok()
 
         queue_item.status = Status.PROCESSING
         queue_item.node_uid = worker.id
 
         job_item.status = JobStatus.PROCESSING
         job_item.node_uid = worker.id
+        job_item.updated_at = DateTime.now()
+
+        # Set Syft Worker UID for given Job
+        syft_worker_uid = get_syft_worker_uid()
+        job_item.syft_worker_uid = syft_worker_uid
 
         queue_result = worker.queue_stash.set_result(credentials, queue_item)
         if isinstance(queue_result, SyftError):

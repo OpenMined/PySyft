@@ -7,6 +7,7 @@ from typing import List
 import docker
 
 # relative
+from ...types.uid import UID
 from ..response import SyftError
 from .worker_image import SyftWorkerImage
 from .worker_image import SyftWorkerImageTag
@@ -32,6 +33,7 @@ def run_container_using_docker(
 
     # Existing main backend container
     existing_container_name = get_main_backend()
+    syft_worker_uid = UID()
 
     # Create List of Envs to pass
     environment = {}
@@ -43,6 +45,7 @@ def run_container_using_docker(
     environment["HTTP_PORT"] = str(88 + worker_count)
     environment["HTTPS_PORT"] = str(446 + worker_count)
     environment["CONSUMER_SERVICE_NAME"] = pool_name
+    environment["SYFT_WORKER_UID"] = syft_worker_uid
 
     # start container
     container = None
@@ -67,6 +70,7 @@ def run_container_using_docker(
             else WorkerStatus.PENDING
         )
         worker = SyftWorker(
+            id=syft_worker_uid,
             name=worker_name,
             container_id=container.id,
             image_hash=container.image.id,

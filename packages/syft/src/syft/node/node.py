@@ -175,6 +175,14 @@ def get_enable_warnings() -> bool:
     return str_to_bool(get_env("ENABLE_WARNINGS", "False"))
 
 
+def get_container_short_id() -> Optional[str]:
+    return get_env("HOSTNAME", None)
+
+
+def get_syft_worker_uid() -> Optional[str]:
+    return get_env("SYFT_WORKER_UID", None)
+
+
 def get_venv_packages() -> str:
     res = subprocess.getoutput(
         "pip list --format=freeze",

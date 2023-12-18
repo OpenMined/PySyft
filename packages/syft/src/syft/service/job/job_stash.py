@@ -25,9 +25,11 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
+from ...types.datetime import DateTime
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
@@ -69,7 +71,7 @@ class JobV1(SyftObject):
 
 
 @serializable()
-class Job(SyftObject):
+class JobV2(SyftObject):
     __canonical_name__ = "JobItem"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -85,6 +87,30 @@ class Job(SyftObject):
     creation_time: Optional[str] = None
     action: Optional[Action] = None
     job_pid: Optional[int] = None
+
+    __attr_searchable__ = ["parent_job_id"]
+    __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
+
+
+@serializable()
+class Job(SyftObject):
+    __canonical_name__ = "JobItem"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    id: UID
+    node_uid: UID
+    result: Optional[Any]
+    resolved: bool = False
+    status: JobStatus = JobStatus.CREATED
+    log_id: Optional[UID]
+    parent_job_id: Optional[UID]
+    n_iters: Optional[int] = 0
+    current_iter: Optional[int] = None
+    creation_time: Optional[str] = None
+    action: Optional[Action] = None
+    job_pid: Optional[int] = None
+    syft_worker_uid: Optional[UID]
+    updated_at: Optional[DateTime] = None
 
     __attr_searchable__ = ["parent_job_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]

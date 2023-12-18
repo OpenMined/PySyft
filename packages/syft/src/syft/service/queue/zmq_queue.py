@@ -239,6 +239,8 @@ class ZMQProducer(QueueProducer):
 
                     # append request message to the corresponding service
                     # This list is processed in dispatch method.
+
+                    # TODO: Logic to evaluate the CAN RUN Condition
                     service.requests.append(msg_bytes)
                     item.status = Status.PROCESSING
                     res = self.queue_stash.update(item.syft_client_verify_key, item)
@@ -379,7 +381,14 @@ class ZMQProducer(QueueProducer):
         if QueueMsgProtocol.W_READY == command:
             service_name = msg.pop(0)
             if worker_ready:
-                self.delete_worker(worker, True)
+                # Delete worker if no service attached.
+                if worker.service is None:
+                    self.delete_worker(worker, True)
+                else:
+                    if worker not in worker.service.waiting:
+                        self.worker_waiting(worker)
+                    else:
+                        self.dispatch(worker.service, None)
             else:
                 # Attach worker to service and mark as idle
                 if service_name not in self.services:
@@ -394,6 +403,9 @@ class ZMQProducer(QueueProducer):
             if worker_ready:
                 worker.expiry = time.time() + HEARTBEAT_TIMEOUT
             else:
+                # extract the syft worker id and worker pool name from the message
+                # Get the corresponding worker pool and worker
+                # update the status to be unhealthy
                 self.delete_worker(worker, True)
         elif QueueMsgProtocol.W_DISCONNECT == command:
             self.delete_worker(worker, False)
@@ -423,6 +435,8 @@ class ZMQConsumer(QueueConsumer):
         address: str,
         queue_name: str,
         service_name: str,
+        syft_worker_id: Optional[UID] = None,
+        container_short_id: Optional[UID] = None,
         verbose: bool = True,
     ) -> None:
         self.address = address
@@ -434,6 +448,8 @@ class ZMQConsumer(QueueConsumer):
         self._stop = False
         self.worker = None
         self.verbose = verbose
+        self.syft_worker_id = syft_worker_id
+        self.container_short_id = container_short_id
 
     def reconnect_to_producer(self):
         """Connect or reconnect to producer"""
@@ -556,6 +572,8 @@ class ZMQConsumer(QueueConsumer):
 
                 # Send HEARTBEAT if it's time
                 if time.time() > self.heartbeat_at:
+                    # TODO: Also send service name and syft worker id during HEARTBEATS
+                    # to the producer.
                     self.send_to_producer(QueueMsgProtocol.W_HEARTBEAT)
                     self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
 
@@ -665,6 +683,8 @@ class ZMQClient(QueueClient):
         queue_name: str,
         message_handler: AbstractMessageHandler,
         service_name: str,
+        container_short_id: Optional[UID] = None,
+        syft_worker_id: Optional[UID] = None,
         address: Optional[str] = None,
     ) -> ZMQConsumer:
         """Add a consumer to a queue
@@ -681,6 +701,8 @@ class ZMQClient(QueueClient):
             message_handler=message_handler,
             address=address,
             service_name=service_name,
+            container_short_id=container_short_id,
+            syft_worker_id=syft_worker_id,
         )
         self.consumers[queue_name].append(consumer)
 
