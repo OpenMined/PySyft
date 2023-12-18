@@ -2,6 +2,8 @@
 # stdlib
 from binascii import hexlify
 from collections import defaultdict
+from http.client import PROCESSING
+import itertools
 import socketserver
 import threading
 import time
@@ -196,11 +198,20 @@ class ZMQProducer(QueueProducer):
             if self._stop:
                 break
             sleep(1)
-            items = self.queue_stash.get_all(
-                self.queue_stash.partition.root_verify_key
+
+            # Items to be queued
+            items_to_queue = self.queue_stash.get_by_status(
+                self.queue_stash.partition.root_verify_key,
+                status=Status.CREATED,
             ).ok()
 
-            for item in items:
+            # Queue Items that are in the processing state
+            items_processing = self.queue_stash.get_by_status(
+                self.queue_stash.partition.root_verify_key,
+                status=Status.PROCESSING,
+            ).ok()
+
+            for item in itertools.chain(items_to_queue, items_processing):
                 if item.status == Status.CREATED:
                     if isinstance(item, ActionQueueItem):
                         action = item.kwargs["action"]
@@ -214,8 +225,11 @@ class ZMQProducer(QueueProducer):
                             self.preprocess_action_arg(arg)
 
                     msg_bytes = serialize(item, to_bytes=True)
+                    worker_pool = item.worker_pool.resolve_with_context(
+                        self.auth_context
+                    )
 
-                    service_name = item.worker_pool_name
+                    service_name = worker_pool.name
                     service: Service = self.services.get(service_name)
 
                     # Skip adding message if corresponding service/pool
@@ -230,6 +244,13 @@ class ZMQProducer(QueueProducer):
                     res = self.queue_stash.update(item.syft_client_verify_key, item)
                     if not res.is_ok():
                         print(f"Failed to update queue item: {item}")
+                elif item.status == Status == PROCESSING:
+                    # Evaluate Retry condition here
+                    # If job running and timeout or job status is KILL
+                    # or heartbeat fails
+                    # or container id doesn't exists, kill process or container
+                    # else decrease retry count and mark status as CREATED.
+                    pass
 
     def run(self):
         self.thread = threading.Thread(target=self._run)

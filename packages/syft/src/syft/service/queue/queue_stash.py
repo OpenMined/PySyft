@@ -15,12 +15,15 @@ from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
+from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
+from ...store.linked_obj import LinkedObject
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
@@ -40,6 +43,9 @@ class Status(str, Enum):
     INTERRUPTED = "interrupted"
 
 
+StatusPartitionKey = PartitionKey(key="status", type_=Status)
+
+
 @serializable()
 class QueueItemV1(SyftObject):
     __canonical_name__ = "QueueItem"
@@ -53,7 +59,7 @@ class QueueItemV1(SyftObject):
 
 
 @serializable()
-class QueueItem(SyftObject):
+class QueueItemV2(SyftObject):
     __canonical_name__ = "QueueItem"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -70,7 +76,29 @@ class QueueItem(SyftObject):
     job_id: Optional[UID]
     worker_settings: Optional[WorkerSettings]
     has_execute_permissions: bool = False
-    worker_pool_name: str
+
+
+@serializable()
+class QueueItem(SyftObject):
+    __canonical_name__ = "QueueItem"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    __attr_searchable__ = ["status"]
+
+    id: UID
+    node_uid: UID
+    result: Optional[Any]
+    resolved: bool = False
+    status: Status = Status.CREATED
+
+    method: str
+    service: str
+    args: List
+    kwargs: Dict[str, Any]
+    job_id: Optional[UID]
+    worker_settings: Optional[WorkerSettings]
+    has_execute_permissions: bool = False
+    worker_pool: LinkedObject
 
     def __repr__(self) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"
@@ -117,6 +145,15 @@ def upgrade_queueitem_v1_to_v2():
         make_set_default("worker_settings", None),
         make_set_default("has_execute_permissions", False),
     ]
+
+
+@serializable()
+class ActionQueueItemV1(QueueItemV2):
+    __canonical_name__ = "ActionQueueItem"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    method: str = "execute"
+    service: str = "actionservice"
 
 
 @serializable()
@@ -200,3 +237,10 @@ class QueueStash(BaseStash):
         if result.is_ok():
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
         return result
+
+    def get_by_status(
+        self, credentials: SyftVerifyKey, status: Status
+    ) -> Result[List[QueueItem], str]:
+        qks = QueryKeys(qks=StatusPartitionKey.with_obj(status))
+
+        return self.query_all(credentials=credentials, qks=qks)
