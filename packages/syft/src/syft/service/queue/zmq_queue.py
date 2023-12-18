@@ -39,7 +39,6 @@ from .base_queue import QueueClientConfig
 from .base_queue import QueueConfig
 from .base_queue import QueueConsumer
 from .base_queue import QueueProducer
-from .consumer_stash import ConsumerItem
 from .consumer_stash import ConsumerStash
 from .queue_stash import ActionQueueItem
 from .queue_stash import Status
@@ -316,7 +315,8 @@ class ZMQConsumer(QueueConsumer):
         message_handler: AbstractMessageHandler,
         address: str,
         queue_name: str,
-        consumer_stash: Optional[ConsumerStash] = None,
+        worker_stash: Optional[ConsumerStash] = None,
+        syft_worker_id: Optional[UID] = None,
     ) -> None:
         self.address = address
         self.message_handler = message_handler
@@ -326,7 +326,8 @@ class ZMQConsumer(QueueConsumer):
         self.post_init()
         self.id = UID()
         self._stop = False
-        self.consumer_stash = consumer_stash
+        self.worker_stash = worker_stash
+        self.syft_worker_id = syft_worker_id
 
     def create_socket(self):
         self.worker = self.ctx.socket(zmq.DEALER)  # DEALER
@@ -359,26 +360,24 @@ class ZMQConsumer(QueueConsumer):
             self.ctx.destroy()
 
     def associate_job(self, message: Frame):
-        action_queue_item: ActionQueueItem = _deserialize(message, from_bytes=True)
-        self.job_id = action_queue_item.job_id
-        self._set_consumer_job()
+        queue_item = _deserialize(message, from_bytes=True)
+        self._set_worker_job(queue_item.job_id)
 
     def clear_job(self):
-        self.job_id = ""
-        self._set_consumer_job()
+        self._set_worker_job(None)
 
-    def _set_consumer_job(self):
-        res = self.consumer_stash.get_by_consumer_id(
-            self.consumer_stash.partition.root_verify_key, str(self.id)
+    def _set_worker_job(self, job_id: Optional[UID]):
+        res = self.worker_stash.get_by_worker_id(
+            self.worker_stash.partition.root_verify_key, str(self.syft_worker_id)
         )
 
         if res.is_err():
             return  # log/report?
 
-        consumer_obj: ConsumerItem = res.ok()
-        consumer_obj.job_id = self.job_id or ""
-        self.consumer_stash.set(
-            self.consumer_stash.partition.root_verify_key, obj=consumer_obj
+        worker_obj = res.ok()
+        worker_obj.job_id = job_id
+        self.worker_stash.set(
+            self.worker_stash.partition.root_verify_key, obj=worker_obj
         )
 
     def _run(self):
@@ -416,7 +415,7 @@ class ZMQConsumer(QueueConsumer):
                         try:
                             self.associate_job(message)
                             self.message_handler.handle_message(
-                                message=message, consumer_id=self.id
+                                message=message, consumer_id=self.syft_worker_id
                             )
                         except Exception as e:
                             # stdlib
@@ -555,8 +554,9 @@ class ZMQClient(QueueClient):
         self,
         queue_name: str,
         message_handler: AbstractMessageHandler,
-        consumer_stash,
+        worker_stash,
         address: Optional[str] = None,
+        syft_worker_id: Optional[UID] = None,
     ) -> ZMQConsumer:
         """Add a consumer to a queue
 
@@ -571,7 +571,8 @@ class ZMQClient(QueueClient):
             queue_name=queue_name,
             message_handler=message_handler,
             address=address,
-            consumer_stash=consumer_stash
+            consumer_stash=worker_stash,
+            syft_worker_id=syft_worker_id,
         )
         self.consumers[queue_name].append(consumer)
 

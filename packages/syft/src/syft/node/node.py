@@ -62,7 +62,6 @@ from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
 from ..service.job.job_service import JobService
 from ..service.job.job_stash import Job
-from ..service.job.job_stash import JobStash
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadataV3
@@ -73,9 +72,6 @@ from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
 from ..service.queue.base_queue import QueueConsumer
 from ..service.queue.base_queue import QueueProducer
-from ..service.queue.consumer_stash import ConsumerItem
-from ..service.queue.consumer_stash import ConsumerService
-from ..service.queue.consumer_stash import ConsumerStash
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
 from ..service.queue.queue_service import QueueService
@@ -101,7 +97,6 @@ from ..service.user.user_stash import UserStash
 from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_service import WorkerService
-from ..service.worker.worker_stash import WorkerStash
 from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
@@ -185,6 +180,10 @@ def get_venv_packages() -> str:
         "pip list --format=freeze",
     )
     return res
+
+
+def get_syft_worker_uid() -> Optional[str]:
+    return get_env("SYFT_WORKER_UID", None)
 
 
 dev_mode = get_dev_mode()
@@ -290,7 +289,6 @@ class Node(AbstractNode):
             [
                 UserService,
                 WorkerService,
-                ConsumerService,
                 SettingsService,
                 ActionService,
                 LogService,
@@ -424,26 +422,25 @@ class Node(AbstractNode):
             for _ in range(queue_config_.client_config.n_consumers):
                 if address is None:
                     raise ValueError("address unknown for consumers")
+
+                if get_syft_worker_uid() is None:
+                    syft_worker = None
+                    # syft_worker = SyftWorker(
+                    #     id = UID(),
+                    #     name=f"in-memory-worker-{i}",
+                    #     container_id=None,
+                    #     image_hash=None,
+                    #     status=WorkerStatus.STARTED # or whatever
+                    #                     )
+                    # syft_worker = self.worker_stash.create()
+                    pass
+                    # client.create_node_pool
+                    # create worker here
+                # TODO: pass syft_worker id to queue
+
                 consumer: QueueConsumer = self.queue_manager.create_consumer(
-                    message_handler,
-                    address=address,
-                    consumer_stash=self.consumer_stash,
+                    message_handler, address=address, syft_worker_id=syft_worker.id
                 )
-
-                # Registers consumer in consumer_stash
-                container_name = os.getenv("DOCKER_WORKER_NAME", None)
-                worker_id = (
-                    self.worker_stash.get_worker_by_name(
-                        self.verify_key, container_name
-                    ).ok().container_id
-                    if container_name
-                    else ""
-                )
-                consumer_obj = ConsumerItem(
-                    worker_id=worker_id, consumer_id=str(consumer.id), job_id=""
-                )
-                self.consumer_stash.set(self.verify_key, obj=consumer_obj)
-
                 consumer.run()
 
     @classmethod
@@ -779,16 +776,8 @@ class Node(AbstractNode):
         self.queue_stash = QueueStash(store=self.document_store)
 
     @property
-    def job_stash(self) -> JobStash:
+    def job_stash(self):
         return self.get_service("jobservice").stash
-
-    @property
-    def worker_stash(self) -> WorkerStash:
-        return self.get_service("workerservice").stash
-
-    @property
-    def consumer_stash(self) -> ConsumerStash:
-        return self.get_service("consumerservice").stash
 
     def _construct_services(self):
         self.service_path_map = {}
@@ -800,7 +789,6 @@ class Node(AbstractNode):
             store_services = [
                 UserService,
                 WorkerService,
-                ConsumerService,
                 SettingsService,
                 DatasetService,
                 UserCodeService,

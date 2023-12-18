@@ -1,6 +1,5 @@
 # stdlib
 import multiprocessing
-import os
 import threading
 import time
 from typing import Any
@@ -18,6 +17,7 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
+from ...types.uid import UID
 from ..job.job_stash import JobStatus
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -81,22 +81,24 @@ class QueueManager(BaseQueueManager):
     def create_consumer(
         self,
         message_handler: Type[AbstractMessageHandler],
-        consumer_stash: ConsumerStash,
+        worker_stash: ConsumerStash,
         address: Optional[str] = None,
+        syft_worker_id: Optional[UID] = None,
     ) -> QueueConsumer:
         consumer = self._client.add_consumer(
             message_handler=message_handler,
             queue_name=message_handler.queue_name,
             address=address,
-            consumer_stash=consumer_stash,
+            worker_stash=worker_stash,
+            syft_worker_id=syft_worker_id,
         )
         return consumer
 
     def create_producer(
-        self, queue_name: str, queue_stash, context: AuthedServiceContext
+        self, queue_name: str, worker_stash, context: AuthedServiceContext
     ) -> QueueProducer:
         return self._client.add_producer(
-            queue_name=queue_name, queue_stash=queue_stash, context=context
+            queue_name=queue_name, worker_stash=worker_stash, context=context
         )
 
     def send(
@@ -214,7 +216,7 @@ class APICallMessageHandler(AbstractMessageHandler):
     queue_name = "api_call"
 
     @staticmethod
-    def handle_message(message: bytes, consumer_id: str):
+    def handle_message(message: bytes, worker_id: Optional[UID]):
         # relative
         from ...node.node import Node
 
@@ -251,15 +253,16 @@ class APICallMessageHandler(AbstractMessageHandler):
         job_item.status = JobStatus.PROCESSING
         job_item.node_uid = worker.id
 
-        try:
-            worker_name = os.getenv("DOCKER_WORKER_NAME", None)
-            docker_worker = worker.worker_stash.get_worker_by_name(
-                credentials, worker_name
-            ).ok()
-            job_item.job_worker_id = str(docker_worker.container_id)
-        except Exception:
-            job_item.job_worker_id = str(worker.id)
-        job_item.job_consumer_id = str(consumer_id)
+        # try:
+        #     worker_name = os.getenv("DOCKER_WORKER_NAME", None)
+        #     docker_worker = worker.worker_stash.get_worker_by_name(
+        #         credentials, worker_name
+        #     ).ok()
+        #     job_item.job_worker_id = str(docker_worker.container_id)
+        # except Exception:
+        #     job_item.job_worker_id = str(worker.id)
+        if worker_id is not None:
+            job_item.job_worker_id = worker_id
 
         queue_result = worker.queue_stash.set_result(credentials, queue_item)
         if isinstance(queue_result, SyftError):

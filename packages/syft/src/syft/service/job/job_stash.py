@@ -106,7 +106,6 @@ class Job(SyftObject):
     creation_time: Optional[str] = None
     action: Optional[Action] = None
     job_pid: Optional[int] = None
-    job_consumer_id: Optional[str] = None
     job_worker_id: Optional[str] = None
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status"]
@@ -324,11 +323,6 @@ class Job(SyftObject):
         return {
             "status": f"{self.action_display_name}: {self.status}"
             + (
-                f"\nconsumer {short_uid(self.job_consumer_id)}"
-                if self.job_consumer_id
-                else ""
-            )
-            + (
                 f"\nworker {short_uid(self.job_worker_id)}"
                 if self.job_worker_id
                 else ""
@@ -393,13 +387,12 @@ class Job(SyftObject):
 
 @migrate(Job, JobV2)
 def downgrade_job_v3_to_v2():
-    return [drop(["job_consumer_id", "job_worker_id"])]
+    return [drop(["job_worker_id"])]
 
 
 @migrate(JobV2, Job)
 def upgrade_job_v2_to_v3():
     return [
-        make_set_default("job_consumer_id", None),
         make_set_default("job_worker_id", None),
     ]
 

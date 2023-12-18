@@ -150,7 +150,9 @@ class JobService(AbstractService):
         else:
             return res.ok()
 
-    @service_method(path="job.get_active", name="get_active", roles=DATA_SCIENTIST_ROLE_LEVEL)
+    @service_method(
+        path="job.get_active", name="get_active", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
     def get_active(self, context: AuthedServiceContext) -> Union[List[Job], SyftError]:
         res = self.stash.get_active(context.credentials)
         if res.is_err():
