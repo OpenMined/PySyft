@@ -46,7 +46,7 @@ jobs:
           timeout: "10m0s"
 
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "trivy-results.sarif"
 
@@ -99,7 +99,7 @@ jobs:
 
         # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk-code.sarif
 
@@ -130,7 +130,7 @@ jobs:
           timeout: "10m0s"
 
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "trivy-results.sarif"
 
@@ -173,7 +173,7 @@ jobs:
 
         # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk-code.sarif
 
@@ -213,13 +213,13 @@ jobs:
 
         #Upload SBOM to GitHub Security tab
       - name: Upload SBOM to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "trivy-results.sarif"
 
           #upload SBOM to github artifacts
       - name: Upload SBOM to GitHub Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: syft.sbom.json
           path: syft.sbom.json
@@ -245,7 +245,7 @@ jobs:
 
         #Upload SBOM to GitHub Artifacts
       - name: Upload SBOM to GitHub Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: mongo-trivy-results.sbom.json
           path: mongo-trivy-results.sbom.json
@@ -262,7 +262,7 @@ jobs:
 
           #Upload sarif file to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "trivy-results.sarif"
 
@@ -299,7 +299,7 @@ jobs:
 
         # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk-code.sarif
 
@@ -323,7 +323,7 @@ jobs:
           timeout: "10m0s"
           #Upload SBOM to GitHub Artifacts
       - name: Upload SBOM to GitHub Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: traefik-trivy-results.sbom.json
           path: traefik-trivy-results.sbom.json
@@ -341,7 +341,7 @@ jobs:
 
           #Upload sarif file to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "trivy-results.sarif"
 
@@ -378,7 +378,7 @@ jobs:
 
         # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk-code.sarif
 
@@ -403,7 +403,7 @@ jobs:
 
         #Upload SBOM to GitHub Artifacts
       - name: Upload SBOM to GitHub Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: seaweedfs-trivy-results.sbom.json
           path: seaweedfs-trivy-results.sbom.json
@@ -420,7 +420,7 @@ jobs:
 
           #Upload sarif file to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "trivy-results.sarif"
 
@@ -457,6 +457,6 @@ jobs:
 
         # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk-code.sarif
