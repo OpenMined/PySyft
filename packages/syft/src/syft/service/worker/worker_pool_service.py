@@ -199,10 +199,7 @@ class SyftWorkerPoolService(AbstractService):
         if isinstance(worker_status, SyftError):
             return worker_status
         elif worker_status != WorkerStatus.PENDING:
-            for worker in worker_pool.workers:
-                if worker.id == worker_id:
-                    worker.status = worker_status
-                    break
+            worker.status = worker_status
 
             result = self.stash.update(
                 credentials=context.credentials,
