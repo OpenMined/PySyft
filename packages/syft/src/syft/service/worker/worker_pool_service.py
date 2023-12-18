@@ -227,7 +227,8 @@ class SyftWorkerPoolService(AbstractService):
     def get_worker_status(
         self, context: AuthedServiceContext, worker_pool_id: UID, worker_id: UID
     ) -> Union[WorkerStatus, SyftError]:
-        return self.get_worker(context, worker_pool_id, worker_id).status
+        worker = self.get_worker(context, worker_pool_id, worker_id)
+        return worker if isinstance(worker, SyftError) else worker.status
 
     @service_method(
         path="worker_pool.worker_logs",
