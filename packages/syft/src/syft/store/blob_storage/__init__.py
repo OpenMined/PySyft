@@ -105,8 +105,13 @@ class BlobRetrieval(SyftObject):
         with open(self.file_name, "rb") as f:
             return f.read()
 
-    def _read_data(self, **kwargs):
-        return self._read()
+    def _read_data(self, stream=False, **kwargs):
+        res = self._read()
+        # TODO: this is maybe not the right solution
+        if stream:
+            return [res]
+        else:
+            return res
 
 
 @migrate(BlobRetrieval, BlobRetrievalV1)

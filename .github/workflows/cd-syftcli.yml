@@ -173,7 +173,7 @@ jobs:
 
       - name: Download binary
         if: steps.check-pypi.outputs.released == 'true'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: syftcli-binaries-${{needs.deploy-syft-cli.outputs.deployed_version}}
           path: ./downloaded-binaries/
