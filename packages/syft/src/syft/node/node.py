@@ -94,6 +94,9 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
+from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
+from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
+from ..service.worker.utils import create_default_image
 from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_service import WorkerService
@@ -365,6 +368,8 @@ class Node(AbstractNode):
         # Migrate data before any operation on db
         if migrate:
             self.find_and_migrate_data()
+
+        create_default_worker_pool(node=self)
 
         NodeRegistry.set_node_for(self.id, self)
 
@@ -1321,3 +1326,43 @@ class NodeRegistry:
     @classmethod
     def get_all_nodes(cls) -> List[Node]:
         return list(cls.__node_registry__.values())
+
+
+def create_default_worker_pool(node: Node):
+    credentials = node.verify_key
+
+    image_stash = node.get_service(SyftWorkerImageService).stash
+
+    print("Creating Default Worker Image")
+    # Get/Create a default worker SyftWorkerImage
+    default_image = create_default_image(
+        credentials=credentials, image_stash=image_stash
+    )
+    image_build_method = node.get_service_method(SyftWorkerImageService.build)
+
+    print("Building Default Worker Image")
+
+    # Build the Image for given tag
+    result = image_build_method(
+        node.context, uid=default_image.id, tag=DEFAULT_WORKER_IMAGE_TAG
+    )
+
+    if isinstance(result, SyftError):
+        print("Failed to build default worker image: ", result.message)
+        return
+
+    create_pool_method = node.get_service_method(SyftWorkerPoolService.create)
+
+    print("Creating default Worker Pool")
+    result = create_pool_method(
+        node.context,
+        name=DEFAULT_WORKER_POOL_NAME,
+        image_uid=default_image.id,
+        number=1,
+    )
+
+    if isinstance(result, SyftError):
+        print(f"Failed to create Worker for Default workers. Error: {result.message}")
+        return
+
+    print("Created default worker pool.")

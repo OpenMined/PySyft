@@ -7,10 +7,14 @@ from typing import List
 import docker
 
 # relative
+from ...custom_worker.config import DockerWorkerConfig
+from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
+from ...util.util import get_syft_cpu_dockerfile
 from ..response import SyftError
 from .worker_image import SyftWorkerImage
 from .worker_image import SyftWorkerImageTag
+from .worker_image_stash import SyftWorkerImageStash
 from .worker_pool import ContainerSpawnStatus
 from .worker_pool import SyftWorker
 from .worker_pool import WorkerOrchestrationType
@@ -126,3 +130,27 @@ def run_containers(
         results.append(spawn_result)
 
     return results
+
+
+def create_default_image(credentials: SyftVerifyKey, image_stash: SyftWorkerImageStash):
+    default_cpu_dockerfile = get_syft_cpu_dockerfile()
+    worker_config = DockerWorkerConfig.from_path(default_cpu_dockerfile)
+
+    result = image_stash.get_by_docker_config(credentials, worker_config)
+
+    if result.ok() is None:
+        default_syft_image = SyftWorkerImage(
+            config=worker_config, created_by=credentials
+        )
+        result = image_stash.set(credentials, default_syft_image)
+
+        if result.is_err():
+            print(f"Failed to save image stash: {result.err()}")
+
+    default_syft_image = result.ok()
+
+    return default_syft_image
+
+
+DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu"
+DEFAULT_WORKER_POOL_NAME = "default-pool"

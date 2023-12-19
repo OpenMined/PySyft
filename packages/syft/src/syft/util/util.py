@@ -883,3 +883,16 @@ def set_klass_module_to_syft(klass, module_name):
         new_module = sys.modules["syft"].__dict__[module_name]
     setattr(new_module, klass.__name__, klass)
     sys.modules["syft"].__dict__[module_name] = new_module
+
+
+def get_syft_src_path() -> Path:
+    return Path(__file__).parent.parent.parent.expanduser()
+
+
+def get_grid_src_path() -> Path:
+    syft_path = get_syft_src_path()
+    syft_path.parent / "grid"
+
+
+def get_syft_cpu_dockerfile() -> Path:
+    return get_grid_src_path().parent / "backend" / "worker_cpu.dockerfile"
