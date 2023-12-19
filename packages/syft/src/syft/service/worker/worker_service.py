@@ -10,12 +10,14 @@ import docker
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store import SyftSuccess
+from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..service import AbstractService
 from ..service import AuthedServiceContext
 from ..service import SyftError
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .worker_pool import SyftWorker
 from .worker_pool import WorkerStatus
 from .worker_stash import WorkerStash
@@ -89,7 +91,9 @@ def get_main_backend() -> str:
     return f"{hostname}-backend-1"
 
 
-def start_worker_container(worker_num: int, context: AuthedServiceContext):
+def start_worker_container(
+    worker_num: int, context: AuthedServiceContext, syft_worker_uid
+):
     client = docker.from_env()
     existing_container_name = get_main_backend()
     hostname = socket.gethostname()
@@ -98,11 +102,15 @@ def start_worker_container(worker_num: int, context: AuthedServiceContext):
         worker_name=worker_name,
         client=client,
         existing_container_name=existing_container_name,
+        syft_worker_uid=syft_worker_uid,
     )
 
 
 def create_new_container_from_existing(
-    worker_name: str, client: docker.client.DockerClient, existing_container_name: str
+    worker_name: str,
+    client: docker.client.DockerClient,
+    existing_container_name: str,
+    syft_worker_uid,
 ) -> docker.models.containers.Container:
     # Get the existing container
     existing_container = client.containers.get(existing_container_name)
@@ -142,6 +150,8 @@ def create_new_container_from_existing(
     environment["PORT"] = str(8003 + WORKER_NUM)
     environment["HTTP_PORT"] = str(88 + WORKER_NUM)
     environment["HTTPS_PORT"] = str(446 + WORKER_NUM)
+    environment["SYFT_WORKER_UID"] = str(syft_worker_uid)
+
     environment.pop("NODE_PRIVATE_KEY", None)
 
     new_container = client.containers.create(
@@ -184,7 +194,10 @@ class WorkerService(AbstractService):
         for _worker_num in range(n):
             global WORKER_NUM
             WORKER_NUM += 1
-            container = start_worker_container(WORKER_NUM, context)
+            worker_uid = UID()
+            container = start_worker_container(
+                WORKER_NUM, context, syft_worker_uid=worker_uid
+            )
             # worker_name = f"{pool_name}-{worker_count}"
             status = (
                 WorkerStatus.STOPPED
@@ -192,6 +205,7 @@ class WorkerService(AbstractService):
                 else WorkerStatus.PENDING
             )
             obj = SyftWorker(
+                id=worker_uid,
                 name=f"default_pool-{WORKER_NUM}",
                 container_id=container.id,
                 image_hash=container.image.id,
@@ -221,6 +235,18 @@ class WorkerService(AbstractService):
 
         if result.is_err():
             return SyftError(message=f"Failed to fetch workers. {result.err()}")
+        else:
+            return result.ok()
+
+    @service_method(path="worker.get", name="get", roles=DATA_SCIENTIST_ROLE_LEVEL)
+    def get(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
+        """Add a Container Image."""
+        result = self.stash.get_by_uid(context.credentials, uid)
+
+        if result.is_err():
+            return SyftError(message=f"Failed to fetch worker. {result.err()}")
         else:
             return result.ok()
 

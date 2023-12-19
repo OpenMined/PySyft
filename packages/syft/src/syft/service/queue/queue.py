@@ -271,7 +271,7 @@ class APICallMessageHandler(AbstractMessageHandler):
         if isinstance(queue_result, SyftError):
             raise Exception(message=f"{queue_result.err()}")
 
-        job_result = worker.job_stash.set(credentials, job_item)
+        job_result = worker.job_stash.set_result(credentials, job_item)
         if isinstance(job_result, SyftError):
             raise Exception(message=f"{job_result.err()}")
 

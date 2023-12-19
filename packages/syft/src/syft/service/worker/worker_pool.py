@@ -4,11 +4,13 @@ from typing import List
 from typing import Optional
 
 # relative
+from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...types.syft_object import short_uid
 from ...types.uid import UID
 
 
@@ -43,12 +45,30 @@ class SyftWorker(SyftObject):
     status: WorkerStatus
     job_id: Optional[UID]
 
+    def get_job_repr(self):
+        if self.job_id is not None:
+            api = APIRegistry.api_for(
+                node_uid=self.syft_node_location,
+                user_verify_key=self.syft_client_verify_key,
+            )
+            job = api.services.job.get(self.job_id)
+            if job.action.user_code_id is not None:
+                func_name = api.services.code.get_by_id(
+                    job.action.user_code_id
+                ).service_func_name
+                return f"{func_name} ({short_uid(self.job_id)})"
+            else:
+                return f"action ({short_uid(self.job_id)})"
+        else:
+            return ""
+
     def _coll_repr_(self):
         return {
             "name": self.name,
-            "container_id": self.container_id,
-            "created_at": self.created_at,
-            "status": self.status,
+            "container id": self.container_id,
+            "status": str(self.status.value.lower()),
+            "job": self.get_job_repr(),
+            "created at": str(self.created_at),
         }
 
 

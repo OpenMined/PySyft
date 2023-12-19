@@ -33,6 +33,7 @@ from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..worker.worker_pool import WorkerStatus
 from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
 from .base_queue import QueueClient
@@ -372,13 +373,21 @@ class ZMQConsumer(QueueConsumer):
         )
 
         if res.is_err():
+            print(res)
             return  # log/report?
-
+        # stdlib
         worker_obj = res.ok()
         worker_obj.job_id = job_id
-        self.worker_stash.set(
+        if job_id is None:
+            worker_obj.status = WorkerStatus.PENDING
+        else:
+            worker_obj.status = WorkerStatus.RUNNING
+
+        res = self.worker_stash.update(
             self.worker_stash.partition.root_verify_key, obj=worker_obj
         )
+        if res.is_err():
+            print(res)
 
     def _run(self):
         liveness = HEARTBEAT_LIVENESS

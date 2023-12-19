@@ -106,7 +106,7 @@ class Job(SyftObject):
     creation_time: Optional[str] = None
     action: Optional[Action] = None
     job_pid: Optional[int] = None
-    job_worker_id: Optional[str] = None
+    job_worker_id: Optional[UID] = None
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
@@ -137,6 +137,14 @@ class Job(SyftObject):
         blocks_filled_str = "█" * blocks_filled
         blocks_empty_str = "&nbsp;&nbsp;" * blocks_empty
         return f"{percentage}% |{blocks_filled_str}{blocks_empty_str}|\n{self.current_iter}/{self.n_iters}\n"
+
+    @property
+    def worker(self):
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        return api.services.worker.get(self.job_worker_id)
 
     @property
     def eta_string(self):
@@ -323,7 +331,7 @@ class Job(SyftObject):
         return {
             "status": f"{self.action_display_name}: {self.status}"
             + (
-                f"\nworker {short_uid(self.job_worker_id)}"
+                f"\non worker {short_uid(self.job_worker_id)}"
                 if self.job_worker_id
                 else ""
             ),

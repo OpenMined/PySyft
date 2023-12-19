@@ -438,7 +438,8 @@ class Node(AbstractNode):
                 if address is None:
                     raise ValueError("address unknown for consumers")
 
-                if get_syft_worker_uid() is None:
+                syft_worker_id_str = get_syft_worker_uid()
+                if syft_worker_id_str is None:
                     # this means we are not in a docker container
                     # so the object does not exist yet
                     syft_worker = SyftWorker(
@@ -448,12 +449,15 @@ class Node(AbstractNode):
                         status=WorkerStatus.PENDING,
                     )
                     self.worker_stash.set(self.signing_key.verify_key, syft_worker)
+                    syft_worker_id = syft_worker.id
+                else:
+                    syft_worker_id = UID(syft_worker_id_str)
 
                 consumer: QueueConsumer = self.queue_manager.create_consumer(
                     message_handler,
                     address=address,
                     worker_stash=self.worker_stash,
-                    syft_worker_id=syft_worker.id,
+                    syft_worker_id=syft_worker_id,
                 )
                 consumer.run()
 
