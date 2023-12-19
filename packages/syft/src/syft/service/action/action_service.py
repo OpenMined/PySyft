@@ -127,8 +127,9 @@ class ActionService(AbstractService):
         """Get an object from the action store"""
         # relative
         from .action_data_empty import ActionDataLink
+        from .action_data_empty import ObjectNotReady
 
-        result = self._get(context, uid, has_permission=True)
+        result = self._get(context, uid)
         if result.is_ok():
             obj = result.ok()
             if isinstance(obj.syft_action_data, ActionDataLink):
@@ -139,13 +140,17 @@ class ActionService(AbstractService):
                 if result.is_ok():
                     return Ok(True)
                 else:
-                    return Ok(False)
+                    return result
 
-            # If it's not an action data link. It's resolved
+            # If it's a leaf but not resolved yet, return false
+            elif isinstance(obj.syft_action_data, ObjectNotReady):
+                return Ok(False)
+
+            # If it's not an action data link or non resolved (empty). It's resolved
             return Ok(True)
 
-        # If it's not in the store, it's not resolved
-        return Ok(False)
+        # If it's not in the store or permission error, return the error
+        return result
 
     @service_method(
         path="action.resolve_links", name="resolve_links", roles=GUEST_ROLE_LEVEL
@@ -196,24 +201,14 @@ class ActionService(AbstractService):
             )
             # Resolve graph links
             if isinstance(obj.syft_action_data, ActionDataLink):
-                while not self.is_resolved(
+                if not self.is_resolved(
                     context, obj.syft_action_data.action_object_id.id
                 ).ok():
-                    time.sleep(1)
+                    return SyftError(message="This object is not resolved yet.")
                 result = self.resolve_links(
                     context, obj.syft_action_data.action_object_id.id, twin_mode
                 )
                 return result
-                # result = self._get(
-                #     context,
-                #     obj.syft_action_data.action_object_id.id,
-                #     twin_mode,
-                #     has_permission,
-                # )
-                # if result.is_ok():
-                #     obj = result.ok()
-                # else:
-                #     return result
             if isinstance(obj, TwinObject):
                 if twin_mode == TwinMode.PRIVATE:
                     obj = obj.private
@@ -316,10 +311,10 @@ class ActionService(AbstractService):
                 )
                 exec_result = execute_byte_code(code_item, filtered_kwargs, context)
                 if isinstance(exec_result.result, ActionObject):
-                    result_action_object = ActionObject.link(exec_result.result.id)
-                    # self.store.add_permission(
-                    #     ActionObjectREAD(uid=exec_result.result.id, credentials=context.credentials)
-                    # )
+                    result_action_object = ActionObject.link(
+                        result_id=result_id,
+                        pointer_id=exec_result.result.id
+                    )
                 else:
                     result_action_object = wrap_result(result_id, exec_result.result)
             else:
