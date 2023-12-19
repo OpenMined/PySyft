@@ -119,7 +119,7 @@ class SyftWorkerPoolService(AbstractService):
     )
     def get_all(
         self, context: AuthedServiceContext
-    ) -> Union[List[WorkerPool], SyftError]:
+    ) -> Union[DictTuple[str, WorkerPool], SyftError]:
         # TODO: During get_all, we should dynamically make a call to docker to get the status of the containers
         # and update the status of the workers in the pool.
         result = self.stash.get_all(credentials=context.credentials)
