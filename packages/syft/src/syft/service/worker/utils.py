@@ -11,12 +11,17 @@ from .worker_image import SyftWorkerImage
 from .worker_image import SyftWorkerImageTag
 from .worker_pool import ContainerSpawnStatus
 from .worker_pool import SyftWorker
+from .worker_pool import WorkerHealth
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerStatus
+from .worker_pool import get_healthcheck_based_on_status
 
 
 def run_container_using_docker(
-    image_tag: SyftWorkerImageTag, worker_name: str, debug: bool = False
+    image_tag: SyftWorkerImageTag,
+    worker_name: str,
+    full_tag_str: str,
+    debug: bool = False,
 ) -> ContainerSpawnStatus:
     client = docker.from_env()
 
@@ -37,11 +42,15 @@ def run_container_using_docker(
             if container.status == "exited"
             else WorkerStatus.PENDING
         )
+        healthcheck: WorkerHealth = get_healthcheck_based_on_status(status)
+
         worker = SyftWorker(
             name=worker_name,
             container_id=container.id,
             image_hash=container.image.id,
             status=status,
+            healthcheck=healthcheck,
+            full_image_tag_str=full_tag_str,
         )
     except Exception as e:
         error_message = f"Failed to run command in container. {worker_name} {image_tag}. {e}. {sys.stderr}"
@@ -51,6 +60,8 @@ def run_container_using_docker(
                 container_id=container.id,
                 image_hash=container.image.id,
                 status=WorkerStatus.STOPPED,
+                healthcheck=WorkerHealth.UNHEALTHY,
+                full_image_tag_str=full_tag_str,
             )
             container.stop()
 
@@ -74,7 +85,9 @@ def run_containers(
     for worker_count in range(1, number + 1):
         worker_name = f"{pool_name}-{worker_count}"
         spawn_result = run_container_using_docker(
-            worker_name=worker_name, image_tag=image_tag
+            worker_name=worker_name,
+            image_tag=image_tag,
+            full_tag_str=worker_image.full_tag_str,
         )
         results.append(spawn_result)
 

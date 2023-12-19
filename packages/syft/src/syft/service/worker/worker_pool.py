@@ -18,6 +18,10 @@ from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
+from ...util.fonts import ITABLES_CSS
+from ...util.fonts import fonts_css
 from ..response import SyftError
 
 
@@ -45,7 +49,7 @@ class SyftWorker(SyftObject):
     __repr_attrs__ = [
         "name",
         "container_id",
-        "image_hash",
+        "full_image_tag_str",
         "status",
         "healthcheck",
         "created_at",
@@ -58,6 +62,21 @@ class SyftWorker(SyftObject):
     image_hash: str
     healthcheck: Optional[WorkerHealth]
     status: WorkerStatus
+    full_image_tag_str: Optional[str]
+
+    def get_status_healthcheck(self) -> None:
+        self.status: WorkerStatus = get_worker_container_status(self)
+        self.healthcheck = get_healthcheck_based_on_status(status=self.status)
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        self.get_status_healthcheck()
+        return {
+            "Name": self.name,
+            "Image": self.full_image_tag_str,
+            "Healthcheck (health / unhealthy)": f"{self.healthcheck.value}",
+            "Status": f"{self.status.value}",
+            "Created at": str(self.created_at),
+        }
 
 
 @serializable()
@@ -111,6 +130,33 @@ class WorkerPool(SyftObject):
             "Created at": str(self.created_at),
         }
 
+    def _repr_html_(self) -> Any:
+        return f"""
+            <style>
+            {fonts_css}
+            .syft-dataset {{color: {SURFACE[options.color_theme]};}}
+            .syft-dataset h3,
+            .syft-dataset p
+              {{font-family: 'Open Sans';}}
+              {ITABLES_CSS}
+            </style>
+            <div class='syft-dataset'>
+            <h3>{self.name}</h3>
+            <p class='paragraph-sm'>
+                <strong><span class='pr-8'>Created on: </span></strong>
+                {self.created_at}
+            </p>
+            <p class='paragraph-sm'>
+                <strong><span class='pr-8'>Healthy Workers:</span></strong>
+                {len(self.healthy_workers)} / {self.max_count}
+            </p>
+            <p class='paragraph-sm'>
+                <strong><span class='pr-8'>Running Workers:</span></strong>
+                {len(self.running_workers)} / {self.max_count}
+            </p>
+            {self.workers._repr_html_()}
+            """
+
 
 @serializable()
 class WorkerOrchestrationType:
@@ -163,3 +209,10 @@ def get_worker_container_status(
         return SyftError(message=f"Unknown container status: {container_status}")
 
     return syft_container_status
+
+
+def get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
+    if status in [WorkerStatus.PENDING, WorkerStatus.RUNNING]:
+        return WorkerHealth.HEALTHY
+    else:
+        return WorkerHealth.UNHEALTHY
