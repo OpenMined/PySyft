@@ -16,6 +16,7 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import ActionPermission
 from .worker_image import SyftWorkerImage
 
 DockerWorkerConfigPK = PartitionKey(key="config", type_=DockerWorkerConfig)
@@ -39,6 +40,13 @@ class SyftWorkerImageStash(BaseUIDStoreStash):
         add_permissions: Union[List[ActionObjectPermission], None] = None,
         ignore_duplicates: bool = False,
     ) -> Result[SyftWorkerImage, str]:
+        add_permissions = [] if add_permissions is None else add_permissions
+
+        # By default syft images have all read permission
+        add_permissions.append(
+            ActionObjectPermission(uid=obj.id, permission=ActionPermission.ALL_READ)
+        )
+
         if isinstance(obj.config, DockerWorkerConfig):
             result = self.get_by_docker_config(
                 credentials=credentials, config=obj.config
