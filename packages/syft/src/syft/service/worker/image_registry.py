@@ -1,3 +1,6 @@
+# stdlib
+from typing import Optional
+
 # relative
 from ...serde.serializable import serializable
 from ...types.base import SyftBaseModel
@@ -10,6 +13,10 @@ __all__ = ["SyftImageRegistry"]
 class SyftImageRegistry(SyftBaseModel):
     id: UID
     url: str
+
+    # TODO: confirm if this is how we want to handle registry auth
+    username: Optional[str] = None
+    password: Optional[str] = None
 
     @classmethod
     def from_url(cls, full_str: str):
