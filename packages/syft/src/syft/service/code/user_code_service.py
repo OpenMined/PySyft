@@ -340,15 +340,6 @@ class UserCodeService(AbstractService):
             # Execute the code item
             action_service = context.node.get_service("actionservice")
 
-            # Set empty result to store
-            if result_id is not None:
-                obj = ActionObject.obj_not_ready(id=result_id)
-                action_service.set_result_to_store(
-                    result_action_object=obj,
-                    context=context,
-                    output_policy=code.output_policy,
-                )
-
             result_action_object: Result[
                 Union[ActionObject, TwinObject], str
             ] = action_service._user_code_execute(
