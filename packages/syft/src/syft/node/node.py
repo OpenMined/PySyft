@@ -1089,7 +1089,7 @@ class Node(AbstractNode):
             result_obj.syft_resolved = False
             result_obj.syft_node_location = self.id
             result_obj.syft_client_verify_key = credentials
-        
+
         job = Job(
             id=queue_item.job_id,
             result=result_obj,

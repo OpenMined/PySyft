@@ -185,7 +185,6 @@ class ActionService(AbstractService):
     ) -> Result[ActionObject, str]:
         """Get an object from the action store"""
         # stdlib
-        import time
 
         # relative
         from .action_data_empty import ActionDataLink
@@ -312,8 +311,7 @@ class ActionService(AbstractService):
                 exec_result = execute_byte_code(code_item, filtered_kwargs, context)
                 if isinstance(exec_result.result, ActionObject):
                     result_action_object = ActionObject.link(
-                        result_id=result_id,
-                        pointer_id=exec_result.result.id
+                        result_id=result_id, pointer_id=exec_result.result.id
                     )
                 else:
                     result_action_object = wrap_result(result_id, exec_result.result)

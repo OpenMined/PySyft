@@ -51,8 +51,8 @@ from ..response import SyftException
 from ..service import from_api_or_context
 from .action_data_empty import ActionDataEmpty
 from .action_data_empty import ActionDataLink
-from .action_data_empty import ObjectNotReady
 from .action_data_empty import ActionFileData
+from .action_data_empty import ObjectNotReady
 from .action_permissions import ActionPermission
 from .action_types import action_type_for_object
 from .action_types import action_type_for_type
@@ -1224,10 +1224,8 @@ class ActionObject(SyftObject):
             obj_id = self.id.id
         else:
             obj_id = self.id
-        
-        while not api.services.action.is_resolved(
-            obj_id
-        ):
+
+        while not api.services.action.is_resolved(obj_id):
             time.sleep(1)
         return self
 
