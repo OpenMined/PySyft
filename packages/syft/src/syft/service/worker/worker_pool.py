@@ -1,7 +1,15 @@
 # stdlib
 from enum import Enum
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
+from typing import cast
+
+# third party
+import docker
+from docker.models.containers import Container
 
 # relative
 from ...serde.serializable import serializable
@@ -10,6 +18,7 @@ from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
+from ..response import SyftError
 
 
 @serializable()
@@ -68,9 +77,39 @@ class WorkerPool(SyftObject):
 
     name: str
     syft_worker_image_id: UID
+    syft_worker_image_name_tag: Optional[str]
     max_count: int
     workers: List[SyftWorker]
     created_at: DateTime = DateTime.now()
+
+    @property
+    def running_workers(self) -> List[SyftWorker]:
+        return [
+            worker
+            for worker in self.workers
+            if get_worker_container_status(worker) == WorkerStatus.RUNNING
+        ]
+
+    @property
+    def healthy_workers(self) -> List[SyftWorker]:
+        return [
+            worker
+            for worker in self.workers
+            if (
+                get_worker_container_status(worker) == WorkerStatus.PENDING
+                or get_worker_container_status(worker) == WorkerStatus.RUNNING
+            )
+        ]
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        return {
+            "Pool Name": self.name,
+            "Workers": len(self.workers),
+            "Healthy (healthy / all)": f"{len(self.healthy_workers)} / {self.max_count}",
+            "Running (running / all)": f"{len(self.running_workers)} / {self.max_count}",
+            "Image": self.syft_worker_image_name_tag,
+            "Created at": str(self.created_at),
+        }
 
 
 @serializable()
@@ -86,3 +125,41 @@ class ContainerSpawnStatus(SyftBaseModel):
     worker_name: str
     worker: Optional[SyftWorker]
     error: Optional[str]
+
+
+def get_worker_container(
+    worker: SyftWorker, docker_client: Optional[docker.DockerClient] = None
+) -> Union[Container, SyftError]:
+    docker_client = docker_client if docker_client is not None else docker.from_env()
+    try:
+        return cast(Container, docker_client.containers.get(worker.container_id))
+    except docker.errors.NotFound as e:
+        return SyftError(f"Worker {worker.id} container not found. Error {e}")
+    except docker.errors.APIError as e:
+        return SyftError(
+            f"Unable to access worker {worker.id} container. "
+            + f"Container server error {e}"
+        )
+
+
+def get_worker_container_status(
+    worker: SyftWorker, docker_client: Optional[docker.DockerClient] = None
+) -> Union[WorkerStatus, SyftError]:
+    container = get_worker_container(worker, docker_client)
+    if isinstance(container, SyftError):
+        return container
+
+    container_status = container.status
+    syft_container_status = None
+    if container_status == "running":
+        syft_container_status = WorkerStatus.RUNNING
+    elif container_status in ["paused", "removing", "exited", "dead"]:
+        syft_container_status = WorkerStatus.STOPPED
+    elif container_status == "restarting":
+        syft_container_status = WorkerStatus.RESTARTED
+    elif container_status == "created":
+        syft_container_status = WorkerStatus.PENDING
+    else:
+        return SyftError(message=f"Unknown container status: {container_status}")
+
+    return syft_container_status

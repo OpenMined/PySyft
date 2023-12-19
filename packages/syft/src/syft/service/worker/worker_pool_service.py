@@ -7,7 +7,6 @@ from typing import cast
 
 # third party
 import docker
-from docker.models.containers import Container
 
 # relative
 from ...serde.serializable import serializable
@@ -26,6 +25,8 @@ from .worker_pool import SyftWorker
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerPool
 from .worker_pool import WorkerStatus
+from .worker_pool import get_worker_container
+from .worker_pool import get_worker_container_status
 from .worker_pool_stash import SyftWorkerPoolStash
 
 
@@ -101,6 +102,7 @@ class SyftWorkerPoolService(AbstractService):
             syft_worker_image_id=image_uid,
             max_count=number,
             workers=workers,
+            syft_worker_image_name_tag=str(worker_image.image_tag),
         )
         result = self.stash.set(credentials=context.credentials, obj=worker_pool)
 
@@ -146,7 +148,7 @@ class SyftWorkerPoolService(AbstractService):
         worker_pool, worker = worker_pool_worker
 
         # delete the worker using docker client sdk
-        docker_container = _get_worker_container(worker)
+        docker_container = get_worker_container(worker)
         if isinstance(docker_container, SyftError):
             return docker_container
 
@@ -195,7 +197,7 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_pool, worker = worker_pool_worker
 
-        worker_status = _get_worker_container_status(worker)
+        worker_status = get_worker_container_status(worker)
         if isinstance(worker_status, SyftError):
             return worker_status
         elif worker_status != WorkerStatus.PENDING:
@@ -247,7 +249,7 @@ class SyftWorkerPoolService(AbstractService):
 
         _, worker = worker_pool_worker
 
-        docker_container = _get_worker_container(worker)
+        docker_container = get_worker_container(worker)
         if isinstance(docker_container, SyftError):
             return docker_container
 
@@ -307,41 +309,3 @@ def _get_worker(
             message=f"Worker with id: {worker_id} not found in pool: {worker_pool.name}"
         )
     )
-
-
-def _get_worker_container(
-    worker: SyftWorker, docker_client: Optional[docker.DockerClient] = None
-) -> Union[Container, SyftError]:
-    docker_client = docker_client if docker_client is not None else docker.from_env()
-    try:
-        return cast(Container, docker_client.containers.get(worker.container_id))
-    except docker.errors.NotFound as e:
-        return SyftError(f"Worker {worker.id} container not found. Error {e}")
-    except docker.errors.APIError as e:
-        return SyftError(
-            f"Unable to access worker {worker.id} container. "
-            + f"Container server error {e}"
-        )
-
-
-def _get_worker_container_status(
-    worker: SyftWorker, docker_client: Optional[docker.DockerClient] = None
-) -> Union[WorkerStatus, SyftError]:
-    container = _get_worker_container(worker, docker_client)
-    if isinstance(container, SyftError):
-        return container
-
-    container_status = container.status
-    syft_container_status = None
-    if container_status == "running":
-        syft_container_status = WorkerStatus.RUNNING
-    elif container_status in ["paused", "removing", "exited", "dead"]:
-        syft_container_status = WorkerStatus.STOPPED
-    elif container_status == "restarting":
-        syft_container_status = WorkerStatus.RESTARTED
-    elif container_status == "created":
-        syft_container_status = WorkerStatus.PENDING
-    else:
-        return SyftError(message=f"Unknown container status: {container_status}")
-
-    return syft_container_status
