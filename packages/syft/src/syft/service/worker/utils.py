@@ -152,5 +152,5 @@ def create_default_image(credentials: SyftVerifyKey, image_stash: SyftWorkerImag
     return default_syft_image
 
 
-DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu"
+DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu:0.0.1"
 DEFAULT_WORKER_POOL_NAME = "default"

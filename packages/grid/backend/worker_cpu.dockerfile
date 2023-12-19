@@ -19,9 +19,10 @@ ARG CUSTOM_CMD='echo "No custom commands passed"'
 # Worker specific environment variables go here
 ENV SYFT_WORKER="true"
 
-RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
-    --mount=type=cache,target=$HOME/.cache/pip,sharing=locked \
-    apk update && \
+# Commenting this until we support built using python docker sdk or find any other alternative.
+# RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
+#     --mount=type=cache,target=$HOME/.cache/pip,sharing=locked \
+RUN apk update && \
     apk add ${SYSTEM_PACKAGES} && \
     pip install --user ${PIP_PACKAGES} && \
     bash -c "$CUSTOM_CMD"

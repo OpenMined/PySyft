@@ -1272,7 +1272,11 @@ def create_admin_new(
             user = create_user.to(User)
             user.signing_key = node.signing_key
             user.verify_key = user.signing_key.verify_key
-            result = user_stash.set(credentials=node.signing_key.verify_key, user=user)
+            result = user_stash.set(
+                credentials=node.signing_key.verify_key,
+                user=user,
+                ignore_duplicates=True,
+            )
             if result.is_ok():
                 return result.ok()
             else:
@@ -1333,6 +1337,12 @@ def create_default_worker_pool(node: Node):
 
     image_stash = node.get_service(SyftWorkerImageService).stash
 
+    context = AuthedServiceContext(
+        node=node,
+        credentials=credentials,
+        role=ServiceRole.ADMIN,
+    )
+
     print("Creating Default Worker Image")
     # Get/Create a default worker SyftWorkerImage
     default_image = create_default_image(
@@ -1344,18 +1354,18 @@ def create_default_worker_pool(node: Node):
 
     # Build the Image for given tag
     result = image_build_method(
-        node.context, uid=default_image.id, tag=DEFAULT_WORKER_IMAGE_TAG
+        context, uid=default_image.id, tag=DEFAULT_WORKER_IMAGE_TAG
     )
 
     if isinstance(result, SyftError):
         print("Failed to build default worker image: ", result.message)
         return
 
-    create_pool_method = node.get_service_method(SyftWorkerPoolService.create)
+    create_pool_method = node.get_service_method(SyftWorkerPoolService.create_pool)
 
     print("Creating default Worker Pool")
     result = create_pool_method(
-        node.context,
+        context,
         name=DEFAULT_WORKER_POOL_NAME,
         image_uid=default_image.id,
         number=1,

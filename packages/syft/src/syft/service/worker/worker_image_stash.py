@@ -59,5 +59,5 @@ class SyftWorkerImageStash(BaseUIDStoreStash):
     def get_by_docker_config(
         self, credentials: SyftVerifyKey, config: DockerWorkerConfig
     ):
-        qks = QueryKeys(qks=[DockerWorkerConfigPK.from_obj(config)])
+        qks = QueryKeys(qks=[DockerWorkerConfigPK.with_obj(config)])
         return self.query_one(credentials=credentials, qks=qks)

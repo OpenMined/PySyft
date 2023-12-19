@@ -105,6 +105,7 @@ def build_using_docker(worker_image: SyftWorkerImage, push: bool = True):
         result = client.images.build(
             fileobj=file_obj,
             rm=True,
+            forcerm=True,
             tag=worker_image.image_tag.full_tag,
         )
         worker_image.image_hash = result[0].id

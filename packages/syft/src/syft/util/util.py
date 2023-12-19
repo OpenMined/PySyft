@@ -891,8 +891,8 @@ def get_syft_src_path() -> Path:
 
 def get_grid_src_path() -> Path:
     syft_path = get_syft_src_path()
-    syft_path.parent / "grid"
+    return syft_path.parent.parent / "grid"
 
 
 def get_syft_cpu_dockerfile() -> Path:
-    return get_grid_src_path().parent / "backend" / "worker_cpu.dockerfile"
+    return get_grid_src_path() / "backend" / "worker_cpu.dockerfile"
