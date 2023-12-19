@@ -11,6 +11,7 @@ import pydantic
 from ...custom_worker.config import DockerWorkerConfig
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -82,6 +83,7 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"Failed to create tag: {e}")
 
         worker_image.image_tag = image_tag
+        worker_image.full_tag_str = tag
         worker_image, result = build_using_docker(worker_image=worker_image, push=push)
 
         if isinstance(result, SyftError):
@@ -103,16 +105,16 @@ class SyftWorkerImageService(AbstractService):
     )
     def get_all(
         self, context: AuthedServiceContext
-    ) -> Union[List[SyftWorkerImage], SyftError]:
+    ) -> Union[DictTuple[str, SyftWorkerImage], SyftError]:
         """
         One image one docker file for now
-        TODO: change repr when listing
         """
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_err():
             return SyftError(message=f"{result.err()}")
-
-        return result.ok()
+        images: List[SyftWorkerImage] = result.ok()
+        dict_tuple = DictTuple((im.full_tag_str, im) for im in images)
+        return dict_tuple
 
     @service_method(
         path="worker_image.delete",

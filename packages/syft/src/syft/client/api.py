@@ -384,6 +384,9 @@ class APIModule:
         results = self.get_all()
         return results._repr_html_()
 
+    def __len__(self) -> int:
+        return len(self.get_all())
+
 
 def debox_signed_syftapicall_response(
     signed_result: SignedSyftAPICall,

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
@@ -23,8 +22,6 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.user.roles import Roles
 from ..service.user.user_roles import ServiceRole
-from ..service.worker.worker_image import SyftWorkerImage
-from ..service.worker.worker_pool import WorkerPool
 from ..types.uid import UID
 from ..util.fonts import fonts_css
 from ..util.util import get_mb_size
@@ -201,15 +198,15 @@ class DomainClient(SyftClient):
         return self.api.services.code_history.get_histories()
 
     @property
-    def images(self) -> Optional[Union[List[SyftWorkerImage], SyftError]]:
+    def images(self) -> Optional[APIModule]:
         if self.api.has_service("worker_image"):
-            return self.api.services.worker_image.get_all()
+            return self.api.services.worker_image
         return None
 
     @property
-    def worker_pools(self) -> Optional[Union[List[WorkerPool], SyftError]]:
+    def worker_pools(self) -> Optional[APIModule]:
         if self.api.has_service("worker_pool"):
-            return self.api.services.worker_pool.get_all()
+            return self.api.services.worker_pool
         return None
 
     def get_project(

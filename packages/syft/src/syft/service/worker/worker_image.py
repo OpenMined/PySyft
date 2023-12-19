@@ -18,8 +18,6 @@ from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
-from ...util import options
-from ...util.colors import SURFACE
 from ..response import SyftError
 from ..response import SyftSuccess
 
@@ -53,17 +51,6 @@ class ContainerImageRegistry(SyftBaseModel):
 
     def __str__(self) -> str:
         return self.url
-
-    def _repr_html_(self) -> str:
-        return f"""
-            <style>
-            .syft-container-image-registry {{color: {SURFACE[options.color_theme]};}}
-            </style>
-            <div class='syft-container-image-registry style='line-height:25%'>
-                <h3>ContainerImageRegistry</h3>
-                <p><strong>URL: </strong>{self.url}</p>
-            </div>
-            """
 
 
 @serializable()
@@ -99,19 +86,6 @@ class SyftWorkerImageTag(SyftBaseModel):
         else:
             return f"url: {self.registry.url}, repo: {self.repo}, tag: {self.tag}"
 
-    def _repr_html_(self) -> str:
-        return f"""
-            <style>
-            .syft-worker-image-tag {{color: {SURFACE[options.color_theme]};}}
-            </style>
-            <div class='syft-worker-image-tag style='line-height:25%'>
-                <h3>SyftWorkerImage</h3>
-                <p><strong>Registry: </strong>{str(self.registry)}</p>
-                <p><strong>Repo: </strong>{self.repo}</p>
-                <p><strong>Tag: </strong>{self.tag}</p>
-            </div>
-            """
-
 
 @serializable()
 class SyftWorkerImage(SyftObject):
@@ -128,6 +102,7 @@ class SyftWorkerImage(SyftObject):
     created_at: DateTime = DateTime.now()
     created_by: SyftVerifyKey
     source_file: Optional[str]
+    full_tag_str: Optional[str]
 
     __repr_attrs__ = ["image_tag", "image_hash", "created_at"]
 
