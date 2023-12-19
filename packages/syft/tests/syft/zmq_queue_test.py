@@ -20,6 +20,7 @@ from syft.service.queue.zmq_queue import ZMQProducer
 from syft.service.queue.zmq_queue import ZMQQueueConfig
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
+from syft.util.util import get_queue_address
 
 
 @pytest.fixture
@@ -142,7 +143,7 @@ def consumer(producer):
 def test_zmq_pub_sub(faker: Faker, producer, consumer):
     received_messages = []
 
-    pub_addr = f"tcp://localhost:{producer.port}"
+    pub_addr = get_queue_address(port=producer.port)
 
     assert producer.address == pub_addr
     assert isinstance(producer.backend, Socket)

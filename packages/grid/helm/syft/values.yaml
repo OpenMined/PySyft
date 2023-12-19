@@ -19,6 +19,7 @@ secrets:
 
 configuration:
   devmode: false
+  loglevel: "debug"
 
 db:
   mongo:
@@ -32,6 +33,9 @@ seaweedfs:
   S3_PORT: 8333
   SEAWEED_MOUNT_PORT: 4001
   S3_ROOT_USER: "admin"
+
+queue:
+  port: 5556
 
 container:
   registry: "docker.io"

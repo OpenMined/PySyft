@@ -109,8 +109,10 @@ from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.experimental_flags import flags
+from ..util.logger import info
 from ..util.telemetry import instrument
 from ..util.util import get_env
+from ..util.util import get_queue_address
 from ..util.util import get_root_data_path
 from ..util.util import random_name
 from ..util.util import str_to_bool
@@ -349,7 +351,7 @@ class Node(AbstractNode):
 
         self.post_init()
         self.create_initial_settings(admin_email=root_email)
-
+        info("calling init queue manager")
         self.init_queue_manager(queue_config=queue_config)
 
         self.init_blob_storage(config=blob_storage_config)
@@ -402,6 +404,7 @@ class Node(AbstractNode):
 
     def init_queue_manager(self, queue_config: Optional[QueueConfig]):
         queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
+        info(">>>>> queue_config_", queue_config_)
         self.queue_config = queue_config_
 
         MessageHandlers = [APICallMessageHandler]
@@ -411,6 +414,7 @@ class Node(AbstractNode):
             queue_name = message_handler.queue_name
             # client config
             if getattr(queue_config_.client_config, "create_producer", True):
+                info(">>>>> Create producer")
                 context = AuthedServiceContext(
                     node=self,
                     credentials=self.verify_key,
@@ -422,18 +426,21 @@ class Node(AbstractNode):
                 producer.run()
                 address = producer.address
             else:
+                info(">>>> Create consumer")
                 port = queue_config_.client_config.queue_port
                 if port is not None:
-                    address = f"tcp://localhost:{port}"
+                    address = get_queue_address(port=port)
                 else:
                     address = None
 
             for _ in range(queue_config_.client_config.n_consumers):
+                info("for each n consumer", address)
                 if address is None:
                     raise ValueError("address unknown for consumers")
                 consumer: QueueConsumer = self.queue_manager.create_consumer(
                     message_handler, address=address
                 )
+                info(">>> running consumer")
                 consumer.run()
 
     @classmethod

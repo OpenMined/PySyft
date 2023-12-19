@@ -30,6 +30,8 @@ from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import UID
+from ...util.logger import info
+from ...util.util import get_queue_address
 from ..response import SyftError
 from ..response import SyftSuccess
 from .base_queue import AbstractMessageHandler
@@ -77,7 +79,7 @@ class WorkerQueue:
             if t > worker.expiry:  # Worker expired
                 expired.append(address)
         for address in expired:
-            print("Idle worker expired: %s" % address)
+            info("Idle worker expired: %s" % address)
             self.queue.pop(address, None)
 
     def next(self):
@@ -102,7 +104,7 @@ class ZMQProducer(QueueProducer):
 
     @property
     def address(self):
-        return f"tcp://localhost:{self.port}"
+        return get_queue_address(port=self.port)
 
     def post_init(self):
         self.identity = b"%04X-%04X" % (
@@ -124,7 +126,7 @@ class ZMQProducer(QueueProducer):
         try:
             self.poll_workers.unregister(self.backend)
         except Exception as e:
-            print("failed to unregister poller", e)
+            info("failed to unregister poller", e)
         self.backend.close()
         self.context.destroy()
         if self.thread is not None:
@@ -167,7 +169,7 @@ class ZMQProducer(QueueProducer):
                         return True
             return value
         except Exception as e:
-            print(e)
+            info(e)
             return True
 
     def unwrap_nested_actionobjects(self, data):
@@ -229,7 +231,7 @@ class ZMQProducer(QueueProducer):
                     item.status = Status.PROCESSING
                     res = self.queue_stash.update(item.syft_client_verify_key, item)
                     if not res.is_ok():
-                        print("Failed to update queue item")
+                        info("Failed to update queue item")
 
     def run(self):
         self.thread = threading.Thread(target=self._run)
@@ -264,17 +266,18 @@ class ZMQProducer(QueueProducer):
                     with lock:
                         frames = self.backend.recv_multipart()
                     if not frames:
-                        print("error in producer")
+                        info("error in producer")
                         break
-
+                    info("got a heart beat")
                     # Validate control message, or return reply to client
                     msg = frames[1:]
                     address = frames[0]
+                    info("got a heart beat > ", msg, address)
                     if len(msg) == 1:
                         if address not in connecting_workers:
                             self.workers.ready(Worker(address))
                             if msg[0] not in (PPP_READY, PPP_HEARTBEAT):
-                                print("E: Invalid message from worker: %s" % msg)
+                                info("E: Invalid message from worker: %s" % msg)
                     else:
                         if address in connecting_workers:
                             connecting_workers.remove(address)
@@ -297,7 +300,7 @@ class ZMQProducer(QueueProducer):
                 # which in turns causes all kinds of problems
                 sleep(0.5)
                 if not self._stop:
-                    print(
+                    info(
                         f"Error in producer {e}, {self.identity} {traceback.format_exc()}"
                     )
 
@@ -330,10 +333,15 @@ class ZMQConsumer(QueueConsumer):
         self.worker.setsockopt(zmq.IDENTITY, self.identity)
         self.worker.setsockopt(LINGER, 1)
         self.poller.register(self.worker, zmq.POLLIN)
-        self.worker.connect(self.address)
-        self.worker.send(PPP_READY)
+        info("got address", self.address)
+        try:
+            self.worker.connect(self.address)
+            self.worker.send(PPP_READY)
+        except Exception as e:
+            info("failed to connect", e, self)
 
     def post_init(self):
+        info("init")
         self.ctx = zmq.Context()
         self.poller = zmq.Poller()
         self.create_socket()
@@ -346,7 +354,7 @@ class ZMQConsumer(QueueConsumer):
         try:
             self.poller.unregister(self.worker)
         except Exception as e:
-            print("failed to unregister poller", e)
+            info("failed to unregister poller", e)
         finally:
             self.worker.close()
             self.ctx.destroy()
@@ -365,16 +373,17 @@ class ZMQConsumer(QueueConsumer):
                 except Exception as e:
                     time.sleep(0.5)
                     if isinstance(e, ContextTerminated) or self._stop:
+                        info("got nothing in loop")
                         return
                     else:
                         # possibly file descriptor problem
-                        print(e, traceback.format_exc())
+                        info(e, traceback.format_exc())
                         continue
                 if socks.get(self.worker) == zmq.POLLIN:
                     with lock:
                         frames = self.worker.recv_multipart()
                     if not frames or len(frames) not in [1, 3]:
-                        print(f"Worker error: Invalid message: {frames}")
+                        info(f"Worker error: Invalid message: {frames}")
                         break  # Interrupted
 
                     # get normal message
@@ -384,22 +393,25 @@ class ZMQConsumer(QueueConsumer):
                         liveness = HEARTBEAT_LIVENESS
                         message = frames[2]
                         try:
+                            info("trying to handle message", message)
                             self.message_handler.handle_message(message=message)
                         except Exception as e:
                             # stdlib
-                            print(
+                            info(
                                 f"ERROR HANDLING MESSAGE {e}, {traceback.format_exc()}"
                             )
                     # process heartbeat
                     elif len(frames) == 1 and frames[0] == PPP_HEARTBEAT:
+                        info("heartbeat")
                         liveness = HEARTBEAT_LIVENESS
                     # process wrong message
                     interval = INTERVAL_INIT
                 # process silence
                 else:
+                    info("reduce liveness")
                     liveness -= 1
                     if liveness == 0:
-                        print(
+                        info(
                             f"Heartbeat failure, worker can't reach queue, reconnecting in {interval}s"
                         )
                         time.sleep(interval)
@@ -415,10 +427,11 @@ class ZMQConsumer(QueueConsumer):
                 if time.time() > heartbeat_at:
                     heartbeat_at = time.time() + HEARTBEAT_INTERVAL
                     if not self._stop:
+                        info("send heartbeat")
                         self.worker.send(PPP_HEARTBEAT)
             except zmq.ZMQError as e:
                 if e.errno == zmq.ETERM:
-                    print("Subscriber connection Terminated")
+                    info("Subscriber connection Terminated")
                 else:
                     raise e
 
@@ -529,7 +542,7 @@ class ZMQClient(QueueClient):
         """
 
         if address is None:
-            address = f"tcp://localhost:{self.config.queue_port}"
+            address = get_queue_address(port=self.config.queue_port)
 
         consumer = ZMQConsumer(
             queue_name=queue_name,

@@ -1,10 +1,16 @@
 # stdlib
+import copy
+import os
 import socket
 from typing import List
+from typing import Optional
+from typing import Tuple
 from typing import Union
 
 # third party
 import docker
+import kr8s
+from kr8s.objects import Pod
 
 # relative
 from ...serde.serializable import serializable
@@ -22,115 +28,76 @@ from ..service import SyftError
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 
+container_host = os.getenv("CONTAINER_HOST", "docker")
+ContainerType = Union[docker.models.containers.Container, Pod]
+
 
 @serializable()
-class DockerWorker(SyftObject):
+class ContainerWorker(SyftObject):
     # version
-    __canonical_name__ = "ContainerImage"
+    __canonical_name__ = "ContainerWorker"
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_searchable__ = ["container_id"]
     __attr_unique__ = ["container_id"]
     __repr_attrs__ = ["container_id", "created_at"]
 
-    container_id: str
+    container_id: Optional[str]
     created_at: DateTime
+    name: str
+    container_host: str
 
 
 @instrument
 @serializable()
 class WorkerStash(BaseUIDStoreStash):
-    object_type = DockerWorker
+    object_type = ContainerWorker
     settings: PartitionSettings = PartitionSettings(
-        name=DockerWorker.__canonical_name__, object_type=DockerWorker
+        name=ContainerWorker.__canonical_name__, object_type=ContainerWorker
     )
 
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
 
-# def get_default_env_vars(context: AuthedServiceContext):
-#     if context.node.runs_in_docker:
-#         # get env vars from current environment
-#         return dict(os.environ)
-#     else:
-#         # read env vars from .env file
-#         env_path = f"{context.node.host_syft_location}/packages/grid/.env"
-#         with open(env_path) as f:
-#             lines = f.read().splitlines()
-
-#         default_env_vars = {}
-#         for line in lines:
-#             if "=" in line:
-#                 try:
-#                     var_name, value = line.split("=", 1)
-
-#                     def remove_redundant_quotes(value):
-#                         for s in ['"', "'"]:
-#                             if len(value) != 0:
-#                                 if value[0] == s:
-#                                     value = value[1:]
-#                                 if value[-1] == s:
-#                                     value = value[:-1]
-
-#                     value = remove_redundant_quotes(value)
-#                     default_env_vars[var_name] = value
-#                 except Exception as e:
-#                     print("error parsing env file", e)
-#         return default_env_vars
-
-
-# PORT_COUNTER = 0
-
-
-# def get_env_vars(context: AuthedServiceContext):
-#     default_env_vars = get_default_env_vars(context)
-#     # stdlib
-#     import secrets
-
-#     worker_tag = "".join([str(secrets.choice(list(range(10)))) for i in range(10)])
-#     node = context.node
-#     # TODO, improve
-#     global PORT_COUNTER
-#     PORT_COUNTER += 1
-#     extra_env_vars = {
-#         "SERVICE_NAME": "backend",
-#         "CREATE_PRODUCER": "false",
-#         "N_CONSUMERS": "1",
-#         "DEV_MODE": node.dev_mode,
-#         "DEFAULT_ROOT_USERNAME": f"worker-{worker_tag}",
-#         "PORT": str(8003 + PORT_COUNTER),
-#         "QUEUE_PORT": node.queue_config.client_config.queue_port,
-#         "HTTP_PORT": str(88 + PORT_COUNTER),
-#         "HTTPS_PORT": str(446 + PORT_COUNTER),
-#         "DEFAULT_ROOT_EMAIL": f"{worker_tag}@openmined.org",
-#     }
-#     # if node.dev_mode:
-#     #     extra_env_vars["WATCHFILES_FORCE_POLLING"] = "true"
-
-#     result = {**default_env_vars, **extra_env_vars}
-#     result.pop("NODE_PRIVATE_KEY", None)
-#     return result
-
-
-def get_main_backend() -> str:
+def get_main_backend_docker() -> str:
     hostname = socket.gethostname()
     return f"{hostname}-backend-1"
 
 
-def start_worker_container(worker_num: int, context: AuthedServiceContext):
-    client = docker.from_env()
-    existing_container_name = get_main_backend()
-    hostname = socket.gethostname()
-    worker_name = f"{hostname}-worker-{worker_num}"
-    return create_new_container_from_existing(
-        worker_name=worker_name,
-        client=client,
-        existing_container_name=existing_container_name,
-    )
+def get_main_backend_k8s() -> str:
+    return "backend-0"
 
 
-def create_new_container_from_existing(
+def start_worker_container(
+    worker_num: int, context: AuthedServiceContext
+) -> Tuple[str, ContainerType]:
+    if container_host == "docker":
+        client = docker.from_env()
+        existing_container_name = get_main_backend_docker()
+        hostname = socket.gethostname()
+        worker_name = f"{hostname}-worker-{worker_num}"
+        container = create_new_container_from_existing_docker(
+            worker_name=worker_name,
+            client=client,
+            existing_container_name=existing_container_name,
+        )
+        return worker_name, container.id, container
+    elif container_host == "k8s":
+        client = client = kr8s.api()
+        existing_container_name = get_main_backend_k8s()
+        worker_name = f"worker-{worker_num}"
+        pod = create_new_container_from_existing_k8s(
+            worker_name=worker_name,
+            client=client,
+            existing_container_name=existing_container_name,
+        )
+        return worker_name, pod.metadata.uid, pod
+
+    raise Exception(f"Can't start workers. Unknown container host {container_host}")
+
+
+def create_new_container_from_existing_docker(
     worker_name: str, client: docker.client.DockerClient, existing_container_name: str
 ) -> docker.models.containers.Container:
     # Get the existing container
@@ -189,6 +156,32 @@ def create_new_container_from_existing(
     return new_container
 
 
+def create_new_container_from_existing_k8s(
+    worker_name: str, client: kr8s.Api, existing_container_name: str
+) -> kr8s.objects.Pod:
+    # Get the existing pod
+    existing_pod = Pod.get(existing_container_name)
+
+    spec = existing_pod.spec
+    image = spec.containers[0].image
+    env = spec.containers[0].env
+    new_env = copy.deepcopy(env)
+
+    for item in new_env:
+        if item["name"] == "N_CONSUMERS":
+            item["value"] = "1"
+        if item["name"] == "CREATE_PRODUCER":
+            item["value"] = "False"
+        if item["name"] == "DEFAULT_ROOT_USERNAME":
+            item["value"] = worker_name
+        if item["name"] == "DEFAULT_ROOT_EMAIL":
+            item["value"] = f"{worker_name}@openmined.org"
+
+    pod = Pod.gen(name=worker_name, image=image, env=new_env)
+    pod.create()
+    return pod
+
+
 WORKER_NUM = 0
 
 
@@ -212,8 +205,15 @@ class WorkerService(AbstractService):
         for _worker_num in range(n):
             global WORKER_NUM
             WORKER_NUM += 1
-            res = start_worker_container(WORKER_NUM, context)
-            obj = DockerWorker(container_id=res.id, created_at=DateTime.now())
+            worker_name, container_uid, container = start_worker_container(
+                WORKER_NUM, context
+            )
+            obj = ContainerWorker(
+                name=worker_name,
+                container_id=container_uid,
+                created_at=DateTime.now(),
+                container_host=container_host,
+            )
             result = self.stash.set(context.credentials, obj)
             if result.is_err():
                 return SyftError(message=f"Failed to start worker. {result.err()}")
@@ -234,25 +234,47 @@ class WorkerService(AbstractService):
     def stop(
         self,
         context: AuthedServiceContext,
-        workers: Union[List[DockerWorker], DockerWorker],
+        workers: Union[List[ContainerWorker], ContainerWorker],
     ) -> Union[SyftSuccess, SyftError]:
         # listify
-        if isinstance(workers, DockerWorker):
+        if isinstance(workers, ContainerWorker):
             workers = [workers]
 
-        client = docker.from_env()
-        for w in workers:
-            result = self.stash.delete_by_uid(context.credentials, uid=w.id)
+        if container_host == "docker":
+            client = docker.from_env()
+            for w in workers:
+                result = self.stash.delete_by_uid(context.credentials, uid=w.id)
 
-            if result.is_err():
-                return SyftError(message=f"Failed to stop workers {result.err()}")
+                if result.is_err():
+                    return SyftError(message=f"Failed to stop workers {result.err()}")
 
-            # stop container
-            try:
-                client.containers.list(filters={"id": w.container_id})[0].stop()
-                # also prune here?
-            except Exception as e:
-                # we dont throw an error here because apparently the container was already killed
-                print(f"Failed to kill container {e}")
+                # stop container
+                try:
+                    client.containers.list(filters={"id": w.container_id})[0].stop()
+                    # also prune here?
+                except Exception as e:
+                    # we dont throw an error here because apparently the container was already killed
+                    print(f"Failed to kill container {e}")
 
-        return SyftSuccess(message=f"{len(workers)} workers stopped")
+            return SyftSuccess(message=f"{len(workers)} workers stopped")
+        elif container_host == "k8s":
+            client = client = kr8s.api()
+            for w in workers:
+                result = self.stash.delete_by_uid(context.credentials, uid=w.id)
+
+                if result.is_err():
+                    return SyftError(message=f"Failed to stop workers {result.err()}")
+
+                # stop container
+                try:
+                    pods = kr8s.get("pods", namespace=kr8s.ALL)
+                    for pod in pods:
+                        if pod.metadata.uid == w.container_id:
+                            pod.delete()
+                except Exception as e:
+                    # we dont throw an error here because apparently the container was already killed
+                    print(f"Failed to kill container {e}")
+
+            return SyftSuccess(message=f"{len(workers)} workers stopped")
+
+        raise Exception(f"Can't stop workers. Unknown container host {container_host}")

@@ -23,6 +23,7 @@ spec:
         app.kubernetes.io/name: devspace-app
     spec:
       affinity: null
+      serviceAccountName: worker-manager
       containers:
       - args: null
         command: null
@@ -65,6 +66,12 @@ spec:
           value: '80'
         - name: HTTPS_PORT
           value: '443'
+        - name: QUEUE_PORT
+          value: '{{ .Values.queue.port }}'
+        - name: CREATE_PRODUCER
+          value: 'true'
+        - name: N_CONSUMERS
+          value: '0'
         - name: CONTAINER_HOST
           value: k8s
         - name: TRACE
@@ -75,6 +82,8 @@ spec:
           value: '14268'
         - name: DEV_MODE
           value: 'False'
+        - name: 'LOG_LEVEL'
+          value: '{{ .Values.configuration.loglevel }}'
         - name: DOMAIN_CONNECTION_PORT
           value: '3030'
         - name: ENABLE_OBLV

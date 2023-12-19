@@ -883,3 +883,10 @@ def set_klass_module_to_syft(klass, module_name):
         new_module = sys.modules["syft"].__dict__[module_name]
     setattr(new_module, klass.__name__, klass)
     sys.modules["syft"].__dict__[module_name] = new_module
+
+
+def get_queue_address(port: int) -> str:
+    container_host = os.getenv("CONTAINER_HOST", "docker")
+    if container_host == "k8s":
+        return f"tcp://backend:{port}"
+    return f"tcp://localhost:{port}"
