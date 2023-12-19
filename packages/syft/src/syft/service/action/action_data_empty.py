@@ -34,6 +34,14 @@ class ActionDataEmpty(SyftObject):
 
 
 @serializable()
+class ObjectNotReady(SyftObject):
+    __canonical_name__ = "ObjectNotReady"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    obj_id: UID
+
+
+@serializable()
 class ActionDataLink(SyftObject):
     __canonical_name__ = "ActionDataLink"
     __version__ = SYFT_OBJECT_VERSION_1
