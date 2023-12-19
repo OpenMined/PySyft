@@ -11,6 +11,7 @@ import docker
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -102,7 +103,7 @@ class SyftWorkerPoolService(AbstractService):
             syft_worker_image_id=image_uid,
             max_count=number,
             workers=workers,
-            syft_worker_image_name_tag=str(worker_image.image_tag),
+            syft_worker_image_name_tag=worker_image.full_tag_str,
         )
         result = self.stash.set(credentials=context.credentials, obj=worker_pool)
 
@@ -124,8 +125,10 @@ class SyftWorkerPoolService(AbstractService):
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_err():
             return SyftError(message=f"{result.err()}")
-
-        return result.ok()
+        worker_pools = result.ok()
+        return DictTuple(
+            (pool.syft_worker_image_name_tag, pool) for pool in worker_pools
+        )
 
     @service_method(
         path="worker_pool.delete_worker",

@@ -113,8 +113,7 @@ class SyftWorkerImageService(AbstractService):
         if result.is_err():
             return SyftError(message=f"{result.err()}")
         images: List[SyftWorkerImage] = result.ok()
-        dict_tuple = DictTuple((im.full_tag_str, im) for im in images)
-        return dict_tuple
+        return DictTuple((im.full_tag_str, im) for im in images)
 
     @service_method(
         path="worker_image.delete",
