@@ -993,6 +993,9 @@
         "1": {
           "version": 1,
           "hash": "88207988639b11eaca686b6e079616d9caecc3dbc2a8112258e0f39ee5c3e113",
+          "action": "add"
+        }
+      },
       "SeaweedSecureFilePathLocation": {
         "2": {
           "version": 2,
@@ -1030,7 +1033,6 @@
         "3": {
           "version": 3,
           "hash": "0b664100ea08413ca4ef04665ca910c2cf9535539617ea4ba33687d05cdfe747",
-
           "action": "add"
         }
       }
