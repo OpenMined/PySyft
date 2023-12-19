@@ -34,6 +34,7 @@ from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.markdown import as_markdown_code
 from ...util.telemetry import instrument
+from ..action.action_data_empty import ActionDataLink
 from ..action.action_object import Action
 from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftError
@@ -338,11 +339,29 @@ class Job(SyftObject):
         # stdlib
         from time import sleep
 
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
+
         # todo: timeout
         if self.resolved:
             return self.resolve
+
+        print_warning = True
         while True:
             self.fetch()
+            if print_warning:
+                result_obj = api.services.action.get(
+                    self.result.id, resolve_nested=False
+                )
+                if isinstance(result_obj.syft_action_data, ActionDataLink):
+                    print(
+                        "You're trying to wait on a job that has a link as a result."
+                        "This means that the job may be ready but the linked result may not."
+                        "Use job.result.wait() instead to wait for the linked result."
+                    )
+                    print_warning = False
             sleep(2)
             if self.resolved:
                 break
