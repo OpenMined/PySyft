@@ -95,6 +95,8 @@ from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
 from ..service.worker.worker_image_service import SyftWorkerImageService
+from ..service.worker.worker_pool import SyftWorker
+from ..service.worker.worker_pool import WorkerStatus
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_service import WorkerService
 from ..store.blob_storage import BlobStorageConfig
@@ -419,27 +421,26 @@ class Node(AbstractNode):
                 else:
                     address = None
 
-            for _ in range(queue_config_.client_config.n_consumers):
+            for n in range(queue_config_.client_config.n_consumers):
                 if address is None:
                     raise ValueError("address unknown for consumers")
 
                 if get_syft_worker_uid() is None:
-                    syft_worker = None
-                    # syft_worker = SyftWorker(
-                    #     id = UID(),
-                    #     name=f"in-memory-worker-{i}",
-                    #     container_id=None,
-                    #     image_hash=None,
-                    #     status=WorkerStatus.STARTED # or whatever
-                    #                     )
-                    # syft_worker = self.worker_stash.create()
-                    pass
-                    # client.create_node_pool
-                    # create worker here
-                # TODO: pass syft_worker id to queue
+                    # this means we are not in a docker container
+                    # so the object does not exist yet
+                    syft_worker = SyftWorker(
+                        name=f"in-memory-worker-{n}",
+                        container_id=None,
+                        image_hash=None,
+                        status=WorkerStatus.PENDING,
+                    )
+                    self.worker_stash.set(self.signing_key.verify_key, syft_worker)
 
                 consumer: QueueConsumer = self.queue_manager.create_consumer(
-                    message_handler, address=address, syft_worker_id=syft_worker.id
+                    message_handler,
+                    address=address,
+                    worker_stash=self.worker_stash,
+                    syft_worker_id=syft_worker.id,
                 )
                 consumer.run()
 
@@ -778,6 +779,10 @@ class Node(AbstractNode):
     @property
     def job_stash(self):
         return self.get_service("jobservice").stash
+
+    @property
+    def worker_stash(self):
+        return self.get_service("workerservice").stash
 
     def _construct_services(self):
         self.service_path_map = {}

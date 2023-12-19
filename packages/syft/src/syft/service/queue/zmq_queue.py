@@ -33,13 +33,13 @@ from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
 from .base_queue import QueueClient
 from .base_queue import QueueClientConfig
 from .base_queue import QueueConfig
 from .base_queue import QueueConsumer
 from .base_queue import QueueProducer
-from .consumer_stash import ConsumerStash
 from .queue_stash import ActionQueueItem
 from .queue_stash import Status
 
@@ -315,7 +315,7 @@ class ZMQConsumer(QueueConsumer):
         message_handler: AbstractMessageHandler,
         address: str,
         queue_name: str,
-        worker_stash: Optional[ConsumerStash] = None,
+        worker_stash: Optional[WorkerStash] = None,
         syft_worker_id: Optional[UID] = None,
     ) -> None:
         self.address = address
@@ -326,7 +326,7 @@ class ZMQConsumer(QueueConsumer):
         self.post_init()
         self.id = UID()
         self._stop = False
-        self.worker_stash = worker_stash
+        self.worker_stash: Optional[WorkerStash] = worker_stash
         self.syft_worker_id = syft_worker_id
 
     def create_socket(self):
@@ -367,8 +367,8 @@ class ZMQConsumer(QueueConsumer):
         self._set_worker_job(None)
 
     def _set_worker_job(self, job_id: Optional[UID]):
-        res = self.worker_stash.get_by_worker_id(
-            self.worker_stash.partition.root_verify_key, str(self.syft_worker_id)
+        res = self.worker_stash.get_by_uid(
+            self.worker_stash.partition.root_verify_key, self.syft_worker_id
         )
 
         if res.is_err():
@@ -415,7 +415,7 @@ class ZMQConsumer(QueueConsumer):
                         try:
                             self.associate_job(message)
                             self.message_handler.handle_message(
-                                message=message, consumer_id=self.syft_worker_id
+                                message=message, worker_id=self.syft_worker_id
                             )
                         except Exception as e:
                             # stdlib
@@ -571,7 +571,7 @@ class ZMQClient(QueueClient):
             queue_name=queue_name,
             message_handler=message_handler,
             address=address,
-            consumer_stash=worker_stash,
+            worker_stash=worker_stash,
             syft_worker_id=syft_worker_id,
         )
         self.consumers[queue_name].append(consumer)

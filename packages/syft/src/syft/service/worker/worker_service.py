@@ -10,14 +10,14 @@ import docker
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store import SyftSuccess
-from ...types.datetime import DateTime
 from ...util.telemetry import instrument
 from ..service import AbstractService
 from ..service import AuthedServiceContext
 from ..service import SyftError
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
-from .worker import DockerWorker
+from .worker_pool import SyftWorker
+from .worker_pool import WorkerStatus
 from .worker_stash import WorkerStash
 
 # def get_default_env_vars(context: AuthedServiceContext):
@@ -184,10 +184,30 @@ class WorkerService(AbstractService):
         for _worker_num in range(n):
             global WORKER_NUM
             WORKER_NUM += 1
-            res = start_worker_container(WORKER_NUM, context)
-            obj = DockerWorker(
-                container_name=res.name, container_id=res.id, created_at=DateTime.now()
+            container = start_worker_container(WORKER_NUM, context)
+            # worker_name = f"{pool_name}-{worker_count}"
+            status = (
+                WorkerStatus.STOPPED
+                if container.status == "exited"
+                else WorkerStatus.PENDING
             )
+            obj = SyftWorker(
+                name=f"default_pool-{WORKER_NUM}",
+                container_id=container.id,
+                image_hash=container.image.id,
+                status=status,
+            )
+            # obj = SyftWorker(
+            #     name: str
+            #     container_id: str
+            #     created_at: DateTime = DateTime.now()
+            #     image_hash: str
+            #     healthcheck: Optional[WorkerHealth]
+            #     status: WorkerStatus
+            # )
+            # obj = DockerWorker(
+            #     container_name=res.name, container_id=res.id, created_at=DateTime.now()
+            # )
             result = self.stash.set(context.credentials, obj)
             if result.is_err():
                 return SyftError(message=f"Failed to start worker. {result.err()}")
@@ -208,10 +228,10 @@ class WorkerService(AbstractService):
     def stop(
         self,
         context: AuthedServiceContext,
-        workers: Union[List[DockerWorker], DockerWorker],
+        workers: Union[List[SyftWorker], SyftWorker],
     ) -> Union[SyftSuccess, SyftError]:
         # listify
-        if isinstance(workers, DockerWorker):
+        if isinstance(workers, SyftWorker):
             workers = [workers]
 
         client = docker.from_env()

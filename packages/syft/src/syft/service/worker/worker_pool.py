@@ -36,11 +36,20 @@ class SyftWorker(SyftObject):
 
     id: UID
     name: str
-    container_id: str
+    container_id: Optional[str]
     created_at: DateTime = DateTime.now()
-    image_hash: str
+    image_hash: Optional[str]
     healthcheck: Optional[WorkerHealth]
     status: WorkerStatus
+    job_id: Optional[UID]
+
+    def _coll_repr_(self):
+        return {
+            "name": self.name,
+            "container_id": self.container_id,
+            "created_at": self.created_at,
+            "status": self.status,
+        }
 
 
 @serializable()

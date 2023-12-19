@@ -957,13 +957,6 @@
           "action": "add"
         }
       },
-      "SyftWorker": {
-        "1": {
-          "version": 1,
-          "hash": "dfb3aba52b0223c16251148503e24606c73b1f3f2dfe5fbfac477899adf27420",
-          "action": "add"
-        }
-      },
       "WorkerPool": {
         "1": {
           "version": 1,
@@ -992,14 +985,15 @@
       "JobItem": {
         "3": {
           "version": 3,
-          "hash": "e28c4101c75d48dc10529382f0661a792371ad8342290ef8becb58f0b2b2812a",
+          "hash": "a9e565bc6d5b8b6c60bc9a98fbda066b550d49469790f176cfcf273b31a575ae",
           "action": "add"
         }
       },
-      "QueueConsumerItem": {
+      "QueueConsumerItem": {},
+      "SyftWorker": {
         "1": {
           "version": 1,
-          "hash": "cfbabd63d33957168a69c1205af5a7b71866ece7bac4b4b77a6a50ab3bb67de7",
+          "hash": "b75cc36788d193f470b2838c911174b83ef5ab75f1075e0d7429780d008afea2",
           "action": "add"
         }
       }

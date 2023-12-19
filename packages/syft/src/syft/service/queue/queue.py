@@ -21,12 +21,12 @@ from ...types.uid import UID
 from ..job.job_stash import JobStatus
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
 from .base_queue import BaseQueueManager
 from .base_queue import QueueConfig
 from .base_queue import QueueConsumer
 from .base_queue import QueueProducer
-from .consumer_stash import ConsumerStash
 from .queue_stash import QueueItem
 from .queue_stash import Status
 
@@ -81,7 +81,7 @@ class QueueManager(BaseQueueManager):
     def create_consumer(
         self,
         message_handler: Type[AbstractMessageHandler],
-        worker_stash: ConsumerStash,
+        worker_stash: WorkerStash,
         address: Optional[str] = None,
         syft_worker_id: Optional[UID] = None,
     ) -> QueueConsumer:
@@ -95,10 +95,10 @@ class QueueManager(BaseQueueManager):
         return consumer
 
     def create_producer(
-        self, queue_name: str, worker_stash, context: AuthedServiceContext
+        self, queue_name: str, queue_stash, context: AuthedServiceContext
     ) -> QueueProducer:
         return self._client.add_producer(
-            queue_name=queue_name, worker_stash=worker_stash, context=context
+            queue_name=queue_name, queue_stash=queue_stash, context=context
         )
 
     def send(
@@ -142,6 +142,7 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
         migrate=False,
     )
 
+    print("JOB ID HERE", queue_item.job_id)
     job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).ok()
 
     # Set monitor thread for this job.
@@ -267,9 +268,10 @@ class APICallMessageHandler(AbstractMessageHandler):
         queue_result = worker.queue_stash.set_result(credentials, queue_item)
         if isinstance(queue_result, SyftError):
             raise Exception(message=f"{queue_result.err()}")
-        worker_result = worker.job_stash.set_result(credentials, job_item)
-        if isinstance(worker_result, SyftError):
-            raise Exception(message=f"{worker_result.err()}")
+
+        job_result = worker.job_stash.set(credentials, job_item)
+        if isinstance(job_result, SyftError):
+            raise Exception(message=f"{job_result.err()}")
 
         if queue_config.thread_workers:
             # stdlib
