@@ -46,14 +46,21 @@ def run_container_using_docker(
     environment["HTTPS_PORT"] = str(446 + worker_count)
     environment["CONSUMER_SERVICE_NAME"] = pool_name
     environment["SYFT_WORKER_UID"] = syft_worker_uid
+    environment["DEV_MODE"] = debug
 
     # start container
     container = None
     error_message = None
     worker = None
     try:
-        existing_container = client.containers.get(existing_container_name)
-        network_mode = (f"container:{existing_container.id}",)
+        try:
+            existing_container = client.containers.get(existing_container_name)
+        except docker.errors.NotFound:
+            existing_container = None
+
+        network_mode = (
+            f"container:{existing_container.id}" if existing_container else None
+        )
 
         container = client.containers.run(
             image_tag.full_tag,
@@ -62,6 +69,8 @@ def run_container_using_docker(
             auto_remove=True,
             network_mode=network_mode,
             environment=environment,
+            tty=True,
+            stdin_open=True,
         )
 
         status = (
@@ -97,6 +106,7 @@ def run_containers(
     worker_image: SyftWorkerImage,
     number: int,
     orchestration: WorkerOrchestrationType,
+    dev_mode: bool = False,
 ) -> List[ContainerSpawnStatus]:
     image_tag = worker_image.image_tag
 
@@ -111,6 +121,7 @@ def run_containers(
             worker_count=worker_count,
             image_tag=image_tag,
             pool_name=pool_name,
+            debug=dev_mode,
         )
         results.append(spawn_result)
 

@@ -87,6 +87,7 @@ class SyftWorkerPoolService(AbstractService):
             worker_image=worker_image,
             number=number,
             orchestration=WorkerOrchestrationType.DOCKER,
+            dev_mode=context.node.dev_mode,
         )
 
         workers = [

@@ -16,7 +16,6 @@ from typing import Optional
 from typing import Union
 
 # third party
-from zmq import HEARTBEAT_TIMEOUT
 from zmq import LINGER
 from zmq.error import ContextTerminated
 import zmq.green as zmq
@@ -29,6 +28,7 @@ from ...service.context import AuthedServiceContext
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
@@ -44,12 +44,14 @@ from .base_queue import QueueProducer
 from .queue_stash import ActionQueueItem
 from .queue_stash import Status
 
-HEARTBEAT_LIVENESS = 3
-HEARTBEAT_INTERVAL = 1
+HEARTBEAT_LIVENESS = 300  # second
+HEARTBEAT_INTERVAL = 2500  # msec
+HEARTBEAT_EXPIRY = HEARTBEAT_INTERVAL * HEARTBEAT_LIVENESS
 RECONNECT_INTERVAL = 2
 INTERVAL_INIT = 1
 INTERVAL_MAX = 32
 DEFAULT_THREAD_TIMEOUT = 5
+POLLER_TIMEOUT = 2500
 
 PPP_READY = b"\x01"  # Signals worker is ready
 PPP_HEARTBEAT = b"\x02"  # Signals worker heartbeat
@@ -70,11 +72,11 @@ lock = threading.Lock()
 
 
 class Worker:
-    def __init__(self, address: str, identity: bytes, service: str):
+    def __init__(self, address: str, identity: bytes, service: Optional[str] = None):
         self.identity = identity
         self.address = address
         self.service = service
-        self.expiry = time.time() + HEARTBEAT_INTERVAL * HEARTBEAT_LIVENESS
+        self.expiry = time.time() + 1e-3 * HEARTBEAT_EXPIRY
 
 
 class Service:
@@ -283,10 +285,9 @@ class ZMQProducer(QueueProducer):
 
         Workers are oldest to most recent, so we stop at the first alive worker.
         """
-        while self.waiting:
+        while len(self.waiting) > 0:
             w = self.waiting[0]
             if w.expiry < time.time():
-                print("I: deleting expired worker: %s", w.identity)
                 self.delete_worker(w, False)
                 self.waiting.pop(0)
             else:
@@ -297,13 +298,14 @@ class ZMQProducer(QueueProducer):
         # Queue to broker and service waiting lists
         self.waiting.append(worker)
         worker.service.waiting.append(worker)
-        worker.expiry = time.time() + HEARTBEAT_TIMEOUT
+        worker.expiry = time.time() + 1e-3 * HEARTBEAT_EXPIRY
         self.dispatch(worker.service, None)
 
     def dispatch(self, service: Service, msg: bytes):
         """Dispatch requests to waiting workers as possible"""
         if msg is not None:  # Queue message if any
             service.requests.append(msg)
+
         self.purge_workers()
         while service.waiting and service.requests:
             # One worker consuming only one message at a time.
@@ -344,6 +346,10 @@ class ZMQProducer(QueueProducer):
             if self._stop:
                 return
 
+            for _, service in self.services.items():
+                print("Dispatching messages to waiting workers....")
+                self.dispatch(service, None)
+
             items = self.poll_workers.poll(HEARTBEAT_INTERVAL)
 
             if items:
@@ -363,15 +369,15 @@ class ZMQProducer(QueueProducer):
 
     def require_worker(self, address):
         """Finds the worker (creates if necessary)."""
-        identity = str(UID())
+        identity = hexlify(address)
         worker = self.workers.get(identity)
         if worker is None:
-            worker = Worker(identity, address, HEARTBEAT_TIMEOUT)
+            worker = Worker(identity=identity, address=address)
             self.workers[identity] = worker
-            if self.verbose:
-                print("I: registering new worker: %s", identity)
+            print("I: registering new worker: %s", identity)
+        return worker
 
-    def process_worker(self, address: str, msg: List[bytes]):
+    def process_worker(self, address: bytes, msg: List[bytes]):
         command = msg.pop(0)
 
         worker_ready = hexlify(address) in self.workers
@@ -379,16 +385,10 @@ class ZMQProducer(QueueProducer):
         worker = self.require_worker(address)
 
         if QueueMsgProtocol.W_READY == command:
-            service_name = msg.pop(0)
+            service_name = msg.pop(0).decode()
             if worker_ready:
-                # Delete worker if no service attached.
-                if worker.service is None:
-                    self.delete_worker(worker, True)
-                else:
-                    if worker not in worker.service.waiting:
-                        self.worker_waiting(worker)
-                    else:
-                        self.dispatch(worker.service, None)
+                # Not first command in session or Reserved service name
+                self.delete_worker(worker, True)
             else:
                 # Attach worker to service and mark as idle
                 if service_name not in self.services:
@@ -401,7 +401,7 @@ class ZMQProducer(QueueProducer):
 
         elif QueueMsgProtocol.W_HEARTBEAT == command:
             if worker_ready:
-                worker.expiry = time.time() + HEARTBEAT_TIMEOUT
+                worker.expiry = time.time() + 1e-3 * HEARTBEAT_EXPIRY
             else:
                 # extract the syft worker id and worker pool name from the message
                 # Get the corresponding worker pool and worker
@@ -418,7 +418,7 @@ class ZMQProducer(QueueProducer):
         if disconnect:
             self.send_to_worker(worker, QueueMsgProtocol.W_DISCONNECT, None, None)
 
-        if worker.service is not None:
+        if worker.service is not None and worker in worker.service.waiting:
             worker.service.waiting.remove(worker)
         self.workers.pop(worker.identity)
 
@@ -437,26 +437,28 @@ class ZMQConsumer(QueueConsumer):
         service_name: str,
         syft_worker_id: Optional[UID] = None,
         container_short_id: Optional[UID] = None,
-        verbose: bool = True,
+        verbose: bool = False,
     ) -> None:
         self.address = address
         self.message_handler = message_handler
         self.service_name = service_name
         self.queue_name = queue_name
-        self.post_init()
-        self.id = UID()
-        self._stop = False
+        self.context = zmq.Context()
+        self.poller = zmq.Poller()
         self.worker = None
         self.verbose = verbose
+        self.id = UID()
+        self._stop = False
         self.syft_worker_id = syft_worker_id
         self.container_short_id = container_short_id
+        self.post_init()
 
     def reconnect_to_producer(self):
         """Connect or reconnect to producer"""
         if self.worker:
             self.poller.unregister(self.worker)
             self.worker.close()
-        self.worker = self.ctx.socket(zmq.DEALER)
+        self.worker = self.context.socket(zmq.DEALER)
         self.worker.linger = 0
         self.worker.connect(self.address)
         self.poller.register(self.worker, zmq.POLLIN)
@@ -465,7 +467,7 @@ class ZMQConsumer(QueueConsumer):
             print(f"I: <{self.id}> connecting to broker at {self.address}")
 
         # Register queue with the producer
-        self.send_to_producer(QueueMsgProtocol.W_READY, self.service_name, [])
+        self.send_to_producer(QueueMsgProtocol.W_READY, self.service_name.encode(), [])
 
         # If liveness hits zero, queue is considered disconnected
         self.liveness = HEARTBEAT_LIVENESS
@@ -519,7 +521,7 @@ class ZMQConsumer(QueueConsumer):
                     return
 
                 try:
-                    items = self.poller.poll(self.timeout)
+                    items = self.poller.poll(POLLER_TIMEOUT)
                 except Exception as e:
                     if isinstance(e, ContextTerminated) or self._stop:
                         return
@@ -603,10 +605,23 @@ class ZMQClientConfigV1(SyftObject, QueueClientConfig):
     hostname: str = "127.0.0.1"
 
 
+class ZMQClientConfigV2(SyftObject, QueueClientConfig):
+    __canonical_name__ = "ZMQClientConfig"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    id: Optional[UID]
+    hostname: str = "127.0.0.1"
+    queue_port: Optional[int] = None
+    # TODO: setting this to false until we can fix the ZMQ
+    # port issue causing tests to randomly fail
+    create_producer: bool = False
+    n_consumers: int = 0
+
+
 @serializable()
 class ZMQClientConfig(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     id: Optional[UID]
     hostname: str = "127.0.0.1"

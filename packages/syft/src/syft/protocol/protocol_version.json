@@ -1021,6 +1021,39 @@
           "hash": "0b664100ea08413ca4ef04665ca910c2cf9535539617ea4ba33687d05cdfe747",
           "action": "add"
         }
+      },
+      "QueueItem": {
+        "3": {
+          "version": 3,
+          "hash": "3495f406d2c97050ce86be80c230f49b6b846c63b9a9230cbd6631952f2bad0f",
+          "action": "add"
+        }
+      },
+      "ActionQueueItem": {
+        "2": {
+          "version": 2,
+          "hash": "6413ed01e949cac169299a43ce40651f9bf8053e408b6942853f8afa8a693b3d",
+          "action": "add"
+        }
+      },
+      "ZMQClientConfig": {
+        "2": {
+          "version": 2,
+          "hash": "0f9bc88d56cd6eed6fc75459d1f914aed840c66e1195b9e41cc501b488fef2ed",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "099e7c7a754b8c03130bab2a41d83231b692d57ee71cc9f877ff190cf50f5096",
+          "action": "add"
+        }
+      },
+      "JobItem": {
+        "3": {
+          "version": 3,
+          "hash": "cfbfe1468bf9429d9271545aa887414636361e934e81ad1f5127ec4088963631",
+          "action": "add"
+        }
       }
     }
   }

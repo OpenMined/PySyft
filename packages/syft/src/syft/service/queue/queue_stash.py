@@ -150,7 +150,7 @@ def upgrade_queueitem_v1_to_v2():
 @serializable()
 class ActionQueueItemV1(QueueItemV2):
     __canonical_name__ = "ActionQueueItem"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     method: str = "execute"
     service: str = "actionservice"
@@ -159,7 +159,7 @@ class ActionQueueItemV1(QueueItemV2):
 @serializable()
 class ActionQueueItem(QueueItem):
     __canonical_name__ = "ActionQueueItem"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     method: str = "execute"
     service: str = "actionservice"

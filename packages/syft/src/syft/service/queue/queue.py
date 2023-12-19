@@ -15,7 +15,6 @@ from result import Result
 
 # relative
 from ...node.credentials import SyftVerifyKey
-from ...node.node import get_syft_worker_uid
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
@@ -248,6 +247,7 @@ class APICallMessageHandler(AbstractMessageHandler):
     def handle_message(message: bytes):
         # relative
         from ...node.node import Node
+        from ...node.node import get_syft_worker_uid
 
         queue_item = deserialize(message, from_bytes=True)
         worker_settings = queue_item.worker_settings
