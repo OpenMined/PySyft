@@ -25,6 +25,7 @@ from .worker_pool import ContainerSpawnStatus
 from .worker_pool import SyftWorker
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerPool
+from .worker_pool import WorkerStatus
 from .worker_pool_stash import SyftWorkerPoolStash
 
 
@@ -179,6 +180,54 @@ class SyftWorkerPoolService(AbstractService):
         )
 
     @service_method(
+        path="worker_pool.get_worker",
+        name="get_worker",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def get_worker(
+        self, context: AuthedServiceContext, worker_pool_id: UID, worker_id: UID
+    ) -> Union[SyftWorker, SyftError]:
+        worker_pool_worker = self._get_worker_pool_and_worker(
+            context, worker_pool_id, worker_id
+        )
+        if isinstance(worker_pool_worker, SyftError):
+            return worker_pool_worker
+
+        worker_pool, worker = worker_pool_worker
+
+        worker_status = _get_worker_container_status(worker)
+        if isinstance(worker_status, SyftError):
+            return worker_status
+        elif worker_status != WorkerStatus.PENDING:
+            worker.status = worker_status
+
+            result = self.stash.update(
+                credentials=context.credentials,
+                obj=worker_pool,
+            )
+
+            return (
+                SyftError(
+                    message=f"Failed to update worker status. Error: {result.err()}"
+                )
+                if result.is_err()
+                else worker
+            )
+
+        return worker
+
+    @service_method(
+        path="worker_pool.get_worker_status",
+        name="get_worker_status",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def get_worker_status(
+        self, context: AuthedServiceContext, worker_pool_id: UID, worker_id: UID
+    ) -> Union[WorkerStatus, SyftError]:
+        worker = self.get_worker(context, worker_pool_id, worker_id)
+        return worker if isinstance(worker, SyftError) else worker.status
+
+    @service_method(
         path="worker_pool.worker_logs",
         name="worker_logs",
         roles=DATA_OWNER_ROLE_LEVEL,
@@ -273,3 +322,26 @@ def _get_worker_container(
             f"Unable to access worker {worker.id} container. "
             + f"Container server error {e}"
         )
+
+
+def _get_worker_container_status(
+    worker: SyftWorker, docker_client: Optional[docker.DockerClient] = None
+) -> Union[WorkerStatus, SyftError]:
+    container = _get_worker_container(worker, docker_client)
+    if isinstance(container, SyftError):
+        return container
+
+    container_status = container.status
+    syft_container_status = None
+    if container_status == "running":
+        syft_container_status = WorkerStatus.RUNNING
+    elif container_status in ["paused", "removing", "exited", "dead"]:
+        syft_container_status = WorkerStatus.STOPPED
+    elif container_status == "restarting":
+        syft_container_status = WorkerStatus.RESTARTED
+    elif container_status == "created":
+        syft_container_status = WorkerStatus.PENDING
+    else:
+        return SyftError(message=f"Unknown container status: {container_status}")
+
+    return syft_container_status

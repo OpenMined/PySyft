@@ -142,7 +142,6 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
         migrate=False,
     )
 
-    print("JOB ID HERE", queue_item.job_id)
     job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).ok()
 
     # Set monitor thread for this job.
@@ -246,7 +245,10 @@ class APICallMessageHandler(AbstractMessageHandler):
 
         credentials = queue_item.syft_client_verify_key
 
-        job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).ok()
+        res = worker.job_stash.get_by_uid(credentials, queue_item.job_id)
+        if res.is_err():
+            raise Exception(res.value)
+        job_item = res.ok()
 
         queue_item.status = Status.PROCESSING
         queue_item.node_uid = worker.id

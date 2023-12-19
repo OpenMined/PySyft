@@ -397,14 +397,14 @@ def upgrade_job_v2_to_v3():
     ]
 
 
-@migrate(Job, JobV1)
+@migrate(JobV2, JobV1)
 def downgrade_job_v2_to_v1():
     return [
         drop("job_pid"),
     ]
 
 
-@migrate(JobV1, Job)
+@migrate(JobV1, JobV2)
 def upgrade_job_v1_to_v2():
     return [make_set_default("job_pid", None)]
 
