@@ -361,33 +361,37 @@ class ZMQConsumer(QueueConsumer):
             self.ctx.destroy()
 
     def associate_job(self, message: Frame):
-        queue_item = _deserialize(message, from_bytes=True)
-        self._set_worker_job(queue_item.job_id)
+        try:
+            queue_item = _deserialize(message, from_bytes=True)
+            self._set_worker_job(queue_item.job_id)
+        except Exception as e:
+            print("Could not associate job", e)
 
     def clear_job(self):
         self._set_worker_job(None)
 
     def _set_worker_job(self, job_id: Optional[UID]):
-        res = self.worker_stash.get_by_uid(
-            self.worker_stash.partition.root_verify_key, self.syft_worker_id
-        )
+        if self.worker_stash is not None:
+            res = self.worker_stash.get_by_uid(
+                self.worker_stash.partition.root_verify_key, self.syft_worker_id
+            )
 
-        if res.is_err():
-            print(res)
-            return  # log/report?
-        # stdlib
-        worker_obj = res.ok()
-        worker_obj.job_id = job_id
-        if job_id is None:
-            worker_obj.status = WorkerStatus.PENDING
-        else:
-            worker_obj.status = WorkerStatus.RUNNING
+            if res.is_err():
+                print(res)
+                return  # log/report?
+            # stdlib
+            worker_obj = res.ok()
+            worker_obj.job_id = job_id
+            if job_id is None:
+                worker_obj.status = WorkerStatus.PENDING
+            else:
+                worker_obj.status = WorkerStatus.RUNNING
 
-        res = self.worker_stash.update(
-            self.worker_stash.partition.root_verify_key, obj=worker_obj
-        )
-        if res.is_err():
-            print(res)
+            res = self.worker_stash.update(
+                self.worker_stash.partition.root_verify_key, obj=worker_obj
+            )
+            if res.is_err():
+                print(res)
 
     def _run(self):
         liveness = HEARTBEAT_LIVENESS
@@ -563,7 +567,7 @@ class ZMQClient(QueueClient):
         self,
         queue_name: str,
         message_handler: AbstractMessageHandler,
-        worker_stash,
+        worker_stash: Optional[WorkerStash] = None,
         address: Optional[str] = None,
         syft_worker_id: Optional[UID] = None,
     ) -> ZMQConsumer:

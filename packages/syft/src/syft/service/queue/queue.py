@@ -81,7 +81,7 @@ class QueueManager(BaseQueueManager):
     def create_consumer(
         self,
         message_handler: Type[AbstractMessageHandler],
-        worker_stash: WorkerStash,
+        worker_stash: Optional[WorkerStash] = None,
         address: Optional[str] = None,
         syft_worker_id: Optional[UID] = None,
     ) -> QueueConsumer:
