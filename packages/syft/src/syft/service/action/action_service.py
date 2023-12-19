@@ -106,16 +106,6 @@ class ActionService(AbstractService):
             return Ok(action_object)
         return result.err()
 
-    @service_method(path="action.get", name="get", roles=GUEST_ROLE_LEVEL)
-    def get(
-        self,
-        context: AuthedServiceContext,
-        uid: UID,
-        twin_mode: TwinMode = TwinMode.PRIVATE,
-    ) -> Result[Ok[ActionObject], Err[str]]:
-        """Get an object from the action store"""
-        return self._get(context, uid, twin_mode)
-
     @service_method(
         path="action.is_resolved", name="is_resolved", roles=GUEST_ROLE_LEVEL
     )
@@ -127,7 +117,6 @@ class ActionService(AbstractService):
         """Get an object from the action store"""
         # relative
         from .action_data_empty import ActionDataLink
-        from .action_data_empty import ObjectNotReady
 
         result = self._get(context, uid)
         if result.is_ok():
@@ -143,7 +132,7 @@ class ActionService(AbstractService):
                     return result
 
             # If it's a leaf but not resolved yet, return false
-            elif isinstance(obj.syft_action_data, ObjectNotReady):
+            elif not obj.syft_resolved:
                 return Ok(False)
 
             # If it's not an action data link or non resolved (empty). It's resolved
@@ -176,12 +165,24 @@ class ActionService(AbstractService):
             return result
         return result
 
+    @service_method(path="action.get", name="get", roles=GUEST_ROLE_LEVEL)
+    def get(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        twin_mode: TwinMode = TwinMode.PRIVATE,
+        resolve_nested: bool = True,
+    ) -> Result[Ok[ActionObject], Err[str]]:
+        """Get an object from the action store"""
+        return self._get(context, uid, twin_mode, resolve_nested=resolve_nested)
+
     def _get(
         self,
         context: AuthedServiceContext,
         uid: UID,
         twin_mode: TwinMode = TwinMode.PRIVATE,
         has_permission=False,
+        resolve_nested: bool = True,
     ) -> Result[ActionObject, str]:
         """Get an object from the action store"""
         # stdlib
@@ -199,7 +200,7 @@ class ActionService(AbstractService):
                 context.credentials,
             )
             # Resolve graph links
-            if isinstance(obj.syft_action_data, ActionDataLink):
+            if resolve_nested and isinstance(obj.syft_action_data, ActionDataLink):
                 if not self.is_resolved(
                     context, obj.syft_action_data.action_object_id.id
                 ).ok():
@@ -352,12 +353,19 @@ class ActionService(AbstractService):
             return Err(f"_user_code_execute failed. {e}")
         return Ok(result_action_object)
 
-    def set_result_to_store(self, result_action_object, context, output_policy):
+    def set_result_to_store(self, result_action_object, context, output_policy=None):
         result_id = result_action_object.id
         # result_blob_id = result_action_object.syft_blob_storage_entry_id
-        output_readers = (
-            output_policy.output_readers if not context.has_execute_permissions else []
-        )
+
+        if output_policy is not None:
+            output_readers = (
+                output_policy.output_readers
+                if not context.has_execute_permissions
+                else []
+            )
+        else:
+            output_readers = []
+
         read_permission = ActionPermission.READ
 
         result_action_object._set_obj_location_(
