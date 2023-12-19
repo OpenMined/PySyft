@@ -120,6 +120,10 @@ class MongoStoreClientConfig(StoreClientConfig):
     # Testing and connection reuse
     client: Any = None
 
+    # this allows us to have one connection per `Node` object
+    # in the MongoClientCache
+    node_obj_python_id: Optional[int] = None
+
 
 class MongoClientCache:
     __client_cache__: Dict[str, Type["MongoClient"]] = {}
@@ -139,6 +143,7 @@ class MongoClient:
     client: PyMongoClient = None
 
     def __init__(self, config: MongoStoreClientConfig, cache: bool = True) -> None:
+        self.config = config
         if config.client is not None:
             self.client = config.client
         elif cache:
@@ -236,3 +241,4 @@ class MongoClient:
 
     def close(self):
         self.client.close()
+        MongoClientCache.__client_cache__.pop(hash(str(self.config)), None)

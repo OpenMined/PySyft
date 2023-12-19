@@ -134,7 +134,7 @@ jobs:
           tox -e syftcli.build
 
       - name: upload binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: syftcli-binaries-${{needs.deploy-syft-cli.outputs.deployed_version}}
           path: ./packages/syftcli/dist/cli/*
@@ -173,7 +173,7 @@ jobs:
 
       - name: Download binary
         if: steps.check-pypi.outputs.released == 'true'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: syftcli-binaries-${{needs.deploy-syft-cli.outputs.deployed_version}}
           path: ./downloaded-binaries/
