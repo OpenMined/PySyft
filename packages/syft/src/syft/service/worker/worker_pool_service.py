@@ -82,11 +82,18 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_image = result.ok()
 
+        queue_port = context.node.queue_config.client_config.queue_port
+
+        # TODO: Based on node settings for workers, if we're running a python or http
+        # connection
+        # call run_workers_in_threads for Python Connection
+
         container_statuses: List[ContainerSpawnStatus] = run_containers(
             pool_name=name,
             worker_image=worker_image,
             number=number,
             orchestration=WorkerOrchestrationType.DOCKER,
+            queue_port=queue_port,
             dev_mode=context.node.dev_mode,
         )
 

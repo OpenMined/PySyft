@@ -31,6 +31,7 @@ def run_container_using_docker(
     worker_name: str,
     worker_count: int,
     pool_name: str,
+    queue_port: int,
     debug: bool = False,
 ) -> ContainerSpawnStatus:
     client = docker.from_env()
@@ -51,6 +52,7 @@ def run_container_using_docker(
     environment["CONSUMER_SERVICE_NAME"] = pool_name
     environment["SYFT_WORKER_UID"] = syft_worker_uid
     environment["DEV_MODE"] = debug
+    environment["QUEUE_PORT"] = queue_port
 
     # start container
     container = None
@@ -63,7 +65,7 @@ def run_container_using_docker(
             existing_container = None
 
         network_mode = (
-            f"container:{existing_container.id}" if existing_container else None
+            f"container:{existing_container.id}" if existing_container else "host"
         )
 
         container = client.containers.run(
@@ -105,17 +107,44 @@ def run_container_using_docker(
     )
 
 
+def run_workers_in_threads(node, pool_name: str, number: int):
+    results = []
+    for worker_count in range(1, number + 1):
+        error = None
+        try:
+            node.add_consumer_for_service(pool_name)
+            status = WorkerStatus.RUNNING
+        except Exception as e:
+            print(f"Failed to start consumer for {pool_name}")
+            status = WorkerStatus.STOPPED
+            error = str(e)
+
+        worker_name = f"{pool_name}-{worker_count}"
+        worker = SyftWorker(name=worker_name, status=status)
+        container_status = ContainerSpawnStatus(
+            worker_name=worker_name,
+            worker=worker,
+            error=error,
+        )
+
+        results.append(container_status)
+
+    return container_status
+
+
 def run_containers(
     pool_name: str,
     worker_image: SyftWorkerImage,
     number: int,
     orchestration: WorkerOrchestrationType,
+    queue_port: int,
     dev_mode: bool = False,
 ) -> List[ContainerSpawnStatus]:
     image_tag = worker_image.image_tag
 
     results = []
-    if not orchestration == WorkerOrchestrationType.DOCKER:
+
+    if orchestration not in [WorkerOrchestrationType.DOCKER]:
         return SyftError(message="Only Orchestration via Docker is supported.")
 
     for worker_count in range(1, number + 1):
@@ -125,6 +154,7 @@ def run_containers(
             worker_count=worker_count,
             image_tag=image_tag,
             pool_name=pool_name,
+            queue_port=queue_port,
             debug=dev_mode,
         )
         results.append(spawn_result)

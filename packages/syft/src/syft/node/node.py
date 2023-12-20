@@ -450,6 +450,15 @@ class Node(AbstractNode):
                 )
                 consumer.run()
 
+    def add_consumer_for_service(self, service_name: str):
+        message_handler = [APICallMessageHandler]
+        port = self.queue_config.client_config.queue_port
+        address = f"tcp://localhost:{port}"
+        consumer: QueueConsumer = self.queue_manager.create_consumer(
+            message_handler, address=address, service_name=service_name
+        )
+        consumer.run()
+
     @classmethod
     def named(
         cls,
@@ -1373,6 +1382,11 @@ def create_default_worker_pool(node: Node):
 
     if isinstance(result, SyftError):
         print(f"Failed to create Worker for Default workers. Error: {result.message}")
+        return
+
+    container_status = result[0]
+    if container_status.error:
+        print(f"Failed to create container: {container_status.error}")
         return
 
     print("Created default worker pool.")

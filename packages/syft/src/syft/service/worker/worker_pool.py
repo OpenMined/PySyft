@@ -36,9 +36,9 @@ class SyftWorker(SyftObject):
 
     id: UID
     name: str
-    container_id: str
+    container_id: Optional[str]
     created_at: DateTime = DateTime.now()
-    image_hash: str
+    image_hash: Optional[str]
     healthcheck: Optional[WorkerHealth]
     status: WorkerStatus
 
@@ -61,6 +61,7 @@ class WorkerPool(SyftObject):
 class WorkerOrchestrationType:
     DOCKER = "docker"
     K8s = "k8s"
+    PYTHON = "python"
 
 
 @serializable()
