@@ -22,7 +22,6 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.user.roles import Roles
 from ..service.user.user_roles import ServiceRole
-from ..types.dicttuple import DictTuple
 from ..types.uid import UID
 from ..util.fonts import fonts_css
 from ..util.util import get_mb_size
@@ -209,23 +208,6 @@ class DomainClient(SyftClient):
         if self.api.has_service("worker_pool"):
             return self.api.services.worker_pool
         return None
-
-    @property
-    def workers(self):
-        """
-        TODO: We will work on this later with a new, separate WorkerStash
-        """
-        result = self.api.services.worker_pool.get_all()
-        if isinstance(result, DictTuple):
-            worker_names = ""
-            image_tag_workers = {}
-            for worker_pool in result:
-                for worker in worker_pool.workers:
-                    worker_names += f"{worker.name}\n"
-                image_tag_workers[worker_pool.syft_worker_image_name_tag] = worker_names
-            return DictTuple(image_tag_workers)
-        else:
-            return SyftError(message=f"{result.err()}")
 
     def get_project(
         self,
