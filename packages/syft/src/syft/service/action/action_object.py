@@ -6,6 +6,7 @@ from enum import Enum
 import inspect
 from io import BytesIO
 from pathlib import Path
+import time
 import traceback
 import types
 from typing import Any
@@ -49,7 +50,9 @@ from ...util.logger import debug
 from ..response import SyftException
 from ..service import from_api_or_context
 from .action_data_empty import ActionDataEmpty
+from .action_data_empty import ActionDataLink
 from .action_data_empty import ActionFileData
+from .action_data_empty import ObjectNotReady
 from .action_permissions import ActionPermission
 from .action_types import action_type_for_object
 from .action_types import action_type_for_type
@@ -551,6 +554,8 @@ BASE_PASSTHROUGH_ATTRS = [
     "_repr_debug_",
     "as_empty",
     "get",
+    "is_link",
+    "wait",
     "_save_to_blob_storage",
     "_save_to_blob_storage_",
     "syft_action_data",
@@ -1207,6 +1212,47 @@ class ActionObject(SyftObject):
     def as_empty_data(self) -> ActionDataEmpty:
         return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
 
+    def wait(self):
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if isinstance(self.id, LineageID):
+            obj_id = self.id.id
+        else:
+            obj_id = self.id
+
+        while not api.services.action.is_resolved(obj_id):
+            time.sleep(1)
+        return self
+
+    @staticmethod
+    def link(
+        result_id: UID,
+        pointer_id: Optional[UID] = None,
+    ) -> ActionObject:
+        link = ActionDataLink(action_object_id=pointer_id)
+        res = ActionObject.from_obj(
+            id=result_id,
+            syft_action_data=link,
+        )
+        return res
+
+    @staticmethod
+    def obj_not_ready(
+        id: UID,
+    ) -> ActionObject:
+        inner_obj = ObjectNotReady(obj_id=id)
+
+        res = ActionObject.from_obj(
+            id=id,
+            syft_action_data=inner_obj,
+        )
+        return res
+
     @staticmethod
     def empty(
         syft_internal_type: Type[Any] = NoneType,
@@ -1618,6 +1664,10 @@ class ActionObject(SyftObject):
         # Handle anything else
         res = self._syft_wrap_attribute_for_methods(name)
         return res
+
+    @property
+    def is_link(self) -> bool:
+        return isinstance(self.syft_action_data, ActionDataLink)
 
     def __setattr__(self, name: str, value: Any) -> Any:
         defined_on_self = name in self.__dict__ or name in self.__private_attributes__
