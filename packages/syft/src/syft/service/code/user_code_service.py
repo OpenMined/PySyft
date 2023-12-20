@@ -91,10 +91,15 @@ class UserCodeService(AbstractService):
             )
             if isinstance(codes, SyftError):
                 return codes
-            if version == "latest":
-                nested_codes[service_func_name] = codes[-1]
+            print("Got version", version, type(codes))
+            print("codes", codes)
+            if len(codes) == 0:
+                print("Missing code", service_func_name)
             else:
-                nested_codes[service_func_name] = codes[int(version)]
+                if version == "latest":
+                    nested_codes[service_func_name] = codes[-1]
+                else:
+                    nested_codes[service_func_name] = codes[int(version)]
 
         return nested_codes
 

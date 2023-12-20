@@ -112,6 +112,7 @@ def make_routes(worker: Worker) -> APIRouter:
     def syft_new_api_call(
         request: Request, data: Annotated[bytes, Depends(get_body)]
     ) -> Response:
+        print("PRINT IN syft_new_api_call")
         if TRACE_MODE:
             with trace.get_tracer(syft_new_api_call.__module__).start_as_current_span(
                 syft_new_api_call.__qualname__,

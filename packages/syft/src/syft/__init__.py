@@ -68,9 +68,10 @@ from .service.user.roles import Roles as roles  # noqa: F401
 from .service.user.user_service import UserService  # noqa: F401
 from .types.twin_object import TwinObject  # noqa: F401
 from .types.uid import UID  # noqa: F401
+
+# from .util import logger  # noqa: F401
 from .util import filterwarnings  # noqa: F401
 from .util import jax_settings  # noqa: F401
-from .util import logger  # noqa: F401
 from .util import options  # noqa: F401
 from .util.autoreload import disable_autoreload  # noqa: F401
 from .util.autoreload import enable_autoreload  # noqa: F401
@@ -88,7 +89,7 @@ SYFT_PATH = pathlib.Path(__file__).parent.resolve()
 
 sys.path.append(str(Path(__file__)))
 
-logger.start()
+# logger.start()
 
 try:
     get_ipython()  # noqa: F821
