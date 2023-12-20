@@ -70,6 +70,7 @@ from ..service.notification.notification_service import NotificationService
 from ..service.object_search.migration_state_service import MigrateStateService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
+from ..service.queue.base_queue import AbstractMessageHandler
 from ..service.queue.base_queue import QueueConsumer
 from ..service.queue.base_queue import QueueProducer
 from ..service.queue.queue import APICallMessageHandler
@@ -105,6 +106,7 @@ from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
+from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
@@ -114,6 +116,7 @@ from ..types.uid import UID
 from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
 from ..util.util import get_env
+from ..util.util import get_queue_address
 from ..util.util import get_root_data_path
 from ..util.util import random_name
 from ..util.util import str_to_bool
@@ -369,8 +372,6 @@ class Node(AbstractNode):
         if migrate:
             self.find_and_migrate_data()
 
-        create_default_worker_pool(node=self)
-
         NodeRegistry.set_node_for(self.id, self)
 
     @property
@@ -437,25 +438,37 @@ class Node(AbstractNode):
             else:
                 port = queue_config_.client_config.queue_port
                 if port is not None:
-                    address = f"tcp://localhost:{port}"
+                    address = get_queue_address(port)
                 else:
                     address = None
 
-            for _ in range(queue_config_.client_config.n_consumers):
-                service_name = queue_config_.client_config.consumer_service
-                if address is None:
-                    raise ValueError("address unknown for consumers")
-                consumer: QueueConsumer = self.queue_manager.create_consumer(
-                    message_handler, address=address, service_name=service_name
-                )
-                consumer.run()
+            if address is None:
+                raise ValueError("address unknown for consumers")
 
-    def add_consumer_for_service(self, service_name: str):
-        message_handler = [APICallMessageHandler]
-        port = self.queue_config.client_config.queue_port
-        address = f"tcp://localhost:{port}"
+            service_name = queue_config_.client_config.consumer_service
+
+            if service_name is None:
+                create_default_worker_pool(self)
+            else:
+                self.add_consumer_for_service(
+                    service_name=service_name,
+                    syft_worker_id=get_syft_worker_uid(),
+                    address=address,
+                    message_handler=message_handler,
+                )
+
+    def add_consumer_for_service(
+        self,
+        service_name: str,
+        syft_worker_id: UID,
+        address: str,
+        message_handler: AbstractMessageHandler = APICallMessageHandler,
+    ):
         consumer: QueueConsumer = self.queue_manager.create_consumer(
-            message_handler, address=address, service_name=service_name
+            message_handler,
+            address=address,
+            service_name=service_name,
+            syft_worker_id=syft_worker_id,
         )
         consumer.run()
 
@@ -472,7 +485,7 @@ class Node(AbstractNode):
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         n_consumers: int = 0,
-        consumer_service: str = "default",
+        consumer_service: Optional[str] = None,
         thread_workers: bool = False,
         create_producer: bool = False,
         queue_port: Optional[int] = None,
@@ -1179,6 +1192,12 @@ class Node(AbstractNode):
             )
         else:
             worker_settings = WorkerSettings.from_node(node=self)
+            default_worker_pool = self.get_default_worker_pool()
+            worker_pool = LinkedObject.from_obj(
+                default_worker_pool,
+                service_type=SyftWorkerPoolService,
+                node_uid=self.id,
+            )
             queue_item = QueueItem(
                 id=UID(),
                 node_uid=self.id,
@@ -1190,6 +1209,7 @@ class Node(AbstractNode):
                 method=method,
                 args=unsigned_call.args,
                 kwargs=unsigned_call.kwargs,
+                worker_pool=worker_pool,
             )
             return self.add_queueitem_to_queue(
                 queue_item,
@@ -1197,6 +1217,13 @@ class Node(AbstractNode):
                 action=None,
                 parent_job_id=parent_job_id,
             )
+
+    def get_default_worker_pool(self):
+        pool_stash = self.get_service(SyftWorkerPoolService).stash
+        result = pool_stash.get_by_name(
+            credentials=self.verify_key, pool_name=DEFAULT_WORKER_POOL_NAME
+        )
+        return result.ok()
 
     def get_api(
         self,
@@ -1352,6 +1379,10 @@ def create_default_worker_pool(node: Node):
         role=ServiceRole.ADMIN,
     )
 
+    if node.queue_config.client_config.n_consumers == 0:
+        print("Consumer count is zero. Skipping creating consumers.")
+        return
+
     print("Creating Default Worker Image")
     # Get/Create a default worker SyftWorkerImage
     default_image = create_default_image(
@@ -1372,12 +1403,14 @@ def create_default_worker_pool(node: Node):
 
     create_pool_method = node.get_service_method(SyftWorkerPoolService.create_pool)
 
+    worker_count = node.queue_config.client_config.n_consumers
+
     print("Creating default Worker Pool")
     result = create_pool_method(
         context,
         name=DEFAULT_WORKER_POOL_NAME,
         image_uid=default_image.id,
-        number=1,
+        number=worker_count,
     )
 
     if isinstance(result, SyftError):

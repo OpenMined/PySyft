@@ -896,3 +896,12 @@ def get_grid_src_path() -> Path:
 
 def get_syft_cpu_dockerfile() -> Path:
     return get_grid_src_path() / "backend" / "worker_cpu.dockerfile"
+
+
+def get_queue_address(port: int) -> str:
+    container_host = os.getenv("CONTAINER_HOST", None)
+    if container_host == "k8s":
+        return f"tcp://backend:{port}"
+    elif container_host == "docker":
+        return f"tcp://host.docker.internal:{port}"
+    return f"tcp://localhost:{port}"

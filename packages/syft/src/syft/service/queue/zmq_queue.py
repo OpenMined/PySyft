@@ -21,8 +21,8 @@ from zmq.error import ContextTerminated
 import zmq.green as zmq
 
 # relative
-from ...serde import serialize
 from ...serde.serializable import serializable
+from ...serde.serialize import _serialize as serialize
 from ...service.action.action_object import ActionObject
 from ...service.context import AuthedServiceContext
 from ...types.syft_migration import migrate
@@ -33,6 +33,7 @@ from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import UID
+from ...util.util import get_queue_address
 from ..response import SyftError
 from ..response import SyftSuccess
 from .base_queue import AbstractMessageHandler
@@ -102,7 +103,7 @@ class ZMQProducer(QueueProducer):
 
     @property
     def address(self):
-        return f"tcp://localhost:{self.port}"
+        return get_queue_address(self.port)
 
     def post_init(self):
         """Initialize producer state."""
@@ -230,7 +231,7 @@ class ZMQProducer(QueueProducer):
                     worker_pool = item.worker_pool.resolve_with_context(
                         self.auth_context
                     )
-
+                    worker_pool = worker_pool.ok()
                     service_name = worker_pool.name
                     service: Service = self.services.get(service_name)
 
@@ -347,7 +348,6 @@ class ZMQProducer(QueueProducer):
                 return
 
             for _, service in self.services.items():
-                print("Dispatching messages to waiting workers....")
                 self.dispatch(service, None)
 
             items = self.poll_workers.poll(HEARTBEAT_INTERVAL)
@@ -549,7 +549,8 @@ class ZMQConsumer(QueueConsumer):
                     if command == QueueMsgProtocol.W_REQUEST:
                         # Call Message Handler
                         try:
-                            self.message_handler.handle_message(message=msg)
+                            message = msg.pop()
+                            self.message_handler.handle_message(message=message)
                         except Exception as e:
                             print(
                                 f"ERROR HANDLING MESSAGE: {e}, {traceback.format_exc()}"
@@ -630,7 +631,7 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     # port issue causing tests to randomly fail
     create_producer: bool = False
     n_consumers: int = 0
-    consumer_service: str = "default"
+    consumer_service: Optional[str]
 
 
 @migrate(ZMQClientConfig, ZMQClientConfigV1)
@@ -709,7 +710,7 @@ class ZMQClient(QueueClient):
         """
 
         if address is None:
-            address = f"tcp://localhost:{self.config.queue_port}"
+            address = get_queue_address(self.config.queue_port)
 
         consumer = ZMQConsumer(
             queue_name=queue_name,

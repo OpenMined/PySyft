@@ -949,27 +949,6 @@
           "hash": "d3ce45794da2e6c4b0cef63b98a553525af50c5d9db42d3d64caef3e7d22b4a9",
           "action": "add"
         }
-      },
-      "ContainerImage": {
-        "1": {
-          "version": 1,
-          "hash": "776fc7cf7498b93e656a00fff03b86160d1b63e508e2143ac7932e7e38021b0c",
-          "action": "add"
-        }
-      },
-      "SyftWorker": {
-        "1": {
-          "version": 1,
-          "hash": "dfb3aba52b0223c16251148503e24606c73b1f3f2dfe5fbfac477899adf27420",
-          "action": "add"
-        }
-      },
-      "WorkerPool": {
-        "1": {
-          "version": 1,
-          "hash": "f498e61ec6d2ec916b7e1f25a67dc468f17c59239e77194cebf8b512993cb555",
-          "action": "add"
-        }
       }
     }
   },
@@ -1044,7 +1023,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "099e7c7a754b8c03130bab2a41d83231b692d57ee71cc9f877ff190cf50f5096",
+          "hash": "91ce5953cced58e12c576aa5174d5ca0c91981b01cf42edd5283d347baa3390b",
           "action": "add"
         }
       },
@@ -1052,6 +1031,27 @@
         "3": {
           "version": 3,
           "hash": "cfbfe1468bf9429d9271545aa887414636361e934e81ad1f5127ec4088963631",
+          "action": "add"
+        }
+      },
+      "SyftWorker": {
+        "1": {
+          "version": 1,
+          "hash": "322591b9386ba477b6f778fad2a27ff0f2cb57249a335a92141007e6d87c9136",
+          "action": "add"
+        }
+      },
+      "WorkerPool": {
+        "1": {
+          "version": 1,
+          "hash": "f498e61ec6d2ec916b7e1f25a67dc468f17c59239e77194cebf8b512993cb555",
+          "action": "add"
+        }
+      },
+      "ContainerImage": {
+        "1": {
+          "version": 1,
+          "hash": "776fc7cf7498b93e656a00fff03b86160d1b63e508e2143ac7932e7e38021b0c",
           "action": "add"
         }
       }

@@ -7,9 +7,11 @@ from typing import List
 import docker
 
 # relative
+from ...abstract_node import AbstractNode
 from ...custom_worker.config import DockerWorkerConfig
 from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
+from ...util.util import get_queue_address
 from ...util.util import get_syft_cpu_dockerfile
 from ..response import SyftError
 from .worker_image import SyftWorkerImage
@@ -26,6 +28,17 @@ def get_main_backend() -> str:
     return f"{hostname}-backend-1"
 
 
+def get_backend_container():
+    client = docker.from_env()
+    existing_container_name = get_main_backend()
+    try:
+        existing_container = client.containers.get(existing_container_name)
+    except docker.errors.NotFound:
+        existing_container = None
+
+    return existing_container
+
+
 def run_container_using_docker(
     image_tag: SyftWorkerImageTag,
     worker_name: str,
@@ -34,10 +47,12 @@ def run_container_using_docker(
     queue_port: int,
     debug: bool = False,
 ) -> ContainerSpawnStatus:
+    # Existing main backend container
+    existing_container = get_backend_container()
+
+    # Create a docker client
     client = docker.from_env()
 
-    # Existing main backend container
-    existing_container_name = get_main_backend()
     syft_worker_uid = UID()
 
     # Create List of Envs to pass
@@ -53,17 +68,13 @@ def run_container_using_docker(
     environment["SYFT_WORKER_UID"] = syft_worker_uid
     environment["DEV_MODE"] = debug
     environment["QUEUE_PORT"] = queue_port
+    environment["CONTAINER_HOST"] = "docker"
 
     # start container
     container = None
     error_message = None
     worker = None
     try:
-        try:
-            existing_container = client.containers.get(existing_container_name)
-        except docker.errors.NotFound:
-            existing_container = None
-
         network_mode = (
             f"container:{existing_container.id}" if existing_container else "host"
         )
@@ -107,20 +118,30 @@ def run_container_using_docker(
     )
 
 
-def run_workers_in_threads(node, pool_name: str, number: int):
+def run_workers_in_threads(
+    node: AbstractNode, pool_name: str, number: int
+) -> List[ContainerSpawnStatus]:
     results = []
+
     for worker_count in range(1, number + 1):
         error = None
+        worker_name = f"{pool_name}-{worker_count}"
+        worker = SyftWorker(name=worker_name, status=WorkerStatus.RUNNING)
         try:
-            node.add_consumer_for_service(pool_name)
-            status = WorkerStatus.RUNNING
+            port = node.queue_config.client_config.queue_port
+            address = get_queue_address(port)
+            node.add_consumer_for_service(
+                service_name=pool_name,
+                syft_worker_id=worker.id,
+                address=address,
+            )
         except Exception as e:
-            print(f"Failed to start consumer for {pool_name}")
-            status = WorkerStatus.STOPPED
+            print(
+                f"Failed to start consumer for Pool Name: {pool_name}, Worker Name: {worker_name}"
+            )
+            worker.status = WorkerStatus.STOPPED
             error = str(e)
 
-        worker_name = f"{pool_name}-{worker_count}"
-        worker = SyftWorker(name=worker_name, status=status)
         container_status = ContainerSpawnStatus(
             worker_name=worker_name,
             worker=worker,
@@ -129,7 +150,7 @@ def run_workers_in_threads(node, pool_name: str, number: int):
 
         results.append(container_status)
 
-    return container_status
+    return results
 
 
 def run_containers(

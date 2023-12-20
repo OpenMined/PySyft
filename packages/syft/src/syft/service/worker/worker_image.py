@@ -92,7 +92,11 @@ class SyftWorkerImage(SyftObject):
     created_by: SyftVerifyKey
 
 
-def build_using_docker(worker_image: SyftWorkerImage, push: bool = True):
+def build_using_docker(
+    worker_image: SyftWorkerImage,
+    push: bool = True,
+    dev_mode: bool = False,
+):
     if not isinstance(worker_image.config, DockerWorkerConfig):
         # Handle this to worker with CustomWorkerConfig later
         return SyftError("We only support DockerWorkerConfig")
@@ -102,11 +106,13 @@ def build_using_docker(worker_image: SyftWorkerImage, push: bool = True):
         file_obj = io.BytesIO(worker_image.config.dockerfile.encode("utf-8"))
 
         # docker build -f <dockerfile> <buildargs> <path>
+        buildargs = {} if dev_mode else {"SYFT_VERSION": "local-dev"}
         result = client.images.build(
             fileobj=file_obj,
             rm=True,
             forcerm=True,
             tag=worker_image.image_tag.full_tag,
+            buildargs=buildargs,
         )
         worker_image.image_hash = result[0].id
         log = parse_output(result[1])
