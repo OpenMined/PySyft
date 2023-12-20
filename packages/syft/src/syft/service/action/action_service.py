@@ -126,10 +126,11 @@ class ActionService(AbstractService):
                     context, obj.syft_action_data.action_object_id.id
                 )
 
-                if result.is_ok():
-                    return Ok(True)
-                else:
+                # Checking in case any error occurred
+                if result.is_err():
                     return result
+
+                return Ok(result.syft_resolved)
 
             # If it's a leaf but not resolved yet, return false
             elif not obj.syft_resolved:
@@ -154,15 +155,21 @@ class ActionService(AbstractService):
         # relative
         from .action_data_empty import ActionDataLink
 
-        result = self._get(context, uid, twin_mode)
+        result = self.store.get(uid=uid, credentials=context.credentials)
+        # If user has permission to get the object / object exists
         if result.is_ok():
             obj = result.ok()
+
+            # If it's not a leaf
             if isinstance(obj.syft_action_data, ActionDataLink):
                 nested_result = self.resolve_links(
                     context, obj.syft_action_data.action_object_id.id, twin_mode
                 )
                 return nested_result
+
+            # If it's a leaf
             return result
+
         return result
 
     @service_method(path="action.get", name="get", roles=GUEST_ROLE_LEVEL)
