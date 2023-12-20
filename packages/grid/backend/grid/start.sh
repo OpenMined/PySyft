@@ -6,7 +6,7 @@ echo "Running start.sh with RELEASE=${RELEASE} and $(id)"
 export GEVENT_MONKEYPATCH="False"
 
 APP_MODULE=grid.main:app
-LOG_LEVEL=${LOG_LEVEL:-debug}
+LOG_LEVEL=${LOG_LEVEL:-info}
 HOST=${HOST:-0.0.0.0}
 PORT=${PORT:-80}
 RELOAD=""

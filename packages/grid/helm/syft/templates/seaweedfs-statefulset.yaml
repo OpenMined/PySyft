@@ -92,5 +92,5 @@ spec:
       - ReadWriteOnce
       resources:
         requests:
-          storage: 5Gi
+          storage: {{ .Values.seaweedfs.maxStorage }}
 {{ end }}

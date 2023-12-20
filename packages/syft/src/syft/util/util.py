@@ -886,7 +886,9 @@ def set_klass_module_to_syft(klass, module_name):
 
 
 def get_queue_address(port: int) -> str:
-    container_host = os.getenv("CONTAINER_HOST", "docker")
+    container_host = os.getenv("CONTAINER_HOST", None)
     if container_host == "k8s":
         return f"tcp://backend:{port}"
+    elif container_host == "docker":
+        return f"tcp://host.docker.internal:{port}"
     return f"tcp://localhost:{port}"
