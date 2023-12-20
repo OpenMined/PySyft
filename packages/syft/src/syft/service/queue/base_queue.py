@@ -21,7 +21,7 @@ class AbstractMessageHandler:
     queue_name: ClassVar[str]
 
     @staticmethod
-    def handle_message(message: bytes):
+    def handle_message(message: bytes, consumer_id: str):
         raise NotImplementedError
 
 

@@ -28,7 +28,9 @@ from ...store.document_store import UIDPartitionKey
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
+from ...types.syft_object import short_uid
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import UID
@@ -69,7 +71,7 @@ class JobV1(SyftObject):
 
 
 @serializable()
-class Job(SyftObject):
+class JobV2(SyftObject):
     __canonical_name__ = "JobItem"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -86,7 +88,27 @@ class Job(SyftObject):
     action: Optional[Action] = None
     job_pid: Optional[int] = None
 
-    __attr_searchable__ = ["parent_job_id"]
+
+@serializable()
+class Job(SyftObject):
+    __canonical_name__ = "JobItem"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    id: UID
+    node_uid: UID
+    result: Optional[Any]
+    resolved: bool = False
+    status: JobStatus = JobStatus.CREATED
+    log_id: Optional[UID]
+    parent_job_id: Optional[UID]
+    n_iters: Optional[int] = 0
+    current_iter: Optional[int] = None
+    creation_time: Optional[str] = None
+    action: Optional[Action] = None
+    job_pid: Optional[int] = None
+    job_worker_id: Optional[UID] = None
+
+    __attr_searchable__ = ["parent_job_id", "job_worker_id", "status"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
 
     @pydantic.root_validator()
@@ -115,6 +137,14 @@ class Job(SyftObject):
         blocks_filled_str = "█" * blocks_filled
         blocks_empty_str = "&nbsp;&nbsp;" * blocks_empty
         return f"{percentage}% |{blocks_filled_str}{blocks_empty_str}|\n{self.current_iter}/{self.n_iters}\n"
+
+    @property
+    def worker(self):
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        return api.services.worker.get(self.job_worker_id)
 
     @property
     def eta_string(self):
@@ -299,7 +329,12 @@ class Job(SyftObject):
             logs = logs
 
         return {
-            "status": f"{self.action_display_name}: {self.status}",
+            "status": f"{self.action_display_name}: {self.status}"
+            + (
+                f"\non worker {short_uid(self.job_worker_id)}"
+                if self.job_worker_id
+                else ""
+            ),
             "progress": self.progress,
             "eta": self.eta_string,
             "created": f"{self.creation_time[:-7]} by {self.owner.email}",
@@ -358,14 +393,26 @@ class Job(SyftObject):
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
 
-@migrate(Job, JobV1)
+@migrate(Job, JobV2)
+def downgrade_job_v3_to_v2():
+    return [drop(["job_worker_id"])]
+
+
+@migrate(JobV2, Job)
+def upgrade_job_v2_to_v3():
+    return [
+        make_set_default("job_worker_id", None),
+    ]
+
+
+@migrate(JobV2, JobV1)
 def downgrade_job_v2_to_v1():
     return [
         drop("job_pid"),
     ]
 
 
-@migrate(JobV1, Job)
+@migrate(JobV1, JobV2)
 def upgrade_job_v1_to_v2():
     return [make_set_default("job_pid", None)]
 
@@ -432,3 +479,19 @@ class JobStash(BaseStash):
         if result.is_ok():
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
         return result
+
+    def get_active(self, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
+        qks = QueryKeys(
+            qks=[
+                PartitionKey(key="status", type_=JobStatus).with_obj(
+                    JobStatus.PROCESSING
+                )
+            ]
+        )
+        return self.query_all(credentials=credentials, qks=qks)
+
+    def get_by_worker(self, credentials: SyftVerifyKey, worker_id: str):
+        qks = QueryKeys(
+            qks=[PartitionKey(key="job_worker_id", type_=str).with_obj(worker_id)]
+        )
+        return self.query_all(credentials=credentials, qks=qks)
