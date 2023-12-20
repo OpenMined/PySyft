@@ -1,4 +1,5 @@
 # stdlib
+import contextlib
 from enum import Enum
 from typing import Any
 from typing import Dict
@@ -85,8 +86,9 @@ class SyftWorker(SyftObject):
             return ""
 
     def get_status_healthcheck(self) -> None:
-        self.status: WorkerStatus = get_worker_container_status(self)
-        self.healthcheck = get_healthcheck_based_on_status(status=self.status)
+        with contextlib.closing(docker.from_env()) as client:
+            self.status: WorkerStatus = _get_worker_container_status(client, self)
+        self.healthcheck = _get_healthcheck_based_on_status(status=self.status)
 
     def _coll_repr_(self) -> Dict[str, Any]:
         self.get_status_healthcheck()
@@ -124,22 +126,22 @@ class WorkerPool(SyftObject):
 
     @property
     def running_workers(self) -> List[SyftWorker]:
-        return [
-            worker
-            for worker in self.workers
-            if get_worker_container_status(worker) == WorkerStatus.RUNNING
-        ]
+        with contextlib.closing(docker.from_env()) as client:
+            return [
+                worker
+                for worker in self.workers
+                if _get_worker_container_status(client, worker) == WorkerStatus.RUNNING
+            ]
 
     @property
     def healthy_workers(self) -> List[SyftWorker]:
-        return [
-            worker
-            for worker in self.workers
-            if (
-                get_worker_container_status(worker) == WorkerStatus.PENDING
-                or get_worker_container_status(worker) == WorkerStatus.RUNNING
-            )
-        ]
+        with contextlib.closing(docker.from_env()) as client:
+            return [
+                worker
+                for worker in self.workers
+                if _get_worker_container_status(client, worker)
+                in (WorkerStatus.PENDING, WorkerStatus.RUNNING)
+            ]
 
     def _coll_repr_(self) -> Dict[str, Any]:
         return {
@@ -194,12 +196,12 @@ class ContainerSpawnStatus(SyftBaseModel):
     error: Optional[str]
 
 
-def get_worker_container(
-    worker: SyftWorker, docker_client: Optional[docker.DockerClient] = None
+def _get_worker_container(
+    client: docker.DockerClient,
+    worker: SyftWorker,
 ) -> Union[Container, SyftError]:
-    docker_client = docker_client if docker_client is not None else docker.from_env()
     try:
-        return cast(Container, docker_client.containers.get(worker.container_id))
+        return cast(Container, client.containers.get(worker.container_id))
     except docker.errors.NotFound as e:
         return SyftError(f"Worker {worker.id} container not found. Error {e}")
     except docker.errors.APIError as e:
@@ -209,30 +211,39 @@ def get_worker_container(
         )
 
 
-def get_worker_container_status(
-    worker: SyftWorker, docker_client: Optional[docker.DockerClient] = None
-) -> Union[WorkerStatus, SyftError]:
-    container = get_worker_container(worker, docker_client)
+_CONTAINER_STATUS_TO_WORKER_STATUS: Dict[str, WorkerStatus] = dict(
+    [
+        ("running", WorkerStatus.RUNNING),
+        *(
+            (status, WorkerStatus.STOPPED)
+            for status in ["paused", "removing", "exited", "dead"]
+        ),
+        ("restarting", WorkerStatus.RESTARTED),
+        ("created", WorkerStatus.PENDING),
+    ]
+)
+
+
+def _get_worker_container_status(
+    client: docker.DockerClient,
+    worker: SyftWorker,
+    container: Optional[Container] = None,
+) -> Union[Container, SyftError]:
+    if container is None:
+        container = _get_worker_container(client, worker)
+
     if isinstance(container, SyftError):
         return container
 
     container_status = container.status
-    syft_container_status = None
-    if container_status == "running":
-        syft_container_status = WorkerStatus.RUNNING
-    elif container_status in ["paused", "removing", "exited", "dead"]:
-        syft_container_status = WorkerStatus.STOPPED
-    elif container_status == "restarting":
-        syft_container_status = WorkerStatus.RESTARTED
-    elif container_status == "created":
-        syft_container_status = WorkerStatus.PENDING
-    else:
-        return SyftError(message=f"Unknown container status: {container_status}")
 
-    return syft_container_status
+    return _CONTAINER_STATUS_TO_WORKER_STATUS.get(
+        container_status,
+        SyftError(message=f"Unknown container status: {container_status}"),
+    )
 
 
-def get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
+def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
     if status in [WorkerStatus.PENDING, WorkerStatus.RUNNING]:
         return WorkerHealth.HEALTHY
     else:

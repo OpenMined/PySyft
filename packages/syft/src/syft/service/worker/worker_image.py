@@ -107,13 +107,14 @@ class SyftWorkerImage(SyftObject):
     __repr_attrs__ = ["image_tag", "image_hash", "created_at"]
 
 
-def build_using_docker(worker_image: SyftWorkerImage, push: bool = True):
+def build_using_docker(
+    client: docker.DockerClient, worker_image: SyftWorkerImage, push: bool = True
+):
     if not isinstance(worker_image.config, DockerWorkerConfig):
         # Handle this to worker with CustomWorkerConfig later
         return SyftError("We only support DockerWorkerConfig")
 
     try:
-        client = docker.from_env()
         file_obj = io.BytesIO(worker_image.config.dockerfile.encode("utf-8"))
 
         # docker build -f <dockerfile> <buildargs> <path>

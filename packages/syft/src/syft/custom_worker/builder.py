@@ -1,4 +1,5 @@
 # stdlib
+import contextlib
 import os.path
 from pathlib import Path
 from typing import Tuple
@@ -54,17 +55,16 @@ class CustomWorkerBuilder:
         )
 
         try:
-            client = docker.from_env()
-
             # TODO: Push logs to mongo/seaweed?
-            client.images.build(
-                path=str(contextdir),
-                dockerfile=dockerfile,
-                pull=True,
-                tag=f"{self.CUSTOM_IMAGE_PREFIX}-{type}:{imgtag}",
-                timeout=self.BUILD_MAX_WAIT,
-                buildargs=build_args,
-            )
+            with contextlib.closing(docker.from_env()) as client:
+                client.images.build(
+                    path=str(contextdir),
+                    dockerfile=dockerfile,
+                    pull=True,
+                    tag=f"{self.CUSTOM_IMAGE_PREFIX}-{type}:{imgtag}",
+                    timeout=self.BUILD_MAX_WAIT,
+                    buildargs=build_args,
+                )
 
             return
         except docker.errors.BuildError as e:
