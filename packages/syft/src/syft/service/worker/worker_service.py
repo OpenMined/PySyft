@@ -66,7 +66,7 @@ def get_main_backend_docker() -> str:
 
 
 def get_main_backend_k8s() -> str:
-    return "backend-0"
+    return os.getenv("PODNAME", "backend-0")
 
 
 def start_worker_container(
@@ -171,13 +171,37 @@ def create_new_container_from_existing_k8s(
         if item["name"] == "N_CONSUMERS":
             item["value"] = "1"
         if item["name"] == "CREATE_PRODUCER":
-            item["value"] = "False"
+            item["value"] = "false"
         if item["name"] == "DEFAULT_ROOT_USERNAME":
             item["value"] = worker_name
         if item["name"] == "DEFAULT_ROOT_EMAIL":
             item["value"] = f"{worker_name}@openmined.org"
 
-    pod = Pod.gen(name=worker_name, image=image, env=new_env)
+    volume_mount = existing_pod.spec.containers[0]["volumeMounts"][0].to_dict()
+
+    volume = existing_pod.spec.volumes[0].to_dict()
+
+    pod_dict = {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "metadata": {
+            "name": worker_name,
+        },
+        "spec": {
+            "volumes": [volume],
+            "containers": [
+                {
+                    "name": worker_name,
+                    "image": image,
+                    "env": new_env.to_list(),
+                    "volumeMounts": [volume_mount],
+                }
+            ],
+            "restartPolicy": "Always",
+        },
+    }
+
+    pod = Pod(pod_dict)
     pod.create()
     return pod
 

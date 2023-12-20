@@ -33,7 +33,7 @@ images:
     dockerfile: ./backend/backend.dockerfile
     context: ../
     tags:
-      - dev-latest
+      - "dev-${DEVSPACE_TIMESTAMP}"
       - "${VERSION}"
       - "${devspace.git.commit}"
   frontend:
@@ -44,7 +44,7 @@ images:
     target: "grid-ui-production"
     context: ./frontend
     tags:
-      - dev-latest
+      - "dev-${DEVSPACE_TIMESTAMP}"
       - "${VERSION}"
       - "${devspace.git.commit}"
   seaweedfs:
@@ -55,7 +55,7 @@ images:
     dockerfile: ./seaweedfs/seaweedfs.dockerfile
     context: ./seaweedfs
     tags:
-      - dev-latest
+      - "dev-${DEVSPACE_TIMESTAMP}"
       - "${VERSION}"
       - "${devspace.git.commit}"
 
@@ -68,7 +68,7 @@ deployments:
       values:
         container:
           registry: ${CONTAINER_REGISTRY}
-          syft_version: "dev-latest"
+          syft_version: "dev-${DEVSPACE_TIMESTAMP}"
         node:
           settings:
             nodeName: ${NODE_NAME}

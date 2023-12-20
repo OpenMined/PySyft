@@ -28,6 +28,10 @@ spec:
       - args: null
         command: null
         env:
+        - name: PODNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         - name: MONGO_PORT
           value: {{ .Values.db.mongo.settings.mongoPort }}
         - name: MONGO_HOST
@@ -124,6 +128,7 @@ spec:
       ephemeralContainers: null
       hostAliases: null
       imagePullSecrets: null
+      imagePullPolicy: Always
       initContainers: null
       nodeName: null
       nodeSelector: null
