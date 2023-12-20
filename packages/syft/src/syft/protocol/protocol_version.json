@@ -957,13 +957,6 @@
           "action": "add"
         }
       },
-      "SyftWorker": {
-        "1": {
-          "version": 1,
-          "hash": "dfb3aba52b0223c16251148503e24606c73b1f3f2dfe5fbfac477899adf27420",
-          "action": "add"
-        }
-      },
       "WorkerPool": {
         "1": {
           "version": 1,
@@ -993,6 +986,20 @@
         "1": {
           "version": 1,
           "hash": "88207988639b11eaca686b6e079616d9caecc3dbc2a8112258e0f39ee5c3e113",
+          "action": "add"
+        }
+      },
+      "ContainerImage": {
+        "1": {
+          "version": 1,
+          "hash": "776fc7cf7498b93e656a00fff03b86160d1b63e508e2143ac7932e7e38021b0c",
+          "action": "remove"
+        }
+      },
+      "JobItem": {
+        "3": {
+          "version": 3,
+          "hash": "4120e90800c36dd16d36a512476844c57e5db4808ddd3622fff973faab003b6e",
           "action": "add"
         }
       },
@@ -1033,6 +1040,13 @@
         "3": {
           "version": 3,
           "hash": "0b664100ea08413ca4ef04665ca910c2cf9535539617ea4ba33687d05cdfe747",
+          "action": "add"
+        }
+      },
+      "SyftWorker": {
+        "1": {
+          "version": 1,
+          "hash": "b75cc36788d193f470b2838c911174b83ef5ab75f1075e0d7429780d008afea2",
           "action": "add"
         }
       }

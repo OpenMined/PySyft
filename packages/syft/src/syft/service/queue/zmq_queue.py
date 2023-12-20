@@ -1,5 +1,4 @@
 # stdlib
-# stdlib
 from collections import OrderedDict
 from collections import defaultdict
 from random import randint
@@ -15,11 +14,13 @@ from typing import Optional
 from typing import Union
 
 # third party
+from zmq import Frame
 from zmq import LINGER
 from zmq.error import ContextTerminated
 import zmq.green as zmq
 
 # relative
+from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...service.action.action_object import ActionObject
 from ...service.context import AuthedServiceContext
@@ -32,6 +33,8 @@ from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..worker.worker_pool import WorkerStatus
+from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
 from .base_queue import QueueClient
 from .base_queue import QueueClientConfig
@@ -313,13 +316,19 @@ class ZMQConsumer(QueueConsumer):
         message_handler: AbstractMessageHandler,
         address: str,
         queue_name: str,
+        worker_stash: Optional[WorkerStash] = None,
+        syft_worker_id: Optional[UID] = None,
     ) -> None:
         self.address = address
         self.message_handler = message_handler
         self.queue_name = queue_name
+        self.job_id = None
+        self.is_reconnecting = False
         self.post_init()
         self.id = UID()
         self._stop = False
+        self.worker_stash: Optional[WorkerStash] = worker_stash
+        self.syft_worker_id = syft_worker_id
 
     def create_socket(self):
         self.worker = self.ctx.socket(zmq.DEALER)  # DEALER
@@ -350,6 +359,39 @@ class ZMQConsumer(QueueConsumer):
         finally:
             self.worker.close()
             self.ctx.destroy()
+
+    def associate_job(self, message: Frame):
+        try:
+            queue_item = _deserialize(message, from_bytes=True)
+            self._set_worker_job(queue_item.job_id)
+        except Exception as e:
+            print("Could not associate job", e)
+
+    def clear_job(self):
+        self._set_worker_job(None)
+
+    def _set_worker_job(self, job_id: Optional[UID]):
+        if self.worker_stash is not None:
+            res = self.worker_stash.get_by_uid(
+                self.worker_stash.partition.root_verify_key, self.syft_worker_id
+            )
+
+            if res.is_err():
+                print(res)
+                return  # log/report?
+            # stdlib
+            worker_obj = res.ok()
+            worker_obj.job_id = job_id
+            if job_id is None:
+                worker_obj.status = WorkerStatus.PENDING
+            else:
+                worker_obj.status = WorkerStatus.RUNNING
+
+            res = self.worker_stash.update(
+                self.worker_stash.partition.root_verify_key, obj=worker_obj
+            )
+            if res.is_err():
+                print(res)
 
     def _run(self):
         liveness = HEARTBEAT_LIVENESS
@@ -384,12 +426,17 @@ class ZMQConsumer(QueueConsumer):
                         liveness = HEARTBEAT_LIVENESS
                         message = frames[2]
                         try:
-                            self.message_handler.handle_message(message=message)
+                            self.associate_job(message)
+                            self.message_handler.handle_message(
+                                message=message, worker_id=self.syft_worker_id
+                            )
                         except Exception as e:
                             # stdlib
                             print(
                                 f"ERROR HANDLING MESSAGE {e}, {traceback.format_exc()}"
                             )
+                        finally:
+                            self.clear_job()
                     # process heartbeat
                     elif len(frames) == 1 and frames[0] == PPP_HEARTBEAT:
                         liveness = HEARTBEAT_LIVENESS
@@ -468,7 +515,7 @@ def upgrade_zmqclientconfig_v1_to_v2():
     return [
         make_set_default("queue_port", None),
         make_set_default("create_producer", False),
-        make_set_default("n_consumsers", 0),
+        make_set_default("n_consumers", 0),
     ]
 
 
@@ -520,7 +567,9 @@ class ZMQClient(QueueClient):
         self,
         queue_name: str,
         message_handler: AbstractMessageHandler,
+        worker_stash: Optional[WorkerStash] = None,
         address: Optional[str] = None,
+        syft_worker_id: Optional[UID] = None,
     ) -> ZMQConsumer:
         """Add a consumer to a queue
 
@@ -535,6 +584,8 @@ class ZMQClient(QueueClient):
             queue_name=queue_name,
             message_handler=message_handler,
             address=address,
+            worker_stash=worker_stash,
+            syft_worker_id=syft_worker_id,
         )
         self.consumers[queue_name].append(consumer)
 
