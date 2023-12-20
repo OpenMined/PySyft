@@ -21,7 +21,7 @@ def run_container_using_docker(
     client: docker.DockerClient,
     image_tag: SyftWorkerImageTag,
     worker_name: str,
-    full_tag_str: str,
+    full_tag: str,
 ) -> ContainerSpawnStatus:
     # start container
     container = None
@@ -49,7 +49,7 @@ def run_container_using_docker(
             image_hash=container.image.id,
             status=status,
             healthcheck=healthcheck,
-            full_image_tag_str=full_tag_str,
+            full_image_tag=full_tag,
         )
     except Exception as e:
         error_message = f"Failed to run command in container. {worker_name} {image_tag}. {e}. {sys.stderr}"
@@ -60,7 +60,7 @@ def run_container_using_docker(
                 image_hash=container.image.id,
                 status=WorkerStatus.STOPPED,
                 healthcheck=WorkerHealth.UNHEALTHY,
-                full_image_tag_str=full_tag_str,
+                full_image_tag=full_tag,
             )
             container.stop()
 
@@ -88,7 +88,7 @@ def run_containers(
             client=client,
             worker_name=worker_name,
             image_tag=image_tag,
-            full_tag_str=worker_image.full_tag_str,
+            full_tag=worker_image.full_tag,
         )
         results.append(spawn_result)
 

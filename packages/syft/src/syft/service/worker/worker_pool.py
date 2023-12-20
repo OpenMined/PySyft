@@ -52,7 +52,7 @@ class SyftWorker(SyftObject):
     __repr_attrs__ = [
         "name",
         "container_id",
-        "full_image_tag_str",
+        "full_image_tag",
         "status",
         "healthcheck",
         "created_at",
@@ -65,7 +65,7 @@ class SyftWorker(SyftObject):
     image_hash: Optional[str]
     healthcheck: Optional[WorkerHealth]
     status: WorkerStatus
-    full_image_tag_str: Optional[str]
+    full_image_tag: Optional[str]
     job_id: Optional[UID]
 
     def get_job_repr(self):
@@ -94,7 +94,7 @@ class SyftWorker(SyftObject):
         self.get_status_healthcheck()
         return {
             "Name": self.name,
-            "Image": self.full_image_tag_str,
+            "Image": self.full_image_tag,
             "Healthcheck (health / unhealthy)": f"{self.healthcheck.value}",
             "Status": f"{self.status.value}",
             "Job": self.get_job_repr(),

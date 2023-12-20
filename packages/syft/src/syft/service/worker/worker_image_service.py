@@ -84,7 +84,7 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"Failed to create tag: {e}")
 
         worker_image.image_tag = image_tag
-        worker_image.full_tag_str = tag
+        worker_image.full_tag = tag
         with contextlib.closing(docker.from_env()) as client:
             worker_image, result = build_using_docker(
                 client=client,
@@ -119,7 +119,7 @@ class SyftWorkerImageService(AbstractService):
         if result.is_err():
             return SyftError(message=f"{result.err()}")
         images: List[SyftWorkerImage] = result.ok()
-        return DictTuple((im.full_tag_str, im) for im in images)
+        return DictTuple((im.full_tag, im) for im in images)
 
     @service_method(
         path="worker_image.delete",

@@ -102,7 +102,7 @@ class SyftWorkerImage(SyftObject):
     created_at: DateTime = DateTime.now()
     created_by: SyftVerifyKey
     source_file: Optional[str]
-    full_tag_str: Optional[str]
+    full_tag: Optional[str]
 
     __repr_attrs__ = ["image_tag", "image_hash", "created_at"]
 
