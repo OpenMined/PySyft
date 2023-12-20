@@ -12,11 +12,13 @@ import docker
 from docker.models.containers import Container
 
 # relative
+from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...types.syft_object import short_uid
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
@@ -57,12 +59,30 @@ class SyftWorker(SyftObject):
 
     id: UID
     name: str
-    container_id: str
+    container_id: Optional[str]
     created_at: DateTime = DateTime.now()
-    image_hash: str
+    image_hash: Optional[str]
     healthcheck: Optional[WorkerHealth]
     status: WorkerStatus
     full_image_tag_str: Optional[str]
+    job_id: Optional[UID]
+
+    def get_job_repr(self):
+        if self.job_id is not None:
+            api = APIRegistry.api_for(
+                node_uid=self.syft_node_location,
+                user_verify_key=self.syft_client_verify_key,
+            )
+            job = api.services.job.get(self.job_id)
+            if job.action.user_code_id is not None:
+                func_name = api.services.code.get_by_id(
+                    job.action.user_code_id
+                ).service_func_name
+                return f"{func_name} ({short_uid(self.job_id)})"
+            else:
+                return f"action ({short_uid(self.job_id)})"
+        else:
+            return ""
 
     def get_status_healthcheck(self) -> None:
         self.status: WorkerStatus = get_worker_container_status(self)
@@ -75,6 +95,7 @@ class SyftWorker(SyftObject):
             "Image": self.full_image_tag_str,
             "Healthcheck (health / unhealthy)": f"{self.healthcheck.value}",
             "Status": f"{self.status.value}",
+            "Job": self.get_job_repr(),
             "Created at": str(self.created_at),
         }
 

@@ -35,7 +35,7 @@ spec:
               name: {{ .Values.secrets.db.mongo.mongosecret }}
               key: mongo-password-secret
         envFrom: null
-        image: mongo:7.0.3
+        image: mongo:7.0.4
         lifecycle: null
         livenessProbe: null
         name: container-0

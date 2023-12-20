@@ -63,7 +63,7 @@ def test_zmq_client(client):
         queue_name = QueueName
 
         @staticmethod
-        def handle_message(message: bytes):
+        def handle_message(message: bytes, *args, **kwargs):
             received_message.append(message)
 
     consumer = client.add_consumer(
@@ -157,7 +157,7 @@ def test_zmq_pub_sub(faker: Faker, producer, consumer):
         queue = producer.queue_name
 
         @staticmethod
-        def handle_message(message: bytes):
+        def handle_message(message: bytes, *args, **kwargs):
             received_messages.append(message)
 
     consumer.message_handler = MyMessageHandler
@@ -223,7 +223,7 @@ def test_zmq_queue_manager(queue_manager) -> None:
         queue_name = QueueName
 
         @staticmethod
-        def handle_message(message: bytes):
+        def handle_message(message: bytes, *args, **kwargs):
             received_messages.append(message)
 
     producer = queue_manager.create_producer(
