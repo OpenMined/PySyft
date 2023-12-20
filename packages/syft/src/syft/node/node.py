@@ -1126,6 +1126,12 @@ class Node(AbstractNode):
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(node=self)
+        default_worker_pool = self.get_default_worker_pool()
+        worker_pool = LinkedObject.from_obj(
+            default_worker_pool,
+            service_type=SyftWorkerPoolService,
+            node_uid=self.id,
+        )
 
         queue_item = ActionQueueItem(
             id=task_uid,
@@ -1137,6 +1143,7 @@ class Node(AbstractNode):
             args=[],
             kwargs={"action": action},
             has_execute_permissions=has_execute_permissions,
+            worker_pool=worker_pool,
         )
         return self.add_queueitem_to_queue(
             queue_item, credentials, action, parent_job_id
