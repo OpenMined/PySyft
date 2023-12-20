@@ -200,7 +200,11 @@ class ActionService(AbstractService):
                 context.credentials,
             )
             # Resolve graph links
-            if resolve_nested and isinstance(obj.syft_action_data, ActionDataLink):
+            if (
+                not isinstance(obj, TwinObject)
+                and resolve_nested
+                and isinstance(obj.syft_action_data, ActionDataLink)
+            ):
                 if not self.is_resolved(
                     context, obj.syft_action_data.action_object_id.id
                 ).ok():
