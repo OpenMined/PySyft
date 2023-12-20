@@ -94,6 +94,7 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
+from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool import SyftWorker
 from ..service.worker.worker_pool import WorkerStatus
@@ -312,6 +313,7 @@ class Node(AbstractNode):
                 MigrateStateService,
                 SyftWorkerImageService,
                 SyftWorkerPoolService,
+                SyftImageRegistryService,
             ]
             if services is None
             else services
@@ -844,6 +846,7 @@ class Node(AbstractNode):
                 MigrateStateService,
                 SyftWorkerImageService,
                 SyftWorkerPoolService,
+                SyftImageRegistryService,
             ]
 
             if OBLV:

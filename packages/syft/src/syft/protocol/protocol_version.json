@@ -1033,6 +1033,12 @@
         "1": {
           "version": 1,
           "hash": "b75cc36788d193f470b2838c911174b83ef5ab75f1075e0d7429780d008afea2",
+        }
+      },
+      "SyftImageRegistry": {
+        "1": {
+          "version": 1,
+          "hash": "34f47027bfeb67adc90996e0023b3b71afb699114c80dea0bb422238117b008d",
           "action": "add"
         }
       }

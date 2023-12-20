@@ -4,10 +4,12 @@ import io
 import os.path
 from pathlib import Path
 from typing import Any
+from typing import Iterable
 from typing import Tuple
 
 # third party
 import docker
+from docker.models.images import Image
 
 # relative
 from .config import CustomWorkerConfig
@@ -26,7 +28,12 @@ class CustomWorkerBuilder:
 
     BUILD_MAX_WAIT = 30 * 60
 
-    def build_image(self, config: WorkerConfig, tag: str = None, **kwargs: Any) -> None:
+    def build_image(
+        self,
+        config: WorkerConfig,
+        tag: str = None,
+        **kwargs: Any,
+    ) -> Tuple[Image, Iterable[str]]:
         """
         Builds a Docker image from the given configuration.
         Args:
@@ -41,7 +48,7 @@ class CustomWorkerBuilder:
         else:
             raise Exception("Unknown worker config type")
 
-    def push_image(self, tag: str, **kwargs: Any) -> str:
+    def push_image(self, tag: str, **kwargs: Any) -> Any:
         """
         Pushes a Docker image to the given repo.
         Args:
@@ -51,7 +58,7 @@ class CustomWorkerBuilder:
 
         return self._push_image(tag, **kwargs)
 
-    def _build_dockerfile(self, config: DockerWorkerConfig, tag: str) -> None:
+    def _build_dockerfile(self, config: DockerWorkerConfig, tag: str):
         print("Building with provided dockerfile")
 
         # convert string to file-like object
@@ -61,7 +68,7 @@ class CustomWorkerBuilder:
             tag=tag,
         )
 
-    def _build_template(self, config: CustomWorkerConfig, **kwargs: Any) -> None:
+    def _build_template(self, config: CustomWorkerConfig, **kwargs: Any):
         # Builds a Docker pre-made CPU/GPU image template using a CustomWorkerConfig
         print("Building with dockerfule template")
 
@@ -95,7 +102,7 @@ class CustomWorkerBuilder:
             buildargs=build_args,
         )
 
-    def _build_image(self, tag: str, **build_opts):
+    def _build_image(self, tag: str, **build_opts) -> Tuple[Image, Iterable[str]]:
         # Core docker build call. Func signature should match with Docker SDK's BuildApiMixin
         with contextlib.closing(docker.from_env()) as client:
             image = client.images.build(

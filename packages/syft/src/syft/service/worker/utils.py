@@ -28,9 +28,12 @@ def run_container_using_docker(
     container = None
     error_message = None
     worker = None
+
     try:
+        # login to the registry through the client
+        # so that the subsequent pull/run commands work
         if registry_url and username and password:
-            client.login(username=username, password=password, registry=registry_url)
+            client.login(username=username, password=password)
 
         container = client.containers.run(
             image_tag.full_tag,

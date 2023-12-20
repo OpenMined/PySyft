@@ -20,6 +20,8 @@ from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
+from ..service import SERVICE_TO_TYPES
+from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .utils import run_containers
@@ -367,3 +369,6 @@ def _remove_worker_container(container: Container, **kwargs: Any) -> None:
         if "removal of container" in str(e) and "is already in progress" in str(e):
             # If the container is already being removed, ignore the error
             return
+
+TYPE_TO_SERVICE[WorkerPool] = SyftWorkerPoolService
+SERVICE_TO_TYPES[SyftWorkerPoolService].update({WorkerPool})

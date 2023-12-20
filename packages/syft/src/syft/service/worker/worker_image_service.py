@@ -1,8 +1,11 @@
 # stdlib
 import json
+import os
+from typing import Iterable
 from typing import Iterator
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 # third party
@@ -11,6 +14,7 @@ import pydantic
 
 # relative
 from ...custom_worker.builder import CustomWorkerBuilder
+from ...custom_worker.builder import Image
 from ...custom_worker.config import DockerWorkerConfig
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -20,21 +24,27 @@ from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
+from ..service import SERVICE_TO_TYPES
+from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
+from .image_registry import SyftImageRegistry
+from .image_registry_service import SyftImageRegistryService
 from .worker_image import SyftWorkerImage
 from .worker_image import SyftWorkerImageTag
 from .worker_image_stash import SyftWorkerImageStash
 
 
-@serializable()
+@serializable(without=["builder"])
 class SyftWorkerImageService(AbstractService):
     store: DocumentStore
     stash: SyftWorkerImageStash
+    builder: CustomWorkerBuilder
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = SyftWorkerImageStash(store=store)
+        self.builder = CustomWorkerBuilder()
 
     @service_method(
         path="worker_image.submit_dockerfile",
@@ -63,33 +73,47 @@ class SyftWorkerImageService(AbstractService):
     def build(
         self,
         context: AuthedServiceContext,
-        uid: UID,
-        tag: str,
-        push: bool = False,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        image: UID,
+        repo_name: str,
+        registry: Optional[UID] = None,
+        version: str = "latest",
     ) -> Union[SyftSuccess, SyftError]:
-        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
+        worker_image: SyftWorkerImage = None
+        registry_obj: Optional[SyftImageRegistry] = None
+        image_registry_service: Optional[SyftImageRegistryService] = None
+
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=image)
         if result.is_err():
             return SyftError(
-                message=f"Failed to get image for uid: {uid}. Error: {result.err()}"
+                message=f"Failed to get image for uid: {image}. Error: {result.err()}"
             )
+        worker_image = result.ok()
 
-        worker_image: SyftWorkerImage = result.ok()
+        if worker_image.built_on:
+            return SyftError(message=f"Image<{image}> is already built")
+
+        if registry:
+            # get registry from image registry service
+            image_registry_service = context.node.get_service(SyftImageRegistryService)
+            result = image_registry_service.get_by_id(context, registry)
+            if result.is_err():
+                return result
+            registry_obj = result.ok()
 
         try:
-            image_tag = SyftWorkerImageTag.from_str(full_str=tag)
+            if registry_obj:
+                image_tag = SyftWorkerImageTag.from_registry(
+                    tag=f"{repo_name}:{version}",
+                    registry=registry_obj,
+                )
+            else:
+                image_tag = SyftWorkerImageTag.from_str(f"{repo_name}:{version}")
         except pydantic.ValidationError as e:
             return SyftError(message=f"Failed to create tag: {e}")
 
         worker_image.image_tag = image_tag
 
-        result = self.build_using_docker(
-            worker_image=worker_image,
-            push=push,
-            username=username,
-            password=password,
-        )
+        result = self.docker_build(worker_image=worker_image)
 
         if isinstance(result, SyftError):
             return result
@@ -106,6 +130,40 @@ class SyftWorkerImageService(AbstractService):
             )
 
         return SyftSuccess(message=f"Build {worker_image} succeeded.\n{logs}")
+
+    @service_method(
+        path="worker_image.push",
+        name="push",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def push(
+        self,
+        context: AuthedServiceContext,
+        image: UID,
+        username: str = "",
+        password: str = "",
+    ) -> Union[SyftSuccess, SyftError]:
+        worker_image: SyftWorkerImage = None
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=image)
+        if result.is_err():
+            return SyftError(
+                message=f"Failed to get image for uid: {image}. Error: {result.err()}"
+            )
+        worker_image = result.ok()
+
+        if worker_image.built_on is None:
+            return SyftError(
+                message=f"Image {worker_image} is not built yet. Please build it first."
+            )
+
+        result = self.docker_push(
+            worker_image=worker_image,
+            username=username,
+            password=password,
+        )
+        return SyftSuccess(
+            message=f'The image was successfully pushed to "{worker_image.image_tag.full_tag}"'
+        )
 
     @service_method(
         path="worker_image.get_all",
@@ -162,43 +220,53 @@ class SyftWorkerImageService(AbstractService):
 
         return SyftSuccess(message=returned_message)
 
-    def build_using_docker(
-        self,
-        worker_image: SyftWorkerImage,
-        push: bool = True,
-        username: str = None,
-        password: str = None,
-    ) -> Union[tuple, SyftError]:
+    def docker_build(
+        self, worker_image: SyftWorkerImage
+    ) -> Union[Tuple[Image, Iterable[str]], SyftError]:
         if not isinstance(worker_image.config, DockerWorkerConfig):
             # Handle this to worker with CustomWorkerConfig later
             return SyftError("We only support DockerWorkerConfig")
 
         try:
-            builder = CustomWorkerBuilder()
-            (image, logs) = builder.build_image(
+            (image, logs) = self.builder.build_image(
                 config=worker_image.config,
                 tag=worker_image.image_tag.full_tag,
             )
-            if push:
-                # TODO: check for push errors
-                push_result = builder.push_image(
-                    tag=worker_image.image_tag.full_tag,
-                    registry_url=worker_image.image_tag.registry,
-                    username=username,
-                    password=password,
-                )
-                if '"error"' in push_result:
-                    return SyftError(
-                        message=f"Failed to push {worker_image}. {push_result}"
-                    )
-            logs = self.parse_output(logs)
-            return image, logs
-        except docker.errors.BuildError as e:
-            return SyftError(message=f"Failed to build {worker_image}. {e}")
+            parsed_logs = self.parse_output(logs)
+            return (image, parsed_logs)
         except docker.errors.APIError as e:
             return SyftError(
                 message=f"Docker API error when building {worker_image}. {e}"
             )
+        except docker.errors.DockerException as e:
+            return SyftError(message=f"Failed to build {worker_image}. {e}")
+        except Exception as e:
+            return SyftError(message=f"Unknown exception occured {worker_image}. {e}")
+
+    def docker_push(
+        self,
+        worker_image: SyftWorkerImage,
+        username: str = "",
+        password: str = "",
+    ) -> List[str]:
+        try:
+            result = self.builder.push_image(
+                tag=worker_image.image_tag.full_tag,
+                registry_url=worker_image.image_tag.registry_str,
+                username=username,
+                password=password,
+            )
+
+            if "error" in result:
+                result = SyftError(message=f"Failed to push {worker_image}. {result}")
+
+            return result.split(os.linesep)
+        except docker.errors.APIError as e:
+            return SyftError(
+                message=f"Docker API error when pushing {worker_image}. {e}"
+            )
+        except docker.errors.DockerException as e:
+            return SyftError(message=f"Failed to push {worker_image}. {e}")
         except Exception as e:
             return SyftError(message=f"Unknown exception occured {worker_image}. {e}")
 
@@ -213,3 +281,7 @@ class SyftWorkerImageService(AbstractService):
                 else:
                     log += str(item)
         return log
+
+
+TYPE_TO_SERVICE[SyftWorkerImage] = SyftWorkerImageService
+SERVICE_TO_TYPES[SyftWorkerImageService].update({SyftWorkerImage})

@@ -1,22 +1,21 @@
 # stdlib
-from typing import Optional
 
 # relative
 from ...serde.serializable import serializable
-from ...types.base import SyftBaseModel
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftObject
 from ...types.uid import UID
 
 __all__ = ["SyftImageRegistry"]
 
 
 @serializable()
-class SyftImageRegistry(SyftBaseModel):
+class SyftImageRegistry(SyftObject):
+    __canonical_name__ = "SyftImageRegistry"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     id: UID
     url: str
-
-    # TODO: confirm if this is how we want to handle registry auth
-    username: Optional[str] = None
-    password: Optional[str] = None
 
     @classmethod
     def from_url(cls, full_str: str):

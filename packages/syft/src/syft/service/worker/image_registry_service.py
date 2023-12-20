@@ -1,4 +1,5 @@
 # stdlib
+from typing import List
 from typing import Union
 
 # relative
@@ -9,6 +10,8 @@ from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
+from ..service import SERVICE_TO_TYPES
+from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .image_registry import SyftImageRegistry
@@ -27,37 +30,35 @@ class SyftImageRegistryService(AbstractService):
         self.stash = SyftImageRegistryStash(store=store)
 
     @service_method(
-        path="worker_image.add_image_registry",
-        name="add_image_registry",
+        path="image_registry.add",
+        name="add",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def add_image_registry(
+    def add(
         self,
         context: AuthedServiceContext,
         url: str,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> Union[SyftImageRegistry, SyftError]:
         registry = SyftImageRegistry.from_url(url)
         res = self.stash.set(context.credentials, registry)
 
         if res.is_err():
             return SyftError(message=res.err())
 
-        return SyftSuccess(
-            message=f"Image registry <id: {registry.id}> successfully added."
-        )
+        return registry
 
     @service_method(
-        path="worker_image.delete_image_registry",
-        name="delete_image_registry",
+        path="image_registry.delete",
+        name="delete",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def delete_image_registry(
+    def delete(
         self,
         context: AuthedServiceContext,
         uid: UID = None,
         url: str = None,
     ) -> Union[SyftSuccess, SyftError]:
-        # FIXME - we need to make sure that there are no workers running an image bound to this registry
+        # TODO - we need to make sure that there are no workers running an image bound to this registry
 
         # if url is provided, get uid from url
         if url:
@@ -78,3 +79,34 @@ class SyftImageRegistryService(AbstractService):
             )
         else:
             return SyftError(message="Either UID or URL must be provided.")
+
+    @service_method(
+        path="image_registry.get_all",
+        name="get_all",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def get_all(
+        self,
+        context: AuthedServiceContext,
+    ) -> Union[List[SyftImageRegistry], SyftError]:
+        result = self.stash.get_all(context.credentials)
+        if result.is_err():
+            return SyftError(message=result.err())
+        return result
+
+    @service_method(
+        path="image_registry.get_by_id",
+        name="get_by_id",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def get_by_id(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftImageRegistry, SyftError]:
+        result = self.stash.get_by_uid(context.credentials, uid)
+        if result.is_err():
+            return SyftError(message=result.err())
+        return result
+
+
+TYPE_TO_SERVICE[SyftImageRegistry] = SyftImageRegistryService
+SERVICE_TO_TYPES[SyftImageRegistryService].update({SyftImageRegistry})
