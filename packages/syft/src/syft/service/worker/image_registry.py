@@ -14,6 +14,11 @@ class SyftImageRegistry(SyftObject):
     __canonical_name__ = "SyftImageRegistry"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    __attr_searchable__ = ["url"]
+    __attr_unique__ = ["url"]
+
+    __repr_attrs__ = ["url"]
+
     id: UID
     url: str
 

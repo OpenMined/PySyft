@@ -60,7 +60,7 @@ class SyftWorkerImageTag(SyftBaseModel):
         return f"{self.registry.url}/{self.repo}:{self.tag}"
 
     @property
-    def registry_str(self) -> str:
+    def registry_host(self) -> str:
         if self.registry is None:
             return ""
         elif isinstance(self.registry, str):
@@ -70,6 +70,9 @@ class SyftWorkerImageTag(SyftBaseModel):
 
     def __hash__(self) -> int:
         return hash(self.repo + self.tag + str(hash(self.registry)))
+
+    def __str__(self) -> str:
+        return self.full_tag
 
 
 @serializable()
@@ -90,5 +93,5 @@ class SyftWorkerImage(SyftObject):
 
     def __str__(self) -> str:
         if self.image_hash:
-            return f"<SyftWorkerImage {self.id} | {self.image_hash} {self.built_on}>"
-        return f"<SyftWorkerImage {self.id} | BUILD PENDING>"
+            return f"SyftWorkerImage<{self.id}, {self.image_hash}, {self.built_on}>"
+        return f"SyftWorkerImage<{self.id},BUILD PENDING>"

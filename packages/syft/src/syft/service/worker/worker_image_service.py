@@ -113,7 +113,7 @@ class SyftWorkerImageService(AbstractService):
 
         worker_image.image_tag = image_tag
 
-        result = self.docker_build(worker_image=worker_image)
+        result = self.docker_build(image=worker_image)
 
         if isinstance(result, SyftError):
             return result
@@ -157,7 +157,7 @@ class SyftWorkerImageService(AbstractService):
             )
 
         result = self.docker_push(
-            worker_image=worker_image,
+            image=worker_image,
             username=username,
             password=password,
         )
@@ -221,54 +221,66 @@ class SyftWorkerImageService(AbstractService):
         return SyftSuccess(message=returned_message)
 
     def docker_build(
-        self, worker_image: SyftWorkerImage
+        self, image: SyftWorkerImage
     ) -> Union[Tuple[Image, Iterable[str]], SyftError]:
-        if not isinstance(worker_image.config, DockerWorkerConfig):
+        if not isinstance(image.config, DockerWorkerConfig):
             # Handle this to worker with CustomWorkerConfig later
             return SyftError("We only support DockerWorkerConfig")
 
         try:
             (image, logs) = self.builder.build_image(
-                config=worker_image.config,
-                tag=worker_image.image_tag.full_tag,
+                config=image.config,
+                tag=image.image_tag.full_tag,
             )
             parsed_logs = self.parse_output(logs)
             return (image, parsed_logs)
         except docker.errors.APIError as e:
             return SyftError(
-                message=f"Docker API error when building {worker_image}. {e}"
+                message=f"Docker API error when building {image.image_tag}. Reason - {e}"
             )
         except docker.errors.DockerException as e:
-            return SyftError(message=f"Failed to build {worker_image}. {e}")
+            return SyftError(
+                message=f"Docker exception when building {image.image_tag}. Reason - {e}"
+            )
         except Exception as e:
-            return SyftError(message=f"Unknown exception occured {worker_image}. {e}")
+            return SyftError(
+                message=f"Unknown exception when building {image.image_tag}. Reason - {e}"
+            )
 
     def docker_push(
         self,
-        worker_image: SyftWorkerImage,
+        image: SyftWorkerImage,
         username: str = "",
         password: str = "",
     ) -> List[str]:
         try:
             result = self.builder.push_image(
-                tag=worker_image.image_tag.full_tag,
-                registry_url=worker_image.image_tag.registry_str,
+                tag=image.image_tag.full_tag,
+                registry_url=image.image_tag.registry_host,
                 username=username,
                 password=password,
             )
 
-            if "error" in result:
-                result = SyftError(message=f"Failed to push {worker_image}. {result}")
+            parsed_result = result.split(os.linesep)
 
-            return result.split(os.linesep)
+            if "error" in result:
+                result = SyftError(
+                    message=f"Failed to push {image.image_tag}. Logs - {parsed_result}"
+                )
+
+            return parsed_result
         except docker.errors.APIError as e:
             return SyftError(
-                message=f"Docker API error when pushing {worker_image}. {e}"
+                message=f"Docker API error when pushing {image.image_tag}. {e}"
             )
         except docker.errors.DockerException as e:
-            return SyftError(message=f"Failed to push {worker_image}. {e}")
+            return SyftError(
+                message=f"Docker exception when pushing {image.image_tag}. Reason - {e}"
+            )
         except Exception as e:
-            return SyftError(message=f"Unknown exception occured {worker_image}. {e}")
+            return SyftError(
+                message=f"Unknown exception when pushing {image.image_tag}. Reason - {e}"
+            )
 
     def parse_output(self, log_iterator: Iterator) -> str:
         log = ""
