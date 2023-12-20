@@ -213,7 +213,7 @@ class DomainClient(SyftClient):
     @property
     def workers(self):
         """
-        TODO: Merge with the worker service
+        TODO: We will work on this later with a new, separate WorkerStash
         """
         result = self.api.services.worker_pool.get_all()
         if isinstance(result, DictTuple):
