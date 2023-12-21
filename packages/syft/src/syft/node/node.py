@@ -440,7 +440,7 @@ class Node(AbstractNode):
                 else:
                     address = None
 
-            if address is None:
+            if address is None and queue_config_.client_config.n_consumers > 0:
                 raise ValueError("address unknown for consumers")
 
             service_name = queue_config_.client_config.consumer_service
