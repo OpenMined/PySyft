@@ -20,9 +20,9 @@ def run_container_using_docker(
     client: docker.DockerClient,
     image_tag: SyftWorkerImageTag,
     worker_name: str,
-    username=None,
-    password=None,
-    registry_url: str = None,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    registry_url: Optional[str] = None,
 ) -> ContainerSpawnStatus:
     # start container
     container = None
