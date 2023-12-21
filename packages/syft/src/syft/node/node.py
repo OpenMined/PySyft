@@ -452,14 +452,17 @@ class Node(AbstractNode):
             print("Consumer service Name: ", service_name)
 
             if service_name is None:
+                # Create default worker pools
                 create_default_worker_pool(self)
             else:
-                self.add_consumer_for_service(
-                    service_name=service_name,
-                    syft_worker_id=get_syft_worker_uid(),
-                    address=address,
-                    message_handler=message_handler,
-                )
+                # Create default worker pools
+                for _ in range(queue_config_.client_config.n_consumers):
+                    self.add_consumer_for_service(
+                        service_name=service_name,
+                        syft_worker_id=get_syft_worker_uid(),
+                        address=address,
+                        message_handler=message_handler,
+                    )
 
     def add_consumer_for_service(
         self,
