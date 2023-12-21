@@ -46,7 +46,7 @@ class CustomWorkerBuilder:
         elif isinstance(config, CustomWorkerConfig):
             return self._build_template(config, **kwargs)
         else:
-            raise Exception("Unknown worker config type")
+            raise TypeError("Unknown worker config type")
 
     def push_image(self, tag: str, **kwargs: Any) -> Any:
         """
