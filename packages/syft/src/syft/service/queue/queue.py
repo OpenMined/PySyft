@@ -154,7 +154,6 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
     status = Status.COMPLETED
     job_status = JobStatus.COMPLETED
 
-    print("SERVICE PATH MAP:............................")
     if queue_item.service == "user":
         queue_item.service = "userservice"
 

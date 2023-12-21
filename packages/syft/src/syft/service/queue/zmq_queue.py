@@ -2,7 +2,6 @@
 # stdlib
 from binascii import hexlify
 from collections import defaultdict
-from http.client import PROCESSING
 import itertools
 import socketserver
 import threading
@@ -45,7 +44,7 @@ from .base_queue import QueueProducer
 from .queue_stash import ActionQueueItem
 from .queue_stash import Status
 
-HEARTBEAT_LIVENESS = 300  # second
+HEARTBEAT_LIVENESS = 30  # second
 HEARTBEAT_INTERVAL = 2500  # msec
 HEARTBEAT_EXPIRY = HEARTBEAT_INTERVAL * HEARTBEAT_LIVENESS
 RECONNECT_INTERVAL = 2
@@ -53,9 +52,6 @@ INTERVAL_INIT = 1
 INTERVAL_MAX = 32
 DEFAULT_THREAD_TIMEOUT = 5
 POLLER_TIMEOUT = 2500
-
-PPP_READY = b"\x01"  # Signals worker is ready
-PPP_HEARTBEAT = b"\x02"  # Signals worker heartbeat
 
 
 class QueueMsgProtocol:
@@ -249,7 +245,7 @@ class ZMQProducer(QueueProducer):
                     res = self.queue_stash.update(item.syft_client_verify_key, item)
                     if not res.is_ok():
                         print(f"Failed to update queue item: {item}")
-                elif item.status == Status == PROCESSING:
+                elif item.status == Status.PROCESSING:
                     # Evaluate Retry condition here
                     # If job running and timeout or job status is KILL
                     # or heartbeat fails
@@ -397,6 +393,9 @@ class ZMQProducer(QueueProducer):
                 else:
                     service = self.services.get(service_name)
                 worker.service = service
+                print(
+                    f"New Worker Added: <{worker.identity}> for Service: {service.name}"
+                )
                 self.worker_waiting(worker)
 
         elif QueueMsgProtocol.W_HEARTBEAT == command:

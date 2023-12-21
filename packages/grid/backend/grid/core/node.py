@@ -92,4 +92,5 @@ worker = worker_class(
     local_db=single_container_mode,
     queue_config=queue_config,
     migrate=True,
+    in_memory_workers=settings.INMEMORY_WORKERS,
 )

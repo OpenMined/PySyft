@@ -12,7 +12,6 @@ from ...custom_worker.config import DockerWorkerConfig
 from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
 from ...util.util import get_queue_address
-from ...util.util import get_syft_cpu_dockerfile
 from ..response import SyftError
 from .worker_image import SyftWorkerImage
 from .worker_image import SyftWorkerImageTag
@@ -23,20 +22,56 @@ from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerStatus
 
 
-def get_main_backend() -> str:
+def backend_container_name() -> str:
     hostname = socket.gethostname()
     return f"{hostname}-backend-1"
 
 
-def get_backend_container():
-    client = docker.from_env()
-    existing_container_name = get_main_backend()
+def get_container(docker_client: docker.DockerClient, container_name: str):
     try:
-        existing_container = client.containers.get(existing_container_name)
+        existing_container = docker_client.containers.get(container_name)
     except docker.errors.NotFound:
         existing_container = None
 
     return existing_container
+
+
+def extract_config_from_backend(worker_name: str, docker_client: docker.DockerClient):
+    # Existing main backend container
+    backend_container = get_container(
+        docker_client, container_name=backend_container_name()
+    )
+
+    # Config with defaults
+    extracted_config = {"volume_binds": {}, "network_mode": None, "environment": {}}
+
+    if backend_container is None:
+        return extracted_config
+
+    # Inspect the existing container
+    details = backend_container.attrs
+
+    host_config = details["HostConfig"]
+    environment = details["Config"]["Env"]
+
+    # Extract Volume Binds
+    for vol in host_config["Binds"]:
+        parts = vol.split(":")
+        key = parts[0]
+        bind = parts[1]
+        mode = parts[2]
+        if "/storage" in bind:
+            # we need this because otherwise we are using the same node private key
+            # which will make account creation fail
+            worker_postfix = worker_name.split("-", 1)[1]
+            key = f"{key}-{worker_postfix}"
+        extracted_config["volume_binds"][key] = {"bind": bind, "mode": mode}
+
+    # Extract Environment Variables
+    extracted_config["environment"] = dict([e.split("=", 1) for e in environment])
+    extracted_config["network_mode"] = f"container:{backend_container.id}"
+
+    return extracted_config
 
 
 def run_container_using_docker(
@@ -47,47 +82,60 @@ def run_container_using_docker(
     queue_port: int,
     debug: bool = False,
 ) -> ContainerSpawnStatus:
-    # Existing main backend container
-    existing_container = get_backend_container()
-
     # Create a docker client
-    client = docker.from_env()
+    docker_client = docker.from_env()
 
+    hostname = socket.gethostname()
+
+    # Create a random UID for Worker
     syft_worker_uid = UID()
 
-    # Create List of Envs to pass
-    environment = {}
-    environment["CREATE_PRODUCER"] = "false"
-    environment["N_CONSUMERS"] = 1
-    environment["DEFAULT_ROOT_USERNAME"] = worker_name
-    environment["DEFAULT_ROOT_EMAIL"] = f"{worker_name}@openmined.org"
-    environment["PORT"] = str(8003 + worker_count)
-    environment["HTTP_PORT"] = str(88 + worker_count)
-    environment["HTTPS_PORT"] = str(446 + worker_count)
-    environment["CONSUMER_SERVICE_NAME"] = pool_name
-    environment["SYFT_WORKER_UID"] = syft_worker_uid
-    environment["DEV_MODE"] = debug
-    environment["QUEUE_PORT"] = queue_port
-    environment["CONTAINER_HOST"] = "docker"
+    # container name
+    container_name = f"{hostname}-{worker_name}"
 
     # start container
     container = None
     error_message = None
     worker = None
     try:
-        network_mode = (
-            f"container:{existing_container.id}" if existing_container else "host"
+        # If container with given name already exists then stop it
+        # and recreate it.
+        existing_container = get_container(
+            docker_client=docker_client,
+            container_name=container_name,
+        )
+        if existing_container:
+            existing_container.stop()
+
+        # Extract Config from backend container
+        backend_host_config = extract_config_from_backend(
+            worker_name=worker_name, docker_client=docker_client
         )
 
-        container = client.containers.run(
+        # Create List of Envs to pass
+        environment = backend_host_config["environment"]
+        environment["CREATE_PRODUCER"] = "false"
+        environment["N_CONSUMERS"] = 1
+        environment["PORT"] = str(8003 + worker_count)
+        environment["HTTP_PORT"] = str(88 + worker_count)
+        environment["HTTPS_PORT"] = str(446 + worker_count)
+        environment["CONSUMER_SERVICE_NAME"] = pool_name
+        environment["SYFT_WORKER_UID"] = syft_worker_uid
+        environment["DEV_MODE"] = debug
+        environment["QUEUE_PORT"] = queue_port
+        environment["CONTAINER_HOST"] = "docker"
+
+        container = docker_client.containers.run(
             image_tag.full_tag,
-            name=worker_name,
+            name=f"{hostname}-{worker_name}",
             detach=True,
             auto_remove=True,
-            network_mode=network_mode,
+            network_mode=backend_host_config["network_mode"],
             environment=environment,
+            volumes=backend_host_config["volume_binds"],
             tty=True,
             stdin_open=True,
+            labels={"orgs.openmined.syft": "this is a syft worker container"},
         )
 
         status = (
@@ -184,8 +232,29 @@ def run_containers(
 
 
 def create_default_image(credentials: SyftVerifyKey, image_stash: SyftWorkerImageStash):
-    default_cpu_dockerfile = get_syft_cpu_dockerfile()
-    worker_config = DockerWorkerConfig.from_path(default_cpu_dockerfile)
+    # TODO: Hardcode worker dockerfile since not able to COPY
+    # worker_cpu.dockerfile to backend in backend.dockerfile.
+
+    # default_cpu_dockerfile = get_syft_cpu_dockerfile()
+    # DockerWorkerConfig.from_path(default_cpu_dockerfile)
+
+    default_cpu_dockerfile = """ARG SYFT_VERSION="local-dev"
+    FROM openmined/grid-backend:${SYFT_VERSION}
+    ARG PYTHON_VERSION="3.11"
+    ARG SYSTEM_PACKAGES=""
+    ARG PIP_PACKAGES="pip --dry-run"
+    ARG CUSTOM_CMD='echo "No custom commands passed"'
+
+    # Worker specific environment variables go here
+    ENV SYFT_WORKER="true"
+    ENV DOCKER_TAG=${SYFT_VERSION}
+
+    RUN apk update && \
+        apk add ${SYSTEM_PACKAGES} && \
+        pip install --user ${PIP_PACKAGES} && \
+        bash -c "$CUSTOM_CMD"
+    """
+    worker_config = DockerWorkerConfig(dockerfile=default_cpu_dockerfile)
 
     result = image_stash.get_by_docker_config(credentials, worker_config)
 

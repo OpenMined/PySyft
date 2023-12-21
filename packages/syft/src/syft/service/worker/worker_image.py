@@ -106,7 +106,7 @@ def build_using_docker(
         file_obj = io.BytesIO(worker_image.config.dockerfile.encode("utf-8"))
 
         # docker build -f <dockerfile> <buildargs> <path>
-        buildargs = {} if dev_mode else {"SYFT_VERSION": "local-dev"}
+        buildargs = {} if dev_mode else {"SYFT_VERSION_TAG": "local-dev"}
         result = client.images.build(
             fileobj=file_obj,
             rm=True,

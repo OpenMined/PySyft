@@ -269,6 +269,7 @@ class Node(AbstractNode):
         enable_warnings: bool = False,
         dev_mode: bool = False,
         migrate: bool = False,
+        in_memory_workers: bool = True,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -341,6 +342,7 @@ class Node(AbstractNode):
             create_oblv_key_pair(worker=self)
 
         self.enable_warnings = enable_warnings
+        self.in_memory_workers = in_memory_workers
 
         self.services = services
         self._construct_services()
@@ -447,6 +449,8 @@ class Node(AbstractNode):
 
             service_name = queue_config_.client_config.consumer_service
 
+            print("Consumer service Name: ", service_name)
+
             if service_name is None:
                 create_default_worker_pool(self)
             else:
@@ -491,6 +495,7 @@ class Node(AbstractNode):
         queue_port: Optional[int] = None,
         dev_mode: bool = False,
         migrate: bool = False,
+        in_memory_workers: bool = True,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
@@ -573,6 +578,7 @@ class Node(AbstractNode):
             queue_config=queue_config,
             dev_mode=dev_mode,
             migrate=migrate,
+            in_memory_workers=in_memory_workers,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:

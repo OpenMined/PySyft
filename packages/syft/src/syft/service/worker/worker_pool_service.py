@@ -21,7 +21,8 @@ from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .utils import DEFAULT_WORKER_POOL_NAME
-from .utils import get_backend_container
+from .utils import backend_container_name
+from .utils import get_container
 from .utils import run_containers
 from .utils import run_workers_in_threads
 from .worker_image_stash import SyftWorkerImageStash
@@ -95,8 +96,17 @@ class SyftWorkerPoolService(AbstractService):
 
         queue_port = context.node.queue_config.client_config.queue_port
 
-        # Run in-memory workers in threads
-        if get_backend_container() is None:
+        # Check if workers needs to be run in memory or as containers
+        existing_backend_container = get_container(
+            docker_client=docker.from_env(),
+            container_name=backend_container_name(),
+        )
+        start_workers_in_memory = (
+            existing_backend_container is None or context.node.in_memory_workers
+        )
+
+        if start_workers_in_memory:
+            # Run in-memory workers in threads
             container_statuses: List[ContainerSpawnStatus] = run_workers_in_threads(
                 node=context.node,
                 pool_name=name,

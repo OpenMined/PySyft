@@ -106,6 +106,7 @@ services:
       - DEV_MODE=${DEV_MODE}
       - NODE_SIDE_TYPE=${NODE_SIDE_TYPE}
       - ENABLE_WARNINGS=${ENABLE_WARNINGS}
+      - INMEMORY_WORKERS=true
     ports:
       - "${HTTP_PORT}:${HTTP_PORT}"
     volumes:
@@ -152,7 +153,8 @@ services:
       - BACKEND_STORAGE_PATH=${BACKEND_STORAGE_PATH}
       - QUEUE_PORT=${QUEUE_PORT}
       - CREATE_PRODUCER=true
-      - N_CONSUMERS=0
+      - N_CONSUMERS=1
+      - INMEMORY_WORKERS=${INMEMORY_WORKERS}
       - HOST_GRID_PATH=${PWD}
     command: "./grid/start.sh"
     network_mode: service:proxy
