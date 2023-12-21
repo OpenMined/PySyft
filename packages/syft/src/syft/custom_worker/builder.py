@@ -5,6 +5,7 @@ import os.path
 from pathlib import Path
 from typing import Any
 from typing import Iterable
+from typing import Optional
 from typing import Tuple
 
 # third party
