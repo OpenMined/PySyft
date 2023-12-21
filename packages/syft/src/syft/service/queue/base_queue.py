@@ -7,6 +7,7 @@ from typing import Union
 
 # relative
 from ...serde.serializable import serializable
+from ...types.uid import UID
 from ..response import SyftError
 from ..response import SyftSuccess
 
@@ -21,7 +22,7 @@ class AbstractMessageHandler:
     queue_name: ClassVar[str]
 
     @staticmethod
-    def handle_message(message: bytes):
+    def handle_message(message: bytes, syft_worker_id: UID):
         raise NotImplementedError
 
 

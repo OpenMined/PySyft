@@ -69,11 +69,18 @@ lock = threading.Lock()
 
 
 class Worker:
-    def __init__(self, address: str, identity: bytes, service: Optional[str] = None):
+    def __init__(
+        self,
+        address: str,
+        identity: bytes,
+        service: Optional[str] = None,
+        syft_worker_id: Optional[Union[UID, str]] = None,
+    ):
         self.identity = identity
         self.address = address
         self.service = service
         self.expiry = time.time() + 1e-3 * HEARTBEAT_EXPIRY
+        self.syft_worker_id = UID(syft_worker_id)
 
 
 class Service:
@@ -382,6 +389,7 @@ class ZMQProducer(QueueProducer):
 
         if QueueMsgProtocol.W_READY == command:
             service_name = msg.pop(0).decode()
+            syft_worker_id = msg.pop(0).decode()
             if worker_ready:
                 # Not first command in session or Reserved service name
                 self.delete_worker(worker, True)
@@ -393,6 +401,7 @@ class ZMQProducer(QueueProducer):
                 else:
                     service = self.services.get(service_name)
                 worker.service = service
+                worker.syft_worker_id = syft_worker_id
                 print(
                     f"New Worker Added: <{worker.identity}> for Service: {service.name}"
                 )
@@ -466,7 +475,11 @@ class ZMQConsumer(QueueConsumer):
             print(f"I: <{self.id}> connecting to broker at {self.address}")
 
         # Register queue with the producer
-        self.send_to_producer(QueueMsgProtocol.W_READY, self.service_name.encode(), [])
+        self.send_to_producer(
+            QueueMsgProtocol.W_READY,
+            self.service_name.encode(),
+            [str(self.syft_worker_id).encode()],
+        )
 
         # If liveness hits zero, queue is considered disconnected
         self.liveness = HEARTBEAT_LIVENESS
@@ -549,7 +562,10 @@ class ZMQConsumer(QueueConsumer):
                         # Call Message Handler
                         try:
                             message = msg.pop()
-                            self.message_handler.handle_message(message=message)
+                            self.message_handler.handle_message(
+                                message=message,
+                                syft_worker_id=self.syft_worker_id,
+                            )
                         except Exception as e:
                             print(
                                 f"ERROR HANDLING MESSAGE: {e}, {traceback.format_exc()}"

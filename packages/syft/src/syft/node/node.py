@@ -455,11 +455,12 @@ class Node(AbstractNode):
                 # Create consumers for default worker pool
                 create_default_worker_pool(self)
             else:
-                # Create consumers for given worker pool
-                for _ in range(queue_config_.client_config.n_consumers):
+                # Create consumer for given worker pool
+                syft_worker_uid = get_syft_worker_uid()
+                if syft_worker_uid is not None:
                     self.add_consumer_for_service(
                         service_name=service_name,
-                        syft_worker_id=get_syft_worker_uid(),
+                        syft_worker_id=UID(syft_worker_uid),
                         address=address,
                         message_handler=message_handler,
                     )
