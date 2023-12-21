@@ -975,6 +975,20 @@
           "action": "add"
         }
       },
+      "ActionDataLink": {
+        "1": {
+          "version": 1,
+          "hash": "10bf94e99637695f1ba283f0b10e70743a4ebcb9ee75aefb1a05e6d6e1d21a71",
+          "action": "add"
+        }
+      },
+      "ObjectNotReady": {
+        "1": {
+          "version": 1,
+          "hash": "88207988639b11eaca686b6e079616d9caecc3dbc2a8112258e0f39ee5c3e113",
+          "action": "add"
+        }
+      },
       "ContainerImage": {
         "1": {
           "version": 1,
