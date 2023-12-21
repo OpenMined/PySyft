@@ -56,7 +56,7 @@ class SyftWorkerPoolService(AbstractService):
         image_uid: UID,
         number: int,
         username: str = None,
-        password: str = None
+        password: str = None,
     ) -> Union[List[ContainerSpawnStatus], SyftError]:
         """Creates a pool of workers from the given SyftWorkerImage.
 
@@ -369,6 +369,7 @@ def _remove_worker_container(container: Container, **kwargs: Any) -> None:
         if "removal of container" in str(e) and "is already in progress" in str(e):
             # If the container is already being removed, ignore the error
             return
+
 
 TYPE_TO_SERVICE[WorkerPool] = SyftWorkerPoolService
 SERVICE_TO_TYPES[SyftWorkerPoolService].update({WorkerPool})
