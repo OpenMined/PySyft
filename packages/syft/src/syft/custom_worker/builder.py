@@ -117,9 +117,9 @@ class CustomWorkerBuilder:
     def _push_image(
         self,
         tag: str,
-        registry_url: str = None,
-        username: str = None,
-        password: str = None,
+        registry_url: Optional[str] = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
     ) -> str:
         with contextlib.closing(docker.from_env()) as client:
             if registry_url and username and password:
