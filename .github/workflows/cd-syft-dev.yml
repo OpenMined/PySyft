@@ -143,13 +143,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox
 
-          export CONTAINER_REGISTRY=${{ secrets.ACR_SERVER }}
-          export VERSION=dev-${{github.sha}}
           tox -e syft.build.helm
 
           rm -rf infrastructure/gitops/environments/dev/
           mkdir -p infrastructure/gitops/environments/dev/
-          cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/dev/
+
+          cp -R packages/grid/helm/syft/. infrastructure/gitops/environments/dev/
+
+          # write version to VERSION.txt file
+          echo "dev-${{github.sha}}" > infrastructure/gitops/environments/dev/VERSION.txt
 
       - name: Commit & push changes to Infra Repo
         if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'
