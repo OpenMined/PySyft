@@ -55,8 +55,8 @@ class SyftWorkerPoolService(AbstractService):
         name: str,
         image_uid: UID,
         number: int,
-        username: str = None,
-        password: str = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
     ) -> Union[List[ContainerSpawnStatus], SyftError]:
         """Creates a pool of workers from the given SyftWorkerImage.
 
