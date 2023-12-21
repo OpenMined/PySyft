@@ -10,12 +10,10 @@ secrets:
 configuration:
   devmode: false
 
-db:
-  mongo:
-    settings:
-      mongoPort: "'27017'"
-      mongoHost: "mongo"
-      mongoUsername: "root"
+mongo:
+  port: "'27017'"
+  host: "mongo"
+  username: "root"
 
 seaweedfs:
   # SeaweedFS config

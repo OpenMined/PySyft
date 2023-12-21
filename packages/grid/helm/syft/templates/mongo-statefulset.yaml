@@ -28,7 +28,7 @@ spec:
         command: null
         env:
         - name: MONGO_INITDB_ROOT_USERNAME
-          value: {{ .Values.db.mongo.settings.mongoUsername }}
+          value: {{ .Values.mongo.username }}
         - name: MONGO_INITDB_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:

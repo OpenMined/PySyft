@@ -28,11 +28,11 @@ spec:
         command: null
         env:
         - name: MONGO_PORT
-          value: {{ .Values.db.mongo.settings.mongoPort }}
+          value: {{ .Values.mongo.port }}
         - name: MONGO_HOST
-          value: {{ .Values.db.mongo.settings.mongoHost }}
+          value: {{ .Values.mongo.host }}
         - name: MONGO_USERNAME
-          value: {{ .Values.db.mongo.settings.mongoUsername }}
+          value: {{ .Values.mongo.username }}
         - name: MONGO_PASSWORD
           valueFrom:
             secretKeyRef:
