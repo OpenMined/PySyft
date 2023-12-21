@@ -1,4 +1,7 @@
 # stdlib
+import contextlib
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -31,6 +34,7 @@ from .worker_pool import ContainerSpawnStatus
 from .worker_pool import SyftWorker
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerPool
+from .worker_pool import WorkerStatus
 from .worker_pool_stash import SyftWorkerPoolStash
 from .worker_service import WorkerService
 from .worker_stash import WorkerStash
@@ -207,30 +211,14 @@ class SyftWorkerPoolService(AbstractService):
 
         if not context.node.in_memory_workers:
             # delete the worker using docker client sdk
-            docker_container = _get_worker_container(worker)
-            if isinstance(docker_container, SyftError):
-                return docker_container
+            with contextlib.closing(docker.from_env()) as client:
+                docker_container = _get_worker_container(client, worker)
+                if isinstance(docker_container, SyftError):
+                    return docker_container
 
-            try:
-                # stop the container
-                docker_container.stop()
-                # Remove the container and its volumes
-                docker_container.remove(force=force, v=True)
-            except docker.errors.APIError as e:
-                if "removal of container" in str(e) and "is already in progress" in str(
-                    e
-                ):
-                    # If the container is already being removed, ignore the error
-                    pass
-                else:
-                    # If it's a different error, return it
-                    return SyftError(
-                        message=f"Failed to delete worker with id: {worker_id}. Error: {e}"
-                    )
-            except Exception as e:
-                return SyftError(
-                    message=f"Failed to delete worker with id: {worker_id}. Error: {e}"
-                )
+                stopped = _stop_worker_container(worker, docker_container, force)
+                if stopped is not None:
+                    return stopped
 
         # remove the worker from the pool
         worker_pool.worker_list.remove(linked_worker)
@@ -267,6 +255,77 @@ class SyftWorkerPoolService(AbstractService):
         return result.ok()
 
     @service_method(
+        path="worker_pool.get_worker",
+        name="get_worker",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def get_worker(
+        self, context: AuthedServiceContext, worker_pool_id: UID, worker_id: UID
+    ) -> Union[SyftWorker, SyftError]:
+        worker_pool_worker = self._get_worker_pool_and_worker(
+            context, worker_pool_id, worker_id
+        )
+        if isinstance(worker_pool_worker, SyftError):
+            return worker_pool_worker
+
+        _, linked_worker = worker_pool_worker
+
+        result = linked_worker.resolve_with_context(context=context)
+
+        if result.is_err():
+            return SyftError(
+                message=f"Failed to retrieve Linked SyftWorker {linked_worker.object_uid}"
+            )
+
+        worker = result.ok()
+
+        if context.node.in_memory_workers:
+            return worker
+
+        with contextlib.closing(docker.from_env()) as client:
+            container = _get_worker_container(client, worker)
+            if isinstance(container, SyftError):
+                return container
+
+            container_status = container.status
+
+        worker_status = _CONTAINER_STATUS_TO_WORKER_STATUS.get(container_status)
+        if worker_status is None:
+            return SyftError(message=f"Unknown container status: {container_status}")
+
+        if isinstance(worker_status, SyftError):
+            return worker_status
+
+        if worker_status != WorkerStatus.PENDING:
+            worker.status = worker_status
+
+            result = self.worker_stash.update(
+                credentials=context.credentials,
+                obj=worker,
+            )
+
+            return (
+                SyftError(
+                    message=f"Failed to update worker status. Error: {result.err()}"
+                )
+                if result.is_err()
+                else worker
+            )
+
+        return worker
+
+    @service_method(
+        path="worker_pool.get_worker_status",
+        name="get_worker_status",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def get_worker_status(
+        self, context: AuthedServiceContext, worker_pool_id: UID, worker_id: UID
+    ) -> Union[WorkerStatus, SyftError]:
+        worker = self.get_worker(context, worker_pool_id, worker_id)
+        return worker if isinstance(worker, SyftError) else worker.status
+
+    @service_method(
         path="worker_pool.worker_logs",
         name="worker_logs",
         roles=DATA_OWNER_ROLE_LEVEL,
@@ -298,16 +357,17 @@ class SyftWorkerPoolService(AbstractService):
         if context.node.in_memory_workers:
             logs = b"Logs not implemented for In Memory Workers"
         else:
-            docker_container = _get_worker_container(worker)
-            if isinstance(docker_container, SyftError):
-                return docker_container
+            with contextlib.closing(docker.from_env()) as client:
+                docker_container = _get_worker_container(client, worker)
+                if isinstance(docker_container, SyftError):
+                    return docker_container
 
-            try:
-                logs = cast(bytes, docker_container.logs())
-            except docker.errors.APIError as e:
-                return SyftError(
-                    f"Failed to get worker {worker.id} container logs. Error {e}"
-                )
+                try:
+                    logs = cast(bytes, docker_container.logs())
+                except docker.errors.APIError as e:
+                    return SyftError(
+                        f"Failed to get worker {worker.id} container logs. Error {e}"
+                    )
 
         return logs if raw else logs.decode(errors="ignore")
 
@@ -365,11 +425,11 @@ def _get_worker(
 
 
 def _get_worker_container(
-    worker: SyftWorker, docker_client: Optional[docker.DockerClient] = None
+    client: docker.DockerClient,
+    worker: SyftWorker,
 ) -> Union[Container, SyftError]:
-    docker_client = docker_client if docker_client is not None else docker.from_env()
     try:
-        return cast(Container, docker_client.containers.get(worker.container_id))
+        return cast(Container, client.containers.get(worker.container_id))
     except docker.errors.NotFound as e:
         return SyftError(f"Worker {worker.id} container not found. Error {e}")
     except docker.errors.APIError as e:
@@ -377,6 +437,46 @@ def _get_worker_container(
             f"Unable to access worker {worker.id} container. "
             + f"Container server error {e}"
         )
+
+
+_CONTAINER_STATUS_TO_WORKER_STATUS: Dict[str, WorkerStatus] = dict(
+    [
+        ("running", WorkerStatus.RUNNING),
+        *(
+            (status, WorkerStatus.STOPPED)
+            for status in ["paused", "removing", "exited", "dead"]
+        ),
+        ("restarting", WorkerStatus.RESTARTED),
+        ("created", WorkerStatus.PENDING),
+    ]
+)
+
+
+def _stop_worker_container(
+    worker: SyftWorker,
+    container: Container,
+    force: bool,
+) -> Optional[SyftError]:
+    try:
+        # stop the container
+        container.stop()
+        # Remove the container and its volumes
+        _remove_worker_container(container, force=force, v=True)
+    except Exception as e:
+        return SyftError(
+            message=f"Failed to delete worker with id: {worker.id}. Error: {e}"
+        )
+
+
+def _remove_worker_container(container: Container, **kwargs: Any) -> None:
+    try:
+        container.remove(**kwargs)
+    except docker.errors.NotFound:
+        return
+    except docker.errors.APIError as e:
+        if "removal of container" in str(e) and "is already in progress" in str(e):
+            # If the container is already being removed, ignore the error
+            return
 
 
 TYPE_TO_SERVICE[WorkerPool] = SyftWorkerPoolService

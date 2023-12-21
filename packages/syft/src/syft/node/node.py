@@ -181,15 +181,15 @@ def get_enable_warnings() -> bool:
     return str_to_bool(get_env("ENABLE_WARNINGS", "False"))
 
 
-def get_syft_worker_uid() -> Optional[str]:
-    return get_env("SYFT_WORKER_UID", None)
-
-
 def get_venv_packages() -> str:
     res = subprocess.getoutput(
         "pip list --format=freeze",
     )
     return res
+
+
+def get_syft_worker_uid() -> Optional[str]:
+    return get_env("SYFT_WORKER_UID", None)
 
 
 dev_mode = get_dev_mode()
@@ -1164,11 +1164,26 @@ class Node(AbstractNode):
         self, queue_item, credentials, action=None, parent_job_id=None
     ):
         log_id = UID()
+        role = self.get_role_for_credentials(credentials=credentials)
+        context = AuthedServiceContext(node=self, credentials=credentials, role=role)
 
         result_obj = ActionObject.empty()
         if action is not None:
+            result_obj = ActionObject.obj_not_ready(id=action.result_id)
             result_obj.id = action.result_id
             result_obj.syft_resolved = False
+            result_obj.syft_node_location = self.id
+            result_obj.syft_client_verify_key = credentials
+
+            action_service = self.get_service("actionservice")
+
+            if not action_service.store.exists(uid=action.result_id):
+                result = action_service.set_result_to_store(
+                    result_action_object=result_obj,
+                    context=context,
+                )
+                if result.is_err():
+                    return result.err()
 
         job = Job(
             id=queue_item.job_id,
@@ -1186,8 +1201,7 @@ class Node(AbstractNode):
         self.job_stash.set(credentials, job)
 
         log_service = self.get_service("logservice")
-        role = self.get_role_for_credentials(credentials=credentials)
-        context = AuthedServiceContext(node=self, credentials=credentials, role=role)
+
         result = log_service.add(context, log_id)
         if isinstance(result, SyftError):
             return result

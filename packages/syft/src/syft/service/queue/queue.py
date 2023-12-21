@@ -132,6 +132,7 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
     queue_config = worker_settings.queue_config
     queue_config.client_config.create_producer = False
     queue_config.client_config.n_consumers = 0
+
     # relative
     from ...node.node import Node
 
@@ -152,8 +153,6 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
     # Set monitor thread for this job.
     monitor_thread = MonitorThread(queue_item, worker, credentials)
     monitor_thread.start()
-    status = Status.COMPLETED
-    job_status = JobStatus.COMPLETED
 
     if queue_item.service == "user":
         queue_item.service = "userservice"
@@ -162,6 +161,7 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
         call_method = getattr(worker.get_service(queue_item.service), queue_item.method)
 
         role = worker.get_role_for_credentials(credentials=credentials)
+
         context = AuthedServiceContext(
             node=worker,
             credentials=credentials,
@@ -182,6 +182,8 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
         result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
 
         if isinstance(result, Ok):
+            status = Status.COMPLETED
+            job_status = JobStatus.COMPLETED
             result = result.ok()
         elif isinstance(result, SyftError) or isinstance(result, Err):
             status = Status.ERRORED
@@ -213,6 +215,7 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
 
     worker.queue_stash.set_result(credentials, queue_item)
     worker.job_stash.set_result(credentials, job_item)
+
     # Finish monitor thread
     monitor_thread.stop()
 
@@ -251,7 +254,6 @@ class APICallMessageHandler(AbstractMessageHandler):
     def handle_message(message: bytes, syft_worker_id: UID):
         # relative
         from ...node.node import Node
-        from ...node.node import get_syft_worker_uid
 
         queue_item = deserialize(message, from_bytes=True)
         worker_settings = queue_item.worker_settings
@@ -271,6 +273,7 @@ class APICallMessageHandler(AbstractMessageHandler):
             is_subprocess=True,
             migrate=False,
         )
+
         # otherwise it reads it from env, resulting in the wrong credentials
         worker.id = worker_settings.id
         worker.signing_key = worker_settings.signing_key
@@ -289,16 +292,24 @@ class APICallMessageHandler(AbstractMessageHandler):
         job_item.node_uid = worker.id
         job_item.updated_at = DateTime.now()
 
-        # Set Syft Worker UID for given Job
-        syft_worker_uid = get_syft_worker_uid()
-        job_item.syft_worker_uid = syft_worker_uid
+        # try:
+        #     worker_name = os.getenv("DOCKER_WORKER_NAME", None)
+        #     docker_worker = worker.worker_stash.get_worker_by_name(
+        #         credentials, worker_name
+        #     ).ok()
+        #     job_item.job_worker_id = str(docker_worker.container_id)
+        # except Exception:
+        #     job_item.job_worker_id = str(worker.id)
+        if syft_worker_id is not None:
+            job_item.job_worker_id = syft_worker_id
 
         queue_result = worker.queue_stash.set_result(credentials, queue_item)
         if isinstance(queue_result, SyftError):
             raise Exception(message=f"{queue_result.err()}")
-        worker_result = worker.job_stash.set_result(credentials, job_item)
-        if isinstance(worker_result, SyftError):
-            raise Exception(message=f"{worker_result.err()}")
+
+        job_result = worker.job_stash.set_result(credentials, job_item)
+        if isinstance(job_result, SyftError):
+            raise Exception(message=f"{job_result.err()}")
 
         if queue_config.thread_workers:
             # stdlib

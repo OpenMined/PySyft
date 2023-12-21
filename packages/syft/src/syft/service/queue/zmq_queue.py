@@ -701,7 +701,7 @@ def upgrade_zmqclientconfig_v1_to_v2():
     return [
         make_set_default("queue_port", None),
         make_set_default("create_producer", False),
-        make_set_default("n_consumsers", 0),
+        make_set_default("n_consumers", 0),
     ]
 
 
@@ -754,8 +754,8 @@ class ZMQClient(QueueClient):
         queue_name: str,
         message_handler: AbstractMessageHandler,
         service_name: str,
-        syft_worker_id: Optional[UID] = None,
         address: Optional[str] = None,
+        syft_worker_id: Optional[UID] = None,
     ) -> ZMQConsumer:
         """Add a consumer to a queue
 

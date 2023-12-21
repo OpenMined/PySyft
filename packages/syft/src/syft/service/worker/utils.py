@@ -1,4 +1,5 @@
 # stdlib
+import contextlib
 import socket
 import sys
 from typing import List
@@ -75,6 +76,7 @@ def extract_config_from_backend(worker_name: str, docker_client: docker.DockerCl
 
 
 def run_container_using_docker(
+    docker_client: docker.DockerClient,
     image_tag: SyftWorkerImageTag,
     worker_name: str,
     worker_count: int,
@@ -82,9 +84,7 @@ def run_container_using_docker(
     queue_port: int,
     debug: bool = False,
 ) -> ContainerSpawnStatus:
-    # Create a docker client
-    docker_client = docker.from_env()
-
+    # Get hostname
     hostname = socket.gethostname()
 
     # Create a random UID for Worker
@@ -143,6 +143,7 @@ def run_container_using_docker(
             if container.status == "exited"
             else WorkerStatus.PENDING
         )
+
         worker = SyftWorker(
             id=syft_worker_uid,
             name=worker_name,
@@ -222,17 +223,19 @@ def run_containers(
     if orchestration not in [WorkerOrchestrationType.DOCKER]:
         return SyftError(message="Only Orchestration via Docker is supported.")
 
-    for worker_count in range(1, number + 1):
-        worker_name = f"{pool_name}-{worker_count}"
-        spawn_result = run_container_using_docker(
-            worker_name=worker_name,
-            worker_count=worker_count,
-            image_tag=image_tag,
-            pool_name=pool_name,
-            queue_port=queue_port,
-            debug=dev_mode,
-        )
-        results.append(spawn_result)
+    with contextlib.closing(docker.from_env()) as client:
+        for worker_count in range(1, number + 1):
+            worker_name = f"{pool_name}-{worker_count}"
+            spawn_result = run_container_using_docker(
+                docker_client=client,
+                worker_name=worker_name,
+                worker_count=worker_count,
+                image_tag=image_tag,
+                pool_name=pool_name,
+                queue_port=queue_port,
+                debug=dev_mode,
+            )
+            results.append(spawn_result)
 
     return results
 

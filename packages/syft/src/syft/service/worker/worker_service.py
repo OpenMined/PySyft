@@ -23,7 +23,9 @@ def get_main_backend():
     return f"{hostname}-backend-1"
 
 
-def start_worker_container(worker_num: int, context: AuthedServiceContext):
+def start_worker_container(
+    worker_num: int, context: AuthedServiceContext, syft_worker_uid
+):
     client = docker.from_env()
     existing_container_name = get_main_backend()
     hostname = socket.gethostname()
@@ -32,11 +34,15 @@ def start_worker_container(worker_num: int, context: AuthedServiceContext):
         worker_name=worker_name,
         client=client,
         existing_container_name=existing_container_name,
+        syft_worker_uid=syft_worker_uid,
     )
 
 
 def create_new_container_from_existing(
-    worker_name: str, client: docker.client.DockerClient, existing_container_name: str
+    worker_name: str,
+    client: docker.client.DockerClient,
+    existing_container_name: str,
+    syft_worker_uid,
 ) -> docker.models.containers.Container:
     # Get the existing container
     existing_container = client.containers.get(existing_container_name)
@@ -70,11 +76,14 @@ def create_new_container_from_existing(
     environment = dict([e.split("=", 1) for e in environment])
     environment["CREATE_PRODUCER"] = "false"
     environment["N_CONSUMERS"] = 1
+    environment["DOCKER_WORKER_NAME"] = worker_name
     environment["DEFAULT_ROOT_USERNAME"] = worker_name
     environment["DEFAULT_ROOT_EMAIL"] = f"{worker_name}@openmined.org"
     environment["PORT"] = str(8003 + WORKER_NUM)
     environment["HTTP_PORT"] = str(88 + WORKER_NUM)
     environment["HTTPS_PORT"] = str(446 + WORKER_NUM)
+    environment["SYFT_WORKER_UID"] = str(syft_worker_uid)
+
     environment.pop("NODE_PRIVATE_KEY", None)
 
     new_container = client.containers.create(

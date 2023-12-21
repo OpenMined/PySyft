@@ -93,6 +93,7 @@ class SyftWorkerImage(SyftObject):
 
 
 def build_using_docker(
+    client: docker.DockerClient,
     worker_image: SyftWorkerImage,
     push: bool = True,
     dev_mode: bool = False,
@@ -102,7 +103,6 @@ def build_using_docker(
         return SyftError("We only support DockerWorkerConfig")
 
     try:
-        client = docker.from_env()
         file_obj = io.BytesIO(worker_image.config.dockerfile.encode("utf-8"))
 
         # docker build -f <dockerfile> <buildargs> <path>

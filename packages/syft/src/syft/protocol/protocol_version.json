@@ -961,6 +961,34 @@
           "action": "add"
         }
       },
+      "ActionDataLink": {
+        "1": {
+          "version": 1,
+          "hash": "10bf94e99637695f1ba283f0b10e70743a4ebcb9ee75aefb1a05e6d6e1d21a71",
+          "action": "add"
+        }
+      },
+      "ObjectNotReady": {
+        "1": {
+          "version": 1,
+          "hash": "88207988639b11eaca686b6e079616d9caecc3dbc2a8112258e0f39ee5c3e113",
+          "action": "add"
+        }
+      },
+      "ContainerImage": {
+        "1": {
+          "version": 1,
+          "hash": "776fc7cf7498b93e656a00fff03b86160d1b63e508e2143ac7932e7e38021b0c",
+          "action": "remove"
+        }
+      },
+      "JobItem": {
+        "3": {
+          "version": 3,
+          "hash": "4120e90800c36dd16d36a512476844c57e5db4808ddd3622fff973faab003b6e",
+          "action": "add"
+        }
+      },
       "SeaweedSecureFilePathLocation": {
         "2": {
           "version": 2,
@@ -1024,13 +1052,6 @@
         "3": {
           "version": 3,
           "hash": "91ce5953cced58e12c576aa5174d5ca0c91981b01cf42edd5283d347baa3390b",
-          "action": "add"
-        }
-      },
-      "JobItem": {
-        "3": {
-          "version": 3,
-          "hash": "cfbfe1468bf9429d9271545aa887414636361e934e81ad1f5127ec4088963631",
           "action": "add"
         }
       },
