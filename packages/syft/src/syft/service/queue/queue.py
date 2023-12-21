@@ -25,6 +25,7 @@ from ..job.job_stash import JobStash
 from ..job.job_stash import JobStatus
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
 from .base_queue import BaseQueueManager
 from .base_queue import QueueConfig
@@ -85,16 +86,16 @@ class QueueManager(BaseQueueManager):
         self,
         message_handler: Type[AbstractMessageHandler],
         service_name: str,
+        worker_stash: Optional[WorkerStash] = None,
         address: Optional[str] = None,
         syft_worker_id: Optional[UID] = None,
-        container_short_id: Optional[UID] = None,
     ) -> QueueConsumer:
         consumer = self._client.add_consumer(
             message_handler=message_handler,
             queue_name=message_handler.queue_name,
             address=address,
             service_name=service_name,
-            container_short_id=container_short_id,
+            worker_stash=worker_stash,
             syft_worker_id=syft_worker_id,
         )
         return consumer

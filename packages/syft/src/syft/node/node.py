@@ -181,10 +181,6 @@ def get_enable_warnings() -> bool:
     return str_to_bool(get_env("ENABLE_WARNINGS", "False"))
 
 
-def get_container_short_id() -> Optional[str]:
-    return get_env("HOSTNAME", None)
-
-
 def get_syft_worker_uid() -> Optional[str]:
     return get_env("SYFT_WORKER_UID", None)
 
@@ -476,6 +472,7 @@ class Node(AbstractNode):
             message_handler,
             address=address,
             service_name=service_name,
+            worker_stash=self.worker_stash,
             syft_worker_id=syft_worker_id,
         )
         consumer.run()
@@ -832,6 +829,10 @@ class Node(AbstractNode):
     @property
     def job_stash(self):
         return self.get_service("jobservice").stash
+
+    @property
+    def worker_stash(self):
+        return self.get_service("workerservice").stash
 
     def _construct_services(self):
         self.service_path_map = {}

@@ -15,11 +15,13 @@ from typing import Optional
 from typing import Union
 
 # third party
+from zmq import Frame
 from zmq import LINGER
 from zmq.error import ContextTerminated
 import zmq.green as zmq
 
 # relative
+from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
 from ...service.action.action_object import ActionObject
@@ -35,6 +37,8 @@ from ...types.uid import UID
 from ...util.util import get_queue_address
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..worker.worker_pool import ConsumerState
+from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
 from .base_queue import QueueClient
 from .base_queue import QueueClientConfig
@@ -444,7 +448,7 @@ class ZMQConsumer(QueueConsumer):
         queue_name: str,
         service_name: str,
         syft_worker_id: Optional[UID] = None,
-        container_short_id: Optional[UID] = None,
+        worker_stash: Optional[WorkerStash] = None,
         verbose: bool = False,
     ) -> None:
         self.address = address
@@ -458,7 +462,7 @@ class ZMQConsumer(QueueConsumer):
         self.id = UID()
         self._stop = False
         self.syft_worker_id = syft_worker_id
-        self.container_short_id = container_short_id
+        self.worker_stash = worker_stash
         self.post_init()
 
     def reconnect_to_producer(self):
@@ -570,6 +574,8 @@ class ZMQConsumer(QueueConsumer):
                             print(
                                 f"ERROR HANDLING MESSAGE: {e}, {traceback.format_exc()}"
                             )
+                        finally:
+                            self.clear_job()
                     elif command == QueueMsgProtocol.W_HEARTBEAT:
                         pass
                     elif command == QueueMsgProtocol.W_DISCONNECT:
@@ -606,6 +612,40 @@ class ZMQConsumer(QueueConsumer):
     def run(self):
         self.thread = threading.Thread(target=self._run)
         self.thread.start()
+
+    def associate_job(self, message: Frame):
+        try:
+            queue_item = _deserialize(message, from_bytes=True)
+            self._set_worker_job(queue_item.job_id)
+        except Exception as e:
+            print("Could not associate job", e)
+
+    def clear_job(self):
+        self._set_worker_job(None)
+
+    def _set_worker_job(self, job_id: Optional[UID]):
+        if self.worker_stash is not None:
+            res = self.worker_stash.get_by_uid(
+                self.worker_stash.partition.root_verify_key, self.syft_worker_id
+            )
+
+            if res.is_err():
+                print(res)
+                return  # log/report?
+
+            worker_obj = res.ok()
+            worker_obj.job_id = job_id
+
+            if job_id is None:
+                worker_obj.consumer_state = ConsumerState.IDLE
+            else:
+                worker_obj.consumer_state = ConsumerState.CONSUMING
+
+            res = self.worker_stash.update(
+                self.worker_stash.partition.root_verify_key, obj=worker_obj
+            )
+            if res.is_err():
+                print(res)
 
     @property
     def alive(self):
@@ -714,7 +754,6 @@ class ZMQClient(QueueClient):
         queue_name: str,
         message_handler: AbstractMessageHandler,
         service_name: str,
-        container_short_id: Optional[UID] = None,
         syft_worker_id: Optional[UID] = None,
         address: Optional[str] = None,
     ) -> ZMQConsumer:
@@ -732,7 +771,6 @@ class ZMQClient(QueueClient):
             message_handler=message_handler,
             address=address,
             service_name=service_name,
-            container_short_id=container_short_id,
             syft_worker_id=syft_worker_id,
         )
         self.consumers[queue_name].append(consumer)

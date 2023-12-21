@@ -22,6 +22,12 @@ class WorkerStatus(Enum):
 
 
 @serializable()
+class ConsumerState(Enum):
+    IDLE = "Idle"
+    CONSUMING = "Consuming"
+
+
+@serializable()
 class WorkerHealth(Enum):
     HEALTHY = "✅"
     UNHEALTHY = "❌"
@@ -43,6 +49,7 @@ class SyftWorker(SyftObject):
     healthcheck: Optional[WorkerHealth]
     status: WorkerStatus
     worker_pool_name: str
+    consumer_state: ConsumerState = ConsumerState.IDLE
 
 
 @serializable()

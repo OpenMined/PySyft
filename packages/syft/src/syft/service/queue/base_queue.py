@@ -10,6 +10,7 @@ from ...serde.serializable import serializable
 from ...types.uid import UID
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..worker.worker_stash import WorkerStash
 
 
 @serializable()
@@ -88,6 +89,9 @@ class BaseQueueManager:
         self,
         message_handler: Type[AbstractMessageHandler],
         address: Optional[str],
+        service_name: str,
+        worker_stash: Optional[WorkerStash] = None,
+        syft_worker_id: Optional[UID] = None,
     ) -> QueueConsumer:
         raise NotImplementedError
 
