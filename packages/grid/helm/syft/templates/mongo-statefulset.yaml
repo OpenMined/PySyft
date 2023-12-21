@@ -34,7 +34,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: {{ .Values.secrets.mongo }}
-              key: mongo-password-secret
+              key: rootPassword
         envFrom: null
         image: mongo:7.0.4
         lifecycle: null

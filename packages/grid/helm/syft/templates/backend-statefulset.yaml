@@ -38,7 +38,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: {{ .Values.secrets.mongo }}
-              key: mongo-password-secret
+              key: rootPassword
         - name: SERVICE_NAME
           value: backend
         - name: RELEASE
@@ -93,7 +93,7 @@ spec:
           valueFrom:
             secretKeyRef:
                 name: {{ .Values.secrets.seaweedfs }}
-                key: S3_ROOT_PWD_SECRET
+                key: s3RootPassword
         - name: S3_PORT
           value: "{{ .Values.seaweedfs.s3Port }}"
         - name: SEAWEED_MOUNT_PORT
