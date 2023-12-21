@@ -11,9 +11,11 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import ParamSpec
 from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
+from typing import TypeVar
 from typing import Union
 from typing import cast
 
@@ -664,9 +666,13 @@ class SyftClient:
 
     @property
     def images(self) -> Any:
-        if self.api.has_service("worker_image"):
-            return self.api.services.worker_image
-        return None
+        if not self.api.has_service("worker_image"):
+            return None
+
+        api = self.api.services.worker_image
+        api.push = _prompt_for_password(api.push)
+
+        return api
 
     def login_as_guest(self) -> Self:
         _guest_client = self.guest()
@@ -1029,3 +1035,17 @@ class SyftClientSessionCache:
     @classmethod
     def get_client_for_node_uid(cls, node_uid: UID) -> Optional[SyftClient]:
         return cls.__client_cache__.get(node_uid, None)
+
+
+T = TypeVar("T")
+P = ParamSpec("P")
+
+
+def _prompt_for_password(f: Callable[P, T]) -> Callable[P, T]:
+    def inner(*args: P.args, **kwargs: P.kwargs):
+        if kwargs.get("password") is None:
+            kwargs["password"] = getpass("Password: ")
+
+        return f(*args, **kwargs)
+
+    return inner
