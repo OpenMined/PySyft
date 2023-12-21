@@ -1,4 +1,5 @@
 # stdlib
+import contextlib
 import json
 import os
 from typing import Iterable
@@ -74,9 +75,9 @@ class SyftWorkerImageService(AbstractService):
         self,
         context: AuthedServiceContext,
         image: UID,
-        repo_name: str,
-        registry: Optional[UID] = None,
+        tag: str,
         version: str = "latest",
+        registry: Optional[UID] = None,
     ) -> Union[SyftSuccess, SyftError]:
         worker_image: SyftWorkerImage = None
         registry_obj: Optional[SyftImageRegistry] = None
@@ -103,11 +104,11 @@ class SyftWorkerImageService(AbstractService):
         try:
             if registry_obj:
                 image_tag = SyftWorkerImageTag.from_registry(
-                    tag=f"{repo_name}:{version}",
+                    tag=f"{tag}:{version}",
                     registry=registry_obj,
                 )
             else:
-                image_tag = SyftWorkerImageTag.from_str(f"{repo_name}:{version}")
+                image_tag = SyftWorkerImageTag.from_str(f"{tag}:{version}")
         except pydantic.ValidationError as e:
             return SyftError(message=f"Failed to create tag: {e}")
 
@@ -223,10 +224,6 @@ class SyftWorkerImageService(AbstractService):
     def docker_build(
         self, image: SyftWorkerImage
     ) -> Union[Tuple[Image, Iterable[str]], SyftError]:
-        if not isinstance(image.config, DockerWorkerConfig):
-            # Handle this to worker with CustomWorkerConfig later
-            return SyftError("We only support DockerWorkerConfig")
-
         try:
             (image, logs) = self.builder.build_image(
                 config=image.config,

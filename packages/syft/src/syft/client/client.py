@@ -630,7 +630,7 @@ class SyftClient:
 
     @property
     def settings(self) -> Optional[APIModule]:
-        if self.api.has_service("user"):
+        if self.api.has_service("settings"):
             return self.api.services.settings
         return None
 
@@ -655,6 +655,49 @@ class SyftClient:
         if self.api.has_service("user"):
             return self.api.services.user.get_current_user()
         return None
+
+    @property
+    def registries(self) -> Any:
+        if self.api.has_service("image_registry"):
+            return self.api.services.image_registry
+        return None
+
+    @property
+    def images(self) -> Any:
+        if self.api.has_service("worker_image"):
+            return self.api.services.worker_image
+        return None
+
+    def build_image(
+        self,
+        image: UID,
+        repo_name: str = "",
+        version="latest",
+        registry: Optional[UID] = None,
+    ):
+        if not self.api.has_service("worker_image"):
+            return None
+
+        return self.api.services.worker_image.build(
+            image=image,
+            tag=repo_name,
+            version=version,
+            registry=registry,
+        )
+
+    def push_image(
+        self,
+        image: UID,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+    ):
+        # TODO: Ask for password here if password kwarg is not provided
+        if not self.api.has_service("worker_image"):
+            return None
+        return self.api.services.worker_image.push(
+            image=image,
+            username=username,
+        )
 
     def login_as_guest(self) -> Self:
         _guest_client = self.guest()
