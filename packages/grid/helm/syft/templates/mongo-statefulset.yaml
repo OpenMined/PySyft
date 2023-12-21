@@ -32,7 +32,7 @@ spec:
         - name: MONGO_INITDB_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.secrets.db.mongo.mongosecret }}
+              name: {{ .Values.secrets.mongo }}
               key: mongo-password-secret
         envFrom: null
         image: mongo:7.0.4

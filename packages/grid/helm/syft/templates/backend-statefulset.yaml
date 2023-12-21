@@ -36,7 +36,7 @@ spec:
         - name: MONGO_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.secrets.db.mongo.mongosecret }}
+              name: {{ .Values.secrets.mongo }}
               key: mongo-password-secret
         - name: SERVICE_NAME
           value: backend
@@ -55,7 +55,7 @@ spec:
         - name: STACK_API_KEY
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.secrets.syft.syftsecret }}
+              name: {{ .Values.secrets.syft }}
               key: stackApiKey
         - name: PORT
           value: '80'
@@ -84,14 +84,14 @@ spec:
         - name: DEFAULT_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.secrets.syft.syftsecret }}
+              name: {{ .Values.secrets.syft }}
               key: defaultRootPassword
         - name: S3_ROOT_USER
-          value: "{{ .Values.seaweedfs.S3_ROOT_USER }}"
+          value: "{{ .Values.seaweedfs.s3RootUser }}"
         - name: S3_ROOT_PWD
           valueFrom:
             secretKeyRef:
-                name: {{ .Values.secrets.seaweedfs.seaweedfsecret }}
+                name: {{ .Values.secrets.seaweedfs }}
                 key: S3_ROOT_PWD_SECRET
         - name: S3_PORT
           value: "{{ .Values.seaweedfs.S3_PORT }}"

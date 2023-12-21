@@ -35,7 +35,7 @@ spec:
         - name: S3_ROOT_PWD
           valueFrom:
             secretKeyRef:
-                name: {{ .Values.secrets.seaweedfs.seaweedfsecret }}
+                name: {{ .Values.secrets.seaweedfs }}
                 key: S3_ROOT_PWD_SECRET
         - name: S3_PORT
           value: "{{ .Values.seaweedfs.S3_PORT }}"

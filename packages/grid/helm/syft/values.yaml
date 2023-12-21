@@ -3,19 +3,9 @@
 # Declare variables to be passed into your templates.
 
 secrets:
-  syft:
-    syftsecret: "syftsecret"
-    # stackApiKey: "changeme"
-    # defaultRootPassword: "changethis"
-  db:
-    mongo:
-      # mongoPassword: "example"
-      # mongoInitdbRootPassword: "example"
-      # mongoUsername: "root"
-      # mongoInitdbRootUsername: "root"
-      mongosecret: "mongosecret"
-  seaweedfs:
-    seaweedfsecret: "seaweedfsecret"
+  syft: syft-default-secret
+  mongo: mongo-default-secret
+  seaweedfs: seaweedfs-default-secret
 
 configuration:
   devmode: false
