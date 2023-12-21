@@ -75,8 +75,8 @@ def run_containers(
     worker_image: SyftWorkerImage,
     number: int,
     orchestration: WorkerOrchestrationType,
-    username: str = None,
-    password: str = None,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
 ) -> List[ContainerSpawnStatus]:
     image_tag = worker_image.image_tag
 
