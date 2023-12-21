@@ -133,10 +133,10 @@ class ZMQProducer(QueueProducer):
             self.poll_workers.unregister(self.backend)
         except Exception as e:
             print("failed to unregister poller", e)
-        self.backend.close()
-        self.context.destroy()
         if self.thread is not None:
             self.thread.join(DEFAULT_THREAD_TIMEOUT)
+        self.backend.close()
+        self.context.destroy()
 
     @property
     def action_service(self):
@@ -215,11 +215,15 @@ class ZMQProducer(QueueProducer):
                 status=Status.CREATED,
             ).ok()
 
+            items_to_queue = [] if items_to_queue is None else items_to_queue
+
             # Queue Items that are in the processing state
             items_processing = self.queue_stash.get_by_status(
                 self.queue_stash.partition.root_verify_key,
                 status=Status.PROCESSING,
             ).ok()
+
+            items_processing = [] if items_processing is None else items_processing
 
             for item in itertools.chain(items_to_queue, items_processing):
                 if item.status == Status.CREATED:
@@ -503,7 +507,7 @@ class ZMQConsumer(QueueConsumer):
             print("failed to unregister poller", e)
         finally:
             self.worker.close()
-            self.ctx.destroy()
+            self.context.destroy()
 
     def send_to_producer(
         self,
