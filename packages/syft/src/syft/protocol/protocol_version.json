@@ -1037,21 +1037,14 @@
       "SyftWorker": {
         "1": {
           "version": 1,
-          "hash": "322591b9386ba477b6f778fad2a27ff0f2cb57249a335a92141007e6d87c9136",
+          "hash": "b0e2148eb04feb52ee6b31e76b2c9fc92e11b8b2261f7a0dd11add1874274458",
           "action": "add"
         }
       },
       "WorkerPool": {
         "1": {
           "version": 1,
-          "hash": "f498e61ec6d2ec916b7e1f25a67dc468f17c59239e77194cebf8b512993cb555",
-          "action": "add"
-        }
-      },
-      "ContainerImage": {
-        "1": {
-          "version": 1,
-          "hash": "776fc7cf7498b93e656a00fff03b86160d1b63e508e2143ac7932e7e38021b0c",
+          "hash": "63c1c0d25b02eb59050133e07b9d197dfa01af5f4f425b346ee02f7e23097e96",
           "action": "add"
         }
       }

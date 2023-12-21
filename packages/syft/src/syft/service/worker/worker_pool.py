@@ -5,6 +5,7 @@ from typing import Optional
 
 # relative
 from ...serde.serializable import serializable
+from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -32,7 +33,7 @@ class SyftWorker(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["name"]
-    __attr_searchable__ = ["name", "container_id", "image_hash"]
+    __attr_searchable__ = ["name", "container_id", "image_hash", "worker_pool_name"]
 
     id: UID
     name: str
@@ -41,6 +42,7 @@ class SyftWorker(SyftObject):
     image_hash: Optional[str]
     healthcheck: Optional[WorkerHealth]
     status: WorkerStatus
+    worker_pool_name: str
 
 
 @serializable()
@@ -54,7 +56,11 @@ class WorkerPool(SyftObject):
     name: str
     syft_worker_image_id: UID
     max_count: int
-    workers: List[SyftWorker]
+    worker_list: List[LinkedObject]
+
+    @property
+    def workers(self):
+        return [worker.resolve for worker in self.worker_list]
 
 
 @serializable()

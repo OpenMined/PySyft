@@ -14,39 +14,32 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
-from ...types.uid import UID
+from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
-from .worker_pool import WorkerPool
+from .worker_pool import SyftWorker
 
-PoolNamePartitionKey = PartitionKey(key="name", type_=str)
-PoolImageIDPartitionKey = PartitionKey(key="syft_worker_image_id", type_=UID)
+WorkerContainerNamePartitionKey = PartitionKey(key="container_name", type_=str)
 
 
+@instrument
 @serializable()
-class SyftWorkerPoolStash(BaseUIDStoreStash):
-    object_type = WorkerPool
+class WorkerStash(BaseUIDStoreStash):
+    object_type = SyftWorker
     settings: PartitionSettings = PartitionSettings(
-        name=WorkerPool.__canonical_name__,
-        object_type=WorkerPool,
+        name=SyftWorker.__canonical_name__, object_type=SyftWorker
     )
 
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    def get_by_name(
-        self, credentials: SyftVerifyKey, pool_name: str
-    ) -> Result[Optional[WorkerPool], str]:
-        qks = QueryKeys(qks=[PoolNamePartitionKey.with_obj(pool_name)])
-        return self.query_one(credentials=credentials, qks=qks)
-
     def set(
         self,
         credentials: SyftVerifyKey,
-        obj: WorkerPool,
+        obj: SyftWorker,
         add_permissions: Union[List[ActionObjectPermission], None] = None,
         ignore_duplicates: bool = False,
-    ) -> Result[WorkerPool, str]:
+    ) -> Result[SyftWorker, str]:
         # By default all worker pools have all read permission
         add_permissions = [] if add_permissions is None else add_permissions
         add_permissions.append(
@@ -54,8 +47,8 @@ class SyftWorkerPoolStash(BaseUIDStoreStash):
         )
         return super().set(credentials, obj, add_permissions, ignore_duplicates)
 
-    def get_by_image_uid(
-        self, credentials: SyftVerifyKey, image_uid: UID
-    ) -> List[WorkerPool]:
-        qks = QueryKeys(qks=[PoolImageIDPartitionKey.with_obj(image_uid)])
-        return self.query_all(credentials=credentials, qks=qks)
+    def get_worker_by_name(
+        self, credentials: SyftVerifyKey, worker_name: str
+    ) -> Result[Optional[SyftWorker], str]:
+        qks = QueryKeys(qks=[WorkerContainerNamePartitionKey.with_obj(worker_name)])
+        return self.query_one(credentials=credentials, qks=qks)

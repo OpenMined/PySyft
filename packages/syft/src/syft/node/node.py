@@ -452,10 +452,10 @@ class Node(AbstractNode):
             print("Consumer service Name: ", service_name)
 
             if service_name is None:
-                # Create default worker pools
+                # Create consumers for default worker pool
                 create_default_worker_pool(self)
             else:
-                # Create default worker pools
+                # Create consumers for given worker pool
                 for _ in range(queue_config_.client_config.n_consumers):
                     self.add_consumer_for_service(
                         service_name=service_name,

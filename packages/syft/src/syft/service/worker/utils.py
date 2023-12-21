@@ -149,6 +149,7 @@ def run_container_using_docker(
             container_id=container.id,
             image_hash=container.image.id,
             status=status,
+            worker_pool_name=pool_name,
         )
     except Exception as e:
         error_message = f"Failed to run command in container. {worker_name} {image_tag}. {e}. {sys.stderr}"
@@ -158,6 +159,7 @@ def run_container_using_docker(
                 container_id=container.id,
                 image_hash=container.image.id,
                 status=WorkerStatus.STOPPED,
+                worker_pool_name=pool_name,
             )
             container.stop()
 
@@ -174,7 +176,11 @@ def run_workers_in_threads(
     for worker_count in range(1, number + 1):
         error = None
         worker_name = f"{pool_name}-{worker_count}"
-        worker = SyftWorker(name=worker_name, status=WorkerStatus.RUNNING)
+        worker = SyftWorker(
+            name=worker_name,
+            status=WorkerStatus.RUNNING,
+            worker_pool_name=pool_name,
+        )
         try:
             port = node.queue_config.client_config.queue_port
             address = get_queue_address(port)

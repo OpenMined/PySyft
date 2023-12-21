@@ -12,6 +12,7 @@ from docker.models.containers import Container
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...store.linked_obj import LinkedObject
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -31,6 +32,8 @@ from .worker_pool import SyftWorker
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerPool
 from .worker_pool_stash import SyftWorkerPoolStash
+from .worker_service import WorkerService
+from .worker_stash import WorkerStash
 
 
 @serializable()
@@ -42,6 +45,7 @@ class SyftWorkerPoolService(AbstractService):
         self.store = store
         self.stash = SyftWorkerPoolStash(store=store)
         self.image_stash = SyftWorkerImageStash(store=store)
+        self.worker_stash = WorkerStash(store=store)
 
     @service_method(
         path="worker_pool.create",
@@ -122,17 +126,32 @@ class SyftWorkerPoolService(AbstractService):
                 dev_mode=context.node.dev_mode,
             )
 
-        workers = [
-            container_status.worker
-            for container_status in container_statuses
-            if container_status.worker
-        ]
+        worker_list = []
+
+        for container_status in container_statuses:
+            worker = container_status.worker
+            if worker is None:
+                continue
+            result = self.worker_stash.set(
+                credentials=context.credentials,
+                obj=worker,
+            )
+
+            if result.is_ok():
+                worker_obj = LinkedObject.from_obj(
+                    obj=result.ok(),
+                    service_type=WorkerService,
+                    node_uid=context.node.id,
+                )
+                worker_list.append(worker_obj)
+            else:
+                container_status.error = result.err()
 
         worker_pool = WorkerPool(
             name=name,
             syft_worker_image_id=image_uid,
             max_count=number,
-            workers=workers,
+            worker_list=worker_list,
         )
         result = self.stash.set(credentials=context.credentials, obj=worker_pool)
 
@@ -175,34 +194,55 @@ class SyftWorkerPoolService(AbstractService):
         if isinstance(worker_pool_worker, SyftError):
             return worker_pool_worker
 
-        worker_pool, worker = worker_pool_worker
+        worker_pool, linked_worker = worker_pool_worker
 
-        # delete the worker using docker client sdk
-        docker_container = _get_worker_container(worker)
-        if isinstance(docker_container, SyftError):
-            return docker_container
+        result = linked_worker.resolve_with_context(context=context)
 
-        try:
-            # stop the container
-            docker_container.stop()
-            # Remove the container and its volumes
-            docker_container.remove(force=force, v=True)
-        except docker.errors.APIError as e:
-            if "removal of container" in str(e) and "is already in progress" in str(e):
-                # If the container is already being removed, ignore the error
-                pass
-            else:
-                # If it's a different error, return it
+        if result.is_err():
+            return SyftError(
+                message=f"Failed to retrieve Linked SyftWorker {linked_worker.object_uid}"
+            )
+
+        worker = result.ok()
+
+        if not context.node.in_memory_workers:
+            # delete the worker using docker client sdk
+            docker_container = _get_worker_container(worker)
+            if isinstance(docker_container, SyftError):
+                return docker_container
+
+            try:
+                # stop the container
+                docker_container.stop()
+                # Remove the container and its volumes
+                docker_container.remove(force=force, v=True)
+            except docker.errors.APIError as e:
+                if "removal of container" in str(e) and "is already in progress" in str(
+                    e
+                ):
+                    # If the container is already being removed, ignore the error
+                    pass
+                else:
+                    # If it's a different error, return it
+                    return SyftError(
+                        message=f"Failed to delete worker with id: {worker_id}. Error: {e}"
+                    )
+            except Exception as e:
                 return SyftError(
                     message=f"Failed to delete worker with id: {worker_id}. Error: {e}"
                 )
-        except Exception as e:
-            return SyftError(
-                message=f"Failed to delete worker with id: {worker_id}. Error: {e}"
-            )
 
         # remove the worker from the pool
-        worker_pool.workers.remove(worker)
+        worker_pool.worker_list.remove(linked_worker)
+
+        # Delete worker from worker stash
+        result = self.worker_stash.delete_by_uid(
+            credentials=context.credentials, uid=worker.id
+        )
+        if result.is_err():
+            return SyftError(message=f"Failed to delete worker with uid: {worker.id}")
+
+        # Update worker pool
         result = self.stash.update(context.credentials, obj=worker_pool)
         if result.is_err():
             return SyftError(message=f"Failed to update worker pool: {result.err()}")
@@ -210,6 +250,21 @@ class SyftWorkerPoolService(AbstractService):
         return SyftSuccess(
             message=f"Worker with id: {worker_id} deleted successfully from pool: {worker_pool.name}"
         )
+
+    @service_method(
+        path="worker_pool.filter_by_image_id",
+        name="filter_by_image_id",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def filter_by_image_id(
+        self, context: AuthedServiceContext, image_uid: UID
+    ) -> Union[List[WorkerPool], SyftError]:
+        result = self.stash.get_by_image_uid(context.credentials, image_uid)
+
+        if result.is_err():
+            return SyftError(message=f"Failed to get worker pool for uid: {image_uid}")
+
+        return result.ok()
 
     @service_method(
         path="worker_pool.worker_logs",
@@ -229,18 +284,30 @@ class SyftWorkerPoolService(AbstractService):
         if isinstance(worker_pool_worker, SyftError):
             return worker_pool_worker
 
-        _, worker = worker_pool_worker
+        _, linked_worker = worker_pool_worker
 
-        docker_container = _get_worker_container(worker)
-        if isinstance(docker_container, SyftError):
-            return docker_container
+        result = linked_worker.resolve_with_context(context)
 
-        try:
-            logs = cast(bytes, docker_container.logs())
-        except docker.errors.APIError as e:
+        if result.is_err():
             return SyftError(
-                f"Failed to get worker {worker.id} container logs. Error {e}"
+                message=f"Failed to retrieve Linked SyftWorker {linked_worker.object_uid}"
             )
+
+        worker = result.ok()
+
+        if context.node.in_memory_workers:
+            logs = b"Logs not implemented for In Memory Workers"
+        else:
+            docker_container = _get_worker_container(worker)
+            if isinstance(docker_container, SyftError):
+                return docker_container
+
+            try:
+                logs = cast(bytes, docker_container.logs())
+            except docker.errors.APIError as e:
+                return SyftError(
+                    f"Failed to get worker {worker.id} container logs. Error {e}"
+                )
 
         return logs if raw else logs.decode(errors="ignore")
 
@@ -261,7 +328,7 @@ class SyftWorkerPoolService(AbstractService):
 
     def _get_worker_pool_and_worker(
         self, context: AuthedServiceContext, worker_pool_id: UID, worker_id: UID
-    ) -> Union[Tuple[WorkerPool, SyftWorker], SyftError]:
+    ) -> Union[Tuple[WorkerPool, LinkedObject], SyftError]:
         worker_pool = self._get_worker_pool(context, worker_pool_id)
         if isinstance(worker_pool, SyftError):
             return worker_pool
@@ -275,18 +342,22 @@ class SyftWorkerPoolService(AbstractService):
 
 def _get_worker_opt(worker_pool: WorkerPool, worker_id: UID) -> Optional[SyftWorker]:
     try:
-        return next(worker for worker in worker_pool.workers if worker.id == worker_id)
+        return next(
+            worker
+            for worker in worker_pool.worker_list
+            if worker.object_uid == worker_id
+        )
     except StopIteration:
         return None
 
 
 def _get_worker(
     worker_pool: WorkerPool, worker_id: UID
-) -> Union[SyftWorker, SyftError]:
-    worker = _get_worker_opt(worker_pool, worker_id)
+) -> Union[LinkedObject, SyftError]:
+    linked_worker = _get_worker_opt(worker_pool, worker_id)
     return (
-        worker
-        if worker is not None
+        linked_worker
+        if linked_worker is not None
         else SyftError(
             message=f"Worker with id: {worker_id} not found in pool: {worker_pool.name}"
         )
