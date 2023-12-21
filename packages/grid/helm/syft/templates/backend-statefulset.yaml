@@ -94,9 +94,9 @@ spec:
                 name: {{ .Values.secrets.seaweedfs }}
                 key: S3_ROOT_PWD_SECRET
         - name: S3_PORT
-          value: "{{ .Values.seaweedfs.S3_PORT }}"
+          value: "{{ .Values.seaweedfs.s3Port }}"
         - name: SEAWEED_MOUNT_PORT
-          value: "{{ .Values.seaweedfs.SEAWEED_MOUNT_PORT }}"
+          value: "{{ .Values.seaweedfs.mountPort }}"
         envFrom: null
         image: {{ .Values.container.registry }}/openmined/grid-backend:{{ .Values.container.syft_version }}
         lifecycle: null
