@@ -755,6 +755,7 @@ class ZMQClient(QueueClient):
         message_handler: AbstractMessageHandler,
         service_name: str,
         address: Optional[str] = None,
+        worker_stash: Optional[WorkerStash] = None,
         syft_worker_id: Optional[UID] = None,
     ) -> ZMQConsumer:
         """Add a consumer to a queue
@@ -772,6 +773,7 @@ class ZMQClient(QueueClient):
             address=address,
             service_name=service_name,
             syft_worker_id=syft_worker_id,
+            worker_stash=worker_stash,
         )
         self.consumers[queue_name].append(consumer)
 

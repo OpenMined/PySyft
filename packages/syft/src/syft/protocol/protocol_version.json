@@ -975,17 +975,10 @@
           "action": "add"
         }
       },
-      "ContainerImage": {
-        "1": {
-          "version": 1,
-          "hash": "776fc7cf7498b93e656a00fff03b86160d1b63e508e2143ac7932e7e38021b0c",
-          "action": "remove"
-        }
-      },
       "JobItem": {
         "3": {
           "version": 3,
-          "hash": "4120e90800c36dd16d36a512476844c57e5db4808ddd3622fff973faab003b6e",
+          "hash": "7293ce8bf17bc7420b764bc32fd89512ecbfa045f12db0513904794a6b000581",
           "action": "add"
         }
       },
@@ -1058,7 +1051,7 @@
       "SyftWorker": {
         "1": {
           "version": 1,
-          "hash": "b0e2148eb04feb52ee6b31e76b2c9fc92e11b8b2261f7a0dd11add1874274458",
+          "hash": "785a86a4d20cef41605aa01ea100ef064000cf552946b5d260a98dd9501f6eda",
           "action": "add"
         }
       },
