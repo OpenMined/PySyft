@@ -311,7 +311,7 @@ class ProjectRequest(ProjectEventAddObject):
     # TODO: To add deny requests, when deny functionality is added
 
     def status(self, project: Project) -> Union[Dict, SyftError]:
-        """Returns the status of the request
+        """Returns the status of the request.
 
         Args:
             project (Project): Project object to check the status
