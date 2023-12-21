@@ -43,7 +43,7 @@ spec:
         - name: RELEASE
           value: production
         - name: VERSION
-          value: {{ .Values.container.syft_version }}
+          value: {{ .Values.syft.version }}
         - name: VERSION_HASH
           value: {{ .Values.node.settings.versionHash }}
         - name: NODE_TYPE
@@ -98,7 +98,7 @@ spec:
         - name: SEAWEED_MOUNT_PORT
           value: "{{ .Values.seaweedfs.mountPort }}"
         envFrom: null
-        image: {{ .Values.container.registry }}/openmined/grid-backend:{{ .Values.container.syft_version }}
+        image: {{ .Values.syft.registry }}/openmined/grid-backend:{{ .Values.syft.version }}
         lifecycle: null
         livenessProbe: null
         name: container-0

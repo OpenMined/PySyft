@@ -25,9 +25,9 @@ seaweedfs:
   s3Port: 8333
   s3RootUser: "admin"
 
-container:
+syft:
   registry: "docker.io"
-  syft_version: 0.8.4-beta.3
+  version: 0.8.4-beta.3
 
 node:
   settings:

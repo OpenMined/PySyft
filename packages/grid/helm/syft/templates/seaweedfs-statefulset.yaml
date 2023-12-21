@@ -42,7 +42,7 @@ spec:
         - name: SEAWEED_MOUNT_PORT
           value: "{{ .Values.seaweedfs.mountPort }}"
         envFrom: null
-        image: {{ .Values.container.registry }}/openmined/grid-seaweedfs:{{ .Values.container.syft_version }}
+        image: {{ .Values.syft.registry }}/openmined/grid-seaweedfs:{{ .Values.syft.version }}
         lifecycle: null
         livenessProbe: null
         name: container-0
