@@ -1,5 +1,7 @@
 # stdlib
 from typing import Optional
+from typing import Tuple
+from typing import Union
 
 # third party
 from typing_extensions import Self
@@ -20,7 +22,7 @@ from .image_registry import SyftImageRegistry
 class SyftWorkerImageTag(SyftBaseModel):
     repo: str
     tag: str
-    registry: Optional[SyftImageRegistry | str]
+    registry: Optional[Union[SyftImageRegistry, str]]
 
     @classmethod
     def from_registry(cls, tag: str, registry: SyftImageRegistry) -> Self:
@@ -40,8 +42,8 @@ class SyftWorkerImageTag(SyftBaseModel):
         return cls(repo=repo, registry=registry, tag=tag)
 
     @staticmethod
-    def parse_str(tag_str: str):
-        url, tag = tag_str.rsplit(":", 1)
+    def parse_str(tag: str) -> Tuple[Optional[str], str, str]:
+        url, tag = tag.rsplit(":", 1)
         args = url.rsplit("/", 2)
 
         if len(args) == 3:
@@ -89,9 +91,9 @@ class SyftWorkerImage(SyftObject):
     image_hash: Optional[str]
     created_at: DateTime = DateTime.now()
     created_by: SyftVerifyKey
-    built_on: Optional[DateTime]
+    built_at: Optional[DateTime]
 
     def __str__(self) -> str:
         if self.image_hash:
-            return f"SyftWorkerImage<{self.id}, {self.image_hash}, {self.built_on}>"
+            return f"SyftWorkerImage<{self.id}, {self.image_hash}, {self.built_at}>"
         return f"SyftWorkerImage<{self.id},BUILD PENDING>"

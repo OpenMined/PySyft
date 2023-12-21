@@ -1,12 +1,19 @@
 # stdlib
 import contextlib
+import json
+import os
 import sys
+from typing import Iterable
 from typing import List
+from typing import Tuple
+from typing import Union
 
 # third party
 import docker
 
 # relative
+from ...custom_worker.builder import CustomWorkerBuilder
+from ...custom_worker.builder import Image
 from ..response import SyftError
 from .worker_image import SyftWorkerImage
 from .worker_image import SyftWorkerImageTag
@@ -16,7 +23,82 @@ from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerStatus
 
 
-def run_container_using_docker(
+def docker_build(
+    image: SyftWorkerImage
+) -> Union[Tuple[Image, Iterable[str]], SyftError]:
+    try:
+        builder = CustomWorkerBuilder()
+        (image, logs) = builder.build_image(
+            config=image.config,
+            tag=image.image_tag.full_tag,
+        )
+        parsed_logs = parse_output(logs)
+        return (image, parsed_logs)
+    except docker.errors.APIError as e:
+        return SyftError(
+            message=f"Docker API error when building {image.image_tag}. Reason - {e}"
+        )
+    except docker.errors.DockerException as e:
+        return SyftError(
+            message=f"Docker exception when building {image.image_tag}. Reason - {e}"
+        )
+    except Exception as e:
+        return SyftError(
+            message=f"Unknown exception when building {image.image_tag}. Reason - {e}"
+        )
+
+
+def docker_push(
+    self,
+    image: SyftWorkerImage,
+    username: str = "",
+    password: str = "",
+) -> List[str]:
+    try:
+        builder = CustomWorkerBuilder()
+        result = builder.push_image(
+            tag=image.image_tag.full_tag,
+            registry_url=image.image_tag.registry_host,
+            username=username,
+            password=password,
+        )
+
+        parsed_result = result.split(os.linesep)
+
+        if "error" in result:
+            result = SyftError(
+                message=f"Failed to push {image.image_tag}. Logs - {parsed_result}"
+            )
+
+        return parsed_result
+    except docker.errors.APIError as e:
+        return SyftError(
+            message=f"Docker API error when pushing {image.image_tag}. {e}"
+        )
+    except docker.errors.DockerException as e:
+        return SyftError(
+            message=f"Docker exception when pushing {image.image_tag}. Reason - {e}"
+        )
+    except Exception as e:
+        return SyftError(
+            message=f"Unknown exception when pushing {image.image_tag}. Reason - {e}"
+        )
+
+
+def parse_output(self, log_iter: Iterable) -> str:
+    log = ""
+    for line in log_iter:
+        for item in line.values():
+            if isinstance(item, str):
+                log += item
+            elif isinstance(item, dict):
+                log += json.dumps(item)
+            else:
+                log += str(item)
+    return log
+
+
+def docker_run(
     client: docker.DockerClient,
     image_tag: SyftWorkerImageTag,
     worker_name: str,
@@ -87,7 +169,7 @@ def run_containers(
     with contextlib.closing(docker.from_env()) as client:
         for worker_count in range(1, number + 1):
             worker_name = f"{pool_name}-{worker_count}"
-            spawn_result = run_container_using_docker(
+            spawn_result = docker_run(
                 client=client,
                 worker_name=worker_name,
                 image_tag=image_tag,
