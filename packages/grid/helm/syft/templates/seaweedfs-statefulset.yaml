@@ -3,25 +3,26 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
     app.kubernetes.io/component: seaweedfs
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: devspace-app
   name: seaweedfs
 spec:
   podManagementPolicy: OrderedReady
   replicas: 1
   selector:
     matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
       app.kubernetes.io/component: seaweedfs
       app.kubernetes.io/managed-by: Helm
-      app.kubernetes.io/name: devspace-app
   serviceName: seaweedfs-headless
   template:
     metadata:
       labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
         app.kubernetes.io/component: seaweedfs
         app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: devspace-app
     spec:
       affinity: null
       containers:
@@ -83,9 +84,10 @@ spec:
   volumeClaimTemplates:
   - metadata:
       labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/version: {{ .Chart.AppVersion }}
         app.kubernetes.io/component: seaweedfs
         app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: devspace-app
       name: seaweedfs-data
     spec:
       accessModes:
