@@ -92,7 +92,7 @@ jobs:
         shell: bash
         run: |
           echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
-          echo "SEAWEEDFS_version=$(grep 'SEAWEEDFS_VERSION' packages/grid/default.env | cut -d '=' -f2)" >> $GITHUB_OUTPUT
+          echo "SEAWEEDFS_VERSION=$(grep 'SEAWEEDFS_VERSION' packages/grid/default.env | cut -d '=' -f2)" >> $GITHUB_OUTPUT
 
       - name: Build and push `grid-backend` image to registry
         uses: docker/build-push-action@v5
