@@ -2,25 +2,26 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
     app.kubernetes.io/component: backend
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: devspace-app
   name: backend
 spec:
   podManagementPolicy: OrderedReady
   replicas: 1
   selector:
     matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
       app.kubernetes.io/component: backend
       app.kubernetes.io/managed-by: Helm
-      app.kubernetes.io/name: devspace-app
   serviceName: backend-headless
   template:
     metadata:
       labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
         app.kubernetes.io/component: backend
         app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: devspace-app
     spec:
       affinity: null
       containers:
@@ -28,22 +29,22 @@ spec:
         command: null
         env:
         - name: MONGO_PORT
-          value: {{ .Values.db.mongo.settings.mongoPort }}
+          value: {{ .Values.mongo.port }}
         - name: MONGO_HOST
-          value: {{ .Values.db.mongo.settings.mongoHost }}
+          value: {{ .Values.mongo.host }}
         - name: MONGO_USERNAME
-          value: {{ .Values.db.mongo.settings.mongoUsername }}
+          value: {{ .Values.mongo.username }}
         - name: MONGO_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.secrets.db.mongo.mongosecret }}
-              key: mongo-password-secret
+              name: {{ .Values.secrets.mongo }}
+              key: rootPassword
         - name: SERVICE_NAME
           value: backend
         - name: RELEASE
           value: production
         - name: VERSION
-          value: {{ .Values.container.syft_version }}
+          value: {{ .Values.syft.version }}
         - name: VERSION_HASH
           value: {{ .Values.node.settings.versionHash }}
         - name: NODE_TYPE
@@ -55,7 +56,7 @@ spec:
         - name: STACK_API_KEY
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.secrets.syft.syftsecret }}
+              name: {{ .Values.secrets.syft }}
               key: stackApiKey
         - name: PORT
           value: '80'
@@ -84,21 +85,21 @@ spec:
         - name: DEFAULT_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.secrets.syft.syftsecret }}
+              name: {{ .Values.secrets.syft }}
               key: defaultRootPassword
         - name: S3_ROOT_USER
-          value: "{{ .Values.seaweedfs.S3_ROOT_USER }}"
+          value: "{{ .Values.seaweedfs.s3RootUser }}"
         - name: S3_ROOT_PWD
           valueFrom:
             secretKeyRef:
-                name: {{ .Values.secrets.seaweedfs.seaweedfsecret }}
-                key: S3_ROOT_PWD_SECRET
+                name: {{ .Values.secrets.seaweedfs }}
+                key: s3RootPassword
         - name: S3_PORT
-          value: "{{ .Values.seaweedfs.S3_PORT }}"
+          value: "{{ .Values.seaweedfs.s3Port }}"
         - name: SEAWEED_MOUNT_PORT
-          value: "{{ .Values.seaweedfs.SEAWEED_MOUNT_PORT }}"
+          value: "{{ .Values.seaweedfs.mountPort }}"
         envFrom: null
-        image: {{ .Values.container.registry }}/openmined/grid-backend:{{ .Values.container.syft_version }}
+        image: {{ .Values.syft.registry }}/openmined/grid-backend:{{ .Values.syft.version }}
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -128,9 +129,10 @@ spec:
   volumeClaimTemplates:
   - metadata:
       labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/version: {{ .Chart.AppVersion }}
         app.kubernetes.io/component: backend
         app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: devspace-app
       name: credentials-data
     spec:
       accessModes:

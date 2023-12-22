@@ -2,8 +2,9 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: frontend
   name: frontend
 spec:
   externalIPs: null
@@ -13,6 +14,6 @@ spec:
     protocol: TCP
     targetPort: 80
   selector:
+    app.kubernetes.io/name: {{ .Chart.Name }}
     app.kubernetes.io/component: frontend
-    app.kubernetes.io/name: devspace-app
   type: ClusterIP

@@ -3,39 +3,29 @@
 # Declare variables to be passed into your templates.
 
 secrets:
-  syft:
-    syftsecret: "syftsecret"
-    # stackApiKey: "changeme"
-    # defaultRootPassword: "changethis"
-  db:
-    mongo:
-      # mongoPassword: "example"
-      # mongoInitdbRootPassword: "example"
-      # mongoUsername: "root"
-      # mongoInitdbRootUsername: "root"
-      mongosecret: "mongosecret"
-  seaweedfs:
-    seaweedfsecret: "seaweedfsecret"
+  syft: syft-default-secret
+  mongo: mongo-default-secret
+  seaweedfs: seaweedfs-default-secret
 
 configuration:
   devmode: false
 
-db:
-  mongo:
-    settings:
-      mongoPort: "'27017'"
-      mongoHost: "mongo"
-      mongoUsername: "root"
+mongo:
+  port: "'27017'"
+  host: "mongo"
+  username: "root"
 
 seaweedfs:
-  S3_VOLUME_SIZE_MB: 1024
-  S3_PORT: 8333
-  SEAWEED_MOUNT_PORT: 4001
-  S3_ROOT_USER: "admin"
+  # SeaweedFS config
+  mountPort: 4001
+  # SeaweedFS S3 Config
+  s3VolumeSizeMB: 1024
+  s3Port: 8333
+  s3RootUser: "admin"
 
-container:
+syft:
   registry: "docker.io"
-  syft_version: 0.8.4-beta.3
+  version: 0.8.4-beta.3
 
 node:
   settings:
