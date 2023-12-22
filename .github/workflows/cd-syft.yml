@@ -202,7 +202,7 @@ jobs:
       - name: Upload digest for grid-backend, grid-frontend and grid-seaweedfs
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ steps.release_metadata.outputs.grid_version }}
+          name: digests-${{ steps.release_metadata.outputs.grid_version }}-${{ steps.release_metadata.outputs.short_release_platform }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -218,8 +218,9 @@ jobs:
       - name: Download digests
         uses: actions/download-artifact@v4
         with:
-          name: digests-${{ needs.build-and-push-docker-images.outputs.grid_version }}
           path: /tmp/digests
+          pattern: digests-${{ needs.build-and-push-docker-images.outputs.grid_version }}-*
+          merge-multiple: true
 
       - name: Set up Docker Buildx
         id: buildx
