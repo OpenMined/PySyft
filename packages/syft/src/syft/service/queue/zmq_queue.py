@@ -277,10 +277,9 @@ class ZMQProducer(QueueProducer):
         self.producer_thread = threading.Thread(target=self.read_items)
         self.producer_thread.start()
 
-    def send(self, worker: bytes, message: bytes):
-        message.insert(0, worker)
-        with lock:
-            self.backend.send_multipart(message)
+    def send(self, worker: bytes, message: Union[bytes, List[bytes]]):
+        worker_obj = self.require_worker(worker)
+        self.send_to_worker(worker=worker_obj, msg=message)
 
     def bind(self, endpoint):
         """Bind producer to endpoint."""
