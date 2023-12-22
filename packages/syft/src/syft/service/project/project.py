@@ -317,7 +317,7 @@ class ProjectRequest(ProjectEventAddObject):
             project (Project): Project object to check the status
 
         Returns:
-            str: Status of the request
+            str: Status of the request.
 
         During Request  status calculation, we do not allow multiple responses
         """
