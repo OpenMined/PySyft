@@ -8,12 +8,42 @@ from joblib import Parallel
 from joblib import delayed
 import pytest
 
+# syft absolute
+from syft.service.queue.queue_stash import QueueItem
+from syft.service.worker.worker_pool import WorkerPool
+from syft.service.worker.worker_pool_service import SyftWorkerPoolService
+from syft.store.linked_obj import LinkedObject
+from syft.types.uid import UID
+
 # relative
 from .store_fixtures_test import mongo_queue_stash_fn
 from .store_fixtures_test import sqlite_queue_stash_fn
-from .store_mocks_test import MockSyftObject
 
 REPEATS = 20
+
+
+def mock_queue_object():
+    worker_pool_obj = WorkerPool(
+        name="mypool",
+        syft_worker_image_id=UID(),
+        max_count=0,
+        worker_list=[],
+    )
+    linked_worker_pool = LinkedObject.from_obj(
+        worker_pool_obj,
+        node_uid=UID(),
+        service_type=SyftWorkerPoolService,
+    )
+    obj = QueueItem(
+        id=UID(),
+        node_uid=UID(),
+        method="dummy_method",
+        service="dummy_service",
+        args=[],
+        kwargs={},
+        worker_pool=linked_worker_pool,
+    )
+    return obj
 
 
 @pytest.mark.parametrize(
@@ -50,7 +80,7 @@ def test_queue_stash_sanity(queue: Any) -> None:
 def test_queue_stash_set_get(root_verify_key, queue: Any) -> None:
     objs = []
     for idx in range(REPEATS):
-        obj = MockSyftObject(data=idx)
+        obj = mock_queue_object()
         objs.append(obj)
 
         res = queue.set(root_verify_key, obj, ignore_duplicates=False)
@@ -93,12 +123,12 @@ def test_queue_stash_set_get(root_verify_key, queue: Any) -> None:
 )
 @pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_stash_update(root_verify_key, queue: Any) -> None:
-    obj = MockSyftObject(data=0)
+    obj = mock_queue_object()
     res = queue.set(root_verify_key, obj, ignore_duplicates=False)
     assert res.is_ok()
 
     for idx in range(REPEATS):
-        obj.data = idx
+        obj.args = [idx]
 
         res = queue.update(root_verify_key, obj)
         assert res.is_ok()
@@ -106,7 +136,7 @@ def test_queue_stash_update(root_verify_key, queue: Any) -> None:
 
         item = queue.find_one(root_verify_key, id=obj.id)
         assert item.is_ok()
-        assert item.ok().data == idx
+        assert item.ok().args == [idx]
 
     res = queue.find_and_delete(root_verify_key, id=obj.id)
     assert res.is_ok()
@@ -135,8 +165,8 @@ def test_queue_set_existing_queue_threading(root_verify_key, queue: Any) -> None
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
-        for idx in range(repeats):
-            obj = MockSyftObject(data=idx)
+        for _ in range(repeats):
+            obj = mock_queue_object()
 
             for _ in range(10):
                 res = queue.set(root_verify_key, obj, ignore_duplicates=False)
@@ -178,14 +208,14 @@ def test_queue_update_existing_queue_threading(root_verify_key, queue: Any) -> N
     thread_cnt = 3
     repeats = REPEATS
 
-    obj = MockSyftObject(data=0)
+    obj = mock_queue_object()
     queue.set(root_verify_key, obj, ignore_duplicates=False)
     execution_err = None
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
         for repeat in range(repeats):
-            obj.data = repeat
+            obj.args = [repeat]
 
             for _ in range(10):
                 res = queue.update(root_verify_key, obj)
@@ -232,8 +262,8 @@ def test_queue_set_delete_existing_queue_threading(
     execution_err = None
     objs = []
 
-    for idx in range(repeats * thread_cnt):
-        obj = MockSyftObject(data=idx)
+    for _ in range(repeats * thread_cnt):
+        obj = mock_queue_object()
         res = queue.set(root_verify_key, obj, ignore_duplicates=False)
         objs.append(obj)
 
@@ -277,8 +307,8 @@ def helper_queue_set_threading(root_verify_key, create_queue_cbk) -> None:
         nonlocal execution_err
         queue = create_queue_cbk()
 
-        for idx in range(repeats):
-            obj = MockSyftObject(data=idx)
+        for _ in range(repeats):
+            obj = mock_queue_object()
 
             for _ in range(10):
                 res = queue.set(root_verify_key, obj, ignore_duplicates=False)
@@ -311,10 +341,27 @@ def helper_queue_set_joblib(root_verify_key, create_queue_cbk) -> None:
 
     def _kv_cbk(tid: int) -> None:
         queue = create_queue_cbk()
-
-        for idx in range(repeats):
-            obj = MockSyftObject(data=idx)
-
+        for _ in range(repeats):
+            worker_pool_obj = WorkerPool(
+                name="mypool",
+                syft_worker_image_id=UID(),
+                max_count=0,
+                worker_list=[],
+            )
+            linked_worker_pool = LinkedObject.from_obj(
+                worker_pool_obj,
+                node_uid=UID(),
+                service_type=SyftWorkerPoolService,
+            )
+            obj = QueueItem(
+                id=UID(),
+                node_uid=UID(),
+                method="dummy_method",
+                service="dummy_service",
+                args=[],
+                kwargs={},
+                worker_pool=linked_worker_pool,
+            )
             for _ in range(10):
                 res = queue.set(root_verify_key, obj, ignore_duplicates=False)
                 if res.is_ok():
@@ -366,7 +413,7 @@ def helper_queue_update_threading(root_verify_key, create_queue_cbk) -> None:
 
     queue = create_queue_cbk()
 
-    obj = MockSyftObject(data=0)
+    obj = mock_queue_object()
     queue.set(root_verify_key, obj, ignore_duplicates=False)
     execution_err = None
 
@@ -375,7 +422,7 @@ def helper_queue_update_threading(root_verify_key, create_queue_cbk) -> None:
         queue_local = create_queue_cbk()
 
         for repeat in range(repeats):
-            obj.data = repeat
+            obj.args = [repeat]
 
             for _ in range(10):
                 res = queue_local.update(root_verify_key, obj)
@@ -407,7 +454,7 @@ def helper_queue_update_joblib(root_verify_key, create_queue_cbk) -> None:
         queue_local = create_queue_cbk()
 
         for repeat in range(repeats):
-            obj.data = repeat
+            obj.args = [repeat]
 
             for _ in range(10):
                 res = queue_local.update(root_verify_key, obj)
@@ -420,7 +467,7 @@ def helper_queue_update_joblib(root_verify_key, create_queue_cbk) -> None:
 
     queue = create_queue_cbk()
 
-    obj = MockSyftObject(data=0)
+    obj = mock_queue_object()
     queue.set(root_verify_key, obj, ignore_duplicates=False)
 
     errs = Parallel(n_jobs=thread_cnt)(
@@ -466,8 +513,8 @@ def helper_queue_set_delete_threading(
     execution_err = None
     objs = []
 
-    for idx in range(repeats * thread_cnt):
-        obj = MockSyftObject(data=idx)
+    for _ in range(repeats * thread_cnt):
+        obj = mock_queue_object()
         res = queue.set(root_verify_key, obj, ignore_duplicates=False)
         objs.append(obj)
 
@@ -528,8 +575,8 @@ def helper_queue_set_delete_joblib(
     execution_err = None
     objs = []
 
-    for idx in range(repeats * thread_cnt):
-        obj = MockSyftObject(data=idx)
+    for _ in range(repeats * thread_cnt):
+        obj = mock_queue_object()
         res = queue.set(root_verify_key, obj, ignore_duplicates=False)
         objs.append(obj)
 
