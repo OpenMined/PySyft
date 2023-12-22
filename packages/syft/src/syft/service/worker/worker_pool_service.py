@@ -108,7 +108,7 @@ class SyftWorkerPoolService(AbstractService):
             syft_worker_image_id=image_uid,
             max_count=number,
             workers=workers,
-            syft_worker_image_name_tag=worker_image.full_tag,
+            syft_worker_image_name_tag=worker_image.image_identifier.repo_with_tag,
         )
         result = self.stash.set(credentials=context.credentials, obj=worker_pool)
 

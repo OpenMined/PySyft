@@ -29,7 +29,7 @@ def run_container_using_docker(
     worker = None
     try:
         container = client.containers.run(
-            image_tag.full_tag,
+            image_tag.repo_with_tag,
             name=worker_name,
             detach=True,
             auto_remove=True,
@@ -88,7 +88,7 @@ def run_containers(
             client=client,
             worker_name=worker_name,
             image_tag=image_tag,
-            full_tag=worker_image.full_tag,
+            full_tag=worker_image.repo_with_tag,
         )
         results.append(spawn_result)
 

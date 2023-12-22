@@ -43,10 +43,12 @@ class SyftWorkerImageService(AbstractService):
     def submit_dockerfile(
         self, context: AuthedServiceContext, docker_config: DockerWorkerConfig
     ) -> Union[SyftSuccess, SyftError]:
+        image_identifier = SyftWorkerImageIdentifier(repo="", tag="")
         worker_image = SyftWorkerImage(
             config=docker_config,
             created_by=context.credentials,
             source_file=docker_config.file_name,
+            image_identifier=image_identifier,
         )
         res = self.stash.set(context.credentials, worker_image)
 
@@ -86,7 +88,6 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"Failed to create tag: {e}")
 
         worker_image.image_identifier = image_identifier
-        worker_image.full_tag = tag
         with contextlib.closing(docker.from_env()) as client:
             worker_image, result = build_using_docker(
                 client=client,
@@ -121,7 +122,11 @@ class SyftWorkerImageService(AbstractService):
         if result.is_err():
             return SyftError(message=f"{result.err()}")
         images: List[SyftWorkerImage] = result.ok()
-        return DictTuple((im.full_tag, im) for im in images)
+        return DictTuple(
+            (im.image_identifier.repo_with_tag, im)
+            for im in images
+            if im.image_identifier
+        )
 
     @service_method(
         path="worker_image.delete",
@@ -139,7 +144,7 @@ class SyftWorkerImageService(AbstractService):
 
         if image and image.image_identifier:
             try:
-                full_tag: str = image.image_identifier.full_tag
+                full_tag: str = image.image_identifier.repo_with_tag
                 with contextlib.closing(docker.from_env()) as client:
                     client.images.remove(image=full_tag)
             except docker.errors.ImageNotFound:

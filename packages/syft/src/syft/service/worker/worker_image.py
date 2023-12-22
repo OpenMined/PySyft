@@ -89,17 +89,18 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
         return cls(repo=repo, registry=registry, tag=tag)
 
     @property
-    def full_tag(self) -> str:
+    def repo_with_tag(self) -> str:
         return f"{self.repo}:{self.tag}"
+
+    @property
+    def full_name_with_tag(self) -> str:
+        return f"{self.registry.url}/{self.repo}:{self.tag}"
 
     def __hash__(self) -> int:
         return hash(self.repo + self.tag + str(hash(self.registry)))
 
     def __str__(self) -> str:
-        if self.registry is None:
-            return f"url: None, repo: {self.repo}, tag: {self.tag}"
-        else:
-            return f"url: {self.registry.url}, repo: {self.repo}, tag: {self.tag}"
+        return f"registry: {str(self.registry)}\n repo: {self.repo}\n tag: {self.tag}"
 
 
 @serializable()
@@ -117,7 +118,6 @@ class SyftWorkerImage(SyftObject):
     created_at: DateTime = DateTime.now()
     created_by: SyftVerifyKey
     source_file: Optional[str]
-    full_tag: Optional[str]
 
     __repr_attrs__ = ["image_identifier", "image_hash", "created_at"]
 
@@ -136,7 +136,7 @@ def build_using_docker(
         result = client.images.build(
             fileobj=file_obj,
             rm=True,
-            tag=worker_image.image_identifier.full_tag,
+            tag=worker_image.image_identifier.repo_with_tag,
         )
         worker_image.image_hash = result[0].id
         log = parse_output(result[1])
