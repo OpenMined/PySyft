@@ -5,7 +5,7 @@
 
         $ helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
         $ helm get all {{ .Release.Name }}
-
+    
 
     Following class versions are either added/removed.
 
@@ -96,3 +96,4 @@
 
     This means the existing data will be automatically be migrated to
     their latest class versions during the upgrade.
+    
