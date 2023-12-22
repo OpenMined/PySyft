@@ -395,10 +395,10 @@ jobs:
         run: |
           if $is_pre_release; then
             rm -rf infrastructure/gitops/environments/pre-release/.
-            cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/pre_release/
+            cp -R packages/grid/helm/syft/. infrastructure/gitops/environments/pre_release/
           else
             rm -rf infrastructure/gitops/environments/stable/.
-            cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/stable/
+            cp -R packages/grid/helm/syft/. infrastructure/gitops/environments/stable/
           fi
 
       - name: Commit changes to Infra Repo
