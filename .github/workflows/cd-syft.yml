@@ -296,7 +296,6 @@ jobs:
           ls **/VERSION | xargs -I {} python {}
           cat packages/grid/devspace.yaml | grep '0\.'
           bump2version prenum --allow-dirty --no-commit
-          tox -e lint || true
           ls **/VERSION | xargs -I {} python {}
           cat packages/grid/devspace.yaml | grep '0\.'
           python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
@@ -353,6 +352,10 @@ jobs:
         run: |
           python scripts/convert_to_pypi_readme.py --input-file  packages/syft/README.md --output-file packages/syft/PYPI.md --version ${{ steps.release_checks.outputs.future_stable_version }}
 
+      - name: Linting
+        run: |
+          tox -e lint || true
+
       - name: Commit changes to Syft
         uses: EndBug/add-and-commit@v9
         with:
@@ -395,10 +398,12 @@ jobs:
       - name: Copy files to Infra Repo
         run: |
           if $is_pre_release; then
-            rm -rf infrastructure/gitops/environments/pre-release/.
+            rm -rf infrastructure/gitops/environments/pre_release/
+            mkdir -p infrastructure/gitops/environments/pre_release/
             cp -R packages/grid/helm/syft/. infrastructure/gitops/environments/pre_release/
           else
-            rm -rf infrastructure/gitops/environments/stable/.
+            rm -rf infrastructure/gitops/environments/stable/
+            mkdir -p infrastructure/gitops/environments/stable/
             cp -R packages/grid/helm/syft/. infrastructure/gitops/environments/stable/
           fi
 

@@ -1,9 +1,9 @@
 manifestVersion: 0.1
 hagrid_version: 0.3.97
-syft_version: 0.8.4-beta.4
-dockerTag: 0.8.4-beta.4
+syft_version: 0.8.4-beta.6
+dockerTag: 0.8.4-beta.6
 baseUrl: https://raw.githubusercontent.com/OpenMined/PySyft/
-hash: 153d79bf173320669fbd70cb96289d7d8aa67306
+hash: 4627752f62dc8db544248e78e41cd2edb648ebfb
 target_dir: ~/.hagrid/PySyft/
 files:
   grid:
