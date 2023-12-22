@@ -429,9 +429,8 @@ class ZMQProducer(QueueProducer):
         else:
             print("E: Invalid message....")
 
-    def delete_worker(self, worker, disconnect):
+    def delete_worker(self, worker: Worker, disconnect: bool):
         """Deletes worker from all data structures, and deletes worker."""
-        assert worker is not None
         if disconnect:
             self.send_to_worker(worker, QueueMsgProtocol.W_DISCONNECT, None, None)
 
