@@ -560,7 +560,7 @@ def _create_workers_in_pool(
         else:
             container_status.error = result.err()
 
-    return linked_worker_list, container_status
+    return linked_worker_list, container_statuses
 
 
 TYPE_TO_SERVICE[WorkerPool] = SyftWorkerPoolService
