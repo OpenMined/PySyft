@@ -8,7 +8,7 @@ import docker
 # relative
 from ..response import SyftError
 from .worker_image import SyftWorkerImage
-from .worker_image import SyftWorkerImageTag
+from .worker_image import SyftWorkerImageIdentifier
 from .worker_pool import ContainerSpawnStatus
 from .worker_pool import SyftWorker
 from .worker_pool import WorkerHealth
@@ -19,7 +19,7 @@ from .worker_pool import _get_healthcheck_based_on_status
 
 def run_container_using_docker(
     client: docker.DockerClient,
-    image_tag: SyftWorkerImageTag,
+    image_tag: SyftWorkerImageIdentifier,
     worker_name: str,
     full_tag: str,
 ) -> ContainerSpawnStatus:
@@ -76,7 +76,7 @@ def run_containers(
     number: int,
     orchestration: WorkerOrchestrationType,
 ) -> List[ContainerSpawnStatus]:
-    image_tag = worker_image.image_tag
+    image_tag = worker_image.image_identifier
 
     results = []
     if not orchestration == WorkerOrchestrationType.DOCKER:

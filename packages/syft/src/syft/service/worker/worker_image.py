@@ -54,7 +54,22 @@ class ContainerImageRegistry(SyftBaseModel):
 
 
 @serializable()
-class SyftWorkerImageTag(SyftBaseModel):
+class SyftWorkerImageIdentifier(SyftBaseModel):
+    """
+    Class to identify syft worker images.
+    If a user provides an image's identifier with
+    "docker.io/openmined/test-nginx:0.7.8", the convention we use for
+    image name, tag and repo for now is
+        tag = 0.7.8
+        repo = openmined/test-nginx
+        repo_with_tag = openmined/test-nginx:0.7.8
+        full_name = docker.io/openmined/test-nginx
+        full_name_with_tag = docker.io/openmined/test-nginx:0.7.8
+
+    References:
+        https://docs.docker.com/engine/reference/commandline/tag/#tag-an-image-referenced-by-name-and-tag
+    """
+
     registry: Optional[ContainerImageRegistry]
     repo: str
     tag: str
@@ -93,18 +108,18 @@ class SyftWorkerImage(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["config"]
-    __attr_searchable__ = ["image_tag", "image_hash", "created_by"]
+    __attr_searchable__ = ["image_identifier", "image_hash", "created_by"]
 
     id: UID
     config: WorkerConfig
-    image_tag: Optional[SyftWorkerImageTag]
+    image_identifier: Optional[SyftWorkerImageIdentifier]
     image_hash: Optional[str]
     created_at: DateTime = DateTime.now()
     created_by: SyftVerifyKey
     source_file: Optional[str]
     full_tag: Optional[str]
 
-    __repr_attrs__ = ["image_tag", "image_hash", "created_at"]
+    __repr_attrs__ = ["image_identifier", "image_hash", "created_at"]
 
 
 def build_using_docker(
@@ -121,7 +136,7 @@ def build_using_docker(
         result = client.images.build(
             fileobj=file_obj,
             rm=True,
-            tag=worker_image.image_tag.full_tag,
+            tag=worker_image.image_identifier.full_tag,
         )
         worker_image.image_hash = result[0].id
         log = parse_output(result[1])

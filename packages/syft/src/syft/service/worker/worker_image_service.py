@@ -21,7 +21,7 @@ from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .worker_image import SyftWorkerImage
-from .worker_image import SyftWorkerImageTag
+from .worker_image import SyftWorkerImageIdentifier
 from .worker_image import build_using_docker
 from .worker_image_stash import SyftWorkerImageStash
 
@@ -79,11 +79,13 @@ class SyftWorkerImageService(AbstractService):
         worker_image: SyftWorkerImage = result.ok()
 
         try:
-            image_tag = SyftWorkerImageTag.from_str(full_str=tag)
+            image_identifier: (
+                SyftWorkerImageIdentifier
+            ) = SyftWorkerImageIdentifier.from_str(full_str=tag)
         except pydantic.ValidationError as e:
             return SyftError(message=f"Failed to create tag: {e}")
 
-        worker_image.image_tag = image_tag
+        worker_image.image_identifier = image_identifier
         worker_image.full_tag = tag
         with contextlib.closing(docker.from_env()) as client:
             worker_image, result = build_using_docker(
@@ -135,9 +137,9 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"{res.err()}")
         image: SyftWorkerImage = res.ok()
 
-        if image and image.image_tag:
+        if image and image.image_identifier:
             try:
-                full_tag: str = image.image_tag.full_tag
+                full_tag: str = image.image_identifier.full_tag
                 with contextlib.closing(docker.from_env()) as client:
                     client.images.remove(image=full_tag)
             except docker.errors.ImageNotFound:
