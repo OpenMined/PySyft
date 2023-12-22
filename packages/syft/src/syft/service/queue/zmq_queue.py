@@ -101,6 +101,7 @@ class ZMQProducer(QueueProducer):
     def __init__(
         self, queue_name: str, queue_stash, port: int, context: AuthedServiceContext
     ) -> None:
+        self.id = UID().short()
         self.port = port
         self.queue_stash = queue_stash
         self.queue_name = queue_name
@@ -122,6 +123,7 @@ class ZMQProducer(QueueProducer):
         self.context = zmq.Context(1)
         self.backend = self.context.socket(zmq.ROUTER)
         self.backend.setsockopt(LINGER, 1)
+        self.backend.setsockopt_string(zmq.IDENTITY, self.id)
         self.poll_workers = zmq.Poller()
         self.poll_workers.register(self.backend, zmq.POLLIN)
         self.bind(f"tcp://*:{self.port}")
@@ -329,8 +331,8 @@ class ZMQProducer(QueueProducer):
     def send_to_worker(
         self,
         worker: Worker,
-        command: QueueMsgProtocol,
-        option: bytes,
+        command: QueueMsgProtocol = QueueMsgProtocol.W_REQUEST,
+        option: bytes = None,
         msg: Optional[Union[bytes, list]] = None,
     ):
         """Send message to worker.
@@ -463,7 +465,7 @@ class ZMQConsumer(QueueConsumer):
         self.poller = zmq.Poller()
         self.worker = None
         self.verbose = verbose
-        self.id = UID()
+        self.id = UID().short()
         self._stop = False
         self.syft_worker_id = syft_worker_id
         self.worker_stash = worker_stash
@@ -476,6 +478,7 @@ class ZMQConsumer(QueueConsumer):
             self.worker.close()
         self.worker = self.context.socket(zmq.DEALER)
         self.worker.linger = 0
+        self.worker.setsockopt_string(zmq.IDENTITY, self.id)
         self.worker.connect(self.address)
         self.poller.register(self.worker, zmq.POLLIN)
 
