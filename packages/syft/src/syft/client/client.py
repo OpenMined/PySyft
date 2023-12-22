@@ -668,37 +668,6 @@ class SyftClient:
             return self.api.services.worker_image
         return None
 
-    def build_image(
-        self,
-        image: UID,
-        repo_name: str = "",
-        version="latest",
-        registry: Optional[UID] = None,
-    ):
-        if not self.api.has_service("worker_image"):
-            return None
-
-        return self.api.services.worker_image.build(
-            image=image,
-            tag=repo_name,
-            version=version,
-            registry=registry,
-        )
-
-    def push_image(
-        self,
-        image: UID,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-    ):
-        # TODO: Ask for password here if password kwarg is not provided
-        if not self.api.has_service("worker_image"):
-            return None
-        return self.api.services.worker_image.push(
-            image=image,
-            username=username,
-        )
-
     def login_as_guest(self) -> Self:
         _guest_client = self.guest()
 
