@@ -1411,10 +1411,6 @@ def create_default_worker_pool(node: Node):
         role=ServiceRole.ADMIN,
     )
 
-    if node.queue_config.client_config.n_consumers == 0:
-        print("Consumer count is zero. Skipping creating consumers.")
-        return
-
     print("Creating Default Worker Image")
     # Get/Create a default worker SyftWorkerImage
     default_image = create_default_image(
@@ -1449,9 +1445,13 @@ def create_default_worker_pool(node: Node):
         print(f"Failed to create Worker for Default workers. Error: {result.message}")
         return
 
-    container_status = result[0]
-    if container_status.error:
-        print(f"Failed to create container: {container_status.error}")
-        return
+    for n in range(worker_count):
+        container_status = result[n]
+        if container_status.error:
+            print(
+                f"Failed to create container: Worker: {container_status.worker},"
+                "Error: {container_status.error}"
+            )
+            return
 
     print("Created default worker pool.")

@@ -81,16 +81,17 @@ class SyftWorkerImageService(AbstractService):
         except pydantic.ValidationError as e:
             return SyftError(message=f"Failed to create tag: {e}")
 
-        worker_image.image_tag = image_tag
-        with contextlib.closing(docker.from_env()) as client:
-            worker_image, result = build_using_docker(
-                client=client,
-                worker_image=worker_image,
-                push=push,
-            )
+        if context.node.in_memory_workers:
+            worker_image.image_tag = image_tag
+            with contextlib.closing(docker.from_env()) as client:
+                worker_image, result = build_using_docker(
+                    client=client,
+                    worker_image=worker_image,
+                    push=push,
+                )
 
-        if isinstance(result, SyftError):
-            return result
+            if isinstance(result, SyftError):
+                return result
 
         update_result = self.stash.update(context.credentials, obj=worker_image)
 
