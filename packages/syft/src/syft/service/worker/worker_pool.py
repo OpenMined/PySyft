@@ -26,6 +26,7 @@ from ...util.colors import SURFACE
 from ...util.fonts import ITABLES_CSS
 from ...util.fonts import fonts_css
 from ..response import SyftError
+from .worker_image import SyftWorkerImage
 
 
 @serializable()
@@ -52,7 +53,7 @@ class SyftWorker(SyftObject):
     __repr_attrs__ = [
         "name",
         "container_id",
-        "full_image_tag",
+        "image",
         "status",
         "healthcheck",
         "created_at",
@@ -65,7 +66,7 @@ class SyftWorker(SyftObject):
     image_hash: Optional[str]
     healthcheck: Optional[WorkerHealth]
     status: WorkerStatus
-    full_image_tag: Optional[str]
+    image: SyftWorkerImage
     job_id: Optional[UID]
 
     def get_job_repr(self):
@@ -94,7 +95,7 @@ class SyftWorker(SyftObject):
         self.get_status_healthcheck()
         return {
             "Name": self.name,
-            "Image": self.full_image_tag,
+            "Image": self.image.image_identifier.full_name_with_tag,
             "Healthcheck (health / unhealthy)": f"{self.healthcheck.value}",
             "Status": f"{self.status.value}",
             "Job": self.get_job_repr(),
@@ -108,18 +109,18 @@ class WorkerPool(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["name"]
-    __attr_searchable__ = ["name", "syft_worker_image_id"]
+    __attr_searchable__ = ["name", "image_id"]
     __repr_attrs__ = [
         "name",
-        "syft_worker_image_id",
+        "image_id",
         "max_count",
         "workers",
         "created_at",
     ]
 
     name: str
-    syft_worker_image_id: UID
-    syft_worker_image_name_tag: Optional[str]
+    image_id: UID
+    image: SyftWorkerImage
     max_count: int
     workers: List[SyftWorker]
     created_at: DateTime = DateTime.now()
@@ -149,7 +150,7 @@ class WorkerPool(SyftObject):
             "Workers": len(self.workers),
             "Healthy (healthy / all)": f"{len(self.healthy_workers)} / {self.max_count}",
             "Running (running / all)": f"{len(self.running_workers)} / {self.max_count}",
-            "Image": self.syft_worker_image_name_tag,
+            "Image": self.image.image_identifier.full_name_with_tag,
             "Created at": str(self.created_at),
         }
 

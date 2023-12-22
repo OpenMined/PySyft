@@ -94,13 +94,17 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
 
     @property
     def full_name_with_tag(self) -> str:
-        return f"{self.registry.url}/{self.repo}:{self.tag}"
+        if self.registry:
+            return f"{self.registry.url}/{self.repo}:{self.tag}"
+        else:
+            # default registry is always docker.io
+            return f"docker.io/{self.repo}:{self.tag}"
 
     def __hash__(self) -> int:
         return hash(self.repo + self.tag + str(hash(self.registry)))
 
     def __str__(self) -> str:
-        return f"registry: {str(self.registry)}\n repo: {self.repo}\n tag: {self.tag}"
+        return f"registry: {str(self.registry)}, repo: {self.repo}, tag: {self.tag}"
 
 
 @serializable()
@@ -109,17 +113,16 @@ class SyftWorkerImage(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["config"]
-    __attr_searchable__ = ["image_identifier", "image_hash", "created_by"]
+    __attr_searchable__ = ["image_hash", "created_by"]
+    __repr_attrs__ = ["image_identifier", "image_hash", "created_at"]
 
     id: UID
     config: WorkerConfig
-    image_identifier: Optional[SyftWorkerImageIdentifier]
+    image_identifier: SyftWorkerImageIdentifier
     image_hash: Optional[str]
     created_at: DateTime = DateTime.now()
     created_by: SyftVerifyKey
     source_file: Optional[str]
-
-    __repr_attrs__ = ["image_identifier", "image_hash", "created_at"]
 
 
 def build_using_docker(

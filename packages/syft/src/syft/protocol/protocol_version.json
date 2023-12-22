@@ -405,14 +405,14 @@
       "SyftWorker": {
         "1": {
           "version": 1,
-          "hash": "c989387d6df19192aa1c1a24c2ae788848e4904cd913d2cb59d177ba1207d66a",
+          "hash": "9c1ef1c1d636b9c621839aae7aa48bd13a22f8f6ab04b4621580e97b7078dedc",
           "action": "add"
         }
       },
       "WorkerPool": {
         "1": {
           "version": 1,
-          "hash": "0295bcd97f85688a4da518b40a4efca1cab516a25f6bd6621d36c492442f20a0",
+          "hash": "29bab85539dfdc16cf2bc90c5e8e118aa5b5429b90eb7a591161cf2bc581266d",
           "action": "add"
         }
       },
@@ -934,7 +934,7 @@
       "SyftWorkerImage": {
         "1": {
           "version": 1,
-          "hash": "15482b6fef709d3b69f0805e654bc22677fa82db2582eb7cc472d949755509e5",
+          "hash": "a892898c6a11c8f97c95b7c75b28cc541b074679a1e8c4e42de987f58dad6703",
           "action": "add"
         }
       },

@@ -1,4 +1,5 @@
 # stdlib
+import contextlib
 import sys
 from typing import List
 
@@ -8,7 +9,6 @@ import docker
 # relative
 from ..response import SyftError
 from .worker_image import SyftWorkerImage
-from .worker_image import SyftWorkerImageIdentifier
 from .worker_pool import ContainerSpawnStatus
 from .worker_pool import SyftWorker
 from .worker_pool import WorkerHealth
@@ -19,9 +19,8 @@ from .worker_pool import _get_healthcheck_based_on_status
 
 def run_container_using_docker(
     client: docker.DockerClient,
-    image_tag: SyftWorkerImageIdentifier,
+    worker_image: SyftWorkerImage,
     worker_name: str,
-    full_tag: str,
 ) -> ContainerSpawnStatus:
     # start container
     container = None
@@ -29,7 +28,7 @@ def run_container_using_docker(
     worker = None
     try:
         container = client.containers.run(
-            image_tag.repo_with_tag,
+            worker_image.image_identifier.repo_with_tag,
             name=worker_name,
             detach=True,
             auto_remove=True,
@@ -49,10 +48,10 @@ def run_container_using_docker(
             image_hash=container.image.id,
             status=status,
             healthcheck=healthcheck,
-            full_image_tag=full_tag,
+            image=worker_image,
         )
     except Exception as e:
-        error_message = f"Failed to run command in container. {worker_name} {image_tag}. {e}. {sys.stderr}"
+        error_message = f"Failed to run command in container. {worker_name} {worker_image}. {e}. {sys.stderr}"
         if container:
             worker = SyftWorker(
                 name=worker_name,
@@ -60,7 +59,7 @@ def run_container_using_docker(
                 image_hash=container.image.id,
                 status=WorkerStatus.STOPPED,
                 healthcheck=WorkerHealth.UNHEALTHY,
-                full_image_tag=full_tag,
+                image=worker_image,
             )
             container.stop()
 
@@ -70,26 +69,23 @@ def run_container_using_docker(
 
 
 def run_containers(
-    client: docker.DockerClient,
     pool_name: str,
     worker_image: SyftWorkerImage,
     number: int,
     orchestration: WorkerOrchestrationType,
 ) -> List[ContainerSpawnStatus]:
-    image_tag = worker_image.image_identifier
-
     results = []
     if not orchestration == WorkerOrchestrationType.DOCKER:
         return SyftError(message="Only Orchestration via Docker is supported.")
 
-    for worker_count in range(1, number + 1):
-        worker_name = f"{pool_name}-{worker_count}"
-        spawn_result = run_container_using_docker(
-            client=client,
-            worker_name=worker_name,
-            image_tag=image_tag,
-            full_tag=worker_image.repo_with_tag,
-        )
-        results.append(spawn_result)
+    with contextlib.closing(docker.from_env()) as client:
+        for worker_count in range(1, number + 1):
+            worker_name = f"{pool_name}-{worker_count}"
+            spawn_result = run_container_using_docker(
+                client=client,
+                worker_image=worker_image,
+                worker_name=worker_name,
+            )
+            results.append(spawn_result)
 
     return results

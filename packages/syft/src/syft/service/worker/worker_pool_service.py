@@ -88,14 +88,12 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_image = result.ok()
 
-        with contextlib.closing(docker.from_env()) as client:
-            container_statuses: List[ContainerSpawnStatus] = run_containers(
-                client=client,
-                pool_name=name,
-                worker_image=worker_image,
-                number=number,
-                orchestration=WorkerOrchestrationType.DOCKER,
-            )
+        container_statuses: List[ContainerSpawnStatus] = run_containers(
+            pool_name=name,
+            worker_image=worker_image,
+            number=number,
+            orchestration=WorkerOrchestrationType.DOCKER,
+        )
 
         workers = [
             container_status.worker
@@ -105,10 +103,10 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_pool = WorkerPool(
             name=name,
-            syft_worker_image_id=image_uid,
+            image_id=image_uid,
             max_count=number,
             workers=workers,
-            syft_worker_image_name_tag=worker_image.image_identifier.repo_with_tag,
+            image=worker_image,
         )
         result = self.stash.set(credentials=context.credentials, obj=worker_pool)
 
@@ -132,7 +130,7 @@ class SyftWorkerPoolService(AbstractService):
             return SyftError(message=f"{result.err()}")
         worker_pools = result.ok()
         return DictTuple(
-            (pool.syft_worker_image_name_tag, pool) for pool in worker_pools
+            (pool.image.image_identifier.repo_with_tag, pool) for pool in worker_pools
         )
 
     @service_method(
