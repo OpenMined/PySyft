@@ -240,15 +240,20 @@ def run_containers(
     return results
 
 
-def create_default_image(credentials: SyftVerifyKey, image_stash: SyftWorkerImageStash):
+def create_default_image(
+    credentials: SyftVerifyKey,
+    image_stash: SyftWorkerImageStash,
+    dev_mode: bool,
+    syft_version_tag: str,
+):
     # TODO: Hardcode worker dockerfile since not able to COPY
     # worker_cpu.dockerfile to backend in backend.dockerfile.
 
     # default_cpu_dockerfile = get_syft_cpu_dockerfile()
     # DockerWorkerConfig.from_path(default_cpu_dockerfile)
 
-    default_cpu_dockerfile = """ARG SYFT_VERSION="local-dev"
-    FROM openmined/grid-backend:${SYFT_VERSION}
+    default_cpu_dockerfile = f"""ARG SYFT_VERSION_TAG='{syft_version_tag}' \n"""
+    default_cpu_dockerfile += """FROM openmined/grid-backend:${SYFT_VERSION_TAG}
     ARG PYTHON_VERSION="3.11"
     ARG SYSTEM_PACKAGES=""
     ARG PIP_PACKAGES="pip --dry-run"
@@ -256,7 +261,7 @@ def create_default_image(credentials: SyftVerifyKey, image_stash: SyftWorkerImag
 
     # Worker specific environment variables go here
     ENV SYFT_WORKER="true"
-    ENV DOCKER_TAG=${SYFT_VERSION}
+    ENV DOCKER_TAG=${SYFT_VERSION_TAG}
 
     RUN apk update && \
         apk add ${SYSTEM_PACKAGES} && \

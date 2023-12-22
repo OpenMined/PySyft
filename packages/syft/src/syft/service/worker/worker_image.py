@@ -106,13 +106,14 @@ def build_using_docker(
         file_obj = io.BytesIO(worker_image.config.dockerfile.encode("utf-8"))
 
         # docker build -f <dockerfile> <buildargs> <path>
-        buildargs = {} if dev_mode else {"SYFT_VERSION_TAG": "local-dev"}
+
+        # Enable this once we're able to copy worker_cpu.dockerfile in backend
+        # buildargs = {"SYFT_VERSION_TAG": "local-dev"} if dev_mode else {}
         result = client.images.build(
             fileobj=file_obj,
             rm=True,
             forcerm=True,
             tag=worker_image.image_tag.full_tag,
-            buildargs=buildargs,
         )
         worker_image.image_hash = result[0].id
         log = parse_output(result[1])

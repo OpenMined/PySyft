@@ -1414,7 +1414,10 @@ def create_default_worker_pool(node: Node):
     print("Creating Default Worker Image")
     # Get/Create a default worker SyftWorkerImage
     default_image = create_default_image(
-        credentials=credentials, image_stash=image_stash
+        credentials=credentials,
+        image_stash=image_stash,
+        dev_mode=node.dev_mode,
+        syft_version_tag="local-dev" if node.dev_mode else __version__,
     )
     image_build_method = node.get_service_method(SyftWorkerImageService.build)
 
