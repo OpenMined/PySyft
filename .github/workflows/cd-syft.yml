@@ -395,7 +395,7 @@ jobs:
       - name: Copy files to Infra Repo
         run: |
           if $is_pre_release; then
-            rm -rf infrastructure/gitops/environments/pre-release/.
+            rm -rf infrastructure/gitops/environments/pre_release/.
             cp -R packages/grid/helm/syft/. infrastructure/gitops/environments/pre_release/
           else
             rm -rf infrastructure/gitops/environments/stable/.
