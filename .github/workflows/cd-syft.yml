@@ -296,7 +296,6 @@ jobs:
           ls **/VERSION | xargs -I {} python {}
           cat packages/grid/devspace.yaml | grep '0\.'
           bump2version prenum --allow-dirty --no-commit
-          tox -e lint || true
           ls **/VERSION | xargs -I {} python {}
           cat packages/grid/devspace.yaml | grep '0\.'
           python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
@@ -352,6 +351,10 @@ jobs:
       - name: Update PyPI Readme
         run: |
           python scripts/convert_to_pypi_readme.py --input-file  packages/syft/README.md --output-file packages/syft/PYPI.md --version ${{ steps.release_checks.outputs.future_stable_version }}
+
+      - name: Linting
+        run: |
+          tox -e lint || true
 
       - name: Commit changes to Syft
         uses: EndBug/add-and-commit@v9
