@@ -418,6 +418,9 @@ class Node(AbstractNode):
 
         MessageHandlers = [APICallMessageHandler]
 
+        if self.is_subprocess:
+            return
+
         self.queue_manager = QueueManager(config=queue_config_)
         for message_handler in MessageHandlers:
             queue_name = message_handler.queue_name
