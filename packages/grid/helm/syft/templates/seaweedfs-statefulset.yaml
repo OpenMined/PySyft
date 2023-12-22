@@ -85,7 +85,6 @@ spec:
   - metadata:
       labels:
         app.kubernetes.io/name: {{ .Chart.Name }}
-        app.kubernetes.io/version: {{ .Chart.AppVersion }}
         app.kubernetes.io/component: seaweedfs
         app.kubernetes.io/managed-by: Helm
       name: seaweedfs-data
