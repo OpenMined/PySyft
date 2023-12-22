@@ -21,6 +21,7 @@ from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
+from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
@@ -29,6 +30,7 @@ from .utils import backend_container_name
 from .utils import get_container
 from .utils import run_containers
 from .utils import run_workers_in_threads
+from .worker_image import SyftWorkerImage
 from .worker_image_stash import SyftWorkerImageStash
 from .worker_pool import ContainerSpawnStatus
 from .worker_pool import SyftWorker
@@ -102,54 +104,14 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_image = result.ok()
 
-        queue_port = context.node.queue_config.client_config.queue_port
-
-        # Check if workers needs to be run in memory or as containers
-        existing_backend_container = get_container(
-            docker_client=docker.from_env(),
-            container_name=backend_container_name(),
+        worker_list, container_statuses = _create_workers_in_pool(
+            context=context,
+            pool_name=name,
+            existing_worker_cnt=0,
+            worker_cnt=number,
+            worker_image=worker_image,
+            worker_stash=self.worker_stash,
         )
-        start_workers_in_memory = (
-            existing_backend_container is None or context.node.in_memory_workers
-        )
-
-        if start_workers_in_memory:
-            # Run in-memory workers in threads
-            container_statuses: List[ContainerSpawnStatus] = run_workers_in_threads(
-                node=context.node,
-                pool_name=name,
-                number=number,
-            )
-        else:
-            container_statuses: List[ContainerSpawnStatus] = run_containers(
-                pool_name=name,
-                worker_image=worker_image,
-                number=number,
-                orchestration=WorkerOrchestrationType.DOCKER,
-                queue_port=queue_port,
-                dev_mode=context.node.dev_mode,
-            )
-
-        worker_list = []
-
-        for container_status in container_statuses:
-            worker = container_status.worker
-            if worker is None:
-                continue
-            result = self.worker_stash.set(
-                credentials=context.credentials,
-                obj=worker,
-            )
-
-            if result.is_ok():
-                worker_obj = LinkedObject.from_obj(
-                    obj=result.ok(),
-                    service_type=WorkerService,
-                    node_uid=context.node.id,
-                )
-                worker_list.append(worker_obj)
-            else:
-                container_status.error = result.err()
 
         worker_pool = WorkerPool(
             name=name,
@@ -179,6 +141,66 @@ class SyftWorkerPoolService(AbstractService):
             return SyftError(message=f"{result.err()}")
 
         return result.ok()
+
+    @service_method(
+        path="worker_pool.add_workers",
+        name="add_workers",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def add_workers(
+        self,
+        context: AuthedServiceContext,
+        number: int,
+        pool_id: Optional[UID] = None,
+        pool_name: Optional[str] = None,
+    ) -> Union[List[ContainerSpawnStatus], SyftError]:
+        # TODO: During get_all, we should dynamically make a call to docker to get the status of the containers
+        # and update the status of the workers in the pool.
+
+        if pool_id:
+            result = self.stash.get_by_uid(credentials=context.credentials, uid=pool_id)
+        elif pool_name:
+            result = self.stash.get_by_name(
+                credentials=context.credentials, pool_name=pool_name
+            )
+
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+
+        worker_pool = result.ok()
+
+        existing_worker_cnt = len(worker_pool.worker_list)
+
+        result = self.image_stash.get_by_uid(uid=worker_pool.syft_worker_image_id)
+
+        if result.is_err():
+            return SyftError(
+                message=f"Failed to retrieve image for worker pool: {worker_pool.name}"
+            )
+
+        worker_image = result.ok()
+
+        worker_list, container_statuses = _create_workers_in_pool(
+            context=context,
+            pool_name=worker_pool.name,
+            existing_worker_cnt=existing_worker_cnt,
+            worker_cnt=number,
+            worker_image=worker_image,
+            worker_stash=self.worker_stash,
+        )
+
+        worker_pool.worker_list.append(worker_list)
+        worker_pool.max_count = existing_worker_cnt + number
+
+        update_result = self.stash.update(
+            credentials=context.credentials, obj=worker_pool
+        )
+        if update_result.is_err():
+            return SyftError(
+                message=f"Failed update worker pool: {worker_pool.name} with err: {result.err()}"
+            )
+
+        return container_statuses
 
     @service_method(
         path="worker_pool.delete_worker",
@@ -479,4 +501,67 @@ def _remove_worker_container(container: Container, **kwargs: Any) -> None:
             return
 
 
+def _create_workers_in_pool(
+    context: AuthedServiceContext,
+    pool_name: str,
+    existing_worker_cnt: int,
+    worker_cnt: int,
+    worker_image: SyftWorkerImage,
+    worker_stash: WorkerStash,
+) -> Tuple[List[LinkedObject], List[ContainerSpawnStatus]]:
+    queue_port = context.node.queue_config.client_config.queue_port
+
+    # Check if workers needs to be run in memory or as containers
+    existing_backend_container = get_container(
+        docker_client=docker.from_env(),
+        container_name=backend_container_name(),
+    )
+    start_workers_in_memory = (
+        existing_backend_container is None or context.node.in_memory_workers
+    )
+
+    if start_workers_in_memory:
+        # Run in-memory workers in threads
+        container_statuses: List[ContainerSpawnStatus] = run_workers_in_threads(
+            node=context.node,
+            pool_name=pool_name,
+            start_idx=existing_worker_cnt,
+            number=worker_cnt + existing_worker_cnt,
+        )
+    else:
+        container_statuses: List[ContainerSpawnStatus] = run_containers(
+            pool_name=pool_name,
+            worker_image=worker_image,
+            start_idx=existing_worker_cnt,
+            number=worker_cnt + existing_worker_cnt,
+            orchestration=WorkerOrchestrationType.DOCKER,
+            queue_port=queue_port,
+            dev_mode=context.node.dev_mode,
+        )
+
+    linked_worker_list = []
+
+    for container_status in container_statuses:
+        worker = container_status.worker
+        if worker is None:
+            continue
+        result = worker_stash.set(
+            credentials=context.credentials,
+            obj=worker,
+        )
+
+        if result.is_ok():
+            worker_obj = LinkedObject.from_obj(
+                obj=result.ok(),
+                service_type=WorkerService,
+                node_uid=context.node.id,
+            )
+            linked_worker_list.append(worker_obj)
+        else:
+            container_status.error = result.err()
+
+    return linked_worker_list, container_status
+
+
 TYPE_TO_SERVICE[WorkerPool] = SyftWorkerPoolService
+SERVICE_TO_TYPES[SyftWorkerPoolService] = WorkerPool

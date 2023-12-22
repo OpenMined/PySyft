@@ -170,11 +170,14 @@ def run_container_using_docker(
 
 
 def run_workers_in_threads(
-    node: AbstractNode, pool_name: str, number: int
+    node: AbstractNode,
+    pool_name: str,
+    number: int,
+    start_idx: int = 0,
 ) -> List[ContainerSpawnStatus]:
     results = []
 
-    for worker_count in range(1, number + 1):
+    for worker_count in range(start_idx + 1, number + 1):
         error = None
         worker_name = f"{pool_name}-{worker_count}"
         worker = SyftWorker(
@@ -215,6 +218,7 @@ def run_containers(
     orchestration: WorkerOrchestrationType,
     queue_port: int,
     dev_mode: bool = False,
+    start_idx: int = 0,
 ) -> List[ContainerSpawnStatus]:
     image_tag = worker_image.image_tag
 
@@ -224,7 +228,7 @@ def run_containers(
         return SyftError(message="Only Orchestration via Docker is supported.")
 
     with contextlib.closing(docker.from_env()) as client:
-        for worker_count in range(1, number + 1):
+        for worker_count in range(start_idx + 1, number + 1):
             worker_name = f"{pool_name}-{worker_count}"
             spawn_result = run_container_using_docker(
                 docker_client=client,
