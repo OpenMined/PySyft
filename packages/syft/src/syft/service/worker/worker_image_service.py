@@ -93,6 +93,10 @@ class SyftWorkerImageService(AbstractService):
 
             if isinstance(result, SyftError):
                 return result
+        else:
+            result = SyftSuccess(
+                message="Image building skipped, since using InMemory workers."
+            )
 
         update_result = self.stash.update(context.credentials, obj=worker_image)
 
