@@ -2,6 +2,11 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/component: ingress
+    app.kubernetes.io/managed-by: Helm
   annotations:
     kubernetes.io/ingress.class: {{ .Values.ingress.ingressClass }}
   name: grid-stack-ingress
