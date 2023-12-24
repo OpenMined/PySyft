@@ -971,7 +971,7 @@
       "SyftWorkerImage": {
         "1": {
           "version": 1,
-          "hash": "2f76588e02f932a3bef16bcf5a4ceb87ff8bfcda39f04873912183a7fef90da1",
+          "hash": "bbc96ed307ff3aca692948e76e690e3ec0a81ffb41ee259680fe9500d00a58e2",
           "action": "add"
         }
       },
@@ -1046,7 +1046,8 @@
       "SyftWorker": {
         "1": {
           "version": 1,
-          "hash": "b75cc36788d193f470b2838c911174b83ef5ab75f1075e0d7429780d008afea2"
+          "hash": "b75cc36788d193f470b2838c911174b83ef5ab75f1075e0d7429780d008afea2",
+          "action": "add"
         }
       },
       "SyftImageRegistry": {
