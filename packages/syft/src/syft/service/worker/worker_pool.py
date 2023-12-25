@@ -92,14 +92,23 @@ class SyftWorker(SyftObject):
 
     def _coll_repr_(self) -> Dict[str, Any]:
         self.get_status_healthcheck()
-        return {
-            "Name": self.name,
-            "Image": self.image.image_identifier.full_name_with_tag,
-            "Healthcheck (health / unhealthy)": f"{self.healthcheck.value}",
-            "Status": f"{self.status.value}",
-            "Job": self.get_job_repr(),
-            "Created at": str(self.created_at),
-        }
+        if self.image:
+            return {
+                "Name": self.name,
+                "Image": self.image.image_identifier.full_name_with_tag,
+                "Healthcheck (health / unhealthy)": f"{self.healthcheck.value}",
+                "Status": f"{self.status.value}",
+                "Job": self.get_job_repr(),
+                "Created at": str(self.created_at),
+            }
+        else:
+            return {
+                "Name": self.name,
+                "Healthcheck (health / unhealthy)": f"{self.healthcheck.value}",
+                "Status": f"{self.status.value}",
+                "Job": self.get_job_repr(),
+                "Created at": str(self.created_at),
+            }
 
 
 @serializable()
@@ -118,7 +127,7 @@ class WorkerPool(SyftObject):
     ]
 
     name: str
-    image: SyftWorkerImage
+    image: Optional[SyftWorkerImage]
     max_count: int
     workers: List[SyftWorker]
     created_at: DateTime = DateTime.now()
@@ -143,14 +152,23 @@ class WorkerPool(SyftObject):
             ]
 
     def _coll_repr_(self) -> Dict[str, Any]:
-        return {
-            "Pool Name": self.name,
-            "Workers": len(self.workers),
-            "Healthy (healthy / all)": f"{len(self.healthy_workers)} / {self.max_count}",
-            "Running (running / all)": f"{len(self.running_workers)} / {self.max_count}",
-            "Image": self.image.image_identifier.full_name_with_tag,
-            "Created at": str(self.created_at),
-        }
+        if self.image:
+            return {
+                "Pool Name": self.name,
+                "Workers": len(self.workers),
+                "Healthy (healthy / all)": f"{len(self.healthy_workers)} / {self.max_count}",
+                "Running (running / all)": f"{len(self.running_workers)} / {self.max_count}",
+                "Image": self.image.image_identifier.full_name_with_tag,
+                "Created at": str(self.created_at),
+            }
+        else:
+            return {
+                "Pool Name": self.name,
+                "Workers": len(self.workers),
+                "Healthy (healthy / all)": f"{len(self.healthy_workers)} / {self.max_count}",
+                "Running (running / all)": f"{len(self.running_workers)} / {self.max_count}",
+                "Created at": str(self.created_at),
+            }
 
     def _repr_html_(self) -> Any:
         return f"""
