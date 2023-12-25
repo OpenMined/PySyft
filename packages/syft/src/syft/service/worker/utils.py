@@ -45,7 +45,6 @@ def run_container_using_docker(
         worker = SyftWorker(
             name=worker_name,
             container_id=container.id,
-            image_hash=container.image.id,
             status=status,
             healthcheck=healthcheck,
             image=worker_image,
@@ -56,7 +55,6 @@ def run_container_using_docker(
             worker = SyftWorker(
                 name=worker_name,
                 container_id=container.id,
-                image_hash=container.image.id,
                 status=WorkerStatus.STOPPED,
                 healthcheck=WorkerHealth.UNHEALTHY,
                 image=worker_image,

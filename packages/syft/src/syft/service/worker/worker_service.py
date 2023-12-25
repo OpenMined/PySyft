@@ -208,7 +208,6 @@ class WorkerService(AbstractService):
                 id=worker_uid,
                 name=f"default_pool-{WORKER_NUM}",
                 container_id=container.id,
-                image_hash=container.image.id,
                 status=status,
             )
             # obj = SyftWorker(

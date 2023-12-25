@@ -103,7 +103,6 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_pool = WorkerPool(
             name=name,
-            image_id=image_uid,
             max_count=number,
             workers=workers,
             image=worker_image,
