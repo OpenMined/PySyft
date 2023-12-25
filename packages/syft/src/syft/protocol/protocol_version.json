@@ -405,14 +405,14 @@
       "SyftWorker": {
         "1": {
           "version": 1,
-          "hash": "9c1ef1c1d636b9c621839aae7aa48bd13a22f8f6ab04b4621580e97b7078dedc",
+          "hash": "a202ae85b190741d0919c20d4240daf2aa5e0549e7e5a063687da1d24de8f7cc",
           "action": "add"
         }
       },
       "WorkerPool": {
         "1": {
           "version": 1,
-          "hash": "29bab85539dfdc16cf2bc90c5e8e118aa5b5429b90eb7a591161cf2bc581266d",
+          "hash": "55d1b61d96f9c4ba45868df170ce1d4e1cc208eca122701b8a52594f217724b9",
           "action": "add"
         }
       },

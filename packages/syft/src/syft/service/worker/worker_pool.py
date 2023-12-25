@@ -63,7 +63,6 @@ class SyftWorker(SyftObject):
     name: str
     container_id: Optional[str]
     created_at: DateTime = DateTime.now()
-    image_hash: Optional[str]
     healthcheck: Optional[WorkerHealth]
     status: WorkerStatus
     image: SyftWorkerImage
@@ -109,17 +108,16 @@ class WorkerPool(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["name"]
-    __attr_searchable__ = ["name", "image_id"]
+    __attr_searchable__ = ["name"]
     __repr_attrs__ = [
         "name",
-        "image_id",
+        "image",
         "max_count",
         "workers",
         "created_at",
     ]
 
     name: str
-    image_id: UID
     image: SyftWorkerImage
     max_count: int
     workers: List[SyftWorker]
