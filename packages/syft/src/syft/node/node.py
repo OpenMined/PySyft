@@ -445,7 +445,6 @@ class Node(AbstractNode):
                     syft_worker = SyftWorker(
                         name=f"in-memory-worker-{n}",
                         container_id=None,
-                        image_hash=None,
                         status=WorkerStatus.PENDING,
                     )
                     self.worker_stash.set(self.signing_key.verify_key, syft_worker)

@@ -65,7 +65,7 @@ class SyftWorker(SyftObject):
     created_at: DateTime = DateTime.now()
     healthcheck: Optional[WorkerHealth]
     status: WorkerStatus
-    image: SyftWorkerImage
+    image: Optional[SyftWorkerImage]
     job_id: Optional[UID]
 
     def get_job_repr(self):
