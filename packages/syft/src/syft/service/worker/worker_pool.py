@@ -49,7 +49,7 @@ class SyftWorker(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["name"]
-    __attr_searchable__ = ["name", "container_id", "image_hash"]
+    __attr_searchable__ = ["name", "container_id"]
     __repr_attrs__ = [
         "name",
         "container_id",
