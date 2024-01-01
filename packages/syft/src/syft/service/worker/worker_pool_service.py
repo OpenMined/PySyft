@@ -159,7 +159,8 @@ class SyftWorkerPoolService(AbstractService):
             result = self.stash.get_by_uid(credentials=context.credentials, uid=pool_id)
         elif pool_name:
             result = self.stash.get_by_name(
-                credentials=context.credentials, pool_name=pool_name
+                credentials=context.credentials,
+                pool_name=pool_name,
             )
 
         if result.is_err():
@@ -169,7 +170,10 @@ class SyftWorkerPoolService(AbstractService):
 
         existing_worker_cnt = len(worker_pool.worker_list)
 
-        result = self.image_stash.get_by_uid(uid=worker_pool.syft_worker_image_id)
+        result = self.image_stash.get_by_uid(
+            credentials=context.credentials,
+            uid=worker_pool.syft_worker_image_id,
+        )
 
         if result.is_err():
             return SyftError(

@@ -127,7 +127,7 @@ class WorkerService(AbstractService):
         self, context: AuthedServiceContext, n: int = 1
     ) -> Union[List[ContainerSpawnStatus], SyftError]:
         """Add a Container Image."""
-        worker_pool_service = context.node.get_service("WorkerPoolService")
+        worker_pool_service = context.node.get_service("SyftWorkerPoolService")
 
         return worker_pool_service.add_workers(
             context, number=n, pool_name=DEFAULT_WORKER_POOL_NAME

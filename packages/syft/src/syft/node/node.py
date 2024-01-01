@@ -412,6 +412,9 @@ class Node(AbstractNode):
         for p in self.queue_manager.producers.values():
             p.close()
 
+    def close(self):
+        self.stop()
+
     def init_queue_manager(self, queue_config: Optional[QueueConfig]):
         queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
         self.queue_config = queue_config_
