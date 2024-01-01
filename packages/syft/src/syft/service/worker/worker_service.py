@@ -1,5 +1,6 @@
 # stdlib
 import socket
+from typing import List
 from typing import Union
 
 # third party
@@ -15,7 +16,11 @@ from ..service import AuthedServiceContext
 from ..service import SyftError
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
+from .utils import DEFAULT_WORKER_POOL_NAME
+from .worker_pool import ContainerSpawnStatus
 from .worker_stash import WorkerStash
+
+WORKER_NUM = 0
 
 
 def get_main_backend():
@@ -103,9 +108,6 @@ def create_new_container_from_existing(
     return new_container
 
 
-WORKER_NUM = 0
-
-
 @instrument
 @serializable()
 class WorkerService(AbstractService):
@@ -116,23 +118,20 @@ class WorkerService(AbstractService):
         self.store = store
         self.stash = WorkerStash(store=store)
 
-    # @service_method(
-    #     path="worker.start_workers", name="start_workers", roles=ADMIN_ROLE_LEVEL
-    # )
-    # def start_workers(
-    #     self, context: AuthedServiceContext, n: int = 1
-    # ) -> Union[SyftSuccess, SyftError]:
-    #     """Add a Container Image."""
-    #     for _worker_num in range(n):
-    #         global WORKER_NUM
-    #         WORKER_NUM += 1
-    #         res = start_worker_container(WORKER_NUM, context)
-    #         obj = DockerWorker(container_id=res.id, created_at=DateTime.now())
-    #         result = self.stash.set(context.credentials, obj)
-    #         if result.is_err():
-    #             return SyftError(message=f"Failed to start worker. {result.err()}")
+    @service_method(
+        path="worker.start_workers",
+        name="start_workers",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def start_workers(
+        self, context: AuthedServiceContext, n: int = 1
+    ) -> Union[List[ContainerSpawnStatus], SyftError]:
+        """Add a Container Image."""
+        worker_pool_service = context.node.get_service("WorkerPoolService")
 
-    #     return SyftSuccess(message=f"{n} workers added")
+        return worker_pool_service.add_workers(
+            context, number=n, pool_name=DEFAULT_WORKER_POOL_NAME
+        )
 
     @service_method(path="worker.list", name="list", roles=ADMIN_ROLE_LEVEL)
     def list(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:
