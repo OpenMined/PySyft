@@ -47,7 +47,6 @@ class SyftWorkerImageService(AbstractService):
         worker_image = SyftWorkerImage(
             config=docker_config,
             created_by=context.credentials,
-            source_file=docker_config.file_name,
             image_identifier=image_identifier,
         )
         res = self.stash.set(context.credentials, worker_image)

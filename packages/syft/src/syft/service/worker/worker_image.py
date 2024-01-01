@@ -122,7 +122,6 @@ class SyftWorkerImage(SyftObject):
     image_hash: Optional[str]
     created_at: DateTime = DateTime.now()
     created_by: SyftVerifyKey
-    source_file: Optional[str]
 
 
 def build_using_docker(
