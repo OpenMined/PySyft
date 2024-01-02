@@ -137,8 +137,8 @@ class SyftWorkerImageService(AbstractService):
         self,
         context: AuthedServiceContext,
         image: UID,
-        username: str = "",
-        password: str = "",
+        username: Optional[str] = None,
+        password: Optional[str] = None,
     ) -> Union[SyftSuccess, SyftError]:
         result = self.stash.get_by_uid(credentials=context.credentials, uid=image)
         if result.is_err():

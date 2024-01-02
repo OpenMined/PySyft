@@ -58,8 +58,8 @@ def docker_build(
 
 def docker_push(
     image: SyftWorkerImage,
-    username: str = "",
-    password: str = "",
+    username: Optional[str] = None,
+    password: Optional[str] = None,
 ) -> List[str]:
     try:
         builder = CustomWorkerBuilder()
