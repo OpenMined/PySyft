@@ -146,22 +146,51 @@ class WorkerPool(SyftObject):
 
     @property
     def running_workers(self) -> List[SyftWorker]:
-        with contextlib.closing(docker.from_env()) as client:
-            return [
-                worker
-                for worker in self.workers
-                if _get_worker_container_status(client, worker) == WorkerStatus.RUNNING
-            ]
+        """
+        Called by the client. Query the running workers using an API call to the server
+        """
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        running_workers = []
+        for worker in self.worker_list:
+            res = api.services.worker_pool.get_worker_status(
+                worker_pool_id=self.id, worker_id=worker.object_uid
+            )
+            if isinstance(res, SyftError):
+                return res
+            if res == WorkerStatus.RUNNING:
+                running_workers.append(worker.object_uid)
+
+        return running_workers
 
     @property
-    def healthy_workers(self) -> List[SyftWorker]:
-        with contextlib.closing(docker.from_env()) as client:
-            return [
-                worker
-                for worker in self.workers
-                if _get_worker_container_status(client, worker)
-                in (WorkerStatus.PENDING, WorkerStatus.RUNNING)
-            ]
+    def healthy_workers(self) -> Union(List[UID], SyftError):
+        """
+        Query the healthy workers using an API call to the server
+        """
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        healthy_workers = []
+        for worker in self.worker_list:
+            res = api.services.worker_pool.get_worker_status(
+                worker_pool_id=self.id, worker_id=worker.object_uid
+            )
+            if isinstance(res, SyftError):
+                return res
+            if res in (WorkerStatus.PENDING, WorkerStatus.RUNNING):
+                healthy_workers.append(worker.object_uid)
+
+        return healthy_workers
 
     def _coll_repr_(self) -> Dict[str, Any]:
         if self.image:
