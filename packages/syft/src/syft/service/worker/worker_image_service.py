@@ -31,7 +31,7 @@ from .worker_image import SyftWorkerImageTag
 from .worker_image_stash import SyftWorkerImageStash
 
 
-@serializable(without=["builder"])
+@serializable()
 class SyftWorkerImageService(AbstractService):
     store: DocumentStore
     stash: SyftWorkerImageStash
