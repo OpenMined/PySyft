@@ -10,6 +10,7 @@ import docker
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store import SyftSuccess
+from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..service import AbstractService
 from ..service import AuthedServiceContext
@@ -18,6 +19,7 @@ from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from .utils import DEFAULT_WORKER_POOL_NAME
 from .worker_pool import ContainerSpawnStatus
+from .worker_pool import WorkerStatus
 from .worker_stash import WorkerStash
 
 WORKER_NUM = 0
@@ -142,3 +144,13 @@ class WorkerService(AbstractService):
             return SyftError(message=f"Failed to fetch workers. {result.err()}")
         else:
             return result.ok()
+
+    @service_method(path="worker.status", name="status", roles=ADMIN_ROLE_LEVEL)
+    def status(
+        self, context: AuthedServiceContext, worker_uid: UID
+    ) -> Union[WorkerStatus, SyftError]:
+        result = self.stash.get_by_uid(worker_uid)
+        if result.is_err():
+            return SyftError(message=f"Failed to retrieve worker with UID {worker_uid}")
+        worker = result.ok()
+        return worker.status

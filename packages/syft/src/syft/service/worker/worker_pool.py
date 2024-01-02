@@ -1,5 +1,4 @@
 # stdlib
-import contextlib
 from enum import Enum
 from typing import Any
 from typing import Dict
@@ -63,7 +62,8 @@ class SyftWorker(SyftObject):
         "image",
         "status",
         "healthcheck",
-        "worker_pool_name" "created_at",
+        "worker_pool_name",
+        "created_at",
     ]
 
     id: UID
@@ -95,32 +95,36 @@ class SyftWorker(SyftObject):
             return ""
 
     def get_status_healthcheck(self) -> None:
-        with contextlib.closing(docker.from_env()) as client:
-            self.status: WorkerStatus = _get_worker_container_status(client, self)
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+
+        res = api.services.worker.status(worker_id=self.id)
+        if isinstance(res, SyftError):
+            return res
+        self.status = res
         self.healthcheck = _get_healthcheck_based_on_status(status=self.status)
 
     def _coll_repr_(self) -> Dict[str, Any]:
         self.get_status_healthcheck()
-        if self.image:
-            return {
-                "Name": self.name,
-                "Image": self.image.image_identifier.full_name_with_tag,
-                "Healthcheck (health / unhealthy)": f"{self.healthcheck.value}",
-                "Status": f"{self.status.value}",
-                "Job": self.get_job_repr(),
-                "Created at": str(self.created_at),
-                "Container id": self.container_id,
-                "Consumer state": str(self.consumer_state.value.lower()),
-            }
+        if self.image and self.image.image_identifier:
+            image_name_with_tag = self.image.image_identifier.full_name_with_tag
         else:
-            return {
-                "Name": self.name,
-                "Healthcheck (health / unhealthy)": f"{self.healthcheck.value}",
-                "Status": f"{self.status.value}",
-                "Job": self.get_job_repr(),
-                "Created at": str(self.created_at),
-                "Consumer state": str(self.consumer_state.value.lower()),
-            }
+            image_name_with_tag = "In Memory Worker"
+        return {
+            "Name": self.name,
+            "Image": image_name_with_tag,
+            "Healthcheck (health / unhealthy)": f"{self.healthcheck.value}",
+            "Status": f"{self.status.value}",
+            "Job": self.get_job_repr(),
+            "Created at": str(self.created_at),
+            "Container id": self.container_id,
+            "Consumer state": str(self.consumer_state.value.lower()),
+        }
 
 
 @serializable()
@@ -145,7 +149,7 @@ class WorkerPool(SyftObject):
     created_at: DateTime = DateTime.now()
 
     @property
-    def running_workers(self) -> List[SyftWorker]:
+    def running_workers(self) -> Union[List[UID], SyftError]:
         """
         Called by the client. Query the running workers using an API call to the server
         """
@@ -169,7 +173,7 @@ class WorkerPool(SyftObject):
         return running_workers
 
     @property
-    def healthy_workers(self) -> Union(List[UID], SyftError):
+    def healthy_workers(self) -> Union[List[UID], SyftError]:
         """
         Query the healthy workers using an API call to the server
         """
@@ -193,7 +197,7 @@ class WorkerPool(SyftObject):
         return healthy_workers
 
     def _coll_repr_(self) -> Dict[str, Any]:
-        if self.image:
+        if self.image and self.image.image_identifier:
             return {
                 "Pool Name": self.name,
                 "Workers": len(self.workers),

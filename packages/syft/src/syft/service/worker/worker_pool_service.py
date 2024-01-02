@@ -140,9 +140,14 @@ class SyftWorkerPoolService(AbstractService):
         if result.is_err():
             return SyftError(message=f"{result.err()}")
         worker_pools = result.ok()
-        return DictTuple(
-            (pool.image.image_identifier.repo_with_tag, pool) for pool in worker_pools
-        )
+
+        res: List[Tuple] = []
+        for pool in worker_pools:
+            if pool.image.image_identifier is not None:
+                res.append((pool.image.image_identifier.repo_with_tag, pool))
+            else:
+                res.append(("in-memory-pool", pool))
+        return DictTuple(res)
 
     @service_method(
         path="worker_pool.add_workers",
