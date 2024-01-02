@@ -117,15 +117,18 @@ class SyftWorkerImage(SyftObject):
     __repr_attrs__ = ["image_identifier", "image_hash", "created_at"]
 
     id: UID
-    config: WorkerConfig
-    image_identifier: SyftWorkerImageIdentifier
+    config: Optional[WorkerConfig]
+    image_identifier: Optional[SyftWorkerImageIdentifier]
     image_hash: Optional[str]
     created_at: DateTime = DateTime.now()
     created_by: SyftVerifyKey
 
 
 def build_using_docker(
-    client: docker.DockerClient, worker_image: SyftWorkerImage, push: bool = True
+    client: docker.DockerClient,
+    worker_image: SyftWorkerImage,
+    push: bool = True,
+    dev_mode: bool = False,
 ):
     if not isinstance(worker_image.config, DockerWorkerConfig):
         # Handle this to worker with CustomWorkerConfig later
@@ -135,10 +138,14 @@ def build_using_docker(
         file_obj = io.BytesIO(worker_image.config.dockerfile.encode("utf-8"))
 
         # docker build -f <dockerfile> <buildargs> <path>
+
+        # Enable this once we're able to copy worker_cpu.dockerfile in backend
+        # buildargs = {"SYFT_VERSION_TAG": "local-dev"} if dev_mode else {}
         result = client.images.build(
             fileobj=file_obj,
             rm=True,
             tag=worker_image.image_identifier.repo_with_tag,
+            forcerm=True,
         )
         worker_image.image_hash = result[0].id
         log = parse_output(result[1])

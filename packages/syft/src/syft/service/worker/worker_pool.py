@@ -15,6 +15,7 @@ from docker.models.containers import Container
 # relative
 from ...client.api import APIRegistry
 from ...serde.serializable import serializable
+from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -38,6 +39,12 @@ class WorkerStatus(Enum):
 
 
 @serializable()
+class ConsumerState(Enum):
+    IDLE = "Idle"
+    CONSUMING = "Consuming"
+
+
+@serializable()
 class WorkerHealth(Enum):
     HEALTHY = "✅"
     UNHEALTHY = "❌"
@@ -56,7 +63,7 @@ class SyftWorker(SyftObject):
         "image",
         "status",
         "healthcheck",
-        "created_at",
+        "worker_pool_name" "created_at",
     ]
 
     id: UID
@@ -66,6 +73,8 @@ class SyftWorker(SyftObject):
     healthcheck: Optional[WorkerHealth]
     status: WorkerStatus
     image: Optional[SyftWorkerImage]
+    worker_pool_name: str
+    consumer_state: ConsumerState = ConsumerState.IDLE
     job_id: Optional[UID]
 
     def get_job_repr(self):
@@ -100,6 +109,8 @@ class SyftWorker(SyftObject):
                 "Status": f"{self.status.value}",
                 "Job": self.get_job_repr(),
                 "Created at": str(self.created_at),
+                "Container id": self.container_id,
+                "Consumer state": str(self.consumer_state.value.lower()),
             }
         else:
             return {
@@ -108,6 +119,7 @@ class SyftWorker(SyftObject):
                 "Status": f"{self.status.value}",
                 "Job": self.get_job_repr(),
                 "Created at": str(self.created_at),
+                "Consumer state": str(self.consumer_state.value.lower()),
             }
 
 
@@ -129,7 +141,7 @@ class WorkerPool(SyftObject):
     name: str
     image: Optional[SyftWorkerImage]
     max_count: int
-    workers: List[SyftWorker]
+    worker_list: List[LinkedObject]
     created_at: DateTime = DateTime.now()
 
     @property
@@ -197,11 +209,16 @@ class WorkerPool(SyftObject):
             {self.workers._repr_html_()}
             """
 
+    @property
+    def workers(self):
+        return [worker.resolve for worker in self.worker_list]
+
 
 @serializable()
 class WorkerOrchestrationType:
     DOCKER = "docker"
     K8s = "k8s"
+    PYTHON = "python"
 
 
 @serializable()
