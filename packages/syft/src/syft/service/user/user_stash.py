@@ -47,13 +47,17 @@ class UserStash(BaseStash):
         credentials: SyftVerifyKey,
         user: User,
         add_permissions: Optional[List[ActionObjectPermission]] = None,
+        ignore_duplicates: bool = False,
     ) -> Result[User, str]:
         res = self.check_type(user, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
             return res
         return super().set(
-            credentials=credentials, obj=res.ok(), add_permissions=add_permissions
+            credentials=credentials,
+            obj=res.ok(),
+            add_permissions=add_permissions,
+            ignore_duplicates=ignore_duplicates,
         )
 
     def admin_verify_key(self):

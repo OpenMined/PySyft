@@ -6,6 +6,7 @@ from typing import Optional
 # relative
 from ...client.api import APIRegistry
 from ...serde.serializable import serializable
+from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -23,6 +24,12 @@ class WorkerStatus(Enum):
 
 
 @serializable()
+class ConsumerState(Enum):
+    IDLE = "Idle"
+    CONSUMING = "Consuming"
+
+
+@serializable()
 class WorkerHealth(Enum):
     HEALTHY = "✅"
     UNHEALTHY = "❌"
@@ -34,7 +41,7 @@ class SyftWorker(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["name"]
-    __attr_searchable__ = ["name", "container_id", "image_hash"]
+    __attr_searchable__ = ["name", "container_id", "image_hash", "worker_pool_name"]
 
     id: UID
     name: str
@@ -43,6 +50,8 @@ class SyftWorker(SyftObject):
     image_hash: Optional[str]
     healthcheck: Optional[WorkerHealth]
     status: WorkerStatus
+    worker_pool_name: str
+    consumer_state: ConsumerState = ConsumerState.IDLE
     job_id: Optional[UID]
 
     def get_job_repr(self):
@@ -69,6 +78,7 @@ class SyftWorker(SyftObject):
             "status": str(self.status.value.lower()),
             "job": self.get_job_repr(),
             "created at": str(self.created_at),
+            "consumer state": str(self.consumer_state.value.lower()),
         }
 
 
@@ -83,13 +93,18 @@ class WorkerPool(SyftObject):
     name: str
     syft_worker_image_id: UID
     max_count: int
-    workers: List[SyftWorker]
+    worker_list: List[LinkedObject]
+
+    @property
+    def workers(self):
+        return [worker.resolve for worker in self.worker_list]
 
 
 @serializable()
 class WorkerOrchestrationType:
     DOCKER = "docker"
     K8s = "k8s"
+    PYTHON = "python"
 
 
 @serializable()

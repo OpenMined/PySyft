@@ -25,6 +25,7 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
+from ...types.datetime import DateTime
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -108,6 +109,7 @@ class Job(SyftObject):
     action: Optional[Action] = None
     job_pid: Optional[int] = None
     job_worker_id: Optional[UID] = None
+    updated_at: Optional[DateTime] = None
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]

@@ -272,6 +272,7 @@ def deploy_to_python(
                 node_type=node_type_enum,
                 node_side_type=node_side_type,
                 enable_warnings=enable_warnings,
+                in_memory_workers=True,  # Only in-memory workers supported for python mode
             )
         else:
             # syft <= 0.8.1
@@ -386,6 +387,7 @@ def deploy_to_container(
     port: Union[int, str],
     name: str,
     enable_warnings: bool,
+    in_memory_workers: bool,
 ) -> Optional[NodeHandle]:
     if port == "auto" or port is None:
         if container_exists(name=name):
@@ -421,6 +423,9 @@ def deploy_to_container(
 
     if not enable_warnings:
         commands.append("--no-warnings")
+
+    if in_memory_workers:
+        commands.append("--in-mem-workers")
 
     # by default , we deploy as container stack
     if deployment_type_enum == DeploymentType.SINGLE_CONTAINER:
@@ -495,6 +500,7 @@ class Orchestra:
         thread_workers: bool = False,
         create_producer: bool = False,
         queue_port: Optional[int] = None,
+        in_memory_workers: bool = True,
     ) -> Optional[NodeHandle]:
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"
@@ -570,6 +576,7 @@ class Orchestra:
                 name=name,
                 node_side_type=node_side_type_enum,
                 enable_warnings=enable_warnings,
+                in_memory_workers=in_memory_workers,
             )
         elif deployment_type_enum == DeploymentType.PODMAN:
             return deploy_to_podman(
