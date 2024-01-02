@@ -198,22 +198,17 @@ class WorkerPool(SyftObject):
 
     def _coll_repr_(self) -> Dict[str, Any]:
         if self.image and self.image.image_identifier:
-            return {
-                "Pool Name": self.name,
-                "Workers": len(self.workers),
-                "Healthy (healthy / all)": f"{len(self.healthy_workers)} / {self.max_count}",
-                "Running (running / all)": f"{len(self.running_workers)} / {self.max_count}",
-                "Image": self.image.image_identifier.full_name_with_tag,
-                "Created at": str(self.created_at),
-            }
+            image_name_with_tag = self.image.image_identifier.full_name_with_tag
         else:
-            return {
-                "Pool Name": self.name,
-                "Workers": len(self.workers),
-                "Healthy (healthy / all)": f"{len(self.healthy_workers)} / {self.max_count}",
-                "Running (running / all)": f"{len(self.running_workers)} / {self.max_count}",
-                "Created at": str(self.created_at),
-            }
+            image_name_with_tag = "In Memory Worker"
+        return {
+            "Pool Name": self.name,
+            "Workers": len(self.workers),
+            "Healthy (healthy / all)": f"{len(self.healthy_workers)} / {self.max_count}",
+            "Running (running / all)": f"{len(self.running_workers)} / {self.max_count}",
+            "Image": image_name_with_tag,
+            "Created at": str(self.created_at),
+        }
 
     def _repr_html_(self) -> Any:
         return f"""

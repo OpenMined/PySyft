@@ -3,6 +3,7 @@ import contextlib
 import socket
 import sys
 from typing import List
+from typing import Union
 
 # third party
 import docker
@@ -253,7 +254,7 @@ def create_default_image(
     image_stash: SyftWorkerImageStash,
     dev_mode: bool,
     syft_version_tag: str,
-):
+) -> Union[SyftError, SyftWorkerImage]:
     # TODO: Hardcode worker dockerfile since not able to COPY
     # worker_cpu.dockerfile to backend in backend.dockerfile.
 
@@ -284,12 +285,12 @@ def create_default_image(
         default_syft_image = SyftWorkerImage(
             config=worker_config, created_by=credentials
         )
-        result = image_stash.set(credentials, default_syft_image)
+        result2 = image_stash.set(credentials, default_syft_image)
 
-        if result.is_err():
-            print(f"Failed to save image stash: {result.err()}")
+        if result2.is_err():
+            return SyftError(message=f"Failed to save image stash: {result2.err()}")
 
-    default_syft_image = result.ok()
+    default_syft_image = result2.ok()
 
     return default_syft_image
 
