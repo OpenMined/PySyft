@@ -57,7 +57,6 @@ def docker_build(
 
 
 def docker_push(
-    self,
     image: SyftWorkerImage,
     username: str = "",
     password: str = "",
@@ -93,7 +92,7 @@ def docker_push(
         )
 
 
-def parse_output(self, log_iter: Iterable) -> str:
+def parse_output(log_iter: Iterable) -> str:
     log = ""
     for line in log_iter:
         for item in line.values():
