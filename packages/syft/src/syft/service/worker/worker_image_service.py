@@ -104,12 +104,16 @@ class SyftWorkerImageService(AbstractService):
         except pydantic.ValidationError as e:
             return SyftError(message=f"Failed to create tag: {e}")
 
-        worker_image.image_tag = image_tag
+        if not context.node.in_memory_workers:
+            worker_image.image_tag = image_tag
+            result = docker_build(image)
 
-        result = docker_build(image=worker_image)
-
-        if isinstance(result, SyftError):
-            return result
+            if isinstance(result, SyftError):
+                return result
+        else:
+            result = SyftSuccess(
+                message="Image building skipped, since using InMemory workers."
+            )
 
         (image, logs) = result
         worker_image.built_at = DateTime.now()

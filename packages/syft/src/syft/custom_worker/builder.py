@@ -110,6 +110,7 @@ class CustomWorkerBuilder:
                 tag=tag,
                 pull=True,
                 rm=True,
+                forcerm=True,
                 timeout=self.BUILD_MAX_WAIT,
                 **build_opts,
             )

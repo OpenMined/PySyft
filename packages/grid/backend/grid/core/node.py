@@ -27,6 +27,7 @@ def queue_config() -> ZMQQueueConfig:
             create_producer=settings.CREATE_PRODUCER,
             queue_port=settings.QUEUE_PORT,
             n_consumers=settings.N_CONSUMERS,
+            consumer_service=settings.CONSUMER_SERVICE_NAME,
         )
     )
     return queue_config
@@ -91,4 +92,5 @@ worker = worker_class(
     local_db=single_container_mode,
     queue_config=queue_config,
     migrate=True,
+    in_memory_workers=settings.INMEMORY_WORKERS,
 )
