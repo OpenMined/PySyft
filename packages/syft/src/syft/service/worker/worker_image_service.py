@@ -110,14 +110,16 @@ class SyftWorkerImageService(AbstractService):
 
             if isinstance(result, SyftError):
                 return result
+
+            (image, logs) = result
+            worker_image.built_at = DateTime.now()
+            worker_image.image_hash = image.id
+
+            result = SyftSuccess(message=f"Build {worker_image} succeeded.\n{logs}")
         else:
             result = SyftSuccess(
                 message="Image building skipped, since using InMemory workers."
             )
-
-        (image, logs) = result
-        worker_image.built_at = DateTime.now()
-        worker_image.image_hash = image.id
 
         update_result = self.stash.update(context.credentials, obj=worker_image)
 
@@ -126,7 +128,7 @@ class SyftWorkerImageService(AbstractService):
                 message=f"Failed to update image meta information: {update_result.err()}"
             )
 
-        return SyftSuccess(message=f"Build {worker_image} succeeded.\n{logs}")
+        return result
 
     @service_method(
         path="worker_image.push",

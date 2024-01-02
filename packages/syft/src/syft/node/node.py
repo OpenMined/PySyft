@@ -97,6 +97,7 @@ from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
 from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
+from ..service.worker.utils import DEFAULT_WORKER_IMAGE_VERSION
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ..service.worker.utils import create_default_image
 from ..service.worker.worker_image_service import SyftWorkerImageService
@@ -1434,7 +1435,10 @@ def create_default_worker_pool(node: Node):
 
     # Build the Image for given tag
     result = image_build_method(
-        context, uid=default_image.id, tag=DEFAULT_WORKER_IMAGE_TAG
+        context,
+        image=default_image.id,
+        tag=DEFAULT_WORKER_IMAGE_TAG,
+        version=DEFAULT_WORKER_IMAGE_VERSION,
     )
 
     if isinstance(result, SyftError):

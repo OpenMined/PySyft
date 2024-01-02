@@ -30,6 +30,10 @@ from .worker_pool import SyftWorker
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerStatus
 
+DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu"
+DEFAULT_WORKER_IMAGE_VERSION = "0.0.1"
+DEFAULT_WORKER_POOL_NAME = "default-pool"
+
 
 def docker_build(
     image: SyftWorkerImage,
@@ -384,7 +388,3 @@ def create_default_image(
     default_syft_image = result.ok()
 
     return default_syft_image
-
-
-DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu:0.0.1"
-DEFAULT_WORKER_POOL_NAME = "default-pool"
