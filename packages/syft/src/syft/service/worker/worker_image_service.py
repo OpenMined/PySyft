@@ -2,6 +2,7 @@
 import contextlib
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 # third party
@@ -12,6 +13,7 @@ import pydantic
 from ...custom_worker.config import DockerWorkerConfig
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -20,7 +22,7 @@ from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .worker_image import SyftWorkerImage
-from .worker_image import SyftWorkerImageTag
+from .worker_image import SyftWorkerImageIdentifier
 from .worker_image import build_using_docker
 from .worker_image_stash import SyftWorkerImageStash
 
@@ -42,9 +44,11 @@ class SyftWorkerImageService(AbstractService):
     def submit_dockerfile(
         self, context: AuthedServiceContext, docker_config: DockerWorkerConfig
     ) -> Union[SyftSuccess, SyftError]:
+        image_identifier = SyftWorkerImageIdentifier(repo="", tag="")
         worker_image = SyftWorkerImage(
             config=docker_config,
             created_by=context.credentials,
+            image_identifier=image_identifier,
         )
         res = self.stash.set(context.credentials, worker_image)
 
@@ -77,12 +81,15 @@ class SyftWorkerImageService(AbstractService):
         worker_image: SyftWorkerImage = result.ok()
 
         try:
-            image_tag = SyftWorkerImageTag.from_str(full_str=tag)
+            image_identifier: (
+                SyftWorkerImageIdentifier
+            ) = SyftWorkerImageIdentifier.from_str(full_str=tag)
         except pydantic.ValidationError as e:
             return SyftError(message=f"Failed to create tag: {e}")
 
+        worker_image.image_identifier = image_identifier
+
         if not context.node.in_memory_workers:
-            worker_image.image_tag = image_tag
             with contextlib.closing(docker.from_env()) as client:
                 worker_image, result = build_using_docker(
                     client=client,
@@ -114,16 +121,23 @@ class SyftWorkerImageService(AbstractService):
     )
     def get_all(
         self, context: AuthedServiceContext
-    ) -> Union[List[SyftWorkerImage], SyftError]:
+    ) -> Union[DictTuple[str, SyftWorkerImage], SyftError]:
         """
         One image one docker file for now
-        TODO: change repr when listing
         """
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_err():
             return SyftError(message=f"{result.err()}")
+        images: List[SyftWorkerImage] = result.ok()
 
-        return result.ok()
+        res: List[Tuple] = []
+        for im in images:
+            if im.image_identifier is not None:
+                res.append((im.image_identifier.repo_with_tag, im))
+            else:
+                res.append(("default-worker-image", im))
+
+        return DictTuple(res)
 
     @service_method(
         path="worker_image.delete",
@@ -139,9 +153,9 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"{res.err()}")
         image: SyftWorkerImage = res.ok()
 
-        if image and image.image_tag:
+        if not context.node.in_memory_workers and image and image.image_identifier:
             try:
-                full_tag: str = image.image_tag.full_tag
+                full_tag: str = image.image_identifier.repo_with_tag
                 with contextlib.closing(docker.from_env()) as client:
                     client.images.remove(image=full_tag)
             except docker.errors.ImageNotFound:

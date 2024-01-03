@@ -1,7 +1,15 @@
 # stdlib
 from enum import Enum
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
+from typing import cast
+
+# third party
+import docker
+from docker.models.containers import Container
 
 # relative
 from ...client.api import APIRegistry
@@ -13,6 +21,12 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
+from ...util.fonts import ITABLES_CSS
+from ...util.fonts import fonts_css
+from ..response import SyftError
+from .worker_image import SyftWorkerImage
 
 
 @serializable()
@@ -41,15 +55,24 @@ class SyftWorker(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["name"]
-    __attr_searchable__ = ["name", "container_id", "image_hash", "worker_pool_name"]
+    __attr_searchable__ = ["name", "container_id"]
+    __repr_attrs__ = [
+        "name",
+        "container_id",
+        "image",
+        "status",
+        "healthcheck",
+        "worker_pool_name",
+        "created_at",
+    ]
 
     id: UID
     name: str
     container_id: Optional[str]
     created_at: DateTime = DateTime.now()
-    image_hash: Optional[str]
     healthcheck: Optional[WorkerHealth]
     status: WorkerStatus
+    image: Optional[SyftWorkerImage]
     worker_pool_name: str
     consumer_state: ConsumerState = ConsumerState.IDLE
     job_id: Optional[UID]
@@ -71,14 +94,35 @@ class SyftWorker(SyftObject):
         else:
             return ""
 
-    def _coll_repr_(self):
+    def refresh_status(self) -> None:
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+
+        res = api.services.worker.status(uid=self.id)
+        if isinstance(res, SyftError):
+            return res
+        self.status, self.healthcheck = res
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        self.refresh_status()
+        if self.image and self.image.image_identifier:
+            image_name_with_tag = self.image.image_identifier.full_name_with_tag
+        else:
+            image_name_with_tag = "In Memory Worker"
         return {
-            "name": self.name,
-            "container id": self.container_id,
-            "status": str(self.status.value.lower()),
-            "job": self.get_job_repr(),
-            "created at": str(self.created_at),
-            "consumer state": str(self.consumer_state.value.lower()),
+            "Name": self.name,
+            "Image": image_name_with_tag,
+            "Healthcheck (health / unhealthy)": f"{self.healthcheck.value}",
+            "Status": f"{self.status.value}",
+            "Job": self.get_job_repr(),
+            "Created at": str(self.created_at),
+            "Container id": self.container_id,
+            "Consumer state": str(self.consumer_state.value.lower()),
         }
 
 
@@ -88,16 +132,93 @@ class WorkerPool(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["name"]
-    __attr_searchable__ = ["name", "syft_worker_image_id"]
+    __attr_searchable__ = ["name"]
+    __repr_attrs__ = [
+        "name",
+        "image",
+        "max_count",
+        "workers",
+        "created_at",
+    ]
 
     name: str
-    syft_worker_image_id: UID
+    image: Optional[SyftWorkerImage]
     max_count: int
     worker_list: List[LinkedObject]
+    created_at: DateTime = DateTime.now()
 
     @property
-    def workers(self):
-        return [worker.resolve for worker in self.worker_list]
+    def running_workers(self) -> Union[List[UID], SyftError]:
+        """Query the running workers using an API call to the server"""
+        _running_workers = []
+        for worker in self.workers:
+            if worker.status == WorkerStatus.RUNNING:
+                _running_workers.append(worker)
+
+        return _running_workers
+
+    @property
+    def healthy_workers(self) -> Union[List[UID], SyftError]:
+        """
+        Query the healthy workers using an API call to the server
+        """
+        _healthy_workers = []
+
+        for worker in self.workers:
+            if worker.healthcheck == WorkerHealth.HEALTHY:
+                _healthy_workers.append(worker)
+
+        return _healthy_workers
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        if self.image and self.image.image_identifier:
+            image_name_with_tag = self.image.image_identifier.full_name_with_tag
+        else:
+            image_name_with_tag = "In Memory Worker"
+        return {
+            "Pool Name": self.name,
+            "Workers": len(self.workers),
+            "Healthy (healthy / all)": f"{len(self.healthy_workers)} / {self.max_count}",
+            "Running (running / all)": f"{len(self.running_workers)} / {self.max_count}",
+            "Image": image_name_with_tag,
+            "Created at": str(self.created_at),
+        }
+
+    def _repr_html_(self) -> Any:
+        return f"""
+            <style>
+            {fonts_css}
+            .syft-dataset {{color: {SURFACE[options.color_theme]};}}
+            .syft-dataset h3,
+            .syft-dataset p
+              {{font-family: 'Open Sans';}}
+              {ITABLES_CSS}
+            </style>
+            <div class='syft-dataset'>
+            <h3>{self.name}</h3>
+            <p class='paragraph-sm'>
+                <strong><span class='pr-8'>Created on: </span></strong>
+                {self.created_at}
+            </p>
+            <p class='paragraph-sm'>
+                <strong><span class='pr-8'>Healthy Workers:</span></strong>
+                {len(self.healthy_workers)} / {self.max_count}
+            </p>
+            <p class='paragraph-sm'>
+                <strong><span class='pr-8'>Running Workers:</span></strong>
+                {len(self.running_workers)} / {self.max_count}
+            </p>
+            {self.workers._repr_html_()}
+            """
+
+    @property
+    def workers(self) -> List[SyftWorker]:
+        resolved_workers = []
+        for worker in self.worker_list:
+            resolved_worker = worker.resolve
+            resolved_worker.refresh_status()
+            resolved_workers.append(resolved_worker)
+        return resolved_workers
 
 
 @serializable()
@@ -114,3 +235,50 @@ class ContainerSpawnStatus(SyftBaseModel):
     worker_name: str
     worker: Optional[SyftWorker]
     error: Optional[str]
+
+
+def _get_worker_container(
+    client: docker.DockerClient,
+    worker: SyftWorker,
+) -> Union[Container, SyftError]:
+    try:
+        return cast(Container, client.containers.get(worker.container_id))
+    except docker.errors.NotFound as e:
+        return SyftError(message=f"Worker {worker.id} container not found. Error {e}")
+    except docker.errors.APIError as e:
+        return SyftError(
+            message=f"Unable to access worker {worker.id} container. "
+            + f"Container server error {e}"
+        )
+
+
+_CONTAINER_STATUS_TO_WORKER_STATUS: Dict[str, WorkerStatus] = dict(
+    [
+        ("running", WorkerStatus.RUNNING),
+        *(
+            (status, WorkerStatus.STOPPED)
+            for status in ["paused", "removing", "exited", "dead"]
+        ),
+        ("restarting", WorkerStatus.RESTARTED),
+        ("created", WorkerStatus.PENDING),
+    ]
+)
+
+
+def _get_worker_container_status(
+    client: docker.DockerClient,
+    worker: SyftWorker,
+    container: Optional[Container] = None,
+) -> Union[Container, SyftError]:
+    if container is None:
+        container = _get_worker_container(client, worker)
+
+    if isinstance(container, SyftError):
+        return container
+
+    container_status = container.status
+
+    return _CONTAINER_STATUS_TO_WORKER_STATUS.get(
+        container_status,
+        SyftError(message=f"Unknown container status: {container_status}"),
+    )

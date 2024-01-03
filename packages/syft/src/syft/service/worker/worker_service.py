@@ -1,15 +1,20 @@
 # stdlib
+import contextlib
 import socket
 from typing import List
+from typing import Tuple
 from typing import Union
 
 # third party
 import docker
+from result import Result
 
 # relative
+from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store import SyftSuccess
+from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..service import AbstractService
 from ..service import AuthedServiceContext
@@ -17,7 +22,12 @@ from ..service import SyftError
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from .utils import DEFAULT_WORKER_POOL_NAME
+from .utils import _get_healthcheck_based_on_status
 from .worker_pool import ContainerSpawnStatus
+from .worker_pool import SyftWorker
+from .worker_pool import WorkerHealth
+from .worker_pool import WorkerStatus
+from .worker_pool import _get_worker_container_status
 from .worker_stash import WorkerStash
 
 WORKER_NUM = 0
@@ -133,12 +143,82 @@ class WorkerService(AbstractService):
             context, number=n, pool_name=DEFAULT_WORKER_POOL_NAME
         )
 
-    @service_method(path="worker.list", name="list", roles=ADMIN_ROLE_LEVEL)
+    @service_method(path="worker.get_all", name="get_all", roles=ADMIN_ROLE_LEVEL)
     def list(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:
-        """Add a Container Image."""
+        """List all the workers."""
         result = self.stash.get_all(context.credentials)
 
         if result.is_err():
             return SyftError(message=f"Failed to fetch workers. {result.err()}")
-        else:
-            return result.ok()
+
+        workers = result.ok()
+
+        if context.node.in_memory_workers:
+            return workers
+
+        # If container workers, check their statuses
+        for idx, worker in enumerate(workers):
+            result = check_and_update_status_for_worker(
+                worker=worker,
+                worker_stash=self.stash,
+                credentials=context.credentials,
+            )
+            if result.is_err():
+                return SyftError(
+                    message=f"Failed to update status for worker: {worker.id}. Error: {result.err()}"
+                )
+            workers[idx] = worker
+
+        return workers
+
+    @service_method(path="worker.status", name="status", roles=ADMIN_ROLE_LEVEL)
+    def status(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+    ) -> Union[Tuple[WorkerStatus, WorkerHealth], SyftError]:
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
+        if result.is_err():
+            return SyftError(message=f"Failed to retrieve worker with UID {uid}")
+        worker: SyftWorker = result.ok()
+
+        if context.node.in_memory_workers:
+            return worker.status, worker.healthcheck
+
+        result = check_and_update_status_for_worker(
+            worker=worker,
+            worker_stash=self.stash,
+            credentials=context.credentials,
+        )
+
+        if result.is_err():
+            return SyftError(
+                message=f"Failed to update status for worker: {worker.id}. Error: {result.err()}"
+            )
+
+        worker = result.ok()
+
+        return worker.status, worker.healthcheck
+
+
+def check_and_update_status_for_worker(
+    worker: SyftWorker,
+    worker_stash: WorkerStash,
+    credentials: SyftVerifyKey,
+) -> Result[SyftWorker, str]:
+    with contextlib.closing(docker.from_env()) as client:
+        worker_status = _get_worker_container_status(client, worker)
+
+    if isinstance(worker_status, SyftError):
+        return worker_status
+
+    worker.status = worker_status
+
+    worker.healthcheck = _get_healthcheck_based_on_status(status=worker_status)
+
+    result = worker_stash.update(
+        credentials=credentials,
+        obj=worker,
+    )
+
+    return result

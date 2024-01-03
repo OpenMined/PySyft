@@ -1,7 +1,6 @@
 # stdlib
 import contextlib
 from typing import Any
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -16,6 +15,7 @@ from docker.models.containers import Container
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
+from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -35,6 +35,8 @@ from .worker_pool import SyftWorker
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerPool
 from .worker_pool import WorkerStatus
+from .worker_pool import _get_worker_container
+from .worker_pool import _get_worker_container_status
 from .worker_pool_stash import SyftWorkerPoolStash
 from .worker_service import WorkerService
 from .worker_stash import WorkerStash
@@ -113,8 +115,8 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_pool = WorkerPool(
             name=name,
-            syft_worker_image_id=image_uid,
             max_count=number,
+            image=worker_image,
             worker_list=worker_list,
         )
         result = self.stash.set(credentials=context.credentials, obj=worker_pool)
@@ -131,14 +133,21 @@ class SyftWorkerPoolService(AbstractService):
     )
     def get_all(
         self, context: AuthedServiceContext
-    ) -> Union[List[WorkerPool], SyftError]:
+    ) -> Union[DictTuple[str, WorkerPool], SyftError]:
         # TODO: During get_all, we should dynamically make a call to docker to get the status of the containers
         # and update the status of the workers in the pool.
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_err():
             return SyftError(message=f"{result.err()}")
+        worker_pools = result.ok()
 
-        return result.ok()
+        res: List[Tuple] = []
+        for pool in worker_pools:
+            if pool.image.image_identifier is not None:
+                res.append((pool.image.image_identifier.repo_with_tag, pool))
+            else:
+                res.append(("in-memory-pool", pool))
+        return DictTuple(res)
 
     @service_method(
         path="worker_pool.add_workers",
@@ -307,15 +316,7 @@ class SyftWorkerPoolService(AbstractService):
             return worker
 
         with contextlib.closing(docker.from_env()) as client:
-            container = _get_worker_container(client, worker)
-            if isinstance(container, SyftError):
-                return container
-
-            container_status = container.status
-
-        worker_status = _CONTAINER_STATUS_TO_WORKER_STATUS.get(container_status)
-        if worker_status is None:
-            return SyftError(message=f"Unknown container status: {container_status}")
+            worker_status = _get_worker_container_status(client, worker)
 
         if isinstance(worker_status, SyftError):
             return worker_status
@@ -446,34 +447,6 @@ def _get_worker(
             message=f"Worker with id: {worker_id} not found in pool: {worker_pool.name}"
         )
     )
-
-
-def _get_worker_container(
-    client: docker.DockerClient,
-    worker: SyftWorker,
-) -> Union[Container, SyftError]:
-    try:
-        return cast(Container, client.containers.get(worker.container_id))
-    except docker.errors.NotFound as e:
-        return SyftError(f"Worker {worker.id} container not found. Error {e}")
-    except docker.errors.APIError as e:
-        return SyftError(
-            f"Unable to access worker {worker.id} container. "
-            + f"Container server error {e}"
-        )
-
-
-_CONTAINER_STATUS_TO_WORKER_STATUS: Dict[str, WorkerStatus] = dict(
-    [
-        ("running", WorkerStatus.RUNNING),
-        *(
-            (status, WorkerStatus.STOPPED)
-            for status in ["paused", "removing", "exited", "dead"]
-        ),
-        ("restarting", WorkerStatus.RESTARTED),
-        ("created", WorkerStatus.PENDING),
-    ]
-)
 
 
 def _stop_worker_container(

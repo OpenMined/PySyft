@@ -197,6 +197,18 @@ class DomainClient(SyftClient):
     def code_histories(self) -> UsersCodeHistoriesDict:
         return self.api.services.code_history.get_histories()
 
+    @property
+    def images(self) -> Optional[APIModule]:
+        if self.api.has_service("worker_image"):
+            return self.api.services.worker_image
+        return None
+
+    @property
+    def worker_pools(self) -> Optional[APIModule]:
+        if self.api.has_service("worker_pool"):
+            return self.api.services.worker_pool
+        return None
+
     def get_project(
         self,
         name: str = None,

@@ -1,8 +1,10 @@
 # stdlib
 import contextlib
 import socket
+import socketserver
 import sys
 from typing import List
+from typing import Union
 
 # third party
 import docker
@@ -15,10 +17,10 @@ from ...types.uid import UID
 from ...util.util import get_queue_address
 from ..response import SyftError
 from .worker_image import SyftWorkerImage
-from .worker_image import SyftWorkerImageTag
 from .worker_image_stash import SyftWorkerImageStash
 from .worker_pool import ContainerSpawnStatus
 from .worker_pool import SyftWorker
+from .worker_pool import WorkerHealth
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerStatus
 
@@ -75,9 +77,15 @@ def extract_config_from_backend(worker_name: str, docker_client: docker.DockerCl
     return extracted_config
 
 
+def get_free_tcp_port():
+    with socketserver.TCPServer(("localhost", 0), None) as s:
+        free_port = s.server_address[1]
+        return free_port
+
+
 def run_container_using_docker(
+    worker_image: SyftWorkerImage,
     docker_client: docker.DockerClient,
-    image_tag: SyftWorkerImageTag,
     worker_name: str,
     worker_count: int,
     pool_name: str,
@@ -116,7 +124,7 @@ def run_container_using_docker(
         environment = backend_host_config["environment"]
         environment["CREATE_PRODUCER"] = "false"
         environment["N_CONSUMERS"] = 1
-        environment["PORT"] = str(8003 + worker_count)
+        environment["PORT"] = str(get_free_tcp_port())
         environment["HTTP_PORT"] = str(88 + worker_count)
         environment["HTTPS_PORT"] = str(446 + worker_count)
         environment["CONSUMER_SERVICE_NAME"] = pool_name
@@ -126,7 +134,7 @@ def run_container_using_docker(
         environment["CONTAINER_HOST"] = "docker"
 
         container = docker_client.containers.run(
-            image_tag.full_tag,
+            worker_image.image_identifier.repo_with_tag,
             name=f"{hostname}-{worker_name}",
             detach=True,
             auto_remove=True,
@@ -144,22 +152,26 @@ def run_container_using_docker(
             else WorkerStatus.PENDING
         )
 
+        healthcheck: WorkerHealth = _get_healthcheck_based_on_status(status)
+
         worker = SyftWorker(
             id=syft_worker_uid,
             name=worker_name,
             container_id=container.id,
-            image_hash=container.image.id,
             status=status,
+            healthcheck=healthcheck,
+            image=worker_image,
             worker_pool_name=pool_name,
         )
     except Exception as e:
-        error_message = f"Failed to run command in container. {worker_name} {image_tag}. {e}. {sys.stderr}"
+        error_message = f"Failed to run command in container. {worker_name} {worker_image}. {e}. {sys.stderr}"
         if container:
             worker = SyftWorker(
                 name=worker_name,
                 container_id=container.id,
-                image_hash=container.image.id,
                 status=WorkerStatus.STOPPED,
+                healthcheck=WorkerHealth.UNHEALTHY,
+                image=worker_image,
                 worker_pool_name=pool_name,
             )
             container.stop()
@@ -184,6 +196,7 @@ def run_workers_in_threads(
             name=worker_name,
             status=WorkerStatus.RUNNING,
             worker_pool_name=pool_name,
+            healthcheck=WorkerHealth.HEALTHY,
         )
         try:
             port = node.queue_config.client_config.queue_port
@@ -220,8 +233,6 @@ def run_containers(
     dev_mode: bool = False,
     start_idx: int = 0,
 ) -> List[ContainerSpawnStatus]:
-    image_tag = worker_image.image_tag
-
     results = []
 
     if orchestration not in [WorkerOrchestrationType.DOCKER]:
@@ -234,7 +245,7 @@ def run_containers(
                 docker_client=client,
                 worker_name=worker_name,
                 worker_count=worker_count,
-                image_tag=image_tag,
+                worker_image=worker_image,
                 pool_name=pool_name,
                 queue_port=queue_port,
                 debug=dev_mode,
@@ -249,7 +260,7 @@ def create_default_image(
     image_stash: SyftWorkerImageStash,
     dev_mode: bool,
     syft_version_tag: str,
-):
+) -> Union[SyftError, SyftWorkerImage]:
     # TODO: Hardcode worker dockerfile since not able to COPY
     # worker_cpu.dockerfile to backend in backend.dockerfile.
 
@@ -278,16 +289,24 @@ def create_default_image(
 
     if result.ok() is None:
         default_syft_image = SyftWorkerImage(
-            config=worker_config, created_by=credentials
+            config=worker_config,
+            created_by=credentials,
         )
         result = image_stash.set(credentials, default_syft_image)
 
         if result.is_err():
-            print(f"Failed to save image stash: {result.err()}")
+            return SyftError(message=f"Failed to save image stash: {result.err()}")
 
     default_syft_image = result.ok()
 
     return default_syft_image
+
+
+def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
+    if status in [WorkerStatus.PENDING, WorkerStatus.RUNNING]:
+        return WorkerHealth.HEALTHY
+    else:
+        return WorkerHealth.UNHEALTHY
 
 
 DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu:0.0.1"
