@@ -1,8 +1,15 @@
 # stdlib
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
 
 # third party
-from result import Err, Ok, OkErr, Result
+from result import Err
+from result import Ok
+from result import OkErr
+from result import Result
 
 # relative
 from ...abstract_node import NodeType
@@ -14,20 +21,26 @@ from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
-from ..action.action_permissions import ActionObjectPermission, ActionPermission
+from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..network.routes import route_to_connection
-from ..request.request import SubmitRequest, UserCodeStatusChange
+from ..request.request import SubmitRequest
+from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
-from ..response import SyftError, SyftSuccess
-from ..service import SERVICE_TO_TYPES, TYPE_TO_SERVICE, AbstractService, service_method
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL, GUEST_ROLE_LEVEL
-from .user_code import (
-    SubmitUserCode,
-    UserCode,
-    UserCodeStatus,
-    load_approved_policy_code,
-)
+from ..response import SyftError
+from ..response import SyftSuccess
+from ..service import AbstractService
+from ..service import SERVICE_TO_TYPES
+from ..service import TYPE_TO_SERVICE
+from ..service import service_method
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
+from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..user.user_roles import ServiceRole
+from .user_code import SubmitUserCode
+from .user_code import UserCode
+from .user_code import UserCodeStatus
+from .user_code import load_approved_policy_code
 from .user_code_stash import UserCodeStash
 
 
@@ -51,7 +64,9 @@ class UserCodeService(AbstractService):
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted")
 
-    def _submit(self, context: AuthedServiceContext, code: Union[UserCode, SubmitUserCode]) -> Result:
+    def _submit(
+        self, context: AuthedServiceContext, code: Union[UserCode, SubmitUserCode]
+    ) -> Result:
         if not isinstance(code, UserCode):
             code = code.to(UserCode, context=context)
         result = self.stash.set(context.credentials, code)
@@ -305,9 +320,12 @@ class UserCodeService(AbstractService):
             if code_result.is_err():
                 return code_result
             code: UserCode = code_result.ok()
+            override_execution_permission = (
+                context.has_execute_permissions or context.role == ServiceRole.ADMIN
+            )
 
             output_policy = code.output_policy
-            if not context.has_execute_permissions:
+            if not override_execution_permission:
                 can_execute = self.is_execution_allowed(
                     code=code, context=context, output_policy=output_policy
                 )
@@ -351,7 +369,8 @@ class UserCodeService(AbstractService):
             # Apply Output Policy to the results and update the OutputPolicyState
 
             # this currently only works for nested syft_functions
-            if not context.has_execute_permissions:
+            # and admins executing on high side (TODO, decide if we want to increment counter)
+            if not override_execution_permission:
                 output_policy.apply_output(context=context, outputs=result)
                 code.output_policy = output_policy
                 if not (
@@ -360,14 +379,21 @@ class UserCodeService(AbstractService):
                     )
                 ):
                     return update_success.to_result()
-
+            has_result_read_permission = context.extra_kwargs.get(
+                "has_result_read_permission", False
+            )
             if isinstance(result, TwinObject):
-                return Ok(result.mock)
+                if has_result_read_permission:
+                    return Ok(result.private)
+                else:
+                    return Ok(result.mock)
             elif result.is_mock:
                 return Ok(result)
             elif result.syft_action_data_type is Err:
                 # result contains the error but the request was handled correctly
                 return result.syft_action_data
+            elif has_result_read_permission:
+                return Ok(result)
             else:
                 return Ok(result.as_empty())
         except Exception as e:
