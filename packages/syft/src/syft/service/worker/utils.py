@@ -289,7 +289,8 @@ def create_default_image(
 
     if result.ok() is None:
         default_syft_image = SyftWorkerImage(
-            config=worker_config, created_by=credentials
+            config=worker_config,
+            created_by=credentials,
         )
         result = image_stash.set(credentials, default_syft_image)
 
