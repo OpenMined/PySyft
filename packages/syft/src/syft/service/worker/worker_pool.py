@@ -94,7 +94,7 @@ class SyftWorker(SyftObject):
         else:
             return ""
 
-    def get_status_healthcheck(self) -> None:
+    def refresh_status(self) -> None:
         # relative
         from ...client.api import APIRegistry
 
@@ -106,11 +106,10 @@ class SyftWorker(SyftObject):
         res = api.services.worker.status(worker_id=self.id)
         if isinstance(res, SyftError):
             return res
-        self.status = res
-        self.healthcheck = _get_healthcheck_based_on_status(status=self.status)
+        self.status, self.healthcheck = res
 
     def _coll_repr_(self) -> Dict[str, Any]:
-        self.get_status_healthcheck()
+        self.refresh_status()
         if self.image and self.image.image_identifier:
             image_name_with_tag = self.image.image_identifier.full_name_with_tag
         else:
@@ -150,51 +149,26 @@ class WorkerPool(SyftObject):
 
     @property
     def running_workers(self) -> Union[List[UID], SyftError]:
-        """
-        Called by the client. Query the running workers using an API call to the server
-        """
-        # relative
-        from ...client.api import APIRegistry
+        """Query the running workers using an API call to the server"""
+        _running_workers = []
+        for worker in self.workers:
+            if worker.status == WorkerStatus.RUNNING:
+                _running_workers.append(worker)
 
-        api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        running_workers = []
-        for worker in self.worker_list:
-            res = api.services.worker_pool.get_worker_status(
-                worker_pool_id=self.id, worker_id=worker.object_uid
-            )
-            if isinstance(res, SyftError):
-                return res
-            if res == WorkerStatus.RUNNING:
-                running_workers.append(worker.object_uid)
-
-        return running_workers
+        return _running_workers
 
     @property
     def healthy_workers(self) -> Union[List[UID], SyftError]:
         """
         Query the healthy workers using an API call to the server
         """
-        # relative
-        from ...client.api import APIRegistry
+        _healthy_workers = []
 
-        api = APIRegistry.api_for(
-            node_uid=self.syft_node_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        healthy_workers = []
-        for worker in self.worker_list:
-            res = api.services.worker_pool.get_worker_status(
-                worker_pool_id=self.id, worker_id=worker.object_uid
-            )
-            if isinstance(res, SyftError):
-                return res
-            if res in (WorkerStatus.PENDING, WorkerStatus.RUNNING):
-                healthy_workers.append(worker.object_uid)
+        for worker in self.workers:
+            if worker.healthcheck == WorkerHealth.HEALTHY:
+                _healthy_workers.append(worker.object_uid)
 
-        return healthy_workers
+        return _healthy_workers
 
     def _coll_repr_(self) -> Dict[str, Any]:
         if self.image and self.image.image_identifier:
@@ -239,7 +213,12 @@ class WorkerPool(SyftObject):
 
     @property
     def workers(self):
-        return [worker.resolve for worker in self.worker_list]
+        resolved_workers = []
+        for worker in self.worker_list:
+            resolved_worker = worker.resolve
+            resolved_worker.refresh_status()
+            resolved_workers.append(resolved_worker)
+        return resolved_workers
 
 
 @serializable()
@@ -303,10 +282,3 @@ def _get_worker_container_status(
         container_status,
         SyftError(message=f"Unknown container status: {container_status}"),
     )
-
-
-def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
-    if status in [WorkerStatus.PENDING, WorkerStatus.RUNNING]:
-        return WorkerHealth.HEALTHY
-    else:
-        return WorkerHealth.UNHEALTHY

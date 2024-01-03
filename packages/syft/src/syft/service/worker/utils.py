@@ -22,7 +22,6 @@ from .worker_pool import SyftWorker
 from .worker_pool import WorkerHealth
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerStatus
-from .worker_pool import _get_healthcheck_based_on_status
 
 
 def backend_container_name() -> str:
@@ -293,6 +292,13 @@ def create_default_image(
     default_syft_image = result2.ok()
 
     return default_syft_image
+
+
+def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
+    if status in [WorkerStatus.PENDING, WorkerStatus.RUNNING]:
+        return WorkerHealth.HEALTHY
+    else:
+        return WorkerHealth.UNHEALTHY
 
 
 DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu:0.0.1"
