@@ -2,6 +2,7 @@
 import contextlib
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 # third party
@@ -127,11 +128,15 @@ class SyftWorkerImageService(AbstractService):
         if result.is_err():
             return SyftError(message=f"{result.err()}")
         images: List[SyftWorkerImage] = result.ok()
-        return DictTuple(
-            (im.image_identifier.repo_with_tag, im)
-            for im in images
-            if im.image_identifier
-        )
+
+        res: List[Tuple] = []
+        for im in images:
+            if im.image_identifier is not None:
+                res.append((im.image_identifier.repo_with_tag, im))
+            else:
+                res.append(("default-worker-image", im))
+
+        return DictTuple(res)
 
     @service_method(
         path="worker_image.delete",
@@ -147,7 +152,7 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"{res.err()}")
         image: SyftWorkerImage = res.ok()
 
-        if image and image.image_identifier:
+        if not context.node.in_memory_workers and image and image.image_identifier:
             try:
                 full_tag: str = image.image_identifier.repo_with_tag
                 with contextlib.closing(docker.from_env()) as client:
