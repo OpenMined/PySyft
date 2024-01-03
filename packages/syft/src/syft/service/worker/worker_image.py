@@ -90,7 +90,9 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
 
     @property
     def repo_with_tag(self) -> str:
-        return f"{self.repo}:{self.tag}"
+        if self.repo or self.tag:
+            return f"{self.repo}:{self.tag}"
+        return None
 
     @property
     def full_name_with_tag(self) -> str:
@@ -112,12 +114,12 @@ class SyftWorkerImage(SyftObject):
     __canonical_name__ = "SyftWorkerImage"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    # __attr_unique__ = ["config"]
+    __attr_unique__ = ["config"]
     __attr_searchable__ = ["config", "image_hash", "created_by"]
     __repr_attrs__ = ["image_identifier", "image_hash", "created_at"]
 
     id: UID
-    config: Optional[WorkerConfig]
+    config: WorkerConfig
     image_identifier: Optional[SyftWorkerImageIdentifier]
     image_hash: Optional[str]
     created_at: DateTime = DateTime.now()

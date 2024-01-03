@@ -175,11 +175,11 @@ class WorkerService(AbstractService):
     def status(
         self,
         context: AuthedServiceContext,
-        worker_uid: UID,
+        uid: UID,
     ) -> Union[Tuple[WorkerStatus, WorkerHealth], SyftError]:
-        result = self.stash.get_by_uid(credentials=context.credentials, uid=worker_uid)
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
         if result.is_err():
-            return SyftError(message=f"Failed to retrieve worker with UID {worker_uid}")
+            return SyftError(message=f"Failed to retrieve worker with UID {uid}")
         worker: SyftWorker = result.ok()
 
         if context.node.in_memory_workers:

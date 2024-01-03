@@ -103,7 +103,7 @@ class SyftWorker(SyftObject):
             user_verify_key=self.syft_client_verify_key,
         )
 
-        res = api.services.worker.status(worker_id=self.id)
+        res = api.services.worker.status(uid=self.id)
         if isinstance(res, SyftError):
             return res
         self.status, self.healthcheck = res
@@ -166,7 +166,7 @@ class WorkerPool(SyftObject):
 
         for worker in self.workers:
             if worker.healthcheck == WorkerHealth.HEALTHY:
-                _healthy_workers.append(worker.object_uid)
+                _healthy_workers.append(worker)
 
         return _healthy_workers
 
@@ -212,7 +212,7 @@ class WorkerPool(SyftObject):
             """
 
     @property
-    def workers(self):
+    def workers(self) -> List[SyftWorker]:
         resolved_workers = []
         for worker in self.worker_list:
             resolved_worker = worker.resolve
@@ -244,10 +244,10 @@ def _get_worker_container(
     try:
         return cast(Container, client.containers.get(worker.container_id))
     except docker.errors.NotFound as e:
-        return SyftError(f"Worker {worker.id} container not found. Error {e}")
+        return SyftError(message=f"Worker {worker.id} container not found. Error {e}")
     except docker.errors.APIError as e:
         return SyftError(
-            f"Unable to access worker {worker.id} container. "
+            message=f"Unable to access worker {worker.id} container. "
             + f"Container server error {e}"
         )
 

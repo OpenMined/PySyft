@@ -1,6 +1,7 @@
 # stdlib
 import contextlib
 import socket
+import socketserver
 import sys
 from typing import List
 from typing import Union
@@ -76,6 +77,12 @@ def extract_config_from_backend(worker_name: str, docker_client: docker.DockerCl
     return extracted_config
 
 
+def get_free_tcp_port():
+    with socketserver.TCPServer(("localhost", 0), None) as s:
+        free_port = s.server_address[1]
+        return free_port
+
+
 def run_container_using_docker(
     worker_image: SyftWorkerImage,
     docker_client: docker.DockerClient,
@@ -117,7 +124,7 @@ def run_container_using_docker(
         environment = backend_host_config["environment"]
         environment["CREATE_PRODUCER"] = "false"
         environment["N_CONSUMERS"] = 1
-        environment["PORT"] = str(8003 + worker_count)
+        environment["PORT"] = str(get_free_tcp_port())
         environment["HTTP_PORT"] = str(88 + worker_count)
         environment["HTTPS_PORT"] = str(446 + worker_count)
         environment["CONSUMER_SERVICE_NAME"] = pool_name
@@ -284,12 +291,12 @@ def create_default_image(
         default_syft_image = SyftWorkerImage(
             config=worker_config, created_by=credentials
         )
-        result2 = image_stash.set(credentials, default_syft_image)
+        result = image_stash.set(credentials, default_syft_image)
 
-        if result2.is_err():
-            return SyftError(message=f"Failed to save image stash: {result2.err()}")
+        if result.is_err():
+            return SyftError(message=f"Failed to save image stash: {result.err()}")
 
-    default_syft_image = result2.ok()
+    default_syft_image = result.ok()
 
     return default_syft_image
 
