@@ -135,10 +135,11 @@ class ZMQProducer(QueueProducer):
             self.poll_workers.unregister(self.backend)
         except Exception as e:
             print("failed to unregister poller", e)
-        if self.thread is not None:
-            self.thread.join(DEFAULT_THREAD_TIMEOUT)
-        self.backend.close()
-        self.context.destroy()
+        finally:
+            if self.thread is not None:
+                self.thread.join(DEFAULT_THREAD_TIMEOUT)
+            self.backend.close()
+            self.context.destroy()
 
     @property
     def action_service(self):
@@ -362,7 +363,12 @@ class ZMQProducer(QueueProducer):
             for _, service in self.services.items():
                 self.dispatch(service, None)
 
-            items = self.poll_workers.poll(HEARTBEAT_INTERVAL)
+            items = None
+
+            try:
+                items = self.poll_workers.poll(HEARTBEAT_INTERVAL)
+            except Exception as e:
+                print(f"Failed to poll items. Error: {e}")
 
             if items:
                 msg = self.backend.recv_multipart()
@@ -436,7 +442,7 @@ class ZMQProducer(QueueProducer):
 
         if worker.service is not None and worker in worker.service.waiting:
             worker.service.waiting.remove(worker)
-        self.workers.pop(worker.identity)
+        self.workers.pop(worker.identity, None)
 
     @property
     def alive(self):
@@ -500,13 +506,13 @@ class ZMQConsumer(QueueConsumer):
 
     def close(self):
         self._stop = True
-        if self.thread is not None:
-            self.thread.join(timeout=DEFAULT_THREAD_TIMEOUT)
         try:
             self.poller.unregister(self.worker)
         except Exception as e:
             print("failed to unregister poller", e)
         finally:
+            if self.thread is not None:
+                self.thread.join(timeout=DEFAULT_THREAD_TIMEOUT)
             self.worker.close()
             self.context.destroy()
 
