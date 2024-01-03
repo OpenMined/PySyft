@@ -1406,7 +1406,7 @@ class NodeRegistry:
         return list(cls.__node_registry__.values())
 
 
-def create_default_worker_pool(node: Node):
+def create_default_worker_pool(node: Node) -> Optional[SyftError]:
     credentials = node.verify_key
 
     image_stash = node.get_service(SyftWorkerImageService).stash
@@ -1425,6 +1425,9 @@ def create_default_worker_pool(node: Node):
         dev_mode=node.dev_mode,
         syft_version_tag="local-dev" if node.dev_mode else __version__,
     )
+    if isinstance(default_image, SyftError):
+        return default_image
+
     image_build_method = node.get_service_method(SyftWorkerImageService.build)
 
     print("Building Default Worker Image")
