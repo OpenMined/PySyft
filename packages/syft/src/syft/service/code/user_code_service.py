@@ -1,15 +1,8 @@
 # stdlib
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
+from typing import Any, Dict, List, Optional, Union
 
 # third party
-from result import Err
-from result import Ok
-from result import OkErr
-from result import Result
+from result import Err, Ok, OkErr, Result
 
 # relative
 from ...abstract_node import NodeType
@@ -21,25 +14,20 @@ from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
-from ..action.action_permissions import ActionObjectPermission
-from ..action.action_permissions import ActionPermission
+from ..action.action_permissions import ActionObjectPermission, ActionPermission
 from ..context import AuthedServiceContext
 from ..network.routes import route_to_connection
-from ..request.request import SubmitRequest
-from ..request.request import UserCodeStatusChange
+from ..request.request import SubmitRequest, UserCodeStatusChange
 from ..request.request_service import RequestService
-from ..response import SyftError
-from ..response import SyftSuccess
-from ..service import AbstractService
-from ..service import SERVICE_TO_TYPES
-from ..service import TYPE_TO_SERVICE
-from ..service import service_method
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from ..user.user_roles import GUEST_ROLE_LEVEL
-from .user_code import SubmitUserCode
-from .user_code import UserCode
-from .user_code import UserCodeStatus
-from .user_code import load_approved_policy_code
+from ..response import SyftError, SyftSuccess
+from ..service import SERVICE_TO_TYPES, TYPE_TO_SERVICE, AbstractService, service_method
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL, GUEST_ROLE_LEVEL
+from .user_code import (
+    SubmitUserCode,
+    UserCode,
+    UserCodeStatus,
+    load_approved_policy_code,
+)
 from .user_code_stash import UserCodeStash
 
 
@@ -55,7 +43,7 @@ class UserCodeService(AbstractService):
 
     @service_method(path="code.submit", name="submit", roles=GUEST_ROLE_LEVEL)
     def submit(
-        self, context: AuthedServiceContext, code: SubmitUserCode
+        self, context: AuthedServiceContext, code: Union[UserCode, SubmitUserCode]
     ) -> Union[UserCode, SyftError]:
         """Add User Code"""
         result = self._submit(context=context, code=code)
@@ -63,8 +51,10 @@ class UserCodeService(AbstractService):
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted")
 
-    def _submit(self, context: AuthedServiceContext, code: SubmitUserCode) -> Result:
-        result = self.stash.set(context.credentials, code.to(UserCode, context=context))
+    def _submit(self, context: AuthedServiceContext, code: Union[UserCode, SubmitUserCode]) -> Result:
+        if not isinstance(code, UserCode):
+            code = code.to(UserCode, context=context)
+        result = self.stash.set(context.credentials, code)
         return result
 
     @service_method(
