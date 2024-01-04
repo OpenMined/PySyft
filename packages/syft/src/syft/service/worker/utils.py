@@ -317,7 +317,10 @@ def create_default_image(
     """
     worker_config = DockerWorkerConfig(dockerfile=default_cpu_dockerfile)
 
-    result = image_stash.get_by_docker_config(credentials, worker_config)
+    result = image_stash.get_by_docker_config(
+        credentials=credentials,
+        config=worker_config,
+    )
 
     if result.ok() is None:
         default_syft_image = SyftWorkerImage(

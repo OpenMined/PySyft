@@ -106,7 +106,6 @@ class CustomWorkerBuilder:
             image = client.images.build(
                 tag=tag,
                 pull=True,
-                rm=True,
                 timeout=self.BUILD_MAX_WAIT,
                 **build_opts,
             )
