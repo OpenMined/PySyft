@@ -45,7 +45,9 @@ class SyftImageRegistryService(AbstractService):
         if res.is_err():
             return SyftError(message=res.err())
 
-        return SyftSuccess(f"Image registry <id: {registry.id}> created successfully")
+        return SyftSuccess(
+            message=f"Image registry <id: {registry.id}> created successfully"
+        )
 
     @service_method(
         path="image_registry.delete",
