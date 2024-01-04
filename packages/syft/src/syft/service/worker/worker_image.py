@@ -6,20 +6,19 @@ from typing import Optional
 
 # third party
 import docker
-from typing_extensions import Self
 
 # relative
 from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..response import SyftError
 from ..response import SyftSuccess
+from .image_identifier import SyftWorkerImageIdentifier
 
 
 def parse_output(log_iterator: Iterator) -> str:
@@ -33,80 +32,6 @@ def parse_output(log_iterator: Iterator) -> str:
             else:
                 log += str(item)
     return log
-
-
-@serializable()
-class ContainerImageRegistry(SyftBaseModel):
-    url: str
-    tls_enabled: bool
-
-    __repr_attrs__ = ["url"]
-
-    @classmethod
-    def from_url(cls, full_str: str):
-        return cls(url=full_str, tls_enabled=full_str.startswith("https"))
-
-    def __hash__(self) -> int:
-        return hash(self.url + str(self.tls_enabled))
-
-    def __str__(self) -> str:
-        return self.url
-
-
-@serializable()
-class SyftWorkerImageIdentifier(SyftBaseModel):
-    """
-    Class to identify syft worker images.
-    If a user provides an image's identifier with
-    "docker.io/openmined/test-nginx:0.7.8", the convention we use for
-    image name, tag and repo for now is
-        tag = 0.7.8
-        repo = openmined/test-nginx
-        repo_with_tag = openmined/test-nginx:0.7.8
-        full_name = docker.io/openmined/test-nginx
-        full_name_with_tag = docker.io/openmined/test-nginx:0.7.8
-
-    References:
-        https://docs.docker.com/engine/reference/commandline/tag/#tag-an-image-referenced-by-name-and-tag
-    """
-
-    registry: Optional[ContainerImageRegistry]
-    repo: str
-    tag: str
-
-    __repr_attrs__ = ["registry", "repo", "tag"]
-
-    @classmethod
-    def from_str(cls, full_str: str) -> Self:
-        repo_url, tag = full_str.rsplit(":", 1)
-        args = repo_url.rsplit("/", 2)
-        if len(args) == 3:
-            registry = ContainerImageRegistry.from_url(args[0])
-            repo = "/".join(args[1:])
-        else:
-            registry = None
-            repo = "/".join(args)
-        return cls(repo=repo, registry=registry, tag=tag)
-
-    @property
-    def repo_with_tag(self) -> str:
-        if self.repo or self.tag:
-            return f"{self.repo}:{self.tag}"
-        return None
-
-    @property
-    def full_name_with_tag(self) -> str:
-        if self.registry:
-            return f"{self.registry.url}/{self.repo}:{self.tag}"
-        else:
-            # default registry is always docker.io
-            return f"docker.io/{self.repo}:{self.tag}"
-
-    def __hash__(self) -> int:
-        return hash(self.repo + self.tag + str(hash(self.registry)))
-
-    def __str__(self) -> str:
-        return f"registry: {str(self.registry)}, repo: {self.repo}, tag: {self.tag}"
 
 
 @serializable()
@@ -124,6 +49,7 @@ class SyftWorkerImage(SyftObject):
     image_hash: Optional[str]
     created_at: DateTime = DateTime.now()
     created_by: SyftVerifyKey
+    built_at: Optional[DateTime]
 
 
 def build_using_docker(
@@ -150,6 +76,7 @@ def build_using_docker(
             forcerm=True,
         )
         worker_image.image_hash = result[0].id
+        worker_image.built_at = DateTime.now()
         log = parse_output(result[1])
         return worker_image, SyftSuccess(
             message=f"Build {worker_image} succeeded.\n{log}"

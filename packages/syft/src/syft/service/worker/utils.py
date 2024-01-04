@@ -1,9 +1,11 @@
 # stdlib
 import contextlib
+import os
 import socket
 import socketserver
 import sys
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -11,6 +13,7 @@ import docker
 
 # relative
 from ...abstract_node import AbstractNode
+from ...custom_worker.builder import CustomWorkerBuilder
 from ...custom_worker.config import DockerWorkerConfig
 from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
@@ -307,6 +310,42 @@ def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
         return WorkerHealth.HEALTHY
     else:
         return WorkerHealth.UNHEALTHY
+
+
+def docker_push(
+    image: SyftWorkerImage,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+) -> List[str]:
+    try:
+        builder = CustomWorkerBuilder()
+        result = builder.push_image(
+            tag=image.image_identifier.full_name_with_tag,
+            registry_url=image.image_identifier.registry_host,
+            username=username,
+            password=password,
+        )
+
+        parsed_result = result.split(os.linesep)
+
+        if "error" in result:
+            result = SyftError(
+                message=f"Failed to push {image.image_identifier}. Logs - {parsed_result}"
+            )
+
+        return parsed_result
+    except docker.errors.APIError as e:
+        return SyftError(
+            message=f"Docker API error when pushing {image.image_identifier}. {e}"
+        )
+    except docker.errors.DockerException as e:
+        return SyftError(
+            message=f"Docker exception when pushing {image.image_identifier}. Reason - {e}"
+        )
+    except Exception as e:
+        return SyftError(
+            message=f"Unknown exception when pushing {image.image_identifier}. Reason - {e}"
+        )
 
 
 DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu:0.0.1"
