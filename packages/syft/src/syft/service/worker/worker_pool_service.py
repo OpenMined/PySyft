@@ -64,6 +64,8 @@ class SyftWorkerPoolService(AbstractService):
         name: str,
         image_uid: Optional[UID],
         number: int,
+        reg_username: Optional[str] = None,
+        reg_password: Optional[str] = None,
     ) -> Union[List[ContainerSpawnStatus], SyftError]:
         """Creates a pool of workers from the given SyftWorkerImage.
 
@@ -111,6 +113,8 @@ class SyftWorkerPoolService(AbstractService):
             worker_cnt=number,
             worker_image=worker_image,
             worker_stash=self.worker_stash,
+            reg_username=reg_username,
+            reg_password=reg_username,
         )
 
         worker_pool = WorkerPool(
@@ -483,6 +487,8 @@ def _create_workers_in_pool(
     worker_cnt: int,
     worker_image: SyftWorkerImage,
     worker_stash: WorkerStash,
+    reg_username: Optional[str] = None,
+    reg_password: Optional[str] = None,
 ) -> Tuple[List[LinkedObject], List[ContainerSpawnStatus]]:
     queue_port = context.node.queue_config.client_config.queue_port
 
@@ -506,6 +512,9 @@ def _create_workers_in_pool(
             orchestration=WorkerOrchestrationType.DOCKER,
             queue_port=queue_port,
             dev_mode=context.node.dev_mode,
+            username=reg_username,
+            password=reg_password,
+            registry_url=worker_image.image_identifier.registry_host,
         )
 
     linked_worker_list = []

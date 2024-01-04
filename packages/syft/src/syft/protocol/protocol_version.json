@@ -957,7 +957,7 @@
       "SyftWorkerImage": {
         "1": {
           "version": 1,
-          "hash": "abfca84237a47aab399970a0a1ad747bb7c0f325944b6647be38050e1e0ac697",
+          "hash": "2a9585b6a286e24f1a9f3f943d0128730cf853edc549184dc1809d19e1eec54b",
           "action": "add"
         }
       },
@@ -1059,6 +1059,13 @@
         "1": {
           "version": 1,
           "hash": "3644c2caf4c01499e23b4e94d6a41fed0e39ce63c7fc5318c4e205cae9555308",
+          "action": "add"
+        }
+      },
+      "SyftImageRegistry": {
+        "1": {
+          "version": 1,
+          "hash": "dc83910c91947e3d9eaa3e6f8592237448f0408668c7cca80450b5fcd54722e1",
           "action": "add"
         }
       }

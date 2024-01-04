@@ -14,7 +14,7 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ..response import SyftSuccess
-from .worker_image import SyftImageRegistry
+from .image_registry import SyftImageRegistry
 
 __all__ = ["SyftImageRegistryStash"]
 

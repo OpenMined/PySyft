@@ -43,13 +43,13 @@ class CustomWorkerBuilder:
         """
 
         if isinstance(config, DockerWorkerConfig):
-            return self._build_dockerfile(config, tag)
+            return self._build_dockerfile(config, tag, **kwargs)
         elif isinstance(config, CustomWorkerConfig):
             return self._build_template(config, **kwargs)
         else:
             raise TypeError("Unknown worker config type")
 
-    def push_image(self, tag: str, **kwargs: Any) -> Any:
+    def push_image(self, tag: str, **kwargs: Any) -> str:
         """
         Pushes a Docker image to the given repo.
         Args:
@@ -59,15 +59,12 @@ class CustomWorkerBuilder:
 
         return self._push_image(tag, **kwargs)
 
-    def _build_dockerfile(self, config: DockerWorkerConfig, tag: str):
+    def _build_dockerfile(self, config: DockerWorkerConfig, tag: str, **kwargs):
         print("Building with provided dockerfile")
 
         # convert string to file-like object
         file_obj = io.BytesIO(config.dockerfile.encode("utf-8"))
-        return self._build_image(
-            fileobj=file_obj,
-            tag=tag,
-        )
+        return self._build_image(fileobj=file_obj, tag=tag, **kwargs)
 
     def _build_template(self, config: CustomWorkerConfig, **kwargs: Any):
         # Builds a Docker pre-made CPU/GPU image template using a CustomWorkerConfig
@@ -110,7 +107,6 @@ class CustomWorkerBuilder:
                 tag=tag,
                 pull=True,
                 rm=True,
-                forcerm=True,
                 timeout=self.BUILD_MAX_WAIT,
                 **build_opts,
             )

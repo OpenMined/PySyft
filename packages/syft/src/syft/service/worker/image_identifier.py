@@ -1,5 +1,6 @@
 # stdlib
 from typing import Optional
+from typing import Tuple
 
 # third party
 from typing_extensions import Self
@@ -49,6 +50,20 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
         """Build a SyftWorkerImageTag from a pure-string standard Docker tag."""
         registry, repo, tag = SyftWorkerImageIdentifier.parse_str(tag)
         return cls(repo=repo, registry=registry, tag=tag)
+
+    @staticmethod
+    def parse_str(tag: str) -> Tuple[Optional[str], str, str]:
+        url, tag = tag.rsplit(":", 1)
+        args = url.rsplit("/", 2)
+
+        if len(args) == 3:
+            registry = args[0]
+            repo = "/".join(args[1:])
+        else:
+            registry = None
+            repo = "/".join(args)
+
+        return registry, repo, tag
 
     @property
     def repo_with_tag(self) -> str:

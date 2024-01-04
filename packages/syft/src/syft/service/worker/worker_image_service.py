@@ -13,6 +13,7 @@ import pydantic
 from ...custom_worker.config import DockerWorkerConfig
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..context import AuthedServiceContext
@@ -21,12 +22,12 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
+from .image_registry import SyftImageRegistry
 from .image_registry_service import SyftImageRegistryService
+from .utils import docker_build
 from .utils import docker_push
-from .worker_image import SyftImageRegistry
 from .worker_image import SyftWorkerImage
 from .worker_image import SyftWorkerImageIdentifier
-from .worker_image import build_using_docker
 from .worker_image_stash import SyftWorkerImageStash
 
 
@@ -72,9 +73,10 @@ class SyftWorkerImageService(AbstractService):
         context: AuthedServiceContext,
         image_uid: UID,
         tag: str,
-        push: bool = False,
         registry_uid: Optional[UID] = None,
     ) -> Union[SyftSuccess, SyftError]:
+        registry: SyftImageRegistry = None
+
         result = self.stash.get_by_uid(credentials=context.credentials, uid=image_uid)
         if result.is_err():
             return SyftError(
@@ -82,8 +84,6 @@ class SyftWorkerImageService(AbstractService):
             )
 
         worker_image: SyftWorkerImage = result.ok()
-        if worker_image.built_at:
-            return SyftError(message=f"Image<{image_uid}> is already built")
 
         if registry_uid:
             # get registry from image registry service
@@ -105,18 +105,28 @@ class SyftWorkerImageService(AbstractService):
         except pydantic.ValidationError as e:
             return SyftError(message=f"Failed to create tag: {e}")
 
+        # if image is already built and identifier is unchanged, return an error
+        if (
+            worker_image.built_at
+            and worker_image.image_identifier
+            and worker_image.image_identifier.full_name_with_tag
+            == image_identifier.full_name_with_tag
+        ):
+            return SyftError(message=f"Image<{image_uid}> is already built")
+
         worker_image.image_identifier = image_identifier
 
         if not context.node.in_memory_workers:
-            with contextlib.closing(docker.from_env()) as client:
-                worker_image, result = build_using_docker(
-                    client=client,
-                    worker_image=worker_image,
-                    push=push,
-                    dev_mode=context.node.dev_mode,
-                )
+            result = docker_build(worker_image)
             if isinstance(result, SyftError):
                 return result
+
+            worker_image.image_hash = result.image_hash
+            worker_image.built_at = DateTime.now()
+
+            result = SyftSuccess(
+                message=f"Build {worker_image} succeeded.\n{result.logs}"
+            )
         else:
             result = SyftSuccess(
                 message="Image building skipped, since using InMemory workers."
@@ -143,6 +153,11 @@ class SyftWorkerImageService(AbstractService):
         username: Optional[str] = None,
         password: Optional[str] = None,
     ) -> Union[SyftSuccess, SyftError]:
+        if context.node.in_memory_workers:
+            return SyftSuccess(
+                message="Skipped pushing image, since using InMemory workers."
+            )
+
         result = self.stash.get_by_uid(credentials=context.credentials, uid=image)
         if result.is_err():
             return SyftError(
@@ -150,7 +165,14 @@ class SyftWorkerImageService(AbstractService):
             )
         worker_image: SyftWorkerImage = result.ok()
 
-        if worker_image.built_at is None:
+        if (
+            worker_image.image_identifier is None
+            or worker_image.image_identifier.registry_host == ""
+        ):
+            return SyftError(
+                message=f"Image {worker_image} does not have a valid registry host."
+            )
+        elif worker_image.built_at is None:
             return SyftError(
                 message=f"Image {worker_image} is not built yet. Please build it first."
             )
@@ -160,6 +182,10 @@ class SyftWorkerImageService(AbstractService):
             username=username,
             password=password,
         )
+
+        if isinstance(result, SyftError):
+            return result
+
         return SyftSuccess(
             message=f'The image was successfully pushed to "{worker_image.image_identifier.full_name_with_tag}"'
         )

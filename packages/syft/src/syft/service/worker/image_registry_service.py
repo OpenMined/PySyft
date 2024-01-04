@@ -14,8 +14,8 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
+from .image_registry import SyftImageRegistry
 from .image_registry_stash import SyftImageRegistryStash
-from .worker_image import SyftImageRegistry
 
 __all__ = ["SyftImageRegistryService"]
 
@@ -38,14 +38,14 @@ class SyftImageRegistryService(AbstractService):
         self,
         context: AuthedServiceContext,
         url: str,
-    ) -> Union[SyftImageRegistry, SyftError]:
+    ) -> Union[SyftSuccess, SyftError]:
         registry = SyftImageRegistry.from_url(url)
         res = self.stash.set(context.credentials, registry)
 
         if res.is_err():
             return SyftError(message=res.err())
 
-        return registry
+        return SyftSuccess(f"Image registry <id: {registry.id}> created successfully")
 
     @service_method(
         path="image_registry.delete",
