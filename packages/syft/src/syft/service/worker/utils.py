@@ -1,16 +1,22 @@
 # stdlib
 import contextlib
+import json
+import os
 import socket
 import socketserver
 import sys
+from typing import Iterable
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
 import docker
+from pydantic import BaseModel
 
 # relative
 from ...abstract_node import AbstractNode
+from ...custom_worker.builder import CustomWorkerBuilder
 from ...custom_worker.config import DockerWorkerConfig
 from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
@@ -23,6 +29,14 @@ from .worker_pool import SyftWorker
 from .worker_pool import WorkerHealth
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerStatus
+
+DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu:0.0.1"
+DEFAULT_WORKER_POOL_NAME = "default-pool"
+
+
+class ImageBuildResult(BaseModel):
+    image_hash: str
+    logs: Iterable[str]
 
 
 def backend_container_name() -> str:
@@ -91,6 +105,9 @@ def run_container_using_docker(
     pool_name: str,
     queue_port: int,
     debug: bool = False,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    registry_url: Optional[str] = None,
 ) -> ContainerSpawnStatus:
     # Get hostname
     hostname = socket.gethostname()
@@ -106,6 +123,15 @@ def run_container_using_docker(
     error_message = None
     worker = None
     try:
+        # login to the registry through the client
+        # so that the subsequent pull/run commands work
+        if registry_url and username and password:
+            docker_client.login(
+                username=username,
+                password=password,
+                registry=registry_url,
+            )
+
         # If container with given name already exists then stop it
         # and recreate it.
         existing_container = get_container(
@@ -232,6 +258,9 @@ def run_containers(
     queue_port: int,
     dev_mode: bool = False,
     start_idx: int = 0,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    registry_url: Optional[str] = None,
 ) -> List[ContainerSpawnStatus]:
     results = []
 
@@ -249,6 +278,9 @@ def run_containers(
                 pool_name=pool_name,
                 queue_port=queue_port,
                 debug=dev_mode,
+                username=username,
+                password=password,
+                registry_url=registry_url,
             )
             results.append(spawn_result)
 
@@ -285,7 +317,10 @@ def create_default_image(
     """
     worker_config = DockerWorkerConfig(dockerfile=default_cpu_dockerfile)
 
-    result = image_stash.get_by_docker_config(credentials, worker_config)
+    result = image_stash.get_by_docker_config(
+        credentials=credentials,
+        config=worker_config,
+    )
 
     if result.ok() is None:
         default_syft_image = SyftWorkerImage(
@@ -309,5 +344,76 @@ def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
         return WorkerHealth.UNHEALTHY
 
 
-DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu:0.0.1"
-DEFAULT_WORKER_POOL_NAME = "default-pool"
+def docker_build(
+    image: SyftWorkerImage, **kwargs
+) -> Union[ImageBuildResult, SyftError]:
+    try:
+        builder = CustomWorkerBuilder()
+        (built_image, logs) = builder.build_image(
+            config=image.config,
+            tag=image.image_identifier.full_name_with_tag,
+            rm=True,
+            forcerm=True,
+            **kwargs,
+        )
+        return ImageBuildResult(image_hash=built_image.id, logs=parse_output(logs))
+    except docker.errors.APIError as e:
+        return SyftError(
+            message=f"Docker API error when building {image.image_tag}. Reason - {e}"
+        )
+    except docker.errors.DockerException as e:
+        return SyftError(
+            message=f"Docker exception when building {image.image_tag}. Reason - {e}"
+        )
+    except Exception as e:
+        return SyftError(
+            message=f"Unknown exception when building {image.image_tag}. Reason - {e}"
+        )
+
+
+def docker_push(
+    image: SyftWorkerImage,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+) -> Union[List[str], SyftError]:
+    try:
+        builder = CustomWorkerBuilder()
+        result = builder.push_image(
+            # this should be consistent with docker build command
+            tag=image.image_identifier.full_name_with_tag,
+            registry_url=image.image_identifier.registry_host,
+            username=username,
+            password=password,
+        )
+
+        if "error" in result:
+            return SyftError(
+                message=f"Failed to push {image.image_identifier}. Logs - {result}"
+            )
+
+        return result.split(os.linesep)
+    except docker.errors.APIError as e:
+        return SyftError(
+            message=f"Docker API error when pushing {image.image_identifier}. {e}"
+        )
+    except docker.errors.DockerException as e:
+        return SyftError(
+            message=f"Docker exception when pushing {image.image_identifier}. Reason - {e}"
+        )
+    except Exception as e:
+        return SyftError(
+            message=f"Unknown exception when pushing {image.image_identifier}. Reason - {e}"
+        )
+
+
+def parse_output(log_iterator: Iterable) -> str:
+    log = ""
+    for line in log_iterator:
+        for item in line.values():
+            if isinstance(item, str):
+                log += item
+            elif isinstance(item, dict):
+                log += json.dumps(item)
+            else:
+                log += str(item)
+    return log

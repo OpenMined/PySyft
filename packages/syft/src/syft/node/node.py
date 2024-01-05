@@ -95,6 +95,7 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
+from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ..service.worker.utils import create_default_image
@@ -317,6 +318,7 @@ class Node(AbstractNode):
                 MigrateStateService,
                 SyftWorkerImageService,
                 SyftWorkerPoolService,
+                SyftImageRegistryService,
             ]
             if services is None
             else services
@@ -870,6 +872,7 @@ class Node(AbstractNode):
                 MigrateStateService,
                 SyftWorkerImageService,
                 SyftWorkerPoolService,
+                SyftImageRegistryService,
             ]
 
             if OBLV:
@@ -1434,7 +1437,7 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
 
     # Build the Image for given tag
     result = image_build_method(
-        context, uid=default_image.id, tag=DEFAULT_WORKER_IMAGE_TAG
+        context, image_uid=default_image.id, tag=DEFAULT_WORKER_IMAGE_TAG
     )
 
     if isinstance(result, SyftError):
