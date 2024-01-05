@@ -8,7 +8,7 @@ pipelines:
     run: |-
       run_dependencies --all       # 1. Deploy any projects this project needs (see "dependencies")
       ensure_pull_secrets --all    # 2. Ensure pull secrets
-      create_deployments syft_dev  # 3. Deploy Helm charts and manifests specfied as "deployments"
+      create_deployments syft-dev  # 3. Deploy Helm charts and manifests specfied as "deployments"
       start_dev --all              # 4. Start dev mode "app" (see "dev" section)
   # You can run this pipeline via `devspace deploy` (or `devspace run-pipeline deploy`)
   deploy:
@@ -16,7 +16,7 @@ pipelines:
       run_dependencies --all
       ensure_pull_secrets --all
       build_images --all
-      create_deployments syft_production
+      create_deployments syft-production
 
 vars:
   DEVSPACE_ENV_FILE: "default.env"
@@ -62,7 +62,7 @@ images:
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
-  syft_production:
+  syft-production:
     helm:
       chart:
         name: ./helm/syft
@@ -75,7 +75,7 @@ deployments:
             nodeName: ${NODE_NAME}
             nodeType: ${NODE_TYPE}
 
-  syft_dev:
+  syft-dev:
     helm:
       chart:
         name: ./helm/syft
