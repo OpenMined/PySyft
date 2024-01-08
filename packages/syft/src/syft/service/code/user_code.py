@@ -29,12 +29,9 @@ from typing_extensions import Self
 
 # relative
 from ...abstract_node import NodeType
-from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
-from ...client.client import PythonConnection
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
-from ...protocol.data_protocol import get_data_protocol
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
@@ -994,7 +991,7 @@ class SecureContext:
         node = context.node
         job_service = node.get_service("jobservice")
         action_service = node.get_service("actionservice")
-        user_service = node.get_service("userservice")
+        # user_service = node.get_service("userservice")
 
         def job_set_n_iters(n_iters):
             job = context.job
@@ -1150,7 +1147,6 @@ def execute_byte_code(
         # We only need access to local kwargs
         _locals = {"kwargs": kwargs}
         _globals = {}
-        
 
         for service_func_name, (linked_obj, _) in code_item.nested_codes.items():
             code_obj = linked_obj.resolve_with_context(context=context)
