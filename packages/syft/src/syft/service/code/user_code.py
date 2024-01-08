@@ -1147,8 +1147,12 @@ def execute_byte_code(
         # statisfy lint checker
         result = None
 
-        _locals = locals()
+        # We only need access to local kwargs
+        _locals = {"kwargs": kwargs}
         _globals = {}
+        
+        original_print("Test")
+
 
         for service_func_name, (linked_obj, _) in code_item.nested_codes.items():
             code_obj = linked_obj.resolve_with_context(context=context)
@@ -1156,9 +1160,10 @@ def execute_byte_code(
                 raise Exception(code_obj.err())
             _globals[service_func_name] = code_obj.ok()
         _globals["print"] = print
-        exec(code_item.parsed_code, _globals, locals())  # nosec
+        exec(code_item.parsed_code, _globals, _locals)  # nosec
 
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
+        original_print(kwargs)
         try:
             result = eval(evil_string, _globals, _locals)  # nosec
         except Exception as e:
@@ -1170,6 +1175,7 @@ def execute_byte_code(
                 )
                 log_service = context.node.get_service("LogService")
                 log_service.append(context=context, uid=log_id, new_err=error_msg)
+            original_print(e)
 
             result = Err(
                 f"Exception encountered while running {code_item.service_func_name}"
