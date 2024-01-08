@@ -20,6 +20,7 @@ from ...types.blob_storage import BlobFileType
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import BlobStorageMetadata
 from ...types.blob_storage import CreateBlobStorageEntry
+from ...types.blob_storage import SeaweedSecureFilePathLocation
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -63,6 +64,7 @@ class BlobStorageService(AbstractService):
         account_key: str,
         container_name: str,
         bucket_name: str,
+        use_direct_connections=True,
     ):
         # stdlib
 
@@ -105,14 +107,22 @@ class BlobStorageService(AbstractService):
         objects = res["Contents"]
         file_sizes = [object["Size"] for object in objects]
         file_paths = [object["Key"] for object in objects]
-        secure_file_paths = [
-            AzureSecureFilePathLocation(
-                path=file_path,
-                azure_profile_name=remote_name,
-                bucket_name=bucket_name,
-            )
-            for file_path in file_paths
-        ]
+        if use_direct_connections:
+            secure_file_paths = [
+                AzureSecureFilePathLocation(
+                    path=file_path,
+                    azure_profile_name=remote_name,
+                    bucket_name=bucket_name,
+                )
+                for file_path in file_paths
+            ]
+        else:
+            secure_file_paths = [
+                SeaweedSecureFilePathLocation(
+                    path=file_path,
+                )
+                for file_path in file_paths
+            ]
 
         for sfp, file_size in zip(secure_file_paths, file_sizes):
             blob_storage_entry = BlobStorageEntry(
