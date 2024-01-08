@@ -51,8 +51,6 @@ from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
-from ..job.error_report import ErrorReport
-from ..job.error_report import ErrorReportReason
 from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -457,36 +455,6 @@ class Request(SyftObject):
 
         save_method = context.node.get_service_method(RequestService.save)
         return save_method(context=context, request=self)
-
-    def submit_error_report(
-        self,
-        reason: ErrorReportReason,
-        description: Optional[str] = None,
-        traceback: Optional[str] = None,
-    ) -> ErrorReport:
-        # Ask for traceback confirmation
-        if traceback is not None:
-            traceback = traceback.strip()
-            if traceback:
-                # Print traceback
-                print("Please review the traceback below:")
-                print("--------------------")
-                print(traceback)
-                print("--------------------")
-                print()
-                traceback_confirmation = input(
-                    "Are you sure you want to submit the traceback? (y/N) "
-                )
-                if traceback_confirmation.lower() != "y":
-                    traceback = None
-                    print("Omitted traceback from error report")
-
-        # Create error report
-        return ErrorReport(
-            reason=reason,
-            description=description,
-            traceback=traceback,
-        )
 
     def accept_by_depositing_result(self, result: Any, force: bool = False):
         # this code is extremely brittle because its a work around that relies on
