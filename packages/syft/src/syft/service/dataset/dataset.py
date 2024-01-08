@@ -755,7 +755,6 @@ def infer_shape(context: TransformContext) -> TransformContext:
     if context.output["shape"] is None:
         if not _is_action_data_empty(context.obj.mock):
             context.output["shape"] = get_shape_or_len(context.obj.mock)
-    print(context.output["shape"])
     return context
 
 
