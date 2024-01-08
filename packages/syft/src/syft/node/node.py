@@ -1141,14 +1141,24 @@ class Node(AbstractNode):
         return result
 
     def add_action_to_queue(
-        self, action, credentials, parent_job_id=None, has_execute_permissions=False
+        self,
+        action,
+        credentials,
+        parent_job_id=None,
+        has_execute_permissions: bool = False,
+        worker_pool_id: Optional[UID] = None,
     ):
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(node=self)
-        default_worker_pool = self.get_default_worker_pool()
-        worker_pool = LinkedObject.from_obj(
-            default_worker_pool,
+
+        if worker_pool_id is None:
+            worker_pool = self.get_default_worker_pool()
+        else:
+            worker_pool = self.pool_stash.get_by_uid(credentials, worker_pool_id)
+
+        worker_pool_ref = LinkedObject.from_obj(
+            worker_pool,
             service_type=SyftWorkerPoolService,
             node_uid=self.id,
         )
@@ -1163,7 +1173,7 @@ class Node(AbstractNode):
             args=[],
             kwargs={"action": action},
             has_execute_permissions=has_execute_permissions,
-            worker_pool=worker_pool,
+            worker_pool=worker_pool_ref,
         )
         return self.add_queueitem_to_queue(
             queue_item, credentials, action, parent_job_id
@@ -1259,9 +1269,12 @@ class Node(AbstractNode):
                 parent_job_id=parent_job_id,
             )
 
+    @property
+    def pool_stash(self):
+        return self.get_service(SyftWorkerPoolService).stash
+
     def get_default_worker_pool(self):
-        pool_stash = self.get_service(SyftWorkerPoolService).stash
-        result = pool_stash.get_by_name(
+        result = self.pool_stash.get_by_name(
             credentials=self.verify_key, pool_name=DEFAULT_WORKER_POOL_NAME
         )
         return result.ok()
