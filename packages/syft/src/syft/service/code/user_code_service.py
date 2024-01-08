@@ -25,6 +25,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..network.routes import route_to_connection
+from ..request.request import Request
 from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
@@ -71,6 +72,20 @@ class UserCodeService(AbstractService):
             code = code.to(UserCode, context=context)
         result = self.stash.set(context.credentials, code)
         return result
+
+    @service_method(
+        path="code.submit_as_request", name="submit_as_request", roles=GUEST_ROLE_LEVEL
+    )
+    def submit_as_request(self, context: AuthedServiceContext, request: Request):
+        user_code = request.code
+        if isinstance(user_code, SyftError):
+            return user_code
+
+        result = self._submit(context=context, code=user_code)
+
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        SyftSuccess(message="User Code Submitted")
 
     @service_method(
         path="code.get_by_service_func_name",

@@ -58,6 +58,26 @@ class JobService(AbstractService):
             return res
 
     @service_method(
+        path="job.get_by_user_code_id",
+        name="get_by_user_code_id",
+    )
+    def get_by_user_code_id(
+        self, context: AuthedServiceContext, user_code_id: UID
+    ) -> Union[List[Job], SyftError]:
+        all_jobs = self.stash.get_all(context.credentials)
+        if all_jobs.is_err():
+            return SyftError(message=all_jobs.err())
+
+        all_jobs = all_jobs.ok()
+
+        res = []
+        for job in all_jobs:
+            if job.action is not None and job.action.user_code_id == user_code_id:
+                res.append(job)
+
+        return res
+
+    @service_method(
         path="job.restart",
         name="restart",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
