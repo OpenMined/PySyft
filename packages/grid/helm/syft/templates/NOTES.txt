@@ -1,0 +1,131 @@
+
+    Thank you for installing {{ .Chart.Name }}.
+    Your release is named {{ .Release.Name }}.
+    To learn more about the release, try:
+
+        $ helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
+        $ helm get all {{ .Release.Name }}
+
+
+    Following class versions are either added/removed.
+
+    {
+    "SyftWorkerImage": {
+        "1": {
+            "version": 1,
+            "hash": "2a9585b6a286e24f1a9f3f943d0128730cf853edc549184dc1809d19e1eec54b",
+            "action": "add"
+        }
+    },
+    "ActionDataLink": {
+        "1": {
+            "version": 1,
+            "hash": "10bf94e99637695f1ba283f0b10e70743a4ebcb9ee75aefb1a05e6d6e1d21a71",
+            "action": "add"
+        }
+    },
+    "ObjectNotReady": {
+        "1": {
+            "version": 1,
+            "hash": "88207988639b11eaca686b6e079616d9caecc3dbc2a8112258e0f39ee5c3e113",
+            "action": "add"
+        }
+    },
+    "JobItem": {
+        "3": {
+            "version": 3,
+            "hash": "7293ce8bf17bc7420b764bc32fd89512ecbfa045f12db0513904794a6b000581",
+            "action": "add"
+        }
+    },
+    "SeaweedSecureFilePathLocation": {
+        "2": {
+            "version": 2,
+            "hash": "3ca49db7536a33d5712485164e95406000df9af2aed78e9f9fa2bb2bbbb34fe6",
+            "action": "add"
+        }
+    },
+    "AzureSecureFilePathLocation": {
+        "1": {
+            "version": 1,
+            "hash": "1bb15f3f9d7082779f1c9f58de94011487924cb8a8c9c2ec18fd7c161c27fd0e",
+            "action": "add"
+        }
+    },
+    "RemoteConfig": {
+        "1": {
+            "version": 1,
+            "hash": "ad7bc4780a8ad52e14ce68601852c93d2fe07bda489809cad7cae786d2461754",
+            "action": "add"
+        }
+    },
+    "AzureRemoteConfig": {
+        "1": {
+            "version": 1,
+            "hash": "c05c6caa27db4e385c642536d4b0ecabc0c71e91220d2e6ce21a2761ca68a673",
+            "action": "add"
+        }
+    },
+    "BlobRetrievalByURL": {
+        "2": {
+            "version": 2,
+            "hash": "8059ee03016c4d74e408dad9529e877f91829672e0cc42d8cfff9c8e14058adc",
+            "action": "remove"
+        },
+        "3": {
+            "version": 3,
+            "hash": "0b664100ea08413ca4ef04665ca910c2cf9535539617ea4ba33687d05cdfe747",
+            "action": "add"
+        }
+    },
+    "QueueItem": {
+        "3": {
+            "version": 3,
+            "hash": "3495f406d2c97050ce86be80c230f49b6b846c63b9a9230cbd6631952f2bad0f",
+            "action": "add"
+        }
+    },
+    "ActionQueueItem": {
+        "2": {
+            "version": 2,
+            "hash": "6413ed01e949cac169299a43ce40651f9bf8053e408b6942853f8afa8a693b3d",
+            "action": "add"
+        }
+    },
+    "ZMQClientConfig": {
+        "2": {
+            "version": 2,
+            "hash": "0f9bc88d56cd6eed6fc75459d1f914aed840c66e1195b9e41cc501b488fef2ed",
+            "action": "remove"
+        },
+        "3": {
+            "version": 3,
+            "hash": "91ce5953cced58e12c576aa5174d5ca0c91981b01cf42edd5283d347baa3390b",
+            "action": "add"
+        }
+    },
+    "SyftWorker": {
+        "1": {
+            "version": 1,
+            "hash": "0d5b367162f3ce55ab090cc1b49bd30e50d4eb144e8431eadc679bd0e743aa70",
+            "action": "add"
+        }
+    },
+    "WorkerPool": {
+        "1": {
+            "version": 1,
+            "hash": "3644c2caf4c01499e23b4e94d6a41fed0e39ce63c7fc5318c4e205cae9555308",
+            "action": "add"
+        }
+    },
+    "SyftImageRegistry": {
+        "1": {
+            "version": 1,
+            "hash": "dc83910c91947e3d9eaa3e6f8592237448f0408668c7cca80450b5fcd54722e1",
+            "action": "add"
+        }
+    }
+}
+
+    This means the existing data will be automatically be migrated to
+    their latest class versions during the upgrade.

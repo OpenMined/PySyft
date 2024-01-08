@@ -229,6 +229,11 @@ def clean(location: str) -> None:
     help="Enable Jupyter Notebooks",
 )
 @click.option(
+    "--in-mem-workers",
+    is_flag=True,
+    help="Enable InMemory Workers",
+)
+@click.option(
     "--enable-signup",
     is_flag=True,
     help="Enable Signup for Node",
@@ -1248,6 +1253,8 @@ def create_launch_cmd(
 
     parsed_kwargs["use_blob_storage"] = not bool(kwargs["no_blob_storage"])
 
+    parsed_kwargs["in_mem_workers"] = bool(kwargs["in_mem_workers"])
+
     if parsed_kwargs["use_blob_storage"]:
         parsed_kwargs["set_s3_username"] = kwargs["set_s3_username"]
         parsed_kwargs["set_s3_password"] = kwargs["set_s3_password"]
@@ -2140,6 +2147,7 @@ def create_launch_docker_cmd(
         )
 
     single_container_mode = kwargs["deployment_type"] == "single_container"
+    in_mem_workers = kwargs.get("in_mem_workers")
 
     enable_oblv = bool(kwargs["oblv"])
     print("  - NAME: " + str(snake_name))
@@ -2158,6 +2166,7 @@ def create_launch_docker_cmd(
         print("  - HAGRID_REPO_SHA: " + commit_hash())
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
+    print("  - IN-MEMORY WORKERS: " + str(in_mem_workers))
     if enable_oblv:
         print("  - OBLV: ", enable_oblv)
 
@@ -2202,6 +2211,7 @@ def create_launch_docker_cmd(
         "CREDENTIALS_VOLUME": host_path,
         "NODE_SIDE_TYPE": kwargs["node_side_type"],
         "SINGLE_CONTAINER_MODE": single_container_mode,
+        "INMEMORY_WORKERS": in_mem_workers,
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:

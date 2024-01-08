@@ -1,30 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    helm.sh/chart: component-chart-0.9.1
   labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
     app.kubernetes.io/component: proxy
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: devspace-app
   name: proxy
 spec:
   replicas: 1
   selector:
     matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
       app.kubernetes.io/component: proxy
       app.kubernetes.io/managed-by: Helm
-      app.kubernetes.io/name: devspace-app
   strategy:
     type: Recreate
   template:
     metadata:
-      annotations:
-        helm.sh/chart: component-chart-0.9.1
       labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
         app.kubernetes.io/component: proxy
         app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: devspace-app
     spec:
       affinity: null
       containers:

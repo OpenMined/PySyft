@@ -2,11 +2,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    helm.sh/chart: component-chart-0.9.1
   labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: seaweedfs
   name: seaweedfs
 spec:
   externalIPs: null
@@ -19,8 +18,12 @@ spec:
     port: 8333
     protocol: TCP
     targetPort: 8333
+  - name: port-2
+    port: 4001
+    protocol: TCP
+    targetPort: 4001
   selector:
+    app.kubernetes.io/name: {{ .Chart.Name }}
     app.kubernetes.io/component: seaweedfs
-    app.kubernetes.io/name: devspace-app
   type: ClusterIP
 {{ end }}
