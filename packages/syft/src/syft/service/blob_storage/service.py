@@ -15,11 +15,11 @@ from ...store.blob_storage.on_disk import OnDiskBlobDeposit
 from ...store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ...store.document_store import DocumentStore
 from ...store.document_store import UIDPartitionKey
+from ...types.blob_storage import AzureSecureFilePathLocation
 from ...types.blob_storage import BlobFileType
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import BlobStorageMetadata
 from ...types.blob_storage import CreateBlobStorageEntry
-from ...types.blob_storage import SecureFilePathLocation
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -28,6 +28,8 @@ from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from .remote_profile import AzureRemoteProfile
+from .remote_profile import RemoteProfileStash
 from .stash import BlobStorageStash
 
 BlobDepositType = Union[OnDiskBlobDeposit, SeaweedFSBlobDeposit]
@@ -37,10 +39,12 @@ BlobDepositType = Union[OnDiskBlobDeposit, SeaweedFSBlobDeposit]
 class BlobStorageService(AbstractService):
     store: DocumentStore
     stash: BlobStorageStash
+    remote_profile_stash: RemoteProfileStash
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = BlobStorageStash(store=store)
+        self.remote_profile_stash = RemoteProfileStash(store=store)
 
     @service_method(path="blob_storage.get_all", name="get_all")
     def get_all_blob_storage_entries(
@@ -61,34 +65,53 @@ class BlobStorageService(AbstractService):
         bucket_name: str,
     ):
         # stdlib
-        import sys
 
         # TODO: fix arguments
 
+        remote_name = f"{account_name}{container_name}"
+        remote_name = "".join(ch for ch in remote_name if ch.isalnum())
         args_dict = {
             "account_name": account_name,
             "account_key": account_key,
             "container_name": container_name,
-            "remote_name": f"{account_name}{container_name}",
+            "remote_name": remote_name,
             "bucket_name": bucket_name,
         }
+
+        new_profile = AzureRemoteProfile(
+            profile_name=remote_name,
+            account_name=account_name,
+            account_key=account_key,
+            container_name=container_name,
+        )
+        res = self.remote_profile_stash.set(context.credentials, new_profile)
+        if res.is_err():
+            return SyftError(message=res.value)
+        remote_profile = res.ok()
+        seaweed_config = context.node.blob_storage_client.config
+        # we cache this here such that we can use it when reading a file from azure
+        # from the remote_name
+        seaweed_config.remote_profiles[remote_name] = remote_profile
+
         # TODO: possible wrap this in try catch
         cfg = context.node.blob_store_config.client_config
         init_request = requests.post(url=cfg.mount_url, json=args_dict)  # nosec
         print(init_request.content)
         # TODO check return code
-
-        print(bucket_name, file=sys.stderr)
-
         res = context.node.blob_storage_client.connect().client.list_objects(
             Bucket=bucket_name
         )
-        print(res)
+        # stdlib
         objects = res["Contents"]
         file_sizes = [object["Size"] for object in objects]
         file_paths = [object["Key"] for object in objects]
         secure_file_paths = [
-            SecureFilePathLocation(path=file_path) for file_path in file_paths
+            AzureSecureFilePathLocation(
+                path=file_path,
+                azure_profile_name=remote_name,
+                bucket_name=bucket_name,
+            )
+            for file_path in file_paths
         ]
 
         for sfp, file_size in zip(secure_file_paths, file_sizes):
@@ -112,12 +135,17 @@ class BlobStorageService(AbstractService):
             return result
         bse_list = result.ok()
         # stdlib
-        import sys
 
-        print(bse_list, file=sys.stderr)
         blob_files = []
         for bse in bse_list:
             self.stash.set(obj=bse, credentials=context.credentials)
+            # We create an empty ActionObject and set its blob_storage_entry_id to bse.id
+            # such that we can call reload_cache which creates
+            # the BlobRetrieval (user needs permission to do this)
+            # This could be a BlobRetrievalByURL that creates a BlobFile
+            # and then sets it in the cache (it does not contain the data, only the BlobFile).
+            # In the client, when reading the file, we will creates **another**, blobretrieval
+            # object to read the actual data
             blob_file = ActionObject.empty()
             blob_file.syft_blob_storage_entry_id = bse.id
             blob_file.syft_client_verify_key = context.credentials
@@ -146,6 +174,7 @@ class BlobStorageService(AbstractService):
             return blob_storage_entry.to(BlobStorageMetadata)
         return SyftError(message=result.err())
 
+    # TODO: replace name with `create_blob_retrieval`
     @service_method(
         path="blob_storage.read",
         name="read",

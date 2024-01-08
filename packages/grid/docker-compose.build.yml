@@ -15,10 +15,16 @@ services:
       target: "backend"
     profiles:
       - backend
+
   seaweedfs:
     build:
       context: ${RELATIVE_PATH}./seaweedfs
       dockerfile: seaweedfs.dockerfile
+      args:
+        - SEAWEEDFS_VERSION=${SEAWEEDFS_VERSION}
+    profiles:
+      - blob-storage
+
   worker:
     build:
       context: ${RELATIVE_PATH}../

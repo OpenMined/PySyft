@@ -7,7 +7,7 @@ services:
   #   image: rabbitmq:${RABBITMQ_VERSION?Variable not Set}${RABBITMQ_MANAGEMENT:-}
 
   seaweedfs:
-    image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}:${SEAWEEDFS_VERSION}"
+    image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}:${VERSION-latest}"
     profiles:
       - blob-storage
 

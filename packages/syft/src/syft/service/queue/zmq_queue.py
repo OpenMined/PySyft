@@ -1,8 +1,8 @@
 # stdlib
 # stdlib
-from collections import OrderedDict
+from binascii import hexlify
 from collections import defaultdict
-from random import randint
+import itertools
 import socketserver
 import threading
 import time
@@ -15,23 +15,30 @@ from typing import Optional
 from typing import Union
 
 # third party
+from zmq import Frame
 from zmq import LINGER
 from zmq.error import ContextTerminated
 import zmq.green as zmq
 
 # relative
+from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
+from ...serde.serialize import _serialize as serialize
 from ...service.action.action_object import ActionObject
 from ...service.context import AuthedServiceContext
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import UID
+from ...util.util import get_queue_address
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..worker.worker_pool import ConsumerState
+from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
 from .base_queue import QueueClient
 from .base_queue import QueueClientConfig
@@ -41,14 +48,24 @@ from .base_queue import QueueProducer
 from .queue_stash import ActionQueueItem
 from .queue_stash import Status
 
-HEARTBEAT_LIVENESS = 3
-HEARTBEAT_INTERVAL = 1
+HEARTBEAT_LIVENESS = 30  # second
+HEARTBEAT_INTERVAL = 2500  # msec
+HEARTBEAT_EXPIRY = HEARTBEAT_INTERVAL * HEARTBEAT_LIVENESS
+RECONNECT_INTERVAL = 2
 INTERVAL_INIT = 1
 INTERVAL_MAX = 32
 DEFAULT_THREAD_TIMEOUT = 5
+POLLER_TIMEOUT = 2500
 
-PPP_READY = b"\x01"  # Signals worker is ready
-PPP_HEARTBEAT = b"\x02"  # Signals worker heartbeat
+
+class QueueMsgProtocol:
+    W_WORKER = b"MDPW01"
+    W_READY = b"0x01"
+    W_REQUEST = b"0x02"
+    W_REPLY = b"0x03"
+    W_HEARTBEAT = b"0x04"
+    W_DISCONNECT = b"0x05"
+
 
 MAX_RECURSION_NESTED_ACTIONOBJECTS = 5
 
@@ -56,67 +73,60 @@ lock = threading.Lock()
 
 
 class Worker:
-    def __init__(self, address):
+    def __init__(
+        self,
+        address: str,
+        identity: bytes,
+        service: Optional[str] = None,
+        syft_worker_id: Optional[Union[UID, str]] = None,
+    ):
+        self.identity = identity
         self.address = address
-        self.expiry = time.time() + HEARTBEAT_INTERVAL * HEARTBEAT_LIVENESS
+        self.service = service
+        self.expiry = time.time() + 1e-3 * HEARTBEAT_EXPIRY
+        self.syft_worker_id = UID(syft_worker_id)
 
 
-class WorkerQueue:
-    def __init__(self):
-        self.queue = OrderedDict()
-
-    def ready(self, worker):
-        self.queue.pop(worker.address, None)
-        self.queue[worker.address] = worker
-
-    def purge(self):
-        """Look for & kill expired workers."""
-        t = time.time()
-        expired = []
-        for address, worker in self.queue.items():
-            if t > worker.expiry:  # Worker expired
-                expired.append(address)
-        for address in expired:
-            print("Idle worker expired: %s" % address)
-            self.queue.pop(address, None)
-
-    def next(self):
-        address, worker = self.queue.popitem(False)
-        return address
-
-    def is_empty(self):
-        return len(self.queue) == 0
+class Service:
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.requests = []
+        self.waiting = []  # List of waiting workers
 
 
 @serializable()
 class ZMQProducer(QueueProducer):
+    INTERNAL_SERVICE_PREFIX = b"mmi."
+
     def __init__(
         self, queue_name: str, queue_stash, port: int, context: AuthedServiceContext
     ) -> None:
+        self.id = UID().short()
         self.port = port
-        self.queue_name = queue_name
         self.queue_stash = queue_stash
+        self.queue_name = queue_name
         self.auth_context = context
         self.post_init()
         self._stop = False
 
     @property
     def address(self):
-        return f"tcp://localhost:{self.port}"
+        return get_queue_address(self.port)
 
     def post_init(self):
-        self.identity = b"%04X-%04X" % (
-            randint(0, 0x10000),  # nosec
-            randint(0, 0x10000),  # nosec
-        )  # nosec
+        """Initialize producer state."""
+
+        self.services = {}
+        self.workers = {}
+        self.waiting: List[Worker] = []
+        self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
         self.context = zmq.Context(1)
-        self.backend = self.context.socket(zmq.ROUTER)  # ROUTER
-        self.backend.bind(f"tcp://*:{self.port}")
+        self.backend = self.context.socket(zmq.ROUTER)
         self.backend.setsockopt(LINGER, 1)
+        self.backend.setsockopt_string(zmq.IDENTITY, self.id)
         self.poll_workers = zmq.Poller()
         self.poll_workers.register(self.backend, zmq.POLLIN)
-        self.workers = WorkerQueue()
-        self.message_queue = []
+        self.bind(f"tcp://*:{self.port}")
         self.thread = None
 
     def close(self):
@@ -125,10 +135,11 @@ class ZMQProducer(QueueProducer):
             self.poll_workers.unregister(self.backend)
         except Exception as e:
             print("failed to unregister poller", e)
-        self.backend.close()
-        self.context.destroy()
-        if self.thread is not None:
-            self.thread.join(DEFAULT_THREAD_TIMEOUT)
+        finally:
+            if self.thread is not None:
+                self.thread.join(DEFAULT_THREAD_TIMEOUT)
+            self.backend.close()
+            self.context.destroy()
 
     @property
     def action_service(self):
@@ -199,17 +210,25 @@ class ZMQProducer(QueueProducer):
         while True:
             if self._stop:
                 break
-            # stdlib
-            from time import sleep
-
             sleep(1)
-            items = self.queue_stash.get_all(
-                self.queue_stash.partition.root_verify_key
-            ).ok()
-            # syft absolute
-            import syft as sy
 
-            for item in items:
+            # Items to be queued
+            items_to_queue = self.queue_stash.get_by_status(
+                self.queue_stash.partition.root_verify_key,
+                status=Status.CREATED,
+            ).ok()
+
+            items_to_queue = [] if items_to_queue is None else items_to_queue
+
+            # Queue Items that are in the processing state
+            items_processing = self.queue_stash.get_by_status(
+                self.queue_stash.partition.root_verify_key,
+                status=Status.PROCESSING,
+            ).ok()
+
+            items_processing = [] if items_processing is None else items_processing
+
+            for item in itertools.chain(items_to_queue, items_processing):
                 if item.status == Status.CREATED:
                     if isinstance(item, ActionQueueItem):
                         action = item.kwargs["action"]
@@ -222,14 +241,35 @@ class ZMQProducer(QueueProducer):
                         for _, arg in action.kwargs.items():
                             self.preprocess_action_arg(arg)
 
-                    msg_bytes = sy.serialize(item, to_bytes=True)
-                    frames = [self.identity, b"", msg_bytes]
-                    # adds to queue for main loop
-                    self.message_queue = [frames] + self.message_queue
+                    msg_bytes = serialize(item, to_bytes=True)
+                    worker_pool = item.worker_pool.resolve_with_context(
+                        self.auth_context
+                    )
+                    worker_pool = worker_pool.ok()
+                    service_name = worker_pool.name
+                    service: Service = self.services.get(service_name)
+
+                    # Skip adding message if corresponding service/pool
+                    # is not registered.
+                    if service is None:
+                        continue
+
+                    # append request message to the corresponding service
+                    # This list is processed in dispatch method.
+
+                    # TODO: Logic to evaluate the CAN RUN Condition
+                    service.requests.append(msg_bytes)
                     item.status = Status.PROCESSING
                     res = self.queue_stash.update(item.syft_client_verify_key, item)
                     if not res.is_ok():
-                        print("Failed to update queue item")
+                        print(f"Failed to update queue item: {item}")
+                elif item.status == Status.PROCESSING:
+                    # Evaluate Retry condition here
+                    # If job running and timeout or job status is KILL
+                    # or heartbeat fails
+                    # or container id doesn't exists, kill process or container
+                    # else decrease retry count and mark status as CREATED.
+                    pass
 
     def run(self):
         self.thread = threading.Thread(target=self._run)
@@ -238,68 +278,171 @@ class ZMQProducer(QueueProducer):
         self.producer_thread = threading.Thread(target=self.read_items)
         self.producer_thread.start()
 
-    def send(self, worker: bytes, message: bytes):
-        message.insert(0, worker)
+    def send(self, worker: bytes, message: Union[bytes, List[bytes]]):
+        worker_obj = self.require_worker(worker)
+        self.send_to_worker(worker=worker_obj, msg=message)
+
+    def bind(self, endpoint):
+        """Bind producer to endpoint."""
+        self.backend.bind(endpoint)
+        print("I: MDP producer/0.1.1 is active at %s", endpoint)
+
+    def send_heartbeats(self):
+        """Send heartbeats to idle workers if it's time"""
+        if time.time() > self.heartbeat_at:
+            for worker in self.waiting:
+                self.send_to_worker(worker, QueueMsgProtocol.W_HEARTBEAT, None, None)
+            self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
+
+    def purge_workers(self):
+        """Look for & kill expired workers.
+
+        Workers are oldest to most recent, so we stop at the first alive worker.
+        """
+        while len(self.waiting) > 0:
+            w = self.waiting[0]
+            if w.expiry < time.time():
+                self.delete_worker(w, False)
+                self.waiting.pop(0)
+            else:
+                break
+
+    def worker_waiting(self, worker: Worker):
+        """This worker is now waiting for work."""
+        # Queue to broker and service waiting lists
+        self.waiting.append(worker)
+        worker.service.waiting.append(worker)
+        worker.expiry = time.time() + 1e-3 * HEARTBEAT_EXPIRY
+        self.dispatch(worker.service, None)
+
+    def dispatch(self, service: Service, msg: bytes):
+        """Dispatch requests to waiting workers as possible"""
+        if msg is not None:  # Queue message if any
+            service.requests.append(msg)
+
+        self.purge_workers()
+        while service.waiting and service.requests:
+            # One worker consuming only one message at a time.
+            msg = service.requests.pop(0)
+            worker = service.waiting.pop(0)
+            self.waiting.remove(worker)
+            self.send_to_worker(worker, QueueMsgProtocol.W_REQUEST, None, msg)
+
+    def send_to_worker(
+        self,
+        worker: Worker,
+        command: QueueMsgProtocol = QueueMsgProtocol.W_REQUEST,
+        option: bytes = None,
+        msg: Optional[Union[bytes, list]] = None,
+    ):
+        """Send message to worker.
+
+        If message is provided, sends that message.
+        """
+
+        if msg is None:
+            msg = []
+        elif not isinstance(msg, list):
+            msg = [msg]
+
+        # Stack routing and protocol envelopes to start of message
+        # and routing envelope
+        if option is not None:
+            msg = [option] + msg
+        msg = [worker.address, b"", QueueMsgProtocol.W_WORKER, command] + msg
+
+        print("I: sending %r to worker", command)
         with lock:
-            self.backend.send_multipart(message)
+            self.backend.send_multipart(msg)
 
     def _run(self):
-        heartbeat_at = time.time() + HEARTBEAT_INTERVAL
-        connecting_workers = set()
         while True:
             if self._stop:
                 return
+
+            for _, service in self.services.items():
+                self.dispatch(service, None)
+
+            items = None
+
             try:
-                socks = dict(self.poll_workers.poll(HEARTBEAT_INTERVAL * 1000))
-
-                if len(self.message_queue) != 0:
-                    if not self.workers.is_empty():
-                        frames = self.message_queue.pop()
-                        worker_address = self.workers.next()
-                        connecting_workers.add(worker_address)
-                        self.send(worker_address, frames)
-
-                # Handle worker message
-                if socks.get(self.backend) == zmq.POLLIN:
-                    with lock:
-                        frames = self.backend.recv_multipart()
-                    if not frames:
-                        print("error in producer")
-                        break
-
-                    # Validate control message, or return reply to client
-                    msg = frames[1:]
-                    address = frames[0]
-                    if len(msg) == 1:
-                        if address not in connecting_workers:
-                            self.workers.ready(Worker(address))
-                            if msg[0] not in (PPP_READY, PPP_HEARTBEAT):
-                                print("E: Invalid message from worker: %s" % msg)
-                    else:
-                        if address in connecting_workers:
-                            connecting_workers.remove(address)
-                        # got response message from worker
-                        pass
-
-                    # Send heartbeats to idle workers if it's time
-                    if time.time() >= heartbeat_at:
-                        for worker in self.workers.queue:
-                            msg = [worker, PPP_HEARTBEAT]
-                            with lock:
-                                self.backend.send_multipart(msg)
-                        heartbeat_at = time.time() + HEARTBEAT_INTERVAL
-
-                self.workers.purge()
+                items = self.poll_workers.poll(HEARTBEAT_INTERVAL)
             except Exception as e:
-                # this sleep is important, because we may hit this when
-                # we stop the producer. Without this sleep it would start
-                # spamming the poller, which results in too many open files
-                # which in turns causes all kinds of problems
-                sleep(0.5)
-                if not self._stop:
-                    print(
-                        f"Error in producer {e}, {self.identity} {traceback.format_exc()}"
-                    )
+                print(f"Failed to poll items. Error: {e}")
+
+            if items:
+                msg = self.backend.recv_multipart()
+
+                address = msg.pop(0)
+                empty = msg.pop(0)  # noqa: F841
+                header = msg.pop(0)
+
+                if header == QueueMsgProtocol.W_WORKER:
+                    self.process_worker(address, msg)
+                else:
+                    print("E: Invalid message.")
+
+            self.purge_workers()
+            self.send_heartbeats()
+
+    def require_worker(self, address):
+        """Finds the worker (creates if necessary)."""
+        identity = hexlify(address)
+        worker = self.workers.get(identity)
+        if worker is None:
+            worker = Worker(identity=identity, address=address)
+            self.workers[identity] = worker
+            print("I: registering new worker: %s", identity)
+        return worker
+
+    def process_worker(self, address: bytes, msg: List[bytes]):
+        command = msg.pop(0)
+
+        worker_ready = hexlify(address) in self.workers
+
+        worker = self.require_worker(address)
+
+        if QueueMsgProtocol.W_READY == command:
+            service_name = msg.pop(0).decode()
+            syft_worker_id = msg.pop(0).decode()
+            if worker_ready:
+                # Not first command in session or Reserved service name
+                self.delete_worker(worker, True)
+            else:
+                # Attach worker to service and mark as idle
+                if service_name not in self.services:
+                    service = Service(service_name)
+                    self.services[service_name] = service
+                else:
+                    service = self.services.get(service_name)
+                worker.service = service
+                worker.syft_worker_id = syft_worker_id
+                print(
+                    f"New Worker Added: <{worker.identity}> for Service: {service.name}"
+                )
+                self.worker_waiting(worker)
+
+        elif QueueMsgProtocol.W_HEARTBEAT == command:
+            if worker_ready:
+                worker.expiry = time.time() + 1e-3 * HEARTBEAT_EXPIRY
+            else:
+                # extract the syft worker id and worker pool name from the message
+                # Get the corresponding worker pool and worker
+                # update the status to be unhealthy
+                self.delete_worker(worker, True)
+        elif QueueMsgProtocol.W_DISCONNECT == command:
+            self.delete_worker(worker, False)
+        else:
+            print("E: Invalid message....")
+
+    def delete_worker(self, worker: Worker, disconnect: bool):
+        """Deletes worker from all data structures, and deletes worker."""
+        if disconnect:
+            self.send_to_worker(worker, QueueMsgProtocol.W_DISCONNECT, None, None)
+
+        if worker.service is not None and worker in worker.service.waiting:
+            worker.service.waiting.remove(worker)
+        self.workers.pop(worker.identity, None)
 
     @property
     def alive(self):
@@ -313,124 +456,211 @@ class ZMQConsumer(QueueConsumer):
         message_handler: AbstractMessageHandler,
         address: str,
         queue_name: str,
+        service_name: str,
+        syft_worker_id: Optional[UID] = None,
+        worker_stash: Optional[WorkerStash] = None,
+        verbose: bool = False,
     ) -> None:
         self.address = address
         self.message_handler = message_handler
+        self.service_name = service_name
         self.queue_name = queue_name
-        self.post_init()
-        self.id = UID()
+        self.context = zmq.Context()
+        self.poller = zmq.Poller()
+        self.worker = None
+        self.verbose = verbose
+        self.id = UID().short()
         self._stop = False
+        self.syft_worker_id = syft_worker_id
+        self.worker_stash = worker_stash
+        self.post_init()
 
-    def create_socket(self):
-        self.worker = self.ctx.socket(zmq.DEALER)  # DEALER
-        self.identity = b"%04X-%04X" % (
-            randint(0, 0x10000),  # nosec
-            randint(0, 0x10000),  # nosec
-        )  # nosec
-        self.worker.setsockopt(zmq.IDENTITY, self.identity)
-        self.worker.setsockopt(LINGER, 1)
-        self.poller.register(self.worker, zmq.POLLIN)
+    def reconnect_to_producer(self):
+        """Connect or reconnect to producer"""
+        if self.worker:
+            self.poller.unregister(self.worker)
+            self.worker.close()
+        self.worker = self.context.socket(zmq.DEALER)
+        self.worker.linger = 0
+        self.worker.setsockopt_string(zmq.IDENTITY, self.id)
         self.worker.connect(self.address)
-        self.worker.send(PPP_READY)
+        self.poller.register(self.worker, zmq.POLLIN)
+
+        if self.verbose:
+            print(f"I: <{self.id}> connecting to broker at {self.address}")
+
+        # Register queue with the producer
+        self.send_to_producer(
+            QueueMsgProtocol.W_READY,
+            self.service_name.encode(),
+            [str(self.syft_worker_id).encode()],
+        )
+
+        # If liveness hits zero, queue is considered disconnected
+        self.liveness = HEARTBEAT_LIVENESS
+        self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
 
     def post_init(self):
-        self.ctx = zmq.Context()
-        self.poller = zmq.Poller()
-        self.create_socket()
+        self.reconnect_to_producer()
         self.thread = None
 
     def close(self):
         self._stop = True
-        if self.thread is not None:
-            self.thread.join(timeout=DEFAULT_THREAD_TIMEOUT)
         try:
             self.poller.unregister(self.worker)
         except Exception as e:
             print("failed to unregister poller", e)
         finally:
+            if self.thread is not None:
+                self.thread.join(timeout=DEFAULT_THREAD_TIMEOUT)
             self.worker.close()
-            self.ctx.destroy()
+            self.context.destroy()
+
+    def send_to_producer(
+        self,
+        command: str,
+        option: Optional[bytes] = None,
+        msg: Optional[Union[bytes, list]] = None,
+    ):
+        """Send message to producer.
+
+        If no msg is provided, creates one internally
+        """
+        if msg is None:
+            msg = []
+        elif not isinstance(msg, list):
+            msg = [msg]
+
+        if option:
+            msg = [option] + msg
+
+        msg = [b"", QueueMsgProtocol.W_WORKER, command] + msg
+        if self.verbose:
+            print("I: sending %s to broker", command)
+        with lock:
+            self.worker.send_multipart(msg)
 
     def _run(self):
-        liveness = HEARTBEAT_LIVENESS
-        interval = INTERVAL_INIT
-        heartbeat_at = time.time() + HEARTBEAT_INTERVAL
-        while True:
-            if self._stop:
-                return
-            try:
-                time.sleep(0.1)
+        """Send reply, if any, to producer and wait for next request."""
+        try:
+            while True:
+                if self._stop:
+                    return
+
                 try:
-                    socks = dict(self.poller.poll(HEARTBEAT_INTERVAL * 1000))
+                    items = self.poller.poll(POLLER_TIMEOUT)
                 except Exception as e:
-                    time.sleep(0.5)
                     if isinstance(e, ContextTerminated) or self._stop:
                         return
                     else:
-                        # possibly file descriptor problem
                         print(e, traceback.format_exc())
                         continue
-                if socks.get(self.worker) == zmq.POLLIN:
-                    with lock:
-                        frames = self.worker.recv_multipart()
-                    if not frames or len(frames) not in [1, 3]:
-                        print(f"Worker error: Invalid message: {frames}")
-                        break  # Interrupted
 
-                    # get normal message
-                    if len(frames) == 3:
-                        with lock:
-                            self.worker.send_multipart(frames)
-                        liveness = HEARTBEAT_LIVENESS
-                        message = frames[2]
+                if items:
+                    # Message format:
+                    # [b"", "<header>", "<command>", "<queue_name>", "<actual_msg_bytes>"]
+                    msg = self.worker.recv_multipart()
+                    if self.verbose:
+                        print("I: received message from producer: ")
+                    self.liveness = HEARTBEAT_LIVENESS
+
+                    if len(msg) < 3:
+                        print(f"Invalid message frame. {msg}")
+                        continue
+
+                    empty = msg.pop(0)  # noqa: F841
+                    header = msg.pop(0)  # noqa: F841
+
+                    command = msg.pop(0)
+
+                    if command == QueueMsgProtocol.W_REQUEST:
+                        # Call Message Handler
                         try:
-                            self.message_handler.handle_message(message=message)
-                        except Exception as e:
-                            # stdlib
-                            print(
-                                f"ERROR HANDLING MESSAGE {e}, {traceback.format_exc()}"
+                            message = msg.pop()
+                            self.message_handler.handle_message(
+                                message=message,
+                                syft_worker_id=self.syft_worker_id,
                             )
-                    # process heartbeat
-                    elif len(frames) == 1 and frames[0] == PPP_HEARTBEAT:
-                        liveness = HEARTBEAT_LIVENESS
-                    # process wrong message
-                    interval = INTERVAL_INIT
-                # process silence
+                        except Exception as e:
+                            print(
+                                f"ERROR HANDLING MESSAGE: {e}, {traceback.format_exc()}"
+                            )
+                        finally:
+                            self.clear_job()
+                    elif command == QueueMsgProtocol.W_HEARTBEAT:
+                        pass
+                    elif command == QueueMsgProtocol.W_DISCONNECT:
+                        self.reconnect_to_producer()
+                    else:
+                        print("E: invalid input message: ")
                 else:
-                    liveness -= 1
-                    if liveness == 0:
-                        print(
-                            f"Heartbeat failure, worker can't reach queue, reconnecting in {interval}s"
-                        )
-                        time.sleep(interval)
+                    self.liveness -= 1
+                    if self.liveness == 0:
+                        if self.verbose:
+                            print("W: disconnected from broker - retrying...")
+                        try:
+                            time.sleep(RECONNECT_INTERVAL)
+                        except Exception as e:
+                            print(e, traceback.format_exc())
+                            break
+                        self.reconnect_to_producer()
 
-                        if interval < INTERVAL_MAX:
-                            interval *= 2
-                        self.poller.unregister(self.worker)
-                        self.worker.setsockopt(zmq.LINGER, 1)
-                        self.worker.close()
-                        self.create_socket()
-                        liveness = HEARTBEAT_LIVENESS
-                # send heartbeat
-                if time.time() > heartbeat_at:
-                    heartbeat_at = time.time() + HEARTBEAT_INTERVAL
-                    if not self._stop:
-                        self.worker.send(PPP_HEARTBEAT)
-            except zmq.ZMQError as e:
-                if e.errno == zmq.ETERM:
-                    print("Subscriber connection Terminated")
-                else:
-                    raise e
+                # Send HEARTBEAT if it's time
+                if time.time() > self.heartbeat_at:
+                    # TODO: Also send service name and syft worker id during HEARTBEATS
+                    # to the producer.
+                    self.send_to_producer(QueueMsgProtocol.W_HEARTBEAT)
+                    self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
+
+        except zmq.ZMQError as e:
+            if e.errno == zmq.ETERM:
+                print("Consumer connection Terminated")
+            else:
+                raise e
+
+        print("W: interrupt received, killing worker...")
 
     def run(self):
         self.thread = threading.Thread(target=self._run)
         self.thread.start()
-        # self.thread = gevent.spawn(self._run)
-        # self.thread.start()
+
+    def associate_job(self, message: Frame):
+        try:
+            queue_item = _deserialize(message, from_bytes=True)
+            self._set_worker_job(queue_item.job_id)
+        except Exception as e:
+            print("Could not associate job", e)
+
+    def clear_job(self):
+        self._set_worker_job(None)
+
+    def _set_worker_job(self, job_id: Optional[UID]):
+        if self.worker_stash is not None:
+            res = self.worker_stash.get_by_uid(
+                self.worker_stash.partition.root_verify_key, self.syft_worker_id
+            )
+
+            if res.is_err():
+                print(res)
+                return  # log/report?
+
+            worker_obj = res.ok()
+            worker_obj.job_id = job_id
+
+            if job_id is None:
+                worker_obj.consumer_state = ConsumerState.IDLE
+            else:
+                worker_obj.consumer_state = ConsumerState.CONSUMING
+
+            res = self.worker_stash.update(
+                self.worker_stash.partition.root_verify_key, obj=worker_obj
+            )
+            if res.is_err():
+                print(res)
 
     @property
     def alive(self):
-        return not self.worker.closed
+        return not self.worker.closed and self.liveness
 
 
 @serializable()
@@ -442,8 +672,7 @@ class ZMQClientConfigV1(SyftObject, QueueClientConfig):
     hostname: str = "127.0.0.1"
 
 
-@serializable()
-class ZMQClientConfig(SyftObject, QueueClientConfig):
+class ZMQClientConfigV2(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -454,6 +683,21 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     # port issue causing tests to randomly fail
     create_producer: bool = False
     n_consumers: int = 0
+
+
+@serializable()
+class ZMQClientConfig(SyftObject, QueueClientConfig):
+    __canonical_name__ = "ZMQClientConfig"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    id: Optional[UID]
+    hostname: str = "127.0.0.1"
+    queue_port: Optional[int] = None
+    # TODO: setting this to false until we can fix the ZMQ
+    # port issue causing tests to randomly fail
+    create_producer: bool = False
+    n_consumers: int = 0
+    consumer_service: Optional[str]
 
 
 @migrate(ZMQClientConfig, ZMQClientConfigV1)
@@ -468,7 +712,7 @@ def upgrade_zmqclientconfig_v1_to_v2():
     return [
         make_set_default("queue_port", None),
         make_set_default("create_producer", False),
-        make_set_default("n_consumsers", 0),
+        make_set_default("n_consumers", 0),
     ]
 
 
@@ -520,7 +764,10 @@ class ZMQClient(QueueClient):
         self,
         queue_name: str,
         message_handler: AbstractMessageHandler,
+        service_name: str,
         address: Optional[str] = None,
+        worker_stash: Optional[WorkerStash] = None,
+        syft_worker_id: Optional[UID] = None,
     ) -> ZMQConsumer:
         """Add a consumer to a queue
 
@@ -529,12 +776,15 @@ class ZMQClient(QueueClient):
         """
 
         if address is None:
-            address = f"tcp://localhost:{self.config.queue_port}"
+            address = get_queue_address(self.config.queue_port)
 
         consumer = ZMQConsumer(
             queue_name=queue_name,
             message_handler=message_handler,
             address=address,
+            service_name=service_name,
+            syft_worker_id=syft_worker_id,
+            worker_stash=worker_stash,
         )
         self.consumers[queue_name].append(consumer)
 
@@ -601,6 +851,9 @@ class ZMQClient(QueueClient):
 
 @serializable()
 class ZMQQueueConfig(QueueConfig):
-    def __init__(self, client_type=None, client_config=None):
+    def __init__(
+        self, client_type=None, client_config=None, thread_workers: bool = False
+    ):
         self.client_type = client_type or ZMQClient
         self.client_config: ZMQClientConfig = client_config or ZMQClientConfig()
+        self.thread_workers = thread_workers

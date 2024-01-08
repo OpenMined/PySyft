@@ -470,13 +470,17 @@ class KeyValueStorePartition(StorePartition):
     def _delete_unique_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
         for _unique_ck in self.unique_cks:
             qk = _unique_ck.with_obj(obj)
-            self.unique_keys[qk.key].pop(qk.value, None)
+            unique_keys = self.unique_keys[qk.key]
+            unique_keys.pop(qk.value, None)
+            self.unique_keys[qk.key] = unique_keys
         return Ok(SyftSuccess(message="Deleted"))
 
     def _delete_search_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
         for _search_ck in self.searchable_cks:
             qk = _search_ck.with_obj(obj)
-            self.searchable_keys[qk.key].pop(qk.value, None)
+            search_keys = self.searchable_keys[qk.key]
+            search_keys.pop(qk.value, None)
+            self.searchable_keys[qk.key] = search_keys
         return Ok(SyftSuccess(message="Deleted"))
 
     def _get_keys_index(self, qks: QueryKeys) -> Result[Set[Any], str]:

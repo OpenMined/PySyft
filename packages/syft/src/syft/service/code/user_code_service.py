@@ -373,6 +373,8 @@ class UserCodeService(AbstractService):
 
             if isinstance(result, TwinObject):
                 return Ok(result.mock)
+            elif result.is_mock:
+                return Ok(result)
             elif result.syft_action_data_type is Err:
                 # result contains the error but the request was handled correctly
                 return result.syft_action_data

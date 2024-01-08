@@ -145,6 +145,13 @@ def validate_email(context: TransformContext) -> TransformContext:
     return context
 
 
+def str_url_to_grid_url(context: TransformContext) -> TransformContext:
+    url = context.output.get("url", None)
+    if url is not None and isinstance(url, str):
+        context.output["url"] = GridURL.from_url(str)
+    return context
+
+
 def add_credentials_for_key(key: str) -> Callable:
     def add_credentials(context: TransformContext) -> TransformContext:
         context.output[key] = context.credentials

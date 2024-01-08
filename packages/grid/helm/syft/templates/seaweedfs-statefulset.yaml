@@ -2,48 +2,48 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  annotations:
-    helm.sh/chart: component-chart-0.9.1
   labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
     app.kubernetes.io/component: seaweedfs
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: devspace-app
   name: seaweedfs
 spec:
   podManagementPolicy: OrderedReady
   replicas: 1
   selector:
     matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
       app.kubernetes.io/component: seaweedfs
       app.kubernetes.io/managed-by: Helm
-      app.kubernetes.io/name: devspace-app
   serviceName: seaweedfs-headless
   template:
     metadata:
-      annotations:
-        helm.sh/chart: component-chart-0.9.1
       labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
         app.kubernetes.io/component: seaweedfs
         app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: devspace-app
     spec:
       affinity: null
       containers:
       - args: null
-        command:
-        - sh
-        - /etc/seaweedfs/start.sh
+        command: null
         env:
         - name: S3_VOLUME_SIZE_MB
-          value: '1024'
+          value: "{{ .Values.seaweedfs.s3VolumeSizeMB }}"
         - name: S3_ROOT_USER
-          value: admin
+          value: "{{ .Values.seaweedfs.s3RootUser }}"
         - name: S3_ROOT_PWD
-          value: admin
+          valueFrom:
+            secretKeyRef:
+                name: {{ .Values.secrets.seaweedfs }}
+                key: s3RootPassword
         - name: S3_PORT
-          value: '8333'
+          value: "{{ .Values.seaweedfs.s3Port }}"
+        - name: SEAWEED_MOUNT_PORT
+          value: "{{ .Values.seaweedfs.mountPort }}"
         envFrom: null
-        image: chrislusf/seaweedfs:3.59
+        image: {{ .Values.syft.registry }}/openmined/grid-seaweedfs:{{ .Values.syft.version }}
         lifecycle: null
         livenessProbe: null
         name: container-0
@@ -83,12 +83,10 @@ spec:
         name: seaweedfs-config
   volumeClaimTemplates:
   - metadata:
-      annotations:
-        helm.sh/chart: component-chart-0.9.1
       labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
         app.kubernetes.io/component: seaweedfs
         app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: devspace-app
       name: seaweedfs-data
     spec:
       accessModes:
