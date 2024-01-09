@@ -51,6 +51,7 @@ from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.user_code_service import UserCodeService
+from ..service.code.user_code_stash import UserCodeStash
 from ..service.code_history.code_history_service import CodeHistoryService
 from ..service.context import AuthedServiceContext
 from ..service.context import NodeServiceContext
@@ -101,6 +102,7 @@ from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ..service.worker.utils import create_default_image
 from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
+from ..service.worker.worker_pool_stash import SyftWorkerPoolStash
 from ..service.worker.worker_service import WorkerService
 from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
@@ -1152,6 +1154,19 @@ class Node(AbstractNode):
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(node=self)
 
+        # Extract worker pool id from user code
+        if action.user_code_id is not None:
+            result = self.user_code_stash.get_by_uid(
+                credentials=credentials, uid=action.user_code_id
+            )
+
+            # If result is Ok, then user code object exists
+            if result.is_ok() and result.ok() is not None:
+                user_code = result.ok()
+                worker_pool_id = user_code.worker_pool_id
+
+        # If worker pool id is not set, then use default worker pool
+        # Else, get the worker pool for given uid
         if worker_pool_id is None:
             worker_pool = self.get_default_worker_pool()
         else:
@@ -1160,6 +1175,7 @@ class Node(AbstractNode):
                 return SyftError(message=f"{result.err()}")
             worker_pool = result.ok()
 
+        # Create a Worker pool reference object
         worker_pool_ref = LinkedObject.from_obj(
             worker_pool,
             service_type=SyftWorkerPoolService,
@@ -1176,7 +1192,7 @@ class Node(AbstractNode):
             args=[],
             kwargs={"action": action},
             has_execute_permissions=has_execute_permissions,
-            worker_pool=worker_pool_ref,
+            worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
         return self.add_queueitem_to_queue(
             queue_item, credentials, action, parent_job_id
@@ -1273,8 +1289,12 @@ class Node(AbstractNode):
             )
 
     @property
-    def pool_stash(self):
+    def pool_stash(self) -> SyftWorkerPoolStash:
         return self.get_service(SyftWorkerPoolService).stash
+
+    @property
+    def user_code_stash(self) -> UserCodeStash:
+        return self.get_service(UserCodeService).stash
 
     def get_default_worker_pool(self):
         result = self.pool_stash.get_by_name(
