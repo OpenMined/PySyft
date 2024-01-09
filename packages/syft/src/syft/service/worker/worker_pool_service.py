@@ -185,7 +185,7 @@ class SyftWorkerPoolService(AbstractService):
 
         result = self.image_stash.get_by_uid(
             credentials=context.credentials,
-            uid=worker_pool.syft_worker_image_id,
+            uid=worker_pool.image.id,
         )
 
         if result.is_err():
@@ -204,7 +204,7 @@ class SyftWorkerPoolService(AbstractService):
             worker_stash=self.worker_stash,
         )
 
-        worker_pool.worker_list.append(worker_list)
+        worker_pool.worker_list += worker_list
         worker_pool.max_count = existing_worker_cnt + number
 
         update_result = self.stash.update(
