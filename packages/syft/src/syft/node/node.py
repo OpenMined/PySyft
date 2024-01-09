@@ -1155,7 +1155,10 @@ class Node(AbstractNode):
         if worker_pool_id is None:
             worker_pool = self.get_default_worker_pool()
         else:
-            worker_pool = self.pool_stash.get_by_uid(credentials, worker_pool_id)
+            result = self.pool_stash.get_by_uid(credentials, worker_pool_id)
+            if result.is_err():
+                return SyftError(message=f"{result.err()}")
+            worker_pool = result.ok()
 
         worker_pool_ref = LinkedObject.from_obj(
             worker_pool,
@@ -1277,7 +1280,10 @@ class Node(AbstractNode):
         result = self.pool_stash.get_by_name(
             credentials=self.verify_key, pool_name=DEFAULT_WORKER_POOL_NAME
         )
-        return result.ok()
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+        worker_pool = result.ok()
+        return worker_pool
 
     def get_api(
         self,
