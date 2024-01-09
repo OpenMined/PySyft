@@ -31,7 +31,7 @@ parse_kubectl_config() {
 
     # Creating a new item in 1Password
     op item create --category="Api Credential" --title="$MATCH_STRING" CLIENT_CERTIFICATE_DATA=$CLIENT_CERTIFICATE_DATA USER_NAME=$MATCH_STRING CLIENT_KEY_DATA=$CLIENT_KEY_DATA TOKEN=$TOKEN CERTIFICATE_AUTHORITY_DATA=$CERTIFICATE_AUTHORITY_DATA SERVER=$SERVER CLUSTER_NAME=$CLUSTER_NAME
-    
+
     # Check exit status of the op item creation command
     if [ $? -ne 0 ]; then
         exit 1

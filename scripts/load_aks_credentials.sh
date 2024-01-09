@@ -2,7 +2,7 @@
 
 # Function to check if a command exists
 not_installed() {
-    ! type "$1" &> /dev/null 
+    ! type "$1" &> /dev/null
 }
 
 # Check for jq
@@ -73,7 +73,7 @@ users:
       client-certificate-data: <cc-placeholder>
       client-key-data: <ck-placeholder>
       token: <token-placeholder>"
-    
+
     # Replace placeholders with actual values
     echo "$CONFIG_TEMPLATE" | sed -e "s|<ca-placeholder>|$CERTIFICATE_AUTHORITY_DATA|g" \
         -e "s|<server-placeholder>|$SERVER|g" \
