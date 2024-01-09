@@ -721,12 +721,7 @@ class BaseUIDStoreStash(BaseStash):
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[Optional[BaseUIDStoreStash.object_type], str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
-        result = self.query_one(credentials=credentials, qks=qks)
-        if result.is_ok() and result.ok() is None:
-            return Err(
-                message=f"{self.object_type.__canonical_name__} object does not exist for uid: {uid}"
-            )
-        return result
+        return self.query_one(credentials=credentials, qks=qks)
 
     def set(
         self,
