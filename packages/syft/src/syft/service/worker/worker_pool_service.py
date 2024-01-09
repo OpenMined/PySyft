@@ -114,7 +114,7 @@ class SyftWorkerPoolService(AbstractService):
             worker_image=worker_image,
             worker_stash=self.worker_stash,
             reg_username=reg_username,
-            reg_password=reg_username,
+            reg_password=reg_password,
         )
 
         worker_pool = WorkerPool(

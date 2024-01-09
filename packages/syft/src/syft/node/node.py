@@ -1435,26 +1435,38 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
 
     print("Building Default Worker Image")
 
-    # Build the Image for given tag
-    result = image_build_method(
-        context, image_uid=default_image.id, tag=DEFAULT_WORKER_IMAGE_TAG
-    )
+    if not default_image.built_at:
+        # Build the Image for given tag
+        result = image_build_method(
+            context, image_uid=default_image.id, tag=DEFAULT_WORKER_IMAGE_TAG
+        )
 
-    if isinstance(result, SyftError):
-        print("Failed to build default worker image: ", result.message)
-        return
+        if isinstance(result, SyftError):
+            print("Failed to build default worker image: ", result.message)
+            return
 
-    create_pool_method = node.get_service_method(SyftWorkerPoolService.create_pool)
-
+    default_worker_pool = node.get_default_worker_pool()
     worker_count = node.queue_config.client_config.n_consumers
 
-    print("Creating default Worker Pool")
-    result = create_pool_method(
-        context,
-        name=DEFAULT_WORKER_POOL_NAME,
-        image_uid=default_image.id,
-        number=worker_count,
-    )
+    # Create worker pool if it doesn't exists
+    if default_worker_pool is None:
+        create_pool_method = node.get_service_method(SyftWorkerPoolService.create_pool)
+        print("Creating default Worker Pool")
+        result = create_pool_method(
+            context,
+            name=DEFAULT_WORKER_POOL_NAME,
+            image_uid=default_image.id,
+            number=worker_count,
+        )
+
+    else:
+        # Else add a worker to existing worker pool
+        add_worker_method = node.get_service_method(SyftWorkerPoolService.add_workers)
+        result = add_worker_method(
+            context=context,
+            number=worker_count,
+            pool_name=DEFAULT_WORKER_POOL_NAME
+        )
 
     if isinstance(result, SyftError):
         print(f"Failed to create Worker for Default workers. Error: {result.message}")
@@ -1465,7 +1477,7 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
         if container_status.error:
             print(
                 f"Failed to create container: Worker: {container_status.worker},"
-                "Error: {container_status.error}"
+                f"Error: {container_status.error}"
             )
             return
 
