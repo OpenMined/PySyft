@@ -1,6 +1,7 @@
 # stdlib
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 from typing_extensions import Self
@@ -28,7 +29,7 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
         https://docs.docker.com/engine/reference/commandline/tag/#tag-an-image-referenced-by-name-and-tag
     """
 
-    registry: Optional[SyftImageRegistry]
+    registry: Optional[Union[SyftImageRegistry, str]]
     repo: str
     tag: str
 
@@ -73,11 +74,12 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
 
     @property
     def full_name_with_tag(self) -> str:
-        if self.registry:
-            return f"{self.registry.url}/{self.repo}:{self.tag}"
-        else:
-            # default registry is always docker.io
+        if self.registry is None:
             return f"docker.io/{self.repo}:{self.tag}"
+        elif isinstance(self.registry, str):
+            return f"{self.registry}/{self.repo}:{self.tag}"
+        else:
+            return f"{self.registry.url}/{self.repo}:{self.tag}"
 
     @property
     def registry_host(self) -> str:
@@ -90,6 +92,3 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
 
     def __hash__(self) -> int:
         return hash(self.repo + self.tag + str(hash(self.registry)))
-
-    def __str__(self) -> str:
-        return f"registry: {str(self.registry)}, repo: {self.repo}, tag: {self.tag}"
