@@ -1435,7 +1435,7 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
 
     print("Building Default Worker Image")
 
-    if not default_image.built_at:
+    if not default_image.is_built:
         # Build the Image for given tag
         result = image_build_method(
             context, image_uid=default_image.id, tag=DEFAULT_WORKER_IMAGE_TAG
