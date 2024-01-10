@@ -48,11 +48,9 @@ class SyftWorkerImageService(AbstractService):
     def submit_dockerfile(
         self, context: AuthedServiceContext, docker_config: DockerWorkerConfig
     ) -> Union[SyftSuccess, SyftError]:
-        image_identifier = SyftWorkerImageIdentifier(repo="", tag="")
         worker_image = SyftWorkerImage(
             config=docker_config,
             created_by=context.credentials,
-            image_identifier=image_identifier,
         )
         res = self.stash.set(context.credentials, worker_image)
 
