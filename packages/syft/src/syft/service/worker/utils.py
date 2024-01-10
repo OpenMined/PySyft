@@ -359,15 +359,15 @@ def docker_build(
         return ImageBuildResult(image_hash=built_image.id, logs=parse_output(logs))
     except docker.errors.APIError as e:
         return SyftError(
-            message=f"Docker API error when building {image.image_tag}. Reason - {e}"
+            message=f"Docker API error when building {image.image_identifier}. Reason - {e}"
         )
     except docker.errors.DockerException as e:
         return SyftError(
-            message=f"Docker exception when building {image.image_tag}. Reason - {e}"
+            message=f"Docker exception when building {image.image_identifier}. Reason - {e}"
         )
     except Exception as e:
         return SyftError(
-            message=f"Unknown exception when building {image.image_tag}. Reason - {e}"
+            message=f"Unknown exception when building {image.image_identifier}. Reason - {e}"
         )
 
 
