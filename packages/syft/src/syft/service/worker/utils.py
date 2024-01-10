@@ -142,7 +142,7 @@ def run_container_using_docker(
             container_name=container_name,
         )
         if existing_container:
-            existing_container.stop()
+            existing_container.remove(force=True)
 
         # Extract Config from backend container
         backend_host_config = extract_config_from_backend(
