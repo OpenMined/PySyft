@@ -152,11 +152,6 @@ class SyftWorkerImageService(AbstractService):
         username: Optional[str] = None,
         password: Optional[str] = None,
     ) -> Union[SyftSuccess, SyftError]:
-        if context.node.in_memory_workers:
-            return SyftSuccess(
-                message="Skipped pushing image, since using in-memory workers."
-            )
-
         result = self.stash.get_by_uid(credentials=context.credentials, uid=image)
         if result.is_err():
             return SyftError(
@@ -164,15 +159,15 @@ class SyftWorkerImageService(AbstractService):
             )
         worker_image: SyftWorkerImage = result.ok()
 
-        if (
+        if not worker_image.is_built:
+            return SyftError(message=f"Image ID: {worker_image.id} is not built yet.")
+        elif (
             worker_image.image_identifier is None
             or worker_image.image_identifier.registry_host == ""
         ):
             return SyftError(
                 message=f"Image ID: {worker_image.id} does not have a valid registry host."
             )
-        elif worker_image.built_at is None:
-            return SyftError(message=f"Image ID: {worker_image.id} is not built yet.")
 
         result = docker_push(
             image=worker_image,
