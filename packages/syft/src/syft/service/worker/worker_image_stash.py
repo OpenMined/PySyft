@@ -7,7 +7,8 @@ from result import Err
 from result import Result
 
 # relative
-from ...custom_worker.config import DockerWorkerConfig, WorkerConfig
+from ...custom_worker.config import DockerWorkerConfig
+from ...custom_worker.config import WorkerConfig
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash

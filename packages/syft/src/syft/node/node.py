@@ -1463,9 +1463,7 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
         # Else add a worker to existing worker pool
         add_worker_method = node.get_service_method(SyftWorkerPoolService.add_workers)
         result = add_worker_method(
-            context=context,
-            number=worker_count,
-            pool_name=DEFAULT_WORKER_POOL_NAME
+            context=context, number=worker_count, pool_name=DEFAULT_WORKER_POOL_NAME
         )
 
     if isinstance(result, SyftError):
