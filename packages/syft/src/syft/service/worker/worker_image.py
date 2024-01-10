@@ -23,8 +23,22 @@ class SyftWorkerImage(SyftObject):
 
     id: UID
     config: WorkerConfig
-    image_identifier: Optional[SyftWorkerImageIdentifier]
-    image_hash: Optional[str]
-    created_at: DateTime = DateTime.now()
     created_by: SyftVerifyKey
-    built_at: Optional[DateTime]
+    created_at: DateTime = DateTime.now()
+    image_identifier: Optional[SyftWorkerImageIdentifier] = None
+    image_hash: Optional[str] = None
+    built_at: Optional[DateTime] = None
+
+    @property
+    def is_built(self) -> bool:
+        """Returns True if the image has been built."""
+
+        return self.built_at is not None
+
+    @property
+    def built_image_tag(self) -> Optional[str]:
+        """Returns the full name of the image if it has been built."""
+
+        if self.is_built and self.image_identifier:
+            return self.image_identifier.full_name_with_tag
+        return None
