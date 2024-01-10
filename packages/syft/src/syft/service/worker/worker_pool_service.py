@@ -104,7 +104,7 @@ class SyftWorkerPoolService(AbstractService):
                 message=f"Failed to retrieve Worker Image with id: {image_uid}. Error: {result.err()}"
             )
 
-        worker_image = result.ok()
+        worker_image: SyftWorkerImage = result.ok()
 
         worker_list, container_statuses = _create_workers_in_pool(
             context=context,
@@ -114,7 +114,7 @@ class SyftWorkerPoolService(AbstractService):
             worker_image=worker_image,
             worker_stash=self.worker_stash,
             reg_username=reg_username,
-            reg_password=reg_username,
+            reg_password=reg_password,
         )
 
         worker_pool = WorkerPool(
@@ -193,7 +193,7 @@ class SyftWorkerPoolService(AbstractService):
                 message=f"Failed to retrieve image for worker pool: {worker_pool.name}"
             )
 
-        worker_image = result.ok()
+        worker_image: SyftWorkerImage = result.ok()
 
         worker_list, container_statuses = _create_workers_in_pool(
             context=context,
