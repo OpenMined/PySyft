@@ -90,10 +90,10 @@ class SyftWorkerImageService(AbstractService):
             image_registry_service: SyftImageRegistryService = context.node.get_service(
                 SyftImageRegistryService
             )
-            result = image_registry_service.get_by_id(context, registry_uid)
-            if result.is_err():
-                return result
-            registry: SyftImageRegistry = result.ok()
+            registry_result = image_registry_service.get_by_id(context, registry_uid)
+            if registry_result.is_err():
+                return registry_result
+            registry: SyftImageRegistry = registry_result.ok()
 
         try:
             if registry:
@@ -115,17 +115,18 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"Image ID: {image_uid} is already built")
 
         worker_image.image_identifier = image_identifier
+        result = None
 
         if not context.node.in_memory_workers:
-            result = docker_build(worker_image)
-            if isinstance(result, SyftError):
-                return result
+            build_result = docker_build(worker_image)
+            if isinstance(build_result, SyftError):
+                return build_result
 
-            worker_image.image_hash = result.image_hash
+            worker_image.image_hash = build_result.image_hash
             worker_image.built_at = DateTime.now()
 
             result = SyftSuccess(
-                message=f"Build for Worker ID: {worker_image.id} succeeded.\n{result.logs}"
+                message=f"Build for Worker ID: {worker_image.id} succeeded.\n{build_result.logs}"
             )
         else:
             result = SyftSuccess(
