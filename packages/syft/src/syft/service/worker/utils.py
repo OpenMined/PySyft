@@ -109,6 +109,9 @@ def run_container_using_docker(
     password: Optional[str] = None,
     registry_url: Optional[str] = None,
 ) -> ContainerSpawnStatus:
+    if not worker_image.is_built:
+        raise Exception("Image must be built before running it.")
+
     # Get hostname
     hostname = socket.gethostname()
 
@@ -266,6 +269,9 @@ def run_containers(
 
     if orchestration not in [WorkerOrchestrationType.DOCKER]:
         return SyftError(message="Only Orchestration via Docker is supported.")
+
+    if not worker_image.is_built:
+        return SyftError(message="Image must be built before running it.")
 
     with contextlib.closing(docker.from_env()) as client:
         for worker_count in range(start_idx + 1, number + 1):
