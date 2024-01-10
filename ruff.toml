@@ -1,3 +1,5 @@
+extend-include = ["*.ipynb"]
+
 line-length = 88
 
 # Enable flake8-bugbear (`B`) rules.
@@ -16,6 +18,9 @@ ignore = [
 ]
 
 target-version = "py38"
+
+[lint.per-file-ignores]
+"*.ipynb" = ["E402"]
 
 [pycodestyle]
 max-line-length = 120

@@ -75,6 +75,13 @@ repos:
         args: [".", "--settings-path .isort.cfg"]
         always_run: true
 
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.7.1
+    hooks:
+      - id: nbqa-isort
+      - id: nbqa-black
+      # - id: nbqa-ruff
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
     rev: "v0.1.2"
