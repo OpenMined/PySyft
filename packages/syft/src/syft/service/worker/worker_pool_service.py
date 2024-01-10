@@ -148,7 +148,7 @@ class SyftWorkerPoolService(AbstractService):
         res: List[Tuple] = []
         for pool in worker_pools:
             if pool.image.image_identifier is not None:
-                res.append((pool.image.image_identifier.repo_with_tag, pool))
+                res.append((pool.image.image_identifier.full_name_with_tag, pool))
             else:
                 res.append(("in-memory-pool", pool))
         return DictTuple(res)

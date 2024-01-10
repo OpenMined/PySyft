@@ -207,7 +207,7 @@ class SyftWorkerImageService(AbstractService):
         res: List[Tuple] = []
         for im in images:
             if im.image_identifier is not None:
-                res.append((im.image_identifier.repo_with_tag, im))
+                res.append((im.image_identifier.full_name_with_tag, im))
             else:
                 res.append(("default-worker-image", im))
 
@@ -229,7 +229,7 @@ class SyftWorkerImageService(AbstractService):
 
         if not context.node.in_memory_workers and image and image.image_identifier:
             try:
-                full_tag: str = image.image_identifier.repo_with_tag
+                full_tag: str = image.image_identifier.full_name_with_tag
                 with contextlib.closing(docker.from_env()) as client:
                     client.images.remove(image=full_tag)
             except docker.errors.ImageNotFound:

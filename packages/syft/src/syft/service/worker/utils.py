@@ -160,7 +160,7 @@ def run_container_using_docker(
         environment["CONTAINER_HOST"] = "docker"
 
         container = docker_client.containers.run(
-            worker_image.image_identifier.repo_with_tag,
+            worker_image.image_identifier.full_name_with_tag,
             name=f"{hostname}-{worker_name}",
             detach=True,
             auto_remove=True,
