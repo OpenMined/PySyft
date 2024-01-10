@@ -106,7 +106,7 @@ services:
       - DEV_MODE=${DEV_MODE}
       - NODE_SIDE_TYPE=${NODE_SIDE_TYPE}
       - ENABLE_WARNINGS=${ENABLE_WARNINGS}
-      - INMEMORY_WORKERS=true
+      - INMEMORY_WORKERS=${INMEMORY_WORKERS}
     ports:
       - "${HTTP_PORT}:${HTTP_PORT}"
     volumes:
