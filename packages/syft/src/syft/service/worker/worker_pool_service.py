@@ -104,7 +104,7 @@ class SyftWorkerPoolService(AbstractService):
                 message=f"Failed to retrieve Worker Image with id: {image_uid}. Error: {result.err()}"
             )
 
-        worker_image = result.ok()
+        worker_image: SyftWorkerImage = result.ok()
 
         worker_list, container_statuses = _create_workers_in_pool(
             context=context,
@@ -148,7 +148,7 @@ class SyftWorkerPoolService(AbstractService):
         res: List[Tuple] = []
         for pool in worker_pools:
             if pool.image.image_identifier is not None:
-                res.append((pool.image.image_identifier.repo_with_tag, pool))
+                res.append((pool.image.image_identifier.full_name_with_tag, pool))
             else:
                 res.append(("in-memory-pool", pool))
         return DictTuple(res)
@@ -193,7 +193,7 @@ class SyftWorkerPoolService(AbstractService):
                 message=f"Failed to retrieve image for worker pool: {worker_pool.name}"
             )
 
-        worker_image = result.ok()
+        worker_image: SyftWorkerImage = result.ok()
 
         worker_list, container_statuses = _create_workers_in_pool(
             context=context,
