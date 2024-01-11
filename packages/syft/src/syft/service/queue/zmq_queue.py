@@ -392,7 +392,6 @@ class ZMQProducer(QueueProducer):
         if worker is None:
             worker = Worker(identity=identity, address=address)
             self.workers[identity] = worker
-            print("I: registering new worker: %s", identity)
         return worker
 
     def process_worker(self, address: bytes, msg: List[bytes]):
@@ -417,9 +416,6 @@ class ZMQProducer(QueueProducer):
                     service = self.services.get(service_name)
                 worker.service = service
                 worker.syft_worker_id = syft_worker_id
-                print(
-                    f"New Worker Added: <{worker.identity}> for Service: {service.name}"
-                )
                 self.worker_waiting(worker)
 
         elif QueueMsgProtocol.W_HEARTBEAT == command:
