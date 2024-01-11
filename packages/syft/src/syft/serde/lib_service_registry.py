@@ -241,8 +241,8 @@ class CMPBase:
                     sorted(
                         self.children.values(),
                         key=lambda x: x.permissions.permission_string,  # type: ignore
-                    )  # type: ignore
-                )  # type: ignore
+                    )
+                )
             ]
         )
         tree_prefix = "└───" if is_last else "├───"
