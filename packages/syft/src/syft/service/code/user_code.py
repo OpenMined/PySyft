@@ -658,7 +658,7 @@ class SubmitUserCode(SyftObject):
     def __call__(self, *args: Any, syft_no_node=False, **kwargs: Any) -> Any:
         if syft_no_node:
             return self.local_call(*args, **kwargs)
-        return self.ephemeral_node_call(*args, **kwargs)
+        return self._ephemeral_node_call(*args, **kwargs)
 
     def local_call(self, *args: Any, **kwargs: Any) -> Any:
         # only run this on the client side
@@ -686,17 +686,13 @@ class SubmitUserCode(SyftObject):
         else:
             raise NotImplementedError
 
-    def ephemeral_node_call(self, syft_client, *args: Any, **kwargs: Any) -> Any:
-        # Right now we only create the same number of workers
-        # In the future we might need to have the same pools/images as well
-        if syft_client.worker_pools is None:
-            n_consumers = 0
-        else:
-            n_consumers = sum([len(pool.workers) for pool in syft_client.worker_pools])
-
+    def _ephemeral_node_call(self, n_consumers=2, *args: Any, **kwargs: Any) -> Any:
         # relative
         from ... import _orchestra
+        # Right now we only create a number of workers
+        # In the future we might need to have the same pools/images as well
 
+        # This could be changed given the work on containers
         ep_node = _orchestra().launch(
             name=f"ephemeral_node_{self.func_name}_{random.randint(a=0, b=10000)}",
             reset=True,
@@ -731,14 +727,16 @@ class SubmitUserCode(SyftObject):
                     return res
 
         new_syft_func = deepcopy(self)
-        new_input_policy_init_kwargs = {}
-        ep_node_identity = NodeIdentity.from_api(ep_client.api)
+        # new_input_policy_init_kwargs = {}
+        # ep_node_identity = NodeIdentity.from_api(ep_client.api)
 
         # change the input policy to have the location of the new node
         # maybe to the same for the output policy
-        for dict in self.input_policy_init_kwargs.values():
-            new_input_policy_init_kwargs[ep_node_identity] = dict
-        new_syft_func.input_policy_init_kwargs = new_input_policy_init_kwargs
+        # for dict in self.input_policy_init_kwargs.values():
+        #     new_input_policy_init_kwargs[ep_node_identity] = dict
+        # new_syft_func.input_policy_init_kwargs = new_input_policy_init_kwargs
+
+        # new_syft_func.input_policy_type = None
 
         ep_client.code.request_code_execution(new_syft_func)
         ep_client.requests[-1].approve()
