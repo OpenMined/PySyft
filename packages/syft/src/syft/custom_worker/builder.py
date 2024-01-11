@@ -60,16 +60,12 @@ class CustomWorkerBuilder:
         return self._push_image(tag, **kwargs)
 
     def _build_dockerfile(self, config: DockerWorkerConfig, tag: str, **kwargs):
-        print("Building with provided dockerfile")
-
         # convert string to file-like object
         file_obj = io.BytesIO(config.dockerfile.encode("utf-8"))
         return self._build_image(fileobj=file_obj, tag=tag, **kwargs)
 
     def _build_template(self, config: CustomWorkerConfig, **kwargs: Any):
         # Builds a Docker pre-made CPU/GPU image template using a CustomWorkerConfig
-        print("Building with dockerfule template")
-
         # remove once GPU is supported
         if config.build.gpu:
             raise Exception("GPU custom worker is not supported yet")
@@ -86,12 +82,6 @@ class CustomWorkerBuilder:
             "PIP_PACKAGES": config.build.merged_python_pkgs(),
             "CUSTOM_CMD": config.build.merged_custom_cmds(),
         }
-
-        print(
-            f"Building dockerfile={dockerfile} "
-            f"in context={contextdir} "
-            f"with args={build_args}"
-        )
 
         return self._build_image(
             tag=f"{self.CUSTOM_IMAGE_PREFIX}-{type}:{imgtag}",

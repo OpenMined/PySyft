@@ -46,7 +46,7 @@ class SyftImageRegistryService(AbstractService):
             return SyftError(message=res.err())
 
         return SyftSuccess(
-            message=f"Image registry <id: {registry.id}> created successfully"
+            message=f"Image Registry ID: {registry.id} created successfully"
         )
 
     @service_method(
@@ -68,7 +68,7 @@ class SyftImageRegistryService(AbstractService):
             if res.is_err():
                 return SyftError(message=res.err())
             return SyftSuccess(
-                message=f"Image registry <url: {url}> successfully deleted."
+                message=f"Image Registry URL: {url} successfully deleted."
             )
 
         # if uid is provided, delete by uid
@@ -77,7 +77,7 @@ class SyftImageRegistryService(AbstractService):
             if res.is_err():
                 return SyftError(message=res.err())
             return SyftSuccess(
-                message=f"Image registry <id: {uid}> successfully deleted."
+                message=f"Image Registry ID: {uid} successfully deleted."
             )
         else:
             return SyftError(message="Either UID or URL must be provided.")

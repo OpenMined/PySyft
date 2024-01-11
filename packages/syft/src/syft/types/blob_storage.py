@@ -201,7 +201,7 @@ class SeaweedSecureFilePathLocation(SecureFilePathLocation):
     __canonical_name__ = "SeaweedSecureFilePathLocation"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    upload_id: str
+    upload_id: Optional[str] = None
 
     def generate_url(self, connection, type_, bucket_name):
         try:

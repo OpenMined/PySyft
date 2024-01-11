@@ -94,7 +94,7 @@ class SyftWorkerPoolService(AbstractService):
                 context.credentials, pool_name=DEFAULT_WORKER_POOL_NAME
             )
             default_worker_pool = result.ok()
-            image_uid = default_worker_pool.syft_worker_image_id
+            image_uid = default_worker_pool.image.id
 
         result = self.image_stash.get_by_uid(
             credentials=context.credentials, uid=image_uid
@@ -104,7 +104,7 @@ class SyftWorkerPoolService(AbstractService):
                 message=f"Failed to retrieve Worker Image with id: {image_uid}. Error: {result.err()}"
             )
 
-        worker_image = result.ok()
+        worker_image: SyftWorkerImage = result.ok()
 
         worker_list, container_statuses = _create_workers_in_pool(
             context=context,
@@ -114,7 +114,7 @@ class SyftWorkerPoolService(AbstractService):
             worker_image=worker_image,
             worker_stash=self.worker_stash,
             reg_username=reg_username,
-            reg_password=reg_username,
+            reg_password=reg_password,
         )
 
         worker_pool = WorkerPool(
@@ -148,7 +148,7 @@ class SyftWorkerPoolService(AbstractService):
         res: List[Tuple] = []
         for pool in worker_pools:
             if pool.image.image_identifier is not None:
-                res.append((pool.image.image_identifier.repo_with_tag, pool))
+                res.append((pool.image.image_identifier.full_name_with_tag, pool))
             else:
                 res.append(("in-memory-pool", pool))
         return DictTuple(res)
@@ -165,9 +165,6 @@ class SyftWorkerPoolService(AbstractService):
         pool_id: Optional[UID] = None,
         pool_name: Optional[str] = None,
     ) -> Union[List[ContainerSpawnStatus], SyftError]:
-        # TODO: During get_all, we should dynamically make a call to docker to get the status of the containers
-        # and update the status of the workers in the pool.
-
         if pool_id:
             result = self.stash.get_by_uid(credentials=context.credentials, uid=pool_id)
         elif pool_name:
@@ -185,7 +182,7 @@ class SyftWorkerPoolService(AbstractService):
 
         result = self.image_stash.get_by_uid(
             credentials=context.credentials,
-            uid=worker_pool.syft_worker_image_id,
+            uid=worker_pool.image.id,
         )
 
         if result.is_err():
@@ -193,7 +190,7 @@ class SyftWorkerPoolService(AbstractService):
                 message=f"Failed to retrieve image for worker pool: {worker_pool.name}"
             )
 
-        worker_image = result.ok()
+        worker_image: SyftWorkerImage = result.ok()
 
         worker_list, container_statuses = _create_workers_in_pool(
             context=context,
@@ -204,7 +201,7 @@ class SyftWorkerPoolService(AbstractService):
             worker_stash=self.worker_stash,
         )
 
-        worker_pool.worker_list.append(worker_list)
+        worker_pool.worker_list += worker_list
         worker_pool.max_count = existing_worker_cnt + number
 
         update_result = self.stash.update(
