@@ -20,7 +20,7 @@ from ..action.action_permissions import ActionPermission
 from .worker_pool import WorkerPool
 
 PoolNamePartitionKey = PartitionKey(key="name", type_=str)
-PoolImageIDPartitionKey = PartitionKey(key="syft_worker_image_id", type_=UID)
+PoolImageIDPartitionKey = PartitionKey(key="image_id", type_=UID)
 
 
 @serializable()

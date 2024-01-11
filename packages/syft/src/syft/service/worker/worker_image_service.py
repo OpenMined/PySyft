@@ -243,3 +243,19 @@ class SyftWorkerImageService(AbstractService):
         )
 
         return SyftSuccess(message=returned_message)
+
+    @service_method(
+        path="worker_image.get_by_uid",
+        name="get_by_uid",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def get_by_uid(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftWorkerImage, SyftError]:
+        res = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
+        if res.is_err():
+            return SyftError(
+                message=f"Failed to get image with uid {uid}. Error: {res.err()}"
+            )
+        image: SyftWorkerImage = res.ok()
+        return image
