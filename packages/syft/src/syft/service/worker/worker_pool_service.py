@@ -143,14 +143,11 @@ class SyftWorkerPoolService(AbstractService):
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_err():
             return SyftError(message=f"{result.err()}")
-        worker_pools = result.ok()
+        worker_pools: List[WorkerPool] = result.ok()
 
         res: List[Tuple] = []
         for pool in worker_pools:
-            if pool.image.image_identifier is not None:
-                res.append((pool.image.image_identifier.full_name_with_tag, pool))
-            else:
-                res.append(("in-memory-pool", pool))
+            res.append((pool.name, pool))
         return DictTuple(res)
 
     @service_method(
