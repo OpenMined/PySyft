@@ -752,7 +752,7 @@ def syft_function(
     input_policy: Optional[Union[InputPolicy, UID]] = None,
     output_policy: Optional[Union[OutputPolicy, UID]] = None,
     share_results_with_owners=False,
-    worker_pool_id: Optional[UID] = None,
+    worker_pool_id: Optional[Union[UID, str]] = None,
 ) -> SubmitUserCode:
     if input_policy is None:
         input_policy = EmpyInputPolicy()
@@ -769,6 +769,9 @@ def syft_function(
         output_policy_type = SubmitUserPolicy.from_obj(output_policy)
     else:
         output_policy_type = type(output_policy)
+
+    if isinstance(worker_pool_id, str):
+        worker_pool_id = UID(worker_pool_id)
 
     def decorator(f):
         res = SubmitUserCode(
