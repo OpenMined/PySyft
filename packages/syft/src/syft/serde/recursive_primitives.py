@@ -37,8 +37,8 @@ if sys.version_info >= (3, 9):
     from typing import _UnionGenericAlias
 
 
-iterable_schema = get_capnp_schema("iterable.capnp").Iterable  # type: ignore
-kv_iterable_schema = get_capnp_schema("kv_iterable.capnp").KVIterable  # type: ignore
+iterable_schema = get_capnp_schema("iterable.capnp").Iterable
+kv_iterable_schema = get_capnp_schema("kv_iterable.capnp").KVIterable
 
 
 def serialize_iterable(iterable: Collection) -> bytes:
@@ -63,7 +63,7 @@ def deserialize_iterable(iterable_type: type, blob: bytes) -> Collection:
     MAX_TRAVERSAL_LIMIT = 2**64 - 1
     values = []
 
-    with iterable_schema.from_bytes(  # type: ignore
+    with iterable_schema.from_bytes(
         blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
     ) as msg:
         for element in msg.values:
@@ -104,7 +104,7 @@ def get_deserialized_kv_pairs(blob: bytes) -> List[Any]:
     MAX_TRAVERSAL_LIMIT = 2**64 - 1
     pairs = []
 
-    with kv_iterable_schema.from_bytes(  # type: ignore
+    with kv_iterable_schema.from_bytes(
         blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
     ) as msg:
         for key, value in zip(msg.keys, msg.values):
