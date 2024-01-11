@@ -686,12 +686,15 @@ class SubmitUserCode(SyftObject):
         else:
             raise NotImplementedError
 
-    def _ephemeral_node_call(self, n_consumers=2, *args: Any, **kwargs: Any) -> Any:
+    def _ephemeral_node_call(self, n_consumers=None, *args: Any, **kwargs: Any) -> Any:
         # relative
         from ... import _orchestra
         # Right now we only create a number of workers
         # In the future we might need to have the same pools/images as well
 
+        if n_consumers is None:
+            print(SyftInfo(message="Creating a node with 2 workers (the default value)"))
+            
         # This could be changed given the work on containers
         ep_node = _orchestra().launch(
             name=f"ephemeral_node_{self.func_name}_{random.randint(a=0, b=10000)}",
