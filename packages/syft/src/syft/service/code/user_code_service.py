@@ -34,7 +34,7 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL, ServiceRole
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .user_code import SubmitUserCode
 from .user_code import UserCode
@@ -315,9 +315,12 @@ class UserCodeService(AbstractService):
             if code_result.is_err():
                 return code_result
             code: UserCode = code_result.ok()
+            override_execution_permission = (
+                context.has_execute_permissions or context.role == ServiceRole.ADMIN
+            )
 
             output_policy = code.output_policy
-            if not context.has_execute_permissions:
+            if not override_execution_permission:
                 can_execute = self.is_execution_allowed(
                     code=code, context=context, output_policy=output_policy
                 )
@@ -361,7 +364,7 @@ class UserCodeService(AbstractService):
             # Apply Output Policy to the results and update the OutputPolicyState
 
             # this currently only works for nested syft_functions
-            if not context.has_execute_permissions:
+            if not override_execution_permission:
                 output_policy.apply_output(context=context, outputs=result)
                 code.output_policy = output_policy
                 if not (
@@ -371,13 +374,21 @@ class UserCodeService(AbstractService):
                 ):
                     return update_success.to_result()
 
+            has_result_read_permission = context.extra_kwargs.get(
+                "has_result_read_permission", False
+            )
             if isinstance(result, TwinObject):
-                return Ok(result.mock)
+                if has_result_read_permission:
+                    return Ok(result.private)
+                else:
+                    return Ok(result.mock)            
             elif result.is_mock:
                 return Ok(result)
             elif result.syft_action_data_type is Err:
                 # result contains the error but the request was handled correctly
                 return result.syft_action_data
+            elif has_result_read_permission:
+                return Ok(result)
             else:
                 return Ok(result.as_empty())
         except Exception as e:

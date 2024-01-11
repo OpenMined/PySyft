@@ -30,7 +30,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import UserLibConfigRegistry
 from ..service import service_method
-from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..user.user_roles import GUEST_ROLE_LEVEL, ServiceRole
 from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
@@ -101,7 +101,10 @@ class ActionService(AbstractService):
         )
         if result.is_ok():
             if isinstance(action_object, TwinObject):
-                action_object = action_object.mock
+                if has_result_read_permission:
+                    action_object = action_object.private
+                else:
+                    action_object = action_object.mock
             action_object.syft_point_to(context.node.id)
             return Ok(action_object)
         return result.err()
@@ -271,7 +274,11 @@ class ActionService(AbstractService):
         kwargs: Dict[str, Any],
         result_id: Optional[UID] = None,
     ) -> Result[ActionObjectPointer, Err]:
-        if not context.has_execute_permissions:
+        override_execution_permission = (
+            context.has_execute_permissions or context.role == ServiceRole.ADMIN
+        )
+
+        if not override_execution_permission:
             input_policy = code_item.input_policy
             filtered_kwargs = input_policy.filter_kwargs(
                 kwargs=kwargs, context=context, code_item_id=code_item.id
@@ -284,7 +291,7 @@ class ActionService(AbstractService):
         # update input policy to track any input state
         # code_item.input_policy = input_policy
 
-        if not context.has_execute_permissions:
+        if not override_execution_permission:
             expected_input_kwargs = set()
             for _inp_kwarg in code_item.input_policy.inputs.values():
                 keys = _inp_kwarg.keys()
