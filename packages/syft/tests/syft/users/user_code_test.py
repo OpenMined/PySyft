@@ -145,3 +145,34 @@ def test_nested_requests(worker, guest_client: User):
     assert linked_obj.resolve.id == inner.id
     assert outer.status.approved
     assert not inner.status.approved
+
+def test_local_execution(worker, guest_client: User):
+    root_domain_client = worker.root_client
+    dataset = sy.Dataset(
+        name="test",
+        asset_list=[
+            sy.Asset(
+                name="test",
+                data=np.array([1, 2, 3]),
+                mock=np.array([1, 1, 1]),
+                mock_is_real=False,
+            )
+        ],
+    )
+    root_domain_client.upload_dataset(dataset)
+    asset = root_domain_client.datasets[0].assets[0]
+
+    @sy.syft_function(
+        input_policy=sy.ExactMatch(x=asset),
+        output_policy=sy.SingleExecutionExactOutput(),
+    )
+    def my_func(x):
+        return x + 1
+
+    my_func.code = dedent(my_func.code)
+
+    local_res = my_func(syft_client=guest_client, x=asset)
+
+    assert guest_client.code.request_code_execution(my_func)
+    root_domain_client.requests[-1].approve()
+    assert (local_res == guest_client.code.my_func(x=asset)).all()
