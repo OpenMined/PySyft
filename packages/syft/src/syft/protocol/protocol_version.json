@@ -978,7 +978,7 @@
       "JobItem": {
         "3": {
           "version": 3,
-          "hash": "7293ce8bf17bc7420b764bc32fd89512ecbfa045f12db0513904794a6b000581",
+          "hash": "f24909c18f3471f588f4fad9862aed302faa2db148196c6a032c9b4a33673808",
           "action": "add"
         }
       },
@@ -1059,6 +1059,13 @@
         "1": {
           "version": 1,
           "hash": "63c1c0d25b02eb59050133e07b9d197dfa01af5f4f425b346ee02f7e23097e96",
+          "action": "add"
+        }
+      },
+      "ErrorReport": {
+        "1": {
+          "version": 1,
+          "hash": "4f92d1b054db4e433197cba436afb1b203da94bf50af06930fcda85a9fa510b6",
           "action": "add"
         }
       }

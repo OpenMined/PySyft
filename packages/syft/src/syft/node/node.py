@@ -1213,6 +1213,39 @@ class Node(AbstractNode):
             return result
         return job
 
+    def _can_enqueue_user_code_job(
+        self, user_code_id: UID, credentials: SyftVerifyKey
+    ) -> bool:
+        role = self.get_role_for_credentials(credentials=credentials)
+        context = AuthedServiceContext(node=self, credentials=credentials, role=role)
+
+        user_code_service = self.get_service("usercodeservice")
+        user_code = user_code_service.get_by_uid(context=context, uid=user_code_id)
+
+        # We cannot enqueue job if there are no permissions to execute job action
+        override_execution_permission = (
+            context.has_execute_permissions or context.role == ServiceRole.ADMIN
+        )
+        if not (
+            override_execution_permission
+            or user_code_service.is_execution_allowed(
+                user_code, context, user_code.output_policy
+            )
+        ):
+            return False
+        return True
+
+    def _get_existing_user_code_jobs(
+        self, user_code_id: UID, credentials: SyftVerifyKey
+    ) -> Union[List[Job], SyftError]:
+        role = self.get_role_for_credentials(credentials=credentials)
+        context = AuthedServiceContext(node=self, credentials=credentials, role=role)
+
+        job_service = self.get_service("jobservice")
+        return job_service.get_by_user_code_id(
+            context=context, user_code_id=user_code_id
+        )
+
     def add_api_call_to_queue(self, api_call, parent_job_id=None):
         unsigned_call = api_call
         if isinstance(api_call, SignedSyftAPICall):
@@ -1220,14 +1253,41 @@ class Node(AbstractNode):
 
         is_user_code = unsigned_call.path == "code.call"
 
-        service, method = unsigned_call.path.split(".")
+        service_str, method_str = unsigned_call.path.split(".")
 
         action = None
         if is_user_code:
             action = Action.from_api_call(unsigned_call)
+            if self.node_side_type == NodeSideType.LOW_SIDE:
+                existing_jobs = self._get_existing_user_code_jobs(
+                    action.user_code_id, api_call.credentials
+                )
+                if isinstance(existing_jobs, SyftError):
+                    return existing_jobs
+                elif len(existing_jobs) > 0:
+                    # Print warning if there are existing jobs for this user code
+                    # relative
+                    from ..util.util import prompt_warning_message
+
+                    prompt_warning_message(
+                        "There are existing jobs for this user code, returning the latest one."
+                    )
+                    return existing_jobs[-1]
+                else:
+                    return SyftError(
+                        message="Please wait for the Data Owner to start a job."
+                    )
+            if not self._can_enqueue_user_code_job(
+                action.user_code_id, api_call.credentials
+            ):
+                return SyftError(
+                    message="User has no permissions to start job for this user code."
+                )
+
             return self.add_action_to_queue(
                 action, api_call.credentials, parent_job_id=parent_job_id
             )
+
         else:
             worker_settings = WorkerSettings.from_node(node=self)
             default_worker_pool = self.get_default_worker_pool()
@@ -1243,8 +1303,8 @@ class Node(AbstractNode):
                 syft_node_location=self.id,
                 job_id=UID(),
                 worker_settings=worker_settings,
-                service=service,
-                method=method,
+                service=service_str,
+                method=method_str,
                 args=unsigned_call.args,
                 kwargs=unsigned_call.kwargs,
                 worker_pool=worker_pool,

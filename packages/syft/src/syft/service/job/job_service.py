@@ -8,12 +8,15 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..queue.queue_stash import ActionQueueItem
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
+from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .job_stash import Job
 from .job_stash import JobStash
@@ -60,6 +63,7 @@ class JobService(AbstractService):
     @service_method(
         path="job.get_by_user_code_id",
         name="get_by_user_code_id",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_by_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
@@ -72,7 +76,7 @@ class JobService(AbstractService):
 
         res = []
         for job in all_jobs:
-            if job.action is not None and job.action.user_code_id == user_code_id:
+            if job.user_code_id and job.user_code_id == user_code_id:
                 res.append(job)
 
         return res
@@ -157,6 +161,28 @@ class JobService(AbstractService):
             )
 
     @service_method(
+        path="job.update_status",
+        name="update_status",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def update_job_status(
+        self,
+        context: AuthedServiceContext,
+        id: UID,
+        status: JobStatus,
+    ) -> Union[SyftSuccess, SyftError]:
+        res = self.stash.get_by_uid(context.credentials, uid=id)
+        if res.is_err():
+            return SyftError(message=res.err())
+
+        job = res.ok()
+        job.status = status
+        res = self.stash.update(context.credentials, obj=job)
+        if res.is_err():
+            return SyftError(message=res.err())
+        return SyftSuccess(message="Job status updated successfully!")
+
+    @service_method(
         path="job.get_subjobs",
         name="get_subjobs",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
@@ -178,3 +204,53 @@ class JobService(AbstractService):
         if res.is_err():
             return SyftError(message=res.err())
         return res.ok()
+
+    @service_method(
+        path="job.create_job_for_user_code_id",
+        name="create_job_for_user_code_id",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def create_job_for_user_code_id(
+        self, context: AuthedServiceContext, user_code_id: UID
+    ) -> Union[Job, SyftError]:
+        """
+        When DO submits job from high side for DS,
+        we create an empty job for this user_code_id before an Action (code execution) is created by DS.
+
+        This is needed to be able to track the job status and result once DS starts a job.
+        """
+
+        job = Job(
+            id=UID(),
+            node_uid=context.node.id,
+            action=None,
+            result_id=None,
+            parent_id=None,
+            log_id=UID(),
+            job_pid=None,
+            user_code_id_=user_code_id,
+        )
+
+        user_code_service = context.node.get_service("usercodeservice")
+        user_code = user_code_service.get_by_uid(context=context, uid=user_code_id)
+        if isinstance(user_code, SyftError):
+            return user_code
+
+        # The owner of the code should be able to read the job
+        permission = ActionObjectPermission(
+            job.id, ActionPermission.READ, user_code.user_verify_key
+        )
+        self.stash.set(context.credentials, job, add_permissions=[permission])
+
+        log_service = context.node.get_service("logservice")
+        res = log_service.add(context, job.log_id)
+        if isinstance(res, SyftError):
+            return res
+        # The owner of the code should be able to read the job log
+        log_service.stash.add_permission(
+            ActionObjectPermission(
+                job.log_id, ActionPermission.READ, user_code.user_verify_key
+            )
+        )
+
+        return job

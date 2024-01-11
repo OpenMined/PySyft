@@ -213,7 +213,7 @@ class UserCodeService(AbstractService):
     )
     def get_by_uid(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> Union[UserCode, SyftError]:
         """Get a User Code Item"""
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():

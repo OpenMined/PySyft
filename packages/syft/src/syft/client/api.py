@@ -675,11 +675,9 @@ class SyftAPI(SyftObject):
 
                     if (
                         v.pre_kwargs is not None
-                        and v.pre_kwargs.get("uid", None) is not None
+                        and (user_code_id := v.pre_kwargs.get("uid", None)) is not None
                     ):
-                        code_id = v.pre_kwargs["uid"]
-                        # print(endpoint_function, "code_id", code_id)
-                        endpoint_function.code_id = code_id
+                        endpoint_function.user_code_id = user_code_id
 
                 elif isinstance(v, LibEndpoint):
                     endpoint_function = generate_remote_lib_function(
