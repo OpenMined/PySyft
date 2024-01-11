@@ -694,6 +694,7 @@ class SubmitUserCode(SyftObject):
 
         if n_consumers is None:
             print(SyftInfo(message="Creating a node with 2 workers (the default value)"))
+            n_consumers = 2
             
         # This could be changed given the work on containers
         ep_node = _orchestra().launch(
@@ -730,18 +731,9 @@ class SubmitUserCode(SyftObject):
                     return res
 
         new_syft_func = deepcopy(self)
-        # new_input_policy_init_kwargs = {}
-        # ep_node_identity = NodeIdentity.from_api(ep_client.api)
-
-        # change the input policy to have the location of the new node
-        # maybe to the same for the output policy
-        # for dict in self.input_policy_init_kwargs.values():
-        #     new_input_policy_init_kwargs[ep_node_identity] = dict
-        # new_syft_func.input_policy_init_kwargs = new_input_policy_init_kwargs
-
-        # new_syft_func.input_policy_type = None
-
+        
         ep_client.code.request_code_execution(new_syft_func)
+        print(ep_client.requests)
         ep_client.requests[-1].approve()
         func_call = getattr(ep_client.code, new_syft_func.func_name)
         result = func_call(*args, **kwargs)
