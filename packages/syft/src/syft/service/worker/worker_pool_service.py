@@ -94,7 +94,7 @@ class SyftWorkerPoolService(AbstractService):
                 context.credentials, pool_name=DEFAULT_WORKER_POOL_NAME
             )
             default_worker_pool = result.ok()
-            image_uid = default_worker_pool.syft_worker_image_id
+            image_uid = default_worker_pool.image.id
 
         result = self.image_stash.get_by_uid(
             credentials=context.credentials, uid=image_uid
@@ -165,9 +165,6 @@ class SyftWorkerPoolService(AbstractService):
         pool_id: Optional[UID] = None,
         pool_name: Optional[str] = None,
     ) -> Union[List[ContainerSpawnStatus], SyftError]:
-        # TODO: During get_all, we should dynamically make a call to docker to get the status of the containers
-        # and update the status of the workers in the pool.
-
         if pool_id:
             result = self.stash.get_by_uid(credentials=context.credentials, uid=pool_id)
         elif pool_name:
