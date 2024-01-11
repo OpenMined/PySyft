@@ -1,6 +1,6 @@
 ARG SEAWEEDFS_VERSION
 
-FROM chrislusf/seaweedfs:${SEAWEEDFS_VERSION}
+FROM chrislusf/seaweedfs:${SEAWEEDFS_VERSION}_large_disk
 
 WORKDIR /
 
