@@ -1270,18 +1270,18 @@ class Node(AbstractNode):
                     from ..util.util import prompt_warning_message
 
                     prompt_warning_message(
-                        "There are existing jobs for this user code, returning the latest one."
+                        "There are existing jobs for this user code, returning the latest one"
                     )
                     return existing_jobs[-1]
                 else:
                     return SyftError(
-                        message="Please wait for the Data Owner to start a job."
+                        message="Please wait for the admin to allow the execution of this code"
                     )
             if not self._can_enqueue_user_code_job(
                 action.user_code_id, api_call.credentials
             ):
                 return SyftError(
-                    message="User has no permissions to start job for this user code."
+                    message="User has no permissions to start job for this user code"
                 )
 
             return self.add_action_to_queue(

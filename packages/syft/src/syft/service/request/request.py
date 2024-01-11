@@ -573,10 +573,12 @@ class Request(SyftObject):
                 return result
 
             if job is not None:
-                # This result is from a high side job, update the low side job with the result
-                res = self._set_job_result(result=result, status=job.status)
-                if isinstance(res, SyftError):
-                    return res
+                job_status = job.status
+            else:
+                job_status = JobStatus.COMPLETED
+            res = self._set_job_result(result=result, status=job_status)
+            if isinstance(res, SyftError):
+                return res
             return SyftSuccess(message="Request submitted for updating result.")
         else:
             action_object = ActionObject.from_obj(
@@ -590,11 +592,6 @@ class Request(SyftObject):
             result = api.services.action.set(action_object)
             if isinstance(result, SyftError):
                 return result
-
-            if job is not None:
-                res = self._set_job_result(result=result, status=job.status)
-                if isinstance(res, SyftError):
-                    return res
 
             ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
 
@@ -613,16 +610,28 @@ class Request(SyftObject):
             )
 
             new_changes = [policy_state_mutation, permission_change]
-            result = api.services.request.add_changes(uid=self.id, changes=new_changes)
-            if isinstance(result, SyftError):
-                return result
-            self = result
+            result_request = api.services.request.add_changes(
+                uid=self.id, changes=new_changes
+            )
+            if isinstance(result_request, SyftError):
+                return result_request
+            self = result_request
 
-            return self.approve(disable_warnings=True)
+            approved = self.approve(disable_warnings=True)
+            if isinstance(approved, SyftError):
+                return approved
 
-    def submit_job_status(
-        self, job_status: JobStatus
-    ) -> Result[SyftSuccess, SyftError]:
+            if job is not None:
+                job_status = job.status
+            else:
+                job_status = JobStatus.COMPLETED
+            res = self._set_job_result(result=result, status=job_status)
+            if isinstance(res, SyftError):
+                return res
+
+            return approved
+
+    def submit_job_status(self, other: Job) -> Result[SyftSuccess, SyftError]:
         """
         Update the status of the job for this request
         """
@@ -630,7 +639,7 @@ class Request(SyftObject):
         job_service = api.services.job
 
         job = self._get_or_create_job()
-        return job_service.update_status(id=job.id, status=job_status)
+        return job_service.update_status(id=job.id, status=other.status)
 
 
 @serializable()
