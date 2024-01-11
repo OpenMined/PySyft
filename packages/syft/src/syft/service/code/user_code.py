@@ -29,12 +29,9 @@ from typing_extensions import Self
 
 # relative
 from ...abstract_node import NodeType
-from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
-from ...client.client import PythonConnection
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
-from ...protocol.data_protocol import get_data_protocol
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
@@ -1041,7 +1038,7 @@ class SecureContext:
         node = context.node
         job_service = node.get_service("jobservice")
         action_service = node.get_service("actionservice")
-        user_service = node.get_service("userservice")
+        # user_service = node.get_service("userservice")
 
         def job_set_n_iters(n_iters):
             job = context.job
@@ -1058,24 +1055,24 @@ class SecureContext:
             job.current_iter += current_iter
             job_service.update(context, job)
 
-        def set_api_registry():
-            user_signing_key = [
-                x.signing_key
-                for x in user_service.stash.partition.data.values()
-                if x.verify_key == context.credentials
-            ][0]
-            data_protcol = get_data_protocol()
-            user_api = node.get_api(context.credentials, data_protcol.latest_version)
-            user_api.signing_key = user_signing_key
-            # We hardcode a python connection here since we have access to the node
-            # TODO: this is not secure
-            user_api.connection = PythonConnection(node=node)
+        # def set_api_registry():
+        #     user_signing_key = [
+        #         x.signing_key
+        #         for x in user_service.stash.partition.data.values()
+        #         if x.verify_key == context.credentials
+        #     ][0]
+        #     data_protcol = get_data_protocol()
+        #     user_api = node.get_api(context.credentials, data_protcol.latest_version)
+        #     user_api.signing_key = user_signing_key
+        #     # We hardcode a python connection here since we have access to the node
+        #     # TODO: this is not secure
+        #     user_api.connection = PythonConnection(node=node)
 
-            APIRegistry.set_api_for(
-                node_uid=node.id,
-                user_verify_key=context.credentials,
-                api=user_api,
-            )
+        #     APIRegistry.set_api_for(
+        #         node_uid=node.id,
+        #         user_verify_key=context.credentials,
+        #         api=user_api,
+        #     )
 
         def launch_job(func: UserCode, **kwargs):
             # relative
@@ -1097,8 +1094,8 @@ class SecureContext:
                     has_execute_permissions=True,
                     worker_pool_id=func.worker_pool_id,
                 )
-                # set api in global scope to enable using .get(), .wait())
-                set_api_registry()
+                # # set api in global scope to enable using .get(), .wait())
+                # set_api_registry()
 
                 return job
             except Exception as e:
@@ -1195,7 +1192,8 @@ def execute_byte_code(
         # statisfy lint checker
         result = None
 
-        _locals = locals()
+        # We only need access to local kwargs
+        _locals = {"kwargs": kwargs}
         _globals = {}
 
         for service_func_name, (linked_obj, _) in code_item.nested_codes.items():
@@ -1204,7 +1202,7 @@ def execute_byte_code(
                 raise Exception(code_obj.err())
             _globals[service_func_name] = code_obj.ok()
         _globals["print"] = print
-        exec(code_item.parsed_code, _globals, locals())  # nosec
+        exec(code_item.parsed_code, _globals, _locals)  # nosec
 
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
         try:
@@ -1218,7 +1216,6 @@ def execute_byte_code(
                 )
                 log_service = context.node.get_service("LogService")
                 log_service.append(context=context, uid=log_id, new_err=error_msg)
-
             result = Err(
                 f"Exception encountered while running {code_item.service_func_name}"
                 ", please contact the Node Admin for more info."

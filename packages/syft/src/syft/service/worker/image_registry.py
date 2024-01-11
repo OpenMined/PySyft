@@ -29,5 +29,8 @@ class SyftImageRegistry(SyftObject):
     def __hash__(self) -> int:
         return hash(self.url + str(self.tls_enabled))
 
+    def __repr__(self) -> str:
+        return f"SyftImageRegistry(url={self.url})"
+
     def __str__(self) -> str:
         return self.url
