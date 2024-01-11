@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import ast
+from copy import deepcopy
 import datetime
 from enum import Enum
 import hashlib
@@ -22,18 +23,16 @@ from typing import Tuple
 from typing import Type
 from typing import Union
 from typing import final
-from copy import deepcopy
 
 # third party
 from IPython.display import display
 from result import Err
 from typing_extensions import Self
 
-from syft.types.twin_object import TwinObject
-
 # relative
 from ...abstract_node import NodeType
-from ...client.api import APIRegistry, NodeIdentity
+from ...client.api import APIRegistry
+from ...client.api import NodeIdentity
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
 from ...serde.deserialize import _deserialize
@@ -53,6 +52,7 @@ from ...types.transforms import drop
 from ...types.transforms import generate_id
 from ...types.transforms import make_set_default
 from ...types.transforms import transform
+from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
@@ -659,7 +659,7 @@ class SubmitUserCode(SyftObject):
         if syft_no_node:
             return self.local_call(*args, **kwargs)
         return self.ephemeral_node_call(*args, **kwargs)
-        
+
     def local_call(self, *args: Any, **kwargs: Any) -> Any:
         # only run this on the client side
         if self.local_function:
@@ -685,7 +685,7 @@ class SubmitUserCode(SyftObject):
             return self.local_function(**filtered_kwargs)
         else:
             raise NotImplementedError
-        
+
     def ephemeral_node_call(self, syft_client, *args: Any, **kwargs: Any) -> Any:
         # Right now we only create the same number of workers
         # In the future we might need to have the same pools/images as well
@@ -693,23 +693,23 @@ class SubmitUserCode(SyftObject):
             n_consumers = 0
         else:
             n_consumers = sum([len(pool.workers) for pool in syft_client.worker_pools])
-        
+
+        # relative
         from ... import _orchestra
 
         ep_node = _orchestra().launch(
-            name=f"ephemeral_node_{self.func_name}_{random.randint(a=0, b=10000)}", 
+            name=f"ephemeral_node_{self.func_name}_{random.randint(a=0, b=10000)}",
             reset=True,
             create_producer=True,
             n_consumers=n_consumers,
         )
         ep_client = ep_node.login(email="info@openmined.org", password="changethis")
-        
+
         for node_id, obj_dict in self.input_policy_init_kwargs.items():
             api = APIRegistry.api_for(
-                node_uid = node_id.node_id,
-                user_verify_key=node_id.verify_key
+                node_uid=node_id.node_id, user_verify_key=node_id.verify_key
             )
-            
+
             # Creating TwinObject from the ids of the kwargs
             # Maybe there are some corner cases where this is not enough
             # And need only ActionObjects
@@ -729,19 +729,19 @@ class SubmitUserCode(SyftObject):
                 res = ep_client.api.services.action.set(twin)
                 if isinstance(res, SyftError):
                     return res
-        
+
         new_syft_func = deepcopy(self)
         new_input_policy_init_kwargs = {}
         ep_node_identity = NodeIdentity.from_api(ep_client.api)
-        
+
         # change the input policy to have the location of the new node
         # maybe to the same for the output policy
         for dict in self.input_policy_init_kwargs.values():
             new_input_policy_init_kwargs[ep_node_identity] = dict
         new_syft_func.input_policy_init_kwargs = new_input_policy_init_kwargs
-        
+
         ep_client.code.request_code_execution(new_syft_func)
-        ep_client.requests[-1].approve()    
+        ep_client.requests[-1].approve()
         func_call = getattr(ep_client.code, new_syft_func.func_name)
         result = func_call(*args, **kwargs)
         ep_node.land()
