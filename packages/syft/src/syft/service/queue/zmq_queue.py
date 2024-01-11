@@ -577,6 +577,7 @@ class ZMQConsumer(QueueConsumer):
                         # Call Message Handler
                         try:
                             message = msg.pop()
+                            self.associate_job(message)
                             self.message_handler.handle_message(
                                 message=message,
                                 syft_worker_id=self.syft_worker_id,

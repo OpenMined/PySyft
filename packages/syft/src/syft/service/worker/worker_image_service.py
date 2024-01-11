@@ -48,11 +48,9 @@ class SyftWorkerImageService(AbstractService):
     def submit_dockerfile(
         self, context: AuthedServiceContext, docker_config: DockerWorkerConfig
     ) -> Union[SyftSuccess, SyftError]:
-        image_identifier = SyftWorkerImageIdentifier(repo="", tag="")
         worker_image = SyftWorkerImage(
             config=docker_config,
             created_by=context.credentials,
-            image_identifier=image_identifier,
         )
         res = self.stash.set(context.credentials, worker_image)
 
@@ -60,7 +58,7 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=res.err())
 
         return SyftSuccess(
-            message=f"Dockerfile <id: {worker_image.id}> successfully submitted."
+            message=f"Dockerfile ID: {worker_image.id} successfully submitted."
         )
 
     @service_method(
@@ -90,10 +88,10 @@ class SyftWorkerImageService(AbstractService):
             image_registry_service: SyftImageRegistryService = context.node.get_service(
                 SyftImageRegistryService
             )
-            result = image_registry_service.get_by_id(context, registry_uid)
-            if result.is_err():
-                return result
-            registry: SyftImageRegistry = result.ok()
+            registry_result = image_registry_service.get_by_id(context, registry_uid)
+            if registry_result.is_err():
+                return registry_result
+            registry: SyftImageRegistry = registry_result.ok()
 
         try:
             if registry:
@@ -112,24 +110,25 @@ class SyftWorkerImageService(AbstractService):
             and worker_image.image_identifier.full_name_with_tag
             == image_identifier.full_name_with_tag
         ):
-            return SyftError(message=f"Image<{image_uid}> is already built")
+            return SyftError(message=f"Image ID: {image_uid} is already built")
 
         worker_image.image_identifier = image_identifier
+        result = None
 
         if not context.node.in_memory_workers:
-            result = docker_build(worker_image)
-            if isinstance(result, SyftError):
-                return result
+            build_result = docker_build(worker_image)
+            if isinstance(build_result, SyftError):
+                return build_result
 
-            worker_image.image_hash = result.image_hash
+            worker_image.image_hash = build_result.image_hash
             worker_image.built_at = DateTime.now()
 
             result = SyftSuccess(
-                message=f"Build {worker_image} succeeded.\n{result.logs}"
+                message=f"Build for Worker ID: {worker_image.id} succeeded.\n{build_result.logs}"
             )
         else:
             result = SyftSuccess(
-                message="Image building skipped, since using InMemory workers."
+                message="Image building skipped, since using in-memory workers."
             )
 
         update_result = self.stash.update(context.credentials, obj=worker_image)
@@ -153,28 +152,21 @@ class SyftWorkerImageService(AbstractService):
         username: Optional[str] = None,
         password: Optional[str] = None,
     ) -> Union[SyftSuccess, SyftError]:
-        if context.node.in_memory_workers:
-            return SyftSuccess(
-                message="Skipped pushing image, since using InMemory workers."
-            )
-
         result = self.stash.get_by_uid(credentials=context.credentials, uid=image)
         if result.is_err():
             return SyftError(
-                message=f"Failed to get image for uid: {image}. Error: {result.err()}"
+                message=f"Failed to get Image ID: {image}. Error: {result.err()}"
             )
         worker_image: SyftWorkerImage = result.ok()
 
-        if (
+        if not worker_image.is_built:
+            return SyftError(message=f"Image ID: {worker_image.id} is not built yet.")
+        elif (
             worker_image.image_identifier is None
             or worker_image.image_identifier.registry_host == ""
         ):
             return SyftError(
-                message=f"Image {worker_image} does not have a valid registry host."
-            )
-        elif worker_image.built_at is None:
-            return SyftError(
-                message=f"Image {worker_image} is not built yet. Please build it first."
+                message=f"Image ID: {worker_image.id} does not have a valid registry host."
             )
 
         result = docker_push(
@@ -187,7 +179,7 @@ class SyftWorkerImageService(AbstractService):
             return result
 
         return SyftSuccess(
-            message=f'The image was successfully pushed to "{worker_image.image_identifier.full_name_with_tag}"'
+            message=f'Pushed Image ID: {worker_image.id} to "{worker_image.image_identifier.full_name_with_tag}".'
         )
 
     @service_method(
@@ -209,7 +201,7 @@ class SyftWorkerImageService(AbstractService):
         res: List[Tuple] = []
         for im in images:
             if im.image_identifier is not None:
-                res.append((im.image_identifier.repo_with_tag, im))
+                res.append((im.image_identifier.full_name_with_tag, im))
             else:
                 res.append(("default-worker-image", im))
 
@@ -231,14 +223,14 @@ class SyftWorkerImageService(AbstractService):
 
         if not context.node.in_memory_workers and image and image.image_identifier:
             try:
-                full_tag: str = image.image_identifier.repo_with_tag
+                full_tag: str = image.image_identifier.full_name_with_tag
                 with contextlib.closing(docker.from_env()) as client:
                     client.images.remove(image=full_tag)
             except docker.errors.ImageNotFound:
-                return SyftError(message=f"Image {full_tag} not found.")
+                return SyftError(message=f"Image Tag: {full_tag} not found.")
             except Exception as e:
                 return SyftError(
-                    message=f"Failed to delete image {full_tag}. Error: {e}"
+                    message=f"Failed to delete Image Tag: {full_tag}. Error: {e}"
                 )
 
         result = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
@@ -247,7 +239,7 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"{result.err()}")
 
         returned_message: str = (
-            result.ok().message + f". Image {uid} deleted successfully."
+            result.ok().message + f". Image ID: {uid} deleted successfully."
         )
 
         return SyftSuccess(message=returned_message)
