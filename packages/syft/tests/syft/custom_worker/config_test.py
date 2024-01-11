@@ -51,7 +51,7 @@ CUSTOM_BUILD_CONFIG = {
 
 
 def generate_partial_custom_build_configs(
-    full_config: Dict[str, Any]
+    full_config: Dict[str, Any],
 ) -> List[Dict[str, Any]]:
     """
     generate_partial_custom_build_configs({
