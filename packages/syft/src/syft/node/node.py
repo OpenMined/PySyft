@@ -1450,27 +1450,29 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
 
     # Create worker pool if it doesn't exists
     if default_worker_pool is None:
+        worker_to_add_ = worker_count
         create_pool_method = node.get_service_method(SyftWorkerPoolService.create_pool)
         print("Creating default Worker Pool")
         result = create_pool_method(
             context,
             name=DEFAULT_WORKER_POOL_NAME,
             image_uid=default_image.id,
-            number=worker_count,
+            number=worker_to_add_,
         )
 
     else:
         # Else add a worker to existing worker pool
+        worker_to_add_ = max(default_worker_pool.max_count - worker_count, 0)
         add_worker_method = node.get_service_method(SyftWorkerPoolService.add_workers)
         result = add_worker_method(
-            context=context, number=worker_count, pool_name=DEFAULT_WORKER_POOL_NAME
+            context=context, number=worker_to_add_, pool_name=DEFAULT_WORKER_POOL_NAME
         )
 
     if isinstance(result, SyftError):
         print(f"Failed to create Worker for Default workers. Error: {result.message}")
         return
 
-    for n in range(worker_count):
+    for n in range(worker_to_add_):
         container_status = result[n]
         if container_status.error:
             print(
