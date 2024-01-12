@@ -106,6 +106,7 @@ services:
       - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
       - DEV_MODE=${DEV_MODE}
       - QUEUE_PORT=${QUEUE_PORT}
+      - CREATE_PRODUCER=true
       - NODE_SIDE_TYPE=${NODE_SIDE_TYPE}
       - ENABLE_WARNINGS=${ENABLE_WARNINGS}
       - INMEMORY_WORKERS=True # hardcoding is intentional, since single_container don't share databases
