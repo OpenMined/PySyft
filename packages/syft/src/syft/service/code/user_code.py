@@ -12,6 +12,7 @@ from io import StringIO
 import itertools
 import random
 import sys
+from threading import Thread
 import time
 import traceback
 from typing import Any
@@ -686,16 +687,26 @@ class SubmitUserCode(SyftObject):
         else:
             raise NotImplementedError
 
-    def _ephemeral_node_call(self, n_consumers=None, *args: Any, **kwargs: Any) -> Any:
+    def _ephemeral_node_call(
+        self, 
+        time_alive=None,
+        n_consumers=None, 
+        *args: Any, 
+        **kwargs: Any
+    ) -> Any:
         # relative
         from ... import _orchestra
         # Right now we only create a number of workers
         # In the future we might need to have the same pools/images as well
 
         if n_consumers is None:
-            print(SyftInfo(message="Creating a node with 2 workers (the default value)"))
+            print(SyftInfo(message="Creating a node with n_consumers=2 (the default value)"))
             n_consumers = 2
-            
+        
+        if time_alive is None:
+            print(SyftInfo(message="Closing the node after time_alive=300 (the default value)"))
+            time_alive = 300
+        
         # This could be changed given the work on containers
         ep_node = _orchestra().launch(
             name=f"ephemeral_node_{self.func_name}_{random.randint(a=0, b=10000)}",
@@ -717,27 +728,64 @@ class SubmitUserCode(SyftObject):
             # are ActionObjects, which might change in the future
             for _, id in obj_dict.items():
                 mock_obj = api.services.action.get_mock(id)
-                data_obj = mock_obj
+                if isinstance(mock_obj, SyftError):
+                    data_obj = api.services.action.get(id)
+                    if isinstance(data_obj, SyftError):
+                        return SyftError(
+                            message="You do not have access to object you want \
+                                to use, or the private object does not have mock \
+                                data. Contact the Node Admin.")
+                else:
+                    data_obj = mock_obj
                 data_obj.id = id
-                twin = TwinObject(
+                new_obj = ActionObject.from_obj(
+                    data_obj.syft_action_data,
                     id=id,
-                    private_obj=mock_obj,
-                    mock_obj=mock_obj,
                     syft_node_location=node_id.node_id,
                     syft_client_verify_key=node_id.verify_key,
                 )
-                res = ep_client.api.services.action.set(twin)
+                res = ep_client.api.services.action.set(new_obj)
                 if isinstance(res, SyftError):
                     return res
 
         new_syft_func = deepcopy(self)
         
+        # We are exploring the source code to automatically upload
+        # subjobs in the ephemeral node
+        # Usually, a DS would manually submit the code for subjobs,
+        # but because we dont allow them to interact with the ephemeral node
+        # that would not be possible
+        if "domain" in self.input_kwargs:
+            tree = ast.parse(inspect.getsource(self.local_function))
+            v = LaunchJobVisitor()
+            v.visit(tree)
+            nested_calls = v.nested_calls
+            try:
+                ipython = get_ipython()
+            except Exception:
+                ipython = None
+                pass
+
+            for call in nested_calls:
+                if ipython is not None:
+                    specs = ipython.object_inspect(call)
+                    # Look for nested job locally, maybe we could
+                    # fetch 
+                    if specs["type_name"] == "SubmitUserCode":
+                        ep_client.code.submit(ipython.ev(call))
+        
         ep_client.code.request_code_execution(new_syft_func)
-        print(ep_client.requests)
-        ep_client.requests[-1].approve()
+        ep_client.requests[-1].approve(approve_nested=True)
         func_call = getattr(ep_client.code, new_syft_func.func_name)
         result = func_call(*args, **kwargs)
-        ep_node.land()
+        
+        def task():
+            time.sleep(time_alive)
+            print(SyftInfo(message="Landing the ephmeral node..."))
+            ep_node.land()
+            print(SyftInfo(message="Node Landed!"))
+        thread = Thread(target=task)
+        thread.start()
 
         return result
 
