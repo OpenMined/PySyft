@@ -172,19 +172,22 @@ class Job(SyftObject):
 
         now = datetime.now()
         time_passed = now - datetime.fromisoformat(self.creation_time)
-
-        iter_duration_seconds = time_passed.total_seconds() / self.current_iter
-        iter_duration = timedelta(seconds=iter_duration_seconds)
-
+        iter_duration_seconds: float = time_passed.total_seconds() / self.current_iter
         iters_remaining = self.n_iters - self.current_iter
-        # TODO: Adjust by the number of consumers
-        time_remaining = iters_remaining * iter_duration
 
+        # TODO: Adjust by the number of consumers
+        time_remaining = timedelta(seconds=iters_remaining * iter_duration_seconds)
         time_passed_str = format_timedelta(time_passed)
         time_remaining_str = format_timedelta(time_remaining)
-        iter_duration_str = format_timedelta(iter_duration)
 
-        return f"[{time_passed_str}<{time_remaining_str}]\n{iter_duration_str}s/it"
+        if iter_duration_seconds >= 1:
+            iter_duration: timedelta = timedelta(seconds=iter_duration_seconds)
+            iter_duration_str = f"{format_timedelta(iter_duration)}s/it"
+        else:
+            iters_per_second = round(1 / iter_duration_seconds)
+            iter_duration_str = f"{iters_per_second}it/s"
+
+        return f"[{time_passed_str}<{time_remaining_str}]\n{iter_duration_str}"
 
     @property
     def progress(self) -> str:
