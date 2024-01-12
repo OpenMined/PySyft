@@ -712,12 +712,12 @@ class SubmitUserCode(SyftObject):
 
         # This could be changed given the work on containers
         ep_node = _orchestra().launch(
-            name=f"ephemeral_node_{self.func_name}_{random.randint(a=0, b=10000)}",
+            name=f"ephemeral_node_{self.func_name}_{random.randint(a=0, b=10000)}",  # nosec
             reset=True,
             create_producer=True,
             n_consumers=n_consumers,
         )
-        ep_client = ep_node.login(email="info@openmined.org", password="changethis")
+        ep_client = ep_node.login(email="info@openmined.org", password="changethis")  # nosec
 
         for node_id, obj_dict in self.input_policy_init_kwargs.items():
             api = APIRegistry.api_for(
