@@ -26,10 +26,10 @@ from typing import Union
 from typing import final
 
 # third party
+from IPython import get_ipython
 from IPython.display import display
 from result import Err
 from typing_extensions import Self
-from IPython import get_ipython
 
 # relative
 from ...abstract_node import NodeType

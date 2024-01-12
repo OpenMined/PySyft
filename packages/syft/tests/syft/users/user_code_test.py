@@ -173,4 +173,4 @@ def test_local_execution(worker, guest_client: User):
     my_func.code = dedent(my_func.code)
 
     local_res = my_func(x=asset, time_alive=1)
-    assert (local_res == np.array([2,2,2])).all()
+    assert (local_res == np.array([2, 2, 2])).all()
