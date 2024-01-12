@@ -147,7 +147,7 @@ def test_nested_requests(worker, guest_client: User):
     assert not inner.status.approved
 
 
-def test_local_execution(worker, guest_client: User):
+def test_local_execution(worker):
     root_domain_client = worker.root_client
     dataset = sy.Dataset(
         name="test",

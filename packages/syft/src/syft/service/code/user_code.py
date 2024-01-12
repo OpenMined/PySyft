@@ -702,7 +702,7 @@ class SubmitUserCode(SyftObject):
             )
             n_consumers = 2
 
-        if time_alive is None:
+        if time_alive is None and "blocking" in kwargs and not kwargs["blocking"]:
             print(
                 SyftInfo(
                     message="Closing the node after time_alive=300 (the default value)"
@@ -720,9 +720,10 @@ class SubmitUserCode(SyftObject):
         ep_client = ep_node.login(email="info@openmined.org", password="changethis")  # nosec
 
         for node_id, obj_dict in self.input_policy_init_kwargs.items():
-            api = APIRegistry.api_for(
-                node_uid=node_id.node_id, user_verify_key=node_id.verify_key
-            )
+            # api = APIRegistry.api_for(
+            #     node_uid=node_id.node_id, user_verify_key=node_id.verify_key
+            # )
+            api = APIRegistry.get_by_recent_node_uid(node_uid=node_id.node_id)
 
             # Creating TwinObject from the ids of the kwargs
             # Maybe there are some corner cases where this is not enough
@@ -786,7 +787,8 @@ class SubmitUserCode(SyftObject):
         result = func_call(*args, **kwargs)
 
         def task():
-            time.sleep(time_alive)
+            if "blocking" in kwargs and not kwargs["blocking"]:
+                time.sleep(time_alive)
             print(SyftInfo(message="Landing the ephmeral node..."))
             ep_node.land()
             print(SyftInfo(message="Node Landed!"))
