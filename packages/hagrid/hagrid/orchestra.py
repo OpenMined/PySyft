@@ -585,9 +585,9 @@ class Orchestra:
                 name=name,
                 node_side_type=node_side_type_enum,
             )
-        else:
-            print(f"deployment_type: {deployment_type_enum} is not supported")
-            return None
+        # else:
+        #     print(f"deployment_type: {deployment_type_enum} is not supported")
+        #     return None
 
     @staticmethod
     def land(
