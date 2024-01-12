@@ -101,7 +101,7 @@ def run_command(
 
 
 def check_returncode(
-    func: Callable[..., CompletedProcess]
+    func: Callable[..., CompletedProcess],
 ) -> Callable[..., CompletedProcess]:
     """A decorator to wrap run_command and check the return code."""
 
