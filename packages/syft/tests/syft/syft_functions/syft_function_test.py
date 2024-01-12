@@ -93,4 +93,4 @@ def test_nested_jobs(node):
 
     sub_results = [j.wait().get() for j in job.subjobs]
     assert set(sub_results) == {2, 3, 5}
-    assert job.result.wait().get() == 5
+    assert job.wait(block=True).get() == 5
