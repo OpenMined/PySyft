@@ -9,6 +9,7 @@ import pytest
 import syft as sy
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftSuccess
+from syft.service.user.user import UserCreate
 from syft.store.blob_storage import BlobDeposit
 from syft.store.blob_storage import SyftObjectRetrieval
 from syft.types.blob_storage import CreateBlobStorageEntry
@@ -39,6 +40,14 @@ def test_blob_storage_allocate(blob_deposit):
 
 def test_blob_storage_write(blob_deposit):
     file_data = io.BytesIO(data)
+    written_data = blob_deposit.write(file_data)
+
+    assert isinstance(written_data, SyftSuccess)
+
+
+def test_blob_storage_write_syft_object(blob_deposit, blob_storage, authed_context):
+    user = UserCreate(email="info@openmined.org")
+    file_data = io.BytesIO(sy.serialize(user, to_bytes=True))
     written_data = blob_deposit.write(file_data)
 
     assert isinstance(written_data, SyftSuccess)
