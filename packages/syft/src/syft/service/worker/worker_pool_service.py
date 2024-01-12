@@ -124,6 +124,7 @@ class SyftWorkerPoolService(AbstractService):
             worker_list=worker_list,
             syft_node_location=context.node.id,
             syft_client_verify_key=context.credentials,
+            worker_image=worker_image,  # patched for default image
         )
         result = self.stash.set(credentials=context.credentials, obj=worker_pool)
 
@@ -149,10 +150,22 @@ class SyftWorkerPoolService(AbstractService):
 
         res: List[Tuple] = []
         for pool in worker_pools:
-            if pool.image.image_identifier is not None:
-                res.append((pool.image.image_identifier.full_name_with_tag, pool))
+            # fetch the images from the SyftWorkerImageStash for the newest versions
+            result = self.image_stash.get_by_uid(
+                credentials=context.credentials, uid=pool.image_id
+            )
+            if result.is_err():
+                return SyftError(
+                    message=f"Failed to retrieve the image {pool.image_id} for "
+                    f"worker pool {pool.id}. Error: {result.err()}"
+                )
+            worker_image: SyftWorkerImage = result.ok()
+
+            if worker_image.image_identifier is not None:
+                res.append((worker_image.image_identifier.full_name_with_tag, pool))
             else:
                 res.append(("in-memory-pool", pool))
+
         return DictTuple(res)
 
     @service_method(
