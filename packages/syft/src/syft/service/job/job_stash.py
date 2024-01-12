@@ -403,7 +403,7 @@ class Job(SyftObject):
                     print(
                         "You're trying to wait on a job that has a link as a result."
                         "This means that the job may be ready but the linked result may not."
-                        "Use job.wait(subjobs=True) instead to wait for the linked result."
+                        "Use job.wait(block=True) instead to wait for the linked result."
                     )
                     print_warning = False
             sleep(2)
