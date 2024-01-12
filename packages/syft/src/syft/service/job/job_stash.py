@@ -375,7 +375,7 @@ class Job(SyftObject):
     """
         return as_markdown_code(md)
 
-    def wait(self, subjobs=False):
+    def wait(self, block=False):
         # stdlib
         from time import sleep
 
@@ -388,12 +388,12 @@ class Job(SyftObject):
         if self.resolved:
             return self.resolve
 
-        if subjobs:
+        if block:
             self.result.wait()
             return self.resolve
 
         print_warning = True
-        while not subjobs and True:
+        while True:
             self.fetch()
             if print_warning:
                 result_obj = api.services.action.get(
@@ -403,7 +403,7 @@ class Job(SyftObject):
                     print(
                         "You're trying to wait on a job that has a link as a result."
                         "This means that the job may be ready but the linked result may not."
-                        "Use job.result.wait() instead to wait for the linked result."
+                        "Use job.wait(subjobs=True) instead to wait for the linked result."
                     )
                     print_warning = False
             sleep(2)
