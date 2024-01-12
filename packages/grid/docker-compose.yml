@@ -81,6 +81,7 @@ services:
   worker:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
+    hostname: ${NODE_NAME?Variable not set}
     profiles:
       - worker
     env_file:
@@ -104,9 +105,10 @@ services:
       - JAEGER_PORT=${JAEGER_PORT}
       - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
       - DEV_MODE=${DEV_MODE}
+      - QUEUE_PORT=${QUEUE_PORT}
       - NODE_SIDE_TYPE=${NODE_SIDE_TYPE}
       - ENABLE_WARNINGS=${ENABLE_WARNINGS}
-      - INMEMORY_WORKERS=${INMEMORY_WORKERS}
+      - INMEMORY_WORKERS=True # hardcoding is intentional, since single_container don't share databases
     ports:
       - "${HTTP_PORT}:${HTTP_PORT}"
     volumes:

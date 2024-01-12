@@ -195,8 +195,6 @@ def get_syft_worker_uid() -> Optional[str]:
     return get_env("SYFT_WORKER_UID", None)
 
 
-dev_mode = get_dev_mode()
-
 signing_key_env = get_private_key_env()
 node_uid_env = get_node_uid_env()
 
@@ -272,7 +270,7 @@ class Node(AbstractNode):
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
-        self.dev_mode = dev_mode
+        self.dev_mode = dev_mode or get_dev_mode()
         if node_uid_env is not None:
             self.id = UID.from_string(node_uid_env)
         else:
@@ -784,7 +782,7 @@ class Node(AbstractNode):
             and document_store_config.client_config.filename is None
         ):
             document_store_config.client_config.filename = f"{self.id}.sqlite"
-            if dev_mode:
+            if self.dev_mode:
                 print(
                     f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
                 )
@@ -1467,6 +1465,9 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
         dev_mode=node.dev_mode,
         syft_version_tag="local-dev" if node.dev_mode else __version__,
     )
+
+    # Skip pulling image if using locally built image
+    pull_image = not node.dev_mode
     if isinstance(default_image, SyftError):
         return default_image
 
@@ -1477,7 +1478,10 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
     if not default_image.is_built:
         # Build the Image for given tag
         result = image_build_method(
-            context, image_uid=default_image.id, tag=DEFAULT_WORKER_IMAGE_TAG
+            context,
+            image_uid=default_image.id,
+            tag=DEFAULT_WORKER_IMAGE_TAG,
+            pull=pull_image,
         )
 
         if isinstance(result, SyftError):
@@ -1501,7 +1505,9 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
 
     else:
         # Else add a worker to existing worker pool
-        worker_to_add_ = max(default_worker_pool.max_count - worker_count, 0)
+        worker_to_add_ = max(default_worker_pool.max_count, worker_count) - len(
+            default_worker_pool.worker_list
+        )
         add_worker_method = node.get_service_method(SyftWorkerPoolService.add_workers)
         result = add_worker_method(
             context=context, number=worker_to_add_, pool_name=DEFAULT_WORKER_POOL_NAME

@@ -72,6 +72,7 @@ class SyftWorkerImageService(AbstractService):
         image_uid: UID,
         tag: str,
         registry_uid: Optional[UID] = None,
+        pull: bool = True,
     ) -> Union[SyftSuccess, SyftError]:
         registry: SyftImageRegistry = None
 
@@ -116,7 +117,7 @@ class SyftWorkerImageService(AbstractService):
         result = None
 
         if not context.node.in_memory_workers:
-            build_result = docker_build(worker_image)
+            build_result = docker_build(worker_image, pull=pull)
             if isinstance(build_result, SyftError):
                 return build_result
 
