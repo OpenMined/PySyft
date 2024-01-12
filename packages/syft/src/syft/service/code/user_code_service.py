@@ -34,8 +34,9 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL, ServiceRole
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..user.user_roles import ServiceRole
 from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
@@ -381,7 +382,7 @@ class UserCodeService(AbstractService):
                 if has_result_read_permission:
                     return Ok(result.private)
                 else:
-                    return Ok(result.mock)            
+                    return Ok(result.mock)
             elif result.is_mock:
                 return Ok(result)
             elif result.syft_action_data_type is Err:

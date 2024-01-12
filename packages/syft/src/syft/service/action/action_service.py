@@ -30,7 +30,8 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import UserLibConfigRegistry
 from ..service import service_method
-from ..user.user_roles import GUEST_ROLE_LEVEL, ServiceRole
+from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..user.user_roles import ServiceRole
 from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer

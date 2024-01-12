@@ -53,7 +53,6 @@ from ...types.transforms import drop
 from ...types.transforms import generate_id
 from ...types.transforms import make_set_default
 from ...types.transforms import transform
-from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
@@ -688,25 +687,30 @@ class SubmitUserCode(SyftObject):
             raise NotImplementedError
 
     def _ephemeral_node_call(
-        self, 
-        time_alive=None,
-        n_consumers=None, 
-        *args: Any, 
-        **kwargs: Any
+        self, time_alive=None, n_consumers=None, *args: Any, **kwargs: Any
     ) -> Any:
         # relative
         from ... import _orchestra
+
         # Right now we only create a number of workers
         # In the future we might need to have the same pools/images as well
 
         if n_consumers is None:
-            print(SyftInfo(message="Creating a node with n_consumers=2 (the default value)"))
+            print(
+                SyftInfo(
+                    message="Creating a node with n_consumers=2 (the default value)"
+                )
+            )
             n_consumers = 2
-        
+
         if time_alive is None:
-            print(SyftInfo(message="Closing the node after time_alive=300 (the default value)"))
+            print(
+                SyftInfo(
+                    message="Closing the node after time_alive=300 (the default value)"
+                )
+            )
             time_alive = 300
-        
+
         # This could be changed given the work on containers
         ep_node = _orchestra().launch(
             name=f"ephemeral_node_{self.func_name}_{random.randint(a=0, b=10000)}",
@@ -734,7 +738,8 @@ class SubmitUserCode(SyftObject):
                         return SyftError(
                             message="You do not have access to object you want \
                                 to use, or the private object does not have mock \
-                                data. Contact the Node Admin.")
+                                data. Contact the Node Admin."
+                        )
                 else:
                     data_obj = mock_obj
                 data_obj.id = id
@@ -749,7 +754,7 @@ class SubmitUserCode(SyftObject):
                     return res
 
         new_syft_func = deepcopy(self)
-        
+
         # We are exploring the source code to automatically upload
         # subjobs in the ephemeral node
         # Usually, a DS would manually submit the code for subjobs,
@@ -761,7 +766,9 @@ class SubmitUserCode(SyftObject):
             v.visit(tree)
             nested_calls = v.nested_calls
             try:
-                ipython = get_ipython()
+                ipython = (
+                    get_ipython()
+                )  # works only in interactive envs (like jupyter notebooks)
             except Exception:
                 ipython = None
                 pass
@@ -770,20 +777,21 @@ class SubmitUserCode(SyftObject):
                 if ipython is not None:
                     specs = ipython.object_inspect(call)
                     # Look for nested job locally, maybe we could
-                    # fetch 
+                    # fetch
                     if specs["type_name"] == "SubmitUserCode":
                         ep_client.code.submit(ipython.ev(call))
-        
+
         ep_client.code.request_code_execution(new_syft_func)
         ep_client.requests[-1].approve(approve_nested=True)
         func_call = getattr(ep_client.code, new_syft_func.func_name)
         result = func_call(*args, **kwargs)
-        
+
         def task():
             time.sleep(time_alive)
             print(SyftInfo(message="Landing the ephmeral node..."))
             ep_node.land()
             print(SyftInfo(message="Node Landed!"))
+
         thread = Thread(target=task)
         thread.start()
 
