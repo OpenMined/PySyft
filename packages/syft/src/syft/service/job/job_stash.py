@@ -375,7 +375,7 @@ class Job(SyftObject):
     """
         return as_markdown_code(md)
 
-    def wait(self):
+    def wait(self, subjobs=False):
         # stdlib
         from time import sleep
 
@@ -388,8 +388,12 @@ class Job(SyftObject):
         if self.resolved:
             return self.resolve
 
+        if subjobs:
+            self.result.wait()
+            return self.resolve
+
         print_warning = True
-        while True:
+        while not subjobs and True:
             self.fetch()
             if print_warning:
                 result_obj = api.services.action.get(
