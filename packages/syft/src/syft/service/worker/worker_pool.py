@@ -95,9 +95,6 @@ class SyftWorker(SyftObject):
             return ""
 
     def refresh_status(self) -> None:
-        # relative
-        from ...client.api import APIRegistry
-
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -132,7 +129,7 @@ class WorkerPool(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_unique__ = ["name"]
-    __attr_searchable__ = ["name"]
+    __attr_searchable__ = ["name", "image_id"]
     __repr_attrs__ = [
         "name",
         "image",
@@ -142,10 +139,23 @@ class WorkerPool(SyftObject):
     ]
 
     name: str
-    image: Optional[SyftWorkerImage]
+    image_id: Optional[UID]
     max_count: int
     worker_list: List[LinkedObject]
     created_at: DateTime = DateTime.now()
+
+    @property
+    def image(self) -> Optional[Union[SyftWorkerImage, SyftError]]:
+        """
+        Get the pool's image using the worker_image service API. This way we
+        get the latest state of the image from the SyftWorkerImageStash
+        """
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is not None:
+            return api.services.worker_image.get_by_uid(uid=self.image_id)
 
     @property
     def running_workers(self) -> Union[List[UID], SyftError]:
