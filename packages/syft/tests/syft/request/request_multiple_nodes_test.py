@@ -137,9 +137,7 @@ def test_transfer_request_blocking(
 
     compute_sum.code = dedent(compute_sum.code)
 
-    request_ds = client_ds_1.code.request_code_execution(compute_sum)
-    print(request_ds)
-    # print(client_ds_1.requests[0])
+    client_ds_1.code.request_code_execution(compute_sum)
 
     # Submit + execute on second node
     request_1_do = client_do_1.requests[0]
