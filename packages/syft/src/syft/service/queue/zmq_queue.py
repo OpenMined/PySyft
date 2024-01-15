@@ -351,7 +351,7 @@ class ZMQProducer(QueueProducer):
             msg = [option] + msg
         msg = [worker.address, b"", QueueMsgProtocol.W_WORKER, command] + msg
 
-        print("I: sending %r to worker", command)
+        print(f"I: sending command: {command} to worker")
         with lock:
             self.backend.send_multipart(msg)
 
@@ -392,7 +392,6 @@ class ZMQProducer(QueueProducer):
         if worker is None:
             worker = Worker(identity=identity, address=address)
             self.workers[identity] = worker
-            print("I: registering new worker: %s", identity)
         return worker
 
     def process_worker(self, address: bytes, msg: List[bytes]):

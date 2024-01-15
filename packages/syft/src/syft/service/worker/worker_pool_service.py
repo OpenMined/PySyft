@@ -150,7 +150,6 @@ class SyftWorkerPoolService(AbstractService):
         res: List[Tuple] = []
         for pool in worker_pools:
             res.append((pool.name, pool))
-
         return DictTuple(res)
 
     @service_method(
@@ -402,14 +401,19 @@ class SyftWorkerPoolService(AbstractService):
         context: AuthedServiceContext,
         worker_pool_id: UID,
     ) -> Union[WorkerPool, SyftError]:
-        worker_pool = self.stash.get_by_uid(
+        result = self.stash.get_by_uid(
             credentials=context.credentials, uid=worker_pool_id
         )
 
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+
+        worker_pool = result.ok()
+
         return (
-            SyftError(message=f"{worker_pool.err()}")
-            if worker_pool.is_err()
-            else cast(WorkerPool, worker_pool.ok())
+            SyftError(message=f"worker pool with id {worker_pool_id} does not exist")
+            if worker_pool is None
+            else worker_pool
         )
 
     def _get_worker_pool_and_worker(

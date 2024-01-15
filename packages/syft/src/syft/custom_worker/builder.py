@@ -95,7 +95,6 @@ class CustomWorkerBuilder:
         with contextlib.closing(docker.from_env()) as client:
             image = client.images.build(
                 tag=tag,
-                pull=True,
                 timeout=self.BUILD_MAX_WAIT,
                 **build_opts,
             )
