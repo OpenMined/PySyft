@@ -132,6 +132,14 @@ class UserCodeService(AbstractService):
                 message="The code to be submitted (name and content) already exists"
             )
 
+        worker_pool_service = context.node.get_service("SyftWorkerPoolService")
+        pool_result = worker_pool_service._get_worker_pool(
+            context, user_code.worker_pool_id
+        )
+
+        if isinstance(pool_result, SyftError):
+            return pool_result
+
         result = self.stash.set(context.credentials, user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))

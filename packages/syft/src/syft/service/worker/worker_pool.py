@@ -216,6 +216,8 @@ class WorkerPool(SyftObject):
         resolved_workers = []
         for worker in self.worker_list:
             resolved_worker = worker.resolve
+            if resolved_worker is None:
+                continue
             resolved_worker.refresh_status()
             resolved_workers.append(resolved_worker)
         return resolved_workers

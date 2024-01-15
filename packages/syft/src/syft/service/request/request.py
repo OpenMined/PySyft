@@ -800,6 +800,7 @@ class UserCodeStatusChange(Change):
         "link.service_func_name",
         "link.input_policy_type.__canonical_name__",
         "link.output_policy_type.__canonical_name__",
+        "link.worker_pool_id",
         "link.status.approved",
     ]
 
@@ -830,7 +831,8 @@ class UserCodeStatusChange(Change):
         return msg
 
     def __repr_syft_nested__(self):
-        msg = f"Request to change <b>{self.link.service_func_name}</b> to permission <b>RequestStatus.APPROVED</b>"
+        msg = f"Request to change <b>{self.link.service_func_name}</b> (Pool Id: <b>{self.link.worker_pool_id}</b>) "
+        msg += "to permission <b>RequestStatus.APPROVED</b>"
         if self.nested_solved:
             if self.link.nested_codes == {}:
                 msg += ". No nested requests"
