@@ -145,7 +145,7 @@ class WorkerPool(SyftObject):
     created_at: DateTime = DateTime.now()
 
     @property
-    def image(self) -> Union[SyftWorkerImage, SyftError]:
+    def image(self) -> Optional[Union[SyftWorkerImage, SyftError]]:
         """
         Get the pool's image using the worker_image service API. This way we
         get the latest state of the image from the SyftWorkerImageStash
