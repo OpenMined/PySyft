@@ -46,6 +46,7 @@ from ...types.datetime import DateTime
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftHashableObject
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -284,7 +285,7 @@ class UserCodeV1(SyftObject):
 
 
 @serializable()
-class UserCode(SyftObject):
+class UserCodeV2(SyftObject):
     # version
     __canonical_name__ = "UserCode"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -313,6 +314,38 @@ class UserCode(SyftObject):
     nested_requests: Dict[str, str] = {}
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
 
+
+@serializable()
+class UserCode(SyftObject):
+    # version
+    __canonical_name__ = "UserCode"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    id: UID
+    node_uid: Optional[UID]
+    user_verify_key: SyftVerifyKey
+    raw_code: str
+    input_policy_type: Union[Type[InputPolicy], UserPolicy]
+    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    input_policy_state: bytes = b""
+    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
+    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    output_policy_state: bytes = b""
+    parsed_code: str
+    service_func_name: str
+    unique_func_name: str
+    user_unique_func_name: str
+    code_hash: str
+    signature: inspect.Signature
+    status: UserCodeStatusCollection
+    input_kwargs: List[str]
+    enclave_metadata: Optional[EnclaveMetadata] = None
+    submit_time: Optional[DateTime]
+    uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
+    nested_requests: Dict[str, str] = {}
+    nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
+    worker_pool_id: Optional[UID]
+
     __attr_searchable__ = [
         "user_verify_key",
         "status",
@@ -320,7 +353,12 @@ class UserCode(SyftObject):
         "code_hash",
     ]
     __attr_unique__ = []
-    __repr_attrs__ = ["service_func_name", "input_owners", "code_status"]
+    __repr_attrs__ = [
+        "service_func_name",
+        "input_owners",
+        "code_status",
+        "worker_pool_id",
+    ]
 
     def __setattr__(self, key: str, value: Any) -> None:
         attr = getattr(type(self), key, None)
@@ -612,26 +650,22 @@ class UserCode(SyftObject):
         ip.set_next_input(warning_message + self.raw_code)
 
 
-@migrate(UserCode, UserCodeV1)
-def downgrade_usercode_v2_to_v1():
+@migrate(UserCode, UserCodeV2)
+def downgrade_usercode_v3_to_v2():
     return [
-        drop("uses_domain"),
-        drop("nested_requests"),
-        drop("nested_codes"),
+        drop("worker_pool_id"),
     ]
 
 
-@migrate(UserCodeV1, UserCode)
-def upgrade_usercode_v1_to_v2():
+@migrate(UserCodeV2, UserCode)
+def upgrade_usercode_v2_to_v3():
     return [
-        make_set_default("uses_domain", False),
-        make_set_default("nested_requests", {}),
-        make_set_default("nested_codes", {}),
+        make_set_default("worker_pool_id", None),
     ]
 
 
 @serializable(without=["local_function"])
-class SubmitUserCode(SyftObject):
+class SubmitUserCodeV2(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -647,6 +681,26 @@ class SubmitUserCode(SyftObject):
     local_function: Optional[Callable]
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
+
+
+@serializable(without=["local_function"])
+class SubmitUserCode(SyftObject):
+    # version
+    __canonical_name__ = "SubmitUserCode"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    id: Optional[UID]
+    code: str
+    func_name: str
+    signature: inspect.Signature
+    input_policy_type: Union[SubmitUserPolicy, UID, Type[InputPolicy]]
+    input_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
+    output_policy_type: Union[SubmitUserPolicy, UID, Type[OutputPolicy]]
+    output_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
+    local_function: Optional[Callable]
+    input_kwargs: List[str]
+    enclave_metadata: Optional[EnclaveMetadata] = None
+    worker_pool_id: Optional[UID] = None
 
     __repr_attrs__ = ["func_name", "code"]
 
@@ -803,6 +857,20 @@ class SubmitUserCode(SyftObject):
         return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
 
 
+@migrate(SubmitUserCode, SubmitUserCodeV2)
+def downgrade_submitusercode_v3_to_v2():
+    return [
+        drop("worker_pool_id"),
+    ]
+
+
+@migrate(SubmitUserCodeV2, SubmitUserCode)
+def upgrade_submitusercode_v2_to_v3():
+    return [
+        make_set_default("worker_pool_id", None),
+    ]
+
+
 class ArgumentType(Enum):
     REAL = 1
     MOCK = 2
@@ -836,6 +904,7 @@ def syft_function(
     input_policy: Optional[Union[InputPolicy, UID]] = None,
     output_policy: Optional[Union[OutputPolicy, UID]] = None,
     share_results_with_owners=False,
+    worker_pool_id: Optional[Union[UID, str]] = None,
 ) -> SubmitUserCode:
     if input_policy is None:
         input_policy = EmpyInputPolicy()
@@ -853,6 +922,9 @@ def syft_function(
     else:
         output_policy_type = type(output_policy)
 
+    if isinstance(worker_pool_id, str):
+        worker_pool_id = UID(worker_pool_id)
+
     def decorator(f):
         res = SubmitUserCode(
             code=inspect.getsource(f),
@@ -864,6 +936,7 @@ def syft_function(
             output_policy_init_kwargs=output_policy.init_kwargs,
             local_function=f,
             input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
+            worker_pool_id=worker_pool_id,
         )
 
         if share_results_with_owners:
@@ -1077,6 +1150,13 @@ def add_submit_time(context: TransformContext) -> TransformContext:
     return context
 
 
+def set_default_pool_if_empty(context: TransformContext) -> TransformContext:
+    if context.output.get("worker_pool_id", None) is None:
+        default_pool = context.node.get_default_worker_pool()
+        context.output["worker_pool_id"] = default_pool.id
+    return context
+
+
 @transform(SubmitUserCode, UserCode)
 def submit_user_code_to_user_code() -> List[Callable]:
     return [
@@ -1091,6 +1171,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         add_custom_status,
         add_node_uid_for_key("node_uid"),
         add_submit_time,
+        set_default_pool_if_empty,
     ]
 
 
@@ -1166,6 +1247,7 @@ class SecureContext:
                     credentials=context.credentials,
                     parent_job_id=context.job_id,
                     has_execute_permissions=True,
+                    worker_pool_id=func.worker_pool_id,
                 )
                 # # set api in global scope to enable using .get(), .wait())
                 # set_api_registry()
