@@ -30,6 +30,7 @@ from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
 from ...types.transforms import drop
@@ -92,7 +93,7 @@ class JobV2(SyftObject):
 
 
 @serializable()
-class JobInfo(SyftObject):
+class JobInfo(SyftBaseObject):
     __canonical_name__ = "JobInfo"
     __version__ = SYFT_OBJECT_VERSION_1
     __repr_attrs__ = [
