@@ -660,6 +660,25 @@ def upgrade_usercode_v2_to_v3():
 
 
 @serializable(without=["local_function"])
+class SubmitUserCodeV2(SyftObject):
+    # version
+    __canonical_name__ = "SubmitUserCode"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    id: Optional[UID]
+    code: str
+    func_name: str
+    signature: inspect.Signature
+    input_policy_type: Union[SubmitUserPolicy, UID, Type[InputPolicy]]
+    input_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
+    output_policy_type: Union[SubmitUserPolicy, UID, Type[OutputPolicy]]
+    output_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
+    local_function: Optional[Callable]
+    input_kwargs: List[str]
+    enclave_metadata: Optional[EnclaveMetadata] = None
+
+
+@serializable(without=["local_function"])
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
@@ -713,6 +732,20 @@ class SubmitUserCode(SyftObject):
     @property
     def input_owner_verify_keys(self) -> List[str]:
         return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
+
+
+@migrate(SubmitUserCode, SubmitUserCodeV2)
+def downgrade_submitusercode_v3_to_v2():
+    return [
+        drop("worker_pool_id"),
+    ]
+
+
+@migrate(SubmitUserCodeV2, SubmitUserCode)
+def upgrade_submitusercode_v2_to_v3():
+    return [
+        make_set_default("worker_pool_id", None),
+    ]
 
 
 class ArgumentType(Enum):
