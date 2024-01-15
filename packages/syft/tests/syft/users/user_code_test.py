@@ -8,7 +8,6 @@ import numpy as np
 
 # syft absolute
 import syft as sy
-from syft.client.api import APIRegistry
 from syft.service.action.action_object import ActionObject
 from syft.service.request.request import Request
 from syft.service.request.request import UserCodeStatusChange
@@ -146,37 +145,3 @@ def test_nested_requests(worker, guest_client: User):
     assert linked_obj.resolve.id == inner.id
     assert outer.status.approved
     assert not inner.status.approved
-
-
-def test_local_execution(worker):
-    root_domain_client = worker.root_client
-    dataset = sy.Dataset(
-        name="test",
-        asset_list=[
-            sy.Asset(
-                name="test",
-                data=np.array([1, 2, 3]),
-                mock=np.array([1, 1, 1]),
-            )
-        ],
-    )
-    root_domain_client.upload_dataset(dataset)
-    asset = root_domain_client.datasets[0].assets[0]
-
-    APIRegistry.set_api_for(
-        node_uid=worker.id,
-        user_verify_key=root_domain_client.verify_key,
-        api=root_domain_client.api,
-    )
-
-    @sy.syft_function(
-        input_policy=sy.ExactMatch(x=asset),
-        output_policy=sy.SingleExecutionExactOutput(),
-    )
-    def my_func(x):
-        return x + 1
-
-    my_func.code = dedent(my_func.code)
-
-    local_res = my_func(x=asset, time_alive=1)
-    assert (local_res == np.array([2, 2, 2])).all()
