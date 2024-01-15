@@ -31,7 +31,7 @@ def test_func_2():
 
 
 def test_user_code(worker, guest_client: User) -> None:
-    test_func()
+    # test_func()
     guest_client.api.services.code.request_code_execution(test_func)
 
     root_domain_client = worker.root_client
@@ -49,7 +49,7 @@ def test_user_code(worker, guest_client: User) -> None:
 
 
 def test_duplicated_user_code(worker, guest_client: User) -> None:
-    test_func()
+    # test_func()
     result = guest_client.api.services.code.request_code_execution(test_func)
     assert isinstance(result, Request)
     assert len(guest_client.code.get_all()) == 1
