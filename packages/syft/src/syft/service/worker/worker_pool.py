@@ -143,7 +143,6 @@ class WorkerPool(SyftObject):
     max_count: int
     worker_list: List[LinkedObject]
     created_at: DateTime = DateTime.now()
-    worker_image: Optional[SyftWorkerImage]  # patched for default image
 
     @property
     def image(self) -> Union[SyftWorkerImage, SyftError]:
@@ -155,9 +154,7 @@ class WorkerPool(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-        if api is None:  # we are working with the default pool
-            return self.worker_image
-        else:
+        if api is not None:
             return api.services.worker_image.get_by_uid(uid=self.image_id)
 
     @property
