@@ -95,7 +95,7 @@ class SyftWorkerPoolService(AbstractService):
                 context.credentials, pool_name=DEFAULT_WORKER_POOL_NAME
             )
             default_worker_pool = result.ok()
-            image_uid = default_worker_pool.image.id
+            image_uid = default_worker_pool.image_id
 
         result = self.image_stash.get_by_uid(
             credentials=context.credentials, uid=image_uid
@@ -121,8 +121,10 @@ class SyftWorkerPoolService(AbstractService):
         worker_pool = WorkerPool(
             name=name,
             max_count=number,
-            image=worker_image,
+            image_id=worker_image.id,
             worker_list=worker_list,
+            syft_node_location=context.node.id,
+            syft_client_verify_key=context.credentials,
         )
         result = self.stash.set(credentials=context.credentials, obj=worker_pool)
 
@@ -180,7 +182,7 @@ class SyftWorkerPoolService(AbstractService):
 
         result = self.image_stash.get_by_uid(
             credentials=context.credentials,
-            uid=worker_pool.image.id,
+            uid=worker_pool.image_id,
         )
 
         if result.is_err():

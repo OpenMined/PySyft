@@ -25,7 +25,7 @@ REPEATS = 20
 def mock_queue_object():
     worker_pool_obj = WorkerPool(
         name="mypool",
-        syft_worker_image_id=UID(),
+        image_id=UID(),
         max_count=0,
         worker_list=[],
     )
@@ -344,7 +344,7 @@ def helper_queue_set_joblib(root_verify_key, create_queue_cbk) -> None:
         for _ in range(repeats):
             worker_pool_obj = WorkerPool(
                 name="mypool",
-                syft_worker_image_id=UID(),
+                image_id=UID(),
                 max_count=0,
                 worker_list=[],
             )
