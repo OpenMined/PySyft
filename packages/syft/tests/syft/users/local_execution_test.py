@@ -38,6 +38,7 @@ def test_local_execution(worker):
         return x + 1
 
     my_func.code = dedent(my_func.code)
-
+    
+    print(root_domain_client.api.services.action.get_mock(asset.action_id))
     local_res = my_func(x=asset, time_alive=1)
     assert (local_res == np.array([2, 2, 2])).all()
