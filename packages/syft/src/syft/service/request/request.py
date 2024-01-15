@@ -477,31 +477,14 @@ class Request(SyftObject):
 
         return job
 
-    def _set_job_status(self, status: JobStatus) -> Union[Job, SyftError]:
+    def _set_job_result(self, result: Any, job_info: JobInfo) -> Union[Job, SyftError]:
         job = self._get_or_create_job()
         if isinstance(job, SyftError):
             return job
 
-        job.status = status
-        job.updated_at = DateTime.now()
-
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        res = api.services.job.update(job)
-        if isinstance(res, SyftError):
-            return res
-
-        return job
-
-    def _set_job_result(self, result: Any, status: JobStatus) -> Union[Job, SyftError]:
-        job = self._get_or_create_job()
-        if isinstance(job, SyftError):
-            return job
-
-        job.status = status
         job.result = result
+        job.apply_info(job_info)
         job.updated_at = DateTime.now()
-        job.resolved = True
-        # TODO more fields (logs?)
 
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         res = api.services.job.update(job)
@@ -574,10 +557,13 @@ class Request(SyftObject):
                 return result
 
             if job is not None:
-                job_status = job.status
+                job_info = job.info
             else:
-                job_status = JobStatus.COMPLETED
-            res = self._set_job_result(result=result, status=job_status)
+                job_info = JobInfo(
+                    status=JobStatus.COMPLETED,
+                    resolved=True,
+                )
+            res = self._set_job_result(result=result, job_info=job_info)
             if isinstance(res, SyftError):
                 return res
             return SyftSuccess(message="Request submitted for updating result.")
@@ -623,10 +609,13 @@ class Request(SyftObject):
                 return approved
 
             if job is not None:
-                job_status = job.status
+                job_info = job.info
             else:
-                job_status = JobStatus.COMPLETED
-            res = self._set_job_result(result=result, status=job_status)
+                job_info = JobInfo(
+                    status=JobStatus.COMPLETED,
+                    resolved=True,
+                )
+            res = self._set_job_result(result=result, job_info=job_info)
             if isinstance(res, SyftError):
                 return res
 

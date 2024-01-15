@@ -105,12 +105,12 @@ class JobInfo(SyftBaseObject):
         "creation_time",
     ]
 
-    resolved: bool
-    status: JobStatus
-    parent_job_id: Optional[UID]
-    n_iters: Optional[int]
-    current_iter: Optional[int]
-    creation_time: Optional[str]
+    resolved: bool = False
+    status: JobStatus = JobStatus.CREATED
+    parent_job_id: Optional[UID] = None
+    n_iters: Optional[int] = None
+    current_iter: Optional[int] = None
+    creation_time: Optional[str] = None
 
 
 @serializable()

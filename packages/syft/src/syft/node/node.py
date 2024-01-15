@@ -1226,14 +1226,9 @@ class Node(AbstractNode):
         override_execution_permission = (
             context.has_execute_permissions or context.role == ServiceRole.ADMIN
         )
-        if not (
-            override_execution_permission
-            or user_code_service.is_execution_allowed(
-                user_code, context, user_code.output_policy
-            )
-        ):
-            return False
-        return True
+        return override_execution_permission or user_code_service.is_execution_allowed(
+            user_code, context, user_code.output_policy
+        )
 
     def _get_existing_user_code_jobs(
         self, user_code_id: UID, credentials: SyftVerifyKey
