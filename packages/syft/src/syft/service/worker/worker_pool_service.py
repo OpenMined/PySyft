@@ -25,6 +25,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .utils import DEFAULT_WORKER_POOL_NAME
 from .utils import run_containers
 from .utils import run_workers_in_threads
@@ -135,7 +136,7 @@ class SyftWorkerPoolService(AbstractService):
     @service_method(
         path="worker_pool.get_all",
         name="get_all",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_all(
         self, context: AuthedServiceContext
@@ -275,7 +276,7 @@ class SyftWorkerPoolService(AbstractService):
     @service_method(
         path="worker_pool.filter_by_image_id",
         name="filter_by_image_id",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def filter_by_image_id(
         self, context: AuthedServiceContext, image_uid: UID
@@ -290,7 +291,7 @@ class SyftWorkerPoolService(AbstractService):
     @service_method(
         path="worker_pool.get_worker",
         name="get_worker",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_worker(
         self, context: AuthedServiceContext, worker_pool_id: UID, worker_id: UID
@@ -353,7 +354,7 @@ class SyftWorkerPoolService(AbstractService):
     @service_method(
         path="worker_pool.worker_logs",
         name="worker_logs",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def worker_logs(
         self,

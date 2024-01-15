@@ -21,6 +21,7 @@ from ..service import AuthedServiceContext
 from ..service import SyftError
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .utils import DEFAULT_WORKER_POOL_NAME
 from .utils import _get_healthcheck_based_on_status
 from .worker_pool import ContainerSpawnStatus
@@ -143,7 +144,9 @@ class WorkerService(AbstractService):
             context, number=n, pool_name=DEFAULT_WORKER_POOL_NAME
         )
 
-    @service_method(path="worker.get_all", name="get_all", roles=ADMIN_ROLE_LEVEL)
+    @service_method(
+        path="worker.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
     def list(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:
         """List all the workers."""
         result = self.stash.get_all(context.credentials)
@@ -171,7 +174,9 @@ class WorkerService(AbstractService):
 
         return workers
 
-    @service_method(path="worker.status", name="status", roles=ADMIN_ROLE_LEVEL)
+    @service_method(
+        path="worker.status", name="status", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
     def status(
         self,
         context: AuthedServiceContext,

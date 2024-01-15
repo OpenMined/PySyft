@@ -187,7 +187,7 @@ class SyftWorkerImageService(AbstractService):
     @service_method(
         path="worker_image.get_all",
         name="get_all",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_all(
         self, context: AuthedServiceContext
