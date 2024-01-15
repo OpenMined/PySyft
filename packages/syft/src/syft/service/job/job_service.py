@@ -19,6 +19,7 @@ from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .job_stash import Job
+from .job_stash import JobInfo
 from .job_stash import JobStash
 from .job_stash import JobStatus
 
@@ -161,26 +162,23 @@ class JobService(AbstractService):
             )
 
     @service_method(
-        path="job.update_status",
-        name="update_status",
+        path="job.update_info",
+        name="update_info",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def update_job_status(
+    def update_job_info(
         self,
         context: AuthedServiceContext,
         id: UID,
-        status: JobStatus,
+        job_info: JobInfo,
     ) -> Union[SyftSuccess, SyftError]:
         res = self.stash.get_by_uid(context.credentials, uid=id)
         if res.is_err():
             return SyftError(message=res.err())
 
         job = res.ok()
-        job.status = status
-        res = self.stash.update(context.credentials, obj=job)
-        if res.is_err():
-            return SyftError(message=res.err())
-        return SyftSuccess(message="Job status updated successfully!")
+        job.apply_info(job_info)
+        return self.update(context=context, job=job)
 
     @service_method(
         path="job.get_subjobs",

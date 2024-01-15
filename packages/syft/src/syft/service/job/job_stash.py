@@ -92,6 +92,27 @@ class JobV2(SyftObject):
 
 
 @serializable()
+class JobInfo(SyftObject):
+    __canonical_name__ = "JobInfo"
+    __version__ = SYFT_OBJECT_VERSION_1
+    __repr_attrs__ = [
+        "resolved",
+        "status",
+        "parent_job_id",
+        "n_iters",
+        "current_iter",
+        "creation_time",
+    ]
+
+    resolved: bool
+    status: JobStatus
+    parent_job_id: Optional[UID]
+    n_iters: Optional[int]
+    current_iter: Optional[int]
+    creation_time: Optional[str]
+
+
+@serializable()
 class Job(SyftObject):
     __canonical_name__ = "JobItem"
     __version__ = SYFT_OBJECT_VERSION_3
@@ -215,6 +236,26 @@ class Job(SyftObject):
                     return f"{self.current_iter}/{n_iters_str}"
         else:
             return ""
+
+    @property
+    def info(self) -> JobInfo:
+        return JobInfo(
+            resolved=self.resolved,
+            status=self.status,
+            parent_job_id=self.parent_job_id,
+            n_iters=self.n_iters,
+            current_iter=self.current_iter,
+            creation_time=self.creation_time,
+        )
+
+    def apply_info(self, info: JobInfo) -> None:
+        # Used for syncing job metadata across nodes
+        self.resolved = info.resolved
+        self.status = info.status
+        self.parent_job_id = info.parent_job_id
+        self.n_iters = info.n_iters
+        self.current_iter = info.current_iter
+        self.creation_time = info.creation_time
 
     def restart(self, kill=False) -> None:
         if kill:

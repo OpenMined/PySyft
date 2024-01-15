@@ -52,6 +52,7 @@ from ..code.user_code import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..job.job_stash import Job
+from ..job.job_stash import JobInfo
 from ..job.job_stash import JobStatus
 from ..notification.notifications import Notification
 from ..response import SyftError
@@ -631,15 +632,20 @@ class Request(SyftObject):
 
             return approved
 
-    def submit_job_status(self, other: Job) -> Result[SyftSuccess, SyftError]:
+    def submit_job_info(
+        self, info: JobInfo, **kwargs
+    ) -> Result[SyftSuccess, SyftError]:
         """
         Update the status of the job for this request
         """
+        for k, v in kwargs.items():
+            setattr(info, k, v)
+
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         job_service = api.services.job
 
         job = self._get_or_create_job()
-        return job_service.update_status(id=job.id, status=other.status)
+        return job_service.update_info(job.id, info)
 
 
 @serializable()

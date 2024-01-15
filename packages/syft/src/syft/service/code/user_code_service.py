@@ -313,7 +313,7 @@ class UserCodeService(AbstractService):
         """Call a User Code Function"""
         try:
             # Unroll variables
-            kwarg2id = map_kwargs_to_id(kwargs)
+            kwarg2id = prepare_kwargs(context, kwargs)
 
             # get code item
             code_result = self.stash.get_by_uid(context.credentials, uid=uid)
@@ -439,6 +439,27 @@ def resolve_outputs(
         raise NotImplementedError
 
 
+def prepare_kwargs(context: AuthedServiceContext, kwargs: Dict[str, Any]) -> Dict:
+    # relative
+    from ...types.twin_object import TwinObject
+    from ..action.action_object import ActionObject
+    from ..dataset.dataset import Asset
+
+    kwargs_action_object = {}
+    action_service = context.node.get_service("actionservice")
+    for k, v in kwargs.items():
+        if not isinstance(v, (ActionObject, TwinObject, Asset)):
+            action_object = ActionObject.from_obj(v)
+            result = action_service.set(context, action_object)
+            if result.is_err():
+                raise Exception(f"Input {k} failed to be set: {result.err()}")
+            kwargs_action_object[k] = result.ok()
+        else:
+            kwargs_action_object[k] = v
+
+    return map_kwargs_to_id(kwargs_action_object)
+
+
 def map_kwargs_to_id(kwargs: Dict[str, Any]) -> Dict[str, Any]:
     # relative
     from ...types.twin_object import TwinObject
@@ -456,9 +477,19 @@ def map_kwargs_to_id(kwargs: Dict[str, Any]) -> Dict[str, Any]:
             value = v.action_id
 
         if not isinstance(value, UID):
+            print(v)
             raise Exception(f"Input {k} must have a UID not {type(v)}")
         filtered_kwargs[k] = value
     return filtered_kwargs
+
+
+def create_action_object_for_kwarg(
+    context: AuthedServiceContext, k: str, v: Any
+) -> Union[ActionObject, SyftError]:
+    # Create an action object for a raw function input
+
+    action_object = ActionObject.from_obj(v)
+    return context.node.get_service("actionservice").set(action_object)
 
 
 TYPE_TO_SERVICE[UserCode] = UserCodeService
