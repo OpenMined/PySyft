@@ -41,7 +41,8 @@ class ImageBuildResult(BaseModel):
 
 def backend_container_name() -> str:
     hostname = socket.gethostname()
-    return f"{hostname}-backend-1"
+    service_name = os.getenv("SERVICE", "backend")
+    return f"{hostname}-{service_name}-1"
 
 
 def get_container(docker_client: docker.DockerClient, container_name: str):

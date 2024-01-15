@@ -25,6 +25,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .utils import DEFAULT_WORKER_POOL_NAME
 from .utils import run_containers
 from .utils import run_workers_in_threads
@@ -133,7 +134,7 @@ class SyftWorkerPoolService(AbstractService):
     @service_method(
         path="worker_pool.get_all",
         name="get_all",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_all(
         self, context: AuthedServiceContext
@@ -143,14 +144,11 @@ class SyftWorkerPoolService(AbstractService):
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_err():
             return SyftError(message=f"{result.err()}")
-        worker_pools = result.ok()
+        worker_pools: List[WorkerPool] = result.ok()
 
         res: List[Tuple] = []
         for pool in worker_pools:
-            if pool.image.image_identifier is not None:
-                res.append((pool.image.image_identifier.full_name_with_tag, pool))
-            else:
-                res.append(("in-memory-pool", pool))
+            res.append((pool.name, pool))
         return DictTuple(res)
 
     @service_method(
@@ -276,7 +274,7 @@ class SyftWorkerPoolService(AbstractService):
     @service_method(
         path="worker_pool.filter_by_image_id",
         name="filter_by_image_id",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def filter_by_image_id(
         self, context: AuthedServiceContext, image_uid: UID
@@ -291,7 +289,7 @@ class SyftWorkerPoolService(AbstractService):
     @service_method(
         path="worker_pool.get_worker",
         name="get_worker",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_worker(
         self, context: AuthedServiceContext, worker_pool_id: UID, worker_id: UID
@@ -354,7 +352,7 @@ class SyftWorkerPoolService(AbstractService):
     @service_method(
         path="worker_pool.worker_logs",
         name="worker_logs",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def worker_logs(
         self,
@@ -402,14 +400,19 @@ class SyftWorkerPoolService(AbstractService):
         context: AuthedServiceContext,
         worker_pool_id: UID,
     ) -> Union[WorkerPool, SyftError]:
-        worker_pool = self.stash.get_by_uid(
+        result = self.stash.get_by_uid(
             credentials=context.credentials, uid=worker_pool_id
         )
 
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+
+        worker_pool = result.ok()
+
         return (
-            SyftError(message=f"{worker_pool.err()}")
-            if worker_pool.is_err()
-            else cast(WorkerPool, worker_pool.ok())
+            SyftError(message=f"worker pool with id {worker_pool_id} does not exist")
+            if worker_pool is None
+            else worker_pool
         )
 
     def _get_worker_pool_and_worker(
