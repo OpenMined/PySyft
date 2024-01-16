@@ -79,7 +79,7 @@ class SyftWorkerPoolService(AbstractService):
             context (AuthedServiceContext): context passed to the service
             name (str): name of the pool
             image_id (UID): UID of the SyftWorkerImage against which the pool should be created
-            number (int): number of SyftWorker that needs to be created in the pool
+            num_workers (int): the number of SyftWorker that needs to be created in the pool
         """
 
         result = self.stash.get_by_name(context.credentials, pool_name=name)
