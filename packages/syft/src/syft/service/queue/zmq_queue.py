@@ -445,6 +445,17 @@ class ZMQProducer(QueueProducer):
         if disconnect:
             self.send_to_worker(worker, QueueMsgProtocol.W_DISCONNECT, None, None)
 
+        # During delete change consumer state to be DISCONNECTED
+        if self.worker_stash is not None:
+            update_res = self.worker_stash.update_consumer_state(
+                credentials=self.worker_stash.partition.root_verify_key,
+                worker_uid=worker.syft_worker_id,
+                consumer_state=ConsumerState.DISCONNECTED,
+            )
+            if update_res.is_err():
+                # TODO: Shift to logger
+                print("Failed to update consumer state", update_res)
+
         if worker.service is not None and worker in worker.service.waiting:
             worker.service.waiting.remove(worker)
         self.workers.pop(worker.identity, None)
