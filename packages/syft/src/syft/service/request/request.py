@@ -235,6 +235,34 @@ class CreateCustomImageChange(Change):
 
 
 @serializable()
+class CreateCustomWorkerPoolChange(Change):
+    __canonical_name__ = "CreateCustomWorkerPoolChange"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    pool_name: str
+    num_workers: int
+    image_uid: UID
+
+    __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
+
+    def _run(
+        self, context: ChangeContext, apply: bool
+    ) -> Result[SyftSuccess, SyftError]:
+        return Err(SyftError(message="Not implemented yet!"))
+
+    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+        return self._run(context=context, apply=True)
+
+    def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+        return self._run(context=context, apply=False)
+
+    def __repr_syft_nested__(self):
+        return (
+            f"Create Worker Pool '{self.pool_name}' for Image with id {self.image_uid}"
+        )
+
+
+@serializable()
 class Request(SyftObject):
     __canonical_name__ = "Request"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -428,7 +456,7 @@ class Request(SyftObject):
         if message and metadata.show_warnings and not disable_warnings:
             prompt_warning_message(message=message, confirm=True)
 
-        print(f"Request approved for domain {api.node_name}")
+        print(f"Approving request for domain {api.node_name}")
         return api.services.request.apply(self.id)
 
     def deny(self, reason: str):
@@ -444,7 +472,7 @@ class Request(SyftObject):
         return api.services.request.undo(uid=self.id, reason=reason)
 
     def approve_with_client(self, client):
-        print(f"Request approved for domain {client.name}")
+        print(f"Approving request for domain {client.name}")
         return client.api.services.request.apply(self.id)
 
     def apply(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:

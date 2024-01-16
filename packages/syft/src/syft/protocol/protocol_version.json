@@ -1089,6 +1089,13 @@
           "hash": "197b765666d605cf601bd69bff21b4a31896b6acd14af38739a5047ca29ff015",
           "action": "add"
         }
+      },
+      "CreateCustomWorkerPoolChange": {
+        "1": {
+          "version": 1,
+          "hash": "bb35cefd4feebfaed80f767f0fe60223af9e9c36013cd222c85c88481f4fa681",
+          "action": "add"
+        }
       }
     }
   }

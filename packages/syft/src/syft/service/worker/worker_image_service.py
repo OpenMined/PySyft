@@ -18,6 +18,7 @@ from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..context import AuthedServiceContext
+from ..request.request import Change
 from ..request.request import CreateCustomImageChange
 from ..request.request import SubmitRequest
 from ..request.request_service import RequestService
@@ -69,7 +70,7 @@ class SyftWorkerImageService(AbstractService):
     @service_method(
         path="worker_image.create_image_request",
         name="create_image_request",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def create_image_request(
         self,
@@ -97,7 +98,7 @@ class SyftWorkerImageService(AbstractService):
 
         create_image_change = CreateCustomImageChange(config=config, tag=tag)
 
-        changes = [create_image_change]
+        changes: List[Change] = [create_image_change]
 
         request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)

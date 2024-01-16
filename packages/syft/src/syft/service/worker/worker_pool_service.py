@@ -18,6 +18,10 @@ from ...store.linked_obj import LinkedObject
 from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..context import AuthedServiceContext
+from ..request.request import Change
+from ..request.request import CreateCustomWorkerPoolChange
+from ..request.request import SubmitRequest
+from ..request.request_service import RequestService
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -132,6 +136,53 @@ class SyftWorkerPoolService(AbstractService):
             return SyftError(message=f"Failed to save Worker Pool: {result.err()}")
 
         return container_statuses
+
+    @service_method(
+        path="worker_pool.pool_creation_request",
+        name="pool_creation_request",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def pool_creation_request(
+        self,
+        context: AuthedServiceContext,
+        pool_name: str,
+        num_workers: int,
+        image_uid: Optional[UID],
+        reason: Optional[str] = "",
+    ) -> Union[SyftError, SyftSuccess]:
+        """
+        Create a request to launch the worker pool based on a built image.
+
+        Args:
+            context (AuthedServiceContext): The authenticated service context.
+            pool_name (str): The name of the worker pool.
+            num_workers (int): The number of workers in the pool.
+            image_uid (Optional[UID]): The UID of the built image.
+            reason (Optional[str], optional): The reason for creating the
+                worker pool. Defaults to "".
+        """
+        # check if the worker pool with the given name already exists?
+        result = self.stash.get_by_name(context.credentials, pool_name=pool_name)
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+        if result.ok() is not None:
+            return SyftError(
+                message=f"Worker Pool with name: {pool_name} already "
+                f"exists. Please choose another name!"
+            )
+
+        create_worker_pool_change = CreateCustomWorkerPoolChange(
+            pool_name=pool_name,
+            num_workers=num_workers,
+            image_uid=image_uid,
+        )
+        changes: List[Change] = [create_worker_pool_change]
+
+        request = SubmitRequest(changes=changes)
+        method = context.node.get_service_method(RequestService.submit)
+        result = method(context=context, request=request, reason=reason)
+
+        return result
 
     @service_method(
         path="worker_pool.get_all",
