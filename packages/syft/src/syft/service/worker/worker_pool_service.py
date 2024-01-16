@@ -55,16 +55,16 @@ class SyftWorkerPoolService(AbstractService):
         self.worker_stash = WorkerStash(store=store)
 
     @service_method(
-        path="worker_pool.create",
-        name="create",
+        path="worker_pool.launch",
+        name="launch",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def create_pool(
+    def launch(
         self,
         context: AuthedServiceContext,
         name: str,
         image_uid: Optional[UID],
-        number: int,
+        num_workers: int,
         reg_username: Optional[str] = None,
         reg_password: Optional[str] = None,
     ) -> Union[List[ContainerSpawnStatus], SyftError]:
@@ -79,7 +79,7 @@ class SyftWorkerPoolService(AbstractService):
             context (AuthedServiceContext): context passed to the service
             name (str): name of the pool
             image_id (UID): UID of the SyftWorkerImage against which the pool should be created
-            number (int): number of SyftWorker that needs to be created in the pool
+            num_workers (int): the number of SyftWorker that needs to be created in the pool
         """
 
         result = self.stash.get_by_name(context.credentials, pool_name=name)
@@ -111,7 +111,7 @@ class SyftWorkerPoolService(AbstractService):
             context=context,
             pool_name=name,
             existing_worker_cnt=0,
-            worker_cnt=number,
+            worker_cnt=num_workers,
             worker_image=worker_image,
             worker_stash=self.worker_stash,
             reg_username=reg_username,
@@ -120,7 +120,7 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_pool = WorkerPool(
             name=name,
-            max_count=number,
+            max_count=num_workers,
             image_id=worker_image.id,
             worker_list=worker_list,
             syft_node_location=context.node.id,

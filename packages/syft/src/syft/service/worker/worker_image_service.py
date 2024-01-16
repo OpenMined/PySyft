@@ -210,11 +210,11 @@ class SyftWorkerImageService(AbstractService):
         return DictTuple(res)
 
     @service_method(
-        path="worker_image.delete",
-        name="delete",
+        path="worker_image.remove",
+        name="remove",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def delete(
+    def remove(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
         #  Delete Docker image given image tag
