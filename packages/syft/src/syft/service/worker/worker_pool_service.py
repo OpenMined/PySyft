@@ -37,7 +37,6 @@ from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerPool
 from .worker_pool import WorkerStatus
 from .worker_pool import _get_worker_container
-from .worker_pool import _get_worker_container_status
 from .worker_pool_stash import SyftWorkerPoolStash
 from .worker_service import WorkerService
 from .worker_stash import WorkerStash
@@ -287,58 +286,6 @@ class SyftWorkerPoolService(AbstractService):
             return SyftError(message=f"Failed to get worker pool for uid: {image_uid}")
 
         return result.ok()
-
-    @service_method(
-        path="worker_pool.get_worker",
-        name="get_worker",
-        roles=DATA_SCIENTIST_ROLE_LEVEL,
-    )
-    def get_worker(
-        self, context: AuthedServiceContext, worker_pool_id: UID, worker_id: UID
-    ) -> Union[SyftWorker, SyftError]:
-        worker_pool_worker = self._get_worker_pool_and_worker(
-            context, worker_pool_id, worker_id
-        )
-        if isinstance(worker_pool_worker, SyftError):
-            return worker_pool_worker
-
-        _, linked_worker = worker_pool_worker
-
-        result = linked_worker.resolve_with_context(context=context)
-
-        if result.is_err():
-            return SyftError(
-                message=f"Failed to retrieve Linked SyftWorker {linked_worker.object_uid}"
-            )
-
-        worker = result.ok()
-
-        if context.node.in_memory_workers:
-            return worker
-
-        with contextlib.closing(docker.from_env()) as client:
-            worker_status = _get_worker_container_status(client, worker)
-
-        if isinstance(worker_status, SyftError):
-            return worker_status
-
-        if worker_status != WorkerStatus.PENDING:
-            worker.status = worker_status
-
-            result = self.worker_stash.update(
-                credentials=context.credentials,
-                obj=worker,
-            )
-
-            return (
-                SyftError(
-                    message=f"Failed to update worker status. Error: {result.err()}"
-                )
-                if result.is_err()
-                else worker
-            )
-
-        return worker
 
     @service_method(
         path="worker_pool.get_worker_status",
