@@ -64,7 +64,7 @@ class SyftWorkerPoolService(AbstractService):
         context: AuthedServiceContext,
         name: str,
         image_uid: Optional[UID],
-        number: int,
+        num_workers: int,
         reg_username: Optional[str] = None,
         reg_password: Optional[str] = None,
     ) -> Union[List[ContainerSpawnStatus], SyftError]:
@@ -111,7 +111,7 @@ class SyftWorkerPoolService(AbstractService):
             context=context,
             pool_name=name,
             existing_worker_cnt=0,
-            worker_cnt=number,
+            worker_cnt=num_workers,
             worker_image=worker_image,
             worker_stash=self.worker_stash,
             reg_username=reg_username,
@@ -120,7 +120,7 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_pool = WorkerPool(
             name=name,
-            max_count=number,
+            max_count=num_workers,
             image_id=worker_image.id,
             worker_list=worker_list,
             syft_node_location=context.node.id,

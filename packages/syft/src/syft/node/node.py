@@ -1500,7 +1500,7 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
             context,
             name=DEFAULT_WORKER_POOL_NAME,
             image_uid=default_image.id,
-            number=worker_to_add_,
+            num_workers=worker_to_add_,
         )
 
     else:
