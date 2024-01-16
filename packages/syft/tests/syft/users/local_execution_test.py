@@ -1,7 +1,6 @@
 # stdlib
 from collections import OrderedDict
 from textwrap import dedent
-import time
 
 # third party
 import numpy as np
