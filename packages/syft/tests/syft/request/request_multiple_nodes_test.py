@@ -143,7 +143,7 @@ def test_transfer_request_blocking(
 
     # Submit + execute on second node
     request_1_do = client_do_1.requests[0]
-    client_do_2.code.submit(request_1_do.code)
+    client_do_2.code.sync_code_from_request(request_1_do)
 
     # DO executes + syncs
     client_do_2._fetch_api(client_do_2.credentials)
@@ -180,7 +180,7 @@ def test_transfer_request_nonblocking(
 
     # Submit + execute on second node
     request_1_do = client_do_1.requests[0]
-    client_do_2.code.submit(request_1_do.code)
+    client_do_2.code.sync_code_from_request(request_1_do)
 
     client_do_2._fetch_api(client_do_2.credentials)
     job_2 = client_do_2.code.compute_mean(data=dataset_2, blocking=False)

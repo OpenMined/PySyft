@@ -1,4 +1,5 @@
 # stdlib
+from copy import deepcopy
 from typing import Any
 from typing import Dict
 from typing import List
@@ -25,6 +26,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..network.routes import route_to_connection
+from ..request.request import Request
 from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
@@ -71,6 +73,24 @@ class UserCodeService(AbstractService):
             code = code.to(UserCode, context=context)
         result = self.stash.set(context.credentials, code)
         return result
+
+    @service_method(
+        path="code.sync_code_from_request",
+        name="sync_code_from_request",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def sync_code_from_request(
+        self,
+        context: AuthedServiceContext,
+        request: Request,
+    ) -> Union[SyftSuccess, SyftError]:
+        """Re-submit request from a different node"""
+
+        # This request is from a different node, ensure worker pool is not set
+        code: UserCode = deepcopy(request.code)
+        code.worker_pool_id = None
+
+        return self.submit(context=context, code=code)
 
     @service_method(
         path="code.get_by_service_func_name",
