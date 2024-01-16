@@ -3,7 +3,6 @@ import contextlib
 from typing import List
 from typing import Tuple
 from typing import Union
-from typing import cast
 
 # third party
 import docker
@@ -156,5 +155,5 @@ def _check_and_update_status_for_worker(
             message=f"Failed to update status for worker: {worker.id}. Error: {result.err()}"
         )
         if result.is_err()
-        else cast(SyftWorker, result.ok())
+        else result.ok()
     )
