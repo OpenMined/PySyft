@@ -22,6 +22,7 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .image_registry import SyftImageRegistry
 from .image_registry_service import SyftImageRegistryService
 from .utils import docker_build
@@ -72,6 +73,7 @@ class SyftWorkerImageService(AbstractService):
         image_uid: UID,
         tag: str,
         registry_uid: Optional[UID] = None,
+        pull: bool = True,
     ) -> Union[SyftSuccess, SyftError]:
         registry: SyftImageRegistry = None
 
@@ -116,7 +118,7 @@ class SyftWorkerImageService(AbstractService):
         result = None
 
         if not context.node.in_memory_workers:
-            build_result = docker_build(worker_image)
+            build_result = docker_build(worker_image, pull=pull)
             if isinstance(build_result, SyftError):
                 return build_result
 
@@ -185,7 +187,7 @@ class SyftWorkerImageService(AbstractService):
     @service_method(
         path="worker_image.get_all",
         name="get_all",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_all(
         self, context: AuthedServiceContext
@@ -243,3 +245,19 @@ class SyftWorkerImageService(AbstractService):
         )
 
         return SyftSuccess(message=returned_message)
+
+    @service_method(
+        path="worker_image.get_by_uid",
+        name="get_by_uid",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def get_by_uid(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftWorkerImage, SyftError]:
+        res = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
+        if res.is_err():
+            return SyftError(
+                message=f"Failed to get image with uid {uid}. Error: {res.err()}"
+            )
+        image: SyftWorkerImage = res.ok()
+        return image
