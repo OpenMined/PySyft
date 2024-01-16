@@ -41,6 +41,7 @@ class WorkerStatus(Enum):
 class ConsumerState(Enum):
     IDLE = "Idle"
     CONSUMING = "Consuming"
+    DISCONNECTED = "Disconnected"
 
 
 @serializable()

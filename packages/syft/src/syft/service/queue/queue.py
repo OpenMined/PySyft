@@ -101,10 +101,17 @@ class QueueManager(BaseQueueManager):
         return consumer
 
     def create_producer(
-        self, queue_name: str, queue_stash, context: AuthedServiceContext
+        self,
+        queue_name: str,
+        queue_stash,
+        context: AuthedServiceContext,
+        worker_stash: WorkerStash,
     ) -> QueueProducer:
         return self._client.add_producer(
-            queue_name=queue_name, queue_stash=queue_stash, context=context
+            queue_name=queue_name,
+            queue_stash=queue_stash,
+            context=context,
+            worker_stash=worker_stash,
         )
 
     def send(

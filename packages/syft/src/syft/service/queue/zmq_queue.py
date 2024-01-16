@@ -99,11 +99,17 @@ class ZMQProducer(QueueProducer):
     INTERNAL_SERVICE_PREFIX = b"mmi."
 
     def __init__(
-        self, queue_name: str, queue_stash, port: int, context: AuthedServiceContext
+        self,
+        queue_name: str,
+        queue_stash,
+        worker_stash: WorkerStash,
+        port: int,
+        context: AuthedServiceContext,
     ) -> None:
         self.id = UID().short()
         self.port = port
         self.queue_stash = queue_stash
+        self.worker_stash = worker_stash
         self.queue_name = queue_name
         self.auth_context = context
         self.post_init()
@@ -740,6 +746,7 @@ class ZMQClient(QueueClient):
         queue_name: str,
         port: Optional[int] = None,
         queue_stash=None,
+        worker_stash: Optional[WorkerStash] = None,
         context=None,
     ) -> ZMQProducer:
         """Add a producer of a queue.
@@ -755,7 +762,11 @@ class ZMQClient(QueueClient):
                 port = self.config.queue_port
 
         producer = ZMQProducer(
-            queue_name=queue_name, queue_stash=queue_stash, port=port, context=context
+            queue_name=queue_name,
+            queue_stash=queue_stash,
+            port=port,
+            context=context,
+            worker_stash=worker_stash,
         )
         self.producers[queue_name] = producer
         return producer

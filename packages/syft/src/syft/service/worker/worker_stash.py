@@ -4,6 +4,8 @@ from typing import Optional
 from typing import Union
 
 # third party
+from result import Err
+from result import Ok
 from result import Result
 
 # relative
@@ -14,9 +16,11 @@ from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
+from .worker_pool import ConsumerState
 from .worker_pool import SyftWorker
 
 WorkerContainerNamePartitionKey = PartitionKey(key="container_name", type_=str)
@@ -52,3 +56,20 @@ class WorkerStash(BaseUIDStoreStash):
     ) -> Result[Optional[SyftWorker], str]:
         qks = QueryKeys(qks=[WorkerContainerNamePartitionKey.with_obj(worker_name)])
         return self.query_one(credentials=credentials, qks=qks)
+
+    def update_consumer_state(
+        self, credentials: SyftVerifyKey, worker_uid: UID, consumer_state: ConsumerState
+    ):
+        res = self.get_by_uid(credentials=credentials, uid=worker_uid)
+        if res.is_err():
+            return Err(
+                f"Failed to retrieve Worker with id: {worker_uid}. Error: {res.err()}"
+            )
+        worker: SyftWorker = res.ok()
+        worker.consumer_state = consumer_state
+        update_res = self.update(credentials=credentials, obj=worker)
+        if update_res.is_err():
+            return Err(
+                f"Failed to update Worker with id: {worker_uid}. Error: {update_res.err()}"
+            )
+        return Ok(f"Successfully updated Worker with id: {worker_uid}")
