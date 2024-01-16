@@ -43,9 +43,6 @@ def test_local_execution(worker):
 
     my_func.code = dedent(my_func.code)
 
-    time.sleep(10)
-    mock = root_domain_client.api.services.action.get_mock(asset.action_id)
-    print("MOCK:", mock)
-    print(list(APIRegistry.__api_registry__.keys()))
+    # time.sleep(10)
     local_res = my_func(x=asset, time_alive=1)
     assert (local_res == np.array([2, 2, 2])).all()
