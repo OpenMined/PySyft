@@ -1,5 +1,4 @@
 # stdlib
-import random
 import secrets
 from textwrap import dedent
 
@@ -25,7 +24,6 @@ def node_1():
         n_consumers=1,
         create_producer=True,
         reset=True,
-        queue_port=random.randint(13000, 13300),
     )
     yield node
     node.land()
@@ -43,7 +41,6 @@ def node_2():
         n_consumers=1,
         create_producer=True,
         reset=True,
-        queue_port=random.randint(13000, 13300),
     )
     yield node
     node.land()
