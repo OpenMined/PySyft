@@ -226,7 +226,7 @@ class JobService(AbstractService):
             parent_id=None,
             log_id=UID(),
             job_pid=None,
-            user_code_id_=user_code_id,
+            user_code_id_override=user_code_id,
         )
 
         user_code_service = context.node.get_service("usercodeservice")

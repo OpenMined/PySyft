@@ -134,8 +134,7 @@ class Job(SyftObject):
     updated_at: Optional[DateTime] = None
 
     # Jobs created by DO on low side have no action yet, but do have user_code_id
-    # TODO naming unclear, _user_code_id makes pydantic private attr and does not serialize
-    user_code_id_: Optional[UID] = None
+    user_code_id_override: Optional[UID] = None
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
@@ -148,8 +147,8 @@ class Job(SyftObject):
 
     @property
     def user_code_id(self) -> Optional[UID]:
-        if self.user_code_id_ is not None:
-            return self.user_code_id_
+        if self.user_code_id_override is not None:
+            return self.user_code_id_override
         elif self.action is not None and self.action.user_code_id is not None:
             return self.action.user_code_id
         return None
