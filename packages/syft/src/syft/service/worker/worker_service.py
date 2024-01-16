@@ -205,6 +205,35 @@ class WorkerService(AbstractService):
 
         return worker.status, worker.healthcheck
 
+    @service_method(
+        path="worker.get",
+        name="get",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def get(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftWorker, SyftError]:
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
+        if result.is_err():
+            return SyftError(message=f"Failed to retrieve worker with UID {uid}")
+        worker: SyftWorker = result.ok()
+
+        if context.node.in_memory_workers:
+            return worker
+
+        result = check_and_update_status_for_worker(
+            worker=worker,
+            worker_stash=self.stash,
+            credentials=context.credentials,
+        )
+
+        if result.is_err():
+            return SyftError(
+                message=f"Failed to update status for worker: {worker.id}. Error: {result.err()}"
+            )
+
+        return result.ok()
+
 
 def check_and_update_status_for_worker(
     worker: SyftWorker,
