@@ -1,4 +1,5 @@
 # stdlib
+import random
 import secrets
 from textwrap import dedent
 
@@ -18,11 +19,13 @@ def node_1():
     print(name)
     node = sy.Orchestra.launch(
         name=name,
+        dev_mode=True,
         node_side_type="low",
         local_db=True,
         n_consumers=1,
         create_producer=True,
         reset=True,
+        queue_port=random.randint(13000, 13300),
     )
     yield node
     node.land()
@@ -34,11 +37,13 @@ def node_2():
     print(name)
     node = sy.Orchestra.launch(
         name=name,
+        dev_mode=True,
         node_side_type="high",
         local_db=True,
         n_consumers=1,
         create_producer=True,
         reset=True,
+        queue_port=random.randint(13000, 13300),
     )
     yield node
     node.land()
