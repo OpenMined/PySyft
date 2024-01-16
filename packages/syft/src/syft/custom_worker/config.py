@@ -5,9 +5,11 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 # third party
+from docker.models.images import Image
 from packaging import version
 from pydantic import validator
 from typing_extensions import Self
@@ -15,6 +17,8 @@ import yaml
 
 # relative
 from ..serde.serializable import serializable
+from ..service.response import SyftError
+from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
 
 PYTHON_DEFAULT_VER = "3.11"
@@ -124,3 +128,15 @@ class DockerWorkerConfig(WorkerConfig):
 
     def __str__(self) -> str:
         return self.dockerfile
+
+    def check_build(self, tag: str, **kwargs) -> Tuple[Image, SyftSuccess]:
+        # relative
+        from ..service.worker.utils import parse_output
+        from .builder import CustomWorkerBuilder
+
+        builder = CustomWorkerBuilder()
+        try:
+            _, logs = builder.build_image(config=self, tag=tag, **kwargs)
+            return SyftSuccess(message=parse_output(logs))
+        except Exception as e:
+            return SyftError(message=f"Failed to build image !! Error: {str(e)}.")

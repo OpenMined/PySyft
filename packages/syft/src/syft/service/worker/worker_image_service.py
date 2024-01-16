@@ -10,6 +10,7 @@ import docker
 import pydantic
 
 # relative
+from ...custom_worker.config import CustomWorkerConfig
 from ...custom_worker.config import DockerWorkerConfig
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -17,6 +18,9 @@ from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..context import AuthedServiceContext
+from ..request.request import CreateCustomImageChange
+from ..request.request import SubmitRequest
+from ..request.request_service import RequestService
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -61,6 +65,46 @@ class SyftWorkerImageService(AbstractService):
         return SyftSuccess(
             message=f"Dockerfile ID: {worker_image.id} successfully submitted."
         )
+
+    @service_method(
+        path="worker_image.create_image_request",
+        name="create_image_request",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def create_image_request(
+        self,
+        context: AuthedServiceContext,
+        config: DockerWorkerConfig,
+        tag: str,
+        reason: Optional[str] = "",
+    ) -> Union[SyftSuccess, SyftError]:
+        """Request Image creation for the given config."""
+
+        if isinstance(config, CustomWorkerConfig):
+            return SyftError(message="We only support DockerWorkerConfig.")
+
+        search_result = self.stash.get_by_docker_config(
+            credentials=context.credentials, config=config
+        )
+
+        if search_result.is_err():
+            return SyftError(message=str(search_result.err()))
+
+        worker_image: SyftWorkerImage = search_result.ok()
+
+        if worker_image is not None:
+            return SyftError(message=f"Image already exists for config: {config}")
+
+        create_image_change = CreateCustomImageChange(config=config, tag=tag)
+
+        changes = [create_image_change]
+
+        request = SubmitRequest(changes=changes)
+        method = context.node.get_service_method(RequestService.submit)
+        result = method(context=context, request=request, reason=reason)
+
+        # The Request service already returns either a SyftSuccess or SyftError
+        return result
 
     @service_method(
         path="worker_image.build",
