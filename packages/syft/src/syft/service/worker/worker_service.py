@@ -160,17 +160,19 @@ class WorkerService(AbstractService):
             return workers
 
         # If container workers, check their statuses
-        for idx, worker in enumerate(workers):
-            result = check_and_update_status_for_worker(
-                worker=worker,
-                worker_stash=self.stash,
-                credentials=context.credentials,
-            )
-            if result.is_err():
-                return SyftError(
-                    message=f"Failed to update status for worker: {worker.id}. Error: {result.err()}"
+        with contextlib.closing(docker.from_env()) as client:
+            for idx, worker in enumerate(workers):
+                result = _check_and_update_status_for_worker(
+                    client=client,
+                    worker=worker,
+                    worker_stash=self.stash,
+                    credentials=context.credentials,
                 )
-            workers[idx] = worker
+                if result.is_err():
+                    return SyftError(
+                        message=f"Failed to update status for worker: {worker.id}. Error: {result.err()}"
+                    )
+                workers[idx] = worker
 
         return workers
 
@@ -190,11 +192,13 @@ class WorkerService(AbstractService):
         if context.node.in_memory_workers:
             return worker.status, worker.healthcheck
 
-        result = check_and_update_status_for_worker(
-            worker=worker,
-            worker_stash=self.stash,
-            credentials=context.credentials,
-        )
+        with contextlib.closing(docker.from_env()) as client:
+            result = _check_and_update_status_for_worker(
+                client=client,
+                worker=worker,
+                worker_stash=self.stash,
+                credentials=context.credentials,
+            )
 
         if result.is_err():
             return SyftError(
@@ -221,11 +225,13 @@ class WorkerService(AbstractService):
         if context.node.in_memory_workers:
             return worker
 
-        result = check_and_update_status_for_worker(
-            worker=worker,
-            worker_stash=self.stash,
-            credentials=context.credentials,
-        )
+        with contextlib.closing(docker.from_env()) as client:
+            result = _check_and_update_status_for_worker(
+                client=client,
+                worker=worker,
+                worker_stash=self.stash,
+                credentials=context.credentials,
+            )
 
         if result.is_err():
             return SyftError(
@@ -235,13 +241,13 @@ class WorkerService(AbstractService):
         return result.ok()
 
 
-def check_and_update_status_for_worker(
+def _check_and_update_status_for_worker(
+    client: docker.DockerClient,
     worker: SyftWorker,
     worker_stash: WorkerStash,
     credentials: SyftVerifyKey,
 ) -> Result[SyftWorker, str]:
-    with contextlib.closing(docker.from_env()) as client:
-        worker_status = _get_worker_container_status(client, worker)
+    worker_status = _get_worker_container_status(client, worker)
 
     if isinstance(worker_status, SyftError):
         return worker_status
