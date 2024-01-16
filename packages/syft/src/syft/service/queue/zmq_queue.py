@@ -642,26 +642,16 @@ class ZMQConsumer(QueueConsumer):
 
     def _set_worker_job(self, job_id: Optional[UID]):
         if self.worker_stash is not None:
-            res = self.worker_stash.get_by_uid(
-                self.worker_stash.partition.root_verify_key, self.syft_worker_id
+            consumer_state = (
+                ConsumerState.IDLE if job_id is None else ConsumerState.CONSUMING
             )
-
-            if res.is_err():
-                print(res)
-                return  # log/report?
-
-            worker_obj = res.ok()
-            worker_obj.job_id = job_id
-
-            if job_id is None:
-                worker_obj.consumer_state = ConsumerState.IDLE
-            else:
-                worker_obj.consumer_state = ConsumerState.CONSUMING
-
-            res = self.worker_stash.update(
-                self.worker_stash.partition.root_verify_key, obj=worker_obj
+            res = self.worker_stash.update_consumer_state(
+                credentials=self.worker_stash.partition.root_verify_key,
+                worker_uid=self.syft_worker_id,
+                consumer_state=consumer_state,
             )
             if res.is_err():
+                # TODO: Shift to logger
                 print(res)
 
     @property
