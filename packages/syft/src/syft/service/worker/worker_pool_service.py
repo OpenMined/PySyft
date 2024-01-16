@@ -55,11 +55,11 @@ class SyftWorkerPoolService(AbstractService):
         self.worker_stash = WorkerStash(store=store)
 
     @service_method(
-        path="worker_pool.create",
-        name="create",
+        path="worker_pool.launch",
+        name="launch",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def create_pool(
+    def launch(
         self,
         context: AuthedServiceContext,
         name: str,
