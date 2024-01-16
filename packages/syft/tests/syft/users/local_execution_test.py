@@ -1,5 +1,7 @@
 # stdlib
+from collections import OrderedDict
 from textwrap import dedent
+import time
 
 # third party
 import numpy as np
@@ -12,10 +14,10 @@ from syft.client.api import APIRegistry
 def test_local_execution(worker):
     root_domain_client = worker.root_client
     dataset = sy.Dataset(
-        name="test",
+        name="local_test",
         asset_list=[
             sy.Asset(
-                name="test",
+                name="local_test",
                 data=np.array([1, 2, 3]),
                 mock=np.array([1, 1, 1]),
             )
@@ -23,6 +25,8 @@ def test_local_execution(worker):
     )
     root_domain_client.upload_dataset(dataset)
     asset = root_domain_client.datasets[0].assets[0]
+
+    APIRegistry.__api_registry__ = OrderedDict()
 
     APIRegistry.set_api_for(
         node_uid=worker.id,
@@ -38,7 +42,10 @@ def test_local_execution(worker):
         return x + 1
 
     my_func.code = dedent(my_func.code)
-    
-    print(root_domain_client.api.services.action.get_mock(asset.action_id))
+
+    time.sleep(10)
+    mock = root_domain_client.api.services.action.get_mock(asset.action_id)
+    print("MOCK:", mock)
+    print(list(APIRegistry.__api_registry__.keys()))
     local_res = my_func(x=asset, time_alive=1)
     assert (local_res == np.array([2, 2, 2])).all()
