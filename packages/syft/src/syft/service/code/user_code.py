@@ -770,6 +770,7 @@ class SubmitUserCode(SyftObject):
             reset=True,
             create_producer=True,
             n_consumers=n_consumers,
+            deploy_to="python",
         )
         ep_client = ep_node.login(email="info@openmined.org", password="changethis")  # nosec
 
