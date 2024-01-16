@@ -115,10 +115,9 @@ class WorkerService(AbstractService):
         if result.is_err():
             return SyftError(message=f"Failed to retrieve worker with UID {uid}")
 
-        if result.ok() is None:
-            return SyftError(message=f"Worker doesn't exists for uid: {uid}")
-
-        worker = cast(SyftWorker, result.ok())
+        worker = result.ok()
+        if worker is None:
+            return SyftError(message=f"Worker does not exist for UID {uid}")
 
         if context.node.in_memory_workers:
             return worker
