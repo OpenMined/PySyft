@@ -172,7 +172,7 @@ class WorkerService(AbstractService):
                     return SyftError(
                         message=f"Failed to update status for worker: {worker.id}. Error: {result.err()}"
                     )
-                workers[idx] = worker
+                workers[idx] = result.ok()
 
         return workers
 
