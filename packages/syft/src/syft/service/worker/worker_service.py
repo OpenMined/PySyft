@@ -199,9 +199,11 @@ class WorkerService(AbstractService):
     def get(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftWorker, SyftError]:
-        worker = self._get_worker(context, uid)
-        if not isinstance(worker, SyftWorker):
-            return worker
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
+        if result.is_err():
+            return SyftError(message=f"Failed to retrieve worker with UID {uid}")
+
+        worker = cast(SyftWorker, result.ok())
 
         if context.node.in_memory_workers:
             return worker
@@ -213,17 +215,6 @@ class WorkerService(AbstractService):
                 worker_stash=self.stash,
                 credentials=context.credentials,
             )
-
-    def _get_worker(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftWorker, SyftError]:
-        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
-
-        return (
-            SyftError(message=f"Failed to retrieve worker with UID {uid}")
-            if result.is_err()
-            else cast(SyftWorker, result.ok())
-        )
 
 
 def _check_and_update_status_for_worker(
