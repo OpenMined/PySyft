@@ -1,6 +1,5 @@
 # stdlib
 import contextlib
-import socket
 from typing import List
 from typing import Tuple
 from typing import Union
@@ -30,93 +29,6 @@ from .worker_pool import WorkerHealth
 from .worker_pool import WorkerStatus
 from .worker_pool import _get_worker_container_status
 from .worker_stash import WorkerStash
-
-WORKER_NUM = 0
-
-
-def get_main_backend():
-    hostname = socket.gethostname()
-    return f"{hostname}-backend-1"
-
-
-def start_worker_container(
-    worker_num: int, context: AuthedServiceContext, syft_worker_uid
-):
-    client = docker.from_env()
-    existing_container_name = get_main_backend()
-    hostname = socket.gethostname()
-    worker_name = f"{hostname}-worker-{worker_num}"
-    return create_new_container_from_existing(
-        worker_name=worker_name,
-        client=client,
-        existing_container_name=existing_container_name,
-        syft_worker_uid=syft_worker_uid,
-    )
-
-
-def create_new_container_from_existing(
-    worker_name: str,
-    client: docker.client.DockerClient,
-    existing_container_name: str,
-    syft_worker_uid,
-) -> docker.models.containers.Container:
-    # Get the existing container
-    existing_container = client.containers.get(existing_container_name)
-
-    # Inspect the existing container
-    details = existing_container.attrs
-
-    # Extract relevant settings
-    image = details["Config"]["Image"]
-    command = details["Config"]["Cmd"]
-    environment = details["Config"]["Env"]
-    ports = details["NetworkSettings"]["Ports"]
-    host_config = details["HostConfig"]
-
-    volumes = {}
-    for vol in host_config["Binds"]:
-        parts = vol.split(":")
-        key = parts[0]
-        bind = parts[1]
-        mode = parts[2]
-        if "/storage" in bind:
-            # we need this because otherwise we are using the same node private key
-            # which will make account creation fail
-            worker_postfix = worker_name.split("-", 1)[1]
-            key = f"{key}-{worker_postfix}"
-        volumes[key] = {"bind": bind, "mode": mode}
-
-    # we need this because otherwise we are using the same node private key
-    # which will make account creation fail
-
-    environment = dict([e.split("=", 1) for e in environment])
-    environment["CREATE_PRODUCER"] = "false"
-    environment["N_CONSUMERS"] = 1
-    environment["DOCKER_WORKER_NAME"] = worker_name
-    environment["DEFAULT_ROOT_USERNAME"] = worker_name
-    environment["DEFAULT_ROOT_EMAIL"] = f"{worker_name}@openmined.org"
-    environment["PORT"] = str(8003 + WORKER_NUM)
-    environment["HTTP_PORT"] = str(88 + WORKER_NUM)
-    environment["HTTPS_PORT"] = str(446 + WORKER_NUM)
-    environment["SYFT_WORKER_UID"] = str(syft_worker_uid)
-
-    environment.pop("NODE_PRIVATE_KEY", None)
-
-    new_container = client.containers.create(
-        name=worker_name,
-        image=image,
-        command=command,
-        environment=environment,
-        ports=ports,
-        detach=True,
-        volumes=volumes,
-        tty=True,
-        stdin_open=True,
-        network_mode=f"container:{existing_container.id}",
-    )
-
-    new_container.start()
-    return new_container
 
 
 @instrument
@@ -202,6 +114,9 @@ class WorkerService(AbstractService):
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
         if result.is_err():
             return SyftError(message=f"Failed to retrieve worker with UID {uid}")
+
+        if result.ok() is None:
+            return SyftError(message=f"Worker doesn't exists for uid: {uid}")
 
         worker = cast(SyftWorker, result.ok())
 
