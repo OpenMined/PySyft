@@ -51,6 +51,7 @@ from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.user_code_service import UserCodeService
+from ..service.code.user_code_stash import UserCodeStash
 from ..service.code_history.code_history_service import CodeHistoryService
 from ..service.context import AuthedServiceContext
 from ..service.context import NodeServiceContext
@@ -95,11 +96,13 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
+from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ..service.worker.utils import create_default_image
 from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
+from ..service.worker.worker_pool_stash import SyftWorkerPoolStash
 from ..service.worker.worker_service import WorkerService
 from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
@@ -192,8 +195,6 @@ def get_syft_worker_uid() -> Optional[str]:
     return get_env("SYFT_WORKER_UID", None)
 
 
-dev_mode = get_dev_mode()
-
 signing_key_env = get_private_key_env()
 node_uid_env = get_node_uid_env()
 
@@ -269,7 +270,7 @@ class Node(AbstractNode):
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
-        self.dev_mode = dev_mode
+        self.dev_mode = dev_mode or get_dev_mode()
         if node_uid_env is not None:
             self.id = UID.from_string(node_uid_env)
         else:
@@ -317,6 +318,7 @@ class Node(AbstractNode):
                 MigrateStateService,
                 SyftWorkerImageService,
                 SyftWorkerPoolService,
+                SyftImageRegistryService,
             ]
             if services is None
             else services
@@ -780,7 +782,7 @@ class Node(AbstractNode):
             and document_store_config.client_config.filename is None
         ):
             document_store_config.client_config.filename = f"{self.id}.sqlite"
-            if dev_mode:
+            if self.dev_mode:
                 print(
                     f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
                 )
@@ -870,6 +872,7 @@ class Node(AbstractNode):
                 MigrateStateService,
                 SyftWorkerImageService,
                 SyftWorkerPoolService,
+                SyftImageRegistryService,
             ]
 
             if OBLV:
@@ -1138,14 +1141,41 @@ class Node(AbstractNode):
         return result
 
     def add_action_to_queue(
-        self, action, credentials, parent_job_id=None, has_execute_permissions=False
+        self,
+        action,
+        credentials,
+        parent_job_id=None,
+        has_execute_permissions: bool = False,
+        worker_pool_id: Optional[UID] = None,
     ):
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(node=self)
-        default_worker_pool = self.get_default_worker_pool()
-        worker_pool = LinkedObject.from_obj(
-            default_worker_pool,
+
+        # Extract worker pool id from user code
+        if action.user_code_id is not None:
+            result = self.user_code_stash.get_by_uid(
+                credentials=credentials, uid=action.user_code_id
+            )
+
+            # If result is Ok, then user code object exists
+            if result.is_ok() and result.ok() is not None:
+                user_code = result.ok()
+                worker_pool_id = user_code.worker_pool_id
+
+        # If worker pool id is not set, then use default worker pool
+        # Else, get the worker pool for given uid
+        if worker_pool_id is None:
+            worker_pool = self.get_default_worker_pool()
+        else:
+            result = self.pool_stash.get_by_uid(credentials, worker_pool_id)
+            if result.is_err():
+                return SyftError(message=f"{result.err()}")
+            worker_pool = result.ok()
+
+        # Create a Worker pool reference object
+        worker_pool_ref = LinkedObject.from_obj(
+            worker_pool,
             service_type=SyftWorkerPoolService,
             node_uid=self.id,
         )
@@ -1160,7 +1190,7 @@ class Node(AbstractNode):
             args=[],
             kwargs={"action": action},
             has_execute_permissions=has_execute_permissions,
-            worker_pool=worker_pool,
+            worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
         return self.add_queueitem_to_queue(
             queue_item, credentials, action, parent_job_id
@@ -1311,12 +1341,22 @@ class Node(AbstractNode):
                 parent_job_id=parent_job_id,
             )
 
+    @property
+    def pool_stash(self) -> SyftWorkerPoolStash:
+        return self.get_service(SyftWorkerPoolService).stash
+
+    @property
+    def user_code_stash(self) -> UserCodeStash:
+        return self.get_service(UserCodeService).stash
+
     def get_default_worker_pool(self):
-        pool_stash = self.get_service(SyftWorkerPoolService).stash
-        result = pool_stash.get_by_name(
+        result = self.pool_stash.get_by_name(
             credentials=self.verify_key, pool_name=DEFAULT_WORKER_POOL_NAME
         )
-        return result.ok()
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+        worker_pool = result.ok()
+        return worker_pool
 
     def get_api(
         self,
@@ -1461,7 +1501,7 @@ class NodeRegistry:
         return list(cls.__node_registry__.values())
 
 
-def create_default_worker_pool(node: Node):
+def create_default_worker_pool(node: Node) -> Optional[SyftError]:
     credentials = node.verify_key
 
     image_stash = node.get_service(SyftWorkerImageService).stash
@@ -1480,41 +1520,64 @@ def create_default_worker_pool(node: Node):
         dev_mode=node.dev_mode,
         syft_version_tag="local-dev" if node.dev_mode else __version__,
     )
+
+    # Skip pulling image if using locally built image
+    pull_image = not node.dev_mode
+    if isinstance(default_image, SyftError):
+        return default_image
+
     image_build_method = node.get_service_method(SyftWorkerImageService.build)
 
     print("Building Default Worker Image")
 
-    # Build the Image for given tag
-    result = image_build_method(
-        context, uid=default_image.id, tag=DEFAULT_WORKER_IMAGE_TAG
-    )
+    if not default_image.is_built:
+        # Build the Image for given tag
+        result = image_build_method(
+            context,
+            image_uid=default_image.id,
+            tag=DEFAULT_WORKER_IMAGE_TAG,
+            pull=pull_image,
+        )
 
-    if isinstance(result, SyftError):
-        print("Failed to build default worker image: ", result.message)
-        return
+        if isinstance(result, SyftError):
+            print("Failed to build default worker image: ", result.message)
+            return
 
-    create_pool_method = node.get_service_method(SyftWorkerPoolService.create_pool)
-
+    default_worker_pool = node.get_default_worker_pool()
     worker_count = node.queue_config.client_config.n_consumers
 
-    print("Creating default Worker Pool")
-    result = create_pool_method(
-        context,
-        name=DEFAULT_WORKER_POOL_NAME,
-        image_uid=default_image.id,
-        number=worker_count,
-    )
+    # Create worker pool if it doesn't exists
+    if default_worker_pool is None:
+        worker_to_add_ = worker_count
+        create_pool_method = node.get_service_method(SyftWorkerPoolService.launch)
+        print("Creating default Worker Pool")
+        result = create_pool_method(
+            context,
+            name=DEFAULT_WORKER_POOL_NAME,
+            image_uid=default_image.id,
+            num_workers=worker_to_add_,
+        )
+
+    else:
+        # Else add a worker to existing worker pool
+        worker_to_add_ = max(default_worker_pool.max_count, worker_count) - len(
+            default_worker_pool.worker_list
+        )
+        add_worker_method = node.get_service_method(SyftWorkerPoolService.add_workers)
+        result = add_worker_method(
+            context=context, number=worker_to_add_, pool_name=DEFAULT_WORKER_POOL_NAME
+        )
 
     if isinstance(result, SyftError):
         print(f"Failed to create Worker for Default workers. Error: {result.message}")
         return
 
-    for n in range(worker_count):
+    for n in range(worker_to_add_):
         container_status = result[n]
         if container_status.error:
             print(
                 f"Failed to create container: Worker: {container_status.worker},"
-                "Error: {container_status.error}"
+                f"Error: {container_status.error}"
             )
             return
 

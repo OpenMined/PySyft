@@ -1,7 +1,6 @@
 # stdlib
 import contextlib
 from typing import Any
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -16,6 +15,7 @@ from docker.models.containers import Container
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
+from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -25,6 +25,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .utils import DEFAULT_WORKER_POOL_NAME
 from .utils import run_containers
 from .utils import run_workers_in_threads
@@ -35,6 +36,8 @@ from .worker_pool import SyftWorker
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerPool
 from .worker_pool import WorkerStatus
+from .worker_pool import _get_worker_container
+from .worker_pool import _get_worker_container_status
 from .worker_pool_stash import SyftWorkerPoolStash
 from .worker_service import WorkerService
 from .worker_stash import WorkerStash
@@ -52,16 +55,18 @@ class SyftWorkerPoolService(AbstractService):
         self.worker_stash = WorkerStash(store=store)
 
     @service_method(
-        path="worker_pool.create",
-        name="create",
+        path="worker_pool.launch",
+        name="launch",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def create_pool(
+    def launch(
         self,
         context: AuthedServiceContext,
         name: str,
         image_uid: Optional[UID],
-        number: int,
+        num_workers: int,
+        reg_username: Optional[str] = None,
+        reg_password: Optional[str] = None,
     ) -> Union[List[ContainerSpawnStatus], SyftError]:
         """Creates a pool of workers from the given SyftWorkerImage.
 
@@ -74,7 +79,7 @@ class SyftWorkerPoolService(AbstractService):
             context (AuthedServiceContext): context passed to the service
             name (str): name of the pool
             image_id (UID): UID of the SyftWorkerImage against which the pool should be created
-            number (int): number of SyftWorker that needs to be created in the pool
+            num_workers (int): the number of SyftWorker that needs to be created in the pool
         """
 
         result = self.stash.get_by_name(context.credentials, pool_name=name)
@@ -90,7 +95,7 @@ class SyftWorkerPoolService(AbstractService):
                 context.credentials, pool_name=DEFAULT_WORKER_POOL_NAME
             )
             default_worker_pool = result.ok()
-            image_uid = default_worker_pool.syft_worker_image_id
+            image_uid = default_worker_pool.image_id
 
         result = self.image_stash.get_by_uid(
             credentials=context.credentials, uid=image_uid
@@ -100,22 +105,26 @@ class SyftWorkerPoolService(AbstractService):
                 message=f"Failed to retrieve Worker Image with id: {image_uid}. Error: {result.err()}"
             )
 
-        worker_image = result.ok()
+        worker_image: SyftWorkerImage = result.ok()
 
         worker_list, container_statuses = _create_workers_in_pool(
             context=context,
             pool_name=name,
             existing_worker_cnt=0,
-            worker_cnt=number,
+            worker_cnt=num_workers,
             worker_image=worker_image,
             worker_stash=self.worker_stash,
+            reg_username=reg_username,
+            reg_password=reg_password,
         )
 
         worker_pool = WorkerPool(
             name=name,
-            syft_worker_image_id=image_uid,
-            max_count=number,
+            max_count=num_workers,
+            image_id=worker_image.id,
             worker_list=worker_list,
+            syft_node_location=context.node.id,
+            syft_client_verify_key=context.credentials,
         )
         result = self.stash.set(credentials=context.credentials, obj=worker_pool)
 
@@ -127,18 +136,22 @@ class SyftWorkerPoolService(AbstractService):
     @service_method(
         path="worker_pool.get_all",
         name="get_all",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_all(
         self, context: AuthedServiceContext
-    ) -> Union[List[WorkerPool], SyftError]:
+    ) -> Union[DictTuple[str, WorkerPool], SyftError]:
         # TODO: During get_all, we should dynamically make a call to docker to get the status of the containers
         # and update the status of the workers in the pool.
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_err():
             return SyftError(message=f"{result.err()}")
+        worker_pools: List[WorkerPool] = result.ok()
 
-        return result.ok()
+        res: List[Tuple] = []
+        for pool in worker_pools:
+            res.append((pool.name, pool))
+        return DictTuple(res)
 
     @service_method(
         path="worker_pool.add_workers",
@@ -152,9 +165,6 @@ class SyftWorkerPoolService(AbstractService):
         pool_id: Optional[UID] = None,
         pool_name: Optional[str] = None,
     ) -> Union[List[ContainerSpawnStatus], SyftError]:
-        # TODO: During get_all, we should dynamically make a call to docker to get the status of the containers
-        # and update the status of the workers in the pool.
-
         if pool_id:
             result = self.stash.get_by_uid(credentials=context.credentials, uid=pool_id)
         elif pool_name:
@@ -172,7 +182,7 @@ class SyftWorkerPoolService(AbstractService):
 
         result = self.image_stash.get_by_uid(
             credentials=context.credentials,
-            uid=worker_pool.syft_worker_image_id,
+            uid=worker_pool.image_id,
         )
 
         if result.is_err():
@@ -180,7 +190,7 @@ class SyftWorkerPoolService(AbstractService):
                 message=f"Failed to retrieve image for worker pool: {worker_pool.name}"
             )
 
-        worker_image = result.ok()
+        worker_image: SyftWorkerImage = result.ok()
 
         worker_list, container_statuses = _create_workers_in_pool(
             context=context,
@@ -191,7 +201,7 @@ class SyftWorkerPoolService(AbstractService):
             worker_stash=self.worker_stash,
         )
 
-        worker_pool.worker_list.append(worker_list)
+        worker_pool.worker_list += worker_list
         worker_pool.max_count = existing_worker_cnt + number
 
         update_result = self.stash.update(
@@ -266,7 +276,7 @@ class SyftWorkerPoolService(AbstractService):
     @service_method(
         path="worker_pool.filter_by_image_id",
         name="filter_by_image_id",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def filter_by_image_id(
         self, context: AuthedServiceContext, image_uid: UID
@@ -281,7 +291,7 @@ class SyftWorkerPoolService(AbstractService):
     @service_method(
         path="worker_pool.get_worker",
         name="get_worker",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_worker(
         self, context: AuthedServiceContext, worker_pool_id: UID, worker_id: UID
@@ -307,15 +317,7 @@ class SyftWorkerPoolService(AbstractService):
             return worker
 
         with contextlib.closing(docker.from_env()) as client:
-            container = _get_worker_container(client, worker)
-            if isinstance(container, SyftError):
-                return container
-
-            container_status = container.status
-
-        worker_status = _CONTAINER_STATUS_TO_WORKER_STATUS.get(container_status)
-        if worker_status is None:
-            return SyftError(message=f"Unknown container status: {container_status}")
+            worker_status = _get_worker_container_status(client, worker)
 
         if isinstance(worker_status, SyftError):
             return worker_status
@@ -352,7 +354,7 @@ class SyftWorkerPoolService(AbstractService):
     @service_method(
         path="worker_pool.worker_logs",
         name="worker_logs",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def worker_logs(
         self,
@@ -400,14 +402,19 @@ class SyftWorkerPoolService(AbstractService):
         context: AuthedServiceContext,
         worker_pool_id: UID,
     ) -> Union[WorkerPool, SyftError]:
-        worker_pool = self.stash.get_by_uid(
+        result = self.stash.get_by_uid(
             credentials=context.credentials, uid=worker_pool_id
         )
 
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+
+        worker_pool = result.ok()
+
         return (
-            SyftError(message=f"{worker_pool.err()}")
-            if worker_pool.is_err()
-            else cast(WorkerPool, worker_pool.ok())
+            SyftError(message=f"worker pool with id {worker_pool_id} does not exist")
+            if worker_pool is None
+            else worker_pool
         )
 
     def _get_worker_pool_and_worker(
@@ -448,34 +455,6 @@ def _get_worker(
     )
 
 
-def _get_worker_container(
-    client: docker.DockerClient,
-    worker: SyftWorker,
-) -> Union[Container, SyftError]:
-    try:
-        return cast(Container, client.containers.get(worker.container_id))
-    except docker.errors.NotFound as e:
-        return SyftError(f"Worker {worker.id} container not found. Error {e}")
-    except docker.errors.APIError as e:
-        return SyftError(
-            f"Unable to access worker {worker.id} container. "
-            + f"Container server error {e}"
-        )
-
-
-_CONTAINER_STATUS_TO_WORKER_STATUS: Dict[str, WorkerStatus] = dict(
-    [
-        ("running", WorkerStatus.RUNNING),
-        *(
-            (status, WorkerStatus.STOPPED)
-            for status in ["paused", "removing", "exited", "dead"]
-        ),
-        ("restarting", WorkerStatus.RESTARTED),
-        ("created", WorkerStatus.PENDING),
-    ]
-)
-
-
 def _stop_worker_container(
     worker: SyftWorker,
     container: Container,
@@ -510,6 +489,8 @@ def _create_workers_in_pool(
     worker_cnt: int,
     worker_image: SyftWorkerImage,
     worker_stash: WorkerStash,
+    reg_username: Optional[str] = None,
+    reg_password: Optional[str] = None,
 ) -> Tuple[List[LinkedObject], List[ContainerSpawnStatus]]:
     queue_port = context.node.queue_config.client_config.queue_port
 
@@ -533,6 +514,9 @@ def _create_workers_in_pool(
             orchestration=WorkerOrchestrationType.DOCKER,
             queue_port=queue_port,
             dev_mode=context.node.dev_mode,
+            username=reg_username,
+            password=reg_password,
+            registry_url=worker_image.image_identifier.registry_host,
         )
 
     linked_worker_list = []

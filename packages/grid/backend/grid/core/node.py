@@ -1,6 +1,7 @@
 # syft absolute
 from syft.abstract_node import NodeType
 from syft.node.domain import Domain
+from syft.node.domain import Node
 from syft.node.enclave import Enclave
 from syft.node.gateway import Gateway
 from syft.node.node import get_enable_warnings
@@ -82,7 +83,7 @@ store_config = sql_store_config() if single_container_mode else mongo_store_conf
 blob_storage_config = None if single_container_mode else seaweedfs_config()
 queue_config = queue_config()
 
-worker = worker_class(
+worker: Node = worker_class(
     name=node_name,
     node_side_type=node_side_type,
     action_store_config=store_config,

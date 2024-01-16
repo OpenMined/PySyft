@@ -957,7 +957,7 @@
       "SyftWorkerImage": {
         "1": {
           "version": 1,
-          "hash": "553f41b4d1d4b93725a85b99c25c2fcfc23a826342d0486102729cfe6da50b7b",
+          "hash": "2a9585b6a286e24f1a9f3f943d0128730cf853edc549184dc1809d19e1eec54b",
           "action": "add"
         }
       },
@@ -985,7 +985,7 @@
       "SeaweedSecureFilePathLocation": {
         "2": {
           "version": 2,
-          "hash": "3ca49db7536a33d5712485164e95406000df9af2aed78e9f9fa2bb2bbbb34fe6",
+          "hash": "5fd63fed2a4efba8c2b6c7a7b5e9b5939181781c331230896aa130b6fd558739",
           "action": "add"
         }
       },
@@ -1051,14 +1051,35 @@
       "SyftWorker": {
         "1": {
           "version": 1,
-          "hash": "785a86a4d20cef41605aa01ea100ef064000cf552946b5d260a98dd9501f6eda",
+          "hash": "0d5b367162f3ce55ab090cc1b49bd30e50d4eb144e8431eadc679bd0e743aa70",
           "action": "add"
         }
       },
       "WorkerPool": {
         "1": {
           "version": 1,
-          "hash": "63c1c0d25b02eb59050133e07b9d197dfa01af5f4f425b346ee02f7e23097e96",
+          "hash": "250699eb4c452fc427995353d5c5ad6245fb3e9fdac8814f8348784816a0733b",
+          "action": "add"
+        }
+      },
+      "SyftImageRegistry": {
+        "1": {
+          "version": 1,
+          "hash": "dc83910c91947e3d9eaa3e6f8592237448f0408668c7cca80450b5fcd54722e1",
+          "action": "add"
+        }
+      },
+      "UserCode": {
+        "3": {
+          "version": 3,
+          "hash": "d3fef6e5706c4e54d83c0f43ce1f2d94116c21de16a692ba52bd04809ed51ed3",
+          "action": "add"
+        }
+      },
+      "SubmitUserCode": {
+        "3": {
+          "version": 3,
+          "hash": "911d3e550721c78702aa819082d431305b491c597f23b70d8a7118c801e69694",
           "action": "add"
         }
       }

@@ -4,6 +4,7 @@ markupsafe==2.0.1
 pydata-sphinx-theme==0.7.2
 pygments>=2.15.0 # not directly required, pinned by Snyk to avoid a vulnerability
 requests>=2.31.0 # not directly required, pinned by Snyk to avoid a vulnerability
+setuptools>=65.5.1 # not directly required, pinned by Snyk to avoid a vulnerability
 sphinx==4.3.0
 sphinx-autoapi==1.8.4
 sphinx-code-include==1.1.1
