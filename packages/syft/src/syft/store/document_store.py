@@ -699,7 +699,7 @@ class BaseStash:
         credentials: SyftVerifyKey,
         obj: BaseStash.object_type,
         has_permission=False,
-    ) -> Optional[Result[BaseStash.object_type, str]]:
+    ) -> Result[BaseStash.object_type, str]:
         qk = self.partition.store_query_key(obj)
         return self.partition.update(
             credentials=credentials, qk=qk, obj=obj, has_permission=has_permission
