@@ -48,11 +48,23 @@ from .base_queue import QueueProducer
 from .queue_stash import ActionQueueItem
 from .queue_stash import Status
 
+# Producer/Consumer heartbeat interval (in seconds)
 HEARTBEAT_INTERVAL_SEC = 5
-DEFAULT_THREAD_TIMEOUT = 5
+
+# Thread join timeout (in seconds)
+THREAD_TIMEOUT_SEC = 5
+
+# Max duration (in ms) to wait for ZMQ poller to return
 ZMQ_POLLER_TIMEOUT_MSEC = 1000
+
+# Duration (in seconds) after which a worker without a heartbeat will be marked as expired
 WORKER_TIMEOUT_SEC = 60
+
+# Duration (in seconds) after which producer without a heartbeat will be marked as expired
 PRODUCER_TIMEOUT_SEC = 60
+
+# Lock for working on ZMQ socket
+ZMQ_SOCKET_LOCK = threading.Lock()
 
 
 class QueueMsgProtocol:
@@ -65,8 +77,6 @@ class QueueMsgProtocol:
 
 
 MAX_RECURSION_NESTED_ACTIONOBJECTS = 5
-
-lock = threading.Lock()
 
 
 class Timeout:
@@ -167,11 +177,11 @@ class ZMQProducer(QueueProducer):
             logger.exception("Failed to unregister poller. {}", e)
         finally:
             if self.thread:
-                self.thread.join(DEFAULT_THREAD_TIMEOUT)
+                self.thread.join(THREAD_TIMEOUT_SEC)
                 self.thread = None
 
             if self.producer_thread:
-                self.producer_thread.join(DEFAULT_THREAD_TIMEOUT)
+                self.producer_thread.join(THREAD_TIMEOUT_SEC)
                 self.producer_thread = None
 
             self.backend.close()
@@ -397,7 +407,7 @@ class ZMQProducer(QueueProducer):
         msg = [worker.address, b"", QueueMsgProtocol.W_WORKER, command] + msg
 
         logger.debug("Send: {}", msg)
-        with lock:
+        with ZMQ_SOCKET_LOCK:
             self.backend.send_multipart(msg)
 
     def _run(self):
@@ -561,7 +571,7 @@ class ZMQConsumer(QueueConsumer):
             logger.exception("Failed to unregister worker. {}", e)
         finally:
             if self.thread is not None:
-                self.thread.join(timeout=DEFAULT_THREAD_TIMEOUT)
+                self.thread.join(timeout=THREAD_TIMEOUT_SEC)
                 self.thread = None
             self.worker.close()
             self.context.destroy()
@@ -587,7 +597,7 @@ class ZMQConsumer(QueueConsumer):
 
         msg = [b"", QueueMsgProtocol.W_WORKER, command] + msg
         logger.debug("Send: msg={}", msg)
-        with lock:
+        with ZMQ_SOCKET_LOCK:
             self.worker.send_multipart(msg)
 
     def _run(self):
