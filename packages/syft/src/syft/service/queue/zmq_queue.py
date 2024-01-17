@@ -7,7 +7,6 @@ import socketserver
 import threading
 import time
 from time import sleep
-import traceback
 from typing import DefaultDict
 from typing import Dict
 from typing import List
@@ -49,14 +48,11 @@ from .base_queue import QueueProducer
 from .queue_stash import ActionQueueItem
 from .queue_stash import Status
 
-HEARTBEAT_LIVENESS = 30  # second
-HEARTBEAT_INTERVAL = 2500  # msec
-HEARTBEAT_EXPIRY = HEARTBEAT_INTERVAL * HEARTBEAT_LIVENESS
-RECONNECT_INTERVAL = 2
-INTERVAL_INIT = 1
-INTERVAL_MAX = 32
+HEARTBEAT_INTERVAL_SEC = 5
 DEFAULT_THREAD_TIMEOUT = 5
-POLLER_TIMEOUT = 2500
+ZMQ_POLLER_TIMEOUT_MSEC = 1000
+WORKER_TIMEOUT_SEC = 60
+PRODUCER_TIMEOUT_SEC = 60
 
 
 class QueueMsgProtocol:
@@ -73,6 +69,28 @@ MAX_RECURSION_NESTED_ACTIONOBJECTS = 5
 lock = threading.Lock()
 
 
+class Timeout:
+    def __init__(self, offset_sec: float):
+        self.__offset = float(offset_sec)
+        self.__next_ts = 0
+
+        self.reset()
+
+    @property
+    def next_ts(self):
+        return self.__next_ts
+
+    def reset(self):
+        self.__next_ts = self.now() + self.__offset
+
+    def has_elapsed(self):
+        return self.now() >= self.__next_ts
+
+    @staticmethod
+    def now() -> float:
+        return time.time()
+
+
 class Worker:
     def __init__(
         self,
@@ -84,8 +102,17 @@ class Worker:
         self.identity = identity
         self.address = address
         self.service = service
-        self.expiry = time.time() + 1e-3 * HEARTBEAT_EXPIRY
         self.syft_worker_id = UID(syft_worker_id)
+        self.__expiry_t = Timeout(WORKER_TIMEOUT_SEC)
+
+    def has_expired(self):
+        return self.__expiry_t.has_elapsed()
+
+    def get_expiry(self) -> int:
+        return self.__expiry_t.next_ts
+
+    def reset_expiry(self):
+        self.__expiry_t.reset()
 
 
 class Service:
@@ -120,7 +147,7 @@ class ZMQProducer(QueueProducer):
         self.services = {}
         self.workers = {}
         self.waiting: List[Worker] = []
-        self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
+        self.heartbeat_t = Timeout(HEARTBEAT_INTERVAL_SEC)
         self.context = zmq.Context(1)
         self.backend = self.context.socket(zmq.ROUTER)
         self.backend.setsockopt(LINGER, 1)
@@ -304,30 +331,33 @@ class ZMQProducer(QueueProducer):
 
     def send_heartbeats(self):
         """Send heartbeats to idle workers if it's time"""
-        if time.time() > self.heartbeat_at:
+        if self.heartbeat_t.has_elapsed():
             for worker in self.waiting:
                 self.send_to_worker(worker, QueueMsgProtocol.W_HEARTBEAT, None, None)
-            self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
+            self.heartbeat_t.reset()
 
     def purge_workers(self):
         """Look for & kill expired workers.
 
         Workers are oldest to most recent, so we stop at the first alive worker.
         """
-        while len(self.waiting) > 0:
-            w = self.waiting[0]
-            if w.expiry < time.time():
-                self.delete_worker(w, False)
-                self.waiting.pop(0)
-            else:
-                break
+        # work on a copy of the iterator
+        for worker in list(self.waiting):
+            if worker.has_expired():
+                logger.info(
+                    "Deleting expired worker={} expiry={} now={}",
+                    worker.identity,
+                    worker.get_expiry(),
+                    Timeout.now(),
+                )
+                self.delete_worker(worker, False)
 
     def worker_waiting(self, worker: Worker):
         """This worker is now waiting for work."""
         # Queue to broker and service waiting lists
         self.waiting.append(worker)
         worker.service.waiting.append(worker)
-        worker.expiry = time.time() + 1e-3 * HEARTBEAT_EXPIRY
+        worker.reset_expiry()
         self.dispatch(worker.service, None)
 
     def dispatch(self, service: Service, msg: bytes):
@@ -381,7 +411,7 @@ class ZMQProducer(QueueProducer):
             items = None
 
             try:
-                items = self.poll_workers.poll(HEARTBEAT_INTERVAL)
+                items = self.poll_workers.poll(ZMQ_POLLER_TIMEOUT_MSEC)
             except Exception as e:
                 logger.exception("Failed to poll items: {}", e)
 
@@ -442,7 +472,7 @@ class ZMQProducer(QueueProducer):
 
         elif QueueMsgProtocol.W_HEARTBEAT == command:
             if worker_ready:
-                worker.expiry = time.time() + 1e-3 * HEARTBEAT_EXPIRY
+                worker.reset_expiry()
             else:
                 # extract the syft worker id and worker pool name from the message
                 # Get the corresponding worker pool and worker
@@ -458,8 +488,12 @@ class ZMQProducer(QueueProducer):
         if disconnect:
             self.send_to_worker(worker, QueueMsgProtocol.W_DISCONNECT, None, None)
 
-        if worker.service is not None and worker in worker.service.waiting:
+        if worker.service and worker in worker.service.waiting:
             worker.service.waiting.remove(worker)
+
+        if worker in self.waiting:
+            self.waiting.remove(worker)
+
         self.workers.pop(worker.identity, None)
 
     @property
@@ -513,13 +547,11 @@ class ZMQConsumer(QueueConsumer):
             [str(self.syft_worker_id).encode()],
         )
 
-        # If liveness hits zero, queue is considered disconnected
-        self.liveness = HEARTBEAT_LIVENESS
-        self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
-
     def post_init(self):
-        self.reconnect_to_producer()
         self.thread = None
+        self.heartbeat_t = Timeout(HEARTBEAT_INTERVAL_SEC)
+        self.producer_ping_t = Timeout(PRODUCER_TIMEOUT_SEC)
+        self.reconnect_to_producer()
 
     def close(self):
         self._stop.set()
@@ -566,7 +598,7 @@ class ZMQConsumer(QueueConsumer):
                     return
 
                 try:
-                    items = self.poller.poll(POLLER_TIMEOUT)
+                    items = self.poller.poll(ZMQ_POLLER_TIMEOUT_MSEC)
                 except ContextTerminated:
                     logger.info("Context terminated")
                     return
@@ -580,6 +612,9 @@ class ZMQConsumer(QueueConsumer):
                     msg = self.worker.recv_multipart()
 
                     logger.debug("Recieve: {}", msg)
+
+                    # mark as alive
+                    self.set_producer_alive()
 
                     if len(msg) < 3:
                         logger.error("Invalid message: {}", msg)
@@ -610,23 +645,12 @@ class ZMQConsumer(QueueConsumer):
                     else:
                         logger.error("Invalid command: {}", command)
                 else:
-                    self.liveness -= 1
-                    if self.liveness == 0:
-                        if self.verbose:
-                            print("W: disconnected from broker - retrying...")
-                        try:
-                            time.sleep(RECONNECT_INTERVAL)
-                        except Exception as e:
-                            print(e, traceback.format_exc())
-                            break
+                    if not self.is_producer_alive():
+                        logger.info("Producer check-alive timed out. Reconnecting.")
                         self.reconnect_to_producer()
+                        self.set_producer_alive()
 
-                # Send HEARTBEAT if it's time
-                if time.time() > self.heartbeat_at:
-                    # TODO: Also send service name and syft worker id during HEARTBEATS
-                    # to the producer.
-                    self.send_to_producer(QueueMsgProtocol.W_HEARTBEAT)
-                    self.heartbeat_at = time.time() + HEARTBEAT_INTERVAL
+                self.send_heartbeat()
 
         except zmq.ZMQError as e:
             if e.errno == zmq.ETERM:
@@ -636,6 +660,18 @@ class ZMQConsumer(QueueConsumer):
                 raise e
 
         logger.info("Worker finished")
+
+    def set_producer_alive(self):
+        self.producer_ping_t.reset()
+
+    def is_producer_alive(self) -> bool:
+        # producer timer is within timeout
+        return not self.producer_ping_t.has_elapsed()
+
+    def send_heartbeat(self):
+        if self.heartbeat_t.has_elapsed() and self.is_producer_alive():
+            self.send_to_producer(QueueMsgProtocol.W_HEARTBEAT)
+            self.heartbeat_t.reset()
 
     def run(self):
         self.thread = threading.Thread(target=self._run)
@@ -677,7 +713,7 @@ class ZMQConsumer(QueueConsumer):
 
     @property
     def alive(self):
-        return not self.worker.closed and self.liveness
+        return not self.worker.closed and self.is_producer_alive()
 
 
 @serializable()
