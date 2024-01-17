@@ -1497,13 +1497,13 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
     # Create worker pool if it doesn't exists
     if default_worker_pool is None:
         worker_to_add_ = worker_count
-        create_pool_method = node.get_service_method(SyftWorkerPoolService.create_pool)
+        create_pool_method = node.get_service_method(SyftWorkerPoolService.launch)
         print("Creating default Worker Pool")
         result = create_pool_method(
             context,
             name=DEFAULT_WORKER_POOL_NAME,
             image_uid=default_image.id,
-            number=worker_to_add_,
+            num_workers=worker_to_add_,
         )
 
     else:
