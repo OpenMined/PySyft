@@ -75,7 +75,7 @@ class SyftWorker(SyftObject):
     status: WorkerStatus
     image: Optional[SyftWorkerImage]
     worker_pool_name: str
-    consumer_state: ConsumerState = ConsumerState.IDLE
+    consumer_state: ConsumerState = ConsumerState.DETACHED
     job_id: Optional[UID]
 
     def get_job_repr(self):

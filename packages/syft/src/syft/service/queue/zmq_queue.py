@@ -319,6 +319,14 @@ class ZMQProducer(QueueProducer):
         self.waiting.append(worker)
         worker.service.waiting.append(worker)
         worker.expiry = time.time() + 1e-3 * HEARTBEAT_EXPIRY
+        res = self.worker_stash.update_consumer_state(
+            credentials=self.worker_stash.partition.root_verify_key,
+            worker_uid=worker.syft_worker_id,
+            consumer_state=ConsumerState.IDLE,
+        )
+        if res.is_err():
+            # TODO: Shift to logger
+            print(res)
         self.dispatch(worker.service, None)
 
     def dispatch(self, service: Service, msg: bytes):
