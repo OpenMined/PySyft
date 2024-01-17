@@ -207,7 +207,7 @@ class SyftWorkerPoolService(AbstractService):
 
     @service_method(
         path="worker_pool.create_image_and_pool_request",
-        name="pool_image_creation_request",
+        name="create_image_and_pool_request",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def create_image_and_pool_request(
