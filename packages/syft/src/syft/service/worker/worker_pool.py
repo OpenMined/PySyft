@@ -77,6 +77,12 @@ class SyftWorker(SyftObject):
     consumer_state: ConsumerState = ConsumerState.IDLE
     job_id: Optional[UID]
 
+    @property
+    def logs(self) -> str:
+        if not self.image:
+            logs = "Logs not implemented for In Memory Workers"
+        return logs
+
     def get_job_repr(self):
         if self.job_id is not None:
             api = APIRegistry.api_for(
