@@ -10,6 +10,7 @@ from typing import cast
 # third party
 import docker
 from docker.models.containers import Container
+import pydantic
 
 # relative
 from ...custom_worker.config import CustomWorkerConfig
@@ -33,6 +34,7 @@ from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
+from .image_identifier import SyftWorkerImageIdentifier
 from .utils import DEFAULT_WORKER_POOL_NAME
 from .utils import run_containers
 from .utils import run_workers_in_threads
@@ -224,9 +226,9 @@ class SyftWorkerPoolService(AbstractService):
             context (AuthedServiceContext): The authenticated service context.
             pool_name (str): The name of the worker pool.
             num_workers (int): The number of workers in the pool.
-            image_uid (Optional[UID]): The UID of the built image.
-            reason (Optional[str], optional): The reason for creating the
-                worker pool. Defaults to "".
+            config: (WorkerConfig): Config of the image to be built.
+            tag (str): human-readable manifest identifier that is typically a specific version or variant of an image
+            reason (Optional[str], optional): The reason for creating the worker image and pool. Defaults to "".
         """
 
         if isinstance(config, CustomWorkerConfig):
@@ -241,13 +243,26 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_image: Optional[SyftWorkerImage] = search_result.ok()
 
+        try:
+            image_identifier = SyftWorkerImageIdentifier.from_str(tag=tag)
+        except pydantic.ValidationError as e:
+            return SyftError(message=f"Failed to create tag: {e}")
+
+        # create a list of Change objects and submit a
+        # request for these changes to the server
         changes: List[Change] = []
 
-        if tag is None:
-            return SyftError(message="Please provide a valid tag for the given config")
+        if worker_image is not None:
+            return SyftError(
+                message="Image already exists for given config. \
+                    Please use `worker_pool.create_pool_request` to request pool creation."
+            )
 
-        if worker_image is None:
-            changes += [CreateCustomImageChange(config=config, tag=tag)]
+        # Add create custom image change
+        create_custom_image_change = CreateCustomImageChange(
+            config=config,
+            tag=image_identifier.full_name_with_tag,
+        )
 
         result = self.stash.get_by_name(context.credentials, pool_name=pool_name)
 
@@ -260,14 +275,13 @@ class SyftWorkerPoolService(AbstractService):
                 f"exists. Please choose another name!"
             )
 
-        # create a list of Change objects and submit a
-        # request for these changes to the server
+        # Add create worker pool change
         create_worker_pool_change = CreateCustomWorkerPoolChange(
             pool_name=pool_name,
             num_workers=num_workers,
             config=config,
         )
-        changes += [create_worker_pool_change]
+        changes += [create_custom_image_change, create_worker_pool_change]
         request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)
         result = method(context=context, request=request, reason=reason)
