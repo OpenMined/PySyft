@@ -140,7 +140,7 @@ class SyftWorkerPoolService(AbstractService):
         return container_statuses
 
     @service_method(
-        path="worker_pool.create_image_and_pool_request",
+        path="worker_pool.create_pool_request",
         name="pool_creation_request",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
@@ -205,7 +205,7 @@ class SyftWorkerPoolService(AbstractService):
 
     @service_method(
         path="worker_pool.create_image_and_pool_request",
-        name="pool_creation_request",
+        name="pool_image_creation_request",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def create_image_and_pool_request(

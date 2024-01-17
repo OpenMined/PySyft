@@ -212,7 +212,7 @@ class CreateCustomImageChange(Change):
             )
 
             if result.is_err():
-                return Ok(SyftError(message=f"{result.err()}"))
+                return Err(SyftError(message=f"{result.err()}"))
 
             worker_image = result.ok()
 
@@ -259,9 +259,12 @@ class CreateCustomWorkerPoolChange(Change):
             service_context: AuthedServiceContext = context.to_service_ctx()
 
             if self.config is not None:
-                worker_image = worker_pool_service.stash.get_by_docker_config(
+                result = worker_pool_service.image_stash.get_by_docker_config(
                     service_context.credentials, self.config
                 )
+                if result.is_err():
+                    return Err(SyftError(message=f"{result.err()}"))
+                worker_image = result.ok()
                 self.image_uid = worker_image.id
 
             result = worker_pool_service.launch(
