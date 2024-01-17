@@ -93,7 +93,7 @@ class Timeout:
     def reset(self):
         self.__next_ts = self.now() + self.__offset
 
-    def has_elapsed(self):
+    def has_expired(self):
         return self.now() >= self.__next_ts
 
     @staticmethod
@@ -116,7 +116,7 @@ class Worker:
         self.__expiry_t = Timeout(WORKER_TIMEOUT_SEC)
 
     def has_expired(self):
-        return self.__expiry_t.has_elapsed()
+        return self.__expiry_t.has_expired()
 
     def get_expiry(self) -> int:
         return self.__expiry_t.next_ts
@@ -341,7 +341,7 @@ class ZMQProducer(QueueProducer):
 
     def send_heartbeats(self):
         """Send heartbeats to idle workers if it's time"""
-        if self.heartbeat_t.has_elapsed():
+        if self.heartbeat_t.has_expired():
             for worker in self.waiting:
                 self.send_to_worker(worker, QueueMsgProtocol.W_HEARTBEAT, None, None)
             self.heartbeat_t.reset()
@@ -676,10 +676,10 @@ class ZMQConsumer(QueueConsumer):
 
     def is_producer_alive(self) -> bool:
         # producer timer is within timeout
-        return not self.producer_ping_t.has_elapsed()
+        return not self.producer_ping_t.has_expired()
 
     def send_heartbeat(self):
-        if self.heartbeat_t.has_elapsed() and self.is_producer_alive():
+        if self.heartbeat_t.has_expired() and self.is_producer_alive():
             self.send_to_producer(QueueMsgProtocol.W_HEARTBEAT)
             self.heartbeat_t.reset()
 
