@@ -241,7 +241,8 @@ class CreateCustomWorkerPoolChange(Change):
 
     pool_name: str
     num_workers: int
-    image_uid: UID
+    image_uid: Optional[UID]
+    config: Optional[WorkerConfig]
 
     __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
 
@@ -256,6 +257,13 @@ class CreateCustomWorkerPoolChange(Change):
             # get the worker pool service and try to launch a pool
             worker_pool_service = context.node.get_service("SyftWorkerPoolService")
             service_context: AuthedServiceContext = context.to_service_ctx()
+
+            if self.config is not None:
+                worker_image = worker_pool_service.stash.get_by_docker_config(
+                    service_context.credentials, self.config
+                )
+                self.image_uid = worker_image.id
+
             result = worker_pool_service.launch(
                 context=service_context,
                 name=self.pool_name,

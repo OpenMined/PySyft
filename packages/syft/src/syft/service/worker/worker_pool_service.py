@@ -12,6 +12,8 @@ import docker
 from docker.models.containers import Container
 
 # relative
+from ...custom_worker.config import CustomWorkerConfig
+from ...custom_worker.config import WorkerConfig
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
@@ -19,6 +21,7 @@ from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..request.request import Change
+from ..request.request import CreateCustomImageChange
 from ..request.request import CreateCustomWorkerPoolChange
 from ..request.request import SubmitRequest
 from ..request.request_service import RequestService
@@ -137,16 +140,16 @@ class SyftWorkerPoolService(AbstractService):
         return container_statuses
 
     @service_method(
-        path="worker_pool.pool_creation_request",
+        path="worker_pool.create_image_and_pool_request",
         name="pool_creation_request",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def pool_creation_request(
+    def create_pool_request(
         self,
         context: AuthedServiceContext,
         pool_name: str,
         num_workers: int,
-        image_uid: Optional[UID],
+        image_uid: UID,
         reason: Optional[str] = "",
     ) -> Union[SyftError, SyftSuccess]:
         """
@@ -160,10 +163,97 @@ class SyftWorkerPoolService(AbstractService):
             reason (Optional[str], optional): The reason for creating the
                 worker pool. Defaults to "".
         """
-        # check if the worker pool with the given name already exists?
+
+        search_result = self.image_stash.get_by_uid(
+            credentials=context.credentials, uid=image_uid
+        )
+
+        if search_result.is_err():
+            return SyftError(message=str(search_result.err()))
+
+        worker_image: Optional[SyftWorkerImage] = search_result.ok()
+
+        if worker_image is None:
+            return SyftError(
+                message=f"No image exists for given image uid : {image_uid}"
+            )
+
         result = self.stash.get_by_name(context.credentials, pool_name=pool_name)
+
         if result.is_err():
             return SyftError(message=f"{result.err()}")
+
+        worker_pool = result.ok()
+
+        if worker_pool is not None:
+            return SyftError(
+                message=f"Worker pool already exists for given pool name: {pool_name}"
+            )
+
+        create_worker_pool_change = CreateCustomWorkerPoolChange(
+            pool_name=pool_name,
+            num_workers=num_workers,
+            image_uid=image_uid,
+        )
+
+        changes: List[Change] = [create_worker_pool_change]
+        request = SubmitRequest(changes=changes)
+        method = context.node.get_service_method(RequestService.submit)
+        result = method(context=context, request=request, reason=reason)
+
+        return result
+
+    @service_method(
+        path="worker_pool.create_image_and_pool_request",
+        name="pool_creation_request",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def create_image_and_pool_request(
+        self,
+        context: AuthedServiceContext,
+        pool_name: str,
+        num_workers: int,
+        tag: str,
+        config: WorkerConfig,
+        reason: Optional[str] = "",
+    ) -> Union[SyftError, SyftSuccess]:
+        """
+        Create a request to launch the worker pool based on a built image.
+
+        Args:
+            context (AuthedServiceContext): The authenticated service context.
+            pool_name (str): The name of the worker pool.
+            num_workers (int): The number of workers in the pool.
+            image_uid (Optional[UID]): The UID of the built image.
+            reason (Optional[str], optional): The reason for creating the
+                worker pool. Defaults to "".
+        """
+
+        if isinstance(config, CustomWorkerConfig):
+            return SyftError(message="We only support DockerWorkerConfig.")
+
+        search_result = self.image_stash.get_by_docker_config(
+            credentials=context.credentials, config=config
+        )
+
+        if search_result.is_err():
+            return SyftError(message=str(search_result.err()))
+
+        worker_image: Optional[SyftWorkerImage] = search_result.ok()
+
+        changes: List[Change] = []
+
+        if tag is None:
+            return SyftError(message="Please provide a valid tag for the given config")
+
+        if worker_image is None:
+            changes += [CreateCustomImageChange(config=config, tag=tag)]
+
+        result = self.stash.get_by_name(context.credentials, pool_name=pool_name)
+
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+
         if result.ok() is not None:
             return SyftError(
                 message=f"Worker Pool with name: {pool_name} already "
@@ -175,9 +265,9 @@ class SyftWorkerPoolService(AbstractService):
         create_worker_pool_change = CreateCustomWorkerPoolChange(
             pool_name=pool_name,
             num_workers=num_workers,
-            image_uid=image_uid,
+            config=config,
         )
-        changes: List[Change] = [create_worker_pool_change]
+        changes += [create_worker_pool_change]
         request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)
         result = method(context=context, request=request, reason=reason)
