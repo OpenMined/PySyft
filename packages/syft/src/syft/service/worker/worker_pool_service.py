@@ -170,13 +170,14 @@ class SyftWorkerPoolService(AbstractService):
                 f"exists. Please choose another name!"
             )
 
+        # create a list of Change objects and submit a
+        # request for these changes to the server
         create_worker_pool_change = CreateCustomWorkerPoolChange(
             pool_name=pool_name,
             num_workers=num_workers,
             image_uid=image_uid,
         )
         changes: List[Change] = [create_worker_pool_change]
-
         request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)
         result = method(context=context, request=request, reason=reason)

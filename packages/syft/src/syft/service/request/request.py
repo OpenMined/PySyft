@@ -248,7 +248,30 @@ class CreateCustomWorkerPoolChange(Change):
     def _run(
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
-        return Err(SyftError(message="Not implemented yet!"))
+        """
+        This function is run when the DO approves (apply=True)
+        or deny (apply=False) the request.
+        """
+        if apply:
+            # get the worker pool service and try to launch a pool
+            worker_pool_service = context.node.get_service("SyftWorkerPoolService")
+            service_context: AuthedServiceContext = context.to_service_ctx()
+            result = worker_pool_service.launch(
+                context=service_context,
+                name=self.pool_name,
+                image_uid=self.image_uid,
+                num_workers=self.num_workers,
+            )
+            if isinstance(result, SyftError):
+                return Err(result)
+            else:
+                return Ok(result)
+        else:
+            return Err(
+                SyftError(
+                    message=f"Request to create a worker pool with name {self.name} denied"
+                )
+            )
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=True)
