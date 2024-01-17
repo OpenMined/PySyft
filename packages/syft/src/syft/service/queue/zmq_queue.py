@@ -107,8 +107,8 @@ class ZMQProducer(QueueProducer):
         self.queue_stash = queue_stash
         self.queue_name = queue_name
         self.auth_context = context
+        self._stop = threading.Event()
         self.post_init()
-        self._stop = False
 
     @property
     def address(self):
@@ -128,19 +128,29 @@ class ZMQProducer(QueueProducer):
         self.poll_workers = zmq.Poller()
         self.poll_workers.register(self.backend, zmq.POLLIN)
         self.bind(f"tcp://*:{self.port}")
-        self.thread = None
+        self.thread: threading.Thread = None
+        self.producer_thread: threading.Thread = None
 
     def close(self):
-        self._stop = True
+        self._stop.set()
+
         try:
             self.poll_workers.unregister(self.backend)
         except Exception as e:
             logger.exception("Failed to unregister poller. {}", e)
         finally:
-            if self.thread is not None:
+            if self.thread:
                 self.thread.join(DEFAULT_THREAD_TIMEOUT)
+                self.thread = None
+
+            if self.producer_thread:
+                self.producer_thread.join(DEFAULT_THREAD_TIMEOUT)
+                self.producer_thread = None
+
             self.backend.close()
             self.context.destroy()
+
+            self._stop.clear()
 
     @property
     def action_service(self):
@@ -209,7 +219,7 @@ class ZMQProducer(QueueProducer):
 
     def read_items(self):
         while True:
-            if self._stop:
+            if self._stop.is_set():
                 break
             sleep(1)
 
@@ -362,7 +372,7 @@ class ZMQProducer(QueueProducer):
 
     def _run(self):
         while True:
-            if self._stop:
+            if self._stop.is_set():
                 return
 
             for _, service in self.services.items():
@@ -478,7 +488,7 @@ class ZMQConsumer(QueueConsumer):
         self.worker = None
         self.verbose = verbose
         self.id = UID().short()
-        self._stop = False
+        self._stop = threading.Event()
         self.syft_worker_id = syft_worker_id
         self.worker_stash = worker_stash
         self.post_init()
@@ -512,7 +522,7 @@ class ZMQConsumer(QueueConsumer):
         self.thread = None
 
     def close(self):
-        self._stop = True
+        self._stop.set()
         try:
             self.poller.unregister(self.worker)
         except Exception as e:
@@ -520,8 +530,10 @@ class ZMQConsumer(QueueConsumer):
         finally:
             if self.thread is not None:
                 self.thread.join(timeout=DEFAULT_THREAD_TIMEOUT)
+                self.thread = None
             self.worker.close()
             self.context.destroy()
+            self._stop.clear()
 
     def send_to_producer(
         self,
@@ -550,7 +562,7 @@ class ZMQConsumer(QueueConsumer):
         """Send reply, if any, to producer and wait for next request."""
         try:
             while True:
-                if self._stop:
+                if self._stop.is_set():
                     return
 
                 try:
