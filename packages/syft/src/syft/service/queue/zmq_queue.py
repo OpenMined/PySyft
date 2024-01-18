@@ -159,11 +159,11 @@ class ZMQProducer(QueueProducer):
         self.waiting: List[Worker] = []
         self.heartbeat_t = Timeout(HEARTBEAT_INTERVAL_SEC)
         self.context = zmq.Context(1)
-        self.backend = self.context.socket(zmq.ROUTER)
-        self.backend.setsockopt(LINGER, 1)
-        self.backend.setsockopt_string(zmq.IDENTITY, self.id)
+        self.socket = self.context.socket(zmq.ROUTER)
+        self.socket.setsockopt(LINGER, 1)
+        self.socket.setsockopt_string(zmq.IDENTITY, self.id)
         self.poll_workers = zmq.Poller()
-        self.poll_workers.register(self.backend, zmq.POLLIN)
+        self.poll_workers.register(self.socket, zmq.POLLIN)
         self.bind(f"tcp://*:{self.port}")
         self.thread: threading.Thread = None
         self.producer_thread: threading.Thread = None
@@ -172,7 +172,7 @@ class ZMQProducer(QueueProducer):
         self._stop.set()
 
         try:
-            self.poll_workers.unregister(self.backend)
+            self.poll_workers.unregister(self.socket)
         except Exception as e:
             logger.exception("Failed to unregister poller. {}", e)
         finally:
@@ -184,7 +184,7 @@ class ZMQProducer(QueueProducer):
                 self.producer_thread.join(THREAD_TIMEOUT_SEC)
                 self.producer_thread = None
 
-            self.backend.close()
+            self.socket.close()
             self.context.destroy()
 
             self._stop.clear()
@@ -336,7 +336,7 @@ class ZMQProducer(QueueProducer):
 
     def bind(self, endpoint):
         """Bind producer to endpoint."""
-        self.backend.bind(endpoint)
+        self.socket.bind(endpoint)
         logger.info("Producer endpoint: {}", endpoint)
 
     def send_heartbeats(self):
@@ -408,7 +408,7 @@ class ZMQProducer(QueueProducer):
 
         logger.debug("Send: {}", msg)
         with ZMQ_SOCKET_LOCK:
-            self.backend.send_multipart(msg)
+            self.socket.send_multipart(msg)
 
     def _run(self):
         while True:
@@ -426,7 +426,7 @@ class ZMQProducer(QueueProducer):
                 logger.exception("Failed to poll items: {}", e)
 
             if items:
-                msg = self.backend.recv_multipart()
+                msg = self.socket.recv_multipart()
 
                 logger.debug("Recieve: {}", msg)
 
@@ -508,7 +508,7 @@ class ZMQProducer(QueueProducer):
 
     @property
     def alive(self):
-        return not self.backend.closed
+        return not self.socket.closed
 
 
 @serializable(attrs=["_subscriber"])
@@ -529,7 +529,7 @@ class ZMQConsumer(QueueConsumer):
         self.queue_name = queue_name
         self.context = zmq.Context()
         self.poller = zmq.Poller()
-        self.worker = None
+        self.socket = None
         self.verbose = verbose
         self.id = UID().short()
         self._stop = threading.Event()
@@ -539,14 +539,14 @@ class ZMQConsumer(QueueConsumer):
 
     def reconnect_to_producer(self):
         """Connect or reconnect to producer"""
-        if self.worker:
-            self.poller.unregister(self.worker)
-            self.worker.close()
-        self.worker = self.context.socket(zmq.DEALER)
-        self.worker.linger = 0
-        self.worker.setsockopt_string(zmq.IDENTITY, self.id)
-        self.worker.connect(self.address)
-        self.poller.register(self.worker, zmq.POLLIN)
+        if self.socket:
+            self.poller.unregister(self.socket)
+            self.socket.close()
+        self.socket = self.context.socket(zmq.DEALER)
+        self.socket.linger = 0
+        self.socket.setsockopt_string(zmq.IDENTITY, self.id)
+        self.socket.connect(self.address)
+        self.poller.register(self.socket, zmq.POLLIN)
 
         logger.info("Connecting Worker id={} to broker addr={}", self.id, self.address)
 
@@ -566,14 +566,14 @@ class ZMQConsumer(QueueConsumer):
     def close(self):
         self._stop.set()
         try:
-            self.poller.unregister(self.worker)
+            self.poller.unregister(self.socket)
         except Exception as e:
             logger.exception("Failed to unregister worker. {}", e)
         finally:
             if self.thread is not None:
                 self.thread.join(timeout=THREAD_TIMEOUT_SEC)
                 self.thread = None
-            self.worker.close()
+            self.socket.close()
             self.context.destroy()
             self._stop.clear()
 
@@ -598,7 +598,7 @@ class ZMQConsumer(QueueConsumer):
         msg = [b"", QueueMsgProtocol.W_WORKER, command] + msg
         logger.debug("Send: msg={}", msg)
         with ZMQ_SOCKET_LOCK:
-            self.worker.send_multipart(msg)
+            self.socket.send_multipart(msg)
 
     def _run(self):
         """Send reply, if any, to producer and wait for next request."""
@@ -619,7 +619,7 @@ class ZMQConsumer(QueueConsumer):
                 if items:
                     # Message format:
                     # [b"", "<header>", "<command>", "<queue_name>", "<actual_msg_bytes>"]
-                    msg = self.worker.recv_multipart()
+                    msg = self.socket.recv_multipart()
 
                     logger.debug("Recieve: {}", msg)
 
@@ -723,7 +723,7 @@ class ZMQConsumer(QueueConsumer):
 
     @property
     def alive(self):
-        return not self.worker.closed and self.is_producer_alive()
+        return not self.socket.closed and self.is_producer_alive()
 
 
 @serializable()
