@@ -24,7 +24,6 @@ from .utils import run_workers_in_threads
 from .worker_image import SyftWorkerImage
 from .worker_image_stash import SyftWorkerImageStash
 from .worker_pool import ContainerSpawnStatus
-from .worker_pool import SyftWorker
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerPool
 from .worker_pool_stash import SyftWorkerPoolStash
@@ -242,43 +241,6 @@ class SyftWorkerPoolService(AbstractService):
             if worker_pool is None
             else worker_pool
         )
-
-    def _get_worker_pool_and_worker(
-        self, context: AuthedServiceContext, worker_pool_id: UID, worker_id: UID
-    ) -> Union[Tuple[WorkerPool, LinkedObject], SyftError]:
-        worker_pool = self._get_worker_pool(context, worker_pool_id)
-        if isinstance(worker_pool, SyftError):
-            return worker_pool
-
-        worker = _get_worker(worker_pool, worker_id)
-        if isinstance(worker, SyftError):
-            return worker
-
-        return worker_pool, worker
-
-
-def _get_worker_opt(worker_pool: WorkerPool, worker_id: UID) -> Optional[SyftWorker]:
-    try:
-        return next(
-            worker
-            for worker in worker_pool.worker_list
-            if worker.object_uid == worker_id
-        )
-    except StopIteration:
-        return None
-
-
-def _get_worker(
-    worker_pool: WorkerPool, worker_id: UID
-) -> Union[LinkedObject, SyftError]:
-    linked_worker = _get_worker_opt(worker_pool, worker_id)
-    return (
-        linked_worker
-        if linked_worker is not None
-        else SyftError(
-            message=f"Worker with id: {worker_id} not found in pool: {worker_pool.name}"
-        )
-    )
 
 
 def _create_workers_in_pool(
