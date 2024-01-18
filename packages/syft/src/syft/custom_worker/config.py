@@ -129,7 +129,7 @@ class DockerWorkerConfig(WorkerConfig):
     def __str__(self) -> str:
         return self.dockerfile
 
-    def check_build(self, tag: str, **kwargs) -> Tuple[Image, SyftSuccess]:
+    def test_image_build(self, tag: str, **kwargs) -> Tuple[Image, SyftSuccess]:
         # relative
         from ..service.worker.utils import parse_output
         from .builder import CustomWorkerBuilder
