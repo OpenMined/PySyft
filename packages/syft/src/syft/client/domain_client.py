@@ -2,17 +2,20 @@
 from __future__ import annotations
 
 # stdlib
+from pathlib import Path
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
 
 # third party
+from loguru import logger
 from tqdm import tqdm
 
 # relative
 from ..abstract_node import NodeSideType
 from ..img.base64 import base64read
 from ..serde.serializable import serializable
+from ..service.action.action_object import ActionObject
 from ..service.code_history.code_history import CodeHistoriesDict
 from ..service.code_history.code_history import UsersCodeHistoriesDict
 from ..service.dataset.dataset import Contributor
@@ -22,6 +25,7 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.user.roles import Roles
 from ..service.user.user_roles import ServiceRole
+from ..types.blob_storage import BlobFile
 from ..types.uid import UID
 from ..util.fonts import fonts_css
 from ..util.util import get_mb_size
@@ -115,6 +119,28 @@ class DomainClient(SyftClient):
             if len(valid.err()) > 0:
                 return tuple(valid.err())
             return valid.err()
+
+    def upload_files(
+        self,
+        file_list: Union[BlobFile, list[BlobFile], str, list[str], Path, list[Path]],
+    ) -> Union[SyftSuccess, SyftError]:
+        if not file_list:
+            return SyftSuccess(message="No files to upload")
+
+        if not hasattr(file_list, "__iter__") or isinstance(file_list, str):
+            return ActionObject.from_path(file_list).send(self)
+
+        try:
+            action_objects = [
+                file
+                if isinstance(file, BlobFile)
+                else ActionObject.from_path(file).send(self).syft_action_data
+                for file in file_list
+            ]
+            return ActionObject.from_obj(action_objects).send(self)
+        except Exception as err:
+            logger.debug("upload_files: Error creating action_object: {}", err)
+            return SyftError(message=f"Failed to upload files: {err}")
 
     def connect_to_gateway(
         self,
