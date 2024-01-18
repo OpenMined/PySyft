@@ -35,7 +35,6 @@ from .worker_pool import ContainerSpawnStatus
 from .worker_pool import SyftWorker
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerPool
-from .worker_pool import WorkerStatus
 from .worker_pool import _get_worker_container
 from .worker_pool_stash import SyftWorkerPoolStash
 from .worker_service import WorkerService
@@ -286,17 +285,6 @@ class SyftWorkerPoolService(AbstractService):
             return SyftError(message=f"Failed to get worker pool for uid: {image_uid}")
 
         return result.ok()
-
-    @service_method(
-        path="worker_pool.get_worker_status",
-        name="get_worker_status",
-        roles=DATA_OWNER_ROLE_LEVEL,
-    )
-    def get_worker_status(
-        self, context: AuthedServiceContext, worker_pool_id: UID, worker_id: UID
-    ) -> Union[WorkerStatus, SyftError]:
-        worker = self.get_worker(context, worker_pool_id, worker_id)
-        return worker if isinstance(worker, SyftError) else worker.status
 
     @service_method(
         path="worker_pool.worker_logs",
