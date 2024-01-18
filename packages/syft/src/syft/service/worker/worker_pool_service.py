@@ -41,7 +41,6 @@ class SyftWorkerPoolService(AbstractService):
         self.store = store
         self.stash = SyftWorkerPoolStash(store=store)
         self.image_stash = SyftWorkerImageStash(store=store)
-        self.worker_stash = WorkerStash(store=store)
 
     @service_method(
         path="worker_pool.launch",
@@ -96,13 +95,16 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_image: SyftWorkerImage = result.ok()
 
+        worker_service: WorkerService = context.node.get_service("WorkerService")
+        worker_stash = worker_service.stash
+
         worker_list, container_statuses = _create_workers_in_pool(
             context=context,
             pool_name=name,
             existing_worker_cnt=0,
             worker_cnt=num_workers,
             worker_image=worker_image,
-            worker_stash=self.worker_stash,
+            worker_stash=worker_stash,
             reg_username=reg_username,
             reg_password=reg_password,
         )
@@ -181,13 +183,16 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_image: SyftWorkerImage = result.ok()
 
+        worker_service: WorkerService = context.node.get_service("WorkerService")
+        worker_stash = worker_service.stash
+
         worker_list, container_statuses = _create_workers_in_pool(
             context=context,
             pool_name=worker_pool.name,
             existing_worker_cnt=existing_worker_cnt,
             worker_cnt=number,
             worker_image=worker_image,
-            worker_stash=self.worker_stash,
+            worker_stash=worker_stash,
         )
 
         worker_pool.worker_list += worker_list
