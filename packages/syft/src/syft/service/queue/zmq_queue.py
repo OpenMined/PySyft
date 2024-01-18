@@ -309,7 +309,7 @@ class ZMQProducer(QueueProducer):
                     service.requests.append(msg_bytes)
                     item.status = Status.PROCESSING
                     res = self.queue_stash.update(item.syft_client_verify_key, item)
-                    if res.err():
+                    if res.is_err():
                         logger.error(
                             "Failed to update queue item={} error={}",
                             item,
