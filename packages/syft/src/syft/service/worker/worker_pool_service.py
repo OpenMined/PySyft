@@ -1,13 +1,8 @@
 # stdlib
-from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-
-# third party
-import docker
-from docker.models.containers import Container
 
 # relative
 from ...serde.serializable import serializable
@@ -279,33 +274,6 @@ def _get_worker(
             message=f"Worker with id: {worker_id} not found in pool: {worker_pool.name}"
         )
     )
-
-
-def _stop_worker_container(
-    worker: SyftWorker,
-    container: Container,
-    force: bool,
-) -> Optional[SyftError]:
-    try:
-        # stop the container
-        container.stop()
-        # Remove the container and its volumes
-        _remove_worker_container(container, force=force, v=True)
-    except Exception as e:
-        return SyftError(
-            message=f"Failed to delete worker with id: {worker.id}. Error: {e}"
-        )
-
-
-def _remove_worker_container(container: Container, **kwargs: Any) -> None:
-    try:
-        container.remove(**kwargs)
-    except docker.errors.NotFound:
-        return
-    except docker.errors.APIError as e:
-        if "removal of container" in str(e) and "is already in progress" in str(e):
-            # If the container is already being removed, ignore the error
-            return
 
 
 def _create_workers_in_pool(

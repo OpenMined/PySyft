@@ -1,12 +1,15 @@
 # stdlib
 import contextlib
+from typing import Any
 from typing import List
+from typing import Optional
 from typing import Tuple
 from typing import Union
 from typing import cast
 
 # third party
 import docker
+from docker.models.containers import Container
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -28,10 +31,8 @@ from .worker_pool import ContainerSpawnStatus
 from .worker_pool import SyftWorker
 from .worker_pool import WorkerHealth
 from .worker_pool import WorkerStatus
+from .worker_pool import _get_worker_container
 from .worker_pool import _get_worker_container_status
-from .worker_pool_service import SyftWorkerPoolService
-from .worker_pool_service import _get_worker_container
-from .worker_pool_service import _stop_worker_container
 from .worker_stash import WorkerStash
 
 
@@ -178,9 +179,7 @@ class WorkerService(AbstractService):
             return worker
 
         worker_pool_name = worker.worker_pool_name
-        worker_pool_service: SyftWorkerPoolService = context.node.get_service(
-            "SyftWorkerPoolService"
-        )
+        worker_pool_service = context.node.get_service("SyftWorkerPoolService")
         worker_pool_stash = worker_pool_service.stash
         result = worker_pool_stash.get_by_name(
             credentials=context.credentials, pool_name=worker.worker_pool_name
@@ -274,3 +273,30 @@ def _check_and_update_status_for_worker(
         if result.is_err()
         else result.ok()
     )
+
+
+def _stop_worker_container(
+    worker: SyftWorker,
+    container: Container,
+    force: bool,
+) -> Optional[SyftError]:
+    try:
+        # stop the container
+        container.stop()
+        # Remove the container and its volumes
+        _remove_worker_container(container, force=force, v=True)
+    except Exception as e:
+        return SyftError(
+            message=f"Failed to delete worker with id: {worker.id}. Error: {e}"
+        )
+
+
+def _remove_worker_container(container: Container, **kwargs: Any) -> None:
+    try:
+        container.remove(**kwargs)
+    except docker.errors.NotFound:
+        return
+    except docker.errors.APIError as e:
+        if "removal of container" in str(e) and "is already in progress" in str(e):
+            # If the container is already being removed, ignore the error
+            return
