@@ -179,7 +179,13 @@ class WorkerService(AbstractService):
             return worker
 
         worker_pool_name = worker.worker_pool_name
-        worker_pool_service = context.node.get_service("SyftWorkerPoolService")
+
+        # relative
+        from .worker_pool_service import SyftWorkerPoolService
+
+        worker_pool_service: SyftWorkerPoolService = context.node.get_service(
+            "SyftWorkerPoolService"
+        )
         worker_pool_stash = worker_pool_service.stash
         result = worker_pool_stash.get_by_name(
             credentials=context.credentials, pool_name=worker.worker_pool_name
