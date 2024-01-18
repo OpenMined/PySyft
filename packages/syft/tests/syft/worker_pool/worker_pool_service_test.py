@@ -50,7 +50,9 @@ def test_create_image_and_pool_request_accept(faker: Faker, worker: Worker):
     assert root_client.requests[-1].status.value == 2
 
     all_image_tags = [
-        im.image_identifier.repo_with_tag for im in root_client.images.get_all()
+        im.image_identifier.repo_with_tag
+        for im in root_client.images.get_all()
+        if im.image_identifier
     ]
     assert docker_tag in all_image_tags
     launched_pool = root_client.worker_pools["recordlinkage-pool"]
