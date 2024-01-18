@@ -1058,7 +1058,7 @@
       "WorkerPool": {
         "1": {
           "version": 1,
-          "hash": "3644c2caf4c01499e23b4e94d6a41fed0e39ce63c7fc5318c4e205cae9555308",
+          "hash": "250699eb4c452fc427995353d5c5ad6245fb3e9fdac8814f8348784816a0733b",
           "action": "add"
         }
       },
@@ -1078,6 +1078,17 @@
         "3": {
           "version": 3,
           "hash": "be665c2786800ef6c67c47056a6bfe3d00589a951b9bce867b64c7be724cf32b",
+      "UserCode": {
+        "3": {
+          "version": 3,
+          "hash": "d3fef6e5706c4e54d83c0f43ce1f2d94116c21de16a692ba52bd04809ed51ed3",
+          "action": "add"
+        }
+      },
+      "SubmitUserCode": {
+        "3": {
+          "version": 3,
+          "hash": "911d3e550721c78702aa819082d431305b491c597f23b70d8a7118c801e69694",
           "action": "add"
         }
       }
