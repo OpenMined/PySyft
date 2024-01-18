@@ -141,13 +141,10 @@ class SyftWorkerPoolService(AbstractService):
 
         return container_statuses
 
-    # relative
-    from ..user.user_roles import GUEST_ROLE_LEVEL
-
     @service_method(
         path="worker_pool.create_pool_request",
         name="pool_creation_request",
-        roles=GUEST_ROLE_LEVEL,  # TOASK: DATA_SCIENTIST_ROLE_LEVEL not working?
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def create_pool_request(
         self,
@@ -208,13 +205,10 @@ class SyftWorkerPoolService(AbstractService):
 
         return result
 
-    # relative
-    from ..user.user_roles import GUEST_ROLE_LEVEL
-
     @service_method(
         path="worker_pool.create_image_and_pool_request",
         name="create_image_and_pool_request",
-        roles=GUEST_ROLE_LEVEL,  # TOASK: DATA_SCIENTIST_ROLE_LEVEL not working?
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def create_image_and_pool_request(
         self,
