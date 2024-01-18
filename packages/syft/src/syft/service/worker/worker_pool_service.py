@@ -294,26 +294,14 @@ class SyftWorkerPoolService(AbstractService):
     def worker_logs(
         self,
         context: AuthedServiceContext,
-        worker_pool_id: UID,
         worker_id: UID,
         raw: bool = False,
     ) -> Union[bytes, str, SyftError]:
-        worker_pool_worker = self._get_worker_pool_and_worker(
-            context, worker_pool_id, worker_id
-        )
-        if isinstance(worker_pool_worker, SyftError):
-            return worker_pool_worker
+        worker_service: WorkerService = context.node.get_service("WorkerService")
+        worker = worker_service._get_worker(context=context, uid=worker_id)
 
-        _, linked_worker = worker_pool_worker
-
-        result = linked_worker.resolve_with_context(context)
-
-        if result.is_err():
-            return SyftError(
-                message=f"Failed to retrieve Linked SyftWorker {linked_worker.object_uid}"
-            )
-
-        worker = result.ok()
+        if isinstance(worker, SyftError):
+            return worker
 
         if context.node.in_memory_workers:
             logs = b"Logs not implemented for In Memory Workers"
