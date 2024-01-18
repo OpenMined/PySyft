@@ -5,7 +5,6 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-from typing import cast
 
 # third party
 import docker
@@ -285,40 +284,6 @@ class SyftWorkerPoolService(AbstractService):
             return SyftError(message=f"Failed to get worker pool for uid: {image_uid}")
 
         return result.ok()
-
-    @service_method(
-        path="worker_pool.worker_logs",
-        name="worker_logs",
-        roles=DATA_SCIENTIST_ROLE_LEVEL,
-    )
-    def worker_logs(
-        self,
-        context: AuthedServiceContext,
-        worker_id: UID,
-        raw: bool = False,
-    ) -> Union[bytes, str, SyftError]:
-        worker_service: WorkerService = context.node.get_service("WorkerService")
-        worker = worker_service._get_worker(context=context, uid=worker_id)
-
-        if isinstance(worker, SyftError):
-            return worker
-
-        if context.node.in_memory_workers:
-            logs = b"Logs not implemented for In Memory Workers"
-        else:
-            with contextlib.closing(docker.from_env()) as client:
-                docker_container = _get_worker_container(client, worker)
-                if isinstance(docker_container, SyftError):
-                    return docker_container
-
-                try:
-                    logs = cast(bytes, docker_container.logs())
-                except docker.errors.APIError as e:
-                    return SyftError(
-                        f"Failed to get worker {worker.id} container logs. Error {e}"
-                    )
-
-        return logs if raw else logs.decode(errors="ignore")
 
     def _get_worker_pool(
         self,

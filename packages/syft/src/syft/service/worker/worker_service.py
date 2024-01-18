@@ -3,6 +3,7 @@ import contextlib
 from typing import List
 from typing import Tuple
 from typing import Union
+from typing import cast
 
 # third party
 import docker
@@ -27,6 +28,7 @@ from .worker_pool import SyftWorker
 from .worker_pool import WorkerHealth
 from .worker_pool import WorkerStatus
 from .worker_pool import _get_worker_container_status
+from .worker_pool_service import _get_worker_container
 from .worker_stash import WorkerStash
 
 
@@ -124,6 +126,38 @@ class WorkerService(AbstractService):
                 worker_stash=self.stash,
                 credentials=context.credentials,
             )
+
+    @service_method(
+        path="worker.logs",
+        name="logs",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def logs(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        raw: bool = False,
+    ) -> Union[bytes, str, SyftError]:
+        worker = self._get_worker(context=context, uid=uid)
+        if isinstance(worker, SyftError):
+            return worker
+
+        if context.node.in_memory_workers:
+            logs = b"Logs not implemented for In Memory Workers"
+        else:
+            with contextlib.closing(docker.from_env()) as client:
+                docker_container = _get_worker_container(client, worker)
+                if isinstance(docker_container, SyftError):
+                    return docker_container
+
+                try:
+                    logs = cast(bytes, docker_container.logs())
+                except docker.errors.APIError as e:
+                    return SyftError(
+                        f"Failed to get worker {worker.id} container logs. Error {e}"
+                    )
+
+        return logs if raw else logs.decode(errors="ignore")
 
     def _get_worker(
         self, context: AuthedServiceContext, uid: UID
