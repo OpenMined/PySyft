@@ -22,7 +22,6 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .image_registry import SyftImageRegistry
 from .image_registry_service import SyftImageRegistryService
 from .utils import docker_build
@@ -41,10 +40,14 @@ class SyftWorkerImageService(AbstractService):
         self.store = store
         self.stash = SyftWorkerImageStash(store=store)
 
+    # relative
+    from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
+    from ..user.user_roles import GUEST_ROLE_LEVEL
+
     @service_method(
         path="worker_image.submit_dockerfile",
         name="submit_dockerfile",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=GUEST_ROLE_LEVEL,
     )
     def submit_dockerfile(
         self, context: AuthedServiceContext, docker_config: DockerWorkerConfig
