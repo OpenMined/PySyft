@@ -68,14 +68,14 @@ def test_create_pool_request_accept(faker: Faker, worker: Worker):
     ds_client = get_ds_client(faker, root_client, worker.guest_client)
     assert root_client.credentials != ds_client.credentials
 
-    # the DS submits the docker config to build an image
+    # the DO submits the docker config to build an image
     custom_dockerfile_str = """
         FROM openmined/grid-backend:0.8.4-beta.12
 
         RUN pip install opendp
     """
     docker_config = DockerWorkerConfig(dockerfile=custom_dockerfile_str)
-    submit_result = ds_client.api.services.worker_image.submit_dockerfile(
+    submit_result = root_client.api.services.worker_image.submit_dockerfile(
         docker_config=docker_config
     )
     assert isinstance(submit_result, SyftSuccess)
@@ -93,7 +93,7 @@ def test_create_pool_request_accept(faker: Faker, worker: Worker):
     assert isinstance(docker_build_result, SyftSuccess)
     assert worker_image.image_identifier.repo_with_tag == docker_tag
 
-    # The DS client submits a request to build the image
+    # The DS client submits a request to create a pool from an existing image
     request = ds_client.api.services.worker_pool.pool_creation_request(
         pool_name="opendp-pool", num_workers=3, image_uid=worker_image.id
     )
