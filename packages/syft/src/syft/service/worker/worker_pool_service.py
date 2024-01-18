@@ -1,5 +1,4 @@
 # stdlib
-import contextlib
 from typing import Any
 from typing import List
 from typing import Optional
@@ -18,7 +17,6 @@ from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
-from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
@@ -34,7 +32,6 @@ from .worker_pool import ContainerSpawnStatus
 from .worker_pool import SyftWorker
 from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerPool
-from .worker_pool import _get_worker_container
 from .worker_pool_stash import SyftWorkerPoolStash
 from .worker_service import WorkerService
 from .worker_stash import WorkerStash
@@ -210,77 +207,6 @@ class SyftWorkerPoolService(AbstractService):
             )
 
         return container_statuses
-
-    @service_method(
-        path="worker_pool.delete_worker",
-        name="delete_worker",
-        roles=DATA_OWNER_ROLE_LEVEL,
-    )
-    def delete_worker(
-        self,
-        context: AuthedServiceContext,
-        worker_id: UID,
-        force: bool = False,
-    ) -> Union[SyftSuccess, SyftError]:
-        worker_service: WorkerService = context.node.get_service("WorkerService")
-        worker = worker_service._get_worker(context=context, uid=worker_id)
-        if isinstance(worker, SyftError):
-            return worker
-
-        worker_pool_name = worker.worker_pool_name
-
-        result = self.stash.get_by_name(
-            credentials=context.credentials, pool_name=worker.worker_pool_name
-        )
-
-        if result.is_err():
-            return SyftError(
-                f"Failed to retrieved WorkerPool {worker_pool_name} "
-                f"associated with SyftWorker {worker_id}"
-            )
-
-        worker_pool = result.ok()
-        if worker_pool is None:
-            return SyftError(
-                f"Failed to retrieved WorkerPool {worker_pool_name} "
-                f"associated with SyftWorker {worker_id}"
-            )
-
-        if not context.node.in_memory_workers:
-            # delete the worker using docker client sdk
-            with contextlib.closing(docker.from_env()) as client:
-                docker_container = _get_worker_container(client, worker)
-                if isinstance(docker_container, SyftError):
-                    return docker_container
-
-                stopped = _stop_worker_container(worker, docker_container, force)
-                if stopped is not None:
-                    return stopped
-
-        # remove the worker from the pool
-        try:
-            worker_linked_object = next(
-                obj for obj in worker_pool.worker_list if obj.object_uid == worker_id
-            )
-            worker_pool.worker_list.remove(worker_linked_object)
-        except StopIteration:
-            pass
-
-        # Delete worker from worker stash
-        result = self.worker_stash.delete_by_uid(
-            credentials=context.credentials, uid=worker.id
-        )
-        if result.is_err():
-            return SyftError(message=f"Failed to delete worker with uid: {worker.id}")
-
-        # Update worker pool
-        result = self.stash.update(context.credentials, obj=worker_pool)
-        if result.is_err():
-            return SyftError(message=f"Failed to update worker pool: {result.err()}")
-
-        return SyftSuccess(
-            message=f"Worker with id: {worker_id} deleted successfully from pool: {worker_pool.name}"
-        )
 
     @service_method(
         path="worker_pool.filter_by_image_id",
