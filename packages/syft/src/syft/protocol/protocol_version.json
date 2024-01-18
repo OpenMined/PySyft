@@ -1094,6 +1094,13 @@
           "hash": "911d3e550721c78702aa819082d431305b491c597f23b70d8a7118c801e69694",
           "action": "add"
         }
+      },
+      "ActionFileData": {
+        "1": {
+          "version": 1,
+          "hash": "1f32d94b75b0a6b4e86cec93d94aa905738219e3e7e75f51dd335ee832a6ed3e",
+          "action": "remove"
+        }
       }
     }
   }
