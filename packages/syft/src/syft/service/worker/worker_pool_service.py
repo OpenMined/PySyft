@@ -219,26 +219,32 @@ class SyftWorkerPoolService(AbstractService):
     def delete_worker(
         self,
         context: AuthedServiceContext,
-        worker_pool_id: UID,
         worker_id: UID,
         force: bool = False,
     ) -> Union[SyftSuccess, SyftError]:
-        worker_pool_worker = self._get_worker_pool_and_worker(
-            context, worker_pool_id, worker_id
+        worker_service: WorkerService = context.node.get_service("WorkerService")
+        worker = worker_service._get_worker(context=context, uid=worker_id)
+        if isinstance(worker, SyftError):
+            return worker
+
+        worker_pool_name = worker.worker_pool_name
+
+        result = self.stash.get_by_name(
+            credentials=context.credentials, pool_name=worker.worker_pool_name
         )
-        if isinstance(worker_pool_worker, SyftError):
-            return worker_pool_worker
-
-        worker_pool, linked_worker = worker_pool_worker
-
-        result = linked_worker.resolve_with_context(context=context)
 
         if result.is_err():
             return SyftError(
-                message=f"Failed to retrieve Linked SyftWorker {linked_worker.object_uid}"
+                f"Failed to retrieved WorkerPool {worker_pool_name} "
+                f"associated with SyftWorker {worker_id}"
             )
 
-        worker = result.ok()
+        worker_pool = result.ok()
+        if worker_pool is None:
+            return SyftError(
+                f"Failed to retrieved WorkerPool {worker_pool_name} "
+                f"associated with SyftWorker {worker_id}"
+            )
 
         if not context.node.in_memory_workers:
             # delete the worker using docker client sdk
@@ -252,7 +258,13 @@ class SyftWorkerPoolService(AbstractService):
                     return stopped
 
         # remove the worker from the pool
-        worker_pool.worker_list.remove(linked_worker)
+        try:
+            worker_linked_object = next(
+                obj for obj in worker_pool.worker_list if obj.object_uid == worker_id
+            )
+            worker_pool.worker_list.remove(worker_linked_object)
+        except StopIteration:
+            pass
 
         # Delete worker from worker stash
         result = self.worker_stash.delete_by_uid(
