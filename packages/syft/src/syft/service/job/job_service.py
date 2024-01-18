@@ -69,17 +69,11 @@ class JobService(AbstractService):
     def get_by_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> Union[List[Job], SyftError]:
-        all_jobs = self.stash.get_all(context.credentials)
-        if all_jobs.is_err():
-            return SyftError(message=all_jobs.err())
+        res = self.stash.get_by_user_code_id(context.credentials, user_code_id)
+        if res.is_err():
+            return SyftError(message=res.err())
 
-        all_jobs = all_jobs.ok()
-
-        res = []
-        for job in all_jobs:
-            if job.user_code_id and job.user_code_id == user_code_id:
-                res.append(job)
-
+        res = res.ok()
         return res
 
     @service_method(
@@ -211,13 +205,6 @@ class JobService(AbstractService):
     def create_job_for_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> Union[Job, SyftError]:
-        """
-        When DO submits job from high side for DS,
-        we create an empty job for this user_code_id before an Action (code execution) is created by DS.
-
-        This is needed to be able to track the job status and result once DS starts a job.
-        """
-
         job = Job(
             id=UID(),
             node_uid=context.node.id,
@@ -226,7 +213,7 @@ class JobService(AbstractService):
             parent_id=None,
             log_id=UID(),
             job_pid=None,
-            user_code_id_override=user_code_id,
+            user_code_id=user_code_id,
         )
 
         user_code_service = context.node.get_service("usercodeservice")

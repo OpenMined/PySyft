@@ -99,7 +99,6 @@ class JobInfo(SyftBaseObject):
     __repr_attrs__ = [
         "resolved",
         "status",
-        "parent_job_id",
         "n_iters",
         "current_iter",
         "creation_time",
@@ -107,7 +106,6 @@ class JobInfo(SyftBaseObject):
 
     resolved: bool = False
     status: JobStatus = JobStatus.CREATED
-    parent_job_id: Optional[UID] = None
     n_iters: Optional[int] = None
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
@@ -132,11 +130,9 @@ class Job(SyftObject):
     job_pid: Optional[int] = None
     job_worker_id: Optional[UID] = None
     updated_at: Optional[DateTime] = None
+    user_code_id: Optional[UID] = None
 
-    # Jobs created by DO on low side have no action yet, but do have user_code_id
-    user_code_id_override: Optional[UID] = None
-
-    __attr_searchable__ = ["parent_job_id", "job_worker_id", "status"]
+    __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
 
     @pydantic.root_validator()
@@ -145,13 +141,20 @@ class Job(SyftObject):
             values["creation_time"] = str(datetime.now())
         return values
 
-    @property
-    def user_code_id(self) -> Optional[UID]:
-        if self.user_code_id_override is not None:
-            return self.user_code_id_override
-        elif self.action is not None and self.action.user_code_id is not None:
-            return self.action.user_code_id
-        return None
+    @pydantic.root_validator()
+    def check_user_code_id(cls, values: dict) -> dict:
+        action = values.get("action")
+        user_code_id = values.get("user_code_id")
+
+        if action is not None:
+            if user_code_id is None:
+                values["user_code_id"] = action.user_code_id
+            elif action.user_code_id != user_code_id:
+                raise pydantic.ValidationError(
+                    "user_code_id does not match the action's user_code_id", cls
+                )
+
+        return values
 
     @property
     def action_display_name(self):
@@ -245,7 +248,6 @@ class Job(SyftObject):
         return JobInfo(
             resolved=self.resolved,
             status=self.status,
-            parent_job_id=self.parent_job_id,
             n_iters=self.n_iters,
             current_iter=self.current_iter,
             creation_time=self.creation_time,
@@ -255,7 +257,6 @@ class Job(SyftObject):
         # Used for syncing job metadata across nodes
         self.resolved = info.resolved
         self.status = info.status
-        self.parent_job_id = info.parent_job_id
         self.n_iters = info.n_iters
         self.current_iter = info.current_iter
         self.creation_time = info.creation_time
@@ -571,4 +572,13 @@ class JobStash(BaseStash):
         qks = QueryKeys(
             qks=[PartitionKey(key="job_worker_id", type_=str).with_obj(worker_id)]
         )
+        return self.query_all(credentials=credentials, qks=qks)
+
+    def get_by_user_code_id(
+        self, credentials: SyftVerifyKey, user_code_id: UID
+    ) -> Union[List[Job], SyftError]:
+        qks = QueryKeys(
+            qks=[PartitionKey(key="user_code_id", type_=UID).with_obj(user_code_id)]
+        )
+
         return self.query_all(credentials=credentials, qks=qks)

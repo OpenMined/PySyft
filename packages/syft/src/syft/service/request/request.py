@@ -459,10 +459,8 @@ class Request(SyftObject):
         save_method = context.node.get_service_method(RequestService.save)
         return save_method(context=context, request=self)
 
-    def _get_or_create_job(self) -> Union[Job, SyftError]:
-        """
-        Gets the last job for this requests user_code, or creates one if no jobs exist.
-        """
+    def _get_latest_or_create_job(self) -> Union[Job, SyftError]:
+        """Get the latest job for this requests user_code, or creates one if no jobs exist"""
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         job_service = api.services.job
 
@@ -478,7 +476,7 @@ class Request(SyftObject):
         return job
 
     def _set_job_result(self, result: Any, job_info: JobInfo) -> Union[Job, SyftError]:
-        job = self._get_or_create_job()
+        job = self._get_latest_or_create_job()
         if isinstance(job, SyftError):
             return job
 
@@ -507,8 +505,13 @@ class Request(SyftObject):
             result = job.result.get()
             if isinstance(result, SyftError):
                 return result
+            job_info = job.info
         else:
             job = None
+            job_info = JobInfo(
+                status=JobStatus.COMPLETED,
+                resolved=True,
+            )
 
         change = self.changes[0]
         if not change.is_type(UserCode):
@@ -555,18 +558,6 @@ class Request(SyftObject):
             result = api.services.action.set(action_object)
             if isinstance(result, SyftError):
                 return result
-
-            if job is not None:
-                job_info = job.info
-            else:
-                job_info = JobInfo(
-                    status=JobStatus.COMPLETED,
-                    resolved=True,
-                )
-            res = self._set_job_result(result=result, job_info=job_info)
-            if isinstance(res, SyftError):
-                return res
-            return SyftSuccess(message="Request submitted for updating result.")
         else:
             action_object = ActionObject.from_obj(
                 result,
@@ -608,18 +599,11 @@ class Request(SyftObject):
             if isinstance(approved, SyftError):
                 return approved
 
-            if job is not None:
-                job_info = job.info
-            else:
-                job_info = JobInfo(
-                    status=JobStatus.COMPLETED,
-                    resolved=True,
-                )
-            res = self._set_job_result(result=result, job_info=job_info)
-            if isinstance(res, SyftError):
-                return res
+        res = self._set_job_result(result=result, job_info=job_info)
+        if isinstance(res, SyftError):
+            return res
 
-            return approved
+        return SyftSuccess(message="Request submitted for updating result.")
 
     def submit_job_info(
         self, info: JobInfo, **kwargs
@@ -633,7 +617,7 @@ class Request(SyftObject):
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         job_service = api.services.job
 
-        job = self._get_or_create_job()
+        job = self._get_latest_or_create_job()
         return job_service.update_info(job.id, info)
 
 

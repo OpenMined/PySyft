@@ -64,26 +64,6 @@ def client_ds_1(node_1, client_do_1):
     return node_1.login(email="test@us.er", password="1234")
 
 
-# @pytest.fixture(scope="function")
-# def worker_2(faker, stage_protocol):
-#     return sy.Worker.named(name=faker.name())
-
-
-# @pytest.fixture(scope="function")
-# def client_do_1(worker) -> DomainClient:
-#     return get_mock_client(worker.root_client, ServiceRole.DATA_OWNER)
-
-
-# @pytest.fixture(scope="function")
-# def client_do_2(worker):
-#     return get_mock_client(worker.root_client, ServiceRole.DATA_OWNER)
-
-
-# @pytest.fixture(scope="function")
-# def client_ds_1(worker):
-#     return get_mock_client(worker.root_client, ServiceRole.DATA_SCIENTIST)
-
-
 @pytest.fixture(scope="function")
 def dataset_1(client_do_1):
     mock = np.array([0, 1, 2, 3, 4])
