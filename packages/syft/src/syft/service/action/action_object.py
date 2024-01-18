@@ -51,7 +51,6 @@ from ..response import SyftException
 from ..service import from_api_or_context
 from .action_data_empty import ActionDataEmpty
 from .action_data_empty import ActionDataLink
-from .action_data_empty import ActionFileData
 from .action_data_empty import ObjectNotReady
 from .action_permissions import ActionPermission
 from .action_types import action_type_for_object
@@ -685,10 +684,11 @@ class ActionObject(SyftObject):
 
     def _save_to_blob_storage_(self, data: Any) -> None:
         # relative
+        from ...types.blob_storage import BlobFile
         from ...types.blob_storage import CreateBlobStorageEntry
 
         if not isinstance(data, ActionDataEmpty):
-            if isinstance(data, ActionFileData):
+            if isinstance(data, BlobFile) and data.path:
                 storage_entry = CreateBlobStorageEntry.from_path(data.path)
             else:
                 storage_entry = CreateBlobStorageEntry.from_obj(data)
@@ -704,7 +704,7 @@ class ActionObject(SyftObject):
                 if isinstance(blob_deposit_object, SyftError):
                     return blob_deposit_object
 
-                if isinstance(data, ActionFileData):
+                if isinstance(data, BlobFile):
                     with open(data.path, "rb") as f:
                         result = blob_deposit_object.write(f)
                 else:
@@ -1127,13 +1127,15 @@ class ActionObject(SyftObject):
         syft_node_location: Optional[UID] = None,
     ):
         """Create an Action Object from a file."""
+        # relative
+        from ...types.blob_storage import BlobFile
 
         if id is not None and syft_lineage_id is not None and id != syft_lineage_id.id:
             raise ValueError("UID and LineageID should match")
 
-        syft_action_data = ActionFileData(
-            path=path if isinstance(path, Path) else Path(path)
-        )
+        _path = path if isinstance(path, Path) else Path(path)
+        syft_action_data = BlobFile(path=_path, file_name=_path.name)
+
         action_type = action_type_for_object(syft_action_data)
 
         action_object = action_type(syft_action_data_cache=syft_action_data)

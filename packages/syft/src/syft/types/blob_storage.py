@@ -38,6 +38,7 @@ from .datetime import DateTime
 from .syft_migration import migrate
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SYFT_OBJECT_VERSION_2
+from .syft_object import SYFT_OBJECT_VERSION_3
 from .syft_object import SyftObject
 from .uid import UID
 
@@ -55,14 +56,26 @@ class BlobFileV1(SyftObject):
     __repr_attrs__ = ["id", "file_name"]
 
 
-@serializable()
-class BlobFile(SyftObject):
+class BlobFileV2(SyftObject):
     __canonical_name__ = "BlobFile"
     __version__ = SYFT_OBJECT_VERSION_2
 
     file_name: str
     syft_blob_storage_entry_id: Optional[UID] = None
     file_size: Optional[int] = None
+
+    __repr_attrs__ = ["id", "file_name"]
+
+
+@serializable()
+class BlobFile(SyftObject):
+    __canonical_name__ = "BlobFile"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    file_name: str
+    syft_blob_storage_entry_id: Optional[UID] = None
+    file_size: Optional[int] = None
+    path: Optional[Path]
 
     __repr_attrs__ = ["id", "file_name"]
 

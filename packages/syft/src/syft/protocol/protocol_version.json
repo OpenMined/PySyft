@@ -1068,6 +1068,18 @@
           "hash": "dc83910c91947e3d9eaa3e6f8592237448f0408668c7cca80450b5fcd54722e1",
           "action": "add"
         }
+      },
+      "BlobFile": {
+        "2": {
+          "version": 2,
+          "hash": "f2b29d28fe81a04bf5e946c819010283a9f98a97d50519358bead773865a2e09",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "be665c2786800ef6c67c47056a6bfe3d00589a951b9bce867b64c7be724cf32b",
+          "action": "add"
+        }
       }
     }
   }
