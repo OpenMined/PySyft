@@ -51,6 +51,9 @@ from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
+from ..job.job_stash import Job
+from ..job.job_stash import JobInfo
+from ..job.job_stash import JobStatus
 from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -456,9 +459,42 @@ class Request(SyftObject):
         save_method = context.node.get_service_method(RequestService.save)
         return save_method(context=context, request=self)
 
+    def _get_latest_or_create_job(self) -> Union[Job, SyftError]:
+        """Get the latest job for this requests user_code, or creates one if no jobs exist"""
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        job_service = api.services.job
+
+        existing_jobs = job_service.get_by_user_code_id(self.code.id)
+        if isinstance(existing_jobs, SyftError):
+            return existing_jobs
+
+        if len(existing_jobs) == 0:
+            job = job_service.create_job_for_user_code_id(self.code.id)
+        else:
+            job = existing_jobs[-1]
+
+        return job
+
     def accept_by_depositing_result(self, result: Any, force: bool = False):
         # this code is extremely brittle because its a work around that relies on
         # the type of request being very specifically tied to code which needs approving
+
+        # Special case for results from Jobs (High-low side async)
+        if isinstance(result, JobInfo):
+            job_info = result
+            if not job_info.includes_result:
+                return SyftError(
+                    message="JobInfo should not include result. Use sync_job instead."
+                )
+            result = job_info.result
+        else:
+            # NOTE result is added at the end of function (once ActionObject is created)
+            job_info = JobInfo(
+                includes_metadata=True,
+                includes_result=True,
+                status=JobStatus.COMPLETED,
+                resolved=True,
+            )
 
         change = self.changes[0]
         if not change.is_type(UserCode):
@@ -505,7 +541,6 @@ class Request(SyftObject):
             result = api.services.action.set(action_object)
             if isinstance(result, SyftError):
                 return result
-            return SyftSuccess(message="Request submitted for updating result.")
         else:
             action_object = ActionObject.from_obj(
                 result,
@@ -518,6 +553,7 @@ class Request(SyftObject):
             result = api.services.action.set(action_object)
             if isinstance(result, SyftError):
                 return result
+
             ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
 
             state.apply_output(context=ctx, outputs=result)
@@ -535,12 +571,41 @@ class Request(SyftObject):
             )
 
             new_changes = [policy_state_mutation, permission_change]
-            result = api.services.request.add_changes(uid=self.id, changes=new_changes)
-            if isinstance(result, SyftError):
-                return result
-            self = result
+            result_request = api.services.request.add_changes(
+                uid=self.id, changes=new_changes
+            )
+            if isinstance(result_request, SyftError):
+                return result_request
+            self = result_request
 
-            return self.approve(disable_warnings=True)
+            approved = self.approve(disable_warnings=True)
+            if isinstance(approved, SyftError):
+                return approved
+
+        job_info.result = action_object
+        job = self._get_latest_or_create_job()
+        job.apply_info(job_info)
+
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        job_service = api.services.job
+        res = job_service.update(job)
+        if isinstance(res, SyftError):
+            return res
+
+        return SyftSuccess(message="Request submitted for updating result.")
+
+    def sync_job(self, job_info: JobInfo, **kwargs) -> Result[SyftSuccess, SyftError]:
+        if job_info.includes_result:
+            return SyftError(
+                message="This JobInfo includes a Result. Please use Request.accept_by_depositing_result instead."
+            )
+
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        job_service = api.services.job
+
+        job = self._get_latest_or_create_job()
+        job.apply_info(job_info)
+        return job_service.update(job)
 
 
 @serializable()

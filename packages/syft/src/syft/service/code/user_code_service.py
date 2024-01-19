@@ -1,4 +1,5 @@
 # stdlib
+from copy import deepcopy
 from typing import Any
 from typing import Dict
 from typing import List
@@ -25,6 +26,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..network.routes import route_to_connection
+from ..request.request import Request
 from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
@@ -56,7 +58,7 @@ class UserCodeService(AbstractService):
 
     @service_method(path="code.submit", name="submit", roles=GUEST_ROLE_LEVEL)
     def submit(
-        self, context: AuthedServiceContext, code: SubmitUserCode
+        self, context: AuthedServiceContext, code: Union[UserCode, SubmitUserCode]
     ) -> Union[UserCode, SyftError]:
         """Add User Code"""
         result = self._submit(context=context, code=code)
@@ -64,9 +66,31 @@ class UserCodeService(AbstractService):
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted")
 
-    def _submit(self, context: AuthedServiceContext, code: SubmitUserCode) -> Result:
-        result = self.stash.set(context.credentials, code.to(UserCode, context=context))
+    def _submit(
+        self, context: AuthedServiceContext, code: Union[UserCode, SubmitUserCode]
+    ) -> Result:
+        if not isinstance(code, UserCode):
+            code = code.to(UserCode, context=context)
+        result = self.stash.set(context.credentials, code)
         return result
+
+    @service_method(
+        path="code.sync_code_from_request",
+        name="sync_code_from_request",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def sync_code_from_request(
+        self,
+        context: AuthedServiceContext,
+        request: Request,
+    ) -> Union[SyftSuccess, SyftError]:
+        """Re-submit request from a different node"""
+
+        # This request is from a different node, ensure worker pool is not set
+        code: UserCode = deepcopy(request.code)
+        code.worker_pool_id = None
+
+        return self.submit(context=context, code=code)
 
     @service_method(
         path="code.get_by_service_func_name",
@@ -202,7 +226,7 @@ class UserCodeService(AbstractService):
     )
     def get_by_uid(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> Union[UserCode, SyftError]:
         """Get a User Code Item"""
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
@@ -373,6 +397,7 @@ class UserCodeService(AbstractService):
             # Apply Output Policy to the results and update the OutputPolicyState
 
             # this currently only works for nested syft_functions
+            # and admins executing on high side (TODO, decide if we want to increment counter)
             if not override_execution_permission:
                 output_policy.apply_output(context=context, outputs=result)
                 code.output_policy = output_policy
@@ -382,7 +407,6 @@ class UserCodeService(AbstractService):
                     )
                 ):
                     return update_success.to_result()
-
             has_result_read_permission = context.extra_kwargs.get(
                 "has_result_read_permission", False
             )
