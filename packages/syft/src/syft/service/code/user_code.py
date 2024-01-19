@@ -26,7 +26,6 @@ from typing import Union
 from typing import final
 
 # third party
-from IPython import get_ipython
 from IPython.display import display
 from result import Err
 from typing_extensions import Self
@@ -86,6 +85,7 @@ from ..response import SyftWarning
 from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
 from .unparse import unparse
+from .utils import submit_subjobs_code
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=str)
@@ -810,34 +810,12 @@ class SubmitUserCode(SyftObject):
 
         new_syft_func = deepcopy(self)
 
-        # We are exploring the source code to automatically upload
-        # subjobs in the ephemeral node
-        # Usually, a DS would manually submit the code for subjobs,
-        # but because we dont allow them to interact with the ephemeral node
-        # that would not be possible
-        if "domain" in self.input_kwargs:
-            tree = ast.parse(inspect.getsource(self.local_function))
-            v = LaunchJobVisitor()
-            v.visit(tree)
-            nested_calls = v.nested_calls
-            try:
-                ipython = (
-                    get_ipython()
-                )  # works only in interactive envs (like jupyter notebooks)
-            except Exception:
-                ipython = None
-                pass
+        # We will look for subjos, and if we find any will submit them
+        # to the ephemeral_node
+        submit_subjobs_code(self, ep_client)
 
-            for call in nested_calls:
-                if ipython is not None:
-                    specs = ipython.object_inspect(call)
-                    # Look for nested job locally, maybe we could
-                    # fetch
-                    if specs["type_name"] == "SubmitUserCode":
-                        ep_client.code.submit(ipython.ev(call))
-
-        ep_client.code.request_code_execution(new_syft_func)
-        ep_client.requests[-1].approve(approve_nested=True)
+        ep_client.code.submit(new_syft_func)
+        # ep_client.requests[-1].approve(approve_nested=True)
         func_call = getattr(ep_client.code, new_syft_func.func_name)
         result = func_call(*args, **kwargs)
 
