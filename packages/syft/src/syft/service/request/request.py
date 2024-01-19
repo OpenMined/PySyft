@@ -475,40 +475,23 @@ class Request(SyftObject):
 
         return job
 
-    def _set_job_result(self, result: Any, job_info: JobInfo) -> Union[Job, SyftError]:
-        job = self._get_latest_or_create_job()
-        if isinstance(job, SyftError):
-            return job
-
-        job.result = result
-        job.apply_info(job_info)
-        job.updated_at = DateTime.now()
-
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        res = api.services.job.update(job)
-        if isinstance(res, SyftError):
-            return res
-
-        return job
-
     def accept_by_depositing_result(self, result: Any, force: bool = False):
         # this code is extremely brittle because its a work around that relies on
         # the type of request being very specifically tied to code which needs approving
 
         # Special case for results from Jobs (High-low side async)
-        if isinstance(result, Job):
-            job = result
-            if not job.resolved:
+        if isinstance(result, JobInfo):
+            job_info = result
+            if not job_info.includes_result:
                 return SyftError(
-                    message="This job has not been resolved, please wait until it is resolved before approving."
+                    message="JobInfo should not include result. Use sync_job instead."
                 )
-            result = job.result.get()
-            if isinstance(result, SyftError):
-                return result
-            job_info = job.info
+            result = job_info.result
         else:
-            job = None
+            # NOTE result is added at the end of function (once ActionObject is created)
             job_info = JobInfo(
+                includes_metadata=True,
+                includes_result=True,
                 status=JobStatus.COMPLETED,
                 resolved=True,
             )
@@ -599,26 +582,30 @@ class Request(SyftObject):
             if isinstance(approved, SyftError):
                 return approved
 
-        res = self._set_job_result(result=result, job_info=job_info)
+        job_info.result = action_object
+        job = self._get_latest_or_create_job()
+        job.apply_info(job_info)
+
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        job_service = api.services.job
+        res = job_service.update(job)
         if isinstance(res, SyftError):
             return res
 
         return SyftSuccess(message="Request submitted for updating result.")
 
-    def submit_job_info(
-        self, info: JobInfo, **kwargs
-    ) -> Result[SyftSuccess, SyftError]:
-        """
-        Update the status of the job for this request
-        """
-        for k, v in kwargs.items():
-            setattr(info, k, v)
+    def sync_job(self, job_info: JobInfo, **kwargs) -> Result[SyftSuccess, SyftError]:
+        if job_info.includes_result:
+            return SyftError(
+                message="This JobInfo includes a Result. Please use Request.accept_by_depositing_result instead."
+            )
 
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         job_service = api.services.job
 
         job = self._get_latest_or_create_job()
-        return job_service.update_info(job.id, info)
+        job.apply_info(job_info)
+        return job_service.update(job)
 
 
 @serializable()

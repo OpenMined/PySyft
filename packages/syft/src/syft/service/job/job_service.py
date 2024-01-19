@@ -19,7 +19,6 @@ from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .job_stash import Job
-from .job_stash import JobInfo
 from .job_stash import JobStash
 from .job_stash import JobStatus
 
@@ -154,25 +153,6 @@ class JobService(AbstractService):
                 message="Job is not running or isn't running in multiprocessing mode."
                 "Killing threads is currently not supported"
             )
-
-    @service_method(
-        path="job.update_info",
-        name="update_info",
-        roles=DATA_OWNER_ROLE_LEVEL,
-    )
-    def update_job_info(
-        self,
-        context: AuthedServiceContext,
-        id: UID,
-        job_info: JobInfo,
-    ) -> Union[SyftSuccess, SyftError]:
-        res = self.stash.get_by_uid(context.credentials, uid=id)
-        if res.is_err():
-            return SyftError(message=res.err())
-
-        job = res.ok()
-        job.apply_info(job_info)
-        return self.update(context=context, job=job)
 
     @service_method(
         path="job.get_subjobs",

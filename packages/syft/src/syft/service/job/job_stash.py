@@ -30,16 +30,18 @@ from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
-from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
 from ...util.markdown import as_markdown_code
 from ...util.telemetry import instrument
 from ..action.action_data_empty import ActionDataLink
 from ..action.action_object import Action
+from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftError
 from ..response import SyftNotReady
@@ -93,7 +95,7 @@ class JobV2(SyftObject):
 
 
 @serializable()
-class JobInfo(SyftBaseObject):
+class JobInfo(SyftObject):
     __canonical_name__ = "JobInfo"
     __version__ = SYFT_OBJECT_VERSION_1
     __repr_attrs__ = [
@@ -103,12 +105,77 @@ class JobInfo(SyftBaseObject):
         "current_iter",
         "creation_time",
     ]
+    __public_metadata_attrs__ = [
+        "resolved",
+        "status",
+        "n_iters",
+        "current_iter",
+        "creation_time",
+    ]
+    # Separate check if the job has logs, result, or metadata
+    # None check is not enough because the values we set could be None
+    includes_metadata: bool
+    includes_result: bool
+    # TODO add logs (error reporting PRD)
 
-    resolved: bool = False
-    status: JobStatus = JobStatus.CREATED
+    resolved: Optional[bool] = None
+    status: Optional[JobStatus] = None
     n_iters: Optional[int] = None
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
+
+    result: Optional[Any] = None
+
+    def _repr_html_(self) -> str:
+        metadata_str = ""
+        if self.includes_metadata:
+            metadata_str += "<h4>Public metadata</h4>"
+            for attr in self.__public_metadata_attrs__:
+                value = getattr(self, attr, None)
+                if value is not None:
+                    metadata_str += f"<p style='margin-left: 10px;'><strong>{attr}:</strong> {value}</p>"
+
+        result_str = "<h4>Result</h4>"
+        if self.includes_result:
+            result_str += f"<p style='margin-left: 10px;'>{str(self.result)}</p>"
+        else:
+            result_str += "<p style='margin-left: 10px;'><i>No result included</i></p>"
+
+        return f"""
+            <style>
+            .job-info {{color: {SURFACE[options.color_theme]};}}
+            </style>
+            <div class='job-info'>
+                <h3>JobInfo</h3>
+                {metadata_str}
+                {result_str}
+            </div>
+        """
+
+    @classmethod
+    def from_job(
+        cls,
+        job: "Job",
+        metadata: bool = False,
+        result: bool = False,
+    ):
+        info = cls(
+            includes_metadata=metadata,
+            includes_result=result,
+        )
+
+        if metadata:
+            for attr in cls.__public_metadata_attrs__:
+                setattr(info, attr, getattr(job, attr))
+
+        if result:
+            if not job.resolved:
+                raise ValueError("Cannot sync result of unresolved job")
+            if not isinstance(job.result, ActionObject):
+                raise ValueError("Could not sync result of job")
+            info.result = job.result.get()
+
+        return info
 
 
 @serializable()
@@ -243,23 +310,20 @@ class Job(SyftObject):
         else:
             return ""
 
-    @property
-    def info(self) -> JobInfo:
-        return JobInfo(
-            resolved=self.resolved,
-            status=self.status,
-            n_iters=self.n_iters,
-            current_iter=self.current_iter,
-            creation_time=self.creation_time,
-        )
+    def info(
+        self,
+        public_metadata: bool = True,
+        result: bool = False,
+    ) -> JobInfo:
+        return JobInfo.from_job(self, public_metadata, result)
 
     def apply_info(self, info: JobInfo) -> None:
-        # Used for syncing job metadata across nodes
-        self.resolved = info.resolved
-        self.status = info.status
-        self.n_iters = info.n_iters
-        self.current_iter = info.current_iter
-        self.creation_time = info.creation_time
+        if info.includes_metadata:
+            for attr in info.__public_metadata_attrs__:
+                setattr(self, attr, getattr(info, attr))
+
+        if info.includes_result:
+            self.result = info.result
 
     def restart(self, kill=False) -> None:
         if kill:

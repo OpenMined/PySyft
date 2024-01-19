@@ -1243,23 +1243,6 @@ class Node(AbstractNode):
             return result
         return job
 
-    def _can_enqueue_user_code_job(
-        self, user_code_id: UID, credentials: SyftVerifyKey
-    ) -> bool:
-        role = self.get_role_for_credentials(credentials=credentials)
-        context = AuthedServiceContext(node=self, credentials=credentials, role=role)
-
-        user_code_service = self.get_service("usercodeservice")
-        user_code = user_code_service.get_by_uid(context=context, uid=user_code_id)
-
-        # We cannot enqueue job if there are no permissions to execute job action
-        override_execution_permission = (
-            context.has_execute_permissions or context.role == ServiceRole.ADMIN
-        )
-        return override_execution_permission or user_code_service.is_execution_allowed(
-            user_code, context, user_code.output_policy
-        )
-
     def _get_existing_user_code_jobs(
         self, user_code_id: UID, credentials: SyftVerifyKey
     ) -> Union[List[Job], SyftError]:
@@ -1283,6 +1266,7 @@ class Node(AbstractNode):
         action = None
         if is_user_code:
             action = Action.from_api_call(unsigned_call)
+
             if self.node_side_type == NodeSideType.LOW_SIDE:
                 existing_jobs = self._get_existing_user_code_jobs(
                     action.user_code_id, api_call.credentials
@@ -1302,12 +1286,6 @@ class Node(AbstractNode):
                     return SyftError(
                         message="Please wait for the admin to allow the execution of this code"
                     )
-            if not self._can_enqueue_user_code_job(
-                action.user_code_id, api_call.credentials
-            ):
-                return SyftError(
-                    message="User has no permissions to start job for this user code"
-                )
 
             return self.add_action_to_queue(
                 action, api_call.credentials, parent_job_id=parent_job_id

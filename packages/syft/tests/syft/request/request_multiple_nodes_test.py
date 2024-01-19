@@ -167,18 +167,23 @@ def test_transfer_request_nonblocking(
     assert isinstance(job_2, Job)
 
     # Transfer back Job Info
-    res = request_1_do.submit_job_info(job_2.info)
+    job_2_info = job_2.info()
+    assert job_2_info.result is None
+    assert job_2_info.status is not None
+    res = request_1_do.sync_job(job_2_info)
     assert isinstance(res, sy.SyftSuccess)
 
     # DS checks job info
     job_1_ds = client_ds_1.code.compute_mean.jobs[-1]
-    assert job_1_ds.info == job_2.info
+    assert job_1_ds.status == job_2.status
 
     # DO finishes + syncs job result
     result = job_2.wait().get()
     assert result == dataset_2.data.mean()
     assert job_2.status == JobStatus.COMPLETED
-    res = request_1_do.accept_by_depositing_result(job_2)
+
+    job_2_info_with_result = job_2.info(result=True)
+    res = request_1_do.accept_by_depositing_result(job_2_info_with_result)
     assert isinstance(res, sy.SyftSuccess)
 
     # DS gets result blocking + nonblocking
