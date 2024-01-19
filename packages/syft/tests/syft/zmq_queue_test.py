@@ -156,7 +156,7 @@ def test_zmq_pub_sub(faker: Faker, producer, consumer):
     pub_addr = get_queue_address(producer.port)
 
     assert producer.address == pub_addr
-    assert isinstance(producer.backend, Socket)
+    assert isinstance(producer.socket, Socket)
     assert isinstance(producer, ZMQProducer)
     assert producer.alive
 
@@ -175,7 +175,7 @@ def test_zmq_pub_sub(faker: Faker, producer, consumer):
 
     assert isinstance(consumer, ZMQConsumer)
     assert consumer.address == pub_addr
-    assert isinstance(consumer.worker, Socket)
+    assert isinstance(consumer.socket, Socket)
     assert consumer.queue_name == queue_name
     assert consumer.alive
     assert consumer.thread is None
