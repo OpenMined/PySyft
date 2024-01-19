@@ -810,6 +810,9 @@ class SubmitUserCode(SyftObject):
 
         new_syft_func = deepcopy(self)
 
+        # This will only be used without worker_pools
+        new_syft_func.worker_pool_id = None
+
         # We will look for subjos, and if we find any will submit them
         # to the ephemeral_node
         submit_subjobs_code(self, ep_client)
