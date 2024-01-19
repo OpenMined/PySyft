@@ -817,8 +817,8 @@ class SubmitUserCode(SyftObject):
         # to the ephemeral_node
         submit_subjobs_code(self, ep_client)
 
-        ep_client.code.submit(new_syft_func)
-        # ep_client.requests[-1].approve(approve_nested=True)
+        ep_client.code.request_code_execution(new_syft_func)
+        ep_client.requests[-1].approve(approve_nested=True)
         func_call = getattr(ep_client.code, new_syft_func.func_name)
         result = func_call(*args, **kwargs)
 
