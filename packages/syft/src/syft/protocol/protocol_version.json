@@ -1088,6 +1088,20 @@
           "action": "add"
         }
       },
+      "CreateCustomImageChange": {
+        "1": {
+          "version": 1,
+          "hash": "197b765666d605cf601bd69bff21b4a31896b6acd14af38739a5047ca29ff015",
+          "action": "add"
+        }
+      },
+      "CreateCustomWorkerPoolChange": {
+        "1": {
+          "version": 1,
+          "hash": "86894f8ccc037de61f44f9698fd113ba02c3cf3870a3048c00a46e15dcd1941c",
+          "action": "add"
+        }
+      },
       "JobInfo": {
         "1": {
           "version": 1,
