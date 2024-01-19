@@ -89,6 +89,8 @@ class SyftWorkerPoolService(AbstractService):
         if result.ok() is not None:
             return SyftError(message=f"Worker Pool with name: {name} already exists !!")
 
+        # If image uid is not passed, then use the default worker image
+        # to create the worker pool
         if image_uid is None:
             result = self.stash.get_by_name(
                 context.credentials, pool_name=DEFAULT_WORKER_POOL_NAME
@@ -96,6 +98,7 @@ class SyftWorkerPoolService(AbstractService):
             default_worker_pool = result.ok()
             image_uid = default_worker_pool.image_id
 
+        # Get the image object for the given image id
         result = self.image_stash.get_by_uid(
             credentials=context.credentials, uid=image_uid
         )
@@ -109,6 +112,8 @@ class SyftWorkerPoolService(AbstractService):
         worker_service: WorkerService = context.node.get_service("WorkerService")
         worker_stash = worker_service.stash
 
+        # Create worker pool from given image, with the given worker pool
+        # and with the desired number of workers
         worker_list, container_statuses = _create_workers_in_pool(
             context=context,
             pool_name=name,
@@ -120,6 +125,7 @@ class SyftWorkerPoolService(AbstractService):
             reg_password=reg_password,
         )
 
+        # Update the Database with the pool information
         worker_pool = WorkerPool(
             name=name,
             max_count=num_workers,
@@ -160,6 +166,7 @@ class SyftWorkerPoolService(AbstractService):
                 worker pool. Defaults to "".
         """
 
+        # Check if image exists for the given image id
         search_result = self.image_stash.get_by_uid(
             credentials=context.credentials, uid=image_uid
         )
@@ -169,11 +176,13 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_image: Optional[SyftWorkerImage] = search_result.ok()
 
+        # Raise error if worker image doesn't exists
         if worker_image is None:
             return SyftError(
                 message=f"No image exists for given image uid : {image_uid}"
             )
 
+        # Check if pool already exists for the given pool name
         result = self.stash.get_by_name(context.credentials, pool_name=pool_name)
 
         if result.is_err():
@@ -186,6 +195,9 @@ class SyftWorkerPoolService(AbstractService):
                 message=f"Worker pool already exists for given pool name: {pool_name}"
             )
 
+        # If no worker pool exists for given pool name
+        # and image exists for given image uid, then create a change
+        # request object to create the pool with the desired number of workers
         create_worker_pool_change = CreateCustomWorkerPoolChange(
             pool_name=pool_name,
             num_workers=num_workers,
@@ -193,6 +205,9 @@ class SyftWorkerPoolService(AbstractService):
         )
 
         changes: List[Change] = [create_worker_pool_change]
+
+        # Create a the request object with the changes and submit it
+        # for approval.
         request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)
         result = method(context=context, request=request, reason=reason)
@@ -228,6 +243,7 @@ class SyftWorkerPoolService(AbstractService):
         if isinstance(config, CustomWorkerConfig):
             return SyftError(message="We only support DockerWorkerConfig.")
 
+        # Check if an image already exists for given docker config
         search_result = self.image_stash.get_by_docker_config(
             credentials=context.credentials, config=config
         )
@@ -237,32 +253,36 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_image: Optional[SyftWorkerImage] = search_result.ok()
 
-        try:
-            image_identifier = SyftWorkerImageIdentifier.from_str(tag=tag)
-        except pydantic.ValidationError as e:
-            return SyftError(message=f"Failed to create tag: {e}")
-
-        # create a list of Change objects and submit a
-        # request for these changes to the server
-        changes: List[Change] = []
-
         if worker_image is not None:
             return SyftError(
                 message="Image already exists for given config. \
                     Please use `worker_pool.create_pool_request` to request pool creation."
             )
 
+        # Validate Image Tag
+        try:
+            image_identifier = SyftWorkerImageIdentifier.from_str(tag=tag)
+        except pydantic.ValidationError as e:
+            return SyftError(message=f"Failed to create tag: {e}")
+
+        # create a list of Change objects and submit a
+        # request for these changes for approval
+        changes: List[Change] = []
+
         # Add create custom image change
+        # If this change is approved, then build an image using the config
         create_custom_image_change = CreateCustomImageChange(
             config=config,
             tag=image_identifier.full_name_with_tag,
         )
 
+        # Check if a pool already exists for given pool name
         result = self.stash.get_by_name(context.credentials, pool_name=pool_name)
 
         if result.is_err():
             return SyftError(message=f"{result.err()}")
 
+        # Raise an error if worker pool already exists for the given worker pool name
         if result.ok() is not None:
             return SyftError(
                 message=f"Worker Pool with name: {pool_name} already "
@@ -270,12 +290,16 @@ class SyftWorkerPoolService(AbstractService):
             )
 
         # Add create worker pool change
+        # If change is approved then worker pool is created and
+        # the desired number of workers are added to the pool
         create_worker_pool_change = CreateCustomWorkerPoolChange(
             pool_name=pool_name,
             num_workers=num_workers,
             config=config,
         )
         changes += [create_custom_image_change, create_worker_pool_change]
+
+        # Create a request object and submit a request for approval
         request = SubmitRequest(changes=changes)
         method = context.node.get_service_method(RequestService.submit)
         result = method(context=context, request=request, reason=reason)
@@ -314,6 +338,21 @@ class SyftWorkerPoolService(AbstractService):
         pool_id: Optional[UID] = None,
         pool_name: Optional[str] = None,
     ) -> Union[List[ContainerSpawnStatus], SyftError]:
+        """Add workers to existing worker pool.
+
+        Worker pool is fetched either using the unique pool id or pool name.
+
+        Args:
+            context (AuthedServiceContext): _description_
+            number (int): number of workers to add
+            pool_id (Optional[UID], optional): Unique UID of the pool. Defaults to None.
+            pool_name (Optional[str], optional): Unique name of the pool. Defaults to None.
+
+        Returns:
+            Union[List[ContainerSpawnStatus], SyftError]: List of spawned workers with their status and error if any.
+        """
+
+        # Extract pool using either using pool id or pool name
         if pool_id:
             result = self.stash.get_by_uid(credentials=context.credentials, uid=pool_id)
         elif pool_name:
@@ -344,6 +383,7 @@ class SyftWorkerPoolService(AbstractService):
         worker_service: WorkerService = context.node.get_service("WorkerService")
         worker_stash = worker_service.stash
 
+        # Add workers to given pool from the given image
         worker_list, container_statuses = _create_workers_in_pool(
             context=context,
             pool_name=worker_pool.name,
