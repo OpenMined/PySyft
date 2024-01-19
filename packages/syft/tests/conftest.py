@@ -9,6 +9,8 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.client.domain_client import DomainClient
+from syft.node.worker import Worker
 from syft.protocol.data_protocol import bump_protocol_version
 from syft.protocol.data_protocol import get_data_protocol
 from syft.protocol.data_protocol import stage_protocol_changes
@@ -69,12 +71,12 @@ def stage_protocol(protocol_file: Path):
 
 
 @pytest.fixture()
-def worker(faker, stage_protocol):
+def worker(faker) -> Worker:
     return sy.Worker.named(name=faker.name())
 
 
 @pytest.fixture()
-def root_domain_client(worker):
+def root_domain_client(worker) -> DomainClient:
     return worker.root_client
 
 
@@ -84,7 +86,7 @@ def root_verify_key(worker):
 
 
 @pytest.fixture()
-def guest_client(worker):
+def guest_client(worker) -> DomainClient:
     return worker.guest_client
 
 
@@ -94,7 +96,7 @@ def guest_verify_key(worker):
 
 
 @pytest.fixture()
-def guest_domain_client(root_domain_client):
+def guest_domain_client(root_domain_client) -> DomainClient:
     return root_domain_client.guest()
 
 
