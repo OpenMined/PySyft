@@ -127,8 +127,8 @@ class DomainClient(SyftClient):
         if not file_list:
             return SyftSuccess(message="No files to upload")
 
-        if not hasattr(file_list, "__iter__") or isinstance(file_list, str):
-            return ActionObject.from_path(file_list).send(self)
+        if not isinstance(file_list, list):
+            file_list = [file_list]
 
         try:
             action_objects = [
