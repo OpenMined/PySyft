@@ -690,8 +690,6 @@ custom_code = """
                 </script>
             </div>
         </div>
-    </div>
-    </div>
 """
 
 
