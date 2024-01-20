@@ -19,6 +19,7 @@ from typing_extensions import Self
 # relative
 from ...abstract_node import NodeSideType
 from ...client.api import APIRegistry
+from ...custom_worker.config import WorkerConfig
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
@@ -51,6 +52,9 @@ from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
+from ..job.job_stash import Job
+from ..job.job_stash import JobInfo
+from ..job.job_stash import JobStatus
 from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -180,6 +184,119 @@ class ActionStoreChange(Change):
     def __repr_syft_nested__(self):
         return f"Apply <b>{self.apply_permission_type}</b> to \
             <i>{self.linked_obj.object_type.__canonical_name__}:{self.linked_obj.object_uid.short()}</i>"
+
+
+@serializable()
+class CreateCustomImageChange(Change):
+    __canonical_name__ = "CreateCustomImageChange"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    config: WorkerConfig
+    tag: str
+
+    __repr_attrs__ = ["config", "tag"]
+
+    def _run(
+        self, context: ChangeContext, apply: bool
+    ) -> Result[SyftSuccess, SyftError]:
+        try:
+            worker_image_service = context.node.get_service("SyftWorkerImageService")
+
+            service_context = context.to_service_ctx()
+            result = worker_image_service.submit_dockerfile(
+                service_context, docker_config=self.config
+            )
+
+            if isinstance(result, SyftError):
+                return Err(result)
+
+            result = worker_image_service.stash.get_by_docker_config(
+                service_context.credentials, config=self.config
+            )
+
+            if result.is_err():
+                return Err(SyftError(message=f"{result.err()}"))
+
+            worker_image = result.ok()
+
+            build_result = worker_image_service.build(
+                service_context, image_uid=worker_image.id, tag=self.tag
+            )
+            return Ok(build_result)
+
+        except Exception as e:
+            return Err(SyftError(message=f"Failed to create/build image: {e}"))
+
+    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+        return self._run(context=context, apply=True)
+
+    def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+        return self._run(context=context, apply=False)
+
+    def __repr_syft_nested__(self):
+        return f"Create Image for Config: {self.config} with tag: {self.tag}"
+
+
+@serializable()
+class CreateCustomWorkerPoolChange(Change):
+    __canonical_name__ = "CreateCustomWorkerPoolChange"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    pool_name: str
+    num_workers: int
+    image_uid: Optional[UID]
+    config: Optional[WorkerConfig]
+
+    __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
+
+    def _run(
+        self, context: ChangeContext, apply: bool
+    ) -> Result[SyftSuccess, SyftError]:
+        """
+        This function is run when the DO approves (apply=True)
+        or deny (apply=False) the request.
+        """
+        if apply:
+            # get the worker pool service and try to launch a pool
+            worker_pool_service = context.node.get_service("SyftWorkerPoolService")
+            service_context: AuthedServiceContext = context.to_service_ctx()
+
+            if self.config is not None:
+                result = worker_pool_service.image_stash.get_by_docker_config(
+                    service_context.credentials, self.config
+                )
+                if result.is_err():
+                    return Err(SyftError(message=f"{result.err()}"))
+                worker_image = result.ok()
+                self.image_uid = worker_image.id
+
+            result = worker_pool_service.launch(
+                context=service_context,
+                name=self.pool_name,
+                image_uid=self.image_uid,
+                num_workers=self.num_workers,
+            )
+            if isinstance(result, SyftError):
+                return Err(result)
+            else:
+                return Ok(result)
+        else:
+            return Err(
+                SyftError(
+                    message=f"Request to create a worker pool with name {self.name} denied"
+                )
+            )
+
+    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+        return self._run(context=context, apply=True)
+
+    def undo(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+        return self._run(context=context, apply=False)
+
+    def __repr_syft_nested__(self):
+        return (
+            f"Create Worker Pool '{self.pool_name}' for Image with id {self.image_uid}"
+        )
 
 
 @serializable()
@@ -355,7 +472,9 @@ class Request(SyftObject):
         metadata = api.connection.get_node_metadata(api.signing_key)
         message, is_enclave = None, False
 
-        if len(self.codes) > 1 and not approve_nested:
+        is_code_request = not isinstance(self.codes, SyftError)
+
+        if is_code_request and len(self.codes) > 1 and not approve_nested:
             return SyftError(
                 message="Multiple codes detected, please use approve_nested=True"
             )
@@ -374,7 +493,7 @@ class Request(SyftObject):
         if message and metadata.show_warnings and not disable_warnings:
             prompt_warning_message(message=message, confirm=True)
 
-        print(f"Request approved for domain {api.node_name}")
+        print(f"Approving request for domain {api.node_name}")
         return api.services.request.apply(self.id)
 
     def deny(self, reason: str):
@@ -390,7 +509,7 @@ class Request(SyftObject):
         return api.services.request.undo(uid=self.id, reason=reason)
 
     def approve_with_client(self, client):
-        print(f"Request approved for domain {client.name}")
+        print(f"Approving request for domain {client.name}")
         return client.api.services.request.apply(self.id)
 
     def apply(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
@@ -456,9 +575,42 @@ class Request(SyftObject):
         save_method = context.node.get_service_method(RequestService.save)
         return save_method(context=context, request=self)
 
+    def _get_latest_or_create_job(self) -> Union[Job, SyftError]:
+        """Get the latest job for this requests user_code, or creates one if no jobs exist"""
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        job_service = api.services.job
+
+        existing_jobs = job_service.get_by_user_code_id(self.code.id)
+        if isinstance(existing_jobs, SyftError):
+            return existing_jobs
+
+        if len(existing_jobs) == 0:
+            job = job_service.create_job_for_user_code_id(self.code.id)
+        else:
+            job = existing_jobs[-1]
+
+        return job
+
     def accept_by_depositing_result(self, result: Any, force: bool = False):
         # this code is extremely brittle because its a work around that relies on
         # the type of request being very specifically tied to code which needs approving
+
+        # Special case for results from Jobs (High-low side async)
+        if isinstance(result, JobInfo):
+            job_info = result
+            if not job_info.includes_result:
+                return SyftError(
+                    message="JobInfo should not include result. Use sync_job instead."
+                )
+            result = job_info.result
+        else:
+            # NOTE result is added at the end of function (once ActionObject is created)
+            job_info = JobInfo(
+                includes_metadata=True,
+                includes_result=True,
+                status=JobStatus.COMPLETED,
+                resolved=True,
+            )
 
         change = self.changes[0]
         if not change.is_type(UserCode):
@@ -505,7 +657,6 @@ class Request(SyftObject):
             result = api.services.action.set(action_object)
             if isinstance(result, SyftError):
                 return result
-            return SyftSuccess(message="Request submitted for updating result.")
         else:
             action_object = ActionObject.from_obj(
                 result,
@@ -518,6 +669,7 @@ class Request(SyftObject):
             result = api.services.action.set(action_object)
             if isinstance(result, SyftError):
                 return result
+
             ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
 
             state.apply_output(context=ctx, outputs=result)
@@ -535,12 +687,41 @@ class Request(SyftObject):
             )
 
             new_changes = [policy_state_mutation, permission_change]
-            result = api.services.request.add_changes(uid=self.id, changes=new_changes)
-            if isinstance(result, SyftError):
-                return result
-            self = result
+            result_request = api.services.request.add_changes(
+                uid=self.id, changes=new_changes
+            )
+            if isinstance(result_request, SyftError):
+                return result_request
+            self = result_request
 
-            return self.approve(disable_warnings=True)
+            approved = self.approve(disable_warnings=True)
+            if isinstance(approved, SyftError):
+                return approved
+
+        job_info.result = action_object
+        job = self._get_latest_or_create_job()
+        job.apply_info(job_info)
+
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        job_service = api.services.job
+        res = job_service.update(job)
+        if isinstance(res, SyftError):
+            return res
+
+        return SyftSuccess(message="Request submitted for updating result.")
+
+    def sync_job(self, job_info: JobInfo, **kwargs) -> Result[SyftSuccess, SyftError]:
+        if job_info.includes_result:
+            return SyftError(
+                message="This JobInfo includes a Result. Please use Request.accept_by_depositing_result instead."
+            )
+
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        job_service = api.services.job
+
+        job = self._get_latest_or_create_job()
+        job.apply_info(job_info)
+        return job_service.update(job)
 
 
 @serializable()

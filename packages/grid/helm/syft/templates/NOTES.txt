@@ -36,12 +36,17 @@
             "version": 3,
             "hash": "7293ce8bf17bc7420b764bc32fd89512ecbfa045f12db0513904794a6b000581",
             "action": "add"
+        },
+        "4": {
+            "version": 4,
+            "hash": "e6a4e7e37c747e40bcf0567946c28a18e5eda1029287c3738e223ae0cc705622",
+            "action": "add"
         }
     },
     "SeaweedSecureFilePathLocation": {
         "2": {
             "version": 2,
-            "hash": "3ca49db7536a33d5712485164e95406000df9af2aed78e9f9fa2bb2bbbb34fe6",
+            "hash": "5fd63fed2a4efba8c2b6c7a7b5e9b5939181781c331230896aa130b6fd558739",
             "action": "add"
         }
     },
@@ -114,7 +119,7 @@
     "WorkerPool": {
         "1": {
             "version": 1,
-            "hash": "3644c2caf4c01499e23b4e94d6a41fed0e39ce63c7fc5318c4e205cae9555308",
+            "hash": "250699eb4c452fc427995353d5c5ad6245fb3e9fdac8814f8348784816a0733b",
             "action": "add"
         }
     },
@@ -122,6 +127,41 @@
         "1": {
             "version": 1,
             "hash": "dc83910c91947e3d9eaa3e6f8592237448f0408668c7cca80450b5fcd54722e1",
+            "action": "add"
+        }
+    },
+    "UserCode": {
+        "3": {
+            "version": 3,
+            "hash": "d3fef6e5706c4e54d83c0f43ce1f2d94116c21de16a692ba52bd04809ed51ed3",
+            "action": "add"
+        }
+    },
+    "SubmitUserCode": {
+        "3": {
+            "version": 3,
+            "hash": "911d3e550721c78702aa819082d431305b491c597f23b70d8a7118c801e69694",
+            "action": "add"
+        }
+    },
+    "CreateCustomImageChange": {
+        "1": {
+            "version": 1,
+            "hash": "197b765666d605cf601bd69bff21b4a31896b6acd14af38739a5047ca29ff015",
+            "action": "add"
+        }
+    },
+    "CreateCustomWorkerPoolChange": {
+        "1": {
+            "version": 1,
+            "hash": "86894f8ccc037de61f44f9698fd113ba02c3cf3870a3048c00a46e15dcd1941c",
+            "action": "add"
+        }
+    },
+    "JobInfo": {
+        "1": {
+            "version": 1,
+            "hash": "cf26eeac3d9254dfa439917493b816341f8a379a77d182bbecba3b7ed2c1d00a",
             "action": "add"
         }
     }

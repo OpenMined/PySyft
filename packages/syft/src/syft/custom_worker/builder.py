@@ -93,12 +93,12 @@ class CustomWorkerBuilder:
     def _build_image(self, tag: str, **build_opts) -> Tuple[Image, Iterable]:
         # Core docker build call. Func signature should match with Docker SDK's BuildApiMixin
         with contextlib.closing(docker.from_env()) as client:
-            image = client.images.build(
+            image_result = client.images.build(
                 tag=tag,
                 timeout=self.BUILD_MAX_WAIT,
                 **build_opts,
             )
-            return image
+            return image_result
 
     def _push_image(
         self,
