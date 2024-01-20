@@ -45,6 +45,12 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+# Function to check if a command exists
+not_installed() {
+    ! type "$1" &> /dev/null
+}
+
+
 # Check for jq
 if not_installed jq; then
     echo "jq is not installed. You can install it from: https://stedolan.github.io/jq/download/"
