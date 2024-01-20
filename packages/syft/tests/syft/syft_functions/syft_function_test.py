@@ -93,10 +93,11 @@ def test_nested_jobs(node):
 
     assert len(job.subjobs) == 3
     # stdlib
-
+    
+    assert job.result.get(block=True) == 5
     sub_results = [j.wait().get() for j in job.subjobs]
     assert set(sub_results) == {2, 3, 5}
-    assert job.wait(block=True).get() == 5
+
 
     job = client.jobs[-1]
     assert job.job_worker_id is not None
