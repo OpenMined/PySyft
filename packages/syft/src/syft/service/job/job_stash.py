@@ -431,7 +431,7 @@ class Job(SyftObject):
     """
         return as_markdown_code(md)
 
-    def wait(self, block=False):
+    def wait(self):
         # stdlib
         from time import sleep
 
@@ -442,10 +442,6 @@ class Job(SyftObject):
 
         # todo: timeout
         if self.resolved:
-            return self.resolve
-
-        if block:
-            self.result.wait()
             return self.resolve
 
         print_warning = True
