@@ -117,7 +117,7 @@ class SyftWorkerImageService(AbstractService):
         worker_image.image_identifier = image_identifier
         result = None
 
-        if not context.node.in_memory_workers:
+        if True or not context.node.in_memory_workers:
             build_result = docker_build(worker_image, pull=pull)
             if isinstance(build_result, SyftError):
                 return build_result

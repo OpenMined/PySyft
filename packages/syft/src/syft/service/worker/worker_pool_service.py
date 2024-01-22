@@ -496,8 +496,10 @@ def _create_workers_in_pool(
 
     # Check if workers needs to be run in memory or as containers
     start_workers_in_memory = context.node.in_memory_workers
+    import sys
+    print("FOUND:", start_workers_in_memory, file=sys.stderr)
 
-    if start_workers_in_memory:
+    if False and start_workers_in_memory:
         # Run in-memory workers in threads
         container_statuses: List[ContainerSpawnStatus] = run_workers_in_threads(
             node=context.node,
