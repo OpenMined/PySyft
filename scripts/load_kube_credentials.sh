@@ -5,6 +5,13 @@ not_installed() {
     ! type "$1" &> /dev/null
 }
 
+# Define associative array for command installation links
+declare -A INSTALLATION_LINKS=(
+    [jq]="https://stedolan.github.io/jq/download/"
+    [yq]="https://github.com/mikefarah/yq"
+    [op]="https://developer.1password.com/docs/cli/get-started/"
+)
+
 # Check for required commands and provide installation links
 for cmd in jq yq op; do
     if not_installed "$cmd"; then
@@ -13,7 +20,7 @@ for cmd in jq yq op; do
     fi
 done
 
-# The string to match with context.user
+# The string to match with context.name in kubeconfig
 CONTEXT_NAME="$1"
 
 # Ensure script is called with one argument
