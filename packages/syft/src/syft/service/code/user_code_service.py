@@ -18,6 +18,7 @@ from ...client.enclave_client import EnclaveClient
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
+from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -306,6 +307,11 @@ class UserCodeService(AbstractService):
         else:
             return SyftError(message="Endpoint only supported for enclave code")
 
+    def is_mock_execution_allowed(self, code: UserCode, context: AuthedServiceContext):
+        user_service = context.node.get_service("userservice")
+        current_user = user_service.get_current_user(context=context)
+        return current_user.allow_mock_execution
+
     def is_execution_allowed(self, code, context, output_policy):
         if not code.status.approved:
             return code.status.get_status_message()
@@ -318,6 +324,28 @@ class UserCodeService(AbstractService):
             return output_policy.valid
         else:
             return True
+
+    def _kwargs_are_python_objects(self, kwargs: Dict[str, Any]) -> bool:
+        return all(not isinstance(v, SyftObject) for v in kwargs.values())
+
+    def _wrap_as_action_object(
+        self, kwargs: Dict[str, Any], context: AuthedServiceContext
+    ) -> Union[Dict[str, ActionObject], SyftError]:
+        for k, v in kwargs.items():
+            action_object = ActionObject.from_obj(
+                v,
+                syft_client_verify_key=context.credentials,
+                syft_node_location=context.node.id,
+            )
+            blob_store_result = action_object._save_to_blob_storage()
+            if isinstance(blob_store_result, SyftError):
+                return blob_store_result
+            action_service = context.node.get_service("actionservice")
+            result = action_service.set(context, action_object)
+            if isinstance(result, SyftError):
+                return result
+            kwargs[k] = action_object
+        return kwargs
 
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
@@ -340,14 +368,26 @@ class UserCodeService(AbstractService):
     ) -> Result[ActionObject, Err]:
         """Call a User Code Function"""
         try:
-            # Unroll variables
-            kwarg2id = map_kwargs_to_id(kwargs)
-
             # get code item
             code_result = self.stash.get_by_uid(context.credentials, uid=uid)
             if code_result.is_err():
                 return code_result
             code: UserCode = code_result.ok()
+
+            # Prepare kwargs
+            if self._kwargs_are_python_objects(kwargs):
+                if self.is_mock_execution_allowed(code, context):
+                    kwargs = self._wrap_as_action_object(kwargs, context)
+                    if isinstance(kwargs, SyftError):
+                        return kwargs
+
+                    # Execution is allowed for mock objects
+                    context.has_execute_permissions = True
+                else:
+                    return SyftError(message="Only Syft objects are allowed as inputs")
+
+            kwarg2id = map_kwargs_to_id(kwargs)
+
             override_execution_permission = (
                 context.has_execute_permissions or context.role == ServiceRole.ADMIN
             )

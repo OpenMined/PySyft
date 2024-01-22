@@ -266,6 +266,11 @@ class UserView(SyftObject):
 
         return SyftSuccess(message="User details successfully updated.")
 
+    @property
+    def allow_mock_execution(self) -> bool:
+        # TODO
+        return self.role >= ServiceRole.DATA_SCIENTIST
+
 
 @serializable()
 class UserViewPage(SyftObject):
