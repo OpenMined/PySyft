@@ -30,7 +30,6 @@ from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
 from ...types.transforms import drop
@@ -96,30 +95,9 @@ class JobV2(SyftObject):
 
 
 @serializable()
-class JobV3(SyftObject):
-    __canonical_name__ = "JobItem"
-    __version__ = SYFT_OBJECT_VERSION_3
-
-    id: UID
-    node_uid: UID
-    result: Optional[Any]
-    resolved: bool = False
-    status: JobStatus = JobStatus.CREATED
-    log_id: Optional[UID]
-    parent_job_id: Optional[UID]
-    n_iters: Optional[int] = 0
-    current_iter: Optional[int] = None
-    creation_time: Optional[str] = None
-    action: Optional[Action] = None
-    job_pid: Optional[int] = None
-    job_worker_id: Optional[UID] = None
-    updated_at: Optional[DateTime] = None
-
-
-@serializable()
 class Job(SyftObject):
     __canonical_name__ = "JobItem"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_3
 
     id: UID
     node_uid: UID
@@ -557,29 +535,16 @@ class JobInfo(SyftObject):
         return info
 
 
-@migrate(Job, JobV3)
-def downgrade_job_v4_to_v3():
-    return [
-        drop(["user_code_id"]),
-    ]
-
-
-@migrate(JobV3, Job)
-def upgrade_job_v3_to_v4():
-    return [
-        make_set_default("user_code_id", None),
-    ]
-
-
-@migrate(JobV3, JobV2)
+@migrate(Job, JobV2)
 def downgrade_job_v3_to_v2():
-    return [drop(["job_worker_id"])]
+    return [drop(["job_worker_id", "user_code_id"])]
 
 
-@migrate(JobV2, JobV3)
+@migrate(JobV2, Job)
 def upgrade_job_v2_to_v3():
     return [
         make_set_default("job_worker_id", None),
+        make_set_default("user_code_id", None),
     ]
 
 

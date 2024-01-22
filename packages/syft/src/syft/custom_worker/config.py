@@ -112,11 +112,14 @@ class CustomWorkerConfig(WorkerConfig):
 class DockerWorkerConfig(WorkerConfig):
     dockerfile: str
     file_name: Optional[str]
+    description: Optional[str]
 
     @classmethod
-    def from_path(cls, path: Union[Path, str]) -> Self:
+    def from_path(cls, path: Union[Path, str], description: Optional[str] = "") -> Self:
         with open(path) as f:
-            return cls(dockerfile=f.read(), file_name=Path(path).name)
+            return cls(
+                dockerfile=f.read(), file_name=Path(path).name, description=description
+            )
 
     def __eq__(self, __value: object) -> bool:
         if not isinstance(__value, DockerWorkerConfig):
@@ -140,3 +143,6 @@ class DockerWorkerConfig(WorkerConfig):
             return SyftSuccess(message=parse_output(logs))
         except Exception as e:
             return SyftError(message=f"Failed to build image !! Error: {str(e)}.")
+
+    def set_description(self, description_text: str) -> None:
+        self.description = description_text
