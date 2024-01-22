@@ -144,5 +144,5 @@ class DockerWorkerConfig(WorkerConfig):
         except Exception as e:
             return SyftError(message=f"Failed to build image !! Error: {str(e)}.")
 
-    def set_description(self, new_description: str) -> None:
-        self.description = new_description
+    def set_description(self, description_text: str) -> None:
+        self.description = description_text

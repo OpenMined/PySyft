@@ -202,5 +202,5 @@ def test_docker_worker_config(dockerfile_path: Path, method: str) -> None:
     assert docker_config.dockerfile == dockerfile_path.read_text()
     assert docker_config.description == description
     new_description = description + " (syft version is 0.8.4-beta.12)"
-    docker_config.set_description(new_description=new_description)
+    docker_config.set_description(description_text=new_description)
     assert docker_config.description == new_description
