@@ -25,7 +25,7 @@ seaweedfs:
 
 syft:
   registry: "docker.io"
-  version: 0.8.4-beta.13
+  version: 0.8.4-beta.14
 
 node:
   settings:
