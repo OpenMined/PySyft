@@ -84,3 +84,10 @@ class ChangeContext(SyftBaseObject):
             approving_user_credentials=context.credentials,
             extra_kwargs=context.extra_kwargs,
         )
+
+    def to_service_ctx(self) -> AuthedServiceContext:
+        return AuthedServiceContext(
+            node=self.node,
+            credentials=self.approving_user_credentials,
+            extra_kwargs=self.extra_kwargs,
+        )
