@@ -5,36 +5,26 @@ not_installed() {
     ! type "$1" &> /dev/null
 }
 
-# Check for jq
-if not_installed jq; then
-    echo "jq is not installed. You can install it from: https://stedolan.github.io/jq/download/"
-    exit 1
-fi
-
-# Check for yq
-if not_installed yq; then
-    echo "yq is not installed. You can install it from: https://github.com/mikefarah/yq"
-    exit 1
-fi
-
-# Check for op
-if not_installed op; then
-    echo "op is not installed. You can install it from: https://developer.1password.com/docs/cli/get-started/"
-    exit 1
-fi
+# Check for required commands and provide installation links
+for cmd in jq yq op; do
+    if not_installed "$cmd"; then
+        echo "$cmd is not installed. You can install it from: ${INSTALLATION_LINKS[$cmd]}"
+        exit 1
+    fi
+done
 
 # The string to match with context.user
-USERNAME="$1"
+CONTEXT_NAME="$1"
 
 # Ensure script is called with one argument
 if [ -z "$1" ]; then
-    echo "No username provided. Please provide it."
-    echo "eg. ./load_aks_credentials.sh <username>"
+    echo "No context name provided. Please provide it."
+    echo "eg. ./load_aks_credentials.sh <context_name>"
     exit 1
 fi
 
 # Fetch data from 1Password
-jsonData=$(op item get $USERNAME  --fields label=CLIENT_CERTIFICATE_DATA,label=USER_NAME,label=CLIENT_KEY_DATA,label=TOKEN,label=SERVER,label=CLUSTER_NAME,label=CERTIFICATE_AUTHORITY_DATA --format json)
+jsonData=$(op item get $CONTEXT_NAME  --fields label=CLIENT_CERTIFICATE_DATA,label=USER_NAME,label=CLIENT_KEY_DATA,label=TOKEN,label=SERVER,label=CLUSTER_NAME,label=CERTIFICATE_AUTHORITY_DATA --format json)
 
 # Check exit status of the last command
 if [ $? -ne 0 ]; then
