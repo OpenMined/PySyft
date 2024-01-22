@@ -47,6 +47,64 @@ def test_user_code(worker, guest_client: User) -> None:
     assert isinstance(real_result, int)
 
 
+def test_user_code_mock_execution(worker) -> None:
+    # Setup
+    root_domain_client = worker.root_client
+
+    # TODO guest_client is not in root_domain_client.users
+    root_domain_client.register(
+        name="data-scientist",
+        email="test_user@openmined.org",
+        password="0000",
+        password_verify="0000",
+    )
+    ds_client = root_domain_client.login(
+        email="test_user@openmined.org",
+        password="0000",
+    )
+
+    dataset = sy.Dataset(
+        name="my-dataset",
+        asset_list=[
+            sy.Asset(
+                name="numpy-data",
+                data=np.array([0, 1, 2, 3, 4]),
+                mock=np.array([5, 6, 7, 8, 9]),
+            )
+        ],
+    )
+    root_domain_client.upload_dataset(dataset)
+
+    # DS requests code execution
+    data = ds_client.datasets[0].assets[0]
+
+    @sy.syft_function_single_use(data=data)
+    def compute_mean(data):
+        return data.mean()
+
+    compute_mean.code = dedent(compute_mean.code)
+    ds_client.api.services.code.request_code_execution(compute_mean)
+
+    # Guest attempts to set own permissions
+    guest_user = ds_client.users.get_current_user()
+    print(guest_user)
+    res = guest_user.update(allow_mock_execution=True)
+    assert isinstance(res, SyftError)
+
+    # Mock execution fails, no permissions
+    result = ds_client.api.services.code.compute_mean(data=data.mock)
+    assert isinstance(result, SyftError)
+
+    # DO grants permissions
+    users = root_domain_client.users.get_all()
+    guest_user = [u for u in users if u.id == guest_user.id][0]
+    guest_user.update(allow_mock_execution=True)
+
+    # Mock execution succeeds
+    result = ds_client.api.services.code.compute_mean(data=data.mock).get()
+    assert isinstance(result, float)
+
+
 def test_duplicated_user_code(worker, guest_client: User) -> None:
     # test_func()
     result = guest_client.api.services.code.request_code_execution(test_func)

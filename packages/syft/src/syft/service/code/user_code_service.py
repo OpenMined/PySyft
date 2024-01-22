@@ -308,6 +308,8 @@ class UserCodeService(AbstractService):
             return SyftError(message="Endpoint only supported for enclave code")
 
     def is_mock_execution_allowed(self, code: UserCode, context: AuthedServiceContext):
+        if context.role == ServiceRole.ADMIN:
+            return True
         user_service = context.node.get_service("userservice")
         current_user = user_service.get_current_user(context=context)
         return current_user.allow_mock_execution
@@ -379,12 +381,12 @@ class UserCodeService(AbstractService):
                 if self.is_mock_execution_allowed(code, context):
                     kwargs = self._wrap_as_action_object(kwargs, context)
                     if isinstance(kwargs, SyftError):
-                        return kwargs
+                        return Err(value=kwargs.message)
 
                     # Execution is allowed for mock objects
                     context.has_execute_permissions = True
                 else:
-                    return SyftError(message="Only Syft objects are allowed as inputs")
+                    return Err(value="Only Syft objects are allowed as inputs")
 
             kwarg2id = map_kwargs_to_id(kwargs)
 

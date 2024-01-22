@@ -1108,6 +1108,54 @@
           "hash": "cf26eeac3d9254dfa439917493b816341f8a379a77d182bbecba3b7ed2c1d00a",
           "action": "add"
         }
+      },
+      "User": {
+        "1": {
+          "version": 1,
+          "hash": "078636e64f737e60245b39cf348d30fb006531e80c12b70aa7cf98254e1bb37a",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "1a4e6fe11786c3243ba5429f836951b72274f0ff51c3d13c5f1d3494b9de1fd7",
+          "action": "add"
+        }
+      },
+      "UserUpdate": {
+        "1": {
+          "version": 1,
+          "hash": "839dd90aeb611e1dc471c8fd6daf230e913465c0625c6a297079cb7f0a271195",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "59d3532893d09edc1aa86a68e4166e9720c4ef2bf33bdcc73800b4e0a094b697",
+          "action": "add"
+        }
+      },
+      "UserCreate": {
+        "1": {
+          "version": 1,
+          "hash": "dab78b63544ae91c09f9843c323cb237c0a6fcfeb71c1acf5f738e2fcf5c277f",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "d580e2a4ebb7787b326b6f6c34de27ddf30c6e8303f245c834d1c97fd42b9b42",
+          "action": "add"
+        }
+      },
+      "UserView": {
+        "1": {
+          "version": 1,
+          "hash": "63289383fe7e7584652f242a4362ce6e2f0ade52f6416ab6149b326a506b0675",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "41b3637c59c00bd121cd8034b3be7c055cd741ac61a5e982f818b85d5c3fe3d5",
+          "action": "add"
+        }
       }
     }
   }

@@ -22,8 +22,10 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.syft_metaclass import Empty
+from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import drop
@@ -38,11 +40,27 @@ from ..response import SyftSuccess
 from .user_roles import ServiceRole
 
 
+class UserV1(SyftObject):
+    __canonical_name__ = "User"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    email: Optional[EmailStr]
+    name: Optional[str]
+    hashed_password: Optional[str]
+    salt: Optional[str]
+    signing_key: Optional[SyftSigningKey]
+    verify_key: Optional[SyftVerifyKey]
+    role: Optional[ServiceRole]
+    institution: Optional[str]
+    website: Optional[str] = None
+    created_at: Optional[str] = None
+
+
 @serializable()
 class User(SyftObject):
     # version
     __canonical_name__ = "User"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: Optional[UID]
 
@@ -61,6 +79,8 @@ class User(SyftObject):
     institution: Optional[str]
     website: Optional[str] = None
     created_at: Optional[str] = None
+    # TODO where do we put this flag?
+    allow_mock_execution: bool = False
 
     # serde / storage rules
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
@@ -106,10 +126,24 @@ def check_pwd(password: str, hashed_password: str) -> bool:
     )
 
 
+class UserUpdateV1(PartialSyftObject):
+    __canonical_name__ = "UserUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    email: EmailStr
+    name: str
+    role: ServiceRole
+    password: str
+    password_verify: str
+    verify_key: SyftVerifyKey
+    institution: str
+    website: str
+
+
 @serializable()
 class UserUpdate(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     @pydantic.validator("email", pre=True)
     def make_email(cls, v: Any) -> Any:
@@ -129,12 +163,28 @@ class UserUpdate(PartialSyftObject):
     verify_key: SyftVerifyKey
     institution: str
     website: str
+    allow_mock_execution: bool
+
+
+class UserCreateV1(UserUpdateV1):
+    __canonical_name__ = "UserCreate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    email: EmailStr
+    name: str
+    role: Optional[ServiceRole] = None
+    password: str
+    password_verify: Optional[str] = None
+    verify_key: Optional[SyftVerifyKey]
+    institution: Optional[str]
+    website: Optional[str]
+    created_by: Optional[SyftSigningKey]
 
 
 @serializable()
 class UserCreate(UserUpdate):
     __canonical_name__ = "UserCreate"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     email: EmailStr
     name: str
@@ -145,6 +195,7 @@ class UserCreate(UserUpdate):
     institution: Optional[str]
     website: Optional[str]
     created_by: Optional[SyftSigningKey]
+    allow_mock_execution: bool = False
 
     __repr_attrs__ = ["name", "email"]
 
@@ -160,8 +211,7 @@ class UserSearch(PartialSyftObject):
     name: str
 
 
-@serializable()
-class UserView(SyftObject):
+class UserViewV1(SyftObject):
     __canonical_name__ = "UserView"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -170,6 +220,19 @@ class UserView(SyftObject):
     role: ServiceRole  # make sure role cant be set without uid
     institution: Optional[str]
     website: Optional[str]
+
+
+@serializable()
+class UserView(SyftObject):
+    __canonical_name__ = "UserView"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    email: EmailStr
+    name: str
+    role: ServiceRole  # make sure role cant be set without uid
+    institution: Optional[str]
+    website: Optional[str]
+    allow_mock_execution: bool
 
     __repr_attrs__ = ["name", "email", "institution", "website", "role"]
 
@@ -242,6 +305,7 @@ class UserView(SyftObject):
         institution: Union[Empty, str] = Empty,
         website: Union[str, Empty] = Empty,
         role: Union[str, Empty] = Empty,
+        allow_mock_execution: Union[bool, Empty] = Empty,
     ) -> Union[SyftSuccess, SyftError]:
         """Used to update name, institution, website of a user."""
         api = APIRegistry.api_for(
@@ -255,6 +319,7 @@ class UserView(SyftObject):
             institution=institution,
             website=website,
             role=role,
+            allow_mock_execution=allow_mock_execution,
         )
         result = api.services.user.update(uid=self.id, user_update=user_update)
 
@@ -265,11 +330,6 @@ class UserView(SyftObject):
             setattr(self, attr, val)
 
         return SyftSuccess(message="User details successfully updated.")
-
-    @property
-    def allow_mock_execution(self) -> bool:
-        # TODO
-        return self.role >= ServiceRole.DATA_SCIENTIST
 
 
 @serializable()
@@ -305,7 +365,19 @@ def user_create_to_user() -> List[Callable]:
 
 @transform(User, UserView)
 def user_to_view_user() -> List[Callable]:
-    return [keep(["id", "email", "name", "role", "institution", "website"])]
+    return [
+        keep(
+            [
+                "id",
+                "email",
+                "name",
+                "role",
+                "institution",
+                "website",
+                "allow_mock_execution",
+            ]
+        )
+    ]
 
 
 @serializable()
@@ -321,3 +393,43 @@ class UserPrivateKey(SyftObject):
 @transform(User, UserPrivateKey)
 def user_to_user_verify() -> List[Callable]:
     return [keep(["email", "signing_key", "id", "role"])]
+
+
+@migrate(UserV1, User)
+def upgrade_user_v1_to_v2():
+    return [make_set_default(key="allow_mock_execution", value=False)]
+
+
+@migrate(User, UserV1)
+def downgrade_user_v2_to_v1():
+    return [drop(["allow_mock_execution"])]
+
+
+@migrate(UserUpdateV1, UserUpdate)
+def upgrade_user_update_v1_to_v2():
+    return [make_set_default(key="allow_mock_execution", value=False)]
+
+
+@migrate(UserUpdate, UserUpdateV1)
+def downgrade_user_update_v2_to_v1():
+    return [drop(["allow_mock_execution"])]
+
+
+@migrate(UserCreateV1, UserCreate)
+def upgrade_user_create_v1_to_v2():
+    return [make_set_default(key="allow_mock_execution", value=False)]
+
+
+@migrate(UserCreate, UserCreateV1)
+def downgrade_user_create_v2_to_v1():
+    return [drop(["allow_mock_execution"])]
+
+
+@migrate(UserViewV1, UserView)
+def upgrade_user_view_v1_to_v2():
+    return [make_set_default(key="allow_mock_execution", value=False)]
+
+
+@migrate(UserView, UserViewV1)
+def downgrade_user_view_v2_to_v1():
+    return [drop(["allow_mock_execution"])]
