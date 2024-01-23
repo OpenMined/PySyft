@@ -40,8 +40,8 @@ def get_ds_client(faker: Faker, root_client: SyftClient, guest_client: SyftClien
         password_verify=password,
     )
     assert isinstance(result, SyftSuccess)
-    guest_client.login(email=guest_email, password=password)
-    return guest_client
+    ds_client = guest_client.login(email=guest_email, password=password)
+    return ds_client
 
 
 def test_object_mutation(worker: Worker):

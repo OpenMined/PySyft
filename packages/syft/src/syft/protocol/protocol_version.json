@@ -978,7 +978,7 @@
       "JobItem": {
         "3": {
           "version": 3,
-          "hash": "7293ce8bf17bc7420b764bc32fd89512ecbfa045f12db0513904794a6b000581",
+          "hash": "5b93a59e28574691339d22826d5650969336a2e930b93d6b3fe6d5409ca0cfc4",
           "action": "add"
         }
       },
@@ -1080,6 +1080,27 @@
         "3": {
           "version": 3,
           "hash": "911d3e550721c78702aa819082d431305b491c597f23b70d8a7118c801e69694",
+          "action": "add"
+        }
+      },
+      "CreateCustomImageChange": {
+        "1": {
+          "version": 1,
+          "hash": "197b765666d605cf601bd69bff21b4a31896b6acd14af38739a5047ca29ff015",
+          "action": "add"
+        }
+      },
+      "CreateCustomWorkerPoolChange": {
+        "1": {
+          "version": 1,
+          "hash": "86894f8ccc037de61f44f9698fd113ba02c3cf3870a3048c00a46e15dcd1941c",
+          "action": "add"
+        }
+      },
+      "JobInfo": {
+        "1": {
+          "version": 1,
+          "hash": "cf26eeac3d9254dfa439917493b816341f8a379a77d182bbecba3b7ed2c1d00a",
           "action": "add"
         }
       }

@@ -27,7 +27,7 @@ jobs:
       - name: Check for new changes
         if: github.event_name == 'schedule' || github.event.inputs.check-cache == 'true'
         id: cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /tmp/k8s_dev_hash.txt # we don't care about the file, just the key
           key: k8s-dev-${{ github.sha }}

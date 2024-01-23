@@ -3,13 +3,16 @@ from __future__ import annotations
 
 # stdlib
 import ast
+from copy import deepcopy
 import datetime
 from enum import Enum
 import hashlib
 import inspect
 from io import StringIO
 import itertools
+import random
 import sys
+from threading import Thread
 import time
 import traceback
 from typing import Any
@@ -29,6 +32,7 @@ from typing_extensions import Self
 
 # relative
 from ...abstract_node import NodeType
+from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
@@ -81,6 +85,7 @@ from ..response import SyftWarning
 from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
 from .unparse import unparse
+from .utils import submit_subjobs_code
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=str)
@@ -703,7 +708,12 @@ class SubmitUserCode(SyftObject):
     def kwargs(self) -> List[str]:
         return self.input_policy_init_kwargs
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    def __call__(self, *args: Any, syft_no_node=False, **kwargs: Any) -> Any:
+        if syft_no_node:
+            return self.local_call(*args, **kwargs)
+        return self._ephemeral_node_call(*args, **kwargs)
+
+    def local_call(self, *args: Any, **kwargs: Any) -> Any:
         # only run this on the client side
         if self.local_function:
             tree = ast.parse(inspect.getsource(self.local_function))
@@ -728,6 +738,101 @@ class SubmitUserCode(SyftObject):
             return self.local_function(**filtered_kwargs)
         else:
             raise NotImplementedError
+
+    def _ephemeral_node_call(
+        self, time_alive=None, n_consumers=None, *args: Any, **kwargs: Any
+    ) -> Any:
+        # relative
+        from ... import _orchestra
+
+        # Right now we only create a number of workers
+        # In the future we might need to have the same pools/images as well
+
+        if n_consumers is None:
+            print(
+                SyftInfo(
+                    message="Creating a node with n_consumers=2 (the default value)"
+                )
+            )
+            n_consumers = 2
+
+        if time_alive is None and "blocking" in kwargs and not kwargs["blocking"]:
+            print(
+                SyftInfo(
+                    message="Closing the node after time_alive=300 (the default value)"
+                )
+            )
+            time_alive = 300
+
+        # This could be changed given the work on containers
+        ep_node = _orchestra().launch(
+            name=f"ephemeral_node_{self.func_name}_{random.randint(a=0, b=10000)}",  # nosec
+            reset=True,
+            create_producer=True,
+            n_consumers=n_consumers,
+            deploy_to="python",
+        )
+        ep_client = ep_node.login(email="info@openmined.org", password="changethis")  # nosec
+
+        for node_id, obj_dict in self.input_policy_init_kwargs.items():
+            # api = APIRegistry.api_for(
+            #     node_uid=node_id.node_id, user_verify_key=node_id.verify_key
+            # )
+            api = APIRegistry.get_by_recent_node_uid(node_uid=node_id.node_id)
+
+            # Creating TwinObject from the ids of the kwargs
+            # Maybe there are some corner cases where this is not enough
+            # And need only ActionObjects
+            # Also, this works only on the assumption that all inputs
+            # are ActionObjects, which might change in the future
+            for _, id in obj_dict.items():
+                mock_obj = api.services.action.get_mock(id)
+                if isinstance(mock_obj, SyftError):
+                    data_obj = api.services.action.get(id)
+                    if isinstance(data_obj, SyftError):
+                        return SyftError(
+                            message="You do not have access to object you want \
+                                to use, or the private object does not have mock \
+                                data. Contact the Node Admin."
+                        )
+                else:
+                    data_obj = mock_obj
+                data_obj.id = id
+                new_obj = ActionObject.from_obj(
+                    data_obj.syft_action_data,
+                    id=id,
+                    syft_node_location=node_id.node_id,
+                    syft_client_verify_key=node_id.verify_key,
+                )
+                res = ep_client.api.services.action.set(new_obj)
+                if isinstance(res, SyftError):
+                    return res
+
+        new_syft_func = deepcopy(self)
+
+        # This will only be used without worker_pools
+        new_syft_func.worker_pool_id = None
+
+        # We will look for subjos, and if we find any will submit them
+        # to the ephemeral_node
+        submit_subjobs_code(self, ep_client)
+
+        ep_client.code.request_code_execution(new_syft_func)
+        ep_client.requests[-1].approve(approve_nested=True)
+        func_call = getattr(ep_client.code, new_syft_func.func_name)
+        result = func_call(*args, **kwargs)
+
+        def task():
+            if "blocking" in kwargs and not kwargs["blocking"]:
+                time.sleep(time_alive)
+            print(SyftInfo(message="Landing the ephmeral node..."))
+            ep_node.land()
+            print(SyftInfo(message="Node Landed!"))
+
+        thread = Thread(target=task)
+        thread.start()
+
+        return result
 
     @property
     def input_owner_verify_keys(self) -> List[str]:
