@@ -136,5 +136,4 @@ pytest_plugins = [
     "tests.syft.notifications.fixtures",
     "tests.syft.action_graph.fixtures",
     "tests.syft.serde.fixtures",
-    "tests.syft.worker_pool.fixtures",
 ]

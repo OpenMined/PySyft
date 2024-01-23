@@ -136,3 +136,8 @@ def test_pool_launch(domain_1_port) -> None:
     # Clean the build images
     delete_result = domain_client.api.services.worker_image.remove(uid=worker_image.id)
     assert isinstance(delete_result, sy.SyftSuccess)
+
+
+# TODO: register ds client, ds requests to create an image and pool creation,
+# do approves, then ds creates a function attached to the worker pool, then creates another
+# request. DO approves and runs the function
