@@ -224,7 +224,7 @@ class UserService(AbstractService):
 
         if updates_role and not can_edit_roles:
             return SyftError(message=f"{context.role} is not allowed to edit roles")
-        if (user_update.allow_mock_execution is not Empty) and not can_edit_roles:
+        if (user_update.mock_execution_permission is not Empty) and not can_edit_roles:
             return SyftError(
                 message=f"{context.role} is not allowed to update permissions"
             )

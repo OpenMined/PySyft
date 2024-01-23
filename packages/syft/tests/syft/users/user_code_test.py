@@ -87,8 +87,7 @@ def test_user_code_mock_execution(worker) -> None:
 
     # Guest attempts to set own permissions
     guest_user = ds_client.users.get_current_user()
-    print(guest_user)
-    res = guest_user.update(allow_mock_execution=True)
+    res = guest_user.allow_mock_execution()
     assert isinstance(res, SyftError)
 
     # Mock execution fails, no permissions
@@ -98,7 +97,7 @@ def test_user_code_mock_execution(worker) -> None:
     # DO grants permissions
     users = root_domain_client.users.get_all()
     guest_user = [u for u in users if u.id == guest_user.id][0]
-    guest_user.update(allow_mock_execution=True)
+    guest_user.allow_mock_execution()
 
     # Mock execution succeeds
     result = ds_client.api.services.code.compute_mean(data=data.mock).get()

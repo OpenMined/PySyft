@@ -80,7 +80,7 @@ class User(SyftObject):
     website: Optional[str] = None
     created_at: Optional[str] = None
     # TODO where do we put this flag?
-    allow_mock_execution: bool = False
+    mock_execution_permission: bool = False
 
     # serde / storage rules
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
@@ -163,7 +163,7 @@ class UserUpdate(PartialSyftObject):
     verify_key: SyftVerifyKey
     institution: str
     website: str
-    allow_mock_execution: bool
+    mock_execution_permission: bool
 
 
 class UserCreateV1(UserUpdateV1):
@@ -195,7 +195,7 @@ class UserCreate(UserUpdate):
     institution: Optional[str]
     website: Optional[str]
     created_by: Optional[SyftSigningKey]
-    allow_mock_execution: bool = False
+    mock_execution_permission: bool = False
 
     __repr_attrs__ = ["name", "email"]
 
@@ -232,7 +232,7 @@ class UserView(SyftObject):
     role: ServiceRole  # make sure role cant be set without uid
     institution: Optional[str]
     website: Optional[str]
-    allow_mock_execution: bool
+    mock_execution_permission: bool
 
     __repr_attrs__ = ["name", "email", "institution", "website", "role"]
 
@@ -305,7 +305,7 @@ class UserView(SyftObject):
         institution: Union[Empty, str] = Empty,
         website: Union[str, Empty] = Empty,
         role: Union[str, Empty] = Empty,
-        allow_mock_execution: Union[bool, Empty] = Empty,
+        mock_execution_permission: Union[bool, Empty] = Empty,
     ) -> Union[SyftSuccess, SyftError]:
         """Used to update name, institution, website of a user."""
         api = APIRegistry.api_for(
@@ -319,7 +319,7 @@ class UserView(SyftObject):
             institution=institution,
             website=website,
             role=role,
-            allow_mock_execution=allow_mock_execution,
+            mock_execution_permission=mock_execution_permission,
         )
         result = api.services.user.update(uid=self.id, user_update=user_update)
 
@@ -330,6 +330,9 @@ class UserView(SyftObject):
             setattr(self, attr, val)
 
         return SyftSuccess(message="User details successfully updated.")
+
+    def allow_mock_execution(self, allow: bool = True) -> Union[SyftSuccess, SyftError]:
+        return self.update(mock_execution_permission=allow)
 
 
 @serializable()
@@ -374,7 +377,7 @@ def user_to_view_user() -> List[Callable]:
                 "role",
                 "institution",
                 "website",
-                "allow_mock_execution",
+                "mock_execution_permission",
             ]
         )
     ]
@@ -397,39 +400,39 @@ def user_to_user_verify() -> List[Callable]:
 
 @migrate(UserV1, User)
 def upgrade_user_v1_to_v2():
-    return [make_set_default(key="allow_mock_execution", value=False)]
+    return [make_set_default(key="mock_execution_permission", value=False)]
 
 
 @migrate(User, UserV1)
 def downgrade_user_v2_to_v1():
-    return [drop(["allow_mock_execution"])]
+    return [drop(["mock_execution_permission"])]
 
 
 @migrate(UserUpdateV1, UserUpdate)
 def upgrade_user_update_v1_to_v2():
-    return [make_set_default(key="allow_mock_execution", value=False)]
+    return [make_set_default(key="mock_execution_permission", value=False)]
 
 
 @migrate(UserUpdate, UserUpdateV1)
 def downgrade_user_update_v2_to_v1():
-    return [drop(["allow_mock_execution"])]
+    return [drop(["mock_execution_permission"])]
 
 
 @migrate(UserCreateV1, UserCreate)
 def upgrade_user_create_v1_to_v2():
-    return [make_set_default(key="allow_mock_execution", value=False)]
+    return [make_set_default(key="mock_execution_permission", value=False)]
 
 
 @migrate(UserCreate, UserCreateV1)
 def downgrade_user_create_v2_to_v1():
-    return [drop(["allow_mock_execution"])]
+    return [drop(["mock_execution_permission"])]
 
 
 @migrate(UserViewV1, UserView)
 def upgrade_user_view_v1_to_v2():
-    return [make_set_default(key="allow_mock_execution", value=False)]
+    return [make_set_default(key="mock_execution_permission", value=False)]
 
 
 @migrate(UserView, UserViewV1)
 def downgrade_user_view_v2_to_v1():
-    return [drop(["allow_mock_execution"])]
+    return [drop(["mock_execution_permission"])]

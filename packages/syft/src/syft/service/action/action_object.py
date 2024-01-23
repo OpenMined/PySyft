@@ -428,7 +428,7 @@ def convert_to_pointers(
     kwarg_dict = {}
     if args is not None:
         for arg in args:
-            if not isinstance(arg, ActionObject):
+            if not isinstance(arg, SyftObject):
                 arg = ActionObject.from_obj(
                     syft_action_data=arg,
                     syft_client_verify_key=api.signing_key.verify_key,
@@ -443,7 +443,7 @@ def convert_to_pointers(
 
     if kwargs is not None:
         for k, arg in kwargs.items():
-            if not isinstance(arg, ActionObject):
+            if not isinstance(arg, SyftObject):
                 arg = ActionObject.from_obj(
                     syft_action_data=arg,
                     syft_client_verify_key=api.signing_key.verify_key,
