@@ -78,6 +78,15 @@ class SyftWorker(SyftObject):
     consumer_state: ConsumerState = ConsumerState.DETACHED
     job_id: Optional[UID]
 
+    @property
+    def logs(self) -> Union[str, SyftError]:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+
+        return api.services.worker.logs(uid=self.id)
+
     def get_job_repr(self):
         if self.job_id is not None:
             api = APIRegistry.api_for(
