@@ -978,12 +978,7 @@
       "JobItem": {
         "3": {
           "version": 3,
-          "hash": "7293ce8bf17bc7420b764bc32fd89512ecbfa045f12db0513904794a6b000581",
-          "action": "add"
-        },
-        "4": {
-          "version": 4,
-          "hash": "e6a4e7e37c747e40bcf0567946c28a18e5eda1029287c3738e223ae0cc705622",
+          "hash": "5b93a59e28574691339d22826d5650969336a2e930b93d6b3fe6d5409ca0cfc4",
           "action": "add"
         }
       },
