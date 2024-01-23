@@ -1,8 +1,12 @@
+# stdlib
+
 # third party
+from faker import Faker
 import pytest
 
 # syft absolute
 import syft as sy
+from syft import ActionObject
 from syft.client.domain_client import DomainClient
 from syft.custom_worker.config import DockerWorkerConfig
 from syft.service.response import SyftSuccess
@@ -138,6 +142,85 @@ def test_pool_launch(domain_1_port) -> None:
     assert isinstance(delete_result, sy.SyftSuccess)
 
 
-# TODO: register ds client, ds requests to create an image and pool creation,
-# do approves, then ds creates a function attached to the worker pool, then creates another
-# request. DO approves and runs the function
+@pytest.mark.container_workload
+def test_pool_image_creation_job_requests(domain_1_port) -> None:
+    """
+    Test register ds client, ds requests to create an image and pool creation,
+    do approves, then ds creates a function attached to the worker pool, then creates another
+    request. DO approves and runs the function
+    """
+    # construct a root client and data scientist client for the test domain
+    domain_client: DomainClient = sy.login(
+        port=domain_1_port, email="info@openmined.org", password="changethis"
+    )
+    fake = Faker()
+    ds_username = fake.user_name()
+    ds_email = ds_username + "@example.com"
+    res = domain_client.register(
+        name=ds_username,
+        email=ds_email,
+        password="secret_pw",
+        password_verify="secret_pw",
+    )
+    assert isinstance(res, SyftSuccess)
+    ds_client = sy.login(email=ds_email, password="secret_pw", port=domain_1_port)
+
+    # the DS makes a request to create an image and a pool based on the image
+    docker_config = DockerWorkerConfig(dockerfile=DOCKER_CONFIG_OPENDP)
+    tag_version = sy.UID().short()
+    docker_tag = f"openmined/custom-worker-opendp:{tag_version}"
+    pool_version = sy.UID().short()
+    worker_pool_name = f"custom_worker_pool_ver{pool_version}"
+    request = ds_client.api.services.worker_pool.create_image_and_pool_request(
+        pool_name=worker_pool_name,
+        num_workers=1,
+        tag=docker_tag,
+        config=docker_config,
+        reason="I want to do some more cool data science with PySyft and Recordlinkage",
+    )
+    assert len(request.changes) == 2
+    assert request.changes[0].config == docker_config
+    assert request.changes[1].num_workers == 1
+    assert request.changes[1].pool_name == worker_pool_name
+
+    # the domain client approve the request, so the image should be built
+    # and the worker pool should be launched
+    req_result = domain_client.requests[-1].approve()
+    assert isinstance(req_result, SyftSuccess)
+    assert domain_client.requests[-1].status.value == 2
+    launched_pool = ds_client.api.services.worker_pool.get_by_name(worker_pool_name)
+
+    # Dataset
+    data = ActionObject.from_obj([1, 2])
+    data_ptr = data.send(ds_client)
+
+    # Function
+    @sy.syft_function(
+        input_policy=sy.ExactMatch(x=data_ptr),
+        output_policy=sy.SingleExecutionExactOutput(),
+        worker_pool_id=launched_pool.id,
+    )
+    def custom_worker_func(x):
+        return {"y": x + 1}
+
+    assert custom_worker_func.worker_pool_id == launched_pool.id
+
+    request = ds_client.code.request_code_execution(custom_worker_func)
+    assert isinstance(request, SyftSuccess)
+    domain_client.requests[-1].approve(approve_nested=True)
+    job = domain_client.code.custom_worker_func(x=data_ptr, blocking=False)
+    job.wait()
+    assert job.status.value == "completed"
+    job = domain_client.jobs[-1]
+    assert job.job_worker_id is not None
+    # Once the work is done by the worker, its state is returned to idle again.
+    consuming_worker_is_now_idle = False
+    for worker in domain_client.worker_pools[worker_pool_name].workers:
+        if worker.id == job.job_worker_id:
+            consuming_worker_is_now_idle = worker.consumer_state.value.lower() == "idle"
+
+    assert consuming_worker_is_now_idle is True
+    # Validate the result received from the syft function
+    result = job.wait().get()
+    result_matches = result["y"] == data + 1
+    assert result_matches.all()
