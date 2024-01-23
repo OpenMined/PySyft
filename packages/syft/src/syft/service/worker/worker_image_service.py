@@ -261,3 +261,21 @@ class SyftWorkerImageService(AbstractService):
             )
         image: SyftWorkerImage = res.ok()
         return image
+
+    @service_method(
+        path="worker_image.get_by_config",
+        name="get_by_config",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def get_by_config(
+        self, context: AuthedServiceContext, docker_config: DockerWorkerConfig
+    ) -> Union[SyftWorkerImage, SyftError]:
+        res = self.stash.get_by_docker_config(
+            credentials=context.credentials, config=docker_config
+        )
+        if res.is_err():
+            return SyftError(
+                message=f"Failed to get image with docker config {docker_config}. Error: {res.err()}"
+            )
+        image: SyftWorkerImage = res.ok()
+        return image

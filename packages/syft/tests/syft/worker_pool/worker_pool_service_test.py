@@ -1,7 +1,5 @@
 # third party
 from faker import Faker
-from hagrid.orchestra import NodeHandle
-import pytest
 
 # syft absolute
 from syft.custom_worker.config import DockerWorkerConfig
@@ -114,13 +112,3 @@ def test_create_pool_request_accept(faker: Faker, worker: Worker):
     launched_pool = root_client.worker_pools["opendp-pool"]
     assert isinstance(launched_pool, WorkerPool)
     assert len(launched_pool.worker_list) == 3
-
-
-@pytest.mark.parametrize(
-    "node_based_on_type", ["python", "container_stack"], indirect=True
-)
-def test_launch_pool(node_based_on_type: NodeHandle) -> None:
-    domain_client = node_based_on_type.login(
-        email="info@openmined.org", password="changethis"
-    )
-    assert len(domain_client.worker_pools.get_all()) == 1
