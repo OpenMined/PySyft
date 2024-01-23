@@ -15,6 +15,7 @@ from typing import Union
 
 # third party
 from loguru import logger
+from pydantic import validator
 from zmq import Frame
 from zmq import LINGER
 from zmq.error import ContextTerminated
@@ -26,6 +27,7 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
 from ...service.action.action_object import ActionObject
 from ...service.context import AuthedServiceContext
+from ...types.base import SyftBaseModel
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -101,28 +103,27 @@ class Timeout:
         return time.time()
 
 
-class Worker:
-    def __init__(
-        self,
-        address: str,
-        identity: bytes,
-        service: Optional[str] = None,
-        syft_worker_id: Optional[Union[UID, str]] = None,
-    ):
-        self.identity = identity
-        self.address = address
-        self.service = service
-        self.syft_worker_id = UID(syft_worker_id)
-        self.__expiry_t = Timeout(WORKER_TIMEOUT_SEC)
+class Worker(SyftBaseModel):
+    address: bytes
+    identity: bytes
+    service: Optional[str] = None
+    syft_worker_id: Optional[UID] = None
+    expiry_t: Timeout = Timeout(WORKER_TIMEOUT_SEC)
+
+    @validator("syft_worker_id", pre=True, always=True)
+    def set_syft_worker_id(cls, v, values):
+        if isinstance(v, str):
+            return UID(v)
+        return v
 
     def has_expired(self):
-        return self.__expiry_t.has_expired()
+        return self.expiry_t.has_expired()
 
     def get_expiry(self) -> int:
-        return self.__expiry_t.next_ts
+        return self.expiry_t.next_ts
 
     def reset_expiry(self):
-        self.__expiry_t.reset()
+        self.expiry_t.reset()
 
 
 class Service:
@@ -500,7 +501,7 @@ class ZMQProducer(QueueProducer):
                 else:
                     service = self.services.get(service_name)
                 worker.service = service
-                worker.syft_worker_id = syft_worker_id
+                worker.syft_worker_id = UID(syft_worker_id)
                 logger.info(
                     "New Worker id={} service={}",
                     worker.identity,
