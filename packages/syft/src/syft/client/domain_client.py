@@ -120,9 +120,20 @@ class DomainClient(SyftClient):
                 return tuple(valid.err())
             return valid.err()
 
+    def _get_files_from_dir(self, dir: Path, recursive: bool) -> list:
+        files = dir.rglob("*") if recursive else dir.iterdir()
+        return [f for f in files if not f.name.startswith(".") and f.is_file()]
+
+    def _contains_subdir(self, dir: Path) -> bool:
+        for item in dir.iterdir():
+            if item.is_dir():
+                return True
+        return False
+
     def upload_files(
         self,
         file_list: Union[BlobFile, list[BlobFile], str, list[str], Path, list[Path]],
+        allow_recursive=False,
     ) -> Union[SyftSuccess, SyftError]:
         if not file_list:
             return SyftSuccess(message="No files to upload")
@@ -130,12 +141,43 @@ class DomainClient(SyftClient):
         if not isinstance(file_list, list):
             file_list = [file_list]
 
+        expanded_file_list = []
+
+        for file in file_list:
+            if isinstance(file, BlobFile):
+                expanded_file_list.append(file)
+                continue
+
+            path = Path(file)
+
+            if path.is_dir():
+                if not allow_recursive and self._contains_subdir(path):
+                    res = input(
+                        f"Do you want to include all files recursively in {path.absolute()}? [y/n]: "
+                    ).lower()
+                    print(
+                        f'{"Recursively adding all files" if res == "y" else "Adding files"} in {path.absolute()}'
+                    )
+                    allow_recursive = res == "y"
+                expanded_file_list.extend(
+                    self._get_files_from_dir(path, allow_recursive)
+                )
+            elif path.exists():
+                expanded_file_list.append(path)
+
+        if not expanded_file_list:
+            return SyftSuccess(message="No files to upload")
+
+        print(
+            f"Uploading {len(expanded_file_list)} {'file' if len(expanded_file_list) == 1 else 'files'}"
+        )
+
         try:
             action_objects = [
                 file
                 if isinstance(file, BlobFile)
                 else ActionObject.from_path(file).send(self).syft_action_data
-                for file in file_list
+                for file in tqdm(expanded_file_list)
             ]
             return ActionObject.from_obj(action_objects).send(self)
         except Exception as err:
