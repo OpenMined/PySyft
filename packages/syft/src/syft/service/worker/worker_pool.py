@@ -41,6 +41,7 @@ class WorkerStatus(Enum):
 class ConsumerState(Enum):
     IDLE = "Idle"
     CONSUMING = "Consuming"
+    DETACHED = "Detached"
 
 
 @serializable()
@@ -74,7 +75,7 @@ class SyftWorker(SyftObject):
     status: WorkerStatus
     image: Optional[SyftWorkerImage]
     worker_pool_name: str
-    consumer_state: ConsumerState = ConsumerState.IDLE
+    consumer_state: ConsumerState = ConsumerState.DETACHED
     job_id: Optional[UID]
 
     @property
