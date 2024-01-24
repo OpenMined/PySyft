@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from copy import deepcopy
 from enum import Enum
 from getpass import getpass
 import json
@@ -526,6 +527,33 @@ class SyftClient:
         )
         project = project_create.start()
         return project
+
+    def sync_code_from_request(self, request):
+        code = request.code
+        if isinstance(code, SyftError):
+            return code
+        elif code is None:
+            return SyftError(message="no code inside request")
+
+        code = deepcopy(code)
+
+        def get_nested_codes(code):
+            result = []
+            for __, (linked_code_obj, _) in code.nested_codes.items():
+                nested_code = linked_code_obj.resolve
+                nested_code = deepcopy(nested_code)
+                result.append(nested_code)
+                result += get_nested_codes(nested_code)
+            return result
+
+        nested_codes = get_nested_codes(request.code)
+
+        for c in nested_codes + [code]:
+            res = self.code.submit(c)
+            if isinstance(res, SyftError):
+                return res
+        self._fetch_api(self.credentials)
+        return SyftSuccess(message="User Code Submitted")
 
     @property
     def authed(self) -> bool:
