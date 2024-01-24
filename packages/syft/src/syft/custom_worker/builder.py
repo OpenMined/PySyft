@@ -1,21 +1,22 @@
 # stdlib
-import contextlib
-import io
+from functools import cached_property
 import os.path
 from pathlib import Path
 from typing import Any
-from typing import Iterable
-from typing import Optional
-from typing import Tuple
-
-# third party
-import docker
-from docker.models.images import Image
 
 # relative
+from .builder_docker import DockerBuilder
+from .builder_k8s import KubernetesBuilder
+from .builder_types import BuilderBase
+from .builder_types import ImageBuildResult
+from .builder_types import ImagePushResult
 from .config import CustomWorkerConfig
 from .config import DockerWorkerConfig
 from .config import WorkerConfig
+
+__all__ = ["CustomWorkerBuilder"]
+
+IN_KUBERNETES = os.getenv("CONTAINER_HOST") == "k8s"
 
 
 class CustomWorkerBuilder:
@@ -29,12 +30,19 @@ class CustomWorkerBuilder:
 
     BUILD_MAX_WAIT = 30 * 60
 
+    @cached_property
+    def builder(self) -> BuilderBase:
+        if IN_KUBERNETES:
+            return KubernetesBuilder()
+        else:
+            return DockerBuilder()
+
     def build_image(
         self,
         config: WorkerConfig,
         tag: str = None,
         **kwargs: Any,
-    ) -> Tuple[Image, Iterable[str]]:
+    ) -> ImageBuildResult:
         """
         Builds a Docker image from the given configuration.
         Args:
@@ -49,7 +57,14 @@ class CustomWorkerBuilder:
         else:
             raise TypeError("Unknown worker config type")
 
-    def push_image(self, tag: str, **kwargs: Any) -> str:
+    def push_image(
+        self,
+        tag: str,
+        registry_url: str,
+        username: str,
+        password: str,
+        **kwargs: Any,
+    ) -> ImagePushResult:
         """
         Pushes a Docker image to the given repo.
         Args:
@@ -57,14 +72,26 @@ class CustomWorkerBuilder:
             tag (str): The tag to use for the image.
         """
 
-        return self._push_image(tag, **kwargs)
+        return self.builder.push_image(
+            tag,
+            username=username,
+            password=password,
+            registry_url=registry_url,
+        )
 
-    def _build_dockerfile(self, config: DockerWorkerConfig, tag: str, **kwargs):
-        # convert string to file-like object
-        file_obj = io.BytesIO(config.dockerfile.encode("utf-8"))
-        return self._build_image(fileobj=file_obj, tag=tag, **kwargs)
+    def _build_dockerfile(
+        self,
+        config: DockerWorkerConfig,
+        tag: str,
+        **kwargs,
+    ) -> ImageBuildResult:
+        return self.builder.build_image(dockerfile=config.dockerfile, tag=tag, **kwargs)
 
-    def _build_template(self, config: CustomWorkerConfig, **kwargs: Any):
+    def _build_template(
+        self,
+        config: CustomWorkerConfig,
+        **kwargs: Any,
+    ) -> ImageBuildResult:
         # Builds a Docker pre-made CPU/GPU image template using a CustomWorkerConfig
         # remove once GPU is supported
         if config.build.gpu:
@@ -72,7 +99,7 @@ class CustomWorkerBuilder:
 
         type = self.TYPE_GPU if config.build.gpu else self.TYPE_CPU
 
-        contextdir, dockerfile = self._find_template_dir(type)
+        dockerfile_path = self._find_template_path(type)
 
         imgtag = config.get_signature()[:8]
 
@@ -83,40 +110,13 @@ class CustomWorkerBuilder:
             "CUSTOM_CMD": config.build.merged_custom_cmds(),
         }
 
-        return self._build_image(
+        return self.builder.build_image(
             tag=f"{self.CUSTOM_IMAGE_PREFIX}-{type}:{imgtag}",
-            path=str(contextdir),
-            dockerfile=dockerfile,
+            dockerfile_path=dockerfile_path,
             buildargs=build_args,
         )
 
-    def _build_image(self, tag: str, **build_opts) -> Tuple[Image, Iterable]:
-        # Core docker build call. Func signature should match with Docker SDK's BuildApiMixin
-        with contextlib.closing(docker.from_env()) as client:
-            image_result = client.images.build(
-                tag=tag,
-                timeout=self.BUILD_MAX_WAIT,
-                **build_opts,
-            )
-            return image_result
-
-    def _push_image(
-        self,
-        tag: str,
-        registry_url: Optional[str] = None,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-    ) -> str:
-        with contextlib.closing(docker.from_env()) as client:
-            if registry_url and username and password:
-                client.login(
-                    username=username, password=password, registry=registry_url
-                )
-
-            result = client.images.push(repository=tag)
-            return result
-
-    def _find_template_dir(self, type: str) -> Tuple[Path, str]:
+    def _find_template_path(self, type: str) -> Path:
         """
         Find the Worker Dockerfile and it's context path
         - PROD will be in `$APPDIR/grid/`
@@ -135,6 +135,6 @@ class CustomWorkerBuilder:
         ]
         for path in lookup_paths:
             if path.exists():
-                return path.parent, filename
+                return path
 
         raise FileNotFoundError(f"Cannot find the {filename}")
