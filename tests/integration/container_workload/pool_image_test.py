@@ -233,13 +233,13 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     @sy.syft_function(
         input_policy=sy.ExactMatch(x=data_pointer),
         output_policy=sy.SingleExecutionExactOutput(),
-        worker_pool_id=launched_pool.id,
+        worker_pool_name=launched_pool.name,
     )
     def custom_worker_func(x):
         return {"y": x + 1}
 
     custom_worker_func.code = dedent(custom_worker_func.code)
-    assert custom_worker_func.worker_pool_id == launched_pool.id
+    assert custom_worker_func.worker_pool_name == launched_pool.name
     # Request code execution
     code_request = ds_client.code.request_code_execution(custom_worker_func)
     assert isinstance(code_request, Request)
