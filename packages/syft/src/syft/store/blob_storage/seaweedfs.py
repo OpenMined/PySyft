@@ -37,7 +37,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...util.constants import DEFAULT_TIMEOUT
 
 WRITE_EXPIRATION_TIME = 900  # seconds
-DEFAULT_CHUNK_SIZE = 1024**3  # 1 GB
+DEFAULT_CHUNK_SIZE = (1024**3) // 10 # 100 MB
 
 
 def _byte_chunks(bytes: BytesIO, size: int) -> Generator[bytes, None, None]:
