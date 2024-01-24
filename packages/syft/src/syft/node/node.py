@@ -437,7 +437,10 @@ class Node(AbstractNode):
                     role=ServiceRole.ADMIN,
                 )
                 producer: QueueProducer = self.queue_manager.create_producer(
-                    queue_name=queue_name, queue_stash=self.queue_stash, context=context
+                    queue_name=queue_name,
+                    queue_stash=self.queue_stash,
+                    context=context,
+                    worker_stash=self.worker_stash,
                 )
                 producer.run()
                 address = producer.address
@@ -1146,7 +1149,7 @@ class Node(AbstractNode):
         credentials,
         parent_job_id=None,
         has_execute_permissions: bool = False,
-        worker_pool_id: Optional[UID] = None,
+        worker_pool_name: Optional[str] = None,
     ):
         job_id = UID()
         task_uid = UID()
@@ -1161,14 +1164,14 @@ class Node(AbstractNode):
             # If result is Ok, then user code object exists
             if result.is_ok() and result.ok() is not None:
                 user_code = result.ok()
-                worker_pool_id = user_code.worker_pool_id
+                worker_pool_name = user_code.worker_pool_name
 
         # If worker pool id is not set, then use default worker pool
         # Else, get the worker pool for given uid
-        if worker_pool_id is None:
+        if worker_pool_name is None:
             worker_pool = self.get_default_worker_pool()
         else:
-            result = self.pool_stash.get_by_uid(credentials, worker_pool_id)
+            result = self.pool_stash.get_by_name(credentials, worker_pool_name)
             if result.is_err():
                 return SyftError(message=f"{result.err()}")
             worker_pool = result.ok()

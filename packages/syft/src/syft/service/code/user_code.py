@@ -344,7 +344,7 @@ class UserCode(SyftObject):
     uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
     nested_requests: Dict[str, str] = {}
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
-    worker_pool_id: Optional[UID]
+    worker_pool_name: Optional[str]
 
     __attr_searchable__ = [
         "user_verify_key",
@@ -357,7 +357,7 @@ class UserCode(SyftObject):
         "service_func_name",
         "input_owners",
         "code_status",
-        "worker_pool_id",
+        "worker_pool_name",
     ]
 
     def __setattr__(self, key: str, value: Any) -> None:
@@ -653,14 +653,14 @@ class UserCode(SyftObject):
 @migrate(UserCode, UserCodeV2)
 def downgrade_usercode_v3_to_v2():
     return [
-        drop("worker_pool_id"),
+        drop("worker_pool_name"),
     ]
 
 
 @migrate(UserCodeV2, UserCode)
 def upgrade_usercode_v2_to_v3():
     return [
-        make_set_default("worker_pool_id", None),
+        make_set_default("worker_pool_name", None),
     ]
 
 
@@ -700,7 +700,7 @@ class SubmitUserCode(SyftObject):
     local_function: Optional[Callable]
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
-    worker_pool_id: Optional[UID] = None
+    worker_pool_name: Optional[str] = None
 
     __repr_attrs__ = ["func_name", "code"]
 
@@ -811,7 +811,7 @@ class SubmitUserCode(SyftObject):
         new_syft_func = deepcopy(self)
 
         # This will only be used without worker_pools
-        new_syft_func.worker_pool_id = None
+        new_syft_func.worker_pool_name = None
 
         # We will look for subjos, and if we find any will submit them
         # to the ephemeral_node
@@ -842,14 +842,14 @@ class SubmitUserCode(SyftObject):
 @migrate(SubmitUserCode, SubmitUserCodeV2)
 def downgrade_submitusercode_v3_to_v2():
     return [
-        drop("worker_pool_id"),
+        drop("worker_pool_name"),
     ]
 
 
 @migrate(SubmitUserCodeV2, SubmitUserCode)
 def upgrade_submitusercode_v2_to_v3():
     return [
-        make_set_default("worker_pool_id", None),
+        make_set_default("worker_pool_name", None),
     ]
 
 
@@ -873,12 +873,16 @@ def debox_asset(arg: Any) -> Any:
 
 
 def syft_function_single_use(
-    *args: Any, share_results_with_owners=False, **kwargs: Any
+    *args: Any,
+    share_results_with_owners: bool = False,
+    worker_pool_name: Optional[str] = None,
+    **kwargs: Any,
 ):
     return syft_function(
         input_policy=ExactMatch(*args, **kwargs),
         output_policy=SingleExecutionExactOutput(),
         share_results_with_owners=share_results_with_owners,
+        worker_pool_name=worker_pool_name,
     )
 
 
@@ -886,7 +890,7 @@ def syft_function(
     input_policy: Optional[Union[InputPolicy, UID]] = None,
     output_policy: Optional[Union[OutputPolicy, UID]] = None,
     share_results_with_owners=False,
-    worker_pool_id: Optional[Union[UID, str]] = None,
+    worker_pool_name: Optional[str] = None,
 ) -> SubmitUserCode:
     if input_policy is None:
         input_policy = EmpyInputPolicy()
@@ -904,9 +908,6 @@ def syft_function(
     else:
         output_policy_type = type(output_policy)
 
-    if isinstance(worker_pool_id, str):
-        worker_pool_id = UID(worker_pool_id)
-
     def decorator(f):
         res = SubmitUserCode(
             code=inspect.getsource(f),
@@ -918,7 +919,7 @@ def syft_function(
             output_policy_init_kwargs=output_policy.init_kwargs,
             local_function=f,
             input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
-            worker_pool_id=worker_pool_id,
+            worker_pool_name=worker_pool_name,
         )
 
         if share_results_with_owners:
@@ -1133,9 +1134,9 @@ def add_submit_time(context: TransformContext) -> TransformContext:
 
 
 def set_default_pool_if_empty(context: TransformContext) -> TransformContext:
-    if context.output.get("worker_pool_id", None) is None:
+    if context.output.get("worker_pool_name", None) is None:
         default_pool = context.node.get_default_worker_pool()
-        context.output["worker_pool_id"] = default_pool.id
+        context.output["worker_pool_name"] = default_pool.name
     return context
 
 
@@ -1229,7 +1230,7 @@ class SecureContext:
                     credentials=context.credentials,
                     parent_job_id=context.job_id,
                     has_execute_permissions=True,
-                    worker_pool_id=func.worker_pool_id,
+                    worker_pool_name=func.worker_pool_name,
                 )
                 # # set api in global scope to enable using .get(), .wait())
                 # set_api_registry()
