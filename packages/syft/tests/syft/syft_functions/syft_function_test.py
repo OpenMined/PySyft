@@ -17,11 +17,13 @@ from syft.service.response import SyftSuccess
 
 @pytest.fixture
 def node():
+    random.seed()
+    name = f"nested_job_test_domain-{random.randint(0,1000)}"
     _node = sy.orchestra.launch(
-        name="nested_job_test_domain",
+        name=name,
         dev_mode=True,
         reset=True,
-        n_consumers=3,
+        n_consumers=4,
         create_producer=True,
         queue_port=random.randint(13000, 13300),
     )
@@ -42,7 +44,7 @@ def test_nested_jobs(node):
     ## Dataset
 
     x = ActionObject.from_obj([1, 2])
-    x_ptr = x.send(ds_client)
+    x_ptr = x.send(client)
 
     ## aggregate function
     @sy.syft_function()
@@ -89,7 +91,6 @@ def test_nested_jobs(node):
     job = ds_client.code.process_all(x=x_ptr, blocking=False)
 
     job.wait()
-    # stdlib
 
     assert len(job.subjobs) == 3
     # stdlib
