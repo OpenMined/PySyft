@@ -5,8 +5,6 @@ from __future__ import annotations
 from typing import Optional
 from typing import Type
 
-# third party
-
 # relative
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
