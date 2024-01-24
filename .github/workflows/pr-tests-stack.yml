@@ -442,6 +442,7 @@ jobs:
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
           AZURE_BLOB_STORAGE_KEY: ${{ secrets.AZURE_BLOB_STORAGE_KEY }}
         run: |
+          echo "AZURE_BLOB_STORAGE_KEY=${{ secrets.AZURE_BLOB_STORAGE_KEY }}" >> $GITHUB_ENV
           tox -e stack.test.notebook
 
       #Run log collector python script
