@@ -66,6 +66,8 @@ class WorkerStash(BaseUIDStoreStash):
                 f"Failed to retrieve Worker with id: {worker_uid}. Error: {res.err()}"
             )
         worker: SyftWorker = res.ok()
+        if worker is None:
+            return Err(f"Worker with id: {worker_uid} not found")
         worker.consumer_state = consumer_state
         update_res = self.update(credentials=credentials, obj=worker)
         if update_res.is_err():
