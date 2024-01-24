@@ -1,3 +1,6 @@
+# stdlib
+from textwrap import dedent
+
 # third party
 from faker import Faker
 import numpy as np
@@ -7,6 +10,7 @@ import pytest
 import syft as sy
 from syft.client.domain_client import DomainClient
 from syft.custom_worker.config import DockerWorkerConfig
+from syft.service.request.request import Request
 from syft.service.response import SyftSuccess
 from syft.service.worker.worker_image import SyftWorkerImage
 from syft.service.worker.worker_pool import SyftWorker
@@ -133,10 +137,12 @@ def test_pool_launch(domain_1_port) -> None:
     assert not isinstance(status_res, sy.SyftError)
     assert isinstance(status_res, tuple)
 
-    # Delete the worker pool and its workers
+    # Delete the pool's workers
     for worker in worker_pool.workers:
         res = domain_client.api.services.worker.delete(uid=worker.id, force=True)
         assert isinstance(res, sy.SyftSuccess)
+
+    # TODO: delete the launched pool
 
     # Clean the build images
     delete_result = domain_client.api.services.worker_image.remove(uid=worker_image.id)
@@ -179,6 +185,7 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
         config=docker_config,
         reason="I want to do some more cool data science with PySyft and Recordlinkage",
     )
+    assert isinstance(request, Request)
     assert len(request.changes) == 2
     assert request.changes[0].config == docker_config
     assert request.changes[1].num_workers == 1
@@ -186,9 +193,11 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
 
     # the domain client approve the request, so the image should be built
     # and the worker pool should be launched
-    req_result = domain_client.requests[-1].approve()
+    for r in domain_client.requests:
+        if r.id == request.id:
+            req_result = r.approve()
+            break
     assert isinstance(req_result, SyftSuccess)
-    assert domain_client.requests[-1].status.value == 2
 
     launched_pool = ds_client.api.services.worker_pool.get_by_name(worker_pool_name)
     assert isinstance(launched_pool, WorkerPool)
@@ -221,17 +230,29 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     def custom_worker_func(x):
         return {"y": x + 1}
 
+    custom_worker_func.code = dedent(custom_worker_func.code)
     assert custom_worker_func.worker_pool_id == launched_pool.id
 
     # Request code execution
-    request = ds_client.code.request_code_execution(custom_worker_func)
-    assert isinstance(request, SyftSuccess)
-    domain_client.requests[-1].approve(approve_nested=True)
+    code_request = ds_client.code.request_code_execution(custom_worker_func)
+    assert isinstance(code_request, Request)
+    assert code_request.status.value == 0  # pending
+    for r in domain_client.requests:
+        if r.id == code_request.id:
+            req_result = r.approve(approve_nested=True)
+            break
+    assert isinstance(req_result, SyftSuccess)
+
     job = domain_client.code.custom_worker_func(x=data_pointer, blocking=False)
+    assert job.status.value == "created"
     job.wait()
     assert job.status.value == "completed"
     job = domain_client.jobs[-1]
     assert job.job_worker_id is not None
+
+    # the below will fail for now, seems like because job.job_worker_id is the
+    # id of a Worker instance in zmq.queue.py, instead of SyftWorker
+    assert job.job_worker_id == worker.id
 
     # Once the work is done by the worker, its state is returned to idle again.
     consuming_worker_is_now_idle = False
@@ -245,6 +266,13 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     result = job.wait().get()
     result_matches = result["y"] == data + 1
     assert result_matches.all()
+
+    # Delete the workers of the launched pools
+    for worker in launched_pool.workers:
+        res = domain_client.api.services.worker.delete(uid=worker.id, force=True)
+        assert isinstance(res, sy.SyftSuccess)
+
+    # TODO: delete the launched pool
 
     # Clean the build images
     delete_result = domain_client.api.services.worker_image.remove(uid=built_image.id)
