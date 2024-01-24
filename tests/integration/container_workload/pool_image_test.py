@@ -16,11 +16,6 @@ from syft.service.worker.worker_image import SyftWorkerImage
 from syft.service.worker.worker_pool import SyftWorker
 from syft.service.worker.worker_pool import WorkerPool
 
-DOCKER_CONFIG_OPENDP = """
-    FROM openmined/grid-backend:0.8.4-beta.12
-    RUN pip install opendp
-"""
-
 
 @pytest.mark.container_workload
 def test_image_build(domain_1_port) -> None:
@@ -29,7 +24,11 @@ def test_image_build(domain_1_port) -> None:
     )
 
     # Submit Docker Worker Config
-    docker_config = DockerWorkerConfig(dockerfile=DOCKER_CONFIG_OPENDP)
+    docker_config_rl = """
+        FROM openmined/grid-backend:0.8.4-beta.12
+        RUN pip install recordlinkage
+    """
+    docker_config = DockerWorkerConfig(dockerfile=docker_config_rl)
 
     # Submit Worker Image
     submit_result = domain_client.api.services.worker_image.submit_dockerfile(
@@ -44,7 +43,7 @@ def test_image_build(domain_1_port) -> None:
 
     # Build docker image
     tag_version = sy.UID().short()
-    docker_tag = f"openmined/custom-worker-opendp:{tag_version}"
+    docker_tag = f"openmined/custom-worker-rl:{tag_version}"
     docker_build_result = domain_client.api.services.worker_image.build(
         image_uid=workerimage.id,
         tag=docker_tag,
@@ -78,7 +77,11 @@ def test_pool_launch(domain_1_port) -> None:
     assert len(domain_client.worker_pools.get_all()) == 1
 
     # Submit Docker Worker Config
-    docker_config = DockerWorkerConfig(dockerfile=DOCKER_CONFIG_OPENDP)
+    docker_config_opendp = """
+        FROM openmined/grid-backend:0.8.4-beta.12
+        RUN pip install opendp
+    """
+    docker_config = DockerWorkerConfig(dockerfile=docker_config_opendp)
 
     # Submit Worker Image
     submit_result = domain_client.api.services.worker_image.submit_dockerfile(
@@ -173,9 +176,13 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     ds_client = sy.login(email=ds_email, password="secret_pw", port=domain_1_port)
 
     # the DS makes a request to create an image and a pool based on the image
-    docker_config = DockerWorkerConfig(dockerfile=DOCKER_CONFIG_OPENDP)
+    docker_config_np = """
+        FROM openmined/grid-backend:0.8.4-beta.12
+        RUN pip install numpy
+    """
+    docker_config = DockerWorkerConfig(dockerfile=docker_config_np)
     tag_version = sy.UID().short()
-    docker_tag = f"openmined/custom-worker-opendp:{tag_version}"
+    docker_tag = f"openmined/custom-worker-np:{tag_version}"
     pool_version = sy.UID().short()
     worker_pool_name = f"custom_worker_pool_ver{pool_version}"
     request = ds_client.api.services.worker_pool.create_image_and_pool_request(
@@ -209,6 +216,7 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     assert worker.status.value == "Pending"
     assert worker.healthcheck.value == "✅"
     assert worker.consumer_state.value == "Idle"
+    assert isinstance(worker.logs, str)
     assert worker.job_id is None
 
     built_image = ds_client.api.services.worker_image.get_by_config(docker_config)
