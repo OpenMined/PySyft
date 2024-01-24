@@ -143,6 +143,7 @@ class DomainClient(SyftClient):
         self,
         file_list: Union[BlobFile, list[BlobFile], str, list[str], Path, list[Path]],
         allow_recursive=False,
+        show_files=False
     ) -> Union[SyftSuccess, SyftError]:
         if not file_list:
             return SyftError(message="No files to upload")
@@ -178,8 +179,15 @@ class DomainClient(SyftClient):
             return SyftError(message="No files to upload were found")
 
         print(
-            f"Uploading {len(expanded_file_list)} {'file' if len(expanded_file_list) == 1 else 'files'}"
+            f"Uploading {len(expanded_file_list)} {'file' if len(expanded_file_list) == 1 else 'files'}:"
         )
+
+        if show_files:
+            for file in expanded_file_list:
+                if isinstance(file, BlobFile):
+                    print(file.path or file.file_name)
+                else:
+                    print(file.absolute())
 
         try:
             action_objects = [
