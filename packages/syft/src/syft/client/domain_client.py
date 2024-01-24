@@ -209,6 +209,12 @@ class DomainClient(SyftClient):
             return self.api.services.worker_pool
         return None
 
+    @property
+    def worker_images(self) -> Optional[APIModule]:
+        if self.api.has_service("worker_image"):
+            return self.api.services.worker_image
+        return None
+
     def get_project(
         self,
         name: str = None,
