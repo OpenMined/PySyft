@@ -88,8 +88,6 @@ class UserCodeService(AbstractService):
 
         # This request is from a different node, ensure worker pool is not set
         code: UserCode = deepcopy(request.code)
-        code.worker_pool_id = None
-
         return self.submit(context=context, code=code)
 
     @service_method(
@@ -159,7 +157,8 @@ class UserCodeService(AbstractService):
 
         worker_pool_service = context.node.get_service("SyftWorkerPoolService")
         pool_result = worker_pool_service._get_worker_pool(
-            context, user_code.worker_pool_id
+            context,
+            pool_name=user_code.worker_pool_name,
         )
 
         if isinstance(pool_result, SyftError):
