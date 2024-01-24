@@ -1,15 +1,16 @@
-# stdlib
-
 # third party
 from faker import Faker
+import numpy as np
 import pytest
 
 # syft absolute
 import syft as sy
-from syft import ActionObject
 from syft.client.domain_client import DomainClient
 from syft.custom_worker.config import DockerWorkerConfig
 from syft.service.response import SyftSuccess
+from syft.service.worker.worker_image import SyftWorkerImage
+from syft.service.worker.worker_pool import SyftWorker
+from syft.service.worker.worker_pool import WorkerPool
 
 DOCKER_CONFIG_OPENDP = """
     FROM openmined/grid-backend:0.8.4-beta.12
@@ -188,15 +189,32 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     req_result = domain_client.requests[-1].approve()
     assert isinstance(req_result, SyftSuccess)
     assert domain_client.requests[-1].status.value == 2
+
     launched_pool = ds_client.api.services.worker_pool.get_by_name(worker_pool_name)
+    assert isinstance(launched_pool, WorkerPool)
+    assert launched_pool.name == worker_pool_name
+    assert len(launched_pool.worker_list) == 1
+
+    worker: SyftWorker = launched_pool.workers[0]
+    assert launched_pool.name in worker.name
+    assert worker.status.value == "Pending"
+    assert worker.healthcheck.value == "✅"
+    assert worker.consumer_state.value == "Idle"
+    assert worker.job_id is None
+
+    built_image = ds_client.api.services.worker_image.get_by_config(docker_config)
+    assert isinstance(built_image, SyftWorkerImage)
+    assert built_image.id == launched_pool.image.id
+    assert worker.image.id == built_image.id
 
     # Dataset
-    data = ActionObject.from_obj([1, 2])
-    data_ptr = data.send(ds_client)
+    data = np.array([1, 2, 3])
+    data_action_obj = sy.ActionObject.from_obj(data)
+    data_pointer = domain_client.api.services.action.set(data_action_obj)
 
     # Function
     @sy.syft_function(
-        input_policy=sy.ExactMatch(x=data_ptr),
+        input_policy=sy.ExactMatch(x=data_pointer),
         output_policy=sy.SingleExecutionExactOutput(),
         worker_pool_id=launched_pool.id,
     )
@@ -205,14 +223,16 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
 
     assert custom_worker_func.worker_pool_id == launched_pool.id
 
+    # Request code execution
     request = ds_client.code.request_code_execution(custom_worker_func)
     assert isinstance(request, SyftSuccess)
     domain_client.requests[-1].approve(approve_nested=True)
-    job = domain_client.code.custom_worker_func(x=data_ptr, blocking=False)
+    job = domain_client.code.custom_worker_func(x=data_pointer, blocking=False)
     job.wait()
     assert job.status.value == "completed"
     job = domain_client.jobs[-1]
     assert job.job_worker_id is not None
+
     # Once the work is done by the worker, its state is returned to idle again.
     consuming_worker_is_now_idle = False
     for worker in domain_client.worker_pools[worker_pool_name].workers:
@@ -220,7 +240,12 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
             consuming_worker_is_now_idle = worker.consumer_state.value.lower() == "idle"
 
     assert consuming_worker_is_now_idle is True
+
     # Validate the result received from the syft function
     result = job.wait().get()
     result_matches = result["y"] == data + 1
     assert result_matches.all()
+
+    # Clean the build images
+    delete_result = domain_client.api.services.worker_image.remove(uid=built_image.id)
+    assert isinstance(delete_result, sy.SyftSuccess)

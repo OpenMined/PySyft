@@ -265,7 +265,7 @@ class SyftWorkerImageService(AbstractService):
     @service_method(
         path="worker_image.get_by_config",
         name="get_by_config",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_by_config(
         self, context: AuthedServiceContext, docker_config: DockerWorkerConfig
