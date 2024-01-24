@@ -630,7 +630,7 @@ class Request(SyftObject):
 
         is_approved = change.approved
 
-        permission_request = self.approve()
+        permission_request = self.approve(approve_nested=True)
         if isinstance(permission_request, SyftError):
             return permission_request
 
@@ -694,7 +694,7 @@ class Request(SyftObject):
                 return result_request
             self = result_request
 
-            approved = self.approve(disable_warnings=True)
+            approved = self.approve(disable_warnings=True, approve_nested=True)
             if isinstance(approved, SyftError):
                 return approved
 
