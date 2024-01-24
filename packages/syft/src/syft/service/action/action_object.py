@@ -1092,10 +1092,13 @@ class ActionObject(SyftObject):
         else:
             return res.syft_action_data
 
-    def get(self) -> Any:
+    def get(self, block: bool = False) -> Any:
         """Get the object from a Syft Client"""
         # relative
         from ...client.api import APIRegistry
+
+        if block:
+            self.wait()
 
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
