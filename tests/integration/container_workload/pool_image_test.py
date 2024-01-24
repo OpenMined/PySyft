@@ -256,19 +256,7 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     assert job.status.value == "completed"
 
     job = domain_client.jobs[-1]
-    assert job.job_worker_id is not None
-
-    # the below will fail for now, seems like because job.job_worker_id is the
-    # id of a Worker instance in zmq.queue.py, instead of SyftWorker
-    # assert job.job_worker_id == worker.id
-
-    # Once the work is done by the worker, its state is returned to idle again.
-    # consuming_worker_is_now_idle = False
-    # for worker in domain_client.worker_pools[worker_pool_name].workers:
-    #     if worker.id == job.job_worker_id:
-    #         consuming_worker_is_now_idle = worker.consumer_state.value.lower() == "idle"
-
-    # assert consuming_worker_is_now_idle is True
+    assert job.job_worker_id == worker.id
 
     # Validate the result received from the syft function
     result = job.wait().get()
