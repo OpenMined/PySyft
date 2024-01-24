@@ -437,7 +437,10 @@ class Node(AbstractNode):
                     role=ServiceRole.ADMIN,
                 )
                 producer: QueueProducer = self.queue_manager.create_producer(
-                    queue_name=queue_name, queue_stash=self.queue_stash, context=context
+                    queue_name=queue_name,
+                    queue_stash=self.queue_stash,
+                    context=context,
+                    worker_stash=self.worker_stash,
                 )
                 producer.run()
                 address = producer.address
