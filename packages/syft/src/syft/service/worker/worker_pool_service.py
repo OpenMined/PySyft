@@ -437,14 +437,14 @@ class SyftWorkerPoolService(AbstractService):
         num_of_changes = len(request.changes)
         pool_name, num_workers, config, image_uid, tag = None, None, None, None, None
 
-        if len(num_of_changes) > 2:
+        if num_of_changes > 2:
             return SyftError(
-                message=f"Invalid request object. Only pool request changes allowed. {request.changes}"
+                message=f"Invalid pool request object. Only pool request changes allowed. {request.changes}"
             )
 
         for change in request.changes:
             if isinstance(change, CreateCustomWorkerPoolChange):
-                pool_name = change.name
+                pool_name = change.pool_name
                 num_workers = change.num_workers
                 image_uid = change.image_uid
             elif isinstance(change, CreateCustomImageChange):
