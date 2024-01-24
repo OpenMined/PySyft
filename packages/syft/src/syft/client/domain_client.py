@@ -40,6 +40,23 @@ if TYPE_CHECKING:
     from ..service.project.project import Project
 
 
+def _get_files_from_glob(glob_path: str) -> list:
+    files = Path().glob(glob_path)
+    return [f for f in files if f.is_file() and not f.name.startswith(".")]
+
+
+def _get_files_from_dir(dir: Path, recursive: bool) -> list:
+    files = dir.rglob("*") if recursive else dir.iterdir()
+    return [f for f in files if not f.name.startswith(".") and f.is_file()]
+
+
+def _contains_subdir(dir: Path) -> bool:
+    for item in dir.iterdir():
+        if item.is_dir():
+            return True
+    return False
+
+
 def add_default_uploader(
     user, obj: Union[CreateDataset, CreateAsset]
 ) -> Union[CreateDataset, CreateAsset]:
@@ -56,6 +73,7 @@ def add_default_uploader(
             email=user.email,
         )
         obj.contributors.add(uploader)
+
     obj.uploader = uploader
     return obj
 
@@ -120,23 +138,13 @@ class DomainClient(SyftClient):
                 return tuple(valid.err())
             return valid.err()
 
-    def _get_files_from_dir(self, dir: Path, recursive: bool) -> list:
-        files = dir.rglob("*") if recursive else dir.iterdir()
-        return [f for f in files if not f.name.startswith(".") and f.is_file()]
-
-    def _contains_subdir(self, dir: Path) -> bool:
-        for item in dir.iterdir():
-            if item.is_dir():
-                return True
-        return False
-
     def upload_files(
         self,
         file_list: Union[BlobFile, list[BlobFile], str, list[str], Path, list[Path]],
         allow_recursive=False,
     ) -> Union[SyftSuccess, SyftError]:
         if not file_list:
-            return SyftSuccess(message="No files to upload")
+            return SyftError(message="No files to upload")
 
         if not isinstance(file_list, list):
             file_list = [file_list]
@@ -150,23 +158,26 @@ class DomainClient(SyftClient):
 
             path = Path(file)
 
-            if path.is_dir():
-                if not allow_recursive and self._contains_subdir(path):
+            # stdlib
+            import re
+
+            if re.search(r"[\*\?\[]", str(path)):
+                expanded_file_list.extend(_get_files_from_glob(str(path)))
+            elif path.is_dir():
+                if not allow_recursive and _contains_subdir(path):
                     res = input(
                         f"Do you want to include all files recursively in {path.absolute()}? [y/n]: "
                     ).lower()
                     print(
-                        f'{"Recursively adding all files" if res == "y" else "Adding files"} in {path.absolute()}'
+                        f'{"Recursively uploading all files" if res == "y" else "Uploading files"} in {path.absolute()}'
                     )
                     allow_recursive = res == "y"
-                expanded_file_list.extend(
-                    self._get_files_from_dir(path, allow_recursive)
-                )
+                expanded_file_list.extend(_get_files_from_dir(path, allow_recursive))
             elif path.exists():
                 expanded_file_list.append(path)
 
         if not expanded_file_list:
-            return SyftSuccess(message="No files to upload")
+            return SyftError(message="No files to upload were found")
 
         print(
             f"Uploading {len(expanded_file_list)} {'file' if len(expanded_file_list) == 1 else 'files'}"
