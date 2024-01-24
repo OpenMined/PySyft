@@ -17,8 +17,10 @@ from syft.service.response import SyftSuccess
 
 @pytest.fixture
 def node():
+    random.seed()
+    name = f"nested_job_test_domain-{random.randint(0,1000)}"
     _node = sy.orchestra.launch(
-        name="nested_job_test_domain",
+        name=name,
         dev_mode=True,
         reset=True,
         n_consumers=4,
