@@ -700,7 +700,7 @@ class SubmitUserCode(SyftObject):
     local_function: Optional[Callable]
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
-    worker_pool_name: Optional[UID] = None
+    worker_pool_name: Optional[str] = None
 
     __repr_attrs__ = ["func_name", "code"]
 
