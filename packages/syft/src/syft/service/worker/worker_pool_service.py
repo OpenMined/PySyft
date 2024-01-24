@@ -474,8 +474,8 @@ class SyftWorkerPoolService(AbstractService):
     def _get_worker_pool(
         self,
         context: AuthedServiceContext,
-        pool_id: Optional[UID],
-        pool_name: Optional[str],
+        pool_id: Optional[UID] = None,
+        pool_name: Optional[str] = None,
     ) -> Union[WorkerPool, SyftError]:
         if pool_id:
             result = self.stash.get_by_uid(

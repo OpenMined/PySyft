@@ -873,12 +873,16 @@ def debox_asset(arg: Any) -> Any:
 
 
 def syft_function_single_use(
-    *args: Any, share_results_with_owners=False, **kwargs: Any
+    *args: Any,
+    share_results_with_owners: bool = False,
+    worker_pool_name: Optional[str] = None,
+    **kwargs: Any,
 ):
     return syft_function(
         input_policy=ExactMatch(*args, **kwargs),
         output_policy=SingleExecutionExactOutput(),
         share_results_with_owners=share_results_with_owners,
+        worker_pool_name=worker_pool_name,
     )
 
 
