@@ -1244,20 +1244,30 @@ class Node(AbstractNode):
         return job
 
     def _get_existing_user_code_jobs(
-        self, user_code_id: UID, credentials: SyftVerifyKey
+        self, context: AuthedServiceContext, user_code_id: UID
     ) -> Union[List[Job], SyftError]:
-        role = self.get_role_for_credentials(credentials=credentials)
-        context = AuthedServiceContext(node=self, credentials=credentials, role=role)
-
         job_service = self.get_service("jobservice")
         return job_service.get_by_user_code_id(
             context=context, user_code_id=user_code_id
         )
 
+    def _is_mock_api_call(
+        self, context: AuthedServiceContext, api_call: SyftAPICall
+    ) -> bool:
+        user_code_service = self.get_service("usercodeservice")
+        return user_code_service.is_mock_execution(api_call.kwargs, context)
+
     def add_api_call_to_queue(self, api_call, parent_job_id=None):
         unsigned_call = api_call
         if isinstance(api_call, SignedSyftAPICall):
             unsigned_call = api_call.message
+
+        credentials = api_call.credentials
+        context = AuthedServiceContext(
+            node=self,
+            credentials=credentials,
+            role=self.get_role_for_credentials(credentials=credentials),
+        )
 
         is_user_code = unsigned_call.path == "code.call"
 
@@ -1267,9 +1277,11 @@ class Node(AbstractNode):
         if is_user_code:
             action = Action.from_api_call(unsigned_call)
 
-            if self.node_side_type == NodeSideType.LOW_SIDE:
+            is_mock_call = self._is_mock_api_call(context, unsigned_call)
+            # Low side does not execute jobs, unless this is a mock execution
+            if not is_mock_call and self.node_side_type == NodeSideType.LOW_SIDE:
                 existing_jobs = self._get_existing_user_code_jobs(
-                    action.user_code_id, api_call.credentials
+                    context, action.user_code_id
                 )
                 if isinstance(existing_jobs, SyftError):
                     return existing_jobs
