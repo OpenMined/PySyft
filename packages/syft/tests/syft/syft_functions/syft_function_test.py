@@ -21,7 +21,7 @@ def node():
         name="nested_job_test_domain",
         dev_mode=True,
         reset=True,
-        n_consumers=3,
+        n_consumers=4,
         create_producer=True,
         queue_port=random.randint(13000, 13300),
     )
@@ -31,7 +31,7 @@ def node():
     _node.land()
 
 
-@pytest.mark.flaky(reruns=5, reruns_delay=1)
+# @pytest.mark.flaky(reruns=5, reruns_delay=1)
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_nested_jobs(node):
     client = node.login(email="info@openmined.org", password="changethis")
@@ -42,7 +42,7 @@ def test_nested_jobs(node):
     ## Dataset
 
     x = ActionObject.from_obj([1, 2])
-    x_ptr = x.send(ds_client)
+    x_ptr = x.send(client)
 
     ## aggregate function
     @sy.syft_function()
@@ -89,7 +89,6 @@ def test_nested_jobs(node):
     job = ds_client.code.process_all(x=x_ptr, blocking=False)
 
     job.wait()
-    # stdlib
 
     assert len(job.subjobs) == 3
     # stdlib
