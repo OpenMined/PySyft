@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from pathlib import Path
+import re
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
@@ -157,9 +158,6 @@ class DomainClient(SyftClient):
                 continue
 
             path = Path(file)
-
-            # stdlib
-            import re
 
             if re.search(r"[\*\?\[]", str(path)):
                 expanded_file_list.extend(_get_files_from_glob(str(path)))
