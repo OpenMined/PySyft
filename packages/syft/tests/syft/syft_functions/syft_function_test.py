@@ -76,14 +76,14 @@ def test_nested_jobs(node):
         return job.result
 
     process_all.code = dedent(process_all.code)
-    assert process_all.worker_pool_id is None
+    assert process_all.worker_pool_name is None
 
     # Approve & run
     res = ds_client.code.request_code_execution(process_all)
     print(res)
     assert not isinstance(res, SyftError)
 
-    assert ds_client.code[-1].worker_pool_id is not None
+    assert ds_client.code[-1].worker_pool_name is not None
     client.requests[-1].approve(approve_nested=True)
 
     job = ds_client.code.process_all(x=x_ptr, blocking=False)

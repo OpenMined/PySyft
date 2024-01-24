@@ -19,6 +19,7 @@ from ..context import AuthedServiceContext
 from ..request.request import Change
 from ..request.request import CreateCustomImageChange
 from ..request.request import CreateCustomWorkerPoolChange
+from ..request.request import Request
 from ..request.request import SubmitRequest
 from ..request.request_service import RequestService
 from ..response import SyftError
@@ -438,14 +439,71 @@ class SyftWorkerPoolService(AbstractService):
 
         return result.ok()
 
+    @service_method(
+        path="worker_pool.sync_pool_from_request",
+        name="sync_pool_from_request",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def sync_pool_from_request(
+        self,
+        context: AuthedServiceContext,
+        request: Request,
+    ) -> Union[SyftSuccess, SyftError]:
+        """Re-submit request from a different node"""
+
+        num_of_changes = len(request.changes)
+        pool_name, num_workers, config, image_uid, tag = None, None, None, None, None
+
+        if num_of_changes > 2:
+            return SyftError(
+                message=f"Invalid pool request object. Only pool request changes allowed. {request.changes}"
+            )
+
+        for change in request.changes:
+            if isinstance(change, CreateCustomWorkerPoolChange):
+                pool_name = change.pool_name
+                num_workers = change.num_workers
+                image_uid = change.image_uid
+            elif isinstance(change, CreateCustomImageChange):
+                config = change.config
+                tag = change.tag
+
+        if config is None and image_uid is not None:
+            return self.create_pool_request(
+                context=context,
+                pool_name=pool_name,
+                num_workers=num_workers,
+                image_uid=image_uid,
+            )
+        elif config is not None:
+            return self.create_image_and_pool_request(
+                context=context,
+                pool_name=pool_name,
+                num_workers=num_workers,
+                config=config,
+                tag=tag,
+            )
+        else:
+            return SyftError(
+                message=f"Invalid request object. Invalid image uid or config in the request changes. {request.changes}"
+            )
+
     def _get_worker_pool(
         self,
         context: AuthedServiceContext,
-        worker_pool_id: UID,
+        pool_id: Optional[UID] = None,
+        pool_name: Optional[str] = None,
     ) -> Union[WorkerPool, SyftError]:
-        result = self.stash.get_by_uid(
-            credentials=context.credentials, uid=worker_pool_id
-        )
+        if pool_id:
+            result = self.stash.get_by_uid(
+                credentials=context.credentials,
+                uid=pool_id,
+            )
+        else:
+            result = self.stash.get_by_name(
+                credentials=context.credentials,
+                pool_name=pool_name,
+            )
 
         if result.is_err():
             return SyftError(message=f"{result.err()}")
@@ -453,7 +511,9 @@ class SyftWorkerPoolService(AbstractService):
         worker_pool = result.ok()
 
         return (
-            SyftError(message=f"worker pool with id {worker_pool_id} does not exist")
+            SyftError(
+                message=f"worker pool : {pool_id if pool_id else pool_name} does not exist"
+            )
             if worker_pool is None
             else worker_pool
         )
