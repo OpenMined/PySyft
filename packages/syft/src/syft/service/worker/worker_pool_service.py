@@ -424,11 +424,19 @@ class SyftWorkerPoolService(AbstractService):
     def _get_worker_pool(
         self,
         context: AuthedServiceContext,
-        worker_pool_id: UID,
+        pool_id: Optional[UID],
+        pool_name: Optional[str],
     ) -> Union[WorkerPool, SyftError]:
-        result = self.stash.get_by_uid(
-            credentials=context.credentials, uid=worker_pool_id
-        )
+        if pool_id:
+            result = self.stash.get_by_uid(
+                credentials=context.credentials,
+                uid=pool_id,
+            )
+        else:
+            result = self.stash.get_by_name(
+                credentials=context.credentials,
+                pool_name=pool_name,
+            )
 
         if result.is_err():
             return SyftError(message=f"{result.err()}")
@@ -436,7 +444,9 @@ class SyftWorkerPoolService(AbstractService):
         worker_pool = result.ok()
 
         return (
-            SyftError(message=f"worker pool with id {worker_pool_id} does not exist")
+            SyftError(
+                message=f"worker pool : {pool_id if pool_id else pool_name} does not exist"
+            )
             if worker_pool is None
             else worker_pool
         )
