@@ -29,8 +29,22 @@ def test_func_2():
     return 1
 
 
-def test_user_code(worker, guest_client: User) -> None:
-    # test_func()
+def test_user_code(worker) -> None:
+    root_domain_client = worker.root_client
+    root_domain_client.register(
+        name="data-scientist",
+        email="test_user@openmined.org",
+        password="0000",
+        password_verify="0000",
+    )
+    guest_client = root_domain_client.login(
+        email="test_user@openmined.org",
+        password="0000",
+    )
+
+    users = root_domain_client.users.get_all()
+    users[-1].allow_mock_execution()
+
     guest_client.api.services.code.request_code_execution(test_func)
 
     root_domain_client = worker.root_client

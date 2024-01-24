@@ -323,9 +323,6 @@ class UserCodeService(AbstractService):
             return True
         user_service = context.node.get_service("userservice")
         current_user = user_service.get_current_user(context=context)
-        if isinstance(current_user, SyftError):
-            # TODO with test guest_client we have no current user
-            return False
         return current_user.mock_execution_permission
 
     def get_mock_kwargs(
