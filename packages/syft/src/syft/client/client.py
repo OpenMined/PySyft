@@ -529,7 +529,13 @@ class SyftClient:
         return project
 
     def sync_code_from_request(self, request):
-        code = deepcopy(request.code)
+        code = request.code
+        if isinstance(code, SyftError):
+            return code
+        elif code is None:
+            return SyftError(message="no code inside request")
+
+        code = deepcopy(code)
 
         def get_nested_codes(code):
             result = []
