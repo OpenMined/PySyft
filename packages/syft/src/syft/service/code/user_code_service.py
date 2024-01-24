@@ -318,16 +318,17 @@ class UserCodeService(AbstractService):
         else:
             return True
 
-    def is_mock_execution_allowed(self, context: AuthedServiceContext) -> bool:
+    def is_execution_on_owned_args_allowed(self, context: AuthedServiceContext) -> bool:
         if context.role == ServiceRole.ADMIN:
             return True
         user_service = context.node.get_service("userservice")
         current_user = user_service.get_current_user(context=context)
         return current_user.mock_execution_permission
 
-    def get_mock_kwargs(
+    def keep_owned_kwargs(
         self, kwargs: Dict[str, Any], context: AuthedServiceContext
     ) -> Dict[str, Any]:
+        """Return only the kwargs that are owned by the user"""
         action_service = context.node.get_service("actionservice")
 
         mock_kwargs = {}
@@ -344,10 +345,10 @@ class UserCodeService(AbstractService):
                 mock_kwargs[k] = v
         return mock_kwargs
 
-    def is_mock_execution(
+    def is_execution_on_owned_args(
         self, kwargs: Dict[str, Any], context: AuthedServiceContext
     ) -> bool:
-        return len(self.get_mock_kwargs(kwargs, context)) == len(kwargs)
+        return len(self.keep_owned_kwargs(kwargs, context)) == len(kwargs)
 
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
@@ -376,8 +377,8 @@ class UserCodeService(AbstractService):
             code: UserCode = code_result.ok()
 
             # Set Permissions
-            if self.is_mock_execution(kwargs, context):
-                if self.is_mock_execution_allowed(context):
+            if self.is_execution_on_owned_args(kwargs, context):
+                if self.is_execution_on_owned_args_allowed(context):
                     context.has_execute_permissions = True
                 else:
                     return Err(
@@ -389,7 +390,7 @@ class UserCodeService(AbstractService):
             # Override permissions bypasses the cache, since we do not check in/out policies
             skip_fill_cache = override_execution_permission
             # We do not read from output policy cache if there are mock arguments
-            skip_read_cache = len(self.get_mock_kwargs(kwargs, context)) > 0
+            skip_read_cache = len(self.keep_owned_kwargs(kwargs, context)) > 0
 
             # Check output policy
             output_policy = code.output_policy

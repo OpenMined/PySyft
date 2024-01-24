@@ -1254,11 +1254,13 @@ class Node(AbstractNode):
             context=context, user_code_id=user_code_id
         )
 
-    def _is_mock_api_call(
+    def _is_usercode_call_on_owned_kwargs(
         self, context: AuthedServiceContext, api_call: SyftAPICall
     ) -> bool:
+        if api_call.path != "code.call":
+            return False
         user_code_service = self.get_service("usercodeservice")
-        return user_code_service.is_mock_execution(api_call.kwargs, context)
+        return user_code_service.is_execution_on_owned_args(api_call.kwargs, context)
 
     def add_api_call_to_queue(self, api_call, parent_job_id=None):
         unsigned_call = api_call
@@ -1280,9 +1282,14 @@ class Node(AbstractNode):
         if is_user_code:
             action = Action.from_api_call(unsigned_call)
 
-            is_mock_call = self._is_mock_api_call(context, unsigned_call)
+            is_usercode_call_on_owned_kwargs = self._is_usercode_call_on_owned_kwargs(
+                context, unsigned_call
+            )
             # Low side does not execute jobs, unless this is a mock execution
-            if not is_mock_call and self.node_side_type == NodeSideType.LOW_SIDE:
+            if (
+                not is_usercode_call_on_owned_kwargs
+                and self.node_side_type == NodeSideType.LOW_SIDE
+            ):
                 existing_jobs = self._get_existing_user_code_jobs(
                     context, action.user_code_id
                 )
