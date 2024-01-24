@@ -409,7 +409,7 @@ class Job(SyftObject):
     """
         return as_markdown_code(md)
 
-    def wait(self):
+    def wait(self, job_only=False):
         # stdlib
         from time import sleep
 
@@ -422,6 +422,9 @@ class Job(SyftObject):
         if self.resolved:
             return self.resolve
 
+        if not job_only:
+            self.result.wait()
+
         print_warning = True
         while True:
             self.fetch()
@@ -429,11 +432,11 @@ class Job(SyftObject):
                 result_obj = api.services.action.get(
                     self.result.id, resolve_nested=False
                 )
-                if isinstance(result_obj.syft_action_data, ActionDataLink):
+                if isinstance(result_obj.syft_action_data, ActionDataLink) and job_only:
                     print(
                         "You're trying to wait on a job that has a link as a result."
                         "This means that the job may be ready but the linked result may not."
-                        "Use job.wait().get(block=True) instead to wait for the linked result."
+                        "Use job.wait().get() instead to wait for the linked result."
                     )
                     print_warning = False
             sleep(2)
