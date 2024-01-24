@@ -530,14 +530,12 @@ class SyftClient:
 
     def sync_code_from_request(self, request):
         code = deepcopy(request.code)
-        code.worker_pool_name = None
 
         def get_nested_codes(code):
             result = []
             for __, (linked_code_obj, _) in code.nested_codes.items():
                 nested_code = linked_code_obj.resolve
                 nested_code = deepcopy(nested_code)
-                nested_code.worker_pool_name = None
                 result.append(nested_code)
                 result += get_nested_codes(nested_code)
             return result
