@@ -143,7 +143,7 @@ class DomainClient(SyftClient):
         self,
         file_list: Union[BlobFile, list[BlobFile], str, list[str], Path, list[Path]],
         allow_recursive=False,
-        show_files=False
+        show_files=False,
     ) -> Union[SyftSuccess, SyftError]:
         if not file_list:
             return SyftError(message="No files to upload")
