@@ -472,7 +472,7 @@ class ActionObject(SyftObject):
             f"Must init {cls} with {cls.syft_internal_type} not {type(v)}"
         )
 
-    def syft_point_to(self, node_uid: UID) -> "ActionObject":
+    def syft_point_to(self, node_uid: UID) -> ActionObject:
         """Set the syft_node_uid, used in the post hooks"""
         self.syft_node_uid = node_uid
 
@@ -691,7 +691,9 @@ class ActionObject(SyftObject):
     def syft_get_path(self) -> str:
         """Get the type path of the underlying object"""
         if isinstance(self, AnyActionObject) and self.syft_internal_type:
-            return f"{type(self.syft_action_data).__name__}"  # avoids AnyActionObject errors
+            return (
+                f"{type(self.syft_action_data).__name__}"
+            )  # avoids AnyActionObject errors
         return f"{type(self).__name__}"
 
     def syft_remote_method(

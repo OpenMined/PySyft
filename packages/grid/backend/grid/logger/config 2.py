@@ -56,7 +56,7 @@ class LogConfig(BaseSettings):
     LOGURU_AUTOINIT: Optional[bool] = False
 
 
-@lru_cache()
+@lru_cache
 def get_log_config() -> LogConfig:
     """Returns the configuration for the logging client.
 
