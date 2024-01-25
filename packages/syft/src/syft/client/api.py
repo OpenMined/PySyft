@@ -237,6 +237,21 @@ class RemoteFunction(SyftObject):
     def __ipython_inspector_signature_override__(self) -> Optional[Signature]:
         return self.signature
 
+    def prepare_args_and_kwargs(
+        self, args: List[Any], kwargs: Dict[str, Any]
+    ) -> Union[SyftError, Tuple[List[Any], Dict[str, Any]]]:
+        # Validate and migrate args and kwargs
+        res = validate_callable_args_and_kwargs(args, kwargs, self.signature)
+        if isinstance(res, SyftError):
+            return res
+        args, kwargs = res
+
+        args, kwargs = migrate_args_and_kwargs(
+            to_protocol=self.communication_protocol, args=args, kwargs=kwargs
+        )
+
+        return args, kwargs
+
     def __call__(self, *args, **kwargs):
         if "blocking" in self.signature.parameters:
             raise Exception(
@@ -248,17 +263,11 @@ class RemoteFunction(SyftObject):
             blocking = bool(kwargs["blocking"])
             del kwargs["blocking"]
 
-        # Migrate args and kwargs to communication protocol
-        args, kwargs = migrate_args_and_kwargs(
-            to_protocol=self.communication_protocol, args=args, kwargs=kwargs
-        )
-
-        res = validate_callable_args_and_kwargs(args, kwargs, self.signature)
-
+        res = self.prepare_args_and_kwargs(args, kwargs)
         if isinstance(res, SyftError):
             return res
-        _valid_args, _valid_kwargs = res
 
+        _valid_args, _valid_kwargs = res
         if self.pre_kwargs:
             _valid_kwargs.update(self.pre_kwargs)
 
@@ -289,6 +298,33 @@ class RemoteUserCodeFunction(RemoteFunction):
     __version__ = SYFT_OBJECT_VERSION_1
     __repr_attrs__ = RemoteFunction.__repr_attrs__ + ["user_code_id"]
 
+    api: SyftAPI
+
+    def prepare_args_and_kwargs(
+        self, args: List[Any], kwargs: Dict[str, Any]
+    ) -> Union[SyftError, Tuple[List[Any], Dict[str, Any]]]:
+        # relative
+        from ..service.action.action_object import convert_to_pointers
+
+        # Validate and migrate args and kwargs
+        res = validate_callable_args_and_kwargs(args, kwargs, self.signature)
+        if isinstance(res, SyftError):
+            return res
+        args, kwargs = res
+
+        args, kwargs = convert_to_pointers(
+            api=self.api,
+            node_uid=self.node_uid,
+            args=args,
+            kwargs=kwargs,
+        )
+
+        args, kwargs = migrate_args_and_kwargs(
+            to_protocol=self.communication_protocol, args=args, kwargs=kwargs
+        )
+
+        return args, kwargs
+
     @property
     def user_code_id(self) -> Optional[UID]:
         return self.pre_kwargs.get("uid", None)
@@ -308,6 +344,7 @@ class RemoteUserCodeFunction(RemoteFunction):
 
 
 def generate_remote_function(
+    api: SyftAPI,
     node_uid: UID,
     signature: Signature,
     path: str,
@@ -324,6 +361,7 @@ def generate_remote_function(
     # UserCodes are always code.call with a user_code_id
     if path == "code.call" and pre_kwargs is not None and "uid" in pre_kwargs:
         remote_function = RemoteUserCodeFunction(
+            api=api,
             node_uid=node_uid,
             signature=signature,
             path=path,
@@ -742,6 +780,7 @@ class SyftAPI(SyftObject):
                 signature = signature_remove_context(signature)
                 if isinstance(v, APIEndpoint):
                     endpoint_function = generate_remote_function(
+                        self,
                         self.node_uid,
                         signature,
                         v.service_path,
@@ -1007,3 +1046,7 @@ def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
             _valid_args.append(arg)
 
     return _valid_args, _valid_kwargs
+
+
+RemoteFunction.update_forward_refs()
+RemoteUserCodeFunction.update_forward_refs()

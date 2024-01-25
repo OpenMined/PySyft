@@ -68,7 +68,7 @@ class ActionService(AbstractService):
         if isinstance(blob_store_result, SyftError):
             return blob_store_result
 
-        np_pointer = self.set(context, np_obj)
+        np_pointer = self._set(context, np_obj)
         return np_pointer
 
     @service_method(
@@ -81,6 +81,14 @@ class ActionService(AbstractService):
         context: AuthedServiceContext,
         action_object: Union[ActionObject, TwinObject],
     ) -> Result[ActionObject, str]:
+        return self._set(context, action_object, has_result_read_permission=True)
+
+    def _set(
+        self,
+        context: AuthedServiceContext,
+        action_object: Union[ActionObject, TwinObject],
+        has_result_read_permission: bool = False,
+    ) -> Result[ActionObject, str]:
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
 
@@ -90,8 +98,10 @@ class ActionService(AbstractService):
             action_object.private_obj.syft_created_at = DateTime.now()
             action_object.mock_obj.syft_created_at = DateTime.now()
 
-        has_result_read_permission = context.extra_kwargs.get(
-            "has_result_read_permission", False
+        # If either context or argument is True, has_result_read_permission is True
+        has_result_read_permission = (
+            context.extra_kwargs.get("has_result_read_permission", False)
+            or has_result_read_permission
         )
 
         result = self.store.set(
@@ -404,7 +414,7 @@ class ActionService(AbstractService):
         # pass permission information to the action store as extra kwargs
         context.extra_kwargs = {"has_result_read_permission": True}
 
-        set_result = self.set(context, result_action_object)
+        set_result = self._set(context, result_action_object)
 
         if set_result.is_err():
             return set_result
@@ -664,7 +674,7 @@ class ActionService(AbstractService):
             "has_result_read_permission": has_result_read_permission
         }
 
-        set_result = self.set(context, result_action_object)
+        set_result = self._set(context, result_action_object)
         if set_result.is_err():
             return Err(
                 f"Failed executing action {action}, set result is an error: {set_result.err()}"
