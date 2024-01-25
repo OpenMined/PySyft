@@ -427,6 +427,9 @@ def deploy_to_container(
     if not enable_warnings:
         commands.append("--no-warnings")
 
+    if node_side_type.lower() == NodeSideType.LOW_SIDE.value.lower():
+        commands.append("--low-side")
+
     if in_memory_workers:
         commands.append("--in-mem-workers")
 
