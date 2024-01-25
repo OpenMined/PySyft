@@ -474,7 +474,7 @@ class Node(AbstractNode):
                     f"Running as consumer with uid={syft_worker_uid} service={service_name}"
                 )
 
-                if not syft_worker_uid:
+                if syft_worker_uid:
                     self.add_consumer_for_service(
                         service_name=service_name,
                         syft_worker_id=UID(syft_worker_uid),
