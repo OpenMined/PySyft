@@ -3284,6 +3284,8 @@ def create_land_docker_cmd(verb: GrammarVerb, prune_volumes: bool = False) -> st
     cmd += ' --project-name "' + snake_name + '"'
     cmd += " down --remove-orphans"
 
+    cmd += f" && docker rm $(docker ps --filter name='{snake_name}' -q) --force"
+
     if prune_volumes:
         cmd += (
             f' && docker volume rm $(docker volume ls --filter name="{snake_name}" -q)'
