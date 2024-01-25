@@ -529,24 +529,36 @@ class SyftClient:
         return project
 
     def sync_code_from_request(self, request):
-        code = request.code
+        # relative
+        from ..service.code.user_code import UserCode
+        from ..store.linked_obj import LinkedObject
+
+        code: Union[UserCode, SyftError] = request.code
         if isinstance(code, SyftError):
             return code
-        elif code is None:
-            return SyftError(message="no code inside request")
 
         code = deepcopy(code)
+        code.node_uid = self.id
+        code.user_verify_key = self.verify_key
 
-        def get_nested_codes(code):
+        def get_nested_codes(code: UserCode):
             result = []
             for __, (linked_code_obj, _) in code.nested_codes.items():
                 nested_code = linked_code_obj.resolve
                 nested_code = deepcopy(nested_code)
+                nested_code.node_uid = code.node_uid
+                nested_code.user_verify_key = code.user_verify_key
                 result.append(nested_code)
                 result += get_nested_codes(nested_code)
+
+            updated_code_links = {
+                nested_code.service_func_name: (LinkedObject.from_obj(nested_code), {})
+                for nested_code in result
+            }
+            code.nested_codes = updated_code_links
             return result
 
-        nested_codes = get_nested_codes(request.code)
+        nested_codes = get_nested_codes(code)
 
         for c in nested_codes + [code]:
             res = self.code.submit(c)
