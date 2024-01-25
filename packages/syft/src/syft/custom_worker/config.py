@@ -9,7 +9,6 @@ from typing import Union
 
 # third party
 from packaging import version
-from pydantic import Field
 from pydantic import validator
 from typing_extensions import Self
 import yaml
@@ -17,7 +16,6 @@ import yaml
 # relative
 from ..serde.serializable import serializable
 from ..types.base import SyftBaseModel
-from ..types.uid import UID
 
 PYTHON_DEFAULT_VER = "3.11"
 PYTHON_MIN_VER = version.parse("3.10")
@@ -79,7 +77,7 @@ class CustomBuildConfig(SyftBaseModel):
 
 
 class WorkerConfig(SyftBaseModel):
-    id: UID = Field(default_factory=UID)
+    pass
 
 
 @serializable()
