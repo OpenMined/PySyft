@@ -1,7 +1,7 @@
 # stdlib
 from hashlib import sha256
+import os
 from pathlib import Path
-from time import time
 from typing import Dict
 from typing import Optional
 
@@ -21,6 +21,7 @@ __all__ = ["KubernetesBuilder"]
 JOB_COMPLETION_TTL = 60
 
 BUILD_OUTPUT_PVC = "kaniko-builds"
+KUBERNETES_NAMESPACE = os.getenv("K8S_NAMESPACE", "syft")
 
 
 class InvalidImageDigest(Exception):
@@ -29,7 +30,7 @@ class InvalidImageDigest(Exception):
 
 class KubernetesBuilder(BuilderBase):
     def __init__(self):
-        self.client = kr8s.api(namespace="syft")
+        self.client = kr8s.api(namespace=KUBERNETES_NAMESPACE)
 
     def build_image(
         self,
@@ -39,8 +40,7 @@ class KubernetesBuilder(BuilderBase):
         buildargs: Optional[dict] = None,
         **kwargs,
     ) -> ImageBuildResult:
-        # A parent dockerfile to track all resources created for the job
-        job_id = str(int(time()))
+        job_id = self._new_job_id(tag)
 
         if dockerfile:
             pass
@@ -91,7 +91,9 @@ class KubernetesBuilder(BuilderBase):
         **kwargs,
     ) -> ImagePushResult:
         # Create and start the job
+        job_id = self._new_job_id(tag)
         job = self._create_push_job(
+            job_id=job_id,
             tag=tag,
             username=username,
             password=password,
@@ -100,12 +102,15 @@ class KubernetesBuilder(BuilderBase):
         job.wait(["condition=Complete", "condition=Failed"])
         return ImagePushResult(logs=self._get_logs(job))
 
+    def _new_job_id(self, tag: str) -> str:
+        return self._get_tag_hash(tag)[:16]
+
     def _get_tag_hash(self, tag: str) -> str:
         return sha256(tag.encode()).hexdigest()
 
     def _get_image_digest(self, job: Job) -> Optional[str]:
         selector = {"job-name": job.metadata.name}
-        pods = kr8s.get("pods", namespace="syft", label_selector=selector)
+        pods = self.client.get("pods", label_selector=selector)
         for pod in pods:
             for container_status in pod.status.containerStatuses:
                 if container_status.state.terminated.exitCode != 0:
@@ -115,7 +120,7 @@ class KubernetesBuilder(BuilderBase):
 
     def _get_logs(self, job: Job) -> str:
         selector = {"job-name": job.metadata.name}
-        pods = kr8s.get("pods", namespace="syft", label_selector=selector)
+        pods = self.client.get("pods", label_selector=selector)
         logs = []
         for pod in pods:
             logs.append(f"----------Logs for pod={pod.metadata.name}----------")
@@ -155,6 +160,11 @@ class KubernetesBuilder(BuilderBase):
             {
                 "metadata": {
                     "name": f"build-{job_id}",
+                    "labels": {
+                        "app.kubernetes.io/name": KUBERNETES_NAMESPACE,
+                        "app.kubernetes.io/component": "builder",
+                        "app.kubernetes.io/managed-by": "kr8s",
+                    },
                 },
                 "spec": {
                     "backoffLimit": 2,
@@ -217,6 +227,7 @@ class KubernetesBuilder(BuilderBase):
 
     def _create_push_job(
         self,
+        job_id: str,
         tag: str,
         username: str = "username",
         password: str = "password",
@@ -229,7 +240,12 @@ class KubernetesBuilder(BuilderBase):
             {
                 "metadata": {
                     # there should be only one push at a time, so keep this name unique to a push
-                    "name": f"push-{tag_hash[:16]}",
+                    "name": f"push-{job_id}",
+                    "labels": {
+                        "app.kubernetes.io/name": KUBERNETES_NAMESPACE,
+                        "app.kubernetes.io/component": "builder",
+                        "app.kubernetes.io/managed-by": "kr8s",
+                    },
                 },
                 "spec": {
                     "backoffLimit": 0,

@@ -33,10 +33,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        - name: K8S_NODE_IP
+        - name: K8S_NAMESPACE
           valueFrom:
             fieldRef:
-              fieldPath: status.hostIP
+              fieldPath: metadata.namespace
         - name: MONGO_PORT
           value: "{{ .Values.mongo.port }}"
         - name: MONGO_HOST
