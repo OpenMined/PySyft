@@ -3289,6 +3289,8 @@ def create_land_docker_cmd(verb: GrammarVerb, prune_volumes: bool = False) -> st
             f' && docker volume rm $(docker volume ls --filter name="{snake_name}" -q)'
         )
 
+    cmd += f" && docker rm $(docker ps --filter name={snake_name} -q) --force"
+
     cmd = "cd " + path + env_var + cmd
     return cmd
 

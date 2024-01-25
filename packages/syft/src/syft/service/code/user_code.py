@@ -1218,7 +1218,7 @@ class SecureContext:
             kw2id = {}
             for k, v in kwargs.items():
                 value = ActionObject.from_obj(v)
-                ptr = action_service.set(context, value)
+                ptr = action_service._set(context, value)
                 ptr = ptr.ok()
                 kw2id[k] = ptr.id
             try:
