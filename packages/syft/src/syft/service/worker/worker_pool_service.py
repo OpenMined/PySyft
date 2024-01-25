@@ -471,6 +471,58 @@ class SyftWorkerPoolService(AbstractService):
                 message=f"Invalid request object. Invalid image uid or config in the request changes. {request.changes}"
             )
 
+    @service_method(
+        path="worker_pool.delete",
+        name="delete",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def delete(
+        self,
+        context: AuthedServiceContext,
+        pool_id: Optional[UID] = None,
+        pool_name: Optional[str] = None,
+        force: bool = False,
+    ) -> Union[SyftSuccess, SyftError]:
+        """Delete a worker pool specified by either the unique pool id or pool name.
+
+        Args:
+            context (AuthedServiceContext): the credentials needed to perform the action
+            pool_id (Optional[UID], optional): Unique UID of the pool. Defaults to None.
+            pool_name (Optional[str], optional): Unique name of the pool. Defaults to None.
+
+        Returns:
+            Union[SyftSuccess, SyftError]: Returns SyftSuccess if the delete was carried
+                out successfully. Otherwise returns the SyftError with the message
+                telling the reason why deleting the pool failed.
+        """
+        # Extract pool using either using pool id or pool name
+        if pool_id:
+            result = self.stash.get_by_uid(credentials=context.credentials, uid=pool_id)
+        elif pool_name:
+            result = self.stash.get_by_name(
+                credentials=context.credentials,
+                pool_name=pool_name,
+            )
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+
+        worker_pool: WorkerPool = result.ok()
+        worker_service: WorkerService = context.node.get_service("WorkerService")
+
+        # Forcefully delete the workers in this pool
+        if force:
+            for worker in worker_pool.workers:
+                worker_service.delete(uid=worker.id, force=True)
+
+        # TODO: what to do with the Jobs that are running on the workers?
+
+        # Delete the pool
+        result = self.stash.delete_by_uid(uid=worker_pool.id)
+        if result.err():
+            return SyftError(message=str(result.err()))
+
+        return result.ok()
+
     def _get_worker_pool(
         self,
         context: AuthedServiceContext,
