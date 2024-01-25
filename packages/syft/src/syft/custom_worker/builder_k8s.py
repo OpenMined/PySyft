@@ -20,7 +20,7 @@ __all__ = ["KubernetesBuilder"]
 
 JOB_COMPLETION_TTL = 60
 
-BUILD_OUTPUT_PVC = "kaniko-builds"
+BUILD_OUTPUT_PVC = "worker-builds"
 KUBERNETES_NAMESPACE = os.getenv("K8S_NAMESPACE", "syft")
 
 

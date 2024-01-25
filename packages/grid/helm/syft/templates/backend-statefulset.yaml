@@ -134,7 +134,7 @@ spec:
         {{- if .Values.configuration.devmode }}
         # mount for debugging and inspection
         - mountPath: /root/data/images/
-          name: kaniko-builds
+          name: worker-builds
           readOnly: true
         {{- end }}
       dnsConfig: null
@@ -153,9 +153,9 @@ spec:
       topologySpreadConstraints: null
       {{- if .Values.configuration.devmode }}
       volumes:
-      - name: kaniko-builds
+      - name: worker-builds
         persistentVolumeClaim:
-          claimName: kaniko-builds
+          claimName: worker-builds
       {{- end }}
   volumeClaimTemplates:
   - metadata:
