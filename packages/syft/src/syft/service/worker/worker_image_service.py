@@ -10,7 +10,9 @@ import docker
 import pydantic
 
 # relative
+from ...custom_worker.config import CustomWorkerConfig
 from ...custom_worker.config import DockerWorkerConfig
+from ...custom_worker.config import WorkerConfig
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.datetime import DateTime
@@ -49,8 +51,23 @@ class SyftWorkerImageService(AbstractService):
     def submit_dockerfile(
         self, context: AuthedServiceContext, docker_config: DockerWorkerConfig
     ) -> Union[SyftSuccess, SyftError]:
+        return self._submit_config(context=context, config=docker_config)
+
+    @service_method(
+        path="worker_image.submit_custom_config",
+        name="submit_custom_config",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def submit_custom_config(
+        self, context: AuthedServiceContext, config: CustomWorkerConfig
+    ) -> Union[SyftSuccess, SyftError]:
+        return self._submit_config(context=context, config=config)
+
+    def _submit_config(
+        self, context: AuthedServiceContext, config: WorkerConfig
+    ) -> Union[SyftSuccess, SyftError]:
         worker_image = SyftWorkerImage(
-            config=docker_config,
+            config=config,
             created_by=context.credentials,
         )
         res = self.stash.set(context.credentials, worker_image)
