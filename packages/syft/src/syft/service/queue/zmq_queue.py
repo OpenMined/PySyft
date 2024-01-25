@@ -1,5 +1,4 @@
 # stdlib
-# stdlib
 from binascii import hexlify
 from collections import defaultdict
 import itertools
