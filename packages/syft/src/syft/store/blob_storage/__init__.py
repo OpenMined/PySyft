@@ -98,14 +98,6 @@ class BlobRetrieval(SyftObject):
     syft_blob_storage_entry_id: Optional[UID] = None
     file_size: Optional[int]
 
-    # def read(self) -> Union[SyftObject, SyftError]:
-    #     # we need both methods bcs of inheritrance
-    #     return self._read()
-
-    # def _read(self):
-    #     with open(self.file_name, "rb") as f:
-    #         return f.read()
-
 
 @migrate(BlobRetrieval, BlobRetrievalV1)
 def downgrade_blobretrieval_v2_to_v1():
