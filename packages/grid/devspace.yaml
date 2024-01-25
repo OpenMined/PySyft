@@ -73,6 +73,7 @@ deployments:
           settings:
             nodeName: ${NODE_NAME}
             nodeType: "domain"
+            inMemoryWorkers: true
         # configuration:
         #   devmode: True
 

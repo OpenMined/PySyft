@@ -28,7 +28,7 @@ seaweedfs:
 queue:
   port: 5556
 
-kanikoBuilds:
+workerBuilds:
   maxStorage: "10Gi"
 
 syft:
@@ -45,6 +45,7 @@ node:
     nodeSideType: "high"
     defaultRootEmail: "info@openmined.org"
     logLevel: "info"
+    inMemoryWorkers: false
 
 ingress:
   ingressClass: ""

@@ -76,7 +76,7 @@ spec:
         - name: HTTPS_PORT
           value: "443"
         - name: CONTAINER_HOST
-          value: k8s
+          value: "k8s"
         - name: TRACE
           value: "false"
         - name: JAEGER_HOST
@@ -113,10 +113,8 @@ spec:
           value: "true"
         - name: N_CONSUMERS
           value: "0"
-        - name: CONSUMER_SERVICE_NAME
-          value: ""
         - name: INMEMORY_WORKERS
-          value: "false"
+          value: "{{ .Values.node.settings.inMemoryWorkers }}"
         - name: LOG_LEVEL
           value: {{ .Values.node.settings.logLevel }}
         envFrom: null
