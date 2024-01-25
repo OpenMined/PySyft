@@ -229,8 +229,8 @@ class KubernetesBuilder(BuilderBase):
         self,
         job_id: str,
         tag: str,
-        username: str = "username",
-        password: str = "password",
+        username: str,
+        password: str,
         registry_url: Optional[str] = None,
     ) -> Job:
         tag_hash = self._get_tag_hash(tag)
