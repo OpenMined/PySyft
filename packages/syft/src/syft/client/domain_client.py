@@ -190,13 +190,15 @@ class DomainClient(SyftClient):
                     print(file.absolute())
 
         try:
-            action_objects = [
-                file
-                if isinstance(file, BlobFile)
-                else ActionObject.from_path(file).send(self).syft_action_data
-                for file in tqdm(expanded_file_list)
-            ]
-            return ActionObject.from_obj(action_objects).send(self)
+            result = []
+            for file in tqdm(expanded_file_list):
+                if not isinstance(file, BlobFile):
+                    file = BlobFile(path=file, file_name=file.name)
+                if not file.uploaded:
+                    file.upload_to_blobstorage(self)
+                result.append(file)
+
+            return ActionObject.from_obj(result).send(self)
         except Exception as err:
             logger.debug("upload_files: Error creating action_object: {}", err)
             return SyftError(message=f"Failed to upload files: {err}")

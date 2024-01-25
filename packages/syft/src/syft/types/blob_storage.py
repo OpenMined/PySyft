@@ -27,6 +27,7 @@ from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
 from ..service.action.action_object import BASE_PASSTHROUGH_ATTRS
 from ..service.action.action_types import action_types
+from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.service import from_api_or_context
 from ..types.grid_url import GridURL
@@ -76,6 +77,7 @@ class BlobFile(SyftObject):
     syft_blob_storage_entry_id: Optional[UID] = None
     file_size: Optional[int] = None
     path: Optional[Path]
+    uploaded = False
 
     __repr_attrs__ = ["id", "file_name"]
 
@@ -85,7 +87,9 @@ class BlobFile(SyftObject):
             "blob_storage.read", self.syft_node_location, self.syft_client_verify_key
         )
         blob_retrieval_object = read_method(self.syft_blob_storage_entry_id)
-        return blob_retrieval_object._read_data(stream=stream, chunk_size=chunk_size)
+        return blob_retrieval_object._read_data(
+            stream=stream, chunk_size=chunk_size, _deserialize=False
+        )
 
     @classmethod
     def upload_from_path(self, path, client):
@@ -93,6 +97,29 @@ class BlobFile(SyftObject):
         import syft as sy
 
         return sy.ActionObject.from_path(path=path).send(client).syft_action_data
+
+    def _upload_to_blobstorage_from_api(self, api):
+        assert self.path
+        storage_entry = CreateBlobStorageEntry.from_path(self.path)
+
+        blob_deposit_object = api.services.blob_storage.allocate(storage_entry)
+
+        if isinstance(blob_deposit_object, SyftError):
+            return blob_deposit_object
+
+        with open(self.path, "rb") as f:
+            result = blob_deposit_object.write(f)
+
+        if isinstance(result, SyftError):
+            return result
+
+        self.syft_blob_storage_entry_id = blob_deposit_object.blob_storage_entry_id
+        self.uploaded = True
+
+    def upload_to_blobstorage(self, client):
+        self.syft_node_location = client.id
+        self.syft_client_verify_key = client.verify_key
+        return self._upload_to_blobstorage_from_api(client.api)
 
     def _iter_lines(self, chunk_size=DEFAULT_CHUNK_SIZE):
         """Synchronous version of the async iter_lines. This implementation

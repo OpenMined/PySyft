@@ -691,37 +691,34 @@ class ActionObject(SyftObject):
         from ...types.blob_storage import CreateBlobStorageEntry
 
         if not isinstance(data, ActionDataEmpty):
-            if isinstance(data, BlobFile) and data.path:
-                storage_entry = CreateBlobStorageEntry.from_path(data.path)
+            if isinstance(data, BlobFile) and not data.uploaded:
+                api = APIRegistry.api_for(
+                    self.syft_node_location, self.syft_client_verify_key
+                )
+                data.upload_to_blobstorage_from_api(api)
             else:
                 storage_entry = CreateBlobStorageEntry.from_obj(data)
+                allocate_method = from_api_or_context(
+                    func_or_path="blob_storage.allocate",
+                    syft_node_location=self.syft_node_location,
+                    syft_client_verify_key=self.syft_client_verify_key,
+                )
+                if allocate_method is not None:
+                    blob_deposit_object = allocate_method(storage_entry)
 
-            allocate_method = from_api_or_context(
-                func_or_path="blob_storage.allocate",
-                syft_node_location=self.syft_node_location,
-                syft_client_verify_key=self.syft_client_verify_key,
-            )
-            if allocate_method is not None:
-                blob_deposit_object = allocate_method(storage_entry)
+                    if isinstance(blob_deposit_object, SyftError):
+                        return blob_deposit_object
 
-                if isinstance(blob_deposit_object, SyftError):
-                    return blob_deposit_object
-
-                if isinstance(data, BlobFile):
-                    with open(data.path, "rb") as f:
-                        result = blob_deposit_object.write(f)
-                else:
                     result = blob_deposit_object.write(
                         BytesIO(serialize(data, to_bytes=True))
                     )
-
-                if isinstance(result, SyftError):
-                    return result
-                self.syft_blob_storage_entry_id = (
-                    blob_deposit_object.blob_storage_entry_id
-                )
-            else:
-                print("cannot save to blob storage")
+                    if isinstance(result, SyftError):
+                        return result
+                    self.syft_blob_storage_entry_id = (
+                        blob_deposit_object.blob_storage_entry_id
+                    )
+                else:
+                    print("cannot save to blob storage")
 
             self.syft_action_data_type = type(data)
 
