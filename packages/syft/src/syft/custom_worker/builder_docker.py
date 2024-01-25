@@ -42,7 +42,9 @@ class DockerBuilder(BuilderBase):
                 **kwargs,
             )
             return ImageBuildResult(
-                image_hash=image_result.attrs.get("RepoDigests"),
+                # An image that is built locally will not have a RepoDigests until pushed to a v2 registry
+                # https://stackoverflow.com/a/39812035
+                image_hash=image_result.id,
                 logs=self._parse_output(logs),
             )
 
