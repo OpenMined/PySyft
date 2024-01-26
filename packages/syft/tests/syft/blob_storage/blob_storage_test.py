@@ -1,5 +1,6 @@
 # stdlib
 import io
+import random
 
 # third party
 import pytest
@@ -22,7 +23,7 @@ def authed_context(worker):
     return AuthedServiceContext(node=worker, credentials=worker.signing_key.verify_key)
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def blob_storage(worker):
     return worker.get_service("BlobStorageService")
 
@@ -33,7 +34,13 @@ def test_blob_storage_allocate(authed_context, blob_storage):
     assert isinstance(blob_deposit, BlobDeposit)
 
 
-def test_blob_storage_write(authed_context, blob_storage):
+def test_blob_storage_write():
+    name = "".join(str(random.randint(0, 9)) for i in range(8))
+    worker = sy.Worker.named(name=name)
+    blob_storage = worker.get_service("BlobStorageService")
+    authed_context = AuthedServiceContext(
+        node=worker, credentials=worker.signing_key.verify_key
+    )
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
     file_data = io.BytesIO(data)
@@ -42,7 +49,13 @@ def test_blob_storage_write(authed_context, blob_storage):
     assert isinstance(written_data, SyftSuccess)
 
 
-def test_blob_storage_write_syft_object(authed_context, blob_storage):
+def test_blob_storage_write_syft_object():
+    name = "".join(str(random.randint(0, 9)) for i in range(8))
+    worker = sy.Worker.named(name=name)
+    blob_storage = worker.get_service("BlobStorageService")
+    authed_context = AuthedServiceContext(
+        node=worker, credentials=worker.signing_key.verify_key
+    )
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
     user = UserCreate(email="info@openmined.org")
@@ -52,7 +65,13 @@ def test_blob_storage_write_syft_object(authed_context, blob_storage):
     assert isinstance(written_data, SyftSuccess)
 
 
-def test_blob_storage_read(authed_context, blob_storage):
+def test_blob_storage_read():
+    name = "".join(str(random.randint(0, 9)) for i in range(8))
+    worker = sy.Worker.named(name=name)
+    blob_storage = worker.get_service("BlobStorageService")
+    authed_context = AuthedServiceContext(
+        node=worker, credentials=worker.signing_key.verify_key
+    )
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
     file_data = io.BytesIO(data)
@@ -66,10 +85,10 @@ def test_blob_storage_read(authed_context, blob_storage):
     assert syft_retrieved_data.read() == raw_data
 
 
-# def test_blob_storage_delete(authed_context, blob_storage):
-#     blob_data = CreateBlobStorageEntry.from_obj(data)
-#     blob_deposit = blob_storage.allocate(authed_context, blob_data)
-#     blob_storage.delete(authed_context, blob_deposit.blob_storage_entry_id)
+def test_blob_storage_delete(authed_context, blob_storage):
+    blob_data = CreateBlobStorageEntry.from_obj(data)
+    blob_deposit = blob_storage.allocate(authed_context, blob_data)
+    blob_storage.delete(authed_context, blob_deposit.blob_storage_entry_id)
 
-#     with pytest.raises(FileNotFoundError):
-#         blob_storage.read(authed_context, blob_deposit.blob_storage_entry_id)
+    with pytest.raises(FileNotFoundError):
+        blob_storage.read(authed_context, blob_deposit.blob_storage_entry_id)
