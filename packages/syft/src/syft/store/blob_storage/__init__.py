@@ -131,10 +131,19 @@ class SyftObjectRetrieval(BlobRetrieval):
     path: Path
 
     def _read_data(self, stream=False, _deserialize=True, **kwargs):
-        with open(self.path, "rb") as fp:
-            res = fp.read()
-            if _deserialize:
-                res = deserialize(res, from_bytes=True)
+        # development setup, we can access the same filesystem
+        if self.path.is_file():
+            with open(self.path, "rb") as fp:
+                res = fp.read()
+                if _deserialize:
+                    res = deserialize(res, from_bytes=True)
+        # single container setup, we have to use the data in the object
+        else:
+            if not _deserialize:
+                res = self.syft_object
+            else:
+                res = deserialize(self.syft_object, from_bytes=True)
+
         # TODO: implement proper streaming from local files
         if stream:
             return [res]
