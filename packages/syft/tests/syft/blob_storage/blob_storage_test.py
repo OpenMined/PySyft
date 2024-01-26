@@ -27,24 +27,24 @@ def blob_storage(worker):
     return worker.get_service("BlobStorageService")
 
 
-@pytest.fixture
-def blob_deposit(blob_storage, authed_context):
+def test_blob_storage_allocate(authed_context, blob_storage):
     blob_data = CreateBlobStorageEntry.from_obj(data)
-    return blob_storage.allocate(authed_context, blob_data)
-
-
-def test_blob_storage_allocate(blob_deposit):
+    blob_deposit = blob_storage.allocate(authed_context, blob_data)
     assert isinstance(blob_deposit, BlobDeposit)
 
 
-def test_blob_storage_write(blob_deposit):
+def test_blob_storage_write(authed_context, blob_storage):
+    blob_data = CreateBlobStorageEntry.from_obj(data)
+    blob_deposit = blob_storage.allocate(authed_context, blob_data)
     file_data = io.BytesIO(data)
     written_data = blob_deposit.write(file_data)
 
     assert isinstance(written_data, SyftSuccess)
 
 
-def test_blob_storage_write_syft_object(blob_deposit):
+def test_blob_storage_write_syft_object(authed_context, blob_storage):
+    blob_data = CreateBlobStorageEntry.from_obj(data)
+    blob_deposit = blob_storage.allocate(authed_context, blob_data)
     user = UserCreate(email="info@openmined.org")
     file_data = io.BytesIO(sy.serialize(user, to_bytes=True))
     written_data = blob_deposit.write(file_data)
@@ -52,7 +52,9 @@ def test_blob_storage_write_syft_object(blob_deposit):
     assert isinstance(written_data, SyftSuccess)
 
 
-def test_blob_storage_read(blob_storage, blob_deposit, authed_context):
+def test_blob_storage_read(authed_context, blob_storage):
+    blob_data = CreateBlobStorageEntry.from_obj(data)
+    blob_deposit = blob_storage.allocate(authed_context, blob_data)
     file_data = io.BytesIO(data)
     blob_deposit.write(file_data)
 
@@ -64,7 +66,7 @@ def test_blob_storage_read(blob_storage, blob_deposit, authed_context):
     assert syft_retrieved_data.read() == raw_data
 
 
-def test_blob_storage_delete(blob_storage, authed_context):
+def test_blob_storage_delete(authed_context, blob_storage):
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
     blob_storage.delete(authed_context, blob_deposit.blob_storage_entry_id)
