@@ -50,7 +50,7 @@ from .queue_stash import ActionQueueItem
 from .queue_stash import Status
 
 # Producer/Consumer heartbeat interval (in seconds)
-HEARTBEAT_INTERVAL_SEC = 5
+HEARTBEAT_INTERVAL_SEC = 2
 
 # Thread join timeout (in seconds)
 THREAD_TIMEOUT_SEC = 5
@@ -245,7 +245,16 @@ class ZMQProducer(QueueProducer):
                 key: self.unwrap_nested_actionobjects(obj) for key, obj in data.items()
             }
         if isinstance(data, ActionObject):
-            return data.get()
+            res = self.action_service.get(self.auth_context, data.id)
+            res = res.ok() if res.is_ok() else res.err()
+            if not isinstance(res, ActionObject):
+                return SyftError(message=f"{res}")
+            else:
+                nested_res = res.syft_action_data
+                if isinstance(nested_res, ActionObject):
+                    nested_res.syft_node_location = res.syft_node_location
+                    nested_res.syft_client_verify_key = res.syft_client_verify_key
+                return nested_res
         return data
 
     def preprocess_action_arg(self, arg):
@@ -377,16 +386,21 @@ class ZMQProducer(QueueProducer):
             )
             return
 
-        res = self.worker_stash.update_consumer_state(
-            credentials=self.worker_stash.partition.root_verify_key,
-            worker_uid=syft_worker_id,
-            consumer_state=consumer_state,
-        )
-        if res.is_err():
+        try:
+            res = self.worker_stash.update_consumer_state(
+                credentials=self.worker_stash.partition.root_verify_key,
+                worker_uid=syft_worker_id,
+                consumer_state=consumer_state,
+            )
+            if res.is_err():
+                logger.error(
+                    "Failed to update consumer state for worker id={} error={}",
+                    syft_worker_id,
+                    res.err(),
+                )
+        except Exception as e:
             logger.error(
-                "Failed to update consumer state for worker id={} error={}",
-                syft_worker_id,
-                res.err(),
+                f"Failed to update consumer state for worker id: {syft_worker_id}. Error: {e}"
             )
 
     def worker_waiting(self, worker: Worker):
@@ -467,8 +481,8 @@ class ZMQProducer(QueueProducer):
                 else:
                     logger.error("Invalid message header: {}", header)
 
-            self.purge_workers()
             self.send_heartbeats()
+            self.purge_workers()
 
     def require_worker(self, address):
         """Finds the worker (creates if necessary)."""
@@ -491,6 +505,9 @@ class ZMQProducer(QueueProducer):
             syft_worker_id = msg.pop(0).decode()
             if worker_ready:
                 # Not first command in session or Reserved service name
+                # If worker was already present, then we disconnect it first
+                # and wait for it to re-register itself to the producer. This ensures that
+                # we always have a healthy worker in place that can talk to the producer.
                 self.delete_worker(worker, True)
             else:
                 # Attach worker to service and mark as idle

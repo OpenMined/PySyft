@@ -586,6 +586,7 @@ class Node(AbstractNode):
             )
         else:
             queue_config = None
+
         return cls(
             name=name,
             id=uid,

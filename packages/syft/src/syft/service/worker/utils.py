@@ -232,7 +232,7 @@ def run_workers_in_threads(
             )
         except Exception as e:
             print(
-                f"Failed to start consumer for Pool Name: {pool_name}, Worker Name: {worker_name}"
+                f"Failed to start consumer for Pool Name: {pool_name}, Worker Name: {worker_name}. Error: {e}"
             )
             worker.status = WorkerStatus.STOPPED
             error = str(e)
