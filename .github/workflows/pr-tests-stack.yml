@@ -435,6 +435,7 @@ jobs:
 
       - name: Run Notebook integration tests
         if: steps.changes.outputs.stack == 'true'
+        shell: bash
         timeout-minutes: 60
         env:
           ORCHESTRA_DEPLOYMENT_TYPE: "container_stack"
@@ -442,7 +443,7 @@ jobs:
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
           AZURE_BLOB_STORAGE_KEY: ${{ secrets.AZURE_BLOB_STORAGE_KEY }}
         run: |
-          echo "AZURE_BLOB_STORAGE_KEY=${{ secrets.AZURE_BLOB_STORAGE_KEY }}" >> $GITHUB_ENV
+          export AZURE_BLOB_STORAGE_KEY="Testing"
           tox -e stack.test.notebook
 
       #Run log collector python script
