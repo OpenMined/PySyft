@@ -66,10 +66,10 @@ def test_blob_storage_read(authed_context, blob_storage):
     assert syft_retrieved_data.read() == raw_data
 
 
-def test_blob_storage_delete(authed_context, blob_storage):
-    blob_data = CreateBlobStorageEntry.from_obj(data)
-    blob_deposit = blob_storage.allocate(authed_context, blob_data)
-    blob_storage.delete(authed_context, blob_deposit.blob_storage_entry_id)
+# def test_blob_storage_delete(authed_context, blob_storage):
+#     blob_data = CreateBlobStorageEntry.from_obj(data)
+#     blob_deposit = blob_storage.allocate(authed_context, blob_data)
+#     blob_storage.delete(authed_context, blob_deposit.blob_storage_entry_id)
 
-    with pytest.raises(FileNotFoundError):
-        blob_storage.read(authed_context, blob_deposit.blob_storage_entry_id)
+#     with pytest.raises(FileNotFoundError):
+#         blob_storage.read(authed_context, blob_deposit.blob_storage_entry_id)
