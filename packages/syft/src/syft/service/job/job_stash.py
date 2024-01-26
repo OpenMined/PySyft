@@ -35,10 +35,13 @@ from ...types.syft_object import short_uid
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
 from ...util.markdown import as_markdown_code
 from ...util.telemetry import instrument
 from ..action.action_data_empty import ActionDataLink
 from ..action.action_object import Action
+from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftError
 from ..response import SyftNotReady
@@ -110,14 +113,30 @@ class Job(SyftObject):
     job_pid: Optional[int] = None
     job_worker_id: Optional[UID] = None
     updated_at: Optional[DateTime] = None
+    user_code_id: Optional[UID] = None
 
-    __attr_searchable__ = ["parent_job_id", "job_worker_id", "status"]
+    __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
 
     @pydantic.root_validator()
     def check_time(cls, values: dict) -> dict:
         if values.get("creation_time", None) is None:
             values["creation_time"] = str(datetime.now())
+        return values
+
+    @pydantic.root_validator()
+    def check_user_code_id(cls, values: dict) -> dict:
+        action = values.get("action")
+        user_code_id = values.get("user_code_id")
+
+        if action is not None:
+            if user_code_id is None:
+                values["user_code_id"] = action.user_code_id
+            elif action.user_code_id != user_code_id:
+                raise pydantic.ValidationError(
+                    "user_code_id does not match the action's user_code_id", cls
+                )
+
         return values
 
     @property
@@ -206,6 +225,21 @@ class Job(SyftObject):
                     return f"{self.current_iter}/{n_iters_str}"
         else:
             return ""
+
+    def info(
+        self,
+        public_metadata: bool = True,
+        result: bool = False,
+    ) -> "JobInfo":
+        return JobInfo.from_job(self, public_metadata, result)
+
+    def apply_info(self, info: "JobInfo") -> None:
+        if info.includes_metadata:
+            for attr in info.__public_metadata_attrs__:
+                setattr(self, attr, getattr(info, attr))
+
+        if info.includes_result:
+            self.result = info.result
 
     def restart(self, kill=False) -> None:
         if kill:
@@ -375,7 +409,7 @@ class Job(SyftObject):
     """
         return as_markdown_code(md)
 
-    def wait(self):
+    def wait(self, job_only=False):
         # stdlib
         from time import sleep
 
@@ -388,6 +422,9 @@ class Job(SyftObject):
         if self.resolved:
             return self.resolve
 
+        if not job_only:
+            self.result.wait()
+
         print_warning = True
         while True:
             self.fetch()
@@ -395,11 +432,11 @@ class Job(SyftObject):
                 result_obj = api.services.action.get(
                     self.result.id, resolve_nested=False
                 )
-                if isinstance(result_obj.syft_action_data, ActionDataLink):
+                if isinstance(result_obj.syft_action_data, ActionDataLink) and job_only:
                     print(
                         "You're trying to wait on a job that has a link as a result."
                         "This means that the job may be ready but the linked result may not."
-                        "Use job.result.wait() instead to wait for the linked result."
+                        "Use job.wait().get() instead to wait for the linked result."
                     )
                     print_warning = False
             sleep(2)
@@ -417,15 +454,100 @@ class Job(SyftObject):
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
 
+@serializable()
+class JobInfo(SyftObject):
+    __canonical_name__ = "JobInfo"
+    __version__ = SYFT_OBJECT_VERSION_1
+    __repr_attrs__ = [
+        "resolved",
+        "status",
+        "n_iters",
+        "current_iter",
+        "creation_time",
+    ]
+    __public_metadata_attrs__ = [
+        "resolved",
+        "status",
+        "n_iters",
+        "current_iter",
+        "creation_time",
+    ]
+    # Separate check if the job has logs, result, or metadata
+    # None check is not enough because the values we set could be None
+    includes_metadata: bool
+    includes_result: bool
+    # TODO add logs (error reporting PRD)
+
+    resolved: Optional[bool] = None
+    status: Optional[JobStatus] = None
+    n_iters: Optional[int] = None
+    current_iter: Optional[int] = None
+    creation_time: Optional[str] = None
+
+    result: Optional[Any] = None
+
+    def _repr_html_(self) -> str:
+        metadata_str = ""
+        if self.includes_metadata:
+            metadata_str += "<h4>Public metadata</h4>"
+            for attr in self.__public_metadata_attrs__:
+                value = getattr(self, attr, None)
+                if value is not None:
+                    metadata_str += f"<p style='margin-left: 10px;'><strong>{attr}:</strong> {value}</p>"
+
+        result_str = "<h4>Result</h4>"
+        if self.includes_result:
+            result_str += f"<p style='margin-left: 10px;'>{str(self.result)}</p>"
+        else:
+            result_str += "<p style='margin-left: 10px;'><i>No result included</i></p>"
+
+        return f"""
+            <style>
+            .job-info {{color: {SURFACE[options.color_theme]};}}
+            </style>
+            <div class='job-info'>
+                <h3>JobInfo</h3>
+                {metadata_str}
+                {result_str}
+            </div>
+        """
+
+    @classmethod
+    def from_job(
+        cls,
+        job: Job,
+        metadata: bool = False,
+        result: bool = False,
+    ):
+        info = cls(
+            includes_metadata=metadata,
+            includes_result=result,
+        )
+
+        if metadata:
+            for attr in cls.__public_metadata_attrs__:
+                setattr(info, attr, getattr(job, attr))
+
+        if result:
+            if not job.resolved:
+                raise ValueError("Cannot sync result of unresolved job")
+            if not isinstance(job.result, ActionObject):
+                raise ValueError("Could not sync result of job")
+            info.result = job.result.get()
+
+        return info
+
+
 @migrate(Job, JobV2)
 def downgrade_job_v3_to_v2():
-    return [drop(["job_worker_id"])]
+    return [drop(["job_worker_id", "user_code_id"])]
 
 
 @migrate(JobV2, Job)
 def upgrade_job_v2_to_v3():
     return [
         make_set_default("job_worker_id", None),
+        make_set_default("user_code_id", None),
     ]
 
 
@@ -518,4 +640,13 @@ class JobStash(BaseStash):
         qks = QueryKeys(
             qks=[PartitionKey(key="job_worker_id", type_=str).with_obj(worker_id)]
         )
+        return self.query_all(credentials=credentials, qks=qks)
+
+    def get_by_user_code_id(
+        self, credentials: SyftVerifyKey, user_code_id: UID
+    ) -> Union[List[Job], SyftError]:
+        qks = QueryKeys(
+            qks=[PartitionKey(key="user_code_id", type_=UID).with_obj(user_code_id)]
+        )
+
         return self.query_all(credentials=credentials, qks=qks)

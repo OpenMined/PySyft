@@ -437,7 +437,10 @@ class Node(AbstractNode):
                     role=ServiceRole.ADMIN,
                 )
                 producer: QueueProducer = self.queue_manager.create_producer(
-                    queue_name=queue_name, queue_stash=self.queue_stash, context=context
+                    queue_name=queue_name,
+                    queue_stash=self.queue_stash,
+                    context=context,
+                    worker_stash=self.worker_stash,
                 )
                 producer.run()
                 address = producer.address
@@ -573,6 +576,7 @@ class Node(AbstractNode):
             )
         else:
             queue_config = None
+
         return cls(
             name=name,
             id=uid,
@@ -1146,7 +1150,7 @@ class Node(AbstractNode):
         credentials,
         parent_job_id=None,
         has_execute_permissions: bool = False,
-        worker_pool_id: Optional[UID] = None,
+        worker_pool_name: Optional[str] = None,
     ):
         job_id = UID()
         task_uid = UID()
@@ -1161,14 +1165,14 @@ class Node(AbstractNode):
             # If result is Ok, then user code object exists
             if result.is_ok() and result.ok() is not None:
                 user_code = result.ok()
-                worker_pool_id = user_code.worker_pool_id
+                worker_pool_name = user_code.worker_pool_name
 
         # If worker pool id is not set, then use default worker pool
         # Else, get the worker pool for given uid
-        if worker_pool_id is None:
+        if worker_pool_name is None:
             worker_pool = self.get_default_worker_pool()
         else:
-            result = self.pool_stash.get_by_uid(credentials, worker_pool_id)
+            result = self.pool_stash.get_by_name(credentials, worker_pool_name)
             if result.is_err():
                 return SyftError(message=f"{result.err()}")
             worker_pool = result.ok()
@@ -1243,21 +1247,73 @@ class Node(AbstractNode):
             return result
         return job
 
+    def _get_existing_user_code_jobs(
+        self, context: AuthedServiceContext, user_code_id: UID
+    ) -> Union[List[Job], SyftError]:
+        job_service = self.get_service("jobservice")
+        return job_service.get_by_user_code_id(
+            context=context, user_code_id=user_code_id
+        )
+
+    def _is_usercode_call_on_owned_kwargs(
+        self, context: AuthedServiceContext, api_call: SyftAPICall
+    ) -> bool:
+        if api_call.path != "code.call":
+            return False
+        user_code_service = self.get_service("usercodeservice")
+        return user_code_service.is_execution_on_owned_args(api_call.kwargs, context)
+
     def add_api_call_to_queue(self, api_call, parent_job_id=None):
         unsigned_call = api_call
         if isinstance(api_call, SignedSyftAPICall):
             unsigned_call = api_call.message
 
+        credentials = api_call.credentials
+        context = AuthedServiceContext(
+            node=self,
+            credentials=credentials,
+            role=self.get_role_for_credentials(credentials=credentials),
+        )
+
         is_user_code = unsigned_call.path == "code.call"
 
-        service, method = unsigned_call.path.split(".")
+        service_str, method_str = unsigned_call.path.split(".")
 
         action = None
         if is_user_code:
             action = Action.from_api_call(unsigned_call)
+
+            is_usercode_call_on_owned_kwargs = self._is_usercode_call_on_owned_kwargs(
+                context, unsigned_call
+            )
+            # Low side does not execute jobs, unless this is a mock execution
+            if (
+                not is_usercode_call_on_owned_kwargs
+                and self.node_side_type == NodeSideType.LOW_SIDE
+            ):
+                existing_jobs = self._get_existing_user_code_jobs(
+                    context, action.user_code_id
+                )
+                if isinstance(existing_jobs, SyftError):
+                    return existing_jobs
+                elif len(existing_jobs) > 0:
+                    # Print warning if there are existing jobs for this user code
+                    # relative
+                    from ..util.util import prompt_warning_message
+
+                    prompt_warning_message(
+                        "There are existing jobs for this user code, returning the latest one"
+                    )
+                    return existing_jobs[-1]
+                else:
+                    return SyftError(
+                        message="Please wait for the admin to allow the execution of this code"
+                    )
+
             return self.add_action_to_queue(
                 action, api_call.credentials, parent_job_id=parent_job_id
             )
+
         else:
             worker_settings = WorkerSettings.from_node(node=self)
             default_worker_pool = self.get_default_worker_pool()
@@ -1273,8 +1329,8 @@ class Node(AbstractNode):
                 syft_node_location=self.id,
                 job_id=UID(),
                 worker_settings=worker_settings,
-                service=service,
-                method=method,
+                service=service_str,
+                method=method_str,
                 args=unsigned_call.args,
                 kwargs=unsigned_call.kwargs,
                 worker_pool=worker_pool,
@@ -1494,13 +1550,13 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
     # Create worker pool if it doesn't exists
     if default_worker_pool is None:
         worker_to_add_ = worker_count
-        create_pool_method = node.get_service_method(SyftWorkerPoolService.create_pool)
+        create_pool_method = node.get_service_method(SyftWorkerPoolService.launch)
         print("Creating default Worker Pool")
         result = create_pool_method(
             context,
             name=DEFAULT_WORKER_POOL_NAME,
             image_uid=default_image.id,
-            number=worker_to_add_,
+            num_workers=worker_to_add_,
         )
 
     else:

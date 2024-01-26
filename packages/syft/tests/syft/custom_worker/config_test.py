@@ -17,6 +17,7 @@ import yaml
 # syft absolute
 from syft.custom_worker.config import CustomBuildConfig
 from syft.custom_worker.config import CustomWorkerConfig
+from syft.custom_worker.config import DockerWorkerConfig
 
 
 # in Pydantic v2 this would just be model.model_dump(mode='json')
@@ -163,3 +164,43 @@ def test_load_custom_worker_config(
     )
 
     assert to_json_like_dict(parsed_worker_config_obj) == expected
+
+
+DOCKER_METHODS = ["from_str", "from_path"]
+DOCKER_CONFIG_OPENDP = """
+    FROM openmined/grid-backend:0.8.4-beta.12
+    RUN pip install opendp
+"""
+
+
+@pytest.fixture
+def dockerfile_path(tmp_path: Path) -> Path:
+    file_name = f"{uuid4().hex}.Dockerfile"
+    file_path = tmp_path / file_name
+
+    with open(file_path, "w") as f:
+        f.write(DOCKER_CONFIG_OPENDP)
+
+    yield file_path
+    file_path.unlink()
+
+
+@pytest.mark.parametrize("method", DOCKER_METHODS)
+def test_docker_worker_config(dockerfile_path: Path, method: str) -> None:
+    description = "I want to do some cool DS stuff with Syft and OpenDP"
+    if method == "from_str":
+        docker_config = DockerWorkerConfig(
+            dockerfile=dockerfile_path.read_text(), description=description
+        )
+    elif method == "from_path":
+        docker_config = DockerWorkerConfig.from_path(
+            path=dockerfile_path, description=description
+        )
+    else:
+        raise ValueError(f"method must be one of {METHODS}")
+
+    assert docker_config.dockerfile == dockerfile_path.read_text()
+    assert docker_config.description == description
+    new_description = description + " (syft version is 0.8.4-beta.12)"
+    docker_config.set_description(description_text=new_description)
+    assert docker_config.description == new_description

@@ -3,13 +3,16 @@ from __future__ import annotations
 
 # stdlib
 import ast
+from copy import deepcopy
 import datetime
 from enum import Enum
 import hashlib
 import inspect
 from io import StringIO
 import itertools
+import random
 import sys
+from threading import Thread
 import time
 import traceback
 from typing import Any
@@ -29,6 +32,7 @@ from typing_extensions import Self
 
 # relative
 from ...abstract_node import NodeType
+from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
@@ -81,6 +85,7 @@ from ..response import SyftWarning
 from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
 from .unparse import unparse
+from .utils import submit_subjobs_code
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=str)
@@ -339,7 +344,7 @@ class UserCode(SyftObject):
     uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
     nested_requests: Dict[str, str] = {}
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
-    worker_pool_id: Optional[UID]
+    worker_pool_name: Optional[str]
 
     __attr_searchable__ = [
         "user_verify_key",
@@ -352,7 +357,7 @@ class UserCode(SyftObject):
         "service_func_name",
         "input_owners",
         "code_status",
-        "worker_pool_id",
+        "worker_pool_name",
     ]
 
     def __setattr__(self, key: str, value: Any) -> None:
@@ -648,14 +653,14 @@ class UserCode(SyftObject):
 @migrate(UserCode, UserCodeV2)
 def downgrade_usercode_v3_to_v2():
     return [
-        drop("worker_pool_id"),
+        drop("worker_pool_name"),
     ]
 
 
 @migrate(UserCodeV2, UserCode)
 def upgrade_usercode_v2_to_v3():
     return [
-        make_set_default("worker_pool_id", None),
+        make_set_default("worker_pool_name", None),
     ]
 
 
@@ -695,7 +700,7 @@ class SubmitUserCode(SyftObject):
     local_function: Optional[Callable]
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
-    worker_pool_id: Optional[UID] = None
+    worker_pool_name: Optional[str] = None
 
     __repr_attrs__ = ["func_name", "code"]
 
@@ -703,7 +708,12 @@ class SubmitUserCode(SyftObject):
     def kwargs(self) -> List[str]:
         return self.input_policy_init_kwargs
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    def __call__(self, *args: Any, syft_no_node=False, **kwargs: Any) -> Any:
+        if syft_no_node:
+            return self.local_call(*args, **kwargs)
+        return self._ephemeral_node_call(*args, **kwargs)
+
+    def local_call(self, *args: Any, **kwargs: Any) -> Any:
         # only run this on the client side
         if self.local_function:
             tree = ast.parse(inspect.getsource(self.local_function))
@@ -729,6 +739,101 @@ class SubmitUserCode(SyftObject):
         else:
             raise NotImplementedError
 
+    def _ephemeral_node_call(
+        self, time_alive=None, n_consumers=None, *args: Any, **kwargs: Any
+    ) -> Any:
+        # relative
+        from ... import _orchestra
+
+        # Right now we only create a number of workers
+        # In the future we might need to have the same pools/images as well
+
+        if n_consumers is None:
+            print(
+                SyftInfo(
+                    message="Creating a node with n_consumers=2 (the default value)"
+                )
+            )
+            n_consumers = 2
+
+        if time_alive is None and "blocking" in kwargs and not kwargs["blocking"]:
+            print(
+                SyftInfo(
+                    message="Closing the node after time_alive=300 (the default value)"
+                )
+            )
+            time_alive = 300
+
+        # This could be changed given the work on containers
+        ep_node = _orchestra().launch(
+            name=f"ephemeral_node_{self.func_name}_{random.randint(a=0, b=10000)}",  # nosec
+            reset=True,
+            create_producer=True,
+            n_consumers=n_consumers,
+            deploy_to="python",
+        )
+        ep_client = ep_node.login(email="info@openmined.org", password="changethis")  # nosec
+
+        for node_id, obj_dict in self.input_policy_init_kwargs.items():
+            # api = APIRegistry.api_for(
+            #     node_uid=node_id.node_id, user_verify_key=node_id.verify_key
+            # )
+            api = APIRegistry.get_by_recent_node_uid(node_uid=node_id.node_id)
+
+            # Creating TwinObject from the ids of the kwargs
+            # Maybe there are some corner cases where this is not enough
+            # And need only ActionObjects
+            # Also, this works only on the assumption that all inputs
+            # are ActionObjects, which might change in the future
+            for _, id in obj_dict.items():
+                mock_obj = api.services.action.get_mock(id)
+                if isinstance(mock_obj, SyftError):
+                    data_obj = api.services.action.get(id)
+                    if isinstance(data_obj, SyftError):
+                        return SyftError(
+                            message="You do not have access to object you want \
+                                to use, or the private object does not have mock \
+                                data. Contact the Node Admin."
+                        )
+                else:
+                    data_obj = mock_obj
+                data_obj.id = id
+                new_obj = ActionObject.from_obj(
+                    data_obj.syft_action_data,
+                    id=id,
+                    syft_node_location=node_id.node_id,
+                    syft_client_verify_key=node_id.verify_key,
+                )
+                res = ep_client.api.services.action.set(new_obj)
+                if isinstance(res, SyftError):
+                    return res
+
+        new_syft_func = deepcopy(self)
+
+        # This will only be used without worker_pools
+        new_syft_func.worker_pool_name = None
+
+        # We will look for subjos, and if we find any will submit them
+        # to the ephemeral_node
+        submit_subjobs_code(self, ep_client)
+
+        ep_client.code.request_code_execution(new_syft_func)
+        ep_client.requests[-1].approve(approve_nested=True)
+        func_call = getattr(ep_client.code, new_syft_func.func_name)
+        result = func_call(*args, **kwargs)
+
+        def task():
+            if "blocking" in kwargs and not kwargs["blocking"]:
+                time.sleep(time_alive)
+            print(SyftInfo(message="Landing the ephmeral node..."))
+            ep_node.land()
+            print(SyftInfo(message="Node Landed!"))
+
+        thread = Thread(target=task)
+        thread.start()
+
+        return result
+
     @property
     def input_owner_verify_keys(self) -> List[str]:
         return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
@@ -737,14 +842,14 @@ class SubmitUserCode(SyftObject):
 @migrate(SubmitUserCode, SubmitUserCodeV2)
 def downgrade_submitusercode_v3_to_v2():
     return [
-        drop("worker_pool_id"),
+        drop("worker_pool_name"),
     ]
 
 
 @migrate(SubmitUserCodeV2, SubmitUserCode)
 def upgrade_submitusercode_v2_to_v3():
     return [
-        make_set_default("worker_pool_id", None),
+        make_set_default("worker_pool_name", None),
     ]
 
 
@@ -768,12 +873,16 @@ def debox_asset(arg: Any) -> Any:
 
 
 def syft_function_single_use(
-    *args: Any, share_results_with_owners=False, **kwargs: Any
+    *args: Any,
+    share_results_with_owners: bool = False,
+    worker_pool_name: Optional[str] = None,
+    **kwargs: Any,
 ):
     return syft_function(
         input_policy=ExactMatch(*args, **kwargs),
         output_policy=SingleExecutionExactOutput(),
         share_results_with_owners=share_results_with_owners,
+        worker_pool_name=worker_pool_name,
     )
 
 
@@ -781,7 +890,7 @@ def syft_function(
     input_policy: Optional[Union[InputPolicy, UID]] = None,
     output_policy: Optional[Union[OutputPolicy, UID]] = None,
     share_results_with_owners=False,
-    worker_pool_id: Optional[Union[UID, str]] = None,
+    worker_pool_name: Optional[str] = None,
 ) -> SubmitUserCode:
     if input_policy is None:
         input_policy = EmpyInputPolicy()
@@ -799,9 +908,6 @@ def syft_function(
     else:
         output_policy_type = type(output_policy)
 
-    if isinstance(worker_pool_id, str):
-        worker_pool_id = UID(worker_pool_id)
-
     def decorator(f):
         res = SubmitUserCode(
             code=inspect.getsource(f),
@@ -813,7 +919,7 @@ def syft_function(
             output_policy_init_kwargs=output_policy.init_kwargs,
             local_function=f,
             input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
-            worker_pool_id=worker_pool_id,
+            worker_pool_name=worker_pool_name,
         )
 
         if share_results_with_owners:
@@ -1028,9 +1134,9 @@ def add_submit_time(context: TransformContext) -> TransformContext:
 
 
 def set_default_pool_if_empty(context: TransformContext) -> TransformContext:
-    if context.output.get("worker_pool_id", None) is None:
+    if context.output.get("worker_pool_name", None) is None:
         default_pool = context.node.get_default_worker_pool()
-        context.output["worker_pool_id"] = default_pool.id
+        context.output["worker_pool_name"] = default_pool.name
     return context
 
 
@@ -1112,7 +1218,7 @@ class SecureContext:
             kw2id = {}
             for k, v in kwargs.items():
                 value = ActionObject.from_obj(v)
-                ptr = action_service.set(context, value)
+                ptr = action_service._set(context, value)
                 ptr = ptr.ok()
                 kw2id[k] = ptr.id
             try:
@@ -1124,7 +1230,7 @@ class SecureContext:
                     credentials=context.credentials,
                     parent_job_id=context.job_id,
                     has_execute_permissions=True,
-                    worker_pool_id=func.worker_pool_id,
+                    worker_pool_name=func.worker_pool_name,
                 )
                 # # set api in global scope to enable using .get(), .wait())
                 # set_api_registry()

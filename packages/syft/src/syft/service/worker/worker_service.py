@@ -1,13 +1,15 @@
 # stdlib
 import contextlib
-import socket
+from typing import Any
 from typing import List
+from typing import Optional
 from typing import Tuple
 from typing import Union
+from typing import cast
 
 # third party
 import docker
-from result import Result
+from docker.models.containers import Container
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -21,6 +23,7 @@ from ..service import AuthedServiceContext
 from ..service import SyftError
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
+from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .utils import DEFAULT_WORKER_POOL_NAME
 from .utils import _get_healthcheck_based_on_status
@@ -28,95 +31,9 @@ from .worker_pool import ContainerSpawnStatus
 from .worker_pool import SyftWorker
 from .worker_pool import WorkerHealth
 from .worker_pool import WorkerStatus
+from .worker_pool import _get_worker_container
 from .worker_pool import _get_worker_container_status
 from .worker_stash import WorkerStash
-
-WORKER_NUM = 0
-
-
-def get_main_backend():
-    hostname = socket.gethostname()
-    return f"{hostname}-backend-1"
-
-
-def start_worker_container(
-    worker_num: int, context: AuthedServiceContext, syft_worker_uid
-):
-    client = docker.from_env()
-    existing_container_name = get_main_backend()
-    hostname = socket.gethostname()
-    worker_name = f"{hostname}-worker-{worker_num}"
-    return create_new_container_from_existing(
-        worker_name=worker_name,
-        client=client,
-        existing_container_name=existing_container_name,
-        syft_worker_uid=syft_worker_uid,
-    )
-
-
-def create_new_container_from_existing(
-    worker_name: str,
-    client: docker.client.DockerClient,
-    existing_container_name: str,
-    syft_worker_uid,
-) -> docker.models.containers.Container:
-    # Get the existing container
-    existing_container = client.containers.get(existing_container_name)
-
-    # Inspect the existing container
-    details = existing_container.attrs
-
-    # Extract relevant settings
-    image = details["Config"]["Image"]
-    command = details["Config"]["Cmd"]
-    environment = details["Config"]["Env"]
-    ports = details["NetworkSettings"]["Ports"]
-    host_config = details["HostConfig"]
-
-    volumes = {}
-    for vol in host_config["Binds"]:
-        parts = vol.split(":")
-        key = parts[0]
-        bind = parts[1]
-        mode = parts[2]
-        if "/storage" in bind:
-            # we need this because otherwise we are using the same node private key
-            # which will make account creation fail
-            worker_postfix = worker_name.split("-", 1)[1]
-            key = f"{key}-{worker_postfix}"
-        volumes[key] = {"bind": bind, "mode": mode}
-
-    # we need this because otherwise we are using the same node private key
-    # which will make account creation fail
-
-    environment = dict([e.split("=", 1) for e in environment])
-    environment["CREATE_PRODUCER"] = "false"
-    environment["N_CONSUMERS"] = 1
-    environment["DOCKER_WORKER_NAME"] = worker_name
-    environment["DEFAULT_ROOT_USERNAME"] = worker_name
-    environment["DEFAULT_ROOT_EMAIL"] = f"{worker_name}@openmined.org"
-    environment["PORT"] = str(8003 + WORKER_NUM)
-    environment["HTTP_PORT"] = str(88 + WORKER_NUM)
-    environment["HTTPS_PORT"] = str(446 + WORKER_NUM)
-    environment["SYFT_WORKER_UID"] = str(syft_worker_uid)
-
-    environment.pop("NODE_PRIVATE_KEY", None)
-
-    new_container = client.containers.create(
-        name=worker_name,
-        image=image,
-        command=command,
-        environment=environment,
-        ports=ports,
-        detach=True,
-        volumes=volumes,
-        tty=True,
-        stdin_open=True,
-        network_mode=f"container:{existing_container.id}",
-    )
-
-    new_container.start()
-    return new_container
 
 
 @instrument
@@ -160,17 +77,19 @@ class WorkerService(AbstractService):
             return workers
 
         # If container workers, check their statuses
-        for idx, worker in enumerate(workers):
-            result = check_and_update_status_for_worker(
-                worker=worker,
-                worker_stash=self.stash,
-                credentials=context.credentials,
-            )
-            if result.is_err():
-                return SyftError(
-                    message=f"Failed to update status for worker: {worker.id}. Error: {result.err()}"
+        with contextlib.closing(docker.from_env()) as client:
+            for idx, worker in enumerate(workers):
+                worker_ = _check_and_update_status_for_worker(
+                    client=client,
+                    worker=worker,
+                    worker_stash=self.stash,
+                    credentials=context.credentials,
                 )
-            workers[idx] = worker
+
+                if not isinstance(worker_, SyftWorker):
+                    return worker_
+
+                workers[idx] = worker_
 
         return workers
 
@@ -182,37 +101,164 @@ class WorkerService(AbstractService):
         context: AuthedServiceContext,
         uid: UID,
     ) -> Union[Tuple[WorkerStatus, WorkerHealth], SyftError]:
-        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
-        if result.is_err():
-            return SyftError(message=f"Failed to retrieve worker with UID {uid}")
-        worker: SyftWorker = result.ok()
+        worker = self.get(context=context, uid=uid)
+
+        if not isinstance(worker, SyftWorker):
+            return worker
+
+        return worker.status, worker.healthcheck
+
+    @service_method(
+        path="worker.get",
+        name="get",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def get(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftWorker, SyftError]:
+        worker = self._get_worker(context=context, uid=uid)
+        if isinstance(worker, SyftError):
+            return worker
 
         if context.node.in_memory_workers:
-            return worker.status, worker.healthcheck
+            return worker
 
-        result = check_and_update_status_for_worker(
-            worker=worker,
-            worker_stash=self.stash,
-            credentials=context.credentials,
+        with contextlib.closing(docker.from_env()) as client:
+            return _check_and_update_status_for_worker(
+                client=client,
+                worker=worker,
+                worker_stash=self.stash,
+                credentials=context.credentials,
+            )
+
+    @service_method(
+        path="worker.logs",
+        name="logs",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def logs(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        raw: bool = False,
+    ) -> Union[bytes, str, SyftError]:
+        worker = self._get_worker(context=context, uid=uid)
+        if isinstance(worker, SyftError):
+            return worker
+
+        if context.node.in_memory_workers:
+            logs = b"Logs not implemented for In Memory Workers"
+        else:
+            with contextlib.closing(docker.from_env()) as client:
+                docker_container = _get_worker_container(client, worker)
+                if isinstance(docker_container, SyftError):
+                    return docker_container
+
+                try:
+                    logs = cast(bytes, docker_container.logs())
+                except docker.errors.APIError as e:
+                    return SyftError(
+                        f"Failed to get worker {worker.id} container logs. Error {e}"
+                    )
+
+        return logs if raw else logs.decode(errors="ignore")
+
+    @service_method(
+        path="worker.delete",
+        name="delete",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def delete(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        force: bool = False,
+    ) -> Union[SyftSuccess, SyftError]:
+        worker = self._get_worker(context=context, uid=uid)
+        if isinstance(worker, SyftError):
+            return worker
+
+        worker_pool_name = worker.worker_pool_name
+
+        # relative
+        from .worker_pool_service import SyftWorkerPoolService
+
+        worker_pool_service: SyftWorkerPoolService = context.node.get_service(
+            "SyftWorkerPoolService"
+        )
+        worker_pool_stash = worker_pool_service.stash
+        result = worker_pool_stash.get_by_name(
+            credentials=context.credentials, pool_name=worker.worker_pool_name
         )
 
         if result.is_err():
             return SyftError(
-                message=f"Failed to update status for worker: {worker.id}. Error: {result.err()}"
+                f"Failed to retrieved WorkerPool {worker_pool_name} "
+                f"associated with SyftWorker {uid}"
             )
 
+        worker_pool = result.ok()
+        if worker_pool is None:
+            return SyftError(
+                f"Failed to retrieved WorkerPool {worker_pool_name} "
+                f"associated with SyftWorker {uid}"
+            )
+
+        if not context.node.in_memory_workers:
+            # delete the worker using docker client sdk
+            with contextlib.closing(docker.from_env()) as client:
+                docker_container = _get_worker_container(client, worker)
+                if isinstance(docker_container, SyftError):
+                    return docker_container
+
+                stopped = _stop_worker_container(worker, docker_container, force)
+                if stopped is not None:
+                    return stopped
+
+        # remove the worker from the pool
+        try:
+            worker_linked_object = next(
+                obj for obj in worker_pool.worker_list if obj.object_uid == uid
+            )
+            worker_pool.worker_list.remove(worker_linked_object)
+        except StopIteration:
+            pass
+
+        # Delete worker from worker stash
+        result = self.stash.delete_by_uid(credentials=context.credentials, uid=uid)
+        if result.is_err():
+            return SyftError(message=f"Failed to delete worker with uid: {uid}")
+
+        # Update worker pool
+        result = worker_pool_stash.update(context.credentials, obj=worker_pool)
+        if result.is_err():
+            return SyftError(message=f"Failed to update worker pool: {result.err()}")
+
+        return SyftSuccess(
+            message=f"Worker with id: {uid} deleted successfully from pool: {worker_pool.name}"
+        )
+
+    def _get_worker(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftWorker, SyftError]:
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
+        if result.is_err():
+            return SyftError(message=f"Failed to retrieve worker with UID {uid}")
+
         worker = result.ok()
+        if worker is None:
+            return SyftError(message=f"Worker does not exist for UID {uid}")
 
-        return worker.status, worker.healthcheck
+        return worker
 
 
-def check_and_update_status_for_worker(
+def _check_and_update_status_for_worker(
+    client: docker.DockerClient,
     worker: SyftWorker,
     worker_stash: WorkerStash,
     credentials: SyftVerifyKey,
-) -> Result[SyftWorker, str]:
-    with contextlib.closing(docker.from_env()) as client:
-        worker_status = _get_worker_container_status(client, worker)
+) -> Union[SyftWorker, SyftError]:
+    worker_status = _get_worker_container_status(client, worker)
 
     if isinstance(worker_status, SyftError):
         return worker_status
@@ -226,4 +272,37 @@ def check_and_update_status_for_worker(
         obj=worker,
     )
 
-    return result
+    return (
+        SyftError(
+            message=f"Failed to update status for worker: {worker.id}. Error: {result.err()}"
+        )
+        if result.is_err()
+        else result.ok()
+    )
+
+
+def _stop_worker_container(
+    worker: SyftWorker,
+    container: Container,
+    force: bool,
+) -> Optional[SyftError]:
+    try:
+        # stop the container
+        container.stop()
+        # Remove the container and its volumes
+        _remove_worker_container(container, force=force, v=True)
+    except Exception as e:
+        return SyftError(
+            message=f"Failed to delete worker with id: {worker.id}. Error: {e}"
+        )
+
+
+def _remove_worker_container(container: Container, **kwargs: Any) -> None:
+    try:
+        container.remove(**kwargs)
+    except docker.errors.NotFound:
+        return
+    except docker.errors.APIError as e:
+        if "removal of container" in str(e) and "is already in progress" in str(e):
+            # If the container is already being removed, ignore the error
+            return

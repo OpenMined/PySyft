@@ -1,4 +1,4 @@
-__version__ = "0.8.4-beta.12"
+__version__ = "0.8.4-beta.14"
 
 # stdlib
 import pathlib
@@ -24,6 +24,7 @@ from .client.search import Search  # noqa: F401
 from .client.search import SearchResults  # noqa: F401
 from .client.user_settings import UserSettings  # noqa: F401
 from .client.user_settings import settings  # noqa: F401
+from .custom_worker.config import DockerWorkerConfig  # noqa: F401
 from .external import OBLV  # noqa: F401
 from .external import enable_external_lib  # noqa: F401
 from .node.credentials import SyftSigningKey  # noqa: F401

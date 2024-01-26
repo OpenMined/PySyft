@@ -424,11 +424,14 @@ def convert_to_pointers(
     args: Optional[List] = None,
     kwargs: Optional[Dict] = None,
 ) -> Tuple[List, Dict]:
+    # relative
+    from ..dataset.dataset import Asset
+
     arg_list = []
     kwarg_dict = {}
     if args is not None:
         for arg in args:
-            if not isinstance(arg, ActionObject):
+            if not isinstance(arg, (ActionObject, Asset, UID)):
                 arg = ActionObject.from_obj(
                     syft_action_data=arg,
                     syft_client_verify_key=api.signing_key.verify_key,
@@ -443,7 +446,7 @@ def convert_to_pointers(
 
     if kwargs is not None:
         for k, arg in kwargs.items():
-            if not isinstance(arg, ActionObject):
+            if not isinstance(arg, (ActionObject, Asset, UID)):
                 arg = ActionObject.from_obj(
                     syft_action_data=arg,
                     syft_client_verify_key=api.signing_key.verify_key,
@@ -1089,10 +1092,13 @@ class ActionObject(SyftObject):
         else:
             return res.syft_action_data
 
-    def get(self) -> Any:
+    def get(self, block: bool = False) -> Any:
         """Get the object from a Syft Client"""
         # relative
         from ...client.api import APIRegistry
+
+        if block:
+            self.wait()
 
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,

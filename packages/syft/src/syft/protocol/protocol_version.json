@@ -978,7 +978,7 @@
       "JobItem": {
         "3": {
           "version": 3,
-          "hash": "7293ce8bf17bc7420b764bc32fd89512ecbfa045f12db0513904794a6b000581",
+          "hash": "5b93a59e28574691339d22826d5650969336a2e930b93d6b3fe6d5409ca0cfc4",
           "action": "add"
         }
       },
@@ -1072,14 +1072,83 @@
       "UserCode": {
         "3": {
           "version": 3,
-          "hash": "d3fef6e5706c4e54d83c0f43ce1f2d94116c21de16a692ba52bd04809ed51ed3",
+          "hash": "90fcae0f556f375ba1e91d2e345f57241660695c6e2b84c8e311df89d09e6c66",
           "action": "add"
         }
       },
       "SubmitUserCode": {
         "3": {
           "version": 3,
-          "hash": "911d3e550721c78702aa819082d431305b491c597f23b70d8a7118c801e69694",
+          "hash": "a29160c16d2e2620800d42cdcd9f3637d063a570c477a5d05217a2e64b4bb396",
+          "action": "add"
+        }
+      },
+      "CreateCustomImageChange": {
+        "1": {
+          "version": 1,
+          "hash": "197b765666d605cf601bd69bff21b4a31896b6acd14af38739a5047ca29ff015",
+          "action": "add"
+        }
+      },
+      "CreateCustomWorkerPoolChange": {
+        "1": {
+          "version": 1,
+          "hash": "86894f8ccc037de61f44f9698fd113ba02c3cf3870a3048c00a46e15dcd1941c",
+          "action": "add"
+        }
+      },
+      "JobInfo": {
+        "1": {
+          "version": 1,
+          "hash": "cf26eeac3d9254dfa439917493b816341f8a379a77d182bbecba3b7ed2c1d00a",
+          "action": "add"
+        }
+      },
+      "User": {
+        "1": {
+          "version": 1,
+          "hash": "078636e64f737e60245b39cf348d30fb006531e80c12b70aa7cf98254e1bb37a",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "ded970c92f202716ed33a2117cf541789f35fad66bd4b1db39da5026b1d7d0e7",
+          "action": "add"
+        }
+      },
+      "UserUpdate": {
+        "1": {
+          "version": 1,
+          "hash": "839dd90aeb611e1dc471c8fd6daf230e913465c0625c6a297079cb7f0a271195",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "32cba8fbd786c575f92e26c31384d282e68e3ebfe5c4b0a0e793820b1228d246",
+          "action": "add"
+        }
+      },
+      "UserCreate": {
+        "1": {
+          "version": 1,
+          "hash": "dab78b63544ae91c09f9843c323cb237c0a6fcfeb71c1acf5f738e2fcf5c277f",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "2540188c5aaea866914dccff459df6e0f4727108a503414bb1567ff6297d4646",
+          "action": "add"
+        }
+      },
+      "UserView": {
+        "1": {
+          "version": 1,
+          "hash": "63289383fe7e7584652f242a4362ce6e2f0ade52f6416ab6149b326a506b0675",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "e410de583bb15bc5af57acef7be55ea5fc56b5b0fc169daa3869f4203c4d7473",
           "action": "add"
         }
       }

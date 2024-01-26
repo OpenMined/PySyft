@@ -210,11 +210,11 @@ class SyftWorkerImageService(AbstractService):
         return DictTuple(res)
 
     @service_method(
-        path="worker_image.delete",
-        name="delete",
+        path="worker_image.remove",
+        name="remove",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def delete(
+    def remove(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
         #  Delete Docker image given image tag
@@ -258,6 +258,24 @@ class SyftWorkerImageService(AbstractService):
         if res.is_err():
             return SyftError(
                 message=f"Failed to get image with uid {uid}. Error: {res.err()}"
+            )
+        image: SyftWorkerImage = res.ok()
+        return image
+
+    @service_method(
+        path="worker_image.get_by_config",
+        name="get_by_config",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def get_by_config(
+        self, context: AuthedServiceContext, docker_config: DockerWorkerConfig
+    ) -> Union[SyftWorkerImage, SyftError]:
+        res = self.stash.get_by_docker_config(
+            credentials=context.credentials, config=docker_config
+        )
+        if res.is_err():
+            return SyftError(
+                message=f"Failed to get image with docker config {docker_config}. Error: {res.err()}"
             )
         image: SyftWorkerImage = res.ok()
         return image
