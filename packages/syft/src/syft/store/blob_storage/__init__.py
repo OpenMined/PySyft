@@ -42,6 +42,7 @@ Read/retrieve SyftObject from blob storage
 
 
 # stdlib
+import os
 from pathlib import Path
 from typing import Optional
 from typing import Type
@@ -132,7 +133,7 @@ class SyftObjectRetrieval(BlobRetrieval):
 
     def _read_data(self, stream=False, _deserialize=True, **kwargs):
         # development setup, we can access the same filesystem
-        if self.path.is_file():
+        if os.access(self.path, os.R_OK) and self.path.is_file():
             with open(self.path, "rb") as fp:
                 res = fp.read()
                 if _deserialize:
