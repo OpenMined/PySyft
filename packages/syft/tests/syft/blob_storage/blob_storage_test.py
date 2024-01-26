@@ -35,6 +35,7 @@ def test_blob_storage_allocate(authed_context, blob_storage):
 
 
 def test_blob_storage_write():
+    random.seed()
     name = "".join(str(random.randint(0, 9)) for i in range(8))
     worker = sy.Worker.named(name=name)
     blob_storage = worker.get_service("BlobStorageService")
@@ -50,6 +51,7 @@ def test_blob_storage_write():
 
 
 def test_blob_storage_write_syft_object():
+    random.seed()
     name = "".join(str(random.randint(0, 9)) for i in range(8))
     worker = sy.Worker.named(name=name)
     blob_storage = worker.get_service("BlobStorageService")
@@ -66,6 +68,7 @@ def test_blob_storage_write_syft_object():
 
 
 def test_blob_storage_read():
+    random.seed()
     name = "".join(str(random.randint(0, 9)) for i in range(8))
     worker = sy.Worker.named(name=name)
     blob_storage = worker.get_service("BlobStorageService")
