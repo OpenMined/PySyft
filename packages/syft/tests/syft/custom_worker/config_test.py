@@ -167,7 +167,7 @@ def test_load_custom_worker_config(
 
 
 DOCKER_METHODS = ["from_str", "from_path"]
-DOCKER_CONFIG = """
+DOCKER_CONFIG_OPENDP = """
     FROM openmined/grid-backend:0.8.4-beta.12
     RUN pip install opendp
 """
@@ -179,7 +179,7 @@ def dockerfile_path(tmp_path: Path) -> Path:
     file_path = tmp_path / file_name
 
     with open(file_path, "w") as f:
-        f.write(DOCKER_CONFIG)
+        f.write(DOCKER_CONFIG_OPENDP)
 
     yield file_path
     file_path.unlink()

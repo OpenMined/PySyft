@@ -423,9 +423,26 @@ class SyftWorkerPoolService(AbstractService):
         return result.ok()
 
     @service_method(
+        path="worker_pool.get_by_name",
+        name="get_by_name",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def get_by_name(
+        self, context: AuthedServiceContext, pool_name: str
+    ) -> Union[List[WorkerPool], SyftError]:
+        result = self.stash.get_by_name(context.credentials, pool_name)
+
+        if result.is_err():
+            return SyftError(
+                message=f"Failed to get worker pool with name: {pool_name}"
+            )
+
+        return result.ok()
+
+    @service_method(
         path="worker_pool.sync_pool_from_request",
         name="sync_pool_from_request",
-        roles=DATA_OWNER_ROLE_LEVEL,
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def sync_pool_from_request(
         self,

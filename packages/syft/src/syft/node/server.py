@@ -10,6 +10,7 @@ import subprocess  # nosec
 import time
 from typing import Callable
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 # third party
@@ -77,6 +78,9 @@ def run_uvicorn(
     node_side_type: str,
     enable_warnings: bool,
     in_memory_workers: bool,
+    queue_port: Optional[int],
+    create_producer: bool,
+    n_consumers: int,
 ):
     async def _run_uvicorn(
         name: str,
@@ -106,6 +110,9 @@ def run_uvicorn(
                 enable_warnings=enable_warnings,
                 migrate=True,
                 in_memory_workers=in_memory_workers,
+                queue_port=queue_port,
+                create_producer=create_producer,
+                n_consumers=n_consumers,
             )
         else:
             worker = worker_class(
@@ -117,6 +124,7 @@ def run_uvicorn(
                 enable_warnings=enable_warnings,
                 migrate=True,
                 in_memory_workers=in_memory_workers,
+                queue_port=queue_port,
             )
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)
@@ -172,6 +180,9 @@ def serve_node(
     tail: bool = False,
     enable_warnings: bool = False,
     in_memory_workers: bool = True,
+    queue_port: Optional[int] = None,
+    create_producer: bool = False,
+    n_consumers: int = 0,
 ) -> Tuple[Callable, Callable]:
     server_process = multiprocessing.Process(
         target=run_uvicorn,
@@ -186,6 +197,9 @@ def serve_node(
             node_side_type,
             enable_warnings,
             in_memory_workers,
+            queue_port,
+            create_producer,
+            n_consumers,
         ),
     )
 
