@@ -42,6 +42,8 @@ Read/retrieve SyftObject from blob storage
 
 
 # stdlib
+import os
+from pathlib import Path
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -97,22 +99,6 @@ class BlobRetrieval(SyftObject):
     syft_blob_storage_entry_id: Optional[UID] = None
     file_size: Optional[int]
 
-    def read(self) -> Union[SyftObject, SyftError]:
-        # we need both methods bcs of inheritrance
-        return self._read()
-
-    def _read(self):
-        with open(self.file_name, "rb") as f:
-            return f.read()
-
-    def _read_data(self, stream=False, **kwargs):
-        res = self._read()
-        # TODO: this is maybe not the right solution
-        if stream:
-            return [res]
-        else:
-            return res
-
 
 @migrate(BlobRetrieval, BlobRetrievalV1)
 def downgrade_blobretrieval_v2_to_v1():
@@ -143,18 +129,30 @@ class SyftObjectRetrieval(BlobRetrieval):
     __version__ = SYFT_OBJECT_VERSION_2
 
     syft_object: bytes
+    path: Path
 
-    def read(self) -> Union[SyftObject, SyftError]:
-        if self.type_ is BlobFileType:
-            with open(self.file_name, "wb") as fp:
-                fp.write(self.syft_object)
-            return BlobFile(
-                file_name=self.file_name,
-                syft_blob_storage_entry_id=self.syft_blob_storage_entry_id,
-                syft_node_location=self.syft_node_location,
-                syft_client_verify_key=self.syft_client_verify_key,
-            )
-        return deserialize(self.syft_object, from_bytes=True)
+    def _read_data(self, stream=False, _deserialize=True, **kwargs):
+        # development setup, we can access the same filesystem
+        if os.access(self.path, os.R_OK) and self.path.is_file():
+            with open(self.path, "rb") as fp:
+                res = fp.read()
+                if _deserialize:
+                    res = deserialize(res, from_bytes=True)
+        # single container setup, we have to use the data in the object
+        else:
+            if not _deserialize:
+                res = self.syft_object
+            else:
+                res = deserialize(self.syft_object, from_bytes=True)
+
+        # TODO: implement proper streaming from local files
+        if stream:
+            return [res]
+        else:
+            return res
+
+    def read(self, _deserialize=True) -> Union[SyftObject, SyftError]:
+        return self._read_data(_deserialize=_deserialize)
 
 
 @migrate(SyftObjectRetrieval, SyftObjectRetrievalV1)
@@ -234,7 +232,7 @@ class BlobRetrievalByURL(BlobRetrieval):
         else:
             return self._read_data()
 
-    def _read_data(self, stream=False, chunk_size=DEFAULT_CHUNK_SIZE):
+    def _read_data(self, stream=False, chunk_size=DEFAULT_CHUNK_SIZE, *args, **kwargs):
         # relative
         from ...client.api import APIRegistry
 
