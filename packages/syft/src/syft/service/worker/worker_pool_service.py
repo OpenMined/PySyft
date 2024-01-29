@@ -16,6 +16,9 @@ from ...store.linked_obj import LinkedObject
 from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..context import AuthedServiceContext
+from ..job.job_service import JobService
+from ..queue.queue_service import QueueService
+from ..queue.queue_stash import Status
 from ..request.request import Change
 from ..request.request import CreateCustomImageChange
 from ..request.request import CreateCustomWorkerPoolChange
@@ -525,16 +528,33 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_pool: WorkerPool = result.ok()
         worker_service: WorkerService = context.node.get_service("WorkerService")
+        job_service: JobService = context.node.get_service("JobService")
+        queue_service: QueueService = context.node.get_service("JobService")
 
-        # Forcefully delete the workers in this pool
         if force:
             for worker in worker_pool.workers:
-                worker_service.delete(uid=worker.id, force=True)
-
-        # TODO: what to do with the Jobs that are running on the workers?
-
-        # Delete the pool
-        result = self.stash.delete_by_uid(uid=worker_pool.id)
+                # mark the running QueueItems on the worker as 'interrupted'
+                res = queue_service.get_by_job_id(job_id=worker.job_id)
+                if isinstance(res, SyftError):
+                    return res
+                queue_item = res.ok()
+                res = queue_service.update_queue_status(
+                    uid=queue_item.id, status=Status.INTERRUPTED
+                )
+                if isinstance(res, SyftError):
+                    return res
+                # kill the running job
+                res = job_service.kill(id=worker.job_id)
+                if isinstance(res, SyftError):
+                    return res
+                # then forcefully delete the workers
+                res = worker_service.delete(uid=worker.id, force=True)
+                if isinstance(res, SyftError):
+                    return res
+        # Finally, delete the worker pool from the stash
+        result = self.stash.delete_by_uid(
+            credentials=context.credentials, uid=worker_pool.id
+        )
         if result.err():
             return SyftError(message=str(result.err()))
 

@@ -244,6 +244,7 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     code_request = ds_client.code.request_code_execution(custom_worker_func)
     assert isinstance(code_request, Request)
     assert code_request.status.value == 0  # pending
+    # The domain client approves the code execution request
     for r in domain_client.requests:
         if r.id == code_request.id:
             code_req_result = r.approve(approve_nested=True)
