@@ -1,5 +1,5 @@
 # stdlib
-from enum import StrEnum
+from enum import Enum
 import os
 from typing import Optional
 
@@ -20,7 +20,7 @@ KUBERNETES_NAMESPACE = os.getenv("K8S_NAMESPACE", "syft")
 IN_KUBERNETES = os.getenv("CONTAINER_HOST") == "k8s"
 
 
-class PodPhase(StrEnum):
+class PodPhase(Enum):
     Pending = "Pending"
     Running = "Running"
     Succeeded = "Succeeded"
