@@ -3,7 +3,6 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any
 from typing import Dict
-from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -30,30 +29,19 @@ def _malformed_python_package_error_msg(pkg: str, name: str = "package_name") ->
     return f'You must pin the package to an exact version. Got "{pkg}" expected "{name}==x.y.z"'
 
 
+@serializable()
 class CustomBuildConfig(SyftBaseModel):
     gpu: bool = False
     # python_version: str = PYTHON_DEFAULT_VER
-    python_packages: List[str] = []
-    system_packages: List[str] = []
-    custom_cmds: List[str] = []
+    python_packages: Tuple[str] = ()
+    system_packages: Tuple[str] = ()
+    custom_cmds: Tuple[str] = ()
 
-    # @validator("python_version")
-    # def validate_python_version(cls, ver: str) -> str:
-    #     parsed_ver = version.parse(ver)
-
-    #     # TODO: Check if Wolfi OS/apk supports minor version of python
-    #     if parsed_ver.micro != 0:
-    #         raise ValueError("Provide only major.minor version of python")
-
-    #     if PYTHON_MIN_VER <= parsed_ver < PYTHON_MAX_VER:
-    #         return ver
-    #     else:
-    #         raise ValueError(
-    #             f"Python version must be between {PYTHON_MIN_VER} and {PYTHON_MAX_VER}"
-    #         )
+    class Config:
+        frozen = True
 
     @validator("python_packages")
-    def validate_python_packages(cls, pkgs: List[str]) -> List[str]:
+    def validate_python_packages(cls, pkgs: Tuple[str]) -> Tuple[str]:
         for pkg in pkgs:
             ver_parts = ()
             name_ver = pkg.split("==")
@@ -88,6 +76,9 @@ class WorkerConfig(SyftBaseModel):
 class CustomWorkerConfig(WorkerConfig):
     build: CustomBuildConfig
     version: str = "1"
+
+    class Config:
+        frozen = True
 
     @classmethod
     def from_dict(cls, config: Dict[str, Any]) -> Self:
