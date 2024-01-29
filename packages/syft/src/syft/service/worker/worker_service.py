@@ -197,9 +197,10 @@ class WorkerService(AbstractService):
             runner = KubernetesRunner()
             runner.delete_pod(pod_name=worker.name)
             return SyftSuccess(
+                # pod deletion is not supported in Kubernetes, removing and recreating the pod.
                 message=(
-                    f"Worker id={worker.id} was removed from pool."
-                    "Kubernetes will now re-create the pod."
+                    "Worker deletion is not supported in Kubernetes. "
+                    f"Removing and re-creating worker id={worker.id}"
                 )
             )
         elif not context.node.in_memory_workers:
