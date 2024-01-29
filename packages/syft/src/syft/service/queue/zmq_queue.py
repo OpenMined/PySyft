@@ -1,5 +1,4 @@
 # stdlib
-# stdlib
 from binascii import hexlify
 from collections import defaultdict
 import itertools
@@ -15,6 +14,7 @@ from typing import Union
 
 # third party
 from loguru import logger
+from pydantic import validator
 from zmq import Frame
 from zmq import LINGER
 from zmq.error import ContextTerminated
@@ -26,6 +26,7 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
 from ...service.action.action_object import ActionObject
 from ...service.context import AuthedServiceContext
+from ...types.base import SyftBaseModel
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -49,7 +50,7 @@ from .queue_stash import ActionQueueItem
 from .queue_stash import Status
 
 # Producer/Consumer heartbeat interval (in seconds)
-HEARTBEAT_INTERVAL_SEC = 5
+HEARTBEAT_INTERVAL_SEC = 2
 
 # Thread join timeout (in seconds)
 THREAD_TIMEOUT_SEC = 5
@@ -101,28 +102,27 @@ class Timeout:
         return time.time()
 
 
-class Worker:
-    def __init__(
-        self,
-        address: str,
-        identity: bytes,
-        service: Optional[str] = None,
-        syft_worker_id: Optional[Union[UID, str]] = None,
-    ):
-        self.identity = identity
-        self.address = address
-        self.service = service
-        self.syft_worker_id = UID(syft_worker_id)
-        self.__expiry_t = Timeout(WORKER_TIMEOUT_SEC)
+class Worker(SyftBaseModel):
+    address: bytes
+    identity: bytes
+    service: Optional[str] = None
+    syft_worker_id: Optional[UID] = None
+    expiry_t: Timeout = Timeout(WORKER_TIMEOUT_SEC)
+
+    @validator("syft_worker_id", pre=True, always=True)
+    def set_syft_worker_id(cls, v, values):
+        if isinstance(v, str):
+            return UID(v)
+        return v
 
     def has_expired(self):
-        return self.__expiry_t.has_expired()
+        return self.expiry_t.has_expired()
 
     def get_expiry(self) -> int:
-        return self.__expiry_t.next_ts
+        return self.expiry_t.next_ts
 
     def reset_expiry(self):
-        self.__expiry_t.reset()
+        self.expiry_t.reset()
 
 
 class Service:
@@ -137,11 +137,17 @@ class ZMQProducer(QueueProducer):
     INTERNAL_SERVICE_PREFIX = b"mmi."
 
     def __init__(
-        self, queue_name: str, queue_stash, port: int, context: AuthedServiceContext
+        self,
+        queue_name: str,
+        queue_stash,
+        worker_stash: WorkerStash,
+        port: int,
+        context: AuthedServiceContext,
     ) -> None:
         self.id = UID().short()
         self.port = port
         self.queue_stash = queue_stash
+        self.worker_stash = worker_stash
         self.queue_name = queue_name
         self.auth_context = context
         self._stop = threading.Event()
@@ -239,7 +245,16 @@ class ZMQProducer(QueueProducer):
                 key: self.unwrap_nested_actionobjects(obj) for key, obj in data.items()
             }
         if isinstance(data, ActionObject):
-            return data.get()
+            res = self.action_service.get(self.auth_context, data.id)
+            res = res.ok() if res.is_ok() else res.err()
+            if not isinstance(res, ActionObject):
+                return SyftError(message=f"{res}")
+            else:
+                nested_res = res.syft_action_data
+                if isinstance(nested_res, ActionObject):
+                    nested_res.syft_node_location = res.syft_node_location
+                    nested_res.syft_client_verify_key = res.syft_client_verify_key
+                return nested_res
         return data
 
     def preprocess_action_arg(self, arg):
@@ -362,12 +377,39 @@ class ZMQProducer(QueueProducer):
                 )
                 self.delete_worker(worker, False)
 
+    def update_consumer_state_for_worker(
+        self, syft_worker_id: UID, consumer_state: ConsumerState
+    ):
+        if self.worker_stash is None:
+            logger.error(
+                f"Worker stash is not defined for ZMQProducer : {self.queue_name} - {self.id}"
+            )
+            return
+
+        try:
+            res = self.worker_stash.update_consumer_state(
+                credentials=self.worker_stash.partition.root_verify_key,
+                worker_uid=syft_worker_id,
+                consumer_state=consumer_state,
+            )
+            if res.is_err():
+                logger.error(
+                    "Failed to update consumer state for worker id={} error={}",
+                    syft_worker_id,
+                    res.err(),
+                )
+        except Exception as e:
+            logger.error(
+                f"Failed to update consumer state for worker id: {syft_worker_id}. Error: {e}"
+            )
+
     def worker_waiting(self, worker: Worker):
         """This worker is now waiting for work."""
         # Queue to broker and service waiting lists
         self.waiting.append(worker)
         worker.service.waiting.append(worker)
         worker.reset_expiry()
+        self.update_consumer_state_for_worker(worker.syft_worker_id, ConsumerState.IDLE)
         self.dispatch(worker.service, None)
 
     def dispatch(self, service: Service, msg: bytes):
@@ -439,8 +481,8 @@ class ZMQProducer(QueueProducer):
                 else:
                     logger.error("Invalid message header: {}", header)
 
-            self.purge_workers()
             self.send_heartbeats()
+            self.purge_workers()
 
     def require_worker(self, address):
         """Finds the worker (creates if necessary)."""
@@ -463,6 +505,9 @@ class ZMQProducer(QueueProducer):
             syft_worker_id = msg.pop(0).decode()
             if worker_ready:
                 # Not first command in session or Reserved service name
+                # If worker was already present, then we disconnect it first
+                # and wait for it to re-register itself to the producer. This ensures that
+                # we always have a healthy worker in place that can talk to the producer.
                 self.delete_worker(worker, True)
             else:
                 # Attach worker to service and mark as idle
@@ -472,7 +517,7 @@ class ZMQProducer(QueueProducer):
                 else:
                     service = self.services.get(service_name)
                 worker.service = service
-                worker.syft_worker_id = syft_worker_id
+                worker.syft_worker_id = UID(syft_worker_id)
                 logger.info(
                     "New Worker id={} service={}",
                     worker.identity,
@@ -505,6 +550,10 @@ class ZMQProducer(QueueProducer):
             self.waiting.remove(worker)
 
         self.workers.pop(worker.identity, None)
+
+        self.update_consumer_state_for_worker(
+            worker.syft_worker_id, ConsumerState.DETACHED
+        )
 
     @property
     def alive(self):
@@ -699,27 +748,18 @@ class ZMQConsumer(QueueConsumer):
 
     def _set_worker_job(self, job_id: Optional[UID]):
         if self.worker_stash is not None:
-            res = self.worker_stash.get_by_uid(
-                self.worker_stash.partition.root_verify_key, self.syft_worker_id
+            consumer_state = (
+                ConsumerState.IDLE if job_id is None else ConsumerState.CONSUMING
             )
-
-            if res.is_err():
-                logger.error("Failed to get worker stash. {}", res.err())
-                return  # log/report?
-
-            worker_obj = res.ok()
-            worker_obj.job_id = job_id
-
-            if job_id is None:
-                worker_obj.consumer_state = ConsumerState.IDLE
-            else:
-                worker_obj.consumer_state = ConsumerState.CONSUMING
-
-            res = self.worker_stash.update(
-                self.worker_stash.partition.root_verify_key, obj=worker_obj
+            res = self.worker_stash.update_consumer_state(
+                credentials=self.worker_stash.partition.root_verify_key,
+                worker_uid=self.syft_worker_id,
+                consumer_state=consumer_state,
             )
             if res.is_err():
-                logger.error("Failed to update worker stash. {}", res.err())
+                logger.error(
+                    f"Failed to update consumer state for {self.service_name}-{self.id}, error={res.err()}"
+                )
 
     @property
     def alive(self):
@@ -803,6 +843,7 @@ class ZMQClient(QueueClient):
         queue_name: str,
         port: Optional[int] = None,
         queue_stash=None,
+        worker_stash: Optional[WorkerStash] = None,
         context=None,
     ) -> ZMQProducer:
         """Add a producer of a queue.
@@ -818,7 +859,11 @@ class ZMQClient(QueueClient):
                 port = self.config.queue_port
 
         producer = ZMQProducer(
-            queue_name=queue_name, queue_stash=queue_stash, port=port, context=context
+            queue_name=queue_name,
+            queue_stash=queue_stash,
+            port=port,
+            context=context,
+            worker_stash=worker_stash,
         )
         self.producers[queue_name] = producer
         return producer

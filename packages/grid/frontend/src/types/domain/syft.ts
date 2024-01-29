@@ -1,7 +1,7 @@
 export interface SyftUID {
-  value: string;
+  value: string
 }
 
 export interface SyftNodeId {
-  value: string;
+  value: string
 }

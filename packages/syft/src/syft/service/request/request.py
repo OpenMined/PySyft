@@ -630,7 +630,7 @@ class Request(SyftObject):
 
         is_approved = change.approved
 
-        permission_request = self.approve()
+        permission_request = self.approve(approve_nested=True)
         if isinstance(permission_request, SyftError):
             return permission_request
 
@@ -694,7 +694,7 @@ class Request(SyftObject):
                 return result_request
             self = result_request
 
-            approved = self.approve(disable_warnings=True)
+            approved = self.approve(disable_warnings=True, approve_nested=True)
             if isinstance(approved, SyftError):
                 return approved
 
@@ -981,7 +981,7 @@ class UserCodeStatusChange(Change):
         "link.service_func_name",
         "link.input_policy_type.__canonical_name__",
         "link.output_policy_type.__canonical_name__",
-        "link.worker_pool_id",
+        "link.worker_pool_name",
         "link.status.approved",
     ]
 
@@ -1012,7 +1012,7 @@ class UserCodeStatusChange(Change):
         return msg
 
     def __repr_syft_nested__(self):
-        msg = f"Request to change <b>{self.link.service_func_name}</b> (Pool Id: <b>{self.link.worker_pool_id}</b>) "
+        msg = f"Request to change <b>{self.link.service_func_name}</b> (Pool Id: <b>{self.link.worker_pool_name}</b>) "
         msg += "to permission <b>RequestStatus.APPROVED</b>"
         if self.nested_solved:
             if self.link.nested_codes == {}:

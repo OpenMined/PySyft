@@ -184,6 +184,14 @@ def get_enable_warnings() -> bool:
     return str_to_bool(get_env("ENABLE_WARNINGS", "False"))
 
 
+def get_container_host() -> Optional[str]:
+    return get_env("CONTAINER_HOST")
+
+
+def in_kubernetes() -> Optional[str]:
+    return get_container_host() == "k8s"
+
+
 def get_venv_packages() -> str:
     res = subprocess.getoutput(
         "pip list --format=freeze",
@@ -437,7 +445,10 @@ class Node(AbstractNode):
                     role=ServiceRole.ADMIN,
                 )
                 producer: QueueProducer = self.queue_manager.create_producer(
-                    queue_name=queue_name, queue_stash=self.queue_stash, context=context
+                    queue_name=queue_name,
+                    queue_stash=self.queue_stash,
+                    context=context,
+                    worker_stash=self.worker_stash,
                 )
                 producer.run()
                 address = producer.address
@@ -453,15 +464,17 @@ class Node(AbstractNode):
 
             service_name = queue_config_.client_config.consumer_service
 
-            print("Consumer service Name: ", service_name)
-
-            if service_name is None:
+            if not service_name:
                 # Create consumers for default worker pool
                 create_default_worker_pool(self)
             else:
                 # Create consumer for given worker pool
                 syft_worker_uid = get_syft_worker_uid()
-                if syft_worker_uid is not None:
+                print(
+                    f"Running as consumer with uid={syft_worker_uid} service={service_name}"
+                )
+
+                if syft_worker_uid:
                     self.add_consumer_for_service(
                         service_name=service_name,
                         syft_worker_id=UID(syft_worker_uid),
@@ -573,6 +586,7 @@ class Node(AbstractNode):
             )
         else:
             queue_config = None
+
         return cls(
             name=name,
             id=uid,
@@ -1146,7 +1160,7 @@ class Node(AbstractNode):
         credentials,
         parent_job_id=None,
         has_execute_permissions: bool = False,
-        worker_pool_id: Optional[UID] = None,
+        worker_pool_name: Optional[str] = None,
     ):
         job_id = UID()
         task_uid = UID()
@@ -1161,14 +1175,14 @@ class Node(AbstractNode):
             # If result is Ok, then user code object exists
             if result.is_ok() and result.ok() is not None:
                 user_code = result.ok()
-                worker_pool_id = user_code.worker_pool_id
+                worker_pool_name = user_code.worker_pool_name
 
         # If worker pool id is not set, then use default worker pool
         # Else, get the worker pool for given uid
-        if worker_pool_id is None:
+        if worker_pool_name is None:
             worker_pool = self.get_default_worker_pool()
         else:
-            result = self.pool_stash.get_by_uid(credentials, worker_pool_id)
+            result = self.pool_stash.get_by_name(credentials, worker_pool_name)
             if result.is_err():
                 return SyftError(message=f"{result.err()}")
             worker_pool = result.ok()
@@ -1244,20 +1258,32 @@ class Node(AbstractNode):
         return job
 
     def _get_existing_user_code_jobs(
-        self, user_code_id: UID, credentials: SyftVerifyKey
+        self, context: AuthedServiceContext, user_code_id: UID
     ) -> Union[List[Job], SyftError]:
-        role = self.get_role_for_credentials(credentials=credentials)
-        context = AuthedServiceContext(node=self, credentials=credentials, role=role)
-
         job_service = self.get_service("jobservice")
         return job_service.get_by_user_code_id(
             context=context, user_code_id=user_code_id
         )
 
+    def _is_usercode_call_on_owned_kwargs(
+        self, context: AuthedServiceContext, api_call: SyftAPICall
+    ) -> bool:
+        if api_call.path != "code.call":
+            return False
+        user_code_service = self.get_service("usercodeservice")
+        return user_code_service.is_execution_on_owned_args(api_call.kwargs, context)
+
     def add_api_call_to_queue(self, api_call, parent_job_id=None):
         unsigned_call = api_call
         if isinstance(api_call, SignedSyftAPICall):
             unsigned_call = api_call.message
+
+        credentials = api_call.credentials
+        context = AuthedServiceContext(
+            node=self,
+            credentials=credentials,
+            role=self.get_role_for_credentials(credentials=credentials),
+        )
 
         is_user_code = unsigned_call.path == "code.call"
 
@@ -1267,9 +1293,16 @@ class Node(AbstractNode):
         if is_user_code:
             action = Action.from_api_call(unsigned_call)
 
-            if self.node_side_type == NodeSideType.LOW_SIDE:
+            is_usercode_call_on_owned_kwargs = self._is_usercode_call_on_owned_kwargs(
+                context, unsigned_call
+            )
+            # Low side does not execute jobs, unless this is a mock execution
+            if (
+                not is_usercode_call_on_owned_kwargs
+                and self.node_side_type == NodeSideType.LOW_SIDE
+            ):
                 existing_jobs = self._get_existing_user_code_jobs(
-                    action.user_code_id, api_call.credentials
+                    context, action.user_code_id
                 )
                 if isinstance(existing_jobs, SyftError):
                     return existing_jobs
@@ -1480,6 +1513,9 @@ class NodeRegistry:
 
 
 def create_default_worker_pool(node: Node) -> Optional[SyftError]:
+    if node.in_memory_workers:
+        print("Creating default worker pool with in memory workers")
+
     credentials = node.verify_key
 
     image_stash = node.get_service(SyftWorkerImageService).stash
@@ -1504,11 +1540,9 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
     if isinstance(default_image, SyftError):
         return default_image
 
-    image_build_method = node.get_service_method(SyftWorkerImageService.build)
-
-    print("Building Default Worker Image")
-
     if not default_image.is_built:
+        print("Building Default Worker Image")
+        image_build_method = node.get_service_method(SyftWorkerImageService.build)
         # Build the Image for given tag
         result = image_build_method(
             context,
