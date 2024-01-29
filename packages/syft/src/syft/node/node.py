@@ -184,6 +184,14 @@ def get_enable_warnings() -> bool:
     return str_to_bool(get_env("ENABLE_WARNINGS", "False"))
 
 
+def get_container_host() -> Optional[str]:
+    return get_env("CONTAINER_HOST")
+
+
+def in_kubernetes() -> Optional[str]:
+    return get_container_host() == "k8s"
+
+
 def get_venv_packages() -> str:
     res = subprocess.getoutput(
         "pip list --format=freeze",
@@ -456,15 +464,17 @@ class Node(AbstractNode):
 
             service_name = queue_config_.client_config.consumer_service
 
-            print("Consumer service Name: ", service_name)
-
-            if service_name is None:
+            if not service_name:
                 # Create consumers for default worker pool
                 create_default_worker_pool(self)
             else:
                 # Create consumer for given worker pool
                 syft_worker_uid = get_syft_worker_uid()
-                if syft_worker_uid is not None:
+                print(
+                    f"Running as consumer with uid={syft_worker_uid} service={service_name}"
+                )
+
+                if syft_worker_uid:
                     self.add_consumer_for_service(
                         service_name=service_name,
                         syft_worker_id=UID(syft_worker_uid),
@@ -576,6 +586,7 @@ class Node(AbstractNode):
             )
         else:
             queue_config = None
+
         return cls(
             name=name,
             id=uid,
@@ -1502,6 +1513,9 @@ class NodeRegistry:
 
 
 def create_default_worker_pool(node: Node) -> Optional[SyftError]:
+    if node.in_memory_workers:
+        print("Creating default worker pool with in memory workers")
+
     credentials = node.verify_key
 
     image_stash = node.get_service(SyftWorkerImageService).stash
@@ -1526,11 +1540,9 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
     if isinstance(default_image, SyftError):
         return default_image
 
-    image_build_method = node.get_service_method(SyftWorkerImageService.build)
-
-    print("Building Default Worker Image")
-
     if not default_image.is_built:
+        print("Building Default Worker Image")
+        image_build_method = node.get_service_method(SyftWorkerImageService.build)
         # Build the Image for given tag
         result = image_build_method(
             context,

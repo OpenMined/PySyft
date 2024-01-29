@@ -1,22 +1,21 @@
 # stdlib
 import contextlib
-import json
 import os
 import socket
 import socketserver
 import sys
-from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Union
 
 # third party
 import docker
-from pydantic import BaseModel
 
 # relative
 from ...abstract_node import AbstractNode
 from ...custom_worker.builder import CustomWorkerBuilder
+from ...custom_worker.builder_types import ImageBuildResult
+from ...custom_worker.builder_types import ImagePushResult
 from ...custom_worker.config import DockerWorkerConfig
 from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
@@ -32,11 +31,6 @@ from .worker_pool import WorkerStatus
 
 DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu:0.0.1"
 DEFAULT_WORKER_POOL_NAME = "default-pool"
-
-
-class ImageBuildResult(BaseModel):
-    image_hash: str
-    logs: Iterable[str]
 
 
 def backend_container_name() -> str:
@@ -238,7 +232,7 @@ def run_workers_in_threads(
             )
         except Exception as e:
             print(
-                f"Failed to start consumer for Pool Name: {pool_name}, Worker Name: {worker_name}"
+                f"Failed to start consumer for Pool Name: {pool_name}, Worker Name: {worker_name}. Error: {e}"
             )
             worker.status = WorkerStatus.STOPPED
             error = str(e)
@@ -354,27 +348,27 @@ def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
 def docker_build(
     image: SyftWorkerImage, **kwargs
 ) -> Union[ImageBuildResult, SyftError]:
+    full_tag = image.image_identifier.full_name_with_tag
     try:
         builder = CustomWorkerBuilder()
-        (built_image, logs) = builder.build_image(
+        return builder.build_image(
             config=image.config,
-            tag=image.image_identifier.full_name_with_tag,
+            tag=full_tag,
             rm=True,
             forcerm=True,
             **kwargs,
         )
-        return ImageBuildResult(image_hash=built_image.id, logs=parse_output(logs))
     except docker.errors.APIError as e:
         return SyftError(
-            message=f"Docker API error when building {image.image_identifier}. Reason - {e}"
+            message=f"Docker API error when building '{full_tag}'. Reason - {e}"
         )
     except docker.errors.DockerException as e:
         return SyftError(
-            message=f"Docker exception when building {image.image_identifier}. Reason - {e}"
+            message=f"Docker exception when building '{full_tag}'. Reason - {e}"
         )
     except Exception as e:
         return SyftError(
-            message=f"Unknown exception when building {image.image_identifier}. Reason - {e}"
+            message=f"Unknown exception when building '{full_tag}'. Reason - {e}"
         )
 
 
@@ -382,7 +376,7 @@ def docker_push(
     image: SyftWorkerImage,
     username: Optional[str] = None,
     password: Optional[str] = None,
-) -> Union[List[str], SyftError]:
+) -> Union[ImagePushResult, SyftError]:
     try:
         builder = CustomWorkerBuilder()
         result = builder.push_image(
@@ -393,12 +387,12 @@ def docker_push(
             password=password,
         )
 
-        if "error" in result:
+        if "error" in result.logs:
             return SyftError(
-                message=f"Failed to push {image.image_identifier}. Logs - {result}"
+                message=f"Failed to push {image.image_identifier}. Logs:\n{result.logs}"
             )
 
-        return result.split(os.linesep)
+        return result
     except docker.errors.APIError as e:
         return SyftError(
             message=f"Docker API error when pushing {image.image_identifier}. {e}"
@@ -411,16 +405,3 @@ def docker_push(
         return SyftError(
             message=f"Unknown exception when pushing {image.image_identifier}. Reason - {e}"
         )
-
-
-def parse_output(log_iterator: Iterable) -> str:
-    log = ""
-    for line in log_iterator:
-        for item in line.values():
-            if isinstance(item, str):
-                log += item
-            elif isinstance(item, dict):
-                log += json.dumps(item)
-            else:
-                log += str(item)
-    return log
