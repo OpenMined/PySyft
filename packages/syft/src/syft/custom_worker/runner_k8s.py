@@ -16,15 +16,10 @@ from kr8s.objects import StatefulSet
 from .k8s import KUBERNETES_NAMESPACE
 from .k8s import PodStatus
 
-K8S_CLIENT = kr8s.api(namespace=KUBERNETES_NAMESPACE)
-
-# third party
-
 
 class KubernetesRunner:
     def __init__(self):
-        # use the cached client
-        self.client = K8S_CLIENT
+        self.client = kr8s.api(namespace=KUBERNETES_NAMESPACE)
 
     def create_pool(
         self,
