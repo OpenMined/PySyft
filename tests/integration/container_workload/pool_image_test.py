@@ -1,5 +1,6 @@
 # stdlib
 from textwrap import dedent
+from time import sleep
 
 # third party
 from faker import Faker
@@ -148,6 +149,7 @@ def test_pool_launch(domain_1_port) -> None:
     # TODO: delete the launched pool
 
     # Clean the build images
+    sleep(10)
     delete_result = domain_client.api.services.worker_image.remove(uid=worker_image.id)
     assert isinstance(delete_result, sy.SyftSuccess)
 
