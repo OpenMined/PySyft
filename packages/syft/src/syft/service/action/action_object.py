@@ -51,7 +51,6 @@ from ..response import SyftException
 from ..service import from_api_or_context
 from .action_data_empty import ActionDataEmpty
 from .action_data_empty import ActionDataLink
-from .action_data_empty import ActionFileData
 from .action_data_empty import ObjectNotReady
 from .action_permissions import ActionPermission
 from .action_types import action_type_for_object
@@ -688,40 +687,38 @@ class ActionObject(SyftObject):
 
     def _save_to_blob_storage_(self, data: Any) -> None:
         # relative
+        from ...types.blob_storage import BlobFile
         from ...types.blob_storage import CreateBlobStorageEntry
 
         if not isinstance(data, ActionDataEmpty):
-            if isinstance(data, ActionFileData):
-                storage_entry = CreateBlobStorageEntry.from_path(data.path)
+            if isinstance(data, BlobFile) and not data.uploaded:
+                api = APIRegistry.api_for(
+                    self.syft_node_location, self.syft_client_verify_key
+                )
+                data.upload_to_blobstorage_from_api(api)
             else:
                 storage_entry = CreateBlobStorageEntry.from_obj(data)
+                allocate_method = from_api_or_context(
+                    func_or_path="blob_storage.allocate",
+                    syft_node_location=self.syft_node_location,
+                    syft_client_verify_key=self.syft_client_verify_key,
+                )
+                if allocate_method is not None:
+                    blob_deposit_object = allocate_method(storage_entry)
 
-            allocate_method = from_api_or_context(
-                func_or_path="blob_storage.allocate",
-                syft_node_location=self.syft_node_location,
-                syft_client_verify_key=self.syft_client_verify_key,
-            )
-            if allocate_method is not None:
-                blob_deposit_object = allocate_method(storage_entry)
+                    if isinstance(blob_deposit_object, SyftError):
+                        return blob_deposit_object
 
-                if isinstance(blob_deposit_object, SyftError):
-                    return blob_deposit_object
-
-                if isinstance(data, ActionFileData):
-                    with open(data.path, "rb") as f:
-                        result = blob_deposit_object.write(f)
-                else:
                     result = blob_deposit_object.write(
                         BytesIO(serialize(data, to_bytes=True))
                     )
-
-                if isinstance(result, SyftError):
-                    return result
-                self.syft_blob_storage_entry_id = (
-                    blob_deposit_object.blob_storage_entry_id
-                )
-            else:
-                print("cannot save to blob storage")
+                    if isinstance(result, SyftError):
+                        return result
+                    self.syft_blob_storage_entry_id = (
+                        blob_deposit_object.blob_storage_entry_id
+                    )
+                else:
+                    print("cannot save to blob storage")
 
             self.syft_action_data_type = type(data)
 
@@ -1133,13 +1130,15 @@ class ActionObject(SyftObject):
         syft_node_location: Optional[UID] = None,
     ):
         """Create an Action Object from a file."""
+        # relative
+        from ...types.blob_storage import BlobFile
 
         if id is not None and syft_lineage_id is not None and id != syft_lineage_id.id:
             raise ValueError("UID and LineageID should match")
 
-        syft_action_data = ActionFileData(
-            path=path if isinstance(path, Path) else Path(path)
-        )
+        _path = path if isinstance(path, Path) else Path(path)
+        syft_action_data = BlobFile(path=_path, file_name=_path.name)
+
         action_type = action_type_for_object(syft_action_data)
 
         action_object = action_type(syft_action_data_cache=syft_action_data)
