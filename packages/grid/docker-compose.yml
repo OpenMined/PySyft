@@ -81,6 +81,7 @@ services:
   worker:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
+    hostname: ${NODE_NAME?Variable not set}
     profiles:
       - worker
     env_file:
@@ -104,12 +105,16 @@ services:
       - JAEGER_PORT=${JAEGER_PORT}
       - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
       - DEV_MODE=${DEV_MODE}
+      - QUEUE_PORT=${QUEUE_PORT}
+      - CREATE_PRODUCER=true
       - NODE_SIDE_TYPE=${NODE_SIDE_TYPE}
       - ENABLE_WARNINGS=${ENABLE_WARNINGS}
+      - INMEMORY_WORKERS=True # hardcoding is intentional, since single_container don't share databases
     ports:
       - "${HTTP_PORT}:${HTTP_PORT}"
     volumes:
       - credentials-data:/root/data/creds/
+      - /var/run/docker.sock:/var/run/docker.sock
     extra_hosts:
       - "host.docker.internal:host-gateway"
     labels:
@@ -151,7 +156,8 @@ services:
       - BACKEND_STORAGE_PATH=${BACKEND_STORAGE_PATH}
       - QUEUE_PORT=${QUEUE_PORT}
       - CREATE_PRODUCER=true
-      - N_CONSUMERS=0
+      - N_CONSUMERS=1
+      - INMEMORY_WORKERS=${INMEMORY_WORKERS}
       - HOST_GRID_PATH=${PWD}
     command: "./grid/start.sh"
     network_mode: service:proxy

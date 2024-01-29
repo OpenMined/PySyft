@@ -51,6 +51,7 @@ from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.user_code_service import UserCodeService
+from ..service.code.user_code_stash import UserCodeStash
 from ..service.code_history.code_history_service import CodeHistoryService
 from ..service.context import AuthedServiceContext
 from ..service.context import NodeServiceContext
@@ -70,6 +71,7 @@ from ..service.notification.notification_service import NotificationService
 from ..service.object_search.migration_state_service import MigrateStateService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
+from ..service.queue.base_queue import AbstractMessageHandler
 from ..service.queue.base_queue import QueueConsumer
 from ..service.queue.base_queue import QueueProducer
 from ..service.queue.queue import APICallMessageHandler
@@ -94,12 +96,20 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
+from ..service.worker.image_registry_service import SyftImageRegistryService
+from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
+from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
+from ..service.worker.utils import create_default_image
+from ..service.worker.worker_image_service import SyftWorkerImageService
+from ..service.worker.worker_pool_service import SyftWorkerPoolService
+from ..service.worker.worker_pool_stash import SyftWorkerPoolStash
 from ..service.worker.worker_service import WorkerService
 from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
+from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
@@ -109,6 +119,7 @@ from ..types.uid import UID
 from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
 from ..util.util import get_env
+from ..util.util import get_queue_address
 from ..util.util import get_root_data_path
 from ..util.util import random_name
 from ..util.util import str_to_bool
@@ -180,7 +191,9 @@ def get_venv_packages() -> str:
     return res
 
 
-dev_mode = get_dev_mode()
+def get_syft_worker_uid() -> Optional[str]:
+    return get_env("SYFT_WORKER_UID", None)
+
 
 signing_key_env = get_private_key_env()
 node_uid_env = get_node_uid_env()
@@ -253,10 +266,11 @@ class Node(AbstractNode):
         enable_warnings: bool = False,
         dev_mode: bool = False,
         migrate: bool = False,
+        in_memory_workers: bool = True,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
-        self.dev_mode = dev_mode
+        self.dev_mode = dev_mode or get_dev_mode()
         if node_uid_env is not None:
             self.id = UID.from_string(node_uid_env)
         else:
@@ -302,6 +316,9 @@ class Node(AbstractNode):
                 MetadataService,
                 BlobStorageService,
                 MigrateStateService,
+                SyftWorkerImageService,
+                SyftWorkerPoolService,
+                SyftImageRegistryService,
             ]
             if services is None
             else services
@@ -323,6 +340,7 @@ class Node(AbstractNode):
             create_oblv_key_pair(worker=self)
 
         self.enable_warnings = enable_warnings
+        self.in_memory_workers = in_memory_workers
 
         self.services = services
         self._construct_services()
@@ -376,6 +394,19 @@ class Node(AbstractNode):
         self.blob_store_config = config_
         self.blob_storage_client = config_.client_type(config=config_.client_config)
 
+        # relative
+        from ..store.blob_storage.seaweedfs import SeaweedFSConfig
+
+        if isinstance(config, SeaweedFSConfig):
+            blob_storage_service = self.get_service(BlobStorageService)
+            remote_profiles = blob_storage_service.remote_profile_stash.get_all(
+                credentials=self.signing_key.verify_key, has_permission=True
+            ).ok()
+            for remote_profile in remote_profiles:
+                self.blob_store_config.client_config.remote_profiles[
+                    remote_profile.profile_name
+                ] = remote_profile
+
     def stop(self):
         for consumer_list in self.queue_manager.consumers.values():
             for c in consumer_list:
@@ -383,11 +414,17 @@ class Node(AbstractNode):
         for p in self.queue_manager.producers.values():
             p.close()
 
+    def close(self):
+        self.stop()
+
     def init_queue_manager(self, queue_config: Optional[QueueConfig]):
         queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
         self.queue_config = queue_config_
 
         MessageHandlers = [APICallMessageHandler]
+
+        if self.is_subprocess:
+            return
 
         self.queue_manager = QueueManager(config=queue_config_)
         for message_handler in MessageHandlers:
@@ -400,24 +437,56 @@ class Node(AbstractNode):
                     role=ServiceRole.ADMIN,
                 )
                 producer: QueueProducer = self.queue_manager.create_producer(
-                    queue_name=queue_name, queue_stash=self.queue_stash, context=context
+                    queue_name=queue_name,
+                    queue_stash=self.queue_stash,
+                    context=context,
+                    worker_stash=self.worker_stash,
                 )
                 producer.run()
                 address = producer.address
             else:
                 port = queue_config_.client_config.queue_port
                 if port is not None:
-                    address = f"tcp://localhost:{port}"
+                    address = get_queue_address(port)
                 else:
                     address = None
 
-            for _ in range(queue_config_.client_config.n_consumers):
-                if address is None:
-                    raise ValueError("address unknown for consumers")
-                consumer: QueueConsumer = self.queue_manager.create_consumer(
-                    message_handler, address=address
-                )
-                consumer.run()
+            if address is None and queue_config_.client_config.n_consumers > 0:
+                raise ValueError("address unknown for consumers")
+
+            service_name = queue_config_.client_config.consumer_service
+
+            print("Consumer service Name: ", service_name)
+
+            if service_name is None:
+                # Create consumers for default worker pool
+                create_default_worker_pool(self)
+            else:
+                # Create consumer for given worker pool
+                syft_worker_uid = get_syft_worker_uid()
+                if syft_worker_uid is not None:
+                    self.add_consumer_for_service(
+                        service_name=service_name,
+                        syft_worker_id=UID(syft_worker_uid),
+                        address=address,
+                        message_handler=message_handler,
+                    )
+
+    def add_consumer_for_service(
+        self,
+        service_name: str,
+        syft_worker_id: UID,
+        address: str,
+        message_handler: AbstractMessageHandler = APICallMessageHandler,
+    ):
+        consumer: QueueConsumer = self.queue_manager.create_consumer(
+            message_handler,
+            address=address,
+            service_name=service_name,
+            worker_stash=self.worker_stash,
+            syft_worker_id=syft_worker_id,
+        )
+        consumer.run()
 
     @classmethod
     def named(
@@ -432,10 +501,13 @@ class Node(AbstractNode):
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         n_consumers: int = 0,
+        consumer_service: Optional[str] = None,
+        thread_workers: bool = False,
         create_producer: bool = False,
         queue_port: Optional[int] = None,
         dev_mode: bool = False,
         migrate: bool = False,
+        in_memory_workers: bool = True,
     ) -> Self:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         name_hash_uuid = name_hash[0:16]
@@ -498,7 +570,9 @@ class Node(AbstractNode):
                     create_producer=create_producer,
                     queue_port=queue_port,
                     n_consumers=n_consumers,
-                )
+                    consumer_service=consumer_service,
+                ),
+                thread_workers=thread_workers,
             )
         else:
             queue_config = None
@@ -517,6 +591,7 @@ class Node(AbstractNode):
             queue_config=queue_config,
             dev_mode=dev_mode,
             migrate=migrate,
+            in_memory_workers=in_memory_workers,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -711,12 +786,19 @@ class Node(AbstractNode):
             and document_store_config.client_config.filename is None
         ):
             document_store_config.client_config.filename = f"{self.id}.sqlite"
-            if dev_mode:
+            if self.dev_mode:
                 print(
                     f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
                 )
         document_store = document_store_config.store_type
         self.document_store_config = document_store_config
+
+        # We add the python id of the current node in order
+        # to create one connection per Node object in MongoClientCache
+        # so that we avoid closing the connection from a
+        # different thread through the garbage collection
+        if isinstance(self.document_store_config, MongoStoreConfig):
+            self.document_store_config.client_config.node_obj_python_id = id(self)
 
         self.document_store = document_store(
             root_verify_key=self.verify_key,
@@ -741,6 +823,12 @@ class Node(AbstractNode):
                 root_verify_key=self.verify_key,
             )
         elif isinstance(action_store_config, MongoStoreConfig):
+            # We add the python id of the current node in order
+            # to create one connection per Node object in MongoClientCache
+            # so that we avoid closing the connection from a
+            # different thread through the garbage collection
+            action_store_config.client_config.node_obj_python_id = id(self)
+
             self.action_store = MongoActionStore(
                 root_verify_key=self.verify_key, store_config=action_store_config
             )
@@ -753,6 +841,10 @@ class Node(AbstractNode):
     @property
     def job_stash(self):
         return self.get_service("jobservice").stash
+
+    @property
+    def worker_stash(self):
+        return self.get_service("workerservice").stash
 
     def _construct_services(self):
         self.service_path_map = {}
@@ -782,6 +874,9 @@ class Node(AbstractNode):
                 MetadataService,
                 BlobStorageService,
                 MigrateStateService,
+                SyftWorkerImageService,
+                SyftWorkerPoolService,
+                SyftImageRegistryService,
             ]
 
             if OBLV:
@@ -1050,11 +1145,44 @@ class Node(AbstractNode):
         return result
 
     def add_action_to_queue(
-        self, action, credentials, parent_job_id=None, has_execute_permissions=False
+        self,
+        action,
+        credentials,
+        parent_job_id=None,
+        has_execute_permissions: bool = False,
+        worker_pool_name: Optional[str] = None,
     ):
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(node=self)
+
+        # Extract worker pool id from user code
+        if action.user_code_id is not None:
+            result = self.user_code_stash.get_by_uid(
+                credentials=credentials, uid=action.user_code_id
+            )
+
+            # If result is Ok, then user code object exists
+            if result.is_ok() and result.ok() is not None:
+                user_code = result.ok()
+                worker_pool_name = user_code.worker_pool_name
+
+        # If worker pool id is not set, then use default worker pool
+        # Else, get the worker pool for given uid
+        if worker_pool_name is None:
+            worker_pool = self.get_default_worker_pool()
+        else:
+            result = self.pool_stash.get_by_name(credentials, worker_pool_name)
+            if result.is_err():
+                return SyftError(message=f"{result.err()}")
+            worker_pool = result.ok()
+
+        # Create a Worker pool reference object
+        worker_pool_ref = LinkedObject.from_obj(
+            worker_pool,
+            service_type=SyftWorkerPoolService,
+            node_uid=self.id,
+        )
 
         queue_item = ActionQueueItem(
             id=task_uid,
@@ -1066,6 +1194,7 @@ class Node(AbstractNode):
             args=[],
             kwargs={"action": action},
             has_execute_permissions=has_execute_permissions,
+            worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
         return self.add_queueitem_to_queue(
             queue_item, credentials, action, parent_job_id
@@ -1075,11 +1204,26 @@ class Node(AbstractNode):
         self, queue_item, credentials, action=None, parent_job_id=None
     ):
         log_id = UID()
+        role = self.get_role_for_credentials(credentials=credentials)
+        context = AuthedServiceContext(node=self, credentials=credentials, role=role)
 
         result_obj = ActionObject.empty()
         if action is not None:
+            result_obj = ActionObject.obj_not_ready(id=action.result_id)
             result_obj.id = action.result_id
             result_obj.syft_resolved = False
+            result_obj.syft_node_location = self.id
+            result_obj.syft_client_verify_key = credentials
+
+            action_service = self.get_service("actionservice")
+
+            if not action_service.store.exists(uid=action.result_id):
+                result = action_service.set_result_to_store(
+                    result_action_object=result_obj,
+                    context=context,
+                )
+                if result.is_err():
+                    return result.err()
 
         job = Job(
             id=queue_item.job_id,
@@ -1097,30 +1241,87 @@ class Node(AbstractNode):
         self.job_stash.set(credentials, job)
 
         log_service = self.get_service("logservice")
-        role = self.get_role_for_credentials(credentials=credentials)
-        context = AuthedServiceContext(node=self, credentials=credentials, role=role)
+
         result = log_service.add(context, log_id)
         if isinstance(result, SyftError):
             return result
         return job
+
+    def _get_existing_user_code_jobs(
+        self, context: AuthedServiceContext, user_code_id: UID
+    ) -> Union[List[Job], SyftError]:
+        job_service = self.get_service("jobservice")
+        return job_service.get_by_user_code_id(
+            context=context, user_code_id=user_code_id
+        )
+
+    def _is_usercode_call_on_owned_kwargs(
+        self, context: AuthedServiceContext, api_call: SyftAPICall
+    ) -> bool:
+        if api_call.path != "code.call":
+            return False
+        user_code_service = self.get_service("usercodeservice")
+        return user_code_service.is_execution_on_owned_args(api_call.kwargs, context)
 
     def add_api_call_to_queue(self, api_call, parent_job_id=None):
         unsigned_call = api_call
         if isinstance(api_call, SignedSyftAPICall):
             unsigned_call = api_call.message
 
+        credentials = api_call.credentials
+        context = AuthedServiceContext(
+            node=self,
+            credentials=credentials,
+            role=self.get_role_for_credentials(credentials=credentials),
+        )
+
         is_user_code = unsigned_call.path == "code.call"
 
-        service, method = unsigned_call.path.split(".")
+        service_str, method_str = unsigned_call.path.split(".")
 
         action = None
         if is_user_code:
             action = Action.from_api_call(unsigned_call)
+
+            is_usercode_call_on_owned_kwargs = self._is_usercode_call_on_owned_kwargs(
+                context, unsigned_call
+            )
+            # Low side does not execute jobs, unless this is a mock execution
+            if (
+                not is_usercode_call_on_owned_kwargs
+                and self.node_side_type == NodeSideType.LOW_SIDE
+            ):
+                existing_jobs = self._get_existing_user_code_jobs(
+                    context, action.user_code_id
+                )
+                if isinstance(existing_jobs, SyftError):
+                    return existing_jobs
+                elif len(existing_jobs) > 0:
+                    # Print warning if there are existing jobs for this user code
+                    # relative
+                    from ..util.util import prompt_warning_message
+
+                    prompt_warning_message(
+                        "There are existing jobs for this user code, returning the latest one"
+                    )
+                    return existing_jobs[-1]
+                else:
+                    return SyftError(
+                        message="Please wait for the admin to allow the execution of this code"
+                    )
+
             return self.add_action_to_queue(
                 action, api_call.credentials, parent_job_id=parent_job_id
             )
+
         else:
             worker_settings = WorkerSettings.from_node(node=self)
+            default_worker_pool = self.get_default_worker_pool()
+            worker_pool = LinkedObject.from_obj(
+                default_worker_pool,
+                service_type=SyftWorkerPoolService,
+                node_uid=self.id,
+            )
             queue_item = QueueItem(
                 id=UID(),
                 node_uid=self.id,
@@ -1128,10 +1329,11 @@ class Node(AbstractNode):
                 syft_node_location=self.id,
                 job_id=UID(),
                 worker_settings=worker_settings,
-                service=service,
-                method=method,
+                service=service_str,
+                method=method_str,
                 args=unsigned_call.args,
                 kwargs=unsigned_call.kwargs,
+                worker_pool=worker_pool,
             )
             return self.add_queueitem_to_queue(
                 queue_item,
@@ -1139,6 +1341,23 @@ class Node(AbstractNode):
                 action=None,
                 parent_job_id=parent_job_id,
             )
+
+    @property
+    def pool_stash(self) -> SyftWorkerPoolStash:
+        return self.get_service(SyftWorkerPoolService).stash
+
+    @property
+    def user_code_stash(self) -> UserCodeStash:
+        return self.get_service(UserCodeService).stash
+
+    def get_default_worker_pool(self):
+        result = self.pool_stash.get_by_name(
+            credentials=self.verify_key, pool_name=DEFAULT_WORKER_POOL_NAME
+        )
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+        worker_pool = result.ok()
+        return worker_pool
 
     def get_api(
         self,
@@ -1223,7 +1442,11 @@ def create_admin_new(
             user = create_user.to(User)
             user.signing_key = node.signing_key
             user.verify_key = user.signing_key.verify_key
-            result = user_stash.set(credentials=node.signing_key.verify_key, user=user)
+            result = user_stash.set(
+                credentials=node.signing_key.verify_key,
+                user=user,
+                ignore_duplicates=True,
+            )
             if result.is_ok():
                 return result.ok()
             else:
@@ -1277,3 +1500,86 @@ class NodeRegistry:
     @classmethod
     def get_all_nodes(cls) -> List[Node]:
         return list(cls.__node_registry__.values())
+
+
+def create_default_worker_pool(node: Node) -> Optional[SyftError]:
+    credentials = node.verify_key
+
+    image_stash = node.get_service(SyftWorkerImageService).stash
+
+    context = AuthedServiceContext(
+        node=node,
+        credentials=credentials,
+        role=ServiceRole.ADMIN,
+    )
+
+    print("Creating Default Worker Image")
+    # Get/Create a default worker SyftWorkerImage
+    default_image = create_default_image(
+        credentials=credentials,
+        image_stash=image_stash,
+        dev_mode=node.dev_mode,
+        syft_version_tag="local-dev" if node.dev_mode else __version__,
+    )
+
+    # Skip pulling image if using locally built image
+    pull_image = not node.dev_mode
+    if isinstance(default_image, SyftError):
+        return default_image
+
+    image_build_method = node.get_service_method(SyftWorkerImageService.build)
+
+    print("Building Default Worker Image")
+
+    if not default_image.is_built:
+        # Build the Image for given tag
+        result = image_build_method(
+            context,
+            image_uid=default_image.id,
+            tag=DEFAULT_WORKER_IMAGE_TAG,
+            pull=pull_image,
+        )
+
+        if isinstance(result, SyftError):
+            print("Failed to build default worker image: ", result.message)
+            return
+
+    default_worker_pool = node.get_default_worker_pool()
+    worker_count = node.queue_config.client_config.n_consumers
+
+    # Create worker pool if it doesn't exists
+    if default_worker_pool is None:
+        worker_to_add_ = worker_count
+        create_pool_method = node.get_service_method(SyftWorkerPoolService.launch)
+        print("Creating default Worker Pool")
+        result = create_pool_method(
+            context,
+            name=DEFAULT_WORKER_POOL_NAME,
+            image_uid=default_image.id,
+            num_workers=worker_to_add_,
+        )
+
+    else:
+        # Else add a worker to existing worker pool
+        worker_to_add_ = max(default_worker_pool.max_count, worker_count) - len(
+            default_worker_pool.worker_list
+        )
+        add_worker_method = node.get_service_method(SyftWorkerPoolService.add_workers)
+        result = add_worker_method(
+            context=context, number=worker_to_add_, pool_name=DEFAULT_WORKER_POOL_NAME
+        )
+
+    if isinstance(result, SyftError):
+        print(f"Failed to create Worker for Default workers. Error: {result.message}")
+        return
+
+    for n in range(worker_to_add_):
+        container_status = result[n]
+        if container_status.error:
+            print(
+                f"Failed to create container: Worker: {container_status.worker},"
+                f"Error: {container_status.error}"
+            )
+            return
+
+    print("Created default worker pool.")

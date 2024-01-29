@@ -58,7 +58,7 @@ jobs:
         run: echo ${{steps.get-hashes.outputs.previous_hash}}
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -115,7 +115,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -134,9 +134,9 @@ jobs:
           tox -e syftcli.build
 
       - name: upload binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: syftcli-binaries-${{needs.deploy-syft-cli.outputs.deployed_version}}
+          name: syftcli-binaries-${{needs.deploy-syft-cli.outputs.deployed_version}}-${{matrix.os}}
           path: ./packages/syftcli/dist/cli/*
           if-no-files-found: error
 
@@ -173,10 +173,11 @@ jobs:
 
       - name: Download binary
         if: steps.check-pypi.outputs.released == 'true'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: syftcli-binaries-${{needs.deploy-syft-cli.outputs.deployed_version}}
+          pattern: syftcli-binaries-${{needs.deploy-syft-cli.outputs.deployed_version}}-*
           path: ./downloaded-binaries/
+          merge-multiple: true
 
       - name: GitHub Release
         if: steps.check-pypi.outputs.released == 'true'

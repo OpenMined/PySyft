@@ -2,17 +2,21 @@
 from __future__ import annotations
 
 # stdlib
+from pathlib import Path
+import re
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
 
 # third party
+from loguru import logger
 from tqdm import tqdm
 
 # relative
 from ..abstract_node import NodeSideType
 from ..img.base64 import base64read
 from ..serde.serializable import serializable
+from ..service.action.action_object import ActionObject
 from ..service.code_history.code_history import CodeHistoriesDict
 from ..service.code_history.code_history import UsersCodeHistoriesDict
 from ..service.dataset.dataset import Contributor
@@ -22,6 +26,7 @@ from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.user.roles import Roles
 from ..service.user.user_roles import ServiceRole
+from ..types.blob_storage import BlobFile
 from ..types.uid import UID
 from ..util.fonts import fonts_css
 from ..util.util import get_mb_size
@@ -34,6 +39,23 @@ from .client import login_as_guest
 if TYPE_CHECKING:
     # relative
     from ..service.project.project import Project
+
+
+def _get_files_from_glob(glob_path: str) -> list:
+    files = Path().glob(glob_path)
+    return [f for f in files if f.is_file() and not f.name.startswith(".")]
+
+
+def _get_files_from_dir(dir: Path, recursive: bool) -> list:
+    files = dir.rglob("*") if recursive else dir.iterdir()
+    return [f for f in files if not f.name.startswith(".") and f.is_file()]
+
+
+def _contains_subdir(dir: Path) -> bool:
+    for item in dir.iterdir():
+        if item.is_dir():
+            return True
+    return False
 
 
 def add_default_uploader(
@@ -52,6 +74,7 @@ def add_default_uploader(
             email=user.email,
         )
         obj.contributors.add(uploader)
+
     obj.uploader = uploader
     return obj
 
@@ -115,6 +138,70 @@ class DomainClient(SyftClient):
             if len(valid.err()) > 0:
                 return tuple(valid.err())
             return valid.err()
+
+    def upload_files(
+        self,
+        file_list: Union[BlobFile, list[BlobFile], str, list[str], Path, list[Path]],
+        allow_recursive=False,
+        show_files=False,
+    ) -> Union[SyftSuccess, SyftError]:
+        if not file_list:
+            return SyftError(message="No files to upload")
+
+        if not isinstance(file_list, list):
+            file_list = [file_list]
+
+        expanded_file_list = []
+
+        for file in file_list:
+            if isinstance(file, BlobFile):
+                expanded_file_list.append(file)
+                continue
+
+            path = Path(file)
+
+            if re.search(r"[\*\?\[]", str(path)):
+                expanded_file_list.extend(_get_files_from_glob(str(path)))
+            elif path.is_dir():
+                if not allow_recursive and _contains_subdir(path):
+                    res = input(
+                        f"Do you want to include all files recursively in {path.absolute()}? [y/n]: "
+                    ).lower()
+                    print(
+                        f'{"Recursively uploading all files" if res == "y" else "Uploading files"} in {path.absolute()}'
+                    )
+                    allow_recursive = res == "y"
+                expanded_file_list.extend(_get_files_from_dir(path, allow_recursive))
+            elif path.exists():
+                expanded_file_list.append(path)
+
+        if not expanded_file_list:
+            return SyftError(message="No files to upload were found")
+
+        print(
+            f"Uploading {len(expanded_file_list)} {'file' if len(expanded_file_list) == 1 else 'files'}:"
+        )
+
+        if show_files:
+            for file in expanded_file_list:
+                if isinstance(file, BlobFile):
+                    print(file.path or file.file_name)
+                else:
+                    print(file.absolute())
+
+        try:
+            result = []
+            for file in tqdm(expanded_file_list):
+                if not isinstance(file, BlobFile):
+                    file = BlobFile(path=file, file_name=file.name)
+                if not file.uploaded:
+                    file.upload_to_blobstorage(self)
+                result.append(file)
+
+            return ActionObject.from_obj(result).send(self)
+        except Exception as err:
+            logger.debug("upload_files: Error creating action_object: {}", err)
+            return SyftError(message=f"Failed to upload files: {err}")
 
     def connect_to_gateway(
         self,
@@ -196,6 +283,24 @@ class DomainClient(SyftClient):
     @property
     def code_histories(self) -> UsersCodeHistoriesDict:
         return self.api.services.code_history.get_histories()
+
+    @property
+    def images(self) -> Optional[APIModule]:
+        if self.api.has_service("worker_image"):
+            return self.api.services.worker_image
+        return None
+
+    @property
+    def worker_pools(self) -> Optional[APIModule]:
+        if self.api.has_service("worker_pool"):
+            return self.api.services.worker_pool
+        return None
+
+    @property
+    def worker_images(self) -> Optional[APIModule]:
+        if self.api.has_service("worker_image"):
+            return self.api.services.worker_image
+        return None
 
     def get_project(
         self,

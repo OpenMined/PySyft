@@ -42,6 +42,8 @@ Read/retrieve SyftObject from blob storage
 
 
 # stdlib
+import os
+from pathlib import Path
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -61,15 +63,21 @@ from ...types.blob_storage import BlobFile
 from ...types.blob_storage import BlobFileType
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
+from ...types.blob_storage import DEFAULT_CHUNK_SIZE
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.grid_url import GridURL
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
+from ...types.transforms import str_url_to_grid_url
 from ...types.uid import UID
+
+DEFAULT_TIMEOUT = 10
+MAX_RETRIES = 20
 
 
 @serializable()
@@ -91,20 +99,9 @@ class BlobRetrieval(SyftObject):
     syft_blob_storage_entry_id: Optional[UID] = None
     file_size: Optional[int]
 
-    def read(self) -> Union[SyftObject, SyftError]:
-        # we need both methods bcs of inheritrance
-        return self._read()
-
-    def _read(self):
-        with open(self.file_name, "rb") as f:
-            return f.read()
-
-    def _read_data(self, **kwargs):
-        return self._read()
-
 
 @migrate(BlobRetrieval, BlobRetrievalV1)
-def downgrade_blobretrival_v2_to_v1():
+def downgrade_blobretrieval_v2_to_v1():
     return [
         drop(["syft_blob_storage_entry_id", "file_size"]),
     ]
@@ -119,9 +116,9 @@ def upgrade_blobretrieval_v1_to_v2():
 
 
 @serializable()
-class SyftObjectRetrievalV1(BlobRetrievalV1):
+class SyftObjectRetrievalV2(BlobRetrieval):
     __canonical_name__ = "SyftObjectRetrieval"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     syft_object: bytes
 
@@ -129,35 +126,46 @@ class SyftObjectRetrievalV1(BlobRetrievalV1):
 @serializable()
 class SyftObjectRetrieval(BlobRetrieval):
     __canonical_name__ = "SyftObjectRetrieval"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     syft_object: bytes
+    path: Path
 
-    def read(self) -> Union[SyftObject, SyftError]:
-        if self.type_ is BlobFileType:
-            with open(self.file_name, "wb") as fp:
-                fp.write(self.syft_object)
-            return BlobFile(
-                file_name=self.file_name,
-                syft_blob_storage_entry_id=self.syft_blob_storage_entry_id,
-                syft_node_location=self.syft_node_location,
-                syft_client_verify_key=self.syft_client_verify_key,
-            )
-        return deserialize(self.syft_object, from_bytes=True)
+    def _read_data(self, stream=False, _deserialize=True, **kwargs):
+        # development setup, we can access the same filesystem
+        if os.access(self.path, os.R_OK) and self.path.is_file():
+            with open(self.path, "rb") as fp:
+                res = fp.read()
+                if _deserialize:
+                    res = deserialize(res, from_bytes=True)
+        # single container setup, we have to use the data in the object
+        else:
+            if not _deserialize:
+                res = self.syft_object
+            else:
+                res = deserialize(self.syft_object, from_bytes=True)
+
+        # TODO: implement proper streaming from local files
+        if stream:
+            return [res]
+        else:
+            return res
+
+    def read(self, _deserialize=True) -> Union[SyftObject, SyftError]:
+        return self._read_data(_deserialize=_deserialize)
 
 
-@migrate(SyftObjectRetrieval, SyftObjectRetrievalV1)
-def downgrade_syftobjretrival_v2_to_v1():
+@migrate(SyftObjectRetrieval, SyftObjectRetrievalV2)
+def downgrade_syftobjretrival_v3_to_v2():
     return [
-        drop(["syft_blob_storage_entry_id", "file_size"]),
+        drop(["path"]),
     ]
 
 
-@migrate(SyftObjectRetrievalV1, SyftObjectRetrieval)
-def upgrade_syftobjretrival_v1_to_v2():
+@migrate(SyftObjectRetrievalV2, SyftObjectRetrieval)
+def upgrade_syftobjretrival_v2_to_v3():
     return [
-        make_set_default("syft_blob_storage_entry_id", None),
-        make_set_default("file_size", 1),
+        make_set_default("path", Path("")),
     ]
 
 
@@ -168,12 +176,48 @@ class BlobRetrievalByURLV1(BlobRetrievalV1):
     url: GridURL
 
 
-@serializable()
-class BlobRetrievalByURL(BlobRetrieval):
+def syft_iter_content(
+    blob_url, chunk_size, max_retries=MAX_RETRIES, timeout=DEFAULT_TIMEOUT
+):
+    """custom iter content with smart retries (start from last byte read)"""
+    current_byte = 0
+    for attempt in range(max_retries):
+        try:
+            headers = {"Range": f"bytes={current_byte}-"}
+            with requests.get(
+                str(blob_url), stream=True, headers=headers, timeout=(timeout, timeout)
+            ) as response:
+                response.raise_for_status()
+                for chunk in response.iter_content(
+                    chunk_size=chunk_size, decode_unicode=False
+                ):
+                    current_byte += len(chunk)
+                    yield chunk
+                return
+
+        except requests.exceptions.RequestException as e:
+            if attempt < max_retries:
+                print(
+                    f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying..."
+                )
+            else:
+                print(f"Max retries reached. Failed with error: {e}")
+                raise
+
+
+class BlobRetrievalByURLV2(BlobRetrievalV1):
     __canonical_name__ = "BlobRetrievalByURL"
     __version__ = SYFT_OBJECT_VERSION_2
 
     url: GridURL
+
+
+@serializable()
+class BlobRetrievalByURL(BlobRetrieval):
+    __canonical_name__ = "BlobRetrievalByURL"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    url: Union[GridURL, str]
 
     def read(self) -> Union[SyftObject, SyftError]:
         if self.type_ is BlobFileType:
@@ -187,7 +231,7 @@ class BlobRetrievalByURL(BlobRetrieval):
         else:
             return self._read_data()
 
-    def _read_data(self, stream=False, chunk_size=512):
+    def _read_data(self, stream=False, chunk_size=DEFAULT_CHUNK_SIZE, *args, **kwargs):
         # relative
         from ...client.api import APIRegistry
 
@@ -195,38 +239,53 @@ class BlobRetrievalByURL(BlobRetrieval):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-        if api is not None:
+        if api is not None and isinstance(self.url, GridURL):
             blob_url = api.connection.to_blob_route(
                 self.url.url_path, host=self.url.host_or_ip
             )
         else:
             blob_url = self.url
         try:
-            response = requests.get(str(blob_url), stream=stream)  # nosec
-            response.raise_for_status()
             if self.type_ is BlobFileType:
                 if stream:
-                    return response.iter_lines(chunk_size=chunk_size)
+                    return syft_iter_content(blob_url, chunk_size)
                 else:
+                    response = requests.get(str(blob_url), stream=False)  # nosec
+                    response.raise_for_status()
                     return response.content
-            return deserialize(response.content, from_bytes=True)
+            else:
+                response = requests.get(str(blob_url), stream=stream)  # nosec
+                response.raise_for_status()
+                return deserialize(response.content, from_bytes=True)
         except requests.RequestException as e:
             return SyftError(message=f"Failed to retrieve with Error: {e}")
 
 
-@migrate(BlobRetrievalByURL, BlobRetrievalByURLV1)
+@migrate(BlobRetrievalByURLV2, BlobRetrievalByURLV1)
 def downgrade_blobretrivalbyurl_v2_to_v1():
     return [
         drop(["syft_blob_storage_entry_id", "file_size"]),
     ]
 
 
-@migrate(BlobRetrievalByURLV1, BlobRetrievalByURL)
+@migrate(BlobRetrievalByURLV1, BlobRetrievalByURLV2)
 def upgrade_blobretrivalbyurl_v1_to_v2():
     return [
         make_set_default("syft_blob_storage_entry_id", None),
         make_set_default("file_size", 1),
     ]
+
+
+@migrate(BlobRetrievalByURL, BlobRetrievalByURLV2)
+def downgrade_blobretrivalbyurl_v3_to_v2():
+    return [
+        str_url_to_grid_url,
+    ]
+
+
+@migrate(BlobRetrievalByURLV2, BlobRetrievalByURL)
+def upgrade_blobretrivalbyurl_v2_to_v3():
+    return []
 
 
 @serializable()

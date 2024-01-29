@@ -6,6 +6,7 @@ from enum import Enum
 import inspect
 from io import BytesIO
 from pathlib import Path
+import time
 import traceback
 import types
 from typing import Any
@@ -49,7 +50,8 @@ from ...util.logger import debug
 from ..response import SyftException
 from ..service import from_api_or_context
 from .action_data_empty import ActionDataEmpty
-from .action_data_empty import ActionFileData
+from .action_data_empty import ActionDataLink
+from .action_data_empty import ObjectNotReady
 from .action_permissions import ActionPermission
 from .action_types import action_type_for_object
 from .action_types import action_type_for_type
@@ -421,11 +423,14 @@ def convert_to_pointers(
     args: Optional[List] = None,
     kwargs: Optional[Dict] = None,
 ) -> Tuple[List, Dict]:
+    # relative
+    from ..dataset.dataset import Asset
+
     arg_list = []
     kwarg_dict = {}
     if args is not None:
         for arg in args:
-            if not isinstance(arg, ActionObject):
+            if not isinstance(arg, (ActionObject, Asset, UID)):
                 arg = ActionObject.from_obj(
                     syft_action_data=arg,
                     syft_client_verify_key=api.signing_key.verify_key,
@@ -440,7 +445,7 @@ def convert_to_pointers(
 
     if kwargs is not None:
         for k, arg in kwargs.items():
-            if not isinstance(arg, ActionObject):
+            if not isinstance(arg, (ActionObject, Asset, UID)):
                 arg = ActionObject.from_obj(
                     syft_action_data=arg,
                     syft_client_verify_key=api.signing_key.verify_key,
@@ -551,6 +556,8 @@ BASE_PASSTHROUGH_ATTRS = [
     "_repr_debug_",
     "as_empty",
     "get",
+    "is_link",
+    "wait",
     "_save_to_blob_storage",
     "_save_to_blob_storage_",
     "syft_action_data",
@@ -680,40 +687,38 @@ class ActionObject(SyftObject):
 
     def _save_to_blob_storage_(self, data: Any) -> None:
         # relative
+        from ...types.blob_storage import BlobFile
         from ...types.blob_storage import CreateBlobStorageEntry
 
         if not isinstance(data, ActionDataEmpty):
-            if isinstance(data, ActionFileData):
-                storage_entry = CreateBlobStorageEntry.from_path(data.path)
+            if isinstance(data, BlobFile) and not data.uploaded:
+                api = APIRegistry.api_for(
+                    self.syft_node_location, self.syft_client_verify_key
+                )
+                data.upload_to_blobstorage_from_api(api)
             else:
                 storage_entry = CreateBlobStorageEntry.from_obj(data)
+                allocate_method = from_api_or_context(
+                    func_or_path="blob_storage.allocate",
+                    syft_node_location=self.syft_node_location,
+                    syft_client_verify_key=self.syft_client_verify_key,
+                )
+                if allocate_method is not None:
+                    blob_deposit_object = allocate_method(storage_entry)
 
-            allocate_method = from_api_or_context(
-                func_or_path="blob_storage.allocate",
-                syft_node_location=self.syft_node_location,
-                syft_client_verify_key=self.syft_client_verify_key,
-            )
-            if allocate_method is not None:
-                blob_deposit_object = allocate_method(storage_entry)
+                    if isinstance(blob_deposit_object, SyftError):
+                        return blob_deposit_object
 
-                if isinstance(blob_deposit_object, SyftError):
-                    return blob_deposit_object
-
-                if isinstance(data, ActionFileData):
-                    with open(data.path, "rb") as f:
-                        result = blob_deposit_object.write(f)
-                else:
                     result = blob_deposit_object.write(
                         BytesIO(serialize(data, to_bytes=True))
                     )
-
-                if isinstance(result, SyftError):
-                    return result
-                self.syft_blob_storage_entry_id = (
-                    blob_deposit_object.blob_storage_entry_id
-                )
-            else:
-                print("cannot save to blob storage")
+                    if isinstance(result, SyftError):
+                        return result
+                    self.syft_blob_storage_entry_id = (
+                        blob_deposit_object.blob_storage_entry_id
+                    )
+                else:
+                    print("cannot save to blob storage")
 
             self.syft_action_data_type = type(data)
 
@@ -1084,10 +1089,13 @@ class ActionObject(SyftObject):
         else:
             return res.syft_action_data
 
-    def get(self) -> Any:
+    def get(self, block: bool = False) -> Any:
         """Get the object from a Syft Client"""
         # relative
         from ...client.api import APIRegistry
+
+        if block:
+            self.wait()
 
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
@@ -1122,13 +1130,15 @@ class ActionObject(SyftObject):
         syft_node_location: Optional[UID] = None,
     ):
         """Create an Action Object from a file."""
+        # relative
+        from ...types.blob_storage import BlobFile
 
         if id is not None and syft_lineage_id is not None and id != syft_lineage_id.id:
             raise ValueError("UID and LineageID should match")
 
-        syft_action_data = ActionFileData(
-            path=path if isinstance(path, Path) else Path(path)
-        )
+        _path = path if isinstance(path, Path) else Path(path)
+        syft_action_data = BlobFile(path=_path, file_name=_path.name)
+
         action_type = action_type_for_object(syft_action_data)
 
         action_object = action_type(syft_action_data_cache=syft_action_data)
@@ -1206,6 +1216,47 @@ class ActionObject(SyftObject):
 
     def as_empty_data(self) -> ActionDataEmpty:
         return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
+
+    def wait(self):
+        # relative
+        from ...client.api import APIRegistry
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if isinstance(self.id, LineageID):
+            obj_id = self.id.id
+        else:
+            obj_id = self.id
+
+        while not api.services.action.is_resolved(obj_id):
+            time.sleep(1)
+        return self
+
+    @staticmethod
+    def link(
+        result_id: UID,
+        pointer_id: Optional[UID] = None,
+    ) -> ActionObject:
+        link = ActionDataLink(action_object_id=pointer_id)
+        res = ActionObject.from_obj(
+            id=result_id,
+            syft_action_data=link,
+        )
+        return res
+
+    @staticmethod
+    def obj_not_ready(
+        id: UID,
+    ) -> ActionObject:
+        inner_obj = ObjectNotReady(obj_id=id)
+
+        res = ActionObject.from_obj(
+            id=id,
+            syft_action_data=inner_obj,
+        )
+        return res
 
     @staticmethod
     def empty(
@@ -1618,6 +1669,10 @@ class ActionObject(SyftObject):
         # Handle anything else
         res = self._syft_wrap_attribute_for_methods(name)
         return res
+
+    @property
+    def is_link(self) -> bool:
+        return isinstance(self.syft_action_data, ActionDataLink)
 
     def __setattr__(self, name: str, value: Any) -> Any:
         defined_on_self = name in self.__dict__ or name in self.__private_attributes__

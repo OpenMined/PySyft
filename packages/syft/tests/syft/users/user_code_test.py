@@ -29,8 +29,22 @@ def test_func_2():
     return 1
 
 
-def test_user_code(worker, guest_client: User) -> None:
-    test_func()
+def test_user_code(worker) -> None:
+    root_domain_client = worker.root_client
+    root_domain_client.register(
+        name="data-scientist",
+        email="test_user@openmined.org",
+        password="0000",
+        password_verify="0000",
+    )
+    guest_client = root_domain_client.login(
+        email="test_user@openmined.org",
+        password="0000",
+    )
+
+    users = root_domain_client.users.get_all()
+    users[-1].allow_mock_execution()
+
     guest_client.api.services.code.request_code_execution(test_func)
 
     root_domain_client = worker.root_client
@@ -48,7 +62,7 @@ def test_user_code(worker, guest_client: User) -> None:
 
 
 def test_duplicated_user_code(worker, guest_client: User) -> None:
-    test_func()
+    # test_func()
     result = guest_client.api.services.code.request_code_execution(test_func)
     assert isinstance(result, Request)
     assert len(guest_client.code.get_all()) == 1
@@ -145,3 +159,117 @@ def test_nested_requests(worker, guest_client: User):
     assert linked_obj.resolve.id == inner.id
     assert outer.status.approved
     assert not inner.status.approved
+
+
+def test_user_code_mock_execution(worker) -> None:
+    # Setup
+    root_domain_client = worker.root_client
+
+    # TODO guest_client fixture is not in root_domain_client.users
+    root_domain_client.register(
+        name="data-scientist",
+        email="test_user@openmined.org",
+        password="0000",
+        password_verify="0000",
+    )
+    ds_client = root_domain_client.login(
+        email="test_user@openmined.org",
+        password="0000",
+    )
+
+    dataset = sy.Dataset(
+        name="my-dataset",
+        asset_list=[
+            sy.Asset(
+                name="numpy-data",
+                data=np.array([0, 1, 2, 3, 4]),
+                mock=np.array([5, 6, 7, 8, 9]),
+            )
+        ],
+    )
+    root_domain_client.upload_dataset(dataset)
+
+    # DS requests code execution
+    data = ds_client.datasets[0].assets[0]
+
+    @sy.syft_function_single_use(data=data)
+    def compute_mean(data):
+        return data.mean()
+
+    compute_mean.code = dedent(compute_mean.code)
+    ds_client.api.services.code.request_code_execution(compute_mean)
+
+    # Guest attempts to set own permissions
+    guest_user = ds_client.users.get_current_user()
+    res = guest_user.allow_mock_execution()
+    assert isinstance(res, SyftError)
+
+    # Mock execution fails, no permissions
+    result = ds_client.api.services.code.compute_mean(data=data.mock)
+    assert isinstance(result, SyftError)
+
+    # DO grants permissions
+    users = root_domain_client.users.get_all()
+    guest_user = [u for u in users if u.id == guest_user.id][0]
+    guest_user.allow_mock_execution()
+
+    # Mock execution succeeds
+    result = ds_client.api.services.code.compute_mean(data=data.mock).get()
+    assert isinstance(result, float)
+
+
+def test_mock_multiple_arguments(worker) -> None:
+    # Setup
+    root_domain_client = worker.root_client
+
+    root_domain_client.register(
+        name="data-scientist",
+        email="test_user@openmined.org",
+        password="0000",
+        password_verify="0000",
+    )
+    ds_client = root_domain_client.login(
+        email="test_user@openmined.org",
+        password="0000",
+    )
+
+    dataset = sy.Dataset(
+        name="my-dataset",
+        asset_list=[
+            sy.Asset(
+                name="numpy-data",
+                data=np.array([0, 1, 2, 3, 4]),
+                mock=np.array([5, 6, 7, 8, 9]),
+            )
+        ],
+    )
+    root_domain_client.upload_dataset(dataset)
+    users = root_domain_client.users.get_all()
+    users[-1].allow_mock_execution()
+
+    # DS requests code execution
+    data = ds_client.datasets[0].assets[0]
+
+    @sy.syft_function_single_use(data1=data, data2=data)
+    def compute_sum(data1, data2):
+        return data1 + data2
+
+    compute_sum.code = dedent(compute_sum.code)
+    ds_client.api.services.code.request_code_execution(compute_sum)
+    root_domain_client.requests[-1].approve()
+
+    # Mock execution succeeds, result not cached
+    result = ds_client.api.services.code.compute_sum(data1=1, data2=1)
+    assert result.get() == 2
+
+    # Mixed execution fails on input policy
+    result = ds_client.api.services.code.compute_sum(data1=1, data2=data)
+    assert isinstance(result, SyftError)
+
+    # Real execution succeeds
+    result = ds_client.api.services.code.compute_sum(data1=data, data2=data)
+    assert np.equal(result.get(), np.array([0, 2, 4, 6, 8])).all()
+
+    # Mixed execution fails, no result from cache
+    result = ds_client.api.services.code.compute_sum(data1=1, data2=data)
+    assert isinstance(result, SyftError)

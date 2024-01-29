@@ -25,7 +25,7 @@ from .capnp import get_capnp_schema
 
 TYPE_BANK = {}
 
-recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde  # type: ignore
+recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde
 
 
 def get_types(cls: Type, keys: Optional[List[str]] = None) -> Optional[List[Type]]:
@@ -256,7 +256,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
 def rs_bytes2object(blob: bytes) -> Any:
     MAX_TRAVERSAL_LIMIT = 2**64 - 1
 
-    with recursive_scheme.from_bytes(  # type: ignore
+    with recursive_scheme.from_bytes(
         blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
     ) as msg:
         return rs_proto2object(msg)
@@ -273,7 +273,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
 
     if klass != "NoneType":
         try:
-            class_type = index_syft_by_module_name(proto.fullyQualifiedName)  # type: ignore
+            class_type = index_syft_by_module_name(proto.fullyQualifiedName)
         except Exception:  # nosec
             try:
                 class_type = getattr(sys.modules[".".join(module_parts)], klass)
@@ -338,7 +338,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         return class_type.serde_constructor(kwargs)
 
     if issubclass(class_type, Enum) and "value" in kwargs:
-        obj = class_type.__new__(class_type, kwargs["value"])  # type: ignore
+        obj = class_type.__new__(class_type, kwargs["value"])
     elif issubclass(class_type, BaseModel):
         # if we skip the __new__ flow of BaseModel we get the error
         # AttributeError: object has no attribute '__fields_set__'

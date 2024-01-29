@@ -63,6 +63,7 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
         return SyftObjectRetrieval(
             syft_object=file_path.read_bytes(),
             file_name=file_path.name,
+            path=file_path,
             type_=type_,
         )
 

@@ -4,15 +4,21 @@ from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
+from typing import Tuple
 from typing import Union
 
 # third party
+from docker.models.images import Image
 from packaging import version
 from pydantic import validator
 from typing_extensions import Self
 import yaml
 
 # relative
+from ..serde.serializable import serializable
+from ..service.response import SyftError
+from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
 
 PYTHON_DEFAULT_VER = "3.11"
@@ -74,7 +80,12 @@ class CustomBuildConfig(SyftBaseModel):
         return sep.join(self.custom_cmds)
 
 
-class CustomWorkerConfig(SyftBaseModel):
+class WorkerConfig(SyftBaseModel):
+    pass
+
+
+@serializable()
+class CustomWorkerConfig(WorkerConfig):
     build: CustomBuildConfig
     version: str = "1"
 
@@ -95,3 +106,43 @@ class CustomWorkerConfig(SyftBaseModel):
 
     def get_signature(self) -> str:
         return sha256(self.json(sort_keys=True).encode()).hexdigest()
+
+
+@serializable()
+class DockerWorkerConfig(WorkerConfig):
+    dockerfile: str
+    file_name: Optional[str]
+    description: Optional[str]
+
+    @classmethod
+    def from_path(cls, path: Union[Path, str], description: Optional[str] = "") -> Self:
+        with open(path) as f:
+            return cls(
+                dockerfile=f.read(), file_name=Path(path).name, description=description
+            )
+
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, DockerWorkerConfig):
+            return False
+        return self.dockerfile == __value.dockerfile
+
+    def __hash__(self) -> int:
+        return hash(self.dockerfile)
+
+    def __str__(self) -> str:
+        return self.dockerfile
+
+    def test_image_build(self, tag: str, **kwargs) -> Tuple[Image, SyftSuccess]:
+        # relative
+        from ..service.worker.utils import parse_output
+        from .builder import CustomWorkerBuilder
+
+        builder = CustomWorkerBuilder()
+        try:
+            _, logs = builder.build_image(config=self, tag=tag, **kwargs)
+            return SyftSuccess(message=parse_output(logs))
+        except Exception as e:
+            return SyftError(message=f"Failed to build image !! Error: {str(e)}.")
+
+    def set_description(self, description_text: str) -> None:
+        self.description = description_text

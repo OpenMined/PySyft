@@ -1,4 +1,4 @@
-__version__ = "0.8.3-beta.3"
+__version__ = "0.8.4-beta.14"
 
 # stdlib
 import pathlib
@@ -24,6 +24,7 @@ from .client.search import Search  # noqa: F401
 from .client.search import SearchResults  # noqa: F401
 from .client.user_settings import UserSettings  # noqa: F401
 from .client.user_settings import settings  # noqa: F401
+from .custom_worker.config import DockerWorkerConfig  # noqa: F401
 from .external import OBLV  # noqa: F401
 from .external import enable_external_lib  # noqa: F401
 from .node.credentials import SyftSigningKey  # noqa: F401
@@ -79,7 +80,7 @@ from .util.util import autocache  # noqa: F401
 from .util.util import get_root_data_path  # noqa: F401
 from .util.version_compare import make_requires
 
-LATEST_STABLE_SYFT = "0.8.2"
+LATEST_STABLE_SYFT = "0.8.3"
 requires = make_requires(LATEST_STABLE_SYFT, __version__)
 
 

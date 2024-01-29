@@ -883,3 +883,27 @@ def set_klass_module_to_syft(klass, module_name):
         new_module = sys.modules["syft"].__dict__[module_name]
     setattr(new_module, klass.__name__, klass)
     sys.modules["syft"].__dict__[module_name] = new_module
+
+
+def get_syft_src_path() -> Path:
+    return Path(__file__).parent.parent.parent.expanduser()
+
+
+def get_grid_src_path() -> Path:
+    syft_path = get_syft_src_path()
+    return syft_path.parent.parent / "grid"
+
+
+def get_syft_cpu_dockerfile() -> Path:
+    return get_grid_src_path() / "backend" / "worker_cpu.dockerfile"
+
+
+def get_queue_address(port: int) -> str:
+    """Get queue address based on container host name."""
+
+    container_host = os.getenv("CONTAINER_HOST", None)
+    if container_host == "k8s":
+        return f"tcp://backend:{port}"
+    elif container_host == "docker":
+        return f"tcp://{socket.gethostname()}:{port}"
+    return f"tcp://localhost:{port}"

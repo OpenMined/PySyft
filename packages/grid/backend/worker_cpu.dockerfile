@@ -9,7 +9,8 @@
 # Later we'd want to uninstall old python, and then install a new python runtime...
 # ... but pre-built syft deps may break!
 
-FROM openmined/grid-backend:0.8.3-beta.3
+ARG SYFT_VERSION_TAG="0.8.4-beta.14"
+FROM openmined/grid-backend:${SYFT_VERSION_TAG}
 
 ARG PYTHON_VERSION="3.11"
 ARG SYSTEM_PACKAGES=""
@@ -18,10 +19,12 @@ ARG CUSTOM_CMD='echo "No custom commands passed"'
 
 # Worker specific environment variables go here
 ENV SYFT_WORKER="true"
+ENV SYFT_VERSION_TAG=${SYFT_VERSION_TAG}
 
-RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
-    --mount=type=cache,target=$HOME/.cache/pip,sharing=locked \
-    apk update && \
+# Commenting this until we support built using python docker sdk or find any other alternative.
+# RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
+#     --mount=type=cache,target=$HOME/.cache/pip,sharing=locked \
+RUN apk update && \
     apk add ${SYSTEM_PACKAGES} && \
     pip install --user ${PIP_PACKAGES} && \
     bash -c "$CUSTOM_CMD"

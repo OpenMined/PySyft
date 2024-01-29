@@ -222,12 +222,14 @@ class UserService(AbstractService):
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate
     ) -> Union[UserView, SyftError]:
         updates_role = user_update.role is not Empty
+        can_edit_roles = ServiceRoleCapability.CAN_EDIT_ROLES in context.capabilities()
 
-        if (
-            updates_role
-            and ServiceRoleCapability.CAN_EDIT_ROLES not in context.capabilities()
-        ):
+        if updates_role and not can_edit_roles:
             return SyftError(message=f"{context.role} is not allowed to edit roles")
+        if (user_update.mock_execution_permission is not Empty) and not can_edit_roles:
+            return SyftError(
+                message=f"{context.role} is not allowed to update permissions"
+            )
 
         # Get user to be updated by its UID
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)

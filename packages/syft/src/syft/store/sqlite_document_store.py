@@ -223,9 +223,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             raise ValueError(res.err())
 
     def _get(self, key: UID) -> Any:
-        select_sql = (
-            f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec
-        )
+        select_sql = f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec
         res = self._execute(select_sql, [str(key)])
         if res.is_err():
             raise KeyError(f"Query {select_sql} failed")

@@ -12,6 +12,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
 from typing import _GenericAlias
@@ -59,6 +60,10 @@ from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
 from ..util.telemetry import instrument
 from .connection import NodeConnection
+
+if TYPE_CHECKING:
+    # relative
+    from ..service.job.job_stash import Job
 
 
 class APIRegistry:
@@ -210,54 +215,76 @@ class SyftAPIData(SyftBaseObject):
         )
 
 
-def generate_remote_function(
-    node_uid: UID,
-    signature: Signature,
-    path: str,
-    make_call: Callable,
-    pre_kwargs: Dict[str, Any],
-    communication_protocol: PROTOCOL_TYPE,
-    warning: Optional[APIEndpointWarning],
-):
-    if "blocking" in signature.parameters:
-        raise Exception(
-            f"Signature {signature} can't have 'blocking' kwarg because its reserved"
+class RemoteFunction(SyftObject):
+    __canonical_name__ = "RemoteFunction"
+    __version__ = SYFT_OBJECT_VERSION_1
+    __repr_attrs__ = [
+        "id",
+        "node_uid",
+        "signature",
+        "path",
+    ]
+
+    node_uid: UID
+    signature: Signature
+    path: str
+    make_call: Callable
+    pre_kwargs: Optional[Dict[str, Any]]
+    communication_protocol: PROTOCOL_TYPE
+    warning: Optional[APIEndpointWarning]
+
+    @property
+    def __ipython_inspector_signature_override__(self) -> Optional[Signature]:
+        return self.signature
+
+    def prepare_args_and_kwargs(
+        self, args: List[Any], kwargs: Dict[str, Any]
+    ) -> Union[SyftError, Tuple[List[Any], Dict[str, Any]]]:
+        # Validate and migrate args and kwargs
+        res = validate_callable_args_and_kwargs(args, kwargs, self.signature)
+        if isinstance(res, SyftError):
+            return res
+        args, kwargs = res
+
+        args, kwargs = migrate_args_and_kwargs(
+            to_protocol=self.communication_protocol, args=args, kwargs=kwargs
         )
 
-    def wrapper(*args, **kwargs):
+        return args, kwargs
+
+    def __call__(self, *args, **kwargs):
+        if "blocking" in self.signature.parameters:
+            raise Exception(
+                f"Signature {self.signature} can't have 'blocking' kwarg because it's reserved"
+            )
+
         blocking = True
         if "blocking" in kwargs:
             blocking = bool(kwargs["blocking"])
             del kwargs["blocking"]
 
-        # Migrate args and kwargs to communication protocol
-        args, kwargs = migrate_args_and_kwargs(
-            to_protocol=communication_protocol, args=args, kwargs=kwargs
-        )
-
-        res = validate_callable_args_and_kwargs(args, kwargs, signature)
-
+        res = self.prepare_args_and_kwargs(args, kwargs)
         if isinstance(res, SyftError):
             return res
+
         _valid_args, _valid_kwargs = res
+        if self.pre_kwargs:
+            _valid_kwargs.update(self.pre_kwargs)
 
-        if pre_kwargs:
-            _valid_kwargs.update(pre_kwargs)
-
-        _valid_kwargs["communication_protocol"] = communication_protocol
+        _valid_kwargs["communication_protocol"] = self.communication_protocol
 
         api_call = SyftAPICall(
-            node_uid=node_uid,
-            path=path,
+            node_uid=self.node_uid,
+            path=self.path,
             args=_valid_args,
             kwargs=_valid_kwargs,
             blocking=blocking,
         )
 
-        allowed = warning.show() if warning else True
+        allowed = self.warning.show() if self.warning else True
         if not allowed:
             return
-        result = make_call(api_call=api_call)
+        result = self.make_call(api_call=api_call)
 
         result, _ = migrate_args_and_kwargs(
             [result], kwargs={}, to_latest_protocol=True
@@ -265,8 +292,97 @@ def generate_remote_function(
         result = result[0]
         return result
 
-    wrapper.__ipython_inspector_signature_override__ = signature
-    return wrapper
+
+class RemoteUserCodeFunction(RemoteFunction):
+    __canonical_name__ = "RemoteUserFunction"
+    __version__ = SYFT_OBJECT_VERSION_1
+    __repr_attrs__ = RemoteFunction.__repr_attrs__ + ["user_code_id"]
+
+    api: SyftAPI
+
+    def prepare_args_and_kwargs(
+        self, args: List[Any], kwargs: Dict[str, Any]
+    ) -> Union[SyftError, Tuple[List[Any], Dict[str, Any]]]:
+        # relative
+        from ..service.action.action_object import convert_to_pointers
+
+        # Validate and migrate args and kwargs
+        res = validate_callable_args_and_kwargs(args, kwargs, self.signature)
+        if isinstance(res, SyftError):
+            return res
+        args, kwargs = res
+
+        args, kwargs = convert_to_pointers(
+            api=self.api,
+            node_uid=self.node_uid,
+            args=args,
+            kwargs=kwargs,
+        )
+
+        args, kwargs = migrate_args_and_kwargs(
+            to_protocol=self.communication_protocol, args=args, kwargs=kwargs
+        )
+
+        return args, kwargs
+
+    @property
+    def user_code_id(self) -> Optional[UID]:
+        return self.pre_kwargs.get("uid", None)
+
+    @property
+    def jobs(self) -> Union[List[Job], SyftError]:
+        if self.user_code_id is None:
+            return SyftError(message="Could not find user_code_id")
+        api_call = SyftAPICall(
+            node_uid=self.node_uid,
+            path="job.get_by_user_code_id",
+            args=[self.user_code_id],
+            kwargs={},
+            blocking=True,
+        )
+        return self.make_call(api_call=api_call)
+
+
+def generate_remote_function(
+    api: SyftAPI,
+    node_uid: UID,
+    signature: Signature,
+    path: str,
+    make_call: Callable,
+    pre_kwargs: Optional[Dict[str, Any]],
+    communication_protocol: PROTOCOL_TYPE,
+    warning: Optional[APIEndpointWarning],
+) -> RemoteFunction:
+    if "blocking" in signature.parameters:
+        raise Exception(
+            f"Signature {signature} can't have 'blocking' kwarg because it's reserved"
+        )
+
+    # UserCodes are always code.call with a user_code_id
+    if path == "code.call" and pre_kwargs is not None and "uid" in pre_kwargs:
+        remote_function = RemoteUserCodeFunction(
+            api=api,
+            node_uid=node_uid,
+            signature=signature,
+            path=path,
+            make_call=make_call,
+            pre_kwargs=pre_kwargs,
+            communication_protocol=communication_protocol,
+            warning=warning,
+            user_code_id=pre_kwargs["uid"],
+        )
+    else:
+        remote_function = RemoteFunction(
+            node_uid=node_uid,
+            signature=signature,
+            path=path,
+            make_call=make_call,
+            pre_kwargs=pre_kwargs,
+            communication_protocol=communication_protocol,
+            warning=warning,
+        )
+
+    return remote_function
 
 
 def generate_remote_lib_function(
@@ -664,6 +780,7 @@ class SyftAPI(SyftObject):
                 signature = signature_remove_context(signature)
                 if isinstance(v, APIEndpoint):
                     endpoint_function = generate_remote_function(
+                        self,
                         self.node_uid,
                         signature,
                         v.service_path,
@@ -929,3 +1046,7 @@ def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
             _valid_args.append(arg)
 
     return _valid_args, _valid_kwargs
+
+
+RemoteFunction.update_forward_refs()
+RemoteUserCodeFunction.update_forward_refs()
