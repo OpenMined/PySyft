@@ -11,6 +11,7 @@ import pydantic
 
 # relative
 from ...custom_worker.config import DockerWorkerConfig
+from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.datetime import DateTime
@@ -225,7 +226,10 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"{res.err()}")
         image: SyftWorkerImage = res.ok()
 
-        if not context.node.in_memory_workers and image and image.image_identifier:
+        if context.node.in_memory_workers or IN_KUBERNETES:
+            # TODO: do we delete image from registry in kubernetes?
+            pass
+        elif image and image.image_identifier:
             try:
                 full_tag: str = image.image_identifier.full_name_with_tag
                 with contextlib.closing(docker.from_env()) as client:
