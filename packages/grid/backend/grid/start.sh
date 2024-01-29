@@ -22,6 +22,7 @@ then
     echo "DEV_MODE Enabled"
     RELOAD="--reload"
     pip install --user -e "$APPDIR/syft[telemetry,data_science]"
+    pip install nltk
 fi
 
 set +e
