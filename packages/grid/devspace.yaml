@@ -66,6 +66,8 @@ deployments:
         syft:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
+        workerBuilds:
+          mountInBackend: true
         node:
           settings:
             nodeName: ${NODE_NAME}

@@ -131,8 +131,8 @@ spec:
           name: credentials-data
           readOnly: false
           subPath: credentials-data
-        {{- if .Values.configuration.devmode }}
-        # mount for debugging and inspection
+        {{- if .Values.workerBuilds.mountInBackend }}
+        # mount for debugging and inspection of worker-build volume
         - mountPath: /root/data/images/
           name: worker-builds
           readOnly: true
@@ -151,7 +151,7 @@ spec:
       terminationGracePeriodSeconds: 5
       tolerations: null
       topologySpreadConstraints: null
-      {{- if .Values.configuration.devmode }}
+      {{- if .Values.workerBuilds.mountInBackend }}
       volumes:
       - name: worker-builds
         persistentVolumeClaim:

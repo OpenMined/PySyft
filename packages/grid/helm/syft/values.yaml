@@ -30,6 +30,7 @@ queue:
 
 workerBuilds:
   maxStorage: "10Gi"
+  mountInBackend: false
 
 syft:
   registry: "docker.io"
