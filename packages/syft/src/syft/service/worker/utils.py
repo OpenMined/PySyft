@@ -296,7 +296,12 @@ def create_kubernetes_pool(
     return runner.get_pods(pool_name=pool_name)
 
 
-def scale_kubernetes_pool(runner: KubernetesRunner, pool_name: str, replicas: int):
+def scale_kubernetes_pool(
+    runner: KubernetesRunner,
+    pool_name: str,
+    replicas: int,
+    start_idx: int,
+):
     pool = runner.get_pool(pool_name)
     if not pool:
         return SyftError(message=f"Pool does not exist. name={pool_name}")
@@ -307,7 +312,10 @@ def scale_kubernetes_pool(runner: KubernetesRunner, pool_name: str, replicas: in
     except Exception as e:
         return SyftError(message=f"Failed to scale workers {e}")
 
-    return runner.get_pods(pool_name=pool_name)
+    result = runner.get_pods(pool_name=pool_name)
+
+    # only interested in the new pods
+    return result[start_idx:]
 
 
 def run_workers_in_kubernetes(
@@ -335,13 +343,14 @@ def run_workers_in_kubernetes(
             debug,
         )
     else:
-        pool_pods = scale_kubernetes_pool(
-            runner,
-            pool_name,
-            worker_count,
-        )
-        # only interested in the new pods
-        pool_pods = pool_pods[start_idx:]
+        pool_pods = scale_kubernetes_pool(runner, pool_name, worker_count, start_idx)
+
+        if isinstance(pool_pods, list) and len(pool_pods) > 0:
+            # only interested in the new pods
+            return pool_pods[start_idx:]
+
+    if isinstance(pool_pods, SyftError):
+        return pool_pods
 
     # create worker object
     for pod in pool_pods:

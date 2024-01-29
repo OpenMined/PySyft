@@ -70,7 +70,8 @@ class KubernetesRunner:
     def get_pods(self, pool_name: str) -> List[Pod]:
         selector = {"app.kubernetes.io/component": pool_name}
         pods = self.client.get("pods", label_selector=selector)
-        pods.sort(key=lambda pod: pod.name)
+        if len(pods) > 0:
+            pods.sort(key=lambda pod: pod.name)
         return pods
 
     def get_pod_logs(self, pod_name: str) -> str:
