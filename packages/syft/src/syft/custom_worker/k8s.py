@@ -77,8 +77,8 @@ class PodStatus(BaseModel):
     def from_status_dict(cls: "PodStatus", status: dict):
         return cls(
             phase=PodPhase(status.get("phase", "Unknown")),
-            conditions=PodCondition.from_conditions(status.get("conditions", [])),
-            container_status=ContainerStatus.from_status(
+            condition=PodCondition.from_conditions(status.get("conditions", [])),
+            container=ContainerStatus.from_status(
                 status.get("containerStatuses", {})[0]
             ),
         )
