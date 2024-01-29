@@ -13,10 +13,9 @@ from .builder_types import ImagePushResult
 from .config import CustomWorkerConfig
 from .config import DockerWorkerConfig
 from .config import WorkerConfig
+from .k8s import IN_KUBERNETES
 
 __all__ = ["CustomWorkerBuilder"]
-
-IN_KUBERNETES = os.getenv("CONTAINER_HOST") == "k8s"
 
 
 class CustomWorkerBuilder:

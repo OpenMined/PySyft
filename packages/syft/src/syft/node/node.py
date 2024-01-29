@@ -188,6 +188,18 @@ def get_container_host() -> Optional[str]:
     return get_env("CONTAINER_HOST")
 
 
+def get_default_worker_image() -> str:
+    return get_env("DEFAULT_WORKER_POOL_IMAGE")
+
+
+def get_default_worker_pool_name() -> str:
+    return get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME)
+
+
+def get_default_worker_pool_count() -> int:
+    return int(get_env("DEFAULT_WORKER_POOL_COUNT", 1))
+
+
 def in_kubernetes() -> Optional[str]:
     return get_container_host() == "k8s"
 
@@ -199,8 +211,22 @@ def get_venv_packages() -> str:
     return res
 
 
+def get_syft_worker() -> bool:
+    return str_to_bool(get_env("SYFT_WORKER", "false"))
+
+
+def get_k8s_pod_name() -> Optional[str]:
+    return get_env("K8S_POD_NAME")
+
+
 def get_syft_worker_uid() -> Optional[str]:
-    return get_env("SYFT_WORKER_UID", None)
+    is_worker = get_syft_worker()
+    pod_name = get_k8s_pod_name()
+    uid = get_env("SYFT_WORKER_UID")
+    # if uid is empty is a K8S worker, generate a uid from the pod name
+    if (not uid) and is_worker and pod_name:
+        uid = str(UID.with_seed(pod_name))
+    return uid
 
 
 signing_key_env = get_private_key_env()
@@ -1362,7 +1388,8 @@ class Node(AbstractNode):
 
     def get_default_worker_pool(self):
         result = self.pool_stash.get_by_name(
-            credentials=self.verify_key, pool_name=DEFAULT_WORKER_POOL_NAME
+            credentials=self.verify_key,
+            pool_name=get_default_worker_pool_name(),
         )
         if result.is_err():
             return SyftError(message=f"{result.err()}")
@@ -1512,36 +1539,43 @@ class NodeRegistry:
         return list(cls.__node_registry__.values())
 
 
+def get_default_worker_tag_by_env(dev_mode=False):
+    if in_kubernetes():
+        return get_default_worker_image()
+    elif dev_mode:
+        return "local-dev"
+    else:
+        return __version__
+
+
 def create_default_worker_pool(node: Node) -> Optional[SyftError]:
-    if node.in_memory_workers:
-        print("Creating default worker pool with in memory workers")
-
     credentials = node.verify_key
-
+    pull_image = not node.dev_mode
     image_stash = node.get_service(SyftWorkerImageService).stash
-
+    default_pool_name = get_default_worker_pool_name()
+    default_worker_pool = node.get_default_worker_pool()
+    default_worker_tag = get_default_worker_tag_by_env(node.dev_mode)
+    worker_count = get_default_worker_pool_count()
     context = AuthedServiceContext(
         node=node,
         credentials=credentials,
         role=ServiceRole.ADMIN,
     )
 
-    print("Creating Default Worker Image")
+    print(f"Creating default worker image with tag='{default_worker_tag}'")
     # Get/Create a default worker SyftWorkerImage
     default_image = create_default_image(
         credentials=credentials,
         image_stash=image_stash,
-        dev_mode=node.dev_mode,
-        syft_version_tag="local-dev" if node.dev_mode else __version__,
+        tag=default_worker_tag,
+        in_kubernetes=in_kubernetes(),
     )
-
-    # Skip pulling image if using locally built image
-    pull_image = not node.dev_mode
     if isinstance(default_image, SyftError):
+        print("Failed to create default worker image: ", default_image.message)
         return default_image
 
     if not default_image.is_built:
-        print("Building Default Worker Image")
+        print(f"Building default worker image with tag={default_worker_tag}")
         image_build_method = node.get_service_method(SyftWorkerImageService.build)
         # Build the Image for given tag
         result = image_build_method(
@@ -1555,21 +1589,23 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
             print("Failed to build default worker image: ", result.message)
             return
 
-    default_worker_pool = node.get_default_worker_pool()
-    worker_count = node.queue_config.client_config.n_consumers
-
     # Create worker pool if it doesn't exists
+    print(
+        "Setting up worker pool"
+        f"name={default_pool_name} "
+        f"workers={worker_count} "
+        f"image_uid={default_image.id} "
+        f"in_memory={node.in_memory_workers}"
+    )
     if default_worker_pool is None:
         worker_to_add_ = worker_count
         create_pool_method = node.get_service_method(SyftWorkerPoolService.launch)
-        print("Creating default Worker Pool")
         result = create_pool_method(
             context,
-            name=DEFAULT_WORKER_POOL_NAME,
+            name=default_pool_name,
             image_uid=default_image.id,
-            num_workers=worker_to_add_,
+            num_workers=worker_count,
         )
-
     else:
         # Else add a worker to existing worker pool
         worker_to_add_ = max(default_worker_pool.max_count, worker_count) - len(
@@ -1577,11 +1613,13 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
         )
         add_worker_method = node.get_service_method(SyftWorkerPoolService.add_workers)
         result = add_worker_method(
-            context=context, number=worker_to_add_, pool_name=DEFAULT_WORKER_POOL_NAME
+            context=context,
+            number=worker_to_add_,
+            pool_name=default_pool_name,
         )
 
     if isinstance(result, SyftError):
-        print(f"Failed to create Worker for Default workers. Error: {result.message}")
+        print(f"Default worker pool error. {result.message}")
         return
 
     for n in range(worker_to_add_):

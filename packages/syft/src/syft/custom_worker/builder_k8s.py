@@ -1,6 +1,5 @@
 # stdlib
 from hashlib import sha256
-import os
 from pathlib import Path
 from typing import Dict
 from typing import Optional
@@ -15,13 +14,11 @@ from kr8s.objects import Job
 from .builder_types import BuilderBase
 from .builder_types import ImageBuildResult
 from .builder_types import ImagePushResult
+from .k8s import BUILD_OUTPUT_PVC
+from .k8s import JOB_COMPLETION_TTL
+from .k8s import KUBERNETES_NAMESPACE
 
 __all__ = ["KubernetesBuilder"]
-
-JOB_COMPLETION_TTL = 60
-
-BUILD_OUTPUT_PVC = "worker-builds"
-KUBERNETES_NAMESPACE = os.getenv("K8S_NAMESPACE", "syft")
 
 
 class InvalidImageDigest(Exception):

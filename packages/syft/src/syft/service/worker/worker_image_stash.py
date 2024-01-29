@@ -53,7 +53,7 @@ class SyftWorkerImageStash(BaseUIDStoreStash):
                 credentials=credentials, config=obj.config
             )
             if result.is_ok() and result.ok() is not None:
-                return Err(f"Image already exists for given DockerConfig: {obj.config}")
+                return Err(f"Image already exists for: {obj.config}")
 
         return super().set(credentials, obj, add_permissions, ignore_duplicates)
 

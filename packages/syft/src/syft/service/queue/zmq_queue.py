@@ -370,8 +370,9 @@ class ZMQProducer(QueueProducer):
         for worker in list(self.waiting):
             if worker.has_expired():
                 logger.info(
-                    "Deleting expired worker={} expiry={} now={}",
+                    "Deleting expired Worker id={} uid={} expiry={} now={}",
                     worker.identity,
+                    worker.syft_worker_id,
                     worker.get_expiry(),
                     Timeout.now(),
                 )
@@ -519,9 +520,10 @@ class ZMQProducer(QueueProducer):
                 worker.service = service
                 worker.syft_worker_id = UID(syft_worker_id)
                 logger.info(
-                    "New Worker id={} service={}",
-                    worker.identity,
+                    "New Worker service={} id={} uid={}",
                     service.name,
+                    worker.identity,
+                    worker.syft_worker_id,
                 )
                 self.worker_waiting(worker)
 

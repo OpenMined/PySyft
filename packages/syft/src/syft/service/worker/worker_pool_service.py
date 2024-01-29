@@ -1,4 +1,5 @@
 # stdlib
+import os
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -37,7 +38,6 @@ from .utils import run_workers_in_threads
 from .worker_image import SyftWorkerImage
 from .worker_image_stash import SyftWorkerImageStash
 from .worker_pool import ContainerSpawnStatus
-from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerPool
 from .worker_pool_stash import SyftWorkerPoolStash
 from .worker_service import WorkerService
@@ -115,7 +115,7 @@ class SyftWorkerPoolService(AbstractService):
 
         # Create worker pool from given image, with the given worker pool
         # and with the desired number of workers
-        worker_list, container_statuses = _create_workers_in_pool(
+        result = _create_workers_in_pool(
             context=context,
             pool_name=name,
             existing_worker_cnt=0,
@@ -125,6 +125,11 @@ class SyftWorkerPoolService(AbstractService):
             reg_username=reg_username,
             reg_password=reg_password,
         )
+
+        if isinstance(result, SyftError):
+            return result
+
+        worker_list, container_statuses = result
 
         # Update the Database with the pool information
         worker_pool = WorkerPool(
@@ -353,6 +358,9 @@ class SyftWorkerPoolService(AbstractService):
             Union[List[ContainerSpawnStatus], SyftError]: List of spawned workers with their status and error if any.
         """
 
+        if number <= 0:
+            return SyftError(message=f"Invalid number of workers: {number}")
+
         # Extract pool using either using pool id or pool name
         if pool_id:
             result = self.stash.get_by_uid(credentials=context.credentials, uid=pool_id)
@@ -385,7 +393,7 @@ class SyftWorkerPoolService(AbstractService):
         worker_stash = worker_service.stash
 
         # Add workers to given pool from the given image
-        worker_list, container_statuses = _create_workers_in_pool(
+        result = _create_workers_in_pool(
             context=context,
             pool_name=worker_pool.name,
             existing_worker_cnt=existing_worker_cnt,
@@ -393,6 +401,11 @@ class SyftWorkerPoolService(AbstractService):
             worker_image=worker_image,
             worker_stash=worker_stash,
         )
+
+        if isinstance(result, SyftError):
+            return result
+
+        worker_list, container_statuses = result
 
         worker_pool.worker_list += worker_list
         worker_pool.max_count = existing_worker_cnt + number
@@ -528,7 +541,7 @@ def _create_workers_in_pool(
     worker_stash: WorkerStash,
     reg_username: Optional[str] = None,
     reg_password: Optional[str] = None,
-) -> Tuple[List[LinkedObject], List[ContainerSpawnStatus]]:
+) -> Union[Tuple[List[LinkedObject], List[ContainerSpawnStatus]], SyftError]:
     queue_port = context.node.queue_config.client_config.queue_port
 
     # Check if workers needs to be run in memory or as containers
@@ -543,18 +556,21 @@ def _create_workers_in_pool(
             number=worker_cnt + existing_worker_cnt,
         )
     else:
-        container_statuses: List[ContainerSpawnStatus] = run_containers(
+        result = run_containers(
             pool_name=pool_name,
             worker_image=worker_image,
             start_idx=existing_worker_cnt,
             number=worker_cnt + existing_worker_cnt,
-            orchestration=WorkerOrchestrationType.DOCKER,
+            orchestration=os.getenv("CONTAINER_HOST"),
             queue_port=queue_port,
             dev_mode=context.node.dev_mode,
             username=reg_username,
             password=reg_password,
             registry_url=worker_image.image_identifier.registry_host,
         )
+        if isinstance(result, SyftError):
+            return result
+        container_statuses = result
 
     linked_worker_list = []
 
