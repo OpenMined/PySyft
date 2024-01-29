@@ -300,7 +300,6 @@ def scale_kubernetes_pool(
     runner: KubernetesRunner,
     pool_name: str,
     replicas: int,
-    start_idx: int,
 ):
     pool = runner.get_pool(pool_name)
     if not pool:
@@ -312,10 +311,7 @@ def scale_kubernetes_pool(
     except Exception as e:
         return SyftError(message=f"Failed to scale workers {e}")
 
-    result = runner.get_pods(pool_name=pool_name)
-
-    # only interested in the new pods
-    return result[start_idx:]
+    return runner.get_pods(pool_name=pool_name)
 
 
 def run_workers_in_kubernetes(
@@ -343,11 +339,11 @@ def run_workers_in_kubernetes(
             debug,
         )
     else:
-        pool_pods = scale_kubernetes_pool(runner, pool_name, worker_count, start_idx)
+        pool_pods = scale_kubernetes_pool(runner, pool_name, worker_count)
 
         if isinstance(pool_pods, list) and len(pool_pods) > 0:
-            # only interested in the new pods
-            return pool_pods[start_idx:]
+            # slice only those pods that we're interested in
+            pool_pods = pool_pods[start_idx:]
 
     if isinstance(pool_pods, SyftError):
         return pool_pods
