@@ -109,7 +109,7 @@ class KubernetesBuilder(BuilderBase):
         return sha256(tag.encode()).hexdigest()
 
     def _get_image_digest(self, job: Job) -> Optional[str]:
-        selector = {"job-name": job.metadata.name}
+        selector = {"batch.kubernetes.io/job-name": job.metadata.name}
         pods = self.client.get("pods", label_selector=selector)
         for pod in pods:
             for container_status in pod.status.containerStatuses:
@@ -119,7 +119,7 @@ class KubernetesBuilder(BuilderBase):
         return None
 
     def _get_logs(self, job: Job) -> str:
-        selector = {"job-name": job.metadata.name}
+        selector = {"batch.kubernetes.io/job-name": job.metadata.name}
         pods = self.client.get("pods", label_selector=selector)
         logs = []
         for pod in pods:
