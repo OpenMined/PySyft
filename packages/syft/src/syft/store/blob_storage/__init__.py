@@ -116,9 +116,9 @@ def upgrade_blobretrieval_v1_to_v2():
 
 
 @serializable()
-class SyftObjectRetrievalV1(BlobRetrievalV1):
+class SyftObjectRetrievalV2(BlobRetrieval):
     __canonical_name__ = "SyftObjectRetrieval"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     syft_object: bytes
 
@@ -126,7 +126,7 @@ class SyftObjectRetrievalV1(BlobRetrievalV1):
 @serializable()
 class SyftObjectRetrieval(BlobRetrieval):
     __canonical_name__ = "SyftObjectRetrieval"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     syft_object: bytes
     path: Path
@@ -155,18 +155,17 @@ class SyftObjectRetrieval(BlobRetrieval):
         return self._read_data(_deserialize=_deserialize)
 
 
-@migrate(SyftObjectRetrieval, SyftObjectRetrievalV1)
-def downgrade_syftobjretrival_v2_to_v1():
+@migrate(SyftObjectRetrieval, SyftObjectRetrievalV2)
+def downgrade_syftobjretrival_v3_to_v2():
     return [
-        drop(["syft_blob_storage_entry_id", "file_size"]),
+        drop(["path"]),
     ]
 
 
-@migrate(SyftObjectRetrievalV1, SyftObjectRetrieval)
-def upgrade_syftobjretrival_v1_to_v2():
+@migrate(SyftObjectRetrievalV2, SyftObjectRetrieval)
+def upgrade_syftobjretrival_v2_to_v3():
     return [
-        make_set_default("syft_blob_storage_entry_id", None),
-        make_set_default("file_size", 1),
+        make_set_default("path", Path("")),
     ]
 
 
