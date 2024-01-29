@@ -10,7 +10,6 @@ export const GET: RequestHandler = async () => {
 
     return json({
       admin_email: metadata_raw?.admin_email,
-      deployed_on: metadata_raw?.deployed_on,
       description: metadata_raw?.description,
       highest_version: metadata_raw?.highest_version,
       lowest_version: metadata_raw?.lowest_version,

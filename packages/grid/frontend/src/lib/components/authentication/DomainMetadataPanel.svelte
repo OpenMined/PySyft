@@ -2,12 +2,12 @@
   import Avatar from "$lib/components/Avatar.svelte"
   import Badge from "$lib/components/Badge.svelte"
   import DomainOnlineIndicator from "$lib/components/DomainOnlineIndicator.svelte"
-  import { getInitials } from '$lib/utils';
+  import { getInitials } from "$lib/utils"
   import type { DomainMetadata } from "../../../types/domain/metadata"
 
   export let metadata: DomainMetadata
 
-  $: domainInitials = getInitials(metadata?.name);
+  $: domainInitials = getInitials(metadata?.name)
 </script>
 
 <section
@@ -30,12 +30,6 @@
       <div class="flex gap-1 items-center group relative">
         <p class="uppercase text-gray-400">Id#:</p>
         <Badge>{metadata.node_id}</Badge>
-      </div>
-      <div class="flex gap-1 items-center">
-        <p class="uppercase text-gray-400" data-testid="deployed-on">
-          Deployed on:
-        </p>
-        <p class="font-mono">{metadata.deployed_on}</p>
       </div>
       <div class="flex gap-1 items-center group relative">
         <p class="uppercase text-gray-400">Side:</p>
