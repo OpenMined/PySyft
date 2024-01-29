@@ -2,6 +2,7 @@
 from hashlib import sha256
 from pathlib import Path
 from typing import Dict
+from typing import List
 from typing import Optional
 
 # third party
@@ -21,7 +22,7 @@ from .k8s import KUBERNETES_NAMESPACE
 __all__ = ["KubernetesBuilder"]
 
 
-class InvalidImageDigest(Exception):
+class BuildFailed(Exception):
     pass
 
 
@@ -60,14 +61,18 @@ class KubernetesBuilder(BuilderBase):
             # wait for job to complete/fail
             job.wait(["condition=Complete", "condition=Failed"])
 
-            # TODO: check job status, raise with logs
+            # get logs
+            logs = self._get_logs(job)
 
             image_digest = self._get_image_digest(job)
             if not image_digest:
-                raise InvalidImageDigest("Did not get any image digest from the job")
+                exit_code = self._get_container_exit_code(job)
+                raise BuildFailed(
+                    "Failed to build the image. "
+                    f"Kaniko exit code={exit_code}. "
+                    f"Logs={logs}"
+                )
 
-            # get logs
-            logs = self._get_logs(job)
         except Exception:
             raise
         finally:
@@ -114,6 +119,15 @@ class KubernetesBuilder(BuilderBase):
                     continue
                 return container_status.state.terminated.message
         return None
+
+    def _get_container_exit_code(self, job: Job) -> List[int]:
+        selector = {"batch.kubernetes.io/job-name": job.metadata.name}
+        pods = self.client.get("pods", label_selector=selector)
+        exit_codes = []
+        for pod in pods:
+            for container_status in pod.status.containerStatuses:
+                exit_codes.append(container_status.state.terminated.exitCode)
+        return exit_codes
 
     def _get_logs(self, job: Job) -> str:
         selector = {"batch.kubernetes.io/job-name": job.metadata.name}
@@ -164,7 +178,7 @@ class KubernetesBuilder(BuilderBase):
                     },
                 },
                 "spec": {
-                    "backoffLimit": 2,
+                    "backoffLimit": 0,
                     "ttlSecondsAfterFinished": JOB_COMPLETION_TTL,
                     "template": {
                         "spec": {
