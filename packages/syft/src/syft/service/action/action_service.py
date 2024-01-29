@@ -31,6 +31,7 @@ from ..service import TYPE_TO_SERVICE
 from ..service import UserLibConfigRegistry
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..user.user_roles import ServiceRole
 from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
@@ -67,7 +68,7 @@ class ActionService(AbstractService):
         if isinstance(blob_store_result, SyftError):
             return blob_store_result
 
-        np_pointer = self.set(context, np_obj)
+        np_pointer = self._set(context, np_obj)
         return np_pointer
 
     @service_method(
@@ -80,6 +81,14 @@ class ActionService(AbstractService):
         context: AuthedServiceContext,
         action_object: Union[ActionObject, TwinObject],
     ) -> Result[ActionObject, str]:
+        return self._set(context, action_object, has_result_read_permission=True)
+
+    def _set(
+        self,
+        context: AuthedServiceContext,
+        action_object: Union[ActionObject, TwinObject],
+        has_result_read_permission: bool = False,
+    ) -> Result[ActionObject, str]:
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
 
@@ -89,8 +98,10 @@ class ActionService(AbstractService):
             action_object.private_obj.syft_created_at = DateTime.now()
             action_object.mock_obj.syft_created_at = DateTime.now()
 
-        has_result_read_permission = context.extra_kwargs.get(
-            "has_result_read_permission", False
+        # If either context or argument is True, has_result_read_permission is True
+        has_result_read_permission = (
+            context.extra_kwargs.get("has_result_read_permission", False)
+            or has_result_read_permission
         )
 
         result = self.store.set(
@@ -101,7 +112,10 @@ class ActionService(AbstractService):
         )
         if result.is_ok():
             if isinstance(action_object, TwinObject):
-                action_object = action_object.mock
+                if has_result_read_permission:
+                    action_object = action_object.private
+                else:
+                    action_object = action_object.mock
             action_object.syft_point_to(context.node.id)
             return Ok(action_object)
         return result.err()
@@ -271,7 +285,11 @@ class ActionService(AbstractService):
         kwargs: Dict[str, Any],
         result_id: Optional[UID] = None,
     ) -> Result[ActionObjectPointer, Err]:
-        if not context.has_execute_permissions:
+        override_execution_permission = (
+            context.has_execute_permissions or context.role == ServiceRole.ADMIN
+        )
+
+        if not override_execution_permission:
             input_policy = code_item.input_policy
             filtered_kwargs = input_policy.filter_kwargs(
                 kwargs=kwargs, context=context, code_item_id=code_item.id
@@ -284,7 +302,7 @@ class ActionService(AbstractService):
         # update input policy to track any input state
         # code_item.input_policy = input_policy
 
-        if not context.has_execute_permissions:
+        if not override_execution_permission:
             expected_input_kwargs = set()
             for _inp_kwarg in code_item.input_policy.inputs.values():
                 keys = _inp_kwarg.keys()
@@ -396,7 +414,7 @@ class ActionService(AbstractService):
         # pass permission information to the action store as extra kwargs
         context.extra_kwargs = {"has_result_read_permission": True}
 
-        set_result = self.set(context, result_action_object)
+        set_result = self._set(context, result_action_object)
 
         if set_result.is_err():
             return set_result
@@ -656,7 +674,7 @@ class ActionService(AbstractService):
             "has_result_read_permission": has_result_read_permission
         }
 
-        set_result = self.set(context, result_action_object)
+        set_result = self._set(context, result_action_object)
         if set_result.is_err():
             return Err(
                 f"Failed executing action {action}, set result is an error: {set_result.err()}"

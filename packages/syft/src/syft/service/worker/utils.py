@@ -41,7 +41,8 @@ class ImageBuildResult(BaseModel):
 
 def backend_container_name() -> str:
     hostname = socket.gethostname()
-    return f"{hostname}-backend-1"
+    service_name = os.getenv("SERVICE", "backend")
+    return f"{hostname}-{service_name}-1"
 
 
 def get_container(docker_client: docker.DockerClient, container_name: str):
@@ -109,6 +110,9 @@ def run_container_using_docker(
     password: Optional[str] = None,
     registry_url: Optional[str] = None,
 ) -> ContainerSpawnStatus:
+    if not worker_image.is_built:
+        raise Exception("Image must be built before running it.")
+
     # Get hostname
     hostname = socket.gethostname()
 
@@ -139,7 +143,7 @@ def run_container_using_docker(
             container_name=container_name,
         )
         if existing_container:
-            existing_container.stop()
+            existing_container.remove(force=True)
 
         # Extract Config from backend container
         backend_host_config = extract_config_from_backend(
@@ -160,7 +164,7 @@ def run_container_using_docker(
         environment["CONTAINER_HOST"] = "docker"
 
         container = docker_client.containers.run(
-            worker_image.image_identifier.repo_with_tag,
+            worker_image.image_identifier.full_name_with_tag,
             name=f"{hostname}-{worker_name}",
             detach=True,
             auto_remove=True,
@@ -234,7 +238,7 @@ def run_workers_in_threads(
             )
         except Exception as e:
             print(
-                f"Failed to start consumer for Pool Name: {pool_name}, Worker Name: {worker_name}"
+                f"Failed to start consumer for Pool Name: {pool_name}, Worker Name: {worker_name}. Error: {e}"
             )
             worker.status = WorkerStatus.STOPPED
             error = str(e)
@@ -266,6 +270,9 @@ def run_containers(
 
     if orchestration not in [WorkerOrchestrationType.DOCKER]:
         return SyftError(message="Only Orchestration via Docker is supported.")
+
+    if not worker_image.is_built:
+        return SyftError(message="Image must be built before running it.")
 
     with contextlib.closing(docker.from_env()) as client:
         for worker_count in range(start_idx + 1, number + 1):
@@ -359,15 +366,15 @@ def docker_build(
         return ImageBuildResult(image_hash=built_image.id, logs=parse_output(logs))
     except docker.errors.APIError as e:
         return SyftError(
-            message=f"Docker API error when building {image.image_tag}. Reason - {e}"
+            message=f"Docker API error when building {image.image_identifier}. Reason - {e}"
         )
     except docker.errors.DockerException as e:
         return SyftError(
-            message=f"Docker exception when building {image.image_tag}. Reason - {e}"
+            message=f"Docker exception when building {image.image_identifier}. Reason - {e}"
         )
     except Exception as e:
         return SyftError(
-            message=f"Unknown exception when building {image.image_tag}. Reason - {e}"
+            message=f"Unknown exception when building {image.image_identifier}. Reason - {e}"
         )
 
 

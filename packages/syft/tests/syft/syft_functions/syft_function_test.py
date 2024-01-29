@@ -17,11 +17,13 @@ from syft.service.response import SyftSuccess
 
 @pytest.fixture
 def node():
+    random.seed()
+    name = f"nested_job_test_domain-{random.randint(0,1000)}"
     _node = sy.orchestra.launch(
-        name="nested_job_test_domain",
+        name=name,
         dev_mode=True,
         reset=True,
-        n_consumers=3,
+        n_consumers=4,
         create_producer=True,
         queue_port=random.randint(13000, 13300),
     )
@@ -42,7 +44,7 @@ def test_nested_jobs(node):
     ## Dataset
 
     x = ActionObject.from_obj([1, 2])
-    x_ptr = x.send(ds_client)
+    x_ptr = x.send(client)
 
     ## aggregate function
     @sy.syft_function()
@@ -76,21 +78,26 @@ def test_nested_jobs(node):
         return job.result
 
     process_all.code = dedent(process_all.code)
+    assert process_all.worker_pool_name is None
 
     # Approve & run
     res = ds_client.code.request_code_execution(process_all)
     print(res)
     assert not isinstance(res, SyftError)
+
+    assert ds_client.code[-1].worker_pool_name is not None
     client.requests[-1].approve(approve_nested=True)
 
     job = ds_client.code.process_all(x=x_ptr, blocking=False)
 
     job.wait()
-    # stdlib
 
     assert len(job.subjobs) == 3
     # stdlib
 
+    assert job.wait().get() == 5
     sub_results = [j.wait().get() for j in job.subjobs]
     assert set(sub_results) == {2, 3, 5}
-    assert job.result.wait().get() == 5
+
+    job = client.jobs[-1]
+    assert job.job_worker_id is not None

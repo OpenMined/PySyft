@@ -207,7 +207,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         else:
             insert_sql = (
                 f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
-            )  # nosec
+            )
             data = _serialize(value, to_bytes=True)
             res = self._execute(insert_sql, [str(key), _repr_debug_(value), data])
             if res.is_err():
@@ -216,16 +216,14 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _update(self, key: UID, value: Any) -> None:
         insert_sql = (
             f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
-        )  # nosec
+        )
         data = _serialize(value, to_bytes=True)
         res = self._execute(insert_sql, [str(key), _repr_debug_(value), data, str(key)])
         if res.is_err():
             raise ValueError(res.err())
 
     def _get(self, key: UID) -> Any:
-        select_sql = (
-            f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec
-        )
+        select_sql = f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec
         res = self._execute(select_sql, [str(key)])
         if res.is_err():
             raise KeyError(f"Query {select_sql} failed")

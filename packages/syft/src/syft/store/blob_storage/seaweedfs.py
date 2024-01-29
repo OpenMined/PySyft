@@ -14,6 +14,7 @@ from botocore.client import BaseClient as S3BaseClient
 from botocore.client import ClientError as BotoClientError
 from botocore.client import Config
 import requests
+from tqdm import tqdm
 from typing_extensions import Self
 
 # relative
@@ -33,27 +34,41 @@ from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SeaweedSecureFilePathLocation
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.grid_url import GridURL
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...util.constants import DEFAULT_TIMEOUT
 
 WRITE_EXPIRATION_TIME = 900  # seconds
-DEFAULT_CHUNK_SIZE = 1024**3  # 1 GB
+DEFAULT_FILE_PART_SIZE = (1024**3) * 5  # 5GB
+DEFAULT_UPLOAD_CHUNK_SIZE = 819200
 
 
-def _byte_chunks(bytes: BytesIO, size: int) -> Generator[bytes, None, None]:
+def _byte_chunks(bytes: BytesIO, chunk_size: int) -> Generator[bytes, None, None]:
     while True:
         try:
-            yield bytes.read(size)
+            yield bytes.read(chunk_size)
         except BlockingIOError:
             return
 
 
 @serializable()
-class SeaweedFSBlobDeposit(BlobDeposit):
+class SeaweedFSBlobDepositV1(BlobDeposit):
     __canonical_name__ = "SeaweedFSBlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_1
 
     urls: List[GridURL]
+
+
+@serializable()
+class SeaweedFSBlobDeposit(BlobDeposit):
+    __canonical_name__ = "SeaweedFSBlobDeposit"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    urls: List[GridURL]
+    size: int
 
     def write(self, data: BytesIO) -> Union[SyftSuccess, SyftError]:
         # relative
@@ -68,8 +83,11 @@ class SeaweedFSBlobDeposit(BlobDeposit):
 
         try:
             no_lines = 0
+            # this loops over the parts, we have multiple parts to allow for
+            # concurrent uploads of a single file. (We are currently not using that)
+            part_size = math.ceil(self.size / len(self.urls))
             for part_no, (byte_chunk, url) in enumerate(
-                zip(_byte_chunks(data, DEFAULT_CHUNK_SIZE), self.urls),
+                zip(_byte_chunks(data, part_size), self.urls),
                 start=1,
             ):
                 no_lines += byte_chunk.count(b"\n")
@@ -79,13 +97,33 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                     )
                 else:
                     blob_url = url
+
+                def data_generator(bytes_, chunk_size=DEFAULT_UPLOAD_CHUNK_SIZE):
+                    """Creates a data geneator for the part"""
+                    n = 0
+                    total_iterations = math.ceil(len(bytes_) / chunk_size)
+
+                    with tqdm(
+                        total=total_iterations,
+                        desc=f"Uploading file part {part_no}/{len(self.urls)}",  # noqa
+                    ) as pbar:
+                        while n * chunk_size <= len(bytes_):
+                            chunk = bytes_[n * chunk_size : (n + 1) * chunk_size]
+                            n += 1
+                            pbar.update(1)
+                            yield chunk
+
                 response = requests.put(
-                    url=str(blob_url), data=byte_chunk, timeout=DEFAULT_TIMEOUT
+                    url=str(blob_url),
+                    data=data_generator(byte_chunk),
+                    timeout=DEFAULT_TIMEOUT,
+                    stream=True,
                 )
                 response.raise_for_status()
                 etag = response.headers["ETag"]
                 etags.append({"ETag": etag, "PartNumber": part_no})
         except requests.RequestException as e:
+            print(e)
             return SyftError(message=str(e))
 
         mark_write_complete_method = from_api_or_context(
@@ -96,6 +134,20 @@ class SeaweedFSBlobDeposit(BlobDeposit):
         return mark_write_complete_method(
             etags=etags, uid=self.blob_storage_entry_id, no_lines=no_lines
         )
+
+
+@migrate(SeaweedFSBlobDeposit, SeaweedFSBlobDepositV1)
+def downgrade_seaweedblobdeposit_v2_to_v1():
+    return [
+        drop(["size"]),
+    ]
+
+
+@migrate(SeaweedFSBlobDepositV1, SeaweedFSBlobDeposit)
+def upgrade_seaweedblobdeposit_v1_to_v2():
+    return [
+        make_set_default("size", 1),
+    ]
 
 
 @serializable()
@@ -188,7 +240,7 @@ class SeaweedFSConnection(BlobStorageConnection):
             )
 
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
-        total_parts = math.ceil(obj.file_size / DEFAULT_CHUNK_SIZE)
+        total_parts = math.ceil(obj.file_size / DEFAULT_FILE_PART_SIZE)
 
         urls = [
             GridURL.from_url(
@@ -206,7 +258,9 @@ class SeaweedFSConnection(BlobStorageConnection):
             for i in range(total_parts)
         ]
 
-        return SeaweedFSBlobDeposit(blob_storage_entry_id=obj.id, urls=urls)
+        return SeaweedFSBlobDeposit(
+            blob_storage_entry_id=obj.id, urls=urls, size=obj.file_size
+        )
 
     def complete_multipart_upload(
         self,

@@ -1,4 +1,5 @@
 # stdlib
+from copy import deepcopy
 from typing import Any
 from typing import Dict
 from typing import List
@@ -25,6 +26,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..network.routes import route_to_connection
+from ..request.request import Request
 from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
@@ -36,6 +38,7 @@ from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..user.user_roles import ServiceRole
 from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
@@ -55,7 +58,7 @@ class UserCodeService(AbstractService):
 
     @service_method(path="code.submit", name="submit", roles=GUEST_ROLE_LEVEL)
     def submit(
-        self, context: AuthedServiceContext, code: SubmitUserCode
+        self, context: AuthedServiceContext, code: Union[UserCode, SubmitUserCode]
     ) -> Union[UserCode, SyftError]:
         """Add User Code"""
         result = self._submit(context=context, code=code)
@@ -63,9 +66,29 @@ class UserCodeService(AbstractService):
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted")
 
-    def _submit(self, context: AuthedServiceContext, code: SubmitUserCode) -> Result:
-        result = self.stash.set(context.credentials, code.to(UserCode, context=context))
+    def _submit(
+        self, context: AuthedServiceContext, code: Union[UserCode, SubmitUserCode]
+    ) -> Result:
+        if not isinstance(code, UserCode):
+            code = code.to(UserCode, context=context)
+        result = self.stash.set(context.credentials, code)
         return result
+
+    @service_method(
+        path="code.sync_code_from_request",
+        name="sync_code_from_request",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def sync_code_from_request(
+        self,
+        context: AuthedServiceContext,
+        request: Request,
+    ) -> Union[SyftSuccess, SyftError]:
+        """Re-submit request from a different node"""
+
+        # This request is from a different node, ensure worker pool is not set
+        code: UserCode = deepcopy(request.code)
+        return self.submit(context=context, code=code)
 
     @service_method(
         path="code.get_by_service_func_name",
@@ -132,6 +155,15 @@ class UserCodeService(AbstractService):
                 message="The code to be submitted (name and content) already exists"
             )
 
+        worker_pool_service = context.node.get_service("SyftWorkerPoolService")
+        pool_result = worker_pool_service._get_worker_pool(
+            context,
+            pool_name=user_code.worker_pool_name,
+        )
+
+        if isinstance(pool_result, SyftError):
+            return pool_result
+
         result = self.stash.set(context.credentials, user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -193,7 +225,7 @@ class UserCodeService(AbstractService):
     )
     def get_by_uid(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> Union[UserCode, SyftError]:
         """Get a User Code Item"""
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
@@ -286,6 +318,38 @@ class UserCodeService(AbstractService):
         else:
             return True
 
+    def is_execution_on_owned_args_allowed(self, context: AuthedServiceContext) -> bool:
+        if context.role == ServiceRole.ADMIN:
+            return True
+        user_service = context.node.get_service("userservice")
+        current_user = user_service.get_current_user(context=context)
+        return current_user.mock_execution_permission
+
+    def keep_owned_kwargs(
+        self, kwargs: Dict[str, Any], context: AuthedServiceContext
+    ) -> Dict[str, Any]:
+        """Return only the kwargs that are owned by the user"""
+        action_service = context.node.get_service("actionservice")
+
+        mock_kwargs = {}
+        for k, v in kwargs.items():
+            if isinstance(v, UID):
+                # Jobs have UID kwargs instead of ActionObject
+                v = action_service.get(context, uid=v)
+                if v.is_ok():
+                    v = v.ok()
+            if (
+                isinstance(v, ActionObject)
+                and v.syft_client_verify_key == context.credentials
+            ):
+                mock_kwargs[k] = v
+        return mock_kwargs
+
+    def is_execution_on_owned_args(
+        self, kwargs: Dict[str, Any], context: AuthedServiceContext
+    ) -> bool:
+        return len(self.keep_owned_kwargs(kwargs, context)) == len(kwargs)
+
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
@@ -307,17 +371,30 @@ class UserCodeService(AbstractService):
     ) -> Result[ActionObject, Err]:
         """Call a User Code Function"""
         try:
-            # Unroll variables
-            kwarg2id = map_kwargs_to_id(kwargs)
-
-            # get code item
             code_result = self.stash.get_by_uid(context.credentials, uid=uid)
             if code_result.is_err():
                 return code_result
             code: UserCode = code_result.ok()
 
+            # Set Permissions
+            if self.is_execution_on_owned_args(kwargs, context):
+                if self.is_execution_on_owned_args_allowed(context):
+                    context.has_execute_permissions = True
+                else:
+                    return Err(
+                        "You do not have the permissions for mock execution, please contact the admin"
+                    )
+            override_execution_permission = (
+                context.has_execute_permissions or context.role == ServiceRole.ADMIN
+            )
+            # Override permissions bypasses the cache, since we do not check in/out policies
+            skip_fill_cache = override_execution_permission
+            # We do not read from output policy cache if there are mock arguments
+            skip_read_cache = len(self.keep_owned_kwargs(kwargs, context)) > 0
+
+            # Check output policy
             output_policy = code.output_policy
-            if not context.has_execute_permissions:
+            if not override_execution_permission:
                 can_execute = self.is_execution_allowed(
                     code=code, context=context, output_policy=output_policy
                 )
@@ -327,7 +404,10 @@ class UserCodeService(AbstractService):
                             "UserCodeStatus.DENIED: Function has no output policy"
                         )
                     if not (is_valid := output_policy.valid):
-                        if len(output_policy.output_history) > 0:
+                        if (
+                            len(output_policy.output_history) > 0
+                            and not skip_read_cache
+                        ):
                             result = resolve_outputs(
                                 context=context,
                                 output_ids=output_policy.last_output_ids,
@@ -340,6 +420,7 @@ class UserCodeService(AbstractService):
             # Execute the code item
             action_service = context.node.get_service("actionservice")
 
+            kwarg2id = map_kwargs_to_id(kwargs)
             result_action_object: Result[
                 Union[ActionObject, TwinObject], str
             ] = action_service._user_code_execute(
@@ -361,7 +442,8 @@ class UserCodeService(AbstractService):
             # Apply Output Policy to the results and update the OutputPolicyState
 
             # this currently only works for nested syft_functions
-            if not context.has_execute_permissions:
+            # and admins executing on high side (TODO, decide if we want to increment counter)
+            if not skip_fill_cache:
                 output_policy.apply_output(context=context, outputs=result)
                 code.output_policy = output_policy
                 if not (
@@ -370,14 +452,21 @@ class UserCodeService(AbstractService):
                     )
                 ):
                     return update_success.to_result()
-
+            has_result_read_permission = context.extra_kwargs.get(
+                "has_result_read_permission", False
+            )
             if isinstance(result, TwinObject):
-                return Ok(result.mock)
+                if has_result_read_permission:
+                    return Ok(result.private)
+                else:
+                    return Ok(result.mock)
             elif result.is_mock:
                 return Ok(result)
             elif result.syft_action_data_type is Err:
                 # result contains the error but the request was handled correctly
                 return result.syft_action_data
+            elif has_result_read_permission:
+                return Ok(result)
             else:
                 return Ok(result.as_empty())
         except Exception as e:

@@ -899,9 +899,11 @@ def get_syft_cpu_dockerfile() -> Path:
 
 
 def get_queue_address(port: int) -> str:
+    """Get queue address based on container host name."""
+
     container_host = os.getenv("CONTAINER_HOST", None)
     if container_host == "k8s":
         return f"tcp://backend:{port}"
-    # elif container_host == "docker":
-    #     return f"tcp://host.docker.internal:{port}"
+    elif container_host == "docker":
+        return f"tcp://{socket.gethostname()}:{port}"
     return f"tcp://localhost:{port}"

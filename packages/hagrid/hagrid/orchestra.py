@@ -267,6 +267,9 @@ def deploy_to_python(
                 port=port,
                 reset=reset,
                 processes=processes,
+                queue_port=queue_port,
+                n_consumers=n_consumers,
+                create_producer=create_producer,
                 dev_mode=dev_mode,
                 tail=tail,
                 node_type=node_type_enum,
@@ -423,6 +426,9 @@ def deploy_to_container(
 
     if not enable_warnings:
         commands.append("--no-warnings")
+
+    if node_side_type.lower() == NodeSideType.LOW_SIDE.value.lower():
+        commands.append("--low-side")
 
     if in_memory_workers:
         commands.append("--in-mem-workers")
@@ -585,9 +591,9 @@ class Orchestra:
                 name=name,
                 node_side_type=node_side_type_enum,
             )
-        else:
-            print(f"deployment_type: {deployment_type_enum} is not supported")
-            return None
+        # else:
+        #     print(f"deployment_type: {deployment_type_enum} is not supported")
+        #     return None
 
     @staticmethod
     def land(

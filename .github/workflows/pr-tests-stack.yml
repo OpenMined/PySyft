@@ -30,7 +30,7 @@ jobs:
         # os: [om-ci-16vcpu-ubuntu2204]
         os: [ubuntu-latest]
         python-version: ["3.11"]
-        pytest-modules: ["frontend network"]
+        pytest-modules: ["frontend network container_workload"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
@@ -82,7 +82,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -272,7 +272,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -354,7 +354,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -560,7 +560,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}

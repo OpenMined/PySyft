@@ -8,6 +8,7 @@ from result import Result
 
 # relative
 from ...custom_worker.config import DockerWorkerConfig
+from ...custom_worker.config import WorkerConfig
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
@@ -19,7 +20,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from .worker_image import SyftWorkerImage
 
-DockerWorkerConfigPK = PartitionKey(key="config", type_=DockerWorkerConfig)
+WorkerConfigPK = PartitionKey(key="config", type_=WorkerConfig)
 
 
 @serializable()
@@ -59,5 +60,5 @@ class SyftWorkerImageStash(BaseUIDStoreStash):
     def get_by_docker_config(
         self, credentials: SyftVerifyKey, config: DockerWorkerConfig
     ):
-        qks = QueryKeys(qks=[DockerWorkerConfigPK.with_obj(config)])
+        qks = QueryKeys(qks=[WorkerConfigPK.with_obj(config)])
         return self.query_one(credentials=credentials, qks=qks)
