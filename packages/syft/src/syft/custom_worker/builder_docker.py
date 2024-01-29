@@ -4,6 +4,7 @@ import io
 import json
 from pathlib import Path
 from typing import Iterable
+from typing import Optional
 
 # third party
 import docker
@@ -24,6 +25,7 @@ class DockerBuilder(BuilderBase):
         tag: str,
         dockerfile: str = None,
         dockerfile_path: Path = None,
+        buildargs: Optional[dict] = None,
         **kwargs,
     ):
         if dockerfile:
@@ -39,6 +41,7 @@ class DockerBuilder(BuilderBase):
             image_result, logs = client.images.build(
                 tag=tag,
                 timeout=self.BUILD_MAX_WAIT,
+                buildargs=buildargs,
                 **kwargs,
             )
             return ImageBuildResult(

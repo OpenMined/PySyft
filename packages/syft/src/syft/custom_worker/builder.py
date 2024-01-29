@@ -85,7 +85,11 @@ class CustomWorkerBuilder:
         tag: str,
         **kwargs,
     ) -> ImageBuildResult:
-        return self.builder.build_image(dockerfile=config.dockerfile, tag=tag, **kwargs)
+        return self.builder.build_image(
+            dockerfile=config.dockerfile,
+            tag=tag,
+            **kwargs,
+        )
 
     def _build_template(
         self,
