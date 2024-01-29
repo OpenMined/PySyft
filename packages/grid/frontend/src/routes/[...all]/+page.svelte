@@ -1,12 +1,42 @@
 <script>
+  import { onMount } from "svelte"
   import DomainMetadataPanel from "$lib/components/authentication/DomainMetadataPanel.svelte"
   import AuthCircles from "$lib/components/AuthCircles.svelte"
   import Nav from "$lib/components/authentication/Nav.svelte"
   import Footer from "$lib/components/authentication/Footer.svelte"
+  import { API_BASE_URL } from "$lib/constants"
+  import { deserialize } from "$lib/api/serde"
 
-  export let data
+  let _metadata = null
 
-  $: metadata = data.metadata
+  const get_metadata = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/metadata_capnp`)
+      const metadata_raw = await deserialize(res)
+
+      return {
+        admin_email: metadata_raw?.admin_email,
+        description: metadata_raw?.description,
+        highest_version: metadata_raw?.highest_version,
+        lowest_version: metadata_raw?.lowest_version,
+        name: metadata_raw?.name,
+        node_id: metadata_raw?.id?.value,
+        node_side: metadata_raw?.node_side_type,
+        node_type: metadata_raw?.node_type?.value,
+        organization: metadata_raw?.organization,
+        signup_enabled: metadata_raw?.signup_enabled,
+        syft_version: metadata_raw?.syft_version,
+      }
+    } catch (err) {
+      console.log(err)
+    }
+  }
+
+  onMount(async () => {
+    _metadata = await get_metadata()
+  })
+
+  $: metadata = _metadata
 </script>
 
 <title>PySyft</title>
@@ -16,7 +46,7 @@
   <AuthCircles />
 </div>
 <main class="flex flex-col p-10 gap-10 h-screen">
-  <Nav />
+  <Nav version={_metadata?.syft_version} />
   <div class="grow flex-shrink-0">
     <div
       class="flex flex-col xl:flex-row w-full h-full xl:justify-around items-center gap-12"
