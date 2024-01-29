@@ -83,7 +83,7 @@ class UID:
 
     @staticmethod
     def with_seed(value: str) -> "UID":
-        md5 = hashlib.md5(value.encode("utf-8"))
+        md5 = hashlib.md5(value.encode("utf-8"), usedforsecurity=False)
         return UID(md5.hexdigest())
 
     def to_string(self) -> str:
