@@ -1,5 +1,6 @@
 # stdlib
 from hashlib import sha256
+import os
 from pathlib import Path
 from typing import Dict
 from typing import List
@@ -102,7 +103,8 @@ class KubernetesBuilder(BuilderBase):
             registry_url=registry_url,
         )
         job.wait(["condition=Complete", "condition=Failed"])
-        return ImagePushResult(logs=self._get_logs(job))
+        exit_code = self._get_container_exit_code(job)[0]
+        return ImagePushResult(logs=self._get_logs(job), exit_code=exit_code)
 
     def _new_job_id(self, tag: str) -> str:
         return self._get_tag_hash(tag)[:16]
@@ -247,6 +249,22 @@ class KubernetesBuilder(BuilderBase):
         tag_hash = self._get_tag_hash(tag)
         registry_url = registry_url or tag.split("/")[0]
 
+        extra_flags = ""
+        if os.getenv("DEV_MODE") == "True":
+            extra_flags = "--insecure"
+
+        run_cmds = [
+            "echo Logging in to $REG_URL with user $REG_USERNAME...",
+            # login to registry
+            "crane auth login $REG_URL -u $REG_USERNAME -p $REG_PASSWORD",
+            # push with credentials
+            "echo Pushing image....",
+            f"crane push --image-refs /dev/termination-log {extra_flags} /output/{tag_hash}.tar {tag}",
+            # cleanup built tarfile
+            "echo Cleaning up tar....",
+            f"rm /output/{tag_hash}.tar",
+        ]
+
         job = Job(
             {
                 "metadata": {
@@ -284,19 +302,7 @@ class KubernetesBuilder(BuilderBase):
                                         },
                                     ],
                                     "command": ["sh"],
-                                    "args": [
-                                        "-c",
-                                        " && ".join(
-                                            [
-                                                "crane auth login $REG_URL -u $REG_USERNAME -p $REG_PASSWORD",
-                                                # push with credentials
-                                                f"crane push --image-refs /dev/termination-log /output/{tag_hash}.tar {tag}",  # noqa: E501
-                                                # cleanup built tarfile
-                                                f"rm /output/{tag_hash}.tar",
-                                                # for retagging use crane cp {tag} {new_tag}
-                                            ]
-                                        ),
-                                    ],
+                                    "args": ["-c", " && ".join(run_cmds)],
                                     "volumeMounts": [
                                         {
                                             "name": "build-output",

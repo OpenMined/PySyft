@@ -523,9 +523,7 @@ def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
         return WorkerHealth.UNHEALTHY
 
 
-def docker_build(
-    image: SyftWorkerImage, **kwargs
-) -> Union[ImageBuildResult, SyftError]:
+def image_build(image: SyftWorkerImage, **kwargs) -> Union[ImageBuildResult, SyftError]:
     full_tag = image.image_identifier.full_name_with_tag
     try:
         builder = CustomWorkerBuilder()
@@ -550,11 +548,12 @@ def docker_build(
         )
 
 
-def docker_push(
+def image_push(
     image: SyftWorkerImage,
     username: Optional[str] = None,
     password: Optional[str] = None,
 ) -> Union[ImagePushResult, SyftError]:
+    full_tag = image.image_identifier.full_name_with_tag
     try:
         builder = CustomWorkerBuilder()
         result = builder.push_image(
@@ -565,19 +564,19 @@ def docker_push(
             password=password,
         )
 
-        if "error" in result.logs:
+        if "error" in result.logs.lower() or result.exit_code:
             return SyftError(
-                message=f"Failed to push {image.image_identifier}. Logs:\n{result.logs}"
+                message=f"Failed to push {full_tag}. "
+                f"Exit code: {result.exit_code}. "
+                f"Logs:\n{result.logs}"
             )
 
         return result
     except docker.errors.APIError as e:
-        return SyftError(
-            message=f"Docker API error when pushing {image.image_identifier}. {e}"
-        )
+        return SyftError(message=f"Docker API error when pushing {full_tag}. {e}")
     except docker.errors.DockerException as e:
         return SyftError(
-            message=f"Docker exception when pushing {image.image_identifier}. Reason - {e}"
+            message=f"Docker exception when pushing {full_tag}. Reason - {e}"
         )
     except Exception as e:
         return SyftError(

@@ -72,7 +72,7 @@ class CustomWorkerBuilder:
         """
 
         return self.builder.push_image(
-            tag,
+            tag=tag,
             username=username,
             password=password,
             registry_url=registry_url,
