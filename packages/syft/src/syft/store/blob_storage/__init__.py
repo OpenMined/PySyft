@@ -42,8 +42,6 @@ Read/retrieve SyftObject from blob storage
 
 
 # stdlib
-import os
-from pathlib import Path
 from typing import Optional
 from typing import Type
 from typing import Union
