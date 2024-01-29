@@ -22,8 +22,8 @@ RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     apk update && \
     apk add build-base gcc tzdata python-$PYTHON_VERSION-dev py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-    # uncomment for creating rootless user
-    # && adduser -D -u $UID $USER
+# uncomment for creating rootless user
+# && adduser -D -u $UID $USER
 
 # ==================== [BUILD STEP] Install Syft Dependency ==================== #
 
@@ -73,12 +73,12 @@ ARG USER_GRP
 # Setup Python
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     apk update && \
-    apk add tzdata bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
+    apk add tzdata git bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
     # Uncomment for rootless user
     # adduser -D -u 1000 $USER && \
     mkdir -p /var/log/pygrid $HOME/data/creds $HOME/data/db $HOME/.cache $HOME/.local
-    # chown -R $USER_GRP /var/log/pygrid $HOME/
+# chown -R $USER_GRP /var/log/pygrid $HOME/
 
 USER $USER
 WORKDIR $APPDIR
