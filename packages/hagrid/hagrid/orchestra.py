@@ -1,4 +1,5 @@
 """Python Level API to launch Docker Containers using Hagrid"""
+
 # future
 from __future__ import annotations
 
@@ -26,6 +27,7 @@ try:
     from syft.abstract_node import NodeType
     from syft.protocol.data_protocol import stage_protocol_changes
     from syft.service.response import SyftError
+    from syft.util.version_compare import get_operator
 except Exception:  # nosec
     # print("Please install syft with `pip install syft`")
     pass
@@ -260,22 +262,32 @@ def deploy_to_python(
             # dont use default port to prevent port clashes in CI
             port = find_available_port(host="localhost", port=None, search=True)
         sig = inspect.signature(sy.serve_node)
+
         if "node_type" in sig.parameters.keys():
+            _, op, _ = get_operator(">0.8.2")
+            if op(sy.__version__, "0.8.2"):
+                # syft > 0.8.2
+                worker_parameters = {
+                    "processes": processes,
+                    "queue_port": queue_port,
+                    "n_consumers": n_consumers,
+                    "create_producer": create_producer,
+                    "in_memory_workers": True,  # Only in-memory workers supported for python mode
+                }
+            else:
+                worker_parameters = {}
+
             start, stop = sy.serve_node(
                 name=name,
                 host=host,
                 port=port,
                 reset=reset,
-                processes=processes,
-                queue_port=queue_port,
-                n_consumers=n_consumers,
-                create_producer=create_producer,
                 dev_mode=dev_mode,
                 tail=tail,
                 node_type=node_type_enum,
                 node_side_type=node_side_type,
                 enable_warnings=enable_warnings,
-                in_memory_workers=True,  # Only in-memory workers supported for python mode
+                **worker_parameters,
             )
         else:
             # syft <= 0.8.1
