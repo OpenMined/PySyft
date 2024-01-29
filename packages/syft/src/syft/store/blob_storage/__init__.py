@@ -116,17 +116,9 @@ def upgrade_blobretrieval_v1_to_v2():
 
 
 @serializable()
-class SyftObjectRetrievalV2(BlobRetrieval):
-    __canonical_name__ = "SyftObjectRetrieval"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    syft_object: bytes
-
-
-@serializable()
 class SyftObjectRetrieval(BlobRetrieval):
     __canonical_name__ = "SyftObjectRetrieval"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_2
 
     syft_object: bytes
 
@@ -145,20 +137,6 @@ class SyftObjectRetrieval(BlobRetrieval):
 
     def read(self, _deserialize=True) -> Union[SyftObject, SyftError]:
         return self._read_data(_deserialize=_deserialize)
-
-
-@migrate(SyftObjectRetrieval, SyftObjectRetrievalV2)
-def downgrade_syftobjretrival_v3_to_v2():
-    return [
-        drop(["path"]),
-    ]
-
-
-@migrate(SyftObjectRetrievalV2, SyftObjectRetrieval)
-def upgrade_syftobjretrival_v2_to_v3():
-    return [
-        make_set_default("path", Path("")),
-    ]
 
 
 class BlobRetrievalByURLV1(BlobRetrievalV1):

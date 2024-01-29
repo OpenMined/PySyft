@@ -1169,11 +1169,6 @@
           "version": 1,
           "hash": "7ccc62d5b434d2d438b3df661b4d753b0c7c8d593d451d8b86d364da83998c89",
           "action": "remove"
-        },
-        "3": {
-          "version": 3,
-          "hash": "02cfb94487167c386b65352d146ca2ea1a9b81dd390ef901700f6df3d6790654",
-          "action": "add"
         }
       },
       "ActionFileData": {
