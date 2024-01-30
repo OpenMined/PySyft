@@ -1,38 +1,53 @@
 <script lang="ts">
-  import { page } from '$app/stores';
-  import TrayIcon from '../icons/TrayIcon.svelte';
-  import TableIcon from '../icons/TableIcon.svelte';
-  import UsersIcon from '../icons/UsersIcon.svelte';
-  import TableFillIcon from '../icons/TableFillIcon.svelte';
-  import TrayFillIcon from '../icons/TrayFillIcon.svelte';
-  import UsersFillIcon from '../icons/UsersFillIcon.svelte';
+  import { page } from "$app/stores"
+  import TrayIcon from "../icons/TrayIcon.svelte"
+  import TableIcon from "../icons/TableIcon.svelte"
+  import UsersIcon from "../icons/UsersIcon.svelte"
+  import TableFillIcon from "../icons/TableFillIcon.svelte"
+  import TrayFillIcon from "../icons/TrayFillIcon.svelte"
+  import UsersFillIcon from "../icons/UsersFillIcon.svelte"
 
   const items = [
     {
-      title: 'Governance',
+      title: "Governance",
       sections: [
         {
           icon: TrayIcon,
           iconFill: TrayFillIcon,
-          label: 'Requests',
-          href: '/requests',
-          disabled: true
-        }
-      ]
+          label: "Requests",
+          href: "/requests",
+          disabled: true,
+        },
+      ],
     },
     {
-      title: 'Assets',
-      sections: [{ icon: TableIcon, iconFill: TableFillIcon, label: 'Datasets', href: '/datasets' }]
+      title: "Assets",
+      sections: [
+        {
+          icon: TableIcon,
+          iconFill: TableFillIcon,
+          label: "Datasets",
+          href: "/datasets",
+          disabled: true,
+        },
+      ],
     },
     {
-      title: 'Admin',
-      sections: [{ icon: UsersIcon, iconFill: UsersFillIcon, label: 'Users', href: '/users' }]
-    }
-  ];
+      title: "Admin",
+      sections: [
+        {
+          icon: UsersIcon,
+          iconFill: UsersFillIcon,
+          label: "Users",
+          href: "/users",
+        },
+      ],
+    },
+  ]
 
-  let currentPathname = $page.url.pathname;
+  let currentPathname = $page.url.pathname
 
-  $: currentPathname = $page.url.pathname;
+  $: currentPathname = $page.url.pathname
 </script>
 
 {#each items as item}
@@ -50,9 +65,13 @@
             class:bg-primary-50={section.href === currentPathname}
             class:text-primary-600={section.href === currentPathname}
           >
-            <div class="flex items-center justify-center px-3 py-2 text-primary-500">
+            <div
+              class="flex items-center justify-center px-3 py-2 text-primary-500"
+            >
               <svelte:component
-                this={section.href === currentPathname ? section.iconFill : section.icon}
+                this={section.href === currentPathname
+                  ? section.iconFill
+                  : section.icon}
                 class="w-6 h-6"
               />
             </div>

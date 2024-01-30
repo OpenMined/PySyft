@@ -24,12 +24,21 @@ spec:
         app.kubernetes.io/managed-by: Helm
     spec:
       affinity: null
+      serviceAccountName: backend-service-account
       containers:
       - args: null
         command: null
         env:
+        - name: K8S_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         - name: MONGO_PORT
-          value: {{ .Values.mongo.port }}
+          value: "{{ .Values.mongo.port }}"
         - name: MONGO_HOST
           value: {{ .Values.mongo.host }}
         - name: MONGO_USERNAME
@@ -44,7 +53,7 @@ spec:
         - name: RELEASE
           value: production
         - name: VERSION
-          value: {{ .Values.syft.version }}
+          value: "{{ .Values.syft.version }}"
         - name: VERSION_HASH
           value: {{ .Values.node.settings.versionHash }}
         - name: NODE_TYPE
@@ -59,27 +68,27 @@ spec:
               name: {{ .Values.secrets.syft }}
               key: stackApiKey
         - name: PORT
-          value: '80'
+          value: "80"
         - name: IGNORE_TLS_ERRORS
-          value: 'False'
+          value: "false"
         - name: HTTP_PORT
-          value: '80'
+          value: "80"
         - name: HTTPS_PORT
-          value: '443'
+          value: "443"
         - name: CONTAINER_HOST
-          value: k8s
+          value: "k8s"
         - name: TRACE
-          value: 'False'
+          value: "false"
         - name: JAEGER_HOST
           value: localhost
         - name: JAEGER_PORT
-          value: '14268'
+          value: "14268"
         - name: DEV_MODE
-          value: 'False'
+          value: "false"
         - name: DOMAIN_CONNECTION_PORT
-          value: '3030'
+          value: "3030"
         - name: ENABLE_OBLV
-          value: 'false'
+          value: "false"
         - name: DEFAULT_ROOT_EMAIL
           value: {{ .Values.node.settings.defaultRootEmail }}
         - name: DEFAULT_ROOT_PASSWORD
@@ -98,6 +107,16 @@ spec:
           value: "{{ .Values.seaweedfs.s3Port }}"
         - name: SEAWEED_MOUNT_PORT
           value: "{{ .Values.seaweedfs.mountPort }}"
+        - name: QUEUE_PORT
+          value: "{{ .Values.queue.port }}"
+        - name: CREATE_PRODUCER
+          value: "true"
+        - name: N_CONSUMERS
+          value: "0"
+        - name: INMEMORY_WORKERS
+          value: "{{ .Values.node.settings.inMemoryWorkers }}"
+        - name: LOG_LEVEL
+          value: {{ .Values.node.settings.logLevel }}
         envFrom: null
         image: {{ .Values.syft.registry }}/openmined/grid-backend:{{ .Values.syft.version }}
         lifecycle: null
@@ -112,10 +131,17 @@ spec:
           name: credentials-data
           readOnly: false
           subPath: credentials-data
+        {{- if .Values.workerBuilds.mountInBackend }}
+        # mount for debugging and inspection of worker-build volume
+        - mountPath: /root/data/images/
+          name: worker-builds
+          readOnly: true
+        {{- end }}
       dnsConfig: null
       ephemeralContainers: null
       hostAliases: null
       imagePullSecrets: null
+      imagePullPolicy: Always
       initContainers: null
       nodeName: null
       nodeSelector: null
@@ -125,7 +151,12 @@ spec:
       terminationGracePeriodSeconds: 5
       tolerations: null
       topologySpreadConstraints: null
-      volumes: null
+      {{- if .Values.workerBuilds.mountInBackend }}
+      volumes:
+      - name: worker-builds
+        persistentVolumeClaim:
+          claimName: worker-builds
+      {{- end }}
   volumeClaimTemplates:
   - metadata:
       labels:
