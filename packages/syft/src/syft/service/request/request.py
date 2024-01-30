@@ -20,6 +20,7 @@ from typing_extensions import Self
 from ...abstract_node import NodeSideType
 from ...client.api import APIRegistry
 from ...custom_worker.config import WorkerConfig
+from ...custom_worker.k8s import IN_KUBERNETES
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
@@ -226,10 +227,26 @@ class CreateCustomImageChange(Change):
                 tag=self.tag,
                 registry_uid=self.registry_uid,
             )
+
             if isinstance(build_result, SyftError):
                 return Err(build_result)
-            else:
-                return Ok(build_result)
+
+            if IN_KUBERNETES:
+                push_result = worker_image_service.push(
+                    service_context,
+                    image=worker_image.id,
+                )
+
+                if isinstance(push_result, SyftError):
+                    return Err(push_result)
+
+                return Ok(
+                    SyftSuccess(
+                        message=f"Build Result: {build_result.message} \n Push Result: {push_result.message}"
+                    )
+                )
+
+            return Ok(build_result)
 
         except Exception as e:
             return Err(SyftError(message=f"Failed to create/build image: {e}"))
