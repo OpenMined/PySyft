@@ -633,3 +633,35 @@ jobs:
           tox -e syft.build.helm
           tox -e syft.package.helm
           # tox -e syft.test.helm
+
+      - name: Get current timestamp
+        id: date
+        if: failure()
+        shell: bash
+        run: echo "date=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Collect logs from k3d
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          mkdir -p ./k8s-logs
+          kubectl describe all -A --context k3d-testgateway1 --namespace testgateway1 > ./k8s-logs/testgateway1-desc-${{ steps.date.outputs.date }}.txt
+          kubectl describe all -A --context k3d-testdomain1 --namespace testdomain1 > ./k8s-logs/testdomain1-desc-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-testgateway1 --namespace testgateway1 > ./k8s-logs/testgateway1-logs-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-testdomain1 --namespace testdomain1 > ./k8s-logs/testdomain1-logs-${{ steps.date.outputs.date }}.txt
+          ls -la ./k8s-logs
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: steps.changes.outputs.stack == 'true' && failure()
+        with:
+          name: k8s-logs-${{ matrix.os }}-${{ steps.date.outputs.date }}
+          path: ./k8s-logs/
+
+      - name: Cleanup k3d
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          k3d cluster delete testgateway1 || true
+          k3d cluster delete testdomain1 || true
+          k3d registry delete k3d-registry.localhost || true
