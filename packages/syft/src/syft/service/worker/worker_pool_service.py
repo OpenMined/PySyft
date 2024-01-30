@@ -541,6 +541,7 @@ class SyftWorkerPoolService(AbstractService):
                 res = queue_service.update_queue_status(
                     uid=queue_item.id, status=Status.INTERRUPTED
                 )
+                # import pdb; pdb.set_strace()
                 if isinstance(res, SyftError):
                     return res
                 # kill the running job

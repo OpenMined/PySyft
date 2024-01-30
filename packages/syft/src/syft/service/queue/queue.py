@@ -8,6 +8,7 @@ from typing import Type
 from typing import Union
 
 # third party
+from loguru import logger
 import psutil
 from result import Err
 from result import Ok
@@ -199,12 +200,11 @@ def handle_message_multiprocessing(worker_settings, queue_item, credentials):
         status = Status.ERRORED
         job_status = JobStatus.ERRORED
         # stdlib
-
-        raise e
+        logger.error("HAD AN ERROR WHILE HANDLING MESSAGE", e)
+        # raise e
         # result = SyftError(
         #     message=f"Failed with exception: {e}, {traceback.format_exc()}"
         # )
-        # print("HAD AN ERROR WHILE HANDLING MESSAGE", result.message)
 
     queue_item.result = result
     queue_item.resolved = True

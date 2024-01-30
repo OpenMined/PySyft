@@ -163,7 +163,7 @@ def test_create_pool_request_accept(faker: Faker, worker: Worker) -> None:
     assert isinstance(launched_pool, WorkerPool)
     assert len(launched_pool.worker_list) == 3
 
-    # TODO: delete the built image and launched worker pool
+    # Delete the built image and launched worker pool
     result = root_client.api.services.worker_pool.delete(pool_name=pool_name)
     assert isinstance(result, SyftSuccess)
     assert len(root_client.worker_pools.get_all()) == 1
@@ -238,6 +238,7 @@ def test_worker_pool_nested_jobs(faker: Faker, cw_node_high: NodeHandle) -> None
 
     @sy.syft_function_single_use(x=x_ptr, worker_pool_name=pool_name)
     def process_all(domain, x):
+        print("Doing processing all!")
         job_results = []
         for elem in x:
             batch_job = domain.launch_job(process_batch, batch=elem)
@@ -274,13 +275,25 @@ def test_worker_pool_nested_jobs(faker: Faker, cw_node_high: NodeHandle) -> None
 
     # The DS runs the syft functions
     job = ds_client.code.process_all(x=x_ptr, blocking=False)
-    # stdlib
     job.wait()  # TOASK: why the code stucks here?
     assert len(job.subjobs) == 3
     assert job.wait().get() == 5
     sub_results = [j.wait().get() for j in job.subjobs]
     assert set(sub_results) == {2, 3, 5}
 
-    # Delete the built image
+    # Delete the worker pool and the built image
+    result = root_client.api.services.worker_pool.delete(pool_name=pool_name)
+    assert isinstance(result, SyftSuccess)
+    assert len(root_client.worker_pools.get_all()) == 1
+    assert pool_name not in [pool.name for pool in root_client.worker_pools]
 
-    # Delete the worker pool
+    worker_image = root_client.api.services.worker_image.get_by_config(docker_config)
+    result = root_client.api.services.worker_image.remove(
+        uid=worker_image.id,
+    )
+    assert isinstance(result, SyftSuccess)
+
+    # Check queue
+    # import pdb; pdb.set_trace()
+    res = root_client.api.services.queue.get_by_job_id(job.id)
+    print(res)
