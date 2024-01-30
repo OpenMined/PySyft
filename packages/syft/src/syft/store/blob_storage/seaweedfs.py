@@ -1,6 +1,8 @@
 # stdlib
 from io import BytesIO
 import math
+from queue import Queue
+import threading
 from typing import Dict
 from typing import Generator
 from typing import List
@@ -85,43 +87,77 @@ class SeaweedFSBlobDeposit(BlobDeposit):
             no_lines = 0
             # this loops over the parts, we have multiple parts to allow for
             # concurrent uploads of a single file. (We are currently not using that)
+            # a part may for instance be 5GB
+            # parts are then splitted into chunks which are MBs (order of magnitude)
             part_size = math.ceil(self.size / len(self.urls))
-            for part_no, (byte_chunk, url) in enumerate(
-                zip(_byte_chunks(data, part_size), self.urls),
-                start=1,
-            ):
-                no_lines += byte_chunk.count(b"\n")
-                if api is not None:
-                    blob_url = api.connection.to_blob_route(
-                        url.url_path, host=url.host_or_ip
+            chunk_size = DEFAULT_UPLOAD_CHUNK_SIZE
+
+            # this is the total nr of chunks in all parts
+            total_iterations = math.ceil(part_size / chunk_size) * len(self.urls)
+
+            with tqdm(
+                total=total_iterations,
+                desc=f"Uploading File",  # noqa
+            ) as pbar:
+                for part_no, url in enumerate(
+                    self.urls,
+                    start=1,
+                ):
+                    if api is not None:
+                        blob_url = api.connection.to_blob_route(
+                            url.url_path, host=url.host_or_ip
+                        )
+                    else:
+                        blob_url = url
+
+                    # read a chunk untill we have read part_size
+                    class PartGenerator:
+                        def __init__(self):
+                            self.no_lines = 0
+
+                        def async_generator(self, chunk_size=DEFAULT_UPLOAD_CHUNK_SIZE):
+                            item_queue: Queue = Queue()
+                            threading.Thread(
+                                target=self.add_chunks_to_queue,
+                                kwargs={"queue": item_queue, "chunk_size": chunk_size},
+                                daemon=True,
+                            ).start()
+                            item = item_queue.get()
+                            while item != 0:
+                                yield item
+                                pbar.update(1)
+                                item = item_queue.get()
+
+                        def add_chunks_to_queue(
+                            self, queue, chunk_size=DEFAULT_UPLOAD_CHUNK_SIZE
+                        ):
+                            """Creates a data geneator for the part"""
+                            n = 0
+
+                            while n * chunk_size <= part_size:
+                                try:
+                                    chunk = data.read(chunk_size)
+                                    self.no_lines += chunk.count(b"\n")
+                                    n += 1
+                                    queue.put(chunk)
+                                except BlockingIOError:
+                                    # if end of file, stop
+                                    queue.put(0)
+                            # if end of part, stop
+                            queue.put(0)
+
+                    gen = PartGenerator()
+
+                    response = requests.put(
+                        url=str(blob_url),
+                        data=gen.async_generator(chunk_size),
+                        timeout=DEFAULT_TIMEOUT,
+                        stream=True,
                     )
-                else:
-                    blob_url = url
-
-                def data_generator(bytes_, chunk_size=DEFAULT_UPLOAD_CHUNK_SIZE):
-                    """Creates a data geneator for the part"""
-                    n = 0
-                    total_iterations = math.ceil(len(bytes_) / chunk_size)
-
-                    with tqdm(
-                        total=total_iterations,
-                        desc=f"Uploading file part {part_no}/{len(self.urls)}",  # noqa
-                    ) as pbar:
-                        while n * chunk_size <= len(bytes_):
-                            chunk = bytes_[n * chunk_size : (n + 1) * chunk_size]
-                            n += 1
-                            pbar.update(1)
-                            yield chunk
-
-                response = requests.put(
-                    url=str(blob_url),
-                    data=data_generator(byte_chunk),
-                    timeout=DEFAULT_TIMEOUT,
-                    stream=True,
-                )
-                response.raise_for_status()
-                etag = response.headers["ETag"]
-                etags.append({"ETag": etag, "PartNumber": part_no})
+                    response.raise_for_status()
+                    no_lines += gen.no_lines
+                    etag = response.headers["ETag"]
+                    etags.append({"ETag": etag, "PartNumber": part_no})
         except requests.RequestException as e:
             print(e)
             return SyftError(message=str(e))
