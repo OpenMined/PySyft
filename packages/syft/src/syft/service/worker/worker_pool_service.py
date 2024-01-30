@@ -529,25 +529,33 @@ class SyftWorkerPoolService(AbstractService):
         worker_pool: WorkerPool = result.ok()
         worker_service: WorkerService = context.node.get_service("WorkerService")
         job_service: JobService = context.node.get_service("JobService")
-        queue_service: QueueService = context.node.get_service("JobService")
+        queue_service: QueueService = context.node.get_service("QueueService")
+
         if force:
             for worker in worker_pool.workers:
-                # mark the running QueueItems on the worker as 'interrupted'
-                res = queue_service.get_by_job_id(job_id=worker.job_id)
-                if isinstance(res, SyftError):
-                    return res
-                queue_item = res.ok()
-                res = queue_service.update_queue_status(
-                    uid=queue_item.id, status=Status.INTERRUPTED
-                )
-                if isinstance(res, SyftError):
-                    return res
-                # kill the running job
-                res = job_service.kill(id=worker.job_id)
-                if isinstance(res, SyftError):
-                    return res
-                # then forcefully delete the workers
-                res = worker_service.delete(uid=worker.id, force=True)
+                if worker.job_id:
+                    # if the worker is running a job, first, we mark the
+                    # corresponding QueueItems on the worker as 'interrupted'
+                    res = queue_service.get_by_job_id(
+                        context=context, job_id=worker.job_id
+                    )
+                    if isinstance(res, SyftError):
+                        return res
+                    queue_item = res.ok()
+                    if queue_item.id is not None:
+                        res = queue_service.update_queue_status(
+                            context=context,
+                            uid=queue_item.id,
+                            status=Status.INTERRUPTED,
+                        )
+                        if isinstance(res, SyftError):
+                            return res
+                    # then, we kill the worker's running job
+                    res = job_service.kill(context=context, id=worker.job_id)
+                    if isinstance(res, SyftError):
+                        return res
+                # now, we can delete the workers
+                res = worker_service.delete(context=context, uid=worker.id, force=True)
                 if isinstance(res, SyftError):
                     return res
         # Finally, delete the worker pool from the stash
