@@ -542,6 +542,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Add K3d Registry
+        run: |
+          sudo ./scripts/patch_hosts.py --add-k3d-registry
+
       # free 10GB of space
       - name: Remove unnecessary files
         if: matrix.os == 'ubuntu-latest'
