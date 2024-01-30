@@ -78,6 +78,9 @@ class SyftWorkerImageService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         registry: SyftImageRegistry = None
 
+        if IN_KUBERNETES and registry_uid is None:
+            return SyftError(message="Registry UID is required in Kubernetes mode.")
+
         result = self.stash.get_by_uid(credentials=context.credentials, uid=image_uid)
         if result.is_err():
             return SyftError(
