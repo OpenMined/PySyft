@@ -193,6 +193,7 @@ class CreateCustomImageChange(Change):
 
     config: WorkerConfig
     tag: str
+    registry_uid: Optional[UID]
 
     __repr_attrs__ = ["config", "tag"]
 
@@ -220,7 +221,10 @@ class CreateCustomImageChange(Change):
             worker_image = result.ok()
 
             build_result = worker_image_service.build(
-                service_context, image_uid=worker_image.id, tag=self.tag
+                service_context,
+                image_uid=worker_image.id,
+                tag=self.tag,
+                registry_uid=self.registry_uid,
             )
             return Ok(build_result)
 

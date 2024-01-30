@@ -11,6 +11,7 @@ import pydantic
 # relative
 from ...custom_worker.config import CustomWorkerConfig
 from ...custom_worker.config import WorkerConfig
+from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
@@ -232,6 +233,7 @@ class SyftWorkerPoolService(AbstractService):
         num_workers: int,
         tag: str,
         config: WorkerConfig,
+        registry_uid: Optional[UID] = None,
         reason: Optional[str] = "",
     ) -> Union[SyftError, SyftSuccess]:
         """
@@ -248,6 +250,9 @@ class SyftWorkerPoolService(AbstractService):
 
         if isinstance(config, CustomWorkerConfig):
             return SyftError(message="We only support DockerWorkerConfig.")
+
+        if IN_KUBERNETES and registry_uid is None:
+            return SyftError(message="Registry UID is required in Kubernetes mode.")
 
         # Check if an image already exists for given docker config
         search_result = self.image_stash.get_by_docker_config(
@@ -280,6 +285,7 @@ class SyftWorkerPoolService(AbstractService):
         create_custom_image_change = CreateCustomImageChange(
             config=config,
             tag=image_identifier.full_name_with_tag,
+            registry_uid=registry_uid,
         )
 
         # Check if a pool already exists for given pool name
