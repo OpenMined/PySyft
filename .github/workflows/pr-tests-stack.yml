@@ -544,7 +544,7 @@ jobs:
 
       - name: Add K3d Registry
         run: |
-          sudo ./scripts/patch_hosts.py --add-k3d-registry
+          sudo python ./scripts/patch_hosts.py --add-k3d-registry
 
       # free 10GB of space
       - name: Remove unnecessary files
