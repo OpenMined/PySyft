@@ -438,9 +438,9 @@ jobs:
         timeout-minutes: 60
         env:
           ORCHESTRA_DEPLOYMENT_TYPE: "container_stack"
+          AZURE_BLOB_STORAGE_KEY: "Testing"
           TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
-          AZURE_BLOB_STORAGE_KEY: "Testing"
         shell: bash
         run: |
           tox -e stack.test.notebook
