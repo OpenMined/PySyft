@@ -501,7 +501,7 @@ class SyftWorkerPoolService(AbstractService):
         context: AuthedServiceContext,
         pool_id: Optional[UID] = None,
         pool_name: Optional[str] = None,
-        force: bool = False,
+        force: bool = True,
     ) -> Union[SyftSuccess, SyftError]:
         """Delete a worker pool specified by either the unique pool id or pool name.
 
@@ -530,7 +530,6 @@ class SyftWorkerPoolService(AbstractService):
         worker_service: WorkerService = context.node.get_service("WorkerService")
         job_service: JobService = context.node.get_service("JobService")
         queue_service: QueueService = context.node.get_service("JobService")
-
         if force:
             for worker in worker_pool.workers:
                 # mark the running QueueItems on the worker as 'interrupted'
@@ -541,7 +540,6 @@ class SyftWorkerPoolService(AbstractService):
                 res = queue_service.update_queue_status(
                     uid=queue_item.id, status=Status.INTERRUPTED
                 )
-                # import pdb; pdb.set_strace()
                 if isinstance(res, SyftError):
                     return res
                 # kill the running job
@@ -633,6 +631,8 @@ def _create_workers_in_pool(
 
     for container_status in container_statuses:
         worker = container_status.worker
+        worker.syft_node_location = context.node.id
+        worker.syft_client_verify_key = context.credentials
         if worker is None:
             continue
         result = worker_stash.set(
