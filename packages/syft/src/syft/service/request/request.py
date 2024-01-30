@@ -226,7 +226,10 @@ class CreateCustomImageChange(Change):
                 tag=self.tag,
                 registry_uid=self.registry_uid,
             )
-            return Ok(build_result)
+            if isinstance(build_result, SyftError):
+                return Err(build_result)
+            else:
+                return Ok(build_result)
 
         except Exception as e:
             return Err(SyftError(message=f"Failed to create/build image: {e}"))
