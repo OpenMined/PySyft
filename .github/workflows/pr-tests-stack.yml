@@ -618,14 +618,14 @@ jobs:
           GITHUB_CI: true
         shell: bash
         run: |
-          # install k3d
           K3D_VERSION=v5.6.0
+          DEVSPACE_VERSION=v6.3.10
+          # install k3d
           wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
           mv k3d-linux-amd64 k3d
           chmod +x k3d
           export PATH=`pwd`:$PATH
           k3d version
-          DEVSPACE_VERSION=v6.3.3
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
@@ -662,6 +662,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true' && failure()
         shell: bash
         run: |
+          export PATH=`pwd`:$PATH
           k3d cluster delete testgateway1 || true
           k3d cluster delete testdomain1 || true
           k3d registry delete k3d-registry.localhost || true
