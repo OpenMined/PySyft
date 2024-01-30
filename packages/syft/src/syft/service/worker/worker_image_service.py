@@ -229,9 +229,13 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"{res.err()}")
         image: SyftWorkerImage = res.ok()
 
-        if context.node.in_memory_workers or IN_KUBERNETES:
-            # TODO: do we delete image from registry in kubernetes?
+        if context.node.in_memory_workers:
             pass
+        elif IN_KUBERNETES:
+            # TODO: Implement image deletion in kubernetes
+            return SyftError(
+                message="Image Deletion is not yet implemented in Kubernetes !!"
+            )
         elif image and image.image_identifier:
             try:
                 full_tag: str = image.image_identifier.full_name_with_tag

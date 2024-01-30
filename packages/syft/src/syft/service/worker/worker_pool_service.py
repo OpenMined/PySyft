@@ -1,5 +1,4 @@
 # stdlib
-import os
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -34,6 +33,7 @@ from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .image_identifier import SyftWorkerImageIdentifier
 from .utils import DEFAULT_WORKER_POOL_NAME
+from .utils import get_orchestration_type
 from .utils import run_containers
 from .utils import run_workers_in_threads
 from .worker_image import SyftWorkerImage
@@ -272,7 +272,7 @@ class SyftWorkerPoolService(AbstractService):
 
         # Validate Image Tag
         try:
-            image_identifier = SyftWorkerImageIdentifier.from_str(tag=tag)
+            SyftWorkerImageIdentifier.from_str(tag=tag)
         except pydantic.ValidationError as e:
             return SyftError(message=f"Failed to create tag: {e}")
 
@@ -284,7 +284,7 @@ class SyftWorkerPoolService(AbstractService):
         # If this change is approved, then build an image using the config
         create_custom_image_change = CreateCustomImageChange(
             config=config,
-            tag=image_identifier.full_name_with_tag,
+            tag=tag,
             registry_uid=registry_uid,
         )
 
@@ -567,7 +567,7 @@ def _create_workers_in_pool(
             worker_image=worker_image,
             start_idx=existing_worker_cnt,
             number=worker_cnt + existing_worker_cnt,
-            orchestration=os.getenv("CONTAINER_HOST"),
+            orchestration=get_orchestration_type(),
             queue_port=queue_port,
             dev_mode=context.node.dev_mode,
             username=reg_username,

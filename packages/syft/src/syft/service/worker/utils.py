@@ -582,3 +582,14 @@ def image_push(
         return SyftError(
             message=f"Unknown exception when pushing {image.image_identifier}. Reason - {e}"
         )
+
+
+def get_orchestration_type() -> WorkerOrchestrationType:
+    """Returns orchestration type from env. Defaults to Python."""
+
+    orchstration_type_ = os.getenv("CONTAINER_HOST")
+    return (
+        WorkerOrchestrationType(orchstration_type_.lower())
+        if orchstration_type_
+        else WorkerOrchestrationType.PYTHON
+    )
