@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import os
 from pathlib import Path
 import re
 from typing import Optional
@@ -193,7 +194,9 @@ class DomainClient(SyftClient):
             result = []
             for file in expanded_file_list:
                 if not isinstance(file, BlobFile):
-                    file = BlobFile(path=file, file_name=file.name)
+                    file = BlobFile(
+                        path=file, file_name=file.name, file_size=os.path.getsize(file)
+                    )
                 print("Uploading", file.file_name)
                 if not file.uploaded:
                     file.upload_to_blobstorage(self)

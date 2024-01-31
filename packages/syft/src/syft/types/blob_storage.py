@@ -2,6 +2,7 @@
 from datetime import datetime
 from datetime import timedelta
 import mimetypes
+import os
 from pathlib import Path
 from queue import Queue
 import sys
@@ -120,6 +121,8 @@ class BlobFile(SyftObject):
     def upload_to_blobstorage(self, client):
         self.syft_node_location = client.id
         self.syft_client_verify_key = client.verify_key
+        if self.file_size is None:
+            self.file_size = os.path.getsize(self.path)
         return self._upload_to_blobstorage_from_api(client.api)
 
     def _iter_lines(self, chunk_size=DEFAULT_CHUNK_SIZE):
