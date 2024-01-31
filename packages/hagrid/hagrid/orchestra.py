@@ -1,4 +1,5 @@
 """Python Level API to launch Docker Containers using Hagrid"""
+
 # future
 from __future__ import annotations
 
@@ -255,38 +256,34 @@ def deploy_to_python(
         print("Staging Protocol Changes...")
         stage_protocol_changes()
 
+    kwargs = {
+        "name": name,
+        "host": host,
+        "port": port,
+        "reset": reset,
+        "processes": processes,
+        "dev_mode": dev_mode,
+        "tail": tail,
+        "node_type": node_type_enum,
+        "node_side_type": node_side_type,
+        "enable_warnings": enable_warnings,
+        # new kwargs
+        "queue_port": queue_port,
+        "n_consumers": n_consumers,
+        "create_producer": create_producer,
+    }
+
     if port:
+        kwargs["in_memory_workers"] = True
         if port == "auto":
             # dont use default port to prevent port clashes in CI
             port = find_available_port(host="localhost", port=None, search=True)
+            kwargs["port"] = port
+
         sig = inspect.signature(sy.serve_node)
-        if "node_type" in sig.parameters.keys():
-            start, stop = sy.serve_node(
-                name=name,
-                host=host,
-                port=port,
-                reset=reset,
-                processes=processes,
-                queue_port=queue_port,
-                n_consumers=n_consumers,
-                create_producer=create_producer,
-                dev_mode=dev_mode,
-                tail=tail,
-                node_type=node_type_enum,
-                node_side_type=node_side_type,
-                enable_warnings=enable_warnings,
-                in_memory_workers=True,  # Only in-memory workers supported for python mode
-            )
-        else:
-            # syft <= 0.8.1
-            start, stop = sy.serve_node(
-                name=name,
-                host=host,
-                port=port,
-                reset=reset,
-                dev_mode=dev_mode,
-                tail=tail,
-            )
+        supported_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
+
+        start, stop = sy.serve_node(**supported_kwargs)
         start()
         return NodeHandle(
             node_type=node_type_enum,
@@ -298,33 +295,15 @@ def deploy_to_python(
             node_side_type=node_side_type,
         )
     else:
+        kwargs["local_db"] = local_db
+        kwargs["thread_workers"] = thread_workers
         if node_type_enum in worker_classes:
             worker_class = worker_classes[node_type_enum]
             sig = inspect.signature(worker_class.named)
+            supported_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
             if "node_type" in sig.parameters.keys():
-                worker = worker_class.named(
-                    dev_mode=dev_mode,
-                    name=name,
-                    processes=processes,
-                    reset=reset,
-                    local_db=local_db,
-                    node_type=node_type_enum,
-                    node_side_type=node_side_type,
-                    enable_warnings=enable_warnings,
-                    n_consumers=n_consumers,
-                    thread_workers=thread_workers,
-                    create_producer=create_producer,
-                    queue_port=queue_port,
-                    migrate=True,
-                )
-            else:
-                # syft <= 0.8.1
-                worker = worker_class.named(
-                    name=name,
-                    processes=processes,
-                    reset=reset,
-                    local_db=local_db,
-                )
+                supported_kwargs["migrate"] = True
+            worker = worker_class.named(**supported_kwargs)
         else:
             raise NotImplementedError(f"node_type: {node_type_enum} is not supported")
 
