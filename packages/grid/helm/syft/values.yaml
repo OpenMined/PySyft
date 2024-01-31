@@ -34,7 +34,7 @@ workerBuilds:
 
 syft:
   registry: "docker.io"
-  version: 0.8.4-beta.14
+  version: 0.8.4-beta.15
 
 node:
   settings:

@@ -274,5 +274,6 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     # TODO: delete the launched pool
 
     # Clean the build images
+    sleep(10)
     delete_result = domain_client.api.services.worker_image.remove(uid=built_image.id)
     assert isinstance(delete_result, sy.SyftSuccess)
