@@ -59,14 +59,14 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 #### 1. Add and update Helm repo for Syft
 
 ```sh
-$ helm repo add openmined https://openmined.github.io/PySyft/helm
-$ helm repo update openmined
+helm repo add openmined https://openmined.github.io/PySyft/helm
+helm repo update openmined
 ```
 
 #### 2. Search for available Syft versions
 
 ```sh
-$ helm search repo openmined/syft --versions --devel
+helm search repo openmined/syft --versions --devel
 ```
 
 #### 3. Set your preferred Syft Chart version
@@ -78,14 +78,14 @@ SYFT_VERSION="<paste the chart version number>"
 #### 4. Provisioning Helm Charts
 
 ```sh
-$ helm install my-domain openmined/syft --version $SYFT_VERSION --namespace syft --create-namespace --set ingress.ingressClass=traefik
+helm install my-domain openmined/syft --version $SYFT_VERSION --namespace syft --create-namespace --set ingress.ingressClass=traefik
 ```
 
 ### Azure or GCP Ingress
 
 ```
-$ helm install ... --set ingress.ingressClass="azure/application-gateway"
-$ helm install ... --set ingress.ingressClass="gce"
+helm install ... --set ingress.ingressClass="azure/application-gateway"
+helm install ... --set ingress.ingressClass="gce"
 ```
 
 ## Deploy to a Container Engine or Cloud
