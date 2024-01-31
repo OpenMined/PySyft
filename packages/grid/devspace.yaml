@@ -72,7 +72,7 @@ deployments:
           settings:
             nodeName: ${NODE_NAME}
             nodeType: "domain"
-            inMemoryWorkers: true
+            defaultWorkerPoolCount: 1
         configuration:
           devmode: True
 

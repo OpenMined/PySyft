@@ -67,7 +67,7 @@ class DockerBuilder(BuilderBase):
                 )
 
             result = client.images.push(repository=tag)
-            return ImagePushResult(logs=result)
+            return ImagePushResult(logs=result, exit_code=0)
 
     def _parse_output(self, log_iterator: Iterable) -> str:
         log = ""
