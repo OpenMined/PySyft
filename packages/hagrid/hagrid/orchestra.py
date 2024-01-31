@@ -17,6 +17,7 @@ from typing import Union
 
 # relative
 from .cli import str_to_bool
+from .dummynum import DummyNum
 from .grammar import find_available_port
 from .names import random_name
 from .util import shell
@@ -28,8 +29,14 @@ try:
     from syft.protocol.data_protocol import stage_protocol_changes
     from syft.service.response import SyftError
 except Exception:  # nosec
+    NodeSideType = DummyNum
+    NodeType = DummyNum
+
+    def stage_protocol_changes(*args: Any, **kwargs: Any) -> None:
+        pass
+
+    SyftError = DummyNum
     # print("Please install syft with `pip install syft`")
-    pass
 
 DEFAULT_PORT = 8080
 DEFAULT_URL = "http://localhost"
