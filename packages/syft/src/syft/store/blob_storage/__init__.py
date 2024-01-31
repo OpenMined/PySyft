@@ -114,6 +114,14 @@ def upgrade_blobretrieval_v1_to_v2():
 
 
 @serializable()
+class SyftObjectRetrievalV1(BlobRetrievalV1):
+    __canonical_name__ = "SyftObjectRetrieval"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    syft_object: bytes
+
+
+@serializable()
 class SyftObjectRetrieval(BlobRetrieval):
     __canonical_name__ = "SyftObjectRetrieval"
     __version__ = SYFT_OBJECT_VERSION_2
