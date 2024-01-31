@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Check for file changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           base: ${{ github.ref }}
