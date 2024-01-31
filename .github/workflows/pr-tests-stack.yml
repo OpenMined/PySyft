@@ -61,7 +61,7 @@ jobs:
           docker system prune --all --force
 
       - name: Check for file changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           base: ${{ github.ref }}
@@ -251,7 +251,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Check for file changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           base: ${{ github.ref }}
@@ -333,7 +333,7 @@ jobs:
           docker system prune --all --force
 
       - name: Check for file changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           base: ${{ github.ref }}
@@ -529,7 +529,7 @@ jobs:
           sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v4
       - name: Check for file changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           base: ${{ github.ref }}
