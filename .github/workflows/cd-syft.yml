@@ -3,7 +3,7 @@ name: CD - Syft
 on:
   schedule:
     # run it on 10:15 AM IST (04:45 AM UTC) on every day
-    - cron: "15 4 * * *"
+    - cron: "49 4 * * *"
 
   workflow_dispatch:
     inputs:
@@ -49,20 +49,29 @@ jobs:
           echo "Github User: ${{ github.actor }}"
 
   call-pr-tests-linting:
+    needs: [release-checks]
     if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/pr-tests-linting.yml@dev
 
   call-pr-tests-syft:
+    needs: [release-checks]
     if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/pr-tests-syft.yml@dev
 
   call-pr-tests-stack:
+    needs: [release-checks]
     if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@dev
     secrets: inherit
 
   build-and-push-docker-images:
-    needs: [call-pr-tests-linting, call-pr-tests-syft, call-pr-tests-stack]
+    needs:
+      [
+        call-pr-tests-linting,
+        call-pr-tests-syft,
+        call-pr-tests-stack,
+        release-checks,
+      ]
     if: always() && (needs.call-pr-tests-linting.result == 'success' && needs.call-pr-tests-syft.result == 'success' && needs.call-pr-tests-stack.result == 'success' || github.event.inputs.skip_tests == 'true')
 
     strategy:
