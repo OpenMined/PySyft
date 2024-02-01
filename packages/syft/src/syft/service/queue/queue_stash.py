@@ -244,10 +244,3 @@ class QueueStash(BaseStash):
         qks = QueryKeys(qks=StatusPartitionKey.with_obj(status))
 
         return self.query_all(credentials=credentials, qks=qks)
-
-    def get_by_job_id(
-        self, credentials: SyftVerifyKey, job_id: UID
-    ) -> Result[Optional[QueueItem], str]:
-        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(job_id)])
-        item = self.query_one(credentials=credentials, qks=qks)
-        return item

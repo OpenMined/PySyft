@@ -1,4 +1,5 @@
 # stdlib
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -18,8 +19,6 @@ from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..job.job_service import JobService
-from ..queue.queue_service import QueueService
-from ..queue.queue_stash import Status
 from ..request.request import Change
 from ..request.request import CreateCustomImageChange
 from ..request.request import CreateCustomWorkerPoolChange
@@ -44,6 +43,7 @@ from .worker_image_stash import SyftWorkerImageStash
 from .worker_pool import ContainerSpawnStatus
 from .worker_pool import SyftWorker
 from .worker_pool import WorkerPool
+from .worker_pool import WorkerPoolDeletionStatus
 from .worker_pool_stash import SyftWorkerPoolStash
 from .worker_service import WorkerService
 from .worker_stash import WorkerStash
@@ -522,7 +522,7 @@ class SyftWorkerPoolService(AbstractService):
         pool_id: Optional[UID] = None,
         pool_name: Optional[str] = None,
         force: bool = True,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> WorkerPoolDeletionStatus:
         """Delete a worker pool specified by either the unique pool id or pool name.
 
         Args:
@@ -531,9 +531,9 @@ class SyftWorkerPoolService(AbstractService):
             pool_name (Optional[str], optional): Unique name of the pool. Defaults to None.
 
         Returns:
-            Union[SyftSuccess, SyftError]: Returns SyftSuccess if the delete was carried
-                out successfully. Otherwise returns the SyftError with the message
-                telling the reason why deleting the pool failed.
+            WorkerPoolDeletionStatus: The class that holds the pool name, the deletion
+                statuses of the pool's workers, and the status of deleting the pool
+                itself (either error if failed to delete the pool, or success otherwise)
         """
         # Extract pool using either using pool id or pool name
         if pool_id:
@@ -551,34 +551,41 @@ class SyftWorkerPoolService(AbstractService):
         workers: List[SyftWorker] = worker_pool.workers
         worker_service: WorkerService = context.node.get_service("WorkerService")
         job_service: JobService = context.node.get_service("JobService")
-        queue_service: QueueService = context.node.get_service("QueueService")
         if force:
-            res = self._delete_workers_forcefully(
+            worker_deletion_statuses: Dict = self._delete_workers_forcefully(
                 context=context,
                 workers=workers,
                 worker_service=worker_service,
                 job_service=job_service,
-                queue_service=queue_service,
             )
+            # Delete the worker pool from the stash
+            result = self.stash.delete_by_uid(
+                credentials=context.credentials, uid=worker_pool.id
+            )
+            if result.is_err():
+                return WorkerPoolDeletionStatus(
+                    pool_name=pool_name,
+                    worker_deletion_statuses=worker_deletion_statuses,
+                    error=result.value.message,
+                )
+            else:
+                return WorkerPoolDeletionStatus(
+                    pool_name=pool_name,
+                    worker_deletion_statuses=worker_deletion_statuses,
+                    success=result.value.message,
+                )
         else:
-            res = self._delete_workers_gracefully(
+            worker_deletion_statuses: Dict = self._delete_workers_gracefully(
                 context=context,
                 workers=workers,
                 worker_service=worker_service,
                 job_service=job_service,
-                queue_service=queue_service,
             )
-        if isinstance(res, SyftError):
-            return res
-
-        # Finally, delete the worker pool from the stash
-        result = self.stash.delete_by_uid(
-            credentials=context.credentials, uid=worker_pool.id
-        )
-        if result.err():
-            return SyftError(message=str(result.err()))
-
-        return result.ok()
+            return WorkerPoolDeletionStatus(
+                pool_name=pool_name,
+                worker_deletion_statuses=worker_deletion_statuses,
+                error="Error: Graceful deletion is not yet implemented!",
+            )
 
     def _get_worker_pool(
         self,
@@ -616,38 +623,23 @@ class SyftWorkerPoolService(AbstractService):
         workers: List[SyftWorker],
         worker_service: WorkerService,
         job_service: JobService,
-        queue_service: QueueService,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> Dict[UID, List[Union[SyftSuccess, SyftError]]]:
         """
         Called when we want to delete the workers forcefully: We mark the
         corresponding queue items to be interrupted and kill the running jobs
         """
+        results: Dict[UID, List[Union[SyftSuccess, SyftError]]] = {}
         for worker in workers:
+            results[worker.id] = []
             if worker.job_id:
                 print(f"deleting worker that's running job with id {worker.job_id}")
-                # if the worker is running a job, first, we mark the
-                # corresponding QueueItems on the worker as 'interrupted'
-                res = queue_service.get_by_job_id(context=context, job_id=worker.job_id)
-                if isinstance(res, SyftError):
-                    return res
-                queue_item = res.ok()
-                if queue_item.id is not None:
-                    res = queue_service.update_queue_status(
-                        context=context,
-                        uid=queue_item.id,
-                        status=Status.INTERRUPTED,
-                    )
-                    if isinstance(res, SyftError):
-                        return res
-                # then, we kill the worker's running job
+                # kill the worker's running job
                 res = job_service.kill(context=context, id=worker.job_id)
-                if isinstance(res, SyftError):
-                    return res
-
+                results[worker.id].append(res)
             # now, delete the workers
             res = worker_service.delete(context=context, uid=worker.id, force=True)
-            if isinstance(res, SyftError):
-                return res
+            results[worker.id].append(res)
+        return results
 
     def _delete_workers_gracefully(
         self,
@@ -655,9 +647,13 @@ class SyftWorkerPoolService(AbstractService):
         workers: List[SyftWorker],
         worker_service: WorkerService,
         job_service: JobService,
-        queue_service: QueueService,
-    ) -> Union[SyftSuccess, SyftError]:
-        return SyftError(message="Method not yet implemented!")
+    ) -> Dict[UID, List[Union[SyftSuccess, SyftError]]]:
+        # TODO: currently only return SyftError of not implemented. Implement this!
+        results: Dict[UID, List[Union[SyftSuccess, SyftError]]] = {}
+        for worker in workers:
+            results[worker.id] = []
+            results[worker.id].append(SyftError(message="Method not yet implemented!"))
+        return results
 
 
 def _create_workers_in_pool(

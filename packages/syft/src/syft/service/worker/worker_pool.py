@@ -26,6 +26,7 @@ from ...util.colors import SURFACE
 from ...util.fonts import ITABLES_CSS
 from ...util.fonts import fonts_css
 from ..response import SyftError
+from ..response import SyftSuccess
 from .worker_image import SyftWorkerImage
 
 
@@ -257,6 +258,16 @@ class ContainerSpawnStatus(SyftBaseModel):
     worker_name: str
     worker: Optional[SyftWorker]
     error: Optional[str]
+
+
+@serializable()
+class WorkerPoolDeletionStatus(SyftBaseModel):
+    __repr_attrs__ = ["pool_name", "pool_deletion_status"]
+
+    pool_name: str
+    worker_deletion_statuses: Dict[UID, List[Union[SyftSuccess, SyftError]]]
+    error: Optional[str]
+    success: Optional[str]
 
 
 def _get_worker_container(

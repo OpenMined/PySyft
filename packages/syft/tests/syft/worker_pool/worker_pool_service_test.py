@@ -123,7 +123,7 @@ def test_create_image_and_pool_request_accept(
 
     # Delete the built image and launched worker pool
     result = root_client.api.services.worker_pool.delete(pool_name=pool_name)
-    assert isinstance(result, SyftSuccess)
+    assert isinstance(result.success, str)
     assert len(root_client.worker_pools.get_all()) == 1
     assert pool_name not in [pool.name for pool in root_client.worker_pools]
 
@@ -189,7 +189,7 @@ def test_create_pool_request_accept(faker: Faker, cw_node_high: NodeHandle) -> N
 
     # Delete the built image and launched worker pool
     result = root_client.api.services.worker_pool.delete(pool_name=pool_name)
-    assert isinstance(result, SyftSuccess)
+    assert isinstance(result.success, str)
     assert len(root_client.worker_pools.get_all()) == 1
     assert pool_name not in [pool.name for pool in root_client.worker_pools]
 
@@ -304,7 +304,7 @@ def test_worker_pool_nested_jobs(faker: Faker, cw_node_high: NodeHandle) -> None
 
     # Delete the worker pool and the built image
     result = root_client.api.services.worker_pool.delete(pool_name=pool_name)
-    assert isinstance(result, SyftSuccess)
+    assert isinstance(result.success, str)
     assert len(root_client.worker_pools.get_all()) == 1
     assert pool_name not in [pool.name for pool in root_client.worker_pools]
 
