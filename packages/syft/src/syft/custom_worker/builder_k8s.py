@@ -194,7 +194,10 @@ class KubernetesBuilder(BuilderBase):
                                         "--dockerfile=Dockerfile",
                                         "--context=dir:///workspace",
                                         f"--destination={tag}",
-                                        "--reproducible",
+                                        # Disabling --reproducible because it eats up a lot of CPU+RAM
+                                        # https://github.com/GoogleContainerTools/kaniko/issues/1960
+                                        # https://github.com/GoogleContainerTools/kaniko/pull/2477
+                                        # "--reproducible",
                                         # Build outputs
                                         f"--tar-path=/output/{tag_hash}.tar",
                                         "--digest-file=/dev/termination-log",
@@ -214,6 +217,17 @@ class KubernetesBuilder(BuilderBase):
                                             "readOnly": False,
                                         },
                                     ],
+                                    "resources": {
+                                        "requests": {
+                                            "memory": "4Gi",
+                                            "cpu": "2",
+                                        },
+                                        "limits": {
+                                            "memory": "16Gi",
+                                            "cpu": "4",
+                                        },
+                                        "ephemeral-storage": "10Gi",
+                                    },
                                 }
                             ],
                             "volumes": [
@@ -310,6 +324,17 @@ class KubernetesBuilder(BuilderBase):
                                             "readOnly": False,
                                         },
                                     ],
+                                    "resources": {
+                                        "requests": {
+                                            "memory": "2Gi",
+                                            "cpu": "1",
+                                        },
+                                        "limits": {
+                                            "memory": "4Gi",
+                                            "cpu": "2",
+                                            "ephemeral-storage": "1Gi",
+                                        },
+                                    },
                                 }
                             ],
                             "volumes": [
