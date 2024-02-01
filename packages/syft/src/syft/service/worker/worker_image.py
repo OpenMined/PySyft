@@ -20,7 +20,13 @@ class SyftWorkerImage(SyftObject):
 
     __attr_unique__ = ["config"]
     __attr_searchable__ = ["config", "image_hash", "created_by"]
-    __repr_attrs__ = ["image_identifier", "image_hash", "created_at", "built_at"]
+    __repr_attrs__ = [
+        "image_identifier",
+        "image_hash",
+        "created_at",
+        "built_at",
+        "config",
+    ]
 
     id: UID
     config: WorkerConfig
