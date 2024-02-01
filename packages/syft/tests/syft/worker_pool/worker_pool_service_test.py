@@ -49,7 +49,7 @@ def cw_node_high() -> NodeHandle:
         # node_side_type="high",
         create_producer=True,
         queue_port=queue_port,
-        n_consumers=4,
+        n_consumers=1,
         in_memory_workers=True,
     )
     # start the node here
@@ -219,7 +219,7 @@ def test_worker_pool_nested_jobs(faker: Faker, cw_node_high: NodeHandle) -> None
     pool_name = "syft-numpy-pool"
     request = ds_client.api.services.worker_pool.create_image_and_pool_request(
         pool_name=pool_name,
-        num_workers=4,
+        num_workers=1,
         tag=docker_tag,
         config=docker_config,
         reason="I want to do some more cool data science with PySyft and Recordlinkage",
@@ -295,21 +295,21 @@ def test_worker_pool_nested_jobs(faker: Faker, cw_node_high: NodeHandle) -> None
 
     # The DS runs the syft functions
     job = ds_client.code.process_all(x=x_ptr, blocking=False)
-    print(job)
-    # job.wait()
-    # assert len(job.subjobs) == 3
-    # assert job.wait().get() == 5
-    # sub_results = [j.wait().get() for j in job.subjobs]
-    # assert set(sub_results) == {2, 3, 5}
+    print(f"on doing job with id {job.id} on the worker {job.job_worker_id}")
+    # stdlib
+    import time
 
-    # Delete the worker pool and the built image
+    time.sleep(1)
+
+    # Delete the worker pool while the job is running on one of the workers
     result = root_client.api.services.worker_pool.delete(pool_name=pool_name)
     assert isinstance(result.success, str)
     assert len(root_client.worker_pools.get_all()) == 1
     assert pool_name not in [pool.name for pool in root_client.worker_pools]
 
+    # Delete the built image
     worker_image = root_client.api.services.worker_image.get_by_config(docker_config)
-    result = root_client.api.services.worker_image.remove(
+    result2 = root_client.api.services.worker_image.remove(
         uid=worker_image.id,
     )
-    assert isinstance(result, SyftSuccess)
+    assert isinstance(result2, SyftSuccess)
