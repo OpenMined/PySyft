@@ -695,7 +695,7 @@ class ActionObject(SyftObject):
                 api = APIRegistry.api_for(
                     self.syft_node_location, self.syft_client_verify_key
                 )
-                data.upload_to_blobstorage_from_api(api)
+                data.upload_to_blobstorage(api)
             else:
                 storage_entry = CreateBlobStorageEntry.from_obj(data)
                 allocate_method = from_api_or_context(
