@@ -28,6 +28,7 @@ spec:
       containers:
       - args: null
         command: null
+        imagePullPolicy: Always
         env:
         - name: K8S_POD_NAME
           valueFrom:
@@ -145,7 +146,6 @@ spec:
       ephemeralContainers: null
       hostAliases: null
       imagePullSecrets: null
-      imagePullPolicy: Always
       initContainers: null
       nodeName: null
       nodeSelector: null

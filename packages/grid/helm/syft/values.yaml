@@ -47,6 +47,7 @@ node:
     defaultRootEmail: "info@openmined.org"
     logLevel: "info"
     inMemoryWorkers: false
+    defaultWorkerPoolCount: 1
 
 ingress:
   ingressClass: ""
