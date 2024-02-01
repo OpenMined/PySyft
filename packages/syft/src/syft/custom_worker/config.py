@@ -110,6 +110,13 @@ class DockerWorkerConfig(WorkerConfig):
     file_name: Optional[str]
     description: Optional[str]
 
+    @validator("dockerfile")
+    def validate_dockerfile(cls, dockerfile: str) -> str:
+        if not dockerfile:
+            raise ValueError("Dockerfile cannot be empty")
+        dockerfile = dockerfile.strip()
+        return dockerfile
+
     @classmethod
     def from_path(
         cls,
