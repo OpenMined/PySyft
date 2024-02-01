@@ -50,17 +50,17 @@ jobs:
 
   call-pr-tests-linting:
     needs: [release-checks]
-    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+    if: github.repository == 'OpenMined/PySyft' && needs.release-checks.result == 'success' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/pr-tests-linting.yml@dev
 
   call-pr-tests-syft:
     needs: [release-checks]
-    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+    if: github.repository == 'OpenMined/PySyft' && needs.release-checks.result == 'success' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/pr-tests-syft.yml@dev
 
   call-pr-tests-stack:
     needs: [release-checks]
-    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+    if: github.repository == 'OpenMined/PySyft' && needs.release-checks.result == 'success' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@dev
     secrets: inherit
 
@@ -72,7 +72,7 @@ jobs:
         call-pr-tests-stack,
         release-checks,
       ]
-    if: always() && (needs.call-pr-tests-linting.result == 'success' && needs.call-pr-tests-syft.result == 'success' && needs.call-pr-tests-stack.result == 'success' || github.event.inputs.skip_tests == 'true')
+    if: always() && needs.release-checks.result == 'success' && (needs.call-pr-tests-linting.result == 'success' && needs.call-pr-tests-syft.result == 'success' && needs.call-pr-tests-stack.result == 'success' || github.event.inputs.skip_tests == 'true')
 
     strategy:
       matrix:
