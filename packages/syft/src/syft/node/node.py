@@ -1591,10 +1591,10 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
 
     # Create worker pool if it doesn't exists
     print(
-        "Setting up worker pool"
-        f"name={default_pool_name} "
-        f"workers={worker_count} "
-        f"image_uid={default_image.id} "
+        "Setting up worker pool with "
+        f"name={default_pool_name}, "
+        f"worker_count={worker_count}, "
+        f"image_uid={default_image.id}, "
         f"in_memory={node.in_memory_workers}"
     )
     if default_worker_pool is None:
