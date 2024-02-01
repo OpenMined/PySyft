@@ -35,6 +35,8 @@ class KubernetesRunner:
         reg_url: Optional[str] = None,
         **kwargs,
     ) -> StatefulSet:
+        # create pull secret if registry credentials are passed
+        pull_secret = None
         if reg_username and reg_password and reg_url:
             pull_secret = self._create_image_pull_secret(
                 pool_name,
@@ -42,6 +44,8 @@ class KubernetesRunner:
                 reg_password,
                 reg_url,
             )
+
+        # create a stateful set deployment
         deployment = self._create_stateful_set(
             pool_name,
             tag,
@@ -50,7 +54,11 @@ class KubernetesRunner:
             pull_secret=pull_secret,
             **kwargs,
         )
+
+        # wait for replicas to be available and ready
         self.wait(deployment, available_replicas=replicas)
+
+        # return
         return deployment
 
     def scale_pool(self, pool_name: str, replicas: int) -> Optional[StatefulSet]:
