@@ -552,7 +552,6 @@ class SyftWorkerPoolService(AbstractService):
         worker_service: WorkerService = context.node.get_service("WorkerService")
         job_service: JobService = context.node.get_service("JobService")
         queue_service: QueueService = context.node.get_service("QueueService")
-
         if force:
             res = self._delete_workers_forcefully(
                 context=context,
@@ -625,6 +624,7 @@ class SyftWorkerPoolService(AbstractService):
         """
         for worker in workers:
             if worker.job_id:
+                print(f"deleting worker that's running job with id {worker.job_id}")
                 # if the worker is running a job, first, we mark the
                 # corresponding QueueItems on the worker as 'interrupted'
                 res = queue_service.get_by_job_id(context=context, job_id=worker.job_id)

@@ -243,6 +243,13 @@ def test_worker_pool_nested_jobs(faker: Faker, cw_node_high: NodeHandle) -> None
     @sy.syft_function(worker_pool_name=pool_name)
     def process_batch(batch):
         print(f"starting batch {batch}")
+        # stdlib
+        import time
+
+        duration = 10  # Total duration in seconds
+        for i in range(duration, 0, -1):
+            print(f"Countdown: {i} seconds remaining")
+            time.sleep(1)  # Sleep for one second
         return batch + 1
 
     @sy.syft_function(worker_pool_name=pool_name)
@@ -289,8 +296,7 @@ def test_worker_pool_nested_jobs(faker: Faker, cw_node_high: NodeHandle) -> None
     # The DS runs the syft functions
     job = ds_client.code.process_all(x=x_ptr, blocking=False)
     print(job)
-    # import pdb; pdb.set_trace()
-    # job.wait()  # TOASK: why the code stucks here?
+    # job.wait()
     # assert len(job.subjobs) == 3
     # assert job.wait().get() == 5
     # sub_results = [j.wait().get() for j in job.subjobs]

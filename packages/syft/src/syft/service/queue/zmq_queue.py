@@ -767,6 +767,15 @@ class ZMQConsumer(QueueConsumer):
                 logger.error(
                     f"Failed to update consumer state for {self.service_name}-{self.id}, error={res.err()}"
                 )
+            res = self.worker_stash.update_job_id(
+                credentials=self.worker_stash.partition.root_verify_key,
+                worker_uid=self.syft_worker_id,
+                job_id=job_id,
+            )
+            if res.is_err():
+                logger.error(
+                    f"Failed to update job id for {self.service_name}-{self.id}, error={res.err()}"
+                )
 
     @property
     def alive(self):
