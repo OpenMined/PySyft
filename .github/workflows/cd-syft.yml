@@ -2,8 +2,7 @@ name: CD - Syft
 
 on:
   schedule:
-    # run it on 10:15 AM IST (04:45 AM UTC) on every day
-    - cron: "* * * * *"
+    - cron: "0 12 * * 0" # At 12:00 UTC on every Sunday
 
   workflow_dispatch:
     inputs:
@@ -24,7 +23,7 @@ on:
 
 jobs:
   release-checks:
-    # if:  # don't run on forks
+    if: github.repository == 'OpenMined/PySyft' # don't run on forks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
