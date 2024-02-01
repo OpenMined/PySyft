@@ -1,5 +1,7 @@
 # stdlib
+import base64
 import copy
+import json
 import os
 from time import sleep
 from typing import List
@@ -10,6 +12,7 @@ from typing import Union
 import kr8s
 from kr8s.objects import APIObject
 from kr8s.objects import Pod
+from kr8s.objects import Secret
 from kr8s.objects import StatefulSet
 
 # relative
@@ -27,13 +30,24 @@ class KubernetesRunner:
         tag: str,
         replicas: int = 1,
         env_vars: Optional[dict] = None,
+        reg_username: Optional[str] = None,
+        reg_password: Optional[str] = None,
+        reg_url: Optional[str] = None,
         **kwargs,
     ) -> StatefulSet:
+        if reg_username and reg_password and reg_url:
+            pull_secret = self._create_image_pull_secret(
+                pool_name,
+                reg_username,
+                reg_password,
+                reg_url,
+            )
         deployment = self._create_stateful_set(
             pool_name,
             tag,
             replicas,
             env_vars,
+            pull_secret=pull_secret,
             **kwargs,
         )
         self.wait(deployment, available_replicas=replicas)
@@ -57,8 +71,11 @@ class KubernetesRunner:
         selector = {"app.kubernetes.io/component": pool_name}
         for _set in self.client.get("statefulsets", label_selector=selector):
             _set.delete()
-            return True
-        return False
+
+        for _secret in self.client.get("secrets", label_selector=selector):
+            _secret.delete()
+
+        return True
 
     def delete_pod(self, pod_name: str) -> bool:
         pods = self.client.get("pods", pod_name)
@@ -99,7 +116,7 @@ class KubernetesRunner:
         self,
         deployment: StatefulSet,
         available_replicas: int,
-        timeout: int = 60,
+        timeout: int = 300,
     ) -> None:
         # TODO: Report wait('jsonpath=') bug to kr8s
         # Until then this is the substitute implementation
@@ -133,17 +150,50 @@ class KubernetesRunner:
             if obj.name == name:
                 return obj
 
+    def _create_image_pull_secret(
+        self,
+        pool_name: str,
+        reg_username: str,
+        reg_password: str,
+        reg_url: str,
+        **kwargs,
+    ):
+        _secret = Secret(
+            {
+                "metadata": {
+                    "name": f"pull-secret-{pool_name}",
+                    "labels": {
+                        "app.kubernetes.io/name": KUBERNETES_NAMESPACE,
+                        "app.kubernetes.io/component": pool_name,
+                        "app.kubernetes.io/managed-by": "kr8s",
+                    },
+                },
+                "type": "kubernetes.io/dockerconfigjson",
+                "data": {
+                    ".dockerconfigjson": self._create_dockerconfig_json(
+                        reg_username,
+                        reg_password,
+                        reg_url,
+                    )
+                },
+            }
+        )
+
+        return self._create_or_get(_secret)
+
     def _create_stateful_set(
         self,
         pool_name: str,
         tag: str,
         replicas=1,
         env_vars: Optional[dict] = None,
+        pull_secret: Optional[Secret] = None,
         **kwargs,
     ) -> StatefulSet:
         """Create a stateful set for a pool"""
 
         env_vars = env_vars or {}
+        pull_secret_obj = None
 
         _pod = Pod.get(self._current_pod_name())
 
@@ -169,6 +219,13 @@ class KubernetesRunner:
         # append remaining
         for k, v in env_vars.items():
             env_clone.append({"name": k, "value": v})
+
+        if pull_secret:
+            pull_secret_obj = [
+                {
+                    "name": pull_secret.name,
+                }
+            ]
 
         stateful_set = StatefulSet(
             {
@@ -198,12 +255,14 @@ class KubernetesRunner:
                             "containers": [
                                 {
                                     "name": pool_name,
+                                    "imagePullPolicy": "IfNotPresent",
                                     "image": tag,
                                     "env": env_clone,
                                     "volumeMounts": [creds_volume_mount],
                                 }
                             ],
                             "volumes": [creds_volume],
+                            "imagePullSecrets": pull_secret_obj,
                         },
                     },
                 },
@@ -217,3 +276,23 @@ class KubernetesRunner:
         else:
             obj.refresh()
         return obj
+
+    def _create_dockerconfig_json(
+        self,
+        reg_username: str,
+        reg_password: str,
+        reg_url: str,
+    ):
+        config = {
+            "auths": {
+                reg_url: {
+                    "username": reg_username,
+                    "password": reg_password,
+                    "auth": base64.b64encode(
+                        f"{reg_username}:{reg_password}".encode()
+                    ).decode(),
+                }
+            }
+        }
+        print(json.dumps(config, indent=4))
+        return base64.b64encode(json.dumps(config).encode()).decode()
