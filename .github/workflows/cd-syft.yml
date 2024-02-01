@@ -23,7 +23,7 @@ on:
 
 jobs:
   release-checks:
-    if: github.repository == 'OpenMined/PySyft' &&  github.event_name == 'schedule' # don't run on forks
+    if: github.event_name == 'schedule' # don't run on forks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
