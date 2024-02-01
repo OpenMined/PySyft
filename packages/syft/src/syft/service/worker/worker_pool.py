@@ -244,9 +244,9 @@ class WorkerPool(SyftObject):
 
 
 @serializable()
-class WorkerOrchestrationType:
+class WorkerOrchestrationType(Enum):
     DOCKER = "docker"
-    K8s = "k8s"
+    KUBERNETES = "k8s"
     PYTHON = "python"
 
 

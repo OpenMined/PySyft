@@ -61,7 +61,7 @@ jobs:
           docker system prune --all --force
 
       - name: Check for file changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           base: ${{ github.ref }}
@@ -251,7 +251,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Check for file changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           base: ${{ github.ref }}
@@ -333,7 +333,7 @@ jobs:
           docker system prune --all --force
 
       - name: Check for file changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           base: ${{ github.ref }}
@@ -531,7 +531,7 @@ jobs:
           sudo chown -R $USER:$USER $HOME
       - uses: actions/checkout@v4
       - name: Check for file changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           base: ${{ github.ref }}
@@ -543,6 +543,10 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Add K3d Registry
+        run: |
+          sudo python ./scripts/patch_hosts.py --add-k3d-registry
 
       # free 10GB of space
       - name: Remove unnecessary files
@@ -616,14 +620,14 @@ jobs:
           GITHUB_CI: true
         shell: bash
         run: |
-          # install k3d
           K3D_VERSION=v5.6.0
+          DEVSPACE_VERSION=v6.3.10
+          # install k3d
           wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
           mv k3d-linux-amd64 k3d
           chmod +x k3d
           export PATH=`pwd`:$PATH
           k3d version
-          DEVSPACE_VERSION=v6.3.3
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
@@ -631,3 +635,36 @@ jobs:
           tox -e syft.build.helm
           tox -e syft.package.helm
           # tox -e syft.test.helm
+
+      - name: Get current timestamp
+        id: date
+        if: failure()
+        shell: bash
+        run: echo "date=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Collect logs from k3d
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          mkdir -p ./k8s-logs
+          kubectl describe all -A --context k3d-testgateway1 --namespace testgateway1 > ./k8s-logs/testgateway1-desc-${{ steps.date.outputs.date }}.txt
+          kubectl describe all -A --context k3d-testdomain1 --namespace testdomain1 > ./k8s-logs/testdomain1-desc-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-testgateway1 --namespace testgateway1 > ./k8s-logs/testgateway1-logs-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-testdomain1 --namespace testdomain1 > ./k8s-logs/testdomain1-logs-${{ steps.date.outputs.date }}.txt
+          ls -la ./k8s-logs
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: steps.changes.outputs.stack == 'true' && failure()
+        with:
+          name: k8s-logs-${{ matrix.os }}-${{ steps.date.outputs.date }}
+          path: ./k8s-logs/
+
+      - name: Cleanup k3d
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          export PATH=`pwd`:$PATH
+          k3d cluster delete testgateway1 || true
+          k3d cluster delete testdomain1 || true
+          k3d registry delete k3d-registry.localhost || true

@@ -105,10 +105,33 @@ class CustomWorkerConfig(WorkerConfig):
 
 
 @serializable()
+class PrebuiltWorkerConfig(WorkerConfig):
+    # tag that is already built and pushed in some registry
+    tag: str
+    description: Optional[str]
+
+    def __str__(self) -> str:
+        if self.description:
+            return f"prebuilt tag='{self.tag}' description='{self.description}'"
+        else:
+            return f"prebuilt tag='{self.tag}'"
+
+    def set_description(self, description_text: str) -> None:
+        self.description = description_text
+
+
+@serializable()
 class DockerWorkerConfig(WorkerConfig):
     dockerfile: str
     file_name: Optional[str]
     description: Optional[str]
+
+    @validator("dockerfile")
+    def validate_dockerfile(cls, dockerfile: str) -> str:
+        if not dockerfile:
+            raise ValueError("Dockerfile cannot be empty")
+        dockerfile = dockerfile.strip()
+        return dockerfile
 
     @classmethod
     def from_path(
