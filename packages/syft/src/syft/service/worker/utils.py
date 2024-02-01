@@ -489,7 +489,10 @@ def create_default_image(
         )
     else:
         # in k8s we don't need to build the image, just the tag of backend is enough
-        worker_config = PrebuiltWorkerConfig(tag=tag)
+        worker_config = PrebuiltWorkerConfig(
+            tag=tag,
+            description="Prebuilt default worker image",
+        )
 
         # create SyftWorkerImage from a pre-built image
         _new_image = SyftWorkerImage(

@@ -204,12 +204,13 @@ class SyftWorkerImageService(AbstractService):
         images: List[SyftWorkerImage] = result.ok()
 
         res = {}
-        # if image is built then use full_name_with_tag as key
+        # if image is built index by full_name_with_tag
         res.update(
             {im.image_identifier.full_name_with_tag: im for im in images if im.is_built}
         )
-        # if image is not built then use uid as key
-        res.update({im.id: im for im in images if not im.is_built})
+        # and then index all images by id
+        # TODO: jupyter repr needs to be updated to show unique values (even if multiple keys point to same value)
+        res.update({im.id.to_string(): im for im in images if not im.is_built})
 
         return DictTuple(res)
 

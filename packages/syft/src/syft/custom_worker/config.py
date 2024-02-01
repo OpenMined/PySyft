@@ -108,9 +108,16 @@ class CustomWorkerConfig(WorkerConfig):
 class PrebuiltWorkerConfig(WorkerConfig):
     # tag that is already built and pushed in some registry
     tag: str
+    description: Optional[str]
 
     def __str__(self) -> str:
-        return f"prebuilt tag='{self.tag}'"
+        if self.description:
+            return f"prebuilt tag='{self.tag}' description='{self.description}'"
+        else:
+            return f"prebuilt tag='{self.tag}'"
+
+    def set_description(self, description_text: str) -> None:
+        self.description = description_text
 
 
 @serializable()
