@@ -105,6 +105,15 @@ class CustomWorkerConfig(WorkerConfig):
 
 
 @serializable()
+class PrebuiltWorkerConfig(WorkerConfig):
+    # tag that is already built and pushed in some registry
+    tag: str
+
+    def __str__(self) -> str:
+        return f"prebuilt tag='{self.tag}'"
+
+
+@serializable()
 class DockerWorkerConfig(WorkerConfig):
     dockerfile: str
     file_name: Optional[str]

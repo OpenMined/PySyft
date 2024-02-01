@@ -18,10 +18,10 @@ from ...custom_worker.builder import CustomWorkerBuilder
 from ...custom_worker.builder_types import ImageBuildResult
 from ...custom_worker.builder_types import ImagePushResult
 from ...custom_worker.config import DockerWorkerConfig
+from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.k8s import PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
 from ...node.credentials import SyftVerifyKey
-from ...types.datetime import DateTime
 from ...types.uid import UID
 from ...util.util import get_queue_address
 from ..response import SyftError
@@ -489,16 +489,13 @@ def create_default_image(
         )
     else:
         # in k8s we don't need to build the image, just the tag of backend is enough
-
-        # a very bad and hacky way to keep the Stash's unique `config` requirment happy
-        worker_config = DockerWorkerConfig(dockerfile=tag)
+        worker_config = PrebuiltWorkerConfig(tag=tag)
 
         # create SyftWorkerImage from a pre-built image
         _new_image = SyftWorkerImage(
             config=worker_config,
             created_by=credentials,
             image_identifier=SyftWorkerImageIdentifier.from_str(tag),
-            built_at=DateTime.now(),
         )
 
     result = image_stash.get_by_docker_config(
