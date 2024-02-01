@@ -98,7 +98,7 @@ class BlobFile(SyftObject):
 
         return sy.ActionObject.from_path(path=path).send(client).syft_action_data
 
-    def _upload_to_blobstorage_from_api(self, api):
+    def upload_to_blobstorage_from_api(self, api):
         if self.path is None:
             raise ValueError("cannot upload BlobFile, no path specified")
         storage_entry = CreateBlobStorageEntry.from_path(self.path)
@@ -120,7 +120,7 @@ class BlobFile(SyftObject):
     def upload_to_blobstorage(self, client):
         self.syft_node_location = client.id
         self.syft_client_verify_key = client.verify_key
-        return self._upload_to_blobstorage_from_api(client.api)
+        return self.upload_to_blobstorage_from_api(client.api)
 
     def _iter_lines(self, chunk_size=DEFAULT_CHUNK_SIZE):
         """Synchronous version of the async iter_lines. This implementation
