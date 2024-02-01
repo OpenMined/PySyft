@@ -3,6 +3,7 @@ from hashlib import sha256
 import os
 from pathlib import Path
 from typing import Dict
+from typing import List
 from typing import Optional
 
 # third party
@@ -15,16 +16,14 @@ from kr8s.objects import Job
 from .builder_types import BuilderBase
 from .builder_types import ImageBuildResult
 from .builder_types import ImagePushResult
+from .k8s import BUILD_OUTPUT_PVC
+from .k8s import JOB_COMPLETION_TTL
+from .k8s import KUBERNETES_NAMESPACE
 
 __all__ = ["KubernetesBuilder"]
 
-JOB_COMPLETION_TTL = 60
 
-BUILD_OUTPUT_PVC = "worker-builds"
-KUBERNETES_NAMESPACE = os.getenv("K8S_NAMESPACE", "syft")
-
-
-class InvalidImageDigest(Exception):
+class BuildFailed(Exception):
     pass
 
 
@@ -63,14 +62,18 @@ class KubernetesBuilder(BuilderBase):
             # wait for job to complete/fail
             job.wait(["condition=Complete", "condition=Failed"])
 
-            # TODO: check job status, raise with logs
+            # get logs
+            logs = self._get_logs(job)
 
             image_digest = self._get_image_digest(job)
             if not image_digest:
-                raise InvalidImageDigest("Did not get any image digest from the job")
+                exit_code = self._get_container_exit_code(job)
+                raise BuildFailed(
+                    "Failed to build the image. "
+                    f"Kaniko exit code={exit_code}. "
+                    f"Logs={logs}"
+                )
 
-            # get logs
-            logs = self._get_logs(job)
         except Exception:
             raise
         finally:
@@ -100,7 +103,8 @@ class KubernetesBuilder(BuilderBase):
             registry_url=registry_url,
         )
         job.wait(["condition=Complete", "condition=Failed"])
-        return ImagePushResult(logs=self._get_logs(job))
+        exit_code = self._get_container_exit_code(job)[0]
+        return ImagePushResult(logs=self._get_logs(job), exit_code=exit_code)
 
     def _new_job_id(self, tag: str) -> str:
         return self._get_tag_hash(tag)[:16]
@@ -117,6 +121,15 @@ class KubernetesBuilder(BuilderBase):
                     continue
                 return container_status.state.terminated.message
         return None
+
+    def _get_container_exit_code(self, job: Job) -> List[int]:
+        selector = {"batch.kubernetes.io/job-name": job.metadata.name}
+        pods = self.client.get("pods", label_selector=selector)
+        exit_codes = []
+        for pod in pods:
+            for container_status in pod.status.containerStatuses:
+                exit_codes.append(container_status.state.terminated.exitCode)
+        return exit_codes
 
     def _get_logs(self, job: Job) -> str:
         selector = {"batch.kubernetes.io/job-name": job.metadata.name}
@@ -167,7 +180,7 @@ class KubernetesBuilder(BuilderBase):
                     },
                 },
                 "spec": {
-                    "backoffLimit": 2,
+                    "backoffLimit": 0,
                     "ttlSecondsAfterFinished": JOB_COMPLETION_TTL,
                     "template": {
                         "spec": {
@@ -236,6 +249,22 @@ class KubernetesBuilder(BuilderBase):
         tag_hash = self._get_tag_hash(tag)
         registry_url = registry_url or tag.split("/")[0]
 
+        extra_flags = ""
+        if os.getenv("DEV_MODE") == "True":
+            extra_flags = "--insecure"
+
+        run_cmds = [
+            "echo Logging in to $REG_URL with user $REG_USERNAME...",
+            # login to registry
+            "crane auth login $REG_URL -u $REG_USERNAME -p $REG_PASSWORD",
+            # push with credentials
+            "echo Pushing image....",
+            f"crane push --image-refs /dev/termination-log {extra_flags} /output/{tag_hash}.tar {tag}",
+            # cleanup built tarfile
+            "echo Cleaning up tar....",
+            f"rm /output/{tag_hash}.tar",
+        ]
+
         job = Job(
             {
                 "metadata": {
@@ -273,19 +302,7 @@ class KubernetesBuilder(BuilderBase):
                                         },
                                     ],
                                     "command": ["sh"],
-                                    "args": [
-                                        "-c",
-                                        " && ".join(
-                                            [
-                                                "crane auth login $REG_URL -u $REG_USERNAME -p $REG_PASSWORD",
-                                                # push with credentials
-                                                f"crane push --image-refs /dev/termination-log /output/{tag_hash}.tar {tag}",  # noqa: E501
-                                                # cleanup built tarfile
-                                                f"rm /output/{tag_hash}.tar",
-                                                # for retagging use crane cp {tag} {new_tag}
-                                            ]
-                                        ),
-                                    ],
+                                    "args": ["-c", " && ".join(run_cmds)],
                                     "volumeMounts": [
                                         {
                                             "name": "build-output",

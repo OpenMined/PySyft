@@ -117,6 +117,10 @@ spec:
           value: "{{ .Values.node.settings.inMemoryWorkers }}"
         - name: LOG_LEVEL
           value: {{ .Values.node.settings.logLevel }}
+        - name: DEFAULT_WORKER_POOL_IMAGE
+          value: {{ .Values.syft.registry }}/openmined/grid-backend:{{ .Values.syft.version }}
+        - name: DEFAULT_WORKER_POOL_COUNT
+          value: "{{ .Values.node.settings.defaultWorkerPoolCount }}"
         envFrom: null
         image: {{ .Values.syft.registry }}/openmined/grid-backend:{{ .Values.syft.version }}
         lifecycle: null

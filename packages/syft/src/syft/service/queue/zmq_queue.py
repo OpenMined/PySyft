@@ -370,8 +370,9 @@ class ZMQProducer(QueueProducer):
         for worker in list(self.waiting):
             if worker.has_expired():
                 logger.info(
-                    "Deleting expired worker={} expiry={} now={}",
+                    "Deleting expired Worker id={} uid={} expiry={} now={}",
                     worker.identity,
+                    worker.syft_worker_id,
                     worker.get_expiry(),
                     Timeout.now(),
                 )
@@ -406,8 +407,10 @@ class ZMQProducer(QueueProducer):
     def worker_waiting(self, worker: Worker):
         """This worker is now waiting for work."""
         # Queue to broker and service waiting lists
-        self.waiting.append(worker)
-        worker.service.waiting.append(worker)
+        if worker not in self.waiting:
+            self.waiting.append(worker)
+        if worker not in worker.service.waiting:
+            worker.service.waiting.append(worker)
         worker.reset_expiry()
         self.update_consumer_state_for_worker(worker.syft_worker_id, ConsumerState.IDLE)
         self.dispatch(worker.service, None)
@@ -519,15 +522,19 @@ class ZMQProducer(QueueProducer):
                 worker.service = service
                 worker.syft_worker_id = UID(syft_worker_id)
                 logger.info(
-                    "New Worker id={} service={}",
-                    worker.identity,
+                    "New Worker service={} id={} uid={}",
                     service.name,
+                    worker.identity,
+                    worker.syft_worker_id,
                 )
                 self.worker_waiting(worker)
 
         elif QueueMsgProtocol.W_HEARTBEAT == command:
             if worker_ready:
-                worker.reset_expiry()
+                # If worker is ready then reset expiry
+                # and add it to worker waiting list
+                # if not already present
+                self.worker_waiting(worker)
             else:
                 # extract the syft worker id and worker pool name from the message
                 # Get the corresponding worker pool and worker
@@ -698,7 +705,7 @@ class ZMQConsumer(QueueConsumer):
                         finally:
                             self.clear_job()
                     elif command == QueueMsgProtocol.W_HEARTBEAT:
-                        pass
+                        self.set_producer_alive()
                     elif command == QueueMsgProtocol.W_DISCONNECT:
                         self.reconnect_to_producer()
                     else:

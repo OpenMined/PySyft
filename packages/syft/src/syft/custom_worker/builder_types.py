@@ -17,6 +17,7 @@ class ImageBuildResult(BaseModel):
 
 class ImagePushResult(BaseModel):
     logs: str
+    exit_code: int
 
 
 class BuilderBase(ABC):

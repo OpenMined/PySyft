@@ -13,6 +13,7 @@ import pydantic
 from ...custom_worker.config import CustomWorkerConfig
 from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import WorkerConfig
+from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.datetime import DateTime
@@ -27,8 +28,8 @@ from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .image_registry import SyftImageRegistry
 from .image_registry_service import SyftImageRegistryService
-from .utils import docker_build
-from .utils import docker_push
+from .utils import image_build
+from .utils import image_push
 from .worker_image import SyftWorkerImage
 from .worker_image import SyftWorkerImageIdentifier
 from .worker_image_stash import SyftWorkerImageStash
@@ -94,6 +95,9 @@ class SyftWorkerImageService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         registry: SyftImageRegistry = None
 
+        if IN_KUBERNETES and registry_uid is None:
+            return SyftError(message="Registry UID is required in Kubernetes mode.")
+
         result = self.stash.get_by_uid(credentials=context.credentials, uid=image_uid)
         if result.is_err():
             return SyftError(
@@ -135,7 +139,7 @@ class SyftWorkerImageService(AbstractService):
         result = None
 
         if not context.node.in_memory_workers:
-            build_result = docker_build(worker_image, pull=pull)
+            build_result = image_build(worker_image, pull=pull)
             if isinstance(build_result, SyftError):
                 return build_result
 
@@ -188,7 +192,7 @@ class SyftWorkerImageService(AbstractService):
                 message=f"Image ID: {worker_image.id} does not have a valid registry host."
             )
 
-        result = docker_push(
+        result = image_push(
             image=worker_image,
             username=username,
             password=password,
@@ -222,6 +226,8 @@ class SyftWorkerImageService(AbstractService):
             if im.image_identifier is not None:
                 res.append((im.image_identifier.full_name_with_tag, im))
             else:
+                # FIXME: syft deployments in kubernetes results in a new image per version
+                # This results in "default-worker-image" key having multiple values and DictTuple() throws exception
                 res.append(("default-worker-image", im))
 
         return DictTuple(res)
@@ -240,7 +246,14 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"{res.err()}")
         image: SyftWorkerImage = res.ok()
 
-        if not context.node.in_memory_workers and image and image.image_identifier:
+        if context.node.in_memory_workers:
+            pass
+        elif IN_KUBERNETES:
+            # TODO: Implement image deletion in kubernetes
+            return SyftError(
+                message="Image Deletion is not yet implemented in Kubernetes !!"
+            )
+        elif image and image.image_identifier:
             try:
                 full_tag: str = image.image_identifier.full_name_with_tag
                 with contextlib.closing(docker.from_env()) as client:
