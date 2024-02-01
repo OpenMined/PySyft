@@ -76,7 +76,7 @@ jobs:
 
     strategy:
       matrix:
-        runner: [sh-arc-linux-x64, sh-arc-linux-arm64]
+        runner: [ubuntu-latest]
     runs-on: ${{ matrix.runner }}
 
     outputs:
