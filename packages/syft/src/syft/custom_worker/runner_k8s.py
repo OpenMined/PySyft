@@ -302,5 +302,4 @@ class KubernetesRunner:
                 }
             }
         }
-        print(json.dumps(config, indent=4))
         return base64.b64encode(json.dumps(config).encode()).decode()

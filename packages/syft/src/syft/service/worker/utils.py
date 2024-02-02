@@ -338,15 +338,15 @@ def run_workers_in_kubernetes(
 
     if start_idx == 0:
         pool_pods = create_kubernetes_pool(
-            runner,
-            worker_image,
-            pool_name,
-            worker_count,
-            queue_port,
-            debug,
-            reg_username,
-            reg_password,
-            reg_url,
+            runner=runner,
+            worker_image=worker_image,
+            pool_name=pool_name,
+            replicas=worker_count,
+            queue_port=queue_port,
+            debug=debug,
+            reg_username=reg_username,
+            reg_password=reg_password,
+            reg_url=reg_url,
         )
     else:
         pool_pods = scale_kubernetes_pool(runner, pool_name, worker_count)
