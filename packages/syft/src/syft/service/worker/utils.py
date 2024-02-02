@@ -275,7 +275,7 @@ def prepare_worker_pool_env(runner: KubernetesRunner, env_vars: dict):
     # create a secret for the node credentials owned by the backend, not the pool.
     node_secret = KubeUtils.create_secret(
         secret_name=K8S_NODE_CREDS_NAME,
-        type=KubeUtils.OPAQUE_SECRET_TYPE,
+        type="Opaque",
         component=backend_pod_name,
         data={creds_path.name: creds_path.read_text()},
         encoded=False,

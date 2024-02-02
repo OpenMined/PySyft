@@ -111,8 +111,6 @@ class KubeUtils:
     This is to avoid calling these functions on resources across namespaces!
     """
 
-    OPAQUE_SECRET_TYPE = "Opaque"
-
     @staticmethod
     def resolve_pod(client: kr8s.Api, pod: Union[str, Pod]) -> Optional[Pod]:
         """Return the first pod that matches the given name"""
