@@ -159,7 +159,7 @@ jobs:
       # TODO: Optimize redundant bump protocol version checks
       - name: Check and Bump Protocol Version
         run: |
-          if [[ $(python packages/grid/VERSION) != *"beta"* ]]; then
+          if [[ "${{ steps.get_release_tag.outputs.release_tag }}" == "latest" ]]; then
             export BUMP=True
           fi
           tox -e syft.protocol.check
