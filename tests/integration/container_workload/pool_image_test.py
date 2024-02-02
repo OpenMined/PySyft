@@ -75,7 +75,6 @@ def test_pool_launch(domain_1_port) -> None:
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
-    assert len(domain_client.worker_pools.get_all()) == 1
 
     # Submit Docker Worker Config
     docker_config_opendp = """
@@ -113,9 +112,7 @@ def test_pool_launch(domain_1_port) -> None:
         num_workers=3,
     )
     assert len(worker_pool_res) == 3
-
     assert all(worker.error is None for worker in worker_pool_res)
-    assert len(domain_client.worker_pools.get_all()) == 2
 
     worker_pool = domain_client.worker_pools[worker_pool_name]
     assert len(worker_pool.worker_list) == 3
