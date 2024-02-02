@@ -161,7 +161,6 @@ jobs:
           tox -e syft.protocol.check
 
       - name: Set up Docker Buildx
-        id: buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker
