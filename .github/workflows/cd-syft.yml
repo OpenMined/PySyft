@@ -7,13 +7,13 @@ on:
   workflow_dispatch:
     inputs:
       skip_tests:
-        description: "If true, skip tests"
+        description: "If true, skip pre-release tests"
         required: false
         default: "false"
         type: choice
         options:
-          - true
           - false
+          - true
 
       release_platform:
         description: "Release Platform"
