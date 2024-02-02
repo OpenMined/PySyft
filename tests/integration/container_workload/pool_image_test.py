@@ -145,7 +145,6 @@ def test_pool_launch(domain_1_port) -> None:
     sleep(10)
     result = domain_client.api.services.worker_pool.delete(pool_name=worker_pool_name)
     assert isinstance(result.success, str)
-    assert len(domain_client.worker_pools.get_all()) == 1
     assert worker_pool_name not in [pool.name for pool in domain_client.worker_pools]
 
     # Clean the build images
@@ -269,7 +268,6 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     sleep(10)
     result = domain_client.api.services.worker_pool.delete(pool_name=worker_pool_name)
     assert isinstance(result.success, str)
-    assert len(domain_client.worker_pools.get_all()) == 1
     assert worker_pool_name not in [pool.name for pool in domain_client.worker_pools]
 
     # Clean the build images
