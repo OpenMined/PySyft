@@ -98,7 +98,6 @@ class PodStatus(BaseModel):
 
 @cache
 def get_kr8s_client() -> kr8s.Api:
-    IN_KUBERNETES = True
     if not IN_KUBERNETES:
         raise RuntimeError("Not inside a kubernetes environment")
     return kr8s.api(namespace=KUBERNETES_NAMESPACE)
