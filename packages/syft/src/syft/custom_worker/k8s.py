@@ -10,14 +10,15 @@ from pydantic import BaseModel
 # Time after which Job will be deleted
 JOB_COMPLETION_TTL = 60
 
-# Persistent volume claim for storing build output
-BUILD_OUTPUT_PVC = "worker-builds"
-
 # Kubernetes namespace
 KUBERNETES_NAMESPACE = os.getenv("K8S_NAMESPACE", "syft")
 
 # Kubernetes runtime flag
 IN_KUBERNETES = os.getenv("CONTAINER_HOST") == "k8s"
+
+# Internal registry URL
+DEFAULT_INTERNAL_REGISTRY = f"registry.{KUBERNETES_NAMESPACE}.svc.cluster.local"
+INTERNAL_REGISTRY_HOST = os.getenv("INTERNAL_REGISTRY_HOST", DEFAULT_INTERNAL_REGISTRY)
 
 
 class PodPhase(Enum):
