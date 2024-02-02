@@ -6,7 +6,7 @@ from typing import Union
 from typing_extensions import Self
 
 # relative
-from ...custom_worker.utils import parse_tag
+from ...custom_worker.utils import ImageUtils
 from ...serde.serializable import serializable
 from ...types.base import SyftBaseModel
 from .image_registry import SyftImageRegistry
@@ -38,7 +38,7 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
     @classmethod
     def with_registry(cls, tag: str, registry: SyftImageRegistry) -> Self:
         """Build a SyftWorkerImageTag from Docker tag & a previously created SyftImageRegistry object."""
-        registry_str, repo, tag = parse_tag(tag)
+        registry_str, repo, tag = ImageUtils.parse_tag(tag)
 
         # if we parsed a registry string, make sure it matches the registry object
         if registry_str and registry_str != registry.url:
@@ -49,7 +49,7 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
     @classmethod
     def from_str(cls, tag: str) -> Self:
         """Build a SyftWorkerImageTag from a pure-string standard Docker tag."""
-        registry, repo, tag = parse_tag(tag)
+        registry, repo, tag = ImageUtils.parse_tag(tag)
         return cls(repo=repo, registry=registry, tag=tag)
 
     @property

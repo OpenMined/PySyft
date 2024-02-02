@@ -6,8 +6,6 @@ from typing import List
 from typing import Optional
 
 # third party
-import kr8s
-from kr8s.objects import APIObject
 from kr8s.objects import ConfigMap
 from kr8s.objects import Job
 from kr8s.objects import Secret
@@ -19,8 +17,9 @@ from .builder_types import ImagePushResult
 from .k8s import INTERNAL_REGISTRY_HOST
 from .k8s import JOB_COMPLETION_TTL
 from .k8s import KUBERNETES_NAMESPACE
-from .utils import create_dockerconfig_json
-from .utils import parse_tag
+from .k8s import KubeUtils
+from .k8s import get_kr8s_client
+from .utils import ImageUtils
 
 __all__ = ["KubernetesBuilder"]
 
@@ -30,8 +29,10 @@ class BuildFailed(Exception):
 
 
 class KubernetesBuilder(BuilderBase):
+    COMPONENT = "builder"
+
     def __init__(self):
-        self.client = kr8s.api(namespace=KUBERNETES_NAMESPACE)
+        self.client = get_kr8s_client()
 
     def build_image(
         self,
@@ -72,7 +73,7 @@ class KubernetesBuilder(BuilderBase):
 
             image_digest = self._get_image_digest(job)
             if not image_digest:
-                exit_code = self._get_container_exit_code(job)
+                exit_code = self._get_exit_code(job)
                 raise BuildFailed(
                     "Failed to build the image. "
                     f"Kaniko exit code={exit_code}. "
@@ -83,7 +84,7 @@ class KubernetesBuilder(BuilderBase):
             raise
         finally:
             # don't delete the job, kubernetes will gracefully do that for us
-            config and config.delete(propagation_policy="Background")
+            config and config.delete(propagation_policy="Foreground")
 
         return ImageBuildResult(
             image_hash=image_digest,
@@ -119,12 +120,12 @@ class KubernetesBuilder(BuilderBase):
             )
 
             job.wait(["condition=Complete", "condition=Failed"])
-            exit_code = self._get_container_exit_code(job)[0]
+            exit_code = self._get_exit_code(job)[0]
             logs = self._get_logs(job)
         except Exception:
             raise
         finally:
-            push_secret and push_secret.delete(propagation_policy="Background")
+            push_secret and push_secret.delete(propagation_policy="Foreground")
 
         return ImagePushResult(logs=logs, exit_code=exit_code)
 
@@ -137,51 +138,35 @@ class KubernetesBuilder(BuilderBase):
     def _get_image_digest(self, job: Job) -> Optional[str]:
         selector = {"batch.kubernetes.io/job-name": job.metadata.name}
         pods = self.client.get("pods", label_selector=selector)
-        for pod in pods:
-            for container_status in pod.status.containerStatuses:
-                if container_status.state.terminated.exitCode != 0:
-                    continue
-                return container_status.state.terminated.message
-        return None
+        return KubeUtils.get_container_exit_message(pods)
 
-    def _get_container_exit_code(self, job: Job) -> List[int]:
+    def _get_exit_code(self, job: Job) -> List[int]:
         selector = {"batch.kubernetes.io/job-name": job.metadata.name}
         pods = self.client.get("pods", label_selector=selector)
-        exit_codes = []
-        for pod in pods:
-            for container_status in pod.status.containerStatuses:
-                exit_codes.append(container_status.state.terminated.exitCode)
-        return exit_codes
+        return KubeUtils.get_container_exit_code(pods)
 
     def _get_logs(self, job: Job) -> str:
         selector = {"batch.kubernetes.io/job-name": job.metadata.name}
         pods = self.client.get("pods", label_selector=selector)
-        logs = []
-        for pod in pods:
-            logs.append(f"----------Logs for pod={pod.metadata.name}----------")
-            for log in pod.logs():
-                logs.append(log)
-
-        return "\n".join(logs)
+        return KubeUtils.get_logs(pods)
 
     def _create_build_config(self, job_id: str, dockerfile: str) -> ConfigMap:
         config_map = ConfigMap(
             {
                 "metadata": {
                     "name": f"build-{job_id}",
+                    "labels": {
+                        "app.kubernetes.io/name": KUBERNETES_NAMESPACE,
+                        "app.kubernetes.io/component": KubernetesBuilder.COMPONENT,
+                        "app.kubernetes.io/managed-by": "kr8s",
+                    },
                 },
                 "data": {
                     "Dockerfile": dockerfile,
                 },
             }
         )
-        return self._create_or_get(config_map)
-
-    def _change_registry(self, old_tag: str, registry: str):
-        _, repo, tag = parse_tag(old_tag)
-        new_tag = f"{registry}/{repo}:{tag}"
-        print(f"changed from {old_tag} to {new_tag}")
-        return new_tag
+        return KubeUtils.create_or_get(config_map)
 
     def _create_kaniko_build_job(
         self,
@@ -194,7 +179,7 @@ class KubernetesBuilder(BuilderBase):
         build_args = build_args or {}
         build_args_list = []
 
-        internal_tag = self._change_registry(tag, registry=INTERNAL_REGISTRY_HOST)
+        internal_tag = ImageUtils.change_registry(tag, registry=INTERNAL_REGISTRY_HOST)
 
         for k, v in build_args.items():
             build_args_list.append(f'--build-arg="{k}={v}"')
@@ -205,7 +190,7 @@ class KubernetesBuilder(BuilderBase):
                     "name": f"build-{job_id}",
                     "labels": {
                         "app.kubernetes.io/name": KUBERNETES_NAMESPACE,
-                        "app.kubernetes.io/component": "builder",
+                        "app.kubernetes.io/component": KubernetesBuilder.COMPONENT,
                         "app.kubernetes.io/managed-by": "kr8s",
                     },
                 },
@@ -274,7 +259,7 @@ class KubernetesBuilder(BuilderBase):
             }
         )
 
-        return self._create_or_get(job)
+        return KubeUtils.create_or_get(job)
 
     def _create_push_job(
         self,
@@ -282,8 +267,8 @@ class KubernetesBuilder(BuilderBase):
         tag: str,
         push_secret: Secret,
     ) -> Job:
-        internal_tag = self._change_registry(tag, registry=INTERNAL_REGISTRY_HOST)
-        internal_reg, internal_repo, _ = parse_tag(internal_tag)
+        internal_tag = ImageUtils.change_registry(tag, registry=INTERNAL_REGISTRY_HOST)
+        internal_reg, internal_repo, _ = ImageUtils.parse_tag(internal_tag)
 
         run_cmds = [
             # push with credentials
@@ -302,7 +287,7 @@ class KubernetesBuilder(BuilderBase):
                     "name": f"push-{job_id}",
                     "labels": {
                         "app.kubernetes.io/name": KUBERNETES_NAMESPACE,
-                        "app.kubernetes.io/component": "builder",
+                        "app.kubernetes.io/component": KubernetesBuilder.COMPONENT,
                         "app.kubernetes.io/managed-by": "kr8s",
                     },
                 },
@@ -359,37 +344,15 @@ class KubernetesBuilder(BuilderBase):
                 },
             }
         )
-        return self._create_or_get(job)
+        return KubeUtils.create_or_get(job)
 
     def _create_push_secret(self, id: str, url: str, username: str, password: str):
-        _secret = Secret(
-            {
-                "metadata": {
-                    "name": f"push-secret-{id}",
-                    "labels": {
-                        "app.kubernetes.io/name": KUBERNETES_NAMESPACE,
-                        "app.kubernetes.io/component": "builder",
-                        "app.kubernetes.io/managed-by": "kr8s",
-                    },
-                },
-                "type": "kubernetes.io/dockerconfigjson",
-                "data": {
-                    ".dockerconfigjson": create_dockerconfig_json(
-                        registries=[
-                            # authorize internal registry?
-                            (INTERNAL_REGISTRY_HOST, "username", id),
-                            (url, username, password),
-                        ]
-                    )
-                },
-            }
+        return KubeUtils.create_dockerconfig_secret(
+            secret_name=f"push-secret-{id}",
+            component=KubernetesBuilder.COMPONENT,
+            registries=[
+                # TODO: authorize internal registry?
+                (INTERNAL_REGISTRY_HOST, "username", id),
+                (url, username, password),
+            ],
         )
-
-        return self._create_or_get(_secret)
-
-    def _create_or_get(self, obj: APIObject) -> APIObject:
-        if not obj.exists():
-            obj.create()
-        else:
-            obj.refresh()
-        return obj
