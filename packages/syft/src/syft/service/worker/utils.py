@@ -38,7 +38,7 @@ from .worker_pool import WorkerStatus
 
 DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu:0.0.1"
 DEFAULT_WORKER_POOL_NAME = "default-pool"
-K8S_SECRET_NODE_CREDS = "node-creds"
+K8S_NODE_CREDS_NAME = "node-creds"
 
 
 def backend_container_name() -> str:
@@ -274,7 +274,7 @@ def prepare_worker_pool_env(runner: KubernetesRunner, env_vars: dict):
 
     # create a secret for the node credentials owned by the backend, not the pool.
     node_secret = KubeUtils.create_secret(
-        secret_name=K8S_SECRET_NODE_CREDS,
+        secret_name=K8S_NODE_CREDS_NAME,
         type=KubeUtils.OPAQUE_SECRET,
         component=backend_pod_name,
         data={creds_path.name: creds_path.read_text()},
