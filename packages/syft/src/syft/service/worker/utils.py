@@ -261,6 +261,10 @@ def create_kubernetes_pool(
     replicas: int,
     queue_port: int,
     debug: bool,
+    reg_username: Optional[str] = None,
+    reg_password: Optional[str] = None,
+    reg_url: Optional[str] = None,
+    **kwargs,
 ):
     pool = None
     error = False
@@ -285,6 +289,9 @@ def create_kubernetes_pool(
                 "CREATE_PRODUCER": "False",
                 "INMEMORY_WORKERS": "False",
             },
+            reg_username=reg_username,
+            reg_password=reg_password,
+            reg_url=reg_url,
         )
     except Exception as e:
         error = True
@@ -321,9 +328,9 @@ def run_workers_in_kubernetes(
     queue_port: int,
     start_idx=0,
     debug: bool = False,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    registry_url: Optional[str] = None,
+    reg_username: Optional[str] = None,
+    reg_password: Optional[str] = None,
+    reg_url: Optional[str] = None,
     **kwargs,
 ) -> Union[List[ContainerSpawnStatus], SyftError]:
     spawn_status = []
@@ -331,12 +338,15 @@ def run_workers_in_kubernetes(
 
     if start_idx == 0:
         pool_pods = create_kubernetes_pool(
-            runner,
-            worker_image,
-            pool_name,
-            worker_count,
-            queue_port,
-            debug,
+            runner=runner,
+            worker_image=worker_image,
+            pool_name=pool_name,
+            replicas=worker_count,
+            queue_port=queue_port,
+            debug=debug,
+            reg_username=reg_username,
+            reg_password=reg_password,
+            reg_url=reg_url,
         )
     else:
         pool_pods = scale_kubernetes_pool(runner, pool_name, worker_count)
@@ -412,9 +422,9 @@ def run_containers(
     queue_port: int,
     dev_mode: bool = False,
     start_idx: int = 0,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    registry_url: Optional[str] = None,
+    reg_username: Optional[str] = None,
+    reg_password: Optional[str] = None,
+    reg_url: Optional[str] = None,
 ) -> Union[List[ContainerSpawnStatus], SyftError]:
     results = []
 
@@ -435,9 +445,9 @@ def run_containers(
                     pool_name=pool_name,
                     queue_port=queue_port,
                     debug=dev_mode,
-                    username=username,
-                    password=password,
-                    registry_url=registry_url,
+                    username=reg_username,
+                    password=reg_password,
+                    registry_url=reg_url,
                 )
                 results.append(spawn_result)
     elif orchestration == WorkerOrchestrationType.KUBERNETES:
@@ -448,6 +458,9 @@ def run_containers(
             queue_port=queue_port,
             debug=dev_mode,
             start_idx=start_idx,
+            reg_username=reg_username,
+            reg_password=reg_password,
+            reg_url=reg_url,
         )
 
     return results
