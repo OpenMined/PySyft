@@ -1,5 +1,4 @@
 # stdlib
-from time import sleep
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -56,7 +55,8 @@ class KubernetesRunner:
             )
 
             # wait for replicas to be available and ready
-            self.wait(deployment, available_replicas=replicas)
+            status_path = "{.status.availableReplicas}"
+            deployment.wait(f"jsonpath='{status_path}'={replicas}")
         except Exception:
             raise
         finally:
@@ -115,29 +115,6 @@ class KubernetesRunner:
     def get_pod_env_vars(self, pod: Union[str, Pod]) -> Optional[List[Dict]]:
         pod = KubeUtils.resolve_pod(self.client, pod)
         return KubeUtils.get_pod_env(pod)
-
-    def wait(
-        self,
-        deployment: StatefulSet,
-        available_replicas: int,
-        timeout: int = 300,
-    ) -> None:
-        # TODO: Report wait('jsonpath=') bug to kr8s
-        # Until then this is the substitute implementation
-
-        if available_replicas <= 0:
-            return
-
-        while True:
-            if timeout == 0:
-                raise TimeoutError("Timeout waiting for replicas")
-
-            deployment.refresh()
-            if deployment.status.availableReplicas == available_replicas:
-                break
-
-            timeout -= 1
-            sleep(1)
 
     def _create_image_pull_secret(
         self,
