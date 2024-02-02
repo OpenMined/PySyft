@@ -170,7 +170,12 @@ spec:
       name: credentials-data
     spec:
       accessModes:
+      # k3d does not support ReadWriteMany
+      {{- if .Values.configuration.devmode }}
       - ReadWriteOnce
+      {{- else }}
+      - ReadWriteMany
+      {{- end }}
       resources:
         requests:
           storage: 100Mi

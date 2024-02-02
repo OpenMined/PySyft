@@ -9,7 +9,12 @@ metadata:
     app.kubernetes.io/managed-by: Helm
 spec:
   accessModes:
+    # k3d does not support ReadWriteMany
+    {{- if .Values.configuration.devmode }}
     - ReadWriteOnce
+    {{- else}}
+    - ReadWriteMany
+    {{- end}}
   resources:
     requests:
       storage: {{ .Values.workerBuilds.maxStorage }}
