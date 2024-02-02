@@ -2,6 +2,7 @@
 import random
 import socket
 from textwrap import dedent
+import time
 from typing import Tuple
 
 # third party
@@ -296,12 +297,9 @@ def test_worker_pool_nested_jobs(faker: Faker, cw_node_high: NodeHandle) -> None
     # The DS runs the syft functions
     job = ds_client.code.process_all(x=x_ptr, blocking=False)
     print(f"on doing job with id {job.id} on the worker {job.job_worker_id}")
-    # stdlib
-    import time
-
-    time.sleep(1)
 
     # Delete the worker pool while the job is running on one of the workers
+    time.sleep(2)
     result = root_client.api.services.worker_pool.delete(pool_name=pool_name)
     assert isinstance(result.success, str)
     assert len(root_client.worker_pools.get_all()) == 1

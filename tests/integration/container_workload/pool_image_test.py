@@ -142,13 +142,13 @@ def test_pool_launch(domain_1_port) -> None:
     assert isinstance(status_res, tuple)
 
     # Delete the worker pool
+    sleep(10)
     result = domain_client.api.services.worker_pool.delete(pool_name=worker_pool_name)
     assert isinstance(result.success, str)
     assert len(domain_client.worker_pools.get_all()) == 1
     assert worker_pool_name not in [pool.name for pool in domain_client.worker_pools]
 
     # Clean the build images
-    sleep(10)
     delete_result = domain_client.api.services.worker_image.remove(uid=worker_image.id)
     assert isinstance(delete_result, sy.SyftSuccess)
 
@@ -266,12 +266,12 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     assert result_matches.all()
 
     # Delete the launched pool
+    sleep(10)
     result = domain_client.api.services.worker_pool.delete(pool_name=worker_pool_name)
     assert isinstance(result.success, str)
     assert len(domain_client.worker_pools.get_all()) == 1
     assert worker_pool_name not in [pool.name for pool in domain_client.worker_pools]
 
     # Clean the build images
-    sleep(10)
     delete_result = domain_client.api.services.worker_image.remove(uid=built_image.id)
     assert isinstance(delete_result, sy.SyftSuccess)

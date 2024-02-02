@@ -453,14 +453,7 @@ class SyftWorkerPoolService(AbstractService):
     def get_by_name(
         self, context: AuthedServiceContext, pool_name: str
     ) -> Union[List[WorkerPool], SyftError]:
-        result = self.stash.get_by_name(context.credentials, pool_name)
-
-        if result.is_err():
-            return SyftError(
-                message=f"Failed to get worker pool with name: {pool_name}"
-            )
-
-        return result.ok()
+        return self._get_worker_pool(context=context, pool_name=pool_name)
 
     @service_method(
         path="worker_pool.sync_pool_from_request",
@@ -548,7 +541,13 @@ class SyftWorkerPoolService(AbstractService):
         worker_pool: WorkerPool = result.ok()
 
         # Delete the workers in the pool
-        workers: List[SyftWorker] = worker_pool.workers
+        workers: List[SyftWorker] = []
+        for linked_worker_obj in worker_pool.worker_list:
+            worker = linked_worker_obj.resolve_with_context(context)
+            if worker.is_err():
+                return SyftError(message=worker.err())
+            workers.append(worker.ok())
+        print(f"{workers = }")
         worker_service: WorkerService = context.node.get_service("WorkerService")
         job_service: JobService = context.node.get_service("JobService")
         if force:
