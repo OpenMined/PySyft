@@ -235,6 +235,8 @@ class CreateCustomImageChange(Change):
                 push_result = worker_image_service.push(
                     service_context,
                     image=worker_image.id,
+                    username=context.extra_kwargs.get("reg_username", None),
+                    password=context.extra_kwargs.get("reg_password", None),
                 )
 
                 if isinstance(push_result, SyftError):
@@ -299,6 +301,8 @@ class CreateCustomWorkerPoolChange(Change):
                 name=self.pool_name,
                 image_uid=self.image_uid,
                 num_workers=self.num_workers,
+                reg_username=context.extra_kwargs.get("reg_username", None),
+                reg_password=context.extra_kwargs.get("reg_password", None),
             )
             if isinstance(result, SyftError):
                 return Err(result)
@@ -487,7 +491,12 @@ class Request(SyftObject):
 
         return request_status
 
-    def approve(self, disable_warnings: bool = False, approve_nested: bool = False):
+    def approve(
+        self,
+        disable_warnings: bool = False,
+        approve_nested: bool = False,
+        **kwargs: dict,
+    ):
         api = APIRegistry.api_for(
             self.node_uid,
             self.syft_client_verify_key,
@@ -518,7 +527,7 @@ class Request(SyftObject):
             prompt_warning_message(message=message, confirm=True)
 
         print(f"Approving request for domain {api.node_name}")
-        return api.services.request.apply(self.id)
+        return api.services.request.apply(self.id, **kwargs)
 
     def deny(self, reason: str):
         """Denies the particular request.

@@ -39,11 +39,15 @@ class SyftImageRegistryService(AbstractService):
         context: AuthedServiceContext,
         url: str,
     ) -> Union[SyftSuccess, SyftError]:
-        registry = SyftImageRegistry.from_url(url)
+        try:
+            registry = SyftImageRegistry.from_url(url)
+        except Exception as e:
+            return SyftError(message=f"Failed to create registry. {e}")
+
         res = self.stash.set(context.credentials, registry)
 
         if res.is_err():
-            return SyftError(message=res.err())
+            return SyftError(message=f"Failed to create registry. {res.err()}")
 
         return SyftSuccess(
             message=f"Image Registry ID: {registry.id} created successfully"
