@@ -83,7 +83,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     outputs:
-      release_tag: ${{ steps.release_metadata.outputs.release_tag }}
+      release_tag: ${{ steps.get_release_tag.outputs.release_tag }}
       grid_version: ${{ steps.release_metadata.outputs.grid_version }}
 
     steps:
@@ -125,14 +125,27 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade  bump2version tox
 
-      - name: Generate Release Metadata
-        id: release_metadata
+      - name: Get Release tag
+        id: get_release_tag
         run: |
           if [[ $(python packages/grid/VERSION) == *"beta"* ]]; then
-            echo "release_tag=beta" >> $GITHUB_OUTPUT
+          echo "release_tag=beta" >> $GITHUB_OUTPUT
           else
             echo "release_tag=latest" >> $GITHUB_OUTPUT
           fi
+
+      - name: Bump the Version
+        if: steps.get_release_tag.outputs.release_tag == 'beta'
+        run: |
+          ls **/VERSION | xargs -I {} python {}
+          cat packages/grid/devspace.yaml | grep '0\.'
+          bump2version prenum --allow-dirty --no-commit
+          ls **/VERSION | xargs -I {} python {}
+          cat packages/grid/devspace.yaml | grep '0\.'
+
+      - name: Generate Release Metadata
+        id: release_metadata
+        run: |
           if [[ ${{matrix.runner}} == *"x64"* ]]; then
             echo "release_platform=linux/amd64" >> $GITHUB_OUTPUT
             echo "short_release_platform=amd64" >> $GITHUB_OUTPUT
@@ -143,26 +156,15 @@ jobs:
           echo "grid_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
           echo "seaweedfs_version=$(grep 'SEAWEEDFS_VERSION' packages/grid/default.env | cut -d '=' -f2)" >> $GITHUB_OUTPUT
 
-      - name: Bump the Version
-        id: bump-version
-        if: steps.release_metadata.outputs.release_tag == 'beta'
-        run: |
-          ls **/VERSION | xargs -I {} python {}
-          cat packages/grid/devspace.yaml | grep '0\.'
-          bump2version prenum --allow-dirty --no-commit
-          ls **/VERSION | xargs -I {} python {}
-          cat packages/grid/devspace.yaml | grep '0\.'
-
       # TODO: Optimize redundant bump protocol version checks
       - name: Check and Bump Protocol Version
         run: |
-          if [[ $(python packages/grid/VERSION) != *"beta"* ]]; then
+          if [[ "${{ steps.get_release_tag.outputs.release_tag }}" == "latest" ]]; then
             export BUMP=True
           fi
           tox -e syft.protocol.check
 
       - name: Set up Docker Buildx
-        id: buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker
@@ -253,6 +255,9 @@ jobs:
 
     runs-on: sh-arc-linux-x64
 
+    outputs:
+      release_tag: ${{ needs.build-and-push-docker-images.outputs.release_tag }}
+
     steps:
       - name: Download digests
         uses: actions/download-artifact@v4
@@ -262,7 +267,6 @@ jobs:
           merge-multiple: true
 
       - name: Set up Docker Buildx
-        id: buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker
@@ -329,22 +333,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade tox setuptools wheel twine bump2version PyYAML
 
-      # Check if the version is a pre-release
-      - name: Check if the version is a pre-release and modify version string
-        id: release_checks
-        run: |
-          if [[ $(python packages/grid/VERSION) == *"beta"* ]]; then
-            echo "is_pre_release=true" >> $GITHUB_OUTPUT
-            echo "github_release_version=$(python packages/grid/VERSION |  sed 's/-beta./b/')" >> $GITHUB_OUTPUT
-          else
-            echo "is_pre_release=false" >> $GITHUB_OUTPUT
-            echo "github_release_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
-          fi
-          echo "future_stable_version=$(python packages/grid/VERSION |   sed 's/-beta.*//')" >> $GITHUB_OUTPUT
-
       - name: Bump the Version
-        id: bump-version
-        if: steps.release_checks.outputs.is_pre_release == 'true'
+        if: needs.merge-docker-images.outputs.release_tag == 'beta'
         run: |
           ls **/VERSION | xargs -I {} python {}
           cat packages/grid/devspace.yaml | grep '0\.'
@@ -352,6 +342,17 @@ jobs:
           ls **/VERSION | xargs -I {} python {}
           cat packages/grid/devspace.yaml | grep '0\.'
           python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
+
+      - name: Generate Release Metadata
+        id: release_checks
+        run: |
+          echo "github_release_version=$(python packages/grid/VERSION |  sed 's/-beta./b/')" >> $GITHUB_OUTPUT
+          echo "future_stable_version=$(python packages/grid/VERSION |   sed 's/-beta.*//')" >> $GITHUB_OUTPUT
+          if [[ ${{ needs.merge-docker-images.outputs.release_tag}} == "beta" ]]; then
+            echo "is_beta_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_beta_release=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check Protocol Version
         run: |
@@ -383,7 +384,7 @@ jobs:
 
       - name: Check and Bump Protocol Version
         run: |
-          if [[ "${{ steps.release_checks.outputs.is_pre_release }}" == "false" ]]; then
+          if [[ "${{ needs.merge-docker-images.outputs.release_tag }}" == "latest" ]]; then
             export BUMP=True
           fi
           tox -e syft.protocol.check
@@ -397,7 +398,7 @@ jobs:
           tox -e lint || true
 
       - name: Changes to commit to Syft Repo during beta release
-        if: steps.release_checks.outputs.is_pre_release == 'true'
+        if: needs.merge-docker-images.outputs.release_tag == 'beta'
         uses: EndBug/add-and-commit@v9
         with:
           author_name: ${{ secrets.OM_BOT_NAME }}
@@ -406,7 +407,7 @@ jobs:
           add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION','packages/syft/PYPI.md', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml','packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py', 'packages/grid/podman/podman-kube/podman-syft-kube.yaml' ,'packages/grid/podman/podman-kube/podman-syft-kube-config.yaml', 'packages/syftcli/manifest.yml', 'packages/syft/src/syft/protocol/protocol_version.json', 'packages/grid/backend/worker_cpu.dockerfile','packages/grid/helm/syft/values.yaml','packages/grid/helm/syft']"
 
       - name: Changes to commit to Syft Repo during stable release
-        if: steps.release_checks.outputs.is_pre_release == 'false'
+        if: needs.merge-docker-images.outputs.release_tag == 'latest'
         uses: EndBug/add-and-commit@v9
         with:
           author_name: ${{ secrets.OM_BOT_NAME }}
@@ -447,7 +448,7 @@ jobs:
       # This step will copy the generated K8s manifest files to the correct directory in Infra repo
       - name: Copy files to Infra Repo
         run: |
-          if $is_pre_release; then
+          if [[ "${{ needs.merge-docker-images.outputs.release_tag }}" == "beta" ]]; then
             rm -rf infrastructure/gitops/environments/pre_release/
             mkdir -p infrastructure/gitops/environments/pre_release/
             cp -R packages/grid/helm/syft/. infrastructure/gitops/environments/pre_release/
@@ -478,7 +479,7 @@ jobs:
         with:
           name: v${{ steps.release_checks.outputs.github_release_version }}
           generate_release_notes: true
-          prerelease: ${{ steps.release_checks.outputs.is_pre_release }}
+          prerelease: ${{ steps.release_checks.outputs.is_beta_release }}
           files: |
             ./packages/syftcli/manifest.yml
             ./build/syftcli-config/*
