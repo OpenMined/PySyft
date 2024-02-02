@@ -10,6 +10,10 @@ on:
         description: "If true, skip tests"
         required: false
         default: "false"
+        type: choice
+        options:
+          - true
+          - false
 
       release_platform:
         description: "Release Platform"
