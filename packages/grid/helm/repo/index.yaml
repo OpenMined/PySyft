@@ -2,8 +2,32 @@ apiVersion: v1
 entries:
   syft:
   - apiVersion: v2
+    appVersion: 0.8.4-beta.19
+    created: "2024-02-02T13:14:14.998547445Z"
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 8219575dedb42fa2ddbf2768a4e9afbfacbc2dff7e953d77c7b10a41b78dc687
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.4-beta.19.tgz
+    version: 0.8.4-beta.19
+  - apiVersion: v2
+    appVersion: 0.8.4-beta.18
+    created: "2024-02-02T13:14:14.998139691Z"
+    description: Perform numpy-like analysis on data that remains in someone elses
+      server
+    digest: 6418cde559cf12f1f7fea5a2b123bba950e50eeb3be002441827d2ab7f9e4ef7
+    icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png
+    name: syft
+    type: application
+    urls:
+    - https://openmined.github.io/PySyft/helm/syft-0.8.4-beta.18.tgz
+    version: 0.8.4-beta.18
+  - apiVersion: v2
     appVersion: 0.8.4-beta.17
-    created: "2024-02-02T08:16:39.716168687Z"
+    created: "2024-02-02T13:14:14.997665721Z"
     description: Perform numpy-like analysis on data that remains in someone elses
       server
     digest: 71b39c5a4c64037eadbb154f7029282ba90d9a0d703f8d4c7dfc1ba2f5d81498
@@ -15,7 +39,7 @@ entries:
     version: 0.8.4-beta.17
   - apiVersion: v2
     appVersion: 0.8.4-beta.16
-    created: "2024-02-02T08:16:39.715752643Z"
+    created: "2024-02-02T13:14:14.997155674Z"
     description: Perform numpy-like analysis on data that remains in someone elses
       server
     digest: 9c9840a7c9476dbb08e0ac83926330718fe50c89879752dd8f92712b036109c0
@@ -27,7 +51,7 @@ entries:
     version: 0.8.4-beta.16
   - apiVersion: v2
     appVersion: 0.8.4-beta.15
-    created: "2024-02-02T08:16:39.715345103Z"
+    created: "2024-02-02T13:14:14.996655616Z"
     description: Perform numpy-like analysis on data that remains in someone elses
       server
     digest: 0955fd22da028315e30c68132cbfa4bdc82bae622039bcfce0de339707bb82eb
@@ -39,7 +63,7 @@ entries:
     version: 0.8.4-beta.15
   - apiVersion: v2
     appVersion: 0.8.4-beta.14
-    created: "2024-02-02T08:16:39.714897409Z"
+    created: "2024-02-02T13:14:14.996164224Z"
     description: Perform numpy-like analysis on data that remains in someone elses
       server
     digest: 56208571956abe20ed7a5cc1867cab2667ed792c63e53d0e8bb70a9b438b7bf6
@@ -51,7 +75,7 @@ entries:
     version: 0.8.4-beta.14
   - apiVersion: v2
     appVersion: 0.8.4-beta.13
-    created: "2024-02-02T08:16:39.714542578Z"
+    created: "2024-02-02T13:14:14.995775034Z"
     description: Perform numpy-like analysis on data that remains in someone elses
       server
     digest: d7222c72412b6ee5833fbb07d2549be179cdfc7ccd89e0ad947d112fce799b83
@@ -63,7 +87,7 @@ entries:
     version: 0.8.4-beta.13
   - apiVersion: v2
     appVersion: 0.8.4-beta.12
-    created: "2024-02-02T08:16:39.714181145Z"
+    created: "2024-02-02T13:14:14.995317395Z"
     description: Perform numpy-like analysis on data that remains in someone elses
       server
     digest: af08c723756e397962b2d5190dedfd50797b771c5caf58b93a6f65d8fa24785c
@@ -75,7 +99,7 @@ entries:
     version: 0.8.4-beta.12
   - apiVersion: v2
     appVersion: 0.8.4-beta.11
-    created: "2024-02-02T08:16:39.713800185Z"
+    created: "2024-02-02T13:14:14.994603966Z"
     description: Perform numpy-like analysis on data that remains in someone elses
       server
     digest: a0235835ba57d185a83dd8a26281fa37b2077c3a37fe3a1c50585005695927e3
@@ -87,7 +111,7 @@ entries:
     version: 0.8.4-beta.11
   - apiVersion: v2
     appVersion: 0.8.4-beta.10
-    created: "2024-02-02T08:16:39.71280952Z"
+    created: "2024-02-02T13:14:14.993936403Z"
     description: Perform numpy-like analysis on data that remains in someone elses
       server
     digest: 910ddfeba0c5e66651500dd11404afff092adc0f768ed68e0d93b04b83aa4388
@@ -99,7 +123,7 @@ entries:
     version: 0.8.4-beta.10
   - apiVersion: v2
     appVersion: 0.8.4-beta.9
-    created: "2024-02-02T08:16:39.719892972Z"
+    created: "2024-02-02T13:14:15.002537616Z"
     description: Perform numpy-like analysis on data that remains in someone elses
       server
     digest: c25ca8a9f072d6a5d02232448deaef5668aca05f24dfffbba3ebe30a4f75bb26
@@ -111,7 +135,7 @@ entries:
     version: 0.8.4-beta.9
   - apiVersion: v2
     appVersion: 0.8.4-beta.8
-    created: "2024-02-02T08:16:39.719510489Z"
+    created: "2024-02-02T13:14:15.002140561Z"
     description: Perform numpy-like analysis on data that remains in someone elses
       server
     digest: 7249a39d4137e457b369384ba0a365c271c780d93a8327ce25083df763c39999
@@ -123,7 +147,7 @@ entries:
     version: 0.8.4-beta.8
   - apiVersion: v2
     appVersion: 0.8.4-beta.7
-    created: "2024-02-02T08:16:39.718501873Z"
+    created: "2024-02-02T13:14:15.001621547Z"
     description: Perform numpy-like analysis on data that remains in someone elses
       server
     digest: ee750c7c8d6ea05bd447375e624fdd7f66dd87680ab81f7b7e73df7379a9024a
@@ -135,7 +159,7 @@ entries:
     version: 0.8.4-beta.7
   - apiVersion: v2
     appVersion: 0.8.4-beta.6
-    created: "2024-02-02T08:16:39.718169194Z"
+    created: "2024-02-02T13:14:15.000791266Z"
     description: Perform numpy-like analysis on data that remains in someone elses
       server
     digest: 0e046be9f73df7444a995608c59af16fab9030b139b2acb4d6db6185b8eb5337
@@ -147,7 +171,7 @@ entries:
     version: 0.8.4-beta.6
   - apiVersion: v2
     appVersion: 0.8.4-beta.5
-    created: "2024-02-02T08:16:39.717835532Z"
+    created: "2024-02-02T13:14:15.000188204Z"
     description: Perform numpy-like analysis on data that remains in someone elses
       server
     digest: b56e9a23d46810eccdb4cf5272cc05126da3f6db314e541959c3efb5f260620b
@@ -159,7 +183,7 @@ entries:
     version: 0.8.4-beta.5
   - apiVersion: v2
     appVersion: 0.8.4-beta.4
-    created: "2024-02-02T08:16:39.717444083Z"
+    created: "2024-02-02T13:14:14.999848126Z"
     description: Perform numpy-like analysis on data that remains in someone elses
       server
     digest: 1d5808ecaf55391f3b27ae6236400066508acbd242e33db24a1ab4bffa77409e
@@ -171,7 +195,7 @@ entries:
     version: 0.8.4-beta.4
   - apiVersion: v2
     appVersion: 0.8.4-beta.3
-    created: "2024-02-02T08:16:39.717103058Z"
+    created: "2024-02-02T13:14:14.999475176Z"
     description: Perform numpy-like analysis on data that remains in someone elses
       server
     digest: b64efa8529d82be56c6ab60487ed24420a5614d96d2509c1f93c1003eda71a54
@@ -183,7 +207,7 @@ entries:
     version: 0.8.4-beta.3
   - apiVersion: v2
     appVersion: 0.8.4-beta.2
-    created: "2024-02-02T08:16:39.71674971Z"
+    created: "2024-02-02T13:14:14.999110662Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -199,7 +223,7 @@ entries:
     version: 0.8.4-beta.2
   - apiVersion: v2
     appVersion: 0.8.4-beta.1
-    created: "2024-02-02T08:16:39.712457875Z"
+    created: "2024-02-02T13:14:14.993575396Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -215,7 +239,7 @@ entries:
     version: 0.8.4-beta.1
   - apiVersion: v2
     appVersion: 0.8.3-beta.6
-    created: "2024-02-02T08:16:39.711909443Z"
+    created: "2024-02-02T13:14:14.992971333Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -231,7 +255,7 @@ entries:
     version: 0.8.3-beta.6
   - apiVersion: v2
     appVersion: 0.8.3-beta.5
-    created: "2024-02-02T08:16:39.711331296Z"
+    created: "2024-02-02T13:14:14.992382588Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -247,7 +271,7 @@ entries:
     version: 0.8.3-beta.5
   - apiVersion: v2
     appVersion: 0.8.3-beta.4
-    created: "2024-02-02T08:16:39.710721881Z"
+    created: "2024-02-02T13:14:14.991802028Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -263,7 +287,7 @@ entries:
     version: 0.8.3-beta.4
   - apiVersion: v2
     appVersion: 0.8.3-beta.3
-    created: "2024-02-02T08:16:39.710064446Z"
+    created: "2024-02-02T13:14:14.991117464Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -279,7 +303,7 @@ entries:
     version: 0.8.3-beta.3
   - apiVersion: v2
     appVersion: 0.8.3-beta.2
-    created: "2024-02-02T08:16:39.70951359Z"
+    created: "2024-02-02T13:14:14.990546192Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -295,7 +319,7 @@ entries:
     version: 0.8.3-beta.2
   - apiVersion: v2
     appVersion: 0.8.3-beta.1
-    created: "2024-02-02T08:16:39.708959377Z"
+    created: "2024-02-02T13:14:14.989942539Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -311,7 +335,7 @@ entries:
     version: 0.8.3-beta.1
   - apiVersion: v2
     appVersion: 0.8.2
-    created: "2024-02-02T08:16:39.708389215Z"
+    created: "2024-02-02T13:14:14.989273975Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -327,7 +351,7 @@ entries:
     version: 0.8.2
   - apiVersion: v2
     appVersion: 0.8.2-beta.60
-    created: "2024-02-02T08:16:39.707427414Z"
+    created: "2024-02-02T13:14:14.987790632Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -343,7 +367,7 @@ entries:
     version: 0.8.2-beta.60
   - apiVersion: v2
     appVersion: 0.8.2-beta.59
-    created: "2024-02-02T08:16:39.706418314Z"
+    created: "2024-02-02T13:14:14.986895753Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -359,7 +383,7 @@ entries:
     version: 0.8.2-beta.59
   - apiVersion: v2
     appVersion: 0.8.2-beta.58
-    created: "2024-02-02T08:16:39.705781798Z"
+    created: "2024-02-02T13:14:14.98573778Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -375,7 +399,7 @@ entries:
     version: 0.8.2-beta.58
   - apiVersion: v2
     appVersion: 0.8.2-beta.57
-    created: "2024-02-02T08:16:39.705146455Z"
+    created: "2024-02-02T13:14:14.984694081Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -391,7 +415,7 @@ entries:
     version: 0.8.2-beta.57
   - apiVersion: v2
     appVersion: 0.8.2-beta.56
-    created: "2024-02-02T08:16:39.704503797Z"
+    created: "2024-02-02T13:14:14.983680179Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -407,7 +431,7 @@ entries:
     version: 0.8.2-beta.56
   - apiVersion: v2
     appVersion: 0.8.2-beta.53
-    created: "2024-02-02T08:16:39.703857022Z"
+    created: "2024-02-02T13:14:14.982749292Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -423,7 +447,7 @@ entries:
     version: 0.8.2-beta.53
   - apiVersion: v2
     appVersion: 0.8.2-beta.52
-    created: "2024-02-02T08:16:39.703155696Z"
+    created: "2024-02-02T13:14:14.981601379Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -439,7 +463,7 @@ entries:
     version: 0.8.2-beta.52
   - apiVersion: v2
     appVersion: 0.8.2-beta.51
-    created: "2024-02-02T08:16:39.70230422Z"
+    created: "2024-02-02T13:14:14.980361172Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -455,7 +479,7 @@ entries:
     version: 0.8.2-beta.51
   - apiVersion: v2
     appVersion: 0.8.2-beta.50
-    created: "2024-02-02T08:16:39.701153236Z"
+    created: "2024-02-02T13:14:14.95380213Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -471,7 +495,7 @@ entries:
     version: 0.8.2-beta.50
   - apiVersion: v2
     appVersion: 0.8.2-beta.49
-    created: "2024-02-02T08:16:39.700282985Z"
+    created: "2024-02-02T13:14:14.952766517Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -487,7 +511,7 @@ entries:
     version: 0.8.2-beta.49
   - apiVersion: v2
     appVersion: 0.8.2-beta.48
-    created: "2024-02-02T08:16:39.699638955Z"
+    created: "2024-02-02T13:14:14.951882267Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -503,7 +527,7 @@ entries:
     version: 0.8.2-beta.48
   - apiVersion: v2
     appVersion: 0.8.2-beta.47
-    created: "2024-02-02T08:16:39.698937248Z"
+    created: "2024-02-02T13:14:14.951109357Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -519,7 +543,7 @@ entries:
     version: 0.8.2-beta.47
   - apiVersion: v2
     appVersion: 0.8.2-beta.46
-    created: "2024-02-02T08:16:39.698370883Z"
+    created: "2024-02-02T13:14:14.950522546Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -535,7 +559,7 @@ entries:
     version: 0.8.2-beta.46
   - apiVersion: v2
     appVersion: 0.8.2-beta.45
-    created: "2024-02-02T08:16:39.697801062Z"
+    created: "2024-02-02T13:14:14.949363491Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -551,7 +575,7 @@ entries:
     version: 0.8.2-beta.45
   - apiVersion: v2
     appVersion: 0.8.2-beta.44
-    created: "2024-02-02T08:16:39.697039623Z"
+    created: "2024-02-02T13:14:14.948426463Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -567,7 +591,7 @@ entries:
     version: 0.8.2-beta.44
   - apiVersion: v2
     appVersion: 0.8.2-beta.43
-    created: "2024-02-02T08:16:39.696464762Z"
+    created: "2024-02-02T13:14:14.947528899Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -583,7 +607,7 @@ entries:
     version: 0.8.2-beta.43
   - apiVersion: v2
     appVersion: 0.8.2-beta.41
-    created: "2024-02-02T08:16:39.695583778Z"
+    created: "2024-02-02T13:14:14.927552262Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -599,7 +623,7 @@ entries:
     version: 0.8.2-beta.41
   - apiVersion: v2
     appVersion: 0.8.2-beta.40
-    created: "2024-02-02T08:16:39.694369365Z"
+    created: "2024-02-02T13:14:14.92687977Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -615,7 +639,7 @@ entries:
     version: 0.8.2-beta.40
   - apiVersion: v2
     appVersion: 0.8.2-beta.39
-    created: "2024-02-02T08:16:39.693815724Z"
+    created: "2024-02-02T13:14:14.926225743Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -631,7 +655,7 @@ entries:
     version: 0.8.2-beta.39
   - apiVersion: v2
     appVersion: 0.8.2-beta.38
-    created: "2024-02-02T08:16:39.693259508Z"
+    created: "2024-02-02T13:14:14.925630015Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -647,7 +671,7 @@ entries:
     version: 0.8.2-beta.38
   - apiVersion: v2
     appVersion: 0.8.2-beta.37
-    created: "2024-02-02T08:16:39.692662446Z"
+    created: "2024-02-02T13:14:14.924983372Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -663,7 +687,7 @@ entries:
     version: 0.8.2-beta.37
   - apiVersion: v2
     appVersion: 0.8.1
-    created: "2024-02-02T08:16:39.692041549Z"
+    created: "2024-02-02T13:14:14.924257299Z"
     dependencies:
     - name: component-chart
       repository: https://charts.devspace.sh
@@ -677,4 +701,4 @@ entries:
     urls:
     - https://openmined.github.io/PySyft/helm/syft-0.8.1.tgz
     version: 0.8.1
-generated: "2024-02-02T08:16:39.691277376Z"
+generated: "2024-02-02T13:14:14.92351688Z"
