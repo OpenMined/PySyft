@@ -472,7 +472,7 @@ def generate_remote_lib_function(
 
 @serializable()
 class APIModule:
-    _modules: List[APIModule]
+    _modules: List[str]
     path: str
 
     def __init__(self, path: str) -> None:
@@ -842,8 +842,9 @@ class SyftAPI(SyftObject):
         return hasattr(self.lib, lib_name)
 
     def __repr__(self) -> str:
-        if modules := self.services is not None:
-            _repr_str = "client.api.services\n"
+        modules = self.services
+        _repr_str = "client.api.services\n"
+        if modules is not None:
             for attr_name in modules._modules:
                 module_or_func = getattr(modules, attr_name)
                 module_path_str = f"client.api.services.{attr_name}"
@@ -853,9 +854,7 @@ class SyftAPI(SyftObject):
                         func = getattr(module_or_func, func_name)
                         sig = func.__ipython_inspector_signature_override__
                         _repr_str += f"{module_path_str}.{func_name}{sig}\n\n"
-            return _repr_str
-        else:
-            return ""
+        return _repr_str
 
 
 # code from here:
