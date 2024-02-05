@@ -461,11 +461,11 @@ def clean(location: str) -> None:
     help="Set root password for s3 blob storage",
 )
 @click.option(
-    '--set-s3-volume-size-mb',
+    "--set-volume-size-limit-mb",
     default=1024,
     required=False,
     type=click.IntRange(1024, 50000),
-    help="Set the volume size limit (in MBs)"
+    help="Set the volume size limit (in MBs)",
 )
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
@@ -1265,7 +1265,7 @@ def create_launch_cmd(
     if parsed_kwargs["use_blob_storage"]:
         parsed_kwargs["set_s3_username"] = kwargs["set_s3_username"]
         parsed_kwargs["set_s3_password"] = kwargs["set_s3_password"]
-        parsed_kwargs['set_s3_volume_size_mb'] = kwargs["set_s3_volume_size_mb"]
+        parsed_kwargs["set_volume_size_limit_mb"] = kwargs["set_volume_size_limit_mb"]
 
     parsed_kwargs["node_count"] = (
         int(kwargs["node_count"]) if "node_count" in kwargs else 1
@@ -2270,8 +2270,11 @@ def create_launch_docker_cmd(
     if "set_s3_password" in kwargs and kwargs["set_s3_password"] is not None:
         envs["S3_ROOT_PWD"] = kwargs["set_s3_password"]
 
-    if "set_s3_volume_size_mb" in kwargs and kwargs["set_s3_volume_size_mb"] is not None:
-        envs["S3_VOLUME_SIZE_MB"] = kwargs['set_s3_volume_size_mb']
+    if (
+        "set_volume_size_limit_mb" in kwargs
+        and kwargs["set_volume_size_limit_mb"] is not None
+    ):
+        envs["S3_VOLUME_SIZE_MB"] = kwargs["set_volume_size_limit_mb"]
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
