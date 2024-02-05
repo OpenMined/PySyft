@@ -15,6 +15,8 @@ from .k8s import KubeUtils
 from .k8s import PodStatus
 from .k8s import get_kr8s_client
 
+JSONPATH_AVAILABLE_REPLICAS = "{.status.availableReplicas}"
+
 
 class KubernetesRunner:
     def __init__(self):
@@ -55,8 +57,7 @@ class KubernetesRunner:
             )
 
             # wait for replicas to be available and ready
-            status_path = "{.status.availableReplicas}"
-            deployment.wait(f"jsonpath='{status_path}'={replicas}")
+            deployment.wait(f"jsonpath='{JSONPATH_AVAILABLE_REPLICAS}'={replicas}")
         except Exception:
             raise
         finally:
@@ -71,7 +72,7 @@ class KubernetesRunner:
         if not deployment:
             return None
         deployment.scale(replicas)
-        self.wait(deployment, available_replicas=replicas)
+        deployment.wait(f"jsonpath='{JSONPATH_AVAILABLE_REPLICAS}'={replicas}")
         return deployment
 
     def get_pool(self, pool_name: str) -> Optional[StatefulSet]:
