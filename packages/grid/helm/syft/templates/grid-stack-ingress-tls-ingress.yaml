@@ -7,10 +7,9 @@ metadata:
     app.kubernetes.io/version: {{ .Chart.AppVersion }}
     app.kubernetes.io/component: ingress
     app.kubernetes.io/managed-by: Helm
-  annotations:
-    kubernetes.io/ingress.class: {{ .Values.ingress.ingressClass }}
   name: grid-stack-ingress-tls
 spec:
+  ingressClassName: {{ .Values.ingress.ingressClass }}
   defaultBackend:
     service:
       name: proxy

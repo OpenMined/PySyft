@@ -199,7 +199,7 @@ def test_docker_worker_config(dockerfile_path: Path, method: str) -> None:
     else:
         raise ValueError(f"method must be one of {METHODS}")
 
-    assert docker_config.dockerfile == dockerfile_path.read_text()
+    assert docker_config.dockerfile == dockerfile_path.read_text().strip()
     assert docker_config.description == description
     new_description = description + " (syft version is 0.8.4-beta.12)"
     docker_config.set_description(description_text=new_description)

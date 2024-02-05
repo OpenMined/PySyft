@@ -41,7 +41,7 @@ jobs:
           docker system prune --all --force
 
       - name: Check for file changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           base: ${{ github.ref }}

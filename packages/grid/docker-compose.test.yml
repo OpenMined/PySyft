@@ -1,12 +1,8 @@
 version: "3.8"
 services:
   proxy:
-    profiles:
-      - proxy
     ports:
       - "8080"
-    extra_hosts:
-      - host.docker.internal:host-gateway
 
   # redis:
   #   ports:
@@ -19,22 +15,16 @@ services:
   #     - "15672"
 
   seaweedfs:
-    profiles:
-      - blob-storage
     ports:
       - "9333" # admin
       - "8888" # filer
       - "8333" # S3
 
   backend:
-    profiles:
-      - backend
     environment:
       - TEST_MODE=1
 
   worker:
-    profiles:
-      - worker
     environment:
       - TEST_MODE=1
 
