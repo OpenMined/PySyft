@@ -25,6 +25,12 @@ on:
           - TEST_PYPI
           - REAL_AND_TEST_PYPI
 
+# Prevents concurrent runs of the same workflow
+# while the previous run is still in progress
+concurrency:
+  group: "CD - Syft"
+  cancel-in-progress: false
+
 jobs:
   release-checks:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
