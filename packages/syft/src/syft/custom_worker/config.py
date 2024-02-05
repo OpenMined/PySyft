@@ -1,14 +1,18 @@
 # stdlib
+import contextlib
 from hashlib import sha256
+import io
+import json
 from pathlib import Path
 from typing import Any
 from typing import Dict
+from typing import Iterable
 from typing import List
-from typing import Literal
 from typing import Optional
 from typing import Union
 
 # third party
+import docker
 from packaging import version
 from pydantic import validator
 from typing_extensions import Self
@@ -17,8 +21,8 @@ import yaml
 # relative
 from ..serde.serializable import serializable
 from ..service.response import SyftError
+from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
-from .builder_types import ImageBuildResult
 
 PYTHON_DEFAULT_VER = "3.11"
 PYTHON_MIN_VER = version.parse("3.10")
@@ -163,28 +167,33 @@ class DockerWorkerConfig(WorkerConfig):
     def set_description(self, description_text: str) -> None:
         self.description = description_text
 
-    def test_image_build(
-        self, orchestration_type: Literal["docker", "k8s"], tag: str, **build_args
-    ) -> Union[ImageBuildResult, SyftError]:
-        # relative
-        from .builder_docker import DockerBuilder
-        from .builder_k8s import KubernetesBuilder
-
-        builder = (
-            KubernetesBuilder() if orchestration_type == "k8s" else DockerBuilder()
-        )
-
-        # TODO: Remove this check once we know how test with k8s
-        if orchestration_type == "k8s":
-            return SyftError(
-                message="We currently support test builds using `docker` only."
-            )
-
+    def test_image_build(self, tag: str, **kwargs) -> Union[SyftSuccess, SyftError]:
         try:
-            return builder.build_image(
-                tag=tag,
-                dockerfile=self.dockerfile,
-                buildargs=build_args,
-            )
+            with contextlib.closing(docker.from_env()) as client:
+                if not client.ping():
+                    return SyftError(
+                        "Cannot reach docker server. Please check if docker is running."
+                    )
+
+                kwargs["fileobj"] = io.BytesIO(self.dockerfile.encode("utf-8"))
+                _, logs = client.images.build(
+                    tag=tag,
+                    timeout=self.BUILD_MAX_WAIT,
+                    **kwargs,
+                )
+                return SyftSuccess(message=self._parse_output(logs))
         except Exception as e:
             return SyftError(message=f"Failed to build: {e}")
+
+    @staticmethod
+    def _parse_output(log_iterator: Iterable) -> str:
+        log = ""
+        for line in log_iterator:
+            for item in line.values():
+                if isinstance(item, str):
+                    log += item
+                elif isinstance(item, dict):
+                    log += json.dumps(item) + "\n"
+                else:
+                    log += str(item)
+        return log
