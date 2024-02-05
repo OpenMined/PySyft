@@ -321,46 +321,71 @@ class DataProtocol:
 
     @staticmethod
     def freeze_release(protocol_history: Dict, latest_protocol: str) -> None:
+        """Freezes latest release as a separate release file."""
+
+        # Get release history
         release_history = protocol_history[latest_protocol]
+
+        # Create new file for the version
         syft_version = parse(__version__)
         release_file_name = f"{syft_version.public}.json"
         release_file = protocol_release_dir() / release_file_name
+
+        # Save the new released version
         release_file.write_text(
             json.dumps({latest_protocol: release_history}, indent=2)
         )
 
     def validate_release(self) -> None:
+        """Validate if latest release name is consistent with syft version"""
+
+        # Read the protocol history
         protocol_history = self.read_json(self.file_path)
         sorted_protocol_versions = sorted(protocol_history.keys(), key=natural_key)
 
+        # Grab the latest protocol
         latest_protocol = (
             sorted_protocol_versions[-1] if len(sorted_protocol_versions) > 0 else None
         )
 
+        # Skip validation if latest protocol is dev
         if latest_protocol is None or latest_protocol == "dev":
             return
 
+        # Get filename of the latest protocol
         release_name = protocol_history[latest_protocol]["release_name"]
-        syft_version = parse(release_name.split(".json")[0])
+        # Extract syft version from release name
+        protocol_syft_version = parse(release_name.split(".json")[0])
         current_syft_version = parse(__version__)
 
-        if syft_version.base_version != current_syft_version.base_version:
+        # If base syft version in latest protocol version is not same as current syft version
+        # Skip updating the release name
+        if protocol_syft_version.base_version != current_syft_version.base_version:
             return
 
+        # Update release name to latest beta, stable or post based on current syft version
         print(
             f"Current release {release_name} will be updated to {current_syft_version}"
         )
 
-        curr_protocol_file_path: Path = protocol_release_dir() / release_name
+        # Get latest protocol file path
+        latest_protocol_fp: Path = protocol_release_dir() / release_name
+
+        # New protocol file path
         new_protocol_file_path = (
             protocol_release_dir() / f"{current_syft_version.public}.json"
         )
-        curr_protocol_file_path.rename(new_protocol_file_path)
+
+        # Update older file path to newer file path
+        latest_protocol_fp.rename(new_protocol_file_path)
         protocol_history[latest_protocol][
             "release_name"
         ] = f"{current_syft_version}.json"
 
+        # Save history
         self.file_path.write_text(json.dumps(protocol_history, indent=2) + "\n")
+
+        # Reload protocol
         self.read_history()
 
     def revert_latest_protocol(self) -> Result[SyftSuccess, SyftError]:
