@@ -859,15 +859,10 @@ def is_interpreter_standard() -> bool:
 
 
 def get_interpreter_module() -> str:
-    # stdlib
-    from typing import TYPE_CHECKING
-
-    if TYPE_CHECKING:  # this is False at runtime and is True while typing checking
-        # Import get_ipython only for type checking purposes; not executed at runtime
+    try:
         # third party
         from IPython import get_ipython
 
-    try:
         shell = get_ipython().__class__.__module__
         return shell
     except NameError:
