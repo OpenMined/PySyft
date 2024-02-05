@@ -2,7 +2,6 @@
 import contextlib
 from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 # third party
@@ -204,14 +203,14 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"{result.err()}")
         images: List[SyftWorkerImage] = result.ok()
 
-        res: List[Tuple] = []
-        for im in images:
-            if im.image_identifier is not None:
-                res.append((im.image_identifier.full_name_with_tag, im))
-            else:
-                # FIXME: syft deployments in kubernetes results in a new image per version
-                # This results in "default-worker-image" key having multiple values and DictTuple() throws exception
-                res.append(("default-worker-image", im))
+        res = {}
+        # if image is built index by full_name_with_tag
+        res.update(
+            {im.image_identifier.full_name_with_tag: im for im in images if im.is_built}
+        )
+        # and then index all images by id
+        # TODO: jupyter repr needs to be updated to show unique values (even if multiple keys point to same value)
+        res.update({im.id.to_string(): im for im in images if not im.is_built})
 
         return DictTuple(res)
 

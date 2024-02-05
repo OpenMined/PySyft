@@ -349,6 +349,8 @@ class SyftWorkerPoolService(AbstractService):
         number: int,
         pool_id: Optional[UID] = None,
         pool_name: Optional[str] = None,
+        reg_username: Optional[str] = None,
+        reg_password: Optional[str] = None,
     ) -> Union[List[ContainerSpawnStatus], SyftError]:
         """Add workers to existing worker pool.
 
@@ -406,6 +408,8 @@ class SyftWorkerPoolService(AbstractService):
             worker_cnt=number,
             worker_image=worker_image,
             worker_stash=worker_stash,
+            reg_username=reg_username,
+            reg_password=reg_password,
         )
 
         if isinstance(result, SyftError):
@@ -570,9 +574,9 @@ def _create_workers_in_pool(
             orchestration=get_orchestration_type(),
             queue_port=queue_port,
             dev_mode=context.node.dev_mode,
-            username=reg_username,
-            password=reg_password,
-            registry_url=worker_image.image_identifier.registry_host,
+            reg_username=reg_username,
+            reg_password=reg_password,
+            reg_url=worker_image.image_identifier.registry_host,
         )
         if isinstance(result, SyftError):
             return result
