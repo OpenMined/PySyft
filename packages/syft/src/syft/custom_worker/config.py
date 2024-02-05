@@ -2,11 +2,9 @@
 import contextlib
 from hashlib import sha256
 import io
-import json
 from pathlib import Path
 from typing import Any
 from typing import Dict
-from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Union
@@ -23,6 +21,7 @@ from ..serde.serializable import serializable
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
+from .utils import iterator_to_string
 
 PYTHON_DEFAULT_VER = "3.11"
 PYTHON_MIN_VER = version.parse("3.10")
@@ -181,19 +180,6 @@ class DockerWorkerConfig(WorkerConfig):
                     timeout=self.BUILD_MAX_WAIT,
                     **kwargs,
                 )
-                return SyftSuccess(message=self._parse_output(logs))
+                return SyftSuccess(message=iterator_to_string(iterator=logs))
         except Exception as e:
             return SyftError(message=f"Failed to build: {e}")
-
-    @staticmethod
-    def _parse_output(log_iterator: Iterable) -> str:
-        log = ""
-        for line in log_iterator:
-            for item in line.values():
-                if isinstance(item, str):
-                    log += item
-                elif isinstance(item, dict):
-                    log += json.dumps(item) + "\n"
-                else:
-                    log += str(item)
-        return log
