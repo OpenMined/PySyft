@@ -252,7 +252,7 @@ class RemoteFunction(SyftObject):
 
         return args, kwargs
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Tuple[Any, ...], **kwargs: Dict[str, Any]) -> Any:
         if "blocking" in self.signature.parameters:
             raise Exception(
                 f"Signature {self.signature} can't have 'blocking' kwarg because it's reserved"
@@ -327,7 +327,10 @@ class RemoteUserCodeFunction(RemoteFunction):
 
     @property
     def user_code_id(self) -> Optional[UID]:
-        return self.pre_kwargs.get("uid", None)
+        if self.pre_kwargs:
+            return self.pre_kwargs.get("uid", None)
+        else:
+            return None
 
     @property
     def jobs(self) -> Union[List[Job], SyftError]:
@@ -394,13 +397,15 @@ def generate_remote_lib_function(
     make_call: Callable,
     communication_protocol: PROTOCOL_TYPE,
     pre_kwargs: Dict[str, Any],
-):
+) -> Any:
     if "blocking" in signature.parameters:
         raise Exception(
             f"Signature {signature} can't have 'blocking' kwarg because its reserved"
         )
 
-    def wrapper(*args, **kwargs):
+    def wrapper(
+        *args: Tuple[Any, ...], **kwargs: Dict[str, Any]
+    ) -> Union[SyftError, Any]:
         # relative
         from ..service.action.action_object import TraceResult
 
@@ -476,11 +481,11 @@ class APIModule:
 
     def _add_submodule(
         self, attr_name: str, module_or_func: Union[Callable, APIModule]
-    ):
+    ) -> None:
         setattr(self, attr_name, module_or_func)
         self._modules.append(attr_name)
 
-    def __getattribute__(self, name: str):
+    def __getattribute__(self, name: str) -> Any:
         try:
             return object.__getattribute__(self, name)
         except AttributeError:
@@ -508,11 +513,11 @@ def debox_signed_syftapicall_response(
         return SyftError(message="The result is not signed")  # type: ignore
 
     if not signed_result.is_valid:
-        return SyftError(message="The result signature is invalid")  # type: ignore
+        return SyftError(message="The result signature is invalid")
     return signed_result.message.data
 
 
-def downgrade_signature(signature: Signature, object_versions: Dict):
+def downgrade_signature(signature: Signature, object_versions: Dict) -> Signature:
     migrated_parameters = []
     for _, parameter in signature.parameters.items():
         annotation = unwrap_and_migrate_annotation(
@@ -541,7 +546,7 @@ def downgrade_signature(signature: Signature, object_versions: Dict):
     return new_signature
 
 
-def unwrap_and_migrate_annotation(annotation, object_versions):
+def unwrap_and_migrate_annotation(annotation: Any, object_versions: Dict) -> Any:
     args = get_args(annotation)
     origin = get_origin(annotation)
     if len(args) == 0:
@@ -566,12 +571,12 @@ def unwrap_and_migrate_annotation(annotation, object_versions):
         migrated_annotation = unwrap_and_migrate_annotation(arg, object_versions)
         migrated_annotations.append(migrated_annotation)
 
-    migrated_annotations = tuple(migrated_annotations)
+    migrated_annotations_tuple = tuple(migrated_annotations)
 
     if hasattr(annotation, "copy_with"):
-        return annotation.copy_with(migrated_annotations)
+        return annotation.copy_with(migrated_annotations_tuple)
     elif origin is not None:
-        return origin[migrated_annotations]
+        return origin[migrated_annotations_tuple]
     else:
         return migrated_annotation[0]
 
@@ -726,7 +731,10 @@ class SyftAPI(SyftObject):
 
     def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
-        signed_result = self.connection.make_call(signed_call)
+        if self.connection is not None:
+            signed_result = self.connection.make_call(signed_call)
+        else:
+            return SyftError(message="API connection is None")
 
         result = debox_signed_syftapicall_response(signed_result=signed_result)
 
@@ -740,7 +748,7 @@ class SyftAPI(SyftObject):
                 return result.err()
         return result
 
-    def update_api(self, api_call_result):
+    def update_api(self, api_call_result: Any) -> None:
         # TODO: hacky stuff with typing and imports to prevent circular imports
         # relative
         from ..service.request.request import Request
@@ -755,7 +763,7 @@ class SyftAPI(SyftObject):
     @staticmethod
     def _add_route(
         api_module: APIModule, endpoint: APIEndpoint, endpoint_method: Callable
-    ):
+    ) -> None:
         """Recursively create a module path to the route endpoint."""
 
         _modules = endpoint.module_path.split(".")[:-1] + [endpoint.name]
@@ -771,7 +779,9 @@ class SyftAPI(SyftObject):
         _self._add_submodule(_last_module, endpoint_method)
 
     def generate_endpoints(self) -> None:
-        def build_endpoint_tree(endpoints, communication_protocol):
+        def build_endpoint_tree(
+            endpoints: Dict[str, LibEndpoint], communication_protocol: PROTOCOL_TYPE
+        ) -> APIModule:
             api_module = APIModule(path="")
             for _, v in endpoints.items():
                 signature = v.signature
@@ -814,13 +824,13 @@ class SyftAPI(SyftObject):
         )
 
     @property
-    def services(self) -> APIModule:
+    def services(self) -> Optional[APIModule]:
         if self.api_module is None:
             self.generate_endpoints()
         return self.api_module
 
     @property
-    def lib(self) -> APIModule:
+    def lib(self) -> Optional[APIModule]:
         if self.libs is None:
             self.generate_endpoints()
         return self.libs
@@ -832,23 +842,25 @@ class SyftAPI(SyftObject):
         return hasattr(self.lib, lib_name)
 
     def __repr__(self) -> str:
-        modules = self.services
-        _repr_str = "client.api.services\n"
-        for attr_name in modules._modules:
-            module_or_func = getattr(modules, attr_name)
-            module_path_str = f"client.api.services.{attr_name}"
-            _repr_str += f"\n{module_path_str}\n\n"
-            if hasattr(module_or_func, "_modules"):
-                for func_name in module_or_func._modules:
-                    func = getattr(module_or_func, func_name)
-                    sig = func.__ipython_inspector_signature_override__
-                    _repr_str += f"{module_path_str}.{func_name}{sig}\n\n"
-        return _repr_str
+        if modules := self.services is not None:
+            _repr_str = "client.api.services\n"
+            for attr_name in modules._modules:
+                module_or_func = getattr(modules, attr_name)
+                module_path_str = f"client.api.services.{attr_name}"
+                _repr_str += f"\n{module_path_str}\n\n"
+                if hasattr(module_or_func, "_modules"):
+                    for func_name in module_or_func._modules:
+                        func = getattr(module_or_func, func_name)
+                        sig = func.__ipython_inspector_signature_override__
+                        _repr_str += f"{module_path_str}.{func_name}{sig}\n\n"
+            return _repr_str
+        else:
+            return ""
 
 
 # code from here:
 # https://github.com/ipython/ipython/blob/339c0d510a1f3cb2158dd8c6e7f4ac89aa4c89d8/IPython/core/oinspect.py#L370
-def _render_signature(obj_signature, obj_name) -> str:
+def _render_signature(obj_signature: Signature, obj_name: str) -> str:
     """
     This was mostly taken from inspect.Signature.__str__.
     Look there for the comments.
@@ -889,7 +901,7 @@ def _render_signature(obj_signature, obj_name) -> str:
     return rendered
 
 
-def _getdef(self, obj, oname="") -> Union[str, None]:
+def _getdef(self: Any, obj: Any, oname: str = "") -> Union[str, None]:
     """Return the call signature for any callable object.
     If any exception is generated, None is returned instead and the
     exception is suppressed."""
@@ -899,7 +911,7 @@ def _getdef(self, obj, oname="") -> Union[str, None]:
         return None
 
 
-def monkey_patch_getdef(self, obj, oname="") -> Union[str, None]:
+def monkey_patch_getdef(self: Any, obj: Any, oname: str = "") -> Union[str, None]:
     try:
         if hasattr(obj, "__ipython_inspector_signature_override__"):
             return _render_signature(
@@ -928,17 +940,19 @@ class NodeIdentity(Identity):
     node_name: str
 
     @staticmethod
-    def from_api(api: SyftAPI):
+    def from_api(api: SyftAPI) -> Optional[NodeIdentity]:
         # stores the name root verify key of the domain node
-        node_metadata = api.connection.get_node_metadata(api.signing_key)
-        return NodeIdentity(
-            node_name=node_metadata.name,
-            node_id=api.node_uid,
-            verify_key=SyftVerifyKey.from_string(node_metadata.verify_key),
-        )
+        if api.connection is not None:
+            node_metadata = api.connection.get_node_metadata(api.signing_key)
+            return NodeIdentity(
+                node_name=node_metadata.name,
+                node_id=api.node_uid,
+                verify_key=SyftVerifyKey.from_string(node_metadata.verify_key),
+            )
+        return None
 
     @classmethod
-    def from_change_context(cls, context: ChangeContext):
+    def from_change_context(cls, context: ChangeContext) -> NodeIdentity:
         return cls(
             node_name=context.node.name,
             node_id=context.node.id,
@@ -961,7 +975,9 @@ class NodeIdentity(Identity):
         return f"NodeIdentity <name={self.node_name}, id={self.node_id.short()}, 🔑={str(self.verify_key)[0:8]}>"
 
 
-def validate_callable_args_and_kwargs(args, kwargs, signature: Signature):
+def validate_callable_args_and_kwargs(
+    args: List, kwargs: Dict, signature: Signature
+) -> Union[SyftError, Tuple[List, Dict]]:
     _valid_kwargs = {}
     if "kwargs" in signature.parameters:
         _valid_kwargs = kwargs
