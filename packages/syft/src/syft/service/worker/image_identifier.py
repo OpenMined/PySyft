@@ -93,5 +93,8 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
     def __hash__(self) -> int:
         return hash(self.repo + self.tag + str(hash(self.registry)))
 
+    def __str__(self) -> str:
+        return self.full_name_with_tag
+
     def __repr__(self) -> str:
         return f"SyftWorkerImageIdentifier(repo={self.repo}, tag={self.tag}, registry={self.registry})"
