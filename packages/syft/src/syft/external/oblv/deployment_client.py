@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 
 # third party
 from oblv_ctl import OblvClient
-from pydantic import validator
+from pydantic import field_validator
 import requests
 
 # relative
@@ -46,7 +46,8 @@ class OblvMetadata(EnclaveMetadata):
     deployment_id: Optional[str]
     oblv_client: Optional[OblvClient]
 
-    @validator("deployment_id")
+    @field_validator("deployment_id")
+    @classmethod
     def check_valid_deployment_id(cls, deployment_id: str) -> str:
         if not deployment_id and not LOCAL_MODE:
             raise ValueError(
@@ -56,7 +57,8 @@ class OblvMetadata(EnclaveMetadata):
             )
         return deployment_id
 
-    @validator("oblv_client")
+    @field_validator("oblv_client")
+    @classmethod
     def check_valid_oblv_client(cls, oblv_client: OblvClient) -> OblvClient:
         if not oblv_client and not LOCAL_MODE:
             raise ValueError(

@@ -26,7 +26,9 @@ import warnings
 # third party
 import pandas as pd
 import pydantic
+from pydantic import ConfigDict
 from pydantic import EmailStr
+from pydantic import model_validator
 from pydantic.fields import Undefined
 from result import OkErr
 from typeguard import check_type
@@ -91,8 +93,7 @@ class SyftHashableObject:
 
 
 class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # the name which doesn't change even when there are multiple classes
     __canonical_name__: str
@@ -342,19 +343,17 @@ print_type_cache = defaultdict(list)
 class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
-
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # all objects have a UID
     id: UID
 
     # # move this to transforms
-    @pydantic.root_validator(pre=True)
+    @model_validator(mode="before")
     def make_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        id_field = cls.__fields__["id"]
-        if "id" not in values and id_field.required:
-            values["id"] = id_field.type_()
+        id_field = cls.model_fields["id"]
+        if "id" not in values and id_field.is_required():
+            values["id"] = id_field.annotation()
         return values
 
     __attr_searchable__: ClassVar[

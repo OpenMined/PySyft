@@ -10,7 +10,8 @@ from typing import Optional
 from typing import Union
 
 # third party
-import pydantic
+from pydantic import Field
+from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
@@ -113,7 +114,7 @@ class Job(SyftObject):
     parent_job_id: Optional[UID]
     n_iters: Optional[int] = 0
     current_iter: Optional[int] = None
-    creation_time: Optional[str] = None
+    creation_time: str = Field(default_factory=lambda: str(datetime.now()))
     action: Optional[Action] = None
     job_pid: Optional[int] = None
     job_worker_id: Optional[UID] = None
@@ -123,26 +124,18 @@ class Job(SyftObject):
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
 
-    @pydantic.root_validator()
-    def check_time(cls, values: dict) -> dict:
-        if values.get("creation_time", None) is None:
-            values["creation_time"] = str(datetime.now())
-        return values
-
-    @pydantic.root_validator()
-    def check_user_code_id(cls, values: dict) -> dict:
-        action = values.get("action")
-        user_code_id = values.get("user_code_id")
-
-        if action is not None:
-            if user_code_id is None:
-                values["user_code_id"] = action.user_code_id
-            elif action.user_code_id != user_code_id:
-                raise pydantic.ValidationError(
-                    "user_code_id does not match the action's user_code_id", cls
+    @model_validator(mode="after")
+    def check_user_code_id(self) -> Self:
+        if self.action is not None:
+            if self.user_code_id is None:
+                self.user_code_id = self.action.user_code_id
+            elif self.action.user_code_id != self.user_code_id:
+                raise ValueError(
+                    "user_code_id does not match the action's user_code_id",
+                    self.__class__,
                 )
 
-        return values
+        return self
 
     @property
     def action_display_name(self) -> str:

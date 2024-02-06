@@ -18,8 +18,8 @@ from typing import Type
 from typing import Union
 
 # third party
-import pydantic
-from pydantic import validator
+from pydantic import Field
+from pydantic import field_validator
 from rich.progress import Progress
 from typing_extensions import Self
 
@@ -78,7 +78,7 @@ class ProjectEvent(SyftObject):
 
     # 1. Creation attrs
     id: UID
-    timestamp: DateTime
+    timestamp: DateTime = Field(default_factory=DateTime.now)
     allowed_sub_types: Optional[List] = []
     # 2. Rebase attrs
     project_id: Optional[UID]
@@ -95,12 +95,6 @@ class ProjectEvent(SyftObject):
             short_qual_name(full_name_with_qualname(self)),
             f"{str(self.id)[:4]}...{str(self.id)[-3:]}",
         )
-
-    @pydantic.root_validator(pre=True)
-    def make_timestamp(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if "timestamp" not in values or values["timestamp"] is None:
-            values["timestamp"] = DateTime.now()
-        return values
 
     def _pre_add_update(self, project: Project) -> None:
         pass
@@ -277,8 +271,9 @@ class ProjectRequest(ProjectEventAddObject):
     linked_request: LinkedObject
     allowed_sub_types: List[Type] = [ProjectRequestResponse]
 
-    @validator("linked_request", pre=True)
-    def _validate_linked_request(cls, v: Any) -> Union[Request, LinkedObject]:
+    @field_validator("linked_request", mode="before")
+    @classmethod
+    def _validate_linked_request(cls, v: Any) -> LinkedObject:
         if isinstance(v, Request):
             linked_request = LinkedObject.from_obj(v, node_uid=v.node_uid)
             return linked_request
@@ -557,8 +552,9 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
     choices: List[str]
     allowed_sub_types: List[Type] = [AnswerProjectPoll]
 
-    @validator("choices")
-    def choices_min_length(cls, v: str) -> str:
+    @field_validator("choices")
+    @classmethod
+    def choices_min_length(cls, v: list[str]) -> list[str]:
         if len(v) < 1:
             raise ValueError("choices must have at least one item")
         return v
@@ -1228,10 +1224,9 @@ class ProjectSubmit(SyftObject):
             + "</div>"
         )
 
-    @validator("members", pre=True)
-    def verify_members(
-        cls, val: Union[List[SyftClient], List[NodeIdentity]]
-    ) -> Union[List[SyftClient], List[NodeIdentity]]:
+    @field_validator("members", mode="before")
+    @classmethod
+    def verify_members(cls, val: Union[List[SyftClient], List[NodeIdentity]]) -> Union[List[SyftClient], List[NodeIdentity]]:
         # SyftClients must be logged in by the same emails
         clients = cls.get_syft_clients(val)
         if len(clients) > 0:

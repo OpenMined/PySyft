@@ -15,9 +15,8 @@ from typing import Union
 # third party
 import matplotlib.pyplot as plt
 import networkx as nx
-import pydantic
 from pydantic import Field
-from pydantic import validator
+from pydantic import field_validator
 from result import Err
 from result import Ok
 from result import Result
@@ -66,17 +65,13 @@ class NodeActionData(SyftObject):
     type: NodeType
     status: ExecutionStatus = ExecutionStatus.PROCESSING
     retry: int = 0
-    created_at: Optional[DateTime]
-    updated_at: Optional[DateTime]
+    created_at: DateTime = Field(default_factory=DateTime.now)
+    updated_at: DateTime = Field(default_factory=DateTime.now)
     user_verify_key: SyftVerifyKey
     is_mutated: bool = False  # denotes that this node has been mutated
     is_mutagen: bool = False  # denotes that this node is causing a mutation
     next_mutagen_node: Optional[UID]  # next neighboring mutagen node
     last_nm_mutagen_node: Optional[UID]  # last non mutated mutagen node
-
-    @pydantic.validator("created_at", pre=True, always=True)
-    def make_created_at(cls, v: Optional[DateTime]) -> DateTime:
-        return DateTime.now() if v is None else v
 
     @classmethod
     def from_action(cls, action: Action, credentials: SyftVerifyKey) -> Self:
@@ -124,16 +119,12 @@ class NodeActionDataUpdate(PartialSyftObject):
     status: ExecutionStatus
     retry: int
     created_at: DateTime
-    updated_at: Optional[DateTime]
+    updated_at: DateTime = Field(default_factory=DateTime.now)
     credentials: SyftVerifyKey
     is_mutated: bool
     is_mutagen: bool
     next_mutagen_node: UID  # next neighboring mutagen node
     last_nm_mutagen_node: UID  # last non mutated mutagen node
-
-    @pydantic.validator("updated_at", pre=True, always=True)
-    def set_updated_at(cls, v: Optional[DateTime]) -> DateTime:
-        return DateTime.now() if v is None else v
 
 
 @serializable()
@@ -197,7 +188,8 @@ class InMemoryStoreClientConfig(StoreClientConfig):
 
     # We need this in addition to Field(default_factory=...)
     # so users can still do InMemoryStoreClientConfig(path=None)
-    @validator("path", pre=True)
+    @field_validator("path", mode="before")
+    @classmethod
     def __default_path(cls, path: Optional[Union[str, Path]]) -> Union[str, Path]:
         if path is None:
             return tempfile.gettempdir()

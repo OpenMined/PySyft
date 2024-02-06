@@ -20,7 +20,10 @@ from typing import Type
 from typing import Union
 
 # third party
-import pydantic
+from pydantic import ConfigDict
+from pydantic import Field
+from pydantic import field_validator
+from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
@@ -144,20 +147,20 @@ class Action(SyftObject):
     remote_self: Optional[LineageID]
     args: List[LineageID]
     kwargs: Dict[str, LineageID]
-    result_id: Optional[LineageID]
+    result_id: LineageID = Field(default_factory=lambda: LineageID(UID()))
     action_type: Optional[ActionType]
     create_object: Optional[SyftObject] = None
     user_code_id: Optional[UID] = None
 
-    @pydantic.validator("id", pre=True, always=True)
-    def make_id(cls, v: Optional[UID]) -> UID:
-        """Generate or reuse an UID"""
-        return v if isinstance(v, UID) else UID()
-
-    @pydantic.validator("result_id", pre=True, always=True)
-    def make_result_id(cls, v: Optional[Union[UID, LineageID]]) -> UID:
+    @field_validator("result_id", mode="before")
+    @classmethod
+    def make_result_id(cls, v: Any) -> LineageID:
         """Generate or reuse a LineageID"""
-        return v if isinstance(v, LineageID) else LineageID(v)
+        if isinstance(v, LineageID):
+            return v
+        if not isinstance(v, UID):
+            raise ValueError("result_id type must be a subclass of UID")
+        return LineageID(v)
 
     @property
     def full_path(self) -> str:
@@ -612,6 +615,8 @@ class ActionObject(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     __attr_searchable__: List[str] = []
+
+    id: UID
     syft_action_data_cache: Optional[Any] = None
     syft_blob_storage_entry_id: Optional[UID] = None
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
@@ -760,15 +765,10 @@ class ActionObject(SyftObject):
         """Compute the LineageID of the ActionObject, using the `id` and the `syft_history_hash` memebers"""
         return LineageID(self.id, self.syft_history_hash)
 
-    @pydantic.validator("id", pre=True, always=True)
-    def make_id(cls, v: Optional[UID]) -> UID:
-        """Generate or reuse an UID"""
-        return Action.make_id(v)
+    model_config = ConfigDict(validate_assignment=True)
 
-    class Config:
-        validate_assignment = True
-
-    @pydantic.root_validator()
+    @model_validator(mode="before")
+    @classmethod
     def __check_action_data(cls, values: dict) -> dict:
         v = values.get("syft_action_data_cache")
         if values.get("syft_action_data_type", None) is None:
@@ -797,18 +797,6 @@ class ActionObject(SyftObject):
     @property
     def is_twin(self) -> bool:
         return self.syft_twin_type != TwinMode.NONE
-
-    # @pydantic.validator("syft_action_data", pre=True, always=True)
-    # def check_action_data(
-    #     cls, v: ActionObject.syft_pointer_type
-    # ) -> ActionObject.syft_pointer_type:
-    #     if cls == AnyActionObject or isinstance(
-    #         v, (cls.syft_internal_type, ActionDataEmpty)
-    #     ):
-    #         return v
-    #     raise SyftException(
-    #         f"Must init {cls} with {cls.syft_internal_type} not {type(v)}"
-    #     )
 
     def syft_point_to(self, node_uid: UID) -> ActionObject:
         """Set the syft_node_uid, used in the post hooks"""
@@ -941,7 +929,7 @@ class ActionObject(SyftObject):
             return obj.syft_lineage_id
 
         # We got a raw object. We need to create the ActionObject from scratch and save it in the store.
-        obj_id = Action.make_id(None)
+        obj_id = UID()
         lin_obj_id = Action.make_result_id(obj_id)
         act_obj = ActionObject.from_obj(
             obj,

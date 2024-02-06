@@ -9,7 +9,7 @@ from typing import Optional
 # third party
 from packaging import version
 from pydantic import BaseModel
-from pydantic import root_validator
+from pydantic import model_validator
 
 # relative
 from ...abstract_node import NodeType
@@ -164,7 +164,8 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     show_warnings: bool
     supported_protocols: List = []
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def add_protocol_versions(cls, values: dict) -> dict:
         if "supported_protocols" not in values:
             data_protocol = get_data_protocol()

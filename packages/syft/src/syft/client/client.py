@@ -20,7 +20,7 @@ from typing import cast
 
 # third party
 from argon2 import PasswordHasher
-import pydantic
+from pydantic import field_validator
 import requests
 from requests import Response
 from requests import Session
@@ -141,9 +141,14 @@ class HTTPConnection(NodeConnection):
     routes: Type[Routes] = Routes
     session_cache: Optional[Session]
 
-    @pydantic.validator("url", pre=True, always=True)
-    def make_url(cls, v: Union[GridURL, str]) -> GridURL:
-        return GridURL.from_url(v).as_container_host()
+    @field_validator("url", mode="before")
+    @classmethod
+    def make_url(cls, v: Any) -> Any:
+        return (
+            GridURL.from_url(v).as_container_host()
+            if isinstance(v, (str, GridURL))
+            else v
+        )
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         return HTTPConnection(url=self.url, proxy_target_uid=proxy_target_uid)

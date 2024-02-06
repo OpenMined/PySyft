@@ -17,7 +17,7 @@ from typing import Union
 
 # third party
 from loguru import logger
-from pydantic import validator
+from pydantic import field_validator
 from zmq import Frame
 from zmq import LINGER
 from zmq.error import ContextTerminated
@@ -120,8 +120,11 @@ class Worker(SyftBaseModel):
     syft_worker_id: Optional[UID] = None
     expiry_t: Timeout = Timeout(WORKER_TIMEOUT_SEC)
 
-    @validator("syft_worker_id", pre=True, always=True)
-    def set_syft_worker_id(cls, v: Any, values: Any) -> Union[UID, Any]:
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
+    @field_validator("syft_worker_id", mode="before")
+    @classmethod
+    def set_syft_worker_id(cls, v):
         if isinstance(v, str):
             return UID(v)
         return v

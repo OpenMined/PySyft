@@ -12,7 +12,7 @@ from typing import Union
 # third party
 import docker
 from packaging import version
-from pydantic import validator
+from pydantic import field_validator
 from typing_extensions import Self
 import yaml
 
@@ -54,7 +54,8 @@ class CustomBuildConfig(SyftBaseModel):
     #             f"Python version must be between {PYTHON_MIN_VER} and {PYTHON_MAX_VER}"
     #         )
 
-    @validator("python_packages")
+    @field_validator("python_packages")
+    @classmethod
     def validate_python_packages(cls, pkgs: List[str]) -> List[str]:
         for pkg in pkgs:
             ver_parts = ()
@@ -132,7 +133,8 @@ class DockerWorkerConfig(WorkerConfig):
     file_name: Optional[str]
     description: Optional[str]
 
-    @validator("dockerfile")
+    @field_validator("dockerfile")
+    @classmethod
     def validate_dockerfile(cls, dockerfile: str) -> str:
         if not dockerfile:
             raise ValueError("Dockerfile cannot be empty")

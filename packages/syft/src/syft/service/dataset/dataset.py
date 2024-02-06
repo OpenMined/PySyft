@@ -15,12 +15,14 @@ from IPython.display import HTML
 from IPython.display import display
 import itables
 import pandas as pd
+from pydantic import ConfigDict
 from pydantic import ValidationError
-from pydantic import root_validator
-from pydantic import validator
+from pydantic import field_validator
+from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
+from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable
@@ -334,30 +336,29 @@ class CreateAsset(SyftObject):
     uploader: Optional[Contributor]
 
     __repr_attrs__ = ["name"]
-
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True)
 
     def __init__(self, description: Optional[str] = "", **data: Any) -> None:
         super().__init__(**data, description=MarkdownDescription(text=str(description)))
 
-    @root_validator()
-    def __empty_mock_cannot_be_real(cls, values: dict[str, Any]) -> Dict:
+    @model_validator(mode="after")
+    def __empty_mock_cannot_be_real(self) -> Self:
         """set mock_is_real to False whenever mock is None or empty"""
+        if self.mock is None or _is_action_data_empty(self.mock):
+            self.mock_is_real = False
 
-        if (mock := values.get("mock")) is None or _is_action_data_empty(mock):
-            values["mock_is_real"] = False
+        return self
 
-        return values
-
-    @validator("mock_is_real")
-    def __mock_is_real_for_empty_mock_must_be_false(
-        cls, v: bool, values: dict[str, Any], **kwargs: Any
-    ) -> bool:
-        if v and ((mock := values.get("mock")) is None or _is_action_data_empty(mock)):
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
+    @model_validator(mode="after")
+    def __mock_is_real_for_empty_mock_must_be_false(self) -> Self:
+        if self.mock_is_real and (
+            self.mock is None or _is_action_data_empty(self.mock)
+        ):
             raise ValueError("mock_is_real must be False if mock is not provided")
 
-        return v
+        return self
 
     def add_data_subject(self, data_subject: DataSubject) -> None:
         self.data_subjects.append(data_subject)
@@ -638,15 +639,15 @@ class CreateDataset(Dataset):
 
     id: Optional[UID] = None
     created_at: Optional[DateTime]
-    uploader: Optional[Contributor]  # type: ignore[assignment]
+    uploader: Optional[Contributor] # type: ignore[assignment]
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True)
 
     def _check_asset_must_contain_mock(self) -> None:
         _check_asset_must_contain_mock(self.asset_list)
 
-    @validator("asset_list")
+    @field_validator("asset_list")
+    @classmethod
     def __assets_must_contain_mock(
         cls, asset_list: List[CreateAsset]
     ) -> List[CreateAsset]:

@@ -12,9 +12,9 @@ from typing import Union
 from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
-import pydantic
+from pydantic import EmailStr
 from pydantic import ValidationError
-from pydantic.networks import EmailStr
+from pydantic import field_validator
 
 # relative
 from ...client.api import APIRegistry
@@ -63,10 +63,6 @@ class User(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     id: Optional[UID]
-
-    @pydantic.validator("email", pre=True, always=True)
-    def make_email(cls, v: EmailStr) -> EmailStr:
-        return EmailStr(v)
 
     # fields
     email: Optional[EmailStr]
@@ -145,11 +141,8 @@ class UserUpdate(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    @pydantic.validator("email", pre=True)
-    def make_email(cls, v: Any) -> Any:
-        return EmailStr(v) if isinstance(v, str) and not isinstance(v, EmailStr) else v
-
-    @pydantic.validator("role", pre=True)
+    @field_validator(mode="before")
+    @classmethod
     def str_to_role(cls, v: Any) -> Any:
         if isinstance(v, str) and hasattr(ServiceRole, v.upper()):
             return getattr(ServiceRole, v.upper())
