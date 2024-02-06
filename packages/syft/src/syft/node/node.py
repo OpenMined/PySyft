@@ -11,7 +11,7 @@ import hashlib
 from multiprocessing import current_process
 import os
 from pathlib import Path
-import subprocess
+import subprocess  # nosec
 import traceback
 from typing import Any
 from typing import Callable
