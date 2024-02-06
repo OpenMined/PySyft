@@ -183,7 +183,7 @@ class KubeUtils:
             auths[url] = {
                 "username": uname,
                 "password": passwd,
-                "auth": base64.b64encode(f"{uname}:{passwd}".encode()).decode(),
+                "auth": KubeUtils.b64encode_secret(f"{uname}:{passwd}"),
             }
 
         config_str = json.dumps({"auths": auths})
