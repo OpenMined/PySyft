@@ -44,14 +44,14 @@ class UserV1(SyftObject):
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    email: Optional[EmailStr]
-    name: Optional[str]
-    hashed_password: Optional[str]
-    salt: Optional[str]
-    signing_key: Optional[SyftSigningKey]
-    verify_key: Optional[SyftVerifyKey]
-    role: Optional[ServiceRole]
-    institution: Optional[str]
+    email: Optional[EmailStr] = None
+    name: Optional[str] = None
+    hashed_password: Optional[str] = None
+    salt: Optional[str] = None
+    signing_key: Optional[SyftSigningKey] = None
+    verify_key: Optional[SyftVerifyKey] = None
+    role: Optional[ServiceRole] = None
+    institution: Optional[str] = None
     website: Optional[str] = None
     created_at: Optional[str] = None
 
@@ -62,17 +62,17 @@ class User(SyftObject):
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID]
+    id: Optional[UID] = None
 
     # fields
-    email: Optional[EmailStr]
-    name: Optional[str]
-    hashed_password: Optional[str]
-    salt: Optional[str]
-    signing_key: Optional[SyftSigningKey]
-    verify_key: Optional[SyftVerifyKey]
-    role: Optional[ServiceRole]
-    institution: Optional[str]
+    email: Optional[EmailStr] = None
+    name: Optional[str] = None
+    hashed_password: Optional[str] = None
+    salt: Optional[str] = None
+    signing_key: Optional[SyftSigningKey] = None
+    verify_key: Optional[SyftVerifyKey] = None
+    role: Optional[ServiceRole] = None
+    institution: Optional[str] = None
     website: Optional[str] = None
     created_at: Optional[str] = None
     # TODO where do we put this flag?
@@ -211,8 +211,8 @@ class UserViewV1(SyftObject):
     email: EmailStr
     name: str
     role: ServiceRole  # make sure role cant be set without uid
-    institution: Optional[str]
-    website: Optional[str]
+    institution: Optional[str] = None
+    website: Optional[str] = None
 
 
 @serializable()
@@ -223,8 +223,8 @@ class UserView(SyftObject):
     email: EmailStr
     name: str
     role: ServiceRole  # make sure role cant be set without uid
-    institution: Optional[str]
-    website: Optional[str]
+    institution: Optional[str] = None
+    website: Optional[str] = None
     mock_execution_permission: bool
 
     __repr_attrs__ = ["name", "email", "institution", "website", "role"]

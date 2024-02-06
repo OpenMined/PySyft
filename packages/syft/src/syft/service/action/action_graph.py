@@ -61,7 +61,7 @@ class NodeActionData(SyftObject):
     __canonical_name__ = "NodeActionData"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
+    id: Optional[UID] = None
     type: NodeType
     status: ExecutionStatus = ExecutionStatus.PROCESSING
     retry: int = 0
@@ -70,8 +70,8 @@ class NodeActionData(SyftObject):
     user_verify_key: SyftVerifyKey
     is_mutated: bool = False  # denotes that this node has been mutated
     is_mutagen: bool = False  # denotes that this node is causing a mutation
-    next_mutagen_node: Optional[UID]  # next neighboring mutagen node
-    last_nm_mutagen_node: Optional[UID]  # last non mutated mutagen node
+    next_mutagen_node: Optional[UID] = None  # next neighboring mutagen node
+    last_nm_mutagen_node: Optional[UID] = None  # last non mutated mutagen node
 
     @classmethod
     def from_action(cls, action: Action, credentials: SyftVerifyKey) -> Self:

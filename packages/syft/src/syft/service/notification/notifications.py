@@ -45,8 +45,8 @@ class ReplyNotification(SyftObject):
 
     text: str
     target_msg: UID
-    id: Optional[UID]
-    from_user_verify_key: Optional[SyftVerifyKey]
+    id: Optional[UID] = None
+    from_user_verify_key: Optional[SyftVerifyKey] = None
 
 
 @serializable()
@@ -60,7 +60,7 @@ class Notification(SyftObject):
     to_user_verify_key: SyftVerifyKey
     created_at: DateTime
     status: NotificationStatus = NotificationStatus.UNREAD
-    linked_obj: Optional[LinkedObject]
+    linked_obj: Optional[LinkedObject] = None
     replies: Optional[List[ReplyNotification]] = []
 
     __attr_searchable__ = [

@@ -35,7 +35,7 @@ class NodePeer(SyftObject):
     __attr_unique__ = ["verify_key"]
     __repr_attrs__ = ["name", "node_type", "admin_email"]
 
-    id: Optional[UID]
+    id: Optional[UID] = None
     name: str
     verify_key: SyftVerifyKey
     node_routes: List[NodeRouteType] = []

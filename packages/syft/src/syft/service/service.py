@@ -87,10 +87,10 @@ class BaseConfig(SyftBaseObject):
     private_path: str
     public_name: str
     method_name: str
-    doc_string: Optional[str]
-    signature: Optional[Signature]
+    doc_string: Optional[str] = None
+    signature: Optional[Signature] = None
     is_from_lib: bool = False
-    warning: Optional[APIEndpointWarning]
+    warning: Optional[APIEndpointWarning] = None
 
 
 @serializable()

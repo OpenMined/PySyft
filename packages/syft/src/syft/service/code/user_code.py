@@ -260,7 +260,7 @@ class UserCodeV1(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
-    node_uid: Optional[UID]
+    node_uid: Optional[UID] = None
     user_verify_key: SyftVerifyKey
     raw_code: str
     input_policy_type: Union[Type[InputPolicy], UserPolicy]
@@ -278,7 +278,7 @@ class UserCodeV1(SyftObject):
     status: UserCodeStatusCollection
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
-    submit_time: Optional[DateTime]
+    submit_time: Optional[DateTime] = None
 
     __attr_searchable__ = [
         "user_verify_key",
@@ -295,7 +295,7 @@ class UserCodeV2(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
-    node_uid: Optional[UID]
+    node_uid: Optional[UID] = None
     user_verify_key: SyftVerifyKey
     raw_code: str
     input_policy_type: Union[Type[InputPolicy], UserPolicy]
@@ -313,7 +313,7 @@ class UserCodeV2(SyftObject):
     status: UserCodeStatusCollection
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
-    submit_time: Optional[DateTime]
+    submit_time: Optional[DateTime] = None
     uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
     nested_requests: Dict[str, str] = {}
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
@@ -326,7 +326,7 @@ class UserCodeV3(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_3
 
     id: UID
-    node_uid: Optional[UID]
+    node_uid: Optional[UID] = None
     user_verify_key: SyftVerifyKey
     raw_code: str
     input_policy_type: Union[Type[InputPolicy], UserPolicy]
@@ -344,11 +344,11 @@ class UserCodeV3(SyftObject):
     status: UserCodeStatusCollection
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
-    submit_time: Optional[DateTime]
+    submit_time: Optional[DateTime] = None
     uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
     nested_requests: Dict[str, str] = {}
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
-    worker_pool_name: Optional[str]
+    worker_pool_name: Optional[str] = None
 
 
 @serializable()
@@ -747,7 +747,7 @@ class SubmitUserCodeV2(SyftObject):
     __canonical_name__ = "SubmitUserCode"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID]
+    id: Optional[UID] = None
     code: str
     func_name: str
     signature: inspect.Signature
@@ -755,7 +755,7 @@ class SubmitUserCodeV2(SyftObject):
     input_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
     output_policy_type: Union[SubmitUserPolicy, UID, Type[OutputPolicy]]
     output_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
-    local_function: Optional[Callable]
+    local_function: Optional[Callable] = None
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
 
@@ -766,7 +766,7 @@ class SubmitUserCode(SyftObject):
     __canonical_name__ = "SubmitUserCode"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    id: Optional[UID]
+    id: Optional[UID] = None
     code: str
     func_name: str
     signature: inspect.Signature
@@ -774,7 +774,7 @@ class SubmitUserCode(SyftObject):
     input_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
     output_policy_type: Union[SubmitUserPolicy, UID, Type[OutputPolicy]]
     output_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
-    local_function: Optional[Callable]
+    local_function: Optional[Callable] = None
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
     worker_pool_name: Optional[str] = None
@@ -1257,7 +1257,7 @@ class UserCodeExecutionResult(SyftObject):
     user_code_id: UID
     stdout: str
     stderr: str
-    result: Any
+    result: Any = None
 
 
 class SecureContext:

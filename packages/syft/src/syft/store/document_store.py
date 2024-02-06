@@ -140,7 +140,7 @@ class PartitionKeys(BaseModel):
 
 @serializable()
 class QueryKey(PartitionKey):
-    value: Any
+    value: Any = None
 
     def __eq__(self, other: Any) -> bool:
         return (
@@ -764,5 +764,5 @@ class StoreConfig(SyftBaseObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     store_type: Type[DocumentStore]
-    client_config: Optional[StoreClientConfig]
+    client_config: Optional[StoreClientConfig] = None
     locking_config: LockingConfig = NoLockingConfig()

@@ -85,7 +85,7 @@ class BlobRetrievalV1(SyftObject):
     __canonical_name__ = "BlobRetrieval"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    type_: Optional[Type]
+    type_: Optional[Type] = None
     file_name: str
 
 
@@ -94,10 +94,10 @@ class BlobRetrieval(SyftObject):
     __canonical_name__ = "BlobRetrieval"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    type_: Optional[Type]
+    type_: Optional[Type] = None
     file_name: str
     syft_blob_storage_entry_id: Optional[UID] = None
-    file_size: Optional[int]
+    file_size: Optional[int] = None
 
 
 @migrate(BlobRetrieval, BlobRetrievalV1)

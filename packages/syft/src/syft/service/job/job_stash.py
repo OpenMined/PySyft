@@ -70,11 +70,11 @@ class JobV1(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any]
+    result: Optional[Any] = None
     resolved: bool = False
     status: JobStatus = JobStatus.CREATED
-    log_id: Optional[UID]
-    parent_job_id: Optional[UID]
+    log_id: Optional[UID] = None
+    parent_job_id: Optional[UID] = None
     n_iters: Optional[int] = 0
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
@@ -88,11 +88,11 @@ class JobV2(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any]
+    result: Optional[Any] = None
     resolved: bool = False
     status: JobStatus = JobStatus.CREATED
-    log_id: Optional[UID]
-    parent_job_id: Optional[UID]
+    log_id: Optional[UID] = None
+    parent_job_id: Optional[UID] = None
     n_iters: Optional[int] = 0
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
@@ -107,11 +107,11 @@ class Job(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any]
+    result: Optional[Any] = None
     resolved: bool = False
     status: JobStatus = JobStatus.CREATED
-    log_id: Optional[UID]
-    parent_job_id: Optional[UID]
+    log_id: Optional[UID] = None
+    parent_job_id: Optional[UID] = None
     n_iters: Optional[int] = 0
     current_iter: Optional[int] = None
     creation_time: str = Field(default_factory=lambda: str(datetime.now()))

@@ -64,10 +64,10 @@ class Contributor(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     name: str
-    role: Optional[str]
+    role: Optional[str] = None
     email: str
-    phone: Optional[str]
-    note: Optional[str]
+    phone: Optional[str] = None
+    note: Optional[str] = None
 
     __repr_attrs__ = ["name", "role", "email"]
 
@@ -133,9 +133,9 @@ class Asset(SyftObject):
     contributors: Set[Contributor] = set()
     data_subjects: List[DataSubject] = []
     mock_is_real: bool = False
-    shape: Optional[Tuple]
+    shape: Optional[Tuple] = None
     created_at: DateTime = DateTime.now()
-    uploader: Optional[Contributor]
+    uploader: Optional[Contributor] = None
 
     __repr_attrs__ = ["name", "shape"]
 
@@ -326,14 +326,14 @@ class CreateAsset(SyftObject):
     description: Optional[MarkdownDescription] = None
     contributors: Set[Contributor] = set()
     data_subjects: List[DataSubjectCreate] = []
-    node_uid: Optional[UID]
-    action_id: Optional[UID]
-    data: Optional[Any]
-    mock: Optional[Any]
-    shape: Optional[Tuple]
+    node_uid: Optional[UID] = None
+    action_id: Optional[UID] = None
+    data: Optional[Any] = None
+    mock: Optional[Any] = None
+    shape: Optional[Tuple] = None
     mock_is_real: bool = False
-    created_at: Optional[DateTime]
-    uploader: Optional[Contributor]
+    created_at: Optional[DateTime] = None
+    uploader: Optional[Contributor] = None
 
     __repr_attrs__ = ["name"]
     model_config = ConfigDict(validate_assignment=True)
@@ -463,15 +463,15 @@ class Dataset(SyftObject):
 
     id: UID
     name: str
-    node_uid: Optional[UID]
+    node_uid: Optional[UID] = None
     asset_list: List[Asset] = []
     contributors: Set[Contributor] = set()
-    citation: Optional[str]
-    url: Optional[str]
+    citation: Optional[str] = None
+    url: Optional[str] = None
     description: Optional[MarkdownDescription] = None
-    updated_at: Optional[str]
+    updated_at: Optional[str] = None
     requests: Optional[int] = 0
-    mb_size: Optional[int]
+    mb_size: Optional[int] = None
     created_at: DateTime = DateTime.now()
     uploader: Contributor
 

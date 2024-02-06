@@ -796,7 +796,7 @@ class ZMQClientConfigV1(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
+    id: Optional[UID] = None
     hostname: str = "127.0.0.1"
 
 
@@ -804,7 +804,7 @@ class ZMQClientConfigV2(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID]
+    id: Optional[UID] = None
     hostname: str = "127.0.0.1"
     queue_port: Optional[int] = None
     # TODO: setting this to false until we can fix the ZMQ
@@ -818,14 +818,14 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    id: Optional[UID]
+    id: Optional[UID] = None
     hostname: str = "127.0.0.1"
     queue_port: Optional[int] = None
     # TODO: setting this to false until we can fix the ZMQ
     # port issue causing tests to randomly fail
     create_producer: bool = False
     n_consumers: int = 0
-    consumer_service: Optional[str]
+    consumer_service: Optional[str] = None
 
 
 @migrate(ZMQClientConfig, ZMQClientConfigV1)

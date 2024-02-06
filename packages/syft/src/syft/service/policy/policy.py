@@ -324,7 +324,7 @@ class OutputHistory(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     output_time: DateTime
-    outputs: Optional[Union[List[UID], Dict[str, UID]]]
+    outputs: Optional[Union[List[UID], Dict[str, UID]]] = None
     executing_user_verify_key: SyftVerifyKey
 
 

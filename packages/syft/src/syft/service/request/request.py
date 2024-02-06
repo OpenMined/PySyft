@@ -77,7 +77,7 @@ class Change(SyftObject):
     __canonical_name__ = "Change"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    linked_obj: Optional[LinkedObject]
+    linked_obj: Optional[LinkedObject] = None
 
     def is_type(self, type_: type) -> bool:
         return (self.linked_obj is not None) and (type_ == self.linked_obj.object_type)
@@ -88,7 +88,7 @@ class ChangeStatus(SyftObject):
     __canonical_name__ = "ChangeStatus"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
+    id: Optional[UID] = None
     change_id: UID
     applied: bool = False
 
@@ -348,9 +348,9 @@ class Request(SyftObject):
     requesting_user_name: str = ""
     requesting_user_email: Optional[str] = ""
     requesting_user_institution: Optional[str] = ""
-    approving_user_verify_key: Optional[SyftVerifyKey]
+    approving_user_verify_key: Optional[SyftVerifyKey] = None
     request_time: DateTime
-    updated_at: Optional[DateTime]
+    updated_at: Optional[DateTime] = None
     node_uid: UID
     request_hash: str
     changes: List[Change]
@@ -796,7 +796,7 @@ class RequestInfoFilter(SyftObject):
     __canonical_name__ = "RequestInfoFilter"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    name: Optional[str]
+    name: Optional[str] = None
 
 
 @serializable()
@@ -805,7 +805,7 @@ class SubmitRequest(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     changes: List[Change]
-    requesting_user_verify_key: Optional[SyftVerifyKey]
+    requesting_user_verify_key: Optional[SyftVerifyKey] = None
 
 
 def hash_changes(context: TransformContext) -> TransformContext:

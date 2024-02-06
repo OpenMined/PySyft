@@ -34,7 +34,7 @@ class DataSubject(SyftObject):
 
     node_uid: UID
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     aliases: List[str] = []
 
     @property
@@ -80,7 +80,7 @@ class DataSubjectCreate(SyftObject):
 
     id: Optional[UID] = None
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     aliases: Optional[List[str]] = []
     members: Dict[str, "DataSubjectCreate"] = {}
 

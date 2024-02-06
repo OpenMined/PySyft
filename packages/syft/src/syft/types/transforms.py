@@ -28,10 +28,10 @@ class NotNone:
 
 
 class TransformContext(Context):
-    output: Optional[Dict[str, Any]]
-    node: Optional[AbstractNode]
-    credentials: Optional[SyftVerifyKey]
-    obj: Optional[Any]
+    output: Optional[Dict[str, Any]] = None
+    node: Optional[AbstractNode] = None
+    credentials: Optional[SyftVerifyKey] = None
+    obj: Optional[Any] = None
 
     @staticmethod
     def from_context(obj: Any, context: Optional[Context] = None) -> Self:

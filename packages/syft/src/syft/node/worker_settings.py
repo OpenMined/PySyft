@@ -37,7 +37,7 @@ class WorkerSettingsV1(SyftObject):
     signing_key: SyftSigningKey
     document_store_config: StoreConfig
     action_store_config: StoreConfig
-    blob_store_config: Optional[BlobStorageConfig]
+    blob_store_config: Optional[BlobStorageConfig] = None
 
 
 @serializable()
@@ -52,8 +52,8 @@ class WorkerSettings(SyftObject):
     signing_key: SyftSigningKey
     document_store_config: StoreConfig
     action_store_config: StoreConfig
-    blob_store_config: Optional[BlobStorageConfig]
-    queue_config: Optional[QueueConfig]
+    blob_store_config: Optional[BlobStorageConfig] = None
+    queue_config: Optional[QueueConfig] = None
 
     @staticmethod
     def from_node(node: AbstractNode) -> Self:

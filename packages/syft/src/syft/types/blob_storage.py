@@ -76,7 +76,7 @@ class BlobFile(SyftObject):
     file_name: str
     syft_blob_storage_entry_id: Optional[UID] = None
     file_size: Optional[int] = None
-    path: Optional[Path]
+    path: Optional[Path] = None
     uploaded = False
 
     __repr_attrs__ = ["id", "file_name"]
@@ -312,7 +312,7 @@ class BlobStorageEntryV1(SyftObject):
 
     id: UID
     location: Union[SecureFilePathLocation, SeaweedSecureFilePathLocation]
-    type_: Optional[Type]
+    type_: Optional[Type] = None
     mimetype: str = "bytes"
     file_size: int
     uploaded_by: SyftVerifyKey
@@ -328,13 +328,13 @@ class BlobStorageEntry(SyftObject):
 
     id: UID
     location: Union[SecureFilePathLocation, SeaweedSecureFilePathLocation]
-    type_: Optional[Type]
+    type_: Optional[Type] = None
     mimetype: str = "bytes"
     file_size: int
     no_lines: Optional[int] = 0
     uploaded_by: SyftVerifyKey
     created_at: DateTime = DateTime.now()
-    bucket_name: Optional[str]
+    bucket_name: Optional[str] = None
 
     __attr_searchable__ = ["bucket_name"]
 
@@ -356,7 +356,7 @@ class BlobStorageMetadataV1(SyftObject):
     __canonical_name__ = "BlobStorageMetadata"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    type_: Optional[Type[SyftObject]]
+    type_: Optional[Type[SyftObject]] = None
     mimetype: str = "bytes"
     file_size: int
 
@@ -366,7 +366,7 @@ class BlobStorageMetadata(SyftObject):
     __canonical_name__ = "BlobStorageMetadata"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    type_: Optional[Type[SyftObject]]
+    type_: Optional[Type[SyftObject]] = None
     mimetype: str = "bytes"
     file_size: int
     no_lines: Optional[int] = 0
@@ -390,7 +390,7 @@ class CreateBlobStorageEntry(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
-    type_: Optional[Type]
+    type_: Optional[Type] = None
     mimetype: str = "bytes"
     file_size: int
     extensions: List[str] = []

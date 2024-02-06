@@ -81,14 +81,14 @@ class ProjectEvent(SyftObject):
     timestamp: DateTime = Field(default_factory=DateTime.now)
     allowed_sub_types: Optional[List] = []
     # 2. Rebase attrs
-    project_id: Optional[UID]
-    seq_no: Optional[int]
-    prev_event_uid: Optional[UID]
-    prev_event_hash: Optional[str]
-    event_hash: Optional[str]
+    project_id: Optional[UID] = None
+    seq_no: Optional[int] = None
+    prev_event_uid: Optional[UID] = None
+    prev_event_hash: Optional[str] = None
+    event_hash: Optional[str] = None
     # 3. Signature attrs
-    creator_verify_key: Optional[SyftVerifyKey]
-    signature: Optional[bytes]  # dont use in signing
+    creator_verify_key: Optional[SyftVerifyKey] = None
+    signature: Optional[bytes] = None  # dont use in signing
 
     def __repr_syft_nested__(self) -> tuple[str, str]:
         return (
@@ -677,14 +677,14 @@ class Project(SyftObject):
         "event_id_hashmap",
     ]
 
-    id: Optional[UID]
+    id: Optional[UID] = None
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     members: List[NodeIdentity]
     users: List[UserIdentity] = []
-    username: Optional[str]
+    username: Optional[str] = None
     created_by: str
-    start_hash: Optional[str]
+    start_hash: Optional[str] = None
     # WARNING:  Do not add it to hash keys or print directly
     user_signing_key: Optional[SyftSigningKey] = None
 
@@ -694,7 +694,7 @@ class Project(SyftObject):
 
     # Project sync
     state_sync_leader: NodeIdentity
-    leader_node_peer: Optional[NodePeer]
+    leader_node_peer: Optional[NodePeer] = None
 
     # Unused
     consensus_model: ConsensusModel
@@ -1168,19 +1168,19 @@ class ProjectSubmit(SyftObject):
 
     # Init args
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     members: Union[List[SyftClient], List[NodeIdentity]]
 
     # These will be automatically populated
     users: List[UserIdentity] = []
     created_by: Optional[str] = None
-    username: Optional[str]
+    username: Optional[str] = None
     clients: List[SyftClient] = []  # List of member clients
     start_hash: str = ""
 
     # Project sync args
-    leader_node_route: Optional[NodeRoute]
-    state_sync_leader: Optional[NodeIdentity]
+    leader_node_route: Optional[NodeRoute] = None
+    state_sync_leader: Optional[NodeIdentity] = None
     bootstrap_events: Optional[List[ProjectEvent]] = []
 
     # Unused at the moment
