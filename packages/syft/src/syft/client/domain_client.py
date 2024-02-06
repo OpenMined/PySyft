@@ -191,9 +191,10 @@ class DomainClient(SyftClient):
 
         try:
             result = []
-            for file in tqdm(expanded_file_list):
+            for file in expanded_file_list:
                 if not isinstance(file, BlobFile):
                     file = BlobFile(path=file, file_name=file.name)
+                print("Uploading", file.file_name)
                 if not file.uploaded:
                     file.upload_to_blobstorage(self)
                 result.append(file)

@@ -10,6 +10,7 @@ import pydantic
 # relative
 from ...custom_worker.config import CustomWorkerConfig
 from ...custom_worker.config import WorkerConfig
+from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
@@ -32,12 +33,12 @@ from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .image_identifier import SyftWorkerImageIdentifier
 from .utils import DEFAULT_WORKER_POOL_NAME
+from .utils import get_orchestration_type
 from .utils import run_containers
 from .utils import run_workers_in_threads
 from .worker_image import SyftWorkerImage
 from .worker_image_stash import SyftWorkerImageStash
 from .worker_pool import ContainerSpawnStatus
-from .worker_pool import WorkerOrchestrationType
 from .worker_pool import WorkerPool
 from .worker_pool_stash import SyftWorkerPoolStash
 from .worker_service import WorkerService
@@ -115,7 +116,7 @@ class SyftWorkerPoolService(AbstractService):
 
         # Create worker pool from given image, with the given worker pool
         # and with the desired number of workers
-        worker_list, container_statuses = _create_workers_in_pool(
+        result = _create_workers_in_pool(
             context=context,
             pool_name=name,
             existing_worker_cnt=0,
@@ -125,6 +126,11 @@ class SyftWorkerPoolService(AbstractService):
             reg_username=reg_username,
             reg_password=reg_password,
         )
+
+        if isinstance(result, SyftError):
+            return result
+
+        worker_list, container_statuses = result
 
         # Update the Database with the pool information
         worker_pool = WorkerPool(
@@ -227,6 +233,7 @@ class SyftWorkerPoolService(AbstractService):
         num_workers: int,
         tag: str,
         config: WorkerConfig,
+        registry_uid: Optional[UID] = None,
         reason: Optional[str] = "",
     ) -> Union[SyftError, SyftSuccess]:
         """
@@ -243,6 +250,9 @@ class SyftWorkerPoolService(AbstractService):
 
         if isinstance(config, CustomWorkerConfig):
             return SyftError(message="We only support DockerWorkerConfig.")
+
+        if IN_KUBERNETES and registry_uid is None:
+            return SyftError(message="Registry UID is required in Kubernetes mode.")
 
         # Check if an image already exists for given docker config
         search_result = self.image_stash.get_by_docker_config(
@@ -262,7 +272,7 @@ class SyftWorkerPoolService(AbstractService):
 
         # Validate Image Tag
         try:
-            image_identifier = SyftWorkerImageIdentifier.from_str(tag=tag)
+            SyftWorkerImageIdentifier.from_str(tag=tag)
         except pydantic.ValidationError as e:
             return SyftError(message=f"Failed to create tag: {e}")
 
@@ -274,7 +284,8 @@ class SyftWorkerPoolService(AbstractService):
         # If this change is approved, then build an image using the config
         create_custom_image_change = CreateCustomImageChange(
             config=config,
-            tag=image_identifier.full_name_with_tag,
+            tag=tag,
+            registry_uid=registry_uid,
         )
 
         # Check if a pool already exists for given pool name
@@ -338,6 +349,8 @@ class SyftWorkerPoolService(AbstractService):
         number: int,
         pool_id: Optional[UID] = None,
         pool_name: Optional[str] = None,
+        reg_username: Optional[str] = None,
+        reg_password: Optional[str] = None,
     ) -> Union[List[ContainerSpawnStatus], SyftError]:
         """Add workers to existing worker pool.
 
@@ -352,6 +365,9 @@ class SyftWorkerPoolService(AbstractService):
         Returns:
             Union[List[ContainerSpawnStatus], SyftError]: List of spawned workers with their status and error if any.
         """
+
+        if number <= 0:
+            return SyftError(message=f"Invalid number of workers: {number}")
 
         # Extract pool using either using pool id or pool name
         if pool_id:
@@ -385,14 +401,21 @@ class SyftWorkerPoolService(AbstractService):
         worker_stash = worker_service.stash
 
         # Add workers to given pool from the given image
-        worker_list, container_statuses = _create_workers_in_pool(
+        result = _create_workers_in_pool(
             context=context,
             pool_name=worker_pool.name,
             existing_worker_cnt=existing_worker_cnt,
             worker_cnt=number,
             worker_image=worker_image,
             worker_stash=worker_stash,
+            reg_username=reg_username,
+            reg_password=reg_password,
         )
+
+        if isinstance(result, SyftError):
+            return result
+
+        worker_list, container_statuses = result
 
         worker_pool.worker_list += worker_list
         worker_pool.max_count = existing_worker_cnt + number
@@ -528,7 +551,7 @@ def _create_workers_in_pool(
     worker_stash: WorkerStash,
     reg_username: Optional[str] = None,
     reg_password: Optional[str] = None,
-) -> Tuple[List[LinkedObject], List[ContainerSpawnStatus]]:
+) -> Union[Tuple[List[LinkedObject], List[ContainerSpawnStatus]], SyftError]:
     queue_port = context.node.queue_config.client_config.queue_port
 
     # Check if workers needs to be run in memory or as containers
@@ -543,18 +566,21 @@ def _create_workers_in_pool(
             number=worker_cnt + existing_worker_cnt,
         )
     else:
-        container_statuses: List[ContainerSpawnStatus] = run_containers(
+        result = run_containers(
             pool_name=pool_name,
             worker_image=worker_image,
             start_idx=existing_worker_cnt,
             number=worker_cnt + existing_worker_cnt,
-            orchestration=WorkerOrchestrationType.DOCKER,
+            orchestration=get_orchestration_type(),
             queue_port=queue_port,
             dev_mode=context.node.dev_mode,
-            username=reg_username,
-            password=reg_password,
-            registry_url=worker_image.image_identifier.registry_host,
+            reg_username=reg_username,
+            reg_password=reg_password,
+            reg_url=worker_image.image_identifier.registry_host,
         )
+        if isinstance(result, SyftError):
+            return result
+        container_statuses = result
 
     linked_worker_list = []
 

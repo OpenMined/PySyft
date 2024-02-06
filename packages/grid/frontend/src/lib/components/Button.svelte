@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type { HTMLButtonAttributes } from 'svelte/elements';
+  import type { HTMLButtonAttributes } from "svelte/elements"
 
   interface $$Props extends HTMLButtonAttributes {
-    disabled?: boolean;
-    variant?: 'primary' | 'secondary' | 'error';
-    type?: 'button' | 'submit' | 'reset';
+    disabled?: boolean
+    variant?: "primary" | "secondary" | "error"
+    type?: "button" | "submit" | "reset"
   }
 
-  export let variant = 'primary';
-  export let disabled = false;
-  export let type: $$Props['type'] = 'button';
+  export let variant = "primary"
+  export let disabled = false
+  export let type: $$Props["type"] = "button"
 </script>
 
 <button {type} class={variant} aria-disabled={disabled} on:click {...$$props}>
@@ -22,7 +22,7 @@
     @apply transition-all duration-500;
   }
 
-  [aria-disabled='true'] {
+  [aria-disabled="true"] {
     @apply cursor-not-allowed opacity-50;
   }
 

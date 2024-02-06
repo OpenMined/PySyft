@@ -1086,7 +1086,7 @@
       "CreateCustomImageChange": {
         "1": {
           "version": 1,
-          "hash": "197b765666d605cf601bd69bff21b4a31896b6acd14af38739a5047ca29ff015",
+          "hash": "bc09dca7995938f3b3a2bd9c8b3c2feffc8484df466144a425cb69cadb2ab635",
           "action": "add"
         }
       },
@@ -1181,6 +1181,13 @@
           "version": 1,
           "hash": "1f32d94b75b0a6b4e86cec93d94aa905738219e3e7e75f51dd335ee832a6ed3e",
           "action": "remove"
+        }
+      },
+      "SeaweedFSBlobDeposit": {
+        "2": {
+          "version": 2,
+          "hash": "07d84a95324d95d9c868cd7d1c33c908f77aa468671d76c144586aab672bcbb5",
+          "action": "add"
         }
       }
     }

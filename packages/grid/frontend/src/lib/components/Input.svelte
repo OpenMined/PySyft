@@ -1,13 +1,13 @@
 <script lang="ts">
-  import type { HTMLInputElement } from 'svelte/elements';
+  import type { HTMLInputElement } from "svelte/elements"
 
-  export let label: string;
-  export let id: string;
-  export let required = false;
-  export let value: HTMLInputElement['value'];
-  export let error = '';
-  export const warning = '';
-  $: borderColor = !error ? 'border-gray-300/10' : 'border-rose-500/100';
+  export let label: string
+  export let id: string
+  export let required = false
+  export let value: HTMLInputElement["value"] = ""
+  export let error: boolean | undefined = undefined
+  export const warning = ""
+  $: borderColor = !error ? "border-gray-300/10" : "border-rose-500/100"
 </script>
 
 <div class="flex flex-col gap-4 w-full">

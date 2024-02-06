@@ -2,6 +2,7 @@
 from typing import Optional
 
 # relative
+from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
@@ -19,7 +20,13 @@ class SyftWorkerImage(SyftObject):
 
     __attr_unique__ = ["config"]
     __attr_searchable__ = ["config", "image_hash", "created_by"]
-    __repr_attrs__ = ["image_identifier", "image_hash", "created_at", "built_at"]
+    __repr_attrs__ = [
+        "image_identifier",
+        "image_hash",
+        "created_at",
+        "built_at",
+        "config",
+    ]
 
     id: UID
     config: WorkerConfig
@@ -31,9 +38,13 @@ class SyftWorkerImage(SyftObject):
 
     @property
     def is_built(self) -> bool:
-        """Returns True if the image has been built."""
+        """Returns True if the image has been built or is prebuilt."""
 
-        return self.built_at is not None
+        return self.built_at is not None or self.is_prebuilt
+
+    @property
+    def is_prebuilt(self) -> bool:
+        return isinstance(self.config, PrebuiltWorkerConfig)
 
     @property
     def built_image_tag(self) -> Optional[str]:
