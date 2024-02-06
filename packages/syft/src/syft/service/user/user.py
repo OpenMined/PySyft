@@ -191,9 +191,9 @@ class UserCreate(UserUpdate):
     role: Optional[ServiceRole] = None  # make sure role cant be set without uid
     password: str
     password_verify: Optional[str] = None
-    verify_key: Optional[SyftVerifyKey]
-    institution: Optional[str]
-    website: Optional[str]
+    verify_key: Optional[SyftVerifyKey]  # type: ignore[assignment]
+    institution: Optional[str]  # type: ignore[assignment]
+    website: Optional[str]  # type: ignore[assignment]
     created_by: Optional[SyftSigningKey]
     mock_execution_permission: bool = False
 
@@ -399,40 +399,40 @@ def user_to_user_verify() -> List[Callable]:
 
 
 @migrate(UserV1, User)
-def upgrade_user_v1_to_v2():
+def upgrade_user_v1_to_v2() -> List[Callable]:
     return [make_set_default(key="mock_execution_permission", value=False)]
 
 
 @migrate(User, UserV1)
-def downgrade_user_v2_to_v1():
+def downgrade_user_v2_to_v1() -> List[Callable]:
     return [drop(["mock_execution_permission"])]
 
 
 @migrate(UserUpdateV1, UserUpdate)
-def upgrade_user_update_v1_to_v2():
+def upgrade_user_update_v1_to_v2() -> List[Callable]:
     return [make_set_default(key="mock_execution_permission", value=False)]
 
 
 @migrate(UserUpdate, UserUpdateV1)
-def downgrade_user_update_v2_to_v1():
+def downgrade_user_update_v2_to_v1() -> List[Callable]:
     return [drop(["mock_execution_permission"])]
 
 
 @migrate(UserCreateV1, UserCreate)
-def upgrade_user_create_v1_to_v2():
+def upgrade_user_create_v1_to_v2() -> List[Callable]:
     return [make_set_default(key="mock_execution_permission", value=False)]
 
 
 @migrate(UserCreate, UserCreateV1)
-def downgrade_user_create_v2_to_v1():
+def downgrade_user_create_v2_to_v1() -> List[Callable]:
     return [drop(["mock_execution_permission"])]
 
 
 @migrate(UserViewV1, UserView)
-def upgrade_user_view_v1_to_v2():
+def upgrade_user_view_v1_to_v2() -> List[Callable]:
     return [make_set_default(key="mock_execution_permission", value=False)]
 
 
 @migrate(UserView, UserViewV1)
-def downgrade_user_view_v2_to_v1():
+def downgrade_user_view_v2_to_v1() -> List[Callable]:
     return [drop(["mock_execution_permission"])]
