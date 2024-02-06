@@ -7,6 +7,7 @@ from collections.abc import KeysView
 from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Callable
+from typing import Deque
 from typing import Generic
 from typing import Optional
 from typing import SupportsIndex
@@ -65,7 +66,7 @@ class _Meta(type):
     ) -> _T:
         ...
 
-    def __call__(
+    def __call__(  # type: ignore[misc]
         cls: type[_T],
         __value: Optional[Iterable] = None,
         __key: Optional[Union[Callable, Collection]] = None,
@@ -74,7 +75,7 @@ class _Meta(type):
         # DictTuple()
         if __value is None and __key is None:
             obj = cls.__new__(cls)
-            obj.__init__()
+            obj.__init__()  # type: ignore[misc]
             return obj
 
         # DictTuple(DictTuple(...))
@@ -84,27 +85,31 @@ class _Meta(type):
         # DictTuple({"x": 123, "y": 456})
         elif isinstance(__value, Mapping) and __key is None:
             obj = cls.__new__(cls, __value.values())
-            obj.__init__(__value.keys())
+            obj.__init__(__value.keys())  # type: ignore[misc]
 
             return obj
 
         # DictTuple(EnhancedDictTuple(...))
         # EnhancedDictTuple(DictTuple(...))
         # where EnhancedDictTuple subclasses DictTuple
-        elif hasattr(__value, "items") and callable(__value.items):
+        elif (
+            __value is not None
+            and hasattr(__value, "items")
+            and callable(__value.items)
+        ):
             return cls.__call__(__value.items())
 
         # DictTuple([("x", 123), ("y", 456)])
         elif isinstance(__value, Iterable) and __key is None:
             keys = OrderedDict()
-            values = deque()
+            values: Deque = deque()
 
             for i, (k, v) in enumerate(__value):
                 keys[k] = i
                 values.append(v)
 
             obj = cls.__new__(cls, values)
-            obj.__init__(keys)
+            obj.__init__(keys)  # type: ignore[misc]
 
             return obj
 
@@ -113,7 +118,7 @@ class _Meta(type):
             keys = OrderedDict((k, i) for i, k in enumerate(__key))
 
             obj = cls.__new__(cls, __value)
-            obj.__init__(keys)
+            obj.__init__(keys)  # type: ignore[misc]
 
             return obj
 
@@ -121,14 +126,14 @@ class _Meta(type):
         # equivalent to DictTuple({"a": "abc", "x": "xyz"})
         elif isinstance(__value, Iterable) and isinstance(__key, Callable):
             obj = cls.__new__(cls, __value)
-            obj.__init__(__key)
+            obj.__init__(__key)  # type: ignore[misc]
 
             return obj
 
         raise NotImplementedError
 
 
-class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
+class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):  # type: ignore[misc]
     """
     OVERVIEW
 
@@ -226,7 +231,9 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
     def __getitem__(self, __key: SupportsIndex) -> _VT:
         ...
 
-    def __getitem__(self, __key, /):
+    def __getitem__(
+        self, __key: Union[_KT, SupportsIndex, slice], /
+    ) -> Union[_VT, Self]:
         if isinstance(__key, slice):
             return self.__class__(
                 super().__getitem__(__key),
