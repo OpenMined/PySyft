@@ -402,7 +402,7 @@ class Node(AbstractNode):
         self.post_init()
         self.create_initial_settings(admin_email=root_email)
 
-        queue_config_ = self.init_queue_config(
+        self.queue_config = self.create_queue_config(
             n_consumers=n_consumers,
             create_producer=create_producer,
             thread_workers=thread_workers,
@@ -410,7 +410,7 @@ class Node(AbstractNode):
             queue_config=queue_config,
         )
 
-        self.init_queue_manager(queue_config=queue_config_)
+        self.init_queue_manager(queue_config=self.queue_config)
 
         self.init_blob_storage(config=blob_storage_config)
 
@@ -463,7 +463,8 @@ class Node(AbstractNode):
     def close(self):
         self.stop()
 
-    def init_queue_config(
+    def create_queue_config(
+        self,
         n_consumers: int,
         create_producer: bool,
         thread_workers: bool,
