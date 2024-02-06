@@ -257,7 +257,7 @@ def run_workers_in_threads(
     return results
 
 
-def prepare_worker_pool_env(runner: KubernetesRunner, env_vars: dict):
+def prepare_kubernetes_pool_env(runner: KubernetesRunner, env_vars: dict):
     # get current backend pod name
     backend_pod_name = os.getenv("K8S_POD_NAME")
     if not backend_pod_name:
@@ -317,7 +317,7 @@ def create_kubernetes_pool(
             f"replicas={replicas}"
         )
 
-        env_vars, mount_secrets = prepare_worker_pool_env(
+        env_vars, mount_secrets = prepare_kubernetes_pool_env(
             runner,
             {
                 "SYFT_WORKER": "True",
