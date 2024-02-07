@@ -1158,6 +1158,41 @@
           "hash": "07d84a95324d95d9c868cd7d1c33c908f77aa468671d76c144586aab672bcbb5",
           "action": "add"
         }
+      },
+      "Event": {
+        "1": {
+          "version": 1,
+          "hash": "1f3a5a19594887c11d01385352ba0244e3a57f02019e0df4a0f9da9393a840b1",
+          "action": "add"
+        }
+      },
+      "CRUDEvent": {
+        "1": {
+          "version": 1,
+          "hash": "5a58f86d52caaf2ae29c00a5809e5a17d91f480ea796d9107aa9a3a07881c4a1",
+          "action": "add"
+        }
+      },
+      "CreateObjectEvent": {
+        "1": {
+          "version": 1,
+          "hash": "58e80bd2f193c55730438468f02459cfc8ce678cbeac347548e243340a8749b0",
+          "action": "add"
+        }
+      },
+      "UpdateObjectEvent": {
+        "1": {
+          "version": 1,
+          "hash": "e7af4c8bcb974197235cdabea37d26a35f1066077010d1afaea33ccb4d92b8ce",
+          "action": "add"
+        }
+      },
+      "CreateDatasetEvent": {
+        "1": {
+          "version": 1,
+          "hash": "f1bc0d382312d5e91f86098bf561a7e0f716d82560678e69242f8dddb6604746",
+          "action": "add"
+        }
       }
     }
   }

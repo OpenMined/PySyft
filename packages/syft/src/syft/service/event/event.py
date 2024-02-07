@@ -1,8 +1,9 @@
 from typing import Any, ClassVar, Dict, List, Type
+from syft.serde.serializable import serializable
 
 from syft.service.dataset.dataset import Asset, Dataset
 from syft.store.linked_obj import LinkedObject
-from ...types.syft_object import SyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
 from ...types.uid import UID
 from datetime import datetime
 from pydantic import Field
@@ -16,7 +17,10 @@ def register_event_handler(event_type):
 
     return inner
 
+@serializable()
 class Event(SyftObject):
+    __canonical_name__ = "Event"
+    __version__ = SYFT_OBJECT_VERSION_1
     creator_user: UID
     creation_date: datetime = Field(default_factory=lambda: datetime.now())
 
@@ -24,7 +28,11 @@ class Event(SyftObject):
         method_name = event_handler_registry[self.__class__.__name__]
         return getattr(node, method_name)
     
+
+@serializable()
 class CRUDEvent(Event):
+    __canonical_name__ = "CRUDEvent"
+    __version__ = SYFT_OBJECT_VERSION_1
     object_type: ClassVar[Type] = Type
     object_id: UID
 
@@ -32,7 +40,11 @@ class CRUDEvent(Event):
     def merge_updates_repr(self):
         return f"{self.updates} for object {self.object_id} by {self.creator}"
 
+
+@serializable()
 class CreateObjectEvent(CRUDEvent):
+    __canonical_name__ = "CreateObjectEvent"
+    __version__ = SYFT_OBJECT_VERSION_1
     @property
     def updated_properties(self):
         return list(self.object_type.__annotations__.keys())
@@ -46,7 +58,10 @@ class CreateObjectEvent(CRUDEvent):
         return list(self.updates.items())
 
 
+@serializable()
 class UpdateObjectEvent(CRUDEvent):
+    __canonical_name__ = "UpdateObjectEvent"
+    __version__ = SYFT_OBJECT_VERSION_1
     updates: Dict[str, Any]
 
     @property
@@ -57,7 +72,11 @@ class UpdateObjectEvent(CRUDEvent):
     def update_tuples(self):
         return list(self.updates.items())
 
-class CreateDatasetEvent(CRUDEvent):
+
+@serializable()
+class CreateDatasetEvent(CreateObjectEvent):
+    __canonical_name__ = "CreateDatasetEvent"
+    __version__ = SYFT_OBJECT_VERSION_1
     object_type: ClassVar[Type] = Dataset
 
     def execute(self, node):

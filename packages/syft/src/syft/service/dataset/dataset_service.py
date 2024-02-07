@@ -4,6 +4,8 @@ from typing import List
 from typing import Optional
 from typing import Union
 
+from ..event.event import CreateDatasetEvent
+
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -98,6 +100,15 @@ class DatasetService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
+        
+        event = CreateDatasetEvent(
+            object_id=dataset.id,
+            creator_user=UID(),
+        )
+        res = context.node.get_service("EventService").add(context, event)
+        if isinstance(res, SyftError):
+            return res
+        
         return SyftSuccess(
             message=f"Dataset uploaded to '{context.node.name}'. "
             f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"

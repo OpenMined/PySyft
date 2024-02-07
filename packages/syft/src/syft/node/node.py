@@ -29,6 +29,8 @@ from result import Err
 from result import Result
 from typing_extensions import Self
 
+from ..service.event.event_service import EventService
+
 # relative
 from .. import __version__
 from ..abstract_node import AbstractNode
@@ -319,6 +321,7 @@ class Node(AbstractNode):
                 SyftWorkerImageService,
                 SyftWorkerPoolService,
                 SyftImageRegistryService,
+                EventService,
             ]
             if services is None
             else services
@@ -877,6 +880,7 @@ class Node(AbstractNode):
                 SyftWorkerImageService,
                 SyftWorkerPoolService,
                 SyftImageRegistryService,
+                EventService,
             ]
 
             if OBLV:
