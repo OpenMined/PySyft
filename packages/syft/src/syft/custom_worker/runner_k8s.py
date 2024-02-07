@@ -83,6 +83,9 @@ class KubernetesRunner:
         )
         return deployment
 
+    def exists(self, pool_name: str) -> bool:
+        return bool(self.get_pool(pool_name))
+
     def get_pool(self, pool_name: str) -> Optional[StatefulSet]:
         selector = {"app.kubernetes.io/component": pool_name}
         for _set in self.client.get("statefulsets", label_selector=selector):
