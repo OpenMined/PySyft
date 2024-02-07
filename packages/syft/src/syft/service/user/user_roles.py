@@ -1,6 +1,7 @@
 # stdlib
 from enum import Enum
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
@@ -36,14 +37,14 @@ class ServiceRole(Enum):
     # Disabling it, as both property and classmethod only works for python >= 3.9
     # @property
     @classmethod
-    def roles_descending(cls) -> List[Tuple[int, Self]]:
+    def roles_descending(cls) -> List[Tuple[int, "ServiceRole"]]:
         tuples = []
         for x in cls:
             tuples.append((x.value, x))
         return sorted(tuples, reverse=True)
 
     @staticmethod
-    def roles_for_level(level: Union[int, Self]) -> List[Self]:
+    def roles_for_level(level: Union[int, "ServiceRole"]) -> List["ServiceRole"]:
         if isinstance(level, ServiceRole):
             level = level.value
         roles = []
@@ -59,7 +60,7 @@ class ServiceRole(Enum):
                 level_float = level_float % role_num
         return roles
 
-    def capabilities(self):
+    def capabilities(self) -> List["ServiceRoleCapability"]:
         return ROLE_TO_CAPABILITIES[self]
 
     def __add__(self, other: Any) -> int:
@@ -104,7 +105,7 @@ DATA_OWNER_ROLE_LEVEL: List[ServiceRole] = ServiceRole.roles_for_level(
 
 ADMIN_ROLE_LEVEL = ServiceRole.roles_for_level(ServiceRole.ADMIN)
 
-ROLE_TO_CAPABILITIES = {
+ROLE_TO_CAPABILITIES: Dict["ServiceRole", List["ServiceRoleCapability"]] = {
     ServiceRole.NONE: [],
     ServiceRole.GUEST: [
         ServiceRoleCapability.CAN_MAKE_DATA_REQUESTS,

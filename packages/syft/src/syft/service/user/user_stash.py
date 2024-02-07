@@ -60,7 +60,7 @@ class UserStash(BaseStash):
             ignore_duplicates=ignore_duplicates,
         )
 
-    def admin_verify_key(self) -> Result[SyftVerifyKey]:
+    def admin_verify_key(self) -> Result[Optional[SyftVerifyKey], str]:
         return Ok(self.partition.root_verify_key)
 
     def admin_user(self) -> Result[Optional[User], str]:

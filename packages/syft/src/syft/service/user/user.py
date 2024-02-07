@@ -172,12 +172,12 @@ class UserCreateV1(UserUpdateV1):
 
     email: EmailStr
     name: str
-    role: Optional[ServiceRole] = None
+    role: Optional[ServiceRole] = None  # type: ignore[assignment]
     password: str
-    password_verify: Optional[str] = None
+    password_verify: Optional[str] = None  # type: ignore[assignment]
     verify_key: Optional[SyftVerifyKey]
-    institution: Optional[str]
-    website: Optional[str]
+    institution: Optional[str]  # type: ignore[assignment]
+    website: Optional[str]  # type: ignore[assignment]
     created_by: Optional[SyftSigningKey]
 
 
@@ -188,10 +188,10 @@ class UserCreate(UserUpdate):
 
     email: EmailStr
     name: str
-    role: Optional[ServiceRole] = None  # make sure role cant be set without uid
+    role: Optional[ServiceRole] = None  # type: ignore[assignment]
     password: str
-    password_verify: Optional[str] = None
-    verify_key: Optional[SyftVerifyKey]  # type: ignore[assignment]
+    password_verify: Optional[str] = None  # type: ignore[assignment]
+    verify_key: Optional[SyftVerifyKey]
     institution: Optional[str]  # type: ignore[assignment]
     website: Optional[str]  # type: ignore[assignment]
     created_by: Optional[SyftSigningKey]
