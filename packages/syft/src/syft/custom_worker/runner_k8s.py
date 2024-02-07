@@ -16,6 +16,8 @@ from .k8s import PodStatus
 from .k8s import get_kr8s_client
 
 JSONPATH_AVAILABLE_REPLICAS = "{.status.availableReplicas}"
+CREATE_POOL_TIMEOUT_SEC = 60
+SCALE_POOL_TIMEOUT_SEC = 60
 
 
 class KubernetesRunner:
@@ -57,7 +59,10 @@ class KubernetesRunner:
             )
 
             # wait for replicas to be available and ready
-            deployment.wait(f"jsonpath='{JSONPATH_AVAILABLE_REPLICAS}'={replicas}")
+            deployment.wait(
+                f"jsonpath='{JSONPATH_AVAILABLE_REPLICAS}'={replicas}",
+                timeout=CREATE_POOL_TIMEOUT_SEC,
+            )
         except Exception:
             raise
         finally:
@@ -72,7 +77,10 @@ class KubernetesRunner:
         if not deployment:
             return None
         deployment.scale(replicas)
-        deployment.wait(f"jsonpath='{JSONPATH_AVAILABLE_REPLICAS}'={replicas}")
+        deployment.wait(
+            f"jsonpath='{JSONPATH_AVAILABLE_REPLICAS}'={replicas}",
+            timeout=SCALE_POOL_TIMEOUT_SEC,
+        )
         return deployment
 
     def get_pool(self, pool_name: str) -> Optional[StatefulSet]:

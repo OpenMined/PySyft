@@ -11,9 +11,11 @@ from kr8s.objects import Job
 from kr8s.objects import Secret
 
 # relative
+from .builder_types import BUILD_IMAGE_TIMEOUT_SEC
 from .builder_types import BuilderBase
 from .builder_types import ImageBuildResult
 from .builder_types import ImagePushResult
+from .builder_types import PUSH_IMAGE_TIMEOUT_SEC
 from .k8s import INTERNAL_REGISTRY_HOST
 from .k8s import JOB_COMPLETION_TTL
 from .k8s import KUBERNETES_NAMESPACE
@@ -66,7 +68,10 @@ class KubernetesBuilder(BuilderBase):
             )
 
             # wait for job to complete/fail
-            job.wait(["condition=Complete", "condition=Failed"])
+            job.wait(
+                ["condition=Complete", "condition=Failed"],
+                timeout=BUILD_IMAGE_TIMEOUT_SEC,
+            )
 
             # get logs
             logs = self._get_logs(job)
@@ -119,7 +124,10 @@ class KubernetesBuilder(BuilderBase):
                 push_secret=push_secret,
             )
 
-            job.wait(["condition=Complete", "condition=Failed"])
+            job.wait(
+                ["condition=Complete", "condition=Failed"],
+                timeout=PUSH_IMAGE_TIMEOUT_SEC,
+            )
             exit_code = self._get_exit_code(job)[0]
             logs = self._get_logs(job)
         except Exception:
