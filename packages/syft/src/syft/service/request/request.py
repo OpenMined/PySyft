@@ -874,11 +874,9 @@ class ObjectMutation(Change):
         # this seems necessary for pydantic types
         attr = getattr(type(obj), self.attr_name, None)
         if inspect.isdatadescriptor(attr):
-            assert hasattr(attr, "fget") and hasattr(
-                attr, "fset"
-            ), "attr must have fget and fset"
-            self.previous_value = attr.fget(obj)
-            attr.fset(obj, value)
+            if hasattr(attr, "fget") and hasattr(attr, "fset"):
+                self.previous_value = attr.fget(obj)
+                attr.fset(obj, value)
         else:
             self.previous_value = getattr(obj, self.attr_name, None)
             setattr(obj, self.attr_name, value)
