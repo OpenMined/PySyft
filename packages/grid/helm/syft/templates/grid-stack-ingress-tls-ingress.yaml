@@ -8,8 +8,14 @@ metadata:
     app.kubernetes.io/component: ingress
     app.kubernetes.io/managed-by: Helm
   name: grid-stack-ingress-tls
+  {{- if .Values.ingress.class }}
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.ingress.class }}
+  {{- end }}
 spec:
-  ingressClassName: {{ .Values.ingress.ingressClass }}
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
   defaultBackend:
     service:
       name: proxy
