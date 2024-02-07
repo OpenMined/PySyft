@@ -198,7 +198,7 @@ jobs:
           python3 -m pip install ./packages/syft
           python3 -m pip install cyclonedx-bom
           python3 -m pip freeze > requirements.txt
-          cyclonedx-py --r  -i requirements.txt --format json  -o syft.sbom.json
+          cyclonedx-py requirements -o syft.sbom.json
 
         #Trivy scan SBOM
       - name: Run Trivy vulnerability scanner
