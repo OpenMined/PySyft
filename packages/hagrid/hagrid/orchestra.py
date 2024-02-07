@@ -263,9 +263,6 @@ def deploy_to_python(
         print("Staging Protocol Changes...")
         stage_protocol_changes()
 
-    if queue_port is None:
-        queue_port = find_available_port(host="localhost", port=None, search=True)
-
     kwargs = {
         "name": name,
         "host": host,
