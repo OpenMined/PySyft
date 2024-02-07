@@ -14,6 +14,8 @@ from typing import Union
 
 # third party
 import docker
+from docker.models.containers import Container
+from kr8s.objects import Pod
 
 # relative
 from ...abstract_node import AbstractNode
@@ -49,7 +51,9 @@ def backend_container_name() -> str:
     return f"{hostname}-{service_name}-1"
 
 
-def get_container(docker_client: docker.DockerClient, container_name: str):
+def get_container(
+    docker_client: docker.DockerClient, container_name: str
+) -> Optional[Container]:
     try:
         existing_container = docker_client.containers.get(container_name)
     except docker.errors.NotFound:
@@ -58,14 +62,20 @@ def get_container(docker_client: docker.DockerClient, container_name: str):
     return existing_container
 
 
-def extract_config_from_backend(worker_name: str, docker_client: docker.DockerClient):
+def extract_config_from_backend(
+    worker_name: str, docker_client: docker.DockerClient
+) -> Dict[str, Any]:
     # Existing main backend container
     backend_container = get_container(
         docker_client, container_name=backend_container_name()
     )
 
     # Config with defaults
-    extracted_config = {"volume_binds": {}, "network_mode": None, "environment": {}}
+    extracted_config: Dict[str, Any] = {
+        "volume_binds": {},
+        "network_mode": None,
+        "environment": {},
+    }
 
     if backend_container is None:
         return extracted_config
@@ -96,7 +106,7 @@ def extract_config_from_backend(worker_name: str, docker_client: docker.DockerCl
     return extracted_config
 
 
-def get_free_tcp_port():
+def get_free_tcp_port() -> int:
     with socketserver.TCPServer(("localhost", 0), None) as s:
         free_port = s.server_address[1]
         return free_port
@@ -115,7 +125,7 @@ def run_container_using_docker(
     registry_url: Optional[str] = None,
 ) -> ContainerSpawnStatus:
     if not worker_image.is_built:
-        raise Exception("Image must be built before running it.")
+        raise ValueError("Image must be built before running it.")
 
     # Get hostname
     hostname = socket.gethostname()
@@ -167,8 +177,11 @@ def run_container_using_docker(
         environment["QUEUE_PORT"] = queue_port
         environment["CONTAINER_HOST"] = "docker"
 
+        if worker_image.image_identifier is None:
+            raise ValueError(f"Image {worker_image} does not have an identifier")
+
         container = docker_client.containers.run(
-            worker_image.image_identifier.full_name_with_tag,
+            image=worker_image.image_identifier.full_name_with_tag,
             name=f"{hostname}-{worker_name}",
             detach=True,
             auto_remove=True,
@@ -259,20 +272,22 @@ def run_workers_in_threads(
     return results
 
 
-def prepare_kubernetes_pool_env(runner: KubernetesRunner, env_vars: dict):
+def prepare_kubernetes_pool_env(
+    runner: KubernetesRunner, env_vars: dict
+) -> Tuple[List, Dict]:
     # get current backend pod name
     backend_pod_name = os.getenv("K8S_POD_NAME")
     if not backend_pod_name:
-        raise ValueError(message="Pod name not provided in environment variable")
+        raise ValueError("Pod name not provided in environment variable")
 
     # get current backend's credentials path
-    creds_path = os.getenv("CREDENTIALS_PATH")
+    creds_path: Union[str, None, Path] = os.getenv("CREDENTIALS_PATH")
     if not creds_path:
-        raise ValueError(message="Credentials path not provided")
+        raise ValueError("Credentials path not provided")
 
     creds_path = Path(creds_path)
-    if not creds_path.exists():
-        raise ValueError(message="Credentials file does not exist")
+    if creds_path is not None and not creds_path.exists():
+        raise ValueError("Credentials file does not exist")
 
     # create a secret for the node credentials owned by the backend, not the pool.
     node_secret = KubeUtils.create_secret(
@@ -285,7 +300,7 @@ def prepare_kubernetes_pool_env(runner: KubernetesRunner, env_vars: dict):
 
     # clone and patch backend environment variables
     backend_env = runner.get_pod_env_vars(backend_pod_name) or []
-    env_vars = KubeUtils.patch_env_vars(backend_env, env_vars)
+    env_vars_list = KubeUtils.patch_env_vars(backend_env, env_vars)
     mount_secrets = {
         node_secret.metadata.name: {
             "mountPath": str(creds_path),
@@ -293,7 +308,7 @@ def prepare_kubernetes_pool_env(runner: KubernetesRunner, env_vars: dict):
         },
     }
 
-    return env_vars, mount_secrets
+    return env_vars_list, mount_secrets
 
 
 def create_kubernetes_pool(
@@ -306,8 +321,8 @@ def create_kubernetes_pool(
     reg_username: Optional[str] = None,
     reg_password: Optional[str] = None,
     reg_url: Optional[str] = None,
-    **kwargs,
-):
+    **kwargs: Dict[str, Any],
+) -> Union[SyftError, List[Pod]]:
     pool = None
     error = False
 
@@ -357,7 +372,7 @@ def scale_kubernetes_pool(
     runner: KubernetesRunner,
     pool_name: str,
     replicas: int,
-):
+) -> Union[SyftError, List[Pod]]:
     pool = runner.get_pool(pool_name)
     if not pool:
         return SyftError(message=f"Pool does not exist. name={pool_name}")
@@ -376,12 +391,12 @@ def run_workers_in_kubernetes(
     worker_count: int,
     pool_name: str,
     queue_port: int,
-    start_idx=0,
+    start_idx: int = 0,
     debug: bool = False,
     reg_username: Optional[str] = None,
     reg_password: Optional[str] = None,
     reg_url: Optional[str] = None,
-    **kwargs,
+    **kwargs: Dict[str, Any],
 ) -> Union[List[ContainerSpawnStatus], SyftError]:
     spawn_status = []
     runner = KubernetesRunner()

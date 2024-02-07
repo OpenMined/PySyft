@@ -62,7 +62,7 @@ class SyftImageRegistryService(AbstractService):
         self,
         context: AuthedServiceContext,
         uid: UID = None,
-        url: str = None,
+        url: str = "",
     ) -> Union[SyftSuccess, SyftError]:
         # TODO - we need to make sure that there are no workers running an image bound to this registry
 

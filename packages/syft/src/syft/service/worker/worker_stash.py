@@ -59,13 +59,13 @@ class WorkerStash(BaseUIDStoreStash):
 
     def update_consumer_state(
         self, credentials: SyftVerifyKey, worker_uid: UID, consumer_state: ConsumerState
-    ):
+    ) -> Result[Ok, Err]:
         res = self.get_by_uid(credentials=credentials, uid=worker_uid)
         if res.is_err():
             return Err(
                 f"Failed to retrieve Worker with id: {worker_uid}. Error: {res.err()}"
             )
-        worker: SyftWorker = res.ok()
+        worker: Optional[SyftWorker] = res.ok()
         if worker is None:
             return Err(f"Worker with id: {worker_uid} not found")
         worker.consumer_state = consumer_state
