@@ -177,7 +177,6 @@ class DockerWorkerConfig(WorkerConfig):
                 kwargs["fileobj"] = io.BytesIO(self.dockerfile.encode("utf-8"))
                 _, logs = client.images.build(
                     tag=tag,
-                    timeout=self.BUILD_MAX_WAIT,
                     **kwargs,
                 )
                 return SyftSuccess(message=iterator_to_string(iterator=logs))
