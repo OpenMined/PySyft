@@ -5,6 +5,8 @@ from pathlib import Path
 import socket
 import socketserver
 import sys
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -385,17 +387,22 @@ def run_workers_in_kubernetes(
     runner = KubernetesRunner()
 
     if start_idx == 0:
-        pool_pods = create_kubernetes_pool(
-            runner=runner,
-            tag=worker_image.image_identifier.full_name_with_tag,
-            pool_name=pool_name,
-            replicas=worker_count,
-            queue_port=queue_port,
-            debug=debug,
-            reg_username=reg_username,
-            reg_password=reg_password,
-            reg_url=reg_url,
-        )
+        if worker_image.image_identifier is not None:
+            pool_pods = create_kubernetes_pool(
+                runner=runner,
+                tag=worker_image.image_identifier.full_name_with_tag,
+                pool_name=pool_name,
+                replicas=worker_count,
+                queue_port=queue_port,
+                debug=debug,
+                reg_username=reg_username,
+                reg_password=reg_password,
+                reg_url=reg_url,
+            )
+        else:
+            return SyftError(
+                message=f"image with uid {worker_image.id} does not have an image identifier"
+            )
     else:
         pool_pods = scale_kubernetes_pool(runner, pool_name, worker_count)
 
@@ -584,28 +591,35 @@ def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
         return WorkerHealth.UNHEALTHY
 
 
-def image_build(image: SyftWorkerImage, **kwargs) -> Union[ImageBuildResult, SyftError]:
-    full_tag = image.image_identifier.full_name_with_tag
-    try:
-        builder = CustomWorkerBuilder()
-        return builder.build_image(
-            config=image.config,
-            tag=full_tag,
-            rm=True,
-            forcerm=True,
-            **kwargs,
-        )
-    except docker.errors.APIError as e:
+def image_build(
+    image: SyftWorkerImage, **kwargs: Dict[str, Any]
+) -> Union[ImageBuildResult, SyftError]:
+    if image.image_identifier is not None:
+        full_tag = image.image_identifier.full_name_with_tag
+        try:
+            builder = CustomWorkerBuilder()
+            return builder.build_image(
+                config=image.config,
+                tag=full_tag,
+                rm=True,
+                forcerm=True,
+                **kwargs,
+            )
+        except docker.errors.APIError as e:
+            return SyftError(
+                message=f"Docker API error when building '{full_tag}'. Reason - {e}"
+            )
+        except docker.errors.DockerException as e:
+            return SyftError(
+                message=f"Docker exception when building '{full_tag}'. Reason - {e}"
+            )
+        except Exception as e:
+            return SyftError(
+                message=f"Unknown exception when building '{full_tag}'. Reason - {e}"
+            )
+    else:
         return SyftError(
-            message=f"Docker API error when building '{full_tag}'. Reason - {e}"
-        )
-    except docker.errors.DockerException as e:
-        return SyftError(
-            message=f"Docker exception when building '{full_tag}'. Reason - {e}"
-        )
-    except Exception as e:
-        return SyftError(
-            message=f"Unknown exception when building '{full_tag}'. Reason - {e}"
+            message=f"image with uid {image.id} does not have an image identifier"
         )
 
 
@@ -614,34 +628,40 @@ def image_push(
     username: Optional[str] = None,
     password: Optional[str] = None,
 ) -> Union[ImagePushResult, SyftError]:
-    full_tag = image.image_identifier.full_name_with_tag
-    try:
-        builder = CustomWorkerBuilder()
-        result = builder.push_image(
-            # this should be consistent with docker build command
-            tag=image.image_identifier.full_name_with_tag,
-            registry_url=image.image_identifier.registry_host,
-            username=username,
-            password=password,
-        )
-
-        if "error" in result.logs.lower() or result.exit_code:
-            return SyftError(
-                message=f"Failed to push {full_tag}. "
-                f"Exit code: {result.exit_code}. "
-                f"Logs:\n{result.logs}"
+    if image.image_identifier is not None:
+        full_tag = image.image_identifier.full_name_with_tag
+        try:
+            builder = CustomWorkerBuilder()
+            result = builder.push_image(
+                # this should be consistent with docker build command
+                tag=image.image_identifier.full_name_with_tag,
+                registry_url=image.image_identifier.registry_host,
+                username=username,
+                password=password,
             )
 
-        return result
-    except docker.errors.APIError as e:
-        return SyftError(message=f"Docker API error when pushing {full_tag}. {e}")
-    except docker.errors.DockerException as e:
+            if "error" in result.logs.lower() or result.exit_code:
+                return SyftError(
+                    message=f"Failed to push {full_tag}. "
+                    f"Exit code: {result.exit_code}. "
+                    f"Logs:\n{result.logs}"
+                )
+
+            return result
+        except docker.errors.APIError as e:
+            return SyftError(message=f"Docker API error when pushing {full_tag}. {e}")
+        except docker.errors.DockerException as e:
+            return SyftError(
+                message=f"Docker exception when pushing {full_tag}. Reason - {e}"
+            )
+        except Exception as e:
+            return SyftError(
+                message=f"Unknown exception when pushing {image.image_identifier}. Reason - {e}"
+            )
+    else:
         return SyftError(
-            message=f"Docker exception when pushing {full_tag}. Reason - {e}"
-        )
-    except Exception as e:
-        return SyftError(
-            message=f"Unknown exception when pushing {image.image_identifier}. Reason - {e}"
+            message=f"image with uid {image.id} does not have an "
+            "image identifier and tag, hence we can't push it."
         )
 
 

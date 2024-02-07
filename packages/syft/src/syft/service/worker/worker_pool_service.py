@@ -566,6 +566,10 @@ def _create_workers_in_pool(
             number=worker_cnt + existing_worker_cnt,
         )
     else:
+        if worker_image.image_identifier is not None:
+            registry_host = worker_image.image_identifier.registry_host
+        else:
+            registry_host = None
         result = run_containers(
             pool_name=pool_name,
             worker_image=worker_image,
@@ -576,7 +580,7 @@ def _create_workers_in_pool(
             dev_mode=context.node.dev_mode,
             reg_username=reg_username,
             reg_password=reg_password,
-            reg_url=worker_image.image_identifier.registry_host,
+            reg_url=registry_host,
         )
         if isinstance(result, SyftError):
             return result
