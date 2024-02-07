@@ -81,14 +81,27 @@ SYFT_VERSION="<paste the chart version number>"
 #### 4. Provisioning Helm Charts
 
 ```sh
-helm install my-domain openmined/syft --version $SYFT_VERSION --namespace syft --create-namespace --set ingress.ingressClass=traefik
+helm install my-domain openmined/syft --version $SYFT_VERSION --namespace syft --create-namespace --set ingress.className="traefik"
 ```
 
-### Azure or GCP Ingress
+### Ingress Controllers
 
+For Azure AKS
+
+```sh
+helm install ... --set ingress.className="azure-application-gateway"
 ```
-helm install ... --set ingress.ingressClass="azure/application-gateway"
-helm install ... --set ingress.ingressClass="gce"
+
+For AWS EKS
+
+```sh
+helm install ... --set ingress.className="alb"
+```
+
+For Google GKE we need the [`gce` annotation](https://cloud.google.com/kubernetes-engine/docs/how-to/load-balance-ingress#create-ingress) annotation.
+
+```sh
+helm install ... --set ingress.class="gce"
 ```
 
 ## Deploy to a Container Engine or Cloud
