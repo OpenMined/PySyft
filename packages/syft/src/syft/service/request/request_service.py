@@ -19,6 +19,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
+from ..context import NodeServiceContext
 from ..notification.notification_service import CreateNotification
 from ..notification.notification_service import NotificationService
 from ..notification.notifications import Notification
@@ -104,7 +105,7 @@ class RequestService(AbstractService):
             print("Failed to submit Request", e)
             raise e
 
-    def expand_node(self, context: AuthedServiceContext, code_obj: UserCode):
+    def expand_node(self, context: AuthedServiceContext, code_obj: UserCode) -> Dict:
         user_code_service = context.node.get_service("usercodeservice")
         nested_requests = user_code_service.solve_nested_requests(context, code_obj)
 
@@ -122,7 +123,9 @@ class RequestService(AbstractService):
 
         return new_nested_requests
 
-    def resolve_nested_requests(self, context, request):
+    def resolve_nested_requests(
+        self, context: NodeServiceContext, request: Request
+    ) -> Request:
         # TODO: change this if we have more UserCode Changes
         if len(request.changes) != 1:
             return request
@@ -133,7 +136,7 @@ class RequestService(AbstractService):
                 return request
             code_obj = change.linked_obj.resolve_with_context(context=context).ok()
             # recursively check what other UserCodes to approve
-            nested_requests: Dict[str : Tuple[LinkedObject, Dict]] = self.expand_node(
+            nested_requests: Dict[str, Tuple[LinkedObject, Dict]] = self.expand_node(
                 context, code_obj
             )
             if isinstance(nested_requests, Err):
@@ -161,33 +164,31 @@ class RequestService(AbstractService):
         context: AuthedServiceContext,
         page_index: Optional[int] = 0,
         page_size: Optional[int] = 0,
-    ) -> Union[List[RequestInfo], SyftError]:
-        """Get a Dataset"""
+    ) -> Union[List[List[RequestInfo]], List[RequestInfo], SyftError]:
+        """Get the information of all requests"""
         result = self.stash.get_all(context.credentials)
+        if result.is_err():
+            return SyftError(message=result.err())
+
         method = context.node.get_service_method(UserService.get_by_verify_key)
         get_message = context.node.get_service_method(NotificationService.filter_by_obj)
 
-        requests = []
-        if result.is_ok():
-            for req in result.ok():
-                user = method(req.requesting_user_verify_key).to(UserView)
-                message = get_message(context=context, obj_uid=req.id)
-                requests.append(
-                    RequestInfo(user=user, request=req, notification=message)
-                )
-
-            # If chunk size is defined, then split list into evenly sized chunks
-            if page_size:
-                requests = [
-                    requests[i : i + page_size]
-                    for i in range(0, len(requests), page_size)
-                ]
-                # Return the proper slice using chunk_index
-                requests = requests[page_index]
-
+        requests: List[RequestInfo] = []
+        for req in result.ok():
+            user = method(req.requesting_user_verify_key).to(UserView)
+            message = get_message(context=context, obj_uid=req.id)
+            requests.append(RequestInfo(user=user, request=req, notification=message))
+        if not page_size:
             return requests
 
-        return SyftError(message=result.err())
+        # If chunk size is defined, then split list into evenly sized chunks
+        chunked_requests: List[List[RequestInfo]] = [
+            requests[i : i + page_size] for i in range(0, len(requests), page_size)
+        ]
+        if page_index:
+            return chunked_requests[page_index]
+        else:
+            return chunked_requests
 
     @service_method(path="request.add_changes", name="add_changes")
     def add_changes(
@@ -223,8 +224,9 @@ class RequestService(AbstractService):
             requests = [
                 requests[i : i + page_size] for i in range(0, len(requests), page_size)
             ]
-            # Return the proper slice using chunk_index
-            requests = requests[page_index]
+            if page_index is not None:
+                # Return the proper slice using chunk_index
+                requests = requests[page_index]
 
         return requests
 
