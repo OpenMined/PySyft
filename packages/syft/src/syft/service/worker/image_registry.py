@@ -1,4 +1,5 @@
 # stdlib
+import re
 from urllib.parse import urlparse
 
 # third party
@@ -9,6 +10,8 @@ from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
+
+REGX_DOMAIN = re.compile(r"^(localhost|([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*))(\:\d{1,5})?$")
 
 
 @serializable()
@@ -26,15 +29,19 @@ class SyftImageRegistry(SyftObject):
 
     @validator("url")
     def validate_url(cls, val: str):
-        if val.startswith("http") or "://" in val:
-            raise ValueError("Registry URL must be a valid RFC 3986 URI")
+        if not val:
+            raise ValueError("Invalid Registry URL. Must not be empty")
+
+        if not bool(re.match(REGX_DOMAIN, val)):
+            raise ValueError("Invalid Registry URL. Must be a valid domain.")
+
         return val
 
     @classmethod
     def from_url(cls, full_str: str):
+        # this is only for urlparse
         if "://" not in full_str:
             full_str = f"http://{full_str}"
-
         parsed = urlparse(full_str)
 
         # netloc includes the host & port, so local dev should work as expected
