@@ -1,8 +1,6 @@
 # stdlib
-from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 # third party
@@ -17,7 +15,6 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
-from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
 from ..notification.notification_service import CreateNotification
 from ..notification.notification_service import NotificationService
@@ -37,7 +34,6 @@ from .request import RequestInfo
 from .request import RequestInfoFilter
 from .request import RequestStatus
 from .request import SubmitRequest
-from .request import UserCodeStatusChange
 from .request_stash import RequestStash
 
 

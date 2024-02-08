@@ -1044,6 +1044,7 @@ def new_check_code(context: TransformContext) -> TransformContext:
 #     context.output["nested_requests"] = nested_requests
 #     return context
 
+
 def locate_launch_jobs(context: TransformContext) -> TransformContext:
     nested_codes = {}
     tree = ast.parse(context.output["raw_code"])
@@ -1060,8 +1061,10 @@ def locate_launch_jobs(context: TransformContext) -> TransformContext:
                 raise Exception(user_code.message)
             # TODO: Not great
             print(user_code)
-            user_code_link = LinkedObject.from_obj(user_code[-1], node_uid=context.node.id)
-            
+            user_code_link = LinkedObject.from_obj(
+                user_code[-1], node_uid=context.node.id
+            )
+
             nested_codes[call] = (user_code_link, user_code[-1].nested_codes)
     context.output["nested_codes"] = nested_codes
     return context
