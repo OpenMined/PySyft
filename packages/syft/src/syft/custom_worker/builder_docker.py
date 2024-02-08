@@ -9,6 +9,7 @@ from typing import Optional
 import docker
 
 # relative
+from .builder_types import BUILD_IMAGE_TIMEOUT_SEC
 from .builder_types import BuilderBase
 from .builder_types import ImageBuildResult
 from .builder_types import ImagePushResult
@@ -18,8 +19,6 @@ __all__ = ["DockerBuilder"]
 
 
 class DockerBuilder(BuilderBase):
-    BUILD_MAX_WAIT = 30 * 60
-
     def build_image(
         self,
         tag: str,
@@ -40,7 +39,7 @@ class DockerBuilder(BuilderBase):
         with contextlib.closing(docker.from_env()) as client:
             image_result, logs = client.images.build(
                 tag=tag,
-                timeout=self.BUILD_MAX_WAIT,
+                timeout=BUILD_IMAGE_TIMEOUT_SEC,
                 buildargs=buildargs,
                 **kwargs,
             )

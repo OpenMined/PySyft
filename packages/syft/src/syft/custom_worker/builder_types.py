@@ -7,7 +7,17 @@ from typing import Optional
 # third party
 from pydantic import BaseModel
 
-__all__ = ["BuilderBase", "ImageBuildResult", "ImagePushResult"]
+__all__ = [
+    "BuilderBase",
+    "ImageBuildResult",
+    "ImagePushResult",
+    "BUILD_IMAGE_TIMEOUT_SEC",
+    "PUSH_IMAGE_TIMEOUT_SEC",
+]
+
+
+BUILD_IMAGE_TIMEOUT_SEC = 30 * 60
+PUSH_IMAGE_TIMEOUT_SEC = 10 * 60
 
 
 class ImageBuildResult(BaseModel):
