@@ -1,6 +1,7 @@
 # stdlib
 import contextlib
 import os
+from pathlib import Path
 import socket
 import socketserver
 import sys
@@ -19,6 +20,7 @@ from ...custom_worker.builder_types import ImageBuildResult
 from ...custom_worker.builder_types import ImagePushResult
 from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import PrebuiltWorkerConfig
+from ...custom_worker.k8s import KubeUtils
 from ...custom_worker.k8s import PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
 from ...node.credentials import SyftVerifyKey
@@ -36,6 +38,7 @@ from .worker_pool import WorkerStatus
 
 DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu:0.0.1"
 DEFAULT_WORKER_POOL_NAME = "default-pool"
+K8S_NODE_CREDS_NAME = "node-creds"
 
 
 def backend_container_name() -> str:
@@ -254,9 +257,46 @@ def run_workers_in_threads(
     return results
 
 
+def prepare_kubernetes_pool_env(runner: KubernetesRunner, env_vars: dict):
+    # get current backend pod name
+    backend_pod_name = os.getenv("K8S_POD_NAME")
+    if not backend_pod_name:
+        raise ValueError(message="Pod name not provided in environment variable")
+
+    # get current backend's credentials path
+    creds_path = os.getenv("CREDENTIALS_PATH")
+    if not creds_path:
+        raise ValueError(message="Credentials path not provided")
+
+    creds_path = Path(creds_path)
+    if not creds_path.exists():
+        raise ValueError(message="Credentials file does not exist")
+
+    # create a secret for the node credentials owned by the backend, not the pool.
+    node_secret = KubeUtils.create_secret(
+        secret_name=K8S_NODE_CREDS_NAME,
+        type="Opaque",
+        component=backend_pod_name,
+        data={creds_path.name: creds_path.read_text()},
+        encoded=False,
+    )
+
+    # clone and patch backend environment variables
+    backend_env = runner.get_pod_env_vars(backend_pod_name) or []
+    env_vars = KubeUtils.patch_env_vars(backend_env, env_vars)
+    mount_secrets = {
+        node_secret.metadata.name: {
+            "mountPath": str(creds_path),
+            "subPath": creds_path.name,
+        },
+    }
+
+    return env_vars, mount_secrets
+
+
 def create_kubernetes_pool(
     runner: KubernetesRunner,
-    worker_image: SyftWorker,
+    tag: str,
     pool_name: str,
     replicas: int,
     queue_port: int,
@@ -273,14 +313,13 @@ def create_kubernetes_pool(
         print(
             "Creating new pool "
             f"name={pool_name} "
-            f"tag={worker_image.image_identifier.full_name_with_tag} "
+            f"tag={tag} "
             f"replicas={replicas}"
         )
-        pool = runner.create_pool(
-            pool_name=pool_name,
-            tag=worker_image.image_identifier.full_name_with_tag,
-            replicas=replicas,
-            env_vars={
+
+        env_vars, mount_secrets = prepare_kubernetes_pool_env(
+            runner,
+            {
                 "SYFT_WORKER": "True",
                 "DEV_MODE": f"{debug}",
                 "QUEUE_PORT": f"{queue_port}",
@@ -289,6 +328,15 @@ def create_kubernetes_pool(
                 "CREATE_PRODUCER": "False",
                 "INMEMORY_WORKERS": "False",
             },
+        )
+
+        # run the pool with args + secret
+        pool = runner.create_pool(
+            pool_name=pool_name,
+            tag=tag,
+            replicas=replicas,
+            env_vars=env_vars,
+            mount_secrets=mount_secrets,
             reg_username=reg_username,
             reg_password=reg_password,
             reg_url=reg_url,
@@ -300,7 +348,7 @@ def create_kubernetes_pool(
         if error and pool:
             pool.delete()
 
-    return runner.get_pods(pool_name=pool_name)
+    return runner.get_pool_pods(pool_name=pool_name)
 
 
 def scale_kubernetes_pool(
@@ -318,7 +366,7 @@ def scale_kubernetes_pool(
     except Exception as e:
         return SyftError(message=f"Failed to scale workers {e}")
 
-    return runner.get_pods(pool_name=pool_name)
+    return runner.get_pool_pods(pool_name=pool_name)
 
 
 def run_workers_in_kubernetes(
@@ -336,10 +384,10 @@ def run_workers_in_kubernetes(
     spawn_status = []
     runner = KubernetesRunner()
 
-    if start_idx == 0:
+    if not runner.exists(pool_name=pool_name):
         pool_pods = create_kubernetes_pool(
             runner=runner,
-            worker_image=worker_image,
+            tag=worker_image.image_identifier.full_name_with_tag,
             pool_name=pool_name,
             replicas=worker_count,
             queue_port=queue_port,

@@ -29,7 +29,7 @@ spec:
         command: null
         env:
         - name: VERSION
-          value: {{ .Values.syft.version }}
+          value: "{{ .Values.syft.version }}"
         - name: VERSION_HASH
           value: {{ .Values.node.settings.versionHash }}
         - name: NODE_TYPE
