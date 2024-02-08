@@ -342,7 +342,7 @@ class UserCode(SyftObject):
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime]
     uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
-    nested_requests: Dict[str, str] = {}
+    # nested_requests: Dict[str, str] = {}
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
     worker_pool_name: Optional[str]
 
@@ -1028,9 +1028,24 @@ def new_check_code(context: TransformContext) -> TransformContext:
     return context
 
 
+# def locate_launch_jobs(context: TransformContext) -> TransformContext:
+#     # stdlib
+#     nested_requests = {}
+#     tree = ast.parse(context.output["raw_code"])
+
+#     # look for domain arg
+#     if "domain" in [arg.arg for arg in tree.body[0].args.args]:
+#         v = LaunchJobVisitor()
+#         v.visit(tree)
+#         nested_calls = v.nested_calls
+#         for call in nested_calls:
+#             nested_requests[call] = "latest"
+
+#     context.output["nested_requests"] = nested_requests
+#     return context
+
 def locate_launch_jobs(context: TransformContext) -> TransformContext:
-    # stdlib
-    nested_requests = {}
+    nested_codes = {}
     tree = ast.parse(context.output["raw_code"])
 
     # look for domain arg
@@ -1038,10 +1053,17 @@ def locate_launch_jobs(context: TransformContext) -> TransformContext:
         v = LaunchJobVisitor()
         v.visit(tree)
         nested_calls = v.nested_calls
+        user_code_service = context.node.get_service("usercodeService")
         for call in nested_calls:
-            nested_requests[call] = "latest"
-
-    context.output["nested_requests"] = nested_requests
+            user_code = user_code_service.get_by_service_name(context, call)
+            if isinstance(user_code, SyftError):
+                raise Exception(user_code.message)
+            # TODO: Not great
+            print(user_code)
+            user_code_link = LinkedObject.from_obj(user_code[0], node_uid=context.node.id)
+            
+            nested_codes[call] = (user_code_link, user_code[0].nested_codes)
+    context.output["nested_codes"] = nested_codes
     return context
 
 

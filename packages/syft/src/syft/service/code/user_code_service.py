@@ -105,21 +105,21 @@ class UserCodeService(AbstractService):
             return SyftError(message=str(result.err()))
         return result.ok()
 
-    def solve_nested_requests(self, context: AuthedServiceContext, code: UserCode):
-        nested_requests = code.nested_requests
-        nested_codes = {}
-        for service_func_name, version in nested_requests.items():
-            codes = self.get_by_service_name(
-                context=context, service_func_name=service_func_name
-            )
-            if isinstance(codes, SyftError):
-                return codes
-            if version == "latest":
-                nested_codes[service_func_name] = codes[-1]
-            else:
-                nested_codes[service_func_name] = codes[int(version)]
+    # def solve_nested_requests(self, context: AuthedServiceContext, code: UserCode):
+    #     nested_requests = code.nested_requests
+    #     nested_codes = {}
+    #     for service_func_name, version in nested_requests.items():
+    #         codes = self.get_by_service_name(
+    #             context=context, service_func_name=service_func_name
+    #         )
+    #         if isinstance(codes, SyftError):
+    #             return codes
+    #         if version == "latest":
+    #             nested_codes[service_func_name] = codes[-1]
+    #         else:
+    #             nested_codes[service_func_name] = codes[int(version)]
 
-        return nested_codes
+    #     return nested_codes
 
     def _request_code_execution(
         self,
