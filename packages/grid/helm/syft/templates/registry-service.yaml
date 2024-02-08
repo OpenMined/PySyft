@@ -11,7 +11,7 @@ spec:
   ports:
   - protocol: TCP
     port: 80
-    targetPort: 5800
+    targetPort: 5000
   selector:
     app.kubernetes.io/name: {{ .Chart.Name }}
     app.kubernetes.io/component: registry

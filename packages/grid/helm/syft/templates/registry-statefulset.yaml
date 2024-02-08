@@ -28,7 +28,7 @@ spec:
         - name: REGISTRY_STORAGE_DELETE_ENABLED
           value: "true"
         ports:
-        - containerPort: 5800
+        - containerPort: 5000
         volumeMounts:
         - mountPath: /var/lib/registry
           name: registry-data
