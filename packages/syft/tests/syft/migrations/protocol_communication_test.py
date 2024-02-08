@@ -186,6 +186,9 @@ def my_stage_protocol(protocol_file: Path):
                     _file_path.unlink()
 
 
+@pytest.mark.skip(
+    reason="Issues running with other tests. Shared release folder causes issues."
+)
 def test_client_server_running_different_protocols(my_stage_protocol):
     def patched_index_syft_by_module_name(fully_qualified_name: str):
         if klass_v1.__name__ in fully_qualified_name:

@@ -13,6 +13,7 @@ import syft as sy
 from syft.client.domain_client import DomainClient
 from syft.node.worker import Worker
 from syft.protocol.data_protocol import get_data_protocol
+from syft.protocol.data_protocol import protocol_release_dir
 from syft.protocol.data_protocol import stage_protocol_changes
 
 # relative
@@ -77,6 +78,12 @@ def stage_protocol(protocol_file: Path):
         yield dp.protocol_history
         dp.revert_latest_protocol()
         dp.save_history(dp.protocol_history)
+
+        # Cleanup release dir, remove unused released files
+        for _file_path in protocol_release_dir().iterdir():
+            for version in dp.read_json(_file_path):
+                if version not in dp.protocol_history.keys():
+                    _file_path.unlink()
 
 
 @pytest.fixture()
