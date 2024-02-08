@@ -109,6 +109,9 @@ class DataProtocol:
     def save_history(self, history: Dict) -> None:
         for file_path in protocol_release_dir().iterdir():
             for version in self.read_json(file_path):
+                # Skip adding file if the version is not part of the history
+                if version not in history.keys():
+                    continue
                 history[version] = {"release_name": file_path.name}
         self.file_path.write_text(json.dumps(history, indent=2) + "\n")
 
@@ -338,7 +341,6 @@ class DataProtocol:
 
     def validate_release(self) -> None:
         """Validate if latest release name is consistent with syft version"""
-
         # Read the protocol history
         protocol_history = self.read_json(self.file_path)
         sorted_protocol_versions = sorted(protocol_history.keys(), key=natural_key)
@@ -402,7 +404,7 @@ class DataProtocol:
 
         # If current protocol is dev, skip revert
         if latest_protocol is None or latest_protocol == "dev":
-            return SyftError("Revert skipped !! Already running dev protocol.")
+            return SyftError(message="Revert skipped !! Already running dev protocol.")
 
         # Read the current released protocol
         release_name = protocol_history[latest_protocol]["release_name"]
