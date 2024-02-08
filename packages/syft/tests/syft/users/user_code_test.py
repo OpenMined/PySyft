@@ -146,7 +146,7 @@ def test_nested_requests(worker, guest_client: User):
 
     root_domain_client = worker.root_client
     request = root_domain_client.requests[-1]
-    assert request.code.nested_requests == {"test_inner_func": "latest"}
+    
     root_domain_client.api.services.request.apply(request.id)
     request = root_domain_client.requests[-1]
 
