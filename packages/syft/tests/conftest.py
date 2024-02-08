@@ -1,5 +1,6 @@
 # stdlib
 import json
+import os
 from pathlib import Path
 from unittest import mock
 
@@ -44,6 +45,14 @@ def create_file(filepath: Path, data: dict):
 
 def remove_file(filepath: Path):
     filepath.unlink(missing_ok=True)
+
+
+# Pytest hook to set the number of workers for xdist
+def pytest_xdist_auto_num_workers(config):
+    num = config.option.numprocesses
+    if num == "auto" or num == "logical":
+        return os.cpu_count()
+    return None
 
 
 @pytest.fixture(autouse=True)
