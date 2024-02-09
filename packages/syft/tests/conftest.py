@@ -12,8 +12,8 @@ import pytest
 import syft as sy
 from syft.client.domain_client import DomainClient
 from syft.node.worker import Worker
-from syft.protocol.data_protocol import bump_protocol_version
 from syft.protocol.data_protocol import get_data_protocol
+from syft.protocol.data_protocol import protocol_release_dir
 from syft.protocol.data_protocol import stage_protocol_changes
 
 # relative
@@ -38,9 +38,10 @@ def faker():
     return Faker()
 
 
-def create_file(filepath: Path, data: dict):
-    with open(filepath, "w") as fp:
-        fp.write(json.dumps(data))
+def patch_protocol_file(filepath: Path):
+    dp = get_data_protocol()
+    original_protocol = dp.read_json(dp.file_path)
+    filepath.write_text(json.dumps(original_protocol))
 
 
 def remove_file(filepath: Path):
@@ -60,8 +61,7 @@ def protocol_file():
     random_name = sy.UID().to_string()
     protocol_dir = sy.SYFT_PATH / "protocol"
     file_path = protocol_dir / f"{random_name}.json"
-    dp = get_data_protocol()
-    create_file(filepath=file_path, data=dp.protocol_history)
+    patch_protocol_file(filepath=file_path)
     yield file_path
     remove_file(filepath=file_path)
 
@@ -74,9 +74,16 @@ def stage_protocol(protocol_file: Path):
     ):
         dp = get_data_protocol()
         stage_protocol_changes()
-        bump_protocol_version()
+        # bump_protocol_version()
         yield dp.protocol_history
+        dp.revert_latest_protocol()
         dp.save_history(dp.protocol_history)
+
+        # Cleanup release dir, remove unused released files
+        for _file_path in protocol_release_dir().iterdir():
+            for version in dp.read_json(_file_path):
+                if version not in dp.protocol_history.keys():
+                    _file_path.unlink()
 
 
 @pytest.fixture()
