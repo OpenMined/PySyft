@@ -259,7 +259,7 @@ def deploy_to_python(
         "processes": processes,
         "dev_mode": dev_mode,
         "tail": tail,
-        "node_type": node_type_enum,
+        "node_type": str(node_type_enum),
         "node_side_type": node_side_type,
         "enable_warnings": enable_warnings,
         # new kwargs

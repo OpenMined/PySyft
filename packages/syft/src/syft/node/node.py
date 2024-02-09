@@ -633,6 +633,9 @@ class Node(AbstractNode):
                 client_config=blob_client_config
             )
 
+        node_type = NodeType(node_type)
+        node_side_type = NodeSideType(node_side_type)
+
         return cls(
             name=name,
             id=uid,

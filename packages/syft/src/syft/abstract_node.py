@@ -26,6 +26,9 @@ class NodeSideType(str, Enum):
     LOW_SIDE = "low"
     HIGH_SIDE = "high"
 
+    def __str__(self) -> str:
+        return self.value
+
 
 class AbstractNode:
     id: Optional[UID]
