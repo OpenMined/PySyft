@@ -46,6 +46,7 @@ from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftHashableObject
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -316,6 +317,38 @@ class UserCodeV2(SyftObject):
 
 
 @serializable()
+class UserCodeV3(SyftObject):
+    # version
+    __canonical_name__ = "UserCode"
+    __version__ = SYFT_OBJECT_VERSION_4
+
+    id: UID
+    node_uid: Optional[UID]
+    user_verify_key: SyftVerifyKey
+    raw_code: str
+    input_policy_type: Union[Type[InputPolicy], UserPolicy]
+    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    input_policy_state: bytes = b""
+    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
+    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    output_policy_state: bytes = b""
+    parsed_code: str
+    service_func_name: str
+    unique_func_name: str
+    user_unique_func_name: str
+    code_hash: str
+    signature: inspect.Signature
+    status: UserCodeStatusCollection
+    input_kwargs: List[str]
+    enclave_metadata: Optional[EnclaveMetadata] = None
+    submit_time: Optional[DateTime]
+    uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
+    nested_requests: Dict[str, str] = {}
+    nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
+    worker_pool_name: Optional[str]
+
+
+@serializable()
 class UserCode(SyftObject):
     # version
     __canonical_name__ = "UserCode"
@@ -342,7 +375,6 @@ class UserCode(SyftObject):
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime]
     uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
-    # nested_requests: Dict[str, str] = {}
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
     worker_pool_name: Optional[str]
 
@@ -654,17 +686,31 @@ class UserCode(SyftObject):
         ip.set_next_input(warning_message + self.raw_code)
 
 
-@migrate(UserCode, UserCodeV2)
+@migrate(UserCodeV3, UserCodeV2)
 def downgrade_usercode_v3_to_v2():
     return [
         drop("worker_pool_name"),
     ]
 
 
-@migrate(UserCodeV2, UserCode)
+@migrate(UserCodeV2, UserCodeV3)
 def upgrade_usercode_v2_to_v3():
     return [
         make_set_default("worker_pool_name", None),
+    ]
+
+
+@migrate(UserCode, UserCodeV3)
+def downgrade_usercode_v4_to_v3():
+    return [
+        make_set_default("nested_requests", {}),
+    ]
+
+
+@migrate(UserCodeV3, UserCode)
+def upgrade_usercode_v3_to_v4():
+    return [
+        drop("nested_requests"),
     ]
 
 
@@ -1026,23 +1072,6 @@ def new_check_code(context: TransformContext) -> TransformContext:
     context.output["parsed_code"] = processed_code
 
     return context
-
-
-# def locate_launch_jobs(context: TransformContext) -> TransformContext:
-#     # stdlib
-#     nested_requests = {}
-#     tree = ast.parse(context.output["raw_code"])
-
-#     # look for domain arg
-#     if "domain" in [arg.arg for arg in tree.body[0].args.args]:
-#         v = LaunchJobVisitor()
-#         v.visit(tree)
-#         nested_calls = v.nested_calls
-#         for call in nested_calls:
-#             nested_requests[call] = "latest"
-
-#     context.output["nested_requests"] = nested_requests
-#     return context
 
 
 def locate_launch_jobs(context: TransformContext) -> TransformContext:
