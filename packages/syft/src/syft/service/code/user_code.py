@@ -1056,16 +1056,16 @@ def locate_launch_jobs(context: TransformContext) -> TransformContext:
         nested_calls = v.nested_calls
         user_code_service = context.node.get_service("usercodeService")
         for call in nested_calls:
-            user_code = user_code_service.get_by_service_name(context, call)
-            if isinstance(user_code, SyftError):
-                raise Exception(user_code.message)
+            user_codes = user_code_service.get_by_service_name(context, call)
+            if isinstance(user_codes, SyftError):
+                raise Exception(user_codes.message)
             # TODO: Not great
-            print(user_code)
+            user_code = user_codes[-1]
             user_code_link = LinkedObject.from_obj(
-                user_code[-1], node_uid=context.node.id
+                user_code, node_uid=context.node.id
             )
 
-            nested_codes[call] = (user_code_link, user_code[-1].nested_codes)
+            nested_codes[call] = (user_code_link, user_code.nested_codes)
     context.output["nested_codes"] = nested_codes
     return context
 
