@@ -17,8 +17,12 @@ class NodeSideType(str, Enum):
     LOW_SIDE = "low"
     HIGH_SIDE = "high"
 
+    def __str__(self) -> str:
+        # Use values when transforming NodeType to str
+        return self.value
 
-class NodeType(Enum):
+
+class NodeType(str, Enum):
     DOMAIN = "domain"
     NETWORK = "network"
     ENCLAVE = "enclave"

@@ -10,7 +10,7 @@ from .types.uid import UID
 
 
 @serializable()
-class NodeType(Enum):
+class NodeType(str, Enum):
     DOMAIN = "domain"
     NETWORK = "network"
     ENCLAVE = "enclave"
