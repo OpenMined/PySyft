@@ -192,8 +192,15 @@ jobs:
           for repo in $REPO_LIST
           do
               echo "Cleaning up '$repo'"
+              # remove dev tags
               az acr repository show-tags --name $ACR_REGISTRY_NAME --repository $repo --orderby time_desc --output tsv \
                 | grep dev- \
+                | tail -n +$TAIL_FROM_LINE \
+                | xargs -r -I% az acr repository untag --name $ACR_REGISTRY_NAME --image $repo:%
+
+              # remove beta tags
+              az acr repository show-tags --name $ACR_REGISTRY_NAME --repository $repo --orderby time_desc --output tsv \
+                | grep beta \
                 | tail -n +$TAIL_FROM_LINE \
                 | xargs -r -I% az acr repository untag --name $ACR_REGISTRY_NAME --image $repo:%
           done
