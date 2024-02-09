@@ -1061,9 +1061,7 @@ def locate_launch_jobs(context: TransformContext) -> TransformContext:
                 raise Exception(user_codes.message)
             # TODO: Not great
             user_code = user_codes[-1]
-            user_code_link = LinkedObject.from_obj(
-                user_code, node_uid=context.node.id
-            )
+            user_code_link = LinkedObject.from_obj(user_code, node_uid=context.node.id)
 
             nested_codes[call] = (user_code_link, user_code.nested_codes)
     context.output["nested_codes"] = nested_codes
