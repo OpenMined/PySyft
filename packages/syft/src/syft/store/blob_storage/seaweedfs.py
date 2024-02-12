@@ -1,8 +1,9 @@
 # stdlib
 from io import BytesIO
 import math
+from queue import Queue
+import threading
 from typing import Dict
-from typing import Generator
 from typing import List
 from typing import Optional
 from typing import Type
@@ -14,6 +15,7 @@ from botocore.client import BaseClient as S3BaseClient
 from botocore.client import ClientError as BotoClientError
 from botocore.client import Config
 import requests
+from tqdm import tqdm
 from typing_extensions import Self
 
 # relative
@@ -33,27 +35,33 @@ from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SeaweedSecureFilePathLocation
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.grid_url import GridURL
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...util.constants import DEFAULT_TIMEOUT
 
 WRITE_EXPIRATION_TIME = 900  # seconds
-DEFAULT_CHUNK_SIZE = 1024**3  # 1 GB
+DEFAULT_FILE_PART_SIZE = (1024**3) * 5  # 5GB
+DEFAULT_UPLOAD_CHUNK_SIZE = 819200
 
 
-def _byte_chunks(bytes: BytesIO, size: int) -> Generator[bytes, None, None]:
-    while True:
-        try:
-            yield bytes.read(size)
-        except BlockingIOError:
-            return
+@serializable()
+class SeaweedFSBlobDepositV1(BlobDeposit):
+    __canonical_name__ = "SeaweedFSBlobDeposit"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    urls: List[GridURL]
 
 
 @serializable()
 class SeaweedFSBlobDeposit(BlobDeposit):
     __canonical_name__ = "SeaweedFSBlobDeposit"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     urls: List[GridURL]
+    size: int
 
     def write(self, data: BytesIO) -> Union[SyftSuccess, SyftError]:
         # relative
@@ -68,24 +76,83 @@ class SeaweedFSBlobDeposit(BlobDeposit):
 
         try:
             no_lines = 0
-            for part_no, (byte_chunk, url) in enumerate(
-                zip(_byte_chunks(data, DEFAULT_CHUNK_SIZE), self.urls),
-                start=1,
-            ):
-                no_lines += byte_chunk.count(b"\n")
-                if api is not None:
-                    blob_url = api.connection.to_blob_route(
-                        url.url_path, host=url.host_or_ip
+            # this loops over the parts, we have multiple parts to allow for
+            # concurrent uploads of a single file. (We are currently not using that)
+            # a part may for instance be 5GB
+            # parts are then splitted into chunks which are MBs (order of magnitude)
+            part_size = math.ceil(self.size / len(self.urls))
+            chunk_size = DEFAULT_UPLOAD_CHUNK_SIZE
+
+            # this is the total nr of chunks in all parts
+            total_iterations = math.ceil(part_size / chunk_size) * len(self.urls)
+
+            with tqdm(
+                total=total_iterations,
+                desc=f"Uploading progress",  # noqa
+            ) as pbar:
+                for part_no, url in enumerate(
+                    self.urls,
+                    start=1,
+                ):
+                    if api is not None:
+                        blob_url = api.connection.to_blob_route(
+                            url.url_path, host=url.host_or_ip
+                        )
+                    else:
+                        blob_url = url
+
+                    # read a chunk untill we have read part_size
+                    class PartGenerator:
+                        def __init__(self):
+                            self.no_lines = 0
+
+                        def async_generator(self, chunk_size=DEFAULT_UPLOAD_CHUNK_SIZE):
+                            item_queue: Queue = Queue()
+                            threading.Thread(
+                                target=self.add_chunks_to_queue,
+                                kwargs={"queue": item_queue, "chunk_size": chunk_size},
+                                daemon=True,
+                            ).start()
+                            item = item_queue.get()
+                            while item != 0:
+                                yield item
+                                pbar.update(1)
+                                item = item_queue.get()
+
+                        def add_chunks_to_queue(
+                            self, queue, chunk_size=DEFAULT_UPLOAD_CHUNK_SIZE
+                        ):
+                            """Creates a data geneator for the part"""
+                            n = 0
+
+                            while n * chunk_size <= part_size:
+                                try:
+                                    chunk = data.read(chunk_size)
+                                    self.no_lines += chunk.count(b"\n")
+                                    n += 1
+                                    queue.put(chunk)
+                                except BlockingIOError:
+                                    # if end of file, stop
+                                    queue.put(0)
+                            # if end of part, stop
+                            queue.put(0)
+
+                    gen = PartGenerator()
+
+                    response = requests.put(
+                        url=str(blob_url),
+                        data=gen.async_generator(chunk_size),
+                        timeout=DEFAULT_TIMEOUT,
+                        stream=True,
                     )
-                else:
-                    blob_url = url
-                response = requests.put(
-                    url=str(blob_url), data=byte_chunk, timeout=DEFAULT_TIMEOUT
-                )
-                response.raise_for_status()
-                etag = response.headers["ETag"]
-                etags.append({"ETag": etag, "PartNumber": part_no})
+
+                    response.raise_for_status()
+                    no_lines += gen.no_lines
+                    etag = response.headers["ETag"]
+                    etags.append({"ETag": etag, "PartNumber": part_no})
+
         except requests.RequestException as e:
+            print(e)
             return SyftError(message=str(e))
 
         mark_write_complete_method = from_api_or_context(
@@ -96,6 +163,20 @@ class SeaweedFSBlobDeposit(BlobDeposit):
         return mark_write_complete_method(
             etags=etags, uid=self.blob_storage_entry_id, no_lines=no_lines
         )
+
+
+@migrate(SeaweedFSBlobDeposit, SeaweedFSBlobDepositV1)
+def downgrade_seaweedblobdeposit_v2_to_v1():
+    return [
+        drop(["size"]),
+    ]
+
+
+@migrate(SeaweedFSBlobDepositV1, SeaweedFSBlobDeposit)
+def upgrade_seaweedblobdeposit_v1_to_v2():
+    return [
+        make_set_default("size", 1),
+    ]
 
 
 @serializable()
@@ -188,7 +269,7 @@ class SeaweedFSConnection(BlobStorageConnection):
             )
 
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
-        total_parts = math.ceil(obj.file_size / DEFAULT_CHUNK_SIZE)
+        total_parts = math.ceil(obj.file_size / DEFAULT_FILE_PART_SIZE)
 
         urls = [
             GridURL.from_url(
@@ -205,8 +286,9 @@ class SeaweedFSConnection(BlobStorageConnection):
             )
             for i in range(total_parts)
         ]
-
-        return SeaweedFSBlobDeposit(blob_storage_entry_id=obj.id, urls=urls)
+        return SeaweedFSBlobDeposit(
+            blob_storage_entry_id=obj.id, urls=urls, size=obj.file_size
+        )
 
     def complete_multipart_upload(
         self,

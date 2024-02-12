@@ -184,6 +184,26 @@ def get_enable_warnings() -> bool:
     return str_to_bool(get_env("ENABLE_WARNINGS", "False"))
 
 
+def get_container_host() -> Optional[str]:
+    return get_env("CONTAINER_HOST")
+
+
+def get_default_worker_image() -> str:
+    return get_env("DEFAULT_WORKER_POOL_IMAGE")
+
+
+def get_default_worker_pool_name() -> str:
+    return get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME)
+
+
+def get_default_worker_pool_count() -> int:
+    return int(get_env("DEFAULT_WORKER_POOL_COUNT", 1))
+
+
+def in_kubernetes() -> Optional[str]:
+    return get_container_host() == "k8s"
+
+
 def get_venv_packages() -> str:
     res = subprocess.getoutput(
         "pip list --format=freeze",
@@ -191,8 +211,22 @@ def get_venv_packages() -> str:
     return res
 
 
+def get_syft_worker() -> bool:
+    return str_to_bool(get_env("SYFT_WORKER", "false"))
+
+
+def get_k8s_pod_name() -> Optional[str]:
+    return get_env("K8S_POD_NAME")
+
+
 def get_syft_worker_uid() -> Optional[str]:
-    return get_env("SYFT_WORKER_UID", None)
+    is_worker = get_syft_worker()
+    pod_name = get_k8s_pod_name()
+    uid = get_env("SYFT_WORKER_UID")
+    # if uid is empty is a K8S worker, generate a uid from the pod name
+    if (not uid) and is_worker and pod_name:
+        uid = str(UID.with_seed(pod_name))
+    return uid
 
 
 signing_key_env = get_private_key_env()
@@ -262,6 +296,10 @@ class Node(AbstractNode):
         sqlite_path: Optional[str] = None,
         blob_storage_config: Optional[BlobStorageConfig] = None,
         queue_config: Optional[QueueConfig] = None,
+        queue_port: Optional[int] = None,
+        n_consumers: int = 0,
+        create_producer: bool = False,
+        thread_workers: bool = False,
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         dev_mode: bool = False,
@@ -364,7 +402,15 @@ class Node(AbstractNode):
         self.post_init()
         self.create_initial_settings(admin_email=root_email)
 
-        self.init_queue_manager(queue_config=queue_config)
+        self.queue_config = self.create_queue_config(
+            n_consumers=n_consumers,
+            create_producer=create_producer,
+            thread_workers=thread_workers,
+            queue_port=queue_port,
+            queue_config=queue_config,
+        )
+
+        self.init_queue_manager(queue_config=self.queue_config)
 
         self.init_blob_storage(config=blob_storage_config)
 
@@ -417,20 +463,40 @@ class Node(AbstractNode):
     def close(self):
         self.stop()
 
-    def init_queue_manager(self, queue_config: Optional[QueueConfig]):
-        queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
-        self.queue_config = queue_config_
+    def create_queue_config(
+        self,
+        n_consumers: int,
+        create_producer: bool,
+        thread_workers: bool,
+        queue_port: Optional[int],
+        queue_config: Optional[QueueConfig],
+    ) -> QueueConfig:
+        if queue_config:
+            queue_config_ = queue_config
+        elif queue_port is not None or n_consumers > 0 or create_producer:
+            queue_config_ = ZMQQueueConfig(
+                client_config=ZMQClientConfig(
+                    create_producer=create_producer,
+                    queue_port=queue_port,
+                    n_consumers=n_consumers,
+                ),
+                thread_workers=thread_workers,
+            )
+        else:
+            queue_config_ = ZMQQueueConfig()
 
+        return queue_config_
+
+    def init_queue_manager(self, queue_config: QueueConfig):
         MessageHandlers = [APICallMessageHandler]
-
         if self.is_subprocess:
             return
 
-        self.queue_manager = QueueManager(config=queue_config_)
+        self.queue_manager = QueueManager(config=queue_config)
         for message_handler in MessageHandlers:
             queue_name = message_handler.queue_name
             # client config
-            if getattr(queue_config_.client_config, "create_producer", True):
+            if getattr(queue_config.client_config, "create_producer", True):
                 context = AuthedServiceContext(
                     node=self,
                     credentials=self.verify_key,
@@ -445,26 +511,28 @@ class Node(AbstractNode):
                 producer.run()
                 address = producer.address
             else:
-                port = queue_config_.client_config.queue_port
+                port = queue_config.client_config.queue_port
                 if port is not None:
                     address = get_queue_address(port)
                 else:
                     address = None
 
-            if address is None and queue_config_.client_config.n_consumers > 0:
+            if address is None and queue_config.client_config.n_consumers > 0:
                 raise ValueError("address unknown for consumers")
 
-            service_name = queue_config_.client_config.consumer_service
+            service_name = queue_config.client_config.consumer_service
 
-            print("Consumer service Name: ", service_name)
-
-            if service_name is None:
+            if not service_name:
                 # Create consumers for default worker pool
                 create_default_worker_pool(self)
             else:
                 # Create consumer for given worker pool
                 syft_worker_uid = get_syft_worker_uid()
-                if syft_worker_uid is not None:
+                print(
+                    f"Running as consumer with uid={syft_worker_uid} service={service_name}"
+                )
+
+                if syft_worker_uid:
                     self.add_consumer_for_service(
                         service_name=service_name,
                         syft_worker_id=UID(syft_worker_uid),
@@ -501,7 +569,6 @@ class Node(AbstractNode):
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         n_consumers: int = 0,
-        consumer_service: Optional[str] = None,
         thread_workers: bool = False,
         create_producer: bool = False,
         queue_port: Optional[int] = None,
@@ -564,19 +631,6 @@ class Node(AbstractNode):
                 client_config=blob_client_config
             )
 
-        if queue_port is not None or n_consumers > 0 or create_producer:
-            queue_config = ZMQQueueConfig(
-                client_config=ZMQClientConfig(
-                    create_producer=create_producer,
-                    queue_port=queue_port,
-                    n_consumers=n_consumers,
-                    consumer_service=consumer_service,
-                ),
-                thread_workers=thread_workers,
-            )
-        else:
-            queue_config = None
-
         return cls(
             name=name,
             id=uid,
@@ -588,7 +642,10 @@ class Node(AbstractNode):
             node_side_type=node_side_type,
             enable_warnings=enable_warnings,
             blob_storage_config=blob_storage_config,
-            queue_config=queue_config,
+            queue_port=queue_port,
+            n_consumers=n_consumers,
+            thread_workers=thread_workers,
+            create_producer=create_producer,
             dev_mode=dev_mode,
             migrate=migrate,
             in_memory_workers=in_memory_workers,
@@ -1352,7 +1409,8 @@ class Node(AbstractNode):
 
     def get_default_worker_pool(self):
         result = self.pool_stash.get_by_name(
-            credentials=self.verify_key, pool_name=DEFAULT_WORKER_POOL_NAME
+            credentials=self.verify_key,
+            pool_name=get_default_worker_pool_name(),
         )
         if result.is_err():
             return SyftError(message=f"{result.err()}")
@@ -1502,36 +1560,44 @@ class NodeRegistry:
         return list(cls.__node_registry__.values())
 
 
+def get_default_worker_tag_by_env(dev_mode=False):
+    if in_kubernetes():
+        return get_default_worker_image()
+    elif dev_mode:
+        return "local-dev"
+    else:
+        return __version__
+
+
 def create_default_worker_pool(node: Node) -> Optional[SyftError]:
     credentials = node.verify_key
-
+    pull_image = not node.dev_mode
     image_stash = node.get_service(SyftWorkerImageService).stash
-
+    default_pool_name = get_default_worker_pool_name()
+    default_worker_pool = node.get_default_worker_pool()
+    default_worker_tag = get_default_worker_tag_by_env(node.dev_mode)
+    worker_count = get_default_worker_pool_count()
     context = AuthedServiceContext(
         node=node,
         credentials=credentials,
         role=ServiceRole.ADMIN,
     )
 
-    print("Creating Default Worker Image")
+    print(f"Creating default worker image with tag='{default_worker_tag}'")
     # Get/Create a default worker SyftWorkerImage
     default_image = create_default_image(
         credentials=credentials,
         image_stash=image_stash,
-        dev_mode=node.dev_mode,
-        syft_version_tag="local-dev" if node.dev_mode else __version__,
+        tag=default_worker_tag,
+        in_kubernetes=in_kubernetes(),
     )
-
-    # Skip pulling image if using locally built image
-    pull_image = not node.dev_mode
     if isinstance(default_image, SyftError):
+        print("Failed to create default worker image: ", default_image.message)
         return default_image
 
-    image_build_method = node.get_service_method(SyftWorkerImageService.build)
-
-    print("Building Default Worker Image")
-
     if not default_image.is_built:
+        print(f"Building default worker image with tag={default_worker_tag}")
+        image_build_method = node.get_service_method(SyftWorkerImageService.build)
         # Build the Image for given tag
         result = image_build_method(
             context,
@@ -1544,21 +1610,23 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
             print("Failed to build default worker image: ", result.message)
             return
 
-    default_worker_pool = node.get_default_worker_pool()
-    worker_count = node.queue_config.client_config.n_consumers
-
     # Create worker pool if it doesn't exists
+    print(
+        "Setting up worker pool"
+        f"name={default_pool_name} "
+        f"workers={worker_count} "
+        f"image_uid={default_image.id} "
+        f"in_memory={node.in_memory_workers}"
+    )
     if default_worker_pool is None:
         worker_to_add_ = worker_count
         create_pool_method = node.get_service_method(SyftWorkerPoolService.launch)
-        print("Creating default Worker Pool")
         result = create_pool_method(
             context,
-            name=DEFAULT_WORKER_POOL_NAME,
+            name=default_pool_name,
             image_uid=default_image.id,
-            num_workers=worker_to_add_,
+            num_workers=worker_count,
         )
-
     else:
         # Else add a worker to existing worker pool
         worker_to_add_ = max(default_worker_pool.max_count, worker_count) - len(
@@ -1566,11 +1634,13 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
         )
         add_worker_method = node.get_service_method(SyftWorkerPoolService.add_workers)
         result = add_worker_method(
-            context=context, number=worker_to_add_, pool_name=DEFAULT_WORKER_POOL_NAME
+            context=context,
+            number=worker_to_add_,
+            pool_name=default_pool_name,
         )
 
     if isinstance(result, SyftError):
-        print(f"Failed to create Worker for Default workers. Error: {result.message}")
+        print(f"Default worker pool error. {result.message}")
         return
 
     for n in range(worker_to_add_):

@@ -2,14 +2,18 @@ name: CD - Syft
 
 on:
   schedule:
-    - cron: "00 12 * * */7" # At 12:00 UTC on every seven days
+    - cron: "0 12 * * 0" # At 12:00 UTC on every Sunday
 
   workflow_dispatch:
     inputs:
       skip_tests:
-        description: "If true, skip tests"
+        description: "If true, skip pre-release tests"
         required: false
         default: "false"
+        type: choice
+        options:
+          - false
+          - true
 
       release_platform:
         description: "Release Platform"
@@ -21,23 +25,63 @@ on:
           - TEST_PYPI
           - REAL_AND_TEST_PYPI
 
+# Prevents concurrent runs of the same workflow
+# while the previous run is still in progress
+concurrency:
+  group: "CD - Syft"
+  cancel-in-progress: false
+
 jobs:
+  release-checks:
+    if: github.repository == 'OpenMined/PySyft' # don't run on forks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # The steps ensure that the cron job is able to run only for
+      # for beta releases and not for stable releases
+      # For stable release, we always have to manually run the workflow
+      - name: Check if the release is a beta release
+        run: |
+          if [[ $(python packages/grid/VERSION) != *"beta"* && ${{github.event_name}} == 'schedule'  ]]; then
+            echo "Cron Job could only be run for beta releases"
+            exit 1
+          fi
+
+      # Print the github user triggering the workflow
+      - name: Github User triggering the workflow
+        run: |
+          echo "Github User: ${{ github.actor }}"
+
   call-pr-tests-linting:
-    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+    needs: [release-checks]
+    if: github.repository == 'OpenMined/PySyft' && needs.release-checks.result == 'success' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/pr-tests-linting.yml@dev
 
   call-pr-tests-syft:
-    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+    needs: [release-checks]
+    if: github.repository == 'OpenMined/PySyft' && needs.release-checks.result == 'success' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/pr-tests-syft.yml@dev
 
   call-pr-tests-stack:
-    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+    needs: [release-checks]
+    if: github.repository == 'OpenMined/PySyft' && needs.release-checks.result == 'success' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@dev
     secrets: inherit
 
   build-and-push-docker-images:
-    needs: [call-pr-tests-linting, call-pr-tests-syft, call-pr-tests-stack]
-    if: always() && (needs.call-pr-tests-linting.result == 'success' && needs.call-pr-tests-syft.result == 'success' && needs.call-pr-tests-stack.result == 'success' || github.event.inputs.skip_tests == 'true')
+    needs:
+      [
+        call-pr-tests-linting,
+        call-pr-tests-syft,
+        call-pr-tests-stack,
+        release-checks,
+      ]
+    if: always() && needs.release-checks.result == 'success' && (needs.call-pr-tests-linting.result == 'success' && needs.call-pr-tests-syft.result == 'success' && needs.call-pr-tests-stack.result == 'success' || github.event.inputs.skip_tests == 'true')
 
     strategy:
       matrix:
@@ -45,7 +89,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     outputs:
-      release_tag: ${{ steps.release_metadata.outputs.release_tag }}
+      release_tag: ${{ steps.get_release_tag.outputs.release_tag }}
       grid_version: ${{ steps.release_metadata.outputs.grid_version }}
 
     steps:
@@ -87,8 +131,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade  bump2version tox
 
+      - name: Get Release tag
+        id: get_release_tag
+        run: |
+          if [[ $(python packages/grid/VERSION) == *"beta"* ]]; then
+          echo "release_tag=beta" >> $GITHUB_OUTPUT
+          else
+            echo "release_tag=latest" >> $GITHUB_OUTPUT
+          fi
+
       - name: Bump the Version
-        id: bump-version
+        if: steps.get_release_tag.outputs.release_tag == 'beta'
         run: |
           ls **/VERSION | xargs -I {} python {}
           cat packages/grid/devspace.yaml | grep '0\.'
@@ -99,11 +152,6 @@ jobs:
       - name: Generate Release Metadata
         id: release_metadata
         run: |
-          if [[ $(python packages/grid/VERSION) == *"beta"* ]]; then
-            echo "release_tag=beta" >> $GITHUB_OUTPUT
-          else
-            echo "release_tag=latest" >> $GITHUB_OUTPUT
-          fi
           if [[ ${{matrix.runner}} == *"x64"* ]]; then
             echo "release_platform=linux/amd64" >> $GITHUB_OUTPUT
             echo "short_release_platform=amd64" >> $GITHUB_OUTPUT
@@ -117,13 +165,12 @@ jobs:
       # TODO: Optimize redundant bump protocol version checks
       - name: Check and Bump Protocol Version
         run: |
-          if [[ $(python packages/grid/VERSION) != *"beta"* ]]; then
+          if [[ "${{ steps.get_release_tag.outputs.release_tag }}" == "latest" ]]; then
             export BUMP=True
           fi
           tox -e syft.protocol.check
 
       - name: Set up Docker Buildx
-        id: buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker
@@ -214,6 +261,9 @@ jobs:
 
     runs-on: sh-arc-linux-x64
 
+    outputs:
+      release_tag: ${{ needs.build-and-push-docker-images.outputs.release_tag }}
+
     steps:
       - name: Download digests
         uses: actions/download-artifact@v4
@@ -223,7 +273,6 @@ jobs:
           merge-multiple: true
 
       - name: Set up Docker Buildx
-        id: buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker
@@ -291,7 +340,7 @@ jobs:
           pip install --upgrade tox setuptools wheel twine bump2version PyYAML
 
       - name: Bump the Version
-        id: bump-version
+        if: needs.merge-docker-images.outputs.release_tag == 'beta'
         run: |
           ls **/VERSION | xargs -I {} python {}
           cat packages/grid/devspace.yaml | grep '0\.'
@@ -299,6 +348,17 @@ jobs:
           ls **/VERSION | xargs -I {} python {}
           cat packages/grid/devspace.yaml | grep '0\.'
           python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
+
+      - name: Generate Release Metadata
+        id: release_checks
+        run: |
+          echo "github_release_version=$(python packages/grid/VERSION |  sed 's/-beta./b/')" >> $GITHUB_OUTPUT
+          echo "future_stable_version=$(python packages/grid/VERSION |   sed 's/-beta.*//')" >> $GITHUB_OUTPUT
+          if [[ ${{ needs.merge-docker-images.outputs.release_tag}} == "beta" ]]; then
+            echo "is_beta_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_beta_release=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check Protocol Version
         run: |
@@ -328,22 +388,9 @@ jobs:
           tox -e syft.build.helm
           tox -e syft.package.helm
 
-      # Check if the version is a pre-release
-      - name: Check if the version is a pre-release and modify version string
-        id: release_checks
-        run: |
-          if [[ $(python packages/grid/VERSION) == *"beta"* ]]; then
-            echo "is_pre_release=true" >> $GITHUB_OUTPUT
-            echo "github_release_version=$(python packages/grid/VERSION |  sed 's/-beta./b/')" >> $GITHUB_OUTPUT
-          else
-            echo "is_pre_release=false" >> $GITHUB_OUTPUT
-            echo "github_release_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
-          fi
-          echo "future_stable_version=$(python packages/grid/VERSION |   sed 's/-beta.*//')" >> $GITHUB_OUTPUT
-
       - name: Check and Bump Protocol Version
         run: |
-          if [[ "${{ steps.release_checks.outputs.is_pre_release }}" == "false" ]]; then
+          if [[ "${{ needs.merge-docker-images.outputs.release_tag }}" == "latest" ]]; then
             export BUMP=True
           fi
           tox -e syft.protocol.check
@@ -356,13 +403,23 @@ jobs:
         run: |
           tox -e lint || true
 
-      - name: Commit changes to Syft
+      - name: Changes to commit to Syft Repo during beta release
+        if: needs.merge-docker-images.outputs.release_tag == 'beta'
         uses: EndBug/add-and-commit@v9
         with:
           author_name: ${{ secrets.OM_BOT_NAME }}
           author_email: ${{ secrets.OM_BOT_EMAIL }}
           message: "[syft]bump version"
-          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION','packages/syft/PYPI.md', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml','packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py', 'packages/grid/podman/podman-kube/podman-syft-kube.yaml' ,'packages/grid/podman/podman-kube/podman-syft-kube-config.yaml', 'packages/syftcli/manifest.yml', 'packages/syft/src/syft/protocol/protocol_version.json', 'packages/grid/backend/worker_cpu.dockerfile','packages/grid/helm/syft/values.yaml','packages/grid/helm/syft']"
+          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION','packages/syft/PYPI.md', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml','packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py', 'packages/grid/podman/podman-kube/podman-syft-kube.yaml' ,'packages/grid/podman/podman-kube/podman-syft-kube-config.yaml', 'packages/syftcli/manifest.yml', 'packages/syft/src/syft/protocol/protocol_version.json', 'packages/syft/src/syft/protocol/releases/', 'packages/grid/backend/worker_cpu.dockerfile','packages/grid/helm/syft/values.yaml','packages/grid/helm/syft']"
+
+      - name: Changes to commit to Syft Repo during stable release
+        if: needs.merge-docker-images.outputs.release_tag == 'latest'
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: ${{ secrets.OM_BOT_NAME }}
+          author_email: ${{ secrets.OM_BOT_EMAIL }}
+          message: "[syft] bump protocol version"
+          add: "['packages/syft/src/syft/protocol/protocol_version.json', 'packages/syft/src/syft/protocol/releases/']"
 
       - name: Scheduled Build and Publish
         if: github.event_name == 'schedule'
@@ -397,7 +454,7 @@ jobs:
       # This step will copy the generated K8s manifest files to the correct directory in Infra repo
       - name: Copy files to Infra Repo
         run: |
-          if $is_pre_release; then
+          if [[ "${{ needs.merge-docker-images.outputs.release_tag }}" == "beta" ]]; then
             rm -rf infrastructure/gitops/environments/pre_release/
             mkdir -p infrastructure/gitops/environments/pre_release/
             cp -R packages/grid/helm/syft/. infrastructure/gitops/environments/pre_release/
@@ -428,7 +485,7 @@ jobs:
         with:
           name: v${{ steps.release_checks.outputs.github_release_version }}
           generate_release_notes: true
-          prerelease: ${{ steps.release_checks.outputs.is_pre_release }}
+          prerelease: ${{ steps.release_checks.outputs.is_beta_release }}
           files: |
             ./packages/syftcli/manifest.yml
             ./build/syftcli-config/*

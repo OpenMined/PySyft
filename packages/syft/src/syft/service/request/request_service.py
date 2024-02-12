@@ -233,11 +233,16 @@ class RequestService(AbstractService):
         name="apply",
     )
     def apply(
-        self, context: AuthedServiceContext, uid: UID
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        **kwargs: dict,
     ) -> Union[SyftSuccess, SyftError]:
         request = self.stash.get_by_uid(context.credentials, uid)
         if request.is_ok():
             request = request.ok()
+
+            context.extra_kwargs = kwargs
             result = request.apply(context=context)
 
             filter_by_obj = context.node.get_service_method(

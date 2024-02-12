@@ -1,4 +1,5 @@
 # stdlib
+import hashlib
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -64,9 +65,9 @@ class UID:
 
         # if value is not set - create a novel and unique ID.
         if isinstance(value, str):
-            value = uuid.UUID(value)
+            value = uuid.UUID(value, version=4)
         elif isinstance(value, bytes):
-            value = uuid.UUID(bytes=value)
+            value = uuid.UUID(bytes=value, version=4)
         elif isinstance(value, UID):
             value = value.value
 
@@ -79,6 +80,11 @@ class UID:
         except ValueError as e:
             critical(f"Unable to convert {value} to UUID. {e}")
             traceback_and_raise(e)
+
+    @staticmethod
+    def with_seed(value: str) -> "UID":
+        md5 = hashlib.md5(value.encode("utf-8"), usedforsecurity=False)
+        return UID(md5.hexdigest())
 
     def to_string(self) -> str:
         return self.no_dash

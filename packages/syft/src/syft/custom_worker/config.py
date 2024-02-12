@@ -1,15 +1,16 @@
 # stdlib
+import contextlib
 from hashlib import sha256
+import io
 from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 # third party
-from docker.models.images import Image
+import docker
 from packaging import version
 from pydantic import validator
 from typing_extensions import Self
@@ -20,6 +21,7 @@ from ..serde.serializable import serializable
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
+from .utils import iterator_to_string
 
 PYTHON_DEFAULT_VER = "3.11"
 PYTHON_MIN_VER = version.parse("3.10")
@@ -109,16 +111,45 @@ class CustomWorkerConfig(WorkerConfig):
 
 
 @serializable()
+class PrebuiltWorkerConfig(WorkerConfig):
+    # tag that is already built and pushed in some registry
+    tag: str
+    description: Optional[str]
+
+    def __str__(self) -> str:
+        if self.description:
+            return f"prebuilt tag='{self.tag}' description='{self.description}'"
+        else:
+            return f"prebuilt tag='{self.tag}'"
+
+    def set_description(self, description_text: str) -> None:
+        self.description = description_text
+
+
+@serializable()
 class DockerWorkerConfig(WorkerConfig):
     dockerfile: str
     file_name: Optional[str]
     description: Optional[str]
 
+    @validator("dockerfile")
+    def validate_dockerfile(cls, dockerfile: str) -> str:
+        if not dockerfile:
+            raise ValueError("Dockerfile cannot be empty")
+        dockerfile = dockerfile.strip()
+        return dockerfile
+
     @classmethod
-    def from_path(cls, path: Union[Path, str], description: Optional[str] = "") -> Self:
+    def from_path(
+        cls,
+        path: Union[Path, str],
+        description: Optional[str] = "",
+    ) -> Self:
         with open(path) as f:
             return cls(
-                dockerfile=f.read(), file_name=Path(path).name, description=description
+                dockerfile=f.read(),
+                file_name=Path(path).name,
+                description=description,
             )
 
     def __eq__(self, __value: object) -> bool:
@@ -132,17 +163,22 @@ class DockerWorkerConfig(WorkerConfig):
     def __str__(self) -> str:
         return self.dockerfile
 
-    def test_image_build(self, tag: str, **kwargs) -> Tuple[Image, SyftSuccess]:
-        # relative
-        from ..service.worker.utils import parse_output
-        from .builder import CustomWorkerBuilder
-
-        builder = CustomWorkerBuilder()
-        try:
-            _, logs = builder.build_image(config=self, tag=tag, **kwargs)
-            return SyftSuccess(message=parse_output(logs))
-        except Exception as e:
-            return SyftError(message=f"Failed to build image !! Error: {str(e)}.")
-
     def set_description(self, description_text: str) -> None:
         self.description = description_text
+
+    def test_image_build(self, tag: str, **kwargs) -> Union[SyftSuccess, SyftError]:
+        try:
+            with contextlib.closing(docker.from_env()) as client:
+                if not client.ping():
+                    return SyftError(
+                        "Cannot reach docker server. Please check if docker is running."
+                    )
+
+                kwargs["fileobj"] = io.BytesIO(self.dockerfile.encode("utf-8"))
+                _, logs = client.images.build(
+                    tag=tag,
+                    **kwargs,
+                )
+                return SyftSuccess(message=iterator_to_string(iterator=logs))
+        except Exception as e:
+            return SyftError(message=f"Failed to build: {e}")
