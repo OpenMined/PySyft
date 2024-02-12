@@ -281,7 +281,7 @@ def prepare_kubernetes_pool_env(
         raise ValueError("Pod name not provided in environment variable")
 
     # get current backend's credentials path
-    creds_path: Union[str, None, Path] = os.getenv("CREDENTIALS_PATH")
+    creds_path: Optional[Union[str, Path]] = os.getenv("CREDENTIALS_PATH")
     if not creds_path:
         raise ValueError("Credentials path not provided")
 
@@ -300,7 +300,7 @@ def prepare_kubernetes_pool_env(
 
     # clone and patch backend environment variables
     backend_env = runner.get_pod_env_vars(backend_pod_name) or []
-    env_vars_list = KubeUtils.patch_env_vars(backend_env, env_vars)
+    env_vars_: List = KubeUtils.patch_env_vars(backend_env, env_vars)
     mount_secrets = {
         node_secret.metadata.name: {
             "mountPath": str(creds_path),
@@ -308,7 +308,7 @@ def prepare_kubernetes_pool_env(
         },
     }
 
-    return env_vars_list, mount_secrets
+    return env_vars_, mount_secrets
 
 
 def create_kubernetes_pool(
@@ -321,7 +321,7 @@ def create_kubernetes_pool(
     reg_username: Optional[str] = None,
     reg_password: Optional[str] = None,
     reg_url: Optional[str] = None,
-    **kwargs: Dict[str, Any],
+    **kwargs: Any,
 ) -> Union[SyftError, List[Pod]]:
     pool = None
     error = False
@@ -396,7 +396,7 @@ def run_workers_in_kubernetes(
     reg_username: Optional[str] = None,
     reg_password: Optional[str] = None,
     reg_url: Optional[str] = None,
-    **kwargs: Dict[str, Any],
+    **kwargs: Any,
 ) -> Union[List[ContainerSpawnStatus], SyftError]:
     spawn_status = []
     runner = KubernetesRunner()
