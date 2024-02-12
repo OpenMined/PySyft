@@ -401,7 +401,7 @@ def run_workers_in_kubernetes(
     spawn_status = []
     runner = KubernetesRunner()
 
-    if start_idx == 0:
+    if not runner.exists(pool_name=pool_name):
         if worker_image.image_identifier is not None:
             pool_pods = create_kubernetes_pool(
                 runner=runner,

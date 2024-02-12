@@ -205,4 +205,4 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
 
     result = ds_client.code.simple_function(data=action_obj)
     assert isinstance(result, SyftError)
-    assert "UserCodeStatus.DENIED" in result.message
+    assert "Execution denied" in result.message
