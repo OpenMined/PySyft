@@ -16,19 +16,28 @@ spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
-  defaultBackend:
-    service:
-      name: proxy
-      port:
-        number: 80
   rules:
   - http:
       paths:
-      - backend:
+      - path: /
+        pathType: Prefix
+        backend:
           service:
-            name: proxy
+            name: frontend
             port:
               number: 80
-        path: /
+      - path: /api
         pathType: Prefix
+        backend:
+          service:
+            name: backend
+            port:
+              number: 80
+      - path: /blob
+        pathType: Prefix
+        backend:
+          service:
+            name: seaweedfs
+            port:
+              number: 8333
 {{ end }}
