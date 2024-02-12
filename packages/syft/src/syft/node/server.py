@@ -125,6 +125,8 @@ def run_uvicorn(
                 migrate=True,
                 in_memory_workers=in_memory_workers,
                 queue_port=queue_port,
+                create_producer=create_producer,
+                n_consumers=n_consumers,
             )
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)

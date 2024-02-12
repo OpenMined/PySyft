@@ -238,6 +238,13 @@
             "hash": "1f32d94b75b0a6b4e86cec93d94aa905738219e3e7e75f51dd335ee832a6ed3e",
             "action": "remove"
         }
+    },
+    "SeaweedFSBlobDeposit": {
+        "2": {
+            "version": 2,
+            "hash": "07d84a95324d95d9c868cd7d1c33c908f77aa468671d76c144586aab672bcbb5",
+            "action": "add"
+        }
     }
 }
 
