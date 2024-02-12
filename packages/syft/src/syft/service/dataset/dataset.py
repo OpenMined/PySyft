@@ -140,7 +140,7 @@ class Asset(SyftObject):
     def __init__(
         self,
         description: Optional[Union[MarkdownDescription, str]] = "",
-        **data: Dict[str, Any],
+        **data: Any,
     ):
         if isinstance(description, str):
             description = MarkdownDescription(text=description)
@@ -331,7 +331,7 @@ class CreateAsset(SyftObject):
     class Config:
         validate_assignment = True
 
-    def __init__(self, description: Optional[str] = "", **data: Dict[str, Any]) -> None:
+    def __init__(self, description: Optional[str] = "", **data: Any) -> None:
         super().__init__(**data, description=MarkdownDescription(text=str(description)))
 
     @root_validator()
@@ -474,7 +474,7 @@ class Dataset(SyftObject):
     def __init__(
         self,
         description: Optional[Union[str, MarkdownDescription]] = "",
-        **data: Dict[str, Any],
+        **data: Any,
     ) -> None:
         if isinstance(description, str):
             description = MarkdownDescription(text=description)
