@@ -463,6 +463,10 @@ class UserCode(SyftObject):
             return None
 
     @property
+    def output_policy_approved(self):
+        return self.status.approved
+
+    @property
     def output_policy(self) -> Optional[OutputPolicy]:
         if not self.status.approved:
             return None
