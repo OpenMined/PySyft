@@ -37,19 +37,19 @@ class ServiceRole(Enum):
     # Disabling it, as both property and classmethod only works for python >= 3.9
     # @property
     @classmethod
-    def roles_descending(cls) -> List[Tuple[int, "ServiceRole"]]:
+    def roles_descending(cls) -> List[Tuple[int, Self]]:
         tuples = []
         for x in cls:
             tuples.append((x.value, x))
         return sorted(tuples, reverse=True)
 
-    @staticmethod
-    def roles_for_level(level: Union[int, "ServiceRole"]) -> List["ServiceRole"]:
+    @classmethod
+    def roles_for_level(cls, level: Union[int, Self]) -> List[Self]:
         if isinstance(level, ServiceRole):
             level = level.value
         roles = []
         level_float = float(level)
-        service_roles = ServiceRole.roles_descending()
+        service_roles = cls.roles_descending()
         for role in service_roles:
             role_num = role[0]
             if role_num == 0:
@@ -105,7 +105,7 @@ DATA_OWNER_ROLE_LEVEL: List[ServiceRole] = ServiceRole.roles_for_level(
 
 ADMIN_ROLE_LEVEL = ServiceRole.roles_for_level(ServiceRole.ADMIN)
 
-ROLE_TO_CAPABILITIES: Dict["ServiceRole", List["ServiceRoleCapability"]] = {
+ROLE_TO_CAPABILITIES: Dict[ServiceRole, List[ServiceRoleCapability]] = {
     ServiceRole.NONE: [],
     ServiceRole.GUEST: [
         ServiceRoleCapability.CAN_MAKE_DATA_REQUESTS,
