@@ -343,6 +343,8 @@ class Request(SyftObject):
     request_hash: str
     changes: List[Change]
     history: List[ChangeStatus] = []
+    
+    __dependent_objects__ = [".usercode.something", ]
 
     __attr_searchable__ = [
         "requesting_user_verify_key",
