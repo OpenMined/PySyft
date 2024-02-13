@@ -327,6 +327,14 @@ class Job(SyftObject):
         )
         return api.services.user.get_current_user(self.id)
 
+    def _get_log_objs(self):
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        return api.services.log.get(self.log_id)
+
+
     def logs(self, stdout=True, stderr=True, _print=True):
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
@@ -334,7 +342,7 @@ class Job(SyftObject):
         )
         results = []
         if stdout:
-            stdout_log = api.services.log.get(self.log_id)
+            stdout_log = api.services.log.get_stdout(self.log_id)
             results.append(stdout_log)
 
         if stderr:
