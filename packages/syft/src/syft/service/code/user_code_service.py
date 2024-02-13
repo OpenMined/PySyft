@@ -311,7 +311,7 @@ class UserCodeService(AbstractService):
         # Check if the user has permission to execute the code.
         elif not (has_code_permission := self.has_code_permission(code, context)):
             return has_code_permission
-        elif code.output_policy is None:
+        elif not code.output_policy_approved:
             return SyftError("Output policy not approved", code)
         elif not output_policy.valid:
             return output_policy.valid
@@ -399,9 +399,9 @@ class UserCodeService(AbstractService):
                     code=code, context=context, output_policy=output_policy
                 )
                 if not can_execute:
-                    if output_policy is None:
+                    if not code.output_policy_approved:
                         return Err(
-                            "UserCodeStatus.DENIED: Function has no output policy"
+                            "Execution denied: Your code is waiting for approval"
                         )
                     if not (is_valid := output_policy.valid):
                         if (

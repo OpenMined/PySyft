@@ -1,7 +1,6 @@
 # stdlib
 import contextlib
 import io
-import json
 from pathlib import Path
 from typing import Iterable
 from typing import Optional
@@ -10,16 +9,16 @@ from typing import Optional
 import docker
 
 # relative
+from .builder_types import BUILD_IMAGE_TIMEOUT_SEC
 from .builder_types import BuilderBase
 from .builder_types import ImageBuildResult
 from .builder_types import ImagePushResult
+from .utils import iterator_to_string
 
 __all__ = ["DockerBuilder"]
 
 
 class DockerBuilder(BuilderBase):
-    BUILD_MAX_WAIT = 30 * 60
-
     def build_image(
         self,
         tag: str,
@@ -40,7 +39,7 @@ class DockerBuilder(BuilderBase):
         with contextlib.closing(docker.from_env()) as client:
             image_result, logs = client.images.build(
                 tag=tag,
-                timeout=self.BUILD_MAX_WAIT,
+                timeout=BUILD_IMAGE_TIMEOUT_SEC,
                 buildargs=buildargs,
                 **kwargs,
             )
@@ -67,16 +66,7 @@ class DockerBuilder(BuilderBase):
                 )
 
             result = client.images.push(repository=tag)
-            return ImagePushResult(logs=result)
+            return ImagePushResult(logs=result, exit_code=0)
 
     def _parse_output(self, log_iterator: Iterable) -> str:
-        log = ""
-        for line in log_iterator:
-            for item in line.values():
-                if isinstance(item, str):
-                    log += item
-                elif isinstance(item, dict):
-                    log += json.dumps(item) + "\n"
-                else:
-                    log += str(item)
-        return log
+        return iterator_to_string(iterator=log_iterator)

@@ -12,6 +12,8 @@ import docker
 from docker.models.containers import Container
 
 # relative
+from ...custom_worker.k8s import IN_KUBERNETES
+from ...custom_worker.runner_k8s import KubernetesRunner
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -27,6 +29,7 @@ from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .utils import DEFAULT_WORKER_POOL_NAME
 from .utils import _get_healthcheck_based_on_status
+from .utils import map_pod_to_worker_status
 from .worker_pool import ContainerSpawnStatus
 from .worker_pool import SyftWorker
 from .worker_pool import WorkerHealth
@@ -71,25 +74,13 @@ class WorkerService(AbstractService):
         if result.is_err():
             return SyftError(message=f"Failed to fetch workers. {result.err()}")
 
-        workers = result.ok()
+        workers: List[SyftWorker] = result.ok()
 
         if context.node.in_memory_workers:
             return workers
-
-        # If container workers, check their statuses
-        with contextlib.closing(docker.from_env()) as client:
-            for idx, worker in enumerate(workers):
-                worker_ = _check_and_update_status_for_worker(
-                    client=client,
-                    worker=worker,
-                    worker_stash=self.stash,
-                    credentials=context.credentials,
-                )
-
-                if not isinstance(worker_, SyftWorker):
-                    return worker_
-
-                workers[idx] = worker_
+        else:
+            # If container workers, check their statuses
+            workers = refresh_worker_status(workers, self.stash, context.credentials)
 
         return workers
 
@@ -101,12 +92,12 @@ class WorkerService(AbstractService):
         context: AuthedServiceContext,
         uid: UID,
     ) -> Union[Tuple[WorkerStatus, WorkerHealth], SyftError]:
-        worker = self.get(context=context, uid=uid)
+        result = self.get(context=context, uid=uid)
 
-        if not isinstance(worker, SyftWorker):
-            return worker
+        if isinstance(result, SyftError):
+            return result
 
-        return worker.status, worker.healthcheck
+        return result.status, result.healthcheck
 
     @service_method(
         path="worker.get",
@@ -122,14 +113,8 @@ class WorkerService(AbstractService):
 
         if context.node.in_memory_workers:
             return worker
-
-        with contextlib.closing(docker.from_env()) as client:
-            return _check_and_update_status_for_worker(
-                client=client,
-                worker=worker,
-                worker_stash=self.stash,
-                credentials=context.credentials,
-            )
+        else:
+            return refresh_worker_status([worker], self.stash, context.credentials)[0]
 
     @service_method(
         path="worker.logs",
@@ -148,6 +133,9 @@ class WorkerService(AbstractService):
 
         if context.node.in_memory_workers:
             logs = b"Logs not implemented for In Memory Workers"
+        elif IN_KUBERNETES:
+            runner = KubernetesRunner()
+            return runner.get_pod_logs(pod_name=worker.name)
         else:
             with contextlib.closing(docker.from_env()) as client:
                 docker_container = _get_worker_container(client, worker)
@@ -204,7 +192,18 @@ class WorkerService(AbstractService):
                 f"associated with SyftWorker {uid}"
             )
 
-        if not context.node.in_memory_workers:
+        if IN_KUBERNETES:
+            # Kubernetes will only restart the worker NOT REMOVE IT
+            runner = KubernetesRunner()
+            runner.delete_pod(pod_name=worker.name)
+            return SyftSuccess(
+                # pod deletion is not supported in Kubernetes, removing and recreating the pod.
+                message=(
+                    "Worker deletion is not supported in Kubernetes. "
+                    f"Removing and re-creating worker id={worker.id}"
+                )
+            )
+        elif not context.node.in_memory_workers:
             # delete the worker using docker client sdk
             with contextlib.closing(docker.from_env()) as client:
                 docker_container = _get_worker_container(client, worker)
@@ -252,33 +251,60 @@ class WorkerService(AbstractService):
         return worker
 
 
-def _check_and_update_status_for_worker(
-    client: docker.DockerClient,
-    worker: SyftWorker,
+def refresh_worker_status(
+    workers: List[SyftWorker],
     worker_stash: WorkerStash,
     credentials: SyftVerifyKey,
-) -> Union[SyftWorker, SyftError]:
-    worker_status = _get_worker_container_status(client, worker)
+):
+    if IN_KUBERNETES:
+        result = refresh_status_kubernetes(workers)
+    else:
+        result = refresh_status_docker(workers)
 
-    if isinstance(worker_status, SyftError):
-        return worker_status
+    if isinstance(result, SyftError):
+        return result
 
-    worker.status = worker_status
-
-    worker.healthcheck = _get_healthcheck_based_on_status(status=worker_status)
-
-    result = worker_stash.update(
-        credentials=credentials,
-        obj=worker,
-    )
-
-    return (
-        SyftError(
-            message=f"Failed to update status for worker: {worker.id}. Error: {result.err()}"
+    for worker in result:
+        stash_result = worker_stash.update(
+            credentials=credentials,
+            obj=worker,
         )
-        if result.is_err()
-        else result.ok()
-    )
+        if stash_result.is_err():
+            return SyftError(
+                message=f"Failed to update status for worker: {worker.id}. Error: {stash_result.err()}"
+            )
+
+    return result
+
+
+def refresh_status_kubernetes(workers: List[SyftWorker]):
+    updated_workers = []
+    runner = KubernetesRunner()
+    for worker in workers:
+        status = runner.get_pod_status(pod_name=worker.name)
+        if not status:
+            return SyftError(message=f"Pod does not exist. name={worker.name}")
+        status, health, _ = map_pod_to_worker_status(status)
+        worker.status = status
+        worker.healthcheck = health
+        updated_workers.append(worker)
+
+    return updated_workers
+
+
+def refresh_status_docker(workers: List[SyftWorker]):
+    updated_workers = []
+
+    with contextlib.closing(docker.from_env()) as client:
+        for worker in workers:
+            status = _get_worker_container_status(client, worker)
+            if isinstance(status, SyftError):
+                return status
+            worker.status = status
+            worker.healthcheck = _get_healthcheck_based_on_status(status=status)
+            updated_workers.append(worker)
+
+    return updated_workers
 
 
 def _stop_worker_container(

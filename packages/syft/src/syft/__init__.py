@@ -1,4 +1,4 @@
-__version__ = "0.8.4-beta.14"
+__version__ = "0.8.4-beta.22"
 
 # stdlib
 import pathlib
@@ -9,6 +9,7 @@ from typing import Callable
 
 # relative
 from . import gevent_patch  # noqa: F401
+from .abstract_node import NodeSideType  # noqa: F401
 from .abstract_node import NodeType  # noqa: F401
 from .client.client import connect  # noqa: F401
 from .client.client import login  # noqa: F401
