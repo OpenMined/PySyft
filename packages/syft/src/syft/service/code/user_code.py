@@ -61,6 +61,7 @@ from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
+from ..action.action_object import TwinMode
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..job.job_stash import Job
@@ -553,6 +554,71 @@ class UserCode(SyftObject):
 
                 all_assets += assets
         return all_assets
+
+    def get_dependents(
+        self, visited: Optional[List[str]] = None
+    ) -> Dict[str, List[Any]]:
+        # Usercode dependents are: input_policy inputs, output_policy outputs, nested_codes
+
+        visited = visited or []
+        visited = visited + [self.id]
+        dependents = {self.id: []}
+
+        # NOTE input and output policy are stored directly on the code object,
+        # so dependents are on the code object as well
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        action_service = api.services.action
+        input_policy = self.input_policy
+        if input_policy is not None:
+            all_input_ids = []
+            for _, inputs in input_policy.inputs.items():
+                all_input_ids.extend(inputs.values())
+
+            for input_id in all_input_ids:
+                dependents[self.id].append(
+                    action_service.get(input_id, twin_mode=TwinMode.NONE)
+                )
+
+        output_policy = self.output_policy
+        if output_policy is not None:
+            all_output_ids = []
+            for output in output_policy.output_history:
+                if isinstance(output.outputs, list):
+                    all_output_ids.extend(output.outputs)
+                else:
+                    all_output_ids.extend(output.outputs.values())
+
+            for output_id in all_output_ids:
+                dependents[self.id].append(
+                    action_service.get(output_id, twin_mode=TwinMode.NONE)
+                )
+
+        if self.nested_codes is not None:
+            for obj_link, _ in self.nested_codes.values():
+                if visited and obj_link.id in visited:
+                    continue
+                obj = obj_link.resolve
+                deps = obj.get_dependents(visited=visited)
+
+                visited.extend(list(deps.keys()))
+                dependents.update(deps)
+
+        job_service = api.services.job
+        user_code_jobs = job_service.get_by_user_code_id(self.id)
+        for job in user_code_jobs:
+            dependents[self.id].append(job)
+            if job.id not in visited:
+                visited.append(job.id)
+                job_dependents = job.get_dependents(visited=visited)
+                for k, v in job_dependents.items():
+                    if k not in dependents:
+                        dependents[k] = v
+
+        return dependents
+
+        # remove empty values
+        dependents = {k: v for k, v in dependents.items() if len(v) > 0}
+        return dependents
 
     @property
     def unsafe_function(self) -> Optional[Callable]:

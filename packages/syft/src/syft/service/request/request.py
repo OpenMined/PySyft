@@ -756,6 +756,26 @@ class Request(SyftObject):
         job.apply_info(job_info)
         return job_service.update(job)
 
+    def get_dependents(
+        self, visited: Optional[List[UID]] = None
+    ) -> Dict[str, SyftObject]:
+        visited = visited or []
+        visited = visited + [self.id]
+        dependents = {self.id: []}
+        if not isinstance(self.codes, SyftError):
+            dependents[self.id].extend(self.codes)
+
+        for dep in dependents[self.id]:
+            code_deps = dep.get_dependents(visited=visited)
+            for k, v in code_deps.items():
+                if k not in dependents:
+                    dependents[k] = v
+                visited.append(k)
+        return dependents
+
+    def get_dependencies(self):
+        return []
+
 
 @serializable()
 class RequestInfo(SyftObject):
