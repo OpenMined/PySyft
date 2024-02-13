@@ -380,7 +380,7 @@ Ingress is not working on Mac and Docker and the issue is `being tracked here <h
 
     $ docker ps
     CONTAINER ID   IMAGE                                 COMMAND                  CREATED        STATUS              PORTS                                                                                                                                  NAMES
-    57f73851bf08   gcr.io/k8s-minikube/kicbase:v0.0.25   "/usr/local/bin/entr…"   46 hours ago   Up About a minute   127.0.0.1:57954->22/tcp, 127.0.0.1:57955->2376/tcp, 127.0.0.1:57957->5800/tcp, 127.0.0.1:57958->8443/tcp, 127.0.0.1:57956->32443/tcp minikube
+    57f73851bf08   gcr.io/k8s-minikube/kicbase:v0.0.25   "/usr/local/bin/entr…"   46 hours ago   Up About a minute   127.0.0.1:57954->22/tcp, 127.0.0.1:57955->2376/tcp, 127.0.0.1:57957->5000/tcp, 127.0.0.1:57958->8443/tcp, 127.0.0.1:57956->32443/tcp minikube
 
 
 
