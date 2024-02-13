@@ -23,7 +23,7 @@ then
     echo "DEV_MODE Enabled"
     RELOAD="--reload"
     pip install --user -e "$APPDIR/syft[telemetry,data_science]" debugpy==1.8.1
-    DEBUG_CMD="python -m debugpy --wait-for-client --listen 0.0.0.0:5678 -m"
+    DEBUG_CMD="python -m debugpy --listen 0.0.0.0:5678 -m"
 fi
 
 set +e
