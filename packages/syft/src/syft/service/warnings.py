@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Optional
 
 # third party
@@ -30,7 +31,7 @@ class APIEndpointWarning(SyftBaseModel):
     message: Optional[str] = None
     enabled: bool = True
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, APIEndpointWarning):
             return self.message == other.message and self._bool == other._bool
         return self._bool == other
