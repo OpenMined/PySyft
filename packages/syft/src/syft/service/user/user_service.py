@@ -321,7 +321,7 @@ class UserService(AbstractService):
 
     def get_target_object(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Union[SyftError, User]:
+    ) -> Union[User, SyftError]:
         user_result = self.stash.get_by_uid(credentials=credentials, uid=uid)
         if user_result.is_err():
             return SyftError(message=str(user_result.err()))
