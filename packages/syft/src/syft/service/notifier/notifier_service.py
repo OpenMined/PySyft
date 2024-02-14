@@ -41,10 +41,26 @@ class NotifierService(AbstractService):
     def turn_on(
         self, context: AuthedServiceContext, email_token: Optional[str] = None
     ) -> Union[SyftSuccess, SyftError]:
-        return SyftError(message="Not Implemented")
-        # Set Notifier Model active field to True
-        # notifier = stash.get()
-        # if not notifier -> create a new one
+        result = self.stash.get(credentials=context.credentials)
+
+        # 1 -  If something went wrong at db level, return the error
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        notifier = result.ok()
+        # 2 - If email token is not provided and notifier doesn't exist, return an error
+        if not email_token and not notifier.email_token:
+            return SyftError(message="Email token is required to turn on the notifier")
+
+        # 3 - Activate the notifier
+        notifier.active = True
+
+        # 4 - If email token is provided.
+        if email_token:
+            notifier.email_token = email_token
+
+        self.stash.set(context.node.signing_key.verify_key, notifier)
+        return SyftSuccess(message="Notifier turned on")
 
     @service_method(path="notifier.turn_off", name="turn_off", roles=ADMIN_ROLE_LEVEL)
     def turn_off(
