@@ -15,7 +15,6 @@ from ...store.document_store import PartitionSettings
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..response import SyftError
-from .notifier import Notifier
 from .notifier import NotifierSettings
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
@@ -54,8 +53,8 @@ class NotifierStash(BaseStash):
             return SyftError(message=result.err())
 
     def set(
-        self, credentials: SyftVerifyKey, settings: Notifier
-    ) -> Result[Notifier, str]:
+        self, credentials: SyftVerifyKey, settings: NotifierSettings
+    ) -> Result[NotifierSettings, str]:
         res = self.check_type(settings, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
@@ -63,8 +62,8 @@ class NotifierStash(BaseStash):
         return super().set(credentials=credentials, obj=res.ok())
 
     def update(
-        self, credentials: SyftVerifyKey, settings: Notifier
-    ) -> Result[Notifier, str]:
+        self, credentials: SyftVerifyKey, settings: NotifierSettings
+    ) -> Result[NotifierSettings, str]:
         res = self.check_type(settings, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():

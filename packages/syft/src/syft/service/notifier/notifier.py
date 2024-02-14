@@ -80,20 +80,7 @@ class NotifierSettings(SyftObject):
     # In future, Admin, must be able to have a better
     # control on diff notifications.
     enable_email_notification: bool = True
-    email_notifier: Union[BaseEmailNotifier, None] = SMTPEmailServerNotifier
-
-
-class Notifier(SyftObject):
-    settings: NotifierSettings
-
-    def __init__(self) -> None:
-        self.settings = NotifierSettings()
-
-    def turn_on(self) -> None:
-        self.settings.active = True
-
-    def turn_off(self) -> None:
-        self.settings.active = False
+    email_notifier: Optional[BaseEmailNotifier] = SMTPEmailServerNotifier
 
     def send(
         self, target: SyftVerifyKey, notification: Notification

@@ -68,6 +68,7 @@ from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
+from ..service.notifier.notifier_service import NotifierService
 from ..service.object_search.migration_state_service import MigrateStateService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
@@ -346,6 +347,7 @@ class Node(AbstractNode):
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
+                NotifierService,
                 NotificationService,
                 DataSubjectMemberService,
                 ProjectService,
@@ -928,6 +930,7 @@ class Node(AbstractNode):
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
+                NotifierService,
                 NotificationService,
                 DataSubjectMemberService,
                 ProjectService,

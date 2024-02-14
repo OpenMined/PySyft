@@ -1,6 +1,7 @@
 # stdlib
 
 # stdlib
+from typing import Optional
 from typing import Union
 
 # relative
@@ -38,7 +39,7 @@ class NotifierService(AbstractService):
 
     @service_method(path="notifier.turn_on", name="turn_on", roles=ADMIN_ROLE_LEVEL)
     def turn_on(
-        self, context: AuthedServiceContext, email_token: str | None = None
+        self, context: AuthedServiceContext, email_token: Optional[str] = None
     ) -> Union[SyftSuccess, SyftError]:
         return SyftError(message="Not Implemented")
         # Set Notifier Model active field to True
