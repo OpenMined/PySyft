@@ -60,7 +60,7 @@ class ServiceRole(Enum):
                 level_float = level_float % role_num
         return roles
 
-    def capabilities(self) -> List["ServiceRoleCapability"]:
+    def capabilities(self) -> List[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES[self]
 
     def __add__(self, other: Any) -> int:
