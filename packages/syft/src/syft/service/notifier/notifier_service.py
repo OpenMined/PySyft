@@ -5,6 +5,7 @@ from typing import Optional
 from typing import Union
 
 # relative
+from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ..context import AuthedServiceContext
@@ -15,9 +16,9 @@ from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from .notifier_stash import NotifierStash
 from .notifier import NotifierSettings
-from ...abstract_node import AbstractNode
+from .notifier_stash import NotifierStash
+
 
 @serializable()
 class NotifierService(AbstractService):
@@ -91,17 +92,17 @@ class NotifierService(AbstractService):
         email_token: Optional[str] = None,
     ) -> Union[SyftSuccess, SyftError]:
         """Initialize Notifier for a Node.
-            If Notifier already exists, it will return the existing one.
-            If not, it will create a new one.
+        If Notifier already exists, it will return the existing one.
+        If not, it will create a new one.
 
-            Args:
-                node: Node to initialize the notifier
-                active: If notifier should be active
-                email_token: Email token to send notifications
-            Raises:
-                Exception: If something went wrong
-            Returns:
-                Union: SyftSuccess or SyftError
+        Args:
+            node: Node to initialize the notifier
+            active: If notifier should be active
+            email_token: Email token to send notifications
+        Raises:
+            Exception: If something went wrong
+        Returns:
+            Union: SyftSuccess or SyftError
         """
         try:
             # Create a new NotifierStash since its a static method.
@@ -120,7 +121,7 @@ class NotifierService(AbstractService):
                 )
                 notifier_stash.set(node.signing_key.verify_key, notifier)
         except Exception as e:
-            print("Unable to create base notifier", e )
+            print("Unable to create base notifier", e)
 
     # This is not a public API.
     # This method is used by other services to dispatch notifications internally

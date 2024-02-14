@@ -2,9 +2,9 @@
 from typing import List
 
 # third party
+from result import Err
 from result import Ok
 from result import Result
-from result import Err
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -15,7 +15,6 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..response import SyftError
 from .notifier import NotifierSettings
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
