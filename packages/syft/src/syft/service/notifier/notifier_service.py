@@ -33,9 +33,19 @@ class NotifierService(AbstractService):
     def notifier_settings(  # Maybe just notifier.settings
         self,
         context: AuthedServiceContext,
-    ):
-        pass
-        # Return a View of Notifier Settings
+    ) -> Union[NotifierStash, SyftError]:
+        """Get Notifier Settings
+
+        Args:
+            context: The request context
+        Returns:
+            Union[NotifierSettings, SyftError]: Notifier Settings or SyftError
+        """
+        result = self.stash.get(credentials=context.credentials)
+        if result.is_err():
+            return SyftError(message="Error getting notifier settings")
+
+        return result.ok()
 
     @service_method(path="notifier.turn_on", name="turn_on", roles=ADMIN_ROLE_LEVEL)
     def turn_on(
