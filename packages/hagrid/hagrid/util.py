@@ -1,11 +1,60 @@
 # stdlib
+from enum import Enum
 import os
 import subprocess  # nosec
 import sys
 from typing import Any
+from typing import Callable
 from typing import Tuple
 from typing import Union
 from urllib.parse import urlparse
+
+# relative
+from .dummynum import DummyNum
+
+
+class NodeSideType(str, Enum):
+    LOW_SIDE = "low"
+    HIGH_SIDE = "high"
+
+    def __str__(self) -> str:
+        # Use values when transforming NodeType to str
+        return self.value
+
+
+class NodeType(str, Enum):
+    DOMAIN = "domain"
+    NETWORK = "network"
+    ENCLAVE = "enclave"
+    GATEWAY = "gateway"
+
+    def __str__(self) -> str:
+        # Use values when transforming NodeType to str
+        return self.value
+
+
+class ImportFromSyft:
+    @staticmethod
+    def import_syft_error() -> Callable:
+        try:
+            # syft absolute
+            from syft.service.response import SyftError
+        except Exception:
+            SyftError = DummyNum
+
+        return SyftError
+
+    @staticmethod
+    def import_stage_protocol_changes() -> Callable:
+        try:
+            # syft absolute
+            from syft.protocol.data_protocol import stage_protocol_changes
+        except Exception:
+
+            def stage_protocol_changes(*args: Any, **kwargs: Any) -> None:
+                pass
+
+        return stage_protocol_changes
 
 
 def from_url(url: str) -> Tuple[str, str, int, str, Union[Any, str]]:
