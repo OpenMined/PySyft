@@ -60,7 +60,7 @@ jobs:
 
       - name: Install pytest and nbmake
         run: |
-          pip install pytest nbmake
+          pip install pytest nbmake pytest-randomly
 
       # Ideally we should run it in a tox test, but for now we are just running it in the main environment
       # as we have three different types of tests for notebooks
