@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/component: proxy
+    app.kubernetes.io/managed-by: Helm
+  name: proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/component: proxy
+      app.kubernetes.io/managed-by: Helm
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/component: proxy
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      containers:
+      - image: traefik:v2.11
+        name: proxy-container
+        volumeMounts:
+        - mountPath: /etc/traefik
+          name: proxy-config
+          readOnly: false
+      terminationGracePeriodSeconds: 5
+      volumes:
+      - configMap:
+          name: proxy-config
+        name: proxy-config

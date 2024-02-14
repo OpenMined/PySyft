@@ -37,7 +37,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: seaweedfs
+            name: proxy
             port:
-              number: 8333
+              number: 80
 {{ end }}

@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: proxy-config
+data:
+  dynamic.yml: |
+    http:
+      services:
+        seaweedfs:
+          loadBalancer:
+            servers:
+              - url: http://seaweedfs:8333
+      routers:
+        blob-storage:
+          rule: PathPrefix(`/blob`)
+          service: seaweedfs
+          entryPoints:
+            - web
+          middlewares:
+            - blob-storage-url-rewrite
+            - blob-storage-host
+      middlewares:
+        blob-storage-host:
+          headers:
+            customrequestheaders:
+              Host: seaweedfs:8333
+        blob-storage-url-rewrite:
+          stripprefix:
+            prefixes: /blob
+            forceslash: true
+  traefik.yml: |
+    global:
+      checkNewVersion: false
+      sendAnonymousUsage: false
+    log:
+      level: INFO
+    entryPoints:
+      web:
+        address: :80
+      ping:
+        address: :8082
+    ping:
+      entryPoint: ping
+    providers:
+      file:
+        filename: /etc/traefik/dynamic.yml
