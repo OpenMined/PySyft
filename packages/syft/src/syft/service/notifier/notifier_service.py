@@ -70,6 +70,8 @@ class NotifierService(AbstractService):
             notifier.email_token = email_token
 
         result = self.stash.update(credentials=context.credentials, settings=notifier)
+        if result.is_err():
+            return SyftError(message=result.err())
         return SyftSuccess(message="Notifier turned on")
 
     @service_method(path="notifier.turn_off", name="turn_off", roles=ADMIN_ROLE_LEVEL)
