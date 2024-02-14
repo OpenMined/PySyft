@@ -11,6 +11,12 @@ on:
         required: false
         default: "false"
 
+# Prevents concurrent runs of the same workflow
+# while the previous run is still in progress
+concurrency:
+  group: "CD - Hagrid"
+  cancel-in-progress: false
+
 jobs:
   call-pr-tests-linting:
     if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
