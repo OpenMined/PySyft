@@ -69,7 +69,7 @@ jobs:
       # tox -e stack.test.integration.k8s
       - name: Run tests
         env:
-          ORCHESTRA_DEPLOYMENT_TYPE: "container_stack"
+          ORCHESTRA_DEPLOYMENT_TYPE: "k8s"
           NODE_PORT: "8081"
         run: |
           pytest --nbmake notebooks/api/0.8 -p no:randomly -vvvv -k 'not 11-container-images-k8s.ipynb' --nbmake-timeout=1000
