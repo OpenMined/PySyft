@@ -123,9 +123,7 @@ class SyftWorker(SyftObject):
         else:
             image_name_with_tag = "In Memory Worker"
 
-        healthcheck: str = ""
-        if self.healthcheck is not None:
-            healthcheck = self.healthcheck.value
+        healthcheck = self.healthcheck.value if self.healthcheck is not None else ""
 
         return {
             "Name": self.name,

@@ -658,10 +658,11 @@ def _create_workers_in_pool(
             number=worker_cnt + existing_worker_cnt,
         )
     else:
-        if worker_image.image_identifier is not None:
-            registry_host = worker_image.image_identifier.registry_host
-        else:
-            registry_host = None
+        registry_host = (
+            worker_image.image_identifier.registry_host
+            if worker_image.image_identifier is not None
+            else None
+        )
         result = run_containers(
             pool_name=pool_name,
             worker_image=worker_image,
