@@ -87,7 +87,7 @@ class SyftWorker(SyftObject):
 
         return api.services.worker.logs(uid=self.id)
 
-    def get_job_repr(self):
+    def get_job_repr(self) -> str:
         if self.job_id is not None:
             api = APIRegistry.api_for(
                 node_uid=self.syft_node_location,
@@ -117,14 +117,18 @@ class SyftWorker(SyftObject):
 
     def _coll_repr_(self) -> Dict[str, Any]:
         self.refresh_status()
+
         if self.image and self.image.image_identifier:
             image_name_with_tag = self.image.image_identifier.full_name_with_tag
         else:
             image_name_with_tag = "In Memory Worker"
+
+        healthcheck = self.healthcheck.value if self.healthcheck is not None else ""
+
         return {
             "Name": self.name,
             "Image": image_name_with_tag,
-            "Healthcheck (health / unhealthy)": f"{self.healthcheck.value}",
+            "Healthcheck (health / unhealthy)": f"{healthcheck}",
             "Status": f"{self.status.value}",
             "Job": self.get_job_repr(),
             "Created at": str(self.created_at),
@@ -166,6 +170,8 @@ class WorkerPool(SyftObject):
         )
         if api is not None:
             return api.services.worker_image.get_by_uid(uid=self.image_id)
+        else:
+            return None
 
     @property
     def running_workers(self) -> Union[List[UID], SyftError]:
