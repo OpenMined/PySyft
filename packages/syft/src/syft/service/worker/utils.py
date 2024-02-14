@@ -322,7 +322,7 @@ def create_kubernetes_pool(
     reg_password: Optional[str] = None,
     reg_url: Optional[str] = None,
     **kwargs: Any,
-) -> Union[SyftError, List[Pod]]:
+) -> Union[List[Pod], SyftError]:
     pool = None
     error = False
 
@@ -372,7 +372,7 @@ def scale_kubernetes_pool(
     runner: KubernetesRunner,
     pool_name: str,
     replicas: int,
-) -> Union[SyftError, List[Pod]]:
+) -> Union[List[Pod], SyftError]:
     pool = runner.get_pool(pool_name)
     if not pool:
         return SyftError(message=f"Pool does not exist. name={pool_name}")
