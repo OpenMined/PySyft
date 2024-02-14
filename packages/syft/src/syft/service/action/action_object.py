@@ -567,6 +567,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "syft_action_data_cache",
     "reload_cache",
     "syft_resolved",
+    "refresh_object"
 ]
 
 
@@ -1089,19 +1090,23 @@ class ActionObject(SyftObject):
         else:
             return res.syft_action_data
 
-    def get(self, block: bool = False) -> Any:
-        """Get the object from a Syft Client"""
-        # relative
+    def refresh_object(self):
         from ...client.api import APIRegistry
-
-        if block:
-            self.wait()
-
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
         res = api.services.action.get(self.id)
+        return res
+
+    def get(self, block: bool = False) -> Any:
+        """Get the object from a Syft Client"""
+        # relative
+
+        if block:
+            self.wait()
+
+        res = self.refresh_object()
 
         if not isinstance(res, ActionObject):
             return SyftError(message=f"{res}")
