@@ -48,7 +48,7 @@ jobs:
 
       - name: Install Syft
         run: |
-          pip install syft==${{ github.event.inputs.syft_version }}
+          pip install syft[data_science]==${{ github.event.inputs.syft_version }}
 
       - name: Hagrid Version
         run: |
