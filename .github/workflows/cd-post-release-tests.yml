@@ -15,7 +15,9 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest, macos-14]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        # Re-enable macos-14 when it's available when we remove python 3.9 from syft
+        # os: [ubuntu-latest, macos-latest, windows-latest, macos-14]
         python-version: ["3.11", "3.10", "3.9"]
 
     runs-on: ${{ matrix.os }}
