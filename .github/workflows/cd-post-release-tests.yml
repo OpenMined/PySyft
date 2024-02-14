@@ -71,7 +71,7 @@ jobs:
         env:
           ORCHESTRA_DEPLOYMENT_TYPE: "container_stack"
         run: |
-          python -c "pytest --nbmake -p no:randomly -vvvv -k 'not 11-container-images-k8s.ipynb' --nbmake-timeout=1000;"
+          python -c "pytest --nbmake notebooks/api/0.8 -p no:randomly -vvvv -k 'not 11-container-images-k8s.ipynb' --nbmake-timeout=1000;"
 
   # syft-install-check:
   #   strategy:
