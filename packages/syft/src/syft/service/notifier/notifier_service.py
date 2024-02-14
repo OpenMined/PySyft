@@ -51,9 +51,15 @@ class NotifierService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Union[SyftSuccess, SyftError]:
-        return SyftError(message="Not Implemented")
-        # Set Notifier Model active field to False
-        # Store the current state of the notifier in the stash
+        result = self.stash.get(credentials=context.credentials)
+
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        notifier = result.ok()
+        notifier.active = False
+        result = self.stash.update(credentials=context.credentials, settings=notifier)
+        return SyftSuccess(message="Notifier turned off")
 
     @service_method(
         path="notifier.enable_notifications",
