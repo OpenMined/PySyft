@@ -4,6 +4,7 @@ from typing import List
 # third party
 from result import Ok
 from result import Result
+from result import Err
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -36,21 +37,17 @@ class NotifierStash(BaseStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    def get(self, credentials: SyftVerifyKey) -> Result[NotifierSettings, str]:
+    def get(self, credentials: SyftVerifyKey) -> Result[NotifierSettings, Err]:
         """Get Settings"""
         result = self.get_all(credentials)
-
         if result.is_ok():
             settings = result.ok()
-            # if no settings are found, create a new one using defaults
             if len(settings) == 0:
-                default_settings = NotifierSettings()
-                self.set(credentials, default_settings)
-                return Ok(default_settings)
+                return Ok(None)
             result = settings[0]
             return Ok(result)
         else:
-            return SyftError(message=result.err())
+            return Err(message=result.err())
 
     def set(
         self, credentials: SyftVerifyKey, settings: NotifierSettings
