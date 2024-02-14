@@ -59,7 +59,7 @@ class WorkerStash(BaseUIDStoreStash):
 
     def update_consumer_state(
         self, credentials: SyftVerifyKey, worker_uid: UID, consumer_state: ConsumerState
-    ) -> Result[Ok, Err]:
+    ) -> Result[str, str]:
         res = self.get_by_uid(credentials=credentials, uid=worker_uid)
         if res.is_err():
             return Err(

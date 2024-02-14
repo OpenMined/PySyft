@@ -443,7 +443,7 @@ class SyftWorkerPoolService(AbstractService):
         number: int,
         pool_id: Optional[UID] = None,
         pool_name: Optional[str] = None,
-    ) -> Union[SyftError, SyftSuccess, List[ContainerSpawnStatus]]:
+    ) -> Union[SyftError, SyftSuccess]:
         """
         Scale the worker pool to the given number of workers in Kubernetes.
         Allows both scaling up and down the worker pool.
@@ -466,7 +466,7 @@ class SyftWorkerPoolService(AbstractService):
             return SyftSuccess(message=f"Worker pool already has {number} workers")
         elif number > current_worker_count:
             workers_to_add = number - current_worker_count
-            return self.add_workers(
+            result = self.add_workers(
                 context=context,
                 number=workers_to_add,
                 pool_id=pool_id,
@@ -475,6 +475,8 @@ class SyftWorkerPoolService(AbstractService):
                 reg_username=None,
                 reg_password=None,
             )
+            if isinstance(result, SyftError):
+                return result
         else:
             # scale down at kubernetes control plane
             runner = KubernetesRunner()
@@ -514,7 +516,7 @@ class SyftWorkerPoolService(AbstractService):
                 return SyftError(
                     message=(
                         f"Pool {worker_pool.name} was scaled down, "
-                        f"but failed update the stash with err: {result.err()}"
+                        f"but failed update the stash with err: {update_result.err()}"
                     )
                 )
 
