@@ -163,5 +163,5 @@ jobs:
       - name: Run Orchestra Command
         if: steps.changes.outputs.hagrid == 'true'
         run: |
-          python -c "import syft as sy; domain-1 = sy.orchestra.launch(name='test-domain-1', port=8081, dev_mode=True, reset=True)"
-          python -c "import syft as sy; domain-2 = sy.orchestra.launch(name='test-domain-2', port=8082, dev_mode=False, reset=True)"
+          python -c "import syft as sy; domain1 = sy.orchestra.launch(name='test-domain-1', port=8081, dev_mode=True, reset=True)"
+          python -c "import syft as sy; domain2 = sy.orchestra.launch(name='test-domain-2', port=8082, dev_mode=False, reset=True)"
