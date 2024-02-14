@@ -56,7 +56,7 @@ jobs:
 
       - name: Launch Domain
         run: |
-          hagrid launch test-domain-1 to docker:8081 --tag=${{ github.event.inputs.syft_version }}
+          hagrid launch test-domain-1 to docker:8081 --tag=${{ github.event.inputs.syft_version }} --low-side
 
       - name: Install pytest and nbmake
         run: |
@@ -70,6 +70,7 @@ jobs:
       - name: Run tests
         env:
           ORCHESTRA_DEPLOYMENT_TYPE: "container_stack"
+          NODE_PORT: "8081"
         run: |
           pytest --nbmake notebooks/api/0.8 -p no:randomly -vvvv -k 'not 11-container-images-k8s.ipynb' --nbmake-timeout=1000
 
