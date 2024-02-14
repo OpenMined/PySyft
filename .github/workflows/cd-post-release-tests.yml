@@ -15,11 +15,16 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest, macos-14]
         python-version: ["3.11", "3.10", "3.9"]
 
     runs-on: ${{ matrix.os }}
     steps:
+      - name: System Architecture
+        run: |
+          echo "System Architecture: $(uname -m)"
+          echo "System Version: $(uname -a)"
+
       - uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
