@@ -16,7 +16,8 @@ from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .notifier_stash import NotifierStash
-
+from .notifier import NotifierSettings
+from ...abstract_node import AbstractNode
 
 @serializable()
 class NotifierService(AbstractService):
@@ -83,27 +84,43 @@ class NotifierService(AbstractService):
         # (Notifications for this user will still be saved in Notifications Service)
         # Store the current notifications state in the stash
 
-    def init_notifier(self) -> Union[SyftSuccess, SyftError]:
-        pass
-        # Initialize the notifier service
-        # This method should be called when the node starts
-        # It should check the current state of the notifier and set it up accordingly
-        """Get Settings"""
+    @staticmethod
+    def init_notifier(
+        node: AbstractNode,
+        active: bool = False,
+        email_token: Optional[str] = None,
+    ) -> Union[SyftSuccess, SyftError]:
+        """Initialize Notifier for a Node.
+            If Notifier already exists, it will return the existing one.
+            If not, it will create a new one.
 
-        # TODO: implement this
+            Args:
+                node: Node to initialize the notifier
+                active: If notifier should be active
+                email_token: Email token to send notifications
+            Raises:
+                Exception: If something went wrong
+            Returns:
+                Union: SyftSuccess or SyftError
+        """
+        try:
+            # Create a new NotifierStash since its a static method.
+            notifier_stash = NotifierStash(store=node.document_store)
+            result = notifier_stash.get(node.signing_key.verify_key)
+            if result.is_err():
+                raise Exception(f"Could not create notifier: {result}")
 
-        # result = self.stash.get_all(context.node.signing_key.verify_key)
-        # if result.is_ok():
-        #     settings = result.ok()
-        #     # check if the settings list is empty
-        #     if len(settings) == 0:
-        #         return SyftError(message="No settings found")
-        #     result = settings[0]
-        #     return Ok(result)
-        # else:
-        #     return SyftError(message=result.err())
-
-        # notifier = self.stash.get()
+            # Get the notifier
+            notifier = result.ok()
+            # If notifier doesn't exist, create a new one
+            if not notifier:
+                notifier = NotifierSettings(
+                    active=active,
+                    email_token=email_token,
+                )
+                notifier_stash.set(node.signing_key.verify_key, notifier)
+        except Exception as e:
+            print("Unable to create base notifier", e )
 
     # This is not a public API.
     # This method is used by other services to dispatch notifications internally

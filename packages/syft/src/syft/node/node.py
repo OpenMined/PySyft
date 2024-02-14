@@ -392,6 +392,12 @@ class Node(AbstractNode):
             node=self,
         )
 
+        NotifierService.init_notifier(
+            node=self,
+            active=False,
+            email_token=None,
+        )
+
         self.client_cache = {}
         if isinstance(node_type, str):
             node_type = NodeType(node_type)
