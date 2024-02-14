@@ -569,16 +569,15 @@ class UserCode(SyftObject):
         # so dependents are on the code object as well
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         action_service = api.services.action
-        input_policy = self.input_policy
-        if input_policy is not None:
-            all_input_ids = []
-            for _, inputs in input_policy.inputs.items():
-                all_input_ids.extend(inputs.values())
 
-            for input_id in all_input_ids:
-                dependencies[self.id].append(
-                    action_service.get(input_id, twin_mode=TwinMode.NONE)
-                )
+        all_input_ids = []
+        for _, inputs in self.input_policy_init_kwargs.items():
+            all_input_ids.extend(inputs.values())
+
+        for input_id in all_input_ids:
+            dependencies[self.id].append(
+                action_service.get(input_id, twin_mode=TwinMode.NONE)
+            )
 
         output_policy = self.output_policy
         if output_policy is not None:
