@@ -58,6 +58,21 @@ jobs:
         run: |
           hagrid launch test-domain-1 to docker:8081 --tag=${{ github.event.inputs.syft_version }}
 
+      - name: Install pytest and nbmake
+        run: |
+          pip install pytest nbmake
+
+      # Ideally we should run it in a tox test, but for now we are just running it in the main environment
+      # as we have three different types of tests for notebooks
+      # tox -e stack.test.notebook
+      # tox -e syft.test.notebook
+      # tox -e stack.test.integration.k8s
+      - name: Run tests
+        env:
+          ORCHESTRA_DEPLOYMENT_TYPE: "container_stack"
+        run: |
+          python -c "pytest --nbmake -p no:randomly -vvvv -k 'not 11-container-images-k8s.ipynb' --nbmake-timeout=1000;"
+
   # syft-install-check:
   #   strategy:
   #     max-parallel: 99
