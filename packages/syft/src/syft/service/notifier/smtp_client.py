@@ -15,17 +15,25 @@ class SMTPClient:
         password: Optional[str] = None,
         access_token: Optional[str] = None,
     ) -> None:
-        # TODO: should provide token or username/password but not both
-        if bool(username and password) == bool(access_token):
+        # Should provide token or username/password but not both
+        if username and password and access_token:
             raise ValueError(
                 "Either username and password or access_token must be provided, but not both"
             )
 
+        if not (username and password) and not access_token:
+            raise ValueError(
+                "Either username and password or access_token must be provided"
+            )
+
+        if username and password:
+            self.username = username
+            self.password = password
+        else:
+            self.access_token = access_token
+
         self.smtp_server = smtp_server
         self.smtp_port = smtp_port
-        self.username = username
-        self.password = password
-        self.access_token = access_token
 
     def _create_oauth2_string(self) -> str:
         auth_string = f"user={self.username}\1auth=Bearer {self.access_token}\1\1"
