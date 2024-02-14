@@ -157,11 +157,14 @@ jobs:
       - name: Install Syft ${{ matrix.syft-version }}
         if: steps.changes.outputs.hagrid == 'true'
         run: |
+          https://github.com/google/jax/issues/17693
+          pip install ml-dtypes==0.2.0
+          # Due to jax version<=0.4.10
           pip install syft==${{ matrix.syft-version }}
           pip install .
 
       - name: Run Orchestra Command
         if: steps.changes.outputs.hagrid == 'true'
         run: |
-          python -c "import syft as sy; domain1 = sy.orchestra.launch(name='test-domain-1', port=8081, dev_mode=True, reset=True)"
-          python -c "import syft as sy; domain2 = sy.orchestra.launch(name='test-domain-2', port=8082, dev_mode=False, reset=True)"
+          python -c "import syft as sy; domain1 = sy.orchestra.launch(name='test-domain-1', dev_mode=True, reset=True)"
+          python -c "import syft as sy; domain2 = sy.orchestra.launch(name='test-domain-2',dev_mode=False, reset=True)"
