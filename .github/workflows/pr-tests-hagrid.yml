@@ -157,9 +157,8 @@ jobs:
       - name: Install Syft ${{ matrix.syft-version }}
         if: steps.changes.outputs.hagrid == 'true'
         run: |
-          pwd
           pip install syft==${{ matrix.syft-version }}
-          pip install packages/hagrid
+          pip install .
 
       - name: Run Orchestra Command
         if: steps.changes.outputs.hagrid == 'true'
