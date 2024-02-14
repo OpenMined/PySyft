@@ -501,8 +501,6 @@ class Orchestra:
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
         node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
-        # if not node_type_enum:
-        #     return None
 
         node_side_type_enum = (
             NodeSideType.HIGH_SIDE
