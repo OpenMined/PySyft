@@ -158,7 +158,7 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           pip install syft==${{ matrix.syft-version }}
-          pip install -e packages/hagrid
+          pip install packages/hagrid
 
       - name: Run Orchestra Command
         if: steps.changes.outputs.hagrid == 'true'
