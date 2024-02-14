@@ -567,7 +567,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "syft_action_data_cache",
     "reload_cache",
     "syft_resolved",
-    "refresh_object"
+    "refresh_object",
 ]
 
 
@@ -1091,7 +1091,9 @@ class ActionObject(SyftObject):
             return res.syft_action_data
 
     def refresh_object(self):
+        # relative
         from ...client.api import APIRegistry
+
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,

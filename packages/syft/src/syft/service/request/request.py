@@ -7,6 +7,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Type
 from typing import Union
 
@@ -343,8 +344,6 @@ class Request(SyftObject):
     request_hash: str
     changes: List[Change]
     history: List[ChangeStatus] = []
-    
-    __dependent_objects__ = [".usercode.something", ]
 
     __attr_searchable__ = [
         "requesting_user_verify_key",
@@ -757,6 +756,21 @@ class Request(SyftObject):
         job = self._get_latest_or_create_job()
         job.apply_info(job_info)
         return job_service.update(job)
+
+    def get_dependencies(
+        self, visited: Optional[Set[UID]] = None
+    ) -> Dict[str, SyftObject]:
+        dependencies = {}
+        if not isinstance(self.codes, SyftError):
+            dependencies[self.id] = self.codes
+
+        visited = visited or set()
+        visited.add(self.id)
+        for dep in dependencies.get(self.id, []):
+            code_deps = dep.get_dependencies(visited=visited)
+            dependencies.update(code_deps)
+            visited.update(code_deps.keys())
+        return dependencies
 
 
 @serializable()

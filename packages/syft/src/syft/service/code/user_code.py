@@ -20,6 +20,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -61,6 +62,7 @@ from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
+from ..action.action_object import TwinMode
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..job.job_stash import Job
@@ -553,6 +555,57 @@ class UserCode(SyftObject):
 
                 all_assets += assets
         return all_assets
+
+    def get_dependencies(
+        self, visited: Optional[Set[str]] = None
+    ) -> Dict[str, List[Any]]:
+        # Usercode dependents are: input_policy inputs, output_policy outputs, nested_codes
+
+        visited = visited or set()
+        visited.add(self.id)
+        dependencies = {self.id: []}
+
+        # NOTE input and output policy are stored directly on the code object,
+        # so dependents are on the code object as well
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        action_service = api.services.action
+
+        all_input_ids = []
+        for _, inputs in self.input_policy_init_kwargs.items():
+            all_input_ids.extend(inputs.values())
+
+        for input_id in all_input_ids:
+            dependencies[self.id].append(
+                action_service.get(input_id, twin_mode=TwinMode.NONE)
+            )
+
+        output_policy = self.output_policy
+        if output_policy is not None:
+            all_output_ids = []
+            for output in output_policy.output_history:
+                if isinstance(output.outputs, list):
+                    all_output_ids.extend(output.outputs)
+                else:
+                    all_output_ids.extend(output.outputs.values())
+
+            for output_id in all_output_ids:
+                dependencies[self.id].append(
+                    action_service.get(output_id, twin_mode=TwinMode.NONE)
+                )
+
+        if self.nested_codes is not None:
+            for obj_link, _ in self.nested_codes.values():
+                if visited and obj_link.id in visited:
+                    continue
+                obj = obj_link.resolve
+                deps = obj.get_dependencies(visited=visited)
+
+                visited.update(deps.keys())
+                dependencies.update(deps)
+
+        # remove empty values
+        dependencies = {k: v for k, v in dependencies.items() if len(v) > 0}
+        return dependencies
 
     @property
     def unsafe_function(self) -> Optional[Callable]:
