@@ -17,26 +17,12 @@ from typing import Union
 
 # relative
 from .cli import str_to_bool
-from .dummynum import DummyNum
 from .grammar import find_available_port
 from .names import random_name
+from .util import ImportFromSyft
+from .util import NodeSideType
+from .util import NodeType
 from .util import shell
-
-try:
-    # syft absolute
-    from syft.abstract_node import NodeSideType
-    from syft.abstract_node import NodeType
-    from syft.protocol.data_protocol import stage_protocol_changes
-    from syft.service.response import SyftError
-except Exception:  # nosec
-    NodeSideType = DummyNum
-    NodeType = DummyNum
-
-    def stage_protocol_changes(*args: Any, **kwargs: Any) -> None:
-        pass
-
-    SyftError = DummyNum
-    # print("Please install syft with `pip install syft`")
 
 DEFAULT_PORT = 8080
 DEFAULT_URL = "http://localhost"
@@ -203,6 +189,7 @@ class NodeHandle:
         institution: Optional[str] = None,
         website: Optional[str] = None,
     ) -> Any:
+        SyftError = ImportFromSyft.import_syft_error()
         if not email:
             email = input("Email: ")
         if not password:
@@ -248,6 +235,7 @@ def deploy_to_python(
     create_producer: bool = False,
     queue_port: Optional[int] = None,
 ) -> Optional[NodeHandle]:
+    stage_protocol_changes = ImportFromSyft.import_stage_protocol_changes()
     sy = get_syft_client()
     if sy is None:
         return sy
@@ -271,7 +259,7 @@ def deploy_to_python(
         "processes": processes,
         "dev_mode": dev_mode,
         "tail": tail,
-        "node_type": node_type_enum,
+        "node_type": str(node_type_enum),
         "node_side_type": node_side_type,
         "enable_warnings": enable_warnings,
         # new kwargs
