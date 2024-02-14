@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 
 # third party
 from pydantic import validator
+from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable
@@ -38,7 +39,7 @@ class SyftImageRegistry(SyftObject):
         return val
 
     @classmethod
-    def from_url(cls, full_str: str) -> "SyftImageRegistry":
+    def from_url(cls, full_str: str) -> Self:
         # this is only for urlparse
         if "://" not in full_str:
             full_str = f"http://{full_str}"
