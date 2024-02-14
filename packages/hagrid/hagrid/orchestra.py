@@ -13,6 +13,7 @@ from threading import Thread
 from typing import Any
 from typing import Callable
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Union
 
 # relative
@@ -21,7 +22,6 @@ from .grammar import find_available_port
 from .names import random_name
 from .util import ImportFromSyft
 from .util import NodeSideType
-from .util import NodeType
 from .util import shell
 
 DEFAULT_PORT = 8080
@@ -30,6 +30,9 @@ DEFAULT_URL = "http://localhost"
 # and this causes context switch error when we use normal threading in hagrid
 
 ClientAlias = Any  # we don't want to import Client in case it changes
+
+if TYPE_CHECKING:
+    NodeType = ImportFromSyft.import_node_type()
 
 
 # Define a function to read and print a stream
@@ -95,6 +98,7 @@ def container_exists_with(name: str, port: int) -> bool:
 
 
 def get_node_type(node_type: Optional[Union[str, NodeType]]) -> Optional[NodeType]:
+    NodeType = ImportFromSyft.import_node_type()
     if node_type is None:
         node_type = os.environ.get("ORCHESTRA_NODE_TYPE", NodeType.DOMAIN)
     try:
@@ -236,6 +240,7 @@ def deploy_to_python(
     queue_port: Optional[int] = None,
 ) -> Optional[NodeHandle]:
     stage_protocol_changes = ImportFromSyft.import_stage_protocol_changes()
+    NodeType = ImportFromSyft.import_node_type()
     sy = get_syft_client()
     if sy is None:
         return sy
@@ -259,7 +264,7 @@ def deploy_to_python(
         "processes": processes,
         "dev_mode": dev_mode,
         "tail": tail,
-        "node_type": str(node_type_enum),
+        "node_type": node_type_enum,
         "node_side_type": node_side_type,
         "enable_warnings": enable_warnings,
         # new kwargs
@@ -482,6 +487,7 @@ class Orchestra:
         queue_port: Optional[int] = None,
         in_memory_workers: bool = True,
     ) -> Optional[NodeHandle]:
+        NodeType = ImportFromSyft.import_node_type()
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"
             thread_workers = True
@@ -495,8 +501,8 @@ class Orchestra:
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
         node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
-        if not node_type_enum:
-            return None
+        # if not node_type_enum:
+        #     return None
 
         node_side_type_enum = (
             NodeSideType.HIGH_SIDE
