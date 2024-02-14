@@ -154,12 +154,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('packages/syft/setup.cfg') }}
 
+      # https://github.com/google/jax/issues/17693
+      # pinning ml-dtypes due to jax version==0.4.10
       - name: Install Syft ${{ matrix.syft-version }}
         if: steps.changes.outputs.hagrid == 'true'
         run: |
-          https://github.com/google/jax/issues/17693
           pip install ml-dtypes==0.2.0
-          # Due to jax version<=0.4.10
           pip install syft==${{ matrix.syft-version }}
           pip install .
 
