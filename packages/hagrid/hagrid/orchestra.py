@@ -301,7 +301,7 @@ def deploy_to_python(
             worker_class = worker_classes[node_type_enum]
             sig = inspect.signature(worker_class.named)
             supported_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
-            if "node_type" in sig.parameters.keys() and "migration" in sig.parameters:
+            if "node_type" in sig.parameters.keys() and "migrate" in sig.parameters:
                 supported_kwargs["migrate"] = True
             worker = worker_class.named(**supported_kwargs)
         else:
