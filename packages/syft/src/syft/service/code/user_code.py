@@ -20,6 +20,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -555,14 +556,14 @@ class UserCode(SyftObject):
                 all_assets += assets
         return all_assets
 
-    def get_dependents(
-        self, visited: Optional[List[str]] = None
+    def get_dependencies(
+        self, visited: Optional[Set[str]] = None
     ) -> Dict[str, List[Any]]:
         # Usercode dependents are: input_policy inputs, output_policy outputs, nested_codes
 
-        visited = visited or []
-        visited = visited + [self.id]
-        dependents = {self.id: []}
+        visited = visited or set()
+        visited.add(self.id)
+        dependencies = {self.id: []}
 
         # NOTE input and output policy are stored directly on the code object,
         # so dependents are on the code object as well
@@ -575,7 +576,7 @@ class UserCode(SyftObject):
                 all_input_ids.extend(inputs.values())
 
             for input_id in all_input_ids:
-                dependents[self.id].append(
+                dependencies[self.id].append(
                     action_service.get(input_id, twin_mode=TwinMode.NONE)
                 )
 
@@ -589,7 +590,7 @@ class UserCode(SyftObject):
                     all_output_ids.extend(output.outputs.values())
 
             for output_id in all_output_ids:
-                dependents[self.id].append(
+                dependencies[self.id].append(
                     action_service.get(output_id, twin_mode=TwinMode.NONE)
                 )
 
@@ -598,27 +599,14 @@ class UserCode(SyftObject):
                 if visited and obj_link.id in visited:
                     continue
                 obj = obj_link.resolve
-                deps = obj.get_dependents(visited=visited)
+                deps = obj.get_dependencies(visited=visited)
 
-                visited.extend(list(deps.keys()))
-                dependents.update(deps)
-
-        job_service = api.services.job
-        user_code_jobs = job_service.get_by_user_code_id(self.id)
-        for job in user_code_jobs:
-            dependents[self.id].append(job)
-            if job.id not in visited:
-                visited.append(job.id)
-                job_dependents = job.get_dependents(visited=visited)
-                for k, v in job_dependents.items():
-                    if k not in dependents:
-                        dependents[k] = v
-
-        return dependents
+                visited.update(deps.keys())
+                dependencies.update(deps)
 
         # remove empty values
-        dependents = {k: v for k, v in dependents.items() if len(v) > 0}
-        return dependents
+        dependencies = {k: v for k, v in dependencies.items() if len(v) > 0}
+        return dependencies
 
     @property
     def unsafe_function(self) -> Optional[Callable]:

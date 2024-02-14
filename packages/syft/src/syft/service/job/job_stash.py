@@ -6,6 +6,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Union
 
 # third party
@@ -334,7 +335,6 @@ class Job(SyftObject):
         )
         return api.services.log.get(self.log_id)
 
-
     def logs(self, stdout=True, stderr=True, _print=True):
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
@@ -461,42 +461,36 @@ class Job(SyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
-    def get_dependents(
-        self, visited: Optional[List[UID]] = None
+    def get_dependencies(
+        self, visited: Optional[Set[UID]] = None
     ) -> Dict[UID, List[Any]]:
         # result, usercode, logs, subjobs
-        visited = visited or []
-        visited = visited + [self.id]
+        visited = visited or set()
+        visited.add(self.id)
 
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
 
-        dependents = {self.id: []}
+        dependencies = {self.id: []}
         result_id = self.result.id
         if result_id not in visited:
             result_obj = api.services.action.get(result_id, resolve_nested=False)
-            dependents[self.id].append(result_obj)
-
-        if self.user_code_id not in visited:
-            user_code_obj = api.services.code.get_by_id(self.user_code_id)
-            dependents[self.id].append(user_code_obj)
+            dependencies[self.id].append(result_obj)
 
         if self.log_id not in visited:
             log_obj = api.services.log.get(self.log_id)
-            print("log_obj", type(log_obj))
-            dependents[self.id].append(log_obj)
+            dependencies[self.id].append(log_obj)
 
         for subjob in self.subjobs:
             if subjob.id not in visited:
-                dependents[self.id].append(subjob)
-                sub_dependents = subjob.get_dependents(visited=visited)
-                for key, value in sub_dependents.items():
-                    if key not in dependents:
-                        dependents[key] = value
+                dependencies[self.id].append(subjob)
+                sub_dependents = subjob.get_dependencies(visited=visited)
+                dependencies.update(sub_dependents)
+                visited.update(sub_dependents.keys())
 
-        return dependents
+        return dependencies
 
 
 @serializable()
