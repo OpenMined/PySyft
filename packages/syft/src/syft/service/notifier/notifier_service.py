@@ -33,9 +33,19 @@ class NotifierService(AbstractService):
     def notifier_settings(  # Maybe just notifier.settings
         self,
         context: AuthedServiceContext,
-    ):
-        pass
-        # Return a View of Notifier Settings
+    ) -> Union[NotifierStash, SyftError]:
+        """Get Notifier Settings
+
+        Args:
+            context: The request context
+        Returns:
+            Union[NotifierSettings, SyftError]: Notifier Settings or SyftError
+        """
+        result = self.stash.get(credentials=context.credentials)
+        if result.is_err():
+            return SyftError(message="Error getting notifier settings")
+
+        return result.ok()
 
     @service_method(path="notifier.turn_on", name="turn_on", roles=ADMIN_ROLE_LEVEL)
     def turn_on(
@@ -59,7 +69,7 @@ class NotifierService(AbstractService):
         if email_token:
             notifier.email_token = email_token
 
-        self.stash.set(context.node.signing_key.verify_key, notifier)
+        result = self.stash.update(credentials=context.credentials, settings=notifier)
         return SyftSuccess(message="Notifier turned on")
 
     @service_method(path="notifier.turn_off", name="turn_off", roles=ADMIN_ROLE_LEVEL)
@@ -73,7 +83,7 @@ class NotifierService(AbstractService):
 
     @service_method(
         path="notifier.enable_notifications",
-        name="turn_on",
+        name="enable_notifications",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def enable_notifications(
