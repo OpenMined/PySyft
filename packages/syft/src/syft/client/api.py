@@ -252,7 +252,7 @@ class RemoteFunction(SyftObject):
 
         return args, kwargs
 
-    def __call__(self, *args: Tuple[Any, ...], **kwargs: Dict[str, Any]) -> Any:
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         if "blocking" in self.signature.parameters:
             raise Exception(
                 f"Signature {self.signature} can't have 'blocking' kwarg because it's reserved"
@@ -403,9 +403,7 @@ def generate_remote_lib_function(
             f"Signature {signature} can't have 'blocking' kwarg because its reserved"
         )
 
-    def wrapper(
-        *args: Tuple[Any, ...], **kwargs: Dict[str, Any]
-    ) -> Union[SyftError, Any]:
+    def wrapper(*args: Any, **kwargs: Any) -> Union[SyftError, Any]:
         # relative
         from ..service.action.action_object import TraceResult
 
