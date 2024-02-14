@@ -59,6 +59,8 @@ class NotifierService(AbstractService):
         notifier = result.ok()
         notifier.active = False
         result = self.stash.update(credentials=context.credentials, settings=notifier)
+        if result.is_err():
+            return SyftError(message=result.err())
         return SyftSuccess(message="Notifier turned off")
 
     @service_method(
