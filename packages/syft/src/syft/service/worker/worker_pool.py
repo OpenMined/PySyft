@@ -84,7 +84,8 @@ class SyftWorker(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-
+        if api.services is None:
+            return SyftError(message=f"Services for {api} is None")
         return api.services.worker.logs(uid=self.id)
 
     def get_job_repr(self) -> str:
@@ -93,6 +94,8 @@ class SyftWorker(SyftObject):
                 node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
+            if api.services is None:
+                return f"Can't get services for {api}"
             job = api.services.job.get(self.job_id)
             if job.action.user_code_id is not None:
                 func_name = api.services.code.get_by_id(
@@ -104,16 +107,21 @@ class SyftWorker(SyftObject):
         else:
             return ""
 
-    def refresh_status(self) -> None:
+    def refresh_status(self) -> Optional[SyftError]:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api.services is None:
+            return SyftError(message=f"Services for {api} is None")
 
         res = api.services.worker.status(uid=self.id)
         if isinstance(res, SyftError):
             return res
+
         self.status, self.healthcheck = res
+
+        return None
 
     def _coll_repr_(self) -> Dict[str, Any]:
         self.refresh_status()
@@ -168,7 +176,7 @@ class WorkerPool(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-        if api is not None:
+        if api is not None and api.services is not None:
             return api.services.worker_image.get_by_uid(uid=self.image_id)
         else:
             return None
