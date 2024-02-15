@@ -514,3 +514,9 @@ jobs:
           add: "helm/"
           push: "origin gh-pages"
           cwd: "./ghpages/"
+
+  # Can we remove the always flag from the below job?
+  call-cd-post-release-tests:
+    needs: [deploy-syft]
+    if: always() && github.repository == 'OpenMined/PySyft' && needs.deploy-syft.result == 'success' # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/cd-post-release-tests.yml@dev
