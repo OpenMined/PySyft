@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -59,6 +60,6 @@ class SyftWorkerImageStash(BaseUIDStoreStash):
 
     def get_by_docker_config(
         self, credentials: SyftVerifyKey, config: DockerWorkerConfig
-    ):
+    ) -> Result[Optional[SyftWorkerImage], str]:
         qks = QueryKeys(qks=[WorkerConfigPK.with_obj(config)])
         return self.query_one(credentials=credentials, qks=qks)

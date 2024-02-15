@@ -22,17 +22,6 @@ class NodeSideType(str, Enum):
         return self.value
 
 
-class NodeType(str, Enum):
-    DOMAIN = "domain"
-    NETWORK = "network"
-    ENCLAVE = "enclave"
-    GATEWAY = "gateway"
-
-    def __str__(self) -> str:
-        # Use values when transforming NodeType to str
-        return self.value
-
-
 class ImportFromSyft:
     @staticmethod
     def import_syft_error() -> Callable:
@@ -55,6 +44,16 @@ class ImportFromSyft:
                 pass
 
         return stage_protocol_changes
+
+    @staticmethod
+    def import_node_type() -> Callable:
+        try:
+            # syft absolute
+            from syft.abstract_node import NodeType
+        except Exception:
+            NodeType = DummyNum
+
+        return NodeType
 
 
 def from_url(url: str) -> Tuple[str, str, int, str, Union[Any, str]]:
