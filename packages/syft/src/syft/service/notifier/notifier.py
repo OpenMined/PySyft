@@ -49,24 +49,20 @@ class BaseEmailNotifier(BaseNotifier):
             )
 
 
-class SMTPEmailServerNotifier(BaseEmailNotifier):
+class PostMarkEmailNotifier(BaseEmailNotifier):
     server: str
-    username: Optional[str]
-    password: Optional[str]
     token: Optional[str]
 
     def __init__(
         self,
-        server: str,
-        username: Optional[str],
-        password: Optional[str],
         token: Optional[str],
+        server: str = "smtp.postmark.com",
     ) -> None:
-        # TODO: should provide token or username/password but not both
-        self.server = server
-        self.username = username
-        self.password = password
         self.token = token
+        self.server = server
+        self.smtp_client = SMTPClient(
+            smtp_server=self.server, smtp_port=587, access_token=self.token
+        )
 
 
 @serializable()
@@ -80,20 +76,8 @@ class NotifierSettings(SyftObject):
     # In future, Admin, must be able to have a better
     # control on diff notifications.
     enable_email_notification: bool = True
-    email_notifier: Union[BaseEmailNotifier, None] = SMTPEmailServerNotifier
-
-
-class Notifier(SyftObject):
-    settings: NotifierSettings
-
-    def __init__(self) -> None:
-        self.settings = NotifierSettings()
-
-    def turn_on(self) -> None:
-        self.settings.active = True
-
-    def turn_off(self) -> None:
-        self.settings.active = False
+    email_notifier: Optional[BaseEmailNotifier] = PostMarkEmailNotifier
+    email_token: Optional[str] = ""
 
     def send(
         self, target: SyftVerifyKey, notification: Notification

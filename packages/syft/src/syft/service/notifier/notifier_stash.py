@@ -2,6 +2,7 @@
 from typing import List
 
 # third party
+from result import Err
 from result import Ok
 from result import Result
 
@@ -14,8 +15,6 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID
 from ...util.telemetry import instrument
-from ..response import SyftError
-from .notifier import Notifier
 from .notifier import NotifierSettings
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
@@ -37,25 +36,21 @@ class NotifierStash(BaseStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
-    def get(self, credentials: SyftVerifyKey) -> Result[NotifierSettings, str]:
+    def get(self, credentials: SyftVerifyKey) -> Result[NotifierSettings, Err]:
         """Get Settings"""
         result = self.get_all(credentials)
-
         if result.is_ok():
             settings = result.ok()
-            # if no settings are found, create a new one using defaults
             if len(settings) == 0:
-                default_settings = NotifierSettings()
-                self.set(credentials, default_settings)
-                return Ok(default_settings)
+                return Ok(None)
             result = settings[0]
             return Ok(result)
         else:
-            return SyftError(message=result.err())
+            return Err(message=result.err())
 
     def set(
-        self, credentials: SyftVerifyKey, settings: Notifier
-    ) -> Result[Notifier, str]:
+        self, credentials: SyftVerifyKey, settings: NotifierSettings
+    ) -> Result[NotifierSettings, str]:
         res = self.check_type(settings, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
@@ -63,8 +58,8 @@ class NotifierStash(BaseStash):
         return super().set(credentials=credentials, obj=res.ok())
 
     def update(
-        self, credentials: SyftVerifyKey, settings: Notifier
-    ) -> Result[Notifier, str]:
+        self, credentials: SyftVerifyKey, settings: NotifierSettings
+    ) -> Result[NotifierSettings, str]:
         res = self.check_type(settings, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
