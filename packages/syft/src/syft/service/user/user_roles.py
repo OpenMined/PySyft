@@ -1,6 +1,7 @@
 # stdlib
 from enum import Enum
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
@@ -42,13 +43,13 @@ class ServiceRole(Enum):
             tuples.append((x.value, x))
         return sorted(tuples, reverse=True)
 
-    @staticmethod
-    def roles_for_level(level: Union[int, Self]) -> List[Self]:
+    @classmethod
+    def roles_for_level(cls, level: Union[int, Self]) -> List[Self]:
         if isinstance(level, ServiceRole):
             level = level.value
         roles = []
         level_float = float(level)
-        service_roles = ServiceRole.roles_descending()
+        service_roles = cls.roles_descending()
         for role in service_roles:
             role_num = role[0]
             if role_num == 0:
@@ -59,7 +60,7 @@ class ServiceRole(Enum):
                 level_float = level_float % role_num
         return roles
 
-    def capabilities(self):
+    def capabilities(self) -> List[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES[self]
 
     def __add__(self, other: Any) -> int:
@@ -90,19 +91,21 @@ GUEST_ROLE_LEVEL = ServiceRole.roles_for_level(
     + ServiceRole.ADMIN
 )
 
-DATA_SCIENTIST_ROLE_LEVEL = ServiceRole.roles_for_level(
+DATA_SCIENTIST_ROLE_LEVEL: List[ServiceRole] = ServiceRole.roles_for_level(
     ServiceRole.DATA_SCIENTIST + ServiceRole.DATA_OWNER + ServiceRole.ADMIN
 )
 
-ONLY_DATA_SCIENTIST_ROLE_LEVEL = ServiceRole.roles_for_level(ServiceRole.DATA_SCIENTIST)
+ONLY_DATA_SCIENTIST_ROLE_LEVEL: List[ServiceRole] = ServiceRole.roles_for_level(
+    ServiceRole.DATA_SCIENTIST
+)
 
-DATA_OWNER_ROLE_LEVEL = ServiceRole.roles_for_level(
+DATA_OWNER_ROLE_LEVEL: List[ServiceRole] = ServiceRole.roles_for_level(
     ServiceRole.DATA_OWNER + ServiceRole.ADMIN
 )
 
 ADMIN_ROLE_LEVEL = ServiceRole.roles_for_level(ServiceRole.ADMIN)
 
-ROLE_TO_CAPABILITIES = {
+ROLE_TO_CAPABILITIES: Dict[ServiceRole, List[ServiceRoleCapability]] = {
     ServiceRole.NONE: [],
     ServiceRole.GUEST: [
         ServiceRoleCapability.CAN_MAKE_DATA_REQUESTS,
