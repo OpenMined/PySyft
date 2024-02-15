@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  k3d-registry.localhost.server: |
+    k3d-registry.localhost {
+        log
+        rewrite name k3d-registry.localhost host.k3d.internal
+        forward . 127.0.0.1
+    }
