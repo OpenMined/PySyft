@@ -72,7 +72,7 @@ jobs:
         env:
           NODE_PORT: "8081"
           SYFT_VERSION: ${{ github.event.inputs.syft_version }}
-          EXCLUDE_NOTEBOOKS: "note 11-container-images-k8s.ipynb"
+          EXCLUDE_NOTEBOOKS: "not 11-container-images-k8s.ipynb"
         run: |
           tox -e e2e.test.notebook
 
