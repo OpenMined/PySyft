@@ -59,10 +59,6 @@ jobs:
         run: |
           hagrid launch test-domain-1 to docker:8081 --tag=${{ github.event.inputs.syft_version }} --low-side
 
-      - name: Install pytest and nbmake
-        run: |
-          pip install pytest nbmake pytest-randomly
-
       # Ideally we should run it in a tox test, but for now we are just running it in the main environment
       # as we have three different types of tests for notebooks
       # tox -e stack.test.notebook
