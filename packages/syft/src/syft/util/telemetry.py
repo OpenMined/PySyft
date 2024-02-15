@@ -6,7 +6,6 @@ from typing import TypeVar
 from typing import Union
 
 # third party
-from typing_extensions import Concatenate
 from typing_extensions import ParamSpec
 
 
@@ -25,7 +24,7 @@ T = TypeVar("T", bound=Union[Callable, type])
 P = ParamSpec("P")
 
 
-def setup_tracer() -> Callable[Concatenate[T, P], T]:
+def setup_tracer() -> Callable[..., T]:
     def noop(func: T) -> T:
         return func
 
@@ -85,4 +84,4 @@ def setup_tracer() -> Callable[Concatenate[T, P], T]:
         return noop
 
 
-instrument = setup_tracer()
+instrument: Callable = setup_tracer()
