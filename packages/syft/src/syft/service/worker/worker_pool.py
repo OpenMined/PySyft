@@ -84,6 +84,8 @@ class SyftWorker(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
         if api.services is None:
             return SyftError(message=f"Services for {api} is None")
         return api.services.worker.logs(uid=self.id)
@@ -94,8 +96,10 @@ class SyftWorker(SyftObject):
                 node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
+            if api is None:
+                return SyftError(message=f"You must login to {self.node_uid}")
             if api.services is None:
-                return f"Can't get services for {api}"
+                return f"Services for api {api} is None"
             job = api.services.job.get(self.job_id)
             if job.action.user_code_id is not None:
                 func_name = api.services.code.get_by_id(
@@ -112,6 +116,8 @@ class SyftWorker(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
         if api.services is None:
             return SyftError(message=f"Services for {api} is None")
 

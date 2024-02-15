@@ -243,7 +243,7 @@ class Asset(SyftObject):
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
-        if api.services is not None:
+        if api is not None and api.services is not None:
             return api.services.action.get_pointer(self.action_id)
 
     @property
@@ -255,6 +255,8 @@ class Asset(SyftObject):
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
         if api.services is None:
             return SyftError(message=f"Services for {api} is None")
         result = api.services.action.get_mock(self.action_id)
@@ -285,7 +287,7 @@ class Asset(SyftObject):
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
-        if api.services is None:
+        if api is None or api.services is None:
             return None
         res = api.services.action.get(self.action_id)
         if self.has_permission(res):
