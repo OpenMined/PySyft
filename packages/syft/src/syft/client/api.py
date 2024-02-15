@@ -87,7 +87,9 @@ class APIRegistry:
         cls.__api_registry__[key] = api
 
     @classmethod
-    def api_for(cls, node_uid: UID, user_verify_key: SyftVerifyKey) -> SyftAPI:
+    def api_for(
+        cls, node_uid: UID, user_verify_key: SyftVerifyKey
+    ) -> Optional[SyftAPI]:
         key = (node_uid, user_verify_key)
         return cls.__api_registry__.get(key, None)
 

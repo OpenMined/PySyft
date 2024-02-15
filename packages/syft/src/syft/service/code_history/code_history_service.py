@@ -46,8 +46,10 @@ class CodeHistoryService(AbstractService):
         code: Union[SubmitUserCode, UserCode],
         comment: Optional[str] = None,
     ) -> Union[SyftSuccess, SyftError]:
-        user_code_service = context.node.get_service("usercodeservice")
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
 
+        user_code_service = context.node.get_service("usercodeservice")
         if isinstance(code, SubmitUserCode):
             result = user_code_service._submit(context=context, code=code)
             if result.is_err():
@@ -175,6 +177,8 @@ class CodeHistoryService(AbstractService):
     def get_history_for_user(
         self, context: AuthedServiceContext, email: str
     ) -> Union[CodeHistoriesDict, SyftError]:
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         user_service = context.node.get_service("userservice")
         result = user_service.stash.get_by_email(
             credentials=context.credentials, email=email
