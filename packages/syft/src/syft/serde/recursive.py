@@ -269,7 +269,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     # clean this mess, Tudor
     module_parts = proto.fullyQualifiedName.split(".")
     klass = module_parts.pop()
-    class_type: Type[Any] = type(None)
+    class_type: Type = type(None)
 
     if klass != "NoneType":
         try:
