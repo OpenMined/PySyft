@@ -519,4 +519,4 @@ jobs:
   call-cd-post-release-tests:
     needs: [deploy-syft]
     if: always() && github.repository == 'OpenMined/PySyft' && needs.deploy-syft.result == 'success' # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/cd-post-release-tests.yml
+    uses: OpenMined/PySyft/.github/workflows/cd-post-release-tests.yml@dev
