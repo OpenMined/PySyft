@@ -172,7 +172,7 @@ class UserCreateV1(UserUpdateV1):
 
     email: EmailStr
     name: str
-    role: Optional[ServiceRole] = None
+    role: Optional[ServiceRole] = None  # type: ignore[assignment]
     password: str
     password_verify: Optional[str] = None  # type: ignore[assignment]
     verify_key: Optional[SyftVerifyKey]
@@ -188,7 +188,7 @@ class UserCreate(UserUpdate):
 
     email: EmailStr
     name: str
-    role: Optional[ServiceRole] = None
+    role: Optional[ServiceRole] = None  # type: ignore[assignment]
     password: str
     password_verify: Optional[str] = None  # type: ignore[assignment]
     verify_key: Optional[SyftVerifyKey]
