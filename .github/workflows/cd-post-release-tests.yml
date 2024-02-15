@@ -1,9 +1,14 @@
 name: CD - Post Release Tests
 
 on:
-  workflow_call:
-
   workflow_dispatch:
+    inputs:
+      syft_version:
+        description: "Syft version to test"
+        required: true
+        type: string
+
+  workflow_call:
     inputs:
       syft_version:
         description: "Syft version to test"
@@ -57,12 +62,12 @@ jobs:
 
       - name: Launch Domain
         run: |
-          hagrid launch test-domain-1 to docker:8081 --tag=${{ github.event.inputs.syft_version }} --low-side
+          hagrid launch test-domain-1 to docker:8081 --tag=${{ inputs.syft_version }} --low-side
 
       - name: Run tests
         env:
           NODE_PORT: "8081"
-          SYFT_VERSION: ${{ github.event.inputs.syft_version }}
+          SYFT_VERSION: ${{ inputs.syft_version }}
           EXCLUDE_NOTEBOOKS: "not 11-container-images-k8s.ipynb"
         run: |
           tox -e e2e.test.notebook
@@ -111,7 +116,7 @@ jobs:
 
       - name: Install Syft
         run: |
-          pip install syft==${{ github.event.inputs.syft_version }}
+          pip install syft==${{ inputs.syft_version }}
 
       - name: Check Syft version
         run: |
