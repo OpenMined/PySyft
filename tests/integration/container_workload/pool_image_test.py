@@ -25,8 +25,8 @@ def test_image_build(domain_1_port) -> None:
     )
 
     # Submit Docker Worker Config
-    docker_config_rl = """
-        FROM openmined/grid-backend:0.8.4-beta.12
+    docker_config_rl = f"""
+        FROM openmined/grid-backend:{sy.__version__}
         RUN pip install recordlinkage
     """
     docker_config = DockerWorkerConfig(dockerfile=docker_config_rl)
@@ -78,8 +78,8 @@ def test_pool_launch(domain_1_port) -> None:
     assert len(domain_client.worker_pools.get_all()) == 1
 
     # Submit Docker Worker Config
-    docker_config_opendp = """
-        FROM openmined/grid-backend:0.8.4-beta.12
+    docker_config_opendp = f"""
+        FROM openmined/grid-backend:{sy.__version__}
         RUN pip install opendp
     """
     docker_config = DockerWorkerConfig(dockerfile=docker_config_opendp)
@@ -178,8 +178,8 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     ds_client = sy.login(email=ds_email, password="secret_pw", port=domain_1_port)
 
     # the DS makes a request to create an image and a pool based on the image
-    docker_config_np = """
-        FROM openmined/grid-backend:0.8.4-beta.12
+    docker_config_np = f"""
+        FROM openmined/grid-backend:{sy.__version__}
         RUN pip install numpy
     """
     docker_config = DockerWorkerConfig(dockerfile=docker_config_np)
