@@ -10,7 +10,7 @@ from .types.uid import UID
 
 
 @serializable()
-class NodeType(Enum):
+class NodeType(str, Enum):
     DOMAIN = "domain"
     NETWORK = "network"
     ENCLAVE = "enclave"
@@ -25,6 +25,9 @@ class NodeType(Enum):
 class NodeSideType(str, Enum):
     LOW_SIDE = "low"
     HIGH_SIDE = "high"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class AbstractNode:

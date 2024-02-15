@@ -53,7 +53,7 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
         return cls(repo=repo, registry=registry, tag=tag)
 
     @property
-    def repo_with_tag(self) -> str:
+    def repo_with_tag(self) -> Optional[str]:
         if self.repo or self.tag:
             return f"{self.repo}:{self.tag}"
         return None

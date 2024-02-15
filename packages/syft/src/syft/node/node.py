@@ -474,6 +474,8 @@ class Node(AbstractNode):
         if queue_config:
             queue_config_ = queue_config
         elif queue_port is not None or n_consumers > 0 or create_producer:
+            if not create_producer and queue_port is None:
+                print("No queue port defined to bind consumers.")
             queue_config_ = ZMQQueueConfig(
                 client_config=ZMQClientConfig(
                     create_producer=create_producer,
@@ -630,6 +632,9 @@ class Node(AbstractNode):
             blob_storage_config = OnDiskBlobStorageConfig(
                 client_config=blob_client_config
             )
+
+        node_type = NodeType(node_type)
+        node_side_type = NodeSideType(node_side_type)
 
         return cls(
             name=name,
