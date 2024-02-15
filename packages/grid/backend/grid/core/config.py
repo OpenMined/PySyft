@@ -144,6 +144,7 @@ class Settings(BaseSettings):
     SINGLE_CONTAINER_MODE: bool = str_to_bool(os.getenv("SINGLE_CONTAINER_MODE", False))
     CONSUMER_SERVICE_NAME: Optional[str] = os.getenv("CONSUMER_SERVICE_NAME")
     INMEMORY_WORKERS: bool = str_to_bool(os.getenv("INMEMORY_WORKERS", True))
+    EMAIL_TOKEN: str = os.getenv("EMAIL_TOKEN", "")
 
     TEST_MODE: bool = (
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False

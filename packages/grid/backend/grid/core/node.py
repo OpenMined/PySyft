@@ -94,4 +94,5 @@ worker: Node = worker_class(
     queue_config=queue_config,
     migrate=True,
     in_memory_workers=settings.INMEMORY_WORKERS,
+    email_token=settings.EMAIL_TOKEN,
 )
