@@ -46,9 +46,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Install Syft
+      - name: Install Hagrid
         run: |
-          pip install syft[data_science]==${{ github.event.inputs.syft_version }}
+          pip install -U hagrid
+          pip install tox
 
       - name: Hagrid Version
         run: |
@@ -69,8 +70,9 @@ jobs:
       # tox -e stack.test.integration.k8s
       - name: Run tests
         env:
-          ORCHESTRA_DEPLOYMENT_TYPE: "k8s"
           NODE_PORT: "8081"
+          SYFT_VERSION: ${{ github.event.inputs.syft_version }}
+          EXCLUDE_NOTEBOOKS: "note 11-container-images-k8s.ipynb"
         run: |
           pytest --nbmake notebooks/api/0.8 -p no:randomly -vvvv -k 'not 11-container-images-k8s.ipynb' --nbmake-timeout=1000
 
