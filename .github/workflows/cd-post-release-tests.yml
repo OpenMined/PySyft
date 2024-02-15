@@ -72,52 +72,52 @@ jobs:
         run: |
           tox -e e2e.test.notebook
 
-  # syft-install-check:
-  #   strategy:
-  #     max-parallel: 99
-  #     matrix:
-  #       os: [ubuntu-latest, macos-latest, windows-latest]
-  #       # Re-enable macos-14 when it's available when we remove python 3.9 from syft
-  #       # os: [ubuntu-latest, macos-latest, windows-latest, macos-14]
-  #       python-version: ["3.11", "3.10", "3.9"]
+  syft-install-check:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        # Re-enable macos-14 when it's available when we remove python 3.9 from syft
+        # os: [ubuntu-latest, macos-latest, windows-latest, macos-14]
+        python-version: ["3.11", "3.10", "3.9"]
 
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - name: System Architecture
-  #       run: |
-  #         echo "System Architecture: $(uname -m)"
-  #         echo "System Version: $(uname -a)"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: System Architecture
+        run: |
+          echo "System Architecture: $(uname -m)"
+          echo "System Version: $(uname -a)"
 
-  #     - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-  #     - name: Set up Python ${{ matrix.python-version }}
-  #       uses: actions/setup-python@v5
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
 
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
+        with:
+          python-version: ${{ matrix.python-version }}
 
-  #     - name: Upgrade pip
-  #       run: |
-  #         python -m pip install --upgrade --user pip
+      - name: Upgrade pip
+        run: |
+          python -m pip install --upgrade --user pip
 
-  #     - name: Get pip cache dir
-  #       id: pip-cache
-  #       shell: bash
-  #       run: |
-  #         echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+      - name: Get pip cache dir
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
-  #     - name: pip cache
-  #       uses: actions/cache@v4
-  #       with:
-  #         path: ${{ steps.pip-cache.outputs.dir }}
-  #         key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+      - name: pip cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-  #     - name: Install Syft
-  #       run: |
-  #         pip install syft==${{ github.event.inputs.syft_version }}
+      - name: Install Syft
+        run: |
+          pip install syft==${{ github.event.inputs.syft_version }}
 
-  #     - name: Check Syft version
-  #       run: |
-  #         python -c "import syft; print(syft.__version__)"
+      - name: Check Syft version
+        run: |
+          python -c "import syft; print(syft.__version__)"
