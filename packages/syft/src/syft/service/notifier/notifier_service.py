@@ -62,7 +62,10 @@ class NotifierService(AbstractService):
         notifier = result.ok()
         # 2 - If email token is not provided and notifier doesn't exist, return an error
         if not email_token and not notifier.email_token:
-            return SyftError(message="Email token is required to turn on the notifier")
+            return SyftError(
+                message="No valid token has been added to the domain."
+                + "You can add a new token via client.settings.enable_notifications(token=TOKEN)"
+            )
 
         # 3 - Activate the notifier
         notifier.active = True
@@ -74,7 +77,7 @@ class NotifierService(AbstractService):
         result = self.stash.update(credentials=context.credentials, settings=notifier)
         if result.is_err():
             return SyftError(message=result.err())
-        return SyftSuccess(message="Notifier turned on")
+        return SyftSuccess(message="Notifications enabled successfully.")
 
     @service_method(path="notifier.turn_off", name="turn_off", roles=ADMIN_ROLE_LEVEL)
     def turn_off(
@@ -91,35 +94,45 @@ class NotifierService(AbstractService):
         result = self.stash.update(credentials=context.credentials, settings=notifier)
         if result.is_err():
             return SyftError(message=result.err())
-        return SyftSuccess(message="Notifier turned off")
+        return SyftSuccess(message="Notifications disabled succesfullly")
 
     @service_method(
-        path="notifier.enable_notifications",
-        name="enable_notifications",
+        path="notifier.activate",
+        name="activate",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def enable_notifications(
+    def activate(
         self,
         context: AuthedServiceContext,
     ) -> Union[SyftSuccess, SyftError]:
-        return SyftError(message="Not Implemented")
-        # Enable current account notifier notifications
-        # (Notifications for this user will still be saved in Notifications Service)
-        # Store the current notifications state in the stash
+        result = self.stash.get(credentials=context.credentials)
+
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        notifier = result.ok()
+        if notifier.active:
+            return SyftSuccess(
+                message="Successfully activated notifications via email."
+            )
+        else:
+            return SyftError(message="Notifications are disabled by the domain owner.")
 
     @service_method(
-        path="notifier.disable_notifications",
-        name="disable_notifications",
+        path="notifier.deactivate",
+        name="deactivate",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def disable_notifications(
+    def deactivate(
         self,
         context: AuthedServiceContext,
     ) -> Union[SyftSuccess, SyftError]:
-        return SyftError(message="Not Implemented")
-        # Enable current account  notifier notifications
-        # (Notifications for this user will still be saved in Notifications Service)
-        # Store the current notifications state in the stash
+        result = self.stash.get(credentials=context.credentials)
+
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        return SyftSuccess(message="Successfully deactivated notifications via email.")
 
     @staticmethod
     def init_notifier(
@@ -163,11 +176,14 @@ class NotifierService(AbstractService):
     # This method is used by other services to dispatch notifications internally
     def dispatch_notification(
         self, node: AbstractNode, notification: Notification
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> Union[SyftError]:
         admin_key = node.get_service("userservice").admin_verify_key()
         notifier = self.stash.get(admin_key)
         if notifier.is_err():
-            return SyftError(message=notifier.err())
+            return SyftError(
+                message="The mail service ran out of quota or some notifications failed to be delivered.\n"
+                + "Please check the health of the mailing server."
+            )
 
         notifier: NotifierSettings = notifier.ok()
         # If notifier is active
