@@ -353,7 +353,7 @@ class OutputPolicy(Policy):
         return self.output_kwargs
 
     @property
-    def last_output_ids(self) -> List[str]:
+    def last_output_ids(self) -> List[UID]:
         return self.output_history[-1].outputs
 
 

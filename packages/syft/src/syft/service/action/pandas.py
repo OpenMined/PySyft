@@ -10,11 +10,11 @@ from pandas import Series
 # relative
 from ...serde.serializable import serializable
 from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
-from .action_object import ActionObject
+from .action_object import ActionObject, ActionObjectV2
 from .action_object import ActionObjectV1
 from .action_object import BASE_PASSTHROUGH_ATTRS
 from .action_types import action_types
@@ -28,11 +28,18 @@ class PandasDataFrameObjectV1(ActionObjectV1):
     syft_internal_type: ClassVar[Type[Any]] = DataFrame
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
 
+@serializable()
+class PandasDataFrameObject(ActionObjectV2):
+    __canonical_name__ = "PandasDataframeObject"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    syft_internal_type: ClassVar[Type[Any]] = DataFrame
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
 
 @serializable()
 class PandasDataFrameObject(ActionObject):
     __canonical_name__ = "PandasDataframeObject"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type: ClassVar[Type[Any]] = DataFrame
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
@@ -79,9 +86,17 @@ class PandasSeriesObjectV1(ActionObjectV1):
 
 
 @serializable()
-class PandasSeriesObject(ActionObject):
+class PandasSeriesObject(ActionObjectV2):
     __canonical_name__ = "PandasSeriesObject"
     __version__ = SYFT_OBJECT_VERSION_2
+
+    syft_internal_type = Series
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+
+@serializable()
+class PandasSeriesObject(ActionObject):
+    __canonical_name__ = "PandasSeriesObject"
+    __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type = Series
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS

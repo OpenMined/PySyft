@@ -945,6 +945,15 @@ class NodeIdentity(Identity):
             verify_key=context.node.signing_key.verify_key,
         )
 
+    @classmethod
+    def from_node(cls, node: "Node"):
+        return cls(
+            node_name=node.name,
+            node_id=node.id,
+            verify_key=node.signing_key.verify_key,
+        )
+
+
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, NodeIdentity):
             return False

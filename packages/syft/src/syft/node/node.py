@@ -1351,6 +1351,7 @@ class Node(AbstractNode):
                 existing_jobs = self._get_existing_user_code_jobs(
                     context, action.user_code_id
                 )
+                print(action.user_code_id, flush=True)
                 if isinstance(existing_jobs, SyftError):
                     return existing_jobs
                 elif len(existing_jobs) > 0:
