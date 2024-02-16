@@ -161,14 +161,25 @@ class NotifierService(AbstractService):
 
     # This is not a public API.
     # This method is used by other services to dispatch notifications internally
-    def dispatch_message(
-        self, notification: Notification
-    ) -> Union[SyftSuccess, SyftError, None]:
-        notifier = self.stash.get()
+    def dispatch_notification(
+        self,
+        node: AbstractNode,
+        notification: Notification
+    ) -> Union[SyftSuccess, SyftError]:
+        admin_key = node.get_service("userservice").admin_verify_key()
+        notifier = self.stash.get(admin_key)
+        if notifier.is_err():
+            return SyftError(message=notifier.err())
+        
+        notifier: NotifierSettings = notifier.ok()
         # If notifier is active
         if notifier.active:
-            resp = notifier.send(notification)
-            return resp
+            resp = notifier.send_notifications(
+                node=node,
+                notification=notification
+            )
+            if resp.is_err():
+                return SyftError(message=resp.err())
 
         # If notifier isn't active, return None
-        return None
+        return SyftSuccess(message="Notifications dispatched successfully")
