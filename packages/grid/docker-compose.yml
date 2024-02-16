@@ -110,6 +110,7 @@ services:
       - NODE_SIDE_TYPE=${NODE_SIDE_TYPE}
       - ENABLE_WARNINGS=${ENABLE_WARNINGS}
       - INMEMORY_WORKERS=True # hardcoding is intentional, since single_container don't share databases
+      - EMAIL_TOKEN=${EMAIL_TOKEN}
     ports:
       - "${HTTP_PORT}:${HTTP_PORT}"
     volumes:
@@ -158,6 +159,7 @@ services:
       - CREATE_PRODUCER=true
       - N_CONSUMERS=1
       - INMEMORY_WORKERS=${INMEMORY_WORKERS}
+      - EMAIL_TOKEN=${EMAIL_TOKEN}
       - HOST_GRID_PATH=${PWD}
     command: "./grid/start.sh"
     network_mode: service:proxy
