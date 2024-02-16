@@ -99,6 +99,20 @@ class DiffDict(DiffAttr):
     new_low_keys: List[Any] = []
     new_high_keys: List[Any] = []
 
+def check_linked_obj(low_linked_obj, high_linked_obj):
+    check_id = low_linked_obj.id == high_linked_obj.id
+    check_service_type = low_linked_obj.service_type == high_linked_obj.service_type
+    check_object_type = low_linked_obj.object_type == high_linked_obj.object_type
+    check_object_uid = low_linked_obj.object_uid == high_linked_obj.object_uid
+    return check_id and check_service_type and check_object_type and check_object_uid
+
+def check_change(low_change, high_change):
+    check_value = low_change.value == high_change.value
+    check_lo = check_linked_obj(low_change.linked_obj, high_change.linked_obj)
+    check_ns = low_change.nested_solved == high_change.nested_solved
+    check_mt = low_change.match_type == high_change.match_type
+    return check_value and check_lo and check_ns and check_mt
+
 def get_diff_dict(low_dict, high_dict, check_func=None):
     diff_keys = []
 
@@ -111,7 +125,7 @@ def get_diff_dict(low_dict, high_dict, check_func=None):
     
     for key in common_keys:
         if check_func:
-            if check_func(low_dict[key], high_dict[key]):
+            if not check_func(low_dict[key], high_dict[key]):
                 diff_keys.append(key)
         elif low_dict[key] != high_dict[key]:
             diff_keys.append(key)
@@ -134,7 +148,7 @@ def get_diff_list(low_list, high_list, check_func=None):
     
     for i in range(common_length):
         if check_func:
-            if check_func(low_list[i], high_list[i]):
+            if not check_func(low_list[i], high_list[i]):
                 diff_ids.append(i)
         elif low_list[i] != high_list[i]:
             diff_ids.append(i)
@@ -165,26 +179,23 @@ def get_diff_request(low_request, high_request):
             diff_attr = DiffAttr(attr_name=attr, low_attr=low_attr, high_attr=high_attr)
             diff_attrs.append(diff_attr)
     
-    # def check_changes(low_change, high_chance):
-    #     return False
-    
-    # change_diffs = get_diff_list(
-    #                 low_request.changes, 
-    #                 high_request.changes,
-    #                 check_func=check_changes    
-    #             )
-    # for l in change_diffs:
-    #     if len(l) != 0:
-    #         change_diff = DiffList(
-    #             attr_name="change", 
-    #             low_attr=low_request.changes,
-    #             high_attr=high_request.changes,
-    #             diff_ids=change_diffs[0],
-    #             new_low_ids=change_diffs[1],
-    #             new_high_ids=change_diffs[2]
-    #         )
-    #         diff_attrs.append(change_diff)
-    #         break
+    change_diffs = get_diff_list(
+                    low_request.changes, 
+                    high_request.changes,
+                    check_func=check_change    
+                )
+    for l in change_diffs:
+        if len(l) != 0:
+            change_diff = DiffList(
+                attr_name="change", 
+                low_attr=low_request.changes,
+                high_attr=high_request.changes,
+                diff_ids=change_diffs[0],
+                new_low_ids=change_diffs[1],
+                new_high_ids=change_diffs[2]
+            )
+            diff_attrs.append(change_diff)
+            break
     
     # history_diffs = get_diff_list(low_request.history, high_request.history)
     # for l in history_diffs:
