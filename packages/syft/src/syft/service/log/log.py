@@ -1,10 +1,11 @@
 # relative
-from syft.types.syft_migration import migrate
-from syft.types.transforms import drop, make_set_default
 from ...serde.serializable import serializable
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 
 
 @serializable()
@@ -33,11 +34,13 @@ class SyftLog(SyftObject):
         self.stderr = ""
         self.stdout = ""
 
+
 @migrate(SyftLogV1, SyftLog)
 def upgrade_syftlog_v1_to_v2():
     return [
         make_set_default("stderr", ""),
     ]
+
 
 @migrate(SyftLog, SyftLogV1)
 def downgrade_syftlog_v2_to_v1():

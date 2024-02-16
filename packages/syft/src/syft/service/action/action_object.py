@@ -1141,6 +1141,7 @@ class ActionObject(SyftObject):
             return res.syft_action_data
 
     def refresh_object(self):
+        # relative
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(
