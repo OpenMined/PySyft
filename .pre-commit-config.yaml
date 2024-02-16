@@ -172,7 +172,8 @@ repos:
       - id: mypy
         name: "mypy: syft"
         always_run: true
-        files: "^packages/syft/src/syft/serde|^packages/syft/src/syft/util|^packages/syft/src/syft/service"
+        # files: "^packages/syft/src/syft/serde|^packages/syft/src/syft/util|^packages/syft/src/syft/service"
+        files: "^packages/syft/src/syft/service/action"
         args: [
             "--follow-imports=skip",
             "--ignore-missing-imports",

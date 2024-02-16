@@ -21,7 +21,6 @@ from pydantic import validator
 from result import Err
 from result import Ok
 from result import Result
-from typing_extensions import Self
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -79,7 +78,7 @@ class NodeActionData(SyftObject):
         return DateTime.now() if v is None else v
 
     @staticmethod
-    def from_action(action: Action, credentials: SyftVerifyKey):
+    def from_action(action: Action, credentials: SyftVerifyKey) -> "NodeActionData":
         is_mutagen = action.remote_self is not None and (
             action.remote_self == action.result_id
         )
@@ -91,24 +90,26 @@ class NodeActionData(SyftObject):
         )
 
     @staticmethod
-    def from_action_obj(action_obj: ActionObject, credentials: SyftVerifyKey):
+    def from_action_obj(
+        action_obj: ActionObject, credentials: SyftVerifyKey
+    ) -> "NodeActionData":
         return NodeActionData(
             id=action_obj.id,
             type=NodeType.ACTION_OBJECT,
             user_verify_key=credentials,
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.id)
 
-    def __eq__(self, other: Self):
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, NodeActionData):
             raise NotImplementedError(
                 "Comparisions can be made with NodeActionData type objects only."
             )
         return hash(self) == hash(other)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self._repr_debug_()
 
 
@@ -148,7 +149,7 @@ class BaseGraphStore:
     def delete(self, uid: Any) -> None:
         raise NotImplementedError
 
-    def find_neighbors(self, uid: Any) -> List[Any]:
+    def find_neighbors(self, uid: Any) -> Optional[List[Any]]:
         raise NotImplementedError
 
     def update(self, uid: Any, data: Any) -> None:
@@ -229,7 +230,9 @@ class NetworkXBackingStore(BaseGraphStore):
     def db(self) -> nx.Graph:
         return self._db
 
-    def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
+    def _thread_safe_cbk(
+        self, cbk: Callable, *args: Any, **kwargs: Any
+    ) -> Result[Any, str]:
         # TODO copied method from document_store, have it in one place and reuse?
         locked = self.lock.acquire(blocking=True)
         if not locked:
@@ -267,10 +270,11 @@ class NetworkXBackingStore(BaseGraphStore):
             self.db.remove_node(uid)
         self.save()
 
-    def find_neighbors(self, uid: UID) -> Optional[Iterable]:
+    def find_neighbors(self, uid: UID) -> Optional[List[Any]]:
         if self.exists(uid=uid):
             neighbors = self.db.neighbors(uid)
             return neighbors
+        return None
 
     def update(self, uid: UID, data: Any) -> None:
         self._thread_safe_cbk(self._update, uid=uid, data=data)
@@ -294,7 +298,7 @@ class NetworkXBackingStore(BaseGraphStore):
         self.db.remove_edge(parent, child)
         self.save()
 
-    def visualize(self, seed: int = 3113794652, figsize=(20, 10)) -> None:
+    def visualize(self, seed: int = 3113794652, figsize: tuple = (20, 10)) -> None:
         plt.figure(figsize=figsize)
         pos = nx.spring_layout(self.db, seed=seed)
         return nx.draw_networkx(self.db, pos=pos, with_labels=True)
@@ -305,10 +309,10 @@ class NetworkXBackingStore(BaseGraphStore):
     def edges(self) -> Iterable:
         return self.db.edges()
 
-    def get_predecessors(self, uid: UID) -> Iterable:
+    def get_predecessors(self, uid: UID) -> List:
         return self.db.predecessors(uid)
 
-    def get_successors(self, uid: UID) -> Iterable:
+    def get_successors(self, uid: UID) -> List:
         return self.db.successors(uid)
 
     def is_parent(self, parent: Any, child: Any) -> bool:
@@ -372,10 +376,10 @@ class InMemoryActionGraphStore(ActionGraphStore):
         credentials: SyftVerifyKey,
         parent_uids: Optional[List[UID]] = None,
     ) -> Result[NodeActionData, str]:
-        if self.graph.exists(uid=node.id):
+        if self.graph.exists(uid=node.id):  # type: ignore[call-arg]
             return Err(f"Node already exists in the graph: {node}")
 
-        self.graph.set(uid=node.id, data=node)
+        self.graph.set(uid=node.id, data=node)  # type: ignore[call-arg]
 
         if parent_uids is None:
             parent_uids = []
@@ -397,8 +401,8 @@ class InMemoryActionGraphStore(ActionGraphStore):
         credentials: SyftVerifyKey,
     ) -> Result[NodeActionData, str]:
         # 🟡 TODO: Add permission check
-        if self.graph.exists(uid=uid):
-            node_data = self.graph.get(uid=uid)
+        if self.graph.exists(uid=uid):  # type: ignore[call-arg]
+            node_data = self.graph.get(uid=uid)  # type: ignore[call-arg]
             return Ok(node_data)
         return Err(f"Node does not exists with id: {uid}")
 
@@ -408,8 +412,8 @@ class InMemoryActionGraphStore(ActionGraphStore):
         credentials: SyftVerifyKey,
     ) -> Result[bool, str]:
         # 🟡 TODO: Add permission checks
-        if self.graph.exists(uid=uid):
-            self.graph.delete(uid=uid)
+        if self.graph.exists(uid=uid):  # type: ignore[call-arg]
+            self.graph.delete(uid=uid)  # type: ignore[call-arg]
             return Ok(True)
         return Err(f"Node does not exists with id: {uid}")
 
@@ -420,11 +424,11 @@ class InMemoryActionGraphStore(ActionGraphStore):
         credentials: SyftVerifyKey,
     ) -> Result[NodeActionData, str]:
         # 🟡 TODO: Add permission checks
-        node_data = self.graph.get(uid=uid)
+        node_data = self.graph.get(uid=uid)  # type: ignore[call-arg]
         if node_data is not None:
             for key, val in data.to_dict(exclude_empty=True).items():
                 setattr(node_data, key, val)
-            self.graph.update(uid=uid, data=node_data)
+            self.graph.update(uid=uid, data=node_data)  # type: ignore[call-arg]
             return Ok(node_data)
         return Err(f"Node does not exists for uid: {uid}")
 
@@ -438,7 +442,7 @@ class InMemoryActionGraphStore(ActionGraphStore):
         Used when a node is a mutagen and to update non-mutated
         successor for all nodes between node_id and nm_successor_id
         """
-        node_data = self.graph.get(uid=node_id)
+        node_data = self.graph.get(uid=node_id)  # type: ignore[call-arg]
 
         data = NodeActionDataUpdate(
             next_mutagen_node=nm_successor_id,
@@ -453,7 +457,7 @@ class InMemoryActionGraphStore(ActionGraphStore):
             # loop through successive mutagen nodes and
             # update their last_nm_mutagen_node id
             while node_id != nm_successor_id:
-                node_data = self.graph.get(uid=node_id)
+                node_data = self.graph.get(uid=node_id)  # type: ignore[call-arg]
 
                 # If node is the last added mutagen node,
                 # then in that case its `next_mutagen_node` will be None
@@ -483,7 +487,7 @@ class InMemoryActionGraphStore(ActionGraphStore):
     def _get_last_non_mutated_mutagen(
         self, credentials: SyftVerifyKey, uid: UID
     ) -> Result[UID, str]:
-        node_data = self.graph.get(uid=uid)
+        node_data = self.graph.get(uid=uid)  # type: ignore[call-arg]
         if node_data.is_mutated:
             return Ok(node_data.last_nm_mutagen_node)
 
@@ -495,10 +499,10 @@ class InMemoryActionGraphStore(ActionGraphStore):
         child: UID,
         credentials: SyftVerifyKey,
     ) -> Result[bool, str]:
-        if not self.graph.exists(parent):
+        if not self.graph.exists(parent):  # type: ignore[call-arg]
             return Err(f"Node does not exists for uid (parent): {parent}")
 
-        if not self.graph.exists(child):
+        if not self.graph.exists(child):  # type: ignore[call-arg]
             return Err(f"Node does not exists for uid (child): {child}")
 
         result = self._get_last_non_mutated_mutagen(
@@ -511,13 +515,13 @@ class InMemoryActionGraphStore(ActionGraphStore):
 
         new_parent = result.ok()
 
-        self.graph.add_edge(parent=new_parent, child=child)
+        self.graph.add_edge(parent=new_parent, child=child)  # type: ignore[call-arg]
 
         return Ok(True)
 
     def is_parent(self, parent: UID, child: UID) -> Result[bool, str]:
-        if self.graph.exists(child):
-            parents = self.graph.get_predecessors(child)
+        if self.graph.exists(child):  # type: ignore[call-arg]
+            parents = self.graph.get_predecessors(child)  # type: ignore[call-arg]
             result = parent in parents
             return Ok(result)
         return Err(f"Node doesn't exists for id: {child}")
@@ -529,11 +533,11 @@ class InMemoryActionGraphStore(ActionGraphStore):
     ) -> Result[List[NodeActionData], str]:
         if isinstance(qks, QueryKey):
             qks = QueryKeys(qks=[qks])
-        subgraph = self.graph.subgraph(qks=qks)
-        return Ok(self.graph.topological_sort(subgraph=subgraph))
+        subgraph = self.graph.subgraph(qks=qks)  # type: ignore[call-arg]
+        return Ok(self.graph.topological_sort(subgraph=subgraph))  # type: ignore[call-arg]
 
     def nodes(self, credentials: SyftVerifyKey) -> Result[List, str]:
-        return Ok(self.graph.nodes())
+        return Ok(self.graph.nodes())  # type: ignore[call-arg]
 
     def edges(self, credentials: SyftVerifyKey) -> Result[List, str]:
-        return Ok(self.graph.edges())
+        return Ok(self.graph.edges())  # type: ignore[call-arg]
