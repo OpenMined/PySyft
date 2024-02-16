@@ -61,7 +61,7 @@ class EmailNotifier(BaseNotifier):
             subject = notification.subject
             body = "Testing email notification!"
 
-            if type(receiver_email) == str:
+            if isinstance(receiver_email, str):
                 receiver_email = [receiver_email]
 
             self.smtp_client.send(
