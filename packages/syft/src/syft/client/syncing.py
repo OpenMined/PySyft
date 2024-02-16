@@ -8,6 +8,7 @@
     * check list for each type of object to see if diff must be included or not
 '''
 from typing import Any, Dict, List, Optional, Type
+from IPython.core.display import display, HTML, Markdown
 
 from syft.service.action.action_data_empty import ActionDataEmpty
 from ..types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
@@ -98,7 +99,7 @@ class DiffDict(DiffAttr):
     new_low_keys: List[Any] = []
     new_high_keys: List[Any] = []
 
-def get_diff_dict(low_dict, high_dict):
+def get_diff_dict(low_dict, high_dict, check_func=None):
     diff_keys = []
 
     low_dict_keys = set(low_dict.keys())
@@ -109,12 +110,15 @@ def get_diff_dict(low_dict, high_dict):
     new_high_keys = high_dict_keys - low_dict_keys
     
     for key in common_keys:
-        if low_dict[key] != high_dict[key]:
+        if check_func:
+            if check_func(low_dict[key], high_dict[key]):
+                diff_keys.append(key)
+        elif low_dict[key] != high_dict[key]:
             diff_keys.append(key)
-    
+
     return diff_keys, list(new_low_keys), list(new_high_keys)
     
-def get_diff_list(low_list, high_list):
+def get_diff_list(low_list, high_list, check_func=None):
     diff_ids = []
     new_low_ids = []
     new_high_ids = []
@@ -128,8 +132,11 @@ def get_diff_list(low_list, high_list):
     else:
         common_length = len(low_list)
     
-    for i in range(common_length): 
-        if low_list[i] != high_list[i]:
+    for i in range(common_length):
+        if check_func:
+            if check_func(low_list[i], high_list[i]):
+                diff_ids.append(i)
+        elif low_list[i] != high_list[i]:
             diff_ids.append(i)
     
     return diff_ids, new_low_ids, new_high_ids
@@ -158,33 +165,40 @@ def get_diff_request(low_request, high_request):
             diff_attr = DiffAttr(attr_name=attr, low_attr=low_attr, high_attr=high_attr)
             diff_attrs.append(diff_attr)
     
-    change_diffs = get_diff_list(low_request.changes, high_request.changes)
-    for l in change_diffs:
-        if len(l) != 0:
-            change_diff = DiffList(
-                attr_name="change", 
-                low_attr=low_request.changes,
-                high_attr=high_request.changes,
-                diff_ids=change_diffs[0],
-                new_low_ids=change_diffs[1],
-                new_high_ids=change_diffs[2]
-            )
-            diff_attrs.append(change_diff)
-            break
+    # def check_changes(low_change, high_chance):
+    #     return False
     
-    history_diffs = get_diff_list(low_request.history, high_request.history)
-    for l in history_diffs:
-        if len(l) != 0:
-            history_diff = DiffList(
-                attr_name="history", 
-                low_attr=low_request.history,
-                high_attr=high_request.history,
-                diff_ids=history_diffs[0],
-                new_low_ids=history_diffs[1],
-                new_high_ids=history_diffs[2]
-            )
-            diff_attrs.append(history_diff)
-            break
+    # change_diffs = get_diff_list(
+    #                 low_request.changes, 
+    #                 high_request.changes,
+    #                 check_func=check_changes    
+    #             )
+    # for l in change_diffs:
+    #     if len(l) != 0:
+    #         change_diff = DiffList(
+    #             attr_name="change", 
+    #             low_attr=low_request.changes,
+    #             high_attr=high_request.changes,
+    #             diff_ids=change_diffs[0],
+    #             new_low_ids=change_diffs[1],
+    #             new_high_ids=change_diffs[2]
+    #         )
+    #         diff_attrs.append(change_diff)
+    #         break
+    
+    # history_diffs = get_diff_list(low_request.history, high_request.history)
+    # for l in history_diffs:
+    #     if len(l) != 0:
+    #         history_diff = DiffList(
+    #             attr_name="history", 
+    #             low_attr=low_request.history,
+    #             high_attr=high_request.history,
+    #             diff_ids=history_diffs[0],
+    #             new_low_ids=history_diffs[1],
+    #             new_high_ids=history_diffs[2]
+    #         )
+    #         diff_attrs.append(history_diff)
+    #         break
        
     return diff_attrs
 
@@ -303,39 +317,42 @@ def get_diff_action_object(low_action_object, high_action_object):
     # "nested_codes",
     # "status"
 
-    basic_attrs = [
-        "__attr_searchable__",
-        "syft_action_data_cache",
-        "syft_blob_storage_entry_id",
-        "syft_pointer_type",
-        "syft_parent_hashes",
-        "syft_parent_op", 
-        "syft_parent_args", 
-        "syft_parent_kwargs", 
-        "syft_history_hash", 
-        "syft_internal_type",
-        "syft_node_uid", 
-        "_syft_pre_hooks__", 
-        "_syft_post_hooks__",
-        "syft_twin_type", 
-        "syft_action_data_type",
-        "syft_action_data_repr_",
-        "syft_action_data_str_",
-        "syft_has_bool_attr",
-        "syft_resolve_data",
-        "syft_created_at",
-        "syft_resolved", 
-    ]
+    # basic_attrs = [
+    #     "__attr_searchable__",
+    #     "syft_action_data_cache",
+    #     "syft_blob_storage_entry_id",
+    #     "syft_pointer_type",
+    #     "syft_parent_hashes",
+    #     "syft_parent_op", 
+    #     "syft_parent_args", 
+    #     "syft_parent_kwargs", 
+    #     "syft_history_hash", 
+    #     "syft_internal_type",
+    #     "syft_node_uid", 
+    #     "_syft_pre_hooks__", 
+    #     "_syft_post_hooks__",
+    #     "syft_twin_type", 
+    #     "syft_action_data_type",
+    #     "syft_action_data_repr_",
+    #     "syft_action_data_str_",
+    #     "syft_has_bool_attr",
+    #     "syft_resolve_data",
+    #     "syft_created_at",
+    #     "syft_resolved", 
+    # ]
     
-    for attr in basic_attrs:
-        low_attr = getattr(low_action_object, attr)
-        high_attr = getattr(high_action_object, attr)
-        if low_attr != high_attr:
-            diff_attr = DiffAttr(attr_name=attr, low_attr=low_attr, high_attr=high_attr)
-            diff_attrs.append(diff_attr)
-    
+    # for attr in basic_attrs:
+    #     low_attr = getattr(low_action_object, attr)
+    #     high_attr = getattr(high_action_object, attr)
+    #     if low_attr != high_attr:
+    #         diff_attr = DiffAttr(attr_name=attr, low_attr=low_attr, high_attr=high_attr)
+    #         diff_attrs.append(diff_attr)
+    low_data = low_action_object.syft_action_data
+    high_data = high_action_object.syft_action_data
+    if low_data != high_data:
+        diff_attr = DiffAttr(attr_name='syft_action_data', low_attr=low_data, high_attr=high_data)
+        diff_attrs.append(diff_attr)
     return diff_attrs
-    
 
 
 func_dict = {#
@@ -344,7 +361,7 @@ func_dict = {#
     UserCode.__name__: get_diff_user_code,
     Request.__name__: get_diff_request,
     Project.__name__: None,
-    ActionObject.__name__: None,
+    ActionObject.__name__: get_diff_action_object,
     # UserCodeStatusChange.__name__: None,
 }
 
@@ -588,6 +605,41 @@ class State(SyftObject):
         return objs
 
 
+def resolve(state: State):
+    low_new_objs = []
+    high_new_objs = []
+    # new_objs = state.objs_to_sync()
+    for new_obj in state.diff_to_sync:
+        if new_obj.merge_state == "NEW":
+            if new_obj.low_obj is None:
+                state_list = low_new_objs
+                source = 'LOW'
+                destination = 'HIGH'
+                obj_to_sync = new_obj.high_obj
+            if new_obj.high_obj is None:
+                state_list = high_new_objs
+                source = 'HIGH'
+                destination = 'LOW'
+                obj_to_sync = new_obj.low_obj
+            if hasattr(obj_to_sync, '_repr_markdown_'):
+                display(Markdown(obj_to_sync._repr_markdown_()))
+            else:
+                display(obj_to_sync)
+            print(f"Do you approve moving this object from the {source} side to the {destination} side (approve/deny): ", flush=True)
+            while True:
+                decision = input()
+                if decision == "approve":
+                    state_list.append(obj_to_sync)
+                    break
+                elif decision == "deny":
+                    break
+                else:
+                    print("Please write `approve` or `deny`:", flush=True)
+        if new_obj.merge_state == "DIFF":
+            pass
+
+    return low_new_objs, high_new_objs
+
 # TODO"
 # Split into client.get_sync_state 
 # and diff_state = compare_states(low_state, high_state)
@@ -654,12 +706,15 @@ def get_sync_state(low_side_client, high_side_client):
             # if check_job(low_side_jobs[job.id], job):
             #     jobs_to_sync.append(job)
             sync_state.add_obj(low_side_jobs[job.id], job)
+            sync_state.add_obj(low_side_jobs[job.id].result, job.result)
+
         else:
             # jobs_to_sync.append(job)
             sync_state.add_obj(None, job)
-            
-        if not isinstance(job.result, ActionDataEmpty):
             sync_state.add_obj(None, job.result)
+            
+        # if not isinstance(job.result, ActionDataEmpty):
+        #     sync_state.add_obj(None, job.result)
     # sync_state['jobs'] = jobs_to_sync
     
     # Logs
