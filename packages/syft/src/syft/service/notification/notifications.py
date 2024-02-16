@@ -9,21 +9,21 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.transforms import make_set_default
-from ...types.transforms import drop
-from ...types.syft_migration import migrate
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_credentials_for_key
 from ...types.transforms import add_node_uid_for_key
+from ...types.transforms import drop
 from ...types.transforms import generate_id
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
-from ..notifier.notifier_enums import NOTIFIERS
 from ...util.colors import SURFACE
+from ..notifier.notifier_enums import NOTIFIERS
 
 
 @serializable()
@@ -125,6 +125,7 @@ class NotificationV1(SyftObject):
 
         return NotificationRequestStatus.NO_ACTION
 
+
 @serializable()
 class Notification(SyftObject):
     __canonical_name__ = "Notification"
@@ -198,17 +199,20 @@ class Notification(SyftObject):
 
         return NotificationRequestStatus.NO_ACTION
 
+
 @migrate(NotificationV1, Notification)
 def upgrade_notification_v1_to_v2():
     return [
         make_set_default("notifier_types", []),
     ]
 
+
 @migrate(Notification, NotificationV1)
 def downgrade_notification_v2_to_v1():
     return [
         drop("notifier_types"),
     ]
+
 
 @serializable()
 class CreateNotificationV1(NotificationV1):
@@ -219,6 +223,7 @@ class CreateNotificationV1(NotificationV1):
     node_uid: Optional[UID]
     from_user_verify_key: Optional[SyftVerifyKey]
     created_at: Optional[DateTime]
+
 
 @serializable()
 class CreateNotification(Notification):
@@ -238,11 +243,13 @@ def upgrade_create_notification_v1_to_v2():
         make_set_default("notifier_types", []),
     ]
 
+
 @migrate(Notification, NotificationV1)
 def downgrade_create_notification_v2_to_v1():
     return [
         drop("notifier_types"),
     ]
+
 
 def add_msg_creation_time(context: TransformContext) -> TransformContext:
     context.output["created_at"] = DateTime.now()

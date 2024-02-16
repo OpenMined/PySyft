@@ -22,6 +22,7 @@ from ..context import AuthedServiceContext
 from ..notification.notification_service import CreateNotification
 from ..notification.notification_service import NotificationService
 from ..notification.notifications import Notification
+from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -39,7 +40,7 @@ from .request import RequestStatus
 from .request import SubmitRequest
 from .request import UserCodeStatusChange
 from .request_stash import RequestStash
-from ..notifier.notifier_enums import NOTIFIERS
+
 
 @instrument
 @serializable()

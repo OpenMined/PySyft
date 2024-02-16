@@ -1,8 +1,8 @@
 # stdlib
-from typing import List
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
+from typing import List
 from typing import Optional
 
 
@@ -38,8 +38,8 @@ class SMTPClient:
     def send(self, sender: str, receiver: List[str], subject: str, body: str) -> None:
         if not subject or not body or not receiver:
             raise ValueError("Subject, body, and recipient email(s) are required")
-        
-        msg = MIMEMultipart('alternative')
+
+        msg = MIMEMultipart("alternative")
         msg["From"] = sender
         msg["To"] = ", ".join(receiver)
         msg["Subject"] = subject
@@ -58,4 +58,3 @@ class SMTPClient:
 
             text = msg.as_string()
             server.sendmail(sender, ", ".join(receiver), text)
-

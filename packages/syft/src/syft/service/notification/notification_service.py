@@ -55,10 +55,7 @@ class NotificationService(AbstractService):
         )
         notifier_service = context.node.get_service("notifierservice")
 
-        res = notifier_service.dispatch_notification(
-            context.node,
-            new_notification
-        )
+        res = notifier_service.dispatch_notification(context.node, new_notification)
         if result.is_err():
             return SyftError(message=str(result.err()))
         return result.ok()

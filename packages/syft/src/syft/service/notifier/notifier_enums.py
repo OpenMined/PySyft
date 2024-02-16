@@ -1,5 +1,10 @@
-from enum import Enum, auto
+# stdlib
+from enum import Enum
+from enum import auto
+
+# relative
 from ...serde.serializable import serializable
+
 
 @serializable()
 class NOTIFIERS(Enum):
