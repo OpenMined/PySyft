@@ -237,14 +237,14 @@ class CreateNotification(Notification):
     notifier_types: Optional[List[NOTIFIERS]] = []
 
 
-@migrate(NotificationV1, Notification)
+@migrate(CreateNotificationV1, CreateNotification)
 def upgrade_create_notification_v1_to_v2():
     return [
         make_set_default("notifier_types", []),
     ]
 
 
-@migrate(Notification, NotificationV1)
+@migrate(CreateNotification, CreateNotificationV1)
 def downgrade_create_notification_v2_to_v1():
     return [
         drop("notifier_types"),
