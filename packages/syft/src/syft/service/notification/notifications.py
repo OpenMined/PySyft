@@ -10,6 +10,10 @@ from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.transforms import make_set_default
+from ...types.transforms import drop
+from ...types.syft_migration import migrate
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_credentials_for_key
@@ -18,6 +22,7 @@ from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
+from ..notifier.notifier_enums import NOTIFIERS
 from ...util.colors import SURFACE
 
 
@@ -49,7 +54,7 @@ class ReplyNotification(SyftObject):
 
 
 @serializable()
-class Notification(SyftObject):
+class NotificationV1(SyftObject):
     __canonical_name__ = "Notification"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -120,9 +125,93 @@ class Notification(SyftObject):
 
         return NotificationRequestStatus.NO_ACTION
 
+@serializable()
+class Notification(SyftObject):
+    __canonical_name__ = "Notification"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    subject: str
+    node_uid: UID
+    from_user_verify_key: SyftVerifyKey
+    to_user_verify_key: SyftVerifyKey
+    created_at: DateTime
+    status: NotificationStatus = NotificationStatus.UNREAD
+    linked_obj: Optional[LinkedObject]
+    notifier_types: Optional[List[NOTIFIERS]] = []
+    replies: Optional[List[ReplyNotification]] = []
+
+    __attr_searchable__ = [
+        "from_user_verify_key",
+        "to_user_verify_key",
+        "status",
+    ]
+    __repr_attrs__ = ["subject", "status", "created_at", "linked_obj"]
+
+    def _repr_html_(self) -> str:
+        return f"""
+            <style>
+            .syft-request {{color: {SURFACE[options.color_theme]}; line-height: 1;}}
+            </style>
+            <div class='syft-request'>
+                <h3>Notification</h3>
+                <p><strong>ID: </strong>{self.id}</p>
+                <p><strong>Subject: </strong>{self.subject}</p>
+                <p><strong>Status: </strong>{self.status.name}</p>
+                <p><strong>Created at: </strong>{self.created_at}</p>
+                <p><strong>Linked object: </strong>{self.linked_obj}</p>
+                <p>
+            </div>
+        """
+
+    @property
+    def link(self) -> Optional[SyftObject]:
+        if self.linked_obj:
+            return self.linked_obj.resolve
+        return None
+
+    def _coll_repr_(self):
+        return {
+            "Subject": self.subject,
+            "Status": self.determine_status().name.capitalize(),
+            "Created At": str(self.created_at),
+            "Linked object": f"{self.linked_obj.object_type.__canonical_name__} ({self.linked_obj.object_uid})",
+        }
+
+    def mark_read(self) -> None:
+        api = APIRegistry.api_for(
+            self.node_uid, user_verify_key=self.syft_client_verify_key
+        )
+        return api.services.notifications.mark_as_read(uid=self.id)
+
+    def mark_unread(self) -> None:
+        api = APIRegistry.api_for(
+            self.node_uid, user_verify_key=self.syft_client_verify_key
+        )
+        return api.services.notifications.mark_as_unread(uid=self.id)
+
+    def determine_status(self) -> Enum:
+        # relative
+        from ..request.request import Request
+
+        if isinstance(self.linked_obj.resolve, Request):
+            return self.linked_obj.resolve.status
+
+        return NotificationRequestStatus.NO_ACTION
+
+@migrate(NotificationV1, Notification)
+def upgrade_notification_v1_to_v2():
+    return [
+        make_set_default("notifier_types", []),
+    ]
+
+@migrate(Notification, NotificationV1)
+def downgrade_notification_v2_to_v1():
+    return [
+        drop("notifier_types"),
+    ]
 
 @serializable()
-class CreateNotification(Notification):
+class CreateNotificationV1(NotificationV1):
     __canonical_name__ = "CreateNotification"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -131,6 +220,29 @@ class CreateNotification(Notification):
     from_user_verify_key: Optional[SyftVerifyKey]
     created_at: Optional[DateTime]
 
+@serializable()
+class CreateNotification(Notification):
+    __canonical_name__ = "CreateNotification"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    id: Optional[UID]
+    node_uid: Optional[UID]
+    from_user_verify_key: Optional[SyftVerifyKey]
+    created_at: Optional[DateTime]
+    notifier_types: Optional[List[NOTIFIERS]] = []
+
+
+@migrate(NotificationV1, Notification)
+def upgrade_create_notification_v1_to_v2():
+    return [
+        make_set_default("notifier_types", []),
+    ]
+
+@migrate(Notification, NotificationV1)
+def downgrade_create_notification_v2_to_v1():
+    return [
+        drop("notifier_types"),
+    ]
 
 def add_msg_creation_time(context: TransformContext) -> TransformContext:
     context.output["created_at"] = DateTime.now()
