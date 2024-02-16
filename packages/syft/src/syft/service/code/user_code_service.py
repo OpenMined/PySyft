@@ -371,6 +371,7 @@ class UserCodeService(AbstractService):
     ) -> Result[ActionObject, Err]:
         """Call a User Code Function"""
         try:
+            print(uid)
             code_result = self.stash.get_by_uid(context.credentials, uid=uid)
             if code_result.is_err():
                 return code_result
@@ -387,6 +388,7 @@ class UserCodeService(AbstractService):
             override_execution_permission = (
                 context.has_execute_permissions or context.role == ServiceRole.ADMIN
             )
+            print("override", override_execution_permission)
             # Override permissions bypasses the cache, since we do not check in/out policies
             skip_fill_cache = override_execution_permission
             # We do not read from output policy cache if there are mock arguments
@@ -412,6 +414,7 @@ class UserCodeService(AbstractService):
                                 context=context,
                                 output_ids=output_policy.last_output_ids,
                             )
+                            print("result", result)
                             return Ok(result.as_empty())
                         else:
                             return is_valid.to_result()

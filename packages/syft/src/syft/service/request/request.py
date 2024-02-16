@@ -153,6 +153,7 @@ class ActionStoreChange(Change):
                     permission=self.apply_permission_type,
                 )
                 if apply:
+                    print("ADDING PERMISSION", requesting_permission_action_obj, id_action)
                     action_store.add_permission(requesting_permission_action_obj)
                     blob_storage_service.stash.add_permission(
                         requesting_permission_blob_obj
@@ -528,7 +529,10 @@ class Request(SyftObject):
             prompt_warning_message(message=message, confirm=True)
 
         print(f"Approving request for domain {api.node_name}")
-        return api.services.request.apply(self.id, **kwargs)
+        res = api.services.request.apply(self.id, **kwargs)
+        # if isinstance(res, SyftSuccess):
+
+        return res
 
     def deny(self, reason: str):
         """Denies the particular request.
@@ -621,7 +625,13 @@ class Request(SyftObject):
         if len(existing_jobs) == 0:
             job = job_service.create_job_for_user_code_id(self.code.id)
         else:
+            print("returning existing job")
+            print("setting permission")
             job = existing_jobs[-1]
+            res = job_service.add_read_permission_job_for_code_owner(job, self.code)
+            print(res)
+            res = job_service.add_read_permission_log_for_code_owner(job.log_id, self.code)
+            print(res)
 
         return job
 
@@ -692,11 +702,14 @@ class Request(SyftObject):
             if isinstance(result, SyftError):
                 return result
         else:
-            action_object = ActionObject.from_obj(
-                result,
-                syft_client_verify_key=api.signing_key.verify_key,
-                syft_node_location=api.node_uid,
-            )
+            if not isinstance(result, ActionObject):
+                action_object = ActionObject.from_obj(
+                    result,
+                    syft_client_verify_key=api.signing_key.verify_key,
+                    syft_node_location=api.node_uid,
+                )
+            else:
+                action_object = result
             blob_store_result = action_object._save_to_blob_storage()
             if isinstance(blob_store_result, SyftError):
                 return blob_store_result

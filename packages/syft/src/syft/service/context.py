@@ -37,6 +37,10 @@ class AuthedServiceContext(NodeServiceContext):
     extra_kwargs: Dict = {}
     has_execute_permissions: bool = False
 
+    @property
+    def dev_mode(self):
+        return self.node.dev_mode
+
     def capabilities(self) -> List[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES.get(self.role, [])
 

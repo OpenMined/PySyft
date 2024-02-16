@@ -1403,17 +1403,22 @@ def execute_byte_code(
         try:
             result = eval(evil_string, _globals, _locals)  # nosec
         except Exception as e:
+            error_msg = traceback_from_error(e, code_item)
             if context.job is not None:
-                error_msg = traceback_from_error(e, code_item)
                 time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
                 original_print(
                     f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
                 )
                 log_service = context.node.get_service("LogService")
                 log_service.append(context=context, uid=log_id, new_err=error_msg)
-            result = Err(
-                f"Exception encountered while running {code_item.service_func_name}"
+
+            result_message = f"Exception encountered while running {code_item.service_func_name}" \
                 ", please contact the Node Admin for more info."
+            if context.dev_mode:
+                result_message +=error_msg
+
+            result = Err(
+                result_message
             )
 
         # reset print

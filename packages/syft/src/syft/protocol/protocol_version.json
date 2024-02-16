@@ -1189,6 +1189,92 @@
           "hash": "07d84a95324d95d9c868cd7d1c33c908f77aa468671d76c144586aab672bcbb5",
           "action": "add"
         }
+      },
+      "ActionObject": {
+        "3": {
+          "version": 3,
+          "hash": "9cc29f4b637e7a9407ff5f56e282b5411c2709e8195214c452e44b65f9051d56",
+          "action": "add"
+        }
+      },
+      "AnyActionObject": {
+        "2": {
+          "version": 2,
+          "hash": "002d8be821140befebbc0503e6bc1ef8779094e24e46305e5da5af6eecb56b13",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "ad6b897da9bdf2fcacc853fad73b7d7b98c8d0ecb58c35110e236edefd99f561",
+          "action": "add"
+        }
+      },
+      "BlobFileOBject": {
+        "2": {
+          "version": 2,
+          "hash": "eb895881610723d674755033b0f1798219725d5ad70791d25a44f473ddff318b",
+          "action": "add"
+        }
+      },
+      "NumpyArrayObject": {
+        "2": {
+          "version": 2,
+          "hash": "2c631121d9211006edab5620b214dea83e2398bee92244d822227ee316647e22",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "8572cdfb6a9f8b20c276aeebaf12cd26e424703ea624cf52efdbe33a8ab3d4ef",
+          "action": "add"
+        }
+      },
+      "NumpyScalarObject": {
+        "2": {
+          "version": 2,
+          "hash": "0d5d81b9d45c140f6e07b43ed68d31e0ef060d6b4d0431c9b4795997bb35c69d",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "d3107530ef42a6f3b234423a3c5efcb13f4b43a5959642a0b1e3c093992d59d1",
+          "action": "add"
+        }
+      },
+      "NumpyBoolObject": {
+        "2": {
+          "version": 2,
+          "hash": "24839ba1c88ed833a134124750d5f299abcdf318670315028ed87b254f4578b3",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "b9cd5c27630b0c67465d21e1d67a0b2591cd59aa6ac7d60ab1f5f64a746114df",
+          "action": "add"
+        }
+      },
+      "PandasDataframeObject": {
+        "2": {
+          "version": 2,
+          "hash": "66729d4ba7a92210d45c5a5c24fbdb4c8e58138a515a7bdb71ac8f6e8b868544",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "f1ec7d6debb6d2d81e752418dd84544995b16d0386da791c4770914a227700d9",
+          "action": "add"
+        }
+      },
+      "PandasSeriesObject": {
+        "2": {
+          "version": 2,
+          "hash": "cb05a714f75b1140a943f56a3622fcc0477b3a1f504cd545a98510959ffe1528",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "96f75160ec2a966fc3866cf2e86b151914012514e2b89f618933cdfbb639e528",
+          "action": "add"
+        }
       }
     }
   }
