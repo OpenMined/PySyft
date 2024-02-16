@@ -556,6 +556,26 @@ class UserCode(SyftObject):
                 all_assets += assets
         return all_assets
 
+    def get_all_output_action_objects(self) -> List[ActionObject]:
+        output_policy = self.output_policy
+        if output_policy is not None:
+            all_output_ids = []
+            for output in output_policy.output_history:
+                if isinstance(output.outputs, list):
+                    all_output_ids.extend(output.outputs)
+                else:
+                    all_output_ids.extend(output.outputs.values())
+
+            api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+            result = []
+            for output_id in all_output_ids:
+                action_obj = api.services.action.get(output_id)
+                if isinstance(action_obj, ActionObject):
+                    result.append(action_obj)
+            return result
+
+        return []
+
     def get_dependencies(
         self, visited: Optional[Set[str]] = None
     ) -> Dict[str, List[Any]]:

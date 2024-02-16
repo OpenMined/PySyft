@@ -474,6 +474,13 @@ class Job(SyftObject):
         )
 
         dependencies = {self.id: []}
+
+        if self.user_code_id and self.user_code_id not in visited:
+            user_code_obj = api.services.code.get_by_id(self.user_code_id)
+            dependencies[self.id].append(user_code_obj)
+            code_deps = user_code_obj.get_dependencies(visited=visited)
+            dependencies.update(code_deps)
+
         result_id = self.result.id
         if result_id not in visited:
             result_obj = api.services.action.get(result_id, resolve_nested=False)
