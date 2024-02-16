@@ -39,7 +39,7 @@ from .request import RequestStatus
 from .request import SubmitRequest
 from .request import UserCodeStatusChange
 from .request_stash import RequestStash
-
+from ..notifier.notifier_enums import NOTIFIERS
 
 @instrument
 @serializable()
@@ -87,6 +87,7 @@ class RequestService(AbstractService):
                         from_user_verify_key=context.credentials,
                         to_user_verify_key=root_verify_key,
                         linked_obj=link,
+                        notifier_types=[NOTIFIERS.EMAIL],
                     )
                     method = context.node.get_service_method(NotificationService.send)
                     result = method(context=context, notification=message)
