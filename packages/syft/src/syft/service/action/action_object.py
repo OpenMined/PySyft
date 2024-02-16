@@ -38,7 +38,7 @@ from ...service.response import SyftError
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
@@ -297,6 +297,8 @@ passthrough_attrs = [
     "_save_to_blob_storage_",  # syft
     "syft_action_data",  # syft
     "syft_resolved",  # syft
+    "syft_action_data_node_id",
+    "node_uid",
     "migrate_to",  # syft
     "to_dict",  # syft
     "dict",  # syft
@@ -318,6 +320,8 @@ dont_wrap_output_attrs = [
     "__bool__",
     "__len__",
     "syft_resolved",  # syft
+    "node_uid",
+    "syft_action_data_node_id",
 ]
 dont_make_side_effects = [
     "_repr_html_",
@@ -329,6 +333,8 @@ dont_make_side_effects = [
     "__len__",
     "shape",
     "syft_resolved",  # syft
+    "node_uid",
+    "syft_action_data_node_id",
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -567,7 +573,9 @@ BASE_PASSTHROUGH_ATTRS = [
     "syft_action_data_cache",
     "reload_cache",
     "syft_resolved",
-    "refresh_object"
+    "refresh_object",
+    "syft_action_data_node_id",
+    "node_uid"
 ]
 
 
@@ -604,7 +612,7 @@ class ActionObjectV1(SyftObject):
 
 
 @serializable()
-class ActionObject(SyftObject):
+class ActionObjectV2(SyftObject):
     """Action object for remote execution."""
 
     __canonical_name__ = "ActionObject"
@@ -634,7 +642,47 @@ class ActionObject(SyftObject):
     syft_resolve_data: Optional[bool]
     syft_created_at: Optional[DateTime]
     syft_resolved: bool = True
+
+
+@serializable()
+class ActionObject(SyftObject):
+    """Action object for remote execution."""
+
+    __canonical_name__ = "ActionObject"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    __attr_searchable__: List[str] = []
+    syft_action_data_cache: Optional[Any] = None
+    syft_blob_storage_entry_id: Optional[UID] = None
+    syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
+
+    # Help with calculating history hash for code verification
+    syft_parent_hashes: Optional[Union[int, List[int]]]
+    syft_parent_op: Optional[str]
+    syft_parent_args: Optional[Any]
+    syft_parent_kwargs: Optional[Any]
+    syft_history_hash: Optional[int]
+    syft_internal_type: ClassVar[Type[Any]]
+    syft_node_uid: Optional[UID]
+    _syft_pre_hooks__: Dict[str, List] = {}
+    _syft_post_hooks__: Dict[str, List] = {}
+    syft_twin_type: TwinMode = TwinMode.NONE
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_action_data_type: Optional[Type]
+    syft_action_data_repr_: Optional[str]
+    syft_action_data_str_: Optional[str]
+    syft_has_bool_attr: Optional[bool]
+    syft_resolve_data: Optional[bool]
+    syft_created_at: Optional[DateTime]
+    syft_resolved: bool = True
+    syft_action_data_node_id: Optional[UID]
     # syft_dont_wrap_attrs = ["shape"]
+
+    def _set_obj_location_(self, node_uid, credentials):
+        self.syft_node_location = node_uid
+        self.syft_client_verify_key = credentials
+        if self.syft_action_data_node_id is None:
+            self.syft_action_data_node_id = node_uid
 
     @property
     def syft_action_data(self) -> Any:
@@ -661,6 +709,8 @@ class ActionObject(SyftObject):
                     uid=self.syft_blob_storage_entry_id
                 )
                 if isinstance(blob_retrieval_object, SyftError):
+                    import ipdb
+                    ipdb.set_trace()
                     print(
                         "Detached action object, object exists but is not linked to data in the blob storage",
                         blob_retrieval_object,
@@ -1092,6 +1142,7 @@ class ActionObject(SyftObject):
 
     def refresh_object(self):
         from ...client.api import APIRegistry
+
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -1173,6 +1224,7 @@ class ActionObject(SyftObject):
         syft_client_verify_key: Optional[SyftVerifyKey] = None,
         syft_node_location: Optional[UID] = None,
         syft_resolved: Optional[bool] = True,
+        data_node_id: Optional[UID] = None,
     ) -> ActionObject:
         """Create an ActionObject from an existing object.
 
@@ -1189,6 +1241,7 @@ class ActionObject(SyftObject):
 
         action_type = action_type_for_object(syft_action_data)
         action_object = action_type(syft_action_data_cache=syft_action_data)
+        action_object.syft_action_data_node_id = data_node_id
         action_object.syft_resolved = syft_resolved
 
         if id is not None:
@@ -1269,6 +1322,7 @@ class ActionObject(SyftObject):
         id: Optional[UID] = None,
         syft_lineage_id: Optional[LineageID] = None,
         syft_resolved: Optional[bool] = True,
+        data_node_id: Optional[UID] = None,
     ) -> ActionObject:
         """Create an ActionObject from a type, using a ActionDataEmpty object
 
@@ -1287,6 +1341,7 @@ class ActionObject(SyftObject):
             syft_lineage_id=syft_lineage_id,
             syft_action_data=empty,
             syft_resolved=syft_resolved,
+            data_node_id=data_node_id,
         )
         res.__dict__["syft_internal_type"] = syft_internal_type
         return res
@@ -1920,9 +1975,20 @@ class AnyActionObjectV1(ActionObjectV1):
 
 
 @serializable()
-class AnyActionObject(ActionObject):
+class AnyActionObject(ActionObjectV2):
     __canonical_name__ = "AnyActionObject"
     __version__ = SYFT_OBJECT_VERSION_2
+
+    syft_internal_type: ClassVar[Type[Any]] = NoneType  # type: ignore
+    # syft_passthrough_attrs: List[str] = []
+    syft_dont_wrap_attrs: List[str] = ["__str__", "__repr__", "syft_action_data_str_"]
+    syft_action_data_str_ = ""
+
+
+@serializable()
+class AnyActionObject(ActionObject):
+    __canonical_name__ = "AnyActionObject"
+    __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type: ClassVar[Type[Any]] = NoneType  # type: ignore
     # syft_passthrough_attrs: List[str] = []

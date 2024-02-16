@@ -2,6 +2,9 @@
 from typing import List
 from typing import Union
 
+from syft.service.code.user_code import UserCode
+from syft.service.log.log import SyftLog
+
 # relative
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
@@ -178,6 +181,34 @@ class JobService(AbstractService):
         return res.ok()
 
     @service_method(
+        path="job.add_read_permission_job_for_code_owner",
+        name="add_read_permission_job_for_code_owner",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def add_read_permission_job_for_code_owner(
+        self, context: AuthedServiceContext, job: Job, user_code: UserCode
+    ):
+        permission = ActionObjectPermission(
+            job.id, ActionPermission.READ, user_code.user_verify_key
+        )
+        return self.stash.add_permission(permission=permission)
+
+    @service_method(
+        path="job.add_read_permission_log_for_code_owner",
+        name="add_read_permission_log_for_code_owner",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def add_read_permission_log_for_code_owner(
+        self, context: AuthedServiceContext, log_id: UID, user_code: UserCode
+    ):
+        log_service = context.node.get_service("logservice")
+        return log_service.stash.add_permission(
+            ActionObjectPermission(
+                log_id, ActionPermission.READ, user_code.user_verify_key
+            )
+        )
+
+    @service_method(
         path="job.create_job_for_user_code_id",
         name="create_job_for_user_code_id",
         roles=DATA_OWNER_ROLE_LEVEL,
@@ -202,20 +233,19 @@ class JobService(AbstractService):
             return user_code
 
         # The owner of the code should be able to read the job
-        permission = ActionObjectPermission(
-            job.id, ActionPermission.READ, user_code.user_verify_key
-        )
-        self.stash.set(context.credentials, job, add_permissions=[permission])
+        self.stash.set(context.credentials, job)
+        self.add_read_permission_job_for_code_owner(context, job, user_code)
 
         log_service = context.node.get_service("logservice")
         res = log_service.add(context, job.log_id)
         if isinstance(res, SyftError):
             return res
         # The owner of the code should be able to read the job log
-        log_service.stash.add_permission(
-            ActionObjectPermission(
-                job.log_id, ActionPermission.READ, user_code.user_verify_key
-            )
-        )
+        self.add_read_permission_log_for_code_owner(context, job.log_id, user_code)
+        # log_service.stash.add_permission(
+        #     ActionObjectPermission(
+        #         job.log_id, ActionPermission.READ, user_code.user_verify_key
+        #     )
+        # )
 
         return job
