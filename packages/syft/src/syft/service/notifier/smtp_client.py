@@ -1,5 +1,5 @@
 # stdlib
-import base64
+from typing import List
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
@@ -35,36 +35,27 @@ class SMTPClient:
         self.smtp_server = smtp_server
         self.smtp_port = smtp_port
 
-    def _create_oauth2_string(self) -> str:
-        auth_string = f"user={self.username}\1auth=Bearer {self.access_token}\1\1"
-        return base64.b64encode(auth_string.encode("ascii")).decode("ascii")
-
-    def send(self, subject: str, body: str, to: str, from_addr: str) -> None:
-        if not subject or not body or not to:
+    def send(self, sender: str, receiver: List[str], subject: str, body: str) -> None:
+        if not subject or not body or not receiver:
             raise ValueError("Subject, body, and recipient email(s) are required")
-
-        msg = MIMEMultipart()
-        msg["From"] = from_addr
-        msg["To"] = ", ".join(to)
+        
+        msg = MIMEMultipart('alternative')
+        msg["From"] = sender
+        msg["To"] = ", ".join(receiver)
         msg["Subject"] = subject
         msg.attach(MIMEText(body, "plain"))
 
-        try:
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+        with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+            server.ehlo()
+            if server.has_extn("STARTTLS"):
+                server.starttls()
                 server.ehlo()
-                if server.has_extn("STARTTLS"):
-                    server.starttls()
-                    server.ehlo()
 
-                if self.access_token:
-                    auth_string = self._create_oauth2_string()
-                    server.docmd("AUTH", "XOAUTH2 " + auth_string)
-                elif self.username and self.password:
-                    server.login(self.username, self.password)
+            if self.access_token:
+                server.login(self.access_token, self.access_token)
+            elif self.username and self.password:
+                server.login(self.username, self.password)
 
-                text = msg.as_string()
-                server.sendmail(from_addr, to, text)
-                print("Email sent!")
-        except Exception as e:
-            print(f"Failed to send email: {e}")
-            raise e
+            text = msg.as_string()
+            server.sendmail(sender, ", ".join(receiver), text)
+
