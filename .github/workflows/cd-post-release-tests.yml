@@ -27,6 +27,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
 
@@ -63,16 +73,6 @@ jobs:
       - name: Launch Domain
         run: |
           hagrid launch test-domain-1 to docker:8081 --tag=${{ inputs.syft_version }} --low-side
-
-      # free 10GB of space
-      - name: Remove unnecessary files
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          docker image prune --all --force
-          docker builder prune --all --force
-          docker system prune --all --force
 
       - name: Run tests
         env:
@@ -143,6 +143,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
 
@@ -171,16 +181,6 @@ jobs:
       - name: Install tox
         run: |
           pip install tox
-
-      # free 10GB of space
-      - name: Remove unnecessary files
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          docker image prune --all --force
-          docker builder prune --all --force
-          docker system prune --all --force
 
       - name: Run K8s tests
         env:
