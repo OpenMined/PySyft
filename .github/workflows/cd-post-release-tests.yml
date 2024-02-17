@@ -142,12 +142,7 @@ jobs:
       - name: Install K3d
         run: |
           K3D_VERSION=v5.6.0
-          # install k3d
-          wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
-          mv k3d-linux-amd64 k3d
-          chmod +x k3d
-          export PATH=`pwd`:$PATH
-          k3d version
+          wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
 
       - name: Get pip cache dir
         id: pip-cache
