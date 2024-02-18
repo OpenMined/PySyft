@@ -27,6 +27,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
 
@@ -121,3 +131,59 @@ jobs:
       - name: Check Syft version
         run: |
           python -c "import syft; print(syft.__version__)"
+
+  notebook-test-k8s-k3d:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11"]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install K3d
+        run: |
+          K3D_VERSION=v5.6.0
+          wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
+
+      - name: Get pip cache dir
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: pip cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install tox
+        run: |
+          pip install tox
+
+      - name: Run K8s tests
+        env:
+          SYFT_VERSION: ${{ inputs.syft_version }}
+        run: |
+          tox -e syft.test.helm
