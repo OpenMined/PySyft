@@ -15,6 +15,7 @@ import pytest
 import yaml
 
 # syft absolute
+import syft as sy
 from syft.custom_worker.config import CustomBuildConfig
 from syft.custom_worker.config import CustomWorkerConfig
 from syft.custom_worker.config import DockerWorkerConfig
@@ -167,8 +168,8 @@ def test_load_custom_worker_config(
 
 
 DOCKER_METHODS = ["from_str", "from_path"]
-DOCKER_CONFIG_OPENDP = """
-    FROM openmined/grid-backend:0.8.4-beta.12
+DOCKER_CONFIG_OPENDP = f"""
+    FROM openmined/grid-backend:{sy.__version__}
     RUN pip install opendp
 """
 
@@ -201,6 +202,6 @@ def test_docker_worker_config(dockerfile_path: Path, method: str) -> None:
 
     assert docker_config.dockerfile == dockerfile_path.read_text().strip()
     assert docker_config.description == description
-    new_description = description + " (syft version is 0.8.4-beta.12)"
+    new_description = description + f" (syft version is {sy.__version__})"
     docker_config.set_description(description_text=new_description)
     assert docker_config.description == new_description

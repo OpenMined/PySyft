@@ -1,0 +1,189 @@
+name: CD - Post Release Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      syft_version:
+        description: "Syft version to test"
+        required: true
+        type: string
+
+  workflow_call:
+    inputs:
+      syft_version:
+        description: "Syft version to test"
+        required: true
+        type: string
+
+jobs:
+  notebook-test-hagrid:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11"]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: pip cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Hagrid and tox
+        run: |
+          pip install -U hagrid
+          pip install tox
+
+      - name: Hagrid Version
+        run: |
+          hagrid version
+
+      - name: Launch Domain
+        run: |
+          hagrid launch test-domain-1 to docker:8081 --tag=${{ inputs.syft_version }} --low-side
+
+      - name: Run tests
+        env:
+          NODE_PORT: "8081"
+          SYFT_VERSION: ${{ inputs.syft_version }}
+          EXCLUDE_NOTEBOOKS: "not 11-container-images-k8s.ipynb"
+        run: |
+          tox -e e2e.test.notebook
+
+  syft-install-check:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        # Re-enable macos-14 when it's available when we remove python 3.9 from syft
+        # os: [ubuntu-latest, macos-latest, windows-latest, macos-14]
+        python-version: ["3.11", "3.10", "3.9"]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: System Architecture
+        run: |
+          echo "System Architecture: $(uname -m)"
+          echo "System Version: $(uname -a)"
+
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: pip cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Syft
+        run: |
+          pip install syft==${{ inputs.syft_version }}
+
+      - name: Check Syft version
+        run: |
+          python -c "import syft; print(syft.__version__)"
+
+  notebook-test-k8s-k3d:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11"]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install K3d
+        run: |
+          K3D_VERSION=v5.6.0
+          wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
+
+      - name: Get pip cache dir
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: pip cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install tox
+        run: |
+          pip install tox
+
+      - name: Run K8s tests
+        env:
+          SYFT_VERSION: ${{ inputs.syft_version }}
+        run: |
+          tox -e syft.test.helm
