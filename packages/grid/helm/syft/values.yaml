@@ -29,7 +29,7 @@ registry:
 
 syft:
   registry: "docker.io"
-  version: 0.8.4-beta.29
+  version: 0.8.4-beta.30
 
 node:
   settings:
