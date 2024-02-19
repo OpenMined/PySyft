@@ -41,7 +41,6 @@ from .mode import EDITABLE_MODE
 from .nb_output import NBOutput
 from .version import __version__
 
-LATEST_STABLE_SYFT = "0.8.3"
 LATEST_BETA_SYFT = "0.8.4-beta.30"
 
 DOCKER_ERROR = """
