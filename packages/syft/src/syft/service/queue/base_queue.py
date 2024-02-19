@@ -7,6 +7,8 @@ from typing import Union
 
 # relative
 from ...serde.serializable import serializable
+from ...service.context import AuthedServiceContext
+from ...store.document_store import BaseStash
 from ...types.uid import UID
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -60,7 +62,8 @@ class QueueProducer:
 
 @serializable()
 class QueueClient:
-    pass
+    def __init__(self, config: QueueClientConfig) -> None:
+        raise NotImplementedError
 
 
 @serializable()
@@ -82,20 +85,26 @@ class BaseQueueManager:
     def post_init(self) -> None:
         pass
 
-    def close(self) -> None:
+    def close(self) -> Union[SyftError, SyftSuccess]:
         raise NotImplementedError
 
     def create_consumer(
         self,
         message_handler: Type[AbstractMessageHandler],
-        address: Optional[str],
         service_name: str,
         worker_stash: Optional[WorkerStash] = None,
+        address: Optional[str] = None,
         syft_worker_id: Optional[UID] = None,
     ) -> QueueConsumer:
         raise NotImplementedError
 
-    def create_producer(self, queue_name: str) -> QueueProducer:
+    def create_producer(
+        self,
+        queue_name: str,
+        queue_stash: Type[BaseStash],
+        context: AuthedServiceContext,
+        worker_stash: WorkerStash,
+    ) -> QueueProducer:
         raise NotImplementedError
 
     def send(self, message: bytes, queue_name: str) -> Union[SyftSuccess, SyftError]:
