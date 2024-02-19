@@ -14,7 +14,6 @@ from result import Result
 
 # relative
 from ...node.credentials import SyftVerifyKey
-from ...node.worker import Worker
 from ...node.worker_settings import WorkerSettings
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
@@ -41,10 +40,10 @@ class MonitorThread(threading.Thread):
     def __init__(
         self,
         queue_item: QueueItem,
-        worker: Worker,
+        worker: Any,  # should be of type Worker(Node), but get circular import error
         credentials: SyftVerifyKey,
         interval: int = 5,
-    ):
+    ) -> None:
         super().__init__()
         self.interval = interval
         self.stop_requested = threading.Event()

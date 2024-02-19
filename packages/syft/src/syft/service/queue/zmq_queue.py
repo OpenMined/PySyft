@@ -968,7 +968,10 @@ class ZMQClient(QueueClient):
 @serializable()
 class ZMQQueueConfig(QueueConfig):
     def __init__(
-        self, client_type=None, client_config=None, thread_workers: bool = False
+        self,
+        client_type: Optional[Union[ZMQClient, Any]] = None,
+        client_config: Optional[ZMQClientConfig] = None,
+        thread_workers: bool = False,
     ):
         self.client_type = client_type or ZMQClient
         self.client_config: ZMQClientConfig = client_config or ZMQClientConfig()
