@@ -1,6 +1,7 @@
 # stdlib
 
 # stdlib
+from typing import Optional
 from typing import Union
 
 # third party
@@ -18,6 +19,7 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..warnings import HighSideCRUDWarning
 from .settings import NodeSettingsUpdate
 from .settings import NodeSettingsV2
@@ -79,6 +81,29 @@ class SettingsService(AbstractService):
                 return SyftError(message="No settings found")
         else:
             return SyftError(message=result.err())
+
+    @service_method(
+        path="settings.enable_notifications",
+        name="enable_notifications",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def enable_notifications(
+        self, context: AuthedServiceContext, token: Optional[str] = None
+    ) -> Union[SyftSuccess, SyftError]:
+        notifier_service = context.node.get_service("notifierservice")
+        return notifier_service.turn_on(context=context, email_token=token)
+
+    @service_method(
+        path="settings.disable_notifications",
+        name="disable_notifications",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def disable_notifications(
+        self,
+        context: AuthedServiceContext,
+    ) -> Union[SyftSuccess, SyftError]:
+        notifier_service = context.node.get_service("notifierservice")
+        return notifier_service.turn_off(context=context)
 
     @service_method(
         path="settings.allow_guest_signup",
