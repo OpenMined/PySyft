@@ -53,6 +53,11 @@ class NotificationService(AbstractService):
         result = self.stash.set(
             context.credentials, new_notification, add_permissions=permissions
         )
+        notifier_service = context.node.get_service("notifierservice")
+
+        res = notifier_service.dispatch_notification(context.node, new_notification)
+        if isinstance(res, SyftError):
+            return res
 
         if result.is_err():
             return SyftError(message=str(result.err()))
