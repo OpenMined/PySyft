@@ -86,6 +86,8 @@ class JobService(AbstractService):
         res = self.stash.get_by_uid(context.credentials, uid=uid)
         if res.is_err():
             return SyftError(message=res.err())
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
 
         job = res.ok()
         job.status = JobStatus.CREATED
@@ -107,9 +109,9 @@ class JobService(AbstractService):
 
         context.node.queue_stash.set_placeholder(context.credentials, queue_item)
         context.node.job_stash.set(context.credentials, job)
+
         log_service = context.node.get_service("logservice")
         result = log_service.restart(context, job.log_id)
-
         if result.is_err():
             return SyftError(message=str(result.err()))
 
@@ -185,6 +187,8 @@ class JobService(AbstractService):
     def create_job_for_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> Union[Job, SyftError]:
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         job = Job(
             id=UID(),
             node_uid=context.node.id,
@@ -195,7 +199,6 @@ class JobService(AbstractService):
             job_pid=None,
             user_code_id=user_code_id,
         )
-
         user_code_service = context.node.get_service("usercodeservice")
         user_code = user_code_service.get_by_uid(context=context, uid=user_code_id)
         if isinstance(user_code, SyftError):
@@ -207,6 +210,8 @@ class JobService(AbstractService):
         )
         self.stash.set(context.credentials, job, add_permissions=[permission])
 
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         log_service = context.node.get_service("logservice")
         res = log_service.add(context, job.log_id)
         if isinstance(res, SyftError):

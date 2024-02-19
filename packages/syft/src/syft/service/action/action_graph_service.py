@@ -39,7 +39,7 @@ class ActionGraphService(AbstractService):
     @service_method(path="graph.add_action", name="add_action")
     def add_action(
         self, context: AuthedServiceContext, action: Action
-    ) -> Union[NodeActionData, SyftError]:
+    ) -> Union[tuple[NodeActionData, NodeActionData], SyftError]:
         # Create a node for the action
         input_uids, output_uid = self._extract_input_and_output_from_action(
             action=action

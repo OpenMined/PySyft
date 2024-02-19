@@ -201,7 +201,10 @@ class ZMQProducer(QueueProducer):
 
     @property
     def action_service(self) -> Callable:
-        return self.auth_context.node.get_service("ActionService")
+        if self.auth_context.node is not None:
+            return self.auth_context.node.get_service("ActionService")
+        else:
+            raise Exception(f"{self.auth_context} does not have a node.")
 
     def contains_unresolved_action_objects(self, arg: Any, recursion: int = 0) -> bool:
         """recursively check collections for unresolved action objects"""
@@ -386,7 +389,8 @@ class ZMQProducer(QueueProducer):
         self, syft_worker_id: UID, consumer_state: ConsumerState
     ) -> None:
         if self.worker_stash is None:
-            logger.error(
+            # TODO: fix the mypy issue
+            logger.error(  # type: ignore[unreachable]
                 f"Worker stash is not defined for ZMQProducer : {self.queue_name} - {self.id}"
             )
             return
@@ -862,7 +866,7 @@ class ZMQClient(QueueClient):
         port: Optional[int] = None,
         queue_stash: Optional[QueueStash] = None,
         worker_stash: Optional[WorkerStash] = None,
-        context: AuthedServiceContext = None,
+        context: Optional[AuthedServiceContext] = None,
     ) -> ZMQProducer:
         """Add a producer of a queue.
 

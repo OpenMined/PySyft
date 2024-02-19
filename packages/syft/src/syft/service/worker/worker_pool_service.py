@@ -6,6 +6,7 @@ from typing import Union
 
 # third party
 import pydantic
+from result import OkErr
 
 # relative
 from ...custom_worker.config import CustomWorkerConfig
@@ -112,7 +113,8 @@ class SyftWorkerPoolService(AbstractService):
             )
 
         worker_image: SyftWorkerImage = result.ok()
-
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         worker_service: WorkerService = context.node.get_service("WorkerService")
         worker_stash = worker_service.stash
 
@@ -218,6 +220,8 @@ class SyftWorkerPoolService(AbstractService):
         # Create a the request object with the changes and submit it
         # for approval.
         request = SubmitRequest(changes=changes)
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         method = context.node.get_service_method(RequestService.submit)
         result = method(context=context, request=request, reason=reason)
 
@@ -315,6 +319,8 @@ class SyftWorkerPoolService(AbstractService):
 
         # Create a request object and submit a request for approval
         request = SubmitRequest(changes=changes)
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         method = context.node.get_service_method(RequestService.submit)
         result = method(context=context, request=request, reason=reason)
 
@@ -399,6 +405,8 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_image: SyftWorkerImage = result.ok()
 
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         worker_service: WorkerService = context.node.get_service("WorkerService")
         worker_stash = worker_service.stash
 
@@ -494,15 +502,16 @@ class SyftWorkerPoolService(AbstractService):
                 -(current_worker_count - number) :
             ]
 
-            worker_stash = context.node.get_service("WorkerService").stash
-            # delete linkedobj workers
-            for worker in workers_to_delete:
-                delete_result = worker_stash.delete_by_uid(
-                    credentials=context.credentials,
-                    uid=worker.object_uid,
-                )
-                if delete_result.is_err():
-                    print(f"Failed to delete worker: {worker.object_uid}")
+            if context.node is not None:
+                worker_stash = context.node.get_service("WorkerService").stash
+                # delete linkedobj workers
+                for worker in workers_to_delete:
+                    delete_result = worker_stash.delete_by_uid(
+                        credentials=context.credentials,
+                        uid=worker.object_uid,
+                    )
+                    if delete_result.is_err():
+                        print(f"Failed to delete worker: {worker.object_uid}")
 
             # update worker_pool
             worker_pool.max_count = number
@@ -644,6 +653,9 @@ def _create_workers_in_pool(
     reg_username: Optional[str] = None,
     reg_password: Optional[str] = None,
 ) -> Union[Tuple[List[LinkedObject], List[ContainerSpawnStatus]], SyftError]:
+    if context.node is None:
+        return SyftError(message=f"context {context}'s node is None")
+
     queue_port = context.node.queue_config.client_config.queue_port
 
     # Check if workers needs to be run in memory or as containers
@@ -690,15 +702,16 @@ def _create_workers_in_pool(
             obj=worker,
         )
 
-        if result.is_ok():
-            worker_obj = LinkedObject.from_obj(
-                obj=result.ok(),
-                service_type=WorkerService,
-                node_uid=context.node.id,
-            )
-            linked_worker_list.append(worker_obj)
-        else:
-            container_status.error = result.err()
+        if isinstance(result, OkErr):
+            if result.is_ok() and context.node is not None:
+                worker_obj = LinkedObject.from_obj(
+                    obj=result.ok(),
+                    service_type=WorkerService,
+                    node_uid=context.node.id,
+                )
+                linked_worker_list.append(worker_obj)
+            elif isinstance(result, SyftError):
+                container_status.error = result.err()
 
     return linked_worker_list, container_statuses
 
