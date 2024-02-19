@@ -47,11 +47,15 @@ class QueueConsumer:
 
 @serializable()
 class QueueProducer:
-    address: str
     queue_name: str
+
+    @property
+    def address(self) -> str:
+        raise NotImplementedError
 
     def send(
         self,
+        worker: bytes,
         message: Any,
     ) -> None:
         raise NotImplementedError

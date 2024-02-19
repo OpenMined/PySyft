@@ -173,7 +173,7 @@ repos:
         name: "mypy: syft"
         always_run: true
         # files: "^packages/syft/src/syft/serde|^packages/syft/src/syft/util|^packages/syft/src/syft/service"
-        files: "^packages/syft/src/syft/service/queue/queue.py|^packages/syft/src/syft/service/queue/base_queue.py"
+        files: "^packages/syft/src/syft/service/queue"
         args: [
             "--follow-imports=skip",
             "--ignore-missing-imports",
