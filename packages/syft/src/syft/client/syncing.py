@@ -6,23 +6,33 @@
     * create state datastructure for better UX
     * check list for each type of object to see if diff must be included or not
 """
-from typing import Any, Dict, List, Optional, Type
-from IPython.core.display import display, HTML, Markdown
+# stdlib
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Set
+from typing import Tuple
+from typing import Type
 
-from syft.service.action.action_data_empty import ActionDataEmpty
-from ..types.syft_object import SYFT_OBJECT_VERSION_1, SyftObject
+# third party
+from IPython.core.display import Markdown
+from IPython.core.display import display
+
+# relative
+from .. import UID
+from ..service.action.action_object import ActionObject
 from ..service.code.user_code import UserCode
-
-from ..service.project.project import Project
-from ..service.request.request import Request
 from ..service.job.job_stash import Job
 from ..service.log.log import SyftLog
-from ..util.fonts import ITABLES_CSS, fonts_css
-from ..util.colors import SURFACE
+from ..service.project.project import Project
+from ..service.request.request import Request
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SyftObject
 from ..util import options
-from ..service.action.action_object import ActionObject
-from syft import UID
-from typing import Set
+from ..util.colors import SURFACE
+from ..util.fonts import ITABLES_CSS
+from ..util.fonts import fonts_css
 
 """
 How to check differences between two objects:
@@ -425,6 +435,7 @@ def check_diff(low_obj, high_obj, obj_type):
     return True
 
 
+# relative
 # check_dict_func = {
 #     SyftLogV2.__name__: check_log,
 #     Job.__name__: check_job,
@@ -432,7 +443,7 @@ def check_diff(low_obj, high_obj, obj_type):
 #     Request.__name__: check_request,
 #     Project.__name__: check_project
 # }
-from syft.service.response import SyftError
+from ..service.response import SyftError
 
 
 class SyftString(SyftObject):
@@ -468,7 +479,7 @@ class Diff(SyftObject):  # StateTuple (compare 2 objects)
         if self.low_obj is None:
             return "n/a"
         if self.high_obj is None:
-            return "NEW"
+            return f"{self.object_type}()"
         attr_text = f"{self.object_type}("
         for diff in self.diff_list:
             attr_text += f"{diff.attr_name}={diff.__repr_low_side__()}," + "\n"
@@ -486,7 +497,7 @@ class Diff(SyftObject):  # StateTuple (compare 2 objects)
             return "n/a"
 
         if self.low_obj is None:
-            return "NEW"
+            return f"{self.object_type}()"
         attr_text = f"{self.object_type}("
         for diff in self.diff_list:
             attr_text += f"{diff.attr_name}={diff.__repr_high_side__()}," + "\n"
@@ -560,6 +571,7 @@ class Diff(SyftObject):  # StateTuple (compare 2 objects)
             for diff in self.diff_list:
                 attr_text += diff.__repr__() + "<br>"
 
+            # stdlib
             import re
 
             res = [i.start() for i in re.finditer("\t", attr_text)]
@@ -595,7 +607,7 @@ def get_type(obj):
         return SyftLog
     if isinstance(obj, ActionObject):
         return ActionObject
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def get_merge_state(low_obj, high_obj, obj_type):
@@ -660,36 +672,25 @@ class SyncState(SyftObject):
     __canonical_name__ = "SyncState"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    objs_by_type: Dict[str, Dict[UID, SyftObject]] = {}
-
-    # TODO Full list of dependencies for each object (recursively)
-    dependencies: Dict[UID, Set[UID]] = {}
-
-    def __getitem__(self, key: UID) -> Any:
-        for items in self.objs_by_type.values():
-            if key in items:
-                return items[key]
-        raise KeyError(f"Object with UID {key} not found in SyncState")
+    objects: Dict[UID, SyftObject] = {}
+    dependencies: Dict[UID, List[UID]] = {}
 
     @property
     def all_ids(self) -> Set[UID]:
-        ids = set()
-        for obj_dict in self.objs_by_type.values():
-            ids.update(obj_dict.keys())
-        return ids
+        return set(self.objects.keys())
+
+    def add_objects(self, objects: List[SyftObject]) -> None:
+        for obj in objects:
+            self.objects[obj.id] = obj
 
     def _build_dependencies(self) -> None:
         all_ids = self.all_ids
-        # TODO rewrite recursion, dont need to go through the whole object tree for each object
-        for obj_type in self.objs_by_type:
-            for obj_id, obj in self.objs_by_type[obj_type].items():
-                if hasattr(obj, "get_dependencies"):
-                    dependencies = obj.get_dependencies()[obj_id]
-                    self.dependencies[obj_id] = {
-                        d.id for d in dependencies if d.id in all_ids
-                    }
-                else:
-                    self.dependencies[obj_id] = set()
+        for obj in self.objects.values():
+            if hasattr(obj, "get_dependencies"):
+                deps = obj.get_dependencies()
+                deps = [d.id for d in deps if d.id in all_ids]
+                if len(deps):
+                    self.dependencies[obj.id] = deps
 
     def get_hierarchical_order(self) -> List[Tuple[SyftObject, int]]:
         raise NotImplementedError()
@@ -699,25 +700,28 @@ def get_sync_state(self):
     sync_state = SyncState()
 
     projects = self.api.services.project.get_all()
-    sync_state.objs_by_type["Project"] = {p.id: p for p in projects}
+    sync_state.add_objects(projects)
 
     requests = self.api.services.request.get_all()
-    sync_state.objs_by_type["Request"] = {r.id: r for r in requests}
+    sync_state.add_objects(requests)
 
     user_codes = self.api.services.code.get_all()
-    sync_state.objs_by_type["UserCode"] = {c.id: c for c in user_codes}
+    sync_state.add_objects(user_codes)
 
     jobs = self.api.services.job.get_all()
-    sync_state.objs_by_type["Job"] = {j.id: j for j in jobs}
+    sync_state.add_objects(jobs)
 
     logs = self.api.services.log.get_all()
-    sync_state.objs_by_type["SyftLog"] = {l.id: l for l in logs}
+    sync_state.add_objects(logs)
 
     # TODO workaround, we only need action objects from output policies for now
     action_objects = []
     for code in user_codes:
         action_objects.extend(code.get_all_output_action_objects())
-    sync_state.objs_by_type["ActionObject"] = {a.id: a for a in action_objects}
+    for job in jobs:
+        if job.result is not None:
+            action_objects.append(job.result)
+    sync_state.add_objects(action_objects)
 
     sync_state._build_dependencies()
     return sync_state
@@ -726,24 +730,21 @@ def get_sync_state(self):
 def compare_states(low_state, high_state) -> DiffState:
     diff_state = DiffState()
 
-    for obj_type in low_state.objs_by_type.keys():
-        low_objects = low_state.objs_by_type[obj_type]
-        high_objects = high_state.objs_by_type[obj_type]
-        all_ids = set(low_objects.keys()) | set(high_objects.keys())
+    all_ids = set(low_state.objects.keys()) | set(high_state.objects.keys())
 
-        for obj_id in all_ids:
-            low_obj = low_objects.get(obj_id, None)
-            high_obj = high_objects.get(obj_id, None)
-            diff_state.add_obj(low_obj, high_obj)
+    for obj_id in all_ids:
+        low_obj = low_state.objects.get(obj_id, None)
+        high_obj = high_state.objects.get(obj_id, None)
+        diff_state.add_obj(low_obj, high_obj)
 
     return diff_state
 
 
-def resolve(state: DiffState):
+def resolve(state: DiffState, force_approve: bool = False):
     low_new_objs = []
     high_new_objs = []
     # new_objs = state.objs_to_sync()
-    for new_obj in state.diff_to_sync:
+    for new_obj in state.diffs:
         if new_obj.merge_state == "NEW":
             if new_obj.low_obj is None:
                 state_list = low_new_objs
@@ -759,19 +760,23 @@ def resolve(state: DiffState):
                 display(Markdown(obj_to_sync._repr_markdown_()))
             else:
                 display(obj_to_sync)
-            print(
-                f"Do you approve moving this object from the {source} side to the {destination} side (approve/deny): ",
-                flush=True,
-            )
-            while True:
-                decision = input()
-                if decision == "approve":
-                    state_list.append(obj_to_sync)
-                    break
-                elif decision == "deny":
-                    break
-                else:
-                    print("Please write `approve` or `deny`:", flush=True)
+
+            if force_approve:
+                state_list.append(obj_to_sync)
+            else:
+                print(
+                    f"Do you approve moving this object from the {source} side to the {destination} side (approve/deny): ",
+                    flush=True,
+                )
+                while True:
+                    decision = input()
+                    if decision == "approve":
+                        state_list.append(obj_to_sync)
+                        break
+                    elif decision == "deny":
+                        break
+                    else:
+                        print("Please write `approve` or `deny`:", flush=True)
         if new_obj.merge_state == "DIFF":
             pass
 

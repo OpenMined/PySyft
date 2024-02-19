@@ -7,7 +7,6 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Set
 from typing import Type
 from typing import Union
 
@@ -153,7 +152,9 @@ class ActionStoreChange(Change):
                     permission=self.apply_permission_type,
                 )
                 if apply:
-                    print("ADDING PERMISSION", requesting_permission_action_obj, id_action)
+                    print(
+                        "ADDING PERMISSION", requesting_permission_action_obj, id_action
+                    )
                     action_store.add_permission(requesting_permission_action_obj)
                     blob_storage_service.stash.add_permission(
                         requesting_permission_blob_obj
@@ -445,6 +446,15 @@ class Request(SyftObject):
         }
 
     @property
+    def code_id(self) -> UID:
+        for change in self.changes:
+            if isinstance(change, UserCodeStatusChange):
+                return change.linked_obj.object_uid
+        return SyftError(
+            message="This type of request does not have code associated with it."
+        )
+
+    @property
     def codes(self) -> Any:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
@@ -630,7 +640,9 @@ class Request(SyftObject):
             job = existing_jobs[-1]
             res = job_service.add_read_permission_job_for_code_owner(job, self.code)
             print(res)
-            res = job_service.add_read_permission_log_for_code_owner(job.log_id, self.code)
+            res = job_service.add_read_permission_log_for_code_owner(
+                job.log_id, self.code
+            )
             print(res)
 
         return job
@@ -770,19 +782,13 @@ class Request(SyftObject):
         job.apply_info(job_info)
         return job_service.update(job)
 
-    def get_dependencies(
-        self, visited: Optional[Set[UID]] = None
-    ) -> Dict[str, SyftObject]:
-        dependencies = {}
-        if not isinstance(self.codes, SyftError):
-            dependencies[self.id] = self.codes
+    def get_dependencies(self) -> List[UID]:
+        dependencies = []
 
-        visited = visited or set()
-        visited.add(self.id)
-        for dep in dependencies.get(self.id, []):
-            code_deps = dep.get_dependencies(visited=visited)
-            dependencies.update(code_deps)
-            visited.update(code_deps.keys())
+        code_id = self.code_id
+        if not isinstance(code_id, SyftError):
+            dependencies.append(code_id)
+
         return dependencies
 
 

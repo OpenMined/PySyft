@@ -2,9 +2,6 @@
 from typing import List
 from typing import Union
 
-from syft.service.code.user_code import UserCode
-from syft.service.log.log import SyftLog
-
 # relative
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
@@ -13,6 +10,7 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
+from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
 from ..queue.queue_stash import ActionQueueItem
 from ..response import SyftError
