@@ -50,7 +50,6 @@ from .cache import DEFAULT_REPO
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import LATEST_BETA_SYFT
-from .deps import LATEST_STABLE_SYFT
 from .deps import allowed_hosts
 from .deps import check_docker_service_status
 from .deps import check_docker_version
@@ -93,6 +92,7 @@ from .quickstart_ui import fetch_notebooks_for_url
 from .quickstart_ui import fetch_notebooks_from_zipfile
 from .quickstart_ui import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
+from .stable_version import LATEST_STABLE_SYFT
 from .style import RichGroup
 from .util import fix_windows_virtualenv_api
 from .util import from_url
