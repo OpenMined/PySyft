@@ -520,6 +520,12 @@ jobs:
           push: "origin gh-pages"
           cwd: "./ghpages/"
 
+      # Since the post-release tests are dependent on the release being available on PyPI
+      # we need to wait for PyPI to update before running the post-release tests
+      - name: Wait for PyPI to update
+        run: |
+          sleep 60
+
   # Can we remove the always flag from the below job?
   call-cd-post-release-tests:
     needs: [deploy-syft]
