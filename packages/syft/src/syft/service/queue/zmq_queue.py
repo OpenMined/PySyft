@@ -6,6 +6,7 @@ import socketserver
 import threading
 import time
 from time import sleep
+from typing import Any
 from typing import DefaultDict
 from typing import Dict
 from typing import List
@@ -88,13 +89,13 @@ class Timeout:
         self.reset()
 
     @property
-    def next_ts(self):
+    def next_ts(self) -> Union[float, int]:
         return self.__next_ts
 
-    def reset(self):
+    def reset(self) -> None:
         self.__next_ts = self.now() + self.__offset
 
-    def has_expired(self):
+    def has_expired(self) -> bool:
         return self.now() >= self.__next_ts
 
     @staticmethod
@@ -110,7 +111,7 @@ class Worker(SyftBaseModel):
     expiry_t: Timeout = Timeout(WORKER_TIMEOUT_SEC)
 
     @validator("syft_worker_id", pre=True, always=True)
-    def set_syft_worker_id(cls, v, values):
+    def set_syft_worker_id(cls, v: Any, values: Any) -> Union[UID, Any]:
         if isinstance(v, str):
             return UID(v)
         return v

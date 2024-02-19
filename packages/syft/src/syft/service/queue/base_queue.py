@@ -23,7 +23,7 @@ class AbstractMessageHandler:
     queue_name: ClassVar[str]
 
     @staticmethod
-    def handle_message(message: bytes, syft_worker_id: UID):
+    def handle_message(message: bytes, syft_worker_id: UID) -> None:
         raise NotImplementedError
 
 
@@ -33,7 +33,7 @@ class QueueConsumer:
     queue_name: str
     address: str
 
-    def receive(self):
+    def receive(self) -> None:
         raise NotImplementedError
 
     def run(self) -> None:
@@ -51,7 +51,7 @@ class QueueProducer:
     def send(
         self,
         message: Any,
-    ):
+    ) -> None:
         raise NotImplementedError
 
     def close(self) -> None:

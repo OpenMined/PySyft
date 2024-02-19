@@ -1,6 +1,5 @@
 # stdlib
 import secrets
-import sys
 from textwrap import dedent
 
 # third party
@@ -150,7 +149,6 @@ def test_transfer_request_blocking(
 
 
 @pytest.mark.flaky(reruns=2, reruns_delay=1)
-@pytest.mark.skipif(sys.platform == "win32", reason="very flaky on windows")
 def test_transfer_request_nonblocking(
     client_ds_1, client_do_1, client_do_2, dataset_1, dataset_2
 ):

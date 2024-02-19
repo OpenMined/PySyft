@@ -21,6 +21,7 @@ from pydantic import validator
 from result import Err
 from result import Ok
 from result import Result
+from typing_extensions import Self
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -77,23 +78,23 @@ class NodeActionData(SyftObject):
     def make_created_at(cls, v: Optional[DateTime]) -> DateTime:
         return DateTime.now() if v is None else v
 
-    @staticmethod
-    def from_action(action: Action, credentials: SyftVerifyKey) -> "NodeActionData":
+    @classmethod
+    def from_action(cls, action: Action, credentials: SyftVerifyKey) -> Self:
         is_mutagen = action.remote_self is not None and (
             action.remote_self == action.result_id
         )
-        return NodeActionData(
+        return cls(
             id=action.id,
             type=NodeType.ACTION,
             user_verify_key=credentials,
             is_mutagen=is_mutagen,
         )
 
-    @staticmethod
+    @classmethod
     def from_action_obj(
-        action_obj: ActionObject, credentials: SyftVerifyKey
-    ) -> "NodeActionData":
-        return NodeActionData(
+        cls, action_obj: ActionObject, credentials: SyftVerifyKey
+    ) -> Self:
+        return cls(
             id=action_obj.id,
             type=NodeType.ACTION_OBJECT,
             user_verify_key=credentials,
@@ -149,7 +150,7 @@ class BaseGraphStore:
     def delete(self, uid: Any) -> None:
         raise NotImplementedError
 
-    def find_neighbors(self, uid: Any) -> Optional[List[Any]]:
+    def find_neighbors(self, uid: Any) -> Optional[List]:
         raise NotImplementedError
 
     def update(self, uid: Any, data: Any) -> None:
@@ -270,7 +271,7 @@ class NetworkXBackingStore(BaseGraphStore):
             self.db.remove_node(uid)
         self.save()
 
-    def find_neighbors(self, uid: UID) -> Optional[List[Any]]:
+    def find_neighbors(self, uid: UID) -> Optional[List]:
         if self.exists(uid=uid):
             neighbors = self.db.neighbors(uid)
             return neighbors

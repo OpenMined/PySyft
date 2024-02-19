@@ -60,6 +60,8 @@ class ActionService(AbstractService):
     def np_array(self, context: AuthedServiceContext, data: Any) -> Any:
         if not isinstance(data, np.ndarray):
             data = np.array(data)
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         np_obj = NumpyArrayObject(
             dtype=data.dtype,
             shape=data.shape,
