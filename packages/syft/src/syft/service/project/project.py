@@ -361,7 +361,7 @@ Participants can then select the answer that best represents their opinion or pr
 this wizard is going to guide you through the process of creating a poll"""
 
     description4 = """In this wizard, we're going to ask you for a question and list of choices
-to create the poll. The Questions and choices are converted to strings"""
+to create the poll. The Questions and choices are converted to strings."""
 
     print("\t" + "=" * 69)
     print(w.fill(welcome_msg))
