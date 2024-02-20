@@ -477,6 +477,19 @@ class Job(SyftObject):
 
         return dependencies
 
+    def get_sync_dependencies(self) -> List[UID]:
+        dependencies = []
+        if self.result:
+            dependencies.append(self.result.id)
+
+        if self.log_id:
+            dependencies.append(self.log_id)
+
+        subjob_ids = [subjob.id for subjob in self.subjobs]
+        dependencies.extend(subjob_ids)
+
+        return dependencies
+
 
 @serializable()
 class JobInfo(SyftObject):
