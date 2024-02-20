@@ -20,7 +20,6 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Set
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -62,7 +61,6 @@ from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
-from ..action.action_object import TwinMode
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..job.job_stash import Job
@@ -556,28 +554,35 @@ class UserCode(SyftObject):
                 all_assets += assets
         return all_assets
 
-    def get_dependencies(
-        self, visited: Optional[Set[str]] = None
-    ) -> Dict[str, List[Any]]:
+    def get_all_output_action_objects(self) -> List[ActionObject]:
+        output_policy = self.output_policy
+        if output_policy is not None:
+            all_output_ids = []
+            for output in output_policy.output_history:
+                if isinstance(output.outputs, list):
+                    all_output_ids.extend(output.outputs)
+                else:
+                    all_output_ids.extend(output.outputs.values())
+
+            api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+            result = []
+            for output_id in all_output_ids:
+                action_obj = api.services.action.get(output_id)
+                if isinstance(action_obj, ActionObject):
+                    result.append(action_obj)
+            return result
+
+        return []
+
+    def get_dependencies(self) -> List[UID]:
         # Usercode dependents are: input_policy inputs, output_policy outputs, nested_codes
-
-        visited = visited or set()
-        visited.add(self.id)
-        dependencies = {self.id: []}
-
-        # NOTE input and output policy are stored directly on the code object,
-        # so dependents are on the code object as well
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        action_service = api.services.action
+        dependencies = []
 
         all_input_ids = []
         for _, inputs in self.input_policy_init_kwargs.items():
             all_input_ids.extend(inputs.values())
 
-        for input_id in all_input_ids:
-            dependencies[self.id].append(
-                action_service.get(input_id, twin_mode=TwinMode.NONE)
-            )
+        dependencies.extend(all_input_ids)
 
         output_policy = self.output_policy
         if output_policy is not None:
@@ -588,23 +593,31 @@ class UserCode(SyftObject):
                 else:
                     all_output_ids.extend(output.outputs.values())
 
-            for output_id in all_output_ids:
-                dependencies[self.id].append(
-                    action_service.get(output_id, twin_mode=TwinMode.NONE)
-                )
+            dependencies.extend(all_output_ids)
 
         if self.nested_codes is not None:
-            for obj_link, _ in self.nested_codes.values():
-                if visited and obj_link.id in visited:
-                    continue
-                obj = obj_link.resolve
-                deps = obj.get_dependencies(visited=visited)
+            nested_code_ids = [link.object_uid for link in self.nested_codes.values()]
+            dependencies.extend(nested_code_ids)
 
-                visited.update(deps.keys())
-                dependencies.update(deps)
+        return dependencies
 
-        # remove empty values
-        dependencies = {k: v for k, v in dependencies.items() if len(v) > 0}
+    def get_sync_dependencies(self) -> Union[List[UID], SyftError]:
+        dependencies = []
+
+        job_api = APIRegistry.api_for(
+            self.node_uid, self.syft_client_verify_key
+        ).services.job
+        jobs = job_api.get_by_user_code_id(self.id)
+
+        if isinstance(jobs, SyftError):
+            return jobs
+
+        dependencies.extend([job.id for job in jobs])
+
+        if self.nested_codes is not None:
+            nested_code_ids = [link.object_uid for link in self.nested_codes.values()]
+            dependencies.extend(nested_code_ids)
+
         return dependencies
 
     @property
@@ -1412,14 +1425,14 @@ def execute_byte_code(
                 log_service = context.node.get_service("LogService")
                 log_service.append(context=context, uid=log_id, new_err=error_msg)
 
-            result_message = f"Exception encountered while running {code_item.service_func_name}" \
+            result_message = (
+                f"Exception encountered while running {code_item.service_func_name}"
                 ", please contact the Node Admin for more info."
-            if context.dev_mode:
-                result_message +=error_msg
-
-            result = Err(
-                result_message
             )
+            if context.dev_mode:
+                result_message += error_msg
+
+            result = Err(result_message)
 
         # reset print
         print = original_print

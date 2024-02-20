@@ -6,7 +6,6 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Set
 from typing import Union
 
 # third party
@@ -464,34 +463,33 @@ class Job(SyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
-    def get_dependencies(
-        self, visited: Optional[Set[UID]] = None
-    ) -> Dict[UID, List[Any]]:
-        # result, usercode, logs, subjobs
-        visited = visited or set()
-        visited.add(self.id)
+    def get_dependencies(self) -> List[UID]:
+        dependencies = []
 
-        api = APIRegistry.api_for(
-            node_uid=self.node_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
+        if self.user_code_id:
+            dependencies.append(self.user_code_id)
 
-        dependencies = {self.id: []}
-        result_id = self.result.id
-        if result_id not in visited:
-            result_obj = api.services.action.get(result_id, resolve_nested=False)
-            dependencies[self.id].append(result_obj)
+        if self.result:
+            dependencies.append(self.result.id)
 
-        if self.log_id not in visited:
-            log_obj = api.services.log.get(self.log_id)
-            dependencies[self.id].append(log_obj)
+        if self.log_id:
+            dependencies.append(self.log_id)
 
-        for subjob in self.subjobs:
-            if subjob.id not in visited:
-                dependencies[self.id].append(subjob)
-                sub_dependents = subjob.get_dependencies(visited=visited)
-                dependencies.update(sub_dependents)
-                visited.update(sub_dependents.keys())
+        subjob_ids = [subjob.id for subjob in self.subjobs]
+        dependencies.extend(subjob_ids)
+
+        return dependencies
+
+    def get_sync_dependencies(self) -> List[UID]:
+        dependencies = []
+        if self.result:
+            dependencies.append(self.result.id)
+
+        if self.log_id:
+            dependencies.append(self.log_id)
+
+        subjob_ids = [subjob.id for subjob in self.subjobs]
+        dependencies.extend(subjob_ids)
 
         return dependencies
 

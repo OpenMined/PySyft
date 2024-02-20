@@ -303,6 +303,12 @@ class DomainClient(SyftClient):
             return self.api.services.worker_image
         return None
 
+    @property
+    def sync(self) -> Optional[APIModule]:
+        if self.api.has_service("sync"):
+            return self.api.services.sync
+        return None
+
     def get_project(
         self,
         name: str = None,
