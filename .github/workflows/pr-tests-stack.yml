@@ -290,11 +290,11 @@ jobs:
         run: |
           pip install -U tox
 
-      # - name: Run syft backend base image building test
-      #   if: steps.changes.outputs.stack == 'true'
-      #   timeout-minutes: 60
-      #   run: |
-      #     tox -e backend.test.basecpu
+      - name: Run syft backend base image building test
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 60
+        run: |
+          tox -e backend.test.basecpu
 
   pr-tests-notebook-stack:
     strategy:
