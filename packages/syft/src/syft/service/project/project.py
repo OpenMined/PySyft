@@ -358,7 +358,7 @@ are given to select as their answer to the question.For example, a poll question
 Participants can then select the answer that best represents their opinion or preference"""
 
     description3 = """Since you didn't pass in questions, choices into .create_poll() (or you did so incorrectly),
-this wizard is going to guide you through the process of creating a poll."""
+this wizard is going to guide you through the process of creating a poll"""
 
     description4 = """In this wizard, we're going to ask you for a question and list of choices
 to create the poll. The Questions and choices are converted to strings"""

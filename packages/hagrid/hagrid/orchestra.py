@@ -13,30 +13,16 @@ from threading import Thread
 from typing import Any
 from typing import Callable
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Union
 
 # relative
 from .cli import str_to_bool
-from .dummynum import DummyNum
 from .grammar import find_available_port
 from .names import random_name
+from .util import ImportFromSyft
+from .util import NodeSideType
 from .util import shell
-
-try:
-    # syft absolute
-    from syft.abstract_node import NodeSideType
-    from syft.abstract_node import NodeType
-    from syft.protocol.data_protocol import stage_protocol_changes
-    from syft.service.response import SyftError
-except Exception:  # nosec
-    NodeSideType = DummyNum
-    NodeType = DummyNum
-
-    def stage_protocol_changes(*args: Any, **kwargs: Any) -> None:
-        pass
-
-    SyftError = DummyNum
-    # print("Please install syft with `pip install syft`")
 
 DEFAULT_PORT = 8080
 DEFAULT_URL = "http://localhost"
@@ -44,6 +30,9 @@ DEFAULT_URL = "http://localhost"
 # and this causes context switch error when we use normal threading in hagrid
 
 ClientAlias = Any  # we don't want to import Client in case it changes
+
+if TYPE_CHECKING:
+    NodeType = ImportFromSyft.import_node_type()
 
 
 # Define a function to read and print a stream
@@ -109,6 +98,7 @@ def container_exists_with(name: str, port: int) -> bool:
 
 
 def get_node_type(node_type: Optional[Union[str, NodeType]]) -> Optional[NodeType]:
+    NodeType = ImportFromSyft.import_node_type()
     if node_type is None:
         node_type = os.environ.get("ORCHESTRA_NODE_TYPE", NodeType.DOMAIN)
     try:
@@ -203,6 +193,7 @@ class NodeHandle:
         institution: Optional[str] = None,
         website: Optional[str] = None,
     ) -> Any:
+        SyftError = ImportFromSyft.import_syft_error()
         if not email:
             email = input("Email: ")
         if not password:
@@ -248,6 +239,8 @@ def deploy_to_python(
     create_producer: bool = False,
     queue_port: Optional[int] = None,
 ) -> Optional[NodeHandle]:
+    stage_protocol_changes = ImportFromSyft.import_stage_protocol_changes()
+    NodeType = ImportFromSyft.import_node_type()
     sy = get_syft_client()
     if sy is None:
         return sy
@@ -308,7 +301,7 @@ def deploy_to_python(
             worker_class = worker_classes[node_type_enum]
             sig = inspect.signature(worker_class.named)
             supported_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
-            if "node_type" in sig.parameters.keys():
+            if "node_type" in sig.parameters.keys() and "migrate" in sig.parameters:
                 supported_kwargs["migrate"] = True
             worker = worker_class.named(**supported_kwargs)
         else:
@@ -494,6 +487,7 @@ class Orchestra:
         queue_port: Optional[int] = None,
         in_memory_workers: bool = True,
     ) -> Optional[NodeHandle]:
+        NodeType = ImportFromSyft.import_node_type()
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"
             thread_workers = True
@@ -507,8 +501,6 @@ class Orchestra:
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
         node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
-        if not node_type_enum:
-            return None
 
         node_side_type_enum = (
             NodeSideType.HIGH_SIDE

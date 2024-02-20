@@ -196,8 +196,12 @@ def get_default_worker_pool_name() -> str:
     return get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME)
 
 
-def get_default_worker_pool_count() -> int:
-    return int(get_env("DEFAULT_WORKER_POOL_COUNT", 1))
+def get_default_worker_pool_count(node) -> int:
+    return int(
+        get_env(
+            "DEFAULT_WORKER_POOL_COUNT", node.queue_config.client_config.n_consumers
+        )
+    )
 
 
 def in_kubernetes() -> Optional[str]:
@@ -474,6 +478,8 @@ class Node(AbstractNode):
         if queue_config:
             queue_config_ = queue_config
         elif queue_port is not None or n_consumers > 0 or create_producer:
+            if not create_producer and queue_port is None:
+                print("No queue port defined to bind consumers.")
             queue_config_ = ZMQQueueConfig(
                 client_config=ZMQClientConfig(
                     create_producer=create_producer,
@@ -630,6 +636,9 @@ class Node(AbstractNode):
             blob_storage_config = OnDiskBlobStorageConfig(
                 client_config=blob_client_config
             )
+
+        node_type = NodeType(node_type)
+        node_side_type = NodeSideType(node_side_type)
 
         return cls(
             name=name,
@@ -1576,7 +1585,7 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
     default_pool_name = get_default_worker_pool_name()
     default_worker_pool = node.get_default_worker_pool()
     default_worker_tag = get_default_worker_tag_by_env(node.dev_mode)
-    worker_count = get_default_worker_pool_count()
+    worker_count = get_default_worker_pool_count(node)
     context = AuthedServiceContext(
         node=node,
         credentials=credentials,
