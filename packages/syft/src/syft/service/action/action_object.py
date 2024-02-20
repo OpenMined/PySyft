@@ -709,11 +709,9 @@ class ActionObject(SyftObject):
                     uid=self.syft_blob_storage_entry_id
                 )
                 if isinstance(blob_retrieval_object, SyftError):
-                    import ipdb
-                    ipdb.set_trace()
                     print(
-                        "Detached action object, object exists but is not linked to data in the blob storage",
-                        blob_retrieval_object,
+                        "Could not fetch actionobject data\n",
+                        type(blob_retrieval_object),
                     )
                     return blob_retrieval_object
                 # relative
@@ -749,6 +747,9 @@ class ActionObject(SyftObject):
                 data.upload_to_blobstorage_from_api(api)
             else:
                 storage_entry = CreateBlobStorageEntry.from_obj(data)
+                if self.syft_blob_storage_entry_id is not None:
+                    # TODO: check if it already exists
+                    storage_entry.id=self.syft_blob_storage_entry_id
                 allocate_method = from_api_or_context(
                     func_or_path="blob_storage.allocate",
                     syft_node_location=self.syft_node_location,
@@ -1175,7 +1176,7 @@ class ActionObject(SyftObject):
         if isinstance(id, LineageID):
             id = id.id
         return ActionObject.empty(
-            self.syft_internal_type, id, self.syft_lineage_id, self.syft_resolved
+            self.syft_internal_type, id, self.syft_lineage_id, self.syft_resolved, syft_blob_storage_entry_id=self.syft_blob_storage_entry_id
         )
 
     @staticmethod
@@ -1226,6 +1227,7 @@ class ActionObject(SyftObject):
         syft_node_location: Optional[UID] = None,
         syft_resolved: Optional[bool] = True,
         data_node_id: Optional[UID] = None,
+        syft_blob_storage_entry_id=None
     ) -> ActionObject:
         """Create an ActionObject from an existing object.
 
@@ -1242,6 +1244,7 @@ class ActionObject(SyftObject):
 
         action_type = action_type_for_object(syft_action_data)
         action_object = action_type(syft_action_data_cache=syft_action_data)
+        action_object.syft_blob_storage_entry_id = syft_blob_storage_entry_id
         action_object.syft_action_data_node_id = data_node_id
         action_object.syft_resolved = syft_resolved
 
@@ -1324,6 +1327,7 @@ class ActionObject(SyftObject):
         syft_lineage_id: Optional[LineageID] = None,
         syft_resolved: Optional[bool] = True,
         data_node_id: Optional[UID] = None,
+        syft_blob_storage_entry_id = None
     ) -> ActionObject:
         """Create an ActionObject from a type, using a ActionDataEmpty object
 
@@ -1343,6 +1347,7 @@ class ActionObject(SyftObject):
             syft_action_data=empty,
             syft_resolved=syft_resolved,
             data_node_id=data_node_id,
+            syft_blob_storage_entry_id = syft_blob_storage_entry_id
         )
         res.__dict__["syft_internal_type"] = syft_internal_type
         return res
