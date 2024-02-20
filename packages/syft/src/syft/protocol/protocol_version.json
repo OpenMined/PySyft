@@ -1275,6 +1275,20 @@
           "hash": "96f75160ec2a966fc3866cf2e86b151914012514e2b89f618933cdfbb639e528",
           "action": "add"
         }
+      },
+      "SyncStateItem": {
+        "1": {
+          "version": 1,
+          "hash": "3846e3429925f4009a9bf65ce8a8fa85751fee9937d200d947131822ef6f1533",
+          "action": "add"
+        }
+      },
+      "SyncState": {
+        "1": {
+          "version": 1,
+          "hash": "be0ef32dc9821d4f2f7341b4bf890fd0eee956e3852fc2f3aeabc628d2cdbe39",
+          "action": "add"
+        }
       }
     }
   }

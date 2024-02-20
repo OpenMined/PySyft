@@ -601,6 +601,25 @@ class UserCode(SyftObject):
 
         return dependencies
 
+    def get_sync_dependencies(self) -> Union[List[UID], SyftError]:
+        dependencies = []
+
+        job_api = APIRegistry.api_for(
+            self.node_uid, self.syft_client_verify_key
+        ).services.job
+        jobs = job_api.get_by_user_code_id(self.id)
+
+        if isinstance(jobs, SyftError):
+            return jobs
+
+        dependencies.extend([job.id for job in jobs])
+
+        if self.nested_codes is not None:
+            nested_code_ids = [link.object_uid for link in self.nested_codes.values()]
+            dependencies.extend(nested_code_ids)
+
+        return dependencies
+
     @property
     def unsafe_function(self) -> Optional[Callable]:
         warning = SyftWarning(
