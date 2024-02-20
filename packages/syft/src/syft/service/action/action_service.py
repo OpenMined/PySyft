@@ -297,7 +297,7 @@ class ActionService(AbstractService):
         if not override_execution_permission:
             input_policy = code_item.input_policy
             if input_policy is None:
-                return Err(f"Execution denied: {code_item}'s input policy is None'")
+                return Err(f"{code_item}'s input policy is None'")
             filtered_kwargs = input_policy.filter_kwargs(
                 kwargs=kwargs, context=context, code_item_id=code_item.id
             )
