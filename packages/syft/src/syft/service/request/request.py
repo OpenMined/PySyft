@@ -109,6 +109,8 @@ class ActionStoreChange(Change):
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
         try:
+            if context.node is None:
+                return Err(SyftError(message=f"context {context}'s node is None"))
             action_service: ActionService = context.node.get_service(ActionService)
             blob_storage_service = context.node.get_service(BlobStorageService)
             action_store = action_service.store
@@ -203,6 +205,9 @@ class CreateCustomImageChange(Change):
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
         try:
+            if context.node is None:
+                return Err(SyftError(message=f"context {context}'s node is None"))
+
             worker_image_service = context.node.get_service("SyftWorkerImageService")
 
             service_context = context.to_service_ctx()
@@ -283,8 +288,12 @@ class CreateCustomWorkerPoolChange(Change):
         This function is run when the DO approves (apply=True)
         or deny (apply=False) the request.
         """
+        # TODO: refactor the returned Err(SyftError) or Ok(SyftSuccess) to just
+        # SyftError or SyftSuccess
         if apply:
             # get the worker pool service and try to launch a pool
+            if context.node is None:
+                return Err(SyftError(message=f"context {context}'s node is None"))
             worker_pool_service = context.node.get_service("SyftWorkerPoolService")
             service_context: AuthedServiceContext = context.to_service_ctx()
 
@@ -547,7 +556,7 @@ class Request(SyftObject):
         return client.api.services.request.apply(self.id)
 
     def apply(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
-        change_context = ChangeContext.from_service(context)
+        change_context: ChangeContext = ChangeContext.from_service(context)
         change_context.requesting_user_credentials = self.requesting_user_verify_key
         for change in self.changes:
             # by default change status is not applied
@@ -571,7 +580,7 @@ class Request(SyftObject):
         return Ok(SyftSuccess(message=f"Request {self.id} changes applied"))
 
     def undo(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
-        change_context = ChangeContext.from_service(context)
+        change_context: ChangeContext = ChangeContext.from_service(context)
         change_context.requesting_user_credentials = self.requesting_user_verify_key
 
         current_change_state = self.current_change_state
@@ -606,6 +615,8 @@ class Request(SyftObject):
         # relative
         from .request_service import RequestService
 
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         save_method = context.node.get_service_method(RequestService.save)
         return save_method(context=context, request=self)
 
@@ -1111,7 +1122,8 @@ class UserCodeStatusChange(Change):
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:
         if self.match_type and not isinstance(self.value, UserCodeStatus):
-            return SyftError(
+            # TODO: fix the mypy issue
+            return SyftError(  # type: ignore[unreachable]
                 message=f"{type(self.value)} must be of type: {UserCodeStatus}"
             )
         return SyftSuccess(message=f"{type(self)} valid")
@@ -1131,6 +1143,8 @@ class UserCodeStatusChange(Change):
     #     return approved_nested_codes
 
     def mutate(self, obj: UserCode, context: ChangeContext, undo: bool) -> Any:
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         reason: str = context.extra_kwargs.get("reason", "")
         if not undo:
             res = obj.status.mutate(

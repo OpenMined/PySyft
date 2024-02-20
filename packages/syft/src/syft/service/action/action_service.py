@@ -296,6 +296,8 @@ class ActionService(AbstractService):
 
         if not override_execution_permission:
             input_policy = code_item.input_policy
+            if input_policy is None:
+                return Err(f"Execution denied: {code_item}'s input policy is None'")
             filtered_kwargs = input_policy.filter_kwargs(
                 kwargs=kwargs, context=context, code_item_id=code_item.id
             )
@@ -307,7 +309,7 @@ class ActionService(AbstractService):
         # update input policy to track any input state
         # code_item.input_policy = input_policy
 
-        if not override_execution_permission:
+        if not override_execution_permission and code_item.input_policy is not None:
             expected_input_kwargs = set()
             for _inp_kwarg in code_item.input_policy.inputs.values():
                 keys = _inp_kwarg.keys()
@@ -406,7 +408,8 @@ class ActionService(AbstractService):
             output_readers = []
 
         read_permission = ActionPermission.READ
-
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         result_action_object._set_obj_location_(
             context.node.id,
             context.credentials,
@@ -621,6 +624,9 @@ class ActionService(AbstractService):
         """Execute an operation on objects in the action store"""
         # relative
         from .plan import Plan
+
+        if context.node is None:
+            return Err(f"context {context}'s node is None")
 
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)

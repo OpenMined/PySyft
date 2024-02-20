@@ -75,6 +75,8 @@ class RequestService(AbstractService):
             if result.is_ok():
                 request = result.ok()
                 link = LinkedObject.with_context(request, context=context)
+                if context.node is None:
+                    return SyftError(message=f"context {context}'s node is None")
                 admin_verify_key = context.node.get_service_method(
                     UserService.admin_verify_key
                 )
@@ -105,19 +107,24 @@ class RequestService(AbstractService):
             print("Failed to submit Request", e)
             raise e
 
-    def expand_node(self, context: AuthedServiceContext, code_obj: UserCode) -> Dict:
+    def expand_node(
+        self, context: AuthedServiceContext, code_obj: UserCode
+    ) -> Union[dict, SyftError]:
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
+
         user_code_service = context.node.get_service("usercodeservice")
         nested_requests = user_code_service.solve_nested_requests(context, code_obj)
 
-        new_nested_requests = {}
+        new_nested_requests: dict = {}
         for func_name, code in nested_requests.items():
             nested_dict = self.expand_node(context, code)
             if isinstance(nested_dict, SyftError):
                 return nested_dict
             code.nested_codes = nested_dict
             res = user_code_service.stash.update(context.credentials, code)
-            if isinstance(res, Err):
-                return res
+            if res.is_err():
+                return SyftError(message=f"{res.err()}")
             linked_obj = LinkedObject.from_obj(code, node_uid=context.node.id)
             new_nested_requests[func_name] = (linked_obj, nested_dict)
 
@@ -166,6 +173,10 @@ class RequestService(AbstractService):
         page_size: Optional[int] = 0,
     ) -> Union[List[List[RequestInfo]], List[RequestInfo], SyftError]:
         """Get the information of all requests"""
+        if context.node is None:
+            return SyftError(
+                message=f"Can't get info. Reason: context {context}'s node is None"
+            )
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=result.err())
@@ -240,6 +251,11 @@ class RequestService(AbstractService):
         uid: UID,
         **kwargs: dict,
     ) -> Union[SyftSuccess, SyftError]:
+        if context.node is None:
+            return SyftError(
+                message=f"Can't apply request. Reason: context {context}'s node is None"
+            )
+
         request = self.stash.get_by_uid(context.credentials, uid)
         if request.is_ok():
             request = request.ok()
@@ -308,6 +324,10 @@ class RequestService(AbstractService):
             to_user_verify_key=request.requesting_user_verify_key,
             linked_obj=link,
         )
+        if context.node is None:
+            return SyftError(
+                message=f"Can't send notification. Resason: context {context}'s node is None"
+            )
         send_notification = context.node.get_service_method(NotificationService.send)
         send_notification(context=context, notification=notification)
 
