@@ -58,8 +58,9 @@ class WorkerService(AbstractService):
         self, context: AuthedServiceContext, n: int = 1
     ) -> Union[List[ContainerSpawnStatus], SyftError]:
         """Add a Container Image."""
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         worker_pool_service = context.node.get_service("SyftWorkerPoolService")
-
         return worker_pool_service.add_workers(
             context, number=n, pool_name=DEFAULT_WORKER_POOL_NAME
         )
@@ -76,7 +77,7 @@ class WorkerService(AbstractService):
 
         workers: List[SyftWorker] = result.ok()
 
-        if context.node.in_memory_workers:
+        if context.node is not None and context.node.in_memory_workers:
             return workers
         else:
             # If container workers, check their statuses
@@ -111,7 +112,7 @@ class WorkerService(AbstractService):
         if isinstance(worker, SyftError):
             return worker
 
-        if context.node.in_memory_workers:
+        if context.node is not None and context.node.in_memory_workers:
             return worker
         else:
             return refresh_worker_status([worker], self.stash, context.credentials)[0]
@@ -131,7 +132,7 @@ class WorkerService(AbstractService):
         if isinstance(worker, SyftError):
             return worker
 
-        if context.node.in_memory_workers:
+        if context.node is not None and context.node.in_memory_workers:
             logs = b"Logs not implemented for In Memory Workers"
         elif IN_KUBERNETES:
             runner = KubernetesRunner()
@@ -165,6 +166,8 @@ class WorkerService(AbstractService):
         worker = self._get_worker(context=context, uid=uid)
         if isinstance(worker, SyftError):
             return worker
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
 
         worker_pool_name = worker.worker_pool_name
 

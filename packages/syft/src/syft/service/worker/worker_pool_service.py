@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -463,7 +464,7 @@ class SyftWorkerPoolService(AbstractService):
             # zero is a valid scale down
             return SyftError(message=f"Invalid number of workers: {number}")
 
-        result = self._get_worker_pool(context, pool_id, pool_name)
+        result: Any = self._get_worker_pool(context, pool_id, pool_name)
         if isinstance(result, SyftError):
             return result
 

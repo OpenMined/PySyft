@@ -1209,11 +1209,11 @@ class Node(AbstractNode):
     def add_action_to_queue(
         self,
         action,
-        credentials,
+        credentials: SyftVerifyKey,
         parent_job_id=None,
         has_execute_permissions: bool = False,
         worker_pool_name: Optional[str] = None,
-    ):
+    ) -> Union[Job, SyftError]:
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(node=self)
@@ -1263,8 +1263,12 @@ class Node(AbstractNode):
         )
 
     def add_queueitem_to_queue(
-        self, queue_item, credentials, action=None, parent_job_id=None
-    ):
+        self,
+        queue_item: ActionQueueItem,
+        credentials: SyftVerifyKey,
+        action=None,
+        parent_job_id=None,
+    ) -> Union[Job, SyftError]:
         log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
         context = AuthedServiceContext(node=self, credentials=credentials, role=role)
