@@ -1,4 +1,4 @@
-__version__ = "0.8.4-beta.19"
+__version__ = "0.8.4"
 
 # stdlib
 import pathlib
@@ -9,6 +9,7 @@ from typing import Callable
 
 # relative
 from . import gevent_patch  # noqa: F401
+from .abstract_node import NodeSideType  # noqa: F401
 from .abstract_node import NodeType  # noqa: F401
 from .client.client import connect  # noqa: F401
 from .client.client import login  # noqa: F401
@@ -67,6 +68,7 @@ from .service.response import SyftNotReady  # noqa: F401
 from .service.response import SyftSuccess  # noqa: F401
 from .service.user.roles import Roles as roles  # noqa: F401
 from .service.user.user_service import UserService  # noqa: F401
+from .stable_version import LATEST_STABLE_SYFT
 from .types.twin_object import TwinObject  # noqa: F401
 from .types.uid import UID  # noqa: F401
 from .util import filterwarnings  # noqa: F401
@@ -80,7 +82,6 @@ from .util.util import autocache  # noqa: F401
 from .util.util import get_root_data_path  # noqa: F401
 from .util.version_compare import make_requires
 
-LATEST_STABLE_SYFT = "0.8.3"
 requires = make_requires(LATEST_STABLE_SYFT, __version__)
 
 

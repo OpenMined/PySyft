@@ -312,6 +312,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # For tag and release notes.
+
+    outputs:
+      syft_version: ${{ steps.release_checks.outputs.syft_version }}
+
     steps:
       - name: Permission to home directory
         run: |
@@ -354,6 +358,7 @@ jobs:
         run: |
           echo "github_release_version=$(python packages/grid/VERSION |  sed 's/-beta./b/')" >> $GITHUB_OUTPUT
           echo "future_stable_version=$(python packages/grid/VERSION |   sed 's/-beta.*//')" >> $GITHUB_OUTPUT
+          echo "syft_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
           if [[ ${{ needs.merge-docker-images.outputs.release_tag}} == "beta" ]]; then
             echo "is_beta_release=true" >> $GITHUB_OUTPUT
           else
@@ -410,7 +415,7 @@ jobs:
           author_name: ${{ secrets.OM_BOT_NAME }}
           author_email: ${{ secrets.OM_BOT_EMAIL }}
           message: "[syft]bump version"
-          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION','packages/syft/PYPI.md', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml','packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py', 'packages/grid/podman/podman-kube/podman-syft-kube.yaml' ,'packages/grid/podman/podman-kube/podman-syft-kube-config.yaml', 'packages/syftcli/manifest.yml', 'packages/syft/src/syft/protocol/protocol_version.json', 'packages/grid/backend/worker_cpu.dockerfile','packages/grid/helm/syft/values.yaml','packages/grid/helm/syft']"
+          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION','packages/syft/PYPI.md', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml','packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py', 'packages/grid/podman/podman-kube/podman-syft-kube.yaml' ,'packages/grid/podman/podman-kube/podman-syft-kube-config.yaml', 'packages/syftcli/manifest.yml', 'packages/syft/src/syft/protocol/protocol_version.json', 'packages/syft/src/syft/protocol/releases/', 'packages/grid/backend/worker_cpu.dockerfile','packages/grid/helm/syft/values.yaml','packages/grid/helm/syft']"
 
       - name: Changes to commit to Syft Repo during stable release
         if: needs.merge-docker-images.outputs.release_tag == 'latest'
@@ -419,7 +424,7 @@ jobs:
           author_name: ${{ secrets.OM_BOT_NAME }}
           author_email: ${{ secrets.OM_BOT_EMAIL }}
           message: "[syft] bump protocol version"
-          add: "['packages/syft/src/syft/protocol/protocol_version.json']"
+          add: "['packages/syft/src/syft/protocol/protocol_version.json', 'packages/syft/src/syft/protocol/releases/','packages/syft/PYPI.md','packages/grid/helm/repo']"
 
       - name: Scheduled Build and Publish
         if: github.event_name == 'schedule'
@@ -514,3 +519,17 @@ jobs:
           add: "helm/"
           push: "origin gh-pages"
           cwd: "./ghpages/"
+
+      # Since the post-release tests are dependent on the release being available on PyPI
+      # we need to wait for PyPI to update before running the post-release tests
+      - name: Wait for PyPI to update
+        run: |
+          sleep 60
+
+  # Can we remove the always flag from the below job?
+  call-cd-post-release-tests:
+    needs: [deploy-syft]
+    if: always() && github.repository == 'OpenMined/PySyft' && needs.deploy-syft.result == 'success' # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/cd-post-release-tests.yml@dev
+    with:
+      syft_version: ${{ needs.deploy-syft.outputs.syft_version }}

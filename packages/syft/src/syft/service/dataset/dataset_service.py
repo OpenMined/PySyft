@@ -2,6 +2,7 @@
 from collections.abc import Collection
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Union
 
 # relative
@@ -52,7 +53,7 @@ def _paginate_collection(
 
 
 def _paginate_dataset_collection(
-    datasets: Collection[Dataset],
+    datasets: Sequence[Dataset],
     page_size: Optional[int] = 0,
     page_index: Optional[int] = 0,
 ) -> Union[DictTuple[str, Dataset], DatasetPageView]:
@@ -204,7 +205,9 @@ class DatasetService(AbstractService):
         name="dataset_delete_by_id",
         warning=HighSideCRUDWarning(confirmation=True),
     )
-    def delete_dataset(self, context: AuthedServiceContext, uid: UID):
+    def delete_dataset(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
         result = self.stash.delete_by_uid(context.credentials, uid)
         if result.is_ok():
             return result.ok()
