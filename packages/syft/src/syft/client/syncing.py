@@ -44,6 +44,8 @@ def resolve(state: DiffState, force_approve: bool = False):
                     else:
                         print("Please write `approve` or `deny`:", flush=True)
         if new_obj.merge_state == "DIFF":
-            pass
+            # TODO: this is a shortcut
+            state_list.append(new_obj.high_obj)
+            # pass
 
     return low_new_objs, high_new_objs
