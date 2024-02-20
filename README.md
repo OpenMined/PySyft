@@ -54,6 +54,10 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 - <a href="notebooks/api/0.8/05-custom-policy.ipynb">05-custom-policy.ipynb</a>
 - <a href="notebooks/api/0.8/06-multiple-code-requests.ipynb">06-multiple-code-requests.ipynb</a>
 - <a href="notebooks/api/0.8/07-domain-register-control-flow.ipynb">07-domain-register-control-flow.ipynb</a>
+- <a href="notebooks/api/0.8/08-code-version.ipynb">08-code-version.ipynb</a>
+- <a href="notebooks/api/0.8/09-blob-storage.ipynb">09-blob-storage.ipynb</a>
+- <a href="notebooks/api/0.8/10-container-images.ipynb">10-container-images.ipynb</a>
+- <a href="notebooks/api/0.8/11-container-images-k8s.ipynb">11-container-images-k8s.ipynb</a>
 
 ## Deploy Kubernetes Helm Chart
 
