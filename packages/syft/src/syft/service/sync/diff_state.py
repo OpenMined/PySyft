@@ -462,6 +462,10 @@ class Diff(SyftObject):  # StateTuple (compare 2 objects)
     ]
 
     @property
+    def object_id(self):
+        return self.low_obj.id if self.low_obj is not None else self.high_obj.id
+
+    @property
     def object_type(self):
         return self.obj_type.__name__
 
@@ -621,10 +625,11 @@ class DiffState(SyftObject):
     __canonical_name__ = "DiffState"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    diffs: List[Diff] = []
+    obj_uid_to_diff: Dict[UID, Diff] = {}
+    dependencies: Dict[UID, List[UID]] = {}
 
     @classmethod
-    def from_sync_states(
+    def from_sync_state(
         cls: Type["DiffState"], low_state: SyncState, high_state: SyncState
     ) -> "DiffState":
         diff_state = cls()
@@ -636,7 +641,55 @@ class DiffState(SyftObject):
             high_obj = high_state.objects.get(obj_id, None)
             diff_state.add_obj(low_obj, high_obj)
 
+        diff_state._init_dependencies(low_state, high_state)
         return diff_state
+
+    def _init_dependencies(self, low_state: SyncState, high_state: SyncState) -> None:
+        all_parents = set(low_state.dependencies.keys()) | set(
+            high_state.dependencies.keys()
+        )
+        for parent in all_parents:
+            low_deps = low_state.dependencies.get(parent, [])
+            high_deps = high_state.dependencies.get(parent, [])
+            self.dependencies[parent] = list(set(low_deps) | set(high_deps))
+
+    @property
+    def diffs(self) -> List[Diff]:
+        return list(self.obj_uid_to_diff.values())
+
+    @property
+    def hierarchies(self) -> List[List[Tuple[Diff, int]]]:
+        # Returns a list of hierarchies, where each hierarchy is a list of tuples (Diff, level),
+        # in depth-first order.
+
+        # Each hierarchy only contains one root, at the first position
+        # Example: [(Diff1, 0), (Diff2, 1), (Diff3, 2), (Diff4, 1)]
+        # Diff1
+        # -- Diff2
+        # ---- Diff3
+        # -- Diff4
+
+        def _build_hierarchy_helper(uid, level=0):
+            result = [(uid, level)]
+            if uid in self.dependencies:
+                for child_uid in self.dependencies[uid]:
+                    result.extend(_build_hierarchy_helper(child_uid, level + 1))
+            return result
+
+        hierarchies = []
+        all_ids = {diff.object_id for diff in self.diffs}
+        child_ids = {child for deps in self.dependencies.values() for child in deps}
+        # Root ids are object ids with no parents
+        root_ids = list(all_ids - child_ids)
+
+        for root_uid in root_ids:
+            uid_hierarchy = _build_hierarchy_helper(root_uid)
+            diff_hierarchy = [
+                (self.obj_uid_to_diff[uid], level) for uid, level in uid_hierarchy
+            ]
+            hierarchies.append(diff_hierarchy)
+
+        return hierarchies
 
     def add_obj(self, low_obj, high_obj):
         if low_obj is None and high_obj is None:
@@ -665,7 +718,7 @@ class DiffState(SyftObject):
                 merge_state=merge_state,
                 diff_list=diff_list,
             )
-        self.diffs.append(diff)
+        self.obj_uid_to_diff[diff.object_id] = diff
 
     def objs_to_sync(self):
         objs = []

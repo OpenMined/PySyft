@@ -15,7 +15,9 @@ def get_hierarchy_level_prefix(level: int) -> str:
 
 
 @serializable()
-class SyncStateItem(SyftObject):
+class SyncStateRow(SyftObject):
+    """A row in the SyncState table"""
+
     __canonical_name__ = "SyncStateItem"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -104,7 +106,7 @@ class SyncState(SyftObject):
                     self.dependencies[obj.id] = deps
 
     @property
-    def hierarchy(self) -> List[Tuple[UID, int]]:
+    def hierarchies(self) -> List[List[Tuple[SyftObject, int]]]:
         def _build_hierarchy_helper(uid: UID, level: int = 0) -> List[Tuple[UID, int]]:
             result = [(uid, level)]
             if uid in self.dependencies:
@@ -118,20 +120,24 @@ class SyncState(SyftObject):
         root_ids = list(all_ids - child_ids)
 
         for root_uid in root_ids:
-            result.extend(_build_hierarchy_helper(root_uid))
+            uid_hierarchy = _build_hierarchy_helper(root_uid)
+            object_hierarchy = [
+                (self.objects[uid], level) for uid, level in uid_hierarchy
+            ]
+            result.append(object_hierarchy)
 
         return result
 
     @property
-    def rows(self) -> List[SyncStateItem]:
+    def rows(self) -> List[SyncStateRow]:
         # Display syncstate as table in hierarchical order
         result = []
-        for uid, level in self.hierarchy:
-            obj = self.objects[uid]
-            item = SyncStateItem(
-                object=obj,
-                previous_object=None,  # TODO
-                level=level,
-            )
-            result.append(item)
+        for hierarchy in self.hierarchies:
+            for obj, level in hierarchy:
+                item = SyncStateRow(
+                    object=obj,
+                    previous_object=None,  # TODO
+                    level=level,
+                )
+                result.append(item)
         return result

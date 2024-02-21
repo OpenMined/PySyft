@@ -4,7 +4,7 @@ from IPython.display import display, Markdown
 
 
 def compare_states(low_state, high_state) -> DiffState:
-    return DiffState.from_sync_states(low_state=low_state, high_state=high_state)
+    return DiffState.from_sync_state(low_state=low_state, high_state=high_state)
 
 
 def resolve(state: DiffState, force_approve: bool = False):
