@@ -111,7 +111,7 @@ class NotificationService(AbstractService):
         context: AuthedServiceContext,
     ) -> Union[Notification, SyftError]:
         notifier_service = context.node.get_service("notifierservice")
-        result = notifier_service.activate(context.node)
+        result = notifier_service.deactivate(context.node)
         return result
 
     @service_method(
