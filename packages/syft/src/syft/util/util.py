@@ -101,8 +101,10 @@ def extract_name(klass: type) -> Optional[str]:
     name_regex = r".+class.+?([\w\._]+).+"
     regex2 = r"([\w\.]+)"
     matches = re.match(name_regex, str(klass))
+
     if matches is None:
         matches = re.match(regex2, str(klass))
+
     if matches:
         try:
             fqn: str = matches[1]
@@ -112,8 +114,8 @@ def extract_name(klass: type) -> Optional[str]:
         except Exception as e:
             print(f"Failed to get klass name {klass}")
             raise e
-    else:
-        return None
+
+    return None
 
 
 def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
