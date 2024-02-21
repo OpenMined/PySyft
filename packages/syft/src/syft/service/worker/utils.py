@@ -255,7 +255,7 @@ def run_workers_in_threads(
             )
         except Exception as e:
             print(
-                "Failed to start consumer for"
+                "Failed to start consumer for "
                 f"pool={pool_name} worker={worker_name}. Error: {e}"
             )
             worker.status = WorkerStatus.STOPPED

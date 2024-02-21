@@ -101,11 +101,13 @@ def extract_name(klass: type) -> str:
     name_regex = r".+class.+?([\w\._]+).+"
     regex2 = r"([\w\.]+)"
     matches = re.match(name_regex, str(klass))
+
     if matches is None:
         matches = re.match(regex2, str(klass))
+
     if matches:
         try:
-            fqn = matches[1]
+            fqn: str = matches[1]
             if "." in fqn:
                 return fqn.split(".")[-1]
             return fqn

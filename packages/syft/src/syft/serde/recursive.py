@@ -273,7 +273,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
 
     if klass != "NoneType":
         try:
-            class_type = index_syft_by_module_name(proto.fullyQualifiedName)
+            class_type = index_syft_by_module_name(proto.fullyQualifiedName)  # type: ignore[assignment,unused-ignore]
         except Exception:  # nosec
             try:
                 class_type = getattr(sys.modules[".".join(module_parts)], klass)
