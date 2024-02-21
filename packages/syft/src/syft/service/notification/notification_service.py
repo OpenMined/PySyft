@@ -89,6 +89,32 @@ class NotificationService(AbstractService):
             )
 
     @service_method(
+        path="notifications.activate",
+        name="activate",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def activate(
+        self,
+        context: AuthedServiceContext,
+    ) -> Union[Notification, SyftError]:
+        notifier_service = context.node.get_service("notifierservice")
+        result = notifier_service.activate(context.node)
+        return result
+
+    @service_method(
+        path="notifications.deactivate",
+        name="deactivate",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def deactivate(
+        self,
+        context: AuthedServiceContext,
+    ) -> Union[Notification, SyftError]:
+        notifier_service = context.node.get_service("notifierservice")
+        result = notifier_service.activate(context.node)
+        return result
+
+    @service_method(
         path="notifications.get_all",
         name="get_all",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
