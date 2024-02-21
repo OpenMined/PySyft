@@ -770,7 +770,12 @@ def list_dict_repr_html(self) -> str:
                 cls_name = first_value.__class__.__name__
             else:
                 cls_name = ""
-            vals = get_repr_values_table(self, is_homogenous, extra_fields=extra_fields)
+            try:
+                vals = get_repr_values_table(
+                    self, is_homogenous, extra_fields=extra_fields
+                )
+            except Exception:
+                return str(self)
 
             return create_table_template(
                 vals,

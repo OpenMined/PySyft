@@ -32,6 +32,7 @@ from ..util.fonts import fonts_css
 from ..util.util import get_mb_size
 from ..util.util import prompt_warning_message
 from .api import APIModule
+from .api import APIRegistry
 from .client import SyftClient
 from .client import login
 from .client import login_as_guest
@@ -138,6 +139,41 @@ class DomainClient(SyftClient):
             if len(valid.err()) > 0:
                 return tuple(valid.err())
             return valid.err()
+
+    def apply_state(self, resolved_sync_state):
+        self._sync_items(resolved_sync_state.low_side_state)
+
+    def create_actionobject(self, action_object):
+        print("syncing obj with blob id", action_object.syft_blob_storage_entry_id)
+        action_object = action_object.refresh_object()
+        res = action_object.send(self)
+        #     res = client.api.services.action.set(action_object)
+        print("Created", res, "blob_id:", action_object.syft_blob_storage_entry_id)
+
+        # if node_to.python_node.node_side_type.value == "low":
+        #     add_permissions_for_actionobject(action_object, node_to, node_from)
+
+    def get_permissions_for_other_node(self, items):
+        if len(items) > 0:
+            assert len(set([i.syft_node_location for i in items])) == 1
+            assert len(set([i.syft_client_verify_key for i in items])) == 1
+            item = items[0]
+            api = APIRegistry.api_for(
+                item.syft_node_location, item.syft_client_verify_key
+            )
+            return api.services.sync.get_permissions(items)
+        else:
+            return {}
+
+    def _sync_items(self, items):
+        action_objects = [x for x in items if isinstance(x, ActionObject)]
+        permissions = self.get_permissions_for_other_node(items)
+        for action_object in action_objects:
+            self.create_actionobject(action_object)
+
+        res = self.api.services.sync.sync_items(items, permissions)
+        self._fetch_api(self.credentials)
+        return res
 
     def upload_files(
         self,
