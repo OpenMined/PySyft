@@ -114,10 +114,10 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         )
         return node
 
-    @staticmethod
-    def with_node(self, node: AbstractNode) -> Self:
+    @classmethod
+    def with_node(cls, node: AbstractNode) -> Self:
         worker_settings = WorkerSettings.from_node(node)
-        return PythonNodeRoute(id=worker_settings.id, worker_settings=worker_settings)
+        return cls(id=worker_settings.id, worker_settings=worker_settings)
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, PythonNodeRoute):
