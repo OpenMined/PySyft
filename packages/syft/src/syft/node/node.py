@@ -88,10 +88,10 @@ from ..service.response import SyftError
 from ..service.service import AbstractService
 from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
-from ..service.sync.sync_service import SyncService
 from ..service.settings.settings import NodeSettingsV2
 from ..service.settings.settings_service import SettingsService
 from ..service.settings.settings_stash import SettingsStash
+from ..service.sync.sync_service import SyncService
 from ..service.user.user import User
 from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole

@@ -1,35 +1,3 @@
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Set
-from typing import Tuple
-from typing import Type
-
-from rich.console import Console
-from rich.panel import Panel
-from rich.markdown import Markdown
-from rich import box
-from rich.console import Group
-from rich.padding import Padding
-
-from ...types.uid import UID, LineageID
-from ..action.action_object import ActionObject
-from ..code.user_code import UserCode
-from ..job.job_stash import Job
-from ..log.log import SyftLog
-from ..project.project import Project
-from ..request.request import Request, UserCodeStatusChange
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
-from ...util import options
-from ...util.colors import SURFACE
-from ...util.fonts import ITABLES_CSS
-from ...util.fonts import fonts_css
-from .sync_state import SyncState
-from ..response import SyftError
-
-
 """
 How to check differences between two objects:
     * by default merge every attr
@@ -37,6 +5,41 @@ How to check differences between two objects:
     * check if there are exceptions we do not want to merge
     * check if there are some restrictions on the attr set
 """
+
+# stdlib
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Type
+
+# third party
+from rich import box
+from rich.console import Console
+from rich.console import Group
+from rich.markdown import Markdown
+from rich.padding import Padding
+from rich.panel import Panel
+
+# relative
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftObject
+from ...types.uid import LineageID
+from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
+from ...util.fonts import ITABLES_CSS
+from ...util.fonts import fonts_css
+from ..action.action_object import ActionObject
+from ..code.user_code import UserCode
+from ..job.job_stash import Job
+from ..log.log import SyftLog
+from ..project.project import Project
+from ..request.request import Request
+from ..request.request import UserCodeStatusChange
+from ..response import SyftError
+from .sync_state import SyncState
 
 sketchy_tab = "‎ " * 4
 
@@ -221,8 +224,8 @@ def get_diff_request(low_request, high_request):
     change_diffs = get_diff_list(
         low_request.changes, high_request.changes, check_func=check_change
     )
-    for l in change_diffs:
-        if len(l) != 0:
+    for d in change_diffs:
+        if len(d) != 0:
             change_diff = DiffList(
                 attr_name="change",
                 low_attr=low_request.changes,
@@ -622,11 +625,6 @@ class Diff(SyftObject):  # StateTuple (compare 2 objects)
             attr_text = ""
             for diff in self.diff_list:
                 attr_text += diff.__repr__() + "<br>"
-
-            # stdlib
-            import re
-
-            res = [i.start() for i in re.finditer("\t", attr_text)]
 
             attr_text = attr_text.replace("\n", "<br>")
             # print("New lines", res)

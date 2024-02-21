@@ -1,13 +1,16 @@
+# stdlib
 from typing import Optional
-from ..service.sync.diff_state import (
-    DiffState,
-    ResolveState,
-    display_diff_hierarchy,
-    hierarchy_is_same,
-    resolve_diff,
-)
 
-from IPython.display import display, Markdown
+# third party
+from IPython.display import Markdown
+from IPython.display import display
+
+# relative
+from ..service.sync.diff_state import DiffState
+from ..service.sync.diff_state import ResolveState
+from ..service.sync.diff_state import display_diff_hierarchy
+from ..service.sync.diff_state import hierarchy_is_same
+from ..service.sync.diff_state import resolve_diff
 
 
 def compare_states(low_state, high_state) -> DiffState:
@@ -39,7 +42,7 @@ def resolve(state: DiffState, force_approve: bool = False):
                 state_list.append(obj_to_sync)
             else:
                 print(
-                    f"Do you approve moving this object from the {source} side to the {destination} side (approve/deny): ",
+                    f"Do you approve moving this object from the {source} side to the {destination} side (approve/deny): ",  # noqa: E501
                     flush=True,
                 )
                 while True:

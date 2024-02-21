@@ -236,7 +236,7 @@ CSS_CODE = """
         flex-direction: column;
         align-items: center;
         padding: 6px 4px;
-         
+
         resize: horizontal;
         /* Lt On Surface/Surface */
         /* Lt On Surface/High */

@@ -73,7 +73,9 @@ class LogService(AbstractService):
 
         return result
 
-    @service_method(path="log.get_stdout", name="get_stdout", roles=DATA_SCIENTIST_ROLE_LEVEL)
+    @service_method(
+        path="log.get_stdout", name="get_stdout", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
     def get_stdout(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:

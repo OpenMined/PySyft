@@ -1,10 +1,18 @@
-from syft.store.linked_obj import LinkedObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.uid import UID, LineageID
-from ...types.syft_object import SyftObject
-from typing import Dict, List, Optional, Set, Tuple
-from ...types.datetime import DateTime
+# stdlib
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Set
+from typing import Tuple
+
+# relative
 from ...serde.serializable import serializable
+from ...store.linked_obj import LinkedObject
+from ...types.datetime import DateTime
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftObject
+from ...types.uid import LineageID
+from ...types.uid import UID
 
 
 def get_hierarchy_level_prefix(level: int) -> str:
