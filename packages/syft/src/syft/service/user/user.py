@@ -252,6 +252,8 @@ class UserView(SyftObject):
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
+        if api.services is None:
+            return SyftError(message=f"Services for api {api} is None")
         api.services.user.update(
             uid=self.id, user_update=UserUpdate(password=new_password)
         )
@@ -288,6 +290,8 @@ class UserView(SyftObject):
         except ValidationError:
             return SyftError(message="{email} is not a valid email address.")
 
+        if api.services is None:
+            return SyftError(message=f"Services for {api} is None")
         result = api.services.user.update(uid=self.id, user_update=user_update)
 
         if isinstance(result, SyftError):
@@ -321,6 +325,8 @@ class UserView(SyftObject):
             role=role,
             mock_execution_permission=mock_execution_permission,
         )
+        if api.services is None:
+            return SyftError(message=f"Services for {api} is None")
         result = api.services.user.update(uid=self.id, user_update=user_update)
 
         if isinstance(result, SyftError):
