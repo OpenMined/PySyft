@@ -1,13 +1,17 @@
-from typing import Optional, Union
+# stdlib
+from typing import Optional
+from typing import Union
 
-from syft.service.context import AuthedServiceContext
-from syft.service.response import SyftError
-
-from ...types.datetime import DateTime
-from ...store.document_store import PartitionKey, PartitionSettings, BaseUIDStoreStash
-from .sync_state import SyncState
-from ...util.telemetry import instrument
+# relative
 from ...serde.serializable import serializable
+from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import PartitionKey
+from ...store.document_store import PartitionSettings
+from ...types.datetime import DateTime
+from ...util.telemetry import instrument
+from ..context import AuthedServiceContext
+from ..response import SyftError
+from .sync_state import SyncState
 
 OrderByDatePartitionKey = PartitionKey(key="created_at", type_=DateTime)
 

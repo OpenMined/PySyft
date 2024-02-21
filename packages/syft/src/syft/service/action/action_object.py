@@ -38,8 +38,9 @@ from ...service.response import SyftError
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.transforms import drop
@@ -575,7 +576,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "syft_resolved",
     "refresh_object",
     "syft_action_data_node_id",
-    "node_uid"
+    "node_uid",
 ]
 
 
@@ -749,7 +750,7 @@ class ActionObject(SyftObject):
                 storage_entry = CreateBlobStorageEntry.from_obj(data)
                 if self.syft_blob_storage_entry_id is not None:
                     # TODO: check if it already exists
-                    storage_entry.id=self.syft_blob_storage_entry_id
+                    storage_entry.id = self.syft_blob_storage_entry_id
                 allocate_method = from_api_or_context(
                     func_or_path="blob_storage.allocate",
                     syft_node_location=self.syft_node_location,
@@ -1176,7 +1177,11 @@ class ActionObject(SyftObject):
         if isinstance(id, LineageID):
             id = id.id
         return ActionObject.empty(
-            self.syft_internal_type, id, self.syft_lineage_id, self.syft_resolved, syft_blob_storage_entry_id=self.syft_blob_storage_entry_id
+            self.syft_internal_type,
+            id,
+            self.syft_lineage_id,
+            self.syft_resolved,
+            syft_blob_storage_entry_id=self.syft_blob_storage_entry_id,
         )
 
     @staticmethod
@@ -1227,7 +1232,7 @@ class ActionObject(SyftObject):
         syft_node_location: Optional[UID] = None,
         syft_resolved: Optional[bool] = True,
         data_node_id: Optional[UID] = None,
-        syft_blob_storage_entry_id=None
+        syft_blob_storage_entry_id=None,
     ) -> ActionObject:
         """Create an ActionObject from an existing object.
 
@@ -1327,7 +1332,7 @@ class ActionObject(SyftObject):
         syft_lineage_id: Optional[LineageID] = None,
         syft_resolved: Optional[bool] = True,
         data_node_id: Optional[UID] = None,
-        syft_blob_storage_entry_id = None
+        syft_blob_storage_entry_id=None,
     ) -> ActionObject:
         """Create an ActionObject from a type, using a ActionDataEmpty object
 
@@ -1347,7 +1352,7 @@ class ActionObject(SyftObject):
             syft_action_data=empty,
             syft_resolved=syft_resolved,
             data_node_id=data_node_id,
-            syft_blob_storage_entry_id = syft_blob_storage_entry_id
+            syft_blob_storage_entry_id=syft_blob_storage_entry_id,
         )
         res.__dict__["syft_internal_type"] = syft_internal_type
         return res

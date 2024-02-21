@@ -1,6 +1,10 @@
+# third party
+from IPython.display import Markdown
+from IPython.display import display
+
+# relative
 from ..service.sync.diff_state import DiffState
 
-from IPython.display import display, Markdown
 
 def compare_states(low_state, high_state) -> DiffState:
     return DiffState.from_sync_states(low_state=low_state, high_state=high_state)

@@ -1,12 +1,14 @@
-from syft.store.linked_obj import LinkedObject
-from .sync_stash import SyncStash
-from ...store.document_store import DocumentStore
-from ..service import AbstractService
-from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..context import AuthedServiceContext
-from ..service import service_method
-from .sync_state import SyncState
+# stdlib
 from typing import Optional
+
+# relative
+from ...store.document_store import DocumentStore
+from ..context import AuthedServiceContext
+from ..service import AbstractService
+from ..service import service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL
+from .sync_stash import SyncStash
+from .sync_state import SyncState
 
 
 class SyncService(AbstractService):

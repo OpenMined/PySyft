@@ -4,7 +4,8 @@ from __future__ import annotations
 # stdlib
 from collections import defaultdict
 from enum import Enum
-from typing import Any, Dict
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Set
