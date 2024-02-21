@@ -707,7 +707,7 @@ class CreateDataset(Dataset):
     def replace_asset(self, asset: CreateAsset) -> Union[SyftSuccess, SyftError]:
         return self.add_asset(asset=asset, force_replace=True)
 
-    def remove_asset(self, name: str) -> None:
+    def remove_asset(self, name: str) -> Union[SyftSuccess, SyftError]:
         asset_to_remove = None
         for asset in self.asset_list:
             if asset.name == name:

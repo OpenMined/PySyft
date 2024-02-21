@@ -106,7 +106,7 @@ class UserService(AbstractService):
         context: AuthedServiceContext,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
-    ) -> Union[Optional[UserViewPage], Optional[UserView], SyftError]:
+    ) -> Union[list[UserView], UserViewPage, UserView, SyftError]:
         if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
             result = self.stash.get_all(context.credentials, has_permission=True)
         else:
@@ -377,7 +377,8 @@ class UserService(AbstractService):
                 user.hashed_password,
             ):
                 if (
-                    context.node.node_type == NodeType.ENCLAVE
+                    # TODO: (mypy) make context.node non-optional to solve this
+                    context.node.node_type == NodeType.ENCLAVE  # type: ignore
                     and user.role == ServiceRole.ADMIN
                 ):
                     return SyftError(
@@ -418,14 +419,16 @@ class UserService(AbstractService):
             else self.get_role_for_credentials(new_user.created_by)
         )
         can_user_register = (
-            context.node.settings.signup_enabled
+            # TODO: (mypy) make context.node non-optional to solve this
+            context.node.settings.signup_enabled  # type: ignore
             or request_user_role in DATA_OWNER_ROLE_LEVEL
         )
 
         if not can_user_register:
+            # TODO: (mypy) make context.node non-optional to solve this
             return SyftError(
                 message=f"You don't have permission to create an account "
-                f"on the domain: {context.node.name}. Please contact the Domain Owner."
+                f"on the domain: {context.node.name}. Please contact the Domain Owner."  # type: ignore
             )
 
         user = new_user.to(User)

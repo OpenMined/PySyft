@@ -36,7 +36,8 @@ class SettingsService(AbstractService):
     @service_method(path="settings.get", name="get")
     def get(self, context: UnauthedServiceContext) -> Result[Ok, Err]:
         """Get Settings"""
-        result = self.stash.get_all(context.node.signing_key.verify_key)
+        # TODO: (mypy) make context.node non-optional to solve this
+        result = self.stash.get_all(context.node.signing_key.verify_key)  # type: ignore
         if result.is_ok():
             settings = result.ok()
             # check if the settings list is empty
@@ -90,7 +91,8 @@ class SettingsService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Enable/Disable Registration for Data Scientist or Guest Users."""
         flags.CAN_REGISTER = enable
-        method = context.node.get_service_method(SettingsService.update)
+        # TODO: (mypy) make context.node non-optional to solve this
+        method = context.node.get_service_method(SettingsService.update)  # type: ignore
         settings = NodeSettingsUpdate(signup_enabled=enable)
 
         result = method(context=context, settings=settings)

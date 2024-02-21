@@ -9,6 +9,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Self
 from typing import Set
 from typing import Tuple
 from typing import Type
@@ -45,8 +46,8 @@ from .user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .user.user_roles import ServiceRole
 from .warnings import APIEndpointWarning
 
-TYPE_TO_SERVICE = {}
-SERVICE_TO_TYPES = defaultdict(set)
+TYPE_TO_SERVICE: dict = {}
+SERVICE_TO_TYPES: defaultdict = defaultdict(set)
 
 
 class AbstractService:
@@ -94,7 +95,7 @@ class ServiceConfig(BaseConfig):
     permissions: List
     roles: List[ServiceRole]
 
-    def has_permission(self, user_service_role: ServiceRole):
+    def has_permission(self, user_service_role: ServiceRole) -> bool:
         return user_service_role in self.roles
 
 
@@ -103,7 +104,7 @@ class LibConfig(BaseConfig):
     __canonical_name__ = "LibConfig"
     permissions: Set[CMPPermission]
 
-    def has_permission(self, credentials: SyftVerifyKey):
+    def has_permission(self, credentials: SyftVerifyKey) -> bool:
         # TODO: implement user level permissions
         for p in self.permissions:
             if p.permission_string == CMPCRUDPermission.ALL_EXECUTE.name:
@@ -128,7 +129,7 @@ class ServiceConfigRegistry:
         return cls.__service_config_registry__
 
     @classmethod
-    def path_exists(cls, path: str):
+    def path_exists(cls, path: str) -> bool:
         return path in cls.__service_config_registry__
 
 
@@ -145,7 +146,7 @@ class LibConfigRegistry:
         return cls.__service_config_registry__
 
     @classmethod
-    def path_exists(cls, path: str):
+    def path_exists(cls, path: str) -> bool:
         return path in cls.__service_config_registry__
 
 
@@ -154,7 +155,7 @@ class UserLibConfigRegistry:
         self.__service_config_registry__: Dict[str, LibConfig] = service_config_registry
 
     @classmethod
-    def from_user(cls, credentials: SyftVerifyKey):
+    def from_user(cls, credentials: SyftVerifyKey) -> Self:
         return cls(
             {
                 k: lib_config
@@ -163,7 +164,7 @@ class UserLibConfigRegistry:
             }
         )
 
-    def __contains__(self, path: str):
+    def __contains__(self, path: str) -> bool:
         return path in self.__service_config_registry__
 
     def private_path_for(self, public_path: str) -> str:
@@ -180,7 +181,7 @@ class UserServiceConfigRegistry:
         ] = service_config_registry
 
     @classmethod
-    def from_role(cls, user_service_role: ServiceRole):
+    def from_role(cls, user_service_role: ServiceRole) -> Self:
         return cls(
             {
                 k: service_config
@@ -189,7 +190,7 @@ class UserServiceConfigRegistry:
             }
         )
 
-    def __contains__(self, path: str):
+    def __contains__(self, path: str) -> bool:
         return path in self.__service_config_registry__
 
     def private_path_for(self, public_path: str) -> str:
@@ -199,7 +200,7 @@ class UserServiceConfigRegistry:
         return self.__service_config_registry__
 
 
-def register_lib_obj(lib_obj: CMPBase):
+def register_lib_obj(lib_obj: CMPBase) -> None:
     signature = lib_obj.signature
     path = lib_obj.absolute_path
     func_name = lib_obj.name
@@ -320,12 +321,12 @@ def service_method(
     roles: Optional[List[ServiceRole]] = None,
     autosplat: Optional[List[str]] = None,
     warning: Optional[APIEndpointWarning] = None,
-):
+) -> Callable:
     if roles is None or len(roles) == 0:
         # TODO: this is dangerous, we probably want to be more conservative
         roles = DATA_OWNER_ROLE_LEVEL
 
-    def wrapper(func):
+    def wrapper(func: Any) -> Callable:
         func_name = func.__name__
         class_name = func.__qualname__.split(".")[-2]
         _path = class_name + "." + func_name
@@ -335,7 +336,7 @@ def service_method(
 
         input_signature = deepcopy(signature)
 
-        def _decorator(self, *args, **kwargs):
+        def _decorator(self: Any, *args: Any, **kwargs: Any) -> Callable:
             communication_protocol = kwargs.pop("communication_protocol", None)
 
             if communication_protocol:
@@ -434,7 +435,7 @@ def from_api_or_context(
     func_or_path: str,
     syft_node_location: Optional[UID] = None,
     syft_client_verify_key: Optional[SyftVerifyKey] = None,
-):
+) -> Optional[Union[Callable, SyftError, partial]]:
     # relative
     from ..client.api import APIRegistry
     from ..node.node import AuthNodeContextRegistry
@@ -480,3 +481,4 @@ def from_api_or_context(
         return partial(service_method, node_context)
     else:
         print("Could not get method from api or context")
+        return None

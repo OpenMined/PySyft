@@ -662,18 +662,12 @@ class ActionObject(SyftObject):
                 blob_retrieval_object = blob_storage_read_method(
                     uid=self.syft_blob_storage_entry_id
                 )
-                if isinstance(blob_retrieval_object, SyftError):
-                    print(
-                        "Detached action object, object exists but is not linked to data in the blob storage",
-                        blob_retrieval_object,
-                    )
-                    return blob_retrieval_object
                 # relative
                 from ...store.blob_storage import BlobRetrieval
 
                 if isinstance(blob_retrieval_object, SyftError):
                     raise SyftException(
-                        message=f"Failed to retrieve object from blob storage: {blob_retrieval_object.message}"
+                        f"Failed to retrieve object from blob storage: {blob_retrieval_object.message}"
                     )
                 elif isinstance(blob_retrieval_object, BlobRetrieval):
                     # TODO: This change is temporary to for gateway to be compatible with the new blob storage

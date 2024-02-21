@@ -81,9 +81,11 @@ class NetworkStash(BaseUIDStoreStash):
         valid = self.check_type(peer, NodePeer)
         if valid.is_err():
             return SyftError(message=valid.err())
-        existing = self.get_by_uid(credentials=credentials, uid=peer.id)
+        existing: Union[Result, NodePeer] = self.get_by_uid(
+            credentials=credentials, uid=peer.id
+        )
         if existing.is_ok() and existing.ok():
-            existing: NodePeer = existing.ok()
+            existing = existing.ok()
             existing.update_routes(new_routes=peer.node_routes)
             result = self.update(credentials, existing)
             return result
@@ -169,7 +171,11 @@ class NetworkService(AbstractService):
             return SyftError(message=str(e))
 
         # save the remote peer for later
-        result = self.stash.update_peer(context.node.verify_key, remote_node_peer)
+        # TODO: (mypy) make context.node non-optional to solve this
+        result = self.stash.update_peer(
+            context.node.verify_key,  # type: ignore
+            remote_node_peer,
+        )
         if result.is_err():
             return SyftError(message=str(result.err()))
 
@@ -183,7 +189,7 @@ class NetworkService(AbstractService):
         challenge: bytes,
         self_node_route: NodeRoute,
         verify_key: SyftVerifyKey,
-    ) -> Union[bytes, SyftError]:
+    ) -> Union[list, SyftError]:
         """Add a Network Node Peer"""
         # Using the verify_key of the peer to verify the signature
         # It is also our single source of truth for the peer
@@ -195,7 +201,8 @@ class NetworkService(AbstractService):
                 )
             )
 
-        if verify_key != context.node.verify_key:
+        # TODO: (mypy) make context.node non-optional to solve this
+        if verify_key != context.node.verify_key:  # type: ignore
             return SyftError(
                 message="verify_key does not match the remote node's verify_key for add_peer"
             )
@@ -220,7 +227,8 @@ class NetworkService(AbstractService):
         except Exception as e:
             return SyftError(message=str(e))
 
-        result = self.stash.update_peer(context.node.verify_key, peer)
+        # TODO: (mypy) make context.node non-optional to solve this
+        result = self.stash.update_peer(context.node.verify_key, peer)  # type: ignore
         if result.is_err():
             return SyftError(message=str(result.err()))
 
@@ -233,8 +241,8 @@ class NetworkService(AbstractService):
 
         # Q,TODO: Should the returned node peer also be signed
         # as the challenge is already signed
-
-        challenge_signature = context.node.signing_key.signing_key.sign(
+        # TODO: (mypy) make context.node non-optional to solve this
+        challenge_signature = context.node.signing_key.signing_key.sign(  # type: ignore
             challenge
         ).signature
 
@@ -252,7 +260,8 @@ class NetworkService(AbstractService):
 
         # this way they can match up who we are with who they think we are
         # Sending a signed messages for the peer to verify
-        challenge_signature = context.node.signing_key.signing_key.sign(
+        # TODO: (mypy) make context.node non-optional to solve this
+        challenge_signature = context.node.signing_key.signing_key.sign(  # type: ignore
             challenge
         ).signature
 
@@ -282,8 +291,10 @@ class NetworkService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Add a Network Node Route"""
         # get the peer asking for route verification from its verify_key
+        # TODO: (mypy) make context.node non-optional to solve this
         peer = self.stash.get_for_verify_key(
-            context.node.verify_key, context.credentials
+            context.node.verify_key,  # type: ignore
+            context.credentials,
         )
         if peer.is_err():
             return SyftError(message=peer.err())
@@ -297,7 +308,8 @@ class NetworkService(AbstractService):
                 )
             )
         peer.update_routes([route])
-        result = self.stash.update_peer(context.node.verify_key, peer)
+        # TODO: (mypy) make context.node non-optional to solve this
+        result = self.stash.update_peer(context.node.verify_key, peer)  # type: ignore
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Network Route Verified")
@@ -309,8 +321,9 @@ class NetworkService(AbstractService):
         self, context: AuthedServiceContext
     ) -> Union[List[NodePeer], SyftError]:
         """Get all Peers"""
+        # TODO: (mypy) make context.node non-optional to solve this
         result = self.stash.get_all(
-            credentials=context.node.verify_key,
+            credentials=context.node.verify_key,  # type: ignore
             order_by=OrderByNamePartitionKey,
         )
         if result.is_ok():
@@ -325,8 +338,9 @@ class NetworkService(AbstractService):
         self, context: AuthedServiceContext, name: str
     ) -> Union[Optional[NodePeer], SyftError]:
         """Get Peer by Name"""
+        # TODO: (mypy) make context.node non-optional to solve this
         result = self.stash.get_by_name(
-            credentials=context.node.verify_key,
+            credentials=context.node.verify_key,  # type: ignore
             name=name,
         )
         if result.is_ok():
@@ -342,8 +356,10 @@ class NetworkService(AbstractService):
     def get_peers_by_type(
         self, context: AuthedServiceContext, node_type: NodeType
     ) -> Union[List[NodePeer], SyftError]:
+        # TODO: (mypy) make context.node non-optional to solve this
         result = self.stash.get_by_node_type(
-            credentials=context.node.verify_key, node_type=node_type
+            credentials=context.node.verify_key,  # type: ignore
+            node_type=node_type,
         )
 
         if result.is_err():

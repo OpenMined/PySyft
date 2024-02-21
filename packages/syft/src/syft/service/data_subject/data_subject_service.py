@@ -70,7 +70,8 @@ class DataSubjectService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Register a data subject."""
 
-        member_relationship_add = context.node.get_service_method(
+        # TODO: (mypy) make context.node non-optional to solve this
+        member_relationship_add = context.node.get_service_method(  # type: ignore
             DataSubjectMemberService.add
         )
 
@@ -108,7 +109,8 @@ class DataSubjectService(AbstractService):
     def get_members(
         self, context: AuthedServiceContext, data_subject_name: str
     ) -> Union[List[DataSubject], SyftError]:
-        get_relatives = context.node.get_service_method(
+        # TODO: (mypy) make context.node non-optional to solve this
+        get_relatives = context.node.get_service_method(  # type: ignore
             DataSubjectMemberService.get_relatives
         )
 

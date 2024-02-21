@@ -1,5 +1,8 @@
 # third party
 
+# third party
+from metadata.node_metadata import NodeMetadataV3
+
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -19,8 +22,9 @@ class MetadataService(AbstractService):
     @service_method(
         path="metadata.get_metadata", name="get_metadata", roles=GUEST_ROLE_LEVEL
     )
-    def get_metadata(self, context: AuthedServiceContext):
-        return context.node.metadata
+    def get_metadata(self, context: AuthedServiceContext) -> NodeMetadataV3:
+        # TODO: (mypy) make context.node non-optional to solve this
+        return context.node.metadata  # type: ignore
 
     # @service_method(path="metadata.get_admin", name="get_admin", roles=GUEST_ROLE_LEVEL)
     # def get_admin(self, context: AuthedServiceContext):
@@ -29,5 +33,6 @@ class MetadataService(AbstractService):
     #     return admin_user
 
     @service_method(path="metadata.get_env", name="get_env", roles=GUEST_ROLE_LEVEL)
-    def get_env(self, context: AuthedServiceContext):
-        return context.node.packages
+    def get_env(self, context: AuthedServiceContext) -> str:
+        # TODO: (mypy) make context.node non-optional to solve this
+        return context.node.packages  # type: ignore

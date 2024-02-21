@@ -70,7 +70,6 @@ from ..policy.policy import EmpyInputPolicy
 from ..policy.policy import ExactMatch
 from ..policy.policy import InputPolicy
 from ..policy.policy import OutputPolicy
-from ..policy.policy import Policy
 from ..policy.policy import SingleExecutionExactOutput
 from ..policy.policy import SubmitUserPolicy
 from ..policy.policy import UserPolicy
@@ -200,6 +199,8 @@ class UserCodeStatusCollection(SyftHashableObject):
         return False
 
     def for_user_context(self, context: AuthedServiceContext) -> UserCodeStatus:
+        if context.node is None:
+            raise ValueError(f"context {context}'s node is None")
         if context.node.node_type == NodeType.ENCLAVE:
             keys = {status for status, _ in self.status_dict.values()}
             if len(keys) == 1 and UserCodeStatus.APPROVED in keys:
@@ -943,6 +944,14 @@ def syft_function(
         output_policy_type = type(output_policy)
 
     def decorator(f: Any) -> SubmitUserCode:
+        if not isinstance(input_policy, InputPolicy):
+            raise TypeError(
+                f"{input_policy}'s type is supposed to be InputPolicy, but it is {type(input_policy)}"
+            )
+        if not isinstance(output_policy, OutputPolicy):
+            raise TypeError(
+                f"{output_policy}'s type is supposed to be OutputPolicy, but it is {type(OutputPolicy)}"
+            )
         res = SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
@@ -1109,7 +1118,7 @@ def add_credentials_for_key(key: str) -> Callable:
     return add_credentials
 
 
-def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
+def check_policy(policy: Any, context: TransformContext) -> TransformContext:
     policy_service = context.node.get_service(PolicyService)
     if isinstance(policy, SubmitUserPolicy):
         policy = policy.to(UserPolicy, context=context)
@@ -1208,6 +1217,9 @@ class UserCodeExecutionResult(SyftObject):
 class SecureContext:
     def __init__(self, context: AuthedServiceContext) -> None:
         node = context.node
+        if node is None:
+            raise ValueError(f"{context}'s node is None")
+
         job_service = node.get_service("jobservice")
         action_service = node.get_service("actionservice")
         # user_service = node.get_service("userservice")
@@ -1343,8 +1355,9 @@ def execute_byte_code(
 
                 new_args = [to_str(arg) for arg in args]
                 new_str = sep.join(new_args) + end
-                log_service = context.node.get_service("LogService")
-                log_service.append(context=context, uid=log_id, new_str=new_str)
+                if context.node is not None:
+                    log_service = context.node.get_service("LogService")
+                    log_service.append(context=context, uid=log_id, new_str=new_str)
                 time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
                 return __builtin__.print(
                     f"{time} FUNCTION LOG ({job_id}):",
@@ -1388,8 +1401,9 @@ def execute_byte_code(
                 original_print(
                     f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
                 )
-                log_service = context.node.get_service("LogService")
-                log_service.append(context=context, uid=log_id, new_err=error_msg)
+                if context.node is not None:
+                    log_service = context.node.get_service("LogService")
+                    log_service.append(context=context, uid=log_id, new_err=error_msg)
             result = Err(
                 f"Exception encountered while running {code_item.service_func_name}"
                 ", please contact the Node Admin for more info."

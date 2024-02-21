@@ -121,6 +121,8 @@ class ActionService(AbstractService):
                     action_object = action_object.private
                 else:
                     action_object = action_object.mock
+            if context.node is None:
+                return Err(f"context {context}'s node is None")
             action_object.syft_point_to(context.node.id)
             return Ok(action_object)
         return result.err()
@@ -219,7 +221,7 @@ class ActionService(AbstractService):
         result = self.store.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission
         )
-        if result.is_ok():
+        if result.is_ok() and context.node is not None:
             obj: Union[TwinObject, ActionObject] = result.ok()
             obj._set_obj_location_(
                 context.node.id,
@@ -260,6 +262,8 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> Result[ActionObjectPointer, str]:
         """Get a pointer from the action store"""
+        if context.node is None:
+            return Err(f"context {context}'s node is None")
         result = self.store.get_pointer(
             uid=uid, credentials=context.credentials, node_uid=context.node.id
         )
@@ -297,7 +301,7 @@ class ActionService(AbstractService):
         if not override_execution_permission:
             input_policy = code_item.input_policy
             if input_policy is None:
-                return Err(f"{code_item}'s input policy is None'")
+                return Err(f"{code_item}'s input policy is None")
             filtered_kwargs = input_policy.filter_kwargs(
                 kwargs=kwargs, context=context, code_item_id=code_item.id
             )

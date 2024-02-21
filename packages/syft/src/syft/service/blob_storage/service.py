@@ -64,10 +64,8 @@ class BlobStorageService(AbstractService):
         account_key: str,
         container_name: str,
         bucket_name: str,
-        use_direct_connections=True,
-    ):
-        # stdlib
-
+        use_direct_connections: bool = True,
+    ) -> Union[SyftSuccess, SyftError]:
         # TODO: fix arguments
 
         remote_name = f"{account_name}{container_name}"
@@ -90,6 +88,10 @@ class BlobStorageService(AbstractService):
         if res.is_err():
             return SyftError(message=res.value)
         remote_profile = res.ok()
+
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
+
         seaweed_config = context.node.blob_storage_client.config
         # we cache this here such that we can use it when reading a file from azure
         # from the remote_name
@@ -139,7 +141,9 @@ class BlobStorageService(AbstractService):
     @service_method(
         path="blob_storage.get_files_from_bucket", name="get_files_from_bucket"
     )
-    def get_files_from_bucket(self, context: AuthedServiceContext, bucket_name: str):
+    def get_files_from_bucket(
+        self, context: AuthedServiceContext, bucket_name: str
+    ) -> Union[list, SyftError]:
         result = self.stash.find_all(context.credentials, bucket_name=bucket_name)
         if result.is_err():
             return result
@@ -159,7 +163,8 @@ class BlobStorageService(AbstractService):
             blob_file = ActionObject.empty()
             blob_file.syft_blob_storage_entry_id = bse.id
             blob_file.syft_client_verify_key = context.credentials
-            blob_file.syft_node_location = context.node.id
+            if context.node is not None:
+                blob_file.syft_node_location = context.node.id
             blob_file.reload_cache()
             blob_files.append(blob_file.syft_action_data)
 
@@ -198,7 +203,8 @@ class BlobStorageService(AbstractService):
             obj: BlobStorageEntry = result.ok()
             if obj is None:
                 return SyftError(message=f"No blob storage entry exists for uid: {uid}")
-
+            if context.node is None:
+                return SyftError(message=f"context {context}'s node is None")
             with context.node.blob_storage_client.connect() as conn:
                 res: BlobRetrieval = conn.read(
                     obj.location, obj.type_, bucket_name=obj.bucket_name
@@ -216,6 +222,9 @@ class BlobStorageService(AbstractService):
     def allocate(
         self, context: AuthedServiceContext, obj: CreateBlobStorageEntry
     ) -> Union[BlobDepositType, SyftError]:
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
+
         with context.node.blob_storage_client.connect() as conn:
             secure_location = conn.allocate(obj)
 
@@ -294,7 +303,8 @@ class BlobStorageService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=f"{result.err()}")
-
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         with context.node.blob_storage_client.connect() as conn:
             result = conn.complete_multipart_upload(obj, etags)
 
@@ -310,6 +320,8 @@ class BlobStorageService(AbstractService):
 
             if obj is None:
                 return SyftError(message=f"No blob storage entry exists for uid: {uid}")
+            if context.node is None:
+                return SyftError(message=f"context {context}'s node is None")
             try:
                 with context.node.blob_storage_client.connect() as conn:
                     file_unlinked_result = conn.delete(obj.location)
