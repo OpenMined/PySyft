@@ -2,6 +2,7 @@ from ..service.sync.diff_state import DiffState
 
 from IPython.display import display, Markdown
 
+
 def compare_states(low_state, high_state) -> DiffState:
     return DiffState.from_sync_state(low_state=low_state, high_state=high_state)
 
@@ -45,6 +46,7 @@ def resolve(state: DiffState, force_approve: bool = False):
                         print("Please write `approve` or `deny`:", flush=True)
         if new_obj.merge_state == "DIFF":
             # TODO: this is a shortcut
+            state_list = low_new_objs
             state_list.append(new_obj.high_obj)
             # pass
 

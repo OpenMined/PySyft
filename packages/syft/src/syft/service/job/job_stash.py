@@ -470,7 +470,7 @@ class Job(SyftObject):
             dependencies.append(self.user_code_id)
 
         if self.result:
-            dependencies.append(self.result.id)
+            dependencies.append(self.result.id.id)
 
         if self.log_id:
             dependencies.append(self.log_id)
@@ -483,7 +483,7 @@ class Job(SyftObject):
     def get_sync_dependencies(self) -> List[UID]:
         dependencies = []
         if self.result:
-            dependencies.append(self.result.id)
+            dependencies.append(self.result.id.id)
 
         if self.log_id:
             dependencies.append(self.log_id)

@@ -1,6 +1,6 @@
 from syft.store.linked_obj import LinkedObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.uid import UID
+from ...types.uid import UID, LineageID
 from ...types.syft_object import SyftObject
 from typing import Dict, List, Optional, Set, Tuple
 from ...types.datetime import DateTime
@@ -87,7 +87,10 @@ class SyncState(SyftObject):
 
     def add_objects(self, objects: List[SyftObject]) -> None:
         for obj in objects:
-            self.objects[obj.id] = obj
+            if isinstance(obj.id, LineageID):
+                self.objects[obj.id.id] = obj
+            else:
+                self.objects[obj.id] = obj
 
         # TODO might get slow with large states,
         # need to build dependencies every time to not have UIDs
