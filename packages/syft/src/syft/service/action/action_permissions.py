@@ -48,8 +48,7 @@ class ActionObjectPermission:
         else:
             if self.credentials is not None:
                 return f"{self.credentials.verify}_{self.permission.name}"
-            else:
-                return f"{self.permission.name}"
+            return f"{self.permission.name}"
 
     def __repr__(self) -> str:
         if self.credentials is not None:

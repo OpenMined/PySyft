@@ -197,7 +197,7 @@ class Action(SyftObject):
 
     @classmethod
     def syft_function_action_from_kwargs_and_id(
-        cls, kwargs: Any, user_code_id: UID
+        cls, kwargs: dict[str, Any], user_code_id: UID
     ) -> Self:
         kwarg_ids = {}
         for k, v in kwargs.items():
@@ -1266,7 +1266,8 @@ class ActionObject(SyftObject):
 
     @staticmethod
     def empty(
-        syft_internal_type: Optional[Type[Any]] = NoneType,  # type: ignore[assignment]
+        # TODO: fix the mypy issue
+        syft_internal_type: Optional[Type] = NoneType,  # type: ignore[assignment]
         id: Optional[UID] = None,
         syft_lineage_id: Optional[LineageID] = None,
         syft_resolved: Optional[bool] = True,

@@ -1,8 +1,3 @@
-# third party
-
-# third party
-from metadata.node_metadata import NodeMetadataV3
-
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -11,6 +6,7 @@ from ..context import AuthedServiceContext
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from .node_metadata import NodeMetadataV3
 
 
 @instrument

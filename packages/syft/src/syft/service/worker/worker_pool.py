@@ -104,16 +104,16 @@ class SyftWorker(SyftObject):
         else:
             return ""
 
-    def refresh_status(self) -> None:
+    def refresh_status(self) -> Optional[SyftError]:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-
         res = api.services.worker.status(uid=self.id)
         if isinstance(res, SyftError):
             return res
         self.status, self.healthcheck = res
+        return None
 
     def _coll_repr_(self) -> Dict[str, Any]:
         self.refresh_status()

@@ -9,7 +9,6 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Self
 from typing import Set
 from typing import Tuple
 from typing import Type
@@ -18,6 +17,7 @@ from typing import Union
 # third party
 from result import Ok
 from result import OkErr
+from typing_extensions import Self
 
 # relative
 from ..abstract_node import AbstractNode
@@ -55,7 +55,9 @@ class AbstractService:
     node_uid: UID
 
     def resolve_link(
-        self, context: AuthedServiceContext, linked_obj: LinkedObject
+        self,
+        context: Union[AuthedServiceContext, ChangeContext, Any],
+        linked_obj: LinkedObject,
     ) -> Union[Any, SyftError]:
         if isinstance(context, AuthedServiceContext):
             credentials = context.credentials
