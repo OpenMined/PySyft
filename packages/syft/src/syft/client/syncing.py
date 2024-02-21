@@ -1,4 +1,10 @@
-from ..service.sync.diff_state import DiffState
+from ..service.sync.diff_state import (
+    DiffState,
+    ResolveState,
+    display_diff_hierarchy,
+    hierarchy_is_same,
+    resolve_diff,
+)
 
 from IPython.display import display, Markdown
 
@@ -51,3 +57,39 @@ def resolve(state: DiffState, force_approve: bool = False):
             # pass
 
     return low_new_objs, high_new_objs
+
+
+def get_user_input_for_resolve():
+    print(
+        "Do you want to keep the low state or the high state for these objects? choose 'low' or 'high'"
+    )
+
+    while True:
+        decision = input()
+        decision = decision.lower()
+
+        if decision in ["low", "high"]:
+            return decision
+        else:
+            print("Please choose between `low` or `high`")
+
+
+def resolve_hierarchical(state: DiffState):
+    resolved_state_low = ResolveState()
+    resolved_state_high = ResolveState()
+
+    for diff_hierarchy in state.hierarchies:
+        if hierarchy_is_same(diff_hierarchy):
+            continue
+
+        display_diff_hierarchy(diff_hierarchy)
+        decision = get_user_input_for_resolve()
+
+        for diff, _ in diff_hierarchy:
+            low_resolved_diff, high_resolved_diff = resolve_diff(
+                diff, decision=decision
+            )
+            resolved_state_low.add(low_resolved_diff)
+            resolved_state_high.add(high_resolved_diff)
+
+    return resolved_state_low, resolved_state_high

@@ -6,8 +6,12 @@ from typing import Set
 from typing import Tuple
 from typing import Type
 
-from IPython.core.display import Markdown
-from IPython.core.display import display
+from rich.console import Console
+from rich.panel import Panel
+from rich.markdown import Markdown
+from rich import box
+from rich.console import Group
+from rich.padding import Padding
 
 from ...types.uid import UID, LineageID
 from ..action.action_object import ActionObject
@@ -699,7 +703,8 @@ class DiffState(SyftObject):
 
     @property
     def diffs(self) -> List[Diff]:
-        return list(self.obj_uid_to_diff.values())
+        # Returns a list of diffs, in depth-first order.
+        return [diff for hierarchy in self.hierarchies for diff, _ in hierarchy]
 
     @property
     def hierarchies(self) -> List[List[Tuple[Diff, int]]]:
@@ -721,7 +726,7 @@ class DiffState(SyftObject):
             return result
 
         hierarchies = []
-        all_ids = {diff.object_id for diff in self.diffs}
+        all_ids = set(self.obj_uid_to_diff.keys())
         child_ids = {child for deps in self.dependencies.values() for child in deps}
         # Root ids are object ids with no parents
         root_ids = list(all_ids - child_ids)
@@ -770,3 +775,111 @@ class DiffState(SyftObject):
             if diff.merge_state == "NEW":
                 objs.append(diff.get_obj())
         return objs
+
+
+class ResolveState(SyftObject):
+    __canonical_name__ = "SyncUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    create_objs: List[SyftObject] = []
+    update_objs: List[SyftObject] = []
+    delete_objs: List[SyftObject] = []
+
+    def add(self, new_state: "ResolveState") -> None:
+        self.create_objs.extend(new_state.create_objs)
+        self.update_objs.extend(new_state.update_objs)
+        self.delete_objs.extend(new_state.delete_objs)
+
+    def __repr__(self):
+        return (
+            f"ResolveState(\n"
+            f"  create_objs={self.create_objs},\n"
+            f"  update_objs={self.update_objs},\n"
+            f"  delete_objs={self.delete_objs}\n"
+            f")"
+        )
+
+
+def display_diff_object(obj: Optional[SyftObject]) -> Panel:
+    if hasattr(obj, "_repr_markdown_"):
+        return Panel(Markdown(obj._repr_markdown_()), box=box.ROUNDED, expand=False)
+    else:
+        return Panel(str(obj), box=box.ROUNDED, expand=False)
+
+
+def display_diff_hierarchy(diff_hierarchy: List[Tuple[Diff, int]]):
+    console = Console()
+
+    for diff, level in diff_hierarchy:
+        title = (
+            f"{diff.obj_type.__name__}({diff.object_id}) - State: {diff.merge_state}"
+        )
+
+        low_side_panel = display_diff_object(diff.low_obj)
+        low_side_panel.title = "Low side"
+        low_side_panel.title_align = "left"
+        high_side_panel = display_diff_object(diff.high_obj)
+        high_side_panel.title = "High side"
+        high_side_panel.title_align = "left"
+
+        grouped_panels = Group(low_side_panel, high_side_panel)
+
+        diff_panel = Panel(
+            grouped_panels,
+            title=title,
+            title_align="left",
+            box=box.HEAVY_EDGE,
+            expand=False,
+            padding=(1, 2),
+        )
+
+        if level > 0:
+            diff_panel = Padding(diff_panel, (0, 0, 0, 5 * level))
+        # Printing the main Panel using Rich Console
+        console.print(diff_panel)
+
+
+def hierarchy_is_same(diff_hierarchy) -> bool:
+    return all(item.merge_state == "SAME" for item, _ in diff_hierarchy)
+
+
+def resolve_diff(diff: Diff, decision: str) -> ResolveState:
+    resolved_diff_low = ResolveState()
+    resolved_diff_high = ResolveState()
+
+    # No diff, empty resolvestate
+    if diff.merge_state == "SAME":
+        return resolved_diff_low, resolved_diff_high
+
+    elif diff.merge_state == "NEW":
+        low_is_none = diff.low_obj is None
+        high_is_none = diff.high_obj is None
+        if low_is_none and high_is_none:
+            raise ValueError(
+                f"Diff {diff.id} has an incorrect state: both low and high objects are None"
+            )
+
+        # Create or delete new object, depending on decision
+        if decision == "low" and high_is_none:
+            # Move new low obj to high side
+            resolved_diff_high.create_objs.append(diff.low_obj)
+        elif decision == "low" and low_is_none:
+            # Delete new object from high side
+            resolved_diff_high.delete_objs.append(diff.high_obj)
+        elif decision == "high" and low_is_none:
+            # Move new high obj to low side
+            resolved_diff_low.create_objs.append(diff.high_obj)
+        elif decision == "high" and high_is_none:
+            # Delete new object from low side
+            resolved_diff_low.delete_objs.append(diff.low_obj)
+
+    # Update object on high/low side, depending on decision
+    elif diff.merge_state == "DIFF":
+        if decision == "low":
+            # update high side with low obj
+            resolved_diff_high.update_objs.append(diff.low_obj)
+        else:  # decision == high
+            # update low side with high obj
+            resolved_diff_low.update_objs.append(diff.high_obj)
+
+    return resolved_diff_low, resolved_diff_high
