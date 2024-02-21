@@ -58,3 +58,25 @@ class SMTPClient:
 
             text = msg.as_string()
             server.sendmail(sender, ", ".join(receiver), text)
+
+    def check_credentials(self) -> bool:
+        """Check if the credentials are valid.
+
+        Returns:
+            bool: True if the credentials are valid, False otherwise.
+        """
+        try:
+            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.ehlo()
+                if server.has_extn("STARTTLS"):
+                    server.starttls()
+                    server.ehlo()
+
+                if self.access_token:
+                    server.login(self.access_token, self.access_token)
+                elif self.username and self.password:
+                    server.login(self.username, self.password)
+
+                return True
+        except Exception:
+            return False
