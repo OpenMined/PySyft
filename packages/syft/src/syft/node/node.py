@@ -310,6 +310,8 @@ class Node(AbstractNode):
         dev_mode: bool = False,
         migrate: bool = False,
         in_memory_workers: bool = True,
+        smtp_username: Optional[str] = None,
+        smtp_password: Optional[str] = None,
         email_token: Optional[str] = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
