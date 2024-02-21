@@ -71,8 +71,15 @@ class NotifierService(AbstractService):
         notifier.active = True
 
         # 4 - If email token is provided.
-        if email_token:
+        is_valid = notifier.valid_email_credentials(
+            token=email_token,
+        )
+        if email_token and is_valid:
             notifier.email_token = email_token
+        else:
+            return SyftError(
+                message="The token provided is not valid. Please provide a valid token."
+            )
 
         result = self.stash.update(credentials=context.credentials, settings=notifier)
         if result.is_err():
@@ -166,8 +173,13 @@ class NotifierService(AbstractService):
             if not notifier:
                 notifier = NotifierSettings(
                     active=active,
-                    email_token=email_token,
                 )
+
+                is_valid = notifier.valid_email_credentials(token=email_token)
+                if email_token and is_valid:
+                    notifier.email_token = email_token
+                else:
+                    notifier.active = False
                 notifier_stash.set(node.signing_key.verify_key, notifier)
         except Exception as e:
             print("Unable to create base notifier", e)
