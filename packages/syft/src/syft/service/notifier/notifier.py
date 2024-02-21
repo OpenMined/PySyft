@@ -48,6 +48,26 @@ class EmailNotifier(BaseNotifier):
             smtp_server=self.server, smtp_port=587, access_token=self.token
         )
 
+    @staticmethod
+    def check_credentials(
+        server: str,
+        port: int,
+        token: Optional[str] = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+    ) -> bool:
+        if token:
+            return SMTPClient(
+                smtp_server=server, smtp_port=port, access_token=token
+            ).check_credentials()
+        else:
+            return SMTPClient(
+                smtp_server=server,
+                smtp_port=port,
+                username=username,
+                password=password,
+            ).check_credentials()
+
     def send(self, node: AbstractNode, notification: Notification) -> Result[Ok, Err]:
         try:
             user_service = node.get_service("userservice")
@@ -117,6 +137,11 @@ class NotifierSettings(SyftObject):
     @property
     def app_enabled(self) -> bool:
         return self.notifiers_status[NOTIFIERS.APP]
+
+    def valid_email_credentials(self, token: str) -> bool:
+        return self.notifiers[NOTIFIERS.EMAIL].check_credentials(
+            server="smtp.postmarkapp.com", port=587, token=token
+        )
 
     def send_notifications(
         self,
