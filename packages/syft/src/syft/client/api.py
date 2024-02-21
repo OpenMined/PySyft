@@ -976,7 +976,7 @@ class NodeIdentity(Identity):
 
 def validate_callable_args_and_kwargs(
     args: List, kwargs: Dict, signature: Signature
-) -> Union[SyftError, Tuple[List, Dict]]:
+) -> Union[Tuple[List, Dict], SyftError]:
     _valid_kwargs = {}
     if "kwargs" in signature.parameters:
         _valid_kwargs = kwargs
