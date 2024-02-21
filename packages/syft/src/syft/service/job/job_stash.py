@@ -342,7 +342,10 @@ class Job(SyftObject):
         results = []
         if stdout:
             stdout_log = api.services.log.get_stdout(self.log_id)
-            results.append(stdout_log)
+            if isinstance(stdout_log, SyftError):
+                results.append(f"Log {self.log_id} not available")
+            else:
+                results.append(stdout_log)
 
         if stderr:
             try:
@@ -521,7 +524,7 @@ class JobInfo(SyftObject):
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
 
-    result: Optional[Any] = None
+    result: Optional[ActionObject] = None
 
     def _repr_html_(self) -> str:
         metadata_str = ""
@@ -570,7 +573,7 @@ class JobInfo(SyftObject):
                 raise ValueError("Cannot sync result of unresolved job")
             if not isinstance(job.result, ActionObject):
                 raise ValueError("Could not sync result of job")
-            info.result = job.result.get()
+            info.result = job.result
 
         return info
 

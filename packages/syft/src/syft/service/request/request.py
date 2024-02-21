@@ -633,6 +633,7 @@ class Request(SyftObject):
             return existing_jobs
 
         if len(existing_jobs) == 0:
+            print("Creating job for existing user code")
             job = job_service.create_job_for_user_code_id(self.code.id)
         else:
             print("returning existing job")
@@ -700,13 +701,18 @@ class Request(SyftObject):
                 return SyftError(
                     message="Already approved, if you want to force updating the result use force=True"
                 )
+            # TODO: this should overwrite the output history instead
             action_obj_id = state.output_history[0].outputs[0]
-            action_object = ActionObject.from_obj(
-                result,
-                id=action_obj_id,
-                syft_client_verify_key=api.signing_key.verify_key,
-                syft_node_location=api.node_uid,
-            )
+
+            if not isinstance(result, ActionObject):
+                action_object = ActionObject.from_obj(
+                    result,
+                    id=action_obj_id,
+                    syft_client_verify_key=api.signing_key.verify_key,
+                    syft_node_location=api.node_uid,
+                )
+            else:
+                action_object = result
             blob_store_result = action_object._save_to_blob_storage()
             if isinstance(blob_store_result, SyftError):
                 return blob_store_result
@@ -722,12 +728,16 @@ class Request(SyftObject):
                 )
             else:
                 action_object = result
-            blob_store_result = action_object._save_to_blob_storage()
-            if isinstance(blob_store_result, SyftError):
-                return blob_store_result
-            result = api.services.action.set(action_object)
-            if isinstance(result, SyftError):
-                return result
+
+            # TODO: proper check for if actionobject is already uploaded
+            # we also need this for manualy syncing
+            if action_object.syft_blob_storage_entry_id is None:
+                blob_store_result = action_object._save_to_blob_storage()
+                if isinstance(blob_store_result, SyftError):
+                    return blob_store_result
+                result = api.services.action.set(action_object)
+                if isinstance(result, SyftError):
+                    return result
 
             ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
 

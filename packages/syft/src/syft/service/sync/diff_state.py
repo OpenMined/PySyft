@@ -15,7 +15,7 @@ from ..code.user_code import UserCode
 from ..job.job_stash import Job
 from ..log.log import SyftLog
 from ..project.project import Project
-from ..request.request import Request
+from ..request.request import Request, UserCodeStatusChange
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...util import options
@@ -33,6 +33,8 @@ How to check differences between two objects:
     * check if there are exceptions we do not want to merge
     * check if there are some restrictions on the attr set
 """
+
+sketchy_tab = '‎ ' * 4
 
 only_attr_dict = {
     SyftLog.__name__: ["stdout", "stderr"],
@@ -443,6 +445,32 @@ class SyftString(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
     string: str
 
+def recursive_repr(value_attr, no_tabs=0):
+    new_no_tabs = no_tabs + 1 if no_tabs != 0 else 2
+    if isinstance(value_attr, List):
+        list_repr = '[\n'
+        for elem in value_attr:
+            list_repr += recursive_repr(elem, no_tabs=new_no_tabs) + '\n'
+        list_repr += f'{sketchy_tab * (new_no_tabs-1)}]'
+        return list_repr
+    elif isinstance(value_attr, Dict):
+        dict_repr = '[\n'
+        for key, elem in value_attr.items:
+            elem_repr = {recursive_repr(elem, no_tabs=new_no_tabs)}
+            dict_repr += f"{sketchy_tab * no_tabs}{key}: {elem_repr}\n"
+        dict_repr += f'{sketchy_tab * (new_no_tabs-1)}]'
+        return 
+    elif isinstance(value_attr, UserCodeStatusChange):
+        return f'{sketchy_tab*no_tabs}UserCodeStatusChange'
+    elif isinstance(value_attr, str):
+        print(value_attr)
+        if len(value_attr.split(',')) > 1:
+            repr_str = ''   
+            for sub_string in value_attr.split(','):
+                repr_str += f'{sketchy_tab*(new_no_tabs-1)}{sub_string},\n'
+            return repr_str[:-1]
+    return f'{sketchy_tab*no_tabs}{value_attr}'
+
 
 class Diff(SyftObject):  # StateTuple (compare 2 objects)
     # version
@@ -468,13 +496,18 @@ class Diff(SyftObject):  # StateTuple (compare 2 objects)
     @property
     def object_type(self):
         return self.obj_type.__name__
-
     @property
     def low_state(self):
         if self.low_obj is None:
             return "n/a"
         if self.high_obj is None:
-            return f"{self.object_type}()"
+            attrs_str = ''
+            attrs = getattr(self.low_obj, '__repr_attrs__', [])
+            for attr in attrs:
+                value = getattr(self.low_obj, attr)    
+                attrs_str += f"{sketchy_tab}{attr}: {recursive_repr(value)}\n"
+            attrs_str = attrs_str[:-1]
+            return f"{self.object_type}\n{attrs_str}"
         attr_text = f"{self.object_type}("
         for diff in self.diff_list:
             attr_text += f"{diff.attr_name}={diff.__repr_low_side__()}," + "\n"
@@ -492,7 +525,13 @@ class Diff(SyftObject):  # StateTuple (compare 2 objects)
             return "n/a"
 
         if self.low_obj is None:
-            return f"{self.object_type}()"
+            attrs_str = ''
+            attrs = getattr(self.high_obj, '__repr_attrs__', [])
+            for attr in attrs:
+                value = getattr(self.high_obj, attr)    
+                attrs_str += f"{sketchy_tab}{attr}: {recursive_repr(value)}\n"
+            attrs_str = attrs_str[:-1]
+            return f"{self.object_type}\n{attrs_str}"
         attr_text = f"{self.object_type}("
         for diff in self.diff_list:
             attr_text += f"{diff.attr_name}={diff.__repr_high_side__()}," + "\n"

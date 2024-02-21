@@ -371,7 +371,6 @@ class UserCodeService(AbstractService):
     ) -> Result[ActionObject, Err]:
         """Call a User Code Function"""
         try:
-            print(uid)
             code_result = self.stash.get_by_uid(context.credentials, uid=uid)
             if code_result.is_err():
                 return code_result
@@ -414,7 +413,6 @@ class UserCodeService(AbstractService):
                                 context=context,
                                 output_ids=output_policy.last_output_ids,
                             )
-                            print("result", result)
                             return Ok(result.as_empty())
                         else:
                             return is_valid.to_result()

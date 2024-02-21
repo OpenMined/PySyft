@@ -215,6 +215,7 @@ CSS_CODE = """
         grid-template-columns: 1fr repeat(${cols}, 1fr);
         grid-template-rows: repeat(2, 1fr);
         overflow-x: auto;
+        position: relative;
     }
 
     .grid-std-cells {
@@ -235,7 +236,8 @@ CSS_CODE = """
         flex-direction: column;
         align-items: center;
         padding: 6px 4px;
-
+         
+        resize: horizontal;
         /* Lt On Surface/Surface */
         /* Lt On Surface/High */
         border: 1px solid #CFCDD6;
@@ -294,7 +296,7 @@ CSS_CODE = """
     }
     .paginationContainer{
         width: 100%;
-        height: 30px;
+        /*height: 30px;*/
         display: flex;
         justify-content: center;
         gap: 8px;
@@ -643,9 +645,7 @@ custom_code = """
                                                 } else {
                                                     text = String(item[attr])
                                                 }
-                                                if (text.length > 150){
-                                                    text = text.slice(0,150) + "...";
-                                                }
+
                                                 text = text.replaceAll("\\n", "</br>");
                                                 div.innerHTML = text;
                                             }
