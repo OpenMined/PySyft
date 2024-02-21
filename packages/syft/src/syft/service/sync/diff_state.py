@@ -18,6 +18,7 @@ from ..project.project import Project
 from ..request.request import Request
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...types.uid import LineageID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.fonts import ITABLES_CSS
@@ -463,7 +464,10 @@ class Diff(SyftObject):  # StateTuple (compare 2 objects)
 
     @property
     def object_id(self):
-        return self.low_obj.id if self.low_obj is not None else self.high_obj.id
+        uid = self.low_obj.id if self.low_obj is not None else self.high_obj.id
+        if isinstance(uid, LineageID):
+            return uid.id
+        return uid
 
     @property
     def object_type(self):
