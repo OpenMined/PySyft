@@ -1,3 +1,4 @@
+from typing import Optional
 from ..service.sync.diff_state import (
     DiffState,
     ResolveState,
@@ -74,7 +75,7 @@ def get_user_input_for_resolve():
             print("Please choose between `low` or `high`")
 
 
-def resolve_hierarchical(state: DiffState):
+def resolve_hierarchical(state: DiffState, decision: Optional[str] = None):
     resolved_state_low = ResolveState()
     resolved_state_high = ResolveState()
 
@@ -83,7 +84,11 @@ def resolve_hierarchical(state: DiffState):
             continue
 
         display_diff_hierarchy(diff_hierarchy)
-        decision = get_user_input_for_resolve()
+
+        if decision is None:
+            decision = get_user_input_for_resolve()
+        else:
+            print(f"Decision: Syncing all objects from {decision} side")
 
         for diff, _ in diff_hierarchy:
             low_resolved_diff, high_resolved_diff = resolve_diff(

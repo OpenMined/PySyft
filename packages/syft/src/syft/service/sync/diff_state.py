@@ -100,10 +100,10 @@ class DiffAttr(SyftObject):
     """
 
     def __repr_low_side__(self):
-        return f"{self.low_attr}"
+        return recursive_repr(self.low_attr)
 
     def __repr_high_side__(self):
-        return f"{self.high_attr}"
+        return recursive_repr(self.high_attr)
 
 
 except_attrs_dict = {
@@ -467,13 +467,15 @@ def recursive_repr(value_attr, no_tabs=0):
         return
     elif isinstance(value_attr, UserCodeStatusChange):
         return f"{sketchy_tab*no_tabs}UserCodeStatusChange"
-    elif isinstance(value_attr, str):
-        print(value_attr)
-        if len(value_attr.split(",")) > 1:
-            repr_str = ""
-            for sub_string in value_attr.split(","):
-                repr_str += f"{sketchy_tab*(new_no_tabs-1)}{sub_string},\n"
-            return repr_str[:-1]
+    # elif isinstance(value_attr, str):
+    #     if len(value_attr.split(",")) > 1:
+    #         repr_str = ""
+    #         for sub_string in value_attr.split(","):
+    #             repr_str += f"{sketchy_tab*(new_no_tabs-1)}{sub_string},\n"
+    #         return repr_str[:-1]
+
+    elif isinstance(value_attr, bytes):
+        value_attr = value_attr[:10] + b"..."
     return f"{sketchy_tab*no_tabs}{value_attr}"
 
 
@@ -509,22 +511,25 @@ class Diff(SyftObject):  # StateTuple (compare 2 objects)
     def low_state(self):
         if self.low_obj is None:
             return "n/a"
+        if isinstance(self.low_obj, ActionObject):
+            return self.low_obj.__repr__()
         if self.high_obj is None:
             attrs_str = ""
             attrs = getattr(self.low_obj, "__repr_attrs__", [])
             for attr in attrs:
                 value = getattr(self.low_obj, attr)
-                attrs_str += f"{sketchy_tab}{attr}: {recursive_repr(value)}\n"
+                attrs_str += f"{sketchy_tab}{attr} = {recursive_repr(value)}\n"
             attrs_str = attrs_str[:-1]
-            return f"{self.object_type}\n{attrs_str}"
-        attr_text = f"{self.object_type}("
+            return f"class {self.object_type}:\n{attrs_str}"
+        attr_text = f"class {self.object_type}:\n"
         for diff in self.diff_list:
-            attr_text += f"{diff.attr_name}={diff.__repr_low_side__()}," + "\n"
+            attr_text += (
+                f"{sketchy_tab}{diff.attr_name}={diff.__repr_low_side__()}," + "\n"
+            )
 
         if len(self.diff_list) > 0:
-            attr_text = attr_text[:-2] + ")"
-        else:
-            attr_text += ")"
+            attr_text = attr_text[:-2]
+
         return attr_text
         # return "DIFF"
 
@@ -533,21 +538,25 @@ class Diff(SyftObject):  # StateTuple (compare 2 objects)
         if self.high_obj is None:
             return "n/a"
 
+        if isinstance(self.high_obj, ActionObject):
+            return self.high_obj.__repr__()
+
         if self.low_obj is None:
             attrs_str = ""
             attrs = getattr(self.high_obj, "__repr_attrs__", [])
             for attr in attrs:
                 value = getattr(self.high_obj, attr)
-                attrs_str += f"{sketchy_tab}{attr}: {recursive_repr(value)}\n"
+                attrs_str += f"{sketchy_tab}{attr} = {recursive_repr(value)}\n"
             attrs_str = attrs_str[:-1]
-            return f"{self.object_type}\n{attrs_str}"
-        attr_text = f"{self.object_type}("
+            return f"class {self.object_type}:\n{attrs_str}"
+        attr_text = f"class {self.object_type}:\n"
         for diff in self.diff_list:
-            attr_text += f"{diff.attr_name}={diff.__repr_high_side__()}," + "\n"
+            attr_text += (
+                f"{sketchy_tab}{diff.attr_name}={diff.__repr_high_side__()}," + "\n"
+            )
         if len(self.diff_list) > 0:
-            attr_text = attr_text[:-2] + ")"
-        else:
-            attr_text += ")"
+            attr_text = attr_text[:-2]
+
         return attr_text
         # return "DIFF"
 
@@ -800,11 +809,12 @@ class ResolveState(SyftObject):
         )
 
 
-def display_diff_object(obj: Optional[SyftObject]) -> Panel:
-    if hasattr(obj, "_repr_markdown_"):
-        return Panel(Markdown(obj._repr_markdown_()), box=box.ROUNDED, expand=False)
-    else:
-        return Panel(str(obj), box=box.ROUNDED, expand=False)
+def display_diff_object(obj_state: Optional[str]) -> Panel:
+    if obj_state is None:
+        return Panel(Markdown("None"), box=box.ROUNDED, expand=False)
+    return Panel(
+        Markdown(f"```python\n{obj_state}\n```"), box=box.ROUNDED, expand=False
+    )
 
 
 def display_diff_hierarchy(diff_hierarchy: List[Tuple[Diff, int]]):
@@ -815,10 +825,12 @@ def display_diff_hierarchy(diff_hierarchy: List[Tuple[Diff, int]]):
             f"{diff.obj_type.__name__}({diff.object_id}) - State: {diff.merge_state}"
         )
 
-        low_side_panel = display_diff_object(diff.low_obj)
+        low_side_panel = display_diff_object(diff.low_state if diff.low_obj else None)
         low_side_panel.title = "Low side"
         low_side_panel.title_align = "left"
-        high_side_panel = display_diff_object(diff.high_obj)
+        high_side_panel = display_diff_object(
+            diff.high_state if diff.high_obj else None
+        )
         high_side_panel.title = "High side"
         high_side_panel.title_align = "left"
 
