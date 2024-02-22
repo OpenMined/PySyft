@@ -715,6 +715,9 @@ class DiffState(SyftObject):
         # Returns a list of diffs, in depth-first order.
         return [diff for hierarchy in self.hierarchies for diff, _ in hierarchy]
 
+    def _repr_html_(self) -> Any:
+        return self.diffs._repr_html_()
+
     @property
     def hierarchies(self) -> List[List[Tuple[Diff, int]]]:
         # Returns a list of hierarchies, where each hierarchy is a list of tuples (Diff, level),
@@ -786,7 +789,7 @@ class DiffState(SyftObject):
         return objs
 
 
-class ResolveState(SyftObject):
+class ResolvedSyncState(SyftObject):
     __canonical_name__ = "SyncUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -794,14 +797,14 @@ class ResolveState(SyftObject):
     update_objs: List[SyftObject] = []
     delete_objs: List[SyftObject] = []
 
-    def add(self, new_state: "ResolveState") -> None:
+    def add(self, new_state: "ResolvedSyncState") -> None:
         self.create_objs.extend(new_state.create_objs)
         self.update_objs.extend(new_state.update_objs)
         self.delete_objs.extend(new_state.delete_objs)
 
     def __repr__(self):
         return (
-            f"ResolveState(\n"
+            f"ResolvedSyncState(\n"
             f"  create_objs={self.create_objs},\n"
             f"  update_objs={self.update_objs},\n"
             f"  delete_objs={self.delete_objs}\n"
@@ -842,7 +845,7 @@ def display_diff_hierarchy(diff_hierarchy: List[Tuple[Diff, int]]):
             grouped_panels,
             title=title,
             title_align="left",
-            box=box.HEAVY_EDGE,
+            box=box.ROUNDED,
             expand=False,
             padding=(1, 2),
         )
@@ -853,11 +856,11 @@ def display_diff_hierarchy(diff_hierarchy: List[Tuple[Diff, int]]):
         console.print(diff_panel)
 
 
-def resolve_diff(diff: Diff, decision: str) -> ResolveState:
-    resolved_diff_low = ResolveState()
-    resolved_diff_high = ResolveState()
+def resolve_diff(diff: Diff, decision: str) -> ResolvedSyncState:
+    resolved_diff_low = ResolvedSyncState()
+    resolved_diff_high = ResolvedSyncState()
 
-    # No diff, return empty resolvestate
+    # No diff, return empty resolved state
     if diff.merge_state == "SAME":
         return resolved_diff_low, resolved_diff_high
 
