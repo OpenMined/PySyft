@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from typing import Union
 
 # third party
+from hagrid.orchestra import NodeHandle
 from loguru import logger
 from tqdm import tqdm
 
@@ -25,6 +26,7 @@ from ..service.dataset.dataset import CreateDataset
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.user.roles import Roles
+from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..types.blob_storage import BlobFile
 from ..types.uid import UID
@@ -59,7 +61,7 @@ def _contains_subdir(dir: Path) -> bool:
 
 
 def add_default_uploader(
-    user, obj: Union[CreateDataset, CreateAsset]
+    user: UserView, obj: Union[CreateDataset, CreateAsset]
 ) -> Union[CreateDataset, CreateAsset]:
     uploader = None
     for contributor in obj.contributors:
@@ -142,8 +144,8 @@ class DomainClient(SyftClient):
     def upload_files(
         self,
         file_list: Union[BlobFile, list[BlobFile], str, list[str], Path, list[Path]],
-        allow_recursive=False,
-        show_files=False,
+        allow_recursive: bool = False,
+        show_files: bool = False,
     ) -> Union[SyftSuccess, SyftError]:
         if not file_list:
             return SyftError(message="No files to upload")
@@ -305,7 +307,7 @@ class DomainClient(SyftClient):
 
     def get_project(
         self,
-        name: str = None,
+        name: Optional[str] = None,
         uid: UID = None,
     ) -> Optional[Project]:
         """Get project by name or UID"""

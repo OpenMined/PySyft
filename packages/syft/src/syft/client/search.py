@@ -64,9 +64,9 @@ class Search:
             peer, _ = peer_tuple
             client = peer.guest_client
             results = client.api.services.dataset.search(name=name)
-            return (client, results)
+            return (client, results)  # type: ignore[return-value]
         except:  # noqa
-            return (None, [])
+            return (None, [])  # type: ignore[return-value]
 
     def __search(self, name: str) -> List[Tuple[SyftClient, List[Dataset]]]:
         results = [
@@ -75,7 +75,7 @@ class Search:
 
         # filter out SyftError
         filtered = ((client, result) for client, result in results if result)
-        return filtered
+        return filtered  # type: ignore[return-value]
 
     def search(self, name: str) -> SearchResults:
         return SearchResults(self.__search(name))

@@ -2,10 +2,8 @@
 from typing import Any
 from typing import List
 from typing import Optional
+from typing import Type
 from typing import Union
-
-# third party
-from typing_extensions import Self
 
 # relative
 from ..abstract_node import NodeSideType
@@ -26,7 +24,7 @@ from .client import SyftClient
 class GatewayClient(SyftClient):
     # TODO: add widget repr for gateway client
 
-    def proxy_to(self, peer: Any) -> Self:
+    def proxy_to(self, peer: Any) -> SyftClient:
         # relative
         from .domain_client import DomainClient
         from .enclave_client import EnclaveClient
@@ -34,7 +32,7 @@ class GatewayClient(SyftClient):
         connection = self.connection.with_proxy(peer.id)
         metadata = connection.get_node_metadata(credentials=SyftSigningKey.generate())
         if metadata.node_type == NodeType.DOMAIN.value:
-            client_type = DomainClient
+            client_type: Type[SyftClient] = DomainClient
         elif metadata.node_type == NodeType.ENCLAVE.value:
             client_type = EnclaveClient
         else:
@@ -53,8 +51,8 @@ class GatewayClient(SyftClient):
         name: str,
         email: Optional[str] = None,
         password: Optional[str] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> SyftClient:
         peer = None
         if self.api.has_service("network"):
             peer = self.api.services.network.get_peer_by_name(name=name)
@@ -178,7 +176,7 @@ class ProxyClient(SyftObject):
     def __len__(self) -> int:
         return len(self.retrieve_nodes())
 
-    def __getitem__(self, key: int):
+    def __getitem__(self, key: int) -> SyftClient:
         if not isinstance(key, int):
             raise SyftException(f"Key: {key} must be an integer")
 

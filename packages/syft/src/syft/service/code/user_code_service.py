@@ -126,7 +126,7 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code: SubmitUserCode,
         reason: Optional[str] = "",
-    ):
+    ) -> Union[Request, SyftError]:
         user_code: UserCode = code.to(UserCode, context=context)
         return self._request_code_execution_inner(context, user_code, reason)
 
@@ -135,7 +135,7 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         user_code: UserCode,
         reason: Optional[str] = "",
-    ):
+    ) -> Union[Request, SyftError]:
         if not all(
             x in user_code.input_owner_verify_keys for x in user_code.output_readers
         ):

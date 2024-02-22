@@ -13,7 +13,6 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Tuple
 from typing import Type
 from typing import Union
 from typing import cast
@@ -25,7 +24,7 @@ import requests
 from requests import Response
 from requests import Session
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped]
 from typing_extensions import Self
 
 # relative
@@ -94,9 +93,9 @@ def forward_message_to_proxy(
     proxy_target_uid: UID,
     path: str,
     credentials: Optional[SyftSigningKey] = None,
-    args: Optional[Tuple] = None,
+    args: Optional[list] = None,
     kwargs: Optional[Dict] = None,
-):
+) -> Union[Any, SyftError]:
     kwargs = {} if kwargs is None else kwargs
     args = [] if args is None else args
     call = SyftAPICall(
@@ -155,7 +154,7 @@ class HTTPConnection(NodeConnection):
     def api_url(self) -> GridURL:
         return self.url.with_path(self.routes.ROUTE_API_CALL.value)
 
-    def to_blob_route(self, path: str, **kwargs) -> GridURL:
+    def to_blob_route(self, path: str, **kwargs: Any) -> GridURL:
         _path = self.routes.ROUTE_BLOB_STORE.value + path
         return self.url.with_path(_path)
 
@@ -347,7 +346,7 @@ class PythonConnection(NodeConnection):
         else:
             return self.node.metadata.to(NodeMetadataJSON)
 
-    def to_blob_route(self, path: str, host=None) -> GridURL:
+    def to_blob_route(self, path: str, host: Optional[str] = None) -> GridURL:
         # TODO: FIX!
         if host is not None:
             return GridURL(host_or_ip=host, port=8333).with_path(path)
@@ -474,7 +473,7 @@ class SyftClient:
         self.metadata = metadata
         self.credentials: Optional[SyftSigningKey] = credentials
         self._api = api
-        self.communication_protocol = None
+        self.communication_protocol: Optional[Union[int, str]] = None
         self.current_protocol = None
 
         self.post_init()
@@ -528,7 +527,8 @@ class SyftClient:
         project = project_create.start()
         return project
 
-    def sync_code_from_request(self, request):
+    # TODO: type of request should be REQUEST, but it will give circular import error
+    def sync_code_from_request(self, request: Any) -> Union[SyftSuccess, SyftError]:
         # relative
         from ..service.code.user_code import UserCode
         from ..store.linked_obj import LinkedObject
@@ -541,7 +541,7 @@ class SyftClient:
         code.node_uid = self.id
         code.user_verify_key = self.verify_key
 
-        def get_nested_codes(code: UserCode):
+        def get_nested_codes(code: UserCode) -> list[UserCode]:
             result = []
             for __, (linked_code_obj, _) in code.nested_codes.items():
                 nested_code = linked_code_obj.resolve
@@ -551,7 +551,7 @@ class SyftClient:
                 result.append(nested_code)
                 result += get_nested_codes(nested_code)
 
-            updated_code_links = {
+            updated_code_links: dict[str, tuple[LinkedObject, dict]] = {
                 nested_code.service_func_name: (LinkedObject.from_obj(nested_code), {})
                 for nested_code in result
             }
@@ -625,7 +625,8 @@ class SyftClient:
         # invalidate API
         if self._api is None or (self._api.signing_key != self.credentials):
             self._fetch_api(self.credentials)
-
+        if self._api is None:
+            raise ValueError(f"{self}'s api is None")
         return self._api
 
     def guest(self) -> Self:
@@ -792,7 +793,7 @@ class SyftClient:
 
         return client
 
-    def _reload_user_code(self):
+    def _reload_user_code(self) -> None:
         # relative
         from ..service.code.user_code import load_approved_policy_code
 
@@ -807,7 +808,7 @@ class SyftClient:
         password_verify: Optional[str] = None,
         institution: Optional[str] = None,
         website: Optional[str] = None,
-    ):
+    ) -> Optional[Union[SyftError, Any]]:
         if not email:
             email = input("Email: ")
         if not password:
@@ -841,7 +842,7 @@ class SyftClient:
             if self.metadata.show_warnings and not prompt_warning_message(
                 message=message
             ):
-                return
+                return None
 
         response = self.connection.register(new_user=new_user)
         if isinstance(response, tuple):
@@ -878,13 +879,13 @@ class SyftClient:
             metadata.check_version(__version__)
             self.metadata = metadata
 
-    def _fetch_api(self, credentials: SyftSigningKey):
+    def _fetch_api(self, credentials: SyftSigningKey) -> None:
         _api: SyftAPI = self.connection.get_api(
             credentials=credentials,
             communication_protocol=self.communication_protocol,
         )
 
-        def refresh_callback():
+        def refresh_callback() -> None:
             return self._fetch_api(self.credentials)
 
         _api.refresh_api_callback = refresh_callback
@@ -927,7 +928,7 @@ def register(
     password: str,
     institution: Optional[str] = None,
     website: Optional[str] = None,
-):
+) -> SyftClient:
     guest_client = connect(url=url, port=port)
     return guest_client.register(
         name=name,
@@ -944,7 +945,7 @@ def login_as_guest(
     node: Optional[AbstractNode] = None,
     port: Optional[int] = None,
     verbose: bool = True,
-):
+) -> SyftClient:
     _client = connect(url=url, node=node, port=port)
 
     if isinstance(_client, SyftError):
@@ -1023,7 +1024,7 @@ class SyftClientSessionCache:
         password: str,
         connection: NodeConnection,
         syft_client: SyftClient,
-    ):
+    ) -> None:
         hash_key = cls._get_key(email, password, connection.get_cache_key())
         cls.__credentials_store__[hash_key] = syft_client
         cls.__client_cache__[syft_client.id] = syft_client
@@ -1034,7 +1035,7 @@ class SyftClientSessionCache:
         verify_key: SyftVerifyKey,
         node_uid: UID,
         syft_client: SyftClient,
-    ):
+    ) -> None:
         hash_key = str(node_uid) + str(verify_key)
         cls.__client_cache__[hash_key] = syft_client
 
@@ -1051,8 +1052,8 @@ class SyftClientSessionCache:
     ) -> Optional[SyftClient]:
         # we have some bugs here so lets disable until they are fixed.
         return None
-        hash_key = cls._get_key(email, password, connection.get_cache_key())
-        return cls.__credentials_store__.get(hash_key, None)
+        # hash_key = cls._get_key(email, password, connection.get_cache_key())
+        # return cls.__credentials_store__.get(hash_key, None)
 
     @classmethod
     def get_client_for_node_uid(cls, node_uid: UID) -> Optional[SyftClient]:

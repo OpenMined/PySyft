@@ -2,8 +2,13 @@
 from __future__ import annotations
 
 # stdlib
+from typing import Any
 from typing import Optional
 from typing import TYPE_CHECKING
+from typing import Union
+
+# third party
+from hagrid.orchestra import NodeHandle
 
 # relative
 from ..abstract_node import NodeSideType
@@ -92,7 +97,7 @@ class EnclaveClient(SyftClient):
     def get_enclave_metadata(self) -> EnclaveMetadata:
         return EnclaveMetadata(route=self.connection.route)
 
-    def request_code_execution(self, code: SubmitUserCode):
+    def request_code_execution(self, code: SubmitUserCode) -> Union[Any, SyftError]:
         # relative
         from ..service.code.user_code_service import SubmitUserCode
 

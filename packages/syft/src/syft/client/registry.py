@@ -112,7 +112,7 @@ class NetworkRegistry:
         return pd.DataFrame(on).to_string()
 
     @staticmethod
-    def create_client(network: Dict[str, Any]) -> Client:  # type: ignore
+    def create_client(network: Dict[str, Any]) -> Client:
         # relative
         from ..client.client import connect
 
@@ -127,7 +127,7 @@ class NetworkRegistry:
             error(f"Failed to login with: {network}. {e}")
             raise SyftException(f"Failed to login with: {network}. {e}")
 
-    def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
+    def __getitem__(self, key: Union[str, int]) -> Client:
         if isinstance(key, int):
             return self.create_client(network=self.online_networks[key])
         else:
@@ -266,14 +266,14 @@ class DomainRegistry:
             return "(no domains online - try syft.domains.all_domains to see offline domains)"
         return pd.DataFrame(on).to_string()
 
-    def create_client(self, peer: NodePeer) -> Client:  # type: ignore
+    def create_client(self, peer: NodePeer) -> Client:
         try:
             return peer.guest_client
         except Exception as e:
             error(f"Failed to login to: {peer}. {e}")
             raise SyftException(f"Failed to login to: {peer}. {e}")
 
-    def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
+    def __getitem__(self, key: Union[str, int]) -> Client:
         if isinstance(key, int):
             return self.create_client(self.online_domains[key][0])
         else:
@@ -360,7 +360,7 @@ class EnclaveRegistry:
         return pd.DataFrame(on).to_string()
 
     @staticmethod
-    def create_client(enclave: Dict[str, Any]) -> Client:  # type: ignore
+    def create_client(enclave: Dict[str, Any]) -> Client:
         # relative
         from ..client.client import connect
 
@@ -375,7 +375,7 @@ class EnclaveRegistry:
             error(f"Failed to login with: {enclave}. {e}")
             raise SyftException(f"Failed to login with: {enclave}. {e}")
 
-    def __getitem__(self, key: Union[str, int]) -> EnclaveClient:  # type: ignore
+    def __getitem__(self, key: Union[str, int]) -> EnclaveClient:
         if isinstance(key, int):
             return self.create_client(enclave=self.online_enclaves[key])
         else:
