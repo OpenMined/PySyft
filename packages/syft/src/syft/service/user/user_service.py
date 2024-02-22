@@ -4,8 +4,6 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-# third party
-
 # relative
 from ...abstract_node import NodeType
 from ...exceptions.user import UserAlreadyExistsException
