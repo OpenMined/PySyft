@@ -29,6 +29,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user import UserView
+from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
 from .request import Change
@@ -103,6 +104,15 @@ class RequestService(AbstractService):
         except Exception as e:
             print("Failed to submit Request", e)
             raise e
+
+    @service_method(path="request.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
+    def delete(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
+        result = self.stash.delete_by_uid(context.credentials, uid)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return result
 
     def expand_node(self, context: AuthedServiceContext, code_obj: UserCode):
         user_code_service = context.node.get_service("usercodeservice")
