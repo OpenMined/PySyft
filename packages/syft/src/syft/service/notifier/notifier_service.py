@@ -95,7 +95,8 @@ class NotifierService(AbstractService):
             if not (notifier.email_username and notifier.email_password):
                 return SyftError(
                     message="No valid token has been added to the domain."
-                    + "You can add a pair of SMTP credentials via <client>.settings.enable_notifications(email=<>, password=<>)"
+                    + "You can add a pair of SMTP credentials via "
+                    + "<client>.settings.enable_notifications(email=<>, password=<>)"
                 )
             else:
                 print("[LOG] No new credentials provided. Using existing ones.")
