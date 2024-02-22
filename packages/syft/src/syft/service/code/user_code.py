@@ -944,14 +944,6 @@ def syft_function(
         output_policy_type = type(output_policy)
 
     def decorator(f: Any) -> SubmitUserCode:
-        if not isinstance(input_policy, InputPolicy):
-            raise TypeError(
-                f"{input_policy}'s type is supposed to be InputPolicy, but it is {type(input_policy)}"
-            )
-        if not isinstance(output_policy, OutputPolicy):
-            raise TypeError(
-                f"{output_policy}'s type is supposed to be OutputPolicy, but it is {type(OutputPolicy)}"
-            )
         res = SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
