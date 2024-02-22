@@ -5,8 +5,6 @@ from typing import Tuple
 from typing import Union
 
 # third party
-from result import Err
-from result import Ok
 
 # relative
 from ...abstract_node import NodeType
@@ -16,6 +14,7 @@ from ...node.credentials import SyftVerifyKey
 from ...node.credentials import UserLoginCredentials
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...store.linked_obj import LinkedObject
 from ...types.syft_metaclass import Empty
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -24,6 +23,10 @@ from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..context import NodeServiceContext
 from ..context import UnauthedServiceContext
+from ..notification.email_templates import OnBoardEmailTemplate
+from ..notification.notification_service import CreateNotification
+from ..notification.notification_service import NotificationService
+from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -33,7 +36,6 @@ from ..service import service_method
 from ..settings.settings_stash import SettingsStash
 from .user import User
 from .user import UserCreate
-from ...store.linked_obj import LinkedObject
 from .user import UserPrivateKey
 from .user import UserSearch
 from .user import UserUpdate
@@ -46,11 +48,7 @@ from .user_roles import GUEST_ROLE_LEVEL
 from .user_roles import ServiceRole
 from .user_roles import ServiceRoleCapability
 from .user_stash import UserStash
-from ..notification.notification_service import CreateNotification
-from ..notification.notification_service import NotificationService
-from ..notification.email_templates import SuspiciousActivityEmailTemplate
-from ..notification.notifications import Notification
-from ..notifier.notifier_enums import NOTIFIERS
+
 
 @instrument
 @serializable()
@@ -434,33 +432,6 @@ class UserService(AbstractService):
         )
 
         if not can_user_register:
-            root_key = self.admin_verify_key()
-            root_context = AuthedServiceContext(
-                node=context.node, credentials=root_key
-            )
-            link = None
-            if new_user.created_by:
-                user = self.stash.get_by_signing_key(
-                    credentials=root_context.credentials,
-                    signing_key=new_user.created_by
-                ).ok()
-                link = LinkedObject.with_context(
-                    user,
-                    context=root_context
-                )
-            message = CreateNotification(
-                subject="Not allowed register attempt",
-                from_user_verify_key=root_key,
-                to_user_verify_key=root_key,
-                linked_obj=link,
-                notifier_types=[NOTIFIERS.EMAIL],
-                email_template=SuspiciousActivityEmailTemplate,
-            )
-
-            method = context.node.get_service_method(NotificationService.send)
-            result = method(context=root_context, notification=message)
-            if not isinstance(result, Notification):
-                return Err(result)
             return SyftError(
                 message=f"You don't have permission to create an account "
                 f"on the domain: {context.node.name}. Please contact the Domain Owner."
@@ -489,6 +460,25 @@ class UserService(AbstractService):
         user = result.ok()
 
         success_message = f"User '{user.name}' successfully registered!"
+
+        # Notification Step
+        root_key = self.admin_verify_key()
+        root_context = AuthedServiceContext(node=context.node, credentials=root_key)
+        link = None
+        if new_user.created_by:
+            link = LinkedObject.with_context(user, context=root_context)
+        message = CreateNotification(
+            subject="Not allowed register attempt",
+            from_user_verify_key=root_key,
+            to_user_verify_key=user.verify_key,
+            linked_obj=link,
+            notifier_types=[NOTIFIERS.EMAIL],
+            email_template=OnBoardEmailTemplate,
+        )
+
+        method = context.node.get_service_method(NotificationService.send)
+        result = method(context=root_context, notification=message)
+
         if request_user_role in DATA_OWNER_ROLE_LEVEL:
             success_message += " To see users, run `[your_client].users`"
 

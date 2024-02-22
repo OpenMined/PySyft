@@ -13,11 +13,11 @@ from result import Ok
 from result import Result
 
 # relative
-from ..context import AuthedServiceContext
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -76,7 +76,9 @@ class EmailNotifier(BaseNotifier):
             password=password,
         )
 
-    def send(self, context: AuthedServiceContext, notification: Notification) -> Result[Ok, Err]:
+    def send(
+        self, context: AuthedServiceContext, notification: Notification
+    ) -> Result[Ok, Err]:
         try:
             user_service = context.node.get_service("userservice")
             sender_email = user_service.get_by_verify_key(
@@ -85,13 +87,11 @@ class EmailNotifier(BaseNotifier):
             receiver_email = user_service.get_by_verify_key(
                 notification.to_user_verify_key
             ).email
-            print(f"sender_email: {sender_email}")
-            print(f"receiver_email: {receiver_email}")
 
-            subject = notification.email_template.email_title(notification, context=context)
+            subject = notification.email_template.email_title(
+                notification, context=context
+            )
             body = notification.email_template.email_body(notification, context=context)
-            # subject = notification.subject
-            # body = "Testing email notification!"
 
             if isinstance(receiver_email, str):
                 receiver_email = [receiver_email]

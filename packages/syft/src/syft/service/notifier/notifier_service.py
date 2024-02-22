@@ -288,7 +288,9 @@ class NotifierService(AbstractService):
         notifier: NotifierSettings = notifier.ok()
         # If notifier is active
         if notifier.active:
-            resp = notifier.send_notifications(context=context, notification=notification)
+            resp = notifier.send_notifications(
+                context=context, notification=notification
+            )
             if resp.is_err():
                 return SyftError(message=resp.err())
 

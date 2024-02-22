@@ -1,25 +1,29 @@
-from ...abstract_node import AbstractNode
+# relative
 from ..context import AuthedServiceContext
+
 
 class EmailTemplate:
     pass
 
-class SuspiciousActivityEmailTemplate(EmailTemplate):
 
+class OnBoardEmailTemplate(EmailTemplate):
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
-        return f"Domain {context.node.name}: Suspicious Activity Detected!"
-    
+        return f"Welcome to {context.node.name} node!"
+
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
         user_service = context.node.get_service("userservice")
-        user = notification.linked_obj.resolve_with_context(
-            context=context
-        ).ok()
+        admin_name = user_service.get_by_verify_key(
+            user_service.admin_verify_key()
+        ).name
 
-        head = """
+        head = (
+            f"""
         <head>
-            <title>Suspicious Activity Alert</title>
+            <title>Welcome to {context.node.name}</title>
+        """
+            + """
             <style>
                 body {
                     font-family: Arial, sans-serif;
@@ -28,19 +32,19 @@ class SuspiciousActivityEmailTemplate(EmailTemplate):
                     line-height: 1.6;
                 }
                 .container {
-                    width: 80%;
-                    margin: auto;
-                    background: #fff;
+                    max-width: 600px;
+                    margin: 20px auto;
                     padding: 20px;
-                    border: 1px solid #ddd;
-                    border-radius: 5px;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    background: #fff;
                 }
                 h1 {
-                    color: #ff0000;
+                    color: #0056b3;
                 }
-                .alert-details {
-                    margin-top: 20px;
+                .feature {
+                    background-color: #e7f1ff;
+                    padding: 10px;
+                    margin: 10px 0;
+                    border-radius: 5px;
                 }
                 .footer {
                     text-align: center;
@@ -50,45 +54,50 @@ class SuspiciousActivityEmailTemplate(EmailTemplate):
             </style>
         </head>
         """
+        )
 
         body = f"""
         <body>
             <div class="container">
-                <h1>Suspicious Activity Detected</h1>
-                <p>Hello Admin,</p>
-                <p>We have detected some suspicious activities in your domain node. Please review the following details:</p>
-                <div class="alert-details">
-                    <p><strong>Date and Time of Activity:</strong> {notification.created_at}</p>
-                    <p><strong>Type of Activity:</strong> Unauthorized Register Attempt </p>
-                    <p><strong>User :</strong> {user.name} {user.email}</p>
+                <h1>Welcome to {context.node.name} node!</h1>
+                <p>Hello,</p>
+                <p>We're thrilled to have you on board and excited to help you get started with our powerful features:</p>
+
+                <div class="feature">
+                    <h3>Remote Data Science</h3>
+                    <p>Access and analyze data from anywhere, using our comprehensive suite of data science tools.</p>
                 </div>
-                <p>We recommend you to take the following actions:</p>
-                <ul>
-                    <li>Identify the person who tried it.</li>
-                    <li>Investigate his/her reasons.</li>
-                    <li>Contact support if you notice any unfamiliar activity.</li>
-                </ul>
-                <p>Stay Safe,<br>Your {context.node.name} Team</p>
-            </div>
-            <div class="footer">
-                This is an automated message, please do not reply directly to this email. <br>
-                For assistance, please contact our support team.
+
+                <div class="feature">
+                    <h3>Remote Code Execution</h3>
+                    <p>Execute code remotely on private data, ensuring flexibility and efficiency in your research.</p>
+                </div>
+
+                <!-- Add more features here if needed -->
+
+                <p>Explore these features and much more within your account. If you have any questions or need assistance, don't hesitate to reach out.</p>
+
+                <p>Cheers,</p>
+                <p>{admin_name}</p>
+
+                <div class="footer">
+                    This is an automated message, please do not reply directly to this email. <br>
+                    For assistance, please contact our support team.
+                </div>
             </div>
         </body>
         """
         return f"""<html>{head} {body}</html>"""
 
-class RequestEmailTemplate(EmailTemplate):
 
+class RequestEmailTemplate(EmailTemplate):
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
         return f"Domain {context.node.name}: New Request!"
-        
+
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
-        request_obj = notification.linked_obj.resolve_with_context(
-            context=context
-        ).ok()
+        request_obj = notification.linked_obj.resolve_with_context(context=context).ok()
 
         head = """
         <head>
@@ -180,7 +189,7 @@ class RequestEmailTemplate(EmailTemplate):
                             <p><strong>Date:</strong> {request_obj.request_time}</p>
                             <p><strong>Changes:</strong> {",".join([change.__class__.__name__ for change in request_obj.changes])}</p>
                         </div>
-                    </div> 
+                    </div>
                    <p>To review and respond to this request, please click the button below:</p>
                     <a href="#" class="button">Review Request</a>
                     <p>If you did not expect this request or have concerns about it, please contact our support team immediately.</p>
