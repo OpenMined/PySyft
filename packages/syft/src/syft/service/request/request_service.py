@@ -22,6 +22,7 @@ from ..context import AuthedServiceContext
 from ..notification.notification_service import CreateNotification
 from ..notification.notification_service import NotificationService
 from ..notification.notifications import Notification
+from ..notification.email_templates import RequestEmailTemplate
 from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -89,6 +90,7 @@ class RequestService(AbstractService):
                         to_user_verify_key=root_verify_key,
                         linked_obj=link,
                         notifier_types=[NOTIFIERS.EMAIL],
+                        email_template=RequestEmailTemplate,
                     )
                     method = context.node.get_service_method(NotificationService.send)
                     result = method(context=context, notification=message)

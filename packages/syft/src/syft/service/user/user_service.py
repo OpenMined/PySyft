@@ -4,6 +4,10 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
+# third party
+from result import Err
+from result import Ok
+
 # relative
 from ...abstract_node import NodeType
 from ...exceptions.user import UserAlreadyExistsException
@@ -29,6 +33,7 @@ from ..service import service_method
 from ..settings.settings_stash import SettingsStash
 from .user import User
 from .user import UserCreate
+from ...store.linked_obj import LinkedObject
 from .user import UserPrivateKey
 from .user import UserSearch
 from .user import UserUpdate
@@ -41,7 +46,11 @@ from .user_roles import GUEST_ROLE_LEVEL
 from .user_roles import ServiceRole
 from .user_roles import ServiceRoleCapability
 from .user_stash import UserStash
-
+from ..notification.notification_service import CreateNotification
+from ..notification.notification_service import NotificationService
+from ..notification.email_templates import SuspiciousActivityEmailTemplate
+from ..notification.notifications import Notification
+from ..notifier.notifier_enums import NOTIFIERS
 
 @instrument
 @serializable()
@@ -425,6 +434,33 @@ class UserService(AbstractService):
         )
 
         if not can_user_register:
+            root_key = self.admin_verify_key()
+            root_context = AuthedServiceContext(
+                node=context.node, credentials=root_key
+            )
+            link = None
+            if new_user.created_by:
+                user = self.stash.get_by_signing_key(
+                    credentials=root_context.credentials,
+                    signing_key=new_user.created_by
+                ).ok()
+                link = LinkedObject.with_context(
+                    user,
+                    context=root_context
+                )
+            message = CreateNotification(
+                subject="Not allowed register attempt",
+                from_user_verify_key=root_key,
+                to_user_verify_key=root_key,
+                linked_obj=link,
+                notifier_types=[NOTIFIERS.EMAIL],
+                email_template=SuspiciousActivityEmailTemplate,
+            )
+
+            method = context.node.get_service_method(NotificationService.send)
+            result = method(context=root_context, notification=message)
+            if not isinstance(result, Notification):
+                return Err(result)
             return SyftError(
                 message=f"You don't have permission to create an account "
                 f"on the domain: {context.node.name}. Please contact the Domain Owner."
