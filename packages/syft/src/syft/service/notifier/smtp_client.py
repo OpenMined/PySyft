@@ -2,41 +2,33 @@
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
-from typing import List
-from typing import Optional
+
+# third party
+from result import Err
+from result import Ok
+from result import Result
 
 
 class SMTPClient:
+    SOCKET_TIMEOUT = 5  # seconds
+
     def __init__(
         self,
-        smtp_server: str,
-        smtp_port: int,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        access_token: Optional[str] = None,
+        server: str,
+        port: int,
+        username: str,
+        password: str,
     ) -> None:
-        # Should provide token or username/password but not both
-        if username and password and access_token:
-            raise ValueError(
-                "Either username and password or access_token must be provided, but not both"
-            )
+        if not (username and password):
+            raise ValueError("Both username and password must be provided")
 
-        if not (username and password) and not access_token:
-            raise ValueError(
-                "Either username and password or access_token must be provided"
-            )
+        self.username = username
+        self.password = password
+        self.server = server
+        self.port = port
 
-        if username and password:
-            self.username = username
-            self.password = password
-        else:
-            self.access_token = access_token
-
-        self.smtp_server = smtp_server
-        self.smtp_port = smtp_port
-
-    def send(self, sender: str, receiver: List[str], subject: str, body: str) -> None:
-        if not subject or not body or not receiver:
+    def send(self, sender: str, receiver: list[str], subject: str, body: str) -> None:
+        if not (subject and body and receiver):
             raise ValueError("Subject, body, and recipient email(s) are required")
 
         msg = MIMEMultipart("alternative")
@@ -45,38 +37,34 @@ class SMTPClient:
         msg["Subject"] = subject
         msg.attach(MIMEText(body, "plain"))
 
-        with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+        with smtplib.SMTP(
+            self.server, self.port, timeout=self.SOCKET_TIMEOUT
+        ) as server:
             server.ehlo()
             if server.has_extn("STARTTLS"):
                 server.starttls()
                 server.ehlo()
-
-            if self.access_token:
-                server.login(self.access_token, self.access_token)
-            elif self.username and self.password:
-                server.login(self.username, self.password)
-
+            server.login(self.username, self.password)
             text = msg.as_string()
             server.sendmail(sender, ", ".join(receiver), text)
+        # TODO: Add error handling
 
-    def check_credentials(self) -> bool:
+    @classmethod
+    def check_credentials(
+        cls, server: str, port: int, username: str, password: str
+    ) -> Result[Ok, Err]:
         """Check if the credentials are valid.
 
         Returns:
             bool: True if the credentials are valid, False otherwise.
         """
         try:
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.ehlo()
-                if server.has_extn("STARTTLS"):
-                    server.starttls()
-                    server.ehlo()
-
-                if self.access_token:
-                    server.login(self.access_token, self.access_token)
-                elif self.username and self.password:
-                    server.login(self.username, self.password)
-
-                return True
-        except Exception:
-            return False
+            with smtplib.SMTP(server, port, timeout=cls.SOCKET_TIMEOUT) as smtp_server:
+                smtp_server.ehlo()
+                if smtp_server.has_extn("STARTTLS"):
+                    smtp_server.starttls()
+                    smtp_server.ehlo()
+                smtp_server.login(username, password)
+                return Ok("Credentials are valid.")
+        except Exception as e:
+            return Err(e)

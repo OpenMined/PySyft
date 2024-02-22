@@ -24,49 +24,57 @@ from ..response import SyftSuccess
 from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
 
+DEFAULT_EMAIL_SERVER = "smtp.postmarkapp.com"
+
 
 class BaseNotifier:
+    EMAIL_SERVER = DEFAULT_EMAIL_SERVER
+
     def send(
         self, target: SyftVerifyKey, notification: Notification
     ) -> Union[SyftSuccess, SyftError]:
-        pass
+        return SyftError(message="Not implemented")
 
 
 class EmailNotifier(BaseNotifier):
+    smtp_client = SMTPClient
+    username: str
+    password: str
     server: str
-    token: Optional[str]
-    smtp_client: SMTPClient
+    port: int
 
     def __init__(
         self,
-        token: Optional[str],
-        server: str = "smtp.postmarkapp.com",
+        username: str,
+        password: str,
+        server: str = DEFAULT_EMAIL_SERVER,
+        port: int = 587,
     ) -> None:
-        self.token = token
+        self.username = username
+        self.password = password
         self.server = server
+        self.port = port
         self.smtp_client = SMTPClient(
-            smtp_server=self.server, smtp_port=587, access_token=self.token
+            server=self.server,
+            port=self.port,
+            username=self.username,
+            password=self.password,
         )
 
-    @staticmethod
+    @classmethod
     def check_credentials(
-        server: str,
-        port: int,
-        token: Optional[str] = None,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-    ) -> bool:
-        if token:
-            return SMTPClient(
-                smtp_server=server, smtp_port=port, access_token=token
-            ).check_credentials()
-        else:
-            return SMTPClient(
-                smtp_server=server,
-                smtp_port=port,
-                username=username,
-                password=password,
-            ).check_credentials()
+        cls,
+        username: str,
+        password: str,
+        server: str = DEFAULT_EMAIL_SERVER,
+        port: int = 587,
+    ) -> Result[Ok, Err]:
+        return cls.smtp_client.check_credentials(
+            server=server,
+            port=port,
+            username=username,
+            password=password,
+        )
 
     def send(self, node: AbstractNode, notification: Notification) -> Result[Ok, Err]:
         try:
@@ -88,8 +96,10 @@ class EmailNotifier(BaseNotifier):
                 sender=sender_email, receiver=receiver_email, subject=subject, body=body
             )
             return Ok("Email sent successfully!")
-        except Exception as e:
-            return Err(f"Error: unable to send email: {e}")
+        except Exception:
+            return Err(
+                "Some notifications failed to be delivered. Please check the health of the mailing server."
+            )
 
 
 @serializable()
@@ -99,12 +109,9 @@ class NotifierSettings(SyftObject):
     __repr_attrs__ = [
         "active",
         "email_enabled",
-        "sms_enabled",
-        "slack_enabled",
-        "app_enabled",
     ]
     active: bool = False
-    # Flag to identify which notification is enable
+    # Flag to identify which notification is enabled
     # For now, consider only the email notification
     # In future, Admin, must be able to have a better
     # control on diff notifications.
@@ -120,7 +127,11 @@ class NotifierSettings(SyftObject):
         NOTIFIERS.APP: False,
     }
 
-    email_token: Optional[str] = ""
+    email_server: Optional[str] = DEFAULT_EMAIL_SERVER
+    email_port: Optional[int] = 587
+    email_username: Optional[str] = ""
+    email_password: Optional[str] = ""
+    email_subscribers = set()
 
     @property
     def email_enabled(self) -> bool:
@@ -138,9 +149,18 @@ class NotifierSettings(SyftObject):
     def app_enabled(self) -> bool:
         return self.notifiers_status[NOTIFIERS.APP]
 
-    def valid_email_credentials(self, token: str) -> bool:
+    def validate_email_credentials(
+        self,
+        username: str,
+        password: str,
+        server: Optional[str] = None,
+        port: Optional[int] = None,
+    ) -> Result[Ok, Err]:
         return self.notifiers[NOTIFIERS.EMAIL].check_credentials(
-            server="smtp.postmarkapp.com", port=587, token=token
+            server=server if server else self.email_server,
+            port=port if port else self.email_port,
+            username=username,
+            password=password,
         )
 
     def send_notifications(
@@ -158,13 +178,13 @@ class NotifierSettings(SyftObject):
         return Ok("Notification sent successfully!")
 
     def select_notifiers(self, notification: Notification) -> List[BaseNotifier]:
-        """This method allow us to check which notification is enabled and return the
-        notifier object to be used to send the notification.
+        """
+        Return a list of the notifiers enabled for the given notification"
 
         Args:
             notification (Notification): The notification object
         Returns:
-            List[BaseNotifier]: A list of notifier objects
+            List[BaseNotifier]: A list of enabled notifier objects
         """
         notifier_objs = []
         for notifier_type in notification.notifier_types:
@@ -176,7 +196,9 @@ class NotifierSettings(SyftObject):
                 # If notifier is email, we need to pass the token
                 if notifier_type == NOTIFIERS.EMAIL:
                     notifier_objs.append(
-                        self.notifiers[notifier_type](token=self.email_token)
+                        self.notifiers[notifier_type](
+                            username=self.email_username, password=self.email_password
+                        )
                     )
                 # If notifier is not email, we just create the notifier object
                 # TODO: Add the other notifiers, and its auth methods

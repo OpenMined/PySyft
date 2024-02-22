@@ -685,6 +685,12 @@ class SyftClient:
         return None
 
     @property
+    def notifier(self) -> Optional[APIModule]:
+        if self.api.has_service("notifier"):
+            return self.api.services.notifier
+        return None
+
+    @property
     def peers(self) -> Optional[Union[List[NodePeer], SyftError]]:
         if self.api.has_service("network"):
             return self.api.services.network.get_all_peers()

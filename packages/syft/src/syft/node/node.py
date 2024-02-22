@@ -310,6 +310,8 @@ class Node(AbstractNode):
         dev_mode: bool = False,
         migrate: bool = False,
         in_memory_workers: bool = True,
+        smtp_username: Optional[str] = None,
+        smtp_password: Optional[str] = None,
         email_token: Optional[str] = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
@@ -397,18 +399,9 @@ class Node(AbstractNode):
             node=self,
         )
 
-        if not email_token:
-            NotifierService.init_notifier(
-                node=self,
-                active=False,
-                email_token=None,
-            )
-        else:
-            NotifierService.init_notifier(
-                node=self,
-                active=True,
-                email_token=email_token,
-            )
+        NotifierService.init_notifier(
+            node=self, email_password=smtp_password, email_username=smtp_username
+        )
 
         self.client_cache = {}
         if isinstance(node_type, str):
