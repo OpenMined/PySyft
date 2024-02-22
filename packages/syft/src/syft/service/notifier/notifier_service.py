@@ -4,6 +4,11 @@
 from typing import Optional
 from typing import Union
 
+# third party
+from result import Err
+from result import Ok
+from result import Result
+
 # relative
 from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
@@ -29,10 +34,8 @@ class NotifierService(AbstractService):
         self.store = store
         self.stash = NotifierStash(store=store)
 
-    @service_method(
-        path="notifier.settings", name="notifier_settings", roles=ADMIN_ROLE_LEVEL
-    )
-    def notifier_settings(  # Maybe just notifier.settings
+    @service_method(path="notifier.settings", name="settings", roles=ADMIN_ROLE_LEVEL)
+    def settings(  # Maybe just notifier.settings
         self,
         context: AuthedServiceContext,
     ) -> Union[NotifierStash, SyftError]:
@@ -51,35 +54,71 @@ class NotifierService(AbstractService):
 
     @service_method(path="notifier.turn_on", name="turn_on", roles=ADMIN_ROLE_LEVEL)
     def turn_on(
-        self, context: AuthedServiceContext, email_token: Optional[str] = None
+        self,
+        context: AuthedServiceContext,
+        email_username: Optional[str] = None,
+        email_password: Optional[str] = None,
     ) -> Union[SyftSuccess, SyftError]:
+        """Turn on email notifications.
+
+        Args:
+            email_username (Optional[str]): Email server username. Defaults to None.
+            email_password (Optional[str]): Email email server password. Defaults to None.
+
+        Returns:
+            Union[SyftSuccess, SyftError]: A union type representing the success or error response.
+
+        Raises:
+            None
+
+        """
+
         result = self.stash.get(credentials=context.credentials)
 
         # 1 -  If something went wrong at db level, return the error
         if result.is_err():
             return SyftError(message=result.err())
 
+        # 2 - If one of the credentials are set alone, return an error
+        if (
+            email_username
+            and not email_password
+            or email_password
+            and not email_username
+        ):
+            return SyftError(message="You must provide both username and password")
+
         notifier = result.ok()
-        # 2 - If email token is not provided and notifier doesn't exist, return an error
-        if not email_token and not notifier.email_token:
-            return SyftError(
-                message="No valid token has been added to the domain."
-                + "You can add a new token via client.settings.enable_notifications(token=TOKEN)"
-            )
+        print("[LOG] Got notifier from db")
+        # If no new credentials provided, check for existing ones
+        if not (email_username and email_password):
+            if not (notifier.email_username and notifier.email_password):
+                return SyftError(
+                    message="No valid token has been added to the domain."
+                    + "You can add a pair of SMTP credentials via "
+                    + "<client>.settings.enable_notifications(email=<>, password=<>)"
+                )
+            else:
+                print("[LOG] No new credentials provided. Using existing ones.")
+                email_password = notifier.email_password
+                email_username = notifier.email_username
+        print("[LOG] Validating credentials...")
 
-        # 3 - Activate the notifier
-        notifier.active = True
-
-        # 4 - If email token is provided.
-        is_valid = notifier.valid_email_credentials(
-            token=email_token,
+        validation_result = notifier.validate_email_credentials(
+            username=email_username, password=email_password
         )
-        if email_token and is_valid:
-            notifier.email_token = email_token
-        else:
+
+        if validation_result.is_err():
             return SyftError(
-                message="The token provided is not valid. Please provide a valid token."
+                message="Invalid SMTP credentials. Please check your username and password."
             )
+
+        notifier.email_password = email_password
+        notifier.email_username = email_username
+        notifier.active = True
+        print(
+            "[LOG] Email credentials are valid. Updating the notifier settings in the db."
+        )
 
         result = self.stash.update(credentials=context.credentials, settings=notifier)
         if result.is_err():
@@ -91,6 +130,11 @@ class NotifierService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Union[SyftSuccess, SyftError]:
+        """
+        Turn off email notifications service.
+        PySyft notifications will still work.
+        """
+
         result = self.stash.get(credentials=context.credentials)
 
         if result.is_err():
@@ -112,18 +156,38 @@ class NotifierService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Union[SyftSuccess, SyftError]:
-        result = self.stash.get(credentials=context.credentials)
+        """
+        Activate email notifications for the authenticated user.
+        This will only work if the domain owner has enabled notifications.
+        """
+
+        # TODO: user credentials should not be used to get the notifier settings
+        # TODO: WARNING THIS IS A POTENTIAL SECURITY RISK (ONLY FOR DEVELOPMENT PURPOSES)
+
+        admin_key = self.stash.admin_verify_key()
+
+        result = self.stash.get(credentials=admin_key)
+        print(result)
 
         if result.is_err():
             return SyftError(message=result.err())
 
         notifier = result.ok()
-        if notifier.active:
+
+        user_key = context.credentials
+
+        if user_key in notifier.email_subscribers:
             return SyftSuccess(
-                message="Successfully activated notifications via email."
+                message="Notifications are already activated for this user."
             )
-        else:
-            return SyftError(message="Notifications are disabled by the domain owner.")
+
+        notifier.email_subscribers.add(user_key)
+
+        # TODO: user credentials should not be used to update the notifier settings
+        result = self.stash.update(credentials=admin_key, settings=notifier)
+        if result.is_err():
+            return SyftError(message=result.err())
+        return SyftSuccess(message="Notifications enabled successfully.")
 
     @service_method(
         path="notifier.deactivate",
@@ -134,27 +198,41 @@ class NotifierService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Union[SyftSuccess, SyftError]:
-        result = self.stash.get(credentials=context.credentials)
+        """Deactivate email notifications for the authenticated user
+        This will only work if the domain owner has enabled notifications.
+        """
+
+        # TODO: WARNING THIS IS A POTENTIAL SECURITY RISK (ONLY FOR DEVELOPMENT PURPOSES)
+        admin_key = self.stash.admin_verify_key()
+        result = self.stash.get(credentials=admin_key)
 
         if result.is_err():
             return SyftError(message=result.err())
 
-        return SyftSuccess(message="Successfully deactivated notifications via email.")
+        notifier = result.ok()
+        user_key = context.credentials
+        notifier.email_subscribers.remove(user_key)
+
+        result = self.stash.update(credentials=admin_key, settings=notifier)
+        if result.is_err():
+            return SyftError(message=result.err())
+        return SyftSuccess(message="Notifications disabled successfully.")
 
     @staticmethod
     def init_notifier(
         node: AbstractNode,
-        active: bool = False,
-        email_token: Optional[str] = None,
-    ) -> Union[SyftSuccess, SyftError]:
-        """Initialize Notifier for a Node.
-        If Notifier already exists, it will return the existing one.
+        email_username: Optional[str] = None,
+        email_password: Optional[str] = None,
+    ) -> Result[Ok, Err]:
+        """Initialize Notifier settings for a Node.
+        If settings already exist, it will use the existing one.
         If not, it will create a new one.
 
         Args:
             node: Node to initialize the notifier
             active: If notifier should be active
-            email_token: Email token to send notifications
+            email_username: Email username to send notifications
+            email_password: Email password to send notifications
         Raises:
             Exception: If something went wrong
         Returns:
@@ -170,25 +248,35 @@ class NotifierService(AbstractService):
             # Get the notifier
             notifier = result.ok()
             # If notifier doesn't exist, create a new one
+
             if not notifier:
-                notifier = NotifierSettings(
-                    active=active,
+                notifier = NotifierSettings()
+                notifier.active = False  # Default to False
+
+            # TODO: this should be a method in NotifierSettings
+            if email_username and email_password:
+                validation_result = notifier.validate_email_credentials(
+                    username=email_username, password=email_password
                 )
 
-                is_valid = notifier.valid_email_credentials(token=email_token)
-                if email_token and is_valid:
-                    notifier.email_token = email_token
-                else:
+                if validation_result.is_err():
                     notifier.active = False
-                notifier_stash.set(node.signing_key.verify_key, notifier)
+                else:
+                    notifier.email_password = email_password
+                    notifier.email_username = email_username
+                    notifier.active = True
+
+            notifier_stash.set(node.signing_key.verify_key, notifier)
+            return Ok("Notifier initialized successfully")
+
         except Exception as e:
-            print("Unable to create base notifier", e)
+            raise Exception(f"Error initializing notifier. \n {e}")
 
     # This is not a public API.
     # This method is used by other services to dispatch notifications internally
     def dispatch_notification(
         self, node: AbstractNode, notification: Notification
-    ) -> Union[SyftError]:
+    ) -> Union[SyftSuccess, SyftError]:
         admin_key = node.get_service("userservice").admin_verify_key()
         notifier = self.stash.get(admin_key)
         if notifier.is_err():

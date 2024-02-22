@@ -36,6 +36,9 @@ class NotifierStash(BaseStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
+    def admin_verify_key(self) -> SyftVerifyKey:
+        return self.partition.root_verify_key
+
     def get(self, credentials: SyftVerifyKey) -> Result[NotifierSettings, Err]:
         """Get Settings"""
         result = self.get_all(credentials)
@@ -50,18 +53,22 @@ class NotifierStash(BaseStash):
 
     def set(
         self, credentials: SyftVerifyKey, settings: NotifierSettings
-    ) -> Result[NotifierSettings, str]:
-        res = self.check_type(settings, self.object_type)
+    ) -> Result[NotifierSettings, Err]:
+        result = self.check_type(settings, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
-        if res.is_err():
-            return res
-        return super().set(credentials=credentials, obj=res.ok())
+        if result.is_err():
+            return Err(message=result.err())
+        return super().set(
+            credentials=credentials, obj=result.ok()
+        )  # TODO check if result isInstance(Ok)
 
     def update(
         self, credentials: SyftVerifyKey, settings: NotifierSettings
-    ) -> Result[NotifierSettings, str]:
-        res = self.check_type(settings, self.object_type)
+    ) -> Result[NotifierSettings, Err]:
+        result = self.check_type(settings, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
-        if res.is_err():
-            return res
-        return super().update(credentials=credentials, obj=res.ok())
+        if result.is_err():
+            return Err(message=result.err())
+        return super().update(
+            credentials=credentials, obj=result.ok()
+        )  # TODO check if result isInstance(Ok)
