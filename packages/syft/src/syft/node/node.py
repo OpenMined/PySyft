@@ -399,18 +399,9 @@ class Node(AbstractNode):
             node=self,
         )
 
-        if not email_token:
-            NotifierService.init_notifier(
-                node=self,
-                active=False,
-                email_token=None,
-            )
-        else:
-            NotifierService.init_notifier(
-                node=self,
-                active=True,
-                email_token=email_token,
-            )
+        NotifierService.init_notifier(
+            node=self, email_password=smtp_password, email_username=smtp_username
+        )
 
         self.client_cache = {}
         if isinstance(node_type, str):

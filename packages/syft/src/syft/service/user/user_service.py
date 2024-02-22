@@ -359,6 +359,8 @@ class UserService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
 
+        # TODO: Remove notifications for the deleted user
+
         return result.ok()
 
     def exchange_credentials(
@@ -453,6 +455,9 @@ class UserService(AbstractService):
         success_message = f"User '{user.name}' successfully registered!"
         if request_user_role in DATA_OWNER_ROLE_LEVEL:
             success_message += " To see users, run `[your_client].users`"
+
+        # TODO: Add a notifications for the new user
+
         msg = SyftSuccess(message=success_message)
         return (msg, user.to(UserPrivateKey))
 
