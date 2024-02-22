@@ -172,7 +172,7 @@ repos:
       - id: mypy
         name: "mypy: syft"
         always_run: true
-        files: "^packages/syft/src/syft/client"
+        files: "^packages/syft/src/syft/client|^packages/syft/src/syft/node"
         args: [
             "--follow-imports=skip",
             "--ignore-missing-imports",

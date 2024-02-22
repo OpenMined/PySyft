@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from typing import Callable
 from typing import Optional
 
 # third party
@@ -55,9 +56,9 @@ class WorkerSettings(SyftObject):
     blob_store_config: Optional[BlobStorageConfig]
     queue_config: Optional[QueueConfig]
 
-    @staticmethod
-    def from_node(node: AbstractNode) -> Self:
-        return WorkerSettings(
+    @classmethod
+    def from_node(cls, node: AbstractNode) -> Self:
+        return cls(
             id=node.id,
             name=node.name,
             node_type=node.node_type,
@@ -74,14 +75,14 @@ class WorkerSettings(SyftObject):
 
 
 @migrate(WorkerSettings, WorkerSettingsV1)
-def downgrade_workersettings_v2_to_v1():
+def downgrade_workersettings_v2_to_v1() -> list[Callable]:
     return [
         drop(["queue_config"]),
     ]
 
 
 @migrate(WorkerSettingsV1, WorkerSettings)
-def upgrade_workersettings_v1_to_v2():
+def upgrade_workersettings_v1_to_v2() -> list[Callable]:
     # relative
     from ..service.queue.zmq_queue import ZMQQueueConfig
 
