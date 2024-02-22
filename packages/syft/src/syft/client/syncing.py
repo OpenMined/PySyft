@@ -9,7 +9,6 @@ from IPython.display import display
 from ..service.sync.diff_state import DiffState
 from ..service.sync.diff_state import ResolveState
 from ..service.sync.diff_state import display_diff_hierarchy
-from ..service.sync.diff_state import hierarchy_is_same
 from ..service.sync.diff_state import resolve_diff
 
 
@@ -83,7 +82,8 @@ def resolve_hierarchical(state: DiffState, decision: Optional[str] = None):
     resolved_state_high = ResolveState()
 
     for diff_hierarchy in state.hierarchies:
-        if hierarchy_is_same(diff_hierarchy):
+        if all(item.merge_state == "SAME" for item, _ in diff_hierarchy):
+            # Hierarchy has no diffs
             continue
 
         display_diff_hierarchy(diff_hierarchy)

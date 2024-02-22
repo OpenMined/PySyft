@@ -478,7 +478,9 @@ def recursive_repr(value_attr, no_tabs=0):
     #         return repr_str[:-1]
 
     elif isinstance(value_attr, bytes):
-        value_attr = value_attr[:10] + b"..."
+        value_attr = repr(value_attr)
+        if len(value_attr) > 50:
+            value_attr = value_attr[:50] + "..."
     return f"{sketchy_tab*no_tabs}{value_attr}"
 
 
@@ -811,7 +813,9 @@ def display_diff_object(obj_state: Optional[str]) -> Panel:
     if obj_state is None:
         return Panel(Markdown("None"), box=box.ROUNDED, expand=False)
     return Panel(
-        Markdown(f"```python\n{obj_state}\n```"), box=box.ROUNDED, expand=False
+        Markdown(f"```python\n{obj_state}\n```", code_theme="default"),
+        box=box.ROUNDED,
+        expand=False,
     )
 
 
@@ -849,15 +853,11 @@ def display_diff_hierarchy(diff_hierarchy: List[Tuple[Diff, int]]):
         console.print(diff_panel)
 
 
-def hierarchy_is_same(diff_hierarchy) -> bool:
-    return all(item.merge_state == "SAME" for item, _ in diff_hierarchy)
-
-
 def resolve_diff(diff: Diff, decision: str) -> ResolveState:
     resolved_diff_low = ResolveState()
     resolved_diff_high = ResolveState()
 
-    # No diff, empty resolvestate
+    # No diff, return empty resolvestate
     if diff.merge_state == "SAME":
         return resolved_diff_low, resolved_diff_high
 
@@ -866,30 +866,21 @@ def resolve_diff(diff: Diff, decision: str) -> ResolveState:
         high_is_none = diff.high_obj is None
         if low_is_none and high_is_none:
             raise ValueError(
-                f"Diff {diff.id} has an incorrect state: both low and high objects are None"
+                f"Diff {diff.id} is missing objects: both low and high objects are None"
             )
-
-        # Create or delete new object, depending on decision
         if decision == "low" and high_is_none:
-            # Move new low obj to high side
             resolved_diff_high.create_objs.append(diff.low_obj)
         elif decision == "low" and low_is_none:
-            # Delete new object from high side
             resolved_diff_high.delete_objs.append(diff.high_obj)
         elif decision == "high" and low_is_none:
-            # Move new high obj to low side
             resolved_diff_low.create_objs.append(diff.high_obj)
         elif decision == "high" and high_is_none:
-            # Delete new object from low side
             resolved_diff_low.delete_objs.append(diff.low_obj)
 
-    # Update object on high/low side, depending on decision
     elif diff.merge_state == "DIFF":
         if decision == "low":
-            # update high side with low obj
             resolved_diff_high.update_objs.append(diff.low_obj)
         else:  # decision == high
-            # update low side with high obj
             resolved_diff_low.update_objs.append(diff.high_obj)
 
     return resolved_diff_low, resolved_diff_high
