@@ -110,6 +110,7 @@ class NotifierService(AbstractService):
         print(
             "[LOG] Email credentials are valid. Updating the notifier settings in the db."
         )
+
         result = self.stash.update(credentials=context.credentials, settings=notifier)
         if result.is_err():
             return SyftError(message=result.err())
@@ -275,6 +276,7 @@ class NotifierService(AbstractService):
             raise Exception(
                 f"Error initializing notifier. \n {validation_result.err()}"
             )
+
 
     # This is not a public API.
     # This method is used by other services to dispatch notifications internally

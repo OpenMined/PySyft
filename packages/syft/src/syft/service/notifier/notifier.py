@@ -70,6 +70,26 @@ class EmailNotifier(BaseNotifier):
             password=password,
         )
 
+    @staticmethod
+    def check_credentials(
+        server: str,
+        port: int,
+        token: Optional[str] = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+    ) -> bool:
+        if token:
+            return SMTPClient(
+                smtp_server=server, smtp_port=port, access_token=token
+            ).check_credentials()
+        else:
+            return SMTPClient(
+                smtp_server=server,
+                smtp_port=port,
+                username=username,
+                password=password,
+            ).check_credentials()
+
     def send(self, node: AbstractNode, notification: Notification) -> Result[Ok, Err]:
         try:
             user_service = node.get_service("userservice")
