@@ -197,19 +197,19 @@ class SyncService(AbstractService):
         node = context.node
 
         projects = node.get_service("projectservice").get_all(context)
-        new_state.add_objects(projects)
+        new_state.add_objects(projects, api=node.root_client.api)
 
         requests = node.get_service("requestservice").get_all(context)
-        new_state.add_objects(requests)
+        new_state.add_objects(requests, api=node.root_client.api)
 
         user_codes = node.get_service("usercodeservice").get_all(context)
-        new_state.add_objects(user_codes)
+        new_state.add_objects(user_codes, api=node.root_client.api)
 
         jobs = node.get_service("jobservice").get_all(context)
-        new_state.add_objects(jobs)
+        new_state.add_objects(jobs, api=node.root_client.api)
 
         logs = node.get_service("logservice").get_all(context)
-        new_state.add_objects(logs)
+        new_state.add_objects(logs, api=node.root_client.api)
 
         # TODO workaround, we only need action objects from output policies for now
         action_objects = []
@@ -220,7 +220,7 @@ class SyncService(AbstractService):
                 action_objects.append(job.result)
         new_state.add_objects(action_objects)
 
-        new_state._build_dependencies()
+        new_state._build_dependencies(api=node.root_client.api)
 
         # TODO
         # previous_state = self.stash.get_latest(context=context)

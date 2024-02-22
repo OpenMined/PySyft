@@ -93,7 +93,7 @@ class SyncState(SyftObject):
     def all_ids(self) -> Set[UID]:
         return set(self.objects.keys())
 
-    def add_objects(self, objects: List[SyftObject]) -> None:
+    def add_objects(self, objects: List[SyftObject], api=None) -> None:
         for obj in objects:
             if isinstance(obj.id, LineageID):
                 self.objects[obj.id.id] = obj
@@ -103,15 +103,15 @@ class SyncState(SyftObject):
         # TODO might get slow with large states,
         # need to build dependencies every time to not have UIDs
         # in dependencies that are not in objects
-        self._build_dependencies()
+        self._build_dependencies(api=api)
 
-    def _build_dependencies(self) -> None:
+    def _build_dependencies(self, api=None) -> None:
         self.dependencies = {}
 
         all_ids = self.all_ids
         for obj in self.objects.values():
             if hasattr(obj, "get_sync_dependencies"):
-                deps = obj.get_sync_dependencies()
+                deps = obj.get_sync_dependencies(api=api)
                 deps = [d.id for d in deps if d.id in all_ids]
                 if len(deps):
                     self.dependencies[obj.id] = deps

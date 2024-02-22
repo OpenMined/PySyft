@@ -480,7 +480,7 @@ class Job(SyftObject):
 
         return dependencies
 
-    def get_sync_dependencies(self) -> List[UID]:
+    def get_sync_dependencies(self, api=None) -> List[UID]:
         dependencies = []
         if self.result:
             dependencies.append(self.result.id.id)
