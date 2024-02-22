@@ -277,7 +277,6 @@ class NotifierService(AbstractService):
                 f"Error initializing notifier. \n {validation_result.err()}"
             )
 
-
     # This is not a public API.
     # This method is used by other services to dispatch notifications internally
     def dispatch_notification(
