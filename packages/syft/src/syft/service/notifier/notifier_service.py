@@ -79,14 +79,23 @@ class NotifierService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
 
+        # 2 - If one of the credentials are set alone, return an error
+        if (
+            email_username
+            and not email_password
+            or email_password
+            and not email_username
+        ):
+            return SyftError(message="You must provide both username and password")
+
         notifier = result.ok()
         print("[LOG] Got notifier from db")
         # If no new credentials provided, check for existing ones
         if not (email_username and email_password):
             if not (notifier.email_username and notifier.email_password):
                 return SyftError(
-                    message="Email credentials haven't been set yet."
-                    "Username and password are required to enable email notifications."
+                    message="No valid token has been added to the domain."
+                    + "You can add a pair of SMTP credentials via <client>.settings.enable_notifications(email=<>, password=<>)"
                 )
             else:
                 print("[LOG] No new credentials provided. Using existing ones.")
@@ -94,14 +103,13 @@ class NotifierService(AbstractService):
                 email_username = notifier.email_username
         print("[LOG] Validating credentials...")
 
-        # TODO: this should be a method in NotifierSettings
         validation_result = notifier.validate_email_credentials(
             username=email_username, password=email_password
         )
 
         if validation_result.is_err():
             return SyftError(
-                message=f"Error validating email credentials. \n {validation_result.err()}"
+                message="Invalid SMTP credentials. Please check your username and password."
             )
 
         notifier.email_password = email_password
@@ -202,11 +210,6 @@ class NotifierService(AbstractService):
 
         notifier = result.ok()
         user_key = context.credentials
-        if user_key not in notifier.email_subscribers:
-            return SyftSuccess(
-                message="Notifications were already deactivated for this user."
-            )
-
         notifier.email_subscribers.remove(user_key)
 
         result = self.stash.update(credentials=admin_key, settings=notifier)
@@ -249,8 +252,6 @@ class NotifierService(AbstractService):
                 notifier = NotifierSettings()
                 notifier.active = False  # Default to False
 
-            print("New Notifier created")
-            print(notifier)
             # TODO: this should be a method in NotifierSettings
             if email_username and email_password:
                 validation_result = notifier.validate_email_credentials(
@@ -258,25 +259,17 @@ class NotifierService(AbstractService):
                 )
 
                 if validation_result.is_err():
-                    raise ValueError(
-                        f"Error validating email credentials. \n {validation_result.err()}"
-                    )
+                    notifier.active = False
                 else:
                     notifier.email_password = email_password
                     notifier.email_username = email_username
                     notifier.active = True
 
-            print("After update")
-            print(notifier)
-
             notifier_stash.set(node.signing_key.verify_key, notifier)
             return Ok("Notifier initialized successfully")
 
-        except Exception:
-            raise Exception(
-                f"Error initializing notifier. \n {validation_result.err()}"
-            )
-
+        except Exception as e:
+            raise Exception(f"Error initializing notifier. \n {e}")
     # This is not a public API.
     # This method is used by other services to dispatch notifications internally
     def dispatch_notification(

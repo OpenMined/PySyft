@@ -24,7 +24,7 @@ from ..response import SyftSuccess
 from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
 
-DEFAULT_EMAIL_SERVER = "smtp.mailgun.org"
+DEFAULT_EMAIL_SERVER = "smtp.postmarkapp.com"
 
 
 class BaseNotifier:
@@ -54,6 +54,12 @@ class EmailNotifier(BaseNotifier):
         self.password = password
         self.server = server
         self.port = port
+        self.smtp_client = SMTPClient(
+            server=self.server,
+            port=self.port,
+            username=self.username,
+            password=self.password,
+        )
 
     @classmethod
     def check_credentials(
@@ -62,7 +68,7 @@ class EmailNotifier(BaseNotifier):
         password: str,
         server: str = DEFAULT_EMAIL_SERVER,
         port: int = 587,
-    ) -> bool:
+    ) -> Result[Ok, Err]:
         return cls.smtp_client.check_credentials(
             server=server,
             port=port,
@@ -90,22 +96,10 @@ class EmailNotifier(BaseNotifier):
                 sender=sender_email, receiver=receiver_email, subject=subject, body=body
             )
             return Ok("Email sent successfully!")
-        except Exception as e:
-            return Err(f"Error: unable to send email: {e}")
-
-
-# @serializable()
-# @dataclass
-# class EmailNotifierSettings:
-#     """Email notifier configuration"""
-#     server: str
-#     smtp_client = SMTPClient
-#     username: str
-#     password: str
-#     server: str = DEFAULT_EMAIL_SERVER
-#     port: int = 587
-#     notifier = EmailNotifier
-#     subscribers = set()
+        except Exception:
+            return Err(
+                "Some notifications failed to be delivered. Please check the health of the mailing server."
+            )
 
 
 @serializable()
@@ -115,9 +109,6 @@ class NotifierSettings(SyftObject):
     __repr_attrs__ = [
         "active",
         "email_enabled",
-        "sms_enabled",
-        "slack_enabled",
-        "app_enabled",
     ]
     active: bool = False
     # Flag to identify which notification is enabled
