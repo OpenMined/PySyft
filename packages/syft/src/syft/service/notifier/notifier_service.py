@@ -270,6 +270,7 @@ class NotifierService(AbstractService):
 
         except Exception as e:
             raise Exception(f"Error initializing notifier. \n {e}")
+
     # This is not a public API.
     # This method is used by other services to dispatch notifications internally
     def dispatch_notification(
