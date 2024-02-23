@@ -1,5 +1,12 @@
+# stdlib
+from typing import TYPE_CHECKING
+
 # relative
 from ..context import AuthedServiceContext
+
+if TYPE_CHECKING:
+    # relative
+    from .notifications import Notification
 
 
 class EmailTemplate:
@@ -61,7 +68,8 @@ class OnBoardEmailTemplate(EmailTemplate):
             <div class="container">
                 <h1>Welcome to {context.node.name} node!</h1>
                 <p>Hello,</p>
-                <p>We're thrilled to have you on board and excited to help you get started with our powerful features:</p>
+                <p>We're thrilled to have you on board and
+                excited to help you get started with our powerful features:</p>
 
                 <div class="feature">
                     <h3>Remote Data Science</h3>
@@ -75,7 +83,8 @@ class OnBoardEmailTemplate(EmailTemplate):
 
                 <!-- Add more features here if needed -->
 
-                <p>Explore these features and much more within your account. If you have any questions or need assistance, don't hesitate to reach out.</p>
+                <p>Explore these features and much more within your account.
+                If you have any questions or need assistance, don't hesitate to reach out.</p>
 
                 <p>Cheers,</p>
                 <p>{admin_name}</p>
@@ -178,21 +187,27 @@ class RequestEmailTemplate(EmailTemplate):
                 </div>
                 <div class="content">
                     <p>Hello,</p>
-                    <p>A new request has been submitted and requires your attention. Please review the details below:</p>
+                    <p>A new request has been submitted and requires your attention.
+                    Please review the details below:</p>
 
                     <div class="request-card">
                         <div class="request-header">Request Details</div>
                         <div class="request-content">
 
                             <p><strong>ID:</strong> {request_obj.id}</p>
-                            <p><strong>Submitted By:</strong> {request_obj.requesting_user_name} {request_obj.requesting_user_email or ""}</p>
+                            <p>
+                            <strong>Submitted By:</strong>
+                            {request_obj.requesting_user_name} {request_obj.requesting_user_email or ""}
+                            </p>
                             <p><strong>Date:</strong> {request_obj.request_time}</p>
-                            <p><strong>Changes:</strong> {",".join([change.__class__.__name__ for change in request_obj.changes])}</p>
+                            <p>
+                            <strong>Changes:</strong>
+                            {",".join([change.__class__.__name__ for change in request_obj.changes])}
+                            </p>
                         </div>
                     </div>
-                   <p>To review and respond to this request, please click the button below:</p>
-                    <a href="#" class="button">Review Request</a>
-                    <p>If you did not expect this request or have concerns about it, please contact our support team immediately.</p>
+                    <p>If you did not expect this request or have concerns about it,
+                    please contact our support team immediately.</p>
                 </div>
                 <div class="footer">
                     This is an automated message, please do not reply directly to this email. <br>
