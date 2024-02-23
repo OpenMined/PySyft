@@ -41,6 +41,7 @@ from ..response import SyftSuccess
 from .user_roles import ServiceRole
 
 
+@serializable()
 class UserV1(SyftObject):
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -151,6 +152,7 @@ def check_pwd(password: str, hashed_password: str) -> bool:
     )
 
 
+@serializable()
 class UserUpdateV1(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -208,6 +210,7 @@ class UserUpdate(PartialSyftObject):
     mock_execution_permission: bool
 
 
+@serializable()
 class UserCreateV1(UserUpdateV1):
     __canonical_name__ = "UserCreate"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -273,6 +276,7 @@ class UserSearch(PartialSyftObject):
     name: str
 
 
+@serializable()
 class UserViewV1(SyftObject):
     __canonical_name__ = "UserView"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -469,6 +473,7 @@ def user_to_view_user() -> List[Callable]:
                 "institution",
                 "website",
                 "mock_execution_permission",
+                "email_notifications_enabled",
             ]
         )
     ]
@@ -552,13 +557,13 @@ def downgrade_user_view_v3_to_v2() -> List[Callable]:
 
 
 # Create
-@migrate(UserViewV2, UserView)
+@migrate(UserCreateV2, UserCreate)
 def upgrade_user_create_v2_to_v3() -> List[Callable]:
     return [make_set_default(key="email_notifications_enabled", value=True)]
 
 
 @migrate(UserView, UserViewV2)
-def downgrade_create_view_v3_to_v2() -> List[Callable]:
+def downgrade_create_create_v3_to_v2() -> List[Callable]:
     return [drop(["email_notifications_enabled"])]
 
 
@@ -568,6 +573,6 @@ def upgrade_user_update_v2_to_v3() -> List[Callable]:
     return [make_set_default(key="email_notifications_enabled", value=True)]
 
 
-@migrate(UserUpdate, UserViewV2)
+@migrate(UserUpdate, UserUpdateV2)
 def downgrade_user_update_v3_to_v2() -> List[Callable]:
     return [drop(["email_notifications_enabled"])]
