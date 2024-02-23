@@ -172,9 +172,8 @@ repos:
       - id: mypy
         name: "mypy: syft"
         always_run: true
-        files: "^packages/syft/src/syft/client|^packages/syft/src/syft/enclave|^packages/syft/src/syft/node|^packages/syft/src/syft/shylock|^packages/syft/src/syft/exceptions"
+        files: "^packages/syft/src/syft/ast|^packages/syft/src/syft/capnp|^packages/syft/src/syft/client|^packages/syft/src/syft/core|^packages/syft/src/syft/custom_worker|^packages/syft/src/syft/enclave|^packages/syft/src/syft/node|^packages/syft/src/syft/shylock|^packages/syft/src/syft/exceptions"
         # files: "^packages/syft/src/syft/"
-        # files: "^packages/syft/src/syft/abstract_node.py"
         args: [
             "--follow-imports=skip",
             "--ignore-missing-imports",

@@ -57,7 +57,7 @@ class CustomBuildConfig(SyftBaseModel):
     @validator("python_packages")
     def validate_python_packages(cls, pkgs: List[str]) -> List[str]:
         for pkg in pkgs:
-            ver_parts = ()
+            ver_parts: Union[tuple, list] = ()
             name_ver = pkg.split("==")
             if len(name_ver) != 2:
                 raise ValueError(_malformed_python_package_error_msg(pkg))
@@ -72,13 +72,13 @@ class CustomBuildConfig(SyftBaseModel):
 
         return pkgs
 
-    def merged_python_pkgs(self, sep=" ") -> str:
+    def merged_python_pkgs(self, sep: str = " ") -> str:
         return sep.join(self.python_packages)
 
-    def merged_system_pkgs(self, sep=" ") -> str:
+    def merged_system_pkgs(self, sep: str = " ") -> str:
         return sep.join(self.system_packages)
 
-    def merged_custom_cmds(self, sep=";") -> str:
+    def merged_custom_cmds(self, sep: str = ";") -> str:
         return sep.join(self.custom_cmds)
 
 
@@ -166,7 +166,9 @@ class DockerWorkerConfig(WorkerConfig):
     def set_description(self, description_text: str) -> None:
         self.description = description_text
 
-    def test_image_build(self, tag: str, **kwargs) -> Union[SyftSuccess, SyftError]:
+    def test_image_build(
+        self, tag: str, **kwargs: Any
+    ) -> Union[SyftSuccess, SyftError]:
         try:
             with contextlib.closing(docker.from_env()) as client:
                 if not client.ping():
