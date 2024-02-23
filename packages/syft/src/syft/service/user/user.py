@@ -80,6 +80,9 @@ class UserV2(SyftObject):
     # TODO where do we put this flag?
     mock_execution_permission: bool = False
 
+    __attr_searchable__ = ["name", "email", "verify_key", "role"]
+    __attr_unique__ = ["email", "signing_key", "verify_key"]
+    __repr_attrs__ = ["name", "email"]
 
 @serializable()
 class User(SyftObject):
