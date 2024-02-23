@@ -13,11 +13,11 @@ from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -76,9 +76,11 @@ class EmailNotifier(BaseNotifier):
             password=password,
         )
 
-    def send(self, node: AbstractNode, notification: Notification) -> Result[Ok, Err]:
+    def send(
+        self, context: AuthedServiceContext, notification: Notification
+    ) -> Result[Ok, Err]:
         try:
-            user_service = node.get_service("userservice")
+            user_service = context.node.get_service("userservice")
             sender_email = user_service.get_by_verify_key(
                 notification.from_user_verify_key
             ).email
@@ -86,8 +88,10 @@ class EmailNotifier(BaseNotifier):
                 notification.to_user_verify_key
             ).email
 
-            subject = notification.subject
-            body = "Testing email notification!"
+            subject = notification.email_template.email_title(
+                notification, context=context
+            )
+            body = notification.email_template.email_body(notification, context=context)
 
             if isinstance(receiver_email, str):
                 receiver_email = [receiver_email]
@@ -165,13 +169,13 @@ class NotifierSettings(SyftObject):
 
     def send_notifications(
         self,
-        node: AbstractNode,
+        context: AuthedServiceContext,
         notification: Notification,
     ) -> Result[Ok, Err]:
         notifier_objs: List = self.select_notifiers(notification)
 
         for notifier in notifier_objs:
-            result = notifier.send(node, notification)
+            result = notifier.send(context, notification)
             if result.err():
                 return result
 
