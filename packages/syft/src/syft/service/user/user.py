@@ -39,7 +39,7 @@ from ...types.uid import UID
 from ..response import SyftError
 from ..response import SyftSuccess
 from .user_roles import ServiceRole
-
+from ..notifier.notifier_enums import NOTIFIERS
 
 @serializable()
 class UserV1(SyftObject):
@@ -97,7 +97,12 @@ class User(SyftObject):
         return EmailStr(v)
 
     # fields
-    email_notifications_enabled: bool = True
+    notifications_enabled: Dict[NOTIFIERS, bool] = {
+        NOTIFIERS.EMAIL: True,
+        NOTIFIERS.SMS: False,
+        NOTIFIERS.SLACK: False,
+        NOTIFIERS.APP: False,
+    }
     email: Optional[EmailStr]
     name: Optional[str]
     hashed_password: Optional[str]
