@@ -58,7 +58,7 @@ def _repr_debug_(value: Any) -> str:
     return repr(value)
 
 
-def raise_exception(table_name: str, e: Exception):
+def raise_exception(table_name: str, e: Exception) -> None:
     if "disk I/O error" in str(e):
         message = f"Error usually related to concurrent writes. {str(e)}"
         raise Exception(message)
@@ -183,7 +183,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
     ) -> Result[Ok[sqlite3.Cursor], Err[str]]:
         with SyftLock(self.lock_config):
             cursor: Optional[sqlite3.Cursor] = None
-            err = None
+            # err = None
             try:
                 cursor = self.cur.execute(sql, *args)
             except Exception as e:
@@ -196,8 +196,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
             # err = Err(str(e))
             self.db.commit()  # Commit if everything went ok
 
-            if err is not None:
-                return err
+            # if err is not None:
+            #     return err
 
             return Ok(cursor)
 
@@ -323,10 +323,10 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def __len__(self) -> int:
         return self._len()
 
-    def __delitem__(self, key: str):
+    def __delitem__(self, key: str) -> None:
         self._delete(key)
 
-    def clear(self) -> Self:
+    def clear(self) -> None:
         self._delete_all()
 
     def copy(self) -> Self:
@@ -352,7 +352,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def __iter__(self) -> Any:
         return iter(self.keys())
 
-    def __del__(self):
+    def __del__(self) -> None:
         try:
             self._close()
         except BaseException:

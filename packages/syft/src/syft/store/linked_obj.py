@@ -128,14 +128,15 @@ class LinkedObject(SyftObject):
             object_uid=object_uid,
         )
 
-    @staticmethod
+    @classmethod
     def from_uid(
+        cls,
         object_uid: UID,
         object_type: Type[SyftObject],
         service_type: Type[Any],
         node_uid: UID,
     ) -> Self:
-        return LinkedObject(
+        return cls(
             node_uid=node_uid,
             service_type=service_type,
             object_type=object_type,

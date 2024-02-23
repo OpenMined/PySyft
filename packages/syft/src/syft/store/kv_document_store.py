@@ -59,16 +59,16 @@ class KeyValueBackingStore:
     def __len__(self) -> int:
         raise NotImplementedError
 
-    def __delitem__(self, key: str):
+    def __delitem__(self, key: str) -> None:
         raise NotImplementedError
 
-    def clear(self) -> Self:
+    def clear(self) -> None:
         raise NotImplementedError
 
     def copy(self) -> Self:
         raise NotImplementedError
 
-    def update(self, *args: Any, **kwargs: Any) -> Self:
+    def update(self, *args: Any, **kwargs: Any) -> None:
         raise NotImplementedError
 
     def keys(self) -> Any:
@@ -248,7 +248,7 @@ class KeyValueStorePartition(StorePartition):
         permissions.add(permission.permission_string)
         self.permissions[permission.uid] = permissions
 
-    def remove_permission(self, permission: ActionObjectPermission):
+    def remove_permission(self, permission: ActionObjectPermission) -> None:
         permissions = self.permissions[permission.uid]
         permissions.remove(permission.permission_string)
         self.permissions[permission.uid] = permissions
@@ -370,8 +370,8 @@ class KeyValueStorePartition(StorePartition):
         credentials: SyftVerifyKey,
         qk: QueryKey,
         obj: SyftObject,
-        has_permission=False,
-        overwrite=False,
+        has_permission: bool = False,
+        overwrite: bool = False,
     ) -> Result[SyftObject, str]:
         try:
             if qk.value not in self.data:
@@ -449,7 +449,7 @@ class KeyValueStorePartition(StorePartition):
         pass
 
     def _delete(
-        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission=False
+        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
     ) -> Result[SyftSuccess, Err]:
         try:
             if has_permission or self.has_permission(
@@ -486,9 +486,9 @@ class KeyValueStorePartition(StorePartition):
     def _get_keys_index(self, qks: QueryKeys) -> Result[Set[Any], str]:
         try:
             # match AND
-            subsets = []
+            subsets: list = []
             for qk in qks.all:
-                subset = {}
+                subset: set = set()
                 pk_key, pk_value = qk.key, qk.value
                 if pk_key not in self.unique_keys:
                     return Err(f"Failed to query index with {qk}")
@@ -515,7 +515,7 @@ class KeyValueStorePartition(StorePartition):
             # match AND
             subsets = []
             for qk in qks.all:
-                subset = {}
+                subset: set = set()
                 pk_key, pk_value = qk.key, qk.value
                 if pk_key not in self.searchable_keys:
                     return Err(f"Failed to search with {qk}")

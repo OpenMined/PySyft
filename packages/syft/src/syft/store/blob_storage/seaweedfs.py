@@ -3,7 +3,10 @@ from io import BytesIO
 import math
 from queue import Queue
 import threading
+from typing import Any
+from typing import Callable
 from typing import Dict
+from typing import Generator
 from typing import List
 from typing import Optional
 from typing import Type
@@ -103,10 +106,12 @@ class SeaweedFSBlobDeposit(BlobDeposit):
 
                     # read a chunk untill we have read part_size
                     class PartGenerator:
-                        def __init__(self):
+                        def __init__(self) -> None:
                             self.no_lines = 0
 
-                        def async_generator(self, chunk_size=DEFAULT_UPLOAD_CHUNK_SIZE):
+                        def async_generator(
+                            self, chunk_size: int = DEFAULT_UPLOAD_CHUNK_SIZE
+                        ) -> Generator:
                             item_queue: Queue = Queue()
                             threading.Thread(
                                 target=self.add_chunks_to_queue,
@@ -120,8 +125,10 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                                 item = item_queue.get()
 
                         def add_chunks_to_queue(
-                            self, queue, chunk_size=DEFAULT_UPLOAD_CHUNK_SIZE
-                        ):
+                            self,
+                            queue: Queue,
+                            chunk_size: int = DEFAULT_UPLOAD_CHUNK_SIZE,
+                        ) -> None:
                             """Creates a data geneator for the part"""
                             n = 0
 
@@ -166,14 +173,14 @@ class SeaweedFSBlobDeposit(BlobDeposit):
 
 
 @migrate(SeaweedFSBlobDeposit, SeaweedFSBlobDepositV1)
-def downgrade_seaweedblobdeposit_v2_to_v1():
+def downgrade_seaweedblobdeposit_v2_to_v1() -> list[Callable]:
     return [
         drop(["size"]),
     ]
 
 
 @migrate(SeaweedFSBlobDepositV1, SeaweedFSBlobDeposit)
-def upgrade_seaweedblobdeposit_v1_to_v2():
+def upgrade_seaweedblobdeposit_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("size", 1),
     ]
@@ -240,11 +247,14 @@ class SeaweedFSConnection(BlobStorageConnection):
     def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, *exc) -> None:
+    def __exit__(self, *exc: Any) -> None:
         self.client.close()
 
     def read(
-        self, fp: SecureFilePathLocation, type_: Optional[Type], bucket_name=None
+        self,
+        fp: SecureFilePathLocation,
+        type_: Optional[Type],
+        bucket_name: Optional[str] = None,
     ) -> BlobRetrieval:
         if bucket_name is None:
             bucket_name = self.default_bucket_name

@@ -42,8 +42,12 @@ Read/retrieve SyftObject from blob storage
 
 
 # stdlib
+from io import BytesIO
 import os
 from pathlib import Path
+from typing import Any
+from typing import Callable
+from typing import Generator
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -101,14 +105,14 @@ class BlobRetrieval(SyftObject):
 
 
 @migrate(BlobRetrieval, BlobRetrievalV1)
-def downgrade_blobretrieval_v2_to_v1():
+def downgrade_blobretrieval_v2_to_v1() -> list[Callable]:
     return [
         drop(["syft_blob_storage_entry_id", "file_size"]),
     ]
 
 
 @migrate(BlobRetrievalV1, BlobRetrieval)
-def upgrade_blobretrieval_v1_to_v2():
+def upgrade_blobretrieval_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("syft_blob_storage_entry_id", None),
         make_set_default("file_size", 1),
@@ -131,7 +135,9 @@ class SyftObjectRetrieval(BlobRetrieval):
     syft_object: bytes
     path: Path
 
-    def _read_data(self, stream=False, _deserialize=True, **kwargs):
+    def _read_data(
+        self, stream: bool = False, _deserialize: bool = True, **kwargs: Any
+    ) -> Any:
         # development setup, we can access the same filesystem
         if os.access(self.path, os.R_OK) and self.path.is_file():
             with open(self.path, "rb") as fp:
@@ -151,19 +157,19 @@ class SyftObjectRetrieval(BlobRetrieval):
         else:
             return res
 
-    def read(self, _deserialize=True) -> Union[SyftObject, SyftError]:
+    def read(self, _deserialize: bool = True) -> Union[SyftObject, SyftError]:
         return self._read_data(_deserialize=_deserialize)
 
 
 @migrate(SyftObjectRetrieval, SyftObjectRetrievalV2)
-def downgrade_syftobjretrival_v3_to_v2():
+def downgrade_syftobjretrival_v3_to_v2() -> list[Callable]:
     return [
         drop(["path"]),
     ]
 
 
 @migrate(SyftObjectRetrievalV2, SyftObjectRetrieval)
-def upgrade_syftobjretrival_v2_to_v3():
+def upgrade_syftobjretrival_v2_to_v3() -> list[Callable]:
     return [
         make_set_default("path", Path("")),
     ]
@@ -177,8 +183,11 @@ class BlobRetrievalByURLV1(BlobRetrievalV1):
 
 
 def syft_iter_content(
-    blob_url, chunk_size, max_retries=MAX_RETRIES, timeout=DEFAULT_TIMEOUT
-):
+    blob_url: Union[str, GridURL],
+    chunk_size: int,
+    max_retries: int = MAX_RETRIES,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> Generator:
     """custom iter content with smart retries (start from last byte read)"""
     current_byte = 0
     for attempt in range(max_retries):
@@ -231,7 +240,13 @@ class BlobRetrievalByURL(BlobRetrieval):
         else:
             return self._read_data()
 
-    def _read_data(self, stream=False, chunk_size=DEFAULT_CHUNK_SIZE, *args, **kwargs):
+    def _read_data(
+        self,
+        stream: bool = False,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
         # relative
         from ...client.api import APIRegistry
 
@@ -262,14 +277,14 @@ class BlobRetrievalByURL(BlobRetrieval):
 
 
 @migrate(BlobRetrievalByURLV2, BlobRetrievalByURLV1)
-def downgrade_blobretrivalbyurl_v2_to_v1():
+def downgrade_blobretrivalbyurl_v2_to_v1() -> list[Callable]:
     return [
         drop(["syft_blob_storage_entry_id", "file_size"]),
     ]
 
 
 @migrate(BlobRetrievalByURLV1, BlobRetrievalByURLV2)
-def upgrade_blobretrivalbyurl_v1_to_v2():
+def upgrade_blobretrivalbyurl_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("syft_blob_storage_entry_id", None),
         make_set_default("file_size", 1),
@@ -277,14 +292,14 @@ def upgrade_blobretrivalbyurl_v1_to_v2():
 
 
 @migrate(BlobRetrievalByURL, BlobRetrievalByURLV2)
-def downgrade_blobretrivalbyurl_v3_to_v2():
+def downgrade_blobretrivalbyurl_v3_to_v2() -> list[Callable]:
     return [
         str_url_to_grid_url,
     ]
 
 
 @migrate(BlobRetrievalByURLV2, BlobRetrievalByURL)
-def upgrade_blobretrivalbyurl_v2_to_v3():
+def upgrade_blobretrivalbyurl_v2_to_v3() -> list[Callable]:
     return []
 
 
@@ -295,7 +310,7 @@ class BlobDeposit(SyftObject):
 
     blob_storage_entry_id: UID
 
-    def write(self, data: bytes) -> Union[SyftSuccess, SyftError]:
+    def write(self, data: BytesIO) -> Union[SyftSuccess, SyftError]:
         pass
 
 
@@ -308,7 +323,7 @@ class BlobStorageConnection:
     def __enter__(self) -> Self:
         raise NotImplementedError
 
-    def __exit__(self, *exc) -> None:
+    def __exit__(self, *exc: Any) -> None:
         raise NotImplementedError
 
     def read(self, fp: SecureFilePathLocation, type_: Optional[Type]) -> BlobRetrieval:
