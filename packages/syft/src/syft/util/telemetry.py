@@ -1,5 +1,6 @@
 # stdlib
 import os
+from typing import Any
 from typing import Callable
 from typing import Optional
 from typing import TypeVar
@@ -20,7 +21,7 @@ TRACE_MODE = str_to_bool(os.environ.get("TRACE", "False"))
 T = TypeVar("T", bound=Union[Callable, type])
 
 
-def noop(__func_or_class: T, /) -> T:
+def noop(__func_or_class: T, /, *args: Any, **kwargs: Any) -> T:
     return __func_or_class
 
 

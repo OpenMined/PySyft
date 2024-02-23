@@ -49,6 +49,7 @@ T = TypeVar("T", bound=Union[Callable, type])
 
 def instrument(
     _func_or_class: T,
+    /,
     *,
     span_name: str = "",
     record_exception: bool = True,
