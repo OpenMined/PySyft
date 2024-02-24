@@ -1,23 +1,17 @@
 # third party
 from fastapi import FastAPI
-import veilid
+
+# relative
+from .veilid_core import VeilidConnectionSingleton
+from .veilid_core import get_veilid_conn
 
 app = FastAPI(title="Veilid")
-
-HOST = "localhost"
-PORT = 5959
+veilid_conn = VeilidConnectionSingleton()
 
 
 @app.get("/")
 async def read_root() -> dict[str, str]:
     return {"message": "Hello World"}
-
-
-async def get_veilid_conn() -> veilid.VeilidAPI:
-    async def noop_callback(update: veilid.VeilidUpdate) -> None:
-        pass
-
-    return await veilid.json_api_connect(HOST, PORT, noop_callback)
 
 
 @app.get("/healthcheck")
@@ -28,3 +22,18 @@ async def healthcheck() -> dict[str, str]:
             return {"message": "OK"}
         else:
             return {"message": "FAIL"}
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    try:
+        veilid_conn.initialize_connection()
+    except Exception as e:
+        # TODO: Shift to Logging Module
+        print(e)
+        raise e
+
+
+@app.on_event("shutdown")
+async def shutdown_event() -> None:
+    veilid_conn.release_connection()
