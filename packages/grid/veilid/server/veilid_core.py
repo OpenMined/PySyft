@@ -1,11 +1,15 @@
 # stdlib
 from typing import Callable
 from typing import Optional
+from typing import Union
 
 # third party
 import veilid
 from veilid import KeyPair
+from veilid import TypedKey
+from veilid import ValueData
 from veilid import VeilidUpdate
+from veilid.json_api import _JsonRoutingContext
 from veilid.json_api import _JsonVeilidAPI
 
 # relative
@@ -87,3 +91,41 @@ async def retrieve_dht_key() -> dict[str, str]:
     if dht_key is None:
         return {"message": "DHT Key does not exist"}
     return {"message": str(dht_key)}
+
+
+async def get_dht_value(
+    router: _JsonRoutingContext,
+    dht_key: TypedKey,
+    subkey: int,
+    force_refresh: bool = True,
+) -> Union[dict[str, str], ValueData]:
+    try:
+        await router.open_dht_record(key=dht_key, writer=None)
+    except Exception:
+        return {"message": f"DHT Key:{dht_key} does not exist in the veilid network"}
+
+    try:
+        return await router.get_dht_value(
+            key=dht_key, subkey=subkey, force_refresh=force_refresh
+        )
+    except Exception:
+        return {"message": f"Subkey:{subkey} does not exist in the DHT Key:{dht_key}"}
+
+
+async def app_message(dht_key: str, message: bytes) -> dict[str, str]:
+    conn = await get_veilid_conn()
+    router = await (await conn.new_routing_context()).with_default_safety()
+
+    dht_key = veilid.TypedKey(dht_key)
+    dht_value = await get_dht_value(router, dht_key, 0)
+
+    if isinstance(dht_value, dict):
+        return dht_value
+
+    # Private Router to peer
+    prr_peer = await conn.import_remote_private_route(dht_value.data)
+
+    # Send message to peer
+    await router.app_message(prr_peer, message)
+
+    return {"message": "Message sent successfully"}

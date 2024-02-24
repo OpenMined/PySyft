@@ -1,8 +1,12 @@
 # third party
+from fastapi import Body
 from fastapi import FastAPI
+from fastapi import Request
+from typing_extensions import Annotated
 
 # relative
 from .veilid_core import VeilidConnectionSingleton
+from .veilid_core import app_message
 from .veilid_core import generate_dht_key
 from .veilid_core import get_veilid_conn
 from .veilid_core import retrieve_dht_key
@@ -34,6 +38,13 @@ async def generate_dht_key_endpoint() -> dict[str, str]:
 @app.get("/retrieve_dht_key")
 async def retrieve_dht_key_endpoint() -> dict[str, str]:
     return await retrieve_dht_key()
+
+
+@app.post("/app_message")
+async def app_message_endpoint(
+    request: Request, dht_key: Annotated[str, Body()], message: Annotated[bytes, Body()]
+) -> dict[str, str]:
+    return await app_message(dht_key=dht_key, message=message)
 
 
 @app.on_event("startup")
