@@ -780,7 +780,7 @@ class Node(AbstractNode):
         return self.get_guest_client()
 
     @property
-    def current_protocol(self) -> List:
+    def current_protocol(self) -> Union[str, int]:
         data_protocol = get_data_protocol()
         return data_protocol.latest_version
 

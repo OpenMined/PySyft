@@ -176,7 +176,7 @@ class ProxyClient(SyftObject):
     def __len__(self) -> int:
         return len(self.retrieve_nodes())
 
-    def __getitem__(self, key: int) -> SyftClient:
+    def __getitem__(self, key: Union[int, str]) -> SyftClient:
         if not isinstance(key, int):
             raise SyftException(f"Key: {key} must be an integer")
 

@@ -474,7 +474,7 @@ class SyftClient:
         self.credentials: Optional[SyftSigningKey] = credentials
         self._api = api
         self.communication_protocol: Optional[Union[int, str]] = None
-        self.current_protocol = None
+        self.current_protocol: Optional[Union[int, str]] = None
 
         self.post_init()
 

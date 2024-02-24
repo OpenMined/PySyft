@@ -151,11 +151,11 @@ class DomainClient(SyftClient):
             return SyftError(message="No files to upload")
 
         if not isinstance(file_list, list):
-            file_list = [file_list]
+            file_list2: list[Union[BlobFile, str, Path]] = [file_list]
 
         expanded_file_list = []
 
-        for file in file_list:
+        for file in file_list2:
             if isinstance(file, BlobFile):
                 expanded_file_list.append(file)
                 continue
@@ -189,13 +189,13 @@ class DomainClient(SyftClient):
                 if isinstance(file, BlobFile):
                     print(file.path or file.file_name)
                 else:
-                    print(file.absolute())
+                    print(file.absolute())  # type: ignore[unreachable]
 
         try:
             result = []
             for file in expanded_file_list:
                 if not isinstance(file, BlobFile):
-                    file = BlobFile(path=file, file_name=file.name)
+                    file = BlobFile(path=file, file_name=file.name)  # type: ignore[unreachable]
                 print("Uploading", file.file_name)
                 if not file.uploaded:
                     file.upload_to_blobstorage(self)
@@ -308,7 +308,7 @@ class DomainClient(SyftClient):
     def get_project(
         self,
         name: Optional[str] = None,
-        uid: UID = None,
+        uid: Optional[UID] = None,
     ) -> Optional[Project]:
         """Get project by name or UID"""
 

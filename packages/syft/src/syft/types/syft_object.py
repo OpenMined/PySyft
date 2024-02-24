@@ -476,7 +476,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         return self.__dict__.keys()
 
     # allows splatting with **
-    def __getitem__(self, key: str) -> Any:
+    def __getitem__(self, key: Union[str, int]) -> Any:
         return self.__dict__.__getitem__(key)
 
     def _upgrade_version(self, latest: bool = True) -> "SyftObject":
