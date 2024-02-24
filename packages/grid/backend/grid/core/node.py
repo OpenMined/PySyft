@@ -96,4 +96,5 @@ worker: Node = worker_class(
     in_memory_workers=settings.INMEMORY_WORKERS,
     smtp_username=settings.SMTP_USERNAME,
     smtp_password=settings.SMTP_PASSWORD,
+    email_sender=settings.EMAIL_SENDER,
 )

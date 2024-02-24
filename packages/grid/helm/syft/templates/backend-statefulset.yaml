@@ -114,10 +114,14 @@ spec:
           value: "true"
         - name: N_CONSUMERS
           value: "0"
+        - name: SMTP_USERNAME
+          value: {{ .Values.node.settings.smtpUserName }}
+        - name: SMTP_PASSWORD
+          value: {{ .Values.node.settings.smtpPassword }}
+        - name: EMAIL_SENDER
+          value: {{ .Values.node.settings.smtpSender }}
         - name: INMEMORY_WORKERS
           value: "{{ .Values.node.settings.inMemoryWorkers }}"
-        - name: EMAIL_TOKEN
-          value: {{ .Values.node.settings.emailToken }}
         - name: LOG_LEVEL
           value: {{ .Values.node.settings.logLevel }}
         - name: DEFAULT_WORKER_POOL_IMAGE
