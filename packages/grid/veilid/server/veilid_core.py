@@ -4,12 +4,16 @@ from typing import Optional
 
 # third party
 import veilid
+from veilid import KeyPair
 from veilid import VeilidUpdate
 from veilid.json_api import _JsonVeilidAPI
 
 # relative
 from .constants import HOST
 from .constants import PORT
+from .veilid_db import load_dht_key
+from .veilid_db import store_dht_key
+from .veilid_db import store_dht_key_creds
 
 
 async def main_callback(update: VeilidUpdate) -> None:
@@ -56,3 +60,30 @@ class VeilidConnectionSingleton:
             # TODO: Shift to Logging Module
             print("Disconnected from Veilid")
             self._connection = None
+
+
+async def generate_dht_key() -> dict[str, str]:
+    conn = await get_veilid_conn()
+
+    if await load_dht_key(conn):
+        return {"message": "DHT Key already exists"}
+
+    router = await (await conn.new_routing_context()).with_default_safety()
+
+    dht_record = await router.create_dht_record(veilid.DHTSchema.dflt(1))
+    keypair = KeyPair.from_parts(key=dht_record.owner, secret=dht_record.owner_secret)
+
+    await store_dht_key(conn, dht_record.key)
+    await store_dht_key_creds(conn, keypair)
+
+    return {"message": "DHT Key generated successfully"}
+
+
+async def retrieve_dht_key() -> dict[str, str]:
+    conn = await get_veilid_conn()
+
+    dht_key = await load_dht_key(conn)
+
+    if dht_key is None:
+        return {"message": "DHT Key does not exist"}
+    return {"message": str(dht_key)}
