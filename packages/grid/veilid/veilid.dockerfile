@@ -26,7 +26,7 @@ RUN --mount=type=cache,target=/root/.cache \
 
 COPY ./start.sh /app/start.sh
 RUN chmod +x /app/start.sh
-COPY ./veilid.py /app/veilid.py
+COPY ./server /app/server
 COPY ./veilid-server.conf /veilid
 
 # ========== [Final] Start Veilid Server and Python Web Server ========== #
