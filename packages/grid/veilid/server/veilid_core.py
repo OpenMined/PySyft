@@ -26,7 +26,10 @@ from .veilid_db import store_dht_key_creds
 
 
 async def main_callback(update: VeilidUpdate) -> None:
-    print(update)
+    # TODO: Handle other types of network events like
+    # when our private route goes
+    if update.kind == veilid.VeilidUpdateKind.APP_MESSAGE:
+        logger.info(f"Received App Message: {update.detail.message}")
 
 
 async def noop_callback(update: VeilidUpdate) -> None:
