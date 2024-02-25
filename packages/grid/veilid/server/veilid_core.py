@@ -103,6 +103,7 @@ async def generate_dht_key() -> dict[str, str]:
             dht_record = await router.create_dht_record(veilid.DHTSchema.dflt(1))
             _, route_blob = await create_private_route(conn)
             await router.set_dht_value(dht_record.key, 0, route_blob)
+            await router.close_dht_record(dht_record.key)
 
             keypair = KeyPair.from_parts(
                 key=dht_record.owner, secret=dht_record.owner_secret
@@ -131,28 +132,38 @@ async def get_dht_value(
 ) -> Union[dict[str, str], ValueData]:
     try:
         await router.open_dht_record(key=dht_key, writer=None)
-    except Exception:
-        return {"message": f"DHT Key:{dht_key} does not exist in the veilid network"}
+    except Exception as e:
+        return {"message": f"DHT Key:{dht_key} does not exist. Exception: {e}"}
 
     try:
-        return await router.get_dht_value(
+        dht_value = await router.get_dht_value(
             key=dht_key, subkey=subkey, force_refresh=force_refresh
         )
-    except Exception:
-        return {"message": f"Subkey:{subkey} does not exist in the DHT Key:{dht_key}"}
+        # NOTE: Always close the DHT record after reading the value
+        await router.close_dht_record(dht_key)
+        return dht_value
+    except Exception as e:
+        return {
+            "message": f"Subkey:{subkey} does not exist in the DHT Key:{dht_key}. Exception: {e}"
+        }
 
 
 async def app_message(dht_key: str, message: bytes) -> dict[str, str]:
     async with await get_veilid_conn() as conn:
         async with await get_routing_context(conn) as router:
             dht_key = veilid.TypedKey(dht_key)
+            # TODO: change to debug
+            logger.info(f"App Message to DHT Key: {dht_key}")
             dht_value = await get_dht_value(router, dht_key, 0)
-
+            # TODO: change to debug
+            logger.info(f"DHT Value:{dht_value}")
             if isinstance(dht_value, dict):
                 return dht_value
 
             # Private Router to peer
             prr_peer = await conn.import_remote_private_route(dht_value.data)
+            # TODO: change to debug
+            logger.info(f"Private Route of  Peer: {prr_peer} ")
 
             # Send message to peer
             await router.app_message(prr_peer, message)
