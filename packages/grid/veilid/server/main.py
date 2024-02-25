@@ -11,6 +11,7 @@ from typing_extensions import Annotated
 
 # relative
 from .veilid_core import VeilidConnectionSingleton
+from .veilid_core import app_call
 from .veilid_core import app_message
 from .veilid_core import generate_dht_key
 from .veilid_core import get_veilid_conn
@@ -55,6 +56,13 @@ async def app_message_endpoint(
     request: Request, dht_key: Annotated[str, Body()], message: Annotated[bytes, Body()]
 ) -> dict[str, str]:
     return await app_message(dht_key=dht_key, message=message)
+
+
+@app.post("/app_call")
+async def app_call_endpoint(
+    request: Request, dht_key: Annotated[str, Body()], message: Annotated[bytes, Body()]
+) -> dict[str, str]:
+    return await app_call(dht_key=dht_key, message=message)
 
 
 @app.on_event("startup")

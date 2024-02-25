@@ -31,6 +31,11 @@ async def main_callback(update: VeilidUpdate) -> None:
     if update.kind == veilid.VeilidUpdateKind.APP_MESSAGE:
         logger.info(f"Received App Message: {update.detail.message}")
 
+    elif update.kind == veilid.VeilidUpdateKind.APP_CALL:
+        logger.info(f"Received App Call: {update.detail.message}")
+        async with await get_veilid_conn() as conn:
+            await conn.app_call_reply(update.detail.call_id, b"Reply from App Call")
+
 
 async def noop_callback(update: VeilidUpdate) -> None:
     pass
@@ -165,7 +170,29 @@ async def app_message(dht_key: str, message: bytes) -> dict[str, str]:
             # TODO: change to debug
             logger.info(f"Private Route of  Peer: {prr_peer} ")
 
-            # Send message to peer
+            # Send app message to peer
             await router.app_message(prr_peer, message)
 
             return {"message": "Message sent successfully"}
+
+
+async def app_call(dht_key: str, message: bytes) -> dict[str, str]:
+    async with await get_veilid_conn() as conn:
+        async with await get_routing_context(conn) as router:
+            dht_key = veilid.TypedKey(dht_key)
+            # TODO: change to debug
+            logger.info(f"App Call to DHT Key: {dht_key}")
+            dht_value = await get_dht_value(router, dht_key, 0)
+            # TODO: change to debug
+            logger.info(f"DHT Value:{dht_value}")
+            if isinstance(dht_value, dict):
+                return dht_value
+
+            # Private Router to peer
+            prr_peer = await conn.import_remote_private_route(dht_value.data)
+            # TODO: change to debug
+            logger.info(f"Private Route of  Peer: {prr_peer} ")
+
+            result = await router.app_call(prr_peer, message)
+
+            return {"message": result}
