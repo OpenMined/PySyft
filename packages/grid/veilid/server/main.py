@@ -1,4 +1,5 @@
 # stdlib
+import json
 import os
 import sys
 
@@ -62,6 +63,19 @@ async def app_message_endpoint(
 async def app_call_endpoint(
     request: Request, dht_key: Annotated[str, Body()], message: Annotated[bytes, Body()]
 ) -> dict[str, str]:
+    return await app_call(dht_key=dht_key, message=message)
+
+
+@app.api_route("/proxy", methods=["GET", "POST", "PUT"])
+async def proxy(request: Request) -> dict[str, str]:
+    logger.info("Proxying request")
+    request_data = await request.json()
+    logger.info(f"Request URL: {request_data}")
+    dht_key = request_data.get("dht_key")
+    request_data.pop("dht_key")
+    logger.info(f"Request URL: {request_data}")
+    message = json.dumps(request_data).encode()
+    logger.info(f"Final Message: {message!r}")
     return await app_call(dht_key=dht_key, message=message)
 
 
