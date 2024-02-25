@@ -1,10 +1,12 @@
 # stdlib
+import json
 from typing import Callable
 from typing import Optional
 from typing import Tuple
 from typing import Union
 
 # third party
+import httpx
 from loguru import logger
 import veilid
 from veilid import KeyPair
@@ -33,8 +35,19 @@ async def main_callback(update: VeilidUpdate) -> None:
 
     elif update.kind == veilid.VeilidUpdateKind.APP_CALL:
         logger.info(f"Received App Call: {update.detail.message}")
+        message: dict = json.loads(update.detail.message)
+
+        async with httpx.AsyncClient() as client:
+            response = await client.request(
+                method=message.get("method"),
+                url=message.get("url"),
+                data=message.get("data", None),
+                params=message.get("params", None),
+                json=message.get("json", None),
+            )
+
         async with await get_veilid_conn() as conn:
-            await conn.app_call_reply(update.detail.call_id, b"Reply from App Call")
+            await conn.app_call_reply(update.detail.call_id, response.content)
 
 
 async def noop_callback(update: VeilidUpdate) -> None:
