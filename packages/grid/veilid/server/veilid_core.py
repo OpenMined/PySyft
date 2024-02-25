@@ -1,6 +1,7 @@
 # stdlib
 from typing import Callable
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 # third party
@@ -12,6 +13,7 @@ from veilid import ValueData
 from veilid import VeilidUpdate
 from veilid.json_api import _JsonRoutingContext
 from veilid.json_api import _JsonVeilidAPI
+from veilid.types import RouteId
 
 # relative
 from .constants import HOST
@@ -65,17 +67,35 @@ class VeilidConnectionSingleton:
             self._connection = None
 
 
+async def create_private_route(
+    conn: _JsonVeilidAPI,
+    stability: veilid.Stability.RELIABLE = veilid.Stability.RELIABLE,
+    sequencing: veilid.Sequencing = veilid.Sequencing.ENSURE_ORDERED,
+) -> Tuple[RouteId, bytes]:
+    route_id, route_blob = await conn.new_custom_private_route(
+        [veilid.CryptoKind.CRYPTO_KIND_VLD0],
+        stability=stability,
+        sequencing=sequencing,
+    )
+    logger.info(f"Private Route created with Route ID: {route_id}")
+    return (route_id, route_blob)
+
+
 async def generate_dht_key() -> dict[str, str]:
     logger.info("Generating DHT Key")
+    # TODO: Use a context manager for the connection
     conn = await get_veilid_conn()
 
     if await load_dht_key(conn):
         return {"message": "DHT Key already exists"}
 
+    # TODO: Use a context manager for the router
     router = await (await conn.new_routing_context()).with_default_safety()
 
     async with router:
         dht_record = await router.create_dht_record(veilid.DHTSchema.dflt(1))
+        _, route_blob = await create_private_route(conn)
+        await router.set_dht_value(dht_record.key, 0, route_blob)
 
     keypair = KeyPair.from_parts(key=dht_record.owner, secret=dht_record.owner_secret)
 
@@ -86,6 +106,7 @@ async def generate_dht_key() -> dict[str, str]:
 
 
 async def retrieve_dht_key() -> dict[str, str]:
+    # TODO: Use a context manager for the connection
     conn = await get_veilid_conn()
 
     dht_key = await load_dht_key(conn)
