@@ -15,7 +15,15 @@ cd packages/grid/veilid && \
 docker run --rm -e DEV_MODE=True -p 4000:4000 -p 5959:5959 -p 5959:5959/udp  -v $(pwd)/server:/app/server veilid:0.1
 ```
 
-#### 2. Production Mode
+##### 2. Additional Flags for Development
+
+```
+a. VEILID_FLAGS="--debug" (For Veilid Debug logs)
+b. APP_LOG_LEVEL="debug" (For changing logging method inside the application could be info, debug, warning, critical)
+c. UVICORN_LOG_LEVEL="debug" (For setting logging method for uvicorn)
+```
+
+#### 3. Production Mode
 
 ```sh
 cd packages/grid/veilid && \

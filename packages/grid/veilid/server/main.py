@@ -1,7 +1,12 @@
+# stdlib
+import os
+import sys
+
 # third party
 from fastapi import Body
 from fastapi import FastAPI
 from fastapi import Request
+from loguru import logger
 from typing_extensions import Annotated
 
 # relative
@@ -10,6 +15,11 @@ from .veilid_core import app_message
 from .veilid_core import generate_dht_key
 from .veilid_core import get_veilid_conn
 from .veilid_core import retrieve_dht_key
+
+# Logging Configuration
+log_level = os.getenv("APP_LOG_LEVEL", "INFO").upper()
+logger.remove()
+logger.add(sys.stderr, colorize=True, level=log_level)
 
 app = FastAPI(title="Veilid")
 veilid_conn = VeilidConnectionSingleton()
@@ -52,8 +62,7 @@ async def startup_event() -> None:
     try:
         await veilid_conn.initialize_connection()
     except Exception as e:
-        # TODO: Shift to Logging Module
-        print(e)
+        logger.exception(f"Failed to connect to Veilid: {e}")
         raise e
 
 

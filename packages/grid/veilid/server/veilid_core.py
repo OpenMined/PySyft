@@ -4,6 +4,7 @@ from typing import Optional
 from typing import Union
 
 # third party
+from loguru import logger
 import veilid
 from veilid import KeyPair
 from veilid import TypedKey
@@ -55,18 +56,17 @@ class VeilidConnectionSingleton:
     async def initialize_connection(self) -> None:
         if self._connection is None:
             self._connection = await get_veilid_conn(update_callback=main_callback)
-            # TODO: Shift to Logging Module
-            print("Connected to Veilid")
+            logger.info("Connected to Veilid")
 
     async def release_connection(self) -> None:
         if self._connection is not None:
             await self._connection.release()
-            # TODO: Shift to Logging Module
-            print("Disconnected from Veilid")
+            logger.info("Disconnected  from Veilid")
             self._connection = None
 
 
 async def generate_dht_key() -> dict[str, str]:
+    logger.info("Generating DHT Key")
     conn = await get_veilid_conn()
 
     if await load_dht_key(conn):
@@ -74,7 +74,9 @@ async def generate_dht_key() -> dict[str, str]:
 
     router = await (await conn.new_routing_context()).with_default_safety()
 
-    dht_record = await router.create_dht_record(veilid.DHTSchema.dflt(1))
+    async with router:
+        dht_record = await router.create_dht_record(veilid.DHTSchema.dflt(1))
+
     keypair = KeyPair.from_parts(key=dht_record.owner, secret=dht_record.owner_secret)
 
     await store_dht_key(conn, dht_record.key)
