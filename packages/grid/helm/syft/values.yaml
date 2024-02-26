@@ -45,6 +45,16 @@ node:
     defaultWorkerPoolCount: 1
 
 # ----------------------------------------
+# For Veilid Core Debug Logs
+# veilidFlags: "--debug"
+# ----------------------------------------
+veilid:
+  enabled: false
+  veilidFlags: ""
+  appLogLevel: "info"
+  uvicornLogLevel: "info"
+
+# ----------------------------------------
 # For Azure
 # className: "azure-application-gateway"
 # ----------------------------------------

@@ -1,0 +1,21 @@
+{{- if .Values.veilid.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: veilid
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/managed-by: Helm
+spec:
+  externalIPs: null
+  ports:
+  - name: port-0
+    port: 80
+    protocol: TCP
+    targetPort: 4000
+  selector:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/component: veilid
+  type: ClusterIP
+{{ end }}

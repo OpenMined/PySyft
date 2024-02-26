@@ -55,6 +55,13 @@ images:
     context: ./seaweedfs
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
+  veilid:
+    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_VEILID}"
+    buildKit: {}
+    dockerfile: ./veilid/veilid.dockerfile
+    context: ./veilid
+    tags:
+      - dev-${DEVSPACE_TIMESTAMP}
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
@@ -75,6 +82,8 @@ deployments:
             defaultWorkerPoolCount: 1
         configuration:
           devmode: True
+        veilid:
+          enabled: true
 
 dev:
   mongo:
@@ -103,6 +112,16 @@ dev:
     sync:
       - path: ./backend/grid:/root/app/grid
       - path: ../syft:/root/app/syft
+  veilid:
+    labelSelector:
+      app.kubernetes.io/name: syft
+      app.kubernetes.io/component: veilid
+    env:
+      - name: DEV_MODE
+        value: "True"
+    logs: {}
+    sync:
+      - path: ./veilid/server:/app/server
 
 profiles:
   - name: gateway

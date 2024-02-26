@@ -1,0 +1,67 @@
+{{- if .Values.veilid.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/component: veilid
+    app.kubernetes.io/managed-by: Helm
+  name: veilid
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/component: veilid
+      app.kubernetes.io/managed-by: Helm
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/component: veilid
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      affinity: null
+      containers:
+      - args: null
+        command: null
+        env:
+        - name: VERSION
+          value: "{{ .Values.syft.version }}"
+        - name: VERSION_HASH
+          value: {{ .Values.node.settings.versionHash }}
+        - name: VEILID_FLAGS
+          value: {{ .Values.veilid.veilidFlags | quote }}
+        - name: UVICORN_LOG_LEVEL
+          value: {{ .Values.veilid.uvicornLogLevel }}
+        - name: APP_LOG_LEVEL
+          value: {{ .Values.veilid.appLogLevel }}
+
+        envFrom: null
+        image: {{ .Values.syft.registry }}/openmined/grid-veilid:{{ .Values.syft.version }}
+        lifecycle: null
+        livenessProbe: null
+        name: container-0
+        readinessProbe: null
+        securityContext: null
+        startupProbe: null
+        volumeDevices: null
+        volumeMounts: null
+      dnsConfig: null
+      ephemeralContainers: null
+      hostAliases: null
+      imagePullSecrets: null
+      initContainers: null
+      nodeName: null
+      nodeSelector: null
+      overhead: null
+      readinessGates: null
+      securityContext: null
+      terminationGracePeriodSeconds: 5
+      tolerations: null
+      topologySpreadConstraints: null
+      volumes: null
+{{ end }}
