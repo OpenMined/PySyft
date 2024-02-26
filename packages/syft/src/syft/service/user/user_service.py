@@ -12,6 +12,7 @@ from ...node.credentials import SyftVerifyKey
 from ...node.credentials import UserLoginCredentials
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...store.linked_obj import LinkedObject
 from ...types.syft_metaclass import Empty
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -20,6 +21,10 @@ from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..context import NodeServiceContext
 from ..context import UnauthedServiceContext
+from ..notification.email_templates import OnBoardEmailTemplate
+from ..notification.notification_service import CreateNotification
+from ..notification.notification_service import NotificationService
+from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -453,6 +458,25 @@ class UserService(AbstractService):
         user = result.ok()
 
         success_message = f"User '{user.name}' successfully registered!"
+
+        # Notification Step
+        root_key = self.admin_verify_key()
+        root_context = AuthedServiceContext(node=context.node, credentials=root_key)
+        link = None
+        if new_user.created_by:
+            link = LinkedObject.with_context(user, context=root_context)
+        message = CreateNotification(
+            subject="Not allowed register attempt",
+            from_user_verify_key=root_key,
+            to_user_verify_key=user.verify_key,
+            linked_obj=link,
+            notifier_types=[NOTIFIERS.EMAIL],
+            email_template=OnBoardEmailTemplate,
+        )
+
+        method = context.node.get_service_method(NotificationService.send)
+        result = method(context=root_context, notification=message)
+
         if request_user_role in DATA_OWNER_ROLE_LEVEL:
             success_message += " To see users, run `[your_client].users`"
 

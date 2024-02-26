@@ -13,18 +13,18 @@ from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
 from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
 
-DEFAULT_EMAIL_SERVER = "smtp.postmarkapp.com"
+DEFAULT_EMAIL_SERVER = "smtp.sendgrid.net"
 
 
 class BaseNotifier:
@@ -38,27 +38,22 @@ class BaseNotifier:
 
 class EmailNotifier(BaseNotifier):
     smtp_client = SMTPClient
-    username: str
-    password: str
-    server: str
-    port: int
+    sender = ""
 
     def __init__(
         self,
         username: str,
         password: str,
+        sender: str,
         server: str = DEFAULT_EMAIL_SERVER,
         port: int = 587,
     ) -> None:
-        self.username = username
-        self.password = password
-        self.server = server
-        self.port = port
+        self.sender = sender
         self.smtp_client = SMTPClient(
-            server=self.server,
-            port=self.port,
-            username=self.username,
-            password=self.password,
+            server=server,
+            port=port,
+            username=username,
+            password=password,
         )
 
     @classmethod
@@ -76,24 +71,26 @@ class EmailNotifier(BaseNotifier):
             password=password,
         )
 
-    def send(self, node: AbstractNode, notification: Notification) -> Result[Ok, Err]:
+    def send(
+        self, context: AuthedServiceContext, notification: Notification
+    ) -> Result[Ok, Err]:
         try:
-            user_service = node.get_service("userservice")
-            sender_email = user_service.get_by_verify_key(
-                notification.from_user_verify_key
-            ).email
+            user_service = context.node.get_service("userservice")
+
             receiver_email = user_service.get_by_verify_key(
                 notification.to_user_verify_key
             ).email
 
-            subject = notification.subject
-            body = "Testing email notification!"
+            subject = notification.email_template.email_title(
+                notification, context=context
+            )
+            body = notification.email_template.email_body(notification, context=context)
 
             if isinstance(receiver_email, str):
                 receiver_email = [receiver_email]
 
             self.smtp_client.send(
-                sender=sender_email, receiver=receiver_email, subject=subject, body=body
+                sender=self.sender, receiver=receiver_email, subject=subject, body=body
             )
             return Ok("Email sent successfully!")
         except Exception:
@@ -127,6 +124,7 @@ class NotifierSettings(SyftObject):
         NOTIFIERS.APP: False,
     }
 
+    email_sender: Optional[str] = ""
     email_server: Optional[str] = DEFAULT_EMAIL_SERVER
     email_port: Optional[int] = 587
     email_username: Optional[str] = ""
@@ -165,13 +163,13 @@ class NotifierSettings(SyftObject):
 
     def send_notifications(
         self,
-        node: AbstractNode,
+        context: AuthedServiceContext,
         notification: Notification,
     ) -> Result[Ok, Err]:
         notifier_objs: List = self.select_notifiers(notification)
 
         for notifier in notifier_objs:
-            result = notifier.send(node, notification)
+            result = notifier.send(context, notification)
             if result.err():
                 return result
 
@@ -197,7 +195,9 @@ class NotifierSettings(SyftObject):
                 if notifier_type == NOTIFIERS.EMAIL:
                     notifier_objs.append(
                         self.notifiers[notifier_type](
-                            username=self.email_username, password=self.email_password
+                            username=self.email_username,
+                            password=self.email_password,
+                            sender=self.email_sender,
                         )
                     )
                 # If notifier is not email, we just create the notifier object

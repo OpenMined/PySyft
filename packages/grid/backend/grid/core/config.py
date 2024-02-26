@@ -143,6 +143,7 @@ class Settings(BaseSettings):
     CONSUMER_SERVICE_NAME: Optional[str] = os.getenv("CONSUMER_SERVICE_NAME")
     INMEMORY_WORKERS: bool = str_to_bool(os.getenv("INMEMORY_WORKERS", True))
     SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
+    EMAIL_SENDER: str = os.getenv("EMAIL_SENDER", "")
     SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
 
     TEST_MODE: bool = (

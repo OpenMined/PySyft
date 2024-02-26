@@ -60,13 +60,14 @@ class NotifierService(AbstractService):
         context: AuthedServiceContext,
         email_username: Optional[str] = None,
         email_password: Optional[str] = None,
+        email_sender: Optional[str] = None,
     ) -> Union[SyftSuccess, SyftError]:
         """Turn on email notifications.
 
         Args:
             email_username (Optional[str]): Email server username. Defaults to None.
             email_password (Optional[str]): Email email server password. Defaults to None.
-
+            sender_email (Optional[str]): Email sender email. Defaults to None.
         Returns:
             Union[SyftSuccess, SyftError]: A union type representing the success or error response.
 
@@ -110,6 +111,11 @@ class NotifierService(AbstractService):
             username=email_username, password=email_password
         )
 
+        if not email_sender and not notifier.email_sender:
+            return SyftError(
+                message="You must provide a sender email address to enable notifications."
+            )
+
         if validation_result.is_err():
             return SyftError(
                 message="Invalid SMTP credentials. Please check your username and password."
@@ -117,6 +123,10 @@ class NotifierService(AbstractService):
 
         notifier.email_password = email_password
         notifier.email_username = email_username
+
+        if email_sender:
+            notifier.email_sender = email_sender
+
         notifier.active = True
         print(
             "[LOG] Email credentials are valid. Updating the notifier settings in the db."
@@ -189,6 +199,7 @@ class NotifierService(AbstractService):
         node: AbstractNode,
         email_username: Optional[str] = None,
         email_password: Optional[str] = None,
+        email_sender: Optional[str] = None,
     ) -> Result[Ok, Err]:
         """Initialize Notifier settings for a Node.
         If settings already exist, it will use the existing one.
@@ -225,11 +236,13 @@ class NotifierService(AbstractService):
                     username=email_username, password=email_password
                 )
 
-                if validation_result.is_err():
+                sender_not_set = not email_sender and not notifier.email_sender
+                if validation_result.is_err() or sender_not_set:
                     notifier.active = False
                 else:
                     notifier.email_password = email_password
                     notifier.email_username = email_username
+                    notifier.email_sender = email_sender
                     notifier.active = True
 
             notifier_stash.set(node.signing_key.verify_key, notifier)
@@ -241,9 +254,9 @@ class NotifierService(AbstractService):
     # This is not a public API.
     # This method is used by other services to dispatch notifications internally
     def dispatch_notification(
-        self, node: AbstractNode, notification: Notification
-    ) -> Union[SyftSuccess, SyftError]:
-        admin_key = node.get_service("userservice").admin_verify_key()
+        self, context: AuthedServiceContext, notification: Notification
+    ) -> Union[SyftError]:
+        admin_key = context.node.get_service("userservice").admin_verify_key()
         notifier = self.stash.get(admin_key)
         if notifier.is_err():
             return SyftError(
@@ -254,7 +267,9 @@ class NotifierService(AbstractService):
         notifier: NotifierSettings = notifier.ok()
         # If notifier is active
         if notifier.active:
-            resp = notifier.send_notifications(node=node, notification=notification)
+            resp = notifier.send_notifications(
+                context=context, notification=notification
+            )
             if resp.is_err():
                 return SyftError(message=resp.err())
 

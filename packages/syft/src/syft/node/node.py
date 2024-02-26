@@ -312,7 +312,7 @@ class Node(AbstractNode):
         in_memory_workers: bool = True,
         smtp_username: Optional[str] = None,
         smtp_password: Optional[str] = None,
-        email_token: Optional[str] = None,
+        email_sender: Optional[str] = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -400,7 +400,10 @@ class Node(AbstractNode):
         )
 
         NotifierService.init_notifier(
-            node=self, email_password=smtp_password, email_username=smtp_username
+            node=self,
+            email_password=smtp_password,
+            email_username=smtp_username,
+            email_sender=email_sender,
         )
 
         self.client_cache = {}

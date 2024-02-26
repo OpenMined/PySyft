@@ -2,6 +2,7 @@
 from enum import Enum
 from typing import List
 from typing import Optional
+from typing import Type
 
 # relative
 from ...client.api import APIRegistry
@@ -24,6 +25,7 @@ from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ..notifier.notifier_enums import NOTIFIERS
+from .email_templates import EmailTemplate
 
 
 @serializable()
@@ -139,6 +141,7 @@ class Notification(SyftObject):
     status: NotificationStatus = NotificationStatus.UNREAD
     linked_obj: Optional[LinkedObject]
     notifier_types: Optional[List[NOTIFIERS]] = []
+    email_template: Optional[Type[EmailTemplate]] = None
     replies: Optional[List[ReplyNotification]] = []
 
     __attr_searchable__ = [
