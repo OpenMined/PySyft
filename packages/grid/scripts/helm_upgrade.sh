@@ -20,7 +20,7 @@ if [ "$UPGRADE_TYPE" == "ProdToDev" ]; then
     UPGRADE_ARGS=""
 elif [ "$UPGRADE_TYPE" == "BetaToDev" ]; then
     INSTALL_SOURCE=$BETA   # latest published beta
-    UPGRADE_SOURCE=$DEV  # local chart
+    UPGRADE_SOURCE=$DEV    # local chart
     INSTALL_ARGS=""
     UPGRADE_ARGS=""
 else

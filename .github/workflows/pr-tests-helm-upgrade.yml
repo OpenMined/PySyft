@@ -28,5 +28,5 @@ jobs:
       - name: Upgrade helm on latest beta
         run: |
           tox -e dev.k8s.start
-          tox -e syft.test.helm.upgrade
+          UPGRADE_TYPE=BetaToDev tox -e syft.test.helm.upgrade
           tox -e dev.k8s.destroy
