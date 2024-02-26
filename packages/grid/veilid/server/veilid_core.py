@@ -1,5 +1,6 @@
 # stdlib
 import json
+import lzma
 from typing import Callable
 from typing import Optional
 from typing import Tuple
@@ -47,7 +48,9 @@ async def main_callback(update: VeilidUpdate) -> None:
             )
 
         async with await get_veilid_conn() as conn:
-            await conn.app_call_reply(update.detail.call_id, response.content)
+            compressed_response = lzma.compress(response.content)
+            logger.info(f"Compression response size: {len(compressed_response)}")
+            await conn.app_call_reply(update.detail.call_id, compressed_response)
 
 
 async def noop_callback(update: VeilidUpdate) -> None:
