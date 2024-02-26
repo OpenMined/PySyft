@@ -2,11 +2,13 @@
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import cast
 
 # third party
 from result import Result
 
 # relative
+from ...abstract_node import AbstractNode
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
@@ -70,8 +72,8 @@ class DataSubjectService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Register a data subject."""
 
-        # TODO: (mypy) make context.node non-optional to solve this
-        member_relationship_add = context.node.get_service_method(  # type: ignore
+        context.node = cast(AbstractNode, context.node)
+        member_relationship_add = context.node.get_service_method(
             DataSubjectMemberService.add
         )
 
@@ -109,8 +111,8 @@ class DataSubjectService(AbstractService):
     def get_members(
         self, context: AuthedServiceContext, data_subject_name: str
     ) -> Union[List[DataSubject], SyftError]:
-        # TODO: (mypy) make context.node non-optional to solve this
-        get_relatives = context.node.get_service_method(  # type: ignore
+        context.node = cast(AbstractNode, context.node)
+        get_relatives = context.node.get_service_method(
             DataSubjectMemberService.get_relatives
         )
 

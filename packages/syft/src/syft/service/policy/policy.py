@@ -192,13 +192,13 @@ class InputPolicy(Policy):
     def _inputs_for_context(self, context: ChangeContext) -> Union[dict, SyftError]:
         user_node_view = NodeIdentity.from_change_context(context)
         inputs = self.inputs[user_node_view]
-
+        if context.node is None:
+            return SyftError(f"context {context}'s node is None")
         root_context = AuthedServiceContext(
             node=context.node, credentials=context.approving_user_credentials
         ).as_root_context()
 
-        action_service = context.node.get_service("actionservice")  # type: ignore
-        # TODO: (mypy) make context.node non-optional to solve this
+        action_service = context.node.get_service("actionservice")
         for var_name, uid in inputs.items():
             action_object = action_service.get(uid=uid, context=root_context)
             if action_object.is_err():

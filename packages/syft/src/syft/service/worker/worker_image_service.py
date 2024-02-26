@@ -3,12 +3,14 @@ import contextlib
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import cast
 
 # third party
 import docker
 import pydantic
 
 # relative
+from ...abstract_node import AbstractNode
 from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
@@ -90,8 +92,8 @@ class SyftWorkerImageService(AbstractService):
 
         if registry_uid:
             # get registry from image registry service
-            # TODO: (mypy) make context.node non-optional to solve this
-            image_registry_service: SyftImageRegistryService = context.node.get_service(  # type: ignore
+            context.node = cast(AbstractNode, context.node)
+            image_registry_service: SyftImageRegistryService = context.node.get_service(
                 SyftImageRegistryService
             )
             registry_result = image_registry_service.get_by_id(context, registry_uid)
@@ -230,8 +232,8 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"{res.err()}")
         image: SyftWorkerImage = res.ok()
 
-        # TODO: (mypy) make context.node non-optional to solve this
-        if context.node.in_memory_workers:  # type: ignore
+        context.node = cast(AbstractNode, context.node)
+        if context.node.in_memory_workers:
             pass
         elif IN_KUBERNETES:
             # TODO: Implement image deletion in kubernetes

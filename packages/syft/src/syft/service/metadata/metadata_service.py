@@ -1,4 +1,8 @@
+# stdlib
+from typing import cast
+
 # relative
+from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...util.telemetry import instrument
@@ -19,7 +23,7 @@ class MetadataService(AbstractService):
         path="metadata.get_metadata", name="get_metadata", roles=GUEST_ROLE_LEVEL
     )
     def get_metadata(self, context: AuthedServiceContext) -> NodeMetadataV3:
-        # TODO: (mypy) make context.node non-optional to solve this
+        context.node = cast(AbstractNode, context.node)
         return context.node.metadata  # type: ignore
 
     # @service_method(path="metadata.get_admin", name="get_admin", roles=GUEST_ROLE_LEVEL)
@@ -30,5 +34,5 @@ class MetadataService(AbstractService):
 
     @service_method(path="metadata.get_env", name="get_env", roles=GUEST_ROLE_LEVEL)
     def get_env(self, context: AuthedServiceContext) -> str:
-        # TODO: (mypy) make context.node non-optional to solve this
-        return context.node.packages  # type: ignore
+        context.node = cast(AbstractNode, context.node)
+        return context.node.packages

@@ -377,8 +377,8 @@ class UserService(AbstractService):
                 user.hashed_password,
             ):
                 if (
-                    # TODO: (mypy) make context.node non-optional to solve this
-                    context.node.node_type == NodeType.ENCLAVE  # type: ignore
+                    context.node
+                    and context.node.node_type == NodeType.ENCLAVE
                     and user.role == ServiceRole.ADMIN
                 ):
                     return SyftError(
@@ -418,17 +418,19 @@ class UserService(AbstractService):
             if new_user.created_by is None
             else self.get_role_for_credentials(new_user.created_by)
         )
+
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
+
         can_user_register = (
-            # TODO: (mypy) make context.node non-optional to solve this
-            context.node.settings.signup_enabled  # type: ignore
+            context.node.settings.signup_enabled
             or request_user_role in DATA_OWNER_ROLE_LEVEL
         )
 
         if not can_user_register:
-            # TODO: (mypy) make context.node non-optional to solve this
             return SyftError(
                 message=f"You don't have permission to create an account "
-                f"on the domain: {context.node.name}. Please contact the Domain Owner."  # type: ignore
+                f"on the domain: {context.node.name}. Please contact the Domain Owner."
             )
 
         user = new_user.to(User)
