@@ -7,5 +7,16 @@
   },
   "3": {
     "release_name": "0.8.4.json"
+  },
+  "dev": {
+    "object_versions": {
+      "VeilidConnection": {
+        "1": {
+          "version": 1,
+          "hash": "a5380a21dd2ff4de88b6c012dfe0c9aeb5cd16ef1df7b285f943a220dba05468",
+          "action": "add"
+        }
+      }
+    }
   }
 }

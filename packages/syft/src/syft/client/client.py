@@ -337,6 +337,7 @@ class VeilidConnection(NodeConnection):
     dht_key: str
     proxy_target_uid: Optional[UID]
     routes: Type[Routes] = Routes
+    session_cache: Optional[Session]
 
     @pydantic.validator("vld_forward_proxy", pre=True, always=True)
     def make_forward_proxy_url(cls, v: Union[GridURL, str]) -> GridURL:
@@ -377,7 +378,7 @@ class VeilidConnection(NodeConnection):
             "dht_key": self.dht_key,
             "params": params,
         }
-        response = self.session.request(str(forward_proxy_url), json=json_data)
+        response = self.session.get(str(forward_proxy_url), json=json_data)
         if response.status_code != 200:
             raise requests.ConnectionError(
                 f"Failed to fetch {forward_proxy_url}. Response returned with code {response.status_code}"

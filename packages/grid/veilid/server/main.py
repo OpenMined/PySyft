@@ -7,6 +7,7 @@ import sys
 from fastapi import Body
 from fastapi import FastAPI
 from fastapi import Request
+from fastapi import Response
 from loguru import logger
 from typing_extensions import Annotated
 
@@ -76,7 +77,8 @@ async def proxy(request: Request) -> dict[str, str]:
     logger.info(f"Request URL: {request_data}")
     message = json.dumps(request_data).encode()
     logger.info(f"Final Message: {message!r}")
-    return await app_call(dht_key=dht_key, message=message)
+    res = await app_call(dht_key=dht_key, message=message)
+    return Response(res, media_type="application/octet-stream")
 
 
 @app.on_event("startup")

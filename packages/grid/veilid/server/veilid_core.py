@@ -208,4 +208,4 @@ async def app_call(dht_key: str, message: bytes) -> dict[str, str]:
 
             result = await router.app_call(prr_peer, message)
 
-            return {"message": result}
+            return result
