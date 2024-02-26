@@ -36,10 +36,11 @@ from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_email
 from ...types.uid import UID
+from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftError
 from ..response import SyftSuccess
 from .user_roles import ServiceRole
-from ..notifier.notifier_enums import NOTIFIERS
+
 
 @serializable()
 class UserV1(SyftObject):
@@ -83,6 +84,7 @@ class UserV2(SyftObject):
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
     __repr_attrs__ = ["name", "email"]
+
 
 @serializable()
 class User(SyftObject):
@@ -206,7 +208,6 @@ class UserUpdate(PartialSyftObject):
             return getattr(ServiceRole, v.upper())
         return v
 
-    email_notifications_enabled: Optional[bool] = None
     email: EmailStr
     name: str
     role: ServiceRole  # make sure role cant be set without uid
@@ -258,7 +259,6 @@ class UserCreate(UserUpdate):
     __canonical_name__ = "UserCreate"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    email_notifications_enabled: bool = True
     email: EmailStr
     name: str
     role: Optional[ServiceRole] = None  # TODO: type: ignore[assignment]
@@ -316,7 +316,12 @@ class UserView(SyftObject):
     __canonical_name__ = "UserView"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    email_notifications_enabled: bool
+    notifications_enabled: Dict[NOTIFIERS, bool] = {
+        NOTIFIERS.EMAIL: True,
+        NOTIFIERS.SMS: False,
+        NOTIFIERS.SLACK: False,
+        NOTIFIERS.APP: False,
+    }
     email: EmailStr
     name: str
     role: ServiceRole  # make sure role cant be set without uid
@@ -330,7 +335,7 @@ class UserView(SyftObject):
         "institution",
         "website",
         "role",
-        "email_notifications_enabled",
+        "notifications_enabled",
     ]
 
     def _coll_repr_(self) -> Dict[str, Any]:
@@ -340,6 +345,10 @@ class UserView(SyftObject):
             "Institute": self.institution,
             "Website": self.website,
             "Role": self.role.name.capitalize(),
+            "Notifications": "Email: "
+            + (
+                "Enabled" if self.notifications_enabled[NOTIFIERS.EMAIL] else "Disabled"
+            ),
         }
 
     def _set_password(self, new_password: str) -> Union[SyftError, SyftSuccess]:
@@ -481,7 +490,7 @@ def user_to_view_user() -> List[Callable]:
                 "institution",
                 "website",
                 "mock_execution_permission",
-                "email_notifications_enabled",
+                "notifications_enabled",
             ]
         )
     ]
@@ -502,12 +511,12 @@ def user_to_user_verify() -> List[Callable]:
     return [keep(["email", "signing_key", "id", "role"])]
 
 
-@migrate(UserV1, User)
+@migrate(UserV1, UserV2)
 def upgrade_user_v1_to_v2() -> List[Callable]:
     return [make_set_default(key="mock_execution_permission", value=False)]
 
 
-@migrate(User, UserV1)
+@migrate(UserV2, UserV1)
 def downgrade_user_v2_to_v1() -> List[Callable]:
     return [drop(["mock_execution_permission"])]
 
@@ -532,12 +541,12 @@ def downgrade_user_create_v2_to_v1() -> List[Callable]:
     return [drop(["mock_execution_permission"])]
 
 
-@migrate(UserViewV1, UserView)
+@migrate(UserViewV1, UserViewV2)
 def upgrade_user_view_v1_to_v2() -> List[Callable]:
     return [make_set_default(key="mock_execution_permission", value=False)]
 
 
-@migrate(UserView, UserViewV1)
+@migrate(UserViewV2, UserViewV1)
 def downgrade_user_view_v2_to_v1() -> List[Callable]:
     return [drop(["mock_execution_permission"])]
 
@@ -545,42 +554,20 @@ def downgrade_user_view_v2_to_v1() -> List[Callable]:
 # User
 @migrate(UserV2, User)
 def upgrade_user_v2_to_v3() -> List[Callable]:
-    return [make_set_default(key="email_notifications_enabled", value=True)]
+    return [make_set_default(key="notifications_enabled", value=True)]
 
 
 @migrate(User, UserV2)
 def downgrade_user_v3_to_v2() -> List[Callable]:
-    return [drop(["email_notifications_enabled"])]
+    return [drop(["notifications_enabled"])]
 
 
 # View
 @migrate(UserViewV2, UserView)
 def upgrade_user_view_v2_to_v3() -> List[Callable]:
-    return [make_set_default(key="email_notifications_enabled", value=True)]
+    return [make_set_default(key="notifications_enabled", value=True)]
 
 
 @migrate(UserView, UserViewV2)
 def downgrade_user_view_v3_to_v2() -> List[Callable]:
-    return [drop(["email_notifications_enabled"])]
-
-
-# Create
-@migrate(UserCreateV2, UserCreate)
-def upgrade_user_create_v2_to_v3() -> List[Callable]:
-    return [make_set_default(key="email_notifications_enabled", value=True)]
-
-
-@migrate(UserView, UserViewV2)
-def downgrade_create_create_v3_to_v2() -> List[Callable]:
-    return [drop(["email_notifications_enabled"])]
-
-
-# Update
-@migrate(UserUpdateV2, UserUpdate)
-def upgrade_user_update_v2_to_v3() -> List[Callable]:
-    return [make_set_default(key="email_notifications_enabled", value=True)]
-
-
-@migrate(UserUpdate, UserUpdateV2)
-def downgrade_user_update_v3_to_v2() -> List[Callable]:
-    return [drop(["email_notifications_enabled"])]
+    return [drop(["notifications_enabled"])]

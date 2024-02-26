@@ -15,6 +15,8 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
+
+# from ..user.user import User
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -161,32 +163,8 @@ class NotifierService(AbstractService):
         This will only work if the domain owner has enabled notifications.
         """
 
-        # TODO: user credentials should not be used to get the notifier settings
-        # TODO: WARNING THIS IS A POTENTIAL SECURITY RISK (ONLY FOR DEVELOPMENT PURPOSES)
+        # TODO: User method in User Service to disable notifications
 
-        admin_key = self.stash.admin_verify_key()
-
-        result = self.stash.get(credentials=admin_key)
-        print(result)
-
-        if result.is_err():
-            return SyftError(message=result.err())
-
-        notifier = result.ok()
-
-        user_key = context.credentials
-
-        if user_key in notifier.email_subscribers:
-            return SyftSuccess(
-                message="Notifications are already activated for this user."
-            )
-
-        notifier.email_subscribers.add(user_key)
-
-        # TODO: user credentials should not be used to update the notifier settings
-        result = self.stash.update(credentials=admin_key, settings=notifier)
-        if result.is_err():
-            return SyftError(message=result.err())
         return SyftSuccess(message="Notifications enabled successfully.")
 
     @service_method(
@@ -202,20 +180,8 @@ class NotifierService(AbstractService):
         This will only work if the domain owner has enabled notifications.
         """
 
-        # TODO: WARNING THIS IS A POTENTIAL SECURITY RISK (ONLY FOR DEVELOPMENT PURPOSES)
-        admin_key = self.stash.admin_verify_key()
-        result = self.stash.get(credentials=admin_key)
+        # TODO: User method in User Service to disable notifications
 
-        if result.is_err():
-            return SyftError(message=result.err())
-
-        notifier = result.ok()
-        user_key = context.credentials
-        notifier.email_subscribers.remove(user_key)
-
-        result = self.stash.update(credentials=admin_key, settings=notifier)
-        if result.is_err():
-            return SyftError(message=result.err())
         return SyftSuccess(message="Notifications disabled successfully.")
 
     @staticmethod

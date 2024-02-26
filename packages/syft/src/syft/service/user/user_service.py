@@ -481,6 +481,29 @@ class UserService(AbstractService):
             return result.ok()
         return SyftError(message=f"No User with verify_key: {verify_key}")
 
+    # TODO: This exposed service is only for the development phase.
+    # enable/disable notifications will be called from Notifier Service
+
+    @service_method(
+        path="user.enable_notifications",
+        name="enable_notifications",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def enable_notifications(
+        self, context: AuthedServiceContext
+    ) -> Union[UserView, SyftError]:
+        result = self.stash.get_by_verify_key(
+            credentials=context.credentials, verify_key=context.credentials
+        )
+        if result.is_ok():
+            # this seems weird that we get back None as Ok(None)
+            user = result.ok()
+            if user:
+                return user
+            else:
+                SyftError(message="User not found!")
+        return SyftError(message=str(result.err()))
+
 
 TYPE_TO_SERVICE[User] = UserService
 SERVICE_TO_TYPES[UserService].update({User})
