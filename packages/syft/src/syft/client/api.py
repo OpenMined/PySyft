@@ -620,6 +620,8 @@ class SyftAPI(SyftObject):
         user_verify_key: Optional[SyftVerifyKey] = None,
     ) -> SyftAPI:
         # relative
+        from ..service.api.api_service import APIService
+
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
         from ..service.code.user_code_service import UserCodeService
 
@@ -715,6 +717,26 @@ class SyftAPI(SyftObject):
                 pre_kwargs={"uid": code_item.id},
             )
             endpoints[unique_path] = endpoint
+
+        # get admin defined custom api endpoints
+        method = node.get_method_with_context(APIService.get_endpoints, context)
+        custom_endpoints = method()
+        for custom_endpoint in custom_endpoints:
+            pre_kwargs = {"path": custom_endpoint.path}
+            service_path = "api.call"
+            path = custom_endpoint.path
+            api_end = custom_endpoint.path.split(".")[-1]
+            endpoint = APIEndpoint(
+                service_path=service_path,
+                module_path=path,
+                name=api_end,
+                description="",
+                doc_string="",
+                signature=custom_endpoint.signature,
+                has_self=False,
+                pre_kwargs=pre_kwargs,
+            )
+            endpoints[path] = endpoint
 
         return SyftAPI(
             node_name=node.name,

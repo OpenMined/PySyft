@@ -7,5 +7,16 @@
   },
   "3": {
     "release_name": "0.8.4.json"
+  },
+  "dev": {
+    "object_versions": {
+      "CustomAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "2a85e44b93c3b41f2d7e8b3d968dd623dbf98728e26de5631c5ac22111100799",
+          "action": "add"
+        }
+      }
+    }
   }
 }
