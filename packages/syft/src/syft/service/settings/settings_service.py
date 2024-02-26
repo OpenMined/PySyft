@@ -92,12 +92,14 @@ class SettingsService(AbstractService):
         context: AuthedServiceContext,
         email_username: Optional[str] = None,
         email_password: Optional[str] = None,
+        email_sender: Optional[str] = None,
     ) -> Union[SyftSuccess, SyftError]:
         notifier_service = context.node.get_service("notifierservice")
         return notifier_service.turn_on(
             context=context,
             email_username=email_username,
             email_password=email_password,
+            email_sender=email_sender,
         )
 
     @service_method(
