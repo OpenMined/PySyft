@@ -911,6 +911,7 @@ class SyftClient:
         register: bool = False,
         **kwargs: Any,
     ) -> Self:
+        # TODO: Remove this Hack (Note to Rasswanth)
         # If SYFT_LOGIN_{NODE_NAME}_PASSWORD is set, use that as the password
         # for the login. This is useful for CI/CD environments to test password
         # randomization that is implemented by helm charts
@@ -1098,9 +1099,18 @@ def connect(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     node: Optional[AbstractNode] = None,
     port: Optional[int] = None,
+    vld_forward_proxy: Optional[Union[str, GridURL]] = None,
+    vld_reverse_proxy: Optional[Union[str, GridURL]] = None,
+    dht_key: Optional[str] = None,
 ) -> SyftClient:
     if node:
         connection = PythonConnection(node=node)
+    elif dht_key and vld_forward_proxy and vld_reverse_proxy:
+        connection = VeilidConnection(
+            vld_forward_proxy=vld_forward_proxy,
+            vld_reverse_proxy=vld_reverse_proxy,
+            dht_key=dht_key,
+        )
     else:
         url = GridURL.from_url(url)
         if isinstance(port, (int, str)):
@@ -1137,12 +1147,25 @@ def register(
 
 @instrument
 def login_as_guest(
+    # HTTPConnection
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
-    node: Optional[AbstractNode] = None,
     port: Optional[int] = None,
+    # PythonConnection
+    node: Optional[AbstractNode] = None,
+    # Veilid Connection
+    vld_forward_proxy: Optional[Union[str, GridURL]] = None,
+    vld_reverse_proxy: Optional[Union[str, GridURL]] = None,
+    dht_key: Optional[str] = None,
     verbose: bool = True,
 ):
-    _client = connect(url=url, node=node, port=port)
+    _client = connect(
+        url=url,
+        node=node,
+        port=port,
+        vld_forward_proxy=vld_forward_proxy,
+        vld_reverse_proxy=vld_reverse_proxy,
+        dht_key=dht_key,
+    )
 
     if isinstance(_client, SyftError):
         return _client
@@ -1159,13 +1182,26 @@ def login_as_guest(
 @instrument
 def login(
     email: str,
+    # HTTPConnection
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
-    node: Optional[AbstractNode] = None,
     port: Optional[int] = None,
+    # PythonConnection
+    node: Optional[AbstractNode] = None,
+    # Veilid Connection
+    vld_forward_proxy: Optional[Union[str, GridURL]] = None,
+    vld_reverse_proxy: Optional[Union[str, GridURL]] = None,
+    dht_key: Optional[str] = None,
     password: Optional[str] = None,
     cache: bool = True,
 ) -> SyftClient:
-    _client = connect(url=url, node=node, port=port)
+    _client = connect(
+        url=url,
+        node=node,
+        port=port,
+        vld_forward_proxy=vld_forward_proxy,
+        vld_reverse_proxy=vld_reverse_proxy,
+        dht_key=dht_key,
+    )
 
     if isinstance(_client, SyftError):
         return _client
