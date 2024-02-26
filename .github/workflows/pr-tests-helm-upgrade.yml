@@ -15,9 +15,15 @@ on:
 
   workflow_dispatch:
     inputs:
-      none:
-        description: "Run helm upgrade"
+      upgrade_type:
+        description: "Select upgrade path type"
         required: false
+        default: "BetaToDev"
+        type: choice
+        options:
+          - BetaToDev
+          - ProdToBeta
+          - ProdToDev
 
 concurrency:
   group: pr-tests-helm-upgrade
@@ -52,7 +58,8 @@ jobs:
         run: |
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
-          UPGRADE_TYPE=BetaToDev tox -e syft.test.helm.upgrade
+          # default upgrade is beta to dev
+          UPGRADE_TYPE=${{ github.event.inputs.upgrade_type }} tox -e syft.test.helm.upgrade
 
       - name: Destroy cluster
         if: always()

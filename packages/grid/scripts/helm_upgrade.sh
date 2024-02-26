@@ -13,13 +13,18 @@ PROD="openmined/syft"
 BETA="openmined/syft --devel"
 DEV="./helm/syft"
 
-if [ "$UPGRADE_TYPE" == "ProdToDev" ]; then
+if [ "$UPGRADE_TYPE" == "ProdToBeta" ]; then
     INSTALL_SOURCE=$PROD   # latest published prod
     UPGRADE_SOURCE=$BETA   # latest published beta
     INSTALL_ARGS=""
     UPGRADE_ARGS=""
 elif [ "$UPGRADE_TYPE" == "BetaToDev" ]; then
     INSTALL_SOURCE=$BETA   # latest published beta
+    UPGRADE_SOURCE=$DEV    # local chart
+    INSTALL_ARGS=""
+    UPGRADE_ARGS=""
+elif [ "$UPGRADE_TYPE" == "ProdToDev" ]; then
+    INSTALL_SOURCE=$PROD   # latest published prod
     UPGRADE_SOURCE=$DEV    # local chart
     INSTALL_ARGS=""
     UPGRADE_ARGS=""
