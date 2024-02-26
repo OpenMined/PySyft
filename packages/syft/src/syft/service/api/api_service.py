@@ -53,6 +53,16 @@ class CustomAPIEndpointStash(BaseUIDStoreStash):
         res = self.check_type(endpoint, CustomAPIEndpoint)
         if res.is_err():
             return res
+        old_endpoint = self.get_by_path(credentials=credentials, path=endpoint.path)
+        if old_endpoint and old_endpoint.ok():
+            old_endpoint = old_endpoint.ok()
+            old_endpoint = old_endpoint[0]
+
+            if old_endpoint == endpoint:
+                return Ok(endpoint)
+            else:
+                super().delete_by_uid(credentials=credentials, uid=old_endpoint.id)
+
         result = super().set(
             credentials=credentials, obj=res.ok(), ignore_duplicates=True
         )

@@ -28,6 +28,16 @@ class CustomAPIEndpoint(SyftObject):
     __attr_searchable__ = ["path"]
     __attr_unique__ = ["path"]
 
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, CustomAPIEndpoint):
+            return (
+                self.path == other.path
+                and self.api_code == other.api_code
+                and self.signature == other.signature
+                and self.func_name == other.func_name
+            )
+        return self == other
+
     def exec(self, context: AuthedServiceContext, **kwargs: Any) -> Any:
         try:
             inner_function = ast.parse(self.api_code).body[0]
@@ -43,7 +53,7 @@ class CustomAPIEndpoint(SyftObject):
             return context, result
         except Exception as e:
             print(f"Failed to run CustomAPIEndpoint Code. {e}")
-            return SyftError(e)
+            return SyftError(message=e)
 
 
 def get_signature(func: Callable) -> Signature:
