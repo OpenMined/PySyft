@@ -1,4 +1,5 @@
 # stdlib
+import base64
 import json
 import lzma
 from typing import Callable
@@ -39,6 +40,12 @@ async def main_callback(update: VeilidUpdate) -> None:
         message: dict = json.loads(update.detail.message)
 
         async with httpx.AsyncClient() as client:
+            data = message.get("data", None)
+            # TODO: can we optimize this?
+            # We encode the data to base64,as while sending
+            # json expects valid utf-8 strings
+            if data:
+                message["data"] = base64.b64decode(data)
             response = await client.request(
                 method=message.get("method"),
                 url=message.get("url"),

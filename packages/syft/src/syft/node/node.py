@@ -96,6 +96,7 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
+from ..service.veilid.veilid_service import VeilidService
 from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
@@ -361,6 +362,7 @@ class Node(AbstractNode):
                 SyftWorkerImageService,
                 SyftWorkerPoolService,
                 SyftImageRegistryService,
+                VeilidService,
             ]
             if services is None
             else services
@@ -943,6 +945,7 @@ class Node(AbstractNode):
                 SyftWorkerImageService,
                 SyftWorkerPoolService,
                 SyftImageRegistryService,
+                VeilidService,
             ]
 
             if OBLV:

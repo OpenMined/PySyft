@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import base64
 from copy import deepcopy
 from enum import Enum
 from getpass import getpass
@@ -459,6 +460,10 @@ class VeilidConnection(NodeConnection):
 
     def make_call(self, signed_call: SignedSyftAPICall) -> Union[Any, SyftError]:
         msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
+        # Since JSON expects strings, we need to encode the bytes to base64
+        # as some bytes may not be valid utf-8
+        # TODO: Can we optimize this?
+        msg_base64 = base64.b64encode(msg_bytes).decode()
 
         rev_proxy_url = self.vld_reverse_proxy.with_path(
             self.routes.ROUTE_API_CALL.value
@@ -468,9 +473,8 @@ class VeilidConnection(NodeConnection):
             "url": str(rev_proxy_url),
             "method": "POST",
             "dht_key": self.dht_key,
-            "data": msg_bytes,
+            "data": msg_base64,
         }
-
         response = requests.post(  # nosec
             url=str(forward_proxy_url),
             json=json_data,
