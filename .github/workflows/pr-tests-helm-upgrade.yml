@@ -58,8 +58,10 @@ jobs:
         run: |
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
-          # default upgrade is beta to dev
-          UPGRADE_TYPE=${{ github.event.inputs.upgrade_type }} tox -e syft.test.helm.upgrade
+          # default upgrade is beta to dev, but override with input if provided
+          UPGRADE_TYPE_INPUT=${{ github.event.inputs.upgrade_type }}
+          export UPGRADE_TYPE=${UPGRADE_TYPE_INPUT:-BetaToDev}
+          tox -e syft.test.helm.upgrade
 
       - name: Destroy cluster
         if: always()
