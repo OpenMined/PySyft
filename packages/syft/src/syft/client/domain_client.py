@@ -151,11 +151,11 @@ class DomainClient(SyftClient):
             return SyftError(message="No files to upload")
 
         if not isinstance(file_list, list):
-            file_list2: list[Union[BlobFile, str, Path]] = [file_list]
+            file_list = [file_list]
 
         expanded_file_list = []
 
-        for file in file_list2:
+        for file in file_list:
             if isinstance(file, BlobFile):
                 expanded_file_list.append(file)
                 continue
