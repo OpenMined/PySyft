@@ -40,6 +40,9 @@ node:
     versionHash: "abc"
     nodeSideType: "high"
     defaultRootEmail: "info@openmined.org"
+    smtpUserName: "apikey"
+    smtpPassword: "password"
+    smtpSender: "info@openmined.org"
     logLevel: "info"
     inMemoryWorkers: false
     defaultWorkerPoolCount: 1

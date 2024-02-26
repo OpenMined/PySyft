@@ -337,6 +337,13 @@ def clean(location: str) -> None:
     help="Password used to auth in email server and enable notification via emails",
 )
 @click.option(
+    "--smtp-sender",
+    default=None,
+    required=False,
+    type=str,
+    help="Sender email used to deliver PyGrid email notifications.",
+)
+@click.option(
     "--build-src",
     default=DEFAULT_BRANCH,
     required=False,
@@ -1325,6 +1332,7 @@ def create_launch_cmd(
 
     parsed_kwargs["smtp_username"] = kwargs["smtp_username"]
     parsed_kwargs["smtp_password"] = kwargs["smtp_password"]
+    parsed_kwargs["smtp_sender"] = kwargs["smtp_sender"]
 
     parsed_kwargs["enable_warnings"] = not kwargs["no_warnings"]
 
@@ -2174,6 +2182,7 @@ def create_launch_docker_cmd(
     single_container_mode = kwargs["deployment_type"] == "single_container"
     in_mem_workers = kwargs.get("in_mem_workers")
     smtp_username = kwargs.get("smtp_username")
+    smtp_sender = kwargs.get("smtp_sender")
     smtp_password = kwargs.get("smtp_password")
 
     enable_oblv = bool(kwargs["oblv"])
@@ -2241,6 +2250,7 @@ def create_launch_docker_cmd(
         "INMEMORY_WORKERS": in_mem_workers,
         "SMTP_USERNAME": smtp_username,
         "SMTP_PASSWORD": smtp_password,
+        "EMAIL_SENDER": smtp_sender,
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:
