@@ -35,7 +35,7 @@ class SMTPClient:
         msg["From"] = sender
         msg["To"] = ", ".join(receiver)
         msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain"))
+        msg.attach(MIMEText(body, "html"))
 
         with smtplib.SMTP(
             self.server, self.port, timeout=self.SOCKET_TIMEOUT
