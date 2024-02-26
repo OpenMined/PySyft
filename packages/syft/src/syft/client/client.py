@@ -120,6 +120,7 @@ def forward_message_to_proxy(
 API_PATH = "/api/v2"
 DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
+VEILID_PROXY_PATH = "/proxy"
 
 
 class Routes(Enum):
@@ -303,6 +304,202 @@ class HTTPConnection(NodeConnection):
 
     def __hash__(self) -> int:
         return hash(self.proxy_target_uid) + hash(self.url)
+
+    def get_client_type(self) -> Type[SyftClient]:
+        # TODO: Rasswanth, should remove passing in credentials
+        # when metadata are proxy forwarded in the grid routes
+        # in the gateway fixes PR
+        # relative
+        from .domain_client import DomainClient
+        from .enclave_client import EnclaveClient
+        from .gateway_client import GatewayClient
+
+        metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
+        if metadata.node_type == NodeType.DOMAIN.value:
+            return DomainClient
+        elif metadata.node_type == NodeType.GATEWAY.value:
+            return GatewayClient
+        elif metadata.node_type == NodeType.ENCLAVE.value:
+            return EnclaveClient
+        else:
+            return SyftError(message=f"Unknown node type {metadata.node_type}")
+
+
+@serializable(
+    attrs=["proxy_target_uid", "dht_key", "vld_forward_proxy", "vld_reverse_proxy"]
+)
+class VeilidConnection(NodeConnection):
+    __canonical_name__ = "VeilidConnection"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    vld_forward_proxy: GridURL
+    vld_reverse_proxy: GridURL
+    dht_key: str
+    proxy_target_uid: Optional[UID]
+    routes: Type[Routes] = Routes
+
+    @pydantic.validator("vld_forward_proxy", pre=True, always=True)
+    def make_forward_proxy_url(cls, v: Union[GridURL, str]) -> GridURL:
+        return GridURL.from_url(v)
+
+    @pydantic.validator("vld_reverse_proxy", pre=True, always=True)
+    def make_reverse_proxy_url(cls, v: Union[GridURL, str]) -> GridURL:
+        return GridURL.from_url(v)
+
+    def with_proxy(self, proxy_target_uid: UID) -> Self:
+        raise NotImplementedError("VeilidConnection does not support with_proxy")
+
+    def get_cache_key(self) -> str:
+        return str(self.dht_key)
+
+    # def to_blob_route(self, path: str, **kwargs) -> GridURL:
+    #     _path = self.routes.ROUTE_BLOB_STORE.value + path
+    #     return self.url.with_path(_path)
+
+    @property
+    def session(self) -> Session:
+        if self.session_cache is None:
+            session = requests.Session()
+            retry = Retry(total=3, backoff_factor=0.5)
+            adapter = HTTPAdapter(max_retries=retry)
+            session.mount("http://", adapter)
+            session.mount("https://", adapter)
+            self.session_cache = session
+        return self.session_cache
+
+    def _make_get(self, path: str, params: Optional[Dict] = None) -> bytes:
+        rev_proxy_url = self.vld_reverse_proxy.with_path(path)
+        forward_proxy_url = self.vld_forward_proxy.with_path(VEILID_PROXY_PATH)
+
+        json_data = {
+            "url": str(rev_proxy_url),
+            "method": "GET",
+            "dht_key": self.dht_key,
+            "params": params,
+        }
+        response = self.session.request(str(forward_proxy_url), json=json_data)
+        if response.status_code != 200:
+            raise requests.ConnectionError(
+                f"Failed to fetch {forward_proxy_url}. Response returned with code {response.status_code}"
+            )
+
+        return response.content
+
+    def _make_post(
+        self,
+        path: str,
+        json: Optional[Dict[str, Any]] = None,
+        data: Optional[bytes] = None,
+    ) -> bytes:
+        rev_proxy_url = self.vld_reverse_proxy.with_path(path)
+        forward_proxy_url = self.vld_forward_proxy.with_path(VEILID_PROXY_PATH)
+
+        json_data = {
+            "url": str(rev_proxy_url),
+            "method": "POST",
+            "dht_key": self.dht_key,
+            "json": json,
+            "data": data,
+        }
+
+        response = self.session.post(str(forward_proxy_url), json=json_data)
+        if response.status_code != 200:
+            raise requests.ConnectionError(
+                f"Failed to fetch {forward_proxy_url}. Response returned with code {response.status_code}"
+            )
+
+        return response.content
+
+    def get_node_metadata(self, credentials: SyftSigningKey) -> NodeMetadataJSON:
+        # TODO: Implement message proxy forwarding for gateway
+
+        response = self._make_get(self.routes.ROUTE_METADATA.value)
+        metadata_json = json.loads(response)
+        return NodeMetadataJSON(**metadata_json)
+
+    def get_api(
+        self, credentials: SyftSigningKey, communication_protocol: int
+    ) -> SyftAPI:
+        # TODO: Implement message proxy forwarding for gateway
+
+        params = {
+            "verify_key": str(credentials.verify_key),
+            "communication_protocol": communication_protocol,
+        }
+        content = self._make_get(self.routes.ROUTE_API.value, params=params)
+        obj = _deserialize(content, from_bytes=True)
+        obj.connection = self
+        obj.signing_key = credentials
+        obj.communication_protocol = communication_protocol
+        if self.proxy_target_uid:
+            obj.node_uid = self.proxy_target_uid
+        return cast(SyftAPI, obj)
+
+    def login(
+        self,
+        email: str,
+        password: str,
+    ) -> Optional[SyftSigningKey]:
+        # TODO: Implement message proxy forwarding for gateway
+
+        credentials = {"email": email, "password": password}
+        response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
+        obj = _deserialize(response, from_bytes=True)
+
+        return obj
+
+    def register(self, new_user: UserCreate) -> SyftSigningKey:
+        # TODO: Implement message proxy forwarding for gateway
+
+        data = _serialize(new_user, to_bytes=True)
+        response = self._make_post(self.routes.ROUTE_REGISTER.value, data=data)
+        response = _deserialize(response, from_bytes=True)
+        return response
+
+    def make_call(self, signed_call: SignedSyftAPICall) -> Union[Any, SyftError]:
+        msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
+
+        rev_proxy_url = self.vld_reverse_proxy.with_path(
+            self.routes.ROUTE_API_CALL.value
+        )
+        forward_proxy_url = self.vld_forward_proxy.with_path(VEILID_PROXY_PATH)
+        json_data = {
+            "url": str(rev_proxy_url),
+            "method": "POST",
+            "dht_key": self.dht_key,
+            "data": msg_bytes,
+        }
+
+        response = requests.post(  # nosec
+            url=str(forward_proxy_url),
+            json=json_data,
+        )
+
+        if response.status_code != 200:
+            raise requests.ConnectionError(
+                f"Failed to fetch metadata. Response returned with code {response.status_code}"
+            )
+
+        result = _deserialize(response.content, from_bytes=True)
+        return result
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def __str__(self) -> str:
+        res = f"{type(self).__name__}:"
+        res = res + f"\n DHT Key: {self.dht_key}"
+        res = res + f"\n Forward Proxy: {self.vld_forward_proxy}"
+        res = res + f"\n Reverse Proxy: {self.vld_reverse_proxy}"
+        return res
+
+    def __hash__(self) -> int:
+        return (
+            hash(self.proxy_target_uid)
+            + hash(self.dht_key)
+            + hash(self.vld_forward_proxy)
+            + hash(self.vld_reverse_proxy)
+        )
 
     def get_client_type(self) -> Type[SyftClient]:
         # TODO: Rasswanth, should remove passing in credentials
