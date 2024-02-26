@@ -949,9 +949,9 @@ def syft_function(
             func_name=f.__name__,
             signature=inspect.signature(f),
             input_policy_type=input_policy_type,
-            input_policy_init_kwargs=input_policy.init_kwargs,
+            input_policy_init_kwargs=input_policy.init_kwargs,  # type: ignore
             output_policy_type=output_policy_type,
-            output_policy_init_kwargs=output_policy.init_kwargs,
+            output_policy_init_kwargs=output_policy.init_kwargs,  # type: ignore
             local_function=f,
             input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
             worker_pool_name=worker_pool_name,

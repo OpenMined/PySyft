@@ -2,6 +2,7 @@
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import cast
 
 # third party
 from typing_extensions import Self
@@ -44,6 +45,7 @@ class AuthedServiceContext(NodeServiceContext):
         return AuthedServiceContext(credentials=credentials, role=role, node=self.node)
 
     def as_root_context(self) -> Self:
+        self.node = cast(AbstractNode, self.node)
         return AuthedServiceContext(
             credentials=self.node.verify_key, role=ServiceRole.ADMIN, node=self.node
         )

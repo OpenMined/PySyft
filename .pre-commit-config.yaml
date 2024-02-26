@@ -190,7 +190,6 @@ repos:
             "--install-types",
             "--non-interactive",
             "--config-file=tox.ini",
-            "--disable-error-code=union-attr", # todo: remove this line after fixing the issue context.node can be None
           ]
 
   - repo: https://github.com/kynan/nbstripout
