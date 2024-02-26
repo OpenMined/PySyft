@@ -21,7 +21,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Dependencies
-        if: steps.changes.outputs.syft == 'true'
         run: |
           pip install --upgrade tox
 
