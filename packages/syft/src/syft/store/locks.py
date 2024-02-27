@@ -368,8 +368,7 @@ class SyftLock(BaseLock):
         """
         if self.passthrough:
             return False
-
-        return self._lock.locked()
+        return self._lock.locked() if self._lock else False
 
     def acquire(self, blocking: bool = True) -> bool:
         """
@@ -410,7 +409,7 @@ class SyftLock(BaseLock):
             return True
 
         try:
-            return self._lock._acquire()
+            return self._lock._acquire() if self._lock else False
         except BaseException:
             return False
 
@@ -420,7 +419,8 @@ class SyftLock(BaseLock):
         """
         if self.passthrough:
             return None
-
+        if not self._lock:
+            return None
         try:
             return self._lock._release()
         except BaseException:
@@ -433,4 +433,4 @@ class SyftLock(BaseLock):
         if self.passthrough:
             return True
 
-        return self._lock._renew()
+        return self._lock._renew() if self._lock else False

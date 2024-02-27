@@ -95,18 +95,17 @@ class GatewayClient(SyftClient):
 
         url = getattr(self.connection, "url", None)
         node_details = f"<strong>URL:</strong> {url}<br />" if url else ""
-        node_details += (
-            f"<strong>Node Type:</strong> {self.metadata.node_type.capitalize()}<br />"
-        )
-        node_side_type = (
-            "Low Side"
-            if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value
-            else "High Side"
-        )
-        node_details += f"<strong>Node Side Type:</strong> {node_side_type}<br />"
-        node_details += (
-            f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
-        )
+        if self.metadata:
+            node_details += f"<strong>Node Type:</strong> {self.metadata.node_type.capitalize()}<br />"
+            node_side_type = (
+                "Low Side"
+                if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value
+                else "High Side"
+            )
+            node_details += f"<strong>Node Side Type:</strong> {node_side_type}<br />"
+            node_details += (
+                f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
+            )
 
         return f"""
         <style>

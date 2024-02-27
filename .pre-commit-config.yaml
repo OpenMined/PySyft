@@ -172,8 +172,8 @@ repos:
       - id: mypy
         name: "mypy: syft"
         always_run: true
-        files: "^packages/syft/src/syft/ast|^packages/syft/src/syft/capnp|^packages/syft/src/syft/client|^packages/syft/src/syft/core|^packages/syft/src/syft/custom_worker|^packages/syft/src/syft/enclave|^packages/syft/src/syft/node|^packages/syft/src/syft/shylock|^packages/syft/src/syft/exceptions|^packages/syft/src/syft/grid|^packages/syft/src/syft/img|^packages/syft/src/syft/lib|^packages/syft/src/syft/store|^packages/syft/src/syft/protocol"
-        # files: "^packages/syft/src/syft/"
+        files: "^packages/syft/src/syft/"
+        exclude: "^packages/syft/src/syft/service|^packages/syft/src/syft/external/oblv/|^packages/syft/src/syft/types/dicttuple.py|^packages/syft/src/syft/util/telemetry.py"
         args: [
             "--follow-imports=skip",
             "--ignore-missing-imports",
@@ -190,7 +190,6 @@ repos:
             "--install-types",
             "--non-interactive",
             "--config-file=tox.ini",
-            "--disable-error-code=union-attr", # todo: remove this line after fixing the issue context.node can be None
           ]
 
   - repo: https://github.com/kynan/nbstripout

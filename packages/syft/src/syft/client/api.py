@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
 from typing import _GenericAlias
+from typing import cast
 from typing import get_args
 from typing import get_origin
 
@@ -240,8 +241,8 @@ class RemoteFunction(SyftObject):
         return self.signature
 
     def prepare_args_and_kwargs(
-        self, args: List[Any], kwargs: Dict[str, Any]
-    ) -> Union[SyftError, Tuple[List[Any], Dict[str, Any]]]:
+        self, args: Union[list, tuple], kwargs: dict[str, Any]
+    ) -> Union[SyftError, tuple[tuple, dict[str, Any]]]:
         # Validate and migrate args and kwargs
         res = validate_callable_args_and_kwargs(args, kwargs, self.signature)
         if isinstance(res, SyftError):
@@ -278,7 +279,7 @@ class RemoteFunction(SyftObject):
         api_call = SyftAPICall(
             node_uid=self.node_uid,
             path=self.path,
-            args=_valid_args,
+            args=list(_valid_args),
             kwargs=_valid_kwargs,
             blocking=blocking,
         )
@@ -303,8 +304,8 @@ class RemoteUserCodeFunction(RemoteFunction):
     api: SyftAPI
 
     def prepare_args_and_kwargs(
-        self, args: List[Any], kwargs: Dict[str, Any]
-    ) -> Union[SyftError, Tuple[List[Any], Dict[str, Any]]]:
+        self, args: Union[list, tuple], kwargs: Dict[str, Any]
+    ) -> Union[SyftError, tuple[tuple, dict[str, Any]]]:
         # relative
         from ..service.action.action_object import convert_to_pointers
 
@@ -824,16 +825,16 @@ class SyftAPI(SyftObject):
         )
 
     @property
-    def services(self) -> Optional[APIModule]:
+    def services(self) -> APIModule:
         if self.api_module is None:
             self.generate_endpoints()
-        return self.api_module
+        return cast(APIModule, self.api_module)
 
     @property
-    def lib(self) -> Optional[APIModule]:
+    def lib(self) -> APIModule:
         if self.libs is None:
             self.generate_endpoints()
-        return self.libs
+        return cast(APIModule, self.libs)
 
     def has_service(self, service_name: str) -> bool:
         return hasattr(self.services, service_name)

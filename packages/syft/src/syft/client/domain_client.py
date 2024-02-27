@@ -7,6 +7,7 @@ import re
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
+from typing import cast
 
 # third party
 from hagrid.orchestra import NodeHandle
@@ -90,6 +91,9 @@ class DomainClient(SyftClient):
         # relative
         from ..types.twin_object import TwinObject
 
+        if self.users is None:
+            return SyftError(f"can't get user service for {self}")
+
         user = self.users.get_current_user()
         dataset = add_default_uploader(user, dataset)
         for i in range(len(dataset.asset_list)):
@@ -97,21 +101,22 @@ class DomainClient(SyftClient):
             dataset.asset_list[i] = add_default_uploader(user, asset)
 
         dataset._check_asset_must_contain_mock()
-        dataset_size = 0
+        dataset_size: float = 0.0
 
         # TODO: Refactor so that object can also be passed to generate warnings
-        metadata = self.api.connection.get_node_metadata(self.api.signing_key)
+        if self.api.connection:
+            metadata = self.api.connection.get_node_metadata(self.api.signing_key)
 
-        if (
-            metadata.show_warnings
-            and metadata.node_side_type == NodeSideType.HIGH_SIDE.value
-        ):
-            message = (
-                "You're approving a request on "
-                f"{metadata.node_side_type} side {metadata.node_type} "
-                "which may host datasets with private information."
-            )
-            prompt_warning_message(message=message, confirm=True)
+            if (
+                metadata.show_warnings
+                and metadata.node_side_type == NodeSideType.HIGH_SIDE.value
+            ):
+                message = (
+                    "You're approving a request on "
+                    f"{metadata.node_side_type} side {metadata.node_type} "
+                    "which may host datasets with private information."
+                )
+                prompt_warning_message(message=message, confirm=True)
 
         for asset in tqdm(dataset.asset_list):
             print(f"Uploading: {asset.name}")
@@ -151,7 +156,8 @@ class DomainClient(SyftClient):
             return SyftError(message="No files to upload")
 
         if not isinstance(file_list, list):
-            file_list = [file_list]
+            file_list = [file_list]  # type: ignore[assignment]
+        file_list = cast(list, file_list)
 
         expanded_file_list = []
 
@@ -230,9 +236,12 @@ class DomainClient(SyftClient):
 
         res = self.exchange_route(client)
         if isinstance(res, SyftSuccess):
-            return SyftSuccess(
-                message=f"Connected {self.metadata.node_type} to {client.name} gateway"
-            )
+            if self.metadata:
+                return SyftSuccess(
+                    message=f"Connected {self.metadata.node_type} to {client.name} gateway"
+                )
+            else:
+                return SyftSuccess(message=f"Connected to {client.name} gateway")
         return res
 
     @property
@@ -375,18 +384,17 @@ class DomainClient(SyftClient):
 
         url = getattr(self.connection, "url", None)
         node_details = f"<strong>URL:</strong> {url}<br />" if url else ""
-        node_details += (
-            f"<strong>Node Type:</strong> {self.metadata.node_type.capitalize()}<br />"
-        )
-        node_side_type = (
-            "Low Side"
-            if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value
-            else "High Side"
-        )
-        node_details += f"<strong>Node Side Type:</strong> {node_side_type}<br />"
-        node_details += (
-            f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
-        )
+        if self.metadata is not None:
+            node_details += f"<strong>Node Type:</strong> {self.metadata.node_type.capitalize()}<br />"
+            node_side_type = (
+                "Low Side"
+                if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value
+                else "High Side"
+            )
+            node_details += f"<strong>Node Side Type:</strong> {node_side_type}<br />"
+            node_details += (
+                f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
+            )
 
         return f"""
         <style>

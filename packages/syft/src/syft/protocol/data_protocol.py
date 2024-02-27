@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 from typing import Any
 from typing import Dict
+from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -33,7 +34,7 @@ PROTOCOL_STATE_FILENAME = "protocol_version.json"
 PROTOCOL_TYPE = Union[str, int]
 
 
-def natural_key(key: PROTOCOL_TYPE) -> List[int]:
+def natural_key(key: PROTOCOL_TYPE) -> List[Union[int, str, Any]]:
     """Define key for natural ordering of strings."""
     if isinstance(key, int):
         key = str(key)
@@ -128,7 +129,7 @@ class DataProtocol:
 
     def build_state(self, stop_key: Optional[str] = None) -> dict:
         sorted_dict = sort_dict_naturally(self.protocol_history)
-        state_dict = defaultdict(dict)
+        state_dict: dict = defaultdict(dict)
         for protocol_number in sorted_dict:
             object_versions = sorted_dict[protocol_number]["object_versions"]
             for canonical_name, versions in object_versions.items():
@@ -165,8 +166,8 @@ class DataProtocol:
         return state_dict
 
     def diff_state(self, state: Dict) -> tuple[Dict, Dict]:
-        compare_dict = defaultdict(dict)  # what versions are in the latest code
-        object_diff = defaultdict(dict)  # diff in latest code with saved json
+        compare_dict: dict = defaultdict(dict)  # what versions are in the latest code
+        object_diff: dict = defaultdict(dict)  # diff in latest code with saved json
         for k in TYPE_BANK:
             (
                 nonrecursive,
@@ -497,7 +498,7 @@ def debox_arg_and_migrate(arg: Any, protocol_state: dict) -> Any:
         arg = arg.value
 
     if isinstance(arg, MutableMapping):
-        iterable_keys = arg.keys()
+        iterable_keys: Iterable = arg.keys()
     elif isinstance(arg, MutableSequence):
         iterable_keys = range(len(arg))
     elif isinstance(arg, tuple):

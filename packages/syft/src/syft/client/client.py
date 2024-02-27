@@ -484,7 +484,7 @@ class SyftClient:
     def post_init(self) -> None:
         if self.metadata is None:
             self._fetch_node_metadata(self.credentials)
-
+        self.metadata = cast(NodeMetadataJSON, self.metadata)
         self.communication_protocol = self._get_communication_protocol(
             self.metadata.supported_protocols
         )
@@ -625,9 +625,7 @@ class SyftClient:
         # invalidate API
         if self._api is None or (self._api.signing_key != self.credentials):
             self._fetch_api(self.credentials)
-        if self._api is None:
-            raise ValueError(f"{self}'s api is None")
-        return self._api
+        return cast(SyftAPI, self._api)  # we are sure self._api is not None after fetch
 
     def guest(self) -> Self:
         return self.__class__(
@@ -642,7 +640,8 @@ class SyftClient:
 
         self_node_route = connection_to_route(self.connection)
         remote_node_route = connection_to_route(client.connection)
-
+        if client.metadata is None:
+            return SyftError(f"client {client}'s metadata is None!")
         result = self.api.services.network.exchange_credentials_with(
             self_node_route=self_node_route,
             remote_node_route=remote_node_route,
@@ -700,10 +699,11 @@ class SyftClient:
     def login_as_guest(self) -> Self:
         _guest_client = self.guest()
 
-        print(
-            f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()}-side "
-            f"{self.metadata.node_type.capitalize()}> as GUEST"
-        )
+        if self.metadata is not None:
+            print(
+                f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()}-side "
+                f"{self.metadata.node_type.capitalize()}> as GUEST"
+            )
 
         return _guest_client
 
@@ -747,11 +747,11 @@ class SyftClient:
 
         client.__logged_in_user = email
 
-        if user_private_key is not None:
+        if user_private_key is not None and client.users is not None:
             client.__user_role = user_private_key.role
             client.__logged_in_username = client.users.get_current_user().name
 
-        if signing_key is not None:
+        if signing_key is not None and client.metadata is not None:
             print(
                 f"Logged into <{client.name}: {client.metadata.node_side_type.capitalize()} side "
                 f"{client.metadata.node_type.capitalize()}> as <{email}>"
@@ -789,7 +789,9 @@ class SyftClient:
         # relative
         from ..node.node import CODE_RELOADER
 
-        CODE_RELOADER[thread_ident()] = client._reload_user_code
+        thread_id = thread_ident()
+        if thread_id is not None:
+            CODE_RELOADER[thread_id] = client._reload_user_code
 
         return client
 
@@ -808,7 +810,7 @@ class SyftClient:
         password_verify: Optional[str] = None,
         institution: Optional[str] = None,
         website: Optional[str] = None,
-    ) -> Optional[Union[SyftError, Any]]:
+    ) -> Optional[Union[SyftError, SyftSigningKey]]:
         if not email:
             email = input("Email: ")
         if not password:
@@ -833,7 +835,10 @@ class SyftClient:
         except Exception as e:
             return SyftError(message=str(e))
 
-        if self.metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
+        if (
+            self.metadata
+            and self.metadata.node_side_type == NodeSideType.HIGH_SIDE.value
+        ):
             message = (
                 "You're registering a user to a high side "
                 f"{self.metadata.node_type}, which could "
@@ -889,6 +894,10 @@ class SyftClient:
             return self._fetch_api(self.credentials)
 
         _api.refresh_api_callback = refresh_callback
+
+        if self.credentials is None:
+            raise ValueError(f"{self}'s credentials (signing key) is None!")
+
         APIRegistry.set_api_for(
             node_uid=self.id,
             user_verify_key=self.credentials.verify_key,

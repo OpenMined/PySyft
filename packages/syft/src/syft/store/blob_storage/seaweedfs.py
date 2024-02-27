@@ -97,7 +97,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                     self.urls,
                     start=1,
                 ):
-                    if api is not None:
+                    if api is not None and api.connection is not None:
                         blob_url = api.connection.to_blob_route(
                             url.url_path, host=url.host_or_ip
                         )

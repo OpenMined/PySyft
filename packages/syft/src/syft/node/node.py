@@ -159,7 +159,7 @@ def get_node_name() -> Optional[str]:
     return get_env(NODE_NAME, None)
 
 
-def get_node_side_type() -> str:
+def get_node_side_type() -> Optional[str]:
     return get_env(NODE_SIDE_TYPE, "high")
 
 
@@ -191,11 +191,11 @@ def get_container_host() -> Optional[str]:
     return get_env("CONTAINER_HOST")
 
 
-def get_default_worker_image() -> str:
+def get_default_worker_image() -> Optional[str]:
     return get_env("DEFAULT_WORKER_POOL_IMAGE")
 
 
-def get_default_worker_pool_name() -> str:
+def get_default_worker_pool_name() -> Optional[str]:
     return get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME)
 
 
@@ -450,7 +450,7 @@ class Node(AbstractNode):
         # relative
         from ..store.blob_storage.seaweedfs import SeaweedFSConfig
 
-        if isinstance(config, SeaweedFSConfig):
+        if isinstance(config, SeaweedFSConfig) and self.signing_key:
             blob_storage_service = self.get_service(BlobStorageService)
             remote_profiles = blob_storage_service.remote_profile_stash.get_all(
                 credentials=self.signing_key.verify_key, has_permission=True
@@ -789,11 +789,13 @@ class Node(AbstractNode):
         from ..client.client import PythonConnection
 
         connection = PythonConnection(node=self)
-        if verbose:
-            print(
+        if verbose and self.node_side_type:
+            message: str = (
                 f"Logged into <{self.name}: {self.node_side_type.value.capitalize()} "
-                f"side {self.node_type.value.capitalize()} > as GUEST"
             )
+            if self.node_type:
+                message += f"side {self.node_type.value.capitalize()} > as GUEST"
+            print(message)
 
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
@@ -839,7 +841,9 @@ class Node(AbstractNode):
         def reload_user_code() -> None:
             user_code_service.load_user_code(context=context)
 
-        CODE_RELOADER[thread_ident()] = reload_user_code
+        ti = thread_ident()
+        if ti is not None:
+            CODE_RELOADER[ti] = reload_user_code
 
     def init_stores(
         self,
@@ -989,6 +993,8 @@ class Node(AbstractNode):
     @property
     def settings(self) -> NodeSettingsV2:
         settings_stash = SettingsStash(store=self.document_store)
+        if self.signing_key is None:
+            raise ValueError(f"{self} has no signing key")
         settings = settings_stash.get_all(self.signing_key.verify_key)
         if settings.is_ok() and len(settings.ok()) > 0:
             settings_data = settings.ok()[0]
@@ -1005,6 +1011,8 @@ class Node(AbstractNode):
         organization = settings_data.organization
         description = settings_data.description
         show_warnings = settings_data.show_warnings
+        node_type = self.node_type.value if self.node_type else ""
+        node_side_type = self.node_side_type.value if self.node_side_type else ""
 
         return NodeMetadataV3(
             name=name,
@@ -1015,8 +1023,8 @@ class Node(AbstractNode):
             syft_version=__version__,
             description=description,
             organization=organization,
-            node_type=self.node_type.value,
-            node_side_type=self.node_side_type.value,
+            node_type=node_type,
+            node_side_type=node_side_type,
             show_warnings=show_warnings,
         )
 
@@ -1026,6 +1034,8 @@ class Node(AbstractNode):
 
     @property
     def verify_key(self) -> SyftVerifyKey:
+        if self.signing_key is None:
+            raise ValueError(f"{self} has no signing key")
         return self.signing_key.verify_key
 
     def __hash__(self) -> int:
@@ -1464,6 +1474,9 @@ class Node(AbstractNode):
             self.name = random_name()
         try:
             settings_stash = SettingsStash(store=self.document_store)
+            if self.signing_key is None:
+                print("create_initial_settings failed as there is no signing key")
+                return None
             settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
             if settings_exists:
                 self.name = settings_exists[0].name
@@ -1481,7 +1494,7 @@ class Node(AbstractNode):
                     deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
                     signup_enabled=flags.CAN_REGISTER,
                     admin_email=admin_email,
-                    node_side_type=self.node_side_type.value,
+                    node_side_type=self.node_side_type.value,  # type: ignore
                     show_warnings=self.enable_warnings,
                 )
                 result = settings_stash.set(
@@ -1491,7 +1504,7 @@ class Node(AbstractNode):
                     return result.ok()
                 return None
         except Exception as e:
-            print("create_worker_metadata failed", e)
+            print(f"create_initial_settings failed with error {e}")
             return None
 
 
@@ -1547,7 +1560,7 @@ def create_oblv_key_pair(
 
         oblv_keys_stash = OblvKeysStash(store=worker.document_store)
 
-        if not len(oblv_keys_stash):
+        if not len(oblv_keys_stash) and worker.signing_key:
             public_key, private_key = generate_oblv_key(oblv_key_name=worker.name)
             oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
             res = oblv_keys_stash.set(worker.signing_key.verify_key, oblv_keys)
@@ -1586,7 +1599,7 @@ class NodeRegistry:
         return list(cls.__node_registry__.values())
 
 
-def get_default_worker_tag_by_env(dev_mode: bool = False) -> str:
+def get_default_worker_tag_by_env(dev_mode: bool = False) -> Optional[str]:
     if in_kubernetes():
         return get_default_worker_image()
     elif dev_mode:
