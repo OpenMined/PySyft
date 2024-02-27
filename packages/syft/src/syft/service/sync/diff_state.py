@@ -834,7 +834,7 @@ def display_diff_hierarchy(diff_hierarchy: List[Tuple[Diff, int]]):
         low_side_panel.title = "Low side"
         low_side_panel.title_align = "left"
         high_side_panel = display_diff_object(
-            diff.high_state if diff.high_obj else None
+            diff.high_state if diff.high_obj is not None else None
         )
         high_side_panel.title = "High side"
         high_side_panel.title_align = "left"
@@ -852,7 +852,7 @@ def display_diff_hierarchy(diff_hierarchy: List[Tuple[Diff, int]]):
 
         if level > 0:
             diff_panel = Padding(diff_panel, (0, 0, 0, 5 * level))
-        # Printing the main Panel using Rich Console
+
         console.print(diff_panel)
 
 

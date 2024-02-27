@@ -141,9 +141,6 @@ class DomainClient(SyftClient):
                 return tuple(valid.err())
             return valid.err()
 
-    def apply_state(self, resolved_sync_state):
-        self._sync_items(resolved_sync_state.low_side_state)
-
     def create_actionobject(self, action_object):
         print("syncing obj with blob id", action_object.syft_blob_storage_entry_id)
         action_object = action_object.refresh_object()
@@ -166,7 +163,7 @@ class DomainClient(SyftClient):
         else:
             return {}
 
-    def _sync_items(
+    def apply_state(
         self, resolved_state: ResolvedSyncState
     ) -> Union[SyftSuccess, SyftError]:
         if len(resolved_state.delete_objs):
