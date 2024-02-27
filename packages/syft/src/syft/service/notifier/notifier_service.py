@@ -5,6 +5,7 @@ from typing import Optional
 from typing import Union
 
 # third party
+from pydantic import EmailStr
 from result import Err
 from result import Ok
 from result import Result
@@ -15,8 +16,6 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
-
-# from ..user.user import User
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -111,11 +110,6 @@ class NotifierService(AbstractService):
             username=email_username, password=email_password
         )
 
-        if not email_sender and not notifier.email_sender:
-            return SyftError(
-                message="You must provide a sender email address to enable notifications."
-            )
-
         if validation_result.is_err():
             return SyftError(
                 message="Invalid SMTP credentials. Please check your username and password."
@@ -124,7 +118,19 @@ class NotifierService(AbstractService):
         notifier.email_password = email_password
         notifier.email_username = email_username
 
+        # Email sender verification
+        if not email_sender and not notifier.email_sender:
+            return SyftError(
+                message="You must provide a sender email address to enable notifications."
+            )
+
         if email_sender:
+            try:
+                EmailStr.validate(email_sender)
+            except ValueError:
+                return SyftError(
+                    message="Invalid sender email address. Please check your email address."
+                )
             notifier.email_sender = email_sender
 
         notifier.active = True
@@ -172,10 +178,8 @@ class NotifierService(AbstractService):
         Activate email notifications for the authenticated user.
         This will only work if the domain owner has enabled notifications.
         """
-
-        # TODO: User method in User Service to disable notifications
-
-        return SyftSuccess(message="Notifications enabled successfully.")
+        user_service = context.node.get_service("userservice")
+        return user_service.enable_notifications(context)
 
     @service_method(
         path="notifier.deactivate",
@@ -189,10 +193,8 @@ class NotifierService(AbstractService):
         """Deactivate email notifications for the authenticated user
         This will only work if the domain owner has enabled notifications.
         """
-
-        # TODO: User method in User Service to disable notifications
-
-        return SyftSuccess(message="Notifications disabled successfully.")
+        user_service = context.node.get_service("userservice")
+        return user_service.disable_notifications(context)
 
     @staticmethod
     def init_notifier(
