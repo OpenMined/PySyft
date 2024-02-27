@@ -13,7 +13,28 @@
       "VeilidConnection": {
         "1": {
           "version": 1,
-          "hash": "a5380a21dd2ff4de88b6c012dfe0c9aeb5cd16ef1df7b285f943a220dba05468",
+          "hash": "afa8b55292fdc4eaf02edce77900ce5a126c9bf62e357f2a21e4568bf5ccb619",
+          "action": "add"
+        }
+      },
+      "VeilidNodeRoute": {
+        "1": {
+          "version": 1,
+          "hash": "a84de892654b354b8d2ecc36d6487d900311a18bf8751f062ad49bfa0731952c",
+          "action": "add"
+        }
+      },
+      "EnclaveMetadata": {
+        "2": {
+          "version": 2,
+          "hash": "aaa03d8cc546c9d368d84fe100dc0e4f64f6b0102971edc709493c9dc06e193a",
+          "action": "add"
+        }
+      },
+      "NodePeer": {
+        "2": {
+          "version": 2,
+          "hash": "e1fb2a76c054cb81356bf398fab20e050b5bbc72495cd78d0cb5135530a69fa0",
           "action": "add"
         }
       }

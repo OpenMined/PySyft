@@ -39,6 +39,7 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..warnings import CRUDWarning
 from .node_peer import NodePeer
@@ -353,6 +354,88 @@ class NetworkService(AbstractService):
 
         # Return peers or an empty list when result is None
         return result.ok() or []
+
+    @service_method(
+        path="network.exchange_veilid_route",
+        name="exchange_veilid_route",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def exchange_veilid_route(
+        self,
+        context: AuthedServiceContext,
+        remote_node_route: NodeRoute,
+    ) -> Union[SyftSuccess, SyftError]:
+        """Exchange Route With Another Node"""
+        # Step 1: Get our own Veilid Node Peer to send to the remote node
+        self_node_peer: NodePeer = context.node.settings.to(NodePeer)
+
+        veilid_service = context.node.get_service("veilidservice")
+        veilid_route = veilid_service.get_veilid_route(context=context)
+
+        if isinstance(veilid_route, SyftError):
+            return veilid_route
+
+        self_node_peer.node_routes = [veilid_route]
+
+        # Step 2: Create a Remote Client
+        remote_client: SyftClient = remote_node_route.client_with_context(
+            context=context
+        )
+
+        # Step 3: Send the Node Peer to the remote node
+        remote_node_peer: Union[
+            NodePeer, SyftError
+        ] = remote_client.api.services.network.add_veilid_peer(
+            peer=self_node_peer,
+        )
+
+        if not isinstance(remote_node_peer, NodePeer):
+            return remote_node_peer
+
+        # Step 4: Add the remote Node Peer to our stash
+        result = self.stash.update_peer(context.node.verify_key, remote_node_peer)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        return SyftSuccess(message="Routes Exchanged")
+
+    @service_method(
+        path="network.add_veilid_peer", name="add_veilid_peer", roles=GUEST_ROLE_LEVEL
+    )
+    def add_veilid_peer(
+        self,
+        context: AuthedServiceContext,
+        peer: NodePeer,
+    ) -> Union[NodePeer, SyftError]:
+        """Add a Veilid Node Peer"""
+
+        # Step 1: Using the verify_key of the peer to verify the signature
+        # It is also our single source of truth for the peer
+        if peer.verify_key != context.credentials:
+            return SyftError(
+                message=(
+                    f"The {type(peer)}.verify_key: "
+                    f"{peer.verify_key} does not match the signature of the message"
+                )
+            )
+
+        # Step 2: Save the remote peer to our stash
+        result = self.stash.update_peer(context.node.verify_key, peer)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        # Step 3: Get our own Veilid Node Peer to send to the remote node
+        self_node_peer: NodePeer = context.node.settings.to(NodePeer)
+
+        veilid_service = context.node.get_service("veilidservice")
+        veilid_route = veilid_service.get_veilid_route(context=context)
+
+        if isinstance(veilid_route, SyftError):
+            return veilid_route
+
+        self_node_peer.node_routes = [veilid_route]
+
+        return self_node_peer
 
 
 TYPE_TO_SERVICE[NodePeer] = NetworkService

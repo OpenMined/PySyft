@@ -872,7 +872,6 @@ class SyftClient:
 
             result = self.api.services.network.exchange_veilid_route(
                 remote_node_route=remote_node_route,
-                remote_node_verify_key=client.metadata.to(NodeMetadataV3).verify_key,
             )
         else:
             raise ValueError(f"Protocol {protocol} not supported")

@@ -9,6 +9,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
+from ..network.routes import VeilidNodeRoute
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -59,7 +60,7 @@ class VeilidService(AbstractService):
         name="retrieve_dht_key",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def retrieve_dht_key(self, context: AuthedServiceContext) -> Union[bool, SyftError]:
+    def retrieve_dht_key(self, context: AuthedServiceContext) -> Union[str, SyftError]:
         # TODO: Simplify the below logic related to HARDCODED Strings
         status_res = self.check_veilid_status()
         if isinstance(status_res, SyftError):
@@ -74,10 +75,7 @@ class VeilidService(AbstractService):
                         message="DHT key does not exist.Invoke .generate_dht_key to generate a new key."
                     )
                 else:
-                    return SyftSuccess(
-                        message=f"DHT key retrieved successfully: {response.json().get('message')}"
-                    )
-
+                    response.json().get("message")
             return SyftError(
                 message=f"Failed to retrieve DHT key. status_code:{response.status_code} error: {response.json()}"
             )
@@ -100,3 +98,15 @@ class VeilidService(AbstractService):
             return SyftError(
                 message="Veilid service is not healthy. Please try again later."
             )
+
+    @service_method(
+        path="veilid.get_veilid_route",
+        name="get_veilid_route",
+    )
+    def get_veilid_route(
+        self, context: AuthedServiceContext
+    ) -> Union[VeilidNodeRoute, SyftError]:
+        dht_key = self.retrieve_dht_key(context)
+        if isinstance(dht_key, SyftError):
+            return dht_key
+        return VeilidNodeRoute(dht_key=dht_key)
