@@ -35,6 +35,7 @@ from .api import APIModule
 from .client import SyftClient
 from .client import login
 from .client import login_as_guest
+from .protocol import SyftProtocol
 
 if TYPE_CHECKING:
     # relative
@@ -212,7 +213,11 @@ class DomainClient(SyftClient):
         handle: Optional[NodeHandle] = None,  # noqa: F821
         email: Optional[str] = None,
         password: Optional[str] = None,
+        protocol: Union[str, SyftProtocol] = SyftProtocol.HTTP,
     ) -> None:
+        if isinstance(protocol, str):
+            protocol = SyftProtocol(protocol)
+
         if via_client is not None:
             client = via_client
         elif handle is not None:
@@ -226,7 +231,7 @@ class DomainClient(SyftClient):
             if isinstance(client, SyftError):
                 return client
 
-        res = self.exchange_route(client)
+        res = self.exchange_route(client, protocol=protocol)
         if isinstance(res, SyftSuccess):
             return SyftSuccess(
                 message=f"Connected {self.metadata.node_type} to {client.name} gateway"

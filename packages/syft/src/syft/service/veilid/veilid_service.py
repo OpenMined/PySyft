@@ -14,11 +14,10 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
-
-VEILID_SERVICE_URL = "http://veilid"
-HEALTHCHECK_ENDPOINT = "/healthcheck"
-GEN_DHT_KEY_ENDPOINT = "/generate_dht_key"
-RET_DHT_KEY_ENDPOINT = "/retrieve_dht_key"
+from .veilid_endpoints import GEN_DHT_KEY_ENDPOINT
+from .veilid_endpoints import HEALTHCHECK_ENDPOINT
+from .veilid_endpoints import RET_DHT_KEY_ENDPOINT
+from .veilid_endpoints import VEILID_SERVICE_URL
 
 
 @instrument

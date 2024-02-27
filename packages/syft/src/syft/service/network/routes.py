@@ -17,6 +17,7 @@ from ...client.client import HTTPConnection
 from ...client.client import NodeConnection
 from ...client.client import PythonConnection
 from ...client.client import SyftClient
+from ...client.client import VeilidConnection
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -89,6 +90,21 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
 
 
 @serializable()
+class VeilidNodeRoute(SyftObject, NodeRoute):
+    __canonical_name__ = "VeilidNodeRoute"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    dht_key: str
+    proxy_target_uid: Optional[UID] = None
+    priority: int = 1
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, VeilidNodeRoute):
+            return hash(self) == hash(other)
+        return self == other
+
+
+@serializable()
 class PythonNodeRoute(SyftObject, NodeRoute):
     __canonical_name__ = "PythonNodeRoute"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -125,7 +141,7 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         return self == other
 
 
-NodeRouteType = Union[HTTPNodeRoute, PythonNodeRoute]
+NodeRouteType = Union[HTTPNodeRoute, PythonNodeRoute, VeilidNodeRoute]
 
 
 def route_to_connection(
@@ -133,12 +149,20 @@ def route_to_connection(
 ) -> NodeConnection:
     if isinstance(route, HTTPNodeRoute):
         return route.to(HTTPConnection, context=context)
-    else:
+    elif isinstance(route, PythonNodeRoute):
         return route.to(PythonConnection, context=context)
+    elif isinstance(route, VeilidNodeRoute):
+        return route.to(VeilidConnection, context=context)
+    else:
+        raise ValueError(f"Route {route} is not supported.")
 
 
 def connection_to_route(connection: NodeConnection) -> NodeRoute:
     if isinstance(connection, HTTPConnection):
         return connection.to(HTTPNodeRoute)
-    else:
+    elif isinstance(connection, PythonConnection):
         return connection.to(PythonNodeRoute)
+    elif isinstance(connection, VeilidConnection):
+        return connection.to(VeilidNodeRoute)
+    else:
+        raise ValueError(f"Connection {connection} is not supported.")

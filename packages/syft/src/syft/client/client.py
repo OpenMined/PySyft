@@ -53,6 +53,9 @@ from ..service.user.user import UserPrivateKey
 from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
+from ..service.veilid.veilid_endpoints import VEILID_PROXY_PATH
+from ..service.veilid.veilid_endpoints import VEILID_SERVICE_URL
+from ..service.veilid.veilid_endpoints import VEILID_SYFT_PROXY_URL
 from ..types.grid_url import GridURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
@@ -68,6 +71,7 @@ from .api import SyftAPI
 from .api import SyftAPICall
 from .api import debox_signed_syftapicall_response
 from .connection import NodeConnection
+from .protocol import SyftProtocol
 
 if TYPE_CHECKING:
     # relative
@@ -121,7 +125,6 @@ def forward_message_to_proxy(
 API_PATH = "/api/v2"
 DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
-VEILID_PROXY_PATH = "/proxy"
 
 
 class Routes(Enum):
@@ -333,8 +336,8 @@ class VeilidConnection(NodeConnection):
     __canonical_name__ = "VeilidConnection"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    vld_forward_proxy: GridURL
-    vld_reverse_proxy: GridURL
+    vld_forward_proxy: Optional[GridURL]
+    vld_reverse_proxy: Optional[GridURL]
     dht_key: str
     proxy_target_uid: Optional[UID]
     routes: Type[Routes] = Routes
@@ -342,11 +345,20 @@ class VeilidConnection(NodeConnection):
 
     @pydantic.validator("vld_forward_proxy", pre=True, always=True)
     def make_forward_proxy_url(cls, v: Union[GridURL, str]) -> GridURL:
-        return GridURL.from_url(v)
+        if v is None:
+            forward_proxy_url = GridURL.from_url(VEILID_SERVICE_URL)
+        else:
+            forward_proxy_url = GridURL.from_url(v)
+        return forward_proxy_url
 
+    # TODO: Remove this once when we remove reverse proxy in Veilid Connection
     @pydantic.validator("vld_reverse_proxy", pre=True, always=True)
     def make_reverse_proxy_url(cls, v: Union[GridURL, str]) -> GridURL:
-        return GridURL.from_url(v)
+        if v is None:
+            reverse_proxy_url = GridURL.from_url(VEILID_SYFT_PROXY_URL)
+        else:
+            reverse_proxy_url = GridURL.from_url(v)
+        return reverse_proxy_url
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         raise NotImplementedError("VeilidConnection does not support with_proxy")
@@ -837,18 +849,33 @@ class SyftClient:
             metadata=self.metadata,
         )
 
-    def exchange_route(self, client: Self) -> Union[SyftSuccess, SyftError]:
-        # relative
-        from ..service.network.routes import connection_to_route
+    def exchange_route(
+        self, client: Self, protocol: SyftProtocol
+    ) -> Union[SyftSuccess, SyftError]:
+        if protocol == SyftProtocol.HTTP:
+            # relative
+            from ..service.network.routes import connection_to_route
 
-        self_node_route = connection_to_route(self.connection)
-        remote_node_route = connection_to_route(client.connection)
+            self_node_route = connection_to_route(self.connection)
+            remote_node_route = connection_to_route(client.connection)
 
-        result = self.api.services.network.exchange_credentials_with(
-            self_node_route=self_node_route,
-            remote_node_route=remote_node_route,
-            remote_node_verify_key=client.metadata.to(NodeMetadataV3).verify_key,
-        )
+            result = self.api.services.network.exchange_credentials_with(
+                self_node_route=self_node_route,
+                remote_node_route=remote_node_route,
+                remote_node_verify_key=client.metadata.to(NodeMetadataV3).verify_key,
+            )
+        elif protocol == SyftProtocol.VEILID:
+            # relative
+            from ..service.network.routes import connection_to_route
+
+            remote_node_route = connection_to_route(client.connection)
+
+            result = self.api.services.network.exchange_veilid_route(
+                remote_node_route=remote_node_route,
+                remote_node_verify_key=client.metadata.to(NodeMetadataV3).verify_key,
+            )
+        else:
+            raise ValueError(f"Protocol {protocol} not supported")
 
         return result
 

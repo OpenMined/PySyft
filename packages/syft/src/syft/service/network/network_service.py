@@ -14,6 +14,7 @@ from ...abstract_node import NodeType
 from ...client.client import HTTPConnection
 from ...client.client import PythonConnection
 from ...client.client import SyftClient
+from ...client.client import VeilidConnection
 from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
@@ -44,6 +45,7 @@ from .node_peer import NodePeer
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
 from .routes import PythonNodeRoute
+from .routes import VeilidNodeRoute
 
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 NodeTypePartitionKey = PartitionKey(key="node_type", type_=NodeType)
@@ -400,6 +402,20 @@ def node_route_to_http_connection(
         protocol=obj.protocol, host_or_ip=obj.host_or_ip, port=obj.port
     ).as_container_host()
     return HTTPConnection(url=url, proxy_target_uid=obj.proxy_target_uid)
+
+
+@transform_method(VeilidNodeRoute, VeilidConnection)
+def node_route_to_veilid_connection(
+    obj: Any, context: Optional[TransformContext] = None
+) -> List[Callable]:
+    return VeilidConnection(dht_key=obj.dht_key, proxy_target_uid=obj.proxy_target_uid)
+
+
+@transform_method(VeilidConnection, VeilidNodeRoute)
+def veilid_connection_to_node_route(
+    obj: Any, context: Optional[TransformContext] = None
+) -> List[Callable]:
+    return VeilidNodeRoute(dht_key=obj.dht_key, proxy_target_uid=obj.proxy_target_uid)
 
 
 @transform(NodeMetadataV3, NodePeer)
