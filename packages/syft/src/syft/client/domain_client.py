@@ -24,6 +24,7 @@ from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
+from ..service.sync.diff_state import ResolvedSyncState
 from ..service.user.roles import Roles
 from ..service.user.user_roles import ServiceRole
 from ..types.blob_storage import BlobFile
@@ -146,8 +147,8 @@ class DomainClient(SyftClient):
 
     def get_permissions_for_other_node(self, items):
         if len(items) > 0:
-            assert len(set([i.syft_node_location for i in items])) == 1
-            assert len(set([i.syft_client_verify_key for i in items])) == 1
+            assert len({i.syft_node_location for i in items}) == 1
+            assert len({i.syft_client_verify_key for i in items}) == 1
             item = items[0]
             api = APIRegistry.api_for(
                 item.syft_node_location, item.syft_client_verify_key
@@ -156,13 +157,27 @@ class DomainClient(SyftClient):
         else:
             return {}
 
-    def apply_state(self, items):
+    def apply_state(
+        self, resolved_state: ResolvedSyncState
+    ) -> Union[SyftSuccess, SyftError]:
+        if len(resolved_state.delete_objs):
+            raise NotImplementedError("TODO implement delete")
+        items = resolved_state.create_objs + resolved_state.update_objs
+
         action_objects = [x for x in items if isinstance(x, ActionObject)]
         permissions = self.get_permissions_for_other_node(items)
         for action_object in action_objects:
             self.create_actionobject(action_object)
 
         res = self.api.services.sync.sync_items(items, permissions)
+        if isinstance(res, SyftError):
+            return res
+
+        # Add updated node state to store to have a previous_state for next sync
+        new_state = self.api.services.sync.get_state(add_to_store=True)
+        if isinstance(new_state, SyftError):
+            return new_state
+
         self._fetch_api(self.credentials)
         return res
 

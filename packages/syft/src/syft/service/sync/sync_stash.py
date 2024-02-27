@@ -36,12 +36,12 @@ class SyncStash(BaseUIDStoreStash):
         all_states = self.get_all(
             credentials=context.node.verify_key,
             order_by=OrderByDatePartitionKey,
-            limit=1,
         )
 
-        if isinstance(all_states, str):
-            return SyftError(message=all_states)
+        if all_states.is_err():
+            return SyftError(message=all_states.err())
 
+        all_states = all_states.ok()
         if len(all_states) > 0:
-            return all_states[0]
+            return all_states[-1]
         return None

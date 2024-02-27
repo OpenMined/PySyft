@@ -648,6 +648,14 @@ class Request(SyftObject):
 
         return job
 
+    def _is_action_object_from_job(self, action_object: ActionObject) -> Optional[Job]:
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        job_service = api.services.job
+        existing_jobs = job_service.get_by_user_code_id(self.code.id)
+        for job in existing_jobs:
+            if job.result and job.result.id == action_object.id:
+                return job
+
     def accept_by_depositing_result(self, result: Any, force: bool = False):
         # this code is extremely brittle because its a work around that relies on
         # the type of request being very specifically tied to code which needs approving
@@ -660,6 +668,16 @@ class Request(SyftObject):
                     message="JobInfo should not include result. Use sync_job instead."
                 )
             result = job_info.result
+        elif isinstance(result, ActionObject):
+            # Do not allow accepting a result produced by a Job,
+            # This can cause an inconsistent Job state
+            if self._is_action_object_from_job(result):
+                action_object_job = self._is_action_object_from_job(result)
+                if action_object_job is not None:
+                    return SyftError(
+                        message=f"This ActionObject is the result of Job {action_object_job.id}, "
+                        f"please use the `Job.info` instead."
+                    )
         else:
             # NOTE result is added at the end of function (once ActionObject is created)
             job_info = JobInfo(
@@ -767,8 +785,16 @@ class Request(SyftObject):
             if isinstance(approved, SyftError):
                 return approved
 
+            print("ActionObject 4", type(action_object), action_object)
+
         job_info.result = action_object
         job = self._get_latest_or_create_job()
+
+        existing_result = job.result.id if job.result is not None else None
+        print("New result", action_object)
+        print(
+            f"Job({job.id}) Setting new result {existing_result} -> {job_info.result.id}"
+        )
         job.apply_info(job_info)
 
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
@@ -803,7 +829,7 @@ class Request(SyftObject):
 
         return dependencies
 
-    def get_sync_dependencies(self) -> Union[List[UID], SyftError]:
+    def get_sync_dependencies(self, api=None) -> Union[List[UID], SyftError]:
         return self.get_dependencies()
 
 

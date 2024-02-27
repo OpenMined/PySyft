@@ -3,7 +3,6 @@ from collections import defaultdict
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Optional
 from typing import Set
 from typing import Union
 
@@ -11,6 +10,7 @@ from typing import Union
 from ...client.api import NodeIdentity
 from ...node.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
+from ...store.linked_obj import LinkedObject
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..action.action_object import ActionObject
@@ -191,25 +191,25 @@ class SyncService(AbstractService):
     )
     def get_state(
         self, context: AuthedServiceContext, add_to_store: bool = False
-    ) -> Optional[SyncState]:
+    ) -> Union[SyncState, SyftError]:
         new_state = SyncState()
 
         node = context.node
 
         projects = node.get_service("projectservice").get_all(context)
-        new_state.add_objects(projects)
+        new_state.add_objects(projects, api=node.root_client.api)
 
         requests = node.get_service("requestservice").get_all(context)
-        new_state.add_objects(requests)
+        new_state.add_objects(requests, api=node.root_client.api)
 
         user_codes = node.get_service("usercodeservice").get_all(context)
-        new_state.add_objects(user_codes)
+        new_state.add_objects(user_codes, api=node.root_client.api)
 
         jobs = node.get_service("jobservice").get_all(context)
-        new_state.add_objects(jobs)
+        new_state.add_objects(jobs, api=node.root_client.api)
 
         logs = node.get_service("logservice").get_all(context)
-        new_state.add_objects(logs)
+        new_state.add_objects(logs, api=node.root_client.api)
 
         # TODO workaround, we only need action objects from output policies for now
         action_objects = []
@@ -220,18 +220,17 @@ class SyncService(AbstractService):
                 action_objects.append(job.result)
         new_state.add_objects(action_objects)
 
-        new_state._build_dependencies()
+        new_state._build_dependencies(api=node.root_client.api)
 
-        # TODO
-        # previous_state = self.stash.get_latest(context=context)
-        # if previous_state is not None:
-        #     new_state.previous_state_link = LinkedObject.from_obj(
-        #         obj=previous_state,
-        #         service_type=SyncService,
-        #         node_uid=context.node.id,
-        #     )
+        previous_state = self.stash.get_latest(context=context)
+        if previous_state is not None:
+            new_state.previous_state_link = LinkedObject.from_obj(
+                obj=previous_state,
+                service_type=SyncService,
+                node_uid=context.node.id,
+            )
 
-        # if add_to_store:
-        #     self.stash.add(new_state, context=context)
+        if add_to_store:
+            self.stash.set(context.credentials, new_state)
 
         return new_state

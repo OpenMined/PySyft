@@ -17,6 +17,7 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .job_stash import Job
@@ -75,6 +76,19 @@ class JobService(AbstractService):
 
         res = res.ok()
         return res
+
+    @service_method(
+        path="job.delete",
+        name="delete",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def delete(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
+        res = self.stash.delete_by_uid(context.credentials, uid)
+        if res.is_err():
+            return SyftError(message=res.err())
+        return SyftSuccess(message="Great Success!")
 
     @service_method(
         path="job.restart",

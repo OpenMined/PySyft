@@ -24,8 +24,13 @@ class SyftLog(SyftObject):
     __canonical_name__ = "SyftLog"
     __version__ = SYFT_OBJECT_VERSION_2
 
+    __repr_attrs__ = ["stdout", "stderr"]
+
     stdout: str = ""
     stderr: str = ""
+
+    def append(self, new_str: str) -> None:
+        self.stdout += new_str
 
     def append_error(self, new_str: str) -> None:
         self.stderr += new_str

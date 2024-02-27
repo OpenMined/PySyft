@@ -36,6 +36,7 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
@@ -73,6 +74,16 @@ class UserCodeService(AbstractService):
             code = code.to(UserCode, context=context)
         result = self.stash.set(context.credentials, code)
         return result
+
+    @service_method(path="code.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
+    def delete(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
+        """Delete User Code"""
+        result = self.stash.delete_by_uid(context.credentials, uid)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return SyftSuccess(message="User Code Deleted")
 
     @service_method(
         path="code.sync_code_from_request",
