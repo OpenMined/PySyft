@@ -36,6 +36,7 @@ class VeilidService(AbstractService):
     def generate_dht_key(
         self, context: AuthedServiceContext
     ) -> Union[SyftSuccess, SyftError]:
+        # TODO: Simplify the below logic related to HARDCODED Strings
         status_res = self.check_veilid_status()
         if isinstance(status_res, SyftError):
             return status_res
@@ -59,6 +60,7 @@ class VeilidService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def retrieve_dht_key(self, context: AuthedServiceContext) -> Union[bool, SyftError]:
+        # TODO: Simplify the below logic related to HARDCODED Strings
         status_res = self.check_veilid_status()
         if isinstance(status_res, SyftError):
             return status_res
