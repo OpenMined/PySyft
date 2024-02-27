@@ -77,9 +77,14 @@ class EmailNotifier(BaseNotifier):
         try:
             user_service = context.node.get_service("userservice")
 
-            receiver_email = user_service.get_by_verify_key(
-                notification.to_user_verify_key
-            ).email
+            receiver = user_service.get_by_verify_key(notification.to_user_verify_key)
+
+            if not receiver.notifications_enabled[NOTIFIERS.EMAIL]:
+                return Ok(
+                    "Email notifications are disabled for this user."
+                )  # TODO: Should we return an error here?
+
+            receiver_email = receiver.email
 
             subject = notification.email_template.email_title(
                 notification, context=context
@@ -191,7 +196,7 @@ class NotifierSettings(SyftObject):
                 self.notifiers_status[notifier_type]
                 and self.notifiers[notifier_type] is not None
             ):
-                # If notifier is email, we need to pass the token
+                # If notifier is email, we need to pass the parameters
                 if notifier_type == NOTIFIERS.EMAIL:
                     notifier_objs.append(
                         self.notifiers[notifier_type](

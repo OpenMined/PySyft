@@ -505,6 +505,57 @@ class UserService(AbstractService):
             return result.ok()
         return SyftError(message=f"No User with verify_key: {verify_key}")
 
+    # TODO: This exposed service is only for the development phase.
+    # enable/disable notifications will be called from Notifier Service
+
+    def _set_notification_status(
+        self,
+        notifier_type: NOTIFIERS,
+        new_status: bool,
+        verify_key: SyftVerifyKey,
+    ) -> Optional[SyftError]:
+        result = self.stash.get_by_verify_key(
+            credentials=verify_key, verify_key=verify_key
+        )
+        if result.is_ok():
+            # this seems weird that we get back None as Ok(None)
+            user = result.ok()
+        else:
+            return SyftError(message=str(result.err()))
+
+        user.notifications_enabled[notifier_type] = new_status
+
+        result = self.stash.update(
+            credentials=user.verify_key,
+            user=user,
+        )
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        else:
+            return None
+
+    def enable_notifications(
+        self, context: AuthedServiceContext
+    ) -> Union[SyftSuccess, SyftError]:
+        result = self._set_notification_status(
+            NOTIFIERS.EMAIL, True, context.credentials
+        )
+        if result is not None:
+            return result
+        else:
+            return SyftSuccess(message="Notifications enabled successfully!")
+
+    def disable_notifications(
+        self, context: AuthedServiceContext
+    ) -> Union[SyftSuccess, SyftError]:
+        result = self._set_notification_status(
+            NOTIFIERS.EMAIL, False, context.credentials
+        )
+        if result is not None:
+            return result
+        else:
+            return SyftSuccess(message="Notifications disabled successfully!")
+
 
 TYPE_TO_SERVICE[User] = UserService
 SERVICE_TO_TYPES[UserService].update({User})

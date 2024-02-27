@@ -26,6 +26,7 @@ from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import drop
@@ -35,11 +36,13 @@ from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_email
 from ...types.uid import UID
+from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftError
 from ..response import SyftSuccess
 from .user_roles import ServiceRole
 
 
+@serializable()
 class UserV1(SyftObject):
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -57,10 +60,37 @@ class UserV1(SyftObject):
 
 
 @serializable()
-class User(SyftObject):
+class UserV2(SyftObject):
     # version
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_2
+
+    id: Optional[UID]
+
+    # fields
+    email: Optional[EmailStr]
+    name: Optional[str]
+    hashed_password: Optional[str]
+    salt: Optional[str]
+    signing_key: Optional[SyftSigningKey]
+    verify_key: Optional[SyftVerifyKey]
+    role: Optional[ServiceRole]
+    institution: Optional[str]
+    website: Optional[str] = None
+    created_at: Optional[str] = None
+    # TODO where do we put this flag?
+    mock_execution_permission: bool = False
+
+    __attr_searchable__ = ["name", "email", "verify_key", "role"]
+    __attr_unique__ = ["email", "signing_key", "verify_key"]
+    __repr_attrs__ = ["name", "email"]
+
+
+@serializable()
+class User(SyftObject):
+    # version
+    __canonical_name__ = "User"
+    __version__ = SYFT_OBJECT_VERSION_3
 
     id: Optional[UID]
 
@@ -69,6 +99,12 @@ class User(SyftObject):
         return EmailStr(v)
 
     # fields
+    notifications_enabled: Dict[NOTIFIERS, bool] = {
+        NOTIFIERS.EMAIL: True,
+        NOTIFIERS.SMS: False,
+        NOTIFIERS.SLACK: False,
+        NOTIFIERS.APP: False,
+    }
     email: Optional[EmailStr]
     name: Optional[str]
     hashed_password: Optional[str]
@@ -126,6 +162,7 @@ def check_pwd(password: str, hashed_password: str) -> bool:
     )
 
 
+@serializable()
 class UserUpdateV1(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -141,9 +178,25 @@ class UserUpdateV1(PartialSyftObject):
 
 
 @serializable()
-class UserUpdate(PartialSyftObject):
+class UserUpdateV2(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
     __version__ = SYFT_OBJECT_VERSION_2
+
+    email: EmailStr
+    name: str
+    role: ServiceRole  # make sure role cant be set without uid
+    password: str
+    password_verify: str
+    verify_key: SyftVerifyKey
+    institution: str
+    website: str
+    mock_execution_permission: bool
+
+
+@serializable()
+class UserUpdate(PartialSyftObject):
+    __canonical_name__ = "UserUpdate"
+    __version__ = SYFT_OBJECT_VERSION_3
 
     @pydantic.validator("email", pre=True)
     def make_email(cls, v: Any) -> Any:
@@ -166,6 +219,7 @@ class UserUpdate(PartialSyftObject):
     mock_execution_permission: bool
 
 
+@serializable()
 class UserCreateV1(UserUpdateV1):
     __canonical_name__ = "UserCreate"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -182,9 +236,28 @@ class UserCreateV1(UserUpdateV1):
 
 
 @serializable()
-class UserCreate(UserUpdate):
+class UserCreateV2(UserUpdateV2):
     __canonical_name__ = "UserCreate"
     __version__ = SYFT_OBJECT_VERSION_2
+
+    email: EmailStr
+    name: str
+    role: Optional[ServiceRole] = None  # type: ignore[assignment]
+    password: str
+    password_verify: Optional[str] = None  # type: ignore[assignment]
+    verify_key: Optional[SyftVerifyKey]
+    institution: Optional[str]  # type: ignore[assignment]
+    website: Optional[str]  # type: ignore[assignment]
+    created_by: Optional[SyftSigningKey]
+    mock_execution_permission: bool = False
+
+    __repr_attrs__ = ["name", "email"]
+
+
+@serializable()
+class UserCreate(UserUpdate):
+    __canonical_name__ = "UserCreate"
+    __version__ = SYFT_OBJECT_VERSION_3
 
     email: EmailStr
     name: str
@@ -211,6 +284,7 @@ class UserSearch(PartialSyftObject):
     name: str
 
 
+@serializable()
 class UserViewV1(SyftObject):
     __canonical_name__ = "UserView"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -223,7 +297,7 @@ class UserViewV1(SyftObject):
 
 
 @serializable()
-class UserView(SyftObject):
+class UserViewV2(SyftObject):
     __canonical_name__ = "UserView"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -236,6 +310,34 @@ class UserView(SyftObject):
 
     __repr_attrs__ = ["name", "email", "institution", "website", "role"]
 
+
+@serializable()
+class UserView(SyftObject):
+    __canonical_name__ = "UserView"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    notifications_enabled: Dict[NOTIFIERS, bool] = {
+        NOTIFIERS.EMAIL: True,
+        NOTIFIERS.SMS: False,
+        NOTIFIERS.SLACK: False,
+        NOTIFIERS.APP: False,
+    }
+    email: EmailStr
+    name: str
+    role: ServiceRole  # make sure role cant be set without uid
+    institution: Optional[str]
+    website: Optional[str]
+    mock_execution_permission: bool
+
+    __repr_attrs__ = [
+        "name",
+        "email",
+        "institution",
+        "website",
+        "role",
+        "notifications_enabled",
+    ]
+
     def _coll_repr_(self) -> Dict[str, Any]:
         return {
             "Name": self.name,
@@ -243,6 +345,10 @@ class UserView(SyftObject):
             "Institute": self.institution,
             "Website": self.website,
             "Role": self.role.name.capitalize(),
+            "Notifications": "Email: "
+            + (
+                "Enabled" if self.notifications_enabled[NOTIFIERS.EMAIL] else "Disabled"
+            ),
         }
 
     def _set_password(self, new_password: str) -> Union[SyftError, SyftSuccess]:
@@ -384,6 +490,7 @@ def user_to_view_user() -> List[Callable]:
                 "institution",
                 "website",
                 "mock_execution_permission",
+                "notifications_enabled",
             ]
         )
     ]
@@ -404,12 +511,12 @@ def user_to_user_verify() -> List[Callable]:
     return [keep(["email", "signing_key", "id", "role"])]
 
 
-@migrate(UserV1, User)
+@migrate(UserV1, UserV2)
 def upgrade_user_v1_to_v2() -> List[Callable]:
     return [make_set_default(key="mock_execution_permission", value=False)]
 
 
-@migrate(User, UserV1)
+@migrate(UserV2, UserV1)
 def downgrade_user_v2_to_v1() -> List[Callable]:
     return [drop(["mock_execution_permission"])]
 
@@ -434,11 +541,33 @@ def downgrade_user_create_v2_to_v1() -> List[Callable]:
     return [drop(["mock_execution_permission"])]
 
 
-@migrate(UserViewV1, UserView)
+@migrate(UserViewV1, UserViewV2)
 def upgrade_user_view_v1_to_v2() -> List[Callable]:
     return [make_set_default(key="mock_execution_permission", value=False)]
 
 
-@migrate(UserView, UserViewV1)
+@migrate(UserViewV2, UserViewV1)
 def downgrade_user_view_v2_to_v1() -> List[Callable]:
     return [drop(["mock_execution_permission"])]
+
+
+# User
+@migrate(UserV2, User)
+def upgrade_user_v2_to_v3() -> List[Callable]:
+    return [make_set_default(key="notifications_enabled", value=True)]
+
+
+@migrate(User, UserV2)
+def downgrade_user_v3_to_v2() -> List[Callable]:
+    return [drop(["notifications_enabled"])]
+
+
+# View
+@migrate(UserViewV2, UserView)
+def upgrade_user_view_v2_to_v3() -> List[Callable]:
+    return [make_set_default(key="notifications_enabled", value=True)]
+
+
+@migrate(UserView, UserViewV2)
+def downgrade_user_view_v3_to_v2() -> List[Callable]:
+    return [drop(["notifications_enabled"])]

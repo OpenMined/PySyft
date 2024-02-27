@@ -5,6 +5,7 @@ from typing import Optional
 from typing import Union
 
 # third party
+from pydantic import EmailStr
 from result import Err
 from result import Ok
 from result import Result
@@ -109,11 +110,6 @@ class NotifierService(AbstractService):
             username=email_username, password=email_password
         )
 
-        if not email_sender and not notifier.email_sender:
-            return SyftError(
-                message="You must provide a sender email address to enable notifications."
-            )
-
         if validation_result.is_err():
             return SyftError(
                 message="Invalid SMTP credentials. Please check your username and password."
@@ -122,7 +118,19 @@ class NotifierService(AbstractService):
         notifier.email_password = email_password
         notifier.email_username = email_username
 
+        # Email sender verification
+        if not email_sender and not notifier.email_sender:
+            return SyftError(
+                message="You must provide a sender email address to enable notifications."
+            )
+
         if email_sender:
+            try:
+                EmailStr.validate(email_sender)
+            except ValueError:
+                return SyftError(
+                    message="Invalid sender email address. Please check your email address."
+                )
             notifier.email_sender = email_sender
 
         notifier.active = True
@@ -170,34 +178,8 @@ class NotifierService(AbstractService):
         Activate email notifications for the authenticated user.
         This will only work if the domain owner has enabled notifications.
         """
-
-        # TODO: user credentials should not be used to get the notifier settings
-        # TODO: WARNING THIS IS A POTENTIAL SECURITY RISK (ONLY FOR DEVELOPMENT PURPOSES)
-
-        admin_key = self.stash.admin_verify_key()
-
-        result = self.stash.get(credentials=admin_key)
-        print(result)
-
-        if result.is_err():
-            return SyftError(message=result.err())
-
-        notifier = result.ok()
-
-        user_key = context.credentials
-
-        if user_key in notifier.email_subscribers:
-            return SyftSuccess(
-                message="Notifications are already activated for this user."
-            )
-
-        notifier.email_subscribers.add(user_key)
-
-        # TODO: user credentials should not be used to update the notifier settings
-        result = self.stash.update(credentials=admin_key, settings=notifier)
-        if result.is_err():
-            return SyftError(message=result.err())
-        return SyftSuccess(message="Notifications enabled successfully.")
+        user_service = context.node.get_service("userservice")
+        return user_service.enable_notifications(context)
 
     @service_method(
         path="notifier.deactivate",
@@ -211,22 +193,8 @@ class NotifierService(AbstractService):
         """Deactivate email notifications for the authenticated user
         This will only work if the domain owner has enabled notifications.
         """
-
-        # TODO: WARNING THIS IS A POTENTIAL SECURITY RISK (ONLY FOR DEVELOPMENT PURPOSES)
-        admin_key = self.stash.admin_verify_key()
-        result = self.stash.get(credentials=admin_key)
-
-        if result.is_err():
-            return SyftError(message=result.err())
-
-        notifier = result.ok()
-        user_key = context.credentials
-        notifier.email_subscribers.remove(user_key)
-
-        result = self.stash.update(credentials=admin_key, settings=notifier)
-        if result.is_err():
-            return SyftError(message=result.err())
-        return SyftSuccess(message="Notifications disabled successfully.")
+        user_service = context.node.get_service("userservice")
+        return user_service.disable_notifications(context)
 
     @staticmethod
     def init_notifier(
