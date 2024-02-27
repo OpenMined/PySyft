@@ -320,7 +320,7 @@ class UserCodeV2(SyftObject):
 class UserCodeV3(SyftObject):
     # version
     __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_3
 
     id: UID
     node_uid: Optional[UID]
@@ -352,7 +352,7 @@ class UserCodeV3(SyftObject):
 class UserCode(SyftObject):
     # version
     __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     id: UID
     node_uid: Optional[UID]
