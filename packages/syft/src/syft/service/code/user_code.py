@@ -574,33 +574,6 @@ class UserCode(SyftObject):
 
         return []
 
-    def get_dependencies(self) -> List[UID]:
-        # Usercode dependents are: input_policy inputs, output_policy outputs, nested_codes
-        dependencies = []
-
-        all_input_ids = []
-        for _, inputs in self.input_policy_init_kwargs.items():
-            all_input_ids.extend(inputs.values())
-
-        dependencies.extend(all_input_ids)
-
-        output_policy = self.output_policy
-        if output_policy is not None:
-            all_output_ids = []
-            for output in output_policy.output_history:
-                if isinstance(output.outputs, list):
-                    all_output_ids.extend(output.outputs)
-                else:
-                    all_output_ids.extend(output.outputs.values())
-
-            dependencies.extend(all_output_ids)
-
-        if self.nested_codes is not None:
-            nested_code_ids = [link.object_uid for link in self.nested_codes.values()]
-            dependencies.extend(nested_code_ids)
-
-        return dependencies
-
     def get_sync_dependencies(self, api=None) -> Union[List[UID], SyftError]:
         dependencies = []
 

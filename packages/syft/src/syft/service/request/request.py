@@ -818,7 +818,7 @@ class Request(SyftObject):
         job.apply_info(job_info)
         return job_service.update(job)
 
-    def get_dependencies(self) -> Union[List[UID], SyftError]:
+    def get_sync_dependencies(self) -> Union[List[UID], SyftError]:
         dependencies = []
 
         code_id = self.code_id
@@ -828,9 +828,6 @@ class Request(SyftObject):
         dependencies.append(code_id)
 
         return dependencies
-
-    def get_sync_dependencies(self, api=None) -> Union[List[UID], SyftError]:
-        return self.get_dependencies()
 
 
 @serializable()

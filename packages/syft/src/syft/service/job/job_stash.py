@@ -463,23 +463,6 @@ class Job(SyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
-    def get_dependencies(self) -> List[UID]:
-        dependencies = []
-
-        if self.user_code_id:
-            dependencies.append(self.user_code_id)
-
-        if self.result is not None:
-            dependencies.append(self.result.id.id)
-
-        if self.log_id:
-            dependencies.append(self.log_id)
-
-        subjob_ids = [subjob.id for subjob in self.subjobs]
-        dependencies.extend(subjob_ids)
-
-        return dependencies
-
     def get_sync_dependencies(self, api=None) -> List[UID]:
         dependencies = []
         if self.result is not None:
