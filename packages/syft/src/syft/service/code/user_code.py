@@ -64,6 +64,7 @@ from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..job.job_stash import Job
+from ..output.output_service import ExecutionOutput
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
 from ..policy.policy import EmpyInputPolicy
@@ -74,6 +75,7 @@ from ..policy.policy import Policy
 from ..policy.policy import SingleExecutionExactOutput
 from ..policy.policy import SubmitUserPolicy
 from ..policy.policy import UserPolicy
+from ..policy.policy import filter_only_uids
 from ..policy.policy import init_policy
 from ..policy.policy import load_policy_code
 from ..policy.policy_service import PolicyService
@@ -82,6 +84,7 @@ from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..response import SyftWarning
+from ..service import from_api_or_context
 from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
 from .unparse import unparse
@@ -520,6 +523,46 @@ class UserCode(SyftObject):
             raise Exception(f"You can't set {type(value)} as output_policy_state")
 
     @property
+    def output_history(self) -> Union[List[ExecutionOutput], SyftError]:
+        if not self.status.approved:
+            return SyftError(message="Please wait for the code to be approved")
+
+        get_outputs = from_api_or_context(
+            "output.get_by_user_code_id",
+            self.syft_node_location,
+            self.syft_client_verify_key,
+        )
+        return get_outputs(self.id)
+
+    def apply_output(
+        self,
+        context: AuthedServiceContext,
+        outputs: Any,
+    ) -> Union[ExecutionOutput, SyftError]:
+        output_policy = self.output_policy
+        if output_policy is None:
+            return SyftError(
+                message="You must wait for the output policy to be approved"
+            )
+
+        output_ids = filter_only_uids(outputs)
+        output_service = context.node.get_service("result")
+        execution_result = output_service.create_from_output_ids(context, output_ids)
+        if isinstance(execution_result, SyftError):
+            return execution_result
+
+        # TODO can we remove this, and get execution count from self.output_history?
+        output_policy.apply_output(context=context, outputs=outputs)
+        self.output_policy = output_policy
+
+        code_service = context.get_service("codeservice")
+        res = code_service.update_code_state(context=context, code_item=self)
+        if isinstance(res, SyftError):
+            return res
+
+        return execution_result
+
+    @property
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
 
@@ -554,11 +597,13 @@ class UserCode(SyftObject):
                 all_assets += assets
         return all_assets
 
-    def get_all_output_action_objects(self) -> List[ActionObject]:
-        output_policy = self.output_policy
-        if output_policy is not None:
+    def get_all_output_action_objects(self) -> Union[List[ActionObject], SyftError]:
+        if self.status.approved:
             all_output_ids = []
-            for output in output_policy.output_history:
+            output_history = self.output_history
+            if isinstance(output_history, SyftError):
+                return output_history
+            for output in output_history:
                 if isinstance(output.outputs, list):
                     all_output_ids.extend(output.outputs)
                 else:
@@ -587,11 +632,11 @@ class UserCode(SyftObject):
         output_policy = self.output_policy
         if output_policy is not None:
             all_output_ids = []
-            for output in output_policy.output_history:
-                if isinstance(output.outputs, list):
-                    all_output_ids.extend(output.outputs)
+            for output in self.output_history:
+                if isinstance(output.output_ids, list):
+                    all_output_ids.extend(output.output_ids)
                 else:
-                    all_output_ids.extend(output.outputs.values())
+                    all_output_ids.extend(output.output_ids.values())
 
             dependencies.extend(all_output_ids)
 
@@ -1229,9 +1274,9 @@ def submit_user_code_to_user_code() -> List[Callable]:
 
 
 @serializable()
-class UserCodeExecutionResult(SyftObject):
+class UserCodeExecutionOutput(SyftObject):
     # version
-    __canonical_name__ = "UserCodeExecutionResult"
+    __canonical_name__ = "UserCodeExecutionOutput"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
@@ -1441,7 +1486,7 @@ def execute_byte_code(
         sys.stdout = stdout_
         sys.stderr = stderr_
 
-        return UserCodeExecutionResult(
+        return UserCodeExecutionOutput(
             user_code_id=code_item.id,
             stdout=str(stdout.getvalue()),
             stderr=str(stderr.getvalue()),

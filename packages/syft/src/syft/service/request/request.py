@@ -710,6 +710,9 @@ class Request(SyftObject):
             return permission_request
 
         code = change.linked_obj.resolve
+        output_history = code.output_history
+        if isinstance(output_history, SyftError):
+            return output_history
         state = code.output_policy
 
         # This weird order is due to the fact that state is None before calling approve
@@ -720,7 +723,7 @@ class Request(SyftObject):
                     message="Already approved, if you want to force updating the result use force=True"
                 )
             # TODO: this should overwrite the output history instead
-            action_obj_id = state.output_history[0].outputs[0]
+            action_obj_id = output_history[0].output_ids[0]
 
             if not isinstance(result, ActionObject):
                 action_object = ActionObject.from_obj(

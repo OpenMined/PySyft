@@ -30,7 +30,6 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
-from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -67,7 +66,7 @@ def extract_uid(v: Any) -> UID:
     return value
 
 
-def filter_only_uids(results: Any) -> Dict[str, Any]:
+def filter_only_uids(results: Any) -> Union[List[UID], Dict[str, UID]]:
     if not hasattr(results, "__len__"):
         results = [results]
 
@@ -311,23 +310,11 @@ class ExactMatch(InputPolicy):
         return results
 
 
-@serializable()
-class OutputHistory(SyftObject):
-    # version
-    __canonical_name__ = "OutputHistory"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    output_time: DateTime
-    outputs: Optional[Union[List[UID], Dict[str, UID]]]
-    executing_user_verify_key: SyftVerifyKey
-
-
 class OutputPolicy(Policy):
     # version
     __canonical_name__ = "OutputPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    output_history: List[OutputHistory] = []
     output_kwargs: List[str] = []
     node_uid: Optional[UID]
     output_readers: List[SyftVerifyKey] = []
@@ -337,24 +324,7 @@ class OutputPolicy(Policy):
         context: NodeServiceContext,
         outputs: Any,
     ) -> Any:
-        output_uids = filter_only_uids(outputs)
-        if isinstance(output_uids, UID):
-            output_uids = [output_uids]
-        history = OutputHistory(
-            output_time=DateTime.now(),
-            outputs=output_uids,
-            executing_user_verify_key=context.credentials,
-        )
-        self.output_history.append(history)
         return outputs
-
-    @property
-    def outputs(self) -> List[str]:
-        return self.output_kwargs
-
-    @property
-    def last_output_ids(self) -> List[UID]:
-        return self.output_history[-1].outputs
 
 
 @serializable()
@@ -371,10 +341,8 @@ class OutputPolicyExecuteCount(OutputPolicy):
         outputs: Any,
     ) -> Optional[Any]:
         if self.count < self.limit:
-            super().apply_output(context, outputs)
             self.count += 1
-            return outputs
-        return None
+        return outputs
 
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:

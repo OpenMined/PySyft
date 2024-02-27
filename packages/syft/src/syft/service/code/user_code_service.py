@@ -304,12 +304,14 @@ class UserCodeService(AbstractService):
                 if not code.status.approved:
                     return code.status.get_status_message()
 
-                if (output_policy := code.output_policy) is None:
-                    return SyftError(message=f"Output policy not approved {code}")
+                output_history = code.output_history
+                if isinstance(output_history, SyftError):
+                    return output_history
 
-                if len(output_policy.output_history) > 0:
+                if len(output_history) > 0:
                     return resolve_outputs(
-                        context=context, output_ids=output_policy.last_output_ids
+                        context=context,
+                        output_ids=output_history[-1].output_ids,
                     )
                 else:
                     return SyftError(message="No results available")
@@ -406,6 +408,9 @@ class UserCodeService(AbstractService):
 
             # Check output policy
             output_policy = code.output_policy
+            output_history = code.output_history
+            if isinstance(output_history, SyftError):
+                return Err(output_history.message)
             if not override_execution_permission:
                 can_execute = self.is_execution_allowed(
                     code=code, context=context, output_policy=output_policy
@@ -416,10 +421,7 @@ class UserCodeService(AbstractService):
                             "Execution denied: Your code is waiting for approval"
                         )
                     if not (is_valid := output_policy.valid):
-                        if (
-                            len(output_policy.output_history) > 0
-                            and not skip_read_cache
-                        ):
+                        if len(output_history) > 0 and not skip_read_cache:
                             result = resolve_outputs(
                                 context=context,
                                 output_ids=output_policy.last_output_ids,
@@ -456,14 +458,9 @@ class UserCodeService(AbstractService):
             # this currently only works for nested syft_functions
             # and admins executing on high side (TODO, decide if we want to increment counter)
             if not skip_fill_cache:
-                output_policy.apply_output(context=context, outputs=result)
-                code.output_policy = output_policy
-                if not (
-                    update_success := self.update_code_state(
-                        context=context, code_item=code
-                    )
-                ):
-                    return update_success.to_result()
+                res = code.apply_output(context=context, outputs=result)
+                if isinstance(res, SyftError):
+                    return Err(res.message)
             has_result_read_permission = context.extra_kwargs.get(
                 "has_result_read_permission", False
             )

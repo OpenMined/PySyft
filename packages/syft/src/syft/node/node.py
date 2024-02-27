@@ -69,6 +69,7 @@ from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
 from ..service.object_search.migration_state_service import MigrateStateService
+from ..service.output.output_service import OutputService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
 from ..service.queue.base_queue import AbstractMessageHandler
@@ -359,6 +360,7 @@ class Node(AbstractNode):
                 SyftWorkerPoolService,
                 SyftImageRegistryService,
                 SyncService,
+                OutputService,
             ]
             if services is None
             else services
@@ -937,6 +939,7 @@ class Node(AbstractNode):
                 SyftWorkerPoolService,
                 SyftImageRegistryService,
                 SyncService,
+                OutputService,
             ]
 
             if OBLV:
