@@ -1,3 +1,11 @@
+"""
+How to check differences between two objects:
+    * by default merge every attr
+    * check if there is a custom implementation of the check function
+    * check if there are exceptions we do not want to merge
+    * check if there are some restrictions on the attr set
+"""
+
 # stdlib
 from typing import Any
 from typing import Dict
@@ -5,6 +13,14 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Type
+
+# third party
+from rich import box
+from rich.console import Console
+from rich.console import Group
+from rich.markdown import Markdown
+from rich.padding import Padding
+from rich.panel import Panel
 
 # relative
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -24,14 +40,6 @@ from ..request.request import Request
 from ..request.request import UserCodeStatusChange
 from ..response import SyftError
 from .sync_state import SyncState
-
-"""
-How to check differences between two objects:
-    * by default merge every attr
-    * check if there is a custom implementation of the check function
-    * check if there are exceptions we do not want to merge
-    * check if there are some restrictions on the attr set
-"""
 
 sketchy_tab = "‎ " * 4
 
@@ -95,10 +103,10 @@ class DiffAttr(SyftObject):
     """
 
     def __repr_low_side__(self):
-        return f"{self.low_attr}"
+        return recursive_repr(self.low_attr)
 
     def __repr_high_side__(self):
-        return f"{self.high_attr}"
+        return recursive_repr(self.high_attr)
 
 
 except_attrs_dict = {
@@ -216,8 +224,8 @@ def get_diff_request(low_request, high_request):
     change_diffs = get_diff_list(
         low_request.changes, high_request.changes, check_func=check_change
     )
-    for l in change_diffs:
-        if len(l) != 0:
+    for d in change_diffs:
+        if len(d) != 0:
             change_diff = DiffList(
                 attr_name="change",
                 low_attr=low_request.changes,
@@ -462,13 +470,17 @@ def recursive_repr(value_attr, no_tabs=0):
         return
     elif isinstance(value_attr, UserCodeStatusChange):
         return f"{sketchy_tab*no_tabs}UserCodeStatusChange"
-    elif isinstance(value_attr, str):
-        print(value_attr)
-        if len(value_attr.split(",")) > 1:
-            repr_str = ""
-            for sub_string in value_attr.split(","):
-                repr_str += f"{sketchy_tab*(new_no_tabs-1)}{sub_string},\n"
-            return repr_str[:-1]
+    # elif isinstance(value_attr, str):
+    #     if len(value_attr.split(",")) > 1:
+    #         repr_str = ""
+    #         for sub_string in value_attr.split(","):
+    #             repr_str += f"{sketchy_tab*(new_no_tabs-1)}{sub_string},\n"
+    #         return repr_str[:-1]
+
+    elif isinstance(value_attr, bytes):
+        value_attr = repr(value_attr)
+        if len(value_attr) > 50:
+            value_attr = value_attr[:50] + "..."
     return f"{sketchy_tab*no_tabs}{value_attr}"
 
 
@@ -504,22 +516,25 @@ class Diff(SyftObject):  # StateTuple (compare 2 objects)
     def low_state(self):
         if self.low_obj is None:
             return "n/a"
+        if isinstance(self.low_obj, ActionObject):
+            return self.low_obj.__repr__()
         if self.high_obj is None:
             attrs_str = ""
             attrs = getattr(self.low_obj, "__repr_attrs__", [])
             for attr in attrs:
                 value = getattr(self.low_obj, attr)
-                attrs_str += f"{sketchy_tab}{attr}: {recursive_repr(value)}\n"
+                attrs_str += f"{sketchy_tab}{attr} = {recursive_repr(value)}\n"
             attrs_str = attrs_str[:-1]
-            return f"{self.object_type}\n{attrs_str}"
-        attr_text = f"{self.object_type}("
+            return f"class {self.object_type}:\n{attrs_str}"
+        attr_text = f"class {self.object_type}:\n"
         for diff in self.diff_list:
-            attr_text += f"{diff.attr_name}={diff.__repr_low_side__()}," + "\n"
+            attr_text += (
+                f"{sketchy_tab}{diff.attr_name}={diff.__repr_low_side__()}," + "\n"
+            )
 
         if len(self.diff_list) > 0:
-            attr_text = attr_text[:-2] + ")"
-        else:
-            attr_text += ")"
+            attr_text = attr_text[:-2]
+
         return attr_text
         # return "DIFF"
 
@@ -528,21 +543,25 @@ class Diff(SyftObject):  # StateTuple (compare 2 objects)
         if self.high_obj is None:
             return "n/a"
 
+        if isinstance(self.high_obj, ActionObject):
+            return self.high_obj.__repr__()
+
         if self.low_obj is None:
             attrs_str = ""
             attrs = getattr(self.high_obj, "__repr_attrs__", [])
             for attr in attrs:
                 value = getattr(self.high_obj, attr)
-                attrs_str += f"{sketchy_tab}{attr}: {recursive_repr(value)}\n"
+                attrs_str += f"{sketchy_tab}{attr} = {recursive_repr(value)}\n"
             attrs_str = attrs_str[:-1]
-            return f"{self.object_type}\n{attrs_str}"
-        attr_text = f"{self.object_type}("
+            return f"class {self.object_type}:\n{attrs_str}"
+        attr_text = f"class {self.object_type}:\n"
         for diff in self.diff_list:
-            attr_text += f"{diff.attr_name}={diff.__repr_high_side__()}," + "\n"
+            attr_text += (
+                f"{sketchy_tab}{diff.attr_name}={diff.__repr_high_side__()}," + "\n"
+            )
         if len(self.diff_list) > 0:
-            attr_text = attr_text[:-2] + ")"
-        else:
-            attr_text += ")"
+            attr_text = attr_text[:-2]
+
         return attr_text
         # return "DIFF"
 
@@ -608,11 +627,6 @@ class Diff(SyftObject):  # StateTuple (compare 2 objects)
             attr_text = ""
             for diff in self.diff_list:
                 attr_text += diff.__repr__() + "<br>"
-
-            # stdlib
-            import re
-
-            res = [i.start() for i in re.finditer("\t", attr_text)]
 
             attr_text = attr_text.replace("\n", "<br>")
             # print("New lines", res)
@@ -698,7 +712,11 @@ class DiffState(SyftObject):
 
     @property
     def diffs(self) -> List[Diff]:
-        return list(self.obj_uid_to_diff.values())
+        # Returns a list of diffs, in depth-first order.
+        return [diff for hierarchy in self.hierarchies for diff, _ in hierarchy]
+
+    def _repr_html_(self) -> Any:
+        return self.diffs._repr_html_()
 
     @property
     def hierarchies(self) -> List[List[Tuple[Diff, int]]]:
@@ -720,7 +738,7 @@ class DiffState(SyftObject):
             return result
 
         hierarchies = []
-        all_ids = {diff.object_id for diff in self.diffs}
+        all_ids = set(self.obj_uid_to_diff.keys())
         child_ids = {child for deps in self.dependencies.values() for child in deps}
         # Root ids are object ids with no parents
         root_ids = list(all_ids - child_ids)
@@ -769,3 +787,103 @@ class DiffState(SyftObject):
             if diff.merge_state == "NEW":
                 objs.append(diff.get_obj())
         return objs
+
+
+class ResolvedSyncState(SyftObject):
+    __canonical_name__ = "SyncUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    create_objs: List[SyftObject] = []
+    update_objs: List[SyftObject] = []
+    delete_objs: List[SyftObject] = []
+
+    def add(self, new_state: "ResolvedSyncState") -> None:
+        self.create_objs.extend(new_state.create_objs)
+        self.update_objs.extend(new_state.update_objs)
+        self.delete_objs.extend(new_state.delete_objs)
+
+    def __repr__(self):
+        return (
+            f"ResolvedSyncState(\n"
+            f"  create_objs={self.create_objs},\n"
+            f"  update_objs={self.update_objs},\n"
+            f"  delete_objs={self.delete_objs}\n"
+            f")"
+        )
+
+
+def display_diff_object(obj_state: Optional[str]) -> Panel:
+    if obj_state is None:
+        return Panel(Markdown("None"), box=box.ROUNDED, expand=False)
+    return Panel(
+        Markdown(f"```python\n{obj_state}\n```", code_theme="default"),
+        box=box.ROUNDED,
+        expand=False,
+    )
+
+
+def display_diff_hierarchy(diff_hierarchy: List[Tuple[Diff, int]]):
+    console = Console()
+
+    for diff, level in diff_hierarchy:
+        title = (
+            f"{diff.obj_type.__name__}({diff.object_id}) - State: {diff.merge_state}"
+        )
+
+        low_side_panel = display_diff_object(diff.low_state if diff.low_obj else None)
+        low_side_panel.title = "Low side"
+        low_side_panel.title_align = "left"
+        high_side_panel = display_diff_object(
+            diff.high_state if diff.high_obj is not None else None
+        )
+        high_side_panel.title = "High side"
+        high_side_panel.title_align = "left"
+
+        grouped_panels = Group(low_side_panel, high_side_panel)
+
+        diff_panel = Panel(
+            grouped_panels,
+            title=title,
+            title_align="left",
+            box=box.ROUNDED,
+            expand=False,
+            padding=(1, 2),
+        )
+
+        if level > 0:
+            diff_panel = Padding(diff_panel, (0, 0, 0, 5 * level))
+
+        console.print(diff_panel)
+
+
+def resolve_diff(diff: Diff, decision: str) -> ResolvedSyncState:
+    resolved_diff_low = ResolvedSyncState()
+    resolved_diff_high = ResolvedSyncState()
+
+    # No diff, return empty resolved state
+    if diff.merge_state == "SAME":
+        return resolved_diff_low, resolved_diff_high
+
+    elif diff.merge_state == "NEW":
+        low_is_none = diff.low_obj is None
+        high_is_none = diff.high_obj is None
+        if low_is_none and high_is_none:
+            raise ValueError(
+                f"Diff {diff.id} is missing objects: both low and high objects are None"
+            )
+        if decision == "low" and high_is_none:
+            resolved_diff_high.create_objs.append(diff.low_obj)
+        elif decision == "low" and low_is_none:
+            resolved_diff_high.delete_objs.append(diff.high_obj)
+        elif decision == "high" and low_is_none:
+            resolved_diff_low.create_objs.append(diff.high_obj)
+        elif decision == "high" and high_is_none:
+            resolved_diff_low.delete_objs.append(diff.low_obj)
+
+    elif diff.merge_state == "DIFF":
+        if decision == "low":
+            resolved_diff_high.update_objs.append(diff.low_obj)
+        else:  # decision == high
+            resolved_diff_low.update_objs.append(diff.high_obj)
+
+    return resolved_diff_low, resolved_diff_high

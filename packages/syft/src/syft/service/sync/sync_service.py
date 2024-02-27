@@ -3,7 +3,6 @@ from collections import defaultdict
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Optional
 from typing import Set
 from typing import Union
 
@@ -11,6 +10,7 @@ from typing import Union
 from ...client.api import NodeIdentity
 from ...node.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
+from ...store.linked_obj import LinkedObject
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..action.action_object import ActionObject
@@ -191,7 +191,7 @@ class SyncService(AbstractService):
     )
     def get_state(
         self, context: AuthedServiceContext, add_to_store: bool = False
-    ) -> Optional[SyncState]:
+    ) -> Union[SyncState, SyftError]:
         new_state = SyncState()
 
         node = context.node
@@ -222,16 +222,15 @@ class SyncService(AbstractService):
 
         new_state._build_dependencies(api=node.root_client.api)
 
-        # TODO
-        # previous_state = self.stash.get_latest(context=context)
-        # if previous_state is not None:
-        #     new_state.previous_state_link = LinkedObject.from_obj(
-        #         obj=previous_state,
-        #         service_type=SyncService,
-        #         node_uid=context.node.id,
-        #     )
+        previous_state = self.stash.get_latest(context=context)
+        if previous_state is not None:
+            new_state.previous_state_link = LinkedObject.from_obj(
+                obj=previous_state,
+                service_type=SyncService,
+                node_uid=context.node.id,
+            )
 
-        # if add_to_store:
-        #     self.stash.add(new_state, context=context)
+        if add_to_store:
+            self.stash.set(context.credentials, new_state)
 
         return new_state
