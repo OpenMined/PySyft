@@ -3,12 +3,8 @@ import re
 from urllib.parse import urlparse
 
 # third party
-<<<<<<< HEAD
-from pydantic import validator
-from typing_extensions import Self
-=======
 from pydantic import field_validator
->>>>>>> d9b153bbdf (Update to pydantic v2 first pass with bump-pydantic)
+from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable
@@ -34,7 +30,7 @@ class SyftImageRegistry(SyftObject):
 
     @field_validator("url")
     @classmethod
-    def validate_url(cls, val: str):
+    def validate_url(cls, val: str) -> str:
         if not val:
             raise ValueError("Invalid Registry URL. Must not be empty")
 

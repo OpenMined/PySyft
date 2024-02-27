@@ -20,6 +20,7 @@ from pandas._libs.tslibs.timestamps import Timestamp
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pydantic
+from pydantic._internal._model_construction import ModelMetaclass
 from pymongo.collection import Collection
 from result import Err
 from result import Ok
@@ -29,6 +30,7 @@ import zmq.green as zmq
 # relative
 from ..types.dicttuple import DictTuple
 from ..types.dicttuple import _Meta as _DictTupleMetaClass
+from ..types.syft_metaclass import _EmptyMetaclass
 from .deserialize import _deserialize as deserialize
 from .recursive_primitives import _serialize_kv_pairs
 from .recursive_primitives import deserialize_kv
@@ -55,7 +57,7 @@ recursive_serde_register(
 recursive_serde_register(Ok, serialize_attrs=["_value"])
 recursive_serde_register(Err, serialize_attrs=["_value"])
 
-recursive_serde_register_type(pydantic.main.ModelMetaclass)
+recursive_serde_register_type(ModelMetaclass)
 recursive_serde_register(Result)
 
 # exceptions
@@ -145,6 +147,13 @@ recursive_serde_register(
     DictTuple,
     serialize=_serialize_dicttuple,
     deserialize=functools.partial(deserialize_kv, DictTuple),
+)
+
+
+recursive_serde_register(
+    _EmptyMetaclass,
+    serialize=serialize_type,
+    deserialize=deserialize_type,
 )
 
 
