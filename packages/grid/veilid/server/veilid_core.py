@@ -24,6 +24,7 @@ from veilid.types import RouteId
 # relative
 from .constants import HOST
 from .constants import PORT
+from .constants import USE_DIRECT_CONNECTION
 from .veilid_db import load_dht_key
 from .veilid_db import store_dht_key
 from .veilid_db import store_dht_key_creds
@@ -73,9 +74,14 @@ async def get_veilid_conn(
 
 
 async def get_routing_context(conn: _JsonVeilidAPI) -> _JsonRoutingContext:
-    return await (await conn.new_routing_context()).with_sequencing(
-        veilid.Sequencing.ENSURE_ORDERED
-    )
+    if USE_DIRECT_CONNECTION:
+        return await (await conn.new_routing_context()).with_safety(
+            veilid.SafetySelection.unsafe(veilid.Sequencing.ENSURE_ORDERED)
+        )
+    else:
+        return await (await conn.new_routing_context()).with_sequencing(
+            veilid.Sequencing.ENSURE_ORDERED
+        )
 
 
 class VeilidConnectionSingleton:
@@ -120,6 +126,13 @@ async def create_private_route(
     return (route_id, route_blob)
 
 
+async def get_node_id(conn: _JsonVeilidAPI) -> str:
+    state = await conn.get_state()
+    config = state.config.config
+    node_id = config.network.routing_table.node_id[0]
+    return node_id
+
+
 async def generate_dht_key() -> dict[str, str]:
     logger.info("Generating DHT Key")
 
@@ -129,8 +142,14 @@ async def generate_dht_key() -> dict[str, str]:
 
         async with await get_routing_context(conn) as router:
             dht_record = await router.create_dht_record(veilid.DHTSchema.dflt(1))
-            _, route_blob = await create_private_route(conn)
-            await router.set_dht_value(dht_record.key, 0, route_blob)
+
+            if USE_DIRECT_CONNECTION:
+                node_id = await get_node_id(conn)
+                await router.set_dht_value(dht_record.key, 0, node_id.encode())
+            else:
+                _, route_blob = await create_private_route(conn)
+                await router.set_dht_value(dht_record.key, 0, route_blob)
+
             await router.close_dht_record(dht_record.key)
 
             keypair = KeyPair.from_parts(
@@ -188,13 +207,18 @@ async def app_message(dht_key: str, message: bytes) -> dict[str, str]:
             if isinstance(dht_value, dict):
                 return dht_value
 
-            # Private Router to peer
-            prr_peer = await conn.import_remote_private_route(dht_value.data)
-            # TODO: change to debug
-            logger.info(f"Private Route of  Peer: {prr_peer} ")
+            if USE_DIRECT_CONNECTION:
+                # Direct Connection by Node ID
+                route = dht_value.data.decode()
+                logger.info(f"Node ID: {route}")
+            else:
+                # Private Router to peer
+                route = await conn.import_remote_private_route(dht_value.data)
+                # TODO: change to debug
+                logger.info(f"Private Route of  Peer: {route} ")
 
             # Send app message to peer
-            await router.app_message(prr_peer, message)
+            await router.app_message(route, message)
 
             return {"message": "Message sent successfully"}
 
@@ -211,11 +235,16 @@ async def app_call(dht_key: str, message: bytes) -> dict[str, str]:
             if isinstance(dht_value, dict):
                 return dht_value
 
-            # Private Router to peer
-            prr_peer = await conn.import_remote_private_route(dht_value.data)
-            # TODO: change to debug
-            logger.info(f"Private Route of  Peer: {prr_peer} ")
+            if USE_DIRECT_CONNECTION:
+                # Direct Connection by Node ID
+                route = dht_value.data.decode()
+                logger.info(f"Node ID: {route}")
+            else:
+                # Private Router to peer
+                route = await conn.import_remote_private_route(dht_value.data)
+                # TODO: change to debug
+                logger.info(f"Private Route of  Peer: {route} ")
 
-            result = await router.app_call(prr_peer, message)
+            result = await router.app_call(route, message)
 
             return result

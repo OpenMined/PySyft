@@ -6,3 +6,5 @@ DHT_KEY_CREDS = (
     "syft-dht-key-creds"  # name of the DHT Key Credentials in the table Database
 )
 # Credentials refer to the Public and Private Key created for the DHT Key
+
+USE_DIRECT_CONNECTION = True
