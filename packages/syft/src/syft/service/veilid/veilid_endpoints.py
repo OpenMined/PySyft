@@ -1,4 +1,4 @@
-VEILID_SERVICE_URL = "http://veilid:4000"
+VEILID_SERVICE_URL = "http://veilid:80"
 # Service name of our traefik service
 # TODO: Remove this once when we remove reverse proxy in Veilid Connection
 VEILID_SYFT_PROXY_URL = "http://proxy:80"

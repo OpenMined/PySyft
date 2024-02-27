@@ -75,12 +75,12 @@ class VeilidService(AbstractService):
                         message="DHT key does not exist.Invoke .generate_dht_key to generate a new key."
                     )
                 else:
-                    response.json().get("message")
+                    return response.json().get("message")
             return SyftError(
                 message=f"Failed to retrieve DHT key. status_code:{response.status_code} error: {response.json()}"
             )
         except Exception as e:
-            return SyftError(message=f"Failed to retrieve DHT key. {e}")
+            return SyftError(message=f"Failed to retrieve DHT key. exception: {e}")
 
     @staticmethod
     def check_veilid_status() -> Union[SyftSuccess, SyftError]:
