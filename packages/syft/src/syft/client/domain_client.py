@@ -142,14 +142,8 @@ class DomainClient(SyftClient):
             return valid.err()
 
     def create_actionobject(self, action_object):
-        print("syncing obj with blob id", action_object.syft_blob_storage_entry_id)
         action_object = action_object.refresh_object()
         res = action_object.send(self)
-        #     res = client.api.services.action.set(action_object)
-        print("Created", res, "blob_id:", action_object.syft_blob_storage_entry_id)
-
-        # if node_to.python_node.node_side_type.value == "low":
-        #     add_permissions_for_actionobject(action_object, node_to, node_from)
 
     def get_permissions_for_other_node(self, items):
         if len(items) > 0:
