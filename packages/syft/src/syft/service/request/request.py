@@ -710,7 +710,7 @@ class Request(SyftObject):
             return permission_request
 
         code = change.linked_obj.resolve
-        output_history = code.output_history
+        output_history = code.get_output_history()
         if isinstance(output_history, SyftError):
             return output_history
         state = code.output_policy

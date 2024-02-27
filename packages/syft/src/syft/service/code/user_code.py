@@ -522,15 +522,25 @@ class UserCode(SyftObject):
         else:
             raise Exception(f"You can't set {type(value)} as output_policy_state")
 
-    @property
-    def output_history(self) -> Union[List[ExecutionOutput], SyftError]:
+    def get_output_history(
+        self, context: AuthedServiceContext
+    ) -> Union[List[ExecutionOutput], SyftError]:
         if not self.status.approved:
             return SyftError(message="Please wait for the code to be approved")
 
+        if context:
+            syft_client_verify_key = context.credentials
+            syft_node_location = context.node.id
+            print("from context", syft_client_verify_key, syft_node_location)
+        else:
+            syft_client_verify_key = self.syft_client_verify_key
+            syft_node_location = self.syft_node_location
+            print("from self", syft_client_verify_key, syft_node_location)
+
         get_outputs = from_api_or_context(
             "output.get_by_user_code_id",
-            self.syft_node_location,
-            self.syft_client_verify_key,
+            syft_node_location,
+            syft_client_verify_key,
         )
         return get_outputs(self.id)
 
@@ -546,12 +556,18 @@ class UserCode(SyftObject):
             )
 
         output_ids = filter_only_uids(outputs)
-        output_service = context.node.get_service("result")
-        execution_result = output_service.create_from_output_ids(context, output_ids)
+        output_service = context.node.get_service("outputservice")
+        execution_result = output_service.create(
+            context,
+            user_code_id=self.id,
+            output_ids=output_ids,
+            executing_user_verify_key=self.user_verify_key,
+            job_id=None,
+        )
         if isinstance(execution_result, SyftError):
             return execution_result
 
-        # TODO can we remove this, and get execution count from self.output_history?
+        # TODO can we remove this, and get execution count from self.get_output_history?
         output_policy.apply_output(context=context, outputs=outputs)
         self.output_policy = output_policy
 
@@ -600,7 +616,7 @@ class UserCode(SyftObject):
     def get_all_output_action_objects(self) -> Union[List[ActionObject], SyftError]:
         if self.status.approved:
             all_output_ids = []
-            output_history = self.output_history
+            output_history = self.get_output_history()
             if isinstance(output_history, SyftError):
                 return output_history
             for output in output_history:
@@ -632,7 +648,7 @@ class UserCode(SyftObject):
         output_policy = self.output_policy
         if output_policy is not None:
             all_output_ids = []
-            for output in self.output_history:
+            for output in self.get_output_history():
                 if isinstance(output.output_ids, list):
                     all_output_ids.extend(output.output_ids)
                 else:

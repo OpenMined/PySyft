@@ -304,7 +304,7 @@ class UserCodeService(AbstractService):
                 if not code.status.approved:
                     return code.status.get_status_message()
 
-                output_history = code.output_history
+                output_history = code.get_output_history(context=context)
                 if isinstance(output_history, SyftError):
                     return output_history
 
@@ -408,7 +408,7 @@ class UserCodeService(AbstractService):
 
             # Check output policy
             output_policy = code.output_policy
-            output_history = code.output_history
+            output_history = code.get_output_history(context=context)
             if isinstance(output_history, SyftError):
                 return Err(output_history.message)
             if not override_execution_permission:

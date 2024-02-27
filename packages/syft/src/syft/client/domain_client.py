@@ -357,6 +357,12 @@ class DomainClient(SyftClient):
             return self.api.services.sync
         return None
 
+    @property
+    def output(self) -> Optional[APIModule]:
+        if self.api.has_service("output"):
+            return self.api.services.output
+        return None
+
     def get_project(
         self,
         name: str = None,

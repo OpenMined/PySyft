@@ -5,6 +5,9 @@ from typing import Optional
 from typing import Type
 from typing import Union
 
+# third party
+from pydantic import root_validator
+
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
@@ -40,19 +43,35 @@ class ExecutionOutput(SyftObject):
     job_link: Optional[LinkedObject] = None
     created_at: DateTime = DateTime.now()
 
-    __attr_searchable__ = ["user_code_id"]
-    __repr_attrs__ = ["user_code_id", "job_id", "output_ids"]
+    # Required for __attr_searchable__, set by root_validator
+    user_code_id: UID
+
+    __attr_searchable__: List[str] = ["user_code_id", "created_at"]
+    __repr_attrs__: List[str] = ["user_code_id", "job_id", "output_ids"]
+
+    @root_validator
+    def add_user_code_id(cls, values):
+        if "user_code_link" in values:
+            values["user_code_id"] = values["user_code_link"].object_uid
+        return values
 
     @classmethod
-    def from_output_ids(
+    def from_ids(
         cls: Type["ExecutionOutput"],
         output_ids: Union[UID, List[UID], Dict[str, UID]],
+        user_code_id: UID,
+        executing_user_verify_key: SyftVerifyKey,
         node_uid: UID,
+        job_id: Optional[UID] = None,
     ) -> "ExecutionOutput":
         # relative
         from ..action.action_service import ActionService
+        from ..code.user_code_service import UserCode
+        from ..code.user_code_service import UserCodeService
+        from ..job.job_service import Job
+        from ..job.job_service import JobService
 
-        def make_link(uid: UID) -> LinkedObject:
+        def make_output_link(uid: UID) -> LinkedObject:
             return LinkedObject.from_uid(
                 object_uid=uid,
                 object_type=ActionObject,
@@ -61,12 +80,32 @@ class ExecutionOutput(SyftObject):
             )
 
         if isinstance(output_ids, dict):
-            output_links = {k: make_link(v) for k, v in output_ids.items()}
+            output_links = {k: make_output_link(v) for k, v in output_ids.items()}
         elif isinstance(output_ids, UID):
-            output_links = [make_link(output_ids)]
+            output_links = [make_output_link(output_ids)]
         else:
-            output_links = [make_link(x) for x in output_ids]
-        return cls(output_links=output_links)
+            output_links = [make_output_link(x) for x in output_ids]
+
+        user_code_link = LinkedObject.from_uid(
+            object_uid=user_code_id,
+            object_type=UserCode,
+            service_type=UserCodeService,
+            node_uid=node_uid,
+        )
+
+        if job_id:
+            job_link = LinkedObject.from_uid(
+                object_uid=job_id,
+                object_type=Job,
+                service_type=JobService,
+                node_uid=node_uid,
+            )
+        return cls(
+            output_links=output_links,
+            user_code_link=user_code_link,
+            job_link=job_link,
+            executing_user_verify_key=executing_user_verify_key,
+        )
 
     @property
     def outputs(self) -> Union[List[ActionObject], Dict[str, ActionObject]]:
@@ -81,10 +120,6 @@ class ExecutionOutput(SyftObject):
             return {k: v.object_uid for k, v in self.output_links.items()}
         else:
             return [x.object_uid for x in self.output_links]
-
-    @property
-    def user_code_id(self) -> UID:
-        return self.user_code_link.object_uid
 
     @property
     def job_id(self) -> Optional[UID]:
@@ -109,7 +144,7 @@ class OutputStash(BaseUIDStoreStash):
         self, credentials: SyftVerifyKey, user_code_id: UID
     ) -> Union[List[ExecutionOutput], SyftError]:
         qks = QueryKeys(
-            partition_keys=[UserCodeIdPartitionKey.with_obj(user_code_id)],
+            qks=[UserCodeIdPartitionKey.with_obj(user_code_id)],
         )
 
         return self.query_all(
@@ -126,9 +161,32 @@ class OutputService(AbstractService):
         self.stash = OutputStash(store=store)
 
     @service_method(
-        path="result.get_by_user_code_id",
+        path="output.create",
+        name="create",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def create(
+        self,
+        context: AuthedServiceContext,
+        user_code_id: UID,
+        output_ids: Union[UID, List[UID], Dict[str, UID]],
+        executing_user_verify_key: SyftVerifyKey,
+        job_id: Optional[UID] = None,
+    ) -> Union[ExecutionOutput, SyftError]:
+        output = ExecutionOutput.from_ids(
+            output_ids=output_ids,
+            user_code_id=user_code_id,
+            executing_user_verify_key=executing_user_verify_key,
+            node_uid=context.node.id,
+            job_id=job_id,
+        )
+
+        return self.stash.set(context.credentials, output)
+
+    @service_method(
+        path="output.get_by_user_code_id",
         name="get_by_user_code_id",
-        role=GUEST_ROLE_LEVEL,
+        roles=GUEST_ROLE_LEVEL,
     )
     def get_by_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
