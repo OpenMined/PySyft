@@ -21,7 +21,7 @@ from ..util.util import verify_tls
 @serializable(attrs=["protocol", "host_or_ip", "port", "path", "query"])
 class GridURL:
     @classmethod
-    def from_url(cls, url: Union[str, GridURL]) -> Self:
+    def from_url(cls, url: Union[str, GridURL]) -> GridURL:
         if isinstance(url, GridURL):
             return url
         try:
@@ -37,7 +37,7 @@ class GridURL:
             host_or_ip = host_or_ip_parts[0]
             if parts.scheme == "https":
                 port = 443
-            return cls(
+            return GridURL(
                 host_or_ip=host_or_ip,
                 path=parts.path,
                 port=port,
@@ -141,7 +141,7 @@ class GridURL:
     def url_path(self) -> str:
         return f"{self.path}{self.query_string}"
 
-    def to_tls(self) -> Self:
+    def to_tls(self) -> GridURL:
         if self.protocol == "https":
             return self
 
@@ -165,7 +165,7 @@ class GridURL:
     def __hash__(self) -> int:
         return hash(self.__str__())
 
-    def __copy__(self) -> Self:
+    def __copy__(self) -> GridURL:
         return self.__class__.from_url(self.url)
 
     def set_port(self, port: int) -> Self:

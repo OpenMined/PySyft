@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import ClassVar
 from typing import Dict
 from typing import Optional
 
@@ -33,7 +34,7 @@ class TwinObject(SyftObject):
     __canonical_name__ = "TwinObject"
     __version__ = 1
 
-    __attr_searchable__: list = []
+    __attr_searchable__: ClassVar[list[str]] = []
 
     id: UID
     private_obj: ActionObject

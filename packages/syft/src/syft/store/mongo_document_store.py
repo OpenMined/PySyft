@@ -131,7 +131,7 @@ class MongoStorePartition(StorePartition):
             Mongo specific configuration
     """
 
-    storage_type: type[StorableObjectType] = MongoBsonObject
+    storage_type: Type[StorableObjectType] = MongoBsonObject
 
     def init_store(self) -> Result[Ok, Err]:
         store_status = super().init_store()

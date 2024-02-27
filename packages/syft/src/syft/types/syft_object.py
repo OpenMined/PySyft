@@ -816,6 +816,9 @@ class StorableObjectType:
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
 
 class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     """Syft Object to which partial arguments can be provided."""
