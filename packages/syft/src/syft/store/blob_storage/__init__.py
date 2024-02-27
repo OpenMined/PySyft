@@ -254,7 +254,7 @@ class BlobRetrievalByURL(BlobRetrieval):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-        if api is not None and isinstance(self.url, GridURL):
+        if api and api.connection and isinstance(self.url, GridURL):
             blob_url = api.connection.to_blob_route(
                 self.url.url_path, host=self.url.host_or_ip
             )

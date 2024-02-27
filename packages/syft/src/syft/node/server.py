@@ -84,7 +84,7 @@ def run_uvicorn(
 ) -> None:
     async def _run_uvicorn(
         name: str,
-        node_type: Enum,
+        node_type: NodeType,
         host: str,
         port: int,
         reset: bool,

@@ -58,6 +58,10 @@ class WorkerSettings(SyftObject):
 
     @classmethod
     def from_node(cls, node: AbstractNode) -> Self:
+        if node.node_side_type:
+            node_side_type: str = node.node_side_type.value
+        else:
+            node_side_type = NodeSideType.HIGH_SIDE
         return cls(
             id=node.id,
             name=node.name,
@@ -65,7 +69,7 @@ class WorkerSettings(SyftObject):
             signing_key=node.signing_key,
             document_store_config=node.document_store_config,
             action_store_config=node.action_store_config,
-            node_side_type=node.node_side_type.value,
+            node_side_type=node_side_type,
             blob_store_config=node.blob_store_config,
             queue_config=node.queue_config,
         )

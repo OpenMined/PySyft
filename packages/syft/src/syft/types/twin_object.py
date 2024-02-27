@@ -14,6 +14,7 @@ from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
 from ..service.action.action_object import TwinMode
 from ..service.action.action_types import action_types
+from ..service.response import SyftError
 from .syft_object import SyftObject
 from .uid import UID
 
@@ -32,7 +33,7 @@ class TwinObject(SyftObject):
     __canonical_name__ = "TwinObject"
     __version__ = 1
 
-    __attr_searchable__ = []
+    __attr_searchable__: list = []
 
     id: UID
     private_obj: ActionObject
@@ -49,7 +50,7 @@ class TwinObject(SyftObject):
         return values["private_obj"].id if v is None else v
 
     @pydantic.validator("mock_obj", pre=True, always=True)
-    def make_mock_obj(cls, v: ActionObject):
+    def make_mock_obj(cls, v: ActionObject) -> ActionObject:
         return to_action_object(v)
 
     @pydantic.validator("mock_obj_id", pre=True, always=True)
@@ -72,7 +73,7 @@ class TwinObject(SyftObject):
         mock.id = twin_id
         return mock
 
-    def _save_to_blob_storage(self):
+    def _save_to_blob_storage(self) -> Optional[SyftError]:
         # Set node location and verify key
         self.private_obj._set_obj_location_(
             self.syft_node_location,

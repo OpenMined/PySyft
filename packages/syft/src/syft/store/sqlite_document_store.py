@@ -101,8 +101,10 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.settings = settings
         self.store_config = store_config
         self._ddtype = ddtype
-        self.file_path = self.store_config.client_config.file_path
-        self.db_filename = store_config.client_config.filename
+        if self.store_config.client_config:
+            self.file_path = self.store_config.client_config.file_path
+        if store_config.client_config:
+            self.db_filename = store_config.client_config.filename
 
         # if tempfile.TemporaryDirectory() varies from process to process
         # could this cause different locks on the same file
@@ -127,16 +129,17 @@ class SQLiteBackingStore(KeyValueBackingStore):
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
 
-        connection = sqlite3.connect(
-            self.file_path,
-            timeout=self.store_config.client_config.timeout,
-            check_same_thread=False,  # do we need this if we use the lock?
-            # check_same_thread=self.store_config.client_config.check_same_thread,
-        )
-        # TODO: Review OSX compatibility.
-        # Set journal mode to WAL.
-        # connection.execute("pragma journal_mode=wal")
-        SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)] = connection
+        if self.store_config.client_config:
+            connection = sqlite3.connect(
+                self.file_path,
+                timeout=self.store_config.client_config.timeout,
+                check_same_thread=False,  # do we need this if we use the lock?
+                # check_same_thread=self.store_config.client_config.check_same_thread,
+            )
+            # TODO: Review OSX compatibility.
+            # Set journal mode to WAL.
+            # connection.execute("pragma journal_mode=wal")
+            SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)] = connection
 
     def create_table(self) -> None:
         try:

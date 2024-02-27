@@ -175,8 +175,8 @@ class KeyValueStorePartition(StorePartition):
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         try:
-            if obj.id is None:
-                obj.id = UID()
+            # if obj.id is None:
+            # obj.id = UID()
             store_query_key: QueryKey = self.settings.store_key.with_obj(obj)
             uid = store_query_key.value
             write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)

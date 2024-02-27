@@ -201,7 +201,7 @@ class PartitionKeysWithUID(PartitionKeys):
 
     @property
     def all(self) -> Union[tuple[PartitionKey, ...], list[PartitionKey]]:
-        all_keys = self.pks if isinstance(self.pks, (tuple, list)) else [self.pks]
+        all_keys = list(self.pks) if isinstance(self.pks, (tuple, list)) else [self.pks]
         if self.uid_pk not in all_keys:
             all_keys.insert(0, self.uid_pk)
         return all_keys

@@ -591,7 +591,7 @@ class SyftClient:
 
     @classmethod
     def from_url(cls, url: Union[str, GridURL]) -> Self:
-        return cls(connection=HTTPConnection(GridURL.from_url(url)))
+        return cls(connection=HTTPConnection(url=GridURL.from_url(url)))
 
     @classmethod
     def from_node(cls, node: AbstractNode) -> Self:

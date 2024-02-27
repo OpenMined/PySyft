@@ -82,25 +82,29 @@ def _repr_debug_(value: Any) -> str:
 
 def to_mongo(context: TransformContext) -> TransformContext:
     output = {}
-    unique_keys_dict = context.obj._syft_unique_keys_dict()
-    search_keys_dict = context.obj._syft_searchable_keys_dict()
-    all_dict = unique_keys_dict
-    all_dict.update(search_keys_dict)
-    for k in all_dict:
-        value = getattr(context.obj, k, "")
-        # if the value is a method, store its value
-        if callable(value):
-            output[k] = value()
-        else:
-            output[k] = value
+    if context.obj:
+        unique_keys_dict = context.obj._syft_unique_keys_dict()
+        search_keys_dict = context.obj._syft_searchable_keys_dict()
+        all_dict = unique_keys_dict
+        all_dict.update(search_keys_dict)
+        for k in all_dict:
+            value = getattr(context.obj, k, "")
+            # if the value is a method, store its value
+            if callable(value):
+                output[k] = value()
+            else:
+                output[k] = value
 
-    if "id" in context.output:
+        output["__canonical_name__"] = context.obj.__canonical_name__
+        output["__version__"] = context.obj.__version__
+        output["__blob__"] = _serialize(context.obj, to_bytes=True)
+        output["__arepr__"] = _repr_debug_(context.obj)  # a comes first in alphabet
+
+    if context.output and "id" in context.output:
         output["_id"] = context.output["id"]
-    output["__canonical_name__"] = context.obj.__canonical_name__
-    output["__version__"] = context.obj.__version__
-    output["__blob__"] = _serialize(context.obj, to_bytes=True)
-    output["__arepr__"] = _repr_debug_(context.obj)  # a comes first in alphabet
+
     context.output = output
+
     return context
 
 
@@ -127,7 +131,7 @@ class MongoStorePartition(StorePartition):
             Mongo specific configuration
     """
 
-    storage_type: StorableObjectType = MongoBsonObject
+    storage_type: type[StorableObjectType] = MongoBsonObject
 
     def init_store(self) -> Result[Ok, Err]:
         store_status = super().init_store()
@@ -673,7 +677,7 @@ class MongoBackingStore(KeyValueBackingStore):
     def collection(self) -> Result[MongoCollection, Err]:
         if not hasattr(self, "_collection"):
             res = self.init_client()
-            if res.is_err():
+            if res is not None and res.is_err():
                 return res
 
         return Ok(self._collection)
