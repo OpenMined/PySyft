@@ -601,12 +601,12 @@ class UserCode(SyftObject):
 
         return dependencies
 
-    def get_sync_dependencies(self) -> Union[List[UID], SyftError]:
+    def get_sync_dependencies(self, api=None) -> Union[List[UID], SyftError]:
         dependencies = []
 
-        job_api = APIRegistry.api_for(
-            self.node_uid, self.syft_client_verify_key
-        ).services.job
+        if api is None:
+            api = api or APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        job_api = api.services.job
         jobs = job_api.get_by_user_code_id(self.id)
 
         if isinstance(jobs, SyftError):

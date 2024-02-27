@@ -829,7 +829,7 @@ class Request(SyftObject):
 
         return dependencies
 
-    def get_sync_dependencies(self) -> Union[List[UID], SyftError]:
+    def get_sync_dependencies(self, api=None) -> Union[List[UID], SyftError]:
         return self.get_dependencies()
 
 
