@@ -29,24 +29,25 @@ class NotifierStash(BaseStash):
         name=NotifierSettings.__canonical_name__, object_type=NotifierSettings
     )
 
-    # Usual Stash Implementation
-    # The only diff is: We need to be sure that
-    # this will act as a Singleton (as SettingsStash).
-
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
     def admin_verify_key(self) -> SyftVerifyKey:
         return self.partition.root_verify_key
 
+    # TODO: should this method behave like a singleton?
     def get(self, credentials: SyftVerifyKey) -> Result[NotifierSettings, Err]:
         """Get Settings"""
         result = self.get_all(credentials)
         if result.is_ok():
             settings = result.ok()
             if len(settings) == 0:
-                return Ok(None)
-            result = settings[0]
+                return Ok(
+                    None
+                )  # TODO: Stash shouldn't be empty after init. Return Err instead?
+            result = settings[
+                0
+            ]  # TODO: Should we check if theres more than one? => Report corruption
             return Ok(result)
         else:
             return Err(message=result.err())

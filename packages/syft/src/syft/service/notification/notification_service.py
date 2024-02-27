@@ -40,7 +40,6 @@ class NotificationService(AbstractService):
         self, context: AuthedServiceContext, notification: CreateNotification
     ) -> Union[Notification, SyftError]:
         """Send a new notification"""
-
         new_notification = notification.to(Notification, context=context)
 
         # Add read permissions to person receiving this message
@@ -55,7 +54,7 @@ class NotificationService(AbstractService):
         )
         notifier_service = context.node.get_service("notifierservice")
 
-        res = notifier_service.dispatch_notification(context.node, new_notification)
+        res = notifier_service.dispatch_notification(context, new_notification)
         if isinstance(res, SyftError):
             return res
 
