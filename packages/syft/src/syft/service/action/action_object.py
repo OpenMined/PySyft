@@ -393,9 +393,8 @@ def make_action_side_effect(
         )
         context.action = action
     except Exception as e:
-        raise e
         # print(f"make_action_side_effect failed with {traceback.format_exc()}")
-        # return Err(f"make_action_side_effect failed with {traceback.format_exc()}")
+        raise e
 
     return Ok((context, args, kwargs))
 
@@ -1267,7 +1266,7 @@ class ActionObject(SyftObject):
     @staticmethod
     def empty(
         # TODO: fix the mypy issue
-        syft_internal_type: Optional[Type] = NoneType,  # type: ignore[assignment]
+        syft_internal_type: Optional[Type[Any]] = None,
         id: Optional[UID] = None,
         syft_lineage_id: Optional[LineageID] = None,
         syft_resolved: Optional[bool] = True,
@@ -1283,6 +1282,9 @@ class ActionObject(SyftObject):
                 Which LineageID to use for the ActionObject. Optional
         """
 
+        syft_internal_type = (
+            type(None) if syft_internal_type is None else syft_internal_type
+        )
         empty = ActionDataEmpty(syft_internal_type=syft_internal_type)
         res = ActionObject.from_obj(
             id=id,
