@@ -3,8 +3,10 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from typing import cast
 
 # relative
+from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...exceptions.user import UserAlreadyExistsException
 from ...node.credentials import SyftSigningKey
@@ -111,7 +113,7 @@ class UserService(AbstractService):
         context: AuthedServiceContext,
         page_size: Optional[int] = 0,
         page_index: Optional[int] = 0,
-    ) -> Union[Optional[UserViewPage], Optional[UserView], SyftError]:
+    ) -> Union[list[UserView], UserViewPage, UserView, SyftError]:
         if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
             result = self.stash.get_all(context.credentials, has_permission=True)
         else:
@@ -384,7 +386,8 @@ class UserService(AbstractService):
                 user.hashed_password,
             ):
                 if (
-                    context.node.node_type == NodeType.ENCLAVE
+                    context.node
+                    and context.node.node_type == NodeType.ENCLAVE
                     and user.role == ServiceRole.ADMIN
                 ):
                     return SyftError(
@@ -419,11 +422,14 @@ class UserService(AbstractService):
     ) -> Union[Tuple[SyftSuccess, UserPrivateKey], SyftError]:
         """Register new user"""
 
+        context.node = cast(AbstractNode, context.node)
+
         request_user_role = (
             ServiceRole.GUEST
             if new_user.created_by is None
             else self.get_role_for_credentials(new_user.created_by)
         )
+
         can_user_register = (
             context.node.settings.signup_enabled
             or request_user_role in DATA_OWNER_ROLE_LEVEL

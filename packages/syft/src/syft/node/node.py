@@ -1164,14 +1164,14 @@ class Node(AbstractNode):
         api_call: Union[SyftAPICall, SignedSyftAPICall],
         job_id: Optional[UID] = None,
         check_call_location=True,
-    ) -> Result[Union[QueueItem, SyftObject], Err]:
+    ) -> Union[Result, QueueItem, SyftObject, SyftError]:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return SyftError(
-                message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
+                message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."
             )
         else:
             if not api_call.is_valid:
-                return SyftError(message="Your message signature is invalid")  # type: ignore
+                return SyftError(message="Your message signature is invalid")
 
         if api_call.message.node_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
@@ -1203,11 +1203,11 @@ class Node(AbstractNode):
                     return SyftError(
                         message=f"As a `{role}`,"
                         f"you have has no access to: {api_call.path}"
-                    )  # type: ignore
+                    )
                 else:
                     return SyftError(
                         message=f"API call not in registered services: {api_call.path}"
-                    )  # type: ignore
+                    )
 
             _private_api_path = user_config_registry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
@@ -1226,11 +1226,11 @@ class Node(AbstractNode):
     def add_action_to_queue(
         self,
         action,
-        credentials,
+        credentials: SyftVerifyKey,
         parent_job_id=None,
         has_execute_permissions: bool = False,
         worker_pool_name: Optional[str] = None,
-    ):
+    ) -> Union[Job, SyftError]:
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(node=self)
@@ -1280,8 +1280,12 @@ class Node(AbstractNode):
         )
 
     def add_queueitem_to_queue(
-        self, queue_item, credentials, action=None, parent_job_id=None
-    ):
+        self,
+        queue_item: ActionQueueItem,
+        credentials: SyftVerifyKey,
+        action=None,
+        parent_job_id=None,
+    ) -> Union[Job, SyftError]:
         log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
         context = AuthedServiceContext(node=self, credentials=credentials, role=role)
