@@ -55,11 +55,13 @@ MappingIntStrAny = Mapping[IntStr, Any]
 SYFT_OBJECT_VERSION_1 = 1
 SYFT_OBJECT_VERSION_2 = 2
 SYFT_OBJECT_VERSION_3 = 3
+SYFT_OBJECT_VERSION_4 = 4
 
 supported_object_versions = [
     SYFT_OBJECT_VERSION_1,
     SYFT_OBJECT_VERSION_2,
     SYFT_OBJECT_VERSION_3,
+    SYFT_OBJECT_VERSION_4,
 ]
 
 HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
