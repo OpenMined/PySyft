@@ -117,6 +117,7 @@ class Job(SyftObject):
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
+    __exclude_sync_diff_attrs__ = ["action"]
 
     @pydantic.root_validator()
     def check_time(cls, values: dict) -> dict:
@@ -463,7 +464,7 @@ class Job(SyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
-    def get_sync_dependencies(self, api=None) -> List[UID]:
+    def get_sync_dependencies(self, **kwargs) -> List[UID]:
         dependencies = []
         if self.result is not None:
             dependencies.append(self.result.id.id)

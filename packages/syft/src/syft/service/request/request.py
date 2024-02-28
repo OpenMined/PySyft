@@ -356,6 +356,22 @@ class Request(SyftObject):
         "changes",
         "requesting_user_verify_key",
     ]
+    __exclude_sync_diff_attrs__ = ["history"]
+
+    # def get_diffs(self, obj) -> List["AttrDiff"]:
+    #     from ...service.sync.diff_state import ListDiff
+    #     diff_attrs = super().get_diffs(obj)
+
+    #     change_diffs = ListDiff.from_lists(
+    #         attr_name="changes",
+    #         low_list=obj.changes,
+    #         high_list=obj.changes
+    #     )
+    #     if not change_diffs.is_empty:
+    #         diff_attrs.append(change_diffs)
+
+    #     # TODO: add request history if we decide we need to sync it
+    #     return diff_attrs
 
     def _repr_html_(self) -> Any:
         # add changes
@@ -633,13 +649,12 @@ class Request(SyftObject):
             job = job_service.create_job_for_user_code_id(self.code.id)
         else:
             job = existing_jobs[-1]
-            res = job_service.add_read_permission_job_for_code_owner(job, self.code)
-            res = job_service.add_read_permission_log_for_code_owner(
-                job.log_id, self.code
-            )
+            job_service.add_read_permission_log_for_code_owner(job.log_id, self.code)
         return job
 
-    def _is_action_object_result_of_requested_code(self, action_object: ActionObject) -> Optional[Job]:
+    def _is_action_object_result_of_requested_code(
+        self, action_object: ActionObject
+    ) -> Optional[Job]:
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         job_service = api.services.job
         existing_jobs = job_service.get_by_user_code_id(self.code.id)
@@ -662,7 +677,9 @@ class Request(SyftObject):
         elif isinstance(result, ActionObject):
             # Do not allow accepting a result produced by a Job,
             # This can cause an inconsistent Job state
-            if (action_object_job := self._is_action_object_result_of_requested_code(result)):
+            if action_object_job := self._is_action_object_result_of_requested_code(
+                result
+            ):
                 return SyftError(
                     message=f"This ActionObject is the result of Job {action_object_job.id}, "
                     f"please use the `Job.info` instead."

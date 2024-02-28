@@ -206,7 +206,6 @@ class SyncService(AbstractService):
         jobs = node.get_service("jobservice").get_all(context)
         new_state.add_objects(jobs, api=node.root_client.api)
 
-
         # TODO workaround, we only need action objects from output policies for now
         action_objects = []
         for code in user_codes:
