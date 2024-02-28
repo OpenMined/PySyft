@@ -7,7 +7,6 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
 
@@ -23,11 +22,8 @@ from ..types.grid_url import GridURL
 from ..util.constants import DEFAULT_TIMEOUT
 from ..util.logger import error
 from ..util.logger import warning
+from .client import SyftClient as Client
 from .enclave_client import EnclaveClient
-
-if TYPE_CHECKING:
-    # relative
-    from .client import Client
 
 NETWORK_REGISTRY_URL = (
     "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/gateways.json"
@@ -112,7 +108,7 @@ class NetworkRegistry:
         return pd.DataFrame(on).to_string()
 
     @staticmethod
-    def create_client(network: Dict[str, Any]) -> Client:  # type: ignore
+    def create_client(network: Dict[str, Any]) -> Client:
         # relative
         from ..client.client import connect
 
@@ -266,14 +262,14 @@ class DomainRegistry:
             return "(no domains online - try syft.domains.all_domains to see offline domains)"
         return pd.DataFrame(on).to_string()
 
-    def create_client(self, peer: NodePeer) -> Client:  # type: ignore
+    def create_client(self, peer: NodePeer) -> Client:
         try:
             return peer.guest_client
         except Exception as e:
             error(f"Failed to login to: {peer}. {e}")
             raise SyftException(f"Failed to login to: {peer}. {e}")
 
-    def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
+    def __getitem__(self, key: Union[str, int]) -> Client:
         if isinstance(key, int):
             return self.create_client(self.online_domains[key][0])
         else:
