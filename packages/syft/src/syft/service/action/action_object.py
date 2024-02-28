@@ -1721,12 +1721,14 @@ class ActionObject(SyftObject):
             if inspect.isclass(self.syft_action_data_cache):
                 data_repr_ = repr_cls(self.syft_action_data_cache)
             else:
-                if self.syft_action_data_cache is not None:
-                    data_repr_ = (
-                        self.syft_action_data_cache._repr_markdown_()
-                        if hasattr(self.syft_action_data_cache, "_repr_markdown_")
-                        else self.syft_action_data_cache.__repr__()
+                data_repr_ = (
+                    self.syft_action_data_cache._repr_markdown_()
+                    if (
+                        self.syft_action_data_cache is not None
+                        and hasattr(self.syft_action_data_cache, "_repr_markdown_")
                     )
+                    else self.syft_action_data_cache.__repr__()
+                )
 
         return f"```python\n{res}\n```\n{data_repr_}"
 
