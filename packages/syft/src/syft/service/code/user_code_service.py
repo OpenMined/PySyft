@@ -26,6 +26,8 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..network.routes import route_to_connection
+from ..output.output_service import ExecutionOutput
+from ..policy.policy import OutputPolicy
 from ..request.request import Request
 from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
@@ -318,7 +320,12 @@ class UserCodeService(AbstractService):
         else:
             return SyftError(message="Endpoint only supported for enclave code")
 
-    def is_execution_allowed(self, code, context, output_policy):
+    def is_execution_allowed(
+        self,
+        code: UserCode,
+        context: AuthedServiceContext,
+        output_policy: Optional[OutputPolicy],
+    ):
         if not code.status.approved:
             return code.status.get_status_message()
         # Check if the user has permission to execute the code.
@@ -326,8 +333,10 @@ class UserCodeService(AbstractService):
             return has_code_permission
         elif not code.output_policy_approved:
             return SyftError("Output policy not approved", code)
-        elif not output_policy.valid:
-            return output_policy.valid
+
+        policy_is_valid = output_policy is not None and output_policy.is_valid(context)
+        if not policy_is_valid:
+            return policy_is_valid
         else:
             return True
 
@@ -408,23 +417,25 @@ class UserCodeService(AbstractService):
 
             # Check output policy
             output_policy = code.output_policy
-            output_history = code.get_output_history(context=context)
-            if isinstance(output_history, SyftError):
-                return Err(output_history.message)
             if not override_execution_permission:
+                output_history = code.get_output_history(context=context)
+                if isinstance(output_history, SyftError):
+                    return Err(output_history.message)
                 can_execute = self.is_execution_allowed(
-                    code=code, context=context, output_policy=output_policy
+                    code=code,
+                    context=context,
+                    output_policy=output_policy,
                 )
                 if not can_execute:
                     if not code.output_policy_approved:
                         return Err(
                             "Execution denied: Your code is waiting for approval"
                         )
-                    if not (is_valid := output_policy.valid):
+                    if not (is_valid := output_policy.is_valid(context)):
                         if len(output_history) > 0 and not skip_read_cache:
                             result = resolve_outputs(
                                 context=context,
-                                output_ids=output_policy.last_output_ids,
+                                output_ids=output_history[-1].output_ids,
                             )
                             return Ok(result.as_empty())
                         else:
@@ -458,7 +469,9 @@ class UserCodeService(AbstractService):
             # this currently only works for nested syft_functions
             # and admins executing on high side (TODO, decide if we want to increment counter)
             if not skip_fill_cache:
-                res = code.apply_output(context=context, outputs=result)
+                res = code.apply_output(
+                    context=context, outputs=result, job_id=context.job_id
+                )
                 if isinstance(res, SyftError):
                     return Err(res.message)
             has_result_read_permission = context.extra_kwargs.get(
@@ -493,6 +506,27 @@ class UserCodeService(AbstractService):
                 message=f"Code Execution Permission: {context.credentials} denied"
             )
         return SyftSuccess(message="you have permission")
+
+    @service_method(
+        path="code.apply_output", name="apply_output", roles=GUEST_ROLE_LEVEL
+    )
+    def apply_output(
+        self,
+        context: AuthedServiceContext,
+        user_code_id: UID,
+        outputs: Any,
+        job_id: Optional[UID] = None,
+    ) -> Union[ExecutionOutput, SyftError]:
+        code = self.stash.get_by_uid(context.credentials, user_code_id)
+        if code.is_err():
+            return SyftError(message=code.err())
+
+        code: UserCode = code.ok()
+        if not code.status.approved:
+            return SyftError(message="Code is not approved")
+
+        res = code.apply_output(context=context, outputs=outputs, job_id=job_id)
+        return res
 
 
 def resolve_outputs(

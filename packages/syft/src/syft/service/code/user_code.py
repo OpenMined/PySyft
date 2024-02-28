@@ -27,6 +27,7 @@ from typing import final
 
 # third party
 from IPython.display import display
+import pydantic
 from result import Err
 from typing_extensions import Self
 
@@ -84,7 +85,6 @@ from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..response import SyftWarning
-from ..service import from_api_or_context
 from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
 from .unparse import unparse
@@ -522,32 +522,25 @@ class UserCode(SyftObject):
         else:
             raise Exception(f"You can't set {type(value)} as output_policy_state")
 
+    @property
+    def output_history(self) -> Union[List[ExecutionOutput], SyftError]:
+        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        return api.services.output.get_by_user_code_id(self.id)
+
     def get_output_history(
         self, context: AuthedServiceContext
     ) -> Union[List[ExecutionOutput], SyftError]:
         if not self.status.approved:
             return SyftError(message="Please wait for the code to be approved")
 
-        if context:
-            syft_client_verify_key = context.credentials
-            syft_node_location = context.node.id
-            print("from context", syft_client_verify_key, syft_node_location)
-        else:
-            syft_client_verify_key = self.syft_client_verify_key
-            syft_node_location = self.syft_node_location
-            print("from self", syft_client_verify_key, syft_node_location)
-
-        get_outputs = from_api_or_context(
-            "output.get_by_user_code_id",
-            syft_node_location,
-            syft_client_verify_key,
-        )
-        return get_outputs(self.id)
+        output_service = context.node.get_service("outputservice")
+        return output_service.get_by_user_code_id(context, self.id)
 
     def apply_output(
         self,
         context: AuthedServiceContext,
         outputs: Any,
+        job_id: Optional[UID] = None,
     ) -> Union[ExecutionOutput, SyftError]:
         output_policy = self.output_policy
         if output_policy is None:
@@ -562,19 +555,11 @@ class UserCode(SyftObject):
             user_code_id=self.id,
             output_ids=output_ids,
             executing_user_verify_key=self.user_verify_key,
-            job_id=None,
+            job_id=job_id,
+            output_policy_id=output_policy.id,
         )
         if isinstance(execution_result, SyftError):
             return execution_result
-
-        # TODO can we remove this, and get execution count from self.get_output_history?
-        output_policy.apply_output(context=context, outputs=outputs)
-        self.output_policy = output_policy
-
-        code_service = context.get_service("codeservice")
-        res = code_service.update_code_state(context=context, code_item=self)
-        if isinstance(res, SyftError):
-            return res
 
         return execution_result
 
@@ -613,67 +598,8 @@ class UserCode(SyftObject):
                 all_assets += assets
         return all_assets
 
-    def get_all_output_action_objects(self) -> Union[List[ActionObject], SyftError]:
-        if self.status.approved:
-            all_output_ids = []
-            output_history = self.get_output_history()
-            if isinstance(output_history, SyftError):
-                return output_history
-            for output in output_history:
-                if isinstance(output.outputs, list):
-                    all_output_ids.extend(output.outputs)
-                else:
-                    all_output_ids.extend(output.outputs.values())
-
-            api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-            result = []
-            for output_id in all_output_ids:
-                action_obj = api.services.action.get(output_id)
-                if isinstance(action_obj, ActionObject):
-                    result.append(action_obj)
-            return result
-
-        return []
-
-    def get_dependencies(self) -> List[UID]:
-        # Usercode dependents are: input_policy inputs, output_policy outputs, nested_codes
-        dependencies = []
-
-        all_input_ids = []
-        for _, inputs in self.input_policy_init_kwargs.items():
-            all_input_ids.extend(inputs.values())
-
-        dependencies.extend(all_input_ids)
-
-        output_policy = self.output_policy
-        if output_policy is not None:
-            all_output_ids = []
-            for output in self.get_output_history():
-                if isinstance(output.output_ids, list):
-                    all_output_ids.extend(output.output_ids)
-                else:
-                    all_output_ids.extend(output.output_ids.values())
-
-            dependencies.extend(all_output_ids)
-
-        if self.nested_codes is not None:
-            nested_code_ids = [link.object_uid for link in self.nested_codes.values()]
-            dependencies.extend(nested_code_ids)
-
-        return dependencies
-
     def get_sync_dependencies(self, api=None) -> Union[List[UID], SyftError]:
         dependencies = []
-
-        if api is None:
-            api = api or APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        job_api = api.services.job
-        jobs = job_api.get_by_user_code_id(self.id)
-
-        if isinstance(jobs, SyftError):
-            return jobs
-
-        dependencies.extend([job.id for job in jobs])
 
         if self.nested_codes is not None:
             nested_code_ids = [link.object_uid for link in self.nested_codes.values()]
@@ -834,6 +760,12 @@ class SubmitUserCode(SyftObject):
     worker_pool_name: Optional[str] = None
 
     __repr_attrs__ = ["func_name", "code"]
+
+    @pydantic.root_validator(pre=True)
+    def add_output_policy_ids(cls, values: dict) -> dict:
+        if "id" not in values["output_policy_init_kwargs"]:
+            values["output_policy_init_kwargs"]["id"] = UID()
+        return values
 
     @property
     def kwargs(self) -> List[str]:

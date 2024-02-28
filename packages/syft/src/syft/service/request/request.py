@@ -710,10 +710,15 @@ class Request(SyftObject):
             return permission_request
 
         code = change.linked_obj.resolve
-        output_history = code.get_output_history()
+        output_history = code.output_history
         if isinstance(output_history, SyftError):
             return output_history
-        state = code.output_policy
+        output_policy = code.output_policy
+        if isinstance(output_policy, SyftError):
+            return output_policy
+        job = self._get_latest_or_create_job()
+        if isinstance(job, SyftError):
+            return job
 
         # This weird order is due to the fact that state is None before calling approve
         # we could fix it in a future release
@@ -760,14 +765,16 @@ class Request(SyftObject):
                 if isinstance(result, SyftError):
                     return result
 
-            ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
-
-            state.apply_output(context=ctx, outputs=result)
+            res = api.services.code.apply_output(
+                user_code_id=code.id, outputs=result, job_id=job.id
+            )
+            if isinstance(res, SyftError):
+                return res
             policy_state_mutation = ObjectMutation(
                 linked_obj=change.linked_obj,
                 attr_name="output_policy",
                 match_type=True,
-                value=state,
+                value=output_policy,
             )
 
             action_object_link = LinkedObject.from_obj(result, node_uid=self.node_uid)
@@ -791,7 +798,6 @@ class Request(SyftObject):
             print("ActionObject 4", type(action_object), action_object)
 
         job_info.result = action_object
-        job = self._get_latest_or_create_job()
 
         existing_result = job.result.id if job.result is not None else None
         print("New result", action_object)

@@ -481,6 +481,7 @@ class Job(SyftObject):
         return dependencies
 
     def get_sync_dependencies(self, api=None) -> List[UID]:
+        # Result, Log, Subjobs, UserCode
         dependencies = []
         if self.result is not None:
             dependencies.append(self.result.id.id)
@@ -490,6 +491,9 @@ class Job(SyftObject):
 
         subjob_ids = [subjob.id for subjob in self.subjobs]
         dependencies.extend(subjob_ids)
+
+        if self.user_code_id is not None:
+            dependencies.append(self.user_code_id)
 
         return dependencies
 

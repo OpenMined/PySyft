@@ -112,11 +112,7 @@ class Policy(SyftObject):
                 op_code += "\n"
         return op_code
 
-    def public_state() -> None:
-        raise NotImplementedError
-
-    @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
+    def is_valid(self, output_history: List) -> Union[SyftSuccess, SyftError]:
         return SyftSuccess(message="Policy is valid.")
 
 
@@ -326,37 +322,33 @@ class OutputPolicy(Policy):
     ) -> Any:
         return outputs
 
+    def is_valid(self, output_history: List) -> Union[SyftSuccess, SyftError]:
+        raise NotImplementedError()
+
 
 @serializable()
 class OutputPolicyExecuteCount(OutputPolicy):
     __canonical_name__ = "OutputPolicyExecuteCount"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    count: int = 0
     limit: int
 
-    def apply_output(
-        self,
-        context: NodeServiceContext,
-        outputs: Any,
-    ) -> Optional[Any]:
-        if self.count < self.limit:
-            self.count += 1
-        return outputs
+    def is_valid(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:
+        output_service = context.node.get_service("outputservice")
+        output_history = output_service.get_by_output_policy_id(context, self.id)
+        print("output_history", output_history, self.id)
+        if isinstance(output_history, SyftError):
+            return output_history
+        execution_count = len(output_history)
 
-    @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
-        is_valid = self.count < self.limit
+        is_valid = execution_count < self.limit
         if is_valid:
             return SyftSuccess(
-                message=f"Policy is still valid. count: {self.count} < limit: {self.limit}"
+                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}"
             )
         return SyftError(
-            message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
+            message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
         )
-
-    def public_state(self) -> None:
-        return {"limit": self.limit, "count": self.count}
 
 
 @serializable()

@@ -19,6 +19,7 @@ from ..action.action_permissions import ActionPermission
 from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
+from ..output.output_service import ExecutionOutput
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -196,28 +197,34 @@ class SyncService(AbstractService):
 
         node = context.node
 
-        projects = node.get_service("projectservice").get_all(context)
-        new_state.add_objects(projects, api=node.root_client.api)
+        services_to_sync = [
+            "projectservice",
+            "requestservice",
+            "usercodeservice",
+            "jobservice",
+            "logservice",
+            "outputservice",
+        ]
 
-        requests = node.get_service("requestservice").get_all(context)
-        new_state.add_objects(requests, api=node.root_client.api)
+        for service_name in services_to_sync:
+            service = node.get_service(service_name)
+            items = service.get_all(context)
+            new_state.add_objects(items, api=node.root_client.api)
 
-        user_codes = node.get_service("usercodeservice").get_all(context)
-        new_state.add_objects(user_codes, api=node.root_client.api)
+        # TODO workaround, we only need action objects from outputs for now
+        action_object_ids = set()
+        for item in new_state.objects.values():
+            if isinstance(item, ExecutionOutput):
+                action_object_ids.update(item.output_id_list)
+            elif isinstance(item, Job) and item.result is not None:
+                action_object_ids.add(item.result.id)
 
-        jobs = node.get_service("jobservice").get_all(context)
-        new_state.add_objects(jobs, api=node.root_client.api)
-
-        logs = node.get_service("logservice").get_all(context)
-        new_state.add_objects(logs, api=node.root_client.api)
-
-        # TODO workaround, we only need action objects from output policies for now
         action_objects = []
-        for code in user_codes:
-            action_objects.extend(code.get_all_output_action_objects())
-        for job in jobs:
-            if job.result is not None:
-                action_objects.append(job.result)
+        for uid in action_object_ids:
+            action_object = node.get_service("actionservice").get(context, uid)
+            if action_object.is_err():
+                return SyftError(message=action_object.err())
+            action_objects.append(action_object.ok())
         new_state.add_objects(action_objects)
 
         new_state._build_dependencies(api=node.root_client.api)

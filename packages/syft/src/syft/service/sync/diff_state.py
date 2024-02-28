@@ -11,6 +11,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Tuple
 from typing import Type
 
@@ -35,6 +36,7 @@ from ..action.action_object import ActionObject
 from ..code.user_code import UserCode
 from ..job.job_stash import Job
 from ..log.log import SyftLog
+from ..output.output_service import ExecutionOutput
 from ..project.project import Project
 from ..request.request import Request
 from ..request.request import UserCodeStatusChange
@@ -659,6 +661,8 @@ def get_type(obj):
         return SyftLog
     if isinstance(obj, ActionObject):
         return ActionObject
+    if isinstance(obj, ExecutionOutput):
+        return ExecutionOutput
     raise NotImplementedError
 
 
@@ -730,11 +734,35 @@ class DiffState(SyftObject):
         # ---- Diff3
         # -- Diff4
 
-        def _build_hierarchy_helper(uid, level=0):
+        def _build_hierarchy_helper(
+            uid: UID, level: int = 0, visited: Optional[Set] = None
+        ):
+            visited = visited if visited is not None else set()
+
+            if uid in visited:
+                return []
+
             result = [(uid, level)]
+            visited.add(uid)
             if uid in self.dependencies:
-                for child_uid in self.dependencies[uid]:
-                    result.extend(_build_hierarchy_helper(child_uid, level + 1))
+                deps = self.dependencies[uid]
+                for dep_uid in self.dependencies[uid]:
+                    if dep_uid not in visited:
+                        # NOTE we pass visited + deps to recursive calls, to have
+                        # all objects at the highest level in the hierarchy
+                        # Example:
+                        # ExecutionOutput
+                        # -- Job
+                        # ---- Result
+                        # -- Result
+                        # We want to omit Job.Result, because it's already in ExecutionOutput.Result
+                        result.extend(
+                            _build_hierarchy_helper(
+                                uid=dep_uid,
+                                level=level + 1,
+                                visited=visited | set(deps) - {dep_uid},
+                            )
+                        )
             return result
 
         hierarchies = []
