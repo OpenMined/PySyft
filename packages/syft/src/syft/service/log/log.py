@@ -25,6 +25,7 @@ class SyftLog(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     __repr_attrs__ = ["stdout", "stderr"]
+    __exclude_sync_diff_attrs__ = []
 
     stdout: str = ""
     stderr: str = ""

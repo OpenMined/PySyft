@@ -2,14 +2,14 @@
 from typing import Optional
 
 # relative
-from ..service.sync.diff_state import DiffState
+from ..service.sync.diff_state import NodeDiff
 from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.diff_state import display_diff_hierarchy
 from ..service.sync.diff_state import resolve_diff
 
 
-def compare_states(low_state, high_state) -> DiffState:
-    return DiffState.from_sync_state(low_state=low_state, high_state=high_state)
+def compare_states(low_state, high_state) -> NodeDiff:
+    return NodeDiff.from_sync_state(low_state=low_state, high_state=high_state)
 
 
 def get_user_input_for_resolve():
@@ -27,7 +27,9 @@ def get_user_input_for_resolve():
             print("Please choose between `low` or `high`")
 
 
-def resolve(state: DiffState, decision: Optional[str] = None):
+# TODO: only add permissions for objects where we manually give permission
+# Maybe default read permission for some objects (high -> low)
+def resolve(state: NodeDiff, decision: Optional[str] = None):
     resolved_state_low = ResolvedSyncState()
     resolved_state_high = ResolvedSyncState()
 

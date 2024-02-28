@@ -359,6 +359,22 @@ class Request(SyftObject):
         "changes",
         "requesting_user_verify_key",
     ]
+    __exclude_sync_diff_attrs__ = ["history"]
+
+    # def get_diffs(self, obj) -> List["AttrDiff"]:
+    #     from ...service.sync.diff_state import ListDiff
+    #     diff_attrs = super().get_diffs(obj)
+
+    #     change_diffs = ListDiff.from_lists(
+    #         attr_name="changes",
+    #         low_list=obj.changes,
+    #         high_list=obj.changes
+    #     )
+    #     if not change_diffs.is_empty:
+    #         diff_attrs.append(change_diffs)
+
+    #     # TODO: add request history if we decide we need to sync it
+    #     return diff_attrs
 
     def _repr_html_(self) -> Any:
         # add changes
@@ -818,7 +834,7 @@ class Request(SyftObject):
         job.apply_info(job_info)
         return job_service.update(job)
 
-    def get_sync_dependencies(self) -> Union[List[UID], SyftError]:
+    def get_sync_dependencies(self, **kwargs) -> Union[List[UID], SyftError]:
         dependencies = []
 
         code_id = self.code_id

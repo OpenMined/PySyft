@@ -346,6 +346,15 @@ class UserCode(SyftObject):
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
     worker_pool_name: Optional[str]
 
+    __exclude_sync_diff_attrs__ = [
+        "input_policy_type",
+        "input_policy_init_kwargs",
+        "input_policy_state",
+        "output_policy_type",
+        "output_policy_init_kwargs",
+        "output_policy_state",
+    ]
+
     __attr_searchable__ = [
         "user_verify_key",
         "status",
@@ -359,6 +368,23 @@ class UserCode(SyftObject):
         "code_status",
         "worker_pool_name",
     ]
+
+    def get_diffs(self, obj) -> List[AttrDiff]:
+        # relative
+        from ...service.sync.diff_state import AttrDiff
+
+        diff_attrs = super().get_diffs(obj)
+        status = list(self.status.status_dict.values())[0]
+        ext_status = list(obj.status.status_dict.values())[0]
+
+        if status != ext_status:
+            diff_attr = AttrDiff(
+                attr_name="status",
+                low_attr=ext_status,
+                high_attr=status,
+            )
+            diff_attrs.append(diff_attr)
+        return diff_attrs
 
     def __setattr__(self, key: str, value: Any) -> None:
         attr = getattr(type(self), key, None)
