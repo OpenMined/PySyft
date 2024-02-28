@@ -19,12 +19,14 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
+from typing import cast
 
 # third party
 from RestrictedPython import compile_restricted
 from result import Ok
 
 # relative
+from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...client.api import NodeIdentity
 from ...node.credentials import SyftVerifyKey
@@ -220,8 +222,7 @@ def retrieve_from_db(
     # relative
     from ...service.action.action_object import TwinMode
 
-    if context.node is None:
-        raise ValueError(f"{context}'s node is None")
+    context.node = cast(AbstractNode, context.node)
 
     action_service = context.node.get_service("actionservice")
     code_inputs = {}
@@ -265,8 +266,7 @@ def allowed_ids_only(
     kwargs: Dict[str, Any],
     context: AuthedServiceContext,
 ) -> Dict[str, UID]:
-    if context.node is None:
-        raise ValueError(f"{context}'s node is None")
+    context.node = cast(AbstractNode, context.node)
     if context.node.node_type == NodeType.DOMAIN:
         node_identity = NodeIdentity(
             node_name=context.node.name,

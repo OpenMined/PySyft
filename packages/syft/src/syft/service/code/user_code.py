@@ -33,6 +33,7 @@ from result import Err
 from typing_extensions import Self
 
 # relative
+from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
@@ -202,8 +203,7 @@ class UserCodeStatusCollection(SyftHashableObject):
         return False
 
     def for_user_context(self, context: AuthedServiceContext) -> UserCodeStatus:
-        if context.node is None:
-            raise ValueError(f"context {context}'s node is None")
+        context.node = cast(AbstractNode, context.node)
         if context.node.node_type == NodeType.ENCLAVE:
             keys = {status for status, _ in self.status_dict.values()}
             if len(keys) == 1 and UserCodeStatus.APPROVED in keys:

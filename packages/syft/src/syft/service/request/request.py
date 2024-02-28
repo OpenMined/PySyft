@@ -9,6 +9,7 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
+from typing import cast
 
 # third party
 from result import Err
@@ -17,6 +18,7 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ...abstract_node import AbstractNode
 from ...abstract_node import NodeSideType
 from ...client.api import APIRegistry
 from ...client.client import SyftClient
@@ -615,8 +617,7 @@ class Request(SyftObject):
         # relative
         from .request_service import RequestService
 
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
+        context.node = cast(AbstractNode, context.node)
         save_method = context.node.get_service_method(RequestService.save)
         return save_method(context=context, request=self)
 

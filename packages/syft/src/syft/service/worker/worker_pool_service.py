@@ -4,12 +4,14 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from typing import cast
 
 # third party
 import pydantic
 from result import OkErr
 
 # relative
+from ...abstract_node import AbstractNode
 from ...custom_worker.config import CustomWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
@@ -114,8 +116,7 @@ class SyftWorkerPoolService(AbstractService):
             )
 
         worker_image: SyftWorkerImage = result.ok()
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
+        context.node = cast(AbstractNode, context.node)
         worker_service: WorkerService = context.node.get_service("WorkerService")
         worker_stash = worker_service.stash
 
@@ -221,8 +222,7 @@ class SyftWorkerPoolService(AbstractService):
         # Create a the request object with the changes and submit it
         # for approval.
         request = SubmitRequest(changes=changes)
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
+        context.node = cast(AbstractNode, context.node)
         method = context.node.get_service_method(RequestService.submit)
         result = method(context=context, request=request, reason=reason)
 
@@ -320,8 +320,7 @@ class SyftWorkerPoolService(AbstractService):
 
         # Create a request object and submit a request for approval
         request = SubmitRequest(changes=changes)
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
+        context.node = cast(AbstractNode, context.node)
         method = context.node.get_service_method(RequestService.submit)
         result = method(context=context, request=request, reason=reason)
 
@@ -406,8 +405,7 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_image: SyftWorkerImage = result.ok()
 
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
+        context.node = cast(AbstractNode, context.node)
         worker_service: WorkerService = context.node.get_service("WorkerService")
         worker_stash = worker_service.stash
 
@@ -654,9 +652,7 @@ def _create_workers_in_pool(
     reg_username: Optional[str] = None,
     reg_password: Optional[str] = None,
 ) -> Union[Tuple[List[LinkedObject], List[ContainerSpawnStatus]], SyftError]:
-    if context.node is None:
-        return SyftError(message=f"context {context}'s node is None")
-
+    context.node = cast(AbstractNode, context.node)
     queue_port = context.node.queue_config.client_config.queue_port
 
     # Check if workers needs to be run in memory or as containers

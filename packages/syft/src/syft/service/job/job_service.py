@@ -1,8 +1,10 @@
 # stdlib
 from typing import List
 from typing import Union
+from typing import cast
 
 # relative
+from ...abstract_node import AbstractNode
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -86,8 +88,8 @@ class JobService(AbstractService):
         res = self.stash.get_by_uid(context.credentials, uid=uid)
         if res.is_err():
             return SyftError(message=res.err())
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
+
+        context.node = cast(AbstractNode, context.node)
 
         job = res.ok()
         job.status = JobStatus.CREATED
@@ -187,8 +189,7 @@ class JobService(AbstractService):
     def create_job_for_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> Union[Job, SyftError]:
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
+        context.node = cast(AbstractNode, context.node)
         job = Job(
             id=UID(),
             node_uid=context.node.id,
@@ -210,8 +211,7 @@ class JobService(AbstractService):
         )
         self.stash.set(context.credentials, job, add_permissions=[permission])
 
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
+        context.node = cast(AbstractNode, context.node)
         log_service = context.node.get_service("logservice")
         res = log_service.add(context, job.log_id)
         if isinstance(res, SyftError):

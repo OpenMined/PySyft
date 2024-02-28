@@ -1,8 +1,10 @@
 # stdlib
 from typing import List
 from typing import Union
+from typing import cast
 
 # relative
+from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
@@ -191,8 +193,7 @@ class NotificationService(AbstractService):
     def resolve_object(
         self, context: AuthedServiceContext, linked_obj: LinkedObject
     ) -> Union[Notification, SyftError]:
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
+        context.node = cast(AbstractNode, context.node)
         service = context.node.get_service(linked_obj.service_type)
         result = service.resolve_link(context=context, linked_obj=linked_obj)
         if result.is_err():
