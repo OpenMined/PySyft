@@ -3,8 +3,10 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from typing import cast
 
 # relative
+from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...exceptions.user import UserAlreadyExistsException
 from ...node.credentials import SyftSigningKey
@@ -419,8 +421,7 @@ class UserService(AbstractService):
             else self.get_role_for_credentials(new_user.created_by)
         )
 
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
+        context.node = cast(context.node, AbstractNode)
 
         can_user_register = (
             context.node.settings.signup_enabled

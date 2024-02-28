@@ -38,8 +38,7 @@ class SettingsService(AbstractService):
     @service_method(path="settings.get", name="get")
     def get(self, context: UnauthedServiceContext) -> Result[Ok, Err]:
         """Get Settings"""
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
+        context.node = cast(context.node, AbstractNode)
         result = self.stash.get_all(context.node.signing_key.verify_key)
         if result.is_ok():
             settings = result.ok()
