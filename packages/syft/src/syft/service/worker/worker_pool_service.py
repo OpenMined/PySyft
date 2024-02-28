@@ -455,7 +455,7 @@ class SyftWorkerPoolService(AbstractService):
         Scale the worker pool to the given number of workers in Kubernetes.
         Allows both scaling up and down the worker pool.
         """
-
+        context.node = cast(context.node, AbstractNode)
         if not IN_KUBERNETES:
             return SyftError(message="Scaling is only supported in Kubernetes mode")
         elif number < 0:
@@ -501,16 +501,15 @@ class SyftWorkerPoolService(AbstractService):
                 -(current_worker_count - number) :
             ]
 
-            if context.node is not None:
-                worker_stash = context.node.get_service("WorkerService").stash
-                # delete linkedobj workers
-                for worker in workers_to_delete:
-                    delete_result = worker_stash.delete_by_uid(
-                        credentials=context.credentials,
-                        uid=worker.object_uid,
-                    )
-                    if delete_result.is_err():
-                        print(f"Failed to delete worker: {worker.object_uid}")
+            worker_stash = context.node.get_service("WorkerService").stash
+            # delete linkedobj workers
+            for worker in workers_to_delete:
+                delete_result = worker_stash.delete_by_uid(
+                    credentials=context.credentials,
+                    uid=worker.object_uid,
+                )
+                if delete_result.is_err():
+                    print(f"Failed to delete worker: {worker.object_uid}")
 
             # update worker_pool
             worker_pool.max_count = number
@@ -700,11 +699,12 @@ def _create_workers_in_pool(
         )
 
         if isinstance(result, OkErr):
-            if result.is_ok() and context.node is not None:
+            node = cast(context.node, AbstractNode)
+            if result.is_ok():
                 worker_obj = LinkedObject.from_obj(
                     obj=result.ok(),
                     service_type=WorkerService,
-                    node_uid=context.node.id,
+                    node_uid=node.id,
                 )
                 linked_worker_list.append(worker_obj)
             elif isinstance(result, SyftError):
