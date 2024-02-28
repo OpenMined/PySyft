@@ -7,5 +7,16 @@
   },
   "3": {
     "release_name": "0.8.4.json"
+  },
+  "dev": {
+    "object_versions": {
+      "UserCode": {
+        "4": {
+          "version": 4,
+          "hash": "09e2c6a119246d8beb14f34a365c6e016947f854db86658bbef99c8970bf7e27",
+          "action": "add"
+        }
+      }
+    }
   }
 }

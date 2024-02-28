@@ -1,8 +1,6 @@
 # stdlib
-from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 # third party
@@ -17,9 +15,7 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
-from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
-from ..context import NodeServiceContext
 from ..notification.notification_service import CreateNotification
 from ..notification.notification_service import NotificationService
 from ..notification.notifications import Notification
@@ -38,7 +34,6 @@ from .request import RequestInfo
 from .request import RequestInfoFilter
 from .request import RequestStatus
 from .request import SubmitRequest
-from .request import UserCodeStatusChange
 from .request_stash import RequestStash
 
 
@@ -107,63 +102,14 @@ class RequestService(AbstractService):
             print("Failed to submit Request", e)
             raise e
 
-    def expand_node(
-        self, context: AuthedServiceContext, code_obj: UserCode
-    ) -> Union[dict, SyftError]:
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
-
-        user_code_service = context.node.get_service("usercodeservice")
-        nested_requests = user_code_service.solve_nested_requests(context, code_obj)
-
-        new_nested_requests: dict = {}
-        for func_name, code in nested_requests.items():
-            nested_dict = self.expand_node(context, code)
-            if isinstance(nested_dict, SyftError):
-                return nested_dict
-            code.nested_codes = nested_dict
-            res = user_code_service.stash.update(context.credentials, code)
-            if res.is_err():
-                return SyftError(message=f"{res.err()}")
-            linked_obj = LinkedObject.from_obj(code, node_uid=context.node.id)
-            new_nested_requests[func_name] = (linked_obj, nested_dict)
-
-        return new_nested_requests
-
-    def resolve_nested_requests(
-        self, context: NodeServiceContext, request: Request
-    ) -> Request:
-        # TODO: change this if we have more UserCode Changes
-        if len(request.changes) != 1:
-            return request
-
-        change = request.changes[0]
-        if isinstance(change, UserCodeStatusChange):
-            if change.nested_solved:
-                return request
-            code_obj = change.linked_obj.resolve_with_context(context=context).ok()
-            # recursively check what other UserCodes to approve
-            nested_requests: Dict[str, Tuple[LinkedObject, Dict]] = self.expand_node(
-                context, code_obj
-            )
-            if isinstance(nested_requests, Err):
-                return SyftError(message=nested_requests.value)
-            change.nested_solved = True
-            code_obj.nested_codes = nested_requests
-            change.linked_obj.update_with_context(context=context, obj=code_obj)
-
-            request.changes = [change]
-            new_request = self.save(context=context, request=request)
-            return new_request
-        return request
-
     @service_method(path="request.get_all", name="get_all")
     def get_all(self, context: AuthedServiceContext) -> Union[List[Request], SyftError]:
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
         requests = result.ok()
-        return [self.resolve_nested_requests(context, request) for request in requests]
+        # return [self.resolve_nested_requests(context, request) for request in requests]
+        return requests
 
     @service_method(path="request.get_all_info", name="get_all_info")
     def get_all_info(
