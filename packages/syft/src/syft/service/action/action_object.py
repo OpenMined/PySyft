@@ -774,12 +774,11 @@ class ActionObject(SyftObject):
             if inspect.isclass(v):
                 values["syft_action_data_repr_"] = repr_cls(v)
             else:
-                if v is not None:
-                    values["syft_action_data_repr_"] = (
-                        v._repr_markdown_()
-                        if hasattr(v, "_repr_markdown_")
-                        else v.__repr__()
-                    )
+                values["syft_action_data_repr_"] = (
+                    v._repr_markdown_()
+                    if v is not None and hasattr(v, "_repr_markdown_")
+                    else v.__repr__()
+                )
             values["syft_action_data_str_"] = str(v)
             values["syft_has_bool_attr"] = hasattr(v, "__bool__")
         return values
