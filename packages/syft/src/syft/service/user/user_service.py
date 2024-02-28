@@ -415,13 +415,13 @@ class UserService(AbstractService):
     ) -> Union[Tuple[SyftSuccess, UserPrivateKey], SyftError]:
         """Register new user"""
 
+        context.node = cast(AbstractNode, context.node)
+
         request_user_role = (
             ServiceRole.GUEST
             if new_user.created_by is None
             else self.get_role_for_credentials(new_user.created_by)
         )
-
-        context.node = cast(context.node, AbstractNode)
 
         can_user_register = (
             context.node.settings.signup_enabled

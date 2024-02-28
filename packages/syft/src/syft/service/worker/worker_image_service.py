@@ -79,6 +79,8 @@ class SyftWorkerImageService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         registry: Optional[SyftImageRegistry] = None
 
+        context.node = cast(AbstractNode, context.node)
+
         if IN_KUBERNETES and registry_uid is None:
             return SyftError(message="Registry UID is required in Kubernetes mode.")
 
@@ -92,7 +94,6 @@ class SyftWorkerImageService(AbstractService):
 
         if registry_uid:
             # get registry from image registry service
-            context.node = cast(AbstractNode, context.node)
             image_registry_service: SyftImageRegistryService = context.node.get_service(
                 SyftImageRegistryService
             )

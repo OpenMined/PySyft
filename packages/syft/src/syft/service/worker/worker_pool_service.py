@@ -455,7 +455,7 @@ class SyftWorkerPoolService(AbstractService):
         Scale the worker pool to the given number of workers in Kubernetes.
         Allows both scaling up and down the worker pool.
         """
-        context.node = cast(context.node, AbstractNode)
+        context.node = cast(AbstractNode, context.node)
         if not IN_KUBERNETES:
             return SyftError(message="Scaling is only supported in Kubernetes mode")
         elif number < 0:
@@ -699,7 +699,7 @@ def _create_workers_in_pool(
         )
 
         if isinstance(result, OkErr):
-            node = cast(context.node, AbstractNode)
+            node = cast(AbstractNode, context.node)
             if result.is_ok():
                 worker_obj = LinkedObject.from_obj(
                     obj=result.ok(),
