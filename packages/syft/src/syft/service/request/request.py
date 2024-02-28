@@ -152,9 +152,6 @@ class ActionStoreChange(Change):
                     permission=self.apply_permission_type,
                 )
                 if apply:
-                    print(
-                        "ADDING PERMISSION", requesting_permission_action_obj, id_action
-                    )
                     action_store.add_permission(requesting_permission_action_obj)
                     blob_storage_service.stash.add_permission(
                         requesting_permission_blob_obj
@@ -633,22 +630,16 @@ class Request(SyftObject):
             return existing_jobs
 
         if len(existing_jobs) == 0:
-            print("Creating job for existing user code")
             job = job_service.create_job_for_user_code_id(self.code.id)
         else:
-            print("returning existing job")
-            print("setting permission")
             job = existing_jobs[-1]
             res = job_service.add_read_permission_job_for_code_owner(job, self.code)
-            print(res)
             res = job_service.add_read_permission_log_for_code_owner(
                 job.log_id, self.code
             )
-            print(res)
-
         return job
 
-    def _is_action_object_from_job(self, action_object: ActionObject) -> Optional[Job]:
+    def _is_action_object_result_of_requested_code(self, action_object: ActionObject) -> Optional[Job]:
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         job_service = api.services.job
         existing_jobs = job_service.get_by_user_code_id(self.code.id)
@@ -671,13 +662,11 @@ class Request(SyftObject):
         elif isinstance(result, ActionObject):
             # Do not allow accepting a result produced by a Job,
             # This can cause an inconsistent Job state
-            if self._is_action_object_from_job(result):
-                action_object_job = self._is_action_object_from_job(result)
-                if action_object_job is not None:
-                    return SyftError(
-                        message=f"This ActionObject is the result of Job {action_object_job.id}, "
-                        f"please use the `Job.info` instead."
-                    )
+            if (action_object_job := self._is_action_object_result_of_requested_code(result)):
+                return SyftError(
+                    message=f"This ActionObject is the result of Job {action_object_job.id}, "
+                    f"please use the `Job.info` instead."
+                )
         else:
             # NOTE result is added at the end of function (once ActionObject is created)
             job_info = JobInfo(
@@ -785,16 +774,9 @@ class Request(SyftObject):
             if isinstance(approved, SyftError):
                 return approved
 
-            print("ActionObject 4", type(action_object), action_object)
-
         job_info.result = action_object
         job = self._get_latest_or_create_job()
 
-        existing_result = job.result.id if job.result is not None else None
-        print("New result", action_object)
-        print(
-            f"Job({job.id}) Setting new result {existing_result} -> {job_info.result.id}"
-        )
         job.apply_info(job_info)
 
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
@@ -818,7 +800,7 @@ class Request(SyftObject):
         job.apply_info(job_info)
         return job_service.update(job)
 
-    def get_sync_dependencies(self) -> Union[List[UID], SyftError]:
+    def get_sync_dependencies(self, **kwargs) -> Union[List[UID], SyftError]:
         dependencies = []
 
         code_id = self.code_id

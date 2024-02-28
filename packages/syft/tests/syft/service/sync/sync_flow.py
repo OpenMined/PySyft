@@ -186,7 +186,3 @@ def test_sync_flow():
     )
     low_worker.close()
     high_worker.close()
-
-
-if __name__ == "__main__":
-    test_sync_flow()

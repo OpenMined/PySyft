@@ -28,8 +28,8 @@ def get_user_input_for_resolve():
 
 
 def resolve(state: DiffState, decision: Optional[str] = None):
-    resolved_state_low = ResolvedSyncState()
-    resolved_state_high = ResolvedSyncState()
+    resolved_state_low: ResolvedSyncState = ResolvedSyncState()
+    resolved_state_high: ResolvedSyncState = ResolvedSyncState()
 
     for diff_hierarchy in state.hierarchies:
         if all(item.merge_state == "SAME" for item, _ in diff_hierarchy):
@@ -44,6 +44,8 @@ def resolve(state: DiffState, decision: Optional[str] = None):
             print(f"Decision: Syncing all objects from {decision} side")
 
         for diff, _ in diff_hierarchy:
+            low_resolved_diff: ResolvedSyncState
+            high_resolved_diff: ResolvedSyncState
             low_resolved_diff, high_resolved_diff = resolve_diff(
                 diff, decision=decision
             )

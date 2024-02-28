@@ -196,11 +196,9 @@ class SyncService(AbstractService):
 
         node = context.node
 
-        projects = node.get_service("projectservice").get_all(context)
-        new_state.add_objects(projects, api=node.root_client.api)
-
-        requests = node.get_service("requestservice").get_all(context)
-        new_state.add_objects(requests, api=node.root_client.api)
+        for service in ["project", "requests", "log"]:
+            objects = node.get_service(f"{service}service").get_all(context)
+            new_state.add_objects(objects, api=node.root_client.api)
 
         user_codes = node.get_service("usercodeservice").get_all(context)
         new_state.add_objects(user_codes, api=node.root_client.api)
@@ -208,8 +206,6 @@ class SyncService(AbstractService):
         jobs = node.get_service("jobservice").get_all(context)
         new_state.add_objects(jobs, api=node.root_client.api)
 
-        logs = node.get_service("logservice").get_all(context)
-        new_state.add_objects(logs, api=node.root_client.api)
 
         # TODO workaround, we only need action objects from output policies for now
         action_objects = []
