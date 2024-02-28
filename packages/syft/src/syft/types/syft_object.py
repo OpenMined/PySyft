@@ -101,7 +101,7 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
     syft_node_location: Optional[UID]
     syft_client_verify_key: Optional[SyftVerifyKey]
 
-    def _set_obj_location_(self, node_uid, credentials):
+    def _set_obj_location_(self, node_uid: UID, credentials: SyftVerifyKey):
         self.syft_node_location = node_uid
         self.syft_client_verify_key = credentials
 

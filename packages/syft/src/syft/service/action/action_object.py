@@ -402,8 +402,8 @@ def make_action_side_effect(
 
 class TraceResult:
     result: list = []
-    _client = None
-    is_tracing = False
+    _client: SyftClient = None
+    is_tracing: bool = False
 
     @classmethod
     def reset(cls) -> None:
@@ -895,10 +895,10 @@ class ActionObject(SyftObject):
 
         api = None
         if TraceResult._client is not None:
-            api = TraceResult._client.api  # type: ignore[unreachable]
+            api = TraceResult._client.api
 
         if api is not None:
-            obj._set_obj_location_(api.node_uid, api.signing_key.verify_key)  # type: ignore[unreachable]
+            obj._set_obj_location_(api.node_uid, api.signing_key.verify_key)
             res = obj._save_to_blob_storage()
             if isinstance(res, SyftError):
                 print(f"failed saving {obj} to blob storage, error: {res}")
@@ -915,7 +915,7 @@ class ActionObject(SyftObject):
         )
 
         if api is not None:
-            TraceResult.result += [action]  # type: ignore[unreachable]
+            TraceResult.result += [action]
         else:
             api = APIRegistry.api_for(
                 node_uid=self.syft_node_location,
