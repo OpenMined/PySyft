@@ -2,12 +2,14 @@
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import cast
 
 # third party
 from result import Err
 from result import Ok
 
 # relative
+from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
@@ -70,6 +72,7 @@ class RequestService(AbstractService):
             if result.is_ok():
                 request = result.ok()
                 link = LinkedObject.with_context(request, context=context)
+                context.node = cast(AbstractNode, context.node)
                 admin_verify_key = context.node.get_service_method(
                     UserService.admin_verify_key
                 )
@@ -115,33 +118,32 @@ class RequestService(AbstractService):
         context: AuthedServiceContext,
         page_index: Optional[int] = 0,
         page_size: Optional[int] = 0,
-    ) -> Union[List[RequestInfo], SyftError]:
-        """Get a Dataset"""
+    ) -> Union[List[List[RequestInfo]], List[RequestInfo], SyftError]:
+        """Get the information of all requests"""
+        context.node = cast(AbstractNode, context.node)
         result = self.stash.get_all(context.credentials)
+        if result.is_err():
+            return SyftError(message=result.err())
+
         method = context.node.get_service_method(UserService.get_by_verify_key)
         get_message = context.node.get_service_method(NotificationService.filter_by_obj)
 
-        requests = []
-        if result.is_ok():
-            for req in result.ok():
-                user = method(req.requesting_user_verify_key).to(UserView)
-                message = get_message(context=context, obj_uid=req.id)
-                requests.append(
-                    RequestInfo(user=user, request=req, notification=message)
-                )
-
-            # If chunk size is defined, then split list into evenly sized chunks
-            if page_size:
-                requests = [
-                    requests[i : i + page_size]
-                    for i in range(0, len(requests), page_size)
-                ]
-                # Return the proper slice using chunk_index
-                requests = requests[page_index]
-
+        requests: List[RequestInfo] = []
+        for req in result.ok():
+            user = method(req.requesting_user_verify_key).to(UserView)
+            message = get_message(context=context, obj_uid=req.id)
+            requests.append(RequestInfo(user=user, request=req, notification=message))
+        if not page_size:
             return requests
 
-        return SyftError(message=result.err())
+        # If chunk size is defined, then split list into evenly sized chunks
+        chunked_requests: List[List[RequestInfo]] = [
+            requests[i : i + page_size] for i in range(0, len(requests), page_size)
+        ]
+        if page_index:
+            return chunked_requests[page_index]
+        else:
+            return chunked_requests
 
     @service_method(path="request.add_changes", name="add_changes")
     def add_changes(
@@ -177,8 +179,9 @@ class RequestService(AbstractService):
             requests = [
                 requests[i : i + page_size] for i in range(0, len(requests), page_size)
             ]
-            # Return the proper slice using chunk_index
-            requests = requests[page_index]
+            if page_index is not None:
+                # Return the proper slice using chunk_index
+                requests = requests[page_index]
 
         return requests
 
@@ -192,6 +195,7 @@ class RequestService(AbstractService):
         uid: UID,
         **kwargs: dict,
     ) -> Union[SyftSuccess, SyftError]:
+        context.node = cast(AbstractNode, context.node)
         request = self.stash.get_by_uid(context.credentials, uid)
         if request.is_ok():
             request = request.ok()
@@ -260,6 +264,7 @@ class RequestService(AbstractService):
             to_user_verify_key=request.requesting_user_verify_key,
             linked_obj=link,
         )
+        context.node = cast(AbstractNode, context.node)
         send_notification = context.node.get_service_method(NotificationService.send)
         send_notification(context=context, notification=notification)
 

@@ -5,6 +5,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import cast
 
 # third party
 from result import Err
@@ -13,6 +14,7 @@ from result import OkErr
 from result import Result
 
 # relative
+from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...client.enclave_client import EnclaveClient
 from ...serde.serializable import serializable
@@ -26,11 +28,13 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..network.routes import route_to_connection
+from ..policy.policy import OutputPolicy
 from ..request.request import Request
 from ..request.request import SubmitRequest
 from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
 from ..response import SyftError
+from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -97,7 +101,7 @@ class UserCodeService(AbstractService):
     )
     def get_by_service_name(
         self, context: AuthedServiceContext, service_func_name: str
-    ):
+    ) -> Union[List[UserCode], SyftError]:
         result = self.stash.get_by_service_func_name(
             context.credentials, service_func_name=service_func_name
         )
@@ -110,7 +114,7 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code: SubmitUserCode,
         reason: Optional[str] = "",
-    ):
+    ) -> Union[Request, SyftError]:
         user_code: UserCode = code.to(UserCode, context=context)
         return self._request_code_execution_inner(context, user_code, reason)
 
@@ -119,7 +123,15 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         user_code: UserCode,
         reason: Optional[str] = "",
-    ):
+    ) -> Union[Request, SyftError]:
+        if user_code.output_readers is None:
+            return SyftError(
+                message=f"there is no verified output readers for {user_code}"
+            )
+        if user_code.input_owner_verify_keys is None:
+            return SyftError(
+                message=f"there is no verified input owners for {user_code}"
+            )
         if not all(
             x in user_code.input_owner_verify_keys for x in user_code.output_readers
         ):
@@ -138,6 +150,8 @@ class UserCodeService(AbstractService):
             return SyftError(
                 message="The code to be submitted (name and content) already exists"
             )
+
+        context.node = cast(AbstractNode, context.node)
 
         worker_pool_service = context.node.get_service("SyftWorkerPoolService")
         pool_result = worker_pool_service._get_worker_pool(
@@ -159,12 +173,13 @@ class UserCodeService(AbstractService):
             return result
 
         # Users that have access to the output also have access to the code item
-        self.stash.add_permissions(
-            [
-                ActionObjectPermission(user_code.id, ActionPermission.READ, x)
-                for x in user_code.output_readers
-            ]
-        )
+        if user_code.output_readers is not None:
+            self.stash.add_permissions(
+                [
+                    ActionObjectPermission(user_code.id, ActionPermission.READ, x)
+                    for x in user_code.output_readers
+                ]
+            )
 
         linked_obj = LinkedObject.from_obj(user_code, node_uid=context.node.id)
 
@@ -214,7 +229,7 @@ class UserCodeService(AbstractService):
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             user_code = result.ok()
-            if user_code and user_code.input_policy_state:
+            if user_code and user_code.input_policy_state and context.node is not None:
                 # TODO replace with LinkedObject Context
                 user_code.node_uid = context.node.id
             return user_code
@@ -249,6 +264,7 @@ class UserCodeService(AbstractService):
     def get_results(
         self, context: AuthedServiceContext, inp: Union[UID, UserCode]
     ) -> Union[List[UserCode], SyftError]:
+        context.node = cast(AbstractNode, context.node)
         uid = inp.id if isinstance(inp, UserCode) else inp
         code_result = self.stash.get_by_uid(context.credentials, uid=uid)
 
@@ -289,7 +305,9 @@ class UserCodeService(AbstractService):
         else:
             return SyftError(message="Endpoint only supported for enclave code")
 
-    def is_execution_allowed(self, code, context, output_policy):
+    def is_execution_allowed(
+        self, code: UserCode, context: AuthedServiceContext, output_policy: OutputPolicy
+    ) -> Union[bool, SyftSuccess, SyftError, SyftNotReady]:
         if not code.status.approved:
             return code.status.get_status_message()
         # Check if the user has permission to execute the code.
@@ -302,17 +320,22 @@ class UserCodeService(AbstractService):
         else:
             return True
 
-    def is_execution_on_owned_args_allowed(self, context: AuthedServiceContext) -> bool:
+    def is_execution_on_owned_args_allowed(
+        self, context: AuthedServiceContext
+    ) -> Union[bool, SyftError]:
         if context.role == ServiceRole.ADMIN:
             return True
+        context.node = cast(AbstractNode, context.node)
         user_service = context.node.get_service("userservice")
         current_user = user_service.get_current_user(context=context)
         return current_user.mock_execution_permission
 
     def keep_owned_kwargs(
         self, kwargs: Dict[str, Any], context: AuthedServiceContext
-    ) -> Dict[str, Any]:
+    ) -> Union[Dict[str, Any], SyftError]:
         """Return only the kwargs that are owned by the user"""
+        context.node = cast(AbstractNode, context.node)
+
         action_service = context.node.get_service("actionservice")
 
         mock_kwargs = {}
@@ -378,8 +401,8 @@ class UserCodeService(AbstractService):
 
             # Check output policy
             output_policy = code.output_policy
-            if not override_execution_permission:
-                can_execute = self.is_execution_allowed(
+            if output_policy is not None and not override_execution_permission:
+                can_execute: Any = self.is_execution_allowed(
                     code=code, context=context, output_policy=output_policy
                 )
                 if not can_execute:
@@ -402,6 +425,8 @@ class UserCodeService(AbstractService):
                     return can_execute.to_result()
 
             # Execute the code item
+            context.node = cast(AbstractNode, context.node)
+
             action_service = context.node.get_service("actionservice")
 
             kwarg2id = map_kwargs_to_id(kwargs)
@@ -427,7 +452,7 @@ class UserCodeService(AbstractService):
 
             # this currently only works for nested syft_functions
             # and admins executing on high side (TODO, decide if we want to increment counter)
-            if not skip_fill_cache:
+            if not skip_fill_cache and output_policy is not None:
                 output_policy.apply_output(context=context, outputs=result)
                 code.output_policy = output_policy
                 if not (
@@ -459,7 +484,10 @@ class UserCodeService(AbstractService):
 
             return Err(value=f"Failed to run. {e}, {traceback.format_exc()}")
 
-    def has_code_permission(self, code_item, context):
+    def has_code_permission(
+        self, code_item: UserCode, context: AuthedServiceContext
+    ) -> Union[SyftSuccess, SyftError]:
+        context.node = cast(AbstractNode, context.node)
         if not (
             context.credentials == context.node.verify_key
             or context.credentials == code_item.user_verify_key
@@ -482,13 +510,14 @@ def resolve_outputs(
             return None
         outputs = []
         for output_id in output_ids:
-            action_service = context.node.get_service("actionservice")
-            result = action_service.get(
-                context, uid=output_id, twin_mode=TwinMode.PRIVATE
-            )
-            if isinstance(result, OkErr):
-                result = result.value
-            outputs.append(result)
+            if context.node is not None:
+                action_service = context.node.get_service("actionservice")
+                result = action_service.get(
+                    context, uid=output_id, twin_mode=TwinMode.PRIVATE
+                )
+                if isinstance(result, OkErr):
+                    result = result.value
+                outputs.append(result)
         if len(outputs) == 1:
             return outputs[0]
         return outputs

@@ -18,7 +18,7 @@ def set_from_node_to_key(node_attr: str, key: str) -> Callable:
 
 
 @migrate(NodeSettings, NodeSettingsV2)
-def upgrade_metadata_v1_to_v2():
+def upgrade_metadata_v1_to_v2() -> list[Callable]:
     return [
         set_from_node_to_key("verify_key", "verify_key"),
         set_from_node_to_key("node_type", "node_type"),
@@ -26,7 +26,7 @@ def upgrade_metadata_v1_to_v2():
 
 
 @migrate(NodeSettingsV2, NodeSettings)
-def downgrade_metadata_v2_to_v1():
+def downgrade_metadata_v2_to_v1() -> list[Callable]:
     return [
         drop(["verify_key", "node_type"]),
     ]

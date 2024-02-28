@@ -1,9 +1,11 @@
 # stdlib
 import inspect
+from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
 
 # relative
 from ... import ActionObject
@@ -45,17 +47,19 @@ class Plan(SyftObject):
 
         return f"{obj_str}\n{inp_str}\n{act_str}\n{out_str}\n\n{plan_str}"
 
-    def remap_actions_to_inputs(self, **new_inputs):
+    def remap_actions_to_inputs(self, **new_inputs: Any) -> None:
         pass
 
-    def __call__(self, *args, **kwargs):
+    def __call__(
+        self, *args: Any, **kwargs: Any
+    ) -> Union[ActionObject, list[ActionObject]]:
         if len(self.outputs) == 1:
             return self.outputs[0]
         else:
             return self.outputs
 
 
-def planify(func):
+def planify(func: Callable) -> ActionObject:
     TraceResult.reset()
     ActionObject.add_trace_hook()
     TraceResult.is_tracing = True

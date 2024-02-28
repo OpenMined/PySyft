@@ -126,7 +126,6 @@ class SyftWorker(SyftObject):
             return res
 
         self.status, self.healthcheck = res
-
         return None
 
     def _coll_repr_(self) -> Dict[str, Any]:

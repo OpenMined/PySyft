@@ -35,6 +35,7 @@ class AbstractNode:
     name: Optional[str]
     node_type: Optional[NodeType]
     node_side_type: Optional[NodeSideType]
+    in_memory_workers: bool
 
     def get_service(self, path_or_func: Union[str, Callable]) -> Callable:
         raise NotImplementedError
