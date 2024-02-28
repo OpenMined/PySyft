@@ -997,9 +997,9 @@ def syft_function(
             func_name=f.__name__,
             signature=inspect.signature(f),
             input_policy_type=input_policy_type,
-            input_policy_init_kwargs=input_policy.init_kwargs,  # type: ignore
+            input_policy_init_kwargs=input_policy.init_kwargs,
             output_policy_type=output_policy_type,
-            output_policy_init_kwargs=output_policy.init_kwargs,  # type: ignore
+            output_policy_init_kwargs=output_policy.init_kwargs,
             local_function=f,
             input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
             worker_pool_name=worker_pool_name,
@@ -1494,9 +1494,11 @@ def traceback_from_error(e: Exception, code: UserCode) -> str:
     start_line = max(0, line_nr - 2)
     end_line = min(len(lines), line_nr + 2)
     error_lines: Union[list[str], str] = [
-        e.replace("   ", f"    {i} ", 1)
-        if i != line_nr
-        else e.replace("   ", f"--> {i} ", 1)
+        (
+            e.replace("   ", f"    {i} ", 1)
+            if i != line_nr
+            else e.replace("   ", f"--> {i} ", 1)
+        )
         for i, e in enumerate(lines)
         if i >= start_line and i < end_line
     ]

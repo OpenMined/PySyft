@@ -314,7 +314,7 @@ class Job(SyftObject):
             kwargs={"uid": self.id},
             blocking=True,
         )
-        job = api.make_call(call)
+        job: Job = api.make_call(call)
         self.resolved = job.resolved
         if job.resolved:
             self.result = job.result
