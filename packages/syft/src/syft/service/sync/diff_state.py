@@ -483,6 +483,64 @@ def recursive_repr(value_attr, no_tabs=0):
             value_attr = value_attr[:50] + "..."
     return f"{sketchy_tab*no_tabs}{value_attr}"
 
+def context_for_log(diff_log):
+    log_obj = diff_log.ref_obj
+    
+    context_str = f'Log {log_obj.id}:\n'
+    context_str += f'{sketchy_tab}Output: {log_obj.stdout}\n'
+    context_str += f'{sketchy_tab}Err: {log_obj.stderr}\n'
+    return context_str
+
+def context_for_job(diff_job):
+    job_obj = diff_job.ref_obj
+    
+    context_str = f'Job {job_obj.id}:\n'
+    context_str += f'{sketchy_tab}Result:{job_obj.result}\n'
+    context_str += f'{sketchy_tab}Status:{job_obj.status}\n'
+    context_str += f'{sketchy_tab}Parent Job:{job_obj.parent_job_id}\n'
+    
+    return context_str
+
+def context_for_usercode(diff_uc):
+    uc_obj = diff_uc.ref_obj
+    
+    context_str = f"UserCode {uc_obj.id}:\n"
+    context_str += f"{sketchy_tab}Func Name: {uc_obj.service_func_name}\n"
+    context_str += f"{sketchy_tab}Status: {uc_obj.status}\n"
+    
+    return context_str
+
+def context_for_request(diff_req):    
+    req_obj = diff_req.ref_obj
+    
+    context_str = f"Request {req_obj.id}:\n"
+    context_str += f"{sketchy_tab}Submitted by:\n"
+    context_str += f"{sketchy_tab * 2}User Name: {req_obj.requesting_user_name}\n"
+    context_str += f"{sketchy_tab * 2}User Email: {req_obj.requesting_user_email}\n"
+    context_str += f"{sketchy_tab * 2}User Institution: {req_obj.requesting_user_institution}\n"
+    context_str += f"{sketchy_tab}Changes:\n"
+    for change in req_obj.changes:
+        if isinstance(change, UserCodeStatusChange):
+            context_str += f"{sketchy_tab * 2}UserCodeStatusChange:\n"
+            context_str += f"{sketchy_tab * 3}service_func_name: {change.code.service_func_name}\n"
+            
+    return context_str
+
+def context_for_ao(diff_ao):
+    ao_obj = diff_ao.ref_obj
+    return ao_obj.__repr__()
+
+def context_for_project(diff_project):
+    return ""
+
+context_dict = {
+    SyftLog.__name__: context_for_log,
+    Job.__name__: context_for_job,
+    UserCode.__name__: context_for_usercode,
+    Request.__name__: context_for_request,
+    Project.__name__: context_for_project,
+    ActionObject.__name__: context_for_ao,
+}
 
 class Diff(SyftObject):  # StateTuple (compare 2 objects)
     # version
@@ -499,7 +557,16 @@ class Diff(SyftObject):  # StateTuple (compare 2 objects)
         "merge_state",
         "low_state",
         "high_state",
+        "context",
     ]
+
+    @property
+    def context(self):
+        return context_dict[self.object_type](self)
+
+    @property
+    def ref_obj(self):
+        return self.high_obj if self.high_obj else self.low_obj
 
     @property
     def object_id(self):
@@ -820,6 +887,15 @@ def display_diff_object(obj_state: Optional[str]) -> Panel:
         box=box.ROUNDED,
         expand=False,
     )
+    
+def display_context(obj: Optional[Any]) -> Panel:
+    if obj is None:
+        return Panel(Markdown("None"), box=box.ROUNDED, expand=False)
+    return Panel(
+        Markdown(f"```\n{obj}```\n"),
+        box=box.ROUNDED,
+        expand=False,
+    )
 
 
 def display_diff_hierarchy(diff_hierarchy: List[Tuple[Diff, int]]):
@@ -838,8 +914,12 @@ def display_diff_hierarchy(diff_hierarchy: List[Tuple[Diff, int]]):
         )
         high_side_panel.title = "High side"
         high_side_panel.title_align = "left"
+        
+        context_panel = display_context(diff.context)
+        context_panel.title = "Context"
+        context_panel.title_align = "left"
 
-        grouped_panels = Group(low_side_panel, high_side_panel)
+        grouped_panels = Group(low_side_panel, high_side_panel, context_panel)
 
         diff_panel = Panel(
             grouped_panels,
