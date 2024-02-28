@@ -3,11 +3,13 @@ from pathlib import Path
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import cast
 
 # third party
 import requests
 
 # relative
+from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...service.action.action_object import ActionObject
 from ...store.blob_storage import BlobRetrieval
@@ -89,8 +91,7 @@ class BlobStorageService(AbstractService):
             return SyftError(message=res.value)
         remote_profile = res.ok()
 
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
+        context.node = cast(AbstractNode, context.node)
 
         seaweed_config = context.node.blob_storage_client.config
         # we cache this here such that we can use it when reading a file from azure
@@ -203,8 +204,7 @@ class BlobStorageService(AbstractService):
             obj: BlobStorageEntry = result.ok()
             if obj is None:
                 return SyftError(message=f"No blob storage entry exists for uid: {uid}")
-            if context.node is None:
-                return SyftError(message=f"context {context}'s node is None")
+            context.node = cast(AbstractNode, context.node)
             with context.node.blob_storage_client.connect() as conn:
                 res: BlobRetrieval = conn.read(
                     obj.location, obj.type_, bucket_name=obj.bucket_name
@@ -222,9 +222,7 @@ class BlobStorageService(AbstractService):
     def allocate(
         self, context: AuthedServiceContext, obj: CreateBlobStorageEntry
     ) -> Union[BlobDepositType, SyftError]:
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
-
+        context.node = cast(AbstractNode, context.node)
         with context.node.blob_storage_client.connect() as conn:
             secure_location = conn.allocate(obj)
 
@@ -303,8 +301,7 @@ class BlobStorageService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=f"{result.err()}")
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
+        context.node = cast(AbstractNode, context.node)
         with context.node.blob_storage_client.connect() as conn:
             result = conn.complete_multipart_upload(obj, etags)
 
@@ -320,8 +317,9 @@ class BlobStorageService(AbstractService):
 
             if obj is None:
                 return SyftError(message=f"No blob storage entry exists for uid: {uid}")
-            if context.node is None:
-                return SyftError(message=f"context {context}'s node is None")
+
+            context.node = cast(AbstractNode, context.node)
+
             try:
                 with context.node.blob_storage_client.connect() as conn:
                     file_unlinked_result = conn.delete(obj.location)

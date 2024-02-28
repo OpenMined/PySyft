@@ -18,11 +18,13 @@ import traceback
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import Generator
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import Union
+from typing import cast
 from typing import final
 
 # third party
@@ -592,6 +594,7 @@ class UserCode(SyftObject):
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
 
+        inputs: Generator = (x for x in range(0))  # create an empty generator
         if self.input_policy_init_kwargs is not None:
             inputs = (
                 uids
@@ -851,41 +854,40 @@ class SubmitUserCode(SyftObject):
             deploy_to="python",
         )
         ep_client = ep_node.login(email="info@openmined.org", password="changethis")  # nosec
+        self.input_policy_init_kwargs = cast(dict, self.input_policy_init_kwargs)
+        for node_id, obj_dict in self.input_policy_init_kwargs.items():
+            # api = APIRegistry.api_for(
+            #     node_uid=node_id.node_id, user_verify_key=node_id.verify_key
+            # )
+            api = APIRegistry.get_by_recent_node_uid(node_uid=node_id.node_id)
 
-        if self.input_policy_init_kwargs is not None:
-            for node_id, obj_dict in self.input_policy_init_kwargs.items():
-                # api = APIRegistry.api_for(
-                #     node_uid=node_id.node_id, user_verify_key=node_id.verify_key
-                # )
-                api = APIRegistry.get_by_recent_node_uid(node_uid=node_id.node_id)
-
-                # Creating TwinObject from the ids of the kwargs
-                # Maybe there are some corner cases where this is not enough
-                # And need only ActionObjects
-                # Also, this works only on the assumption that all inputs
-                # are ActionObjects, which might change in the future
-                for _, id in obj_dict.items():
-                    mock_obj = api.services.action.get_mock(id)
-                    if isinstance(mock_obj, SyftError):
-                        data_obj = api.services.action.get(id)
-                        if isinstance(data_obj, SyftError):
-                            return SyftError(
-                                message="You do not have access to object you want \
-                                    to use, or the private object does not have mock \
-                                    data. Contact the Node Admin."
-                            )
-                    else:
-                        data_obj = mock_obj
-                    data_obj.id = id
-                    new_obj = ActionObject.from_obj(
-                        data_obj.syft_action_data,
-                        id=id,
-                        syft_node_location=node_id.node_id,
-                        syft_client_verify_key=node_id.verify_key,
-                    )
-                    res = ep_client.api.services.action.set(new_obj)
-                    if isinstance(res, SyftError):
-                        return res
+            # Creating TwinObject from the ids of the kwargs
+            # Maybe there are some corner cases where this is not enough
+            # And need only ActionObjects
+            # Also, this works only on the assumption that all inputs
+            # are ActionObjects, which might change in the future
+            for _, id in obj_dict.items():
+                mock_obj = api.services.action.get_mock(id)
+                if isinstance(mock_obj, SyftError):
+                    data_obj = api.services.action.get(id)
+                    if isinstance(data_obj, SyftError):
+                        return SyftError(
+                            message="You do not have access to object you want \
+                                to use, or the private object does not have mock \
+                                data. Contact the Node Admin."
+                        )
+                else:
+                    data_obj = mock_obj
+                data_obj.id = id
+                new_obj = ActionObject.from_obj(
+                    data_obj.syft_action_data,
+                    id=id,
+                    syft_node_location=node_id.node_id,
+                    syft_client_verify_key=node_id.verify_key,
+                )
+                res = ep_client.api.services.action.set(new_obj)
+                if isinstance(res, SyftError):
+                    return res
 
         new_syft_func = deepcopy(self)
 

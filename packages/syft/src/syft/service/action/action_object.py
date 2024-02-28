@@ -392,9 +392,9 @@ def make_action_side_effect(
             action_type=context.action_type,
         )
         context.action = action
-    except Exception as e:
-        # print(f"make_action_side_effect failed with {traceback.format_exc()}")
-        raise e
+    except Exception:
+        print(f"make_action_side_effect failed with {traceback.format_exc()}")
+        return Err(f"make_action_side_effect failed with {traceback.format_exc()}")
 
     return Ok((context, args, kwargs))
 
@@ -648,7 +648,7 @@ class ActionObject(SyftObject):
 
         return self.syft_action_data_cache
 
-    def reload_cache(self) -> None:
+    def reload_cache(self) -> Optional[SyftError]:
         # If ActionDataEmpty then try to fetch it from store.
         if isinstance(self.syft_action_data_cache, ActionDataEmpty):
             blob_storage_read_method = from_api_or_context(
@@ -665,21 +665,24 @@ class ActionObject(SyftObject):
                 from ...store.blob_storage import BlobRetrieval
 
                 if isinstance(blob_retrieval_object, SyftError):
-                    raise SyftException(
-                        f"Failed to retrieve object from blob storage: {blob_retrieval_object.message}"
-                    )
+                    return blob_retrieval_object
                 elif isinstance(blob_retrieval_object, BlobRetrieval):
                     # TODO: This change is temporary to for gateway to be compatible with the new blob storage
                     self.syft_action_data_cache = blob_retrieval_object.read()
                     self.syft_action_data_type = type(self.syft_action_data)
+                    return None
                 else:
                     # In the case of gateway, we directly receive the actual object
                     # TODO: The ideal solution would be to stream the object from the domain through the gateway
                     # Currently , we are just passing the object as it is, which would be fixed later.
                     self.syft_action_data_cache = blob_retrieval_object
                     self.syft_action_data_type = type(self.syft_action_data)
+                    return None
             else:
                 print("cannot reload cache")
+                return None
+
+        return None
 
     def _save_to_blob_storage_(self, data: Any) -> Optional[SyftError]:
         # relative
