@@ -53,7 +53,7 @@ class NumpyArrayObjectV1(ActionObjectV1, np.lib.mixins.NDArrayOperatorsMixin):
 
     syft_internal_type: ClassVar[Type[Any]] = np.ndarray
     syft_pointer_type = NumpyArrayObjectPointer
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     syft_dont_wrap_attrs = ["dtype", "shape"]
 
 
@@ -66,7 +66,7 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
 
     syft_internal_type: ClassVar[Type[Any]] = np.ndarray
     syft_pointer_type = NumpyArrayObjectPointer
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     syft_dont_wrap_attrs = ["dtype", "shape"]
 
     # def __eq__(self, other: Any) -> bool:
@@ -120,7 +120,7 @@ class NumpyScalarObjectV1(ActionObjectV1, np.lib.mixins.NDArrayOperatorsMixin):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type = np.number
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     syft_dont_wrap_attrs = ["dtype", "shape"]
 
 
@@ -130,7 +130,7 @@ class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __version__ = SYFT_OBJECT_VERSION_2
 
     syft_internal_type = np.number
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     syft_dont_wrap_attrs = ["dtype", "shape"]
 
     def __float__(self) -> float:
@@ -157,7 +157,7 @@ class NumpyBoolObjectV1(ActionObjectV1, np.lib.mixins.NDArrayOperatorsMixin):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type = np.bool_
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     syft_dont_wrap_attrs = ["dtype", "shape"]
 
 
@@ -167,7 +167,7 @@ class NumpyBoolObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __version__ = SYFT_OBJECT_VERSION_2
 
     syft_internal_type = np.bool_
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     syft_dont_wrap_attrs = ["dtype", "shape"]
 
 

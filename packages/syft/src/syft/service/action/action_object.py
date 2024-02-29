@@ -586,7 +586,7 @@ class ActionObjectV1(SyftObject):
     __canonical_name__ = "ActionObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __attr_searchable__: ClassVar[List[str]] = []
+    __attr_searchable__: List[str] = []
     syft_action_data_cache: Optional[Any] = None
     syft_blob_storage_entry_id: Optional[UID] = None
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
@@ -602,7 +602,7 @@ class ActionObjectV1(SyftObject):
     _syft_pre_hooks__: Dict[str, List] = {}
     _syft_post_hooks__: Dict[str, List] = {}
     syft_twin_type: TwinMode = TwinMode.NONE
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     syft_action_data_type: Optional[Type]
     syft_action_data_repr_: Optional[str]
     syft_action_data_str_: Optional[str]
@@ -618,7 +618,7 @@ class ActionObject(SyftObject):
     __canonical_name__ = "ActionObject"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    __attr_searchable__: ClassVar[List[str]] = []
+    __attr_searchable__: List[str] = []
     syft_action_data_cache: Optional[Any] = None
     syft_blob_storage_entry_id: Optional[UID] = None
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
@@ -634,7 +634,7 @@ class ActionObject(SyftObject):
     _syft_pre_hooks__: Dict[str, List] = {}
     _syft_post_hooks__: Dict[str, List] = {}
     syft_twin_type: TwinMode = TwinMode.NONE
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
     syft_action_data_type: Optional[Type]
     syft_action_data_repr_: Optional[str]
     syft_action_data_str_: Optional[str]

@@ -241,7 +241,7 @@ class BlobFileObject(ActionObject):
 
     syft_internal_type: ClassVar[Type[Any]] = BlobFile
     syft_pointer_type = BlobFileObjectPointer
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
 
 
 @serializable()
