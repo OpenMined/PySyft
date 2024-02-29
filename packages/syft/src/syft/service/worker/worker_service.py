@@ -255,7 +255,7 @@ def refresh_worker_status(
     workers: List[SyftWorker],
     worker_stash: WorkerStash,
     credentials: SyftVerifyKey,
-):
+) -> List[SyftWorker]:
     if IN_KUBERNETES:
         result = refresh_status_kubernetes(workers)
     else:
@@ -277,7 +277,7 @@ def refresh_worker_status(
     return result
 
 
-def refresh_status_kubernetes(workers: List[SyftWorker]):
+def refresh_status_kubernetes(workers: List[SyftWorker]) -> List[SyftWorker]:
     updated_workers = []
     runner = KubernetesRunner()
     for worker in workers:
@@ -292,7 +292,7 @@ def refresh_status_kubernetes(workers: List[SyftWorker]):
     return updated_workers
 
 
-def refresh_status_docker(workers: List[SyftWorker]):
+def refresh_status_docker(workers: List[SyftWorker]) -> List[SyftWorker]:
     updated_workers = []
 
     with contextlib.closing(docker.from_env()) as client:
@@ -317,6 +317,7 @@ def _stop_worker_container(
         container.stop()
         # Remove the container and its volumes
         _remove_worker_container(container, force=force, v=True)
+        return None
     except Exception as e:
         return SyftError(
             message=f"Failed to delete worker with id: {worker.id}. Error: {e}"

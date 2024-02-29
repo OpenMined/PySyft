@@ -196,7 +196,7 @@ class SyncService(AbstractService):
 
         node = context.node
 
-        for service in ["project", "requests", "log"]:
+        for service in ["project", "request", "log"]:
             objects = node.get_service(f"{service}service").get_all(context)
             new_state.add_objects(objects, api=node.root_client.api)
 

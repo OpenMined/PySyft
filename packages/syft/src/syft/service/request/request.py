@@ -650,6 +650,7 @@ class Request(SyftObject):
         else:
             job = existing_jobs[-1]
             job_service.add_read_permission_log_for_code_owner(job.log_id, self.code)
+            job_service.add_read_permission_job_for_code_owner(job, self.code)
         return job
 
     def _is_action_object_result_of_requested_code(

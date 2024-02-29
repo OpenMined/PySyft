@@ -122,8 +122,10 @@ class UserService(AbstractService):
                     for i in range(0, len(results), page_size)
                 ]
                 # Return the proper slice using chunk_index
-                results = results[page_index]
-                results = UserViewPage(users=results, total=total)
+                if page_index is not None:
+                    results = results[page_index]
+                    results = UserViewPage(users=results, total=total)
+
             return results
 
         # 🟡 TODO: No user exists will happen when result.ok() is empty list
@@ -180,9 +182,9 @@ class UserService(AbstractService):
             ]
 
             # Return the proper slice using page_index
-            results = results[page_index]
-
-            results = UserViewPage(users=results, total=total)
+            if page_index is not None:
+                results = results[page_index]
+                results = UserViewPage(users=results, total=total)
 
         return results
 
@@ -317,7 +319,9 @@ class UserService(AbstractService):
 
         return user.to(UserView)
 
-    def get_target_object(self, credentials: SyftVerifyKey, uid: UID):
+    def get_target_object(
+        self, credentials: SyftVerifyKey, uid: UID
+    ) -> Union[User, SyftError]:
         user_result = self.stash.get_by_uid(credentials=credentials, uid=uid)
         if user_result.is_err():
             return SyftError(message=str(user_result.err()))

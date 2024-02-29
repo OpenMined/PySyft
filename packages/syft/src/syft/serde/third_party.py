@@ -96,8 +96,8 @@ recursive_serde_register(
 
 
 def deserialize_series(blob: bytes) -> Series:
-    df = DataFrame.from_dict(deserialize(blob, from_bytes=True))
-    return df[df.columns[0]]
+    df: DataFrame = DataFrame.from_dict(deserialize(blob, from_bytes=True))
+    return Series(df[df.columns[0]])
 
 
 recursive_serde_register(

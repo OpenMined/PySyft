@@ -172,7 +172,7 @@ jobs:
           docker volume prune -f || true
           docker buildx use default || true
 
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v3
         with:
           version: 8
           run_install: false

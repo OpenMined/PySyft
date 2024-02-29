@@ -2,6 +2,7 @@
 from faker import Faker
 
 # syft absolute
+import syft as sy
 from syft.custom_worker.config import DockerWorkerConfig
 from syft.node.worker import Worker
 from syft.service.request.request import CreateCustomWorkerPoolChange
@@ -24,8 +25,8 @@ def test_create_image_and_pool_request_accept(faker: Faker, worker: Worker):
     assert root_client.credentials != ds_client.credentials
 
     # the DS makes a request to create an image and a pool based on the image
-    custom_dockerfile = """
-        FROM openmined/grid-backend:0.8.4-beta.12
+    custom_dockerfile = f"""
+        FROM openmined/grid-backend:{sy.__version__}
 
         RUN pip install recordlinkage
     """
@@ -71,8 +72,8 @@ def test_create_pool_request_accept(faker: Faker, worker: Worker):
     assert root_client.credentials != ds_client.credentials
 
     # the DO submits the docker config to build an image
-    custom_dockerfile_str = """
-        FROM openmined/grid-backend:0.8.4-beta.12
+    custom_dockerfile_str = f"""
+        FROM openmined/grid-backend:{sy.__version__}
 
         RUN pip install opendp
     """
