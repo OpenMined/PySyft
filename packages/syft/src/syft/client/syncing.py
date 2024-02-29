@@ -25,7 +25,6 @@ Do you want to allow the data scientist to read this object? choose 'yes' or 'no
     while True:
         permission = input()
         permission = permission.lower()
-        print(f"YOU CHOSE {permission}")
         if permission in ["yes", "no"]:
             return permission
         else:
@@ -41,7 +40,6 @@ def get_user_input_for_resolve():
     while True:
         decision = input()
         decision = decision.lower()
-        print(f"YOU CHOSE {decision}")
         if decision in ["low", "high"]:
             return decision
         else:
