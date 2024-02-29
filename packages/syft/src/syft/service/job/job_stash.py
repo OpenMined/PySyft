@@ -403,7 +403,7 @@ class Job(SyftObject):
     def has_parent(self) -> bool:
         return self.parent_job_id is not None
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _ = self.resolve
         logs = self.logs(_print=False)
         if logs is not None:

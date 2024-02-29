@@ -101,7 +101,7 @@ class MarkdownDescription(SyftObject):
 
     text: str
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         style = """
         <style>
             .jp-RenderedHTMLCommon pre {
@@ -208,7 +208,7 @@ class Asset(SyftObject):
             {mock_table_line}
             </div>"""
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"Asset: {self.name}\n"
         _repr_str += f"Pointer Id: {self.action_id}\n"
         _repr_str += f"Description: {self.description}\n"
@@ -558,7 +558,7 @@ class Dataset(SyftObject):
             _repr_str += f"Description: {self.description.text}\n"
         return as_markdown_python_code(_repr_str)
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         # return self._old_repr_markdown_()
         return self._markdown_()
 

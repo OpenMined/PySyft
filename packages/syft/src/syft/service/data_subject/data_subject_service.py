@@ -47,7 +47,10 @@ class DataSubjectStash(BaseUIDStoreStash):
         return self.query_one(credentials, qks=qks)
 
     def update(
-        self, credentials: SyftVerifyKey, data_subject: DataSubject
+        self,
+        credentials: SyftVerifyKey,
+        data_subject: DataSubject,
+        has_permission: bool = False,
     ) -> Result[DataSubject, str]:
         res = self.check_type(data_subject, DataSubject)
         # we dont use and_then logic here as it is hard because of the order of the arguments

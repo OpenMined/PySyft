@@ -1093,7 +1093,7 @@ class UserCodeStatusChange(Change):
             msg = f"LinkedObject of {self} is None."
         return msg
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         link = self.link
         if link is None:
             return f"{self}'s linked object is None"

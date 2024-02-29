@@ -70,7 +70,10 @@ class NetworkStash(BaseUIDStoreStash):
         return self.query_one(credentials=credentials, qks=qks)
 
     def update(
-        self, credentials: SyftVerifyKey, peer: NodePeer
+        self,
+        credentials: SyftVerifyKey,
+        peer: NodePeer,
+        has_permission: bool = False,
     ) -> Result[NodePeer, str]:
         valid = self.check_type(peer, NodePeer)
         if valid.is_err():

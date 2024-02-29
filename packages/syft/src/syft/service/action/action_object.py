@@ -1721,7 +1721,7 @@ class ActionObject(SyftObject):
     # if we do not implement these boiler plate __method__'s then special infix
     # operations like x + y won't trigger __getattribute__
     # unless there is a super special reason we should write no code in these functions
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         if self.is_mock:
             res = "TwinPointer(Mock)"
         elif self.is_real:

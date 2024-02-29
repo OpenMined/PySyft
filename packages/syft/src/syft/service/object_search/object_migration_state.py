@@ -62,6 +62,7 @@ class SyftMigrationStateStash(BaseStash):
         credentials: SyftVerifyKey,
         migration_state: SyftObjectMigrationState,
         add_permissions: Optional[List[ActionObjectPermission]] = None,
+        ignore_duplicates: bool = False,
     ) -> Result[SyftObjectMigrationState, str]:
         res = self.check_type(migration_state, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments

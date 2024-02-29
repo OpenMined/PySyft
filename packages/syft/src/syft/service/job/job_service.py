@@ -211,7 +211,6 @@ class JobService(AbstractService):
         )
         self.stash.set(context.credentials, job, add_permissions=[permission])
 
-        context.node = cast(AbstractNode, context.node)
         log_service = context.node.get_service("logservice")
         res = log_service.add(context, job.log_id)
         if isinstance(res, SyftError):

@@ -695,7 +695,7 @@ class UserCode(SyftObject):
 
         return md
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return as_markdown_code(self._inner_repr())
 
     @property

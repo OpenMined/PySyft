@@ -298,7 +298,7 @@ class ProjectRequest(ProjectEventAddObject):
         "request.changes[-1].link.service_func_name",
     ]
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         func_name = None
         if len(self.request.changes) > 0:
             func_name = self.request.changes[-1].link.service_func_name
