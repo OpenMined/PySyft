@@ -811,46 +811,6 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     __canonical_name__ = "PartialSyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    # def __init__(self, *args, **kwargs) -> None:
-    #     # Filter out Empty values from args and kwargs
-    #     args_, kwargs_ = (), {}
-    #     for arg in args:
-    #         if arg is not Empty:
-    #             args_.append(arg)
-
-    #     for key, val in kwargs.items():
-    #         if val is not Empty:
-    #             kwargs_[key] = val
-
-    #     super().__init__(*args_, **kwargs_)
-
-    #     fields_with_default = set()
-    #     for _field_name, _field in self.model_fields.items():
-    #         if _field.default is not None or _field.allow_none:
-    #             fields_with_default.add(_field_name)
-
-    #     # Fields whose values are set via a validator hook
-    #     fields_set_via_validator = []
-
-    #     for _field_name in self.__validators__.keys():
-    #         _field = self.model_fields[_field_name]
-    #         if self.__dict__[_field_name] is None:
-    #             # Since all fields are None, only allow None
-    #             # where either none is allowed or default is None
-    #             if _field.allow_none or _field.default is None:
-    #                 fields_set_via_validator.append(_field)
-
-    #     # Exclude unset fields
-    #     unset_fields = (
-    #         set(self.model_fields)
-    #         - set(self.model_fields_set)
-    #         - set(fields_set_via_validator)
-    #     )
-
-    #     empty_fields = unset_fields - fields_with_default
-    #     for field_name in empty_fields:
-    #         self.__dict__[field_name] = Empty
-
 
 recursive_serde_register_type(PartialSyftObject)
 
