@@ -1166,14 +1166,14 @@ class Node(AbstractNode):
         api_call: Union[SyftAPICall, SignedSyftAPICall],
         job_id: Optional[UID] = None,
         check_call_location: bool = True,
-    ) -> Result[Union[QueueItem, SyftObject], Err]:
+    ) -> Union[Result, QueueItem, SyftObject, SyftError]:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return SyftError(
-                message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
+                message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."
             )
         else:
             if not api_call.is_valid:
-                return SyftError(message="Your message signature is invalid")  # type: ignore
+                return SyftError(message="Your message signature is invalid")
 
         if api_call.message.node_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
@@ -1205,11 +1205,11 @@ class Node(AbstractNode):
                     return SyftError(
                         message=f"As a `{role}`,"
                         f"you have has no access to: {api_call.path}"
-                    )  # type: ignore
+                    )
                 else:
                     return SyftError(
                         message=f"API call not in registered services: {api_call.path}"
-                    )  # type: ignore
+                    )
 
             _private_api_path = user_config_registry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)

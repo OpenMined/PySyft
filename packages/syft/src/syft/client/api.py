@@ -508,10 +508,10 @@ class APIModule:
 
 
 def debox_signed_syftapicall_response(
-    signed_result: SignedSyftAPICall,
+    signed_result: Union[SignedSyftAPICall, Any],
 ) -> Union[Any, SyftError]:
     if not isinstance(signed_result, SignedSyftAPICall):
-        return SyftError(message="The result is not signed")  # type: ignore
+        return SyftError(message="The result is not signed")
 
     if not signed_result.is_valid:
         return SyftError(message="The result signature is invalid")

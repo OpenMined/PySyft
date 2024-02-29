@@ -7,7 +7,6 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
 
@@ -23,11 +22,8 @@ from ..types.grid_url import GridURL
 from ..util.constants import DEFAULT_TIMEOUT
 from ..util.logger import error
 from ..util.logger import warning
+from .client import SyftClient as Client
 from .enclave_client import EnclaveClient
-
-if TYPE_CHECKING:
-    # relative
-    from .client import Client
 
 NETWORK_REGISTRY_URL = (
     "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/gateways.json"
