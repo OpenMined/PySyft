@@ -50,12 +50,14 @@ class LinkedObject(SyftObject):
         return api.services.notifications.resolve_object(self)
 
     def resolve_with_context(self, context: NodeServiceContext) -> Any:
+        if context.node is None:
+            raise ValueError(f"context {context}'s node is None")
         return context.node.get_service(self.service_type).resolve_link(
             context=context, linked_obj=self
         )
 
     def update_with_context(
-        self, context: NodeServiceContext, obj: Any
+        self, context: Union[NodeServiceContext, ChangeContext, Any], obj: Any
     ) -> Union[SyftSuccess, SyftError]:
         if isinstance(context, AuthedServiceContext):
             credentials = context.credentials
@@ -63,6 +65,8 @@ class LinkedObject(SyftObject):
             credentials = context.approving_user_credentials
         else:
             return SyftError(message="wrong context passed")
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         result = context.node.get_service(self.service_type).stash.update(
             credentials, obj
         )
@@ -71,7 +75,7 @@ class LinkedObject(SyftObject):
     @classmethod
     def from_obj(
         cls,
-        obj: SyftObject,
+        obj: Union[SyftObject, Type[SyftObject]],
         service_type: Optional[Type[Any]] = None,
         node_uid: Optional[UID] = None,
     ) -> Self:
@@ -122,6 +126,8 @@ class LinkedObject(SyftObject):
         if object_uid is None:
             raise Exception(f"{cls} Requires an object UID")
 
+        if context.node is None:
+            raise ValueError(f"context {context}'s node is None")
         node_uid = context.node.id
 
         return LinkedObject(

@@ -33,7 +33,7 @@ class SyftObjectMigrationState(SyftObject):
         available_versions = SyftMigrationRegistry.get_versions(
             canonical_name=self.canonical_name,
         )
-        if available_versions is None:
+        if not available_versions:
             return None
 
         return sorted(available_versions, reverse=True)[0]

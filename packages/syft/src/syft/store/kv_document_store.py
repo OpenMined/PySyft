@@ -262,7 +262,10 @@ class KeyValueStorePartition(StorePartition):
             raise Exception(f"ObjectPermission type: {permission.permission} not valid")
 
         # TODO: fix for other admins
-        if self.root_verify_key.verify == permission.credentials.verify:
+        if (
+            permission.credentials
+            and self.root_verify_key.verify == permission.credentials.verify
+        ):
             return True
 
         if (

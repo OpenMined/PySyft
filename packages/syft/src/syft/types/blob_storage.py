@@ -102,10 +102,13 @@ class BlobFile(SyftObject):
         read_method = from_api_or_context(
             "blob_storage.read", self.syft_node_location, self.syft_client_verify_key
         )
-        blob_retrieval_object = read_method(self.syft_blob_storage_entry_id)
-        return blob_retrieval_object._read_data(
-            stream=stream, chunk_size=chunk_size, _deserialize=False
-        )
+        if read_method is not None:
+            blob_retrieval_object = read_method(self.syft_blob_storage_entry_id)
+            return blob_retrieval_object._read_data(
+                stream=stream, chunk_size=chunk_size, _deserialize=False
+            )
+        else:
+            return None
 
     @classmethod
     def upload_from_path(cls, path: Union[str, Path], client: SyftClient) -> Any:
