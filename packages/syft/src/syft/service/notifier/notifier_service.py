@@ -226,6 +226,10 @@ class NotifierService(AbstractService):
 
                 sender_not_set = not email_sender and not notifier.email_sender
                 if validation_result.is_err() or sender_not_set:
+                    print(
+                        "Ops something went wrong while trying to setup your notification system.",
+                        "Please check your credentials and configuration.",
+                    )
                     notifier.active = False
                 else:
                     notifier.email_password = email_password
