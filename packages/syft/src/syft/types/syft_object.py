@@ -14,6 +14,7 @@ from typing import Any
 from typing import Callable
 from typing import ClassVar
 from typing import Dict
+from typing import Generator
 from typing import KeysView
 from typing import List
 from typing import Optional
@@ -805,11 +806,17 @@ class StorableObjectType:
         return transform(self, context)
 
 
+TupleGenerator = Generator[Tuple[str, Any], None, None]
+
+
 class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     """Syft Object to which partial arguments can be provided."""
 
     __canonical_name__ = "PartialSyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    def __iter__(self) -> TupleGenerator:
+        yield from ((k, v) for k, v in super().__iter__() if v is not Empty)
 
 
 recursive_serde_register_type(PartialSyftObject)
