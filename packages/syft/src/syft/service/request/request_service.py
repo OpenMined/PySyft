@@ -141,7 +141,9 @@ class RequestService(AbstractService):
         if isinstance(change, UserCodeStatusChange):
             if change.nested_solved:
                 return request
-            code_obj = change.linked_obj.resolve_with_context(context=context).ok()
+            code_obj = change.linked_user_code.resolve_with_context(
+                context=context
+            ).ok()
             # recursively check what other UserCodes to approve
             nested_requests: Dict[str : Tuple[LinkedObject, Dict]] = self.expand_node(
                 context, code_obj

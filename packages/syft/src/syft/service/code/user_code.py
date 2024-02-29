@@ -47,7 +47,7 @@ from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
-from ...types.syft_object import SyftHashableObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
@@ -98,28 +98,6 @@ SubmitTimePartitionKey = PartitionKey(key="submit_time", type_=DateTime)
 PyCodeObject = Any
 
 
-def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
-    # relative
-    from ...types.twin_object import TwinObject
-    from ..action.action_object import ActionObject
-
-    uid_kwargs = {}
-    for k, v in kwargs.items():
-        uid = v
-        if isinstance(v, ActionObject):
-            uid = v.id
-        if isinstance(v, TwinObject):
-            uid = v.id
-        if isinstance(v, Asset):
-            uid = v.action_id
-
-        if not isinstance(uid, UID):
-            raise Exception(f"Input {k} must have a UID not {type(v)}")
-
-        uid_kwargs[k] = uid
-    return uid_kwargs
-
-
 @serializable()
 class UserCodeStatus(Enum):
     PENDING = "pending"
@@ -130,15 +108,12 @@ class UserCodeStatus(Enum):
         return hash(self.value)
 
 
-# User Code status context for multiple approvals
-# To make nested dicts hashable for mongodb
-# as status is in attr_searchable
-@serializable(attrs=["status_dict"])
-class UserCodeStatusCollection(SyftHashableObject):
-    status_dict: Dict[NodeIdentity, Tuple[UserCodeStatus, str]] = {}
+@serializable()
+class UserCodeStatusCollection(SyftObject):
+    __canonical_name__ = "UserCodeStatusCollection"
+    __version__ = SYFT_OBJECT_VERSION_1
 
-    def __init__(self, status_dict: Dict):
-        self.status_dict = status_dict
+    status_dict: Dict[NodeIdentity, Tuple[UserCodeStatus, str]] = {}
 
     def __repr__(self):
         return str(self.status_dict)
@@ -318,9 +293,7 @@ class UserCodeV2(SyftObject):
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
 
 
-@serializable()
-class UserCode(SyftObject):
-    # version
+class UserCodeV3(SyftObject):
     __canonical_name__ = "UserCode"
     __version__ = SYFT_OBJECT_VERSION_3
 
@@ -349,9 +322,40 @@ class UserCode(SyftObject):
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
     worker_pool_name: Optional[str]
 
+
+@serializable()
+class UserCode(SyftObject):
+    # version
+    __canonical_name__ = "UserCode"
+    __version__ = SYFT_OBJECT_VERSION_4
+
+    id: UID
+    node_uid: Optional[UID]
+    user_verify_key: SyftVerifyKey
+    raw_code: str
+    input_policy_type: Union[Type[InputPolicy], UserPolicy]
+    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    input_policy_state: bytes = b""
+    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
+    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    output_policy_state: bytes = b""
+    parsed_code: str
+    service_func_name: str
+    unique_func_name: str
+    user_unique_func_name: str
+    code_hash: str
+    signature: inspect.Signature
+    status_link: LinkedObject
+    input_kwargs: List[str]
+    enclave_metadata: Optional[EnclaveMetadata] = None
+    submit_time: Optional[DateTime]
+    uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
+    nested_requests: Dict[str, str] = {}
+    nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
+    worker_pool_name: Optional[str]
+
     __attr_searchable__ = [
         "user_verify_key",
-        "status",
         "service_func_name",
         "code_hash",
     ]
@@ -390,6 +394,16 @@ class UserCode(SyftObject):
             "Status": status_badge,
             "Submit time": str(self.submit_time),
         }
+
+    @property
+    def status(self) -> Union[UserCodeStatusCollection, SyftError]:
+        res = self.status_link.resolve
+        return res
+
+    def get_status(
+        self, context: AuthedServiceContext
+    ) -> Union[UserCodeStatusCollection, SyftError]:
+        return self.status_link.resolve_with_context(context)
 
     @property
     def is_enclave_code(self) -> bool:
@@ -1164,7 +1178,7 @@ def check_output_policy(context: TransformContext) -> TransformContext:
     return context
 
 
-def add_custom_status(context: TransformContext) -> TransformContext:
+def create_code_status(context: TransformContext) -> TransformContext:
     input_keys = list(context.output["input_policy_init_kwargs"].keys())
     if context.node.node_type == NodeType.DOMAIN:
         node_identity = NodeIdentity(
@@ -1172,21 +1186,29 @@ def add_custom_status(context: TransformContext) -> TransformContext:
             node_id=context.node.id,
             verify_key=context.node.signing_key.verify_key,
         )
-        context.output["status"] = UserCodeStatusCollection(
+        status = UserCodeStatusCollection(
             status_dict={node_identity: (UserCodeStatus.PENDING, "")}
         )
-        # if node_identity in input_keys or len(input_keys) == 0:
-        #     context.output["status"] = UserCodeStatusContext(
-        #         base_dict={node_identity: UserCodeStatus.SUBMITTED}
-        #     )
-        # else:
-        #     raise ValueError(f"Invalid input keys: {input_keys} for {node_identity}")
+
     elif context.node.node_type == NodeType.ENCLAVE:
         status_dict = {key: (UserCodeStatus.PENDING, "") for key in input_keys}
-        context.output["status"] = UserCodeStatusCollection(status_dict=status_dict)
+        status = UserCodeStatusCollection(status_dict=status_dict)
     else:
         raise NotImplementedError(
             f"Invalid node type:{context.node.node_type} for code submission"
+        )
+
+    res = context.node.get_service("usercodestatusservice").create(context, status)
+    # relative
+    from .status_service import UserCodeStatusService
+
+    # TODO error handling in transform functions
+    if not isinstance(res, SyftError):
+        context.output["status_link"] = LinkedObject.from_uid(
+            res.id,
+            UserCodeStatusCollection,
+            service_type=UserCodeStatusService,
+            node_uid=context.node.id,
         )
     return context
 
@@ -1214,7 +1236,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         new_check_code,
         locate_launch_jobs,
         add_credentials_for_key("user_verify_key"),
-        add_custom_status,
+        create_code_status,
         add_node_uid_for_key("node_uid"),
         add_submit_time,
         set_default_pool_if_empty,

@@ -50,6 +50,7 @@ from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
 from ..service.blob_storage.service import BlobStorageService
+from ..service.code.status_service import UserCodeStatusService
 from ..service.code.user_code_service import UserCodeService
 from ..service.code.user_code_stash import UserCodeStash
 from ..service.code_history.code_history_service import CodeHistoryService
@@ -361,6 +362,7 @@ class Node(AbstractNode):
                 SyftImageRegistryService,
                 SyncService,
                 OutputService,
+                UserCodeStatusService,
             ]
             if services is None
             else services
@@ -940,6 +942,7 @@ class Node(AbstractNode):
                 SyftImageRegistryService,
                 SyncService,
                 OutputService,
+                UserCodeStatusService,
             ]
 
             if OBLV:

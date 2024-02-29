@@ -74,6 +74,7 @@ class UserCodeService(AbstractService):
     ) -> Result:
         if not isinstance(code, UserCode):
             code = code.to(UserCode, context=context)
+
         result = self.stash.set(context.credentials, code)
         return result
 
@@ -195,10 +196,12 @@ class UserCodeService(AbstractService):
             ]
         )
 
-        linked_obj = LinkedObject.from_obj(user_code, node_uid=context.node.id)
+        code_link = LinkedObject.from_obj(user_code, node_uid=context.node.id)
 
         CODE_EXECUTE = UserCodeStatusChange(
-            value=UserCodeStatus.APPROVED, linked_obj=linked_obj
+            value=UserCodeStatus.APPROVED,
+            linked_obj=user_code.status_link,
+            linked_user_code=code_link,
         )
         changes = [CODE_EXECUTE]
 
@@ -303,7 +306,7 @@ class UserCodeService(AbstractService):
 
             # if the current node is the enclave
             else:
-                if not code.status.approved:
+                if not code.get_status(context).approved:
                     return code.status.get_status_message()
 
                 output_history = code.get_output_history(context=context)
@@ -326,7 +329,7 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         output_policy: Optional[OutputPolicy],
     ):
-        if not code.status.approved:
+        if not code.get_status(context).approved:
             return code.status.get_status_message()
         # Check if the user has permission to execute the code.
         elif not (has_code_permission := self.has_code_permission(code, context)):
@@ -522,7 +525,7 @@ class UserCodeService(AbstractService):
             return SyftError(message=code.err())
 
         code: UserCode = code.ok()
-        if not code.status.approved:
+        if not code.get_status(context).approved:
             return SyftError(message="Code is not approved")
 
         res = code.apply_output(context=context, outputs=outputs, job_id=job_id)

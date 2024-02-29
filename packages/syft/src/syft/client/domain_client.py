@@ -358,6 +358,12 @@ class DomainClient(SyftClient):
         return None
 
     @property
+    def code_status(self) -> Optional[APIModule]:
+        if self.api.has_service("code_status"):
+            return self.api.services.code_status
+        return None
+
+    @property
     def output(self) -> Optional[APIModule]:
         if self.api.has_service("output"):
             return self.api.services.output

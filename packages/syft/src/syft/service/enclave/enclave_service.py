@@ -13,8 +13,8 @@ from ...store.document_store import DocumentStore
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ..action.action_object import ActionObject
-from ..code.user_code_service import UserCode
-from ..code.user_code_service import UserCodeStatus
+from ..code.user_code import UserCode
+from ..code.user_code import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..network.routes import route_to_connection
@@ -58,7 +58,7 @@ class EnclaveService(AbstractService):
             return user_code
 
         reason: str = context.extra_kwargs.get("reason", "")
-        status_update = user_code.status.mutate(
+        status_update = user_code.get_status(context).mutate(
             value=(UserCodeStatus.APPROVED, reason),
             node_name=node_name,
             node_id=node_id,
@@ -67,13 +67,9 @@ class EnclaveService(AbstractService):
         if isinstance(status_update, SyftError):
             return status_update
 
-        user_code.status = status_update
-
-        user_code_update = user_code_service.update_code_state(
-            context=root_context, code_item=user_code
-        )
-        if isinstance(user_code_update, SyftError):
-            return user_code_update
+        res = user_code.status_link.update_with_context(context, status_update)
+        if isinstance(res, SyftError):
+            return res
 
         root_context = context.as_root_context()
         if not action_service.exists(context=context, obj_id=user_code_id):

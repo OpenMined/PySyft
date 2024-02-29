@@ -51,6 +51,7 @@ from ..action.action_store import ActionPermission
 from ..blob_storage.service import BlobStorageService
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
+from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..job.job_stash import Job
@@ -1093,6 +1094,7 @@ class UserCodeStatusChange(Change):
 
     value: UserCodeStatus
     linked_obj: LinkedObject
+    linked_user_code: LinkedObject
     nested_solved: bool = False
     match_type: bool = True
     __repr_attrs__ = [
@@ -1104,11 +1106,11 @@ class UserCodeStatusChange(Change):
     ]
 
     @property
-    def code(self):
-        return self.link
+    def code(self) -> UserCode:
+        return self.linked_user_code.resolve
 
     @property
-    def codes(self):
+    def codes(self) -> List[UserCode]:
         def recursive_code(node):
             codes = []
             for _, (obj, new_node) in node.items():
@@ -1116,24 +1118,24 @@ class UserCodeStatusChange(Change):
                 codes.extend(recursive_code(new_node))
             return codes
 
-        codes = [self.link]
-        codes.extend(recursive_code(self.link.nested_codes))
+        codes = [self.code]
+        codes.extend(recursive_code(self.code.nested_codes))
         return codes
 
     def nested_repr(self, node=None, level=0):
         msg = ""
         if node is None:
-            node = self.link.nested_codes
+            node = self.code.nested_codes
         for service_func_name, (_, new_node) in node.items():
             msg = "├──" + "──" * level + f"{service_func_name}<br>"
             msg += self.nested_repr(node=new_node, level=level + 1)
         return msg
 
     def __repr_syft_nested__(self):
-        msg = f"Request to change <b>{self.link.service_func_name}</b> (Pool Id: <b>{self.link.worker_pool_name}</b>) "
+        msg = f"Request to change <b>{self.code.service_func_name}</b> (Pool Id: <b>{self.code.worker_pool_name}</b>) "
         msg += "to permission <b>RequestStatus.APPROVED</b>"
         if self.nested_solved:
-            if self.link.nested_codes == {}:
+            if self.code.nested_codes == {}:
                 msg += ". No nested requests"
             else:
                 msg += ".<br><br>This change requests the following nested functions calls:<br>"
@@ -1143,28 +1145,28 @@ class UserCodeStatusChange(Change):
         return msg
 
     def _repr_markdown_(self) -> str:
-        link = self.link
+        code = self.code
         input_policy_type = (
-            link.input_policy_type.__canonical_name__
-            if link.input_policy_type is not None
+            code.input_policy_type.__canonical_name__
+            if code.input_policy_type is not None
             else None
         )
         output_policy_type = (
-            link.output_policy_type.__canonical_name__
-            if link.output_policy_type is not None
+            code.output_policy_type.__canonical_name__
+            if code.output_policy_type is not None
             else None
         )
         repr_dict = {
-            "function": link.service_func_name,
+            "function": code.service_func_name,
             "input_policy_type": f"{input_policy_type}",
             "output_policy_type": f"{output_policy_type}",
-            "approved": f"{link.status.approved}",
+            "approved": f"{code.status.approved}",
         }
         return markdown_as_class_with_fields(self, repr_dict)
 
     @property
     def approved(self) -> bool:
-        return self.linked_obj.resolve.status.approved
+        return self.linked_obj.resolve.approved
 
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:
@@ -1188,10 +1190,16 @@ class UserCodeStatusChange(Change):
 
     #     return approved_nested_codes
 
-    def mutate(self, obj: UserCode, context: ChangeContext, undo: bool) -> Any:
+    def mutate(
+        self,
+        status: UserCodeStatusCollection,
+        context: ChangeContext,
+        undo: bool,
+    ) -> Union[UserCodeStatusCollection, SyftError]:
         reason: str = context.extra_kwargs.get("reason", "")
+
         if not undo:
-            res = obj.status.mutate(
+            res = status.mutate(
                 value=(self.value, reason),
                 node_name=context.node.name,
                 node_id=context.node.id,
@@ -1200,15 +1208,12 @@ class UserCodeStatusChange(Change):
             if isinstance(res, SyftError):
                 return res
         else:
-            res = obj.status.mutate(
+            res = status.mutate(
                 value=(UserCodeStatus.DENIED, reason),
                 node_name=context.node.name,
                 node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
-        if not isinstance(res, SyftError):
-            obj.status = res
-            return obj
         return res
 
     def is_enclave_request(self, user_code: UserCode):
@@ -1224,35 +1229,39 @@ class UserCodeStatusChange(Change):
             valid = self.valid
             if not valid:
                 return Err(valid)
-            obj = self.linked_obj.resolve_with_context(context)
-            if obj.is_err():
-                return Err(SyftError(message=obj.err()))
-            obj = obj.ok()
-            if apply:
-                res = self.mutate(obj, context, undo=False)
+            user_code = self.linked_user_code.resolve_with_context(context)
+            if user_code.is_err():
+                return Err(SyftError(message=user_code.err()))
+            user_code = user_code.ok()
+            user_code_status = self.linked_obj.resolve_with_context(context)
+            if user_code_status.is_err():
+                return Err(SyftError(message=user_code_status.err()))
+            user_code_status = user_code_status.ok()
 
-                if isinstance(res, SyftError):
-                    return Err(res.message)
+            if apply:
+                # Only mutate, does not write to stash
+                updated_status = self.mutate(user_code_status, context, undo=False)
+
+                if isinstance(updated_status, SyftError):
+                    return Err(updated_status.message)
 
                 # relative
                 from ..enclave.enclave_service import propagate_inputs_to_enclave
 
-                user_code = res
-
                 if self.is_enclave_request(user_code):
                     enclave_res = propagate_inputs_to_enclave(
-                        user_code=res, context=context
+                        user_code=user_code, context=context
                     )
                     if isinstance(enclave_res, SyftError):
                         return enclave_res
-                self.linked_obj.update_with_context(context, user_code)
+                self.linked_obj.update_with_context(context, updated_status)
             else:
-                res = self.mutate(obj, context, undo=True)
-                if isinstance(res, SyftError):
-                    return Err(res.message)
+                updated_status = self.mutate(user_code_status, context, undo=True)
+                if isinstance(updated_status, SyftError):
+                    return Err(updated_status.message)
 
                 # TODO: Handle Enclave approval.
-                self.linked_obj.update_with_context(context, res)
+                self.linked_obj.update_with_context(context, updated_status)
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
             print(f"failed to apply {type(self)}. {e}")
