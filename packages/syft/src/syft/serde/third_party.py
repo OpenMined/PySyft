@@ -30,7 +30,7 @@ import zmq.green as zmq
 # relative
 from ..types.dicttuple import DictTuple
 from ..types.dicttuple import _Meta as _DictTupleMetaClass
-from ..types.syft_metaclass import _EmptyMetaclass
+from ..types.syft_metaclass import EmptyType
 from .deserialize import _deserialize as deserialize
 from .recursive_primitives import _serialize_kv_pairs
 from .recursive_primitives import deserialize_kv
@@ -151,7 +151,7 @@ recursive_serde_register(
 
 
 recursive_serde_register(
-    _EmptyMetaclass,
+    EmptyType,
     serialize=serialize_type,
     deserialize=deserialize_type,
 )

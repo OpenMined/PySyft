@@ -17,14 +17,14 @@ TupleGenerator = typing.Generator[typing.Tuple[str, typing.Any], None, None]
 T = TypeVar("T", bound=BaseModel)
 
 
-class _EmptyMetaclass(type):
+class EmptyType(type):
     def __repr__(self) -> str:
         return self.__name__
 
 
 @serializable()
 @final
-class Empty(metaclass=_EmptyMetaclass):
+class Empty(metaclass=EmptyType):
     pass
 
 
@@ -34,7 +34,7 @@ class PartialModelMetaclass(ModelMetaclass):
         for field, field_info in cls.model_fields.items():
             if field_info.annotation is not None and field_info.is_required():
                 cls.model_fields[field].annotation = Union[
-                    field_info.annotation, type[Empty]
+                    field_info.annotation, EmptyType
                 ]
                 cls.model_fields[field].default = Empty
 
