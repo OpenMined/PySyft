@@ -30,6 +30,7 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
+from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -304,6 +305,17 @@ class ExactMatch(InputPolicy):
             code_item_id=code_item_id, allowed_inputs=allowed_inputs, context=context
         )
         return results
+
+
+@serializable()
+class OutputHistory(SyftObject):
+    # version
+    __canonical_name__ = "OutputHistory"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    output_time: DateTime
+    outputs: Optional[Union[List[UID], Dict[str, UID]]]
+    executing_user_verify_key: SyftVerifyKey
 
 
 class OutputPolicy(Policy):

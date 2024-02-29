@@ -660,13 +660,6 @@
           "action": "add"
         }
       },
-      "UserCodeExecutionOutput": {
-        "1": {
-          "version": 1,
-          "hash": "94c18d2dec05b39993c1a7a70bca2c991c95bd168005a93e578a810e57ef3164",
-          "action": "add"
-        }
-      },
       "CodeHistory": {
         "1": {
           "version": 1,
@@ -1015,6 +1008,13 @@
           "action": "add"
         }
       },
+      "UserCodeExecutionOutput": {
+        "1": {
+          "version": 1,
+          "hash": "94c18d2dec05b39993c1a7a70bca2c991c95bd168005a93e578a810e57ef3164",
+          "action": "add"
+        }
+      },
       "ExecutionOutput": {
         "1": {
           "version": 1,
@@ -1026,6 +1026,20 @@
         "1": {
           "version": 1,
           "hash": "214868b2ae783980e10cc14bebff98b154faeb1f5e8d95fba8ccbb954c85190c",
+          "action": "add"
+        }
+      },
+      "OutputHistory": {
+        "1": {
+          "version": 1,
+          "hash": "4ec6e6efd86a972b474251885151bdfe4ef262562174605e8ab6a8abba1aa867",
+          "action": "add"
+        }
+      },
+      "UserCodeExecutionResult": {
+        "1": {
+          "version": 1,
+          "hash": "49c32e85e78b7b189a7f13b7e26115ef94fcb0b60b578adcbe2b95e289f63a6e",
           "action": "add"
         }
       }

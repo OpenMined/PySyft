@@ -640,8 +640,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             if attr not in base_attrs_sync_ignore and attr not in obj_exclude_attrs:
                 obj_attr = getattr(self, attr)
                 ext_obj_attr = getattr(ext_obj, attr)
-                if hasattr(obj_attr, "syft_eq"):
-                    if not obj_attr.syft_eq(ext_obj_attr):
+                if hasattr(obj_attr, "syft_eq") and not inspect.isclass(obj_attr):
+                    if not obj_attr.syft_eq(ext_obj=ext_obj_attr):
                         return False
                 elif obj_attr != ext_obj_attr:
                     return False

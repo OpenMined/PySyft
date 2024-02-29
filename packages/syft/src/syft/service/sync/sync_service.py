@@ -16,7 +16,7 @@ from ...types.uid import UID
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
-from ..code.user_code import UserCode
+from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
 from ..output.output_service import ExecutionOutput
@@ -78,13 +78,13 @@ class SyncService(AbstractService):
                 x.node_uid = context.node.id
 
     def transform_item(self, context, item):
-        identity = NodeIdentity.from_node(context.node)
-        if isinstance(item, UserCode):
+        if isinstance(item, UserCodeStatusCollection):
+            identity = NodeIdentity.from_node(context.node)
             res = {}
-            for key in item.status.status_dict.keys():
+            for key in item.status_dict.keys():
                 # todo, check if they are actually only two nodes
-                res[identity] = item.status.status_dict[key]
-            item.status.status_dict = res
+                res[identity] = item.status_dict[key]
+            item.status_dict = res
 
         self.set_obj_ids(context, item)
         return item

@@ -77,7 +77,7 @@ class Change(SyftObject):
 
     linked_obj: Optional[LinkedObject]
 
-    def is_type(self, type_: type) -> bool:
+    def change_object_is_type(self, type_: type) -> bool:
         return self.linked_obj and type_ == self.linked_obj.object_type
 
 
@@ -688,29 +688,29 @@ class Request(SyftObject):
                 resolved=True,
             )
 
-        change = self.changes[0]
-        if not change.is_type(UserCode):
+        user_code_status_change: UserCodeStatusChange = self.changes[0]
+        if not user_code_status_change.change_object_is_type(UserCodeStatusCollection):
             raise TypeError(
-                f"accept_by_depositing_result can only be run on {UserCode} not "
-                f"{change.linked_obj.object_type}"
+                f"accept_by_depositing_result can only be run on {UserCodeStatusCollection} not "
+                f"{user_code_status_change.linked_obj.object_type}"
             )
-        if not type(change) == UserCodeStatusChange:
+        if not type(user_code_status_change) == UserCodeStatusChange:
             raise TypeError(
                 f"accept_by_depositing_result can only be run on {UserCodeStatusChange} not "
-                f"{type(change)}"
+                f"{type(user_code_status_change)}"
             )
 
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         if not api:
             raise Exception(f"Login to {self.node_uid} first.")
 
-        is_approved = change.approved
+        is_approved = user_code_status_change.approved
 
         permission_request = self.approve(approve_nested=True)
         if isinstance(permission_request, SyftError):
             return permission_request
 
-        code = change.linked_obj.resolve
+        code = user_code_status_change.code
         output_history = code.output_history
         if isinstance(output_history, SyftError):
             return output_history
@@ -766,17 +766,13 @@ class Request(SyftObject):
                 if isinstance(result, SyftError):
                     return result
 
-            res = api.services.code.apply_output(
-                user_code_id=code.id, outputs=result, job_id=job.id
-            )
-            if isinstance(res, SyftError):
-                return res
-            policy_state_mutation = ObjectMutation(
-                linked_obj=change.linked_obj,
-                attr_name="output_policy",
-                match_type=True,
-                value=output_policy,
-            )
+            # Do we still need this?
+            # policy_state_mutation = ObjectMutation(
+            #     linked_obj=user_code_status_change.linked_obj,
+            #     attr_name="output_policy",
+            #     match_type=True,
+            #     value=output_policy,
+            # )
 
             action_object_link = LinkedObject.from_obj(result, node_uid=self.node_uid)
             permission_change = ActionStoreChange(
@@ -784,7 +780,7 @@ class Request(SyftObject):
                 apply_permission_type=ActionPermission.READ,
             )
 
-            new_changes = [policy_state_mutation, permission_change]
+            new_changes = [permission_change]
             result_request = api.services.request.add_changes(
                 uid=self.id, changes=new_changes
             )
@@ -796,7 +792,11 @@ class Request(SyftObject):
             if isinstance(approved, SyftError):
                 return approved
 
-            print("ActionObject 4", type(action_object), action_object)
+            res = api.services.code.apply_output(
+                user_code_id=code.id, outputs=result, job_id=job.id
+            )
+            if isinstance(res, SyftError):
+                return res
 
         job_info.result = action_object
 

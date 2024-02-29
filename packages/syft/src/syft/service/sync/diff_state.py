@@ -148,7 +148,7 @@ def recursive_attr_repr(value_attr, no_tabs=0):
         return list_repr
     elif isinstance(value_attr, Dict):
         dict_repr = "[\n"
-        for key, elem in value_attr.items:
+        for key, elem in value_attr.items():
             elem_repr = {recursive_attr_repr(elem, no_tabs=new_no_tabs)}
             dict_repr += f"{sketchy_tab * no_tabs}{key}: {elem_repr}\n"
         dict_repr += f"{sketchy_tab * (new_no_tabs-1)}]"

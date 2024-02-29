@@ -57,6 +57,8 @@ class SyncStateRow(SyftObject):
         # TODO use Diffs to determine status
         if self.previous_object is None:
             return "NEW"
+        elif self.previous_object.syft_eq(ext_obj=self.object):
+            return "SAME"
         else:
             return "UPDATED"
 

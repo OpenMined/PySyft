@@ -1316,6 +1316,19 @@ def submit_user_code_to_user_code() -> List[Callable]:
 
 
 @serializable()
+class UserCodeExecutionResult(SyftObject):
+    # version
+    __canonical_name__ = "UserCodeExecutionResult"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    user_code_id: UID
+    stdout: str
+    stderr: str
+    result: Any
+
+
+@serializable()
 class UserCodeExecutionOutput(SyftObject):
     # version
     __canonical_name__ = "UserCodeExecutionOutput"
@@ -1575,11 +1588,18 @@ Encountered while executing {code.service_func_name}:
     return error_msg
 
 
-def load_approved_policy_code(user_code_items: List[UserCode]) -> Any:
+def load_approved_policy_code(
+    user_code_items: List[UserCode], context: Optional[AuthedServiceContext]
+) -> Any:
     """Reload the policy code in memory for user code that is approved."""
     try:
         for user_code in user_code_items:
-            if user_code.status.approved:
+            if context is None:
+                status = user_code.status
+            else:
+                status = user_code.get_status(context)
+
+            if status.approved:
                 if isinstance(user_code.input_policy_type, UserPolicy):
                     load_policy_code(user_code.input_policy_type)
                 if isinstance(user_code.output_policy_type, UserPolicy):

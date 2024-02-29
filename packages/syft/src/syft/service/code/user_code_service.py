@@ -259,7 +259,7 @@ class UserCodeService(AbstractService):
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_ok():
             user_code_items = result.ok()
-            load_approved_policy_code(user_code_items=user_code_items)
+            load_approved_policy_code(user_code_items=user_code_items, context=context)
 
     @service_method(path="code.get_results", name="get_results", roles=GUEST_ROLE_LEVEL)
     def get_results(
