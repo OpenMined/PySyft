@@ -21,7 +21,6 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .notifier import NotifierSettings
 from .notifier_stash import NotifierStash
 
@@ -39,7 +38,7 @@ class NotifierService(AbstractService):
     def settings(  # Maybe just notifier.settings
         self,
         context: AuthedServiceContext,
-    ) -> Union[NotifierStash, SyftError]:
+    ) -> Union[NotifierSettings, SyftError]:
         """Get Notifier Settings
 
         Args:
@@ -53,7 +52,6 @@ class NotifierService(AbstractService):
 
         return result.ok()
 
-    @service_method(path="notifier.turn_on", name="turn_on", roles=ADMIN_ROLE_LEVEL)
     def turn_on(
         self,
         context: AuthedServiceContext,
@@ -143,7 +141,6 @@ class NotifierService(AbstractService):
             return SyftError(message=result.err())
         return SyftSuccess(message="Notifications enabled successfully.")
 
-    @service_method(path="notifier.turn_off", name="turn_off", roles=ADMIN_ROLE_LEVEL)
     def turn_off(
         self,
         context: AuthedServiceContext,
@@ -165,11 +162,6 @@ class NotifierService(AbstractService):
             return SyftError(message=result.err())
         return SyftSuccess(message="Notifications disabled succesfullly")
 
-    @service_method(
-        path="notifier.activate",
-        name="activate",
-        roles=DATA_SCIENTIST_ROLE_LEVEL,
-    )
     def activate(
         self,
         context: AuthedServiceContext,
@@ -181,11 +173,6 @@ class NotifierService(AbstractService):
         user_service = context.node.get_service("userservice")
         return user_service.enable_notifications(context)
 
-    @service_method(
-        path="notifier.deactivate",
-        name="deactivate",
-        roles=DATA_SCIENTIST_ROLE_LEVEL,
-    )
     def deactivate(
         self,
         context: AuthedServiceContext,
