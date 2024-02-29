@@ -3,6 +3,7 @@
 # stdlib
 from typing import Optional
 from typing import Union
+from typing import cast
 
 # third party
 from pydantic import EmailStr
@@ -170,6 +171,7 @@ class NotifierService(AbstractService):
         Activate email notifications for the authenticated user.
         This will only work if the domain owner has enabled notifications.
         """
+        context.node = cast(AbstractNode, context.node)
         user_service = context.node.get_service("userservice")
         return user_service.enable_notifications(context)
 
@@ -180,6 +182,7 @@ class NotifierService(AbstractService):
         """Deactivate email notifications for the authenticated user
         This will only work if the domain owner has enabled notifications.
         """
+        context.node = cast(AbstractNode, context.node)
         user_service = context.node.get_service("userservice")
         return user_service.disable_notifications(context)
 
@@ -245,6 +248,7 @@ class NotifierService(AbstractService):
     def dispatch_notification(
         self, context: AuthedServiceContext, notification: Notification
     ) -> Union[SyftError]:
+        context.node = cast(AbstractNode, context.node)
         admin_key = context.node.get_service("userservice").admin_verify_key()
         notifier = self.stash.get(admin_key)
         if notifier.is_err():
@@ -253,7 +257,7 @@ class NotifierService(AbstractService):
                 + "Please check the health of the mailing server."
             )
 
-        notifier: NotifierSettings = notifier.ok()
+        notifier = notifier.ok()
         # If notifier is active
         if notifier.active:
             resp = notifier.send_notifications(

@@ -5,7 +5,9 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
+from typing import TypeVar
 from typing import Union
+from typing import cast
 
 # third party
 from result import Err
@@ -13,6 +15,7 @@ from result import Ok
 from result import Result
 
 # relative
+from ...abstract_node import AbstractNode
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -36,8 +39,11 @@ class BaseNotifier:
         return SyftError(message="Not implemented")
 
 
+TBaseNotifier = TypeVar("TBaseNotifier", bound=BaseNotifier)
+
+
 class EmailNotifier(BaseNotifier):
-    smtp_client = SMTPClient
+    smtp_client: SMTPClient
     sender = ""
 
     def __init__(
@@ -64,7 +70,7 @@ class EmailNotifier(BaseNotifier):
         server: str = DEFAULT_EMAIL_SERVER,
         port: int = 587,
     ) -> Result[Ok, Err]:
-        return cls.smtp_client.check_credentials(
+        return SMTPClient.check_credentials(
             server=server,
             port=port,
             username=username,
@@ -75,6 +81,8 @@ class EmailNotifier(BaseNotifier):
         self, context: AuthedServiceContext, notification: Notification
     ) -> Result[Ok, Err]:
         try:
+            context.node = cast(AbstractNode, context.node)
+
             user_service = context.node.get_service("userservice")
 
             receiver = user_service.get_by_verify_key(notification.to_user_verify_key)
@@ -86,10 +94,16 @@ class EmailNotifier(BaseNotifier):
 
             receiver_email = receiver.email
 
-            subject = notification.email_template.email_title(
-                notification, context=context
-            )
-            body = notification.email_template.email_body(notification, context=context)
+            if notification.email_template:
+                subject = notification.email_template.email_title(
+                    notification, context=context
+                )
+                body = notification.email_template.email_body(
+                    notification, context=context
+                )
+            else:
+                subject = notification.subject
+                body = notification._repr_html_()
 
             if isinstance(receiver_email, str):
                 receiver_email = [receiver_email]
@@ -118,7 +132,7 @@ class NotifierSettings(SyftObject):
     # In future, Admin, must be able to have a better
     # control on diff notifications.
 
-    notifiers: Dict[NOTIFIERS, Type[BaseNotifier]] = {
+    notifiers: Dict[NOTIFIERS, Type[TBaseNotifier]] = {
         NOTIFIERS.EMAIL: EmailNotifier,
     }
 
@@ -134,7 +148,6 @@ class NotifierSettings(SyftObject):
     email_port: Optional[int] = 587
     email_username: Optional[str] = ""
     email_password: Optional[str] = ""
-    email_subscribers = set()
 
     @property
     def email_enabled(self) -> bool:
@@ -199,7 +212,7 @@ class NotifierSettings(SyftObject):
                 # If notifier is email, we need to pass the parameters
                 if notifier_type == NOTIFIERS.EMAIL:
                     notifier_objs.append(
-                        self.notifiers[notifier_type](
+                        self.notifiers[notifier_type](  # type: ignore[misc]
                             username=self.email_username,
                             password=self.email_password,
                             sender=self.email_sender,
@@ -208,6 +221,6 @@ class NotifierSettings(SyftObject):
                 # If notifier is not email, we just create the notifier object
                 # TODO: Add the other notifiers, and its auth methods
                 else:
-                    notifier_objs.append(self.notifiers[notifier_type]())
+                    notifier_objs.append(self.notifiers[notifier_type]())  # type: ignore[misc]
 
         return notifier_objs

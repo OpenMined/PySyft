@@ -97,6 +97,7 @@ class SettingsService(AbstractService):
         email_password: Optional[str] = None,
         email_sender: Optional[str] = None,
     ) -> Union[SyftSuccess, SyftError]:
+        context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         return notifier_service.turn_on(
             context=context,
@@ -114,6 +115,7 @@ class SettingsService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Union[SyftSuccess, SyftError]:
+        context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         return notifier_service.turn_off(context=context)
 

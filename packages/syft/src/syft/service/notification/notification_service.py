@@ -54,6 +54,7 @@ class NotificationService(AbstractService):
         result = self.stash.set(
             context.credentials, new_notification, add_permissions=permissions
         )
+        context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
 
         res = notifier_service.dispatch_notification(context, new_notification)
@@ -98,6 +99,7 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Union[Notification, SyftError]:
+        context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         result = notifier_service.activate(context)
         return result
@@ -111,6 +113,7 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Union[Notification, SyftError]:
+        context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         result = notifier_service.deactivate(context)
         return result

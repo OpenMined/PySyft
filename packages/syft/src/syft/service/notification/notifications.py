@@ -4,6 +4,7 @@ from typing import Callable
 from typing import List
 from typing import Optional
 from typing import Type
+from typing import cast
 
 # relative
 from ...client.api import APIRegistry
@@ -146,7 +147,7 @@ class Notification(SyftObject):
     created_at: DateTime
     status: NotificationStatus = NotificationStatus.UNREAD
     linked_obj: Optional[LinkedObject]
-    notifier_types: Optional[List[NOTIFIERS]] = []
+    notifier_types: List[NOTIFIERS] = []
     email_template: Optional[Type[EmailTemplate]] = None
     replies: Optional[List[ReplyNotification]] = []
 
@@ -179,7 +180,8 @@ class Notification(SyftObject):
             return self.linked_obj.resolve
         return None
 
-    def _coll_repr_(self):
+    def _coll_repr_(self) -> dict[str, str]:
+        self.linked_obj = cast(LinkedObject, self.linked_obj)
         return {
             "Subject": self.subject,
             "Status": self.determine_status().name.capitalize(),
@@ -203,6 +205,7 @@ class Notification(SyftObject):
         # relative
         from ..request.request import Request
 
+        self.linked_obj = cast(LinkedObject, self.linked_obj)
         if isinstance(self.linked_obj.resolve, Request):
             return self.linked_obj.resolve.status
 
@@ -210,14 +213,14 @@ class Notification(SyftObject):
 
 
 @migrate(NotificationV1, Notification)
-def upgrade_notification_v1_to_v2():
+def upgrade_notification_v1_to_v2() -> List[Callable]:
     return [
         make_set_default("notifier_types", []),
     ]
 
 
 @migrate(Notification, NotificationV1)
-def downgrade_notification_v2_to_v1():
+def downgrade_notification_v2_to_v1() -> List[Callable]:
     return [
         drop("notifier_types"),
     ]
@@ -243,18 +246,18 @@ class CreateNotification(Notification):
     node_uid: Optional[UID]
     from_user_verify_key: Optional[SyftVerifyKey]
     created_at: Optional[DateTime]
-    notifier_types: Optional[List[NOTIFIERS]] = []
+    notifier_types: List[NOTIFIERS] = []
 
 
 @migrate(CreateNotificationV1, CreateNotification)
-def upgrade_create_notification_v1_to_v2():
+def upgrade_create_notification_v1_to_v2() -> List[Callable]:
     return [
         make_set_default("notifier_types", []),
     ]
 
 
 @migrate(CreateNotification, CreateNotificationV1)
-def downgrade_create_notification_v2_to_v1():
+def downgrade_create_notification_v2_to_v1() -> List[Callable]:
     return [
         drop("notifier_types"),
     ]
