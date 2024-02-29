@@ -166,11 +166,11 @@ class Action(SyftObject):
 
     @property
     def job_display_name(self) -> str:
-        if self.user_code_id is not None:
-            api = APIRegistry.api_for(
-                node_uid=self.syft_node_location,
-                user_verify_key=self.syft_client_verify_key,
-            )
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if self.user_code_id is not None and api is not None:
             user_code = api.services.code.get_by_id(self.user_code_id)
             return user_code.service_func_name
         else:
@@ -401,7 +401,7 @@ def make_action_side_effect(
 
 class TraceResult:
     result: list = []
-    _client: SyftClient = None
+    _client: Optional[SyftClient] = None
     is_tracing: bool = False
 
     @classmethod
@@ -852,7 +852,8 @@ class ActionObject(SyftObject):
             node_uid=self.syft_node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
-
+        if api is None:
+            raise ValueError(f"api is None. You must login to {self.syft_node_uid}")
         kwargs = {"action": action}
         api_call = SyftAPICall(
             node_uid=self.syft_node_uid, path="action.execute", args=[], kwargs=kwargs
@@ -868,7 +869,8 @@ class ActionObject(SyftObject):
         permission_change = ActionStoreChange(
             linked_obj=action_object_link, apply_permission_type=ActionPermission.READ
         )
-
+        if client.credentials is None:
+            return SyftError(f"{client} has no signing key")
         submit_request = SubmitRequest(
             changes=[permission_change],
             requesting_user_verify_key=client.credentials.verify_key,
@@ -898,7 +900,7 @@ class ActionObject(SyftObject):
         if TraceResult._client is not None:
             api = TraceResult._client.api
 
-        if api is not None:
+        if api is not None and api.signing_key is not None:
             obj._set_obj_location_(api.node_uid, api.signing_key.verify_key)
             res = obj._save_to_blob_storage()
             if isinstance(res, SyftError):
@@ -922,6 +924,11 @@ class ActionObject(SyftObject):
                 node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
+            if api is None:
+                return SyftError(
+                    message=f"api is None. You must login to {self.syft_node_location}"
+                )
+
         res = api.services.action.execute(action)
         if isinstance(res, SyftError):
             print(f"Failed to to store (arg) {obj} to store, {res}")
@@ -1107,6 +1114,11 @@ class ActionObject(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(
+                message=f"api is None. You must login to {self.syft_node_location}"
+            )
+
         res = api.services.action.get(self.id)
 
         if not isinstance(res, ActionObject):
@@ -1236,7 +1248,7 @@ class ActionObject(SyftObject):
         else:
             obj_id = self.id
 
-        while not api.services.action.is_resolved(obj_id):
+        while api and not api.services.action.is_resolved(obj_id):
             time.sleep(1)
 
         return self

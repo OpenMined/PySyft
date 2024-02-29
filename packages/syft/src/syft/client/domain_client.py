@@ -139,12 +139,9 @@ class DomainClient(SyftClient):
             dataset_size += get_mb_size(asset.data)
         dataset.mb_size = dataset_size
         valid = dataset.check()
-        if valid.ok():
-            return self.api.services.dataset.add(dataset=dataset)
-        else:
-            if len(valid.err()) > 0:
-                return tuple(valid.err())
-            return valid.err()
+        if isinstance(valid, SyftError):
+            return valid
+        return self.api.services.dataset.add(dataset=dataset)
 
     def upload_files(
         self,
@@ -220,7 +217,7 @@ class DomainClient(SyftClient):
         handle: Optional[NodeHandle] = None,  # noqa: F821
         email: Optional[str] = None,
         password: Optional[str] = None,
-    ) -> None:
+    ) -> Optional[Union[SyftSuccess, SyftError]]:
         if via_client is not None:
             client = via_client
         elif handle is not None:

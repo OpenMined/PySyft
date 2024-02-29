@@ -73,7 +73,7 @@ class EnclaveClient(SyftClient):
         handle: Optional[NodeHandle] = None,  # noqa: F821
         email: Optional[str] = None,
         password: Optional[str] = None,
-    ) -> None:
+    ) -> Optional[Union[SyftSuccess, SyftError]]:
         if via_client is not None:
             client = via_client
         elif handle is not None:
@@ -109,6 +109,8 @@ class EnclaveClient(SyftClient):
             raise Exception(
                 f"The input code should be of type: {SubmitUserCode} got:{type(code)}"
             )
+        if code.input_policy_init_kwargs is None:
+            raise ValueError(f"code {code}'s input_policy_init_kwargs is None")
 
         enclave_metadata = self.get_enclave_metadata()
 

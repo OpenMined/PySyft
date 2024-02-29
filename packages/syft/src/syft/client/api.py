@@ -953,6 +953,8 @@ class NodeIdentity(Identity):
 
     @classmethod
     def from_change_context(cls, context: ChangeContext) -> NodeIdentity:
+        if context.node is None:
+            raise ValueError(f"{context}'s node is None")
         return cls(
             node_name=context.node.name,
             node_id=context.node.id,

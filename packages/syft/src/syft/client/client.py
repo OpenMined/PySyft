@@ -543,19 +543,24 @@ class SyftClient:
 
         def get_nested_codes(code: UserCode) -> list[UserCode]:
             result = []
-            for __, (linked_code_obj, _) in code.nested_codes.items():
-                nested_code = linked_code_obj.resolve
-                nested_code = deepcopy(nested_code)
-                nested_code.node_uid = code.node_uid
-                nested_code.user_verify_key = code.user_verify_key
-                result.append(nested_code)
-                result += get_nested_codes(nested_code)
+            if code.nested_codes is not None:
+                for __, (linked_code_obj, _) in code.nested_codes.items():
+                    nested_code = linked_code_obj.resolve
+                    nested_code = deepcopy(nested_code)
+                    nested_code.node_uid = code.node_uid
+                    nested_code.user_verify_key = code.user_verify_key
+                    result.append(nested_code)
+                    result += get_nested_codes(nested_code)
 
-            updated_code_links: dict[str, tuple[LinkedObject, dict]] = {
-                nested_code.service_func_name: (LinkedObject.from_obj(nested_code), {})
-                for nested_code in result
-            }
-            code.nested_codes = updated_code_links
+                updated_code_links: dict[str, tuple[LinkedObject, dict]] = {
+                    nested_code.service_func_name: (
+                        LinkedObject.from_obj(nested_code),
+                        {},
+                    )
+                    for nested_code in result
+                }
+                code.nested_codes = updated_code_links
+
             return result
 
         nested_codes = get_nested_codes(code)
@@ -937,7 +942,7 @@ def register(
     password: str,
     institution: Optional[str] = None,
     website: Optional[str] = None,
-) -> SyftClient:
+) -> Optional[Union[SyftError, SyftSigningKey]]:
     guest_client = connect(url=url, port=port)
     return guest_client.register(
         name=name,
@@ -960,7 +965,7 @@ def login_as_guest(
     if isinstance(_client, SyftError):
         return _client
 
-    if verbose:
+    if verbose and _client.metadata is not None:
         print(
             f"Logged into <{_client.name}: {_client.metadata.node_side_type.capitalize()}-"
             f"side {_client.metadata.node_type.capitalize()}> as GUEST"
