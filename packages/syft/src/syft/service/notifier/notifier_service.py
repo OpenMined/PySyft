@@ -20,8 +20,6 @@ from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
-from ..service import service_method
-from ..user.user_roles import ADMIN_ROLE_LEVEL
 from .notifier import NotifierSettings
 from .notifier_enums import NOTIFIERS
 from .notifier_stash import NotifierStash
@@ -36,7 +34,6 @@ class NotifierService(AbstractService):
         self.store = store
         self.stash = NotifierStash(store=store)
 
-    @service_method(path="notifier.settings", name="settings", roles=ADMIN_ROLE_LEVEL)
     def settings(  # Maybe just notifier.settings
         self,
         context: AuthedServiceContext,
