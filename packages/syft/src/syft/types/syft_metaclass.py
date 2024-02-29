@@ -19,6 +19,9 @@ class EmptyType(type):
     def __repr__(self) -> str:
         return self.__name__
 
+    def __bool__(self) -> bool:
+        return False
+
 
 @serializable()
 @final
