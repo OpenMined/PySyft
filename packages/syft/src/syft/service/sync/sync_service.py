@@ -204,6 +204,7 @@ class SyncService(AbstractService):
             "jobservice",
             "logservice",
             "outputservice",
+            "usercodestatusservice",
         ]
 
         for service_name in services_to_sync:

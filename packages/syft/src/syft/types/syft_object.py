@@ -339,6 +339,12 @@ class SyftMigrationRegistry:
 print_type_cache = defaultdict(list)
 
 
+base_attrs_sync_ignore = [
+    "syft_node_location",
+    "syft_client_verify_key",
+]
+
+
 class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -625,6 +631,59 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                 context,
             )
         return self
+
+    def syft_eq(self, ext_obj) -> bool:
+        attrs_to_check = self.__dict__.keys()
+
+        obj_exclude_attrs = getattr(self, "__exclude_sync_diff_attrs__", [])
+        for attr in attrs_to_check:
+            if attr not in base_attrs_sync_ignore and attr not in obj_exclude_attrs:
+                obj_attr = getattr(self, attr)
+                ext_obj_attr = getattr(ext_obj, attr)
+                if hasattr(obj_attr, "syft_eq"):
+                    if not obj_attr.syft_eq(ext_obj_attr):
+                        return False
+                elif obj_attr != ext_obj_attr:
+                    return False
+        return True
+
+    def get_diffs(self, ext_obj) -> List["AttrDiff"]:
+        # relative
+        from ..service.sync.diff_state import AttrDiff
+        from ..service.sync.diff_state import ListDiff
+
+        diff_attrs = []
+
+        # Sanity check
+        if self.id != ext_obj.id:
+            raise Exception("Not the same id for low side and high side requests")
+
+        attrs_to_check = self.__dict__.keys()
+
+        obj_exclude_attrs = getattr(self, "__exclude_sync_diff_attrs__", [])
+
+        for attr in attrs_to_check:
+            if attr not in base_attrs_sync_ignore and attr not in obj_exclude_attrs:
+                obj_attr = getattr(self, attr)
+                ext_obj_attr = getattr(ext_obj, attr)
+
+                if isinstance(obj_attr, list) and isinstance(ext_obj_attr, list):
+                    list_diff = ListDiff.from_lists(
+                        attr_name=attr, low_list=obj_attr, high_list=ext_obj_attr
+                    )
+                    if not list_diff.is_empty:
+                        diff_attrs.append(list_diff)
+
+                # TODO: to the same check as above for Dicts when we use them
+
+                if obj_attr != ext_obj_attr:
+                    diff_attr = AttrDiff(
+                        attr_name=attr,
+                        low_attr=ext_obj_attr,
+                        high_attr=obj_attr,
+                    )
+                    diff_attrs.append(diff_attr)
+        return diff_attrs
 
 
 def short_qual_name(name: str) -> str:

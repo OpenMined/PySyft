@@ -16,7 +16,7 @@ from ...types.uid import UID
 
 if TYPE_CHECKING:
     # relative
-    from .diff_state import DiffState
+    from .diff_state import NodeDiff
 
 
 def get_hierarchy_level_prefix(level: int) -> str:
@@ -105,14 +105,14 @@ class SyncState(SyftObject):
                 if len(deps):
                     self.dependencies[obj.id] = deps
 
-    def get_previous_state_diff(self) -> "DiffState":
+    def get_previous_state_diff(self) -> "NodeDiff":
         # Re-use DiffState to compare to previous state
         # Low = previous, high = current
         # relative
-        from .diff_state import DiffState
+        from .diff_state import NodeDiff
 
         previous_state = self.previous_state or SyncState()
-        return DiffState.from_sync_state(previous_state, self)
+        return NodeDiff.from_sync_state(previous_state, self)
 
     @property
     def rows(self) -> List[SyncStateRow]:

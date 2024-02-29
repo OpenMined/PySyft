@@ -642,9 +642,14 @@
           "hash": "660e1abc15034f525e91ffdd820c2a2179bfddf83b7b9e3ce7823b2efc515c69",
           "action": "add"
         },
+        "3": {
+          "version": 3,
+          "hash": "90fcae0f556f375ba1e91d2e345f57241660695c6e2b84c8e311df89d09e6c66",
+          "action": "add"
+        },
         "4": {
           "version": 4,
-          "hash": "c6bbef36dbfb8c76009c4a00a445a10e96b7dd58ea1689b4a18725efcfda9faf",
+          "hash": "09e2c6a119246d8beb14f34a365c6e016947f854db86658bbef99c8970bf7e27",
           "action": "add"
         }
       },
@@ -692,25 +697,6 @@
         "1": {
           "version": 1,
           "hash": "5e1f389c4565ee8558386dd5c934d81e0c68ab1434f86bb9065976b587ef44d1",
-          "action": "add"
-        }
-      },
-      "SyftLog": {
-        "1": {
-          "version": 1,
-          "hash": "bd3f62b8fe4b2718a6380c8f05a93c5c40169fc4ab174db291929298e588429e",
-          "action": "add"
-        },
-        "2": {
-          "version": 2,
-          "hash": "d3ce45794da2e6c4b0cef63b98a553525af50c5d9db42d3d64caef3e7d22b4a9",
-          "action": "add"
-        }
-      },
-      "NodePeer": {
-        "1": {
-          "version": 1,
-          "hash": "7b88de7e38490e2d69f31295137673e7ddabc16ab0e2272ff491f6cea1835d63",
           "action": "add"
         }
       },
@@ -920,7 +906,47 @@
         },
         "2": {
           "version": 2,
-          "hash": "4193847a32c3aa358ff67934ee661a60055688c1340051fbd46d2a5e3aac7898",
+          "hash": "d83e0905ae882c824ba8fbbf455cd3881906bf8b2ebbfff07bcf471ef869cedc",
+          "action": "add"
+        }
+      },
+      "SyncStateItem": {
+        "1": {
+          "version": 1,
+          "hash": "7e1f22d0e24bb615b077d76feae7bed96a49a998358bd842aba18e8d69a22481",
+          "action": "add"
+        }
+      },
+      "SyncState": {
+        "1": {
+          "version": 1,
+          "hash": "be0ef32dc9821d4f2f7341b4bf890fd0eee956e3852fc2f3aeabc628d2cdbe39",
+          "action": "add"
+        }
+      },
+      "NodePeer": {
+        "1": {
+          "version": 1,
+          "hash": "7b88de7e38490e2d69f31295137673e7ddabc16ab0e2272ff491f6cea1835d63",
+          "action": "add"
+        }
+      },
+      "SyftLog": {
+        "1": {
+          "version": 1,
+          "hash": "bd3f62b8fe4b2718a6380c8f05a93c5c40169fc4ab174db291929298e588429e",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "d3ce45794da2e6c4b0cef63b98a553525af50c5d9db42d3d64caef3e7d22b4a9",
+          "action": "add"
+        }
+      },
+      "SyftObjectMigrationState": {
+        "1": {
+          "version": 1,
+          "hash": "d3c8126bc15dae4dd243bb035530e3f56cd9e433d403dd6b5f3b45face6d281f",
           "action": "add"
         }
       },
@@ -980,27 +1006,6 @@
           "action": "add"
         }
       },
-      "SyncStateItem": {
-        "1": {
-          "version": 1,
-          "hash": "7e1f22d0e24bb615b077d76feae7bed96a49a998358bd842aba18e8d69a22481",
-          "action": "add"
-        }
-      },
-      "SyncState": {
-        "1": {
-          "version": 1,
-          "hash": "be0ef32dc9821d4f2f7341b4bf890fd0eee956e3852fc2f3aeabc628d2cdbe39",
-          "action": "add"
-        }
-      },
-      "SyftObjectMigrationState": {
-        "1": {
-          "version": 1,
-          "hash": "d3c8126bc15dae4dd243bb035530e3f56cd9e433d403dd6b5f3b45face6d281f",
-          "action": "add"
-        }
-      },
       "SQLiteStoreConfig": {
         "1": {
           "version": 1,
@@ -1012,20 +1017,6 @@
         "1": {
           "version": 1,
           "hash": "a0bba2b7792c9e08c453e9e256f0ac6e6185610726566bcd50b057ae83b42d9a",
-          "action": "add"
-        }
-      },
-      "ExecutionOutput": {
-        "1": {
-          "version": 1,
-          "hash": "1ef2d9e1734fbff01ed39a665ff062bd8137e7a61a18bf2a7e0e9d57f380bcdc",
-          "action": "add"
-        }
-      },
-      "UserCodeStatusCollection": {
-        "1": {
-          "version": 1,
-          "hash": "214868b2ae783980e10cc14bebff98b154faeb1f5e8d95fba8ccbb954c85190c",
           "action": "add"
         }
       }

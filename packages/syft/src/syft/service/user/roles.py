@@ -7,5 +7,5 @@ class Roles(Enum):
     UPLOADER = "Uploader"
     EDITOR = "Editor"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.value}"

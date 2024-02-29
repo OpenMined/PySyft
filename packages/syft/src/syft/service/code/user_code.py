@@ -20,6 +20,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -89,6 +90,10 @@ from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
 from .unparse import unparse
 from .utils import submit_subjobs_code
+
+if TYPE_CHECKING:
+    # relative
+    from ...service.sync.diff_state import AttrDiff
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=str)
@@ -350,7 +355,6 @@ class UserCode(SyftObject):
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime]
     uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
-    nested_requests: Dict[str, str] = {}
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
     worker_pool_name: Optional[str]
 
@@ -366,6 +370,32 @@ class UserCode(SyftObject):
         "code_status",
         "worker_pool_name",
     ]
+
+    __exclude_sync_diff_attrs__ = [
+        "input_policy_type",
+        "input_policy_init_kwargs",
+        "input_policy_state",
+        "output_policy_type",
+        "output_policy_init_kwargs",
+        "output_policy_state",
+    ]
+
+    def get_diffs(self, obj) -> List[AttrDiff]:
+        # relative
+        from ...service.sync.diff_state import AttrDiff
+
+        diff_attrs = super().get_diffs(obj)
+        status = list(self.status.status_dict.values())[0]
+        ext_status = list(obj.status.status_dict.values())[0]
+
+        if status != ext_status:
+            diff_attr = AttrDiff(
+                attr_name="status",
+                low_attr=ext_status,
+                high_attr=status,
+            )
+            diff_attrs.append(diff_attr)
+        return diff_attrs
 
     def __setattr__(self, key: str, value: Any) -> None:
         attr = getattr(type(self), key, None)
@@ -721,17 +751,31 @@ class UserCode(SyftObject):
         ip.set_next_input(warning_message + self.raw_code)
 
 
-@migrate(UserCode, UserCodeV2)
+@migrate(UserCodeV3, UserCodeV2)
 def downgrade_usercode_v3_to_v2():
     return [
         drop("worker_pool_name"),
     ]
 
 
-@migrate(UserCodeV2, UserCode)
+@migrate(UserCodeV2, UserCodeV3)
 def upgrade_usercode_v2_to_v3():
     return [
         make_set_default("worker_pool_name", None),
+    ]
+
+
+@migrate(UserCode, UserCodeV3)
+def downgrade_usercode_v4_to_v3():
+    return [
+        make_set_default("nested_requests", {}),
+    ]
+
+
+@migrate(UserCodeV3, UserCode)
+def upgrade_usercode_v3_to_v4():
+    return [
+        drop("nested_requests"),
     ]
 
 
@@ -1102,8 +1146,7 @@ def new_check_code(context: TransformContext) -> TransformContext:
 
 
 def locate_launch_jobs(context: TransformContext) -> TransformContext:
-    # stdlib
-    nested_requests = {}
+    nested_codes = {}
     tree = ast.parse(context.output["raw_code"])
 
     # look for domain arg
@@ -1111,10 +1154,17 @@ def locate_launch_jobs(context: TransformContext) -> TransformContext:
         v = LaunchJobVisitor()
         v.visit(tree)
         nested_calls = v.nested_calls
+        user_code_service = context.node.get_service("usercodeService")
         for call in nested_calls:
-            nested_requests[call] = "latest"
+            user_codes = user_code_service.get_by_service_name(context, call)
+            if isinstance(user_codes, SyftError):
+                raise Exception(user_codes.message)
+            # TODO: Not great
+            user_code = user_codes[-1]
+            user_code_link = LinkedObject.from_obj(user_code, node_uid=context.node.id)
 
-    context.output["nested_requests"] = nested_requests
+            nested_codes[call] = (user_code_link, user_code.nested_codes)
+    context.output["nested_codes"] = nested_codes
     return context
 
 

@@ -2,14 +2,14 @@
 from typing import Optional
 
 # relative
-from ..service.sync.diff_state import DiffState
+from ..service.sync.diff_state import NodeDiff
 from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.diff_state import display_diff_hierarchy
 from ..service.sync.diff_state import resolve_diff
 
 
-def compare_states(low_state, high_state) -> DiffState:
-    return DiffState.from_sync_state(low_state=low_state, high_state=high_state)
+def compare_states(low_state, high_state) -> NodeDiff:
+    return NodeDiff.from_sync_state(low_state=low_state, high_state=high_state)
 
 
 def get_user_input_for_resolve():
@@ -27,9 +27,11 @@ def get_user_input_for_resolve():
             print("Please choose between `low` or `high`")
 
 
-def resolve(state: DiffState, decision: Optional[str] = None):
-    resolved_state_low = ResolvedSyncState()
-    resolved_state_high = ResolvedSyncState()
+def resolve(state: NodeDiff, decision: Optional[str] = None):
+    # TODO: only add permissions for objects where we manually give permission
+    # Maybe default read permission for some objects (high -> low)
+    resolved_state_low: ResolvedSyncState = ResolvedSyncState()
+    resolved_state_high: ResolvedSyncState = ResolvedSyncState()
 
     for diff_hierarchy in state.hierarchies:
         if all(item.merge_state == "SAME" for item, _ in diff_hierarchy):
@@ -44,6 +46,8 @@ def resolve(state: DiffState, decision: Optional[str] = None):
             print(f"Decision: Syncing all objects from {decision} side")
 
         for diff, _ in diff_hierarchy:
+            low_resolved_diff: ResolvedSyncState
+            high_resolved_diff: ResolvedSyncState
             low_resolved_diff, high_resolved_diff = resolve_diff(
                 diff, decision=decision
             )

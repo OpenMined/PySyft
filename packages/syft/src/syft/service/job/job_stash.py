@@ -117,6 +117,7 @@ class Job(SyftObject):
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
+    __exclude_sync_diff_attrs__ = ["action"]
 
     @pydantic.root_validator()
     def check_time(cls, values: dict) -> dict:
@@ -163,7 +164,7 @@ class Job(SyftObject):
     @property
     def worker(self):
         api = APIRegistry.api_for(
-            node_uid=self.node_uid,
+            node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
         return api.services.worker.get(self.job_worker_id)
@@ -253,7 +254,7 @@ class Job(SyftObject):
             self.status != JobStatus.PROCESSING and self.status != JobStatus.CREATED
         ):
             api = APIRegistry.api_for(
-                node_uid=self.node_uid,
+                node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
             call = SyftAPICall(
@@ -273,7 +274,7 @@ class Job(SyftObject):
     def kill(self) -> Union[None, SyftError]:
         if self.job_pid is not None:
             api = APIRegistry.api_for(
-                node_uid=self.node_uid,
+                node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
 
@@ -292,7 +293,7 @@ class Job(SyftObject):
 
     def fetch(self) -> None:
         api = APIRegistry.api_for(
-            node_uid=self.node_uid,
+            node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
         call = SyftAPICall(
@@ -314,7 +315,7 @@ class Job(SyftObject):
     @property
     def subjobs(self):
         api = APIRegistry.api_for(
-            node_uid=self.node_uid,
+            node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
         return api.services.job.get_subjobs(self.id)
@@ -322,7 +323,7 @@ class Job(SyftObject):
     @property
     def owner(self):
         api = APIRegistry.api_for(
-            node_uid=self.node_uid,
+            node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
         return api.services.user.get_current_user(self.id)
@@ -336,7 +337,7 @@ class Job(SyftObject):
 
     def logs(self, stdout=True, stderr=True, _print=True):
         api = APIRegistry.api_for(
-            node_uid=self.node_uid,
+            node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
         results = []
@@ -424,7 +425,7 @@ class Job(SyftObject):
         from time import sleep
 
         api = APIRegistry.api_for(
-            node_uid=self.node_uid,
+            node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
 
@@ -463,25 +464,7 @@ class Job(SyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
-    def get_dependencies(self) -> List[UID]:
-        dependencies = []
-
-        if self.user_code_id:
-            dependencies.append(self.user_code_id)
-
-        if self.result is not None:
-            dependencies.append(self.result.id.id)
-
-        if self.log_id:
-            dependencies.append(self.log_id)
-
-        subjob_ids = [subjob.id for subjob in self.subjobs]
-        dependencies.extend(subjob_ids)
-
-        return dependencies
-
-    def get_sync_dependencies(self, api=None) -> List[UID]:
-        # Result, Log, Subjobs, UserCode
+    def get_sync_dependencies(self, **kwargs) -> List[UID]:
         dependencies = []
         if self.result is not None:
             dependencies.append(self.result.id.id)

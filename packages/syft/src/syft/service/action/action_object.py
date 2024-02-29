@@ -679,6 +679,25 @@ class ActionObject(SyftObject):
     syft_action_data_node_id: Optional[UID]
     # syft_dont_wrap_attrs = ["shape"]
 
+    def get_diff(self, ext_obj) -> List[AttrDiff]:
+        # relative
+        from ...service.sync.diff_state import AttrDiff
+
+        diff_attrs = []
+
+        # Sanity check
+        if ext_obj.id != self.id:
+            raise Exception("Not the same id for low side and high side requests")
+
+        low_data = ext_obj.syft_action_data
+        high_data = self.syft_action_data
+        if low_data != high_data:
+            diff_attr = AttrDiff(
+                attr_name="syft_action_data", low_attr=low_data, high_attr=high_data
+            )
+            diff_attrs.append(diff_attr)
+        return diff_attrs
+
     def _set_obj_location_(self, node_uid, credentials):
         self.syft_node_location = node_uid
         self.syft_client_verify_key = credentials
