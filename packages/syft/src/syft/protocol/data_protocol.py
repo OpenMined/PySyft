@@ -549,7 +549,7 @@ def migrate_args_and_kwargs(
         to_protocol = data_protocol.latest_version if to_latest_protocol else None
 
     if to_protocol is None:
-        raise SyftException(message="Protocol version missing.")
+        raise SyftException("Protocol version missing.")
 
     # If latest protocol being used is equal to the protocol to be migrate
     # then skip migration of the object

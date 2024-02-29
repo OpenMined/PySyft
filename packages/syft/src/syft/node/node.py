@@ -46,6 +46,7 @@ from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
 from ..service.action.action_object import ActionObject
 from ..service.action.action_service import ActionService
+from ..service.action.action_store import ActionStore
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
@@ -245,7 +246,7 @@ default_root_password = get_default_root_password()
 
 
 class AuthNodeContextRegistry:
-    __node_context_registry__: Dict[str, Node] = OrderedDict()
+    __node_context_registry__: Dict[str, NodeServiceContext] = OrderedDict()
 
     @classmethod
     def set_node_context(
@@ -554,7 +555,7 @@ class Node(AbstractNode):
         service_name: str,
         syft_worker_id: UID,
         address: str,
-        message_handler: AbstractMessageHandler = APICallMessageHandler,
+        message_handler: Type[AbstractMessageHandler] = APICallMessageHandler,
     ) -> None:
         consumer: QueueConsumer = self.queue_manager.create_consumer(
             message_handler,
@@ -893,7 +894,7 @@ class Node(AbstractNode):
             action_store_config.client_config.filename = f"{self.id}.sqlite"
 
         if isinstance(action_store_config, SQLiteStoreConfig):
-            self.action_store = SQLiteActionStore(
+            self.action_store: ActionStore = SQLiteActionStore(
                 store_config=action_store_config,
                 root_verify_key=self.verify_key,
             )
@@ -961,7 +962,7 @@ class Node(AbstractNode):
                 store_services += [OblvService]
 
             if service_klass in store_services:
-                kwargs["store"] = self.document_store
+                kwargs["store"] = self.document_store  # type: ignore[assignment]
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
                 **kwargs
             )
@@ -971,7 +972,7 @@ class Node(AbstractNode):
             path_or_func = path_or_func.__qualname__
         return self._get_service_method_from_path(path_or_func)
 
-    def get_service(self, path_or_func: Union[str, Callable]) -> Callable:
+    def get_service(self, path_or_func: Union[str, Callable]) -> AbstractService:
         if callable(path_or_func):
             path_or_func = path_or_func.__qualname__
         return self._get_service_from_path(path_or_func)
@@ -1437,7 +1438,7 @@ class Node(AbstractNode):
     def user_code_stash(self) -> UserCodeStash:
         return self.get_service(UserCodeService).stash
 
-    def get_default_worker_pool(self) -> WorkerPool:
+    def get_default_worker_pool(self) -> Union[Optional[WorkerPool], SyftError]:
         result = self.pool_stash.get_by_name(
             credentials=self.verify_key,
             pool_name=get_default_worker_pool_name(),

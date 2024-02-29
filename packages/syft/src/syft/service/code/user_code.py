@@ -1192,38 +1192,44 @@ def check_output_policy(context: TransformContext) -> TransformContext:
 
 def add_custom_status(context: TransformContext) -> TransformContext:
     input_keys = list(context.output["input_policy_init_kwargs"].keys())
-    if context.node.node_type == NodeType.DOMAIN:
-        node_identity = NodeIdentity(
-            node_name=context.node.name,
-            node_id=context.node.id,
-            verify_key=context.node.signing_key.verify_key,
-        )
-        context.output["status"] = UserCodeStatusCollection(
-            status_dict={node_identity: (UserCodeStatus.PENDING, "")}
-        )
-        # if node_identity in input_keys or len(input_keys) == 0:
-        #     context.output["status"] = UserCodeStatusContext(
-        #         base_dict={node_identity: UserCodeStatus.SUBMITTED}
-        #     )
-        # else:
-        #     raise ValueError(f"Invalid input keys: {input_keys} for {node_identity}")
-    elif context.node.node_type == NodeType.ENCLAVE:
-        status_dict = {key: (UserCodeStatus.PENDING, "") for key in input_keys}
-        context.output["status"] = UserCodeStatusCollection(status_dict=status_dict)
-    else:
-        raise NotImplementedError(
-            f"Invalid node type:{context.node.node_type} for code submission"
-        )
+    if context.node is not None and context.output is not None:
+        if context.node.node_type == NodeType.DOMAIN:
+            node_identity = NodeIdentity(
+                node_name=context.node.name,
+                node_id=context.node.id,
+                verify_key=context.node.signing_key.verify_key,
+            )
+            context.output["status"] = UserCodeStatusCollection(
+                status_dict={node_identity: (UserCodeStatus.PENDING, "")}
+            )
+            # if node_identity in input_keys or len(input_keys) == 0:
+            #     context.output["status"] = UserCodeStatusContext(
+            #         base_dict={node_identity: UserCodeStatus.SUBMITTED}
+            #     )
+            # else:
+            #     raise ValueError(f"Invalid input keys: {input_keys} for {node_identity}")
+        elif context.node.node_type == NodeType.ENCLAVE:
+            status_dict = {key: (UserCodeStatus.PENDING, "") for key in input_keys}
+            context.output["status"] = UserCodeStatusCollection(status_dict=status_dict)
+        else:
+            raise NotImplementedError(
+                f"Invalid node type:{context.node.node_type} for code submission"
+            )
     return context
 
 
 def add_submit_time(context: TransformContext) -> TransformContext:
-    context.output["submit_time"] = DateTime.now()
+    if context.output:
+        context.output["submit_time"] = DateTime.now()
     return context
 
 
 def set_default_pool_if_empty(context: TransformContext) -> TransformContext:
-    if context.output.get("worker_pool_name", None) is None:
+    if (
+        context.node
+        and context.output
+        and context.output.get("worker_pool_name", None) is None
+    ):
         default_pool = context.node.get_default_worker_pool()
         context.output["worker_pool_name"] = default_pool.name
     return context

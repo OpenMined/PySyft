@@ -123,7 +123,7 @@ class UsersCodeHistoriesDict(SyftObject):
     def available_keys(self) -> str:
         return json.dumps(self.user_dict, sort_keys=True, indent=4)
 
-    def __getitem__(self, key: int) -> Union[CodeHistoriesDict, SyftError]:
+    def __getitem__(self, key: Union[str, int]) -> Union[CodeHistoriesDict, SyftError]:
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         return api.services.code_history.get_history_for_user(key)
 

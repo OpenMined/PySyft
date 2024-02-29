@@ -18,6 +18,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import Union
+from typing import cast
 
 # third party
 import pydantic
@@ -103,7 +104,7 @@ class ActionV1(SyftObject):
     __canonical_name__ = "Action"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __attr_searchable__: List[str] = []
+    __attr_searchable__: ClassVar[List[str]] = []
 
     path: str
     op: str
@@ -137,7 +138,7 @@ class Action(SyftObject):
     __canonical_name__ = "Action"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    __attr_searchable__: List[str] = []
+    __attr_searchable__: ClassVar[List[str]] = []
 
     path: Optional[str]
     op: Optional[str]
@@ -432,7 +433,10 @@ def convert_to_pointers(
     kwarg_dict = {}
     if args is not None:
         for arg in args:
-            if not isinstance(arg, (ActionObject, Asset, UID)):
+            if (
+                not isinstance(arg, (ActionObject, Asset, UID))
+                and api.signing_key is not None  # type: ignore[unreachable]
+            ):
                 arg = ActionObject.from_obj(  # type: ignore[unreachable]
                     syft_action_data=arg,
                     syft_client_verify_key=api.signing_key.verify_key,
@@ -447,7 +451,10 @@ def convert_to_pointers(
 
     if kwargs is not None:
         for k, arg in kwargs.items():
-            if not isinstance(arg, (ActionObject, Asset, UID)):
+            if (
+                not isinstance(arg, (ActionObject, Asset, UID))
+                and api.signing_key is not None  # type: ignore[unreachable]
+            ):
                 arg = ActionObject.from_obj(  # type: ignore[unreachable]
                     syft_action_data=arg,
                     syft_client_verify_key=api.signing_key.verify_key,
@@ -546,7 +553,7 @@ def debox_args_and_kwargs(args: Any, kwargs: Any) -> Tuple[Any, Any]:
     return tuple(filtered_args), filtered_kwargs
 
 
-BASE_PASSTHROUGH_ATTRS = [
+BASE_PASSTHROUGH_ATTRS: list[str] = [
     "is_mock",
     "is_real",
     "is_twin",
@@ -579,7 +586,7 @@ class ActionObjectV1(SyftObject):
     __canonical_name__ = "ActionObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __attr_searchable__: List[str] = []
+    __attr_searchable__: ClassVar[List[str]] = []
     syft_action_data_cache: Optional[Any] = None
     syft_blob_storage_entry_id: Optional[UID] = None
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
@@ -595,7 +602,7 @@ class ActionObjectV1(SyftObject):
     _syft_pre_hooks__: Dict[str, List] = {}
     _syft_post_hooks__: Dict[str, List] = {}
     syft_twin_type: TwinMode = TwinMode.NONE
-    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
     syft_action_data_type: Optional[Type]
     syft_action_data_repr_: Optional[str]
     syft_action_data_str_: Optional[str]
@@ -611,7 +618,7 @@ class ActionObject(SyftObject):
     __canonical_name__ = "ActionObject"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    __attr_searchable__: List[str] = []
+    __attr_searchable__: ClassVar[List[str]] = []
     syft_action_data_cache: Optional[Any] = None
     syft_blob_storage_entry_id: Optional[UID] = None
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
@@ -627,7 +634,7 @@ class ActionObject(SyftObject):
     _syft_pre_hooks__: Dict[str, List] = {}
     _syft_post_hooks__: Dict[str, List] = {}
     syft_twin_type: TwinMode = TwinMode.NONE
-    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
     syft_action_data_type: Optional[Type]
     syft_action_data_repr_: Optional[str]
     syft_action_data_str_: Optional[str]
@@ -925,10 +932,11 @@ class ActionObject(SyftObject):
                 user_verify_key=self.syft_client_verify_key,
             )
             if api is None:
-                return SyftError(
-                    message=f"api is None. You must login to {self.syft_node_location}"
+                print(
+                    f"failed saving {obj} to blob storage, api is None. You must login to {self.syft_node_location}"
                 )
 
+        api = cast(SyftAPI, api)
         res = api.services.action.execute(action)
         if isinstance(res, SyftError):
             print(f"Failed to to store (arg) {obj} to store, {res}")
