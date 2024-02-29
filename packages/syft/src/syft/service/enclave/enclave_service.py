@@ -148,7 +148,9 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
     else:
         return SyftSuccess(message="Current Request does not require Enclave Transfer")
 
-    inputs = user_code.input_policy._inputs_for_context(context)
+    inputs = user_code.get_input_policy(context.to_service_ctx())._inputs_for_context(
+        context
+    )
     if isinstance(inputs, SyftError):
         return inputs
 

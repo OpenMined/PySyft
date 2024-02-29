@@ -120,6 +120,23 @@ class UserCodeStatusCollection(SyftObject):
 
     status_dict: Dict[NodeIdentity, Tuple[UserCodeStatus, str]] = {}
 
+    def get_diffs(self, obj) -> List[AttrDiff]:
+        # relative
+        from ...service.sync.diff_state import AttrDiff
+
+        diff_attrs = super().get_diffs(obj)
+        status = list(self.status_dict.values())[0]
+        ext_status = list(obj.status_dict.values())[0]
+
+        if status != ext_status:
+            diff_attr = AttrDiff(
+                attr_name="status",
+                low_attr=ext_status,
+                high_attr=status,
+            )
+            diff_attrs.append(diff_attr)
+        return diff_attrs
+
     def __repr__(self):
         return str(self.status_dict)
 
@@ -380,23 +397,6 @@ class UserCode(SyftObject):
         "output_policy_state",
     ]
 
-    def get_diffs(self, obj) -> List[AttrDiff]:
-        # relative
-        from ...service.sync.diff_state import AttrDiff
-
-        diff_attrs = super().get_diffs(obj)
-        status = list(self.status.status_dict.values())[0]
-        ext_status = list(obj.status.status_dict.values())[0]
-
-        if status != ext_status:
-            diff_attr = AttrDiff(
-                attr_name="status",
-                low_attr=ext_status,
-                high_attr=status,
-            )
-            diff_attrs.append(diff_attr)
-        return diff_attrs
-
     def __setattr__(self, key: str, value: Any) -> None:
         attr = getattr(type(self), key, None)
         if inspect.isdatadescriptor(attr):
@@ -427,13 +427,17 @@ class UserCode(SyftObject):
 
     @property
     def status(self) -> Union[UserCodeStatusCollection, SyftError]:
+        # Clientside only
         res = self.status_link.resolve
         return res
 
     def get_status(
         self, context: AuthedServiceContext
     ) -> Union[UserCodeStatusCollection, SyftError]:
-        return self.status_link.resolve_with_context(context)
+        status = self.status_link.resolve_with_context(context)
+        if status.is_err():
+            return SyftError(message=status.err())
+        return status.ok()
 
     @property
     def is_enclave_code(self) -> bool:
@@ -470,7 +474,15 @@ class UserCode(SyftObject):
     def input_policy(self) -> Optional[InputPolicy]:
         if not self.status.approved:
             return None
+        return self._get_input_policy()
 
+    def get_input_policy(self, context: AuthedServiceContext) -> Optional[InputPolicy]:
+        status = self.get_status(context)
+        if not status.approved:
+            return None
+        return self._get_input_policy()
+
+    def _get_input_policy(self) -> Optional[InputPolicy]:
         if len(self.input_policy_state) == 0:
             input_policy = None
             if isinstance(self.input_policy_type, type) and issubclass(
@@ -509,15 +521,25 @@ class UserCode(SyftObject):
             print(f"Failed to deserialize custom input policy state. {e}")
             return None
 
-    @property
-    def output_policy_approved(self):
-        return self.status.approved
+    def is_output_policy_approved(self, context: AuthedServiceContext):
+        return self.get_status(context).approved
 
     @property
     def output_policy(self) -> Optional[OutputPolicy]:
         if not self.status.approved:
             return None
+        return self._get_output_policy()
 
+    def get_output_policy(
+        self, context: AuthedServiceContext
+    ) -> Optional[OutputPolicy]:
+        if not self.get_status(context).approved:
+            return None
+        return self._get_output_policy()
+
+    def _get_output_policy(self) -> Optional[OutputPolicy]:
+        # if not self.status.approved:
+        #     return None
         if len(self.output_policy_state) == 0:
             output_policy = None
             if isinstance(self.output_policy_type, type) and issubclass(
@@ -574,7 +596,7 @@ class UserCode(SyftObject):
     def get_output_history(
         self, context: AuthedServiceContext
     ) -> Union[List[ExecutionOutput], SyftError]:
-        if not self.status.approved:
+        if not self.get_status(context).approved:
             return SyftError(message="Please wait for the code to be approved")
 
         output_service = context.node.get_service("outputservice")
@@ -586,7 +608,7 @@ class UserCode(SyftObject):
         outputs: Any,
         job_id: Optional[UID] = None,
     ) -> Union[ExecutionOutput, SyftError]:
-        output_policy = self.output_policy
+        output_policy = self.get_output_policy(context)
         if output_policy is None:
             return SyftError(
                 message="You must wait for the output policy to be approved"

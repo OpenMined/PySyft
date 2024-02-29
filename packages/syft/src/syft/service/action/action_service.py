@@ -291,7 +291,7 @@ class ActionService(AbstractService):
         )
 
         if not override_execution_permission:
-            input_policy = code_item.input_policy
+            input_policy = code_item.get_input_policy(context)
             filtered_kwargs = input_policy.filter_kwargs(
                 kwargs=kwargs, context=context, code_item_id=code_item.id
             )
@@ -301,11 +301,10 @@ class ActionService(AbstractService):
         else:
             filtered_kwargs = retrieve_from_db(code_item.id, kwargs, context).ok()
         # update input policy to track any input state
-        # code_item.input_policy = input_policy
 
         if not override_execution_permission:
             expected_input_kwargs = set()
-            for _inp_kwarg in code_item.input_policy.inputs.values():
+            for _inp_kwarg in code_item.get_input_policy(context).inputs.values():
                 keys = _inp_kwarg.keys()
                 for k in keys:
                     if k not in kwargs:

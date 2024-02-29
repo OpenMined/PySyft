@@ -318,7 +318,7 @@ class UserCodeService(AbstractService):
         # Check if the user has permission to execute the code.
         elif not (has_code_permission := self.has_code_permission(code, context)):
             return has_code_permission
-        elif not code.output_policy_approved:
+        elif not code.is_output_policy_approved(context):
             return SyftError("Output policy not approved", code)
 
         policy_is_valid = output_policy is not None and output_policy.is_valid(context)
@@ -403,7 +403,7 @@ class UserCodeService(AbstractService):
             skip_read_cache = len(self.keep_owned_kwargs(kwargs, context)) > 0
 
             # Check output policy
-            output_policy = code.output_policy
+            output_policy = code.get_output_policy(context)
             if not override_execution_permission:
                 output_history = code.get_output_history(context=context)
                 if isinstance(output_history, SyftError):
@@ -414,7 +414,7 @@ class UserCodeService(AbstractService):
                     output_policy=output_policy,
                 )
                 if not can_execute:
-                    if not code.output_policy_approved:
+                    if not code.is_output_policy_approved(context):
                         return Err(
                             "Execution denied: Your code is waiting for approval"
                         )
@@ -444,7 +444,7 @@ class UserCodeService(AbstractService):
                 result_action_object = result_action_object.ok()
 
             output_result = action_service.set_result_to_store(
-                result_action_object, context, code.output_policy
+                result_action_object, context, code.get_output_policy(context)
             )
 
             if output_result.is_err():
