@@ -28,6 +28,7 @@ spec:
       containers:
       - args: null
         command: null
+        imagePullPolicy: Always
         env:
         - name: K8S_POD_NAME
           valueFrom:
@@ -135,17 +136,10 @@ spec:
           name: credentials-data
           readOnly: false
           subPath: credentials-data
-        {{- if .Values.workerBuilds.mountInBackend }}
-        # mount for debugging and inspection of worker-build volume
-        - mountPath: /root/data/images/
-          name: worker-builds
-          readOnly: true
-        {{- end }}
       dnsConfig: null
       ephemeralContainers: null
       hostAliases: null
       imagePullSecrets: null
-      imagePullPolicy: Always
       initContainers: null
       nodeName: null
       nodeSelector: null
@@ -155,12 +149,6 @@ spec:
       terminationGracePeriodSeconds: 5
       tolerations: null
       topologySpreadConstraints: null
-      {{- if .Values.workerBuilds.mountInBackend }}
-      volumes:
-      - name: worker-builds
-        persistentVolumeClaim:
-          claimName: worker-builds
-      {{- end }}
   volumeClaimTemplates:
   - metadata:
       labels:

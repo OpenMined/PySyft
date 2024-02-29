@@ -269,11 +269,11 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     # clean this mess, Tudor
     module_parts = proto.fullyQualifiedName.split(".")
     klass = module_parts.pop()
-    class_type: Type = type(None)
+    class_type: Union[Type, Any] = type(None)
 
     if klass != "NoneType":
         try:
-            class_type = index_syft_by_module_name(proto.fullyQualifiedName)
+            class_type = index_syft_by_module_name(proto.fullyQualifiedName)  # type: ignore[assignment,unused-ignore]
         except Exception:  # nosec
             try:
                 class_type = getattr(sys.modules[".".join(module_parts)], klass)

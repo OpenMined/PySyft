@@ -12,7 +12,7 @@ from .node_metadata import NodeMetadataV3
 
 
 @migrate(NodeMetadata, NodeMetadataV2)
-def upgrade_metadata_v1_to_v2():
+def upgrade_metadata_v1_to_v2() -> list[Callable]:
     return [
         rename("highest_object_version", "highest_version"),
         rename("lowest_object_version", "lowest_version"),
@@ -20,7 +20,7 @@ def upgrade_metadata_v1_to_v2():
 
 
 @migrate(NodeMetadataV2, NodeMetadata)
-def downgrade_metadata_v2_to_v1():
+def downgrade_metadata_v2_to_v1() -> list[Callable]:
     return [
         rename("highest_version", "highest_object_version"),
         rename("lowest_version", "lowest_object_version"),
@@ -28,7 +28,7 @@ def downgrade_metadata_v2_to_v1():
 
 
 @migrate(NodeMetadataV2, NodeMetadataV3)
-def upgrade_metadata_v2_to_v3():
+def upgrade_metadata_v2_to_v3() -> list[Callable]:
     return [drop(["deployed_on", "on_board", "signup_enabled", "admin_email"])]
 
 
@@ -51,5 +51,5 @@ def _downgrade_metadata_v3_to_v2() -> Callable:
 
 
 @migrate(NodeMetadataV3, NodeMetadataV2)
-def downgrade_metadata_v3_to_v2():
+def downgrade_metadata_v3_to_v2() -> list[Callable]:
     return [_downgrade_metadata_v3_to_v2()]

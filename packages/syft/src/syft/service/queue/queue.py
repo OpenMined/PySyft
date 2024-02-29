@@ -1,5 +1,4 @@
 # stdlib
-import multiprocessing
 import threading
 import time
 from typing import Any
@@ -15,9 +14,11 @@ from result import Result
 
 # relative
 from ...node.credentials import SyftVerifyKey
+from ...node.worker_settings import WorkerSettings
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
+from ...store.document_store import BaseStash
 from ...types.datetime import DateTime
 from ...types.uid import UID
 from ..job.job_stash import Job
@@ -37,8 +38,12 @@ from .queue_stash import Status
 
 class MonitorThread(threading.Thread):
     def __init__(
-        self, queue_item: QueueItem, worker, credentials: SyftVerifyKey, interval=5
-    ):
+        self,
+        queue_item: QueueItem,
+        worker: Any,  # should be of type Worker(Node), but get circular import error
+        credentials: SyftVerifyKey,
+        interval: int = 5,
+    ) -> None:
         super().__init__()
         self.interval = interval
         self.stop_requested = threading.Event()
@@ -46,12 +51,12 @@ class MonitorThread(threading.Thread):
         self.worker = worker
         self.queue_item = queue_item
 
-    def run(self):
+    def run(self) -> None:
         while not self.stop_requested.is_set():
             self.monitor()
             time.sleep(self.interval)
 
-    def monitor(self):
+    def monitor(self) -> None:
         # Implement the monitoring logic here
         job = self.worker.job_stash.get_by_uid(
             self.credentials, self.queue_item.job_id
@@ -67,7 +72,7 @@ class MonitorThread(threading.Thread):
             process = psutil.Process(job.job_pid)
             process.terminate()
 
-    def stop(self):
+    def stop(self) -> None:
         self.stop_requested.set()
 
 
@@ -75,11 +80,11 @@ class MonitorThread(threading.Thread):
 class QueueManager(BaseQueueManager):
     config: QueueConfig
 
-    def post_init(self):
+    def post_init(self) -> None:
         self.client_config = self.config.client_config
         self._client = self.config.client_type(self.client_config)
 
-    def close(self):
+    def close(self) -> Union[SyftError, SyftSuccess]:
         return self._client.close()
 
     def create_consumer(
@@ -103,7 +108,7 @@ class QueueManager(BaseQueueManager):
     def create_producer(
         self,
         queue_name: str,
-        queue_stash,
+        queue_stash: Type[BaseStash],
         context: AuthedServiceContext,
         worker_stash: WorkerStash,
     ) -> QueueProducer:
@@ -125,15 +130,19 @@ class QueueManager(BaseQueueManager):
         )
 
     @property
-    def producers(self):
+    def producers(self) -> Any:
         return self._client.producers
 
     @property
-    def consumers(self):
+    def consumers(self) -> Any:
         return self._client.consumers
 
 
-def handle_message_multiprocessing(worker_settings, queue_item, credentials):
+def handle_message_multiprocessing(
+    worker_settings: WorkerSettings,
+    queue_item: QueueItem,
+    credentials: SyftVerifyKey,
+) -> None:
     # this is a temp hack to prevent some multithreading issues
     time.sleep(0.5)
     queue_config = worker_settings.queue_config
@@ -258,7 +267,7 @@ class APICallMessageHandler(AbstractMessageHandler):
     queue_name = "api_call"
 
     @staticmethod
-    def handle_message(message: bytes, syft_worker_id: UID):
+    def handle_message(message: bytes, syft_worker_id: UID) -> None:
         # relative
         from ...node.node import Node
 
@@ -312,29 +321,31 @@ class APICallMessageHandler(AbstractMessageHandler):
 
         queue_result = worker.queue_stash.set_result(credentials, queue_item)
         if isinstance(queue_result, SyftError):
-            raise Exception(message=f"{queue_result.err()}")
+            raise Exception(f"{queue_result.err()}")
 
         job_result = worker.job_stash.set_result(credentials, job_item)
         if isinstance(job_result, SyftError):
-            raise Exception(message=f"{job_result.err()}")
+            raise Exception(f"{job_result.err()}")
 
         if queue_config.thread_workers:
             # stdlib
             from threading import Thread
 
-            p = Thread(
+            thread = Thread(
                 target=handle_message_multiprocessing,
                 args=(worker_settings, queue_item, credentials),
             )
-            p.start()
+            thread.start()
+            thread.join()
         else:
-            p = multiprocessing.Process(
+            # stdlib
+            from multiprocessing import Process
+
+            process = Process(
                 target=handle_message_multiprocessing,
                 args=(worker_settings, queue_item, credentials),
             )
-            p.start()
-
-            job_item.job_pid = p.pid
+            process.start()
+            job_item.job_pid = process.pid
             worker.job_stash.set_result(credentials, job_item)
-
-        p.join()
+            process.join()

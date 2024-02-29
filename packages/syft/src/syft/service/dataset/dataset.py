@@ -101,7 +101,7 @@ class MarkdownDescription(SyftObject):
 
     text: str
 
-    def _repr_markdown_(self):
+    def _repr_markdown_(self) -> str:
         style = """
         <style>
             .jp-RenderedHTMLCommon pre {
@@ -138,7 +138,9 @@ class Asset(SyftObject):
     __repr_attrs__ = ["name", "shape"]
 
     def __init__(
-        self, description: Optional[Union[MarkdownDescription, str]] = "", **data
+        self,
+        description: Optional[Union[MarkdownDescription, str]] = "",
+        **data: Any,
     ):
         if isinstance(description, str):
             description = MarkdownDescription(text=description)
@@ -241,7 +243,8 @@ class Asset(SyftObject):
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
-        return api.services.action.get_pointer(self.action_id)
+        if api is not None and api.services is not None:
+            return api.services.action.get_pointer(self.action_id)
 
     @property
     def mock(self) -> Union[SyftError, Any]:
@@ -252,6 +255,10 @@ class Asset(SyftObject):
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+        if api.services is None:
+            return SyftError(message=f"Services for {api} is None")
         result = api.services.action.get_mock(self.action_id)
         try:
             if isinstance(result, SyftObject):
@@ -260,10 +267,10 @@ class Asset(SyftObject):
         except Exception as e:
             return SyftError(message=f"Failed to get mock. {e}")
 
-    def has_data_permission(self):
+    def has_data_permission(self) -> bool:
         return self.data is not None
 
-    def has_permission(self, data_result):
+    def has_permission(self, data_result: Any) -> bool:
         # TODO: implement in a better way
         return not (
             isinstance(data_result, str)
@@ -280,6 +287,8 @@ class Asset(SyftObject):
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None or api.services is None:
+            return None
         res = api.services.action.get(self.action_id)
         if self.has_permission(res):
             return res.syft_action_data
@@ -329,7 +338,7 @@ class CreateAsset(SyftObject):
     class Config:
         validate_assignment = True
 
-    def __init__(self, description: Optional[str] = "", **data):
+    def __init__(self, description: Optional[str] = "", **data: Any) -> None:
         super().__init__(**data, description=MarkdownDescription(text=str(description)))
 
     @root_validator()
@@ -470,14 +479,16 @@ class Dataset(SyftObject):
     __repr_attrs__ = ["name", "url", "created_at"]
 
     def __init__(
-        self, description: Optional[Union[str, MarkdownDescription]] = "", **data
-    ):
+        self,
+        description: Optional[Union[str, MarkdownDescription]] = "",
+        **data: Any,
+    ) -> None:
         if isinstance(description, str):
             description = MarkdownDescription(text=description)
         super().__init__(**data, description=description)
 
     @property
-    def icon(self):
+    def icon(self) -> str:
         return FOLDER_ICON
 
     def _coll_repr_(self) -> Dict[str, Any]:
@@ -498,7 +509,7 @@ class Dataset(SyftObject):
             if self.uploader
             else ""
         )
-
+        description_text: str = self.description.text if self.description else ""
         return f"""
             <style>
             {fonts_css}
@@ -510,7 +521,7 @@ class Dataset(SyftObject):
             </style>
             <div class='syft-dataset'>
             <h3>{self.name}</h3>
-            <p>{self.description.text}</p>
+            <p>{description_text}</p>
             {uploaded_by_line}
             <p class='paragraph-sm'><strong><span class='pr-8'>Created on: </span></strong>{self.created_at}</p>
             <p class='paragraph-sm'><strong><span class='pr-8'>URL:
@@ -535,7 +546,10 @@ class Dataset(SyftObject):
         _repr_str = f"Syft Dataset: {self.name}\n"
         _repr_str += "Assets:\n"
         for asset in self.asset_list:
-            _repr_str += f"\t{asset.name}: {asset.description.text}\n"
+            if asset.description is not None:
+                _repr_str += f"\t{asset.name}: {asset.description.text}\n\n"
+            else:
+                _repr_str += f"\t{asset.name}\n\n"
         if self.citation:
             _repr_str += f"Citation: {self.citation}\n"
         if self.url:
@@ -552,7 +566,10 @@ class Dataset(SyftObject):
         _repr_str = f"Syft Dataset: {self.name}\n\n"
         _repr_str += "Assets:\n\n"
         for asset in self.asset_list:
-            _repr_str += f"\t{asset.name}: {asset.description.text}\n\n"
+            if asset.description is not None:
+                _repr_str += f"\t{asset.name}: {asset.description.text}\n\n"
+            else:
+                _repr_str += f"\t{asset.name}\n\n"
         if self.citation:
             _repr_str += f"Citation: {self.citation}\n\n"
         if self.url:
@@ -621,7 +638,7 @@ class CreateDataset(Dataset):
 
     id: Optional[UID] = None
     created_at: Optional[DateTime]
-    uploader: Optional[Contributor]
+    uploader: Optional[Contributor]  # type: ignore[assignment]
 
     class Config:
         validate_assignment = True
@@ -670,7 +687,7 @@ class CreateDataset(Dataset):
             return SyftError(message=f"Failed to add contributor. Error: {e}")
 
     def add_asset(
-        self, asset: CreateAsset, force_replace=False
+        self, asset: CreateAsset, force_replace: bool = False
     ) -> Union[SyftSuccess, SyftError]:
         if asset.mock is None:
             raise ValueError(_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE)
@@ -694,10 +711,10 @@ class CreateDataset(Dataset):
             message=f"Asset '{asset.name}' added to '{self.name}' Dataset."
         )
 
-    def replace_asset(self, asset: CreateAsset):
+    def replace_asset(self, asset: CreateAsset) -> Union[SyftSuccess, SyftError]:
         return self.add_asset(asset=asset, force_replace=True)
 
-    def remove_asset(self, name: str) -> None:
+    def remove_asset(self, name: str) -> Union[SyftSuccess, SyftError]:
         asset_to_remove = None
         for asset in self.asset_list:
             if asset.name == name:

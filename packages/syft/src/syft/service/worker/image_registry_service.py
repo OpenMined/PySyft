@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 from typing import Union
 
 # relative
@@ -39,11 +40,15 @@ class SyftImageRegistryService(AbstractService):
         context: AuthedServiceContext,
         url: str,
     ) -> Union[SyftSuccess, SyftError]:
-        registry = SyftImageRegistry.from_url(url)
+        try:
+            registry = SyftImageRegistry.from_url(url)
+        except Exception as e:
+            return SyftError(message=f"Failed to create registry. {e}")
+
         res = self.stash.set(context.credentials, registry)
 
         if res.is_err():
-            return SyftError(message=res.err())
+            return SyftError(message=f"Failed to create registry. {res.err()}")
 
         return SyftSuccess(
             message=f"Image Registry ID: {registry.id} created successfully"
@@ -58,7 +63,7 @@ class SyftImageRegistryService(AbstractService):
         self,
         context: AuthedServiceContext,
         uid: UID = None,
-        url: str = None,
+        url: Optional[str] = None,
     ) -> Union[SyftSuccess, SyftError]:
         # TODO - we need to make sure that there are no workers running an image bound to this registry
 
