@@ -12,7 +12,7 @@ from typing_extensions import dataclass_transform
 # relative
 from ..serde.serializable import serializable
 
-T = TypeVar("T", bound=BaseModel)
+_T = TypeVar("_T", bound=BaseModel)
 
 
 class EmptyType(type):
@@ -28,7 +28,7 @@ class Empty(metaclass=EmptyType):
 
 @dataclass_transform(kw_only_default=True, field_specifiers=(Field,))
 class PartialModelMetaclass(ModelMetaclass):
-    def __call__(cls: type[T], *args, **kwargs) -> T:
+    def __call__(cls: type[_T], *args, **kwargs) -> _T:
         for field_info in cls.model_fields.values():
             if field_info.annotation is not None and field_info.is_required():
                 field_info.annotation = Union[field_info.annotation, EmptyType]
