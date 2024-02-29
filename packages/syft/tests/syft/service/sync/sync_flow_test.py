@@ -149,7 +149,7 @@ def test_sync_flow():
 
     low_items_to_sync, high_items_to_sync = resolve(diff_state_2, decision="high")
     for diff in diff_state_2.diffs:
-        print(diff.merge_state, diff.object_type)
+        print(diff.status, diff.object_type)
     low_client.apply_state(low_items_to_sync)
 
     action_store_low = low_worker.get_service("actionservice").store

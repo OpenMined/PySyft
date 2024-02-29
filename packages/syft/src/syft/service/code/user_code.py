@@ -124,13 +124,13 @@ class UserCodeStatusCollection(SyftObject):
         # relative
         from ...service.sync.diff_state import AttrDiff
 
-        diff_attrs = super().get_diffs(obj)
+        diff_attrs = []
         status = list(self.status_dict.values())[0]
         ext_status = list(obj.status_dict.values())[0]
 
         if status != ext_status:
             diff_attr = AttrDiff(
-                attr_name="status",
+                attr_name="status_dict",
                 low_attr=ext_status,
                 high_attr=status,
             )
@@ -389,6 +389,7 @@ class UserCode(SyftObject):
     ]
 
     __exclude_sync_diff_attrs__ = [
+        "node_uid",
         "input_policy_type",
         "input_policy_init_kwargs",
         "input_policy_state",

@@ -36,6 +36,7 @@ from ..action.action_object import ActionObject
 from ..request.request import UserCodeStatusChange
 from ..response import SyftError
 from .sync_state import SyncState
+import html
 
 sketchy_tab = "‎ " * 4
 
@@ -48,17 +49,25 @@ class AttrDiff(SyftObject):
     low_attr: Any
     high_attr: Any
 
-    def __repr__(self):
+    def _repr_html_(self):
         return f"""{self.attr_name}:
     Low Side value: {self.low_attr}
     High Side value: {self.high_attr}
     """
 
-    def __repr_low_side__(self):
-        return recursive_attr_repr(self.low_attr)
+    def __repr_side__(self, side):
+        if side == "low":
+            return html.escape(recursive_attr_repr(self.low_attr))
+        if side == "high":
+            return html.escape(recursive_attr_repr(self.high_attr))
 
-    def __repr_high_side__(self):
-        return recursive_attr_repr(self.high_attr)
+    
+    def _coll_repr_(self) -> Dict[str, Any]:
+        return {
+            "attr name": self.attr_name,
+            "low attr": html.escape(f"{self.low_attr}"),
+            "high attr": html.escape(str(self.high_attr)),
+        }
 
 
 class ListDiff(AttrDiff):
@@ -186,13 +195,11 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     ]
 
     @property
-    def merge_state(self):
+    def status(self):
         if self.low_obj is None or self.high_obj is None:
             return "NEW"
-
         if len(self.diff_list) == 0:
             return "SAME"
-
         return "DIFF"
 
     @property
@@ -207,58 +214,52 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         return self.obj_type.__name__
 
     @property
-    def low_state(self):
-        if self.low_obj is None:
-            return "-"
-        if isinstance(self.low_obj, ActionObject):
-            return self.low_obj.__repr__()
-        if self.high_obj is None:
-            attrs_str = ""
-            attrs = getattr(self.low_obj, "__repr_attrs__", [])
-            for attr in attrs:
-                value = getattr(self.low_obj, attr)
-                attrs_str += f"{sketchy_tab}{attr} = {recursive_attr_repr(value)}\n"
-            attrs_str = attrs_str[:-1]
-            return f"NEW\n\nclass {self.object_type}:\n{attrs_str}"
-        attr_text = f"class {self.object_type}:\n"
-        for diff in self.diff_list:
-            attr_text += (
-                f"{sketchy_tab}{diff.attr_name}={diff.__repr_low_side__()}," + "\n"
-            )
-
-        if len(self.diff_list) > 0:
-            attr_text = attr_text[:-2]
-
-        return attr_text
+    def high_state(self):
+        return self.state_str("high")
 
     @property
-    def high_state(self):
-        if self.high_obj is None:
+    def low_state(self):
+        return self.state_str("low")
+
+    def state_str(self, side):
+        if side == "high":
+            obj = self.high_obj
+            other_obj = self.low_obj
+        else:
+            obj = self.low_obj
+            other_obj = self.high_obj
+
+        if obj is None:
             return "-"
+        if self.status == "SAME":
+            return f"SAME\n{self.obj_type.__name__}"
 
-        if isinstance(self.high_obj, ActionObject):
-            return self.high_obj.__repr__()
+        if isinstance(obj, ActionObject):
+            return obj.__repr__()
 
-        if self.low_obj is None:
+        if other_obj is None:
             attrs_str = ""
-            attrs = getattr(self.high_obj, "__repr_attrs__", [])
+            attrs = getattr(obj, "__repr_attrs__", [])
             for attr in attrs:
-                value = getattr(self.high_obj, attr)
+                value = getattr(obj, attr)
                 attrs_str += f"{sketchy_tab}{attr} = {recursive_attr_repr(value)}\n"
             attrs_str = attrs_str[:-1]
             return f"NEW\n\nclass {self.object_type}:\n{attrs_str}"
-        attr_text = f"class {self.object_type}:\n"
+
+        attr_text = f"DIFF\nclass {self.object_type}:\n"
         for diff in self.diff_list:
+            # TODO
             attr_text += (
-                f"{sketchy_tab}{diff.attr_name}={diff.__repr_high_side__()}," + "\n"
+                f"{sketchy_tab}{diff.attr_name}={diff.__repr_side__(side)}," + "\n"
             )
         if len(self.diff_list) > 0:
             attr_text = attr_text[:-2]
 
         return attr_text
 
+
     def get_obj(self):
-        if self.merge_state == "NEW":
+        if self.status == "NEW":
             return self.low_obj if self.low_obj is not None else self.high_obj
         else:
             return "Error"
@@ -307,7 +308,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
                 + obj_repr
             )
 
-        elif self.merge_state == "SAME":
+        elif self.status == "SAME":
             obj_repr = "No changes between low side and high side"
         else:
             obj_repr = ""
@@ -419,7 +420,7 @@ class NodeDiff(SyftObject):
 
         return hierarchies
 
-    def add_obj(self, low_obj, high_obj):
+    def add_obj(self, low_obj:SyftObject, high_obj: SyftObject):
         if low_obj is None and high_obj is None:
             raise Exception("Both objects are None")
         obj_type = type(low_obj if low_obj is not None else high_obj)
@@ -444,7 +445,7 @@ class NodeDiff(SyftObject):
     def objs_to_sync(self):
         objs = []
         for diff in self.diffs:
-            if diff.merge_state == "NEW":
+            if diff.status == "NEW":
                 objs.append(diff.get_obj())
         return objs
 
@@ -487,7 +488,7 @@ def display_diff_hierarchy(diff_hierarchy: List[Tuple[ObjectDiff, int]]):
 
     for diff, level in diff_hierarchy:
         title = (
-            f"{diff.obj_type.__name__}({diff.object_id}) - State: {diff.merge_state}"
+            f"{diff.obj_type.__name__}({diff.object_id}) - State: {diff.status}"
         )
 
         low_side_panel = display_diff_object(diff.low_state if diff.low_obj else None)
@@ -521,10 +522,10 @@ def resolve_diff(diff: ObjectDiff, decision: str) -> ResolvedSyncState:
     resolved_diff_high = ResolvedSyncState()
 
     # No diff, return empty resolved state
-    if diff.merge_state == "SAME":
+    if diff.status == "SAME":
         return resolved_diff_low, resolved_diff_high
 
-    elif diff.merge_state == "NEW":
+    elif diff.status == "NEW":
         low_is_none = diff.low_obj is None
         high_is_none = diff.high_obj is None
         if low_is_none and high_is_none:
@@ -540,7 +541,7 @@ def resolve_diff(diff: ObjectDiff, decision: str) -> ResolvedSyncState:
         elif decision == "high" and high_is_none:
             resolved_diff_low.delete_objs.append(diff.low_obj)
 
-    elif diff.merge_state == "DIFF":
+    elif diff.status == "DIFF":
         if decision == "low":
             resolved_diff_high.update_objs.append(diff.low_obj)
         else:  # decision == high

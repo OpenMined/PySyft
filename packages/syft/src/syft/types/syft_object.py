@@ -633,6 +633,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         return self
 
     def syft_eq(self, ext_obj) -> bool:
+        if ext_obj is None:
+            return False
         attrs_to_check = self.__dict__.keys()
 
         obj_exclude_attrs = getattr(self, "__exclude_sync_diff_attrs__", [])
@@ -676,7 +678,11 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
 
                 # TODO: to the same check as above for Dicts when we use them
 
-                if obj_attr != ext_obj_attr:
+                cmp = obj_attr.__eq__
+                if hasattr(obj_attr, "syft_eq"):
+                    cmp = obj_attr.syft_eq
+
+                if not cmp(ext_obj_attr):
                     diff_attr = AttrDiff(
                         attr_name=attr,
                         low_attr=ext_obj_attr,
