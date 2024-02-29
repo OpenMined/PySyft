@@ -40,7 +40,7 @@ class TwinObject(SyftObject):
     mock_obj: ActionObject
     mock_obj_id: UID = None  # type: ignore
 
-    @field_validator(mode="before")
+    @field_validator("private_obj", mode="before")
     @classmethod
     def make_private_obj(cls, v: Any) -> ActionObject:
         return to_action_object(v)
@@ -51,7 +51,7 @@ class TwinObject(SyftObject):
             self.private_obj_id = self.private_obj.id
         return self
 
-    @field_validator(mode="before")
+    @field_validator("mock_obj", mode="before")
     @classmethod
     def make_mock_obj(cls, v: Any) -> ActionObject:
         return to_action_object(v)

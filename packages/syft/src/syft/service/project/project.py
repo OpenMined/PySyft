@@ -1226,7 +1226,9 @@ class ProjectSubmit(SyftObject):
 
     @field_validator("members", mode="before")
     @classmethod
-    def verify_members(cls, val: Union[List[SyftClient], List[NodeIdentity]]) -> Union[List[SyftClient], List[NodeIdentity]]:
+    def verify_members(
+        cls, val: Union[List[SyftClient], List[NodeIdentity]]
+    ) -> Union[List[SyftClient], List[NodeIdentity]]:
         # SyftClients must be logged in by the same emails
         clients = cls.get_syft_clients(val)
         if len(clients) > 0:

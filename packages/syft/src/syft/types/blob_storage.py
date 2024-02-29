@@ -25,6 +25,7 @@ from ..node.credentials import SyftVerifyKey
 from ..serde import serialize
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
+from ..service.action.action_object import ActionObjectPointer
 from ..service.action.action_object import BASE_PASSTHROUGH_ATTRS
 from ..service.action.action_types import action_types
 from ..service.response import SyftError
@@ -77,7 +78,7 @@ class BlobFile(SyftObject):
     syft_blob_storage_entry_id: Optional[UID] = None
     file_size: Optional[int] = None
     path: Optional[Path] = None
-    uploaded = False
+    uploaded: bool = False
 
     __repr_attrs__ = ["id", "file_name"]
 
@@ -210,8 +211,8 @@ class BlobFileObject(ActionObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[Type[Any]] = BlobFile
-    syft_pointer_type = BlobFileObjectPointer
-    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_pointer_type: ClassVar[Type[ActionObjectPointer]] = BlobFileObjectPointer
+    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
 
 
 @serializable()

@@ -124,7 +124,7 @@ class Worker(SyftBaseModel):
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @field_validator("syft_worker_id", mode="before")
     @classmethod
-    def set_syft_worker_id(cls, v):
+    def set_syft_worker_id(cls, v: Any) -> Any:
         if isinstance(v, str):
             return UID(v)
         return v

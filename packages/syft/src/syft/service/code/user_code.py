@@ -314,7 +314,7 @@ class UserCodeV2(SyftObject):
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime] = None
-    uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
+    uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
     nested_requests: Dict[str, str] = {}
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
 
@@ -345,7 +345,7 @@ class UserCodeV3(SyftObject):
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime] = None
-    uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
+    uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
     nested_requests: Dict[str, str] = {}
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
     worker_pool_name: Optional[str] = None
@@ -377,7 +377,7 @@ class UserCode(SyftObject):
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime]
-    uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
+    uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
     worker_pool_name: Optional[str]
 

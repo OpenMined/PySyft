@@ -141,7 +141,7 @@ class UserUpdate(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    @field_validator(mode="before")
+    @field_validator("role", mode="before")
     @classmethod
     def str_to_role(cls, v: Any) -> Any:
         if isinstance(v, str) and hasattr(ServiceRole, v.upper()):

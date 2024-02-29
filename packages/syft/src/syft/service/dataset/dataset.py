@@ -639,7 +639,7 @@ class CreateDataset(Dataset):
 
     id: Optional[UID] = None
     created_at: Optional[DateTime]
-    uploader: Optional[Contributor] # type: ignore[assignment]
+    uploader: Optional[Contributor]  # type: ignore[assignment]
 
     model_config = ConfigDict(validate_assignment=True)
 
