@@ -115,7 +115,7 @@ class CustomWorkerConfig(WorkerConfig):
 class PrebuiltWorkerConfig(WorkerConfig):
     # tag that is already built and pushed in some registry
     tag: str
-    description: Optional[str]
+    description: Optional[str] = None
 
     def __str__(self) -> str:
         if self.description:
@@ -130,8 +130,8 @@ class PrebuiltWorkerConfig(WorkerConfig):
 @serializable()
 class DockerWorkerConfig(WorkerConfig):
     dockerfile: str
-    file_name: Optional[str]
-    description: Optional[str]
+    file_name: Optional[str] = None
+    description: Optional[str] = None
 
     @field_validator("dockerfile")
     @classmethod

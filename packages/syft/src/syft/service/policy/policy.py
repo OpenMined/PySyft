@@ -335,7 +335,7 @@ class OutputPolicy(Policy):
 
     output_history: List[OutputHistory] = []
     output_kwargs: List[str] = []
-    node_uid: Optional[UID]
+    node_uid: Optional[UID] = None
     output_readers: List[SyftVerifyKey] = []
 
     def apply_output(
@@ -455,7 +455,7 @@ class UserPolicy(Policy):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
-    node_uid: Optional[UID]
+    node_uid: Optional[UID] = None
     user_verify_key: SyftVerifyKey
     raw_code: str
     parsed_code: str

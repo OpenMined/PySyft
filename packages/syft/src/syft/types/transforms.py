@@ -8,7 +8,6 @@ from typing import Type
 from typing import Union
 
 # third party
-from pydantic import EmailStr
 from typing_extensions import Self
 
 # relative
@@ -38,9 +37,9 @@ class TransformContext(Context):
         t_context = TransformContext()
         t_context.obj = obj
         try:
-            t_context.output = dict(obj)
+            t_context.output = obj.to_dict(exclude_empty=True)
         except Exception:
-            t_context.output = obj.to_dict()
+            t_context.output = dict(obj)
         if hasattr(context, "credentials"):
             t_context.credentials = context.credentials
         if hasattr(context, "node"):
@@ -140,8 +139,7 @@ def validate_url(context: TransformContext) -> TransformContext:
 
 def validate_email(context: TransformContext) -> TransformContext:
     if context.output["email"] is not None:
-        context.output["email"] = EmailStr(context.output["email"])
-        EmailStr.validate(context.output["email"])
+        context.output["email"] = context.output["email"]
     return context
 
 

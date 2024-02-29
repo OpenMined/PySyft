@@ -40,7 +40,7 @@ class LogConfig(BaseSettings):
 
     LOGURU_LEVEL: str = LogLevel.INFO.value
     LOGURU_SINK: Optional[str] = "/var/log/pygrid/grid.log"
-    LOGURU_COMPRESSION: Optional[str]
+    LOGURU_COMPRESSION: Optional[str] = None
     LOGURU_ROTATION: Union[
         Optional[str],
         Optional[int],

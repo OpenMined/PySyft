@@ -199,7 +199,7 @@ class CreateCustomImageChange(Change):
 
     config: WorkerConfig
     tag: str
-    registry_uid: Optional[UID]
+    registry_uid: Optional[UID] = None
 
     __repr_attrs__ = ["config", "tag"]
 
@@ -278,8 +278,8 @@ class CreateCustomWorkerPoolChange(Change):
 
     pool_name: str
     num_workers: int
-    image_uid: Optional[UID]
-    config: Optional[WorkerConfig]
+    image_uid: Optional[UID] = None
+    config: Optional[WorkerConfig] = None
 
     __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
 
@@ -873,11 +873,11 @@ class ObjectMutation(Change):
     __canonical_name__ = "ObjectMutation"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    linked_obj: Optional[LinkedObject]
+    linked_obj: Optional[LinkedObject] = None
     attr_name: str
-    value: Optional[Any]
+    value: Optional[Any] = None
     match_type: bool
-    previous_value: Optional[Any]
+    previous_value: Optional[Any] = None
 
     __repr_attrs__ = ["linked_obj", "attr_name"]
 
@@ -945,7 +945,7 @@ class EnumMutation(ObjectMutation):
     __version__ = SYFT_OBJECT_VERSION_1
 
     enum_type: Type[Enum]
-    value: Optional[Enum]
+    value: Optional[Enum] = None
     match_type: bool = True
 
     __repr_attrs__ = ["linked_obj", "attr_name", "value"]

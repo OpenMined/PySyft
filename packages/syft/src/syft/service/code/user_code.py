@@ -358,7 +358,7 @@ class UserCode(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_4
 
     id: UID
-    node_uid: Optional[UID]
+    node_uid: Optional[UID] = None
     user_verify_key: SyftVerifyKey
     raw_code: str
     input_policy_type: Union[Type[InputPolicy], UserPolicy]
@@ -376,10 +376,10 @@ class UserCode(SyftObject):
     status: UserCodeStatusCollection
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
-    submit_time: Optional[DateTime]
+    submit_time: Optional[DateTime] = None
     uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
-    worker_pool_name: Optional[str]
+    worker_pool_name: Optional[str] = None
 
     __attr_searchable__ = [
         "user_verify_key",

@@ -136,10 +136,10 @@ class HTTPConnection(NodeConnection):
     __canonical_name__ = "HTTPConnection"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    proxy_target_uid: Optional[UID]
     url: GridURL
+    proxy_target_uid: Optional[UID] = None
     routes: Type[Routes] = Routes
-    session_cache: Optional[Session]
+    session_cache: Optional[Session] = None
 
     @field_validator("url", mode="before")
     @classmethod
@@ -335,7 +335,7 @@ class PythonConnection(NodeConnection):
     __version__ = SYFT_OBJECT_VERSION_1
 
     node: AbstractNode
-    proxy_target_uid: Optional[UID]
+    proxy_target_uid: Optional[UID] = None
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         return PythonConnection(node=self.node, proxy_target_uid=proxy_target_uid)

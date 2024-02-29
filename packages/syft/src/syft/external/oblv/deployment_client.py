@@ -43,8 +43,8 @@ if TYPE_CHECKING:
 class OblvMetadata(EnclaveMetadata):
     """Contains Metadata to connect to Oblivious Enclave"""
 
-    deployment_id: Optional[str]
-    oblv_client: Optional[OblvClient]
+    deployment_id: Optional[str] = None
+    oblv_client: Optional[OblvClient] = None
 
     @field_validator("deployment_id")
     @classmethod

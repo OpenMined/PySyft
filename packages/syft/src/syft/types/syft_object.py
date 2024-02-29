@@ -21,6 +21,7 @@ from typing import Sequence
 from typing import Tuple
 from typing import Type
 from typing import Union
+from typing import get_args
 import warnings
 
 # third party
@@ -529,7 +530,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         include: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,
         exclude: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,
         by_alias: bool = False,
-        skip_defaults: Optional[bool] = None,
         exclude_unset: bool = False,
         exclude_defaults: bool = False,
         exclude_none: bool = False,
@@ -543,7 +543,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             include=include,
             exclude=exclude,
             by_alias=by_alias,
-            skip_defaults=skip_defaults,
             exclude_unset=exclude_unset,
             exclude_defaults=exclude_defaults,
             exclude_none=exclude_none,
@@ -602,8 +601,11 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             # EmailStr seems to be lost every time the value is set even with a validator
             # this means the incoming type is str so our validators fail
 
-            if isinstance(type_, type) and issubclass(type_, EmailStr):
+            if (isinstance(type_, type) and type_ is EmailStr) or EmailStr in get_args(
+                type_
+            ):
                 type_ = str
+
             kt_dict[key] = type_
         return kt_dict
 

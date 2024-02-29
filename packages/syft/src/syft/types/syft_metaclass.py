@@ -22,7 +22,7 @@ class _EmptyMetaclass(type):
         return self.__name__
 
 
-@serializable
+@serializable()
 @final
 class Empty(metaclass=_EmptyMetaclass):
     pass
@@ -32,7 +32,7 @@ class Empty(metaclass=_EmptyMetaclass):
 class PartialModelMetaclass(ModelMetaclass):
     def __call__(cls: type[T], *args, **kwargs) -> T:
         for field, field_info in cls.model_fields.items():
-            if field_info.annotation is not None and not field_info.is_required():
+            if field_info.annotation is not None and field_info.is_required():
                 cls.model_fields[field].annotation = Union[
                     field_info.annotation, type[Empty]
                 ]

@@ -34,7 +34,7 @@ class AuthedServiceContext(NodeServiceContext):
 
     credentials: SyftVerifyKey
     role: ServiceRole = ServiceRole.NONE
-    job_id: Optional[UID]
+    job_id: Optional[UID] = None
     extra_kwargs: Dict = {}
     has_execute_permissions: bool = False
 
@@ -68,7 +68,7 @@ class UnauthedServiceContext(NodeServiceContext):
     __version__ = SYFT_OBJECT_VERSION_1
 
     login_credentials: UserLoginCredentials
-    node: Optional[AbstractNode]
+    node: Optional[AbstractNode] = None
     role: ServiceRole = ServiceRole.NONE
 
 
