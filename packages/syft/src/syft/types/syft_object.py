@@ -21,7 +21,6 @@ from typing import Sequence
 from typing import Tuple
 from typing import Type
 from typing import Union
-from typing import get_args
 import warnings
 
 # third party
@@ -601,9 +600,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             # EmailStr seems to be lost every time the value is set even with a validator
             # this means the incoming type is str so our validators fail
 
-            if (isinstance(type_, type) and type_ is EmailStr) or EmailStr in get_args(
-                type_
-            ):
+            if type_ is EmailStr or type_ == Union[EmailStr, None]:
                 type_ = str
 
             kt_dict[key] = type_
