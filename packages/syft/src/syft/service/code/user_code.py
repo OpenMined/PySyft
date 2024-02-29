@@ -401,7 +401,7 @@ class UserCode(SyftObject):
         "output_policy_state",
     ]
 
-    def get_diffs(self, obj) -> List['AttrDiff']:
+    def get_diffs(self, obj) -> List[AttrDiff]:
         # relative
         from ...service.sync.diff_state import AttrDiff
 

@@ -431,11 +431,13 @@ class ResolvedSyncState(SyftObject):
     create_objs: List[SyftObject] = []
     update_objs: List[SyftObject] = []
     delete_objs: List[SyftObject] = []
+    uid_for_permissions: List[UID] = []
 
     def add(self, new_state: "ResolvedSyncState") -> None:
         self.create_objs.extend(new_state.create_objs)
         self.update_objs.extend(new_state.update_objs)
         self.delete_objs.extend(new_state.delete_objs)
+        self.uid_for_permissions.extend(new_state.uid_for_permissions)
 
     def __repr__(self):
         return (
@@ -491,7 +493,7 @@ def display_diff_hierarchy(diff_hierarchy: List[Tuple[ObjectDiff, int]]):
         console.print(diff_panel)
 
 
-def resolve_diff(diff: ObjectDiff, decision: str) -> ResolvedSyncState:
+def resolve_diff(diff: ObjectDiff, decision: str, permission: str) -> ResolvedSyncState:
     resolved_diff_low = ResolvedSyncState()
     resolved_diff_high = ResolvedSyncState()
 
@@ -512,6 +514,8 @@ def resolve_diff(diff: ObjectDiff, decision: str) -> ResolvedSyncState:
             resolved_diff_high.delete_objs.append(diff.high_obj)
         elif decision == "high" and low_is_none:
             resolved_diff_low.create_objs.append(diff.high_obj)
+            if permission == "yes":
+                resolved_diff_low.uid_for_permissions.append(diff.high_obj.id)
         elif decision == "high" and high_is_none:
             resolved_diff_low.delete_objs.append(diff.low_obj)
 
