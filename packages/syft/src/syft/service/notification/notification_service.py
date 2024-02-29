@@ -99,7 +99,7 @@ class NotificationService(AbstractService):
         context: AuthedServiceContext,
     ) -> Union[Notification, SyftError]:
         notifier_service = context.node.get_service("notifierservice")
-        result = notifier_service.activate(context.node)
+        result = notifier_service.activate(context)
         return result
 
     @service_method(
@@ -112,7 +112,7 @@ class NotificationService(AbstractService):
         context: AuthedServiceContext,
     ) -> Union[Notification, SyftError]:
         notifier_service = context.node.get_service("notifierservice")
-        result = notifier_service.deactivate(context.node)
+        result = notifier_service.deactivate(context)
         return result
 
     @service_method(
