@@ -541,21 +541,19 @@ class UserService(AbstractService):
             return None
 
     def enable_notifications(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext, notifier_type: NOTIFIERS
     ) -> Union[SyftSuccess, SyftError]:
-        result = self._set_notification_status(
-            NOTIFIERS.EMAIL, True, context.credentials
-        )
+        result = self._set_notification_status(notifier_type, True, context.credentials)
         if result is not None:
             return result
         else:
             return SyftSuccess(message="Notifications enabled successfully!")
 
     def disable_notifications(
-        self, context: AuthedServiceContext
+        self, context: AuthedServiceContext, notifier_type: NOTIFIERS
     ) -> Union[SyftSuccess, SyftError]:
         result = self._set_notification_status(
-            NOTIFIERS.EMAIL, False, context.credentials
+            notifier_type, False, context.credentials
         )
         if result is not None:
             return result

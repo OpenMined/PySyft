@@ -23,6 +23,7 @@ from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from .notifier import NotifierSettings
+from .notifier_enums import NOTIFIERS
 from .notifier_stash import NotifierStash
 
 
@@ -164,8 +165,7 @@ class NotifierService(AbstractService):
         return SyftSuccess(message="Notifications disabled succesfullly")
 
     def activate(
-        self,
-        context: AuthedServiceContext,
+        self, context: AuthedServiceContext, notifier_type: NOTIFIERS = NOTIFIERS.EMAIL
     ) -> Union[SyftSuccess, SyftError]:
         """
         Activate email notifications for the authenticated user.
@@ -173,18 +173,17 @@ class NotifierService(AbstractService):
         """
         context.node = cast(AbstractNode, context.node)
         user_service = context.node.get_service("userservice")
-        return user_service.enable_notifications(context)
+        return user_service.enable_notifications(context, notifier_type=notifier_type)
 
     def deactivate(
-        self,
-        context: AuthedServiceContext,
+        self, context: AuthedServiceContext, notifier_type: NOTIFIERS = NOTIFIERS.EMAIL
     ) -> Union[SyftSuccess, SyftError]:
         """Deactivate email notifications for the authenticated user
         This will only work if the domain owner has enabled notifications.
         """
         context.node = cast(AbstractNode, context.node)
         user_service = context.node.get_service("userservice")
-        return user_service.disable_notifications(context)
+        return user_service.disable_notifications(context, notifier_type=notifier_type)
 
     @staticmethod
     def init_notifier(
