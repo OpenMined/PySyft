@@ -859,6 +859,6 @@ class MongoStoreConfig(StoreConfig):
     client_config: MongoStoreClientConfig
     store_type: Type[DocumentStore] = MongoDocumentStore
     db_name: str = "app"
-    backing_store = MongoBackingStore
+    backing_store: Type[KeyValueBackingStore] = MongoBackingStore
     # TODO: should use a distributed lock, with RedisLockingConfig
     locking_config: LockingConfig = NoLockingConfig()
