@@ -586,7 +586,7 @@ class ActionObjectV1(SyftObject):
     __canonical_name__ = "ActionObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __attr_searchable__: List[str] = []
+    __attr_searchable__: List[str] = []  # type: ignore[misc]
     syft_action_data_cache: Optional[Any] = None
     syft_blob_storage_entry_id: Optional[UID] = None
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
@@ -618,7 +618,7 @@ class ActionObject(SyftObject):
     __canonical_name__ = "ActionObject"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    __attr_searchable__: List[str] = []
+    __attr_searchable__: List[str] = []  # type: ignore[misc]
     syft_action_data_cache: Optional[Any] = None
     syft_blob_storage_entry_id: Optional[UID] = None
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]

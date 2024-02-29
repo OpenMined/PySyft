@@ -230,11 +230,11 @@ class ActionService(AbstractService):
             )
             # Resolve graph links
             if (
-                not isinstance(obj, TwinObject)
+                not isinstance(obj, TwinObject)  # type: ignore[unreachable]
                 and resolve_nested
                 and isinstance(obj.syft_action_data, ActionDataLink)
             ):
-                if not self.is_resolved(
+                if not self.is_resolved(  # type: ignore[unreachable]
                     context, obj.syft_action_data.action_object_id.id
                 ).ok():
                     return SyftError(message="This object is not resolved yet.")
