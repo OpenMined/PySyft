@@ -189,9 +189,9 @@ recursive_serde_register(
 recursive_serde_register(np.core._ufunc_config._unspecified())
 
 recursive_serde_register(
-    pydantic.networks.EmailStr,
+    pydantic.EmailStr,
     serialize=lambda x: x.encode(),
-    deserialize=lambda x: pydantic.networks.EmailStr(x.decode()),
+    deserialize=lambda x: pydantic.EmailStr(x.decode()),
 )
 
 recursive_serde_register(
