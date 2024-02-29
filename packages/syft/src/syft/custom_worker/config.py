@@ -1,5 +1,7 @@
 # stdlib
+import contextlib
 from hashlib import sha256
+import io
 from pathlib import Path
 from typing import Any
 from typing import Dict
@@ -8,6 +10,7 @@ from typing import Optional
 from typing import Union
 
 # third party
+import docker
 from packaging import version
 from pydantic import validator
 from typing_extensions import Self
@@ -15,7 +18,10 @@ import yaml
 
 # relative
 from ..serde.serializable import serializable
+from ..service.response import SyftError
+from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
+from .utils import iterator_to_string
 
 PYTHON_DEFAULT_VER = "3.11"
 PYTHON_MIN_VER = version.parse("3.10")
@@ -105,10 +111,33 @@ class CustomWorkerConfig(WorkerConfig):
 
 
 @serializable()
+class PrebuiltWorkerConfig(WorkerConfig):
+    # tag that is already built and pushed in some registry
+    tag: str
+    description: Optional[str]
+
+    def __str__(self) -> str:
+        if self.description:
+            return f"prebuilt tag='{self.tag}' description='{self.description}'"
+        else:
+            return f"prebuilt tag='{self.tag}'"
+
+    def set_description(self, description_text: str) -> None:
+        self.description = description_text
+
+
+@serializable()
 class DockerWorkerConfig(WorkerConfig):
     dockerfile: str
     file_name: Optional[str]
     description: Optional[str]
+
+    @validator("dockerfile")
+    def validate_dockerfile(cls, dockerfile: str) -> str:
+        if not dockerfile:
+            raise ValueError("Dockerfile cannot be empty")
+        dockerfile = dockerfile.strip()
+        return dockerfile
 
     @classmethod
     def from_path(
@@ -136,3 +165,20 @@ class DockerWorkerConfig(WorkerConfig):
 
     def set_description(self, description_text: str) -> None:
         self.description = description_text
+
+    def test_image_build(self, tag: str, **kwargs) -> Union[SyftSuccess, SyftError]:
+        try:
+            with contextlib.closing(docker.from_env()) as client:
+                if not client.ping():
+                    return SyftError(
+                        "Cannot reach docker server. Please check if docker is running."
+                    )
+
+                kwargs["fileobj"] = io.BytesIO(self.dockerfile.encode("utf-8"))
+                _, logs = client.images.build(
+                    tag=tag,
+                    **kwargs,
+                )
+                return SyftSuccess(message=iterator_to_string(iterator=logs))
+        except Exception as e:
+            return SyftError(message=f"Failed to build: {e}")

@@ -1,5 +1,6 @@
 # stdlib
 import ast
+from typing import Any
 from typing import List
 
 # relative
@@ -7,7 +8,7 @@ from .unparse import unparse
 
 
 class GlobalsVisitor(ast.NodeVisitor):
-    def generic_visit(self, node):
+    def generic_visit(self, node: Any) -> None:
         if isinstance(node, ast.Global):
             raise Exception("No Globals allows")
         ast.NodeVisitor.generic_visit(self, node)
@@ -33,7 +34,7 @@ def make_ast_args(args: List[str]) -> ast.arguments:
 
 
 def make_ast_func(
-    name: str, input_kwargs: List[str], output_arg: str, body=List[ast.AST]
+    name: str, input_kwargs: list[str], output_arg: str, body: List[ast.AST]
 ) -> ast.FunctionDef:
     args = make_ast_args(input_kwargs)
     r = make_return(output_arg)

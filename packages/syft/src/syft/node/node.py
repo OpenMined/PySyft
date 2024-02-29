@@ -196,8 +196,12 @@ def get_default_worker_pool_name() -> str:
     return get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME)
 
 
-def get_default_worker_pool_count() -> int:
-    return int(get_env("DEFAULT_WORKER_POOL_COUNT", 1))
+def get_default_worker_pool_count(node) -> int:
+    return int(
+        get_env(
+            "DEFAULT_WORKER_POOL_COUNT", node.queue_config.client_config.n_consumers
+        )
+    )
 
 
 def in_kubernetes() -> Optional[str]:
@@ -296,6 +300,10 @@ class Node(AbstractNode):
         sqlite_path: Optional[str] = None,
         blob_storage_config: Optional[BlobStorageConfig] = None,
         queue_config: Optional[QueueConfig] = None,
+        queue_port: Optional[int] = None,
+        n_consumers: int = 0,
+        create_producer: bool = False,
+        thread_workers: bool = False,
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         dev_mode: bool = False,
@@ -398,7 +406,15 @@ class Node(AbstractNode):
         self.post_init()
         self.create_initial_settings(admin_email=root_email)
 
-        self.init_queue_manager(queue_config=queue_config)
+        self.queue_config = self.create_queue_config(
+            n_consumers=n_consumers,
+            create_producer=create_producer,
+            thread_workers=thread_workers,
+            queue_port=queue_port,
+            queue_config=queue_config,
+        )
+
+        self.init_queue_manager(queue_config=self.queue_config)
 
         self.init_blob_storage(config=blob_storage_config)
 
@@ -451,20 +467,42 @@ class Node(AbstractNode):
     def close(self):
         self.stop()
 
-    def init_queue_manager(self, queue_config: Optional[QueueConfig]):
-        queue_config_ = ZMQQueueConfig() if queue_config is None else queue_config
-        self.queue_config = queue_config_
+    def create_queue_config(
+        self,
+        n_consumers: int,
+        create_producer: bool,
+        thread_workers: bool,
+        queue_port: Optional[int],
+        queue_config: Optional[QueueConfig],
+    ) -> QueueConfig:
+        if queue_config:
+            queue_config_ = queue_config
+        elif queue_port is not None or n_consumers > 0 or create_producer:
+            if not create_producer and queue_port is None:
+                print("No queue port defined to bind consumers.")
+            queue_config_ = ZMQQueueConfig(
+                client_config=ZMQClientConfig(
+                    create_producer=create_producer,
+                    queue_port=queue_port,
+                    n_consumers=n_consumers,
+                ),
+                thread_workers=thread_workers,
+            )
+        else:
+            queue_config_ = ZMQQueueConfig()
 
+        return queue_config_
+
+    def init_queue_manager(self, queue_config: QueueConfig):
         MessageHandlers = [APICallMessageHandler]
-
         if self.is_subprocess:
             return
 
-        self.queue_manager = QueueManager(config=queue_config_)
+        self.queue_manager = QueueManager(config=queue_config)
         for message_handler in MessageHandlers:
             queue_name = message_handler.queue_name
             # client config
-            if getattr(queue_config_.client_config, "create_producer", True):
+            if getattr(queue_config.client_config, "create_producer", True):
                 context = AuthedServiceContext(
                     node=self,
                     credentials=self.verify_key,
@@ -479,16 +517,16 @@ class Node(AbstractNode):
                 producer.run()
                 address = producer.address
             else:
-                port = queue_config_.client_config.queue_port
+                port = queue_config.client_config.queue_port
                 if port is not None:
                     address = get_queue_address(port)
                 else:
                     address = None
 
-            if address is None and queue_config_.client_config.n_consumers > 0:
+            if address is None and queue_config.client_config.n_consumers > 0:
                 raise ValueError("address unknown for consumers")
 
-            service_name = queue_config_.client_config.consumer_service
+            service_name = queue_config.client_config.consumer_service
 
             if not service_name:
                 # Create consumers for default worker pool
@@ -537,7 +575,6 @@ class Node(AbstractNode):
         node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         n_consumers: int = 0,
-        consumer_service: Optional[str] = None,
         thread_workers: bool = False,
         create_producer: bool = False,
         queue_port: Optional[int] = None,
@@ -600,18 +637,8 @@ class Node(AbstractNode):
                 client_config=blob_client_config
             )
 
-        if queue_port is not None or n_consumers > 0 or create_producer:
-            queue_config = ZMQQueueConfig(
-                client_config=ZMQClientConfig(
-                    create_producer=create_producer,
-                    queue_port=queue_port,
-                    n_consumers=n_consumers,
-                    consumer_service=consumer_service,
-                ),
-                thread_workers=thread_workers,
-            )
-        else:
-            queue_config = None
+        node_type = NodeType(node_type)
+        node_side_type = NodeSideType(node_side_type)
 
         return cls(
             name=name,
@@ -624,7 +651,10 @@ class Node(AbstractNode):
             node_side_type=node_side_type,
             enable_warnings=enable_warnings,
             blob_storage_config=blob_storage_config,
-            queue_config=queue_config,
+            queue_port=queue_port,
+            n_consumers=n_consumers,
+            thread_workers=thread_workers,
+            create_producer=create_producer,
             dev_mode=dev_mode,
             migrate=migrate,
             in_memory_workers=in_memory_workers,
@@ -1121,14 +1151,14 @@ class Node(AbstractNode):
         api_call: Union[SyftAPICall, SignedSyftAPICall],
         job_id: Optional[UID] = None,
         check_call_location=True,
-    ) -> Result[Union[QueueItem, SyftObject], Err]:
+    ) -> Union[Result, QueueItem, SyftObject, SyftError]:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return SyftError(
-                message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
+                message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."
             )
         else:
             if not api_call.is_valid:
-                return SyftError(message="Your message signature is invalid")  # type: ignore
+                return SyftError(message="Your message signature is invalid")
 
         if api_call.message.node_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
@@ -1160,11 +1190,11 @@ class Node(AbstractNode):
                     return SyftError(
                         message=f"As a `{role}`,"
                         f"you have has no access to: {api_call.path}"
-                    )  # type: ignore
+                    )
                 else:
                     return SyftError(
                         message=f"API call not in registered services: {api_call.path}"
-                    )  # type: ignore
+                    )
 
             _private_api_path = user_config_registry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
@@ -1183,11 +1213,11 @@ class Node(AbstractNode):
     def add_action_to_queue(
         self,
         action,
-        credentials,
+        credentials: SyftVerifyKey,
         parent_job_id=None,
         has_execute_permissions: bool = False,
         worker_pool_name: Optional[str] = None,
-    ):
+    ) -> Union[Job, SyftError]:
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(node=self)
@@ -1237,8 +1267,12 @@ class Node(AbstractNode):
         )
 
     def add_queueitem_to_queue(
-        self, queue_item, credentials, action=None, parent_job_id=None
-    ):
+        self,
+        queue_item: ActionQueueItem,
+        credentials: SyftVerifyKey,
+        action=None,
+        parent_job_id=None,
+    ) -> Union[Job, SyftError]:
         log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
         context = AuthedServiceContext(node=self, credentials=credentials, role=role)
@@ -1555,7 +1589,7 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
     default_pool_name = get_default_worker_pool_name()
     default_worker_pool = node.get_default_worker_pool()
     default_worker_tag = get_default_worker_tag_by_env(node.dev_mode)
-    worker_count = get_default_worker_pool_count()
+    worker_count = get_default_worker_pool_count(node)
     context = AuthedServiceContext(
         node=node,
         credentials=credentials,

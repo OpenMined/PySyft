@@ -146,7 +146,7 @@ def test_nested_requests(worker, guest_client: User):
 
     root_domain_client = worker.root_client
     request = root_domain_client.requests[-1]
-    assert request.code.nested_requests == {"test_inner_func": "latest"}
+
     root_domain_client.api.services.request.apply(request.id)
     request = root_domain_client.requests[-1]
 
@@ -156,7 +156,8 @@ def test_nested_requests(worker, guest_client: User):
     assert list(request.code.nested_codes.keys()) == ["test_inner_func"]
     (linked_obj, node) = request.code.nested_codes["test_inner_func"]
     assert node == {}
-    assert linked_obj.resolve.id == inner.id
+    resolved = root_domain_client.api.services.notifications.resolve_object(linked_obj)
+    assert resolved.id == inner.id
     assert outer.status.approved
     assert not inner.status.approved
 

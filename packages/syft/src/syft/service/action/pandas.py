@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Callable
 from typing import ClassVar
 from typing import Type
 
@@ -56,14 +57,14 @@ class PandasDataFrameObject(ActionObject):
 
 
 @migrate(PandasDataFrameObject, PandasDataFrameObjectV1)
-def downgrade_pandasdataframeobject_v2_to_v1():
+def downgrade_pandasdataframeobject_v2_to_v1() -> list[Callable]:
     return [
         drop("syft_resolved"),
     ]
 
 
 @migrate(PandasDataFrameObjectV1, PandasDataFrameObject)
-def upgrade_pandasdataframeobject_v1_to_v2():
+def upgrade_pandasdataframeobject_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("syft_resolved", True),
     ]
@@ -105,14 +106,14 @@ class PandasSeriesObject(ActionObject):
 
 
 @migrate(PandasSeriesObject, PandasSeriesObjectV1)
-def downgrade_pandasseriesframeobject_v2_to_v1():
+def downgrade_pandasseriesframeobject_v2_to_v1() -> list[Callable]:
     return [
         drop("syft_resolved"),
     ]
 
 
 @migrate(PandasSeriesObjectV1, PandasSeriesObject)
-def upgrade_pandasseriesframeobject_v1_to_v2():
+def upgrade_pandasseriesframeobject_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("syft_resolved", True),
     ]

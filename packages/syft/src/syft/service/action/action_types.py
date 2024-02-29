@@ -6,7 +6,7 @@ from typing import Type
 from ...util.logger import debug
 from .action_data_empty import ActionDataEmpty
 
-action_types = {}
+action_types: dict = {}
 
 
 def action_type_for_type(obj_or_type: Any) -> Type:

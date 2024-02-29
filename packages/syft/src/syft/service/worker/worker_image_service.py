@@ -2,14 +2,15 @@
 import contextlib
 from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Union
+from typing import cast
 
 # third party
 import docker
 import pydantic
 
 # relative
+from ...abstract_node import AbstractNode
 from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
@@ -76,7 +77,9 @@ class SyftWorkerImageService(AbstractService):
         registry_uid: Optional[UID] = None,
         pull: bool = True,
     ) -> Union[SyftSuccess, SyftError]:
-        registry: SyftImageRegistry = None
+        registry: Optional[SyftImageRegistry] = None
+
+        context.node = cast(AbstractNode, context.node)
 
         if IN_KUBERNETES and registry_uid is None:
             return SyftError(message="Registry UID is required in Kubernetes mode.")
@@ -97,7 +100,7 @@ class SyftWorkerImageService(AbstractService):
             registry_result = image_registry_service.get_by_id(context, registry_uid)
             if registry_result.is_err():
                 return registry_result
-            registry: SyftImageRegistry = registry_result.ok()
+            registry = registry_result.ok()
 
         try:
             if registry:
@@ -204,14 +207,15 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"{result.err()}")
         images: List[SyftWorkerImage] = result.ok()
 
-        res: List[Tuple] = []
+        res = {}
+        # if image is built, index it by full_name_with_tag
         for im in images:
-            if im.image_identifier is not None:
-                res.append((im.image_identifier.full_name_with_tag, im))
-            else:
-                # FIXME: syft deployments in kubernetes results in a new image per version
-                # This results in "default-worker-image" key having multiple values and DictTuple() throws exception
-                res.append(("default-worker-image", im))
+            if im.is_built and im.image_identifier is not None:
+                res[im.image_identifier.full_name_with_tag] = im
+        # and then index all images by id
+        # TODO: jupyter repr needs to be updated to show unique values
+        # (even if multiple keys point to same value)
+        res.update({im.id.to_string(): im for im in images if not im.is_built})
 
         return DictTuple(res)
 
@@ -229,6 +233,7 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"{res.err()}")
         image: SyftWorkerImage = res.ok()
 
+        context.node = cast(AbstractNode, context.node)
         if context.node.in_memory_workers:
             pass
         elif IN_KUBERNETES:
