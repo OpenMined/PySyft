@@ -1,4 +1,5 @@
 # stdlib
+import typing
 from typing import TypeVar
 from typing import Union
 from typing import final
@@ -12,6 +13,7 @@ from typing_extensions import dataclass_transform
 # relative
 from ..serde.serializable import serializable
 
+TupleGenerator = typing.Generator[typing.Tuple[str, typing.Any], None, None]
 T = TypeVar("T", bound=BaseModel)
 
 
@@ -37,5 +39,16 @@ class PartialModelMetaclass(ModelMetaclass):
                 cls.model_fields[field].default = Empty
 
         cls.model_rebuild(force=True)
+
+        def __iter__(self: T) -> TupleGenerator:
+            empty_fields = {
+                field
+                for field, field_info in self.model_fields.items()
+                if field_info.default is Empty
+            }
+
+            yield from ((k, v) for k, v in super.__iter__() if k not in empty_fields)
+
+        cls.__iter__ = __iter__
 
         return super().__call__(*args, **kwargs)
