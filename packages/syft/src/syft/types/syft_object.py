@@ -8,8 +8,10 @@ from hashlib import sha256
 import inspect
 from inspect import Signature
 import re
+import sys
 import traceback
 import types
+from types import NoneType
 from typing import Any
 from typing import Callable
 from typing import ClassVar
@@ -22,6 +24,8 @@ from typing import Sequence
 from typing import Tuple
 from typing import Type
 from typing import Union
+from typing import get_args
+from typing import get_origin
 import warnings
 
 # third party
@@ -48,6 +52,12 @@ from .dicttuple import DictTuple
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
+
+if sys.version_info >= (3, 10):
+    # stdlib
+    from types import UnionType
+else:
+    UnionType = Union
 
 IntStr = Union[int, str]
 AbstractSetIntStr = Set[IntStr]
@@ -76,6 +86,19 @@ DYNAMIC_SYFT_ATTRIBUTES = [
     "syft_node_location",
     "syft_client_verify_key",
 ]
+
+
+def _get_optional_inner_type(x: Any) -> Any:
+    if get_origin(x) not in (Optional, UnionType, Union):
+        return x
+
+    args = get_args(x)
+
+    if not any(arg is NoneType for arg in args):
+        return x
+
+    non_none = [arg for arg in args if arg is not NoneType]
+    return non_none[0] if len(non_none) == 1 else x
 
 
 class SyftHashableObject:
@@ -587,7 +610,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         kt_dict = {}
         for key in getattr(cls, attr_name, []):
             if key in cls.model_fields:
-                type_ = cls.model_fields[key].annotation
+                type_ = _get_optional_inner_type(cls.model_fields[key].annotation)
             else:
                 try:
                     method = getattr(cls, key)
@@ -601,7 +624,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             # EmailStr seems to be lost every time the value is set even with a validator
             # this means the incoming type is str so our validators fail
 
-            if type_ is EmailStr or type_ == Union[EmailStr, None]:
+            if type_ is EmailStr:
                 type_ = str
 
             kt_dict[key] = type_
