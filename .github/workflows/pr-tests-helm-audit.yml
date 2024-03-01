@@ -1,0 +1,43 @@
+name: PR Tests - Lint Helm Charts
+
+on:
+  push:
+    paths:
+      - .github/workflows/pr-tests-helm-lint.yml
+      - packages/grid/helm/syft/**
+
+  # temporary disabled
+  # pull_request:
+  #   branches:
+  #     - dev
+  #   paths:
+  #     - packages/grid/helm/syft/**
+
+concurrency:
+  group: pr-tests-helm-lint
+  cancel-in-progress: true
+
+jobs:
+  pr-tests-helm-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: fairwindsops/polaris/.github/actions/setup-polaris@master
+
+      - name: Install dependencies
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew update
+
+          # Install python deps
+          pip install --upgrade pip
+          pip install tox
+
+          brew install kube-linter
+
+      - name: Run Helm Lint
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          tox -e syft.lint.helm
