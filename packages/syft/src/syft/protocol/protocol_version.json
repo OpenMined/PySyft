@@ -268,6 +268,11 @@
           "hash": "bcb31f847907edc9c95d2d120dc5427854604f40940e3f41cd0474a1820ac65e",
           "action": "add"
         },
+        "2": {
+          "version": 2,
+          "hash": "002d8be821140befebbc0503e6bc1ef8779094e24e46305e5da5af6eecb56b13",
+          "action": "add"
+        },
         "3": {
           "version": 3,
           "hash": "ad6b897da9bdf2fcacc853fad73b7d7b98c8d0ecb58c35110e236edefd99f561",
