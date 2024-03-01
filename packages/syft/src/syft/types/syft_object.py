@@ -11,7 +11,6 @@ import re
 import sys
 import traceback
 import types
-from types import NoneType
 from typing import Any
 from typing import Callable
 from typing import ClassVar
@@ -55,9 +54,11 @@ from .uid import UID
 
 if sys.version_info >= (3, 10):
     # stdlib
+    from types import NoneType
     from types import UnionType
 else:
     UnionType = Union
+    NoneType = type(None)
 
 IntStr = Union[int, str]
 AbstractSetIntStr = Set[IntStr]
