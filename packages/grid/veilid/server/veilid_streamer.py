@@ -8,8 +8,6 @@ from typing import List
 
 # third party
 import veilid
-from veilid_core import app_call
-from veilid_core import get_veilid_conn
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,7 +39,14 @@ class VeilidStreamer:
         OK = b"@VS@OK"
         ERROR = b"@VS@ER"
 
-    def __init__(self, chunk_size=32 * 1024):
+    def __init__(
+        self,
+        connection: veilid.VeilidAPI,
+        router: veilid.RoutingContext,
+        chunk_size: int = 32 * 1024,
+    ):
+        self.connection = connection
+        self.router = router
         self.chunk_size = chunk_size
 
         # Key is the message hash, value is a list of chunks
@@ -59,15 +64,14 @@ class VeilidStreamer:
 
     async def _send_request(self, dht_key: str, request_data: bytes) -> bytes:
         """Send an app call to the Veilid server and return the response."""
-        response = await app_call(dht_key, request_data)
-        if response != VeilidStreamer.ResponseType.OK:
+        response = await self.router.app_call(dht_key, request_data)
+        if response != VeilidStreamer.ResponseType.OK.value:
             raise Exception("Unexpected response from server")
         return response
 
     async def _send_response(self, call_id: veilid.OperationId, response: bytes):
         """Send a response to an app call."""
-        async with await get_veilid_conn() as conn:
-            await conn.app_call_reply(call_id, response)
+        await self.connection.app_call_reply(call_id, response)
 
     def _calculate_chunks_count(self, message: bytes) -> int:
         message_size = len(message)
@@ -81,7 +85,7 @@ class VeilidStreamer:
         return total_no_of_chunks
 
     def _get_chunk(self, message: bytes, chunk_number: int) -> bytes:
-        message_size = self.chunk_size - len(self.stream_chunk_header_struct.size)
+        message_size = self.chunk_size - self.stream_chunk_header_struct.size
         cursor_start = chunk_number * message_size
         return message[cursor_start : cursor_start + message_size]
 
@@ -92,7 +96,7 @@ class VeilidStreamer:
 
         # Send STREAM_START request
         stream_start_request = self.stream_start_struct.pack(
-            VeilidStreamer.RequestType.STREAM_START,
+            VeilidStreamer.RequestType.STREAM_START.value,
             message_hash,
             chunks_count,
         )
@@ -101,7 +105,7 @@ class VeilidStreamer:
         # Send chunks
         for chunk_number in range(chunks_count):
             chunk_header = self.stream_chunk_header_struct.pack(
-                VeilidStreamer.RequestType.STREAM_CHUNK,
+                VeilidStreamer.RequestType.STREAM_CHUNK.value,
                 message_hash,
                 chunk_number,
             )
@@ -110,8 +114,8 @@ class VeilidStreamer:
             await self._send_request(dht_key, chunk_data)
 
         # Send STREAM_END request
-        stream_end_message = self.stream_start_struct.pack(
-            VeilidStreamer.RequestType.STREAM_END, message_hash
+        stream_end_message = self.stream_end_struct.pack(
+            VeilidStreamer.RequestType.STREAM_END.value, message_hash
         )
         await self._send_request(dht_key, stream_end_message)
 
@@ -122,7 +126,7 @@ class VeilidStreamer:
         _, message_hash, chunks_count = self.stream_start_struct.unpack(message)
         logger.info(f"Receiving stream of {chunks_count} chunks; Hash {message_hash}")
         self.receive_buffer[message_hash] = [None] * chunks_count
-        await self._send_response(call_id, VeilidStreamer.ResponseType.OK)
+        await self._send_response(call_id, VeilidStreamer.ResponseType.OK.value)
 
     async def _handle_receive_stream_chunk(
         self, call_id: veilid.OperationId, message: bytes
@@ -136,7 +140,7 @@ class VeilidStreamer:
         buffer = self.receive_buffer[message_hash]
         buffer[chunk_number] = chunk
         logger.info(f"Got chunk {chunk_number + 1}/{len(buffer)}; Length: {len(chunk)}")
-        await self._send_response(call_id, VeilidStreamer.ResponseType.OK)
+        await self._send_response(call_id, VeilidStreamer.ResponseType.OK.value)
 
     async def _handle_receive_stream_end(
         self, call_id: veilid.OperationId, message: bytes
@@ -148,9 +152,9 @@ class VeilidStreamer:
         hash_matches = hashlib.sha256(message).digest() == message_hash
         logger.info(f"Message reassembled, hash matches: {hash_matches}")
         response = (
-            VeilidStreamer.ResponseType.OK
+            VeilidStreamer.ResponseType.OK.value
             if hash_matches
-            else VeilidStreamer.ResponseType.ERROR
+            else VeilidStreamer.ResponseType.ERROR.value
         )
         await self._send_response(call_id, response)
         del self.receive_buffer[message_hash]
@@ -161,11 +165,11 @@ class VeilidStreamer:
         call_id = update.detail.call_id
         message = update.detail.message
 
-        if message.startswith(VeilidStreamer.RequestType.STREAM_START):
+        if message.startswith(VeilidStreamer.RequestType.STREAM_START.value):
             await self._handle_receive_stream_start(call_id, message)
-        elif message.startswith(VeilidStreamer.RequestType.STREAM_CHUNK):
+        elif message.startswith(VeilidStreamer.RequestType.STREAM_CHUNK.value):
             await self._handle_receive_stream_chunk(call_id, message)
-        elif message.startswith(VeilidStreamer.RequestType.STREAM_END):
+        elif message.startswith(VeilidStreamer.RequestType.STREAM_END.value):
             return await self._handle_receive_stream_end(call_id, message)
         else:
             logger.info(f"Bad message: {message}")
