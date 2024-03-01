@@ -139,7 +139,7 @@ class KeyValueStorePartition(StorePartition):
         except BaseException as e:
             return Err(str(e))
 
-        return Ok()
+        return Ok(True)
 
     def __len__(self) -> int:
         return len(self.data)
