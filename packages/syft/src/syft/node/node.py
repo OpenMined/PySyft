@@ -1188,8 +1188,8 @@ class Node(AbstractNode):
             if api_call.path not in user_config_registry:
                 if ServiceConfigRegistry.path_exists(api_call.path):
                     return SyftError(
-                        message=f"As a `{role}`,"
-                        f"you have has no access to: {api_call.path}"
+                        message=f"As a `{role}`, "
+                        f"you have no access to: {api_call.path}"
                     )
                 else:
                     return SyftError(
