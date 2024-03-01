@@ -940,16 +940,16 @@ class NodeIdentity(Identity):
     node_name: str
 
     @staticmethod
-    def from_api(api: SyftAPI) -> Optional[NodeIdentity]:
+    def from_api(api: SyftAPI) -> NodeIdentity:
         # stores the name root verify key of the domain node
-        if api.connection is not None:
-            node_metadata = api.connection.get_node_metadata(api.signing_key)
-            return NodeIdentity(
-                node_name=node_metadata.name,
-                node_id=api.node_uid,
-                verify_key=SyftVerifyKey.from_string(node_metadata.verify_key),
-            )
-        return None
+        if api.connection is None:
+            raise ValueError("{api}'s connection is None. Can't get the node identity")
+        node_metadata = api.connection.get_node_metadata(api.signing_key)
+        return NodeIdentity(
+            node_name=node_metadata.name,
+            node_id=api.node_uid,
+            verify_key=SyftVerifyKey.from_string(node_metadata.verify_key),
+        )
 
     @classmethod
     def from_change_context(cls, context: ChangeContext) -> NodeIdentity:

@@ -70,7 +70,7 @@ def extract_uid(v: Any) -> UID:
     return value
 
 
-def filter_only_uids(results: Any) -> Union[list, dict]:
+def filter_only_uids(results: Any) -> Union[list, dict, UID]:
     if not hasattr(results, "__len__"):
         results = [results]
 
@@ -89,7 +89,7 @@ def filter_only_uids(results: Any) -> Union[list, dict]:
 
 class Policy(SyftObject):
     # version
-    __canonical_name__ = "Policy"
+    __canonical_name__: str = "Policy"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
@@ -130,7 +130,7 @@ class UserPolicyStatus(Enum):
     APPROVED = "approved"
 
 
-def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
+def partition_by_node(kwargs: Dict[str, Any]) -> dict[NodeIdentity, dict[str, UID]]:
     # relative
     from ...client.api import APIRegistry
     from ...client.api import NodeIdentity
@@ -262,7 +262,7 @@ def retrieve_from_db(
 
 
 def allowed_ids_only(
-    allowed_inputs: Dict[str, UID],
+    allowed_inputs: dict[NodeIdentity, Any],
     kwargs: Dict[str, Any],
     context: AuthedServiceContext,
 ) -> Dict[str, UID]:
@@ -343,7 +343,7 @@ class OutputPolicy(Policy):
         context: NodeServiceContext,
         outputs: Any,
     ) -> Any:
-        output_uids: Union[Dict[str, Any], list] = filter_only_uids(outputs)
+        output_uids: Union[dict[str, Any], list, UID] = filter_only_uids(outputs)
         if isinstance(output_uids, UID):
             output_uids = [output_uids]
         history = OutputHistory(
@@ -451,7 +451,7 @@ class CustomInputPolicy(metaclass=CustomPolicy):
 
 @serializable()
 class UserPolicy(Policy):
-    __canonical_name__ = "UserPolicy"
+    __canonical_name__: str = "UserPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
@@ -525,7 +525,7 @@ class SubmitUserPolicy(Policy):
     __canonical_name__ = "SubmitUserPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
+    id: Optional[UID]  # type: ignore[assignment]
     code: str
     class_name: str
     input_kwargs: List[str]
@@ -545,20 +545,28 @@ class SubmitUserPolicy(Policy):
 
 
 def hash_code(context: TransformContext) -> TransformContext:
-    code = context.output["code"]
-    del context.output["code"]
-    context.output["raw_code"] = code
-    code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
-    context.output["code_hash"] = code_hash
+    if context.output is not None:
+        code = context.output["code"]
+        del context.output["code"]
+        context.output["raw_code"] = code
+        code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
+        context.output["code_hash"] = code_hash
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
+
     return context
 
 
 def generate_unique_class_name(context: TransformContext) -> TransformContext:
     # TODO: Do we need to check if the initial name contains underscores?
-    code_hash = context.output["code_hash"]
-    service_class_name = context.output["class_name"]
-    unique_name = f"{service_class_name}_{context.credentials}_{code_hash}"
-    context.output["unique_name"] = unique_name
+    if context.output is not None:
+        code_hash = context.output["code_hash"]
+        service_class_name = context.output["class_name"]
+        unique_name = f"{service_class_name}_{context.credentials}_{code_hash}"
+        context.output["unique_name"] = unique_name
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
+
     return context
 
 
@@ -657,42 +665,57 @@ def check_class_code(context: TransformContext) -> TransformContext:
     # check for Policy template -> __init__, apply_output, public_state
     # parse init signature
     # check dangerous libraries, maybe compile_restricted already does that
-    try:
-        processed_code = process_class_code(
-            raw_code=context.output["raw_code"],
-            class_name=context.output["unique_name"],
-        )
-        context.output["parsed_code"] = processed_code
-    except Exception as e:
-        raise e
+    if context.output is not None:
+        try:
+            processed_code = process_class_code(
+                raw_code=context.output["raw_code"],
+                class_name=context.output["unique_name"],
+            )
+            context.output["parsed_code"] = processed_code
+        except Exception as e:
+            raise e
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
+
     return context
 
 
 def compile_code(context: TransformContext) -> TransformContext:
-    byte_code = compile_byte_code(context.output["parsed_code"])
-    if byte_code is None:
-        raise Exception(
-            "Unable to compile byte code from parsed code. "
-            + context.output["parsed_code"]
-        )
+    if context.output is not None:
+        byte_code = compile_byte_code(context.output["parsed_code"])
+        if byte_code is None:
+            raise Exception(
+                "Unable to compile byte code from parsed code. "
+                + context.output["parsed_code"]
+            )
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
+
     return context
 
 
 def add_credentials_for_key(key: str) -> Callable:
     def add_credentials(context: TransformContext) -> TransformContext:
-        context.output[key] = context.credentials
+        if context.output is not None:
+            context.output[key] = context.credentials
+        else:
+            print("f{context}'s output is None. No trasformation happened.")
         return context
 
     return add_credentials
 
 
 def generate_signature(context: TransformContext) -> TransformContext:
-    params = [
-        Parameter(name=k, kind=Parameter.POSITIONAL_OR_KEYWORD)
-        for k in context.output["input_kwargs"]
-    ]
-    sig = Signature(parameters=params)
-    context.output["signature"] = sig
+    if context.output is not None:
+        params = [
+            Parameter(name=k, kind=Parameter.POSITIONAL_OR_KEYWORD)
+            for k in context.output["input_kwargs"]
+        ]
+        sig = Signature(parameters=params)
+        context.output["signature"] = sig
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
+
     return context
 
 
