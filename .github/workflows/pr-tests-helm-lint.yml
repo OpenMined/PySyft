@@ -30,18 +30,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: fairwindsops/polaris/.github/actions/setup-polaris@master
-
       - name: Install dependencies
         run: |
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           brew update
+          brew tap FairwindsOps/tap
+          brew install kube-linter FairwindsOps/tap/polaris
 
           # Install python deps
           pip install --upgrade pip
           pip install tox
 
-          brew install kube-linter
+          kube-linter version
+          polaris version
 
       - name: Run Polaris
         run: |
