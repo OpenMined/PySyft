@@ -15,6 +15,7 @@ from typing import ClassVar
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -57,6 +58,10 @@ from .action_permissions import ActionPermission
 from .action_types import action_type_for_object
 from .action_types import action_type_for_type
 from .action_types import action_types
+
+if TYPE_CHECKING:
+    # relative
+    from ..sync.diff_state import AttrDiff
 
 NoneType = type(None)
 
@@ -308,6 +313,8 @@ passthrough_attrs = [
     "__include_fields__",  # pydantic
     "_calculate_keys",  # pydantic
     "_get_value",  # pydantic
+    "__sha256__",
+    "__hash_exclude_attrs__",
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -323,6 +330,8 @@ dont_wrap_output_attrs = [
     "syft_resolved",  # syft
     "node_uid",
     "syft_action_data_node_id",
+    "__sha256__",
+    "__hash_exclude_attrs__",
 ]
 dont_make_side_effects = [
     "_repr_html_",
@@ -336,6 +345,8 @@ dont_make_side_effects = [
     "syft_resolved",  # syft
     "node_uid",
     "syft_action_data_node_id",
+    "__sha256__",
+    "__hash_exclude_attrs__",
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -577,6 +588,8 @@ BASE_PASSTHROUGH_ATTRS = [
     "refresh_object",
     "syft_action_data_node_id",
     "node_uid",
+    "__sha256__",
+    "__hash_exclude_attrs__",
 ]
 
 
@@ -2005,7 +2018,7 @@ class AnyActionObjectV1(ActionObjectV1):
 
 
 @serializable()
-class AnyActionObject(ActionObjectV2):
+class AnyActionObjectV2(ActionObjectV2):
     __canonical_name__ = "AnyActionObject"
     __version__ = SYFT_OBJECT_VERSION_2
 

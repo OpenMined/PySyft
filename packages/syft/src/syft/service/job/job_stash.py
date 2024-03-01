@@ -475,6 +475,9 @@ class Job(SyftObject):
         subjob_ids = [subjob.id for subjob in self.subjobs]
         dependencies.extend(subjob_ids)
 
+        if self.user_code_id is not None:
+            dependencies.append(self.user_code_id)
+
         return dependencies
 
 

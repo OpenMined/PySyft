@@ -18,6 +18,7 @@ from typing import KeysView
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -45,6 +46,10 @@ from .dicttuple import DictTuple
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
+
+if TYPE_CHECKING:
+    # relative
+    from ..service.sync.diff_state import AttrDiff
 
 IntStr = Union[int, str]
 AbstractSetIntStr = Set[IntStr]
@@ -633,6 +638,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         return self
 
     def syft_eq(self, ext_obj) -> bool:
+        if ext_obj is None:
+            return False
         attrs_to_check = self.__dict__.keys()
 
         obj_exclude_attrs = getattr(self, "__exclude_sync_diff_attrs__", [])
@@ -640,14 +647,15 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             if attr not in base_attrs_sync_ignore and attr not in obj_exclude_attrs:
                 obj_attr = getattr(self, attr)
                 ext_obj_attr = getattr(ext_obj, attr)
-                if hasattr(obj_attr, "syft_eq"):
-                    if not obj_attr.syft_eq(ext_obj_attr):
+                if hasattr(obj_attr, "syft_eq") and not inspect.isclass(obj_attr):
+                    if not obj_attr.syft_eq(ext_obj=ext_obj_attr):
                         return False
                 elif obj_attr != ext_obj_attr:
                     return False
         return True
 
     def get_diffs(self, ext_obj) -> List["AttrDiff"]:
+        # self is low, ext is high
         # relative
         from ..service.sync.diff_state import AttrDiff
         from ..service.sync.diff_state import ListDiff
@@ -675,14 +683,18 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                         diff_attrs.append(list_diff)
 
                 # TODO: to the same check as above for Dicts when we use them
+                else:
+                    cmp = obj_attr.__eq__
+                    if hasattr(obj_attr, "syft_eq"):
+                        cmp = obj_attr.syft_eq
 
-                if obj_attr != ext_obj_attr:
-                    diff_attr = AttrDiff(
-                        attr_name=attr,
-                        low_attr=ext_obj_attr,
-                        high_attr=obj_attr,
-                    )
-                    diff_attrs.append(diff_attr)
+                    if not cmp(ext_obj_attr):
+                        diff_attr = AttrDiff(
+                            attr_name=attr,
+                            low_attr=obj_attr,
+                            high_attr=ext_obj_attr,
+                        )
+                        diff_attrs.append(diff_attr)
         return diff_attrs
 
 

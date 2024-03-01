@@ -3,8 +3,8 @@ from typing import Optional
 
 # relative
 from ..service.sync.diff_state import NodeDiff
+from ..service.sync.diff_state import ObjectDiff
 from ..service.sync.diff_state import ResolvedSyncState
-from ..service.sync.diff_state import display_diff_hierarchy
 from ..service.sync.diff_state import resolve_diff
 
 
@@ -33,25 +33,30 @@ def resolve(state: NodeDiff, decision: Optional[str] = None):
     resolved_state_low: ResolvedSyncState = ResolvedSyncState()
     resolved_state_high: ResolvedSyncState = ResolvedSyncState()
 
-    for diff_hierarchy in state.hierarchies:
-        if all(item.merge_state == "SAME" for item, _ in diff_hierarchy):
+    for batch_hierarchy in state.hierarchies:
+        batch_decision = decision
+        if all(diff.status == "SAME" for diff in batch_hierarchy.diffs):
             # Hierarchy has no diffs
             continue
 
-        display_diff_hierarchy(diff_hierarchy)
+        print(batch_hierarchy.__repr__())
 
-        if decision is None:
-            decision = get_user_input_for_resolve()
-        else:
-            print(f"Decision: Syncing all objects from {decision} side")
+        if batch_decision is None:
+            batch_decision = get_user_input_for_resolve()
 
-        for diff, _ in diff_hierarchy:
-            low_resolved_diff: ResolvedSyncState
-            high_resolved_diff: ResolvedSyncState
-            low_resolved_diff, high_resolved_diff = resolve_diff(
-                diff, decision=decision
+        print(
+            f"Decision: Syncing {len(batch_hierarchy)} objects from {batch_decision} side"
+        )
+        print()
+        print("=" * 100)
+        print()
+
+        object_diff: ObjectDiff
+        for object_diff in batch_hierarchy.diffs:
+            low_resolved_batch_state, high_resolved_batch_state = resolve_diff(
+                object_diff, decision=batch_decision
             )
-            resolved_state_low.add(low_resolved_diff)
-            resolved_state_high.add(high_resolved_diff)
+            resolved_state_low.add(low_resolved_batch_state)
+            resolved_state_high.add(high_resolved_batch_state)
 
     return resolved_state_low, resolved_state_high

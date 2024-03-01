@@ -94,21 +94,18 @@ def test_sync_flow():
     print(low_state.objects, high_state.objects)
 
     diff_state = compare_states(low_state, high_state)
-    print(diff_state.diffs)
-    low_items_to_sync, high_items_to_sync = resolve(diff_state, force_approve=True)
+    low_items_to_sync, high_items_to_sync = resolve(diff_state, decision="low")
 
     print(low_items_to_sync, high_items_to_sync)
 
-    low_client._sync_items(low_items_to_sync)
+    low_client.apply_state(low_items_to_sync)
 
-    high_client._sync_items(high_items_to_sync)
+    high_client.apply_state(high_items_to_sync)
 
     low_state = low_client.sync.get_state()
     high_state = high_client.sync.get_state()
 
     diff_state = compare_states(low_state, high_state)
-
-    diff_state.diffs
 
     high_client._fetch_api(high_client.credentials)
 
@@ -116,18 +113,23 @@ def test_sync_flow():
 
     print(high_client.code.get_all())
     job_high = high_client.code.compute_mean(data=data_high, blocking=False)
+    print("Waiting for job...")
     job_high.wait()
     job_high.result.get()
 
-    request = high_client.requests[0]
-    result_obj = job_high.result
+    # syft absolute
+    from syft.service.request.request import Request
+
+    request: Request = high_client.requests[0]
     job_info = job_high.info(public_metadata=True, result=True)
 
-    accept_res = request.accept_by_depositing_result(job_info)
+    print(request.syft_client_verify_key, request.syft_node_location)
+    print(request.code.syft_client_verify_key, request.code.syft_node_location)
+    request.accept_by_depositing_result(job_info)
 
     request = high_client.requests[0]
     code = request.code
-    log = job_high._get_log_objs()
+    job_high._get_log_objs()
 
     action_store_high = high_worker.get_service("actionservice").store
     blob_store_high = high_worker.get_service("blobstorageservice").stash.partition
@@ -145,11 +147,10 @@ def test_sync_flow():
 
     diff_state_2 = compare_states(low_state, high_state)
 
-    diff_state_2.diffs
-    low_items_to_sync, high_items_to_sync = resolve(diff_state_2, force_approve=True)
+    low_items_to_sync, high_items_to_sync = resolve(diff_state_2, decision="high")
     for diff in diff_state_2.diffs:
-        print(diff.merge_state, diff.object_type)
-    low_client._sync_items(low_items_to_sync)
+        print(diff.status, diff.object_type)
+    low_client.apply_state(low_items_to_sync)
 
     action_store_low = low_worker.get_service("actionservice").store
     blob_store_low = low_worker.get_service("blobstorageservice").stash.partition
@@ -165,13 +166,10 @@ def test_sync_flow():
     low_state = low_client.sync.get_state()
     high_state = high_client.sync.get_state()
     res_low = client_low_ds.code.compute_mean(data=data_low)
+    print("Res Low", res_low)
 
     assert res_low.get() == private_high.mean()
-    assert (
-        res_low.id
-        == job_high.result.id.id
-        == code.output_policy.last_output_ids[0].id.id
-    )
+    assert res_low.id == job_high.result.id.id == code.output_history[-1][0].id.id
     assert (
         job_high.result.syft_blob_storage_entry_id == res_low.syft_blob_storage_entry_id
     )

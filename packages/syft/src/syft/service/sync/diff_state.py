@@ -7,14 +7,19 @@ How to check differences between two objects:
 """
 
 # stdlib
+import html
+import textwrap
 from typing import Any
+from typing import ClassVar
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Tuple
 from typing import Type
 
 # third party
+import pydantic
 from rich import box
 from rich.console import Console
 from rich.console import Group
@@ -32,7 +37,12 @@ from ...util.colors import SURFACE
 from ...util.fonts import ITABLES_CSS
 from ...util.fonts import fonts_css
 from ..action.action_object import ActionObject
-from ..request.request import UserCodeStatusChange
+from ..code.user_code import UserCode
+from ..code.user_code import UserCodeStatusCollection
+from ..job.job_stash import Job
+from ..log.log import SyftLog
+from ..output.output_service import ExecutionOutput
+from ..request.request import Request
 from ..response import SyftError
 from .sync_state import SyncState
 
@@ -47,17 +57,24 @@ class AttrDiff(SyftObject):
     low_attr: Any
     high_attr: Any
 
-    def __repr__(self):
+    def _repr_html_(self):
         return f"""{self.attr_name}:
     Low Side value: {self.low_attr}
     High Side value: {self.high_attr}
     """
 
-    def __repr_low_side__(self):
-        return recursive_attr_repr(self.low_attr)
+    def __repr_side__(self, side):
+        if side == "low":
+            return recursive_attr_repr(self.low_attr)
+        if side == "high":
+            return recursive_attr_repr(self.high_attr)
 
-    def __repr_high_side__(self):
-        return recursive_attr_repr(self.high_attr)
+    def _coll_repr_(self) -> Dict[str, Any]:
+        return {
+            "attr name": self.attr_name,
+            "low attr": html.escape(f"{self.low_attr}"),
+            "high attr": html.escape(str(self.high_attr)),
+        }
 
 
 class ListDiff(AttrDiff):
@@ -109,63 +126,28 @@ class ListDiff(AttrDiff):
         return change_diff
 
 
-# class DictDiff(AttrDiff):
-#     # version
-#     __canonical_name__ = "DictDiff"
-#     __version__ = SYFT_OBJECT_VERSION_1
-#     diff_keys: List[Any] = []
-#     new_low_keys: List[Any] = []
-#     new_high_keys: List[Any] = []
+def recursive_attr_repr(value_attr, num_tabs=0):
+    new_num_tabs = num_tabs + 1
 
-# def get_diff_dict(low_dict, high_dict, check_func=None):
-#     diff_keys = []
-
-#     low_dict_keys = set(low_dict.keys())
-#     high_dict_keys = set(high_dict.keys())
-
-#     common_keys = low_dict_keys & high_dict_keys
-#     new_low_keys = low_dict_keys - high_dict_keys
-#     new_high_keys = high_dict_keys - low_dict_keys
-
-#     for key in common_keys:
-#         if check_func:
-#             if not check_func(low_dict[key], high_dict[key]):
-#                 diff_keys.append(key)
-#         elif low_dict[key] != high_dict[key]:
-#             diff_keys.append(key)
-
-#     return diff_keys, list(new_low_keys), list(new_high_keys)
-
-
-def recursive_attr_repr(value_attr, no_tabs=0):
-    new_no_tabs = no_tabs + 1 if no_tabs != 0 else 2
-    if isinstance(value_attr, List):
+    if isinstance(value_attr, list):
         list_repr = "[\n"
         for elem in value_attr:
-            list_repr += recursive_attr_repr(elem, no_tabs=new_no_tabs) + "\n"
-        list_repr += f"{sketchy_tab * (new_no_tabs-1)}]"
+            list_repr += recursive_attr_repr(elem, num_tabs=num_tabs + 1) + "\n"
+        list_repr += "]"
         return list_repr
-    elif isinstance(value_attr, Dict):
-        dict_repr = "[\n"
-        for key, elem in value_attr.items:
-            elem_repr = {recursive_attr_repr(elem, no_tabs=new_no_tabs)}
-            dict_repr += f"{sketchy_tab * no_tabs}{key}: {elem_repr}\n"
-        dict_repr += f"{sketchy_tab * (new_no_tabs-1)}]"
-        return
-    elif isinstance(value_attr, UserCodeStatusChange):
-        return f"{sketchy_tab*no_tabs}UserCodeStatusChange"
-    # elif isinstance(value_attr, str):
-    #     if len(value_attr.split(",")) > 1:
-    #         repr_str = ""
-    #         for sub_string in value_attr.split(","):
-    #             repr_str += f"{sketchy_tab*(new_no_tabs-1)}{sub_string},\n"
-    #         return repr_str[:-1]
+
+    elif isinstance(value_attr, dict):
+        dict_repr = "{\n"
+        for key, elem in value_attr.items():
+            dict_repr += f"{sketchy_tab * new_num_tabs}{key}: {str(elem)}\n"
+        dict_repr += "}"
+        return dict_repr
 
     elif isinstance(value_attr, bytes):
         value_attr = repr(value_attr)
         if len(value_attr) > 50:
             value_attr = value_attr[:50] + "..."
-    return f"{sketchy_tab*no_tabs}{value_attr}"
+    return f"{sketchy_tab*num_tabs}{str(value_attr)}"
 
 
 class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
@@ -178,20 +160,19 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     diff_list: List[AttrDiff] = []
 
     __repr_attrs__ = [
-        # "object_type",
-        # "merge_state",
         "low_state",
         "high_state",
     ]
 
+    def __hash__(self):
+        return hash(self.id) + hash(self.low_obj) + hash(self.high_obj)
+
     @property
-    def merge_state(self):
+    def status(self):
         if self.low_obj is None or self.high_obj is None:
             return "NEW"
-
         if len(self.diff_list) == 0:
             return "SAME"
-
         return "DIFF"
 
     @property
@@ -206,50 +187,76 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         return self.obj_type.__name__
 
     @property
-    def low_state(self):
-        if self.low_obj is None:
-            return "-"
-        if isinstance(self.low_obj, ActionObject):
-            return self.low_obj.__repr__()
-        if self.high_obj is None:
-            attrs_str = ""
-            attrs = getattr(self.low_obj, "__repr_attrs__", [])
-            for attr in attrs:
-                value = getattr(self.low_obj, attr)
-                attrs_str += f"{sketchy_tab}{attr} = {recursive_attr_repr(value)}\n"
-            attrs_str = attrs_str[:-1]
-            return f"NEW\n\nclass {self.object_type}:\n{attrs_str}"
-        attr_text = f"class {self.object_type}:\n"
-        for diff in self.diff_list:
-            attr_text += (
-                f"{sketchy_tab}{diff.attr_name}={diff.__repr_low_side__()}," + "\n"
-            )
-
-        if len(self.diff_list) > 0:
-            attr_text = attr_text[:-2]
-
-        return attr_text
+    def high_state(self):
+        return self.state_str("high")
 
     @property
-    def high_state(self):
-        if self.high_obj is None:
-            return "-"
+    def low_state(self):
+        return self.state_str("low")
 
-        if isinstance(self.high_obj, ActionObject):
-            return self.high_obj.__repr__()
+    @property
+    def object_uid(self):
+        return self.low_obj.id if self.low_obj is not None else self.high_obj.id
 
-        if self.low_obj is None:
+    def diff_attributes_str(self, side: str) -> str:
+        obj = self.low_obj if side == "low" else self.high_obj
+
+        if obj is None:
+            return ""
+
+        repr_attrs = getattr(obj, "__repr_attrs__", [])
+        if self.status == "SAME":
+            repr_attrs = repr_attrs[:3]
+
+        if self.status in {"SAME", "NEW"}:
             attrs_str = ""
-            attrs = getattr(self.high_obj, "__repr_attrs__", [])
+            for attr in repr_attrs:
+                value = getattr(obj, attr)
+                attrs_str += f"{attr}: {recursive_attr_repr(value)}\n"
+            return attrs_str
+
+        if self.status == "DIFF":
+            attrs_str = ""
+            for diff in self.diff_list:
+                attrs_str += f"{diff.attr_name}: {diff.__repr_side__(side)}\n"
+            return attrs_str
+
+    def diff_side_str(self, side: str) -> str:
+        uid = self.object_uid
+        res = f"{self.obj_type.__name__.upper()} #{uid}:\n"
+        res += self.diff_attributes_str(side)
+        return res
+
+    def state_str(self, side: str) -> str:
+        if side == "high":
+            obj = self.high_obj
+            other_obj = self.low_obj
+        else:
+            obj = self.low_obj
+            other_obj = self.high_obj
+
+        if obj is None:
+            return "-"
+        if self.status == "SAME":
+            return f"SAME\n{self.obj_type.__name__}"
+
+        if isinstance(obj, ActionObject):
+            return obj.__repr__()
+
+        if other_obj is None:
+            attrs_str = ""
+            attrs = getattr(obj, "__repr_attrs__", [])
             for attr in attrs:
-                value = getattr(self.high_obj, attr)
+                value = getattr(obj, attr)
                 attrs_str += f"{sketchy_tab}{attr} = {recursive_attr_repr(value)}\n"
             attrs_str = attrs_str[:-1]
             return f"NEW\n\nclass {self.object_type}:\n{attrs_str}"
-        attr_text = f"class {self.object_type}:\n"
+
+        attr_text = f"DIFF\nclass {self.object_type}:\n"
         for diff in self.diff_list:
+            # TODO
             attr_text += (
-                f"{sketchy_tab}{diff.attr_name}={diff.__repr_high_side__()}," + "\n"
+                f"{sketchy_tab}{diff.attr_name}={diff.__repr_side__(side)}," + "\n"
             )
         if len(self.diff_list) > 0:
             attr_text = attr_text[:-2]
@@ -257,10 +264,16 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         return attr_text
 
     def get_obj(self):
-        if self.merge_state == "NEW":
+        if self.status == "NEW":
             return self.low_obj if self.low_obj is not None else self.high_obj
         else:
             return "Error"
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        return {
+            "low_state": html.escape(self.low_state),
+            "high_state": html.escape(self.high_state),
+        }
 
     def _repr_html_(self) -> str:
         if self.low_obj is None and self.high_obj is None:
@@ -306,7 +319,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
                 + obj_repr
             )
 
-        elif self.merge_state == "SAME":
+        elif self.status == "SAME":
             obj_repr = "No changes between low side and high side"
         else:
             obj_repr = ""
@@ -318,6 +331,144 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
         attr_text = f"<h3>{self.object_type} ObjectDiff:</h3>\n{obj_repr}"
         return base_str + attr_text
+
+
+def _wrap_text(text: str, width: int, indent=4) -> str:
+    """Wrap text, preserving existing line breaks"""
+    return "\n".join(
+        [
+            "\n".join(
+                textwrap.wrap(
+                    line,
+                    width,
+                    break_long_words=False,
+                    replace_whitespace=False,
+                    subsequent_indent=" " * indent,
+                )
+            )
+            for line in text.splitlines()
+            if line.strip() != ""
+        ]
+    )
+
+
+class ObjectDiffBatch(SyftObject):
+    __canonical_name__ = "DiffHierarchy"
+    __version__ = SYFT_OBJECT_VERSION_1
+    LINE_LENGTH: ClassVar[int] = 100
+    INDENT: ClassVar[int] = 4
+    ORDER: ClassVar[Dict] = {"low": 0, "high": 1}
+
+    # Diffs are ordered in depth-first order,
+    # so the first diff is the root of the hierarchy
+    diffs: List[ObjectDiff]
+    hierarchy_levels: List[int]
+    dependencies: Dict[UID, List[UID]] = {}
+    dependents: Dict[UID, List[UID]] = {}
+
+    @property
+    def visual_hierarchy(self) -> Tuple[Type, dict]:
+        # Returns
+        root_obj = (
+            self.root.low_obj if self.root.low_obj is not None else self.root.high_obj
+        )
+        if isinstance(root_obj, Request):
+            return Request, {
+                Request: [UserCode],
+                UserCode: [UserCode],
+            }
+        if isinstance(root_obj, UserCodeStatusCollection):
+            return UserCode, {
+                UserCode: [UserCodeStatusCollection],
+            }
+        if isinstance(root_obj, ExecutionOutput):
+            return UserCode, {
+                UserCode: [Job],
+                Job: [ExecutionOutput, SyftLog, Job],
+                ExecutionOutput: [ActionObject],
+            }
+        raise ValueError(f"Unknown root type: {self.root.obj_type}")
+
+    @pydantic.root_validator
+    def make_dependents(cls, values: dict) -> dict:
+        dependencies = values.get("dependencies", {})
+        dependents = {}
+        for parent, children in dependencies.items():
+            for child in children:
+                dependents[child] = dependents.get(child, []) + [parent]
+        values["dependents"] = dependents
+        return values
+
+    @property
+    def root(self) -> ObjectDiff:
+        return self.diffs[0]
+
+    def __len__(self) -> int:
+        return len(self.diffs)
+
+    def __repr__(self) -> str:
+        return f"{self.hierarchy_str('low')}\n\n{self.hierarchy_str('high')}\n"
+
+    def _get_visual_hierarchy(self, node: ObjectDiff) -> dict[ObjectDiff, dict]:
+        _, child_types_map = self.visual_hierarchy
+        child_types = child_types_map.get(node.obj_type, [])
+        dep_ids = self.dependencies.get(node.object_id, []) + self.dependents.get(
+            node.object_id, []
+        )
+
+        result = {}
+        for child_type in child_types:
+            children = [
+                n
+                for n in self.diffs
+                if n.object_id in dep_ids
+                and isinstance(n.low_obj or n.high_obj, child_type)
+            ]
+            for child in children:
+                result[child] = self._get_visual_hierarchy(child)
+
+        return result
+
+    def get_visual_hierarchy(self) -> "ObjectDiffBatch":
+        visual_root_type = self.visual_hierarchy[0]
+        # First diff with a visual root type is the visual root
+        # because diffs are in depth-first order
+        visual_root = [
+            diff
+            for diff in self.diffs
+            if isinstance(diff.low_obj or diff.high_obj, visual_root_type)
+        ][0]
+        return {visual_root: self._get_visual_hierarchy(visual_root)}
+
+    def _get_obj_str(self, diff_obj: ObjectDiff, level: int, side: str) -> str:
+        obj = diff_obj.low_obj if side == "low" else diff_obj.high_obj
+        if obj is None:
+            return ""
+        indent = " " * level * self.INDENT
+        obj_str = diff_obj.diff_side_str(side)
+        obj_str = _wrap_text(obj_str, width=self.LINE_LENGTH - len(indent))
+
+        line_prefix = indent + f"―――― {diff_obj.status} "
+        line = "―" * (self.LINE_LENGTH - len(line_prefix))
+        return f"""{line_prefix}{line}
+
+{textwrap.indent(obj_str, indent)}
+
+"""
+
+    def hierarchy_str(self, side: str) -> str:
+        def _hierarchy_str_recursive(tree: Dict, level: int) -> str:
+            result = ""
+            for node, children in tree.items():
+                result += self._get_obj_str(node, level, side)
+                result += _hierarchy_str_recursive(children, level + 1)
+            return result
+
+        visual_hierarchy = self.get_visual_hierarchy()
+        res = _hierarchy_str_recursive(visual_hierarchy, 0)
+        return f"""{side.upper()} SIDE DIFF:
+
+{res}"""
 
 
 class NodeDiff(SyftObject):
@@ -355,13 +506,13 @@ class NodeDiff(SyftObject):
     @property
     def diffs(self) -> List[ObjectDiff]:
         # Returns a list of diffs, in depth-first order.
-        return [diff for hierarchy in self.hierarchies for diff, _ in hierarchy]
+        return [diff for hierarchy in self.hierarchies for diff in hierarchy.diffs]
 
     def _repr_html_(self) -> Any:
         return self.diffs._repr_html_()
 
     @property
-    def hierarchies(self) -> List[List[Tuple[ObjectDiff, int]]]:
+    def hierarchies(self) -> List[ObjectDiffBatch]:
         # Returns a list of hierarchies, where each hierarchy is a list of tuples (ObjectDiff, level),
         # in depth-first order.
 
@@ -372,11 +523,35 @@ class NodeDiff(SyftObject):
         # ---- Diff3
         # -- Diff4
 
-        def _build_hierarchy_helper(uid, level=0):
+        def _build_hierarchy_helper(
+            uid: UID, level: int = 0, visited: Optional[Set] = None
+        ):
+            visited = visited if visited is not None else set()
+
+            if uid in visited:
+                return []
+
             result = [(uid, level)]
+            visited.add(uid)
             if uid in self.dependencies:
-                for child_uid in self.dependencies[uid]:
-                    result.extend(_build_hierarchy_helper(child_uid, level + 1))
+                deps = self.dependencies[uid]
+                for dep_uid in self.dependencies[uid]:
+                    if dep_uid not in visited:
+                        # NOTE we pass visited + deps to recursive calls, to have
+                        # all objects at the highest level in the hierarchy
+                        # Example:
+                        # ExecutionOutput
+                        # -- Job
+                        # ---- Result
+                        # -- Result
+                        # We want to omit Job.Result, because it's already in ExecutionOutput.Result
+                        result.extend(
+                            _build_hierarchy_helper(
+                                uid=dep_uid,
+                                level=level + 1,
+                                visited=visited | set(deps) - {dep_uid},
+                            )
+                        )
             return result
 
         hierarchies = []
@@ -387,14 +562,23 @@ class NodeDiff(SyftObject):
 
         for root_uid in root_ids:
             uid_hierarchy = _build_hierarchy_helper(root_uid)
-            diff_hierarchy = [
-                (self.obj_uid_to_diff[uid], level) for uid, level in uid_hierarchy
-            ]
-            hierarchies.append(diff_hierarchy)
+            diffs = [self.obj_uid_to_diff[uid] for uid, _ in uid_hierarchy]
+            levels = [level for _, level in uid_hierarchy]
+
+            batch_uids = {uid for uid, _ in uid_hierarchy}
+            dependencies = {
+                uid: [d for d in self.dependencies.get(uid, []) if d in batch_uids]
+                for uid in batch_uids
+            }
+
+            batch = ObjectDiffBatch(
+                diffs=diffs, hierarchy_levels=levels, dependencies=dependencies
+            )
+            hierarchies.append(batch)
 
         return hierarchies
 
-    def add_obj(self, low_obj, high_obj):
+    def add_obj(self, low_obj: SyftObject, high_obj: SyftObject):
         if low_obj is None and high_obj is None:
             raise Exception("Both objects are None")
         obj_type = type(low_obj if low_obj is not None else high_obj)
@@ -407,7 +591,7 @@ class NodeDiff(SyftObject):
                 diff_list=[],
             )
         else:
-            diff_list = high_obj.get_diffs(low_obj)
+            diff_list = low_obj.get_diffs(high_obj)
             diff = ObjectDiff(
                 low_obj=low_obj,
                 high_obj=high_obj,
@@ -419,7 +603,7 @@ class NodeDiff(SyftObject):
     def objs_to_sync(self):
         objs = []
         for diff in self.diffs:
-            if diff.merge_state == "NEW":
+            if diff.status == "NEW":
                 objs.append(diff.get_obj())
         return objs
 
@@ -461,9 +645,7 @@ def display_diff_hierarchy(diff_hierarchy: List[Tuple[ObjectDiff, int]]):
     console = Console()
 
     for diff, level in diff_hierarchy:
-        title = (
-            f"{diff.obj_type.__name__}({diff.object_id}) - State: {diff.merge_state}"
-        )
+        title = f"{diff.obj_type.__name__}({diff.object_id}) - State: {diff.status}"
 
         low_side_panel = display_diff_object(diff.low_state if diff.low_obj else None)
         low_side_panel.title = "Low side"
@@ -491,15 +673,17 @@ def display_diff_hierarchy(diff_hierarchy: List[Tuple[ObjectDiff, int]]):
         console.print(diff_panel)
 
 
-def resolve_diff(diff: ObjectDiff, decision: str) -> ResolvedSyncState:
+def resolve_diff(
+    diff: ObjectDiff, decision: str
+) -> Tuple[ResolvedSyncState, ResolvedSyncState]:
     resolved_diff_low = ResolvedSyncState()
     resolved_diff_high = ResolvedSyncState()
 
     # No diff, return empty resolved state
-    if diff.merge_state == "SAME":
+    if diff.status == "SAME":
         return resolved_diff_low, resolved_diff_high
 
-    elif diff.merge_state == "NEW":
+    elif diff.status == "NEW":
         low_is_none = diff.low_obj is None
         high_is_none = diff.high_obj is None
         if low_is_none and high_is_none:
@@ -515,7 +699,7 @@ def resolve_diff(diff: ObjectDiff, decision: str) -> ResolvedSyncState:
         elif decision == "high" and high_is_none:
             resolved_diff_low.delete_objs.append(diff.low_obj)
 
-    elif diff.merge_state == "DIFF":
+    elif diff.status == "DIFF":
         if decision == "low":
             resolved_diff_high.update_objs.append(diff.low_obj)
         else:  # decision == high

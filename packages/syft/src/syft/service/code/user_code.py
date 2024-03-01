@@ -20,6 +20,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -27,6 +28,7 @@ from typing import final
 
 # third party
 from IPython.display import display
+import pydantic
 from result import Err
 from typing_extensions import Self
 
@@ -47,7 +49,6 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
-from ...types.syft_object import SyftHashableObject
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
@@ -65,6 +66,7 @@ from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..job.job_stash import Job
+from ..output.output_service import ExecutionOutput
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
 from ..policy.policy import EmpyInputPolicy
@@ -75,6 +77,7 @@ from ..policy.policy import Policy
 from ..policy.policy import SingleExecutionExactOutput
 from ..policy.policy import SubmitUserPolicy
 from ..policy.policy import UserPolicy
+from ..policy.policy import filter_only_uids
 from ..policy.policy import init_policy
 from ..policy.policy import load_policy_code
 from ..policy.policy_service import PolicyService
@@ -88,34 +91,16 @@ from .code_parse import LaunchJobVisitor
 from .unparse import unparse
 from .utils import submit_subjobs_code
 
+if TYPE_CHECKING:
+    # relative
+    from ...service.sync.diff_state import AttrDiff
+
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=str)
 ServiceFuncNamePartitionKey = PartitionKey(key="service_func_name", type_=str)
 SubmitTimePartitionKey = PartitionKey(key="submit_time", type_=DateTime)
 
 PyCodeObject = Any
-
-
-def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
-    # relative
-    from ...types.twin_object import TwinObject
-    from ..action.action_object import ActionObject
-
-    uid_kwargs = {}
-    for k, v in kwargs.items():
-        uid = v
-        if isinstance(v, ActionObject):
-            uid = v.id
-        if isinstance(v, TwinObject):
-            uid = v.id
-        if isinstance(v, Asset):
-            uid = v.action_id
-
-        if not isinstance(uid, UID):
-            raise Exception(f"Input {k} must have a UID not {type(v)}")
-
-        uid_kwargs[k] = uid
-    return uid_kwargs
 
 
 @serializable()
@@ -128,15 +113,32 @@ class UserCodeStatus(Enum):
         return hash(self.value)
 
 
-# User Code status context for multiple approvals
-# To make nested dicts hashable for mongodb
-# as status is in attr_searchable
-@serializable(attrs=["status_dict"])
-class UserCodeStatusCollection(SyftHashableObject):
-    status_dict: Dict[NodeIdentity, Tuple[UserCodeStatus, str]] = {}
+@serializable()
+class UserCodeStatusCollection(SyftObject):
+    __canonical_name__ = "UserCodeStatusCollection"
+    __version__ = SYFT_OBJECT_VERSION_1
 
-    def __init__(self, status_dict: Dict):
-        self.status_dict = status_dict
+    __repr_attrs__ = ["approved", "status_dict"]
+
+    status_dict: Dict[NodeIdentity, Tuple[UserCodeStatus, str]] = {}
+    user_code_link: LinkedObject
+
+    def get_diffs(self, ext_obj) -> List[AttrDiff]:
+        # relative
+        from ...service.sync.diff_state import AttrDiff
+
+        diff_attrs = []
+        status = list(self.status_dict.values())[0]
+        ext_status = list(ext_obj.status_dict.values())[0]
+
+        if status != ext_status:
+            diff_attr = AttrDiff(
+                attr_name="status_dict",
+                low_attr=status,
+                high_attr=ext_status,
+            )
+            diff_attrs.append(diff_attr)
+        return diff_attrs
 
     def __repr__(self):
         return str(self.status_dict)
@@ -249,6 +251,9 @@ class UserCodeStatusCollection(SyftHashableObject):
                 message="Cannot Modify Status as the Domain's data is not included in the request"
             )
 
+    def get_sync_dependencies(self, api=None) -> List[UID]:
+        return [self.user_code_link.object_uid]
+
 
 @serializable()
 class UserCodeV1(SyftObject):
@@ -316,9 +321,7 @@ class UserCodeV2(SyftObject):
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
 
 
-@serializable()
 class UserCodeV3(SyftObject):
-    # version
     __canonical_name__ = "UserCode"
     __version__ = SYFT_OBJECT_VERSION_3
 
@@ -370,7 +373,7 @@ class UserCode(SyftObject):
     user_unique_func_name: str
     code_hash: str
     signature: inspect.Signature
-    status: UserCodeStatusCollection
+    status_link: LinkedObject
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime]
@@ -380,7 +383,6 @@ class UserCode(SyftObject):
 
     __attr_searchable__ = [
         "user_verify_key",
-        "status",
         "service_func_name",
         "code_hash",
     ]
@@ -393,6 +395,7 @@ class UserCode(SyftObject):
     ]
 
     __exclude_sync_diff_attrs__ = [
+        "node_uid",
         "input_policy_type",
         "input_policy_init_kwargs",
         "input_policy_state",
@@ -400,23 +403,6 @@ class UserCode(SyftObject):
         "output_policy_init_kwargs",
         "output_policy_state",
     ]
-
-    def get_diffs(self, obj) -> List['AttrDiff']:
-        # relative
-        from ...service.sync.diff_state import AttrDiff
-
-        diff_attrs = super().get_diffs(obj)
-        status = list(self.status.status_dict.values())[0]
-        ext_status = list(obj.status.status_dict.values())[0]
-
-        if status != ext_status:
-            diff_attr = AttrDiff(
-                attr_name="status",
-                low_attr=ext_status,
-                high_attr=status,
-            )
-            diff_attrs.append(diff_attr)
-        return diff_attrs
 
     def __setattr__(self, key: str, value: Any) -> None:
         attr = getattr(type(self), key, None)
@@ -445,6 +431,20 @@ class UserCode(SyftObject):
             "Status": status_badge,
             "Submit time": str(self.submit_time),
         }
+
+    @property
+    def status(self) -> Union[UserCodeStatusCollection, SyftError]:
+        # Clientside only
+        res = self.status_link.resolve
+        return res
+
+    def get_status(
+        self, context: AuthedServiceContext
+    ) -> Union[UserCodeStatusCollection, SyftError]:
+        status = self.status_link.resolve_with_context(context)
+        if status.is_err():
+            return SyftError(message=status.err())
+        return status.ok()
 
     @property
     def is_enclave_code(self) -> bool:
@@ -481,7 +481,15 @@ class UserCode(SyftObject):
     def input_policy(self) -> Optional[InputPolicy]:
         if not self.status.approved:
             return None
+        return self._get_input_policy()
 
+    def get_input_policy(self, context: AuthedServiceContext) -> Optional[InputPolicy]:
+        status = self.get_status(context)
+        if not status.approved:
+            return None
+        return self._get_input_policy()
+
+    def _get_input_policy(self) -> Optional[InputPolicy]:
         if len(self.input_policy_state) == 0:
             input_policy = None
             if isinstance(self.input_policy_type, type) and issubclass(
@@ -520,15 +528,25 @@ class UserCode(SyftObject):
             print(f"Failed to deserialize custom input policy state. {e}")
             return None
 
-    @property
-    def output_policy_approved(self):
-        return self.status.approved
+    def is_output_policy_approved(self, context: AuthedServiceContext):
+        return self.get_status(context).approved
 
     @property
     def output_policy(self) -> Optional[OutputPolicy]:
         if not self.status.approved:
             return None
+        return self._get_output_policy()
 
+    def get_output_policy(
+        self, context: AuthedServiceContext
+    ) -> Optional[OutputPolicy]:
+        if not self.get_status(context).approved:
+            return None
+        return self._get_output_policy()
+
+    def _get_output_policy(self) -> Optional[OutputPolicy]:
+        # if not self.status.approved:
+        #     return None
         if len(self.output_policy_state) == 0:
             output_policy = None
             if isinstance(self.output_policy_type, type) and issubclass(
@@ -578,6 +596,47 @@ class UserCode(SyftObject):
             raise Exception(f"You can't set {type(value)} as output_policy_state")
 
     @property
+    def output_history(self) -> Union[List[ExecutionOutput], SyftError]:
+        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        return api.services.output.get_by_user_code_id(self.id)
+
+    def get_output_history(
+        self, context: AuthedServiceContext
+    ) -> Union[List[ExecutionOutput], SyftError]:
+        if not self.get_status(context).approved:
+            return SyftError(message="Please wait for the code to be approved")
+
+        output_service = context.node.get_service("outputservice")
+        return output_service.get_by_user_code_id(context, self.id)
+
+    def apply_output(
+        self,
+        context: AuthedServiceContext,
+        outputs: Any,
+        job_id: Optional[UID] = None,
+    ) -> Union[ExecutionOutput, SyftError]:
+        output_policy = self.get_output_policy(context)
+        if output_policy is None:
+            return SyftError(
+                message="You must wait for the output policy to be approved"
+            )
+
+        output_ids = filter_only_uids(outputs)
+        output_service = context.node.get_service("outputservice")
+        execution_result = output_service.create(
+            context,
+            user_code_id=self.id,
+            output_ids=output_ids,
+            executing_user_verify_key=self.user_verify_key,
+            job_id=job_id,
+            output_policy_id=output_policy.id,
+        )
+        if isinstance(execution_result, SyftError):
+            return execution_result
+
+        return execution_result
+
+    @property
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
 
@@ -612,38 +671,8 @@ class UserCode(SyftObject):
                 all_assets += assets
         return all_assets
 
-    def get_all_output_action_objects(self) -> List[ActionObject]:
-        output_policy = self.output_policy
-        if output_policy is not None:
-            all_output_ids = []
-            for output in output_policy.output_history:
-                if isinstance(output.outputs, list):
-                    all_output_ids.extend(output.outputs)
-                else:
-                    all_output_ids.extend(output.outputs.values())
-
-            api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-            result = []
-            for output_id in all_output_ids:
-                action_obj = api.services.action.get(output_id)
-                if isinstance(action_obj, ActionObject):
-                    result.append(action_obj)
-            return result
-
-        return []
-
     def get_sync_dependencies(self, api=None) -> Union[List[UID], SyftError]:
         dependencies = []
-
-        if api is None:
-            api = api or APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
-        job_api = api.services.job
-        jobs = job_api.get_by_user_code_id(self.id)
-
-        if isinstance(jobs, SyftError):
-            return jobs
-
-        dependencies.extend([job.id for job in jobs])
 
         if self.nested_codes is not None:
             nested_code_ids = [link.object_uid for link in self.nested_codes.values()]
@@ -818,6 +847,12 @@ class SubmitUserCode(SyftObject):
     worker_pool_name: Optional[str] = None
 
     __repr_attrs__ = ["func_name", "code"]
+
+    @pydantic.root_validator(pre=True)
+    def add_output_policy_ids(cls, values: dict) -> dict:
+        if "id" not in values["output_policy_init_kwargs"]:
+            values["output_policy_init_kwargs"]["id"] = UID()
+        return values
 
     @property
     def kwargs(self) -> List[str]:
@@ -1222,29 +1257,50 @@ def check_output_policy(context: TransformContext) -> TransformContext:
     return context
 
 
-def add_custom_status(context: TransformContext) -> TransformContext:
+def create_code_status(context: TransformContext) -> TransformContext:
+    # relative
+    from .user_code_service import UserCodeService
+
     input_keys = list(context.output["input_policy_init_kwargs"].keys())
+    code_link = LinkedObject.from_uid(
+        context.output["id"],
+        UserCode,
+        service_type=UserCodeService,
+        node_uid=context.node.id,
+    )
     if context.node.node_type == NodeType.DOMAIN:
         node_identity = NodeIdentity(
             node_name=context.node.name,
             node_id=context.node.id,
             verify_key=context.node.signing_key.verify_key,
         )
-        context.output["status"] = UserCodeStatusCollection(
-            status_dict={node_identity: (UserCodeStatus.PENDING, "")}
+        status = UserCodeStatusCollection(
+            status_dict={node_identity: (UserCodeStatus.PENDING, "")},
+            user_code_link=code_link,
         )
-        # if node_identity in input_keys or len(input_keys) == 0:
-        #     context.output["status"] = UserCodeStatusContext(
-        #         base_dict={node_identity: UserCodeStatus.SUBMITTED}
-        #     )
-        # else:
-        #     raise ValueError(f"Invalid input keys: {input_keys} for {node_identity}")
+
     elif context.node.node_type == NodeType.ENCLAVE:
         status_dict = {key: (UserCodeStatus.PENDING, "") for key in input_keys}
-        context.output["status"] = UserCodeStatusCollection(status_dict=status_dict)
+        status = UserCodeStatusCollection(
+            status_dict=status_dict,
+            user_code_link=code_link,
+        )
     else:
         raise NotImplementedError(
             f"Invalid node type:{context.node.node_type} for code submission"
+        )
+
+    res = context.node.get_service("usercodestatusservice").create(context, status)
+    # relative
+    from .status_service import UserCodeStatusService
+
+    # TODO error handling in transform functions
+    if not isinstance(res, SyftError):
+        context.output["status_link"] = LinkedObject.from_uid(
+            res.id,
+            UserCodeStatusCollection,
+            service_type=UserCodeStatusService,
+            node_uid=context.node.id,
         )
     return context
 
@@ -1272,7 +1328,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         new_check_code,
         locate_launch_jobs,
         add_credentials_for_key("user_verify_key"),
-        add_custom_status,
+        create_code_status,
         add_node_uid_for_key("node_uid"),
         add_submit_time,
         set_default_pool_if_empty,
@@ -1283,6 +1339,19 @@ def submit_user_code_to_user_code() -> List[Callable]:
 class UserCodeExecutionResult(SyftObject):
     # version
     __canonical_name__ = "UserCodeExecutionResult"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    user_code_id: UID
+    stdout: str
+    stderr: str
+    result: Any
+
+
+@serializable()
+class UserCodeExecutionOutput(SyftObject):
+    # version
+    __canonical_name__ = "UserCodeExecutionOutput"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
@@ -1492,7 +1561,7 @@ def execute_byte_code(
         sys.stdout = stdout_
         sys.stderr = stderr_
 
-        return UserCodeExecutionResult(
+        return UserCodeExecutionOutput(
             user_code_id=code_item.id,
             stdout=str(stdout.getvalue()),
             stderr=str(stderr.getvalue()),
@@ -1539,11 +1608,18 @@ Encountered while executing {code.service_func_name}:
     return error_msg
 
 
-def load_approved_policy_code(user_code_items: List[UserCode]) -> Any:
+def load_approved_policy_code(
+    user_code_items: List[UserCode], context: Optional[AuthedServiceContext]
+) -> Any:
     """Reload the policy code in memory for user code that is approved."""
     try:
         for user_code in user_code_items:
-            if user_code.status.approved:
+            if context is None:
+                status = user_code.status
+            else:
+                status = user_code.get_status(context)
+
+            if status.approved:
                 if isinstance(user_code.input_policy_type, UserPolicy):
                     load_policy_code(user_code.input_policy_type)
                 if isinstance(user_code.output_policy_type, UserPolicy):

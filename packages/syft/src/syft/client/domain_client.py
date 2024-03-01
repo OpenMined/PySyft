@@ -143,7 +143,7 @@ class DomainClient(SyftClient):
 
     def create_actionobject(self, action_object):
         action_object = action_object.refresh_object()
-        res = action_object.send(self)
+        action_object.send(self)
 
     def get_permissions_for_other_node(self, items):
         if len(items) > 0:
@@ -349,6 +349,18 @@ class DomainClient(SyftClient):
     def sync(self) -> Optional[APIModule]:
         if self.api.has_service("sync"):
             return self.api.services.sync
+        return None
+
+    @property
+    def code_status(self) -> Optional[APIModule]:
+        if self.api.has_service("code_status"):
+            return self.api.services.code_status
+        return None
+
+    @property
+    def output(self) -> Optional[APIModule]:
+        if self.api.has_service("output"):
+            return self.api.services.output
         return None
 
     def get_project(

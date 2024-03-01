@@ -16,9 +16,10 @@ from ...types.uid import UID
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
-from ..code.user_code import UserCode
+from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
+from ..output.output_service import ExecutionOutput
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -77,13 +78,13 @@ class SyncService(AbstractService):
                 x.node_uid = context.node.id
 
     def transform_item(self, context, item):
-        identity = NodeIdentity.from_node(context.node)
-        if isinstance(item, UserCode):
+        if isinstance(item, UserCodeStatusCollection):
+            identity = NodeIdentity.from_node(context.node)
             res = {}
-            for key in item.status.status_dict.keys():
+            for key in item.status_dict.keys():
                 # todo, check if they are actually only two nodes
-                res[identity] = item.status.status_dict[key]
-            item.status.status_dict = res
+                res[identity] = item.status_dict[key]
+            item.status_dict = res
 
         self.set_obj_ids(context, item)
         return item
@@ -196,23 +197,35 @@ class SyncService(AbstractService):
 
         node = context.node
 
-        for service in ["project", "request", "log"]:
-            objects = node.get_service(f"{service}service").get_all(context)
-            new_state.add_objects(objects, api=node.root_client.api)
+        services_to_sync = [
+            "projectservice",
+            "requestservice",
+            "usercodeservice",
+            "jobservice",
+            "logservice",
+            "outputservice",
+            "usercodestatusservice",
+        ]
 
-        user_codes = node.get_service("usercodeservice").get_all(context)
-        new_state.add_objects(user_codes, api=node.root_client.api)
+        for service_name in services_to_sync:
+            service = node.get_service(service_name)
+            items = service.get_all(context)
+            new_state.add_objects(items, api=node.root_client.api)
 
-        jobs = node.get_service("jobservice").get_all(context)
-        new_state.add_objects(jobs, api=node.root_client.api)
+        # TODO workaround, we only need action objects from outputs for now
+        action_object_ids = set()
+        for item in new_state.objects.values():
+            if isinstance(item, ExecutionOutput):
+                action_object_ids.update(item.output_id_list)
+            elif isinstance(item, Job) and item.result is not None:
+                action_object_ids.add(item.result.id)
 
-        # TODO workaround, we only need action objects from output policies for now
         action_objects = []
-        for code in user_codes:
-            action_objects.extend(code.get_all_output_action_objects())
-        for job in jobs:
-            if job.result is not None:
-                action_objects.append(job.result)
+        for uid in action_object_ids:
+            action_object = node.get_service("actionservice").get(context, uid)
+            if action_object.is_err():
+                return SyftError(message=action_object.err())
+            action_objects.append(action_object.ok())
         new_state.add_objects(action_objects)
 
         new_state._build_dependencies(api=node.root_client.api)

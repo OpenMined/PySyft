@@ -1,10 +1,11 @@
 # stdlib
+import html
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Set
 from typing import TYPE_CHECKING
-from typing import Tuple
 
 # relative
 from ...serde.serializable import serializable
@@ -42,11 +43,15 @@ class SyncStateRow(SyftObject):
 
     # TODO table formatting
     __repr_attrs__ = [
-        "object_type",
-        "status",
         "previous_state",
         "current_state",
     ]
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        return {
+            "previous_state": html.escape(self.previous_state),
+            "current_state": html.escape(self.current_state),
+        }
 
     @property
     def object_type(self) -> str:
@@ -58,6 +63,8 @@ class SyncStateRow(SyftObject):
         # TODO use Diffs to determine status
         if self.previous_object is None:
             return "NEW"
+        elif self.previous_object.syft_eq(ext_obj=self.object):
+            return "SAME"
         else:
             return "UPDATED"
 
@@ -106,31 +113,8 @@ class SyncState(SyftObject):
                 if len(deps):
                     self.dependencies[obj.id] = deps
 
-    @property
-    def hierarchies(self) -> List[List[Tuple[SyftObject, int]]]:
-        def _build_hierarchy_helper(uid: UID, level: int = 0) -> List[Tuple[UID, int]]:
-            result = [(uid, level)]
-            if uid in self.dependencies:
-                for child_uid in self.dependencies[uid]:
-                    result.extend(_build_hierarchy_helper(child_uid, level + 1))
-            return result
-
-        result = []
-        all_ids = self.all_ids
-        child_ids = {child for deps in self.dependencies.values() for child in deps}
-        root_ids = list(all_ids - child_ids)
-
-        for root_uid in root_ids:
-            uid_hierarchy = _build_hierarchy_helper(root_uid)
-            object_hierarchy = [
-                (self.objects[uid], level) for uid, level in uid_hierarchy
-            ]
-            result.append(object_hierarchy)
-
-        return result
-
     def get_previous_state_diff(self) -> "NodeDiff":
-        # Re-use NodeDiff to compare to previous state
+        # Re-use DiffState to compare to previous state
         # Low = previous, high = current
         # relative
         from .diff_state import NodeDiff
@@ -144,7 +128,7 @@ class SyncState(SyftObject):
 
         previous_diff = self.get_previous_state_diff()
         for hierarchy in previous_diff.hierarchies:
-            for diff, level in hierarchy:
+            for diff, level in zip(hierarchy.diffs, hierarchy.hierarchy_levels):
                 row = SyncStateRow(
                     object=diff.high_obj,
                     previous_object=diff.low_obj,
