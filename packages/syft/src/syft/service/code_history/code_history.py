@@ -4,6 +4,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
 
 # relative
 from ...client.api import APIRegistry
@@ -36,7 +37,7 @@ class CodeHistory(SyftObject):
 
     __attr_searchable__ = ["user_verify_key", "service_func_name"]
 
-    def add_code(self, code: UserCode, comment: Optional[str] = None):
+    def add_code(self, code: UserCode, comment: Optional[str] = None) -> None:
         self.user_code_history.append(code.id)
         if comment is None:
             comment = ""
@@ -54,10 +55,10 @@ class CodeHistoryView(SyftObject):
     service_func_name: str
     comment_history: List[str] = []
 
-    def _coll_repr_(self):
+    def _coll_repr_(self) -> Dict[str, int]:
         return {"Number of versions": len(self.user_code_history)}
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         rows = get_repr_values_table(self.user_code_history, True)
         for i, r in enumerate(rows):
             r["Version"] = f"v{i}"
@@ -69,14 +70,13 @@ class CodeHistoryView(SyftObject):
         # rows = sorted(rows, key=lambda x: x["Version"])
         return create_table_template(rows, "CodeHistory", table_icon=None)
 
-    def __getitem__(self, index: int):
+    def __getitem__(self, index: int) -> Union[UserCode, SyftError]:
         api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
-        if api.user_role.value >= ServiceRole.DATA_OWNER.value:
-            if index < 0:
-                return SyftError(
-                    message="For security concerns we do not allow negative indexing. \
-                    Try using absolute values when indexing"
-                )
+        if api.user_role.value >= ServiceRole.DATA_OWNER.value and index < 0:
+            return SyftError(
+                message="For security concerns we do not allow negative indexing. \
+                Try using absolute values when indexing"
+            )
         return self.user_code_history[index]
 
 
@@ -89,7 +89,7 @@ class CodeHistoriesDict(SyftObject):
     id: UID
     code_versions: Dict[str, CodeHistoryView] = {}
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         return f"""
             {self.code_versions._repr_html_()}
             """
@@ -120,14 +120,14 @@ class UsersCodeHistoriesDict(SyftObject):
     __repr_attrs__ = ["available_keys"]
 
     @property
-    def available_keys(self):
+    def available_keys(self) -> str:
         return json.dumps(self.user_dict, sort_keys=True, indent=4)
 
-    def __getitem__(self, key: int):
+    def __getitem__(self, key: int) -> Union[CodeHistoriesDict, SyftError]:
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         return api.services.code_history.get_history_for_user(key)
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         rows = []
         for user, funcs in self.user_dict.items():
             rows += [{"user": user, "UserCodes": funcs}]
