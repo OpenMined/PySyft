@@ -1,11 +1,6 @@
 name: PR Tests - Lint Helm Charts
 
 on:
-  push:
-    paths:
-      - .github/workflows/pr-tests-helm-lint.yml
-      - packages/grid/helm/syft/**
-
   # temporary disabled
   # pull_request:
   #   branches:
