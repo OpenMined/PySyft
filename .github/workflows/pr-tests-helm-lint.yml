@@ -13,6 +13,12 @@ on:
   #   paths:
   #     - packages/grid/helm/syft/**
 
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Tests Manually"
+        required: false
+
 concurrency:
   group: pr-tests-helm-lint
   cancel-in-progress: true
