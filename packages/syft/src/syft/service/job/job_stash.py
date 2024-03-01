@@ -177,6 +177,10 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         return api.services.worker.get(self.job_worker_id)
 
     @property
@@ -267,6 +271,10 @@ class Job(SyftObject):
                 node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
+            if api is None:
+                raise ValueError(
+                    f"Can't access Syft API. You must login to {self.syft_node_location}"
+                )
             call = SyftAPICall(
                 node_uid=self.node_uid,
                 path="job.restart",
@@ -288,6 +296,10 @@ class Job(SyftObject):
                 node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
+            if api is None:
+                return SyftError(
+                    message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+                )
             call = SyftAPICall(
                 node_uid=self.node_uid,
                 path="job.kill",
@@ -307,6 +319,10 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            raise ValueError(
+                f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         call = SyftAPICall(
             node_uid=self.node_uid,
             path="job.get",
@@ -329,6 +345,10 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         return api.services.job.get_subjobs(self.id)
 
     @property
@@ -337,6 +357,10 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         return api.services.user.get_current_user(self.id)
 
     def logs(
@@ -346,6 +370,8 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return f"Can't access Syft API. You must login to {self.syft_node_location}"
         results = []
         if stdout:
             stdout_log = api.services.log.get(self.log_id)
@@ -433,7 +459,6 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-
         # todo: timeout
         if self.resolved:
             return self.resolve
@@ -441,6 +466,10 @@ class Job(SyftObject):
         if not job_only and self.result is not None:
             self.result.wait()
 
+        if api is None:
+            raise ValueError(
+                f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         print_warning = True
         while True:
             self.fetch()
