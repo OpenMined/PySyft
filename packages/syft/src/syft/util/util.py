@@ -79,14 +79,14 @@ def full_name_with_name(klass: type) -> str:
         raise e
 
 
-def get_qualname_for(klass: type) -> Optional[str]:
+def get_qualname_for(klass: type) -> str:
     qualname = getattr(klass, "__qualname__", None) or getattr(klass, "__name__", None)
     if qualname is None:
         qualname = extract_name(klass)
     return qualname
 
 
-def get_name_for(klass: type) -> Optional[str]:
+def get_name_for(klass: type) -> str:
     klass_name = getattr(klass, "__name__", None)
     if klass_name is None:
         klass_name = extract_name(klass)
@@ -97,7 +97,7 @@ def get_mb_size(data: Any) -> float:
     return sys.getsizeof(data) / (1024 * 1024)
 
 
-def extract_name(klass: type) -> Optional[str]:
+def extract_name(klass: type) -> str:
     name_regex = r".+class.+?([\w\._]+).+"
     regex2 = r"([\w\.]+)"
     matches = re.match(name_regex, str(klass))
@@ -114,8 +114,8 @@ def extract_name(klass: type) -> Optional[str]:
         except Exception as e:
             print(f"Failed to get klass name {klass}")
             raise e
-
-    return None
+    else:
+        raise ValueError(f"Failed to match regex for klass {klass}")
 
 
 def validate_type(_object: object, _type: type, optional: bool = False) -> Any:

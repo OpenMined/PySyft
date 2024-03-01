@@ -3,6 +3,7 @@ from datetime import datetime
 from datetime import timedelta
 from enum import Enum
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -13,12 +14,15 @@ import pydantic
 from result import Err
 from result import Ok
 from result import Result
+from typing_extensions import Self
 
 # relative
 from ...client.api import APIRegistry
 from ...client.api import SyftAPICall
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...service.queue.queue_stash import QueueItem
+from ...service.worker.worker_pool import SyftWorker
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -46,6 +50,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftError
 from ..response import SyftNotReady
 from ..response import SyftSuccess
+from ..user.user import UserView
 
 
 @serializable()
@@ -140,7 +145,7 @@ class Job(SyftObject):
         return values
 
     @property
-    def action_display_name(self):
+    def action_display_name(self) -> str:
         if self.action is None:
             return "action"
         else:
@@ -150,18 +155,24 @@ class Job(SyftObject):
             return self.action.job_display_name
 
     @property
-    def time_remaining_string(self):
+    def time_remaining_string(self) -> Optional[str]:
         # update state
         self.fetch()
-        percentage = round((self.current_iter / self.n_iters) * 100)
-        blocks_filled = round(percentage / 20)
-        blocks_empty = 5 - blocks_filled
-        blocks_filled_str = "█" * blocks_filled
-        blocks_empty_str = "&nbsp;&nbsp;" * blocks_empty
-        return f"{percentage}% |{blocks_filled_str}{blocks_empty_str}|\n{self.current_iter}/{self.n_iters}\n"
+        if (
+            self.current_iter is not None
+            and self.n_iters is not None
+            and self.n_iters != 0
+        ):
+            percentage = round((self.current_iter / self.n_iters) * 100)
+            blocks_filled = round(percentage / 20)
+            blocks_empty = 5 - blocks_filled
+            blocks_filled_str = "█" * blocks_filled
+            blocks_empty_str = "&nbsp;&nbsp;" * blocks_empty
+            return f"{percentage}% |{blocks_filled_str}{blocks_empty_str}|\n{self.current_iter}/{self.n_iters}\n"
+        return None
 
     @property
-    def worker(self):
+    def worker(self) -> Union[SyftWorker, SyftError]:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -169,7 +180,7 @@ class Job(SyftObject):
         return api.services.worker.get(self.job_worker_id)
 
     @property
-    def eta_string(self):
+    def eta_string(self) -> Optional[str]:
         if (
             self.current_iter is None
             or self.current_iter == 0
@@ -178,7 +189,7 @@ class Job(SyftObject):
         ):
             return None
 
-        def format_timedelta(local_timedelta):
+        def format_timedelta(local_timedelta: timedelta) -> str:
             total_seconds = int(local_timedelta.total_seconds())
             hours, leftover = divmod(total_seconds, 3600)
             minutes, seconds = divmod(leftover, 60)
@@ -209,7 +220,7 @@ class Job(SyftObject):
         return f"[{time_passed_str}<{time_remaining_str}]\n{iter_duration_str}"
 
     @property
-    def progress(self) -> str:
+    def progress(self) -> Optional[str]:
         if self.status in [JobStatus.PROCESSING, JobStatus.COMPLETED]:
             if self.current_iter is None:
                 return ""
@@ -241,7 +252,7 @@ class Job(SyftObject):
         if info.includes_result:
             self.result = info.result
 
-    def restart(self, kill=False) -> None:
+    def restart(self, kill: bool = False) -> None:
         if kill:
             self.kill()
         self.fetch()
@@ -269,14 +280,14 @@ class Job(SyftObject):
             print(
                 "Job is running or scheduled, if you want to kill it use job.kill() first"
             )
+        return None
 
-    def kill(self) -> Union[None, SyftError]:
+    def kill(self) -> Optional[SyftError]:
         if self.job_pid is not None:
             api = APIRegistry.api_for(
                 node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
-
             call = SyftAPICall(
                 node_uid=self.node_uid,
                 path="job.kill",
@@ -285,6 +296,7 @@ class Job(SyftObject):
                 blocking=True,
             )
             api.make_call(call)
+            return None
         else:
             return SyftError(
                 message="Job is not running or isn't running in multiprocessing mode."
@@ -302,7 +314,7 @@ class Job(SyftObject):
             kwargs={"uid": self.id},
             blocking=True,
         )
-        job = api.make_call(call)
+        job: Job = api.make_call(call)
         self.resolved = job.resolved
         if job.resolved:
             self.result = job.result
@@ -312,7 +324,7 @@ class Job(SyftObject):
         self.current_iter = job.current_iter
 
     @property
-    def subjobs(self):
+    def subjobs(self) -> Union[list[QueueItem], SyftError]:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -320,14 +332,16 @@ class Job(SyftObject):
         return api.services.job.get_subjobs(self.id)
 
     @property
-    def owner(self):
+    def owner(self) -> Union[UserView, SyftError]:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
         return api.services.user.get_current_user(self.id)
 
-    def logs(self, stdout=True, stderr=True, _print=True):
+    def logs(
+        self, stdout: bool = True, stderr: bool = True, _print: bool = True
+    ) -> Optional[str]:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -355,19 +369,20 @@ class Job(SyftObject):
             return results_str
         else:
             print(results_str)
+            return None
 
     # def __repr__(self) -> str:
     #     return f"<Job: {self.id}>: {self.status}"
 
     def _coll_repr_(self) -> Dict[str, Any]:
         logs = self.logs(_print=False, stderr=False)
-        log_lines = logs.split("\n")
+        if logs is not None:
+            log_lines = logs.split("\n")
         subjobs = self.subjobs
         if len(log_lines) > 2:
             logs = f"... ({len(log_lines)} lines)\n" + "\n".join(log_lines[-2:])
-        else:
-            logs = logs
 
+        created_time = self.creation_time[:-7] if self.creation_time is not None else ""
         return {
             "status": f"{self.action_display_name}: {self.status}"
             + (
@@ -377,7 +392,7 @@ class Job(SyftObject):
             ),
             "progress": self.progress,
             "eta": self.eta_string,
-            "created": f"{self.creation_time[:-7]} by {self.owner.email}",
+            "created": f"{created_time} by {self.owner.email}",
             "logs": logs,
             # "result": result,
             # "parent_id": str(self.parent_job_id) if self.parent_job_id else "-",
@@ -385,15 +400,16 @@ class Job(SyftObject):
         }
 
     @property
-    def has_parent(self):
+    def has_parent(self) -> bool:
         return self.parent_job_id is not None
 
     def _repr_markdown_(self) -> str:
         _ = self.resolve
         logs = self.logs(_print=False)
-        logs_w_linenr = "\n".join(
-            [f"{i} {line}" for i, line in enumerate(logs.rstrip().split("\n"))]
-        )
+        if logs is not None:
+            logs_w_linenr = "\n".join(
+                [f"{i} {line}" for i, line in enumerate(logs.rstrip().split("\n"))]
+            )
 
         if self.status == JobStatus.COMPLETED:
             logs_w_linenr += "\nJOB COMPLETED"
@@ -409,7 +425,7 @@ class Job(SyftObject):
     """
         return as_markdown_code(md)
 
-    def wait(self, job_only=False):
+    def wait(self, job_only: bool = False) -> Union[Any, SyftNotReady]:
         # stdlib
         from time import sleep
 
@@ -422,13 +438,13 @@ class Job(SyftObject):
         if self.resolved:
             return self.resolve
 
-        if not job_only:
+        if not job_only and self.result is not None:
             self.result.wait()
 
         print_warning = True
         while True:
             self.fetch()
-            if print_warning:
+            if print_warning and self.result is not None:
                 result_obj = api.services.action.get(
                     self.result.id, resolve_nested=False
                 )
@@ -440,9 +456,10 @@ class Job(SyftObject):
                     )
                     print_warning = False
             sleep(2)
+            # TODO: fix the mypy issue
             if self.resolved:
-                break
-        return self.resolve
+                break  # type: ignore[unreachable]
+        return self.resolve  # type: ignore[unreachable]
 
     @property
     def resolve(self) -> Union[Any, SyftNotReady]:
@@ -518,7 +535,7 @@ class JobInfo(SyftObject):
         job: Job,
         metadata: bool = False,
         result: bool = False,
-    ):
+    ) -> Self:
         info = cls(
             includes_metadata=metadata,
             includes_result=result,
@@ -539,12 +556,12 @@ class JobInfo(SyftObject):
 
 
 @migrate(Job, JobV2)
-def downgrade_job_v3_to_v2():
+def downgrade_job_v3_to_v2() -> list[Callable]:
     return [drop(["job_worker_id", "user_code_id"])]
 
 
 @migrate(JobV2, Job)
-def upgrade_job_v2_to_v3():
+def upgrade_job_v2_to_v3() -> list[Callable]:
     return [
         make_set_default("job_worker_id", None),
         make_set_default("user_code_id", None),
@@ -552,14 +569,14 @@ def upgrade_job_v2_to_v3():
 
 
 @migrate(JobV2, JobV1)
-def downgrade_job_v2_to_v1():
+def downgrade_job_v2_to_v1() -> list[Callable]:
     return [
         drop("job_pid"),
     ]
 
 
 @migrate(JobV1, JobV2)
-def upgrade_job_v1_to_v2():
+def upgrade_job_v1_to_v2() -> list[Callable]:
     return [make_set_default("job_pid", None)]
 
 
@@ -636,7 +653,9 @@ class JobStash(BaseStash):
         )
         return self.query_all(credentials=credentials, qks=qks)
 
-    def get_by_worker(self, credentials: SyftVerifyKey, worker_id: str):
+    def get_by_worker(
+        self, credentials: SyftVerifyKey, worker_id: str
+    ) -> Result[List[Job], str]:
         qks = QueryKeys(
             qks=[PartitionKey(key="job_worker_id", type_=str).with_obj(worker_id)]
         )
@@ -644,7 +663,7 @@ class JobStash(BaseStash):
 
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
-    ) -> Union[List[Job], SyftError]:
+    ) -> Result[List[Job], str]:
         qks = QueryKeys(
             qks=[PartitionKey(key="user_code_id", type_=UID).with_obj(user_code_id)]
         )

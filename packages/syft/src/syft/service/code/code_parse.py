@@ -5,7 +5,7 @@ from typing import Any
 
 
 class GlobalsVisitor(ast.NodeVisitor):
-    def generic_visit(self, node):
+    def generic_visit(self, node: Any) -> None:
         if isinstance(node, ast.Global):
             raise Exception("No Globals allowed!")
         ast.NodeVisitor.generic_visit(self, node)
@@ -13,10 +13,10 @@ class GlobalsVisitor(ast.NodeVisitor):
 
 class LaunchJobVisitor(ast.NodeVisitor):
     def visit_Module(self, node: Module) -> Any:
-        self.nested_calls = []
+        self.nested_calls: list = []
         self.generic_visit(node)
 
-    def visit_Call(self, node):
+    def visit_Call(self, node: Any) -> None:
         if isinstance(node.func, ast.Attribute):
             if (
                 getattr(node.func.value, "id", None) == "domain"

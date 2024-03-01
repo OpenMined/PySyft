@@ -337,7 +337,7 @@ class StorePartition:
         except BaseException as e:
             return Err(str(e))
 
-        return Ok()
+        return Ok(True)
 
     def matches_unique_cks(self, partition_key: PartitionKey) -> bool:
         return partition_key in self.unique_cks

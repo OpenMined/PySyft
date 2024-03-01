@@ -1,3 +1,6 @@
+# stdlib
+from typing import Any
+
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
@@ -22,7 +25,7 @@ class DataSubjectMemberRelationship(SyftObject):
     def __hash__(self) -> int:
         return hash(self.parent + self.child)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return hash(self) == hash(other)
 
     def __repr__(self) -> str:

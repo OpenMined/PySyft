@@ -99,10 +99,16 @@ class DatasetService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
-        return SyftSuccess(
-            message=f"Dataset uploaded to '{context.node.name}'. "
-            f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
-        )
+        if context.node is not None:
+            return SyftSuccess(
+                message=f"Dataset uploaded to '{context.node.name}'. "
+                f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
+            )
+        else:
+            return SyftSuccess(
+                message="Dataset uploaded not to a node."
+                "To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
+            )
 
     @service_method(
         path="dataset.get_all",
@@ -124,7 +130,8 @@ class DatasetService(AbstractService):
         datasets = result.ok()
 
         for dataset in datasets:
-            dataset.node_uid = context.node.id
+            if context.node is not None:
+                dataset.node_uid = context.node.id
 
         return _paginate_dataset_collection(
             datasets=datasets, page_size=page_size, page_index=page_index
@@ -162,7 +169,8 @@ class DatasetService(AbstractService):
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             dataset = result.ok()
-            dataset.node_uid = context.node.id
+            if context.node is not None:
+                dataset.node_uid = context.node.id
             return dataset
         return SyftError(message=result.err())
 
@@ -175,7 +183,8 @@ class DatasetService(AbstractService):
         if result.is_ok():
             datasets = result.ok()
             for dataset in datasets:
-                dataset.node_uid = context.node.id
+                if context.node is not None:
+                    dataset.node_uid = context.node.id
             return datasets
         return SyftError(message=result.err())
 
