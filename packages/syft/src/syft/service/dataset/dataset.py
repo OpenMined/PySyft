@@ -257,8 +257,6 @@ class Asset(SyftObject):
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
-        if api.services is None:
-            return SyftError(message=f"Services for {api} is None")
         result = api.services.action.get_mock(self.action_id)
         try:
             if isinstance(result, SyftObject):
@@ -319,7 +317,7 @@ class CreateAsset(SyftObject):
     __canonical_name__ = "CreateAsset"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID] = None
+    id: Optional[UID] = None  # type:ignore[assignment]
     name: str
     description: Optional[MarkdownDescription] = None
     contributors: Set[Contributor] = set()
@@ -457,7 +455,7 @@ def get_shape_or_len(obj: Any) -> Optional[Union[Tuple[int, ...], int]]:
 @serializable()
 class Dataset(SyftObject):
     # version
-    __canonical_name__ = "Dataset"
+    __canonical_name__: str = "Dataset"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
@@ -636,8 +634,8 @@ class CreateDataset(Dataset):
 
     __repr_attrs__ = ["name", "url"]
 
-    id: Optional[UID] = None
-    created_at: Optional[DateTime]
+    id: Optional[UID] = None  # type: ignore[assignment]
+    created_at: Optional[DateTime]  # type: ignore[assignment]
     uploader: Optional[Contributor]  # type: ignore[assignment]
 
     class Config:
@@ -740,6 +738,9 @@ class CreateDataset(Dataset):
 
 
 def create_and_store_twin(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        raise ValueError("f{context}'s output is None. No trasformation happened")
+
     action_id = context.output["action_id"]
     if action_id is None:
         # relative
@@ -748,37 +749,49 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
         private_obj = context.output.pop("data", None)
         mock_obj = context.output.pop("mock", None)
         if private_obj is None and mock_obj is None:
-            raise Exception("No data and no action_id means this asset has no data")
+            raise ValueError("No data and no action_id means this asset has no data")
 
         twin = TwinObject(
             private_obj=private_obj,
             mock_obj=mock_obj,
         )
+        if context.node is None:
+            raise ValueError(
+                "f{context}'s node is None, please log in. No trasformation happened"
+            )
         action_service = context.node.get_service("actionservice")
         result = action_service.set(
             context=context.to_node_context(), action_object=twin
         )
         if result.is_err():
-            raise Exception(f"Failed to create and store twin. {result}")
+            raise RuntimeError(f"Failed to create and store twin. Error: {result}")
 
         context.output["action_id"] = twin.id
     else:
         private_obj = context.output.pop("data", None)
         mock_obj = context.output.pop("mock", None)
+
     return context
 
 
 def infer_shape(context: TransformContext) -> TransformContext:
-    if context.output["shape"] is None:
-        if not _is_action_data_empty(context.obj.mock):
+    if context.output is not None and context.output["shape"] is None:
+        if context.obj is not None and not _is_action_data_empty(context.obj.mock):
             context.output["shape"] = get_shape_or_len(context.obj.mock)
+    else:
+        print("f{context}'s output is None. No trasformation happened")
     return context
 
 
-def set_data_subjects(context: TransformContext) -> TransformContext:
+def set_data_subjects(context: TransformContext) -> Union[TransformContext, SyftError]:
+    if context.output is None:
+        return SyftError("f{context}'s output is None. No trasformation happened")
+    if context.node is None:
+        return SyftError(
+            "f{context}'s node is None, please log in. No trasformation happened"
+        )
     data_subjects = context.output["data_subjects"]
     get_data_subject = context.node.get_service_method(DataSubjectService.get_by_name)
-
     resultant_data_subjects = []
     for data_subject in data_subjects:
         result = get_data_subject(context=context, name=data_subject.name)
@@ -790,13 +803,19 @@ def set_data_subjects(context: TransformContext) -> TransformContext:
 
 
 def add_msg_creation_time(context: TransformContext) -> TransformContext:
-    context.output["created_at"] = DateTime.now()
+    if context.output is not None:
+        context.output["created_at"] = DateTime.now()
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
     return context
 
 
 def add_default_node_uid(context: TransformContext) -> TransformContext:
-    if context.output["node_uid"] is None:
-        context.output["node_uid"] = context.node.id
+    if context.output is not None:
+        if context.output["node_uid"] is None and context.node is not None:
+            context.output["node_uid"] = context.node.id
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
     return context
 
 
@@ -813,18 +832,26 @@ def createasset_to_asset() -> List[Callable]:
 
 
 def convert_asset(context: TransformContext) -> TransformContext:
-    assets = context.output.pop("asset_list", [])
-    for idx, create_asset in enumerate(assets):
-        asset_context = TransformContext.from_context(obj=create_asset, context=context)
-        assets[idx] = create_asset.to(Asset, context=asset_context)
-    context.output["asset_list"] = assets
+    if context.output is not None:
+        assets = context.output.pop("asset_list", [])
+        for idx, create_asset in enumerate(assets):
+            asset_context = TransformContext.from_context(
+                obj=create_asset, context=context
+            )
+            assets[idx] = create_asset.to(Asset, context=asset_context)
+        context.output["asset_list"] = assets
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
     return context
 
 
 def add_current_date(context: TransformContext) -> TransformContext:
-    current_date = datetime.now()
-    formatted_date = current_date.strftime("%b %d, %Y")
-    context.output["updated_at"] = formatted_date
+    if context.output is not None:
+        current_date = datetime.now()
+        formatted_date = current_date.strftime("%b %d, %Y")
+        context.output["updated_at"] = formatted_date
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
     return context
 
 
