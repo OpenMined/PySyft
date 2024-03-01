@@ -7,7 +7,10 @@ How to check differences between two objects:
 """
 
 # stdlib
+import html
+import textwrap
 from typing import Any
+from typing import ClassVar
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -33,10 +36,8 @@ from ...util.colors import SURFACE
 from ...util.fonts import ITABLES_CSS
 from ...util.fonts import fonts_css
 from ..action.action_object import ActionObject
-from ..request.request import UserCodeStatusChange
 from ..response import SyftError
 from .sync_state import SyncState
-import html
 
 sketchy_tab = "‎ " * 4
 
@@ -57,11 +58,10 @@ class AttrDiff(SyftObject):
 
     def __repr_side__(self, side):
         if side == "low":
-            return html.escape(recursive_attr_repr(self.low_attr))
+            return recursive_attr_repr(self.low_attr)
         if side == "high":
-            return html.escape(recursive_attr_repr(self.high_attr))
+            return recursive_attr_repr(self.high_attr)
 
-    
     def _coll_repr_(self) -> Dict[str, Any]:
         return {
             "attr name": self.attr_name,
@@ -119,63 +119,28 @@ class ListDiff(AttrDiff):
         return change_diff
 
 
-# class DictDiff(AttrDiff):
-#     # version
-#     __canonical_name__ = "DictDiff"
-#     __version__ = SYFT_OBJECT_VERSION_1
-#     diff_keys: List[Any] = []
-#     new_low_keys: List[Any] = []
-#     new_high_keys: List[Any] = []
+def recursive_attr_repr(value_attr, num_tabs=0):
+    new_num_tabs = num_tabs + 1
 
-# def get_diff_dict(low_dict, high_dict, check_func=None):
-#     diff_keys = []
-
-#     low_dict_keys = set(low_dict.keys())
-#     high_dict_keys = set(high_dict.keys())
-
-#     common_keys = low_dict_keys & high_dict_keys
-#     new_low_keys = low_dict_keys - high_dict_keys
-#     new_high_keys = high_dict_keys - low_dict_keys
-
-#     for key in common_keys:
-#         if check_func:
-#             if not check_func(low_dict[key], high_dict[key]):
-#                 diff_keys.append(key)
-#         elif low_dict[key] != high_dict[key]:
-#             diff_keys.append(key)
-
-#     return diff_keys, list(new_low_keys), list(new_high_keys)
-
-
-def recursive_attr_repr(value_attr, no_tabs=0):
-    new_no_tabs = no_tabs + 1 if no_tabs != 0 else 2
-    if isinstance(value_attr, List):
+    if isinstance(value_attr, list):
         list_repr = "[\n"
         for elem in value_attr:
-            list_repr += recursive_attr_repr(elem, no_tabs=new_no_tabs) + "\n"
-        list_repr += f"{sketchy_tab * (new_no_tabs-1)}]"
+            list_repr += recursive_attr_repr(elem, num_tabs=num_tabs + 1) + "\n"
+        list_repr += "]"
         return list_repr
-    elif isinstance(value_attr, Dict):
-        dict_repr = "[\n"
+
+    elif isinstance(value_attr, dict):
+        dict_repr = "{\n"
         for key, elem in value_attr.items():
-            elem_repr = {recursive_attr_repr(elem, no_tabs=new_no_tabs)}
-            dict_repr += f"{sketchy_tab * no_tabs}{key}: {elem_repr}\n"
-        dict_repr += f"{sketchy_tab * (new_no_tabs-1)}]"
-        return
-    elif isinstance(value_attr, UserCodeStatusChange):
-        return f"{sketchy_tab*no_tabs}UserCodeStatusChange"
-    # elif isinstance(value_attr, str):
-    #     if len(value_attr.split(",")) > 1:
-    #         repr_str = ""
-    #         for sub_string in value_attr.split(","):
-    #             repr_str += f"{sketchy_tab*(new_no_tabs-1)}{sub_string},\n"
-    #         return repr_str[:-1]
+            dict_repr += f"{sketchy_tab * new_num_tabs}{key}: {str(elem)}\n"
+        dict_repr += "}"
+        return dict_repr
 
     elif isinstance(value_attr, bytes):
         value_attr = repr(value_attr)
         if len(value_attr) > 50:
             value_attr = value_attr[:50] + "..."
-    return f"{sketchy_tab*no_tabs}{value_attr}"
+    return f"{sketchy_tab*num_tabs}{str(value_attr)}"
 
 
 class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
@@ -188,8 +153,6 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     diff_list: List[AttrDiff] = []
 
     __repr_attrs__ = [
-        # "object_type",
-        # "merge_state",
         "low_state",
         "high_state",
     ]
@@ -221,7 +184,40 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     def low_state(self):
         return self.state_str("low")
 
-    def state_str(self, side):
+    @property
+    def object_uid(self):
+        return self.low_obj.id if self.low_obj is not None else self.high_obj.id
+
+    def diff_attributes_str(self, side: str) -> str:
+        obj = self.low_obj if side == "low" else self.high_obj
+
+        if obj is None:
+            return ""
+
+        repr_attrs = getattr(obj, "__repr_attrs__", [])
+        if self.status == "SAME":
+            repr_attrs = repr_attrs[:3]
+
+        if self.status in {"SAME", "NEW"}:
+            attrs_str = ""
+            for attr in repr_attrs:
+                value = getattr(obj, attr)
+                attrs_str += f"{attr}: {recursive_attr_repr(value)}\n"
+            return attrs_str
+
+        if self.status == "DIFF":
+            attrs_str = ""
+            for diff in self.diff_list:
+                attrs_str += f"{diff.attr_name}: {diff.__repr_side__(side)}\n"
+            return attrs_str
+
+    def diff_side_str(self, side: str) -> str:
+        uid = self.object_uid
+        res = f"{self.obj_type.__name__.upper()} #{uid}:\n"
+        res += self.diff_attributes_str(side)
+        return res
+
+    def state_str(self, side: str) -> str:
         if side == "high":
             obj = self.high_obj
             other_obj = self.low_obj
@@ -257,12 +253,17 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
         return attr_text
 
-
     def get_obj(self):
         if self.status == "NEW":
             return self.low_obj if self.low_obj is not None else self.high_obj
         else:
             return "Error"
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        return {
+            "low_state": html.escape(self.low_state),
+            "high_state": html.escape(self.high_state),
+        }
 
     def _repr_html_(self) -> str:
         if self.low_obj is None and self.high_obj is None:
@@ -322,6 +323,38 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         return base_str + attr_text
 
 
+class ObjectDiffBatch(SyftObject):
+    __canonical_name__ = "DiffHierarchy"
+    __version__ = SYFT_OBJECT_VERSION_1
+    LINE_LENGTH: ClassVar[int] = 100
+
+    diffs: List[ObjectDiff]
+    hierarchy_levels: List[int]
+
+    def __len__(self) -> int:
+        return len(self.diffs)
+
+    def __repr__(self) -> str:
+        return f"{self.hierarchy_str('low')}\n\n{self.hierarchy_str('high')}\n"
+
+    def hierarchy_str(self, side: str) -> str:
+        res = f"{side.upper()} DIFF STATE\n\n"
+
+        for diff_obj, level in zip(self.diffs, self.hierarchy_levels):
+            obj = diff_obj.low_obj if side == "low" else diff_obj.high_obj
+            if obj is None:
+                continue
+            item_str = diff_obj.diff_side_str(side)
+            indent = " " * level * 4
+            line_prefix = indent + f"―――― {diff_obj.status} "
+            line = "―" * (self.LINE_LENGTH - len(line_prefix))
+            res += f"""{line_prefix}{line}
+
+{textwrap.indent(item_str, indent)}
+"""
+        return res
+
+
 class NodeDiff(SyftObject):
     __canonical_name__ = "NodeDiff"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -357,13 +390,13 @@ class NodeDiff(SyftObject):
     @property
     def diffs(self) -> List[ObjectDiff]:
         # Returns a list of diffs, in depth-first order.
-        return [diff for hierarchy in self.hierarchies for diff, _ in hierarchy]
+        return [diff for hierarchy in self.hierarchies for diff in hierarchy.diffs]
 
     def _repr_html_(self) -> Any:
         return self.diffs._repr_html_()
 
     @property
-    def hierarchies(self) -> List[List[Tuple[ObjectDiff, int]]]:
+    def hierarchies(self) -> List[ObjectDiffBatch]:
         # Returns a list of hierarchies, where each hierarchy is a list of tuples (ObjectDiff, level),
         # in depth-first order.
 
@@ -413,14 +446,13 @@ class NodeDiff(SyftObject):
 
         for root_uid in root_ids:
             uid_hierarchy = _build_hierarchy_helper(root_uid)
-            diff_hierarchy = [
-                (self.obj_uid_to_diff[uid], level) for uid, level in uid_hierarchy
-            ]
-            hierarchies.append(diff_hierarchy)
+            diffs = [self.obj_uid_to_diff[uid] for uid, _ in uid_hierarchy]
+            levels = [level for _, level in uid_hierarchy]
+            hierarchies.append(ObjectDiffBatch(diffs=diffs, hierarchy_levels=levels))
 
         return hierarchies
 
-    def add_obj(self, low_obj:SyftObject, high_obj: SyftObject):
+    def add_obj(self, low_obj: SyftObject, high_obj: SyftObject):
         if low_obj is None and high_obj is None:
             raise Exception("Both objects are None")
         obj_type = type(low_obj if low_obj is not None else high_obj)
@@ -433,7 +465,7 @@ class NodeDiff(SyftObject):
                 diff_list=[],
             )
         else:
-            diff_list = high_obj.get_diffs(low_obj)
+            diff_list = low_obj.get_diffs(high_obj)
             diff = ObjectDiff(
                 low_obj=low_obj,
                 high_obj=high_obj,
@@ -487,9 +519,7 @@ def display_diff_hierarchy(diff_hierarchy: List[Tuple[ObjectDiff, int]]):
     console = Console()
 
     for diff, level in diff_hierarchy:
-        title = (
-            f"{diff.obj_type.__name__}({diff.object_id}) - State: {diff.status}"
-        )
+        title = f"{diff.obj_type.__name__}({diff.object_id}) - State: {diff.status}"
 
         low_side_panel = display_diff_object(diff.low_state if diff.low_obj else None)
         low_side_panel.title = "Low side"
@@ -517,7 +547,9 @@ def display_diff_hierarchy(diff_hierarchy: List[Tuple[ObjectDiff, int]]):
         console.print(diff_panel)
 
 
-def resolve_diff(diff: ObjectDiff, decision: str) -> ResolvedSyncState:
+def resolve_diff(
+    diff: ObjectDiff, decision: str
+) -> Tuple[ResolvedSyncState, ResolvedSyncState]:
     resolved_diff_low = ResolvedSyncState()
     resolved_diff_high = ResolvedSyncState()
 

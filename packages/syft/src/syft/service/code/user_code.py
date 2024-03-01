@@ -118,21 +118,23 @@ class UserCodeStatusCollection(SyftObject):
     __canonical_name__ = "UserCodeStatusCollection"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    __repr_attrs__ = ["approved", "status_dict"]
+
     status_dict: Dict[NodeIdentity, Tuple[UserCodeStatus, str]] = {}
 
-    def get_diffs(self, obj) -> List[AttrDiff]:
+    def get_diffs(self, ext_obj) -> List[AttrDiff]:
         # relative
         from ...service.sync.diff_state import AttrDiff
 
         diff_attrs = []
         status = list(self.status_dict.values())[0]
-        ext_status = list(obj.status_dict.values())[0]
+        ext_status = list(ext_obj.status_dict.values())[0]
 
         if status != ext_status:
             diff_attr = AttrDiff(
                 attr_name="status_dict",
-                low_attr=ext_status,
-                high_attr=status,
+                low_attr=status,
+                high_attr=ext_status,
             )
             diff_attrs.append(diff_attr)
         return diff_attrs

@@ -1,4 +1,6 @@
 # stdlib
+import html
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -41,11 +43,15 @@ class SyncStateRow(SyftObject):
 
     # TODO table formatting
     __repr_attrs__ = [
-        "object_type",
-        "status",
         "previous_state",
         "current_state",
     ]
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        return {
+            "previous_state": html.escape(self.previous_state),
+            "current_state": html.escape(self.current_state),
+        }
 
     @property
     def object_type(self) -> str:
@@ -122,7 +128,7 @@ class SyncState(SyftObject):
 
         previous_diff = self.get_previous_state_diff()
         for hierarchy in previous_diff.hierarchies:
-            for diff, level in hierarchy:
+            for diff, level in zip(hierarchy.diffs, hierarchy.hierarchy_levels):
                 row = SyncStateRow(
                     object=diff.high_obj,
                     previous_object=diff.low_obj,
