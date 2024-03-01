@@ -43,7 +43,12 @@ jobs:
 
           brew install kube-linter
 
-      - name: Run Helm Lint
+      - name: Run Polaris
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          polaris audit --helm-chart packages/grid/helm/syft --helm-values packages/grid/helm/syft/values.yaml --format=pretty --only-show-failed-tests
+
+      - name: Run Linter
         run: |
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           tox -e syft.lint.helm
