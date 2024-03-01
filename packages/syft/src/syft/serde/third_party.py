@@ -31,6 +31,7 @@ import zmq.green as zmq
 from ..types.dicttuple import DictTuple
 from ..types.dicttuple import _Meta as _DictTupleMetaClass
 from ..types.syft_metaclass import EmptyType
+from ..types.syft_metaclass import PartialModelMetaclass
 from .deserialize import _deserialize as deserialize
 from .recursive_primitives import _serialize_kv_pairs
 from .recursive_primitives import deserialize_kv
@@ -56,8 +57,6 @@ recursive_serde_register(
 # result Ok and Err
 recursive_serde_register(Ok, serialize_attrs=["_value"])
 recursive_serde_register(Err, serialize_attrs=["_value"])
-
-recursive_serde_register_type(ModelMetaclass)
 recursive_serde_register(Result)
 
 # exceptions
@@ -155,6 +154,10 @@ recursive_serde_register(
     serialize=serialize_type,
     deserialize=deserialize_type,
 )
+
+
+recursive_serde_register_type(ModelMetaclass)
+recursive_serde_register(PartialModelMetaclass)
 
 
 def serialize_bytes_io(io: BytesIO) -> bytes:

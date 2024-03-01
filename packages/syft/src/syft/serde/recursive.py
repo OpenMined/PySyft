@@ -113,11 +113,11 @@ def recursive_serde_register(
         pydantic_fields = [
             field
             for field, field_info in cls.model_fields.items()
-            if (
+            if not (
                 field_info.annotation is not None
                 and hasattr(field_info.annotation, "__origin__")
                 and field_info.annotation.__origin__
-                not in (Callable, types.FunctionType, types.LambdaType)
+                in (Callable, types.FunctionType, types.LambdaType)
             )
         ]
         attribute_list.update(pydantic_fields)
