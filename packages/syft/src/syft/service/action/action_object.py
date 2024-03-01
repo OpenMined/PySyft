@@ -155,12 +155,7 @@ class Action(SyftObject):
     @field_validator("result_id", mode="before")
     @classmethod
     def make_result_id(cls, v: Any) -> LineageID:
-        """Generate or reuse a LineageID"""
-        if isinstance(v, LineageID):
-            return v
-        if not isinstance(v, UID):
-            raise ValueError("result_id type must be a subclass of UID")
-        return LineageID(v)
+        return v if isinstance(v, LineageID) else LineageID(v)
 
     @property
     def full_path(self) -> str:
@@ -946,12 +941,8 @@ class ActionObject(SyftObject):
             return obj.syft_lineage_id
 
         # We got a raw object. We need to create the ActionObject from scratch and save it in the store.
-        obj_id = UID()
-        lin_obj_id = Action.make_result_id(obj_id)
         act_obj = ActionObject.from_obj(
             obj,
-            id=obj_id,
-            syft_lineage_id=lin_obj_id,
             syft_client_verify_key=self.syft_client_verify_key,
             syft_node_location=self.syft_node_location,
         )
