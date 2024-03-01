@@ -8,6 +8,7 @@ from typing import Type
 from typing import Union
 
 # third party
+from pydantic import EmailStr
 from typing_extensions import Self
 
 # relative
@@ -139,7 +140,7 @@ def validate_url(context: TransformContext) -> TransformContext:
 
 def validate_email(context: TransformContext) -> TransformContext:
     if context.output["email"] is not None:
-        context.output["email"] = context.output["email"]
+        EmailStr._validate(context.output["email"])
     return context
 
 

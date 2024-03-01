@@ -210,8 +210,8 @@ def test_action_object_hooks() -> None:
         # change return type to sum
         return Ok(sum(new_result))
 
-    action_object._syft_pre_hooks__["__add__"] = [pre_add]
-    action_object._syft_post_hooks__["__add__"] = [post_add]
+    action_object.syft_pre_hooks__["__add__"] = [pre_add]
+    action_object.syft_post_hooks__["__add__"] = [post_add]
 
     result = action_object + action_object
     x = result.syft_action_data
@@ -219,8 +219,8 @@ def test_action_object_hooks() -> None:
     assert y == 18
     assert x == y
 
-    action_object._syft_pre_hooks__["__add__"] = []
-    action_object._syft_post_hooks__["__add__"] = []
+    action_object.syft_pre_hooks__["__add__"] = []
+    action_object.syft_post_hooks__["__add__"] = []
 
 
 def test_worker_serde() -> None:

@@ -638,8 +638,8 @@ class CreateDataset(Dataset):
     __repr_attrs__ = ["name", "url"]
 
     id: Optional[UID] = None
-    created_at: Optional[DateTime]
-    uploader: Optional[Contributor]  # type: ignore[assignment]
+    created_at: Optional[DateTime] = None
+    uploader: Optional[Contributor] = None  # type: ignore[assignment]
 
     model_config = ConfigDict(validate_assignment=True)
 

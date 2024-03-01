@@ -376,10 +376,12 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
 
     # # move this to transforms
     @model_validator(mode="before")
-    def make_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        id_field = cls.model_fields["id"]
-        if "id" not in values and id_field.is_required():
-            values["id"] = id_field.annotation()
+    @classmethod
+    def make_id(cls, values: Any) -> Any:
+        if isinstance(values, dict):
+            id_field = cls.model_fields["id"]
+            if "id" not in values and id_field.is_required():
+                values["id"] = id_field.annotation()
         return values
 
     __attr_searchable__: ClassVar[
@@ -584,7 +586,9 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             if value is not PydanticUndefined:
                 if decl.default_factory:
                     # If the value is defined via PrivateAttr with default factory
-                    value = decl.default_factory(value)
+                    value = decl.default_factory()
+                elif decl.default:
+                    value = decl.default
                 elif var_annotation is not None:
                     # Otherwise validate value against the variable annotation
                     check_type(attr, value, var_annotation)

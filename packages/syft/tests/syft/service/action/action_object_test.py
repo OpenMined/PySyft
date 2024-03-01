@@ -163,12 +163,12 @@ def test_actionobject_make_empty_sanity(dtype: Type):
 def test_actionobject_hooks_init(orig_obj: Any):
     obj = ActionObject.from_obj(orig_obj)
 
-    assert HOOK_ALWAYS in obj._syft_pre_hooks__
-    assert HOOK_ALWAYS in obj._syft_post_hooks__
+    assert HOOK_ALWAYS in obj.syft_pre_hooks__
+    assert HOOK_ALWAYS in obj.syft_post_hooks__
 
-    assert make_action_side_effect in obj._syft_pre_hooks__[HOOK_ALWAYS]
-    assert send_action_side_effect in obj._syft_pre_hooks__[HOOK_ON_POINTERS]
-    assert propagate_node_uid in obj._syft_post_hooks__[HOOK_ALWAYS]
+    assert make_action_side_effect in obj.syft_pre_hooks__[HOOK_ALWAYS]
+    assert send_action_side_effect in obj.syft_pre_hooks__[HOOK_ON_POINTERS]
+    assert propagate_node_uid in obj.syft_post_hooks__[HOOK_ALWAYS]
 
 
 @pytest.mark.parametrize(

@@ -310,6 +310,23 @@ passthrough_attrs = [
     "__include_fields__",  # pydantic
     "_calculate_keys",  # pydantic
     "_get_value",  # pydantic
+    "__pydantic_validator__",  # pydantic
+    "__class_vars__",  # pydantic
+    "__private_attributes__",  # pydantic
+    "__signature__",  # pydantic
+    "__pydantic_complete__",  # pydantic
+    "__pydantic_core_schema__",  # pydantic
+    "__pydantic_custom_init__",  # pydantic
+    "__pydantic_decorators__",  # pydantic
+    "__pydantic_generic_metadata__",  # pydantic
+    "__pydantic_parent_namespace__",  # pydantic
+    "__pydantic_post_init__",  # pydantic
+    "__pydantic_root_model__",  # pydantic
+    "__pydantic_serializer__",  # pydantic
+    "__pydantic_validator__",  # pydantic
+    "__pydantic_extra__",  # pydantic
+    "__pydantic_fields_set__",  # pydantic
+    "__pydantic_private__",  # pydantic
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -595,8 +612,8 @@ class ActionObjectV1(SyftObject):
     syft_history_hash: Optional[int] = None
     syft_internal_type: ClassVar[Type[Any]]
     syft_node_uid: Optional[UID] = None
-    _syft_pre_hooks__: Dict[str, List] = {}
-    _syft_post_hooks__: Dict[str, List] = {}
+    syft_pre_hooks__: Dict[str, List] = {}
+    syft_post_hooks__: Dict[str, List] = {}
     syft_twin_type: TwinMode = TwinMode.NONE
     syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
     syft_action_data_type: Optional[Type] = None
@@ -607,7 +624,7 @@ class ActionObjectV1(SyftObject):
     syft_created_at: Optional[DateTime] = None
 
 
-@serializable()
+@serializable(without=["syft_pre_hooks__", "syft_post_hooks__"])
 class ActionObject(SyftObject):
     """Action object for remote execution."""
 
@@ -629,8 +646,8 @@ class ActionObject(SyftObject):
     syft_history_hash: Optional[int] = None
     syft_internal_type: ClassVar[Type[Any]]
     syft_node_uid: Optional[UID] = None
-    _syft_pre_hooks__: Dict[str, List] = {}
-    _syft_post_hooks__: Dict[str, List] = {}
+    syft_pre_hooks__: Dict[str, List] = {}
+    syft_post_hooks__: Dict[str, List] = {}
     syft_twin_type: TwinMode = TwinMode.NONE
     syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
     syft_action_data_type: Optional[Type] = None
@@ -1200,13 +1217,13 @@ class ActionObject(SyftObject):
     @classmethod
     def add_trace_hook(cls) -> bool:
         return True
-        # if trace_action_side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
-        #     self._syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
+        # if trace_action_side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
+        #     self.syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
 
     @classmethod
     def remove_trace_hook(cls) -> bool:
         return True
-        # self._syft_pre_hooks__[HOOK_ALWAYS].pop(trace_action_side_effct, None)
+        # self.syft_pre_hooks__[HOOK_ALWAYS].pop(trace_action_side_effct, None)
 
     def as_empty_data(self) -> ActionDataEmpty:
         return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
@@ -1253,14 +1270,15 @@ class ActionObject(SyftObject):
         )
         return res
 
-    @staticmethod
+    @classmethod
     def empty(
         # TODO: fix the mypy issue
+        cls,
         syft_internal_type: Optional[Type[Any]] = None,
         id: Optional[UID] = None,
         syft_lineage_id: Optional[LineageID] = None,
         syft_resolved: Optional[bool] = True,
-    ) -> ActionObject:
+    ) -> Self:
         """Create an ActionObject from a type, using a ActionDataEmpty object
 
         Parameters:
@@ -1275,8 +1293,8 @@ class ActionObject(SyftObject):
         syft_internal_type = (
             type(None) if syft_internal_type is None else syft_internal_type
         )
-        empty = ActionDataEmpty(syft_internal_type=syft_internal_type)
-        res = ActionObject.from_obj(
+        empty = cls(syft_internal_type=syft_internal_type)
+        res = cls.from_obj(
             id=id,
             syft_lineage_id=syft_lineage_id,
             syft_action_data=empty,
@@ -1287,33 +1305,33 @@ class ActionObject(SyftObject):
 
     def __post_init__(self) -> None:
         """Add pre/post hooks."""
-        if HOOK_ALWAYS not in self._syft_pre_hooks__:
-            self._syft_pre_hooks__[HOOK_ALWAYS] = []
+        if HOOK_ALWAYS not in self.syft_pre_hooks__:
+            self.syft_pre_hooks__[HOOK_ALWAYS] = []
 
-        if HOOK_ON_POINTERS not in self._syft_post_hooks__:
-            self._syft_pre_hooks__[HOOK_ON_POINTERS] = []
+        if HOOK_ON_POINTERS not in self.syft_post_hooks__:
+            self.syft_pre_hooks__[HOOK_ON_POINTERS] = []
 
         # this should be a list as orders matters
         for side_effect in [make_action_side_effect]:
-            if side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
-                self._syft_pre_hooks__[HOOK_ALWAYS].append(side_effect)
+            if side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
+                self.syft_pre_hooks__[HOOK_ALWAYS].append(side_effect)
 
         for side_effect in [send_action_side_effect]:
-            if side_effect not in self._syft_pre_hooks__[HOOK_ON_POINTERS]:
-                self._syft_pre_hooks__[HOOK_ON_POINTERS].append(side_effect)
+            if side_effect not in self.syft_pre_hooks__[HOOK_ON_POINTERS]:
+                self.syft_pre_hooks__[HOOK_ON_POINTERS].append(side_effect)
 
-        if trace_action_side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
-            self._syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
+        if trace_action_side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
+            self.syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
 
-        if HOOK_ALWAYS not in self._syft_post_hooks__:
-            self._syft_post_hooks__[HOOK_ALWAYS] = []
+        if HOOK_ALWAYS not in self.syft_post_hooks__:
+            self.syft_post_hooks__[HOOK_ALWAYS] = []
 
-        if HOOK_ON_POINTERS not in self._syft_post_hooks__:
-            self._syft_post_hooks__[HOOK_ON_POINTERS] = []
+        if HOOK_ON_POINTERS not in self.syft_post_hooks__:
+            self.syft_post_hooks__[HOOK_ON_POINTERS] = []
 
         for side_effect in [propagate_node_uid]:
-            if side_effect not in self._syft_post_hooks__[HOOK_ALWAYS]:
-                self._syft_post_hooks__[HOOK_ALWAYS].append(side_effect)
+            if side_effect not in self.syft_post_hooks__[HOOK_ALWAYS]:
+                self.syft_post_hooks__[HOOK_ALWAYS].append(side_effect)
 
         if isinstance(self.syft_action_data_type, ActionObject):
             raise Exception("Nested ActionObjects", self.syft_action_data_repr_)
@@ -1325,16 +1343,16 @@ class ActionObject(SyftObject):
     ) -> Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]:
         """Hooks executed before the actual call"""
         result_args, result_kwargs = args, kwargs
-        if name in self._syft_pre_hooks__:
-            for hook in self._syft_pre_hooks__[name]:
+        if name in self.syft_pre_hooks__:
+            for hook in self.syft_pre_hooks__[name]:
                 result = hook(context, *result_args, **result_kwargs)
                 if result.is_ok():
                     context, result_args, result_kwargs = result.ok()
                 else:
                     debug(f"Pre-hook failed with {result.err()}")
         if name not in self._syft_dont_wrap_attrs():
-            if HOOK_ALWAYS in self._syft_pre_hooks__:
-                for hook in self._syft_pre_hooks__[HOOK_ALWAYS]:
+            if HOOK_ALWAYS in self.syft_pre_hooks__:
+                for hook in self.syft_pre_hooks__[HOOK_ALWAYS]:
                     result = hook(context, *result_args, **result_kwargs)
                     if result.is_ok():
                         context, result_args, result_kwargs = result.ok()
@@ -1344,8 +1362,8 @@ class ActionObject(SyftObject):
 
         if self.is_pointer:
             if name not in self._syft_dont_wrap_attrs():
-                if HOOK_ALWAYS in self._syft_pre_hooks__:
-                    for hook in self._syft_pre_hooks__[HOOK_ON_POINTERS]:
+                if HOOK_ALWAYS in self.syft_pre_hooks__:
+                    for hook in self.syft_pre_hooks__[HOOK_ON_POINTERS]:
                         result = hook(context, *result_args, **result_kwargs)
                         if result.is_ok():
                             context, result_args, result_kwargs = result.ok()
@@ -1360,8 +1378,8 @@ class ActionObject(SyftObject):
     ) -> Any:
         """Hooks executed after the actual call"""
         new_result = result
-        if name in self._syft_post_hooks__:
-            for hook in self._syft_post_hooks__[name]:
+        if name in self.syft_post_hooks__:
+            for hook in self.syft_post_hooks__[name]:
                 result = hook(context, name, new_result)
                 if result.is_ok():
                     new_result = result.ok()
@@ -1369,8 +1387,8 @@ class ActionObject(SyftObject):
                     debug(f"Post hook failed with {result.err()}")
 
         if name not in self._syft_dont_wrap_attrs():
-            if HOOK_ALWAYS in self._syft_post_hooks__:
-                for hook in self._syft_post_hooks__[HOOK_ALWAYS]:
+            if HOOK_ALWAYS in self.syft_post_hooks__:
+                for hook in self.syft_post_hooks__[HOOK_ALWAYS]:
                     result = hook(context, name, new_result)
                     if result.is_ok():
                         new_result = result.ok()
@@ -1379,8 +1397,8 @@ class ActionObject(SyftObject):
 
         if self.is_pointer:
             if name not in self._syft_dont_wrap_attrs():
-                if HOOK_ALWAYS in self._syft_post_hooks__:
-                    for hook in self._syft_post_hooks__[HOOK_ON_POINTERS]:
+                if HOOK_ALWAYS in self.syft_post_hooks__:
+                    for hook in self.syft_post_hooks__[HOOK_ON_POINTERS]:
                         result = hook(context, name, new_result)
                         if result.is_ok():
                             new_result = result.ok()
@@ -1652,6 +1670,9 @@ class ActionObject(SyftObject):
         """
         # bypass certain attrs to prevent recursion issues
         if name.startswith("_syft") or name.startswith("syft"):
+            return object.__getattribute__(self, name)
+
+        if name in passthrough_attrs:
             return object.__getattribute__(self, name)
 
         # third party
