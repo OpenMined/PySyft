@@ -47,6 +47,9 @@ def resolve(state: NodeDiff, decision: Optional[str] = None):
         print(
             f"Decision: Syncing {len(batch_hierarchy)} objects from {batch_decision} side"
         )
+        print()
+        print("=" * 100)
+        print()
 
         object_diff: ObjectDiff
         for object_diff in batch_hierarchy.diffs:

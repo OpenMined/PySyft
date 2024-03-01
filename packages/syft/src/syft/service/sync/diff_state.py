@@ -19,6 +19,7 @@ from typing import Tuple
 from typing import Type
 
 # third party
+import pydantic
 from rich import box
 from rich.console import Console
 from rich.console import Group
@@ -36,6 +37,12 @@ from ...util.colors import SURFACE
 from ...util.fonts import ITABLES_CSS
 from ...util.fonts import fonts_css
 from ..action.action_object import ActionObject
+from ..code.user_code import UserCode
+from ..code.user_code import UserCodeStatusCollection
+from ..job.job_stash import Job
+from ..log.log import SyftLog
+from ..output.output_service import ExecutionOutput
+from ..request.request import Request
 from ..response import SyftError
 from .sync_state import SyncState
 
@@ -156,6 +163,9 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         "low_state",
         "high_state",
     ]
+
+    def __hash__(self):
+        return hash(self.id) + hash(self.low_obj) + hash(self.high_obj)
 
     @property
     def status(self):
@@ -323,13 +333,75 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         return base_str + attr_text
 
 
+def _wrap_text(text: str, width: int, indent=4) -> str:
+    """Wrap text, preserving existing line breaks"""
+    return "\n".join(
+        [
+            "\n".join(
+                textwrap.wrap(
+                    line,
+                    width,
+                    break_long_words=False,
+                    replace_whitespace=False,
+                    subsequent_indent=" " * indent,
+                )
+            )
+            for line in text.splitlines()
+            if line.strip() != ""
+        ]
+    )
+
+
 class ObjectDiffBatch(SyftObject):
     __canonical_name__ = "DiffHierarchy"
     __version__ = SYFT_OBJECT_VERSION_1
     LINE_LENGTH: ClassVar[int] = 100
+    INDENT: ClassVar[int] = 4
+    ORDER: ClassVar[Dict] = {"low": 0, "high": 1}
 
+    # Diffs are ordered in depth-first order,
+    # so the first diff is the root of the hierarchy
     diffs: List[ObjectDiff]
     hierarchy_levels: List[int]
+    dependencies: Dict[UID, List[UID]] = {}
+    dependents: Dict[UID, List[UID]] = {}
+
+    @property
+    def visual_hierarchy(self) -> Tuple[Type, dict]:
+        # Returns
+        root_obj = (
+            self.root.low_obj if self.root.low_obj is not None else self.root.high_obj
+        )
+        if isinstance(root_obj, Request):
+            return Request, {
+                Request: [UserCode],
+                UserCode: [UserCode],
+            }
+        if isinstance(root_obj, UserCodeStatusCollection):
+            return UserCode, {
+                UserCode: [UserCodeStatusCollection],
+            }
+        if isinstance(root_obj, ExecutionOutput):
+            return UserCode, {
+                UserCode: [Job],
+                Job: [ExecutionOutput, SyftLog, Job],
+                ExecutionOutput: [ActionObject],
+            }
+        raise ValueError(f"Unknown root type: {self.root.obj_type}")
+
+    @pydantic.root_validator
+    def make_dependents(cls, values: dict) -> dict:
+        dependencies = values.get("dependencies", {})
+        dependents = {}
+        for parent, children in dependencies.items():
+            for child in children:
+                dependents[child] = dependents.get(child, []) + [parent]
+        values["dependents"] = dependents
+        return values
+
+    @property
+    def root(self) -> ObjectDiff:
+        return self.diffs[0]
 
     def __len__(self) -> int:
         return len(self.diffs)
@@ -337,22 +409,66 @@ class ObjectDiffBatch(SyftObject):
     def __repr__(self) -> str:
         return f"{self.hierarchy_str('low')}\n\n{self.hierarchy_str('high')}\n"
 
-    def hierarchy_str(self, side: str) -> str:
-        res = f"{side.upper()} DIFF STATE\n\n"
+    def _get_visual_hierarchy(self, node: ObjectDiff) -> dict[ObjectDiff, dict]:
+        _, child_types_map = self.visual_hierarchy
+        child_types = child_types_map.get(node.obj_type, [])
+        dep_ids = self.dependencies.get(node.object_id, []) + self.dependents.get(
+            node.object_id, []
+        )
 
-        for diff_obj, level in zip(self.diffs, self.hierarchy_levels):
-            obj = diff_obj.low_obj if side == "low" else diff_obj.high_obj
-            if obj is None:
-                continue
-            item_str = diff_obj.diff_side_str(side)
-            indent = " " * level * 4
-            line_prefix = indent + f"―――― {diff_obj.status} "
-            line = "―" * (self.LINE_LENGTH - len(line_prefix))
-            res += f"""{line_prefix}{line}
+        result = {}
+        for child_type in child_types:
+            children = [
+                n
+                for n in self.diffs
+                if n.object_id in dep_ids
+                and isinstance(n.low_obj or n.high_obj, child_type)
+            ]
+            for child in children:
+                result[child] = self._get_visual_hierarchy(child)
 
-{textwrap.indent(item_str, indent)}
+        return result
+
+    def get_visual_hierarchy(self) -> "ObjectDiffBatch":
+        visual_root_type = self.visual_hierarchy[0]
+        # First diff with a visual root type is the visual root
+        # because diffs are in depth-first order
+        visual_root = [
+            diff
+            for diff in self.diffs
+            if isinstance(diff.low_obj or diff.high_obj, visual_root_type)
+        ][0]
+        return {visual_root: self._get_visual_hierarchy(visual_root)}
+
+    def _get_obj_str(self, diff_obj: ObjectDiff, level: int, side: str) -> str:
+        obj = diff_obj.low_obj if side == "low" else diff_obj.high_obj
+        if obj is None:
+            return ""
+        indent = " " * level * self.INDENT
+        obj_str = diff_obj.diff_side_str(side)
+        obj_str = _wrap_text(obj_str, width=self.LINE_LENGTH - len(indent))
+
+        line_prefix = indent + f"―――― {diff_obj.status} "
+        line = "―" * (self.LINE_LENGTH - len(line_prefix))
+        return f"""{line_prefix}{line}
+
+{textwrap.indent(obj_str, indent)}
+
 """
-        return res
+
+    def hierarchy_str(self, side: str) -> str:
+        def _hierarchy_str_recursive(tree: Dict, level: int) -> str:
+            result = ""
+            for node, children in tree.items():
+                result += self._get_obj_str(node, level, side)
+                result += _hierarchy_str_recursive(children, level + 1)
+            return result
+
+        visual_hierarchy = self.get_visual_hierarchy()
+        res = _hierarchy_str_recursive(visual_hierarchy, 0)
+        return f"""{side.upper()} SIDE DIFF:
+
+{res}"""
 
 
 class NodeDiff(SyftObject):
@@ -448,7 +564,17 @@ class NodeDiff(SyftObject):
             uid_hierarchy = _build_hierarchy_helper(root_uid)
             diffs = [self.obj_uid_to_diff[uid] for uid, _ in uid_hierarchy]
             levels = [level for _, level in uid_hierarchy]
-            hierarchies.append(ObjectDiffBatch(diffs=diffs, hierarchy_levels=levels))
+
+            batch_uids = {uid for uid, _ in uid_hierarchy}
+            dependencies = {
+                uid: [d for d in self.dependencies.get(uid, []) if d in batch_uids]
+                for uid in batch_uids
+            }
+
+            batch = ObjectDiffBatch(
+                diffs=diffs, hierarchy_levels=levels, dependencies=dependencies
+            )
+            hierarchies.append(batch)
 
         return hierarchies
 

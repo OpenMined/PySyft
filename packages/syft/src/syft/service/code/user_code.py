@@ -121,6 +121,7 @@ class UserCodeStatusCollection(SyftObject):
     __repr_attrs__ = ["approved", "status_dict"]
 
     status_dict: Dict[NodeIdentity, Tuple[UserCodeStatus, str]] = {}
+    user_code_link: LinkedObject
 
     def get_diffs(self, ext_obj) -> List[AttrDiff]:
         # relative
@@ -249,6 +250,9 @@ class UserCodeStatusCollection(SyftObject):
             return SyftError(
                 message="Cannot Modify Status as the Domain's data is not included in the request"
             )
+
+    def get_sync_dependencies(self, api=None) -> List[UID]:
+        return [self.user_code_link.object_uid]
 
 
 @serializable()
@@ -1254,7 +1258,16 @@ def check_output_policy(context: TransformContext) -> TransformContext:
 
 
 def create_code_status(context: TransformContext) -> TransformContext:
+    # relative
+    from .user_code_service import UserCodeService
+
     input_keys = list(context.output["input_policy_init_kwargs"].keys())
+    code_link = LinkedObject.from_uid(
+        context.output["id"],
+        UserCode,
+        service_type=UserCodeService,
+        node_uid=context.node.id,
+    )
     if context.node.node_type == NodeType.DOMAIN:
         node_identity = NodeIdentity(
             node_name=context.node.name,
@@ -1262,12 +1275,16 @@ def create_code_status(context: TransformContext) -> TransformContext:
             verify_key=context.node.signing_key.verify_key,
         )
         status = UserCodeStatusCollection(
-            status_dict={node_identity: (UserCodeStatus.PENDING, "")}
+            status_dict={node_identity: (UserCodeStatus.PENDING, "")},
+            user_code_link=code_link,
         )
 
     elif context.node.node_type == NodeType.ENCLAVE:
         status_dict = {key: (UserCodeStatus.PENDING, "") for key in input_keys}
-        status = UserCodeStatusCollection(status_dict=status_dict)
+        status = UserCodeStatusCollection(
+            status_dict=status_dict,
+            user_code_link=code_link,
+        )
     else:
         raise NotImplementedError(
             f"Invalid node type:{context.node.node_type} for code submission"

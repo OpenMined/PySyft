@@ -450,7 +450,7 @@ class Request(SyftObject):
     def code_id(self) -> UID:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
-                return change.linked_obj.object_uid
+                return change.linked_user_code.object_uid
         return SyftError(
             message="This type of request does not have code associated with it."
         )
@@ -828,7 +828,7 @@ class Request(SyftObject):
         job.apply_info(job_info)
         return job_service.update(job)
 
-    def get_dependencies(self) -> Union[List[UID], SyftError]:
+    def get_sync_dependencies(self, api=None) -> Union[List[UID], SyftError]:
         dependencies = []
 
         code_id = self.code_id
@@ -838,9 +838,6 @@ class Request(SyftObject):
         dependencies.append(code_id)
 
         return dependencies
-
-    def get_sync_dependencies(self, api=None) -> Union[List[UID], SyftError]:
-        return self.get_dependencies()
 
 
 @serializable()
