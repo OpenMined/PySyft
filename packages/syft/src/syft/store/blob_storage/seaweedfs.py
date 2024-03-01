@@ -167,6 +167,8 @@ class SeaweedFSBlobDeposit(BlobDeposit):
             syft_node_location=self.syft_node_location,
             syft_client_verify_key=self.syft_client_verify_key,
         )
+        if mark_write_complete_method is None:
+            return SyftError(message="mark_write_complete_method is None")
         return mark_write_complete_method(
             etags=etags, uid=self.blob_storage_entry_id, no_lines=no_lines
         )

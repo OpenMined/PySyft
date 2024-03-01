@@ -41,6 +41,8 @@ class OnDiskBlobDeposit(BlobDeposit):
             syft_node_location=self.syft_node_location,
             syft_client_verify_key=self.syft_client_verify_key,
         )
+        if write_to_disk_method is None:
+            return SyftError(message="write_to_disk_method is None")
         return write_to_disk_method(data=data.read(), uid=self.blob_storage_entry_id)
 
 

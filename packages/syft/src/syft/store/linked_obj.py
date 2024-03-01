@@ -67,9 +67,11 @@ class LinkedObject(SyftObject):
             return SyftError(message="wrong context passed")
         if context.node is None:
             return SyftError(message=f"context {context}'s node is None")
-        result = context.node.get_service(self.service_type).stash.update(
-            credentials, obj
-        )
+        service = context.node.get_service(self.service_type)
+        if hasattr(service, "stash"):
+            result = service.stash.update(credentials, obj)
+        else:
+            return SyftError(message=f"service {service} does not have a stash")
         return result
 
     @classmethod

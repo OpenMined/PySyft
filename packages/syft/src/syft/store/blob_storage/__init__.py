@@ -311,7 +311,7 @@ class BlobDeposit(SyftObject):
     blob_storage_entry_id: UID
 
     def write(self, data: BytesIO) -> Union[SyftSuccess, SyftError]:
-        pass
+        raise NotImplementedError
 
 
 @serializable()
