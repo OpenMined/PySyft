@@ -48,14 +48,25 @@ And you can attach the debugger running on port 5678.
 Add the following to `packages/grid/backend/grid/__init__.py`
 
 ```py
-import os
 import pydevd_pycharm
+pydevd_pycharm.settrace('your-local-addr', port=5678, suspend=False)
+```
+Ensure that `your-local-addr` is reachable from the containers.
 
-if os.getenv('DEV_MODE'):
-    pydevd_pycharm.settrace('your-local-addr', port=5678, suspend=False)
+Next, replace the debugpy install and `DEBUG_CMD` in `packages/grid/backend/grid/start.sh`:
+
+```bash
+# only set by kubernetes to avoid conflict with docker tests
+if [[ ${DEBUGGER_ENABLED} == "True" ]];
+then
+    pip install --user pydevd-pycharm==233.14475.56 # remove debugpy, add pydevd-pycharm
+    DEBUG_CMD="" # empty the debug command
+fi
 ```
 
-Whenever you start a container in development mode (`DEV_MODE=true`), it attempts to connect to PyCharm. Ensure that `your-local-addr` is reachable from the containers. Then, you can run the following command:
+If it fails to connect, check the backend logs. You might need to install a different pydevd-pycharm version. The version to be installed is shown in the log error message.
+
+Whenever you start a container, it attempts to connect to PyCharm. 
 
 ```bash
 tox -e dev.k8s.hotreload
