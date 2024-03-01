@@ -506,6 +506,9 @@ class APIModule:
         results = self.get_all()
         return results._repr_html_()
 
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return NotImplementedError
+
 
 def debox_signed_syftapicall_response(
     signed_result: Union[SignedSyftAPICall, Any],
