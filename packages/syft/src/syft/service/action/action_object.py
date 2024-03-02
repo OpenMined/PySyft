@@ -322,6 +322,22 @@ passthrough_attrs = [
     "__pydantic_extra__",  # pydantic
     "__pydantic_fields_set__",  # pydantic
     "__pydantic_private__",  # pydantic
+    "model_config",  # pydantic
+    "model_computed_fields",  # pydantic
+    "model_extra",  # pydantic
+    "model_fields",  # pydantic
+    "model_fields_set",  # pydantic
+    "model_construct",  # pydantic
+    "model_copy",  # pydantic
+    "model_dump",  # pydantic
+    "model_dump_json",  # pydantic
+    "model_json_schema",  # pydantic
+    "model_parametrized_name",  # pydantic
+    "model_post_init",  # pydantic
+    "model_rebuild",  # pydantic
+    "model_validate",  # pydantic
+    "model_validate_json",  # pydantic
+    "copy",  # pydantic
 ]
 dont_wrap_output_attrs = [
     "__repr__",
