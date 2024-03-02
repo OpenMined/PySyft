@@ -114,7 +114,11 @@ class RequestEmailTemplate(EmailTemplate):
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
         context.node = cast(AbstractNode, context.node)
-        return f"Domain {context.node.name}: New Request!"
+        notification.linked_obj = cast(LinkedObject, notification.linked_obj)
+        request_obj = notification.linked_obj.resolve_with_context(context=context).ok()
+
+        context.node = cast(AbstractNode, context.node)
+        return f"Domain {context.node.name}: A New Request ({str(request_obj.id)[:4]}) has been received!"
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
