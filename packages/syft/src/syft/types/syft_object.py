@@ -437,7 +437,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     def _repr_debug_(self) -> str:
         class_name = get_qualname_for(type(self))
         _repr_str = f"class {class_name}:\n"
-        fields = getattr(self, "__fields__", {})
+        fields = getattr(self, "model_fields", {})
         for attr in fields.keys():
             if attr in DYNAMIC_SYFT_ATTRIBUTES:
                 continue
