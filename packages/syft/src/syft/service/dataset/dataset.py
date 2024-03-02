@@ -16,7 +16,6 @@ from IPython.display import display
 import itables
 import pandas as pd
 from pydantic import ConfigDict
-from pydantic import ValidationError
 from pydantic import field_validator
 from pydantic import model_validator
 from result import Err
@@ -342,21 +341,11 @@ class CreateAsset(SyftObject):
         super().__init__(**data, description=MarkdownDescription(text=str(description)))
 
     @model_validator(mode="after")
-    def __empty_mock_cannot_be_real(self) -> Self:
-        """set mock_is_real to False whenever mock is None or empty"""
-        if self.mock is None or _is_action_data_empty(self.mock):
-            self.__dict__["mock_is_real"] = False
-
-        return self
-
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @model_validator(mode="after")
     def __mock_is_real_for_empty_mock_must_be_false(self) -> Self:
         if self.mock_is_real and (
             self.mock is None or _is_action_data_empty(self.mock)
         ):
-            raise ValueError("mock_is_real must be False if mock is not provided")
+            self.__dict__["mock_is_real"] = False
 
         return self
 
@@ -400,14 +389,11 @@ class CreateAsset(SyftObject):
         if isinstance(mock_data, SyftError):
             raise SyftException(mock_data)
 
-        current_mock = self.mock
-        self.mock = mock_data
+        if mock_is_real and (mock_data is None or _is_action_data_empty(mock_data)):
+            raise SyftException("`mock_is_real` must be False if mock is empty")
 
-        try:
-            self.mock_is_real = mock_is_real
-        except ValidationError as e:
-            self.mock = current_mock
-            raise e
+        self.mock = mock_data
+        self.mock_is_real = mock_is_real
 
     def no_mock(self) -> None:
         # relative
