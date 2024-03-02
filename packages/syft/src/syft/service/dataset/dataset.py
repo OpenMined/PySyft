@@ -471,7 +471,7 @@ class Dataset(SyftObject):
     description: Optional[MarkdownDescription] = None
     updated_at: Optional[str] = None
     requests: Optional[int] = 0
-    mb_size: Optional[int] = None
+    mb_size: Optional[float] = None
     created_at: DateTime = DateTime.now()
     uploader: Contributor
 
