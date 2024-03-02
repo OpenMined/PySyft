@@ -1300,7 +1300,7 @@ class ActionObject(SyftObject):
         syft_internal_type = (
             type(None) if syft_internal_type is None else syft_internal_type
         )
-        empty = cls(syft_internal_type=syft_internal_type)
+        empty = ActionDataEmpty(syft_internal_type=syft_internal_type)
         res = cls.from_obj(
             id=id,
             syft_lineage_id=syft_lineage_id,
