@@ -157,7 +157,7 @@ recursive_serde_register(
 
 
 recursive_serde_register_type(ModelMetaclass)
-recursive_serde_register(PartialModelMetaclass)
+recursive_serde_register_type(PartialModelMetaclass)
 
 
 def serialize_bytes_io(io: BytesIO) -> bytes:
