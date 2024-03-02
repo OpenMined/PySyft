@@ -19,6 +19,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
 from ..notification.email_templates import RequestEmailTemplate
+from ..notification.email_templates import RequestUpdateEmailTemplate
 from ..notification.notification_service import CreateNotification
 from ..notification.notification_service import NotificationService
 from ..notification.notifications import Notification
@@ -220,9 +221,12 @@ class RequestService(AbstractService):
                 mark_as_read(context=context, uid=request_notification.id)
 
                 notification = CreateNotification(
-                    subject=f"{request.changes} for Request id: {uid} has status updated to {request.status}",
+                    subject=f"Your request ({str(uid)[:4]}) has been approved!",
+                    from_user_verify_key=context.credentials,
                     to_user_verify_key=request.requesting_user_verify_key,
                     linked_obj=link,
+                    notifier_types=[NOTIFIERS.EMAIL],
+                    email_template=RequestUpdateEmailTemplate,
                 )
                 send_notification = context.node.get_service_method(
                     NotificationService.send
@@ -259,14 +263,16 @@ class RequestService(AbstractService):
 
         link = LinkedObject.with_context(request, context=context)
         message_subject = (
-            f"Your request for uid: {uid} has been denied. "
-            f"Reason specified by Data Owner: {reason}."
+            f"Your request ({str(uid)[:4]}) has been denied. "
         )
 
         notification = CreateNotification(
             subject=message_subject,
+            from_user_verify_key=context.credentials,
             to_user_verify_key=request.requesting_user_verify_key,
             linked_obj=link,
+            notifier_types=[NOTIFIERS.EMAIL],
+            email_template=RequestUpdateEmailTemplate,
         )
         context.node = cast(AbstractNode, context.node)
         send_notification = context.node.get_service_method(NotificationService.send)
