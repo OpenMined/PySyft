@@ -345,7 +345,7 @@ class CreateAsset(SyftObject):
     def __empty_mock_cannot_be_real(self) -> Self:
         """set mock_is_real to False whenever mock is None or empty"""
         if self.mock is None or _is_action_data_empty(self.mock):
-            self.mock_is_real = False
+            self.__dict__["mock_is_real"] = False
 
         return self
 
