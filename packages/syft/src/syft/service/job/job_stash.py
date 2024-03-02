@@ -10,7 +10,7 @@ from typing import Optional
 from typing import Union
 
 # third party
-from pydantic import Field
+from pydantic import field_validator
 from pydantic import model_validator
 from result import Err
 from result import Ok
@@ -114,7 +114,7 @@ class Job(SyftObject):
     parent_job_id: Optional[UID] = None
     n_iters: Optional[int] = 0
     current_iter: Optional[int] = None
-    creation_time: str = Field(default_factory=lambda: str(datetime.now()))
+    creation_time: Optional[str] = None
     action: Optional[Action] = None
     job_pid: Optional[int] = None
     job_worker_id: Optional[UID] = None
@@ -123,6 +123,11 @@ class Job(SyftObject):
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
+
+    @field_validator("creation_time")
+    @classmethod
+    def check_time(cls, time: Any) -> Any:
+        return str(datetime.now()) if time is None else time
 
     @model_validator(mode="after")
     def check_user_code_id(self) -> Self:
