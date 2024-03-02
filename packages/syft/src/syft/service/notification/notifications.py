@@ -132,10 +132,10 @@ class CreateNotification(Notification):
     __canonical_name__ = "CreateNotification"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
-    node_uid: Optional[UID]
-    from_user_verify_key: Optional[SyftVerifyKey]
-    created_at: Optional[DateTime]
+    id: Optional[UID] = None
+    node_uid: Optional[UID] = None
+    from_user_verify_key: Optional[SyftVerifyKey] = None
+    created_at: Optional[DateTime] = None
 
 
 def add_msg_creation_time(context: TransformContext) -> TransformContext:
