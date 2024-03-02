@@ -165,7 +165,14 @@ class DomainClient(SyftClient):
         items = resolved_state.create_objs + resolved_state.update_objs
 
         action_objects = [x for x in items if isinstance(x, ActionObject)]
-        permissions = self.get_permissions_for_other_node(items)
+        # permissions = self.get_permissions_for_other_node(items)
+        permissions = {}
+        for p in resolved_state.new_permissions:
+            if p.uid in permissions:
+                permissions[p.uid].add(p.permission_string)
+            else:
+                permissions[p.uid] = {p.permission_string}
+
         for action_object in action_objects:
             self.create_actionobject(action_object)
 

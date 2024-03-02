@@ -230,6 +230,8 @@ class SyncService(AbstractService):
 
         new_state._build_dependencies(api=node.root_client.api)
 
+        new_state.permissions = self.get_permissions(context, new_state.objects)
+
         previous_state = self.stash.get_latest(context=context)
         if previous_state is not None:
             new_state.previous_state_link = LinkedObject.from_obj(

@@ -56,7 +56,7 @@ class NumpyArrayObjectV1(ActionObjectV1, np.lib.mixins.NDArrayOperatorsMixin):
 
 
 @serializable()
-class NumpyArrayObject(ActionObjectV2, np.lib.mixins.NDArrayOperatorsMixin):
+class NumpyArrayObjectV2(ActionObjectV2, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyArrayObject"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -132,7 +132,7 @@ class NumpyScalarObjectV1(ActionObjectV1, np.lib.mixins.NDArrayOperatorsMixin):
 
 
 @serializable()
-class NumpyScalarObject(ActionObjectV2, np.lib.mixins.NDArrayOperatorsMixin):
+class NumpyScalarObjectV2(ActionObjectV2, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyScalarObject"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -179,7 +179,7 @@ class NumpyBoolObjectV1(ActionObjectV1, np.lib.mixins.NDArrayOperatorsMixin):
 
 
 @serializable()
-class NumpyBoolObject(ActionObjectV2, np.lib.mixins.NDArrayOperatorsMixin):
+class NumpyBoolObjectV2(ActionObjectV2, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyBoolObject"
     __version__ = SYFT_OBJECT_VERSION_2
 

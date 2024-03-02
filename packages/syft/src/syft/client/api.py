@@ -63,6 +63,7 @@ from .connection import NodeConnection
 
 if TYPE_CHECKING:
     # relative
+    from ..node import Node
     from ..service.job.job_stash import Job
 
 
@@ -959,7 +960,7 @@ class NodeIdentity(Identity):
         )
 
     @classmethod
-    def from_node(cls, node: Node):
+    def from_node(cls, node: Node) -> NodeIdentity:
         return cls(
             node_name=node.name,
             node_id=node.id,

@@ -37,6 +37,7 @@ from ...util.colors import SURFACE
 from ...util.fonts import ITABLES_CSS
 from ...util.fonts import fonts_css
 from ..action.action_object import ActionObject
+from ..action.action_permissions import ActionObjectPermission
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatusCollection
 from ..job.job_stash import Job
@@ -156,6 +157,11 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     __version__ = SYFT_OBJECT_VERSION_1
     low_obj: Optional[SyftObject] = None
     high_obj: Optional[SyftObject] = None
+    low_permissions: List[ActionObjectPermission] = []
+    high_permissions: List[ActionObjectPermission] = []
+
+    new_low_permissions: List[ActionObjectPermission] = []
+    new_high_permissions: List[ActionObjectPermission] = []
     obj_type: Type
     diff_list: List[AttrDiff] = []
 
@@ -163,6 +169,26 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         "low_state",
         "high_state",
     ]
+
+    @classmethod
+    def from_objects(cls, low_obj, high_obj, low_permissions, high_permissions):
+        if low_obj is None and high_obj is None:
+            raise Exception("Both objects are None")
+        obj_type = type(low_obj if low_obj is not None else high_obj)
+
+        if low_obj is None or high_obj is None:
+            diff_list = []
+        else:
+            diff_list = low_obj.get_diffs(high_obj)
+
+        return cls(
+            low_obj=low_obj,
+            high_obj=high_obj,
+            obj_type=obj_type,
+            low_permissions=low_permissions,
+            high_permissions=high_permissions,
+            diff_list=diff_list,
+        )
 
     def __hash__(self):
         return hash(self.id) + hash(self.low_obj) + hash(self.high_obj)
@@ -181,6 +207,10 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         if isinstance(uid, LineageID):
             return uid.id
         return uid
+
+    @property
+    def non_empty_object(self):
+        return self.low_obj or self.high_obj
 
     @property
     def object_type(self):
@@ -407,7 +437,13 @@ class ObjectDiffBatch(SyftObject):
         return len(self.diffs)
 
     def __repr__(self) -> str:
-        return f"{self.hierarchy_str('low')}\n\n{self.hierarchy_str('high')}\n"
+        return f"""{self.hierarchy_str('low')}
+
+{self.hierarchy_str('high')}
+"""
+
+    def _repr_markdown_(self):
+        return None  # Turns off the _repr_markdown_ of SyftObject
 
     def _get_visual_hierarchy(self, node: ObjectDiff) -> dict[ObjectDiff, dict]:
         _, child_types_map = self.visual_hierarchy
@@ -466,7 +502,7 @@ class ObjectDiffBatch(SyftObject):
 
         visual_hierarchy = self.get_visual_hierarchy()
         res = _hierarchy_str_recursive(visual_hierarchy, 0)
-        return f"""{side.upper()} SIDE DIFF:
+        return f"""{side.upper()} SIDE BATCH STATE:
 
 {res}"""
 
@@ -482,17 +518,21 @@ class NodeDiff(SyftObject):
     def from_sync_state(
         cls: Type["NodeDiff"], low_state: SyncState, high_state: SyncState
     ) -> "NodeDiff":
-        diff_state = cls()
-
-        all_ids = set(low_state.objects.keys()) | set(high_state.objects.keys())
-
-        for obj_id in all_ids:
+        obj_uid_to_diff = {}
+        for obj_id in set(low_state.objects.keys()) | set(high_state.objects.keys()):
             low_obj = low_state.objects.get(obj_id, None)
+            low_permissions = low_state.permissions.get(obj_id, [])
             high_obj = high_state.objects.get(obj_id, None)
-            diff_state.add_obj(low_obj, high_obj)
+            high_permissions = high_state.permissions.get(obj_id, [])
+            diff = ObjectDiff.from_objects(
+                low_obj, high_obj, low_permissions, high_permissions
+            )
+            obj_uid_to_diff[diff.object_id] = diff
 
-        diff_state._init_dependencies(low_state, high_state)
-        return diff_state
+        node_diff = cls(obj_uid_to_diff=obj_uid_to_diff)
+
+        node_diff._init_dependencies(low_state, high_state)
+        return node_diff
 
     def _init_dependencies(self, low_state: SyncState, high_state: SyncState) -> None:
         all_parents = set(low_state.dependencies.keys()) | set(
@@ -578,28 +618,6 @@ class NodeDiff(SyftObject):
 
         return hierarchies
 
-    def add_obj(self, low_obj: SyftObject, high_obj: SyftObject):
-        if low_obj is None and high_obj is None:
-            raise Exception("Both objects are None")
-        obj_type = type(low_obj if low_obj is not None else high_obj)
-
-        if low_obj is None or high_obj is None:
-            diff = ObjectDiff(
-                low_obj=low_obj,
-                high_obj=high_obj,
-                obj_type=obj_type,
-                diff_list=[],
-            )
-        else:
-            diff_list = low_obj.get_diffs(high_obj)
-            diff = ObjectDiff(
-                low_obj=low_obj,
-                high_obj=high_obj,
-                obj_type=obj_type,
-                diff_list=diff_list,
-            )
-        self.obj_uid_to_diff[diff.object_id] = diff
-
     def objs_to_sync(self):
         objs = []
         for diff in self.diffs:
@@ -615,11 +633,27 @@ class ResolvedSyncState(SyftObject):
     create_objs: List[SyftObject] = []
     update_objs: List[SyftObject] = []
     delete_objs: List[SyftObject] = []
+    new_permissions: List[ActionObjectPermission] = []
+    alias: str
 
-    def add(self, new_state: "ResolvedSyncState") -> None:
-        self.create_objs.extend(new_state.create_objs)
-        self.update_objs.extend(new_state.update_objs)
-        self.delete_objs.extend(new_state.delete_objs)
+    def add_cruds_from_diff(self, diff: ObjectDiff, decision: str):
+        if diff.status == "SAME":
+            return
+
+        my_obj = diff.low_obj if self.alias == "low" else diff.high_obj
+        other_obj = diff.low_obj if self.alias == "high" else diff.high_obj
+
+        if decision != self.alias:  # chose for the other
+            if diff.status == "DIFF":
+                if other_obj not in self.update_objs:
+                    self.update_objs.append(other_obj)
+            elif diff.status == "NEW":
+                if my_obj is None:
+                    if other_obj not in self.create_objs:
+                        self.create_objs.append(other_obj)
+                elif other_obj is None:
+                    if my_obj not in self.delete_objs:
+                        self.delete_objs.append(my_obj)
 
     def __repr__(self):
         return (
@@ -627,6 +661,7 @@ class ResolvedSyncState(SyftObject):
             f"  create_objs={self.create_objs},\n"
             f"  update_objs={self.update_objs},\n"
             f"  delete_objs={self.delete_objs}\n"
+            f"  new_permissions={self.new_permissions}\n"
             f")"
         )
 
@@ -671,38 +706,3 @@ def display_diff_hierarchy(diff_hierarchy: List[Tuple[ObjectDiff, int]]):
             diff_panel = Padding(diff_panel, (0, 0, 0, 5 * level))
 
         console.print(diff_panel)
-
-
-def resolve_diff(
-    diff: ObjectDiff, decision: str
-) -> Tuple[ResolvedSyncState, ResolvedSyncState]:
-    resolved_diff_low = ResolvedSyncState()
-    resolved_diff_high = ResolvedSyncState()
-
-    # No diff, return empty resolved state
-    if diff.status == "SAME":
-        return resolved_diff_low, resolved_diff_high
-
-    elif diff.status == "NEW":
-        low_is_none = diff.low_obj is None
-        high_is_none = diff.high_obj is None
-        if low_is_none and high_is_none:
-            raise ValueError(
-                f"ObjectDiff {diff.id} is missing objects: both low and high objects are None"
-            )
-        if decision == "low" and high_is_none:
-            resolved_diff_high.create_objs.append(diff.low_obj)
-        elif decision == "low" and low_is_none:
-            resolved_diff_high.delete_objs.append(diff.high_obj)
-        elif decision == "high" and low_is_none:
-            resolved_diff_low.create_objs.append(diff.high_obj)
-        elif decision == "high" and high_is_none:
-            resolved_diff_low.delete_objs.append(diff.low_obj)
-
-    elif diff.status == "DIFF":
-        if decision == "low":
-            resolved_diff_high.update_objs.append(diff.low_obj)
-        else:  # decision == high
-            resolved_diff_low.update_objs.append(diff.high_obj)
-
-    return resolved_diff_low, resolved_diff_high

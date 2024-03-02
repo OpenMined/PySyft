@@ -48,6 +48,13 @@ class ActionObjectPermission:
         else:
             return f"{self.credentials.verify}_{self.permission.name}"
 
+    def _coll_repr_(self):
+        return {
+            "uid": str(self.uid),
+            "credentials": str(self.credentials),
+            "permission": str(self.permission),
+        }
+
     def __repr__(self) -> str:
         if self.credentials is not None:
             return f"[{self.permission.name}: {self.uid} as {self.credentials.verify}]"

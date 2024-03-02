@@ -32,7 +32,7 @@ class PandasDataFrameObjectV1(ActionObjectV1):
 
 
 @serializable()
-class PandasDataFrameObject(ActionObjectV2):
+class PandasDataFrameObjectV2(ActionObjectV2):
     __canonical_name__ = "PandasDataframeObject"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -90,7 +90,7 @@ class PandasSeriesObjectV1(ActionObjectV1):
 
 
 @serializable()
-class PandasSeriesObject(ActionObjectV2):
+class PandasSeriesObjectV2(ActionObjectV2):
     __canonical_name__ = "PandasSeriesObject"
     __version__ = SYFT_OBJECT_VERSION_2
 
