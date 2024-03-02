@@ -525,7 +525,7 @@ class SubmitUserPolicy(Policy):
     __canonical_name__ = "SubmitUserPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
+    id: Optional[UID] = None
     code: str
     class_name: str
     input_kwargs: List[str]
