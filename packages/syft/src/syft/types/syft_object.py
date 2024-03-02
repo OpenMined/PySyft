@@ -89,6 +89,12 @@ DYNAMIC_SYFT_ATTRIBUTES = [
 ]
 
 
+def _is_optional(x: Any) -> bool:
+    return get_origin(x) in (Optional, UnionType, Union) and any(
+        arg is NoneType for arg in get_args(x)
+    )
+
+
 def _get_optional_inner_type(x: Any) -> Any:
     if get_origin(x) not in (Optional, UnionType, Union):
         return x
@@ -584,19 +590,12 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             value = kwargs.get(attr, decl.get_default())
             var_annotation = self.__annotations__.get(attr)
             if value is not PydanticUndefined:
-                if decl.default_factory:
-                    # If the value is defined via PrivateAttr with default factory
-                    value = decl.default_factory()
-                elif decl.default:
-                    value = decl.default
-                elif var_annotation is not None:
+                if var_annotation is not None:
                     # Otherwise validate value against the variable annotation
                     check_type(attr, value, var_annotation)
                 setattr(self, attr, value)
             else:
-                # check if the private is optional
-                is_optional_attr = type(None) in getattr(var_annotation, "__args__", [])
-                if not is_optional_attr:
+                if not _is_optional(var_annotation):
                     raise ValueError(
                         f"{attr}\n field required (type=value_error.missing)"
                     )
