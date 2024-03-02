@@ -262,9 +262,7 @@ class RequestService(AbstractService):
             )
 
         link = LinkedObject.with_context(request, context=context)
-        message_subject = (
-            f"Your request ({str(uid)[:4]}) has been denied. "
-        )
+        message_subject = f"Your request ({str(uid)[:4]}) has been denied. "
 
         notification = CreateNotification(
             subject=message_subject,
