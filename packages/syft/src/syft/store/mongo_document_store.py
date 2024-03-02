@@ -190,7 +190,7 @@ class MongoStorePartition(StorePartition):
         if current_index_keys is not None:
             keys_same = check_index_keys(current_index_keys["key"], new_index_keys)
             if keys_same:
-                return Ok()
+                return Ok(True)
 
             # Drop current index, since incompatible with current object
             try:
@@ -202,7 +202,7 @@ class MongoStorePartition(StorePartition):
 
         # If no new indexes, then skip index creation
         if len(new_index_keys) == 0:
-            return Ok()
+            return Ok(True)
 
         try:
             collection.create_index(new_index_keys, unique=True, name=index_name)
@@ -211,7 +211,7 @@ class MongoStorePartition(StorePartition):
                 f"Failed to create index for {object_name} with index keys: {new_index_keys}"
             )
 
-        return Ok()
+        return Ok(True)
 
     @property
     def collection(self) -> Result[MongoCollection, Err]:

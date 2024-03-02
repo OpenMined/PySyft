@@ -184,7 +184,7 @@ class MongoClient:
             self.client = None
             return Err(str(e))
 
-        return Ok()
+        return Ok(True)
 
     def with_db(self, db_name: str) -> Result[MongoDatabase, Err]:
         try:

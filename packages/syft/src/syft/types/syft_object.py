@@ -483,9 +483,11 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                 value = value.__repr_syft_nested__()
             if isinstance(value, list):
                 value = [
-                    elem.__repr_syft_nested__()
-                    if hasattr(elem, "__repr_syft_nested__")
-                    else elem
+                    (
+                        elem.__repr_syft_nested__()
+                        if hasattr(elem, "__repr_syft_nested__")
+                        else elem
+                    )
                     for elem in value
                 ]
             value = f'"{value}"' if isinstance(value, str) else value
@@ -592,7 +594,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             if value is not PydanticUndefined:
                 if var_annotation is not None:
                     # Otherwise validate value against the variable annotation
-                    check_type(attr, value, var_annotation)
+                    check_type(value, var_annotation)
                 setattr(self, attr, value)
             else:
                 if not _is_optional(var_annotation):
@@ -732,9 +734,11 @@ def get_repr_values_table(_self, is_homogenous, extra_fields=None):
                             and hasattr(value[0], "__repr_syft_nested__")
                         ):
                             value = [
-                                x.__repr_syft_nested__()
-                                if hasattr(x, "__repr_syft_nested__")
-                                else x
+                                (
+                                    x.__repr_syft_nested__()
+                                    if hasattr(x, "__repr_syft_nested__")
+                                    else x
+                                )
                                 for x in value
                             ]
                     if value is None:
