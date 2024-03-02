@@ -104,7 +104,7 @@ class PartitionKey(BaseModel):
                 obj = [obj]
 
         # is a list type so lets compare directly
-        check_type("obj", obj, self.type_)
+        check_type(obj, self.type_)
         return obj
 
     @property
