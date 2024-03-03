@@ -168,10 +168,10 @@ class UserCreateV1(UserUpdateV1):
     role: Optional[ServiceRole] = None  # type: ignore[assignment]
     password: str
     password_verify: Optional[str] = None  # type: ignore[assignment]
-    verify_key: Optional[SyftVerifyKey]
-    institution: Optional[str]  # type: ignore[assignment]
-    website: Optional[str]  # type: ignore[assignment]
-    created_by: Optional[SyftSigningKey]
+    verify_key: Optional[SyftVerifyKey] = None
+    institution: Optional[str] = None  # type: ignore[assignment]
+    website: Optional[str] = None  # type: ignore[assignment]
+    created_by: Optional[SyftSigningKey] = None
 
 
 @serializable()
@@ -184,10 +184,10 @@ class UserCreate(UserUpdate):
     role: Optional[ServiceRole] = None  # type: ignore[assignment]
     password: str
     password_verify: Optional[str] = None  # type: ignore[assignment]
-    verify_key: Optional[SyftVerifyKey]
-    institution: Optional[str]  # type: ignore[assignment]
-    website: Optional[str]  # type: ignore[assignment]
-    created_by: Optional[SyftSigningKey]
+    verify_key: Optional[SyftVerifyKey] = None
+    institution: Optional[str] = None  # type: ignore[assignment]
+    website: Optional[str] = None  # type: ignore[assignment]
+    created_by: Optional[SyftSigningKey] = None
     mock_execution_permission: bool = False
 
     __repr_attrs__ = ["name", "email"]
