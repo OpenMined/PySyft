@@ -32,6 +32,7 @@ import pandas as pd
 import pydantic
 from pydantic import ConfigDict
 from pydantic import EmailStr
+from pydantic import Field
 from pydantic import model_validator
 from pydantic.fields import PydanticUndefined
 from result import OkErr
@@ -130,8 +131,8 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
     __canonical_name__: str
     __version__: int  # data is always versioned
 
-    syft_node_location: Optional[UID] = None
-    syft_client_verify_key: Optional[SyftVerifyKey] = None
+    syft_node_location: Optional[UID] = Field(default=None, exclude=True)
+    syft_client_verify_key: Optional[SyftVerifyKey] = Field(default=None, exclude=True)
 
     def _set_obj_location_(self, node_uid: UID, credentials: SyftVerifyKey):
         self.syft_node_location = node_uid
