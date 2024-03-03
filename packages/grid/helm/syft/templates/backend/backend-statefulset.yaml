@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: backend
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  serviceName: backend-headless
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+    spec:
+      containers:
+        - name: backend-container
+          image: "{{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}"
+          imagePullPolicy: Always
+          {{- if .Values.node.resources }}
+          resources: {{- toYaml .Values.node.resources | nindent 12 }}
+          {{- else if ne .Values.node.resourcesPreset "none" }}
+          resources: {{- include "common.resources.preset" (dict "type" .Values.node.resourcesPreset ) | nindent 12 -}}
+          {{- end }}
+          env:
+            # kubernetes runtime
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CONTAINER_HOST
+              value: "k8s"
+            # syft
+            - name: NODE_TYPE
+              value: {{ .Values.node.type | default "domain" }}
+            - name: NODE_NAME
+              value: {{ .Values.node.name | default .Release.Name }}
+            - name: NODE_SIDE_TYPE
+              value: {{ .Values.node.side }}
+            - name: DEFAULT_ROOT_EMAIL
+              value: {{ .Values.node.rootEmail | required "Root email is required" }}
+            - name: DEFAULT_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.node.secretKeyName }}
+                  key: defaultRootPassword
+            - name: LOG_LEVEL
+              value: {{ .Values.node.logLevel | quote }}
+            - name: QUEUE_PORT
+              value: {{ .Values.node.queuePort | quote }}
+            - name: CREATE_PRODUCER
+              value: "true"
+            - name: INMEMORY_WORKERS
+              value: {{ .Values.node.inMemoryWorkers | default "false" | quote }}
+            - name: DEFAULT_WORKER_POOL_IMAGE
+              value: {{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}
+            - name: DEFAULT_WORKER_POOL_COUNT
+              value: {{ .Values.node.defaultWorkerPoolCount | quote }}
+            # MongoDB
+            - name: MONGO_PORT
+              value: {{ .Values.mongo.port | quote }}
+            - name: MONGO_HOST
+              value: {{ .Values.mongo.host }}
+            - name: MONGO_USERNAME
+              value: {{ .Values.mongo.username }}
+            - name: MONGO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongo.secretKeyName }}
+                  key: rootPassword
+            # Tracing
+            - name: TRACE
+              value: "false"
+            - name: SERVICE_NAME
+              value: backend
+            - name: JAEGER_HOST
+              value: localhost
+            - name: JAEGER_PORT
+              value: "14268"
+            # Oblivious
+            {{- if .Values.node.oblv.enabled }}
+            - name: OBLV_LOCALHOST_PORT
+              value: {{ .Values.node.oblv.port | quote }}
+            - name: OBLV_ENABLED
+              value: {{ .Values.node.oblv.enabled | quote }}
+            {{- end }}
+            # SeaweedFS
+            - name: S3_ROOT_USER
+              value: {{ .Values.seaweedfs.s3RootUser }}
+            - name: S3_ROOT_PWD
+              valueFrom:
+                secretKeyRef:
+                    name: {{ .Values.seaweedfs.secretKeyName }}
+                    key: s3RootPassword
+            - name: S3_PORT
+              value: {{ .Values.seaweedfs.s3Port | quote }}
+            - name: SEAWEED_MOUNT_PORT
+              value: {{ .Values.seaweedfs.mountPort | quote }}
+            {{- if .Values.node.extraEnvs }}
+            {{- toYaml .Values.node.extraEnvs | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: api-port
+              containerPort: 80
+          volumeMounts:
+            - mountPath: /root/data/creds/
+              name: credentials-data
+              readOnly: false
+              subPath: credentials-data
+          startupProbe:
+            httpGet:
+              path: /api/v2/metadata?probe=startupProbe
+              port: api-port
+            failureThreshold: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v2/?probe=livenessProbe
+              port: api-port
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe: null
+          securityContext:
+            allowPrivilegeEscalation: false
+      serviceAccountName: backend-service-account
+      terminationGracePeriodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+        app.kubernetes.io/component: backend-pvc
+      name: credentials-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi

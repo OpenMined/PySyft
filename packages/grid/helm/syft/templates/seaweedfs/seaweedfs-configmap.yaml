@@ -1,5 +1,11 @@
-{{- if ne .Values.node.settings.nodeType "gateway"}}
+{{- if ne .Values.node.type "gateway"}}
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seaweedfs-config
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-config
 data:
   filer.toml: |
     [leveldb2]
@@ -12,7 +18,4 @@ data:
     echo "s3.configure -access_key ${S3_ROOT_USER} -secret_key ${S3_ROOT_PWD} -user iam -actions Read,Write,List,Tagging,Admin -apply" \
     | weed shell > /dev/null 2>&1 \
     & weed server -s3 -s3.port=${S3_PORT} -master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}
-kind: ConfigMap
-metadata:
-  name: seaweedfs-config
 {{ end }}

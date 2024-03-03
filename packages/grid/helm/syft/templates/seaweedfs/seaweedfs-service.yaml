@@ -1,0 +1,27 @@
+{{- if ne .Values.node.type "gateway"}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: seaweedfs-service
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs-service
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "common.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs
+  ports:
+    - name: filer
+      protocol: TCP
+      port: 8888
+      targetPort: 8888
+    - name: s3
+      protocol: TCP
+      port: 8333
+      targetPort: 8333
+    - name: mount-api
+      protocol: TCP
+      port: 4001
+      targetPort: 4001
+{{ end }}

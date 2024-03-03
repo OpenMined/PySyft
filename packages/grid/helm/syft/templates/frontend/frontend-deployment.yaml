@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+        app.kubernetes.io/component: frontend
+    spec:
+      affinity: null
+      containers:
+        - name: frontend-container
+          image: {{ .Values.global.registry }}/openmined/grid-frontend:{{ .Values.global.version }}
+          imagePullPolicy: Always
+          {{- if .Values.node.resources }}
+          resources: {{- toYaml .Values.frontend.resources | nindent 12 }}
+          {{- else if ne .Values.frontend.resourcesPreset "none" }}
+          resources: {{- include "common.resources.preset" (dict "type" .Values.frontend.resourcesPreset ) | nindent 12 -}}
+          {{- end }}
+          env:
+            - name: NODE_TYPE
+              value: {{ .Values.node.type }}
+            {{- if .Values.frontend.extraEnvs }}
+            {{- toYaml .Values.frontend.extraEnvs | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: ui-port
+              containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /health?probe=startupProbe
+              port: ui-port
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+      terminationGracePeriodSeconds: 5

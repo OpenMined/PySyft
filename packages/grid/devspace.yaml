@@ -60,21 +60,21 @@ images:
 deployments:
   syft:
     helm:
+      releaseName: syft-dev
       chart:
         name: ./helm/syft
       values:
-        syft:
+        global:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
+          devmode: false
         registry:
           maxStorage: "5Gi"
         node:
-          settings:
-            nodeName: ${NODE_NAME}
-            nodeType: "domain"
-            defaultWorkerPoolCount: 1
-        configuration:
-          devmode: True
+          name: ${NODE_NAME}
+          rootEmail: info@openmined.org
+          defaultWorkerPoolCount: 1
+          resourcesPreset: micro
 
 dev:
   mongo:
@@ -99,6 +99,8 @@ dev:
     env:
       - name: DEV_MODE
         value: "True"
+      - name: RELEASE
+        value: development
     logs: {}
     sync:
       - path: ./backend/grid:/root/app/grid

@@ -20,6 +20,7 @@ ARG UID
 # Setup Python DEV
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     apk update && \
+    apk upgrade && \
     apk add build-base gcc tzdata python-$PYTHON_VERSION-dev py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # uncomment for creating rootless user
@@ -73,6 +74,7 @@ ARG USER_GRP
 # Setup Python
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     apk update && \
+    apk upgrade && \
     apk add tzdata git bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
     # Uncomment for rootless user
@@ -93,11 +95,8 @@ ENV PATH=$PATH:$HOME/.local/bin \
     RELEASE="production" \
     DEV_MODE="False" \
     CONTAINER_HOST="docker" \
-    PORT=80\
-    HTTP_PORT=80 \
-    HTTPS_PORT=443 \
-    DOMAIN_CONNECTION_PORT=3030 \
-    IGNORE_TLS_ERRORS="False" \
+    OBLV_ENABLED="False" \
+    OBLV_LOCALHOST_PORT=3030 \
     DEFAULT_ROOT_EMAIL="info@openmined.org" \
     DEFAULT_ROOT_PASSWORD="changethis" \
     STACK_API_KEY="changeme" \

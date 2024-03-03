@@ -1,15 +1,25 @@
-secrets:
-  syft: syft-default-secret
-  mongo: mongo-default-secret
-  seaweedfs: seaweedfs-default-secret
-
-configuration:
+global:
+  registry: docker.io
+  version: 0.8.5-beta.1
   devmode: false
 
 mongo:
   port: 27017
-  host: "mongo"
-  username: "root"
+  host: mongo
+  username: root
+  secretKeyName: mongo-secret
+  # pod resources
+  resourcesPreset: nano
+  resources: null
+  # env vars
+  extraEnvs: null
+
+frontend:
+  # pod resources
+  resourcesPreset: nano
+  resources: null
+  # env vars
+  extraEnvs: null
 
 seaweedfs:
   # SeaweedFS config
@@ -17,43 +27,56 @@ seaweedfs:
   # SeaweedFS S3 Config
   s3VolumeSizeMB: 1024
   s3Port: 8333
-  s3RootUser: "admin"
-  # storage limits
-  maxStorage: "5Gi"
+  s3RootUser: admin
+  # pvc storage limits
+  maxStorage: 5Gi
+  # secrets
+  secretKeyName: seaweedfs-secret
+  # resource limits
+  resourcesPreset: nano
+  resources: null
 
-queue:
-  port: 5556
+proxy:
+  resourcesPreset: nano
+  resources: null
 
 registry:
-  maxStorage: "10Gi"
-
-syft:
-  registry: "docker.io"
-  version: 0.8.5-beta.1
+  maxStorage: 10Gi
+  resourcesPreset: nano
+  resources: null
 
 node:
-  settings:
-    tls: false
-    hostname: "" # do not make this localhost
-    nodeName: "mynode"
-    nodeType: "domain"
-    versionHash: "abc"
-    nodeSideType: "high"
-    defaultRootEmail: "info@openmined.org"
-    logLevel: "info"
-    inMemoryWorkers: false
-    defaultWorkerPoolCount: 1
+  name: null
+  rootEmail: info@openmined.org
+  type: domain
+  side: high
+  inMemoryWorkers: false
+  defaultWorkerPoolCount: 1
+  queuePort: 5556
+  logLevel: info
+  oblv:
+    enabled: false
+    port: 3030
+  secretKeyName: backend-secret
+  extraEnvs: null
+  resourcesPreset: small
+  resources: null
 
 # ----------------------------------------
 # For Azure
-# className: "azure-application-gateway"
+# className: azure-application-gateway
 # ----------------------------------------
 # For AWS
-# className: "alb"
+# className: alb
 # ----------------------------------------
 # For GCE, https://cloud.google.com/kubernetes-engine/docs/how-to/load-balance-ingress#create-ingress
-# class: "gce"
+# class: gce
 # ----------------------------------------
 ingress:
+  hostname: null # do not make this localhost
+  tls:
+    enabled: false
+    secretName: null
+
   class: null
   className: null

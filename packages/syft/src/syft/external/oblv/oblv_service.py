@@ -36,8 +36,8 @@ from ...service.user.user_roles import GUEST_ROLE_LEVEL
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.util import find_available_port
-from .constants import DOMAIN_CONNECTION_PORT
 from .constants import LOCAL_MODE
+from .constants import OBLV_LOCALHOST_PORT
 from .deployment_client import OblvMetadata
 from .exceptions import OblvEnclaveError
 from .exceptions import OblvProxyConnectPCRError
@@ -323,7 +323,7 @@ class OblvService(AbstractService):
                 )
             connection_string = f"http://127.0.0.1:{port}"
         else:
-            port = os.getenv("DOMAIN_CONNECTION_PORT", DOMAIN_CONNECTION_PORT)
+            port = os.getenv("OBLV_LOCALHOST_PORT", OBLV_LOCALHOST_PORT)
             connection_string = f"http://127.0.0.1:{port}"
 
             # To identify if we are in docker container

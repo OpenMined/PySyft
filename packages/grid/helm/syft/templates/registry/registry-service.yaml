@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry-service
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: registry-service
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "common.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: registry
+  ports:
+  - name: registry
+    protocol: TCP
+    port: 80
+    targetPort: 5000

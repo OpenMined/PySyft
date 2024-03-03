@@ -169,8 +169,6 @@ def run_container_using_docker(
         environment["CREATE_PRODUCER"] = "false"
         environment["N_CONSUMERS"] = 1
         environment["PORT"] = str(get_free_tcp_port())
-        environment["HTTP_PORT"] = str(88 + worker_count)
-        environment["HTTPS_PORT"] = str(446 + worker_count)
         environment["CONSUMER_SERVICE_NAME"] = pool_name
         environment["SYFT_WORKER_UID"] = syft_worker_uid
         environment["DEV_MODE"] = debug
