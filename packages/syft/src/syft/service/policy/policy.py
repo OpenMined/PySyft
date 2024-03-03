@@ -463,7 +463,6 @@ class UserPolicy(Policy):
     class_name: str
     unique_name: str
     code_hash: str
-    byte_code: PyCodeObject
     status: UserPolicyStatus = UserPolicyStatus.SUBMITTED
 
     # TODO: fix the mypy issue
