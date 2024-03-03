@@ -124,7 +124,9 @@ def test_scientist_can_list_code_assets(worker: sy.Worker, faker: Faker) -> None
         c for c in request.changes if (isinstance(c, UserCodeStatusChange))
     )
 
-    assert status_change.linked_obj.resolve.assets[0] == asset_input
+    assert status_change.linked_obj.resolve.assets[0].model_dump(
+        mode="json"
+    ) == asset_input.model_dump(mode="json")
 
 
 @sy.syft_function()
