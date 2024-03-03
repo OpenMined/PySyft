@@ -1,0 +1,9 @@
+checks:
+  addAllBuiltIn: true
+  exclude:
+    - "dnsconfig-options"
+    - "no-node-affinity"
+    - "minimum-three-replicas"
+    - "read-secret-from-env-var"
+    - "run-as-non-root"
+    - "non-isolated-pod"
