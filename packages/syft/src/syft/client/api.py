@@ -1063,5 +1063,5 @@ def validate_callable_args_and_kwargs(
     return _valid_args, _valid_kwargs
 
 
-RemoteFunction.update_forward_refs()
-RemoteUserCodeFunction.update_forward_refs()
+RemoteFunction.model_rebuild(force=True)
+RemoteUserCodeFunction.model_rebuild(force=True)
