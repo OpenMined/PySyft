@@ -11,7 +11,7 @@ from typing import Optional
 from typing import Union
 
 # third party
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 
 # LOGURU_LEVEL type for version>3.8
@@ -46,8 +46,8 @@ class LogConfig(BaseSettings):
         Optional[int],
         Optional[time],
         Optional[timedelta],
-    ]
-    LOGURU_RETENTION: Union[Optional[str], Optional[int], Optional[timedelta]]
+    ] = None
+    LOGURU_RETENTION: Union[Optional[str], Optional[int], Optional[timedelta]] = None
     LOGURU_COLORIZE: Optional[bool] = True
     LOGURU_SERIALIZE: Optional[bool] = False
     LOGURU_BACKTRACE: Optional[bool] = True
