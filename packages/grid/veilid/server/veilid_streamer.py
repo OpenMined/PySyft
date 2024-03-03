@@ -23,18 +23,60 @@ AsyncReceiveStreamCallback = Callable[[bytes], Coroutine[Any, Any, bytes]]
 
 
 class VeilidStreamer:
-    """Handle sending and receiving large messages over Veilid
-    Sender side:
-        1. Send STREAM_START request -> Get OK
-        3. Send all chunks using STREAM_CHUNK requests
-        4. Send STREAM_END request -> Get OK
-    Receiver side:
-        1. Get STREAM_START request
-        2. Set up buffers and send OK
-        3. Receive all the chunks and fill the buffers
-        4. Get STREAM_END request -> Reassemble message -> Send OK
-    Chunk structure:
-        [RequestType.STREAM_CHUNK][Message hash][Chunk Number][Actual Message Chunk]
+    """Pluggable class to make veild server capable of streaming large messages.
+
+    Data flow:
+        Sender side:
+            1. Send STREAM_START request -> Get OK
+            3. Send all chunks using STREAM_CHUNK requests
+            4. Send STREAM_END request -> Get OK
+        Receiver side:
+            1. Get STREAM_START request
+            2. Set up buffers and send OK
+            3. Receive all the chunks and fill the buffers
+            4. Get STREAM_END request -> Reassemble message -> Send OK
+
+    Structs:
+        We are using 3 different structs to serialize and deserialize the metadata:
+
+        1. stream_start_struct = Struct("!8s32sQ")  # 48 bytes
+           [RequestType.STREAM_START (8 bytes string)][Message hash (32 bytes string)][Total chunks count (8 bytes unsigned long long)] = 48 bytes
+        2. stream_chunk_header_struct = Struct("!8s32sQ")  # 48 bytes
+           [RequestType.STREAM_CHUNK (8 bytes string)][Message hash (32 bytes string)][Chunk Number (8 bytes unsigned long long)] = 48 bytes
+        3. stream_end_struct = Struct("!8s32s")  # 40 bytes
+           [RequestType.STREAM_END (8 bytes string)][Message hash (32 bytes string)] = 40 bytes
+
+        The message is divided into chunks of 32720 bytes each, and each chunk is sent as a separate STREAM_CHUNK request.
+        This helps in keeping the size of each request within the 32KB limit of the Veilid API.
+        [stream_chunk_header_struct (48 bytes)][Actual Message Chunk (32720 bytes)] = 32768 bytes
+
+    Usage:
+        1. Add this preferably as a Singleton near the code where you are initializing
+           the VeilidAPI connection and the RoutingContext.
+           ```
+           vs = VeilidStreamer(connection=conn, router=router)
+           ```
+
+        2. Add a callback function to handle the received message stream:
+           ```
+           async def receive_stream_callback(message: bytes) -> bytes:
+               # Do something with the message once the entire stream is received.
+               return b'some reply to the sender of the stream.'
+           ```
+
+        3. Add the following to your connection's update_callback function to relay
+           updates to the VeilidStreamer properly:
+           ```
+           def update_callback(update: veilid.VeilidUpdate) -> None:
+               if VeilidStreamer.is_stream_update(update):
+                   vs.receive_stream(update, receive_stream_callback)
+               ...other callback code...
+           ```
+
+        4. Use the `stream` method to send an app_call with a message of any size.
+           ```
+           reply = await vs.stream(dht_key, message)
+           ```
     """
 
     class RequestType(Enum):
@@ -60,16 +102,17 @@ class VeilidStreamer:
         self.receive_buffer: Dict[bytes, List[bytes]] = {}
 
         # Structs for serializing and deserializing metadata as bytes of fixed length
-        # '!' - big-endian byte order as per IETF RFC 1700
+        # '!' - big-endian byte order (recommended for networks as per IETF RFC 1700)
         # '8s' - String of length 8
-        # 'Q' - Unsigned long long (8 bytes)
         # '32s' - String of length 32
+        # 'Q' - Unsigned long long (8 bytes)
         # https://docs.python.org/3/library/struct.html#format-characters
         self.stream_start_struct = Struct("!8s32sQ")  # 48 bytes
         self.stream_chunk_header_struct = Struct("!8s32sQ")  # 48 bytes
         self.stream_end_struct = Struct("!8s32s")  # 40 bytes
 
-    def is_stream_update(self, update: veilid.VeilidUpdate) -> bool:
+    @staticmethod
+    def is_stream_update(update: veilid.VeilidUpdate) -> bool:
         """Checks if the update is a stream request."""
         return (
             update.kind == veilid.VeilidUpdateKind.APP_CALL
@@ -91,13 +134,8 @@ class VeilidStreamer:
 
         # Send chunks
         chunks_iterator = range(chunks_count)
-        if logger.isEnabledFor(logging.INFO):
-            chunks_iterator = tqdm(
-                chunks_iterator,
-                desc="Sending chunks",
-                unit="chunk",
-                colour="#00ff00",
-            )
+        if logger.isEnabledFor(logging.DEBUG):
+            chunks_iterator = tqdm(chunks_iterator, desc="Sending chunks", unit="chunk")
 
         for chunk_number in chunks_iterator:
             chunk_header = self.stream_chunk_header_struct.pack(
