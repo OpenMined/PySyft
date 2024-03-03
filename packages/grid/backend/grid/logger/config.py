@@ -41,13 +41,8 @@ class LogConfig(BaseSettings):
     LOGURU_LEVEL: str = LogLevel.INFO.value
     LOGURU_SINK: Optional[str] = "/var/log/pygrid/grid.log"
     LOGURU_COMPRESSION: Optional[str] = None
-    LOGURU_ROTATION: Union[
-        Optional[str],
-        Optional[int],
-        Optional[time],
-        Optional[timedelta],
-    ] = None
-    LOGURU_RETENTION: Union[Optional[str], Optional[int], Optional[timedelta]] = None
+    LOGURU_ROTATION: Union[str, int, time, timedelta, None] = None
+    LOGURU_RETENTION: Union[str, int, timedelta, None] = None
     LOGURU_COLORIZE: Optional[bool] = True
     LOGURU_SERIALIZE: Optional[bool] = False
     LOGURU_BACKTRACE: Optional[bool] = True
