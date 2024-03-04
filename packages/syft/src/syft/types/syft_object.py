@@ -566,7 +566,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                     value = decl.default_factory(value)
                 elif var_annotation is not None:
                     # Otherwise validate value against the variable annotation
-                    check_type(value, var_annotation)
+                    check_type(attr, value, var_annotation)
                 setattr(self, attr, value)
             else:
                 # check if the private is optional
