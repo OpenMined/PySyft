@@ -1,4 +1,4 @@
-ARG PYTHON_VERSION="3.11"
+ARG PYTHON_VERSION="3.12"
 ARG TZ="Etc/UTC"
 
 # change to USER="syftuser", UID=1000 and HOME="/home/$USER" for rootless

@@ -551,7 +551,7 @@ def create_default_image(
     if not in_kubernetes:
         default_cpu_dockerfile = f"""ARG SYFT_VERSION_TAG='{tag}' \n"""
         default_cpu_dockerfile += """FROM openmined/grid-backend:${SYFT_VERSION_TAG}
-        ARG PYTHON_VERSION="3.11"
+        ARG PYTHON_VERSION="3.12"
         ARG SYSTEM_PACKAGES=""
         ARG PIP_PACKAGES="pip --dry-run"
         ARG CUSTOM_CMD='echo "No custom commands passed"'
