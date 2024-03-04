@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 from typing import Tuple
 from typing import Union
 
@@ -59,14 +60,14 @@ class Search:
     @staticmethod
     def __search_one_node(
         peer_tuple: Tuple[NodePeer, NodeMetadataJSON], name: str
-    ) -> List[Dataset]:
+    ) -> Tuple[Optional[SyftClient], List[Dataset]]:
         try:
             peer, _ = peer_tuple
             client = peer.guest_client
             results = client.api.services.dataset.search(name=name)
-            return (client, results)  # type: ignore[return-value]
+            return (client, results)
         except:  # noqa
-            return (None, [])  # type: ignore[return-value]
+            return (None, [])
 
     def __search(self, name: str) -> List[Tuple[SyftClient, List[Dataset]]]:
         results = [
@@ -74,8 +75,8 @@ class Search:
         ]
 
         # filter out SyftError
-        filtered = ((client, result) for client, result in results if result)
-        return filtered  # type: ignore[return-value]
+        filtered = [(client, result) for client, result in results if result]
+        return filtered
 
     def search(self, name: str) -> SearchResults:
         return SearchResults(self.__search(name))
