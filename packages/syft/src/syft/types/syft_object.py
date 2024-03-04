@@ -563,30 +563,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                     new_dict[k] = v
             return new_dict
 
-    def dict(
-        self,
-        *,
-        include: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,
-        exclude: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,
-        by_alias: bool = False,
-        exclude_unset: bool = False,
-        exclude_defaults: bool = False,
-        exclude_none: bool = False,
-    ):
-        if exclude is None:
-            exclude = set()
-
-        for attr in DYNAMIC_SYFT_ATTRIBUTES:
-            exclude.add(attr)
-        return super().dict(
-            include=include,
-            exclude=exclude,
-            by_alias=by_alias,
-            exclude_unset=exclude_unset,
-            exclude_defaults=exclude_defaults,
-            exclude_none=exclude_none,
-        )
-
     def __post_init__(self) -> None:
         pass
 
