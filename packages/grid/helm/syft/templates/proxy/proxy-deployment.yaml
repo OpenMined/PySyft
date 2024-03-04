@@ -19,7 +19,6 @@ spec:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: proxy
     spec:
-      affinity: null
       containers:
         - name: proxy-container
           image: traefik:v2.11
@@ -28,6 +27,9 @@ spec:
           resources: {{- toYaml .Values.proxy.resources | nindent 12 }}
           {{- else if ne .Values.proxy.resourcesPreset "none" }}
           resources: {{- include "common.resources.preset" (dict "type" .Values.proxy.resourcesPreset ) | nindent 12 -}}
+          {{- end }}
+          {{- if .Values.proxy.env }}
+          env: {{ toYaml .Values.proxy.env | nindent 12 }}
           {{- end }}
           ports:
             - name: proxy-port
@@ -47,8 +49,6 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe: null
-          securityContext:
-            allowPrivilegeEscalation: false
       terminationGracePeriodSeconds: 5
       volumes:
       - configMap:

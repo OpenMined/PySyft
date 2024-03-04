@@ -1,3 +1,12 @@
+{{/*
+Common Pod resource limit presets
+
+Usage:
+  {{- include "common.resources.preset" (dict "type" "nano") }}
+
+Params:
+  type - String (Required) - One of resource presets: nano, micro, small, medium, large, xlarge, 2xlarge, 4xlarge
+*/}}
 {{- define "common.resources.preset" -}}
 {{- $presets := dict
   "nano" (dict

@@ -32,12 +32,15 @@ spec:
           {{- end }}
           env:
             - name: MONGO_INITDB_ROOT_USERNAME
-              value: {{ .Values.mongo.username }}
+              value: {{ .Values.mongo.username | required "mongo.username is required" }}
             - name: MONGO_INITDB_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.mongo.secretKeyName | required "Mongo Secret is required"}}
+                  name: {{ .Values.mongo.secretKeyName | required "mongo.secretKeyName is required" }}
                   key: rootPassword
+            {{- if .Values.mongo.env }}
+            {{- toYaml .Values.mongo.env | nindent 12 }}
+            {{- end }}
           volumeMounts:
             - mountPath: /data/db
               name: mongo-data
@@ -46,18 +49,16 @@ spec:
           ports:
             - name: mongo-port
               containerPort: 27017
-          securityContext:
-            allowPrivilegeEscalation: false
       terminationGracePeriodSeconds: 5
   volumeClaimTemplates:
   - metadata:
+      name: mongo-data
       labels:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: mongo-pvc
-      name: mongo-data
     spec:
       accessModes:
       - ReadWriteOnce
       resources:
         requests:
-          storage: 5Gi
+          storage: {{ .Values.mongo.storageSize | quote }}

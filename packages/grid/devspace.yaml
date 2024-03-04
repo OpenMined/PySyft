@@ -67,9 +67,9 @@ deployments:
         global:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
-          devmode: false
+          useDefaultSecrets: true
         registry:
-          maxStorage: "5Gi"
+          storageSize: "5Gi"
         node:
           name: ${NODE_NAME}
           rootEmail: info@openmined.org
@@ -110,5 +110,5 @@ profiles:
   - name: gateway
     patches:
       - op: replace
-        path: deployments.syft.helm.values.node.settings.nodeType
+        path: deployments.syft.helm.values.node.type
         value: "gateway"

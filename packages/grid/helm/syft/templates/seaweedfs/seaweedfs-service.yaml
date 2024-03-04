@@ -2,10 +2,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: seaweedfs-service
+  name: seaweedfs
   labels:
     {{- include "common.labels" . | nindent 4 }}
-    app.kubernetes.io/component: seaweedfs-service
+    app.kubernetes.io/component: seaweedfs
 spec:
   type: ClusterIP
   selector:

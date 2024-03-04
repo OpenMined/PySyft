@@ -33,18 +33,21 @@ spec:
           {{- end }}
           env:
             - name: S3_VOLUME_SIZE_MB
-              value: "{{ .Values.seaweedfs.s3VolumeSizeMB }}"
+              value: {{ .Values.seaweedfs.s3.volumeSizeMB | quote }}
             - name: S3_ROOT_USER
-              value: "{{ .Values.seaweedfs.s3RootUser }}"
+              value: {{ .Values.seaweedfs.s3.rootUser | quote }}
             - name: S3_ROOT_PWD
               valueFrom:
                 secretKeyRef:
-                    name: {{ .Values.seaweedfs.secretKeyName }}
+                    name: {{ .Values.seaweedfs.secretKeyName | required "seaweedfs.secretKeyName is required" }}
                     key: s3RootPassword
             - name: S3_PORT
-              value: "{{ .Values.seaweedfs.s3Port }}"
+              value: "{{ .Values.seaweedfs.s3.port }}"
             - name: SEAWEED_MOUNT_PORT
-              value: "{{ .Values.seaweedfs.mountPort }}"
+              value: "{{ .Values.seaweedfs.mountApi.port }}"
+            {{- if .Values.seaweedfs.env }}
+            {{- toYaml .Values.seaweedfs.env | nindent 12 }}
+            {{- end }}
           volumeMounts:
             - mountPath: /etc/seaweedfs/filer.toml
               name: seaweedfs-config
@@ -63,18 +66,16 @@ spec:
         - configMap:
             name: seaweedfs-config
           name: seaweedfs-config
-      securityContext:
-        allowPrivilegeEscalation: false
   volumeClaimTemplates:
   - metadata:
+      name: seaweedfs-data
       labels:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: seaweedfs-pvc
-      name: seaweedfs-data
     spec:
       accessModes:
       - ReadWriteOnce
       resources:
         requests:
-          storage: {{ .Values.seaweedfs.maxStorage }}
+          storage: {{ .Values.seaweedfs.storageSize | quote }}
 {{ end }}

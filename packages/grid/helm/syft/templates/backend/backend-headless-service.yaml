@@ -11,5 +11,5 @@ spec:
     app.kubernetes.io/component: backend
   clusterIP: None
   ports:
-    - name: api-server
+    - name: api
       port: 80

@@ -32,6 +32,9 @@ spec:
           env:
             - name: REGISTRY_STORAGE_DELETE_ENABLED
               value: "true"
+            {{- if .Values.registry.env }}
+            {{- toYaml .Values.registry.env | nindent 12 }}
+            {{- end }}
           ports:
             - name: registry-port
               containerPort: 5000
@@ -52,8 +55,6 @@ spec:
             periodSeconds: 15
             timeoutSeconds: 5
             failureThreshold: 3
-          securityContext:
-            allowPrivilegeEscalation: false
       terminationGracePeriodSeconds: 5
   volumeClaimTemplates:
   - metadata:
@@ -66,4 +67,4 @@ spec:
       - ReadWriteOnce
       resources:
         requests:
-          storage: {{ .Values.registry.maxStorage }}
+          storage: {{ .Values.registry.storageSize | quote }}

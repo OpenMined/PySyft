@@ -8,7 +8,7 @@ metadata:
 spec:
   clusterIP: None
   ports:
-    - name: mongo-port
+    - name: mongo
       port: 27017
   selector:
     {{- include "common.selectorLabels" . | nindent 4 }}

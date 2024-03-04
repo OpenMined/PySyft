@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: mongo-service
+  name: mongo
   labels:
     {{- include "common.labels" . | nindent 4 }}
-    app.kubernetes.io/component: mongo-service
+    app.kubernetes.io/component: mongo
 spec:
   type: ClusterIP
   selector:

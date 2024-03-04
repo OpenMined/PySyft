@@ -42,7 +42,7 @@ echo Installing syft...
 helm install $DOMAIN_NAME $INSTALL_SOURCE $INSTALL_ARGS --namespace $KUBE_NAMESPACE --create-namespace
 helm ls -A
 
-WAIT_TIME=5 bash ./scripts/wait_for.sh service backend-service --namespace $KUBE_NAMESPACE
+WAIT_TIME=5 bash ./scripts/wait_for.sh service backend --namespace $KUBE_NAMESPACE
 WAIT_TIME=5 bash ./scripts/wait_for.sh pod default-pool-0 --namespace $KUBE_NAMESPACE
 
 echo Upgrading syft...
@@ -50,4 +50,4 @@ helm upgrade $DOMAIN_NAME $UPGRADE_SOURCE $UPGRADE_ARGS --namespace $KUBE_NAMESP
 helm ls -A
 
 echo "Post-upgrade sleep" && sleep 5
-WAIT_TIME=5 bash ./scripts/wait_for.sh service backend-service --namespace $KUBE_NAMESPACE
+WAIT_TIME=5 bash ./scripts/wait_for.sh service backend --namespace $KUBE_NAMESPACE

@@ -50,11 +50,11 @@ spec:
             - name: NODE_SIDE_TYPE
               value: {{ .Values.node.side }}
             - name: DEFAULT_ROOT_EMAIL
-              value: {{ .Values.node.rootEmail | required "Root email is required" }}
+              value: {{ .Values.node.rootEmail | required "node.rootEmail is required" }}
             - name: DEFAULT_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.node.secretKeyName }}
+                  name: {{ .Values.node.secretKeyName | required "node.secretKeyName is required" }}
                   key: defaultRootPassword
             - name: LOG_LEVEL
               value: {{ .Values.node.logLevel | quote }}
@@ -63,16 +63,20 @@ spec:
             - name: CREATE_PRODUCER
               value: "true"
             - name: INMEMORY_WORKERS
-              value: {{ .Values.node.inMemoryWorkers | default "false" | quote }}
+              value: {{ .Values.node.inMemoryWorkers | quote }}
             - name: DEFAULT_WORKER_POOL_IMAGE
               value: {{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}
             - name: DEFAULT_WORKER_POOL_COUNT
               value: {{ .Values.node.defaultWorkerPoolCount | quote }}
+            {{- if .Values.node.debuggerEnabled }}
+            - name: DEBUGGER_ENABLED
+              value: "true"
+            {{- end }}
             # MongoDB
             - name: MONGO_PORT
               value: {{ .Values.mongo.port | quote }}
             - name: MONGO_HOST
-              value: {{ .Values.mongo.host }}
+              value: "mongo"
             - name: MONGO_USERNAME
               value: {{ .Values.mongo.username }}
             - name: MONGO_PASSWORD
@@ -97,19 +101,21 @@ spec:
               value: {{ .Values.node.oblv.enabled | quote }}
             {{- end }}
             # SeaweedFS
+            {{- if ne .Values.node.type "gateway"}}
             - name: S3_ROOT_USER
-              value: {{ .Values.seaweedfs.s3RootUser }}
+              value: {{ .Values.seaweedfs.s3.rootUser }}
             - name: S3_ROOT_PWD
               valueFrom:
                 secretKeyRef:
                     name: {{ .Values.seaweedfs.secretKeyName }}
                     key: s3RootPassword
             - name: S3_PORT
-              value: {{ .Values.seaweedfs.s3Port | quote }}
+              value: {{ .Values.seaweedfs.s3.port | quote }}
             - name: SEAWEED_MOUNT_PORT
-              value: {{ .Values.seaweedfs.mountPort | quote }}
-            {{- if .Values.node.extraEnvs }}
-            {{- toYaml .Values.node.extraEnvs | nindent 12 }}
+              value: {{ .Values.seaweedfs.mountApi.port | quote }}
+            {{- end }}
+            {{- if .Values.node.env }}
+            {{- toYaml .Values.node.env | nindent 12 }}
             {{- end }}
           ports:
             - name: api-port
@@ -133,19 +139,17 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe: null
-          securityContext:
-            allowPrivilegeEscalation: false
       serviceAccountName: backend-service-account
       terminationGracePeriodSeconds: 5
   volumeClaimTemplates:
   - metadata:
+      name: credentials-data
       labels:
         {{- include "common.labels" . | nindent 8 }}
-        app.kubernetes.io/component: backend-pvc
-      name: credentials-data
+        app.kubernetes.io/component: backend-credentials-pvc
     spec:
       accessModes:
       - ReadWriteOnce
       resources:
         requests:
-          storage: 100Mi
+          storage: 10Mi

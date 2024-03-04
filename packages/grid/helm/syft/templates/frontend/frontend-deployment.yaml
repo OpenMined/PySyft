@@ -19,7 +19,6 @@ spec:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: frontend
     spec:
-      affinity: null
       containers:
         - name: frontend-container
           image: {{ .Values.global.registry }}/openmined/grid-frontend:{{ .Values.global.version }}
@@ -29,12 +28,9 @@ spec:
           {{- else if ne .Values.frontend.resourcesPreset "none" }}
           resources: {{- include "common.resources.preset" (dict "type" .Values.frontend.resourcesPreset ) | nindent 12 -}}
           {{- end }}
-          env:
-            - name: NODE_TYPE
-              value: {{ .Values.node.type }}
-            {{- if .Values.frontend.extraEnvs }}
-            {{- toYaml .Values.frontend.extraEnvs | nindent 12 }}
-            {{- end }}
+          {{- if .Values.frontend.env }}
+          env: {{ toYaml .Values.frontend.env | nindent 12 }}
+          {{- end }}
           ports:
             - name: ui-port
               containerPort: 80
@@ -45,6 +41,4 @@ spec:
             periodSeconds: 15
             timeoutSeconds: 5
             failureThreshold: 3
-          securityContext:
-            allowPrivilegeEscalation: false
       terminationGracePeriodSeconds: 5

@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend-service
+  name: backend
   labels:
     {{- include "common.labels" . | nindent 4 }}
-    app.kubernetes.io/component: backend-service
+    app.kubernetes.io/component: backend
 spec:
   type: ClusterIP
   selector:
@@ -19,3 +19,9 @@ spec:
       protocol: TCP
       port: {{ .Values.node.queuePort }}
       targetPort: {{ .Values.node.queuePort }}
+    {{- if .Values.node.debuggerEnabled }}
+    - name: debug
+      port: 5678
+      targetPort: 5678
+      protocol: TCP
+    {{- end }}
