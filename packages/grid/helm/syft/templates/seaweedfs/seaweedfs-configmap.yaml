@@ -5,7 +5,7 @@ metadata:
   name: seaweedfs-config
   labels:
     {{- include "common.labels" . | nindent 4 }}
-    app.kubernetes.io/component: seaweedfs-config
+    app.kubernetes.io/component: seaweedfs
 data:
   filer.toml: |
     [leveldb2]

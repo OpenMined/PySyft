@@ -4,7 +4,7 @@ metadata:
   name: mongo-headless
   labels:
     {{- include "common.labels" . | nindent 4 }}
-    app.kubernetes.io/component: mongo-headless
+    app.kubernetes.io/component: mongo
 spec:
   clusterIP: None
   ports:

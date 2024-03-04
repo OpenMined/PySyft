@@ -4,7 +4,7 @@ metadata:
   name: backend-headless
   labels:
     {{- include "common.labels" . | nindent 4 }}
-    app.kubernetes.io/component: backend-headless
+    app.kubernetes.io/component: backend
 spec:
   selector:
     {{- include "common.selectorLabels" . | nindent 4 }}

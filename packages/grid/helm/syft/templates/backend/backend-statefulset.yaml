@@ -146,7 +146,7 @@ spec:
       name: credentials-data
       labels:
         {{- include "common.labels" . | nindent 8 }}
-        app.kubernetes.io/component: backend-credentials-pvc
+        app.kubernetes.io/component: backend
     spec:
       accessModes:
       - ReadWriteOnce

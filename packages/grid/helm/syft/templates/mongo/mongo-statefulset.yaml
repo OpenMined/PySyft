@@ -55,7 +55,7 @@ spec:
       name: mongo-data
       labels:
         {{- include "common.labels" . | nindent 8 }}
-        app.kubernetes.io/component: mongo-pvc
+        app.kubernetes.io/component: mongo
     spec:
       accessModes:
       - ReadWriteOnce

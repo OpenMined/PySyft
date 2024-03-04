@@ -71,7 +71,7 @@ spec:
       name: seaweedfs-data
       labels:
         {{- include "common.labels" . | nindent 8 }}
-        app.kubernetes.io/component: seaweedfs-pvc
+        app.kubernetes.io/component: seaweedfs
     spec:
       accessModes:
       - ReadWriteOnce

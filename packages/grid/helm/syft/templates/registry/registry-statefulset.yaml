@@ -61,7 +61,7 @@ spec:
       name: registry-data
       labels:
         {{- include "common.labels" . | nindent 8 }}
-        app.kubernetes.io/component: registry-pvc
+        app.kubernetes.io/component: registry
     spec:
       accessModes:
       - ReadWriteOnce
