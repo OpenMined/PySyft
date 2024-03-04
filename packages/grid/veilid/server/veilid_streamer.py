@@ -1,4 +1,5 @@
 # stdlib
+import asyncio
 from enum import Enum
 import hashlib
 import logging
@@ -10,8 +11,10 @@ from typing import Dict
 from typing import List
 
 # third party
-from tqdm.auto import tqdm
 import veilid
+
+# relative
+from .utils import retry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -133,19 +136,20 @@ class VeilidStreamer:
         await self._send_request(dht_key, stream_start_request)
 
         # Send chunks
-        chunks_iterator = range(chunks_count)
-        if logger.isEnabledFor(logging.DEBUG):
-            chunks_iterator = tqdm(chunks_iterator, desc="Sending chunks", unit="chunk")
+        asyncio_gather_with_retries = retry(
+            veilid.VeilidAPIErrorTimeout, tries=3, delay=1, backoff=2
+        )(asyncio.gather)
 
-        for chunk_number in chunks_iterator:
-            chunk_header = self.stream_chunk_header_struct.pack(
-                VeilidStreamer.RequestType.STREAM_CHUNK.value,
-                message_hash,
-                chunk_number,
-            )
-            chunk = self._get_chunk(message, chunk_number)
-            chunk_data = chunk_header + chunk
-            await self._send_request(dht_key, chunk_data)
+        batch = []
+        batch_size = 65
+
+        for chunk_number in range(chunks_count):
+            chunk = self._get_chunk(message, message_hash, chunk_number)
+            batch.append(self._send_request(dht_key, chunk))
+            if len(batch) == batch_size or chunk_number == chunks_count - 1:
+                await asyncio_gather_with_retries(*batch)
+                await asyncio.sleep(0.5)  # hack: cooldown to avoid backpressure
+                batch = []
 
         # Send STREAM_END request
         stream_end_message = self.stream_end_struct.pack(
@@ -195,17 +199,28 @@ class VeilidStreamer:
         total_no_of_chunks = (size_with_headers + chunk_size - 1) // chunk_size
         return total_no_of_chunks
 
-    def _get_chunk(self, message: bytes, chunk_number: int) -> bytes:
+    def _get_chunk(
+        self,
+        message: bytes,
+        message_hash: bytes,
+        chunk_number: int,
+    ) -> bytes:
+        chunk_header = self.stream_chunk_header_struct.pack(
+            VeilidStreamer.RequestType.STREAM_CHUNK.value,
+            message_hash,
+            chunk_number,
+        )
         message_size = self.chunk_size - self.stream_chunk_header_struct.size
         cursor_start = chunk_number * message_size
-        return message[cursor_start : cursor_start + message_size]
+        chunk = message[cursor_start : cursor_start + message_size]
+        return chunk_header + chunk
 
     async def _handle_receive_stream_start(
         self, call_id: veilid.OperationId, message: bytes
     ) -> None:
         """Handles receiving STREAM_START request."""
         _, message_hash, chunks_count = self.stream_start_struct.unpack(message)
-        logger.debug(f"Receiving stream of {chunks_count} chunks; Hash {message_hash}")
+        logger.debug(f"Receiving stream of {chunks_count} chunks...")
         self.receive_buffer[message_hash] = [None] * chunks_count
         await self._send_response(call_id, VeilidStreamer.ResponseType.OK.value)
 
