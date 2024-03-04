@@ -1,4 +1,3 @@
-# type: ignore
 # stdlib
 import json
 import subprocess

@@ -117,7 +117,7 @@ jobs:
 
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.0.0
+        uses: crazy-max/ghaction-setup-docker@v3.1.0
 
       - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
@@ -148,7 +148,7 @@ jobs:
       #     tox -e stack.test.integration
 
       - name: Run integration tests
-        uses: nick-fields/retry@v2
+        uses: nick-fields/retry@v3
         if: steps.changes.outputs.stack == 'true'
         env:
           HAGRID_ART: false

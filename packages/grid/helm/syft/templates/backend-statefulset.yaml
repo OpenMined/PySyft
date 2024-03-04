@@ -84,8 +84,6 @@ spec:
           value: localhost
         - name: JAEGER_PORT
           value: "14268"
-        - name: DEV_MODE
-          value: "false"
         - name: DOMAIN_CONNECTION_PORT
           value: "3030"
         - name: ENABLE_OBLV

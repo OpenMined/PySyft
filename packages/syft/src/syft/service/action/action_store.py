@@ -65,7 +65,7 @@ class KeyValueActionStore(ActionStore):
         self.root_verify_key = root_verify_key
 
     def get(
-        self, uid: UID, credentials: SyftVerifyKey, has_permission=False
+        self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False
     ) -> Result[SyftObject, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
@@ -212,7 +212,10 @@ class KeyValueActionStore(ActionStore):
         if not isinstance(permission.permission, ActionPermission):
             raise Exception(f"ObjectPermission type: {permission.permission} not valid")
 
-        if self.root_verify_key.verify == permission.credentials.verify:
+        if (
+            permission.credentials is not None
+            and self.root_verify_key.verify == permission.credentials.verify
+        ):
             return True
 
         if (
@@ -241,7 +244,7 @@ class KeyValueActionStore(ActionStore):
         permissions.add(permission.permission_string)
         self.permissions[permission.uid] = permissions
 
-    def remove_permission(self, permission: ActionObjectPermission):
+    def remove_permission(self, permission: ActionObjectPermission) -> None:
         permissions = self.permissions[permission.uid]
         permissions.remove(permission.permission_string)
         self.permissions[permission.uid] = permissions
@@ -250,7 +253,9 @@ class KeyValueActionStore(ActionStore):
         for permission in permissions:
             self.add_permission(permission)
 
-    def migrate_data(self, to_klass: SyftObject, credentials: SyftVerifyKey):
+    def migrate_data(
+        self, to_klass: SyftObject, credentials: SyftVerifyKey
+    ) -> Result[bool, str]:
         has_root_permission = credentials == self.root_verify_key
 
         if has_root_permission:

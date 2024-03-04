@@ -1,0 +1,66 @@
+name: PR Tests - Helm Upgrade
+
+on:
+  # Re-enable when we have a stable helm chart
+  # pull_request:
+  #   branches:
+  #     - dev
+  #   paths:
+  #     - packages/grid/helm/syft/**
+
+  workflow_dispatch:
+    inputs:
+      upgrade_type:
+        description: "Select upgrade path type"
+        required: false
+        default: "BetaToDev"
+        type: choice
+        options:
+          - BetaToDev
+          - ProdToBeta
+          - ProdToDev
+
+concurrency:
+  group: pr-tests-helm-upgrade
+  cancel-in-progress: true
+
+jobs:
+  pr-tests-helm-upgrade:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew update
+
+          # Install python deps
+          pip install --upgrade pip
+          pip install tox
+
+          # Install kubernetes
+          brew install helm k3d devspace kubectl
+
+      - name: Setup cluster
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
+          tox -e dev.k8s.start
+
+      - name: Upgrade helm chart
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
+          # default upgrade is beta to dev, but override with input if provided
+          UPGRADE_TYPE_INPUT=${{ github.event.inputs.upgrade_type }}
+          export UPGRADE_TYPE=${UPGRADE_TYPE_INPUT:-BetaToDev}
+          tox -e syft.test.helm.upgrade
+
+      - name: Destroy cluster
+        if: always()
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
+          tox -e dev.k8s.destroyall
