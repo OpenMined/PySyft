@@ -81,7 +81,7 @@ class SyncState(SyftObject):
     dependencies: Dict[UID, List[UID]] = {}
     created_at: DateTime = DateTime.now()
     previous_state_link: Optional[LinkedObject] = None
-    permissions: Dict[UID, ActionPermission] = {}
+    permissions: Dict[UID, List[ActionPermission]] = {}
 
     __attr_searchable__ = ["created_at"]
 

@@ -17,6 +17,7 @@ from typing import Optional
 from typing import Set
 from typing import Tuple
 from typing import Type
+from typing import Union
 
 # third party
 import pydantic
@@ -58,16 +59,16 @@ class AttrDiff(SyftObject):
     low_attr: Any
     high_attr: Any
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         return f"""{self.attr_name}:
     Low Side value: {self.low_attr}
     High Side value: {self.high_attr}
     """
 
-    def __repr_side__(self, side):
+    def __repr_side__(self, side: str) -> str:
         if side == "low":
             return recursive_attr_repr(self.low_attr)
-        if side == "high":
+        else:
             return recursive_attr_repr(self.high_attr)
 
     def _coll_repr_(self) -> Dict[str, Any]:
@@ -87,7 +88,7 @@ class ListDiff(AttrDiff):
     new_high_ids: List[int] = []
 
     @property
-    def is_empty(self):
+    def is_empty(self) -> bool:
         return (
             len(self.diff_ids) == 0
             and len(self.new_low_ids) == 0
@@ -95,7 +96,7 @@ class ListDiff(AttrDiff):
         )
 
     @classmethod
-    def from_lists(cls, attr_name, low_list, high_list):
+    def from_lists(cls, attr_name: str, low_list: List, high_list: List) -> "ListDiff":
         diff_ids = []
         new_low_ids = []
         new_high_ids = []
@@ -127,7 +128,7 @@ class ListDiff(AttrDiff):
         return change_diff
 
 
-def recursive_attr_repr(value_attr, num_tabs=0):
+def recursive_attr_repr(value_attr: Union[List, Dict, bytes], num_tabs: int = 0) -> str:
     new_num_tabs = num_tabs + 1
 
     if isinstance(value_attr, list):
@@ -145,9 +146,9 @@ def recursive_attr_repr(value_attr, num_tabs=0):
         return dict_repr
 
     elif isinstance(value_attr, bytes):
-        value_attr = repr(value_attr)
+        value_attr = repr(value_attr)  # type: ignore
         if len(value_attr) > 50:
-            value_attr = value_attr[:50] + "..."
+            value_attr = value_attr[:50] + "..."  # type: ignore
     return f"{sketchy_tab*num_tabs}{str(value_attr)}"
 
 
@@ -171,7 +172,13 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     ]
 
     @classmethod
-    def from_objects(cls, low_obj, high_obj, low_permissions, high_permissions):
+    def from_objects(
+        cls,
+        low_obj: SyftObject,
+        high_obj: SyftObject,
+        low_permissions: List[ActionObjectPermission],
+        high_permissions: List[ActionObjectPermission],
+    ) -> "ObjectDiff":
         if low_obj is None and high_obj is None:
             raise Exception("Both objects are None")
         obj_type = type(low_obj if low_obj is not None else high_obj)
@@ -190,11 +197,11 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
             diff_list=diff_list,
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.id) + hash(self.low_obj) + hash(self.high_obj)
 
     @property
-    def status(self):
+    def status(self) -> str:
         if self.low_obj is None or self.high_obj is None:
             return "NEW"
         if len(self.diff_list) == 0:
@@ -202,31 +209,33 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         return "DIFF"
 
     @property
-    def object_id(self):
-        uid = self.low_obj.id if self.low_obj is not None else self.high_obj.id
+    def object_id(self) -> UID:
+        uid: Union[UID, LineageID] = (
+            self.low_obj.id if self.low_obj is not None else self.high_obj.id  # type: ignore
+        )
         if isinstance(uid, LineageID):
             return uid.id
         return uid
 
     @property
-    def non_empty_object(self):
+    def non_empty_object(self) -> SyftObject:
         return self.low_obj or self.high_obj
 
     @property
-    def object_type(self):
+    def object_type(self) -> str:
         return self.obj_type.__name__
 
     @property
-    def high_state(self):
+    def high_state(self) -> str:
         return self.state_str("high")
 
     @property
-    def low_state(self):
+    def low_state(self) -> str:
         return self.state_str("low")
 
     @property
-    def object_uid(self):
-        return self.low_obj.id if self.low_obj is not None else self.high_obj.id
+    def object_uid(self) -> UID:
+        return self.low_obj.id if self.low_obj is not None else self.high_obj.id  # type: ignore
 
     def diff_attributes_str(self, side: str) -> str:
         obj = self.low_obj if side == "low" else self.high_obj
@@ -245,11 +254,13 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
                 attrs_str += f"{attr}: {recursive_attr_repr(value)}\n"
             return attrs_str
 
-        if self.status == "DIFF":
+        elif self.status == "DIFF":
             attrs_str = ""
             for diff in self.diff_list:
                 attrs_str += f"{diff.attr_name}: {diff.__repr_side__(side)}\n"
             return attrs_str
+        else:
+            raise ValueError("")
 
     def diff_side_str(self, side: str) -> str:
         obj = self.low_obj if side == "low" else self.high_obj
@@ -295,11 +306,11 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
         return attr_text
 
-    def get_obj(self):
+    def get_obj(self) -> SyftObject:
         if self.status == "NEW":
             return self.low_obj if self.low_obj is not None else self.high_obj
         else:
-            return "Error"
+            raise ValueError("ERROR")
 
     def _coll_repr_(self) -> Dict[str, Any]:
         low_state = f"{self.status}\n{self.diff_side_str('low')}"
@@ -325,11 +336,13 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         <div class='syft-diff'>
         """
 
+        obj_repr: str
+        attr_text: str
         if self.low_obj is None:
             if hasattr(self.high_obj, "_repr_html_"):
-                obj_repr = self.high_obj._repr_html_()
+                obj_repr = self.high_obj._repr_html_()  # type: ignore
             elif hasattr(self.high_obj, "_inner_repr"):
-                obj_repr = self.high_obj._inner_repr()
+                obj_repr = self.high_obj._inner_repr()  # type: ignore
             else:
                 obj_repr = self.__repr__()
             attr_text = (
@@ -341,9 +354,9 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
         elif self.high_obj is None:
             if hasattr(self.low_obj, "_repr_html_"):
-                obj_repr = self.low_obj._repr_html_()
+                obj_repr = self.low_obj._repr_html_()  # type: ignore
             elif hasattr(self.low_obj, "_inner_repr"):
-                obj_repr = self.low_obj._inner_repr()
+                obj_repr = self.low_obj._inner_repr()  # type: ignore
             else:
                 obj_repr = self.__repr__()
             attr_text = (
@@ -367,7 +380,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         return base_str + attr_text
 
 
-def _wrap_text(text: str, width: int, indent=4) -> str:
+def _wrap_text(text: str, width: int, indent: int = 4) -> str:
     """Wrap text, preserving existing line breaks"""
     return "\n".join(
         [
@@ -426,7 +439,7 @@ class ObjectDiffBatch(SyftObject):
     @pydantic.root_validator
     def make_dependents(cls, values: dict) -> dict:
         dependencies = values.get("dependencies", {})
-        dependents = {}
+        dependents: Dict = {}
         for parent, children in dependencies.items():
             for child in children:
                 dependents[child] = dependents.get(child, []) + [parent]
@@ -446,7 +459,7 @@ class ObjectDiffBatch(SyftObject):
 {self.hierarchy_str('high')}
 """
 
-    def _repr_markdown_(self):
+    def _repr_markdown_(self) -> None:
         return None  # Turns off the _repr_markdown_ of SyftObject
 
     def _get_visual_hierarchy(self, node: ObjectDiff) -> dict[ObjectDiff, dict]:
@@ -478,7 +491,7 @@ class ObjectDiffBatch(SyftObject):
             for diff in self.diffs
             if isinstance(diff.low_obj or diff.high_obj, visual_root_type)
         ][0]
-        return {visual_root: self._get_visual_hierarchy(visual_root)}
+        return {visual_root: self._get_visual_hierarchy(visual_root)}  # type: ignore
 
     def _get_obj_str(self, diff_obj: ObjectDiff, level: int, side: str) -> str:
         obj = diff_obj.low_obj if side == "low" else diff_obj.high_obj
@@ -527,9 +540,9 @@ class NodeDiff(SyftObject):
         obj_uid_to_diff = {}
         for obj_id in set(low_state.objects.keys()) | set(high_state.objects.keys()):
             low_obj = low_state.objects.get(obj_id, None)
-            low_permissions = low_state.permissions.get(obj_id, [])
+            low_permissions: List = low_state.permissions.get(obj_id, [])
             high_obj = high_state.objects.get(obj_id, None)
-            high_permissions = high_state.permissions.get(obj_id, [])
+            high_permissions: List = high_state.permissions.get(obj_id, [])
             diff = ObjectDiff.from_objects(
                 low_obj, high_obj, low_permissions, high_permissions
             )
@@ -614,7 +627,7 @@ class NodeDiff(SyftObject):
 
         def _build_hierarchy_helper(
             uid: UID, level: int = 0, visited: Optional[Set] = None
-        ):
+        ) -> List:
             visited = visited if visited is not None else set()
 
             if uid in visited:
@@ -667,7 +680,7 @@ class NodeDiff(SyftObject):
 
         return hierarchies
 
-    def objs_to_sync(self):
+    def objs_to_sync(self) -> List[SyftObject]:
         objs = []
         for diff in self.diffs:
             if diff.status == "NEW":
@@ -685,7 +698,7 @@ class ResolvedSyncState(SyftObject):
     new_permissions: List[ActionObjectPermission] = []
     alias: str
 
-    def add_cruds_from_diff(self, diff: ObjectDiff, decision: str):
+    def add_cruds_from_diff(self, diff: ObjectDiff, decision: str) -> None:
         if diff.status == "SAME":
             return
 
@@ -704,7 +717,7 @@ class ResolvedSyncState(SyftObject):
                     if my_obj not in self.delete_objs:
                         self.delete_objs.append(my_obj)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"ResolvedSyncState(\n"
             f"  create_objs={self.create_objs},\n"
@@ -725,7 +738,7 @@ def display_diff_object(obj_state: Optional[str]) -> Panel:
     )
 
 
-def display_diff_hierarchy(diff_hierarchy: List[Tuple[ObjectDiff, int]]):
+def display_diff_hierarchy(diff_hierarchy: List[Tuple[ObjectDiff, int]]) -> None:
     console = Console()
 
     for diff, level in diff_hierarchy:
