@@ -755,12 +755,22 @@ class Request(SyftObject):
                 )
             else:
                 action_object = result
-            blob_store_result = action_object._save_to_blob_storage()
-            if isinstance(blob_store_result, SyftError):
-                return blob_store_result
-            result = api.services.action.set(action_object)
-            if isinstance(result, SyftError):
-                return result
+            action_object_is_from_this_node = (
+                self.syft_node_location == action_object.syft_node_location
+            )
+            if (
+                action_object.syft_blob_storage_entry_id is None
+                or not action_object_is_from_this_node
+            ):
+                action_object.reload_cache()
+                action_object.syft_node_location = self.syft_node_location
+                action_object.syft_client_verify_key = self.syft_client_verify_key
+                blob_store_result = action_object._save_to_blob_storage()
+                if isinstance(blob_store_result, SyftError):
+                    return blob_store_result
+                result = api.services.action.set(action_object)
+                if isinstance(result, SyftError):
+                    return result
         else:
             if not isinstance(result, ActionObject):
                 action_object = ActionObject.from_obj(
@@ -773,7 +783,16 @@ class Request(SyftObject):
 
             # TODO: proper check for if actionobject is already uploaded
             # we also need this for manualy syncing
-            if action_object.syft_blob_storage_entry_id is None:
+            action_object_is_from_this_node = (
+                self.syft_node_location == action_object.syft_node_location
+            )
+            if (
+                action_object.syft_blob_storage_entry_id is None
+                or not action_object_is_from_this_node
+            ):
+                action_object.reload_cache()
+                action_object.syft_node_location = self.syft_node_location
+                action_object.syft_client_verify_key = self.syft_client_verify_key
                 blob_store_result = action_object._save_to_blob_storage()
                 if isinstance(blob_store_result, SyftError):
                     return blob_store_result

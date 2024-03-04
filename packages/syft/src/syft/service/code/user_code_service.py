@@ -92,22 +92,6 @@ class UserCodeService(AbstractService):
         return SyftSuccess(message="User Code Deleted")
 
     @service_method(
-        path="code.sync_code_from_request",
-        name="sync_code_from_request",
-        roles=GUEST_ROLE_LEVEL,
-    )
-    def sync_code_from_request(
-        self,
-        context: AuthedServiceContext,
-        request: Request,
-    ) -> Union[SyftSuccess, SyftError]:
-        """Re-submit request from a different node"""
-
-        # This request is from a different node, ensure worker pool is not set
-        code: UserCode = deepcopy(request.code)
-        return self.submit(context=context, code=code)
-
-    @service_method(
         path="code.get_by_service_func_name",
         name="get_by_service_func_name",
         roles=GUEST_ROLE_LEVEL,
