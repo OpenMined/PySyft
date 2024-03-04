@@ -971,6 +971,9 @@ class ActionObject(SyftObject):
             return
         elif obj.syft_node_uid is not None:
             return
+
+        if obj.syft_blob_storage_entry_id is not None:
+            return
         # TODO fix: the APIRegistry often gets the wrong client
         # if you have 2 clients in memory
         # therefore the following happens if you call a method
@@ -991,9 +994,6 @@ class ActionObject(SyftObject):
 
         if api is not None:
             obj._set_obj_location_(api.node_uid, api.signing_key.verify_key)
-            res = obj._save_to_blob_storage()
-            if isinstance(res, SyftError):
-                print(f"failed saving {obj} to blob storage, error: {res}")
 
         action = Action(
             path="",
