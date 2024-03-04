@@ -17,6 +17,12 @@ spec:
     port: {{ .Values.queue.port }}
     protocol: TCP
     targetPort: {{ .Values.queue.port }}
+  {{- if .Values.configuration.devmode }}
+  - name: debug
+    port: 5678
+    targetPort: 5678
+    protocol: TCP
+  {{- end }}
   selector:
     app.kubernetes.io/component: backend
   type: ClusterIP
