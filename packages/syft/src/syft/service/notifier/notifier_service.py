@@ -20,6 +20,7 @@ from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
+from .notifier import NotificationPreferences
 from .notifier import NotifierSettings
 from .notifier_enums import NOTIFIERS
 from .notifier_stash import NotifierStash
@@ -50,6 +51,21 @@ class NotifierService(AbstractService):
             return SyftError(message="Error getting notifier settings")
 
         return result.ok()
+
+    def user_settings(
+        self,
+        context: AuthedServiceContext,
+    ) -> NotificationPreferences:
+        context.node = cast(AbstractNode, context.node)
+        user_service = context.node.get_service("userservice")
+        user_view = user_service.get_current_user(context)
+        notifications = user_view.notifications_enabled
+        return NotificationPreferences(
+            email=notifications[NOTIFIERS.EMAIL],
+            sms=notifications[NOTIFIERS.SMS],
+            slack=notifications[NOTIFIERS.SLACK],
+            app=notifications[NOTIFIERS.APP],
+        )
 
     def turn_on(
         self,

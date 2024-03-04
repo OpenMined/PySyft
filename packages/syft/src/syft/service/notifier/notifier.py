@@ -119,6 +119,23 @@ class EmailNotifier(BaseNotifier):
 
 
 @serializable()
+class NotificationPreferences(SyftObject):
+    __canonical_name__ = "NotificationPreferences"
+    __version__ = SYFT_OBJECT_VERSION_1
+    __repr_attrs__ = [
+        "email",
+        "sms",
+        "slack",
+        "app",
+    ]
+
+    email: bool = False
+    sms: bool = False
+    slack: bool = False
+    app: bool = False
+
+
+@serializable()
 class NotifierSettings(SyftObject):
     __canonical_name__ = "NotifierSettings"
     __version__ = SYFT_OBJECT_VERSION_1

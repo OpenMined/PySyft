@@ -93,6 +93,18 @@ class NotificationService(AbstractService):
         return result.ok()
 
     @service_method(
+        path="notifications.user_settings",
+        name="user_settings",
+    )
+    def user_settings(
+        self,
+        context: AuthedServiceContext,
+    ) -> Union[NotifierSettings, SyftError]:
+        context.node = cast(AbstractNode, context.node)
+        notifier_service = context.node.get_service("notifierservice")
+        return notifier_service.user_settings(context)
+
+    @service_method(
         path="notifications.settings",
         name="settings",
         roles=ADMIN_ROLE_LEVEL,
