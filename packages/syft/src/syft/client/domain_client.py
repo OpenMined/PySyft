@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from pathlib import Path
 import re
+from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
@@ -38,13 +39,14 @@ from .api import APIModule
 from .client import SyftClient
 from .client import login
 from .client import login_as_guest
+from .connection import NodeConnection
 
 if TYPE_CHECKING:
     # relative
     from ..service.project.project import Project
 
 
-def _get_files_from_glob(glob_path: str) -> list:
+def _get_files_from_glob(glob_path: str) -> list[Path]:
     files = Path().glob(glob_path)
     return [f for f in files if f.is_file() and not f.name.startswith(".")]
 
@@ -104,19 +106,21 @@ class DomainClient(SyftClient):
         dataset_size: float = 0.0
 
         # TODO: Refactor so that object can also be passed to generate warnings
-        if self.api.connection:
-            metadata = self.api.connection.get_node_metadata(self.api.signing_key)
 
-            if (
-                metadata.show_warnings
-                and metadata.node_side_type == NodeSideType.HIGH_SIDE.value
-            ):
-                message = (
-                    "You're approving a request on "
-                    f"{metadata.node_side_type} side {metadata.node_type} "
-                    "which may host datasets with private information."
-                )
-                prompt_warning_message(message=message, confirm=True)
+        self.api.connection = cast(NodeConnection, self.api.connection)
+
+        metadata = self.api.connection.get_node_metadata(self.api.signing_key)
+
+        if (
+            metadata.show_warnings
+            and metadata.node_side_type == NodeSideType.HIGH_SIDE.value
+        ):
+            message = (
+                "You're approving a request on "
+                f"{metadata.node_side_type} side {metadata.node_type} "
+                "which may host datasets with private information."
+            )
+            prompt_warning_message(message=message, confirm=True)
 
         for asset in tqdm(dataset.asset_list):
             print(f"Uploading: {asset.name}")
@@ -156,7 +160,7 @@ class DomainClient(SyftClient):
             file_list = [file_list]  # type: ignore[assignment]
         file_list = cast(list, file_list)
 
-        expanded_file_list = []
+        expanded_file_list: List[Union[BlobFile, Path]] = []
 
         for file in file_list:
             if isinstance(file, BlobFile):
@@ -192,13 +196,13 @@ class DomainClient(SyftClient):
                 if isinstance(file, BlobFile):
                     print(file.path or file.file_name)
                 else:
-                    print(file.absolute())  # type: ignore[unreachable]
+                    print(file.absolute())
 
         try:
             result = []
             for file in expanded_file_list:
                 if not isinstance(file, BlobFile):
-                    file = BlobFile(path=file, file_name=file.name)  # type: ignore[unreachable]
+                    file = BlobFile(path=file, file_name=file.name)
                 print("Uploading", file.file_name)
                 if not file.uploaded:
                     file.upload_to_blobstorage(self)
