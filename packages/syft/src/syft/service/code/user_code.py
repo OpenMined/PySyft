@@ -604,7 +604,9 @@ class UserCode(SyftObject):
         self, context: AuthedServiceContext
     ) -> Union[List[ExecutionOutput], SyftError]:
         if not self.get_status(context).approved:
-            return SyftError(message="Please wait for the code to be approved")
+            return SyftError(
+                message="Execution denied, Please wait for the code to be approved"
+            )
 
         output_service = context.node.get_service("outputservice")
         return output_service.get_by_user_code_id(context, self.id)

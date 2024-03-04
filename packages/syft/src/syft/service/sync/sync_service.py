@@ -218,11 +218,11 @@ class SyncService(AbstractService):
 
         # TODO workaround, we only need action objects from outputs for now
         action_object_ids = set()
-        for item in new_state.objects.values():
-            if isinstance(item, ExecutionOutput):
-                action_object_ids.update(item.output_id_list)
-            elif isinstance(item, Job) and item.result is not None:
-                action_object_ids.add(item.result.id)
+        for obj in new_state.objects.values():
+            if isinstance(obj, ExecutionOutput):
+                action_object_ids |= set(obj.output_id_list)
+            elif isinstance(obj, Job) and obj.result is not None:
+                action_object_ids.add(obj.result.id)
 
         action_objects = []
         for uid in action_object_ids:

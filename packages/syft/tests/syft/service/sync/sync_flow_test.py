@@ -94,7 +94,9 @@ def test_sync_flow():
     print(low_state.objects, high_state.objects)
 
     diff_state = compare_states(low_state, high_state)
-    low_items_to_sync, high_items_to_sync = resolve(diff_state, decision="low")
+    low_items_to_sync, high_items_to_sync = resolve(
+        diff_state, decision="low", share_private_objects=True
+    )
 
     print(low_items_to_sync, high_items_to_sync)
 
@@ -147,7 +149,9 @@ def test_sync_flow():
 
     diff_state_2 = compare_states(low_state, high_state)
 
-    low_items_to_sync, high_items_to_sync = resolve(diff_state_2, decision="high")
+    low_items_to_sync, high_items_to_sync = resolve(
+        diff_state_2, decision="high", share_private_objects=True
+    )
     for diff in diff_state_2.diffs:
         print(diff.status, diff.object_type)
     low_client.apply_state(low_items_to_sync)
@@ -169,7 +173,10 @@ def test_sync_flow():
     print("Res Low", res_low)
 
     assert res_low.get() == private_high.mean()
-    assert res_low.id == job_high.result.id.id == code.output_history[-1][0].id.id
+
+    assert (
+        res_low.id == job_high.result.id.id == code.output_history[-1].outputs[0].id.id
+    )
     assert (
         job_high.result.syft_blob_storage_entry_id == res_low.syft_blob_storage_entry_id
     )
