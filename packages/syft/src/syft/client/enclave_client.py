@@ -6,6 +6,7 @@ from typing import Any
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
+from typing import cast
 
 # third party
 from hagrid.orchestra import NodeHandle
@@ -15,6 +16,7 @@ from ..abstract_node import NodeSideType
 from ..client.api import APIRegistry
 from ..img.base64 import base64read
 from ..serde.serializable import serializable
+from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.network.routes import NodeRouteType
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
@@ -87,14 +89,13 @@ class EnclaveClient(SyftClient):
             if isinstance(client, SyftError):
                 return client
 
+        self.metadata: NodeMetadataJSON = cast(NodeMetadataJSON, self.metadata)
         res = self.exchange_route(client)
+
         if isinstance(res, SyftSuccess):
-            if self.metadata:
-                return SyftSuccess(
-                    message=f"Connected {self.metadata.node_type} to {client.name} gateway"
-                )
-            else:
-                return SyftSuccess(message=f"Connected to {client.name} gateway")
+            return SyftSuccess(
+                message=f"Connected {self.metadata.node_type} to {client.name} gateway"
+            )
 
         return res
 
