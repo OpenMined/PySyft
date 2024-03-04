@@ -340,7 +340,7 @@ class Job(SyftObject):
         )
         return api.services.user.get_current_user(self.id)
 
-    def _get_log_objs(self):
+    def _get_log_objs(self) -> Union[SyftObject, SyftError]:
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
@@ -481,7 +481,7 @@ class Job(SyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
-    def get_sync_dependencies(self, **kwargs) -> List[UID]:
+    def get_sync_dependencies(self, **kwargs: Dict) -> List[UID]:
         dependencies = []
         if self.result is not None:
             dependencies.append(self.result.id.id)

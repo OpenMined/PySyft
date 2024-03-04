@@ -531,8 +531,8 @@ class SyftClient:
     def sync_code_from_request(self, request):
         # relative
         from ..service.code.user_code import UserCode
-        from ..store.linked_obj import LinkedObject
         from ..service.code.user_code import UserCodeStatusCollection
+        from ..store.linked_obj import LinkedObject
 
         code: Union[UserCode, SyftError] = request.code
         if isinstance(code, SyftError):

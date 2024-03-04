@@ -245,5 +245,5 @@ SUPPORTED_FLOAT_TYPES = [
     np.float64,
 ]
 
-for scalar_type in SUPPORTED_INT_TYPES + SUPPORTED_FLOAT_TYPES:
+for scalar_type in SUPPORTED_INT_TYPES + SUPPORTED_FLOAT_TYPES:  # type: ignore
     action_types[scalar_type] = NumpyScalarObject

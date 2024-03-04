@@ -1,5 +1,7 @@
 # stdlib
 from enum import Enum
+from typing import Any
+from typing import Dict
 from typing import Optional
 
 # relative
@@ -50,7 +52,7 @@ class ActionObjectPermission:
                 return f"{self.credentials.verify}_{self.permission.name}"
             return f"{self.permission.name}"
 
-    def _coll_repr_(self):
+    def _coll_repr_(self) -> Dict[str, Any]:
         return {
             "uid": str(self.uid),
             "credentials": str(self.credentials),

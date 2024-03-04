@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -7,6 +8,7 @@ from typing import Union
 
 # third party
 import pydantic
+from result import Result
 
 # relative
 from ...client.api import APIRegistry
@@ -105,31 +107,34 @@ class ExecutionOutput(SyftObject):
         )
 
     @property
-    def outputs(self) -> Union[List[ActionObject], Dict[str, ActionObject]]:
+    def outputs(self) -> Optional[Union[List[ActionObject], Dict[str, ActionObject]]]:
         action_service = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         ).services.action
         # TODO error handling for action_service.get
-        if isinstance(self.output_ids, dict):
-            res = {k: action_service.get(v) for k, v in self.output_ids.items()}
-        else:
-            res = [action_service.get(v) for v in self.output_ids]
 
-        return res
+        if isinstance(self.output_ids, dict):
+            return {k: action_service.get(v) for k, v in self.output_ids.items()}
+        elif isinstance(self.output_ids, list):
+            return [action_service.get(v) for v in self.output_ids]
+        else:
+            return None
 
     @property
     def output_id_list(self) -> List[UID]:
         ids = self.output_ids
         if isinstance(ids, dict):
             return list(ids.values())
-        return ids
+        elif isinstance(ids, list):
+            return ids
+        return []
 
     @property
     def job_id(self) -> Optional[UID]:
         return self.job_link.object_uid if self.job_link else None
 
-    def get_sync_dependencies(self, api=None) -> List[UID]:
+    def get_sync_dependencies(self, api: Any = None) -> List[UID]:
         # Output ids, user code id, job id
         res = []
 
@@ -149,7 +154,7 @@ class OutputStash(BaseUIDStoreStash):
         name=ExecutionOutput.__canonical_name__, object_type=ExecutionOutput
     )
 
-    def __init__(self, store):
+    def __init__(self, store: DocumentStore) -> None:
         super().__init__(store)
         self.store = store
         self.settings = self.settings
@@ -157,7 +162,7 @@ class OutputStash(BaseUIDStoreStash):
 
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
-    ) -> Union[List[ExecutionOutput], SyftError]:
+    ) -> Result[List[ExecutionOutput], str]:
         qks = QueryKeys(
             qks=[UserCodeIdPartitionKey.with_obj(user_code_id)],
         )
@@ -167,7 +172,7 @@ class OutputStash(BaseUIDStoreStash):
 
     def get_by_output_policy_id(
         self, credentials: SyftVerifyKey, output_policy_id: UID
-    ) -> Union[List[ExecutionOutput], SyftError]:
+    ) -> Result[List[ExecutionOutput], str]:
         qks = QueryKeys(
             qks=[OutputPolicyIdPartitionKey.with_obj(output_policy_id)],
         )
@@ -204,7 +209,7 @@ class OutputService(AbstractService):
             output_ids=output_ids,
             user_code_id=user_code_id,
             executing_user_verify_key=executing_user_verify_key,
-            node_uid=context.node.id,
+            node_uid=context.node.id,  # type: ignore
             job_id=job_id,
             output_policy_id=output_policy_id,
         )
@@ -221,7 +226,8 @@ class OutputService(AbstractService):
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> Union[List[ExecutionOutput], SyftError]:
         result = self.stash.get_by_user_code_id(
-            credentials=context.node.verify_key, user_code_id=user_code_id
+            credentials=context.node.verify_key,  # type: ignore
+            user_code_id=user_code_id,
         )
         if result.is_ok():
             return result.ok()
@@ -236,7 +242,8 @@ class OutputService(AbstractService):
         self, context: AuthedServiceContext, output_policy_id: UID
     ) -> Union[List[ExecutionOutput], SyftError]:
         result = self.stash.get_by_output_policy_id(
-            credentials=context.node.verify_key, output_policy_id=output_policy_id
+            credentials=context.node.verify_key,  # type: ignore
+            output_policy_id=output_policy_id,  # type: ignore
         )
         if result.is_ok():
             return result.ok()

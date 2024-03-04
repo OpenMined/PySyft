@@ -1,5 +1,4 @@
 # stdlib
-from copy import deepcopy
 from typing import Any
 from typing import Dict
 from typing import List
@@ -424,7 +423,7 @@ class UserCodeService(AbstractService):
                         return Err(
                             "Execution denied: Your code is waiting for approval"
                         )
-                    if not (is_valid := output_policy.is_valid(context)):
+                    if not (is_valid := output_policy.is_valid(context)):  # type: ignore
                         if len(output_history) > 0 and not skip_read_cache:
                             result = resolve_outputs(
                                 context=context,
@@ -433,7 +432,7 @@ class UserCodeService(AbstractService):
                             return Ok(result.as_empty())
                         else:
                             return is_valid.to_result()
-                    return can_execute.to_result()
+                    return can_execute.to_result()  # type: ignore
 
             # Execute the code item
             context.node = cast(AbstractNode, context.node)
@@ -515,11 +514,11 @@ class UserCodeService(AbstractService):
         outputs: Any,
         job_id: Optional[UID] = None,
     ) -> Union[ExecutionOutput, SyftError]:
-        code = self.stash.get_by_uid(context.credentials, user_code_id)
-        if code.is_err():
-            return SyftError(message=code.err())
+        code_result = self.stash.get_by_uid(context.credentials, user_code_id)
+        if code_result.is_err():
+            return SyftError(message=code_result.err())
 
-        code: UserCode = code.ok()
+        code: UserCode = code_result.ok()
         if not code.get_status(context).approved:
             return SyftError(message="Code is not approved")
 

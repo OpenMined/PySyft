@@ -210,7 +210,9 @@ class RequestService(AbstractService):
 
             link = LinkedObject.with_context(request, context=context)
             if not request.status == RequestStatus.PENDING:
-                if request_notification is not None and not isinstance(request_notification, SyftError):
+                if request_notification is not None and not isinstance(
+                    request_notification, SyftError
+                ):
                     mark_as_read = context.node.get_service_method(
                         NotificationService.mark_as_read
                     )

@@ -5,6 +5,7 @@ from typing import Union
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...types.datetime import DateTime
@@ -24,7 +25,7 @@ class SyncStash(BaseUIDStoreStash):
         name=SyncState.__canonical_name__, object_type=SyncState
     )
 
-    def __init__(self, store):
+    def __init__(self, store: DocumentStore):
         super().__init__(store)
         self.store = store
         self.settings = self.settings
@@ -34,7 +35,7 @@ class SyncStash(BaseUIDStoreStash):
         self, context: AuthedServiceContext
     ) -> Union[Optional[SyncState], SyftError]:
         all_states = self.get_all(
-            credentials=context.node.verify_key,
+            credentials=context.node.verify_key,  # type: ignore
             order_by=OrderByDatePartitionKey,
         )
 

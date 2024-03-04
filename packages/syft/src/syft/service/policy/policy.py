@@ -115,7 +115,7 @@ class Policy(SyftObject):
                 op_code += "\n"
         return op_code
 
-    def is_valid(self, *args, **kwargs) -> Union[SyftSuccess, SyftError]:
+    def is_valid(self, *args: List, **kwargs: Dict) -> Union[SyftSuccess, SyftError]:  # type: ignore
         return SyftSuccess(message="Policy is valid.")
 
     def public_state(self) -> Any:
@@ -353,7 +353,7 @@ class OutputPolicy(Policy):
 
         return outputs
 
-    def is_valid(self, output_history: List) -> Union[SyftSuccess, SyftError]:
+    def is_valid(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:  # type: ignore
         raise NotImplementedError()
 
 
@@ -364,8 +364,8 @@ class OutputPolicyExecuteCount(OutputPolicy):
 
     limit: int
 
-    def is_valid(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:
-        output_service = context.node.get_service("outputservice")
+    def is_valid(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:  # type: ignore
+        output_service = context.node.get_service("outputservice")  # type: ignore
         output_history = output_service.get_by_output_policy_id(context, self.id)
         if isinstance(output_history, SyftError):
             return output_history
