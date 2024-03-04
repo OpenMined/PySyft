@@ -1,8 +1,10 @@
 # stdlib
 from typing import List
 from typing import Union
+from typing import cast
 
 # relative
+from ...abstract_node import AbstractNode
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -102,6 +104,8 @@ class JobService(AbstractService):
         if res.is_err():
             return SyftError(message=res.err())
 
+        context.node = cast(AbstractNode, context.node)
+
         job = res.ok()
         job.status = JobStatus.CREATED
         self.update(context=context, job=job)
@@ -122,9 +126,9 @@ class JobService(AbstractService):
 
         context.node.queue_stash.set_placeholder(context.credentials, queue_item)
         context.node.job_stash.set(context.credentials, job)
+
         log_service = context.node.get_service("logservice")
         result = log_service.restart(context, job.log_id)
-
         if result.is_err():
             return SyftError(message=str(result.err()))
 
@@ -228,6 +232,7 @@ class JobService(AbstractService):
     def create_job_for_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> Union[Job, SyftError]:
+        context.node = cast(AbstractNode, context.node)
         job = Job(
             id=UID(),
             node_uid=context.node.id,
@@ -238,7 +243,6 @@ class JobService(AbstractService):
             job_pid=None,
             user_code_id=user_code_id,
         )
-
         user_code_service = context.node.get_service("usercodeservice")
         user_code = user_code_service.get_by_uid(context=context, uid=user_code_id)
         if isinstance(user_code, SyftError):
@@ -248,6 +252,7 @@ class JobService(AbstractService):
         self.stash.set(context.credentials, job)
         self.add_read_permission_job_for_code_owner(context, job, user_code)
 
+        context.node = cast(AbstractNode, context.node)
         log_service = context.node.get_service("logservice")
         res = log_service.add(context, job.log_id)
         if isinstance(res, SyftError):

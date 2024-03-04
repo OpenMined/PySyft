@@ -1,9 +1,11 @@
 # stdlib
 from enum import Enum
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
 from result import Ok
@@ -107,18 +109,18 @@ class QueueItem(SyftObject):
         return f"<QueueItem: {self.id}>: {self.status}"
 
     @property
-    def is_action(self):
+    def is_action(self) -> bool:
         return self.service_path == "Action" and self.method_name == "execute"
 
     @property
-    def action(self):
+    def action(self) -> Union[Any, SyftError]:
         if self.is_action:
             return self.kwargs["action"]
         return SyftError(message="QueueItem not an Action")
 
 
 @migrate(QueueItem, QueueItemV1)
-def downgrade_queueitem_v2_to_v1():
+def downgrade_queueitem_v2_to_v1() -> list[Callable]:
     return [
         drop(
             [
@@ -135,7 +137,7 @@ def downgrade_queueitem_v2_to_v1():
 
 
 @migrate(QueueItemV1, QueueItem)
-def upgrade_queueitem_v1_to_v2():
+def upgrade_queueitem_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("method", ""),
         make_set_default("service", ""),

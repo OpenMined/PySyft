@@ -83,7 +83,7 @@ class ActionType(Enum):
     SYFTFUNCTION = 32
 
 
-def repr_cls(c):
+def repr_cls(c: Any) -> str:
     return f"{c.__module__}.{c.__name__}"
 
 
@@ -202,7 +202,9 @@ class Action(SyftObject):
         return hashes
 
     @classmethod
-    def syft_function_action_from_kwargs_and_id(cls, kwargs, user_code_id):
+    def syft_function_action_from_kwargs_and_id(
+        cls, kwargs: dict[str, Any], user_code_id: UID
+    ) -> Self:
         kwarg_ids = {}
         for k, v in kwargs.items():
             kwarg_ids[k] = LineageID(v)
@@ -236,8 +238,8 @@ class Action(SyftObject):
         )
         return action
 
-    def __repr__(self):
-        def repr_uid(_id):
+    def __repr__(self) -> str:
+        def repr_uid(_id: LineageID) -> str:
             return f"{str(_id)[:3]}..{str(_id)[-1]}"
 
         arg_repr = ", ".join([repr_uid(x) for x in self.args])
@@ -253,7 +255,7 @@ class Action(SyftObject):
 
 
 @migrate(Action, ActionV1)
-def downgrade_action_v2_to_v1():
+def downgrade_action_v2_to_v1() -> list[Callable]:
     return [
         drop("user_code_id"),
         make_set_default("op", ""),
@@ -262,7 +264,7 @@ def downgrade_action_v2_to_v1():
 
 
 @migrate(ActionV1, Action)
-def upgrade_action_v1_to_v2():
+def upgrade_action_v1_to_v2() -> list[Callable]:
     return [make_set_default("user_code_id", None)]
 
 
@@ -408,20 +410,20 @@ def make_action_side_effect(
             action_type=context.action_type,
         )
         context.action = action
-    except Exception as e:
-        raise e
+    except Exception:
         print(f"make_action_side_effect failed with {traceback.format_exc()}")
         return Err(f"make_action_side_effect failed with {traceback.format_exc()}")
+
     return Ok((context, args, kwargs))
 
 
 class TraceResult:
-    result = []
-    _client = None
-    is_tracing = False
+    result: list = []
+    _client: SyftClient = None
+    is_tracing: bool = False
 
     @classmethod
-    def reset(cls):
+    def reset(cls) -> None:
         cls.result = []
         cls._client = None
 
@@ -449,7 +451,7 @@ def convert_to_pointers(
     if args is not None:
         for arg in args:
             if not isinstance(arg, (ActionObject, Asset, UID)):
-                arg = ActionObject.from_obj(
+                arg = ActionObject.from_obj(  # type: ignore[unreachable]
                     syft_action_data=arg,
                     syft_client_verify_key=api.signing_key.verify_key,
                     syft_node_location=api.node_uid,
@@ -464,7 +466,7 @@ def convert_to_pointers(
     if kwargs is not None:
         for k, arg in kwargs.items():
             if not isinstance(arg, (ActionObject, Asset, UID)):
-                arg = ActionObject.from_obj(
+                arg = ActionObject.from_obj(  # type: ignore[unreachable]
                     syft_action_data=arg,
                     syft_client_verify_key=api.signing_key.verify_key,
                     syft_node_location=api.node_uid,
@@ -728,7 +730,7 @@ class ActionObject(SyftObject):
 
         return self.syft_action_data_cache
 
-    def reload_cache(self):
+    def reload_cache(self) -> Optional[SyftError]:
         # If ActionDataEmpty then try to fetch it from store.
         if isinstance(self.syft_action_data_cache, ActionDataEmpty):
             blob_storage_read_method = from_api_or_context(
@@ -751,23 +753,26 @@ class ActionObject(SyftObject):
                 from ...store.blob_storage import BlobRetrieval
 
                 if isinstance(blob_retrieval_object, SyftError):
-                    raise SyftException(
-                        message=f"Failed to retrieve object from blob storage: {blob_retrieval_object.message}"
-                    )
+                    return blob_retrieval_object
                 elif isinstance(blob_retrieval_object, BlobRetrieval):
                     # TODO: This change is temporary to for gateway to be compatible with the new blob storage
                     self.syft_action_data_cache = blob_retrieval_object.read()
                     self.syft_action_data_type = type(self.syft_action_data)
+                    return None
                 else:
                     # In the case of gateway, we directly receive the actual object
                     # TODO: The ideal solution would be to stream the object from the domain through the gateway
                     # Currently , we are just passing the object as it is, which would be fixed later.
                     self.syft_action_data_cache = blob_retrieval_object
                     self.syft_action_data_type = type(self.syft_action_data)
+                    return None
             else:
                 print("cannot reload cache")
+                return None
 
-    def _save_to_blob_storage_(self, data: Any) -> None:
+        return None
+
+    def _save_to_blob_storage_(self, data: Any) -> Optional[SyftError]:
         # relative
         from ...types.blob_storage import BlobFile
         from ...types.blob_storage import CreateBlobStorageEntry
@@ -822,6 +827,8 @@ class ActionObject(SyftObject):
 
         self.syft_action_data_cache = data
 
+        return None
+
     def _save_to_blob_storage(self) -> Optional[SyftError]:
         data = self.syft_action_data
         if isinstance(data, SyftError):
@@ -833,6 +840,7 @@ class ActionObject(SyftObject):
             return result
         if not TraceResult.is_tracing:
             self.syft_action_data_cache = self.as_empty_data()
+        return None
 
     @property
     def is_pointer(self) -> bool:
@@ -862,7 +870,7 @@ class ActionObject(SyftObject):
             else:
                 values["syft_action_data_repr_"] = (
                     v._repr_markdown_()
-                    if hasattr(v, "_repr_markdown_")
+                    if v is not None and hasattr(v, "_repr_markdown_")
                     else v.__repr__()
                 )
             values["syft_action_data_str_"] = str(v)
@@ -870,15 +878,15 @@ class ActionObject(SyftObject):
         return values
 
     @property
-    def is_mock(self):
+    def is_mock(self) -> bool:
         return self.syft_twin_type == TwinMode.MOCK
 
     @property
-    def is_real(self):
+    def is_real(self) -> bool:
         return self.syft_twin_type == TwinMode.PRIVATE
 
     @property
-    def is_twin(self):
+    def is_twin(self) -> bool:
         return self.syft_twin_type != TwinMode.NONE
 
     # @pydantic.validator("syft_action_data", pre=True, always=True)
@@ -942,7 +950,7 @@ class ActionObject(SyftObject):
         )
         return api.make_call(api_call)
 
-    def request(self, client):
+    def request(self, client: SyftClient) -> Union[Any, SyftError]:
         # relative
         from ..request.request import ActionStoreChange
         from ..request.request import SubmitRequest
@@ -958,7 +966,7 @@ class ActionObject(SyftObject):
         )
         return client.api.services.request.submit(submit_request)
 
-    def _syft_try_to_save_to_store(self, obj) -> None:
+    def _syft_try_to_save_to_store(self, obj: SyftObject) -> None:
         if self.syft_node_uid is None or self.syft_client_verify_key is None:
             return
         elif obj.syft_node_uid is not None:
@@ -1009,7 +1017,7 @@ class ActionObject(SyftObject):
         if isinstance(res, SyftError):
             print(f"Failed to to store (arg) {obj} to store, {res}")
 
-    def _syft_prepare_obj_uid(self, obj) -> LineageID:
+    def _syft_prepare_obj_uid(self, obj: Any) -> LineageID:
         # We got the UID
         if isinstance(obj, (UID, LineageID)):
             return LineageID(obj.id)
@@ -1130,7 +1138,11 @@ class ActionObject(SyftObject):
 
     def syft_get_path(self) -> str:
         """Get the type path of the underlying object"""
-        if isinstance(self, AnyActionObject) and self.syft_internal_type:
+        if (
+            isinstance(self, AnyActionObject)
+            and self.syft_internal_type
+            and self.syft_action_data_type is not None
+        ):
             # avoids AnyActionObject errors
             return f"{self.syft_action_data_type.__name__}"
         return f"{type(self).__name__}"
@@ -1203,7 +1215,7 @@ class ActionObject(SyftObject):
                 nested_res.syft_client_verify_key = res.syft_client_verify_key
             return nested_res
 
-    def as_empty(self):
+    def as_empty(self) -> ActionObject:
         id = self.id
         # TODO: fix
         if isinstance(id, LineageID):
@@ -1223,7 +1235,7 @@ class ActionObject(SyftObject):
         syft_lineage_id: Optional[LineageID] = None,
         syft_client_verify_key: Optional[SyftVerifyKey] = None,
         syft_node_location: Optional[UID] = None,
-    ):
+    ) -> ActionObject:
         """Create an Action Object from a file."""
         # relative
         from ...types.blob_storage import BlobFile
@@ -1303,20 +1315,20 @@ class ActionObject(SyftObject):
         return action_object
 
     @classmethod
-    def add_trace_hook(cls):
+    def add_trace_hook(cls) -> bool:
         return True
         # if trace_action_side_effect not in self._syft_pre_hooks__[HOOK_ALWAYS]:
         #     self._syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
 
     @classmethod
-    def remove_trace_hook(cls):
+    def remove_trace_hook(cls) -> bool:
         return True
         # self._syft_pre_hooks__[HOOK_ALWAYS].pop(trace_action_side_effct, None)
 
     def as_empty_data(self) -> ActionDataEmpty:
         return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
 
-    def wait(self):
+    def wait(self) -> ActionObject:
         # relative
         from ...client.api import APIRegistry
 
@@ -1331,6 +1343,7 @@ class ActionObject(SyftObject):
 
         while not api.services.action.is_resolved(obj_id):
             time.sleep(1)
+
         return self
 
     @staticmethod
@@ -1359,7 +1372,8 @@ class ActionObject(SyftObject):
 
     @staticmethod
     def empty(
-        syft_internal_type: Type[Any] = NoneType,
+        # TODO: fix the mypy issue
+        syft_internal_type: Optional[Type[Any]] = None,
         id: Optional[UID] = None,
         syft_lineage_id: Optional[LineageID] = None,
         syft_resolved: Optional[bool] = True,
@@ -1377,6 +1391,9 @@ class ActionObject(SyftObject):
                 Which LineageID to use for the ActionObject. Optional
         """
 
+        syft_internal_type = (
+            type(None) if syft_internal_type is None else syft_internal_type
+        )
         empty = ActionDataEmpty(syft_internal_type=syft_internal_type)
         res = ActionObject.from_obj(
             id=id,
@@ -1502,7 +1519,7 @@ class ActionObject(SyftObject):
 
         constructor = action_type_for_type(result)
         syft_twin_type = TwinMode.NONE
-        if context.result_twin_type is not None:
+        if context is not None and context.result_twin_type is not None:
             syft_twin_type = context.result_twin_type
         result = constructor(
             syft_twin_type=syft_twin_type,
@@ -1529,11 +1546,13 @@ class ActionObject(SyftObject):
         # use the custom defined version
         context_self = self
         if not defined_on_self:
-            context_self = self.syft_action_data  # type: ignore
+            context_self = self.syft_action_data
 
         return context_self
 
-    def _syft_attr_propagate_ids(self, context, name: str, result: Any) -> Any:
+    def _syft_attr_propagate_ids(
+        self, context: PreHookContext, name: str, result: Any
+    ) -> Any:
         """Patch the results with the syft_history_hash, node_uid, and result_id."""
         if name in self._syft_dont_wrap_attrs():
             return result
@@ -1677,7 +1696,7 @@ class ActionObject(SyftObject):
         if inspect.ismethod(original_func) or inspect.ismethoddescriptor(original_func):
             debug("Running method: ", name)
 
-            def wrapper(_self: Any, *args: Any, **kwargs: Any):
+            def wrapper(_self: Any, *args: Any, **kwargs: Any) -> Any:
                 return _base_wrapper(*args, **kwargs)
 
             wrapper = types.MethodType(wrapper, type(self))
@@ -1702,9 +1721,9 @@ class ActionObject(SyftObject):
         # third party
         return wrapper
 
-    def _syft_setattr(self, name, value):
+    def _syft_setattr(self, name: str, value: Any) -> Any:
         args = (name, value)
-        kwargs = {}
+        kwargs: dict = {}
         op_name = "__setattr__"
 
         def fake_func(*args: Any, **kwargs: Any) -> Any:
@@ -1788,7 +1807,7 @@ class ActionObject(SyftObject):
             return value
         else:
             self._syft_setattr(name, value)
-            context_self = self.syft_action_data  # type: ignore
+            context_self = self.syft_action_data
             return context_self.__setattr__(name, value)
 
     # def keys(self) -> KeysView[str]:
@@ -1815,7 +1834,10 @@ class ActionObject(SyftObject):
             else:
                 data_repr_ = (
                     self.syft_action_data_cache._repr_markdown_()
-                    if hasattr(self.syft_action_data_cache, "_repr_markdown_")
+                    if (
+                        self.syft_action_data_cache is not None
+                        and hasattr(self.syft_action_data_cache, "_repr_markdown_")
+                    )
                     else self.syft_action_data_cache.__repr__()
                 )
 
@@ -1945,10 +1967,10 @@ class ActionObject(SyftObject):
     def __rshift__(self, other: Any) -> Any:
         return self._syft_output_action_object(self.__rshift__(other))
 
-    def __iter__(self):
+    def __iter__(self) -> Any:
         return self._syft_output_action_object(self.__iter__())
 
-    def __next__(self):
+    def __next__(self) -> Any:
         return self._syft_output_action_object(self.__next__())
 
     # r ops
@@ -1994,14 +2016,14 @@ class ActionObject(SyftObject):
 
 
 @migrate(ActionObject, ActionObjectV1)
-def downgrade_actionobject_v2_to_v1():
+def downgrade_actionobject_v2_to_v1() -> list[Callable]:
     return [
         drop("syft_resolved"),
     ]
 
 
 @migrate(ActionObjectV1, ActionObject)
-def upgrade_actionobject_v1_to_v2():
+def upgrade_actionobject_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("syft_resolved", True),
     ]
@@ -2046,7 +2068,7 @@ class AnyActionObject(ActionObject):
 
 
 @migrate(AnyActionObject, AnyActionObjectV1)
-def downgrade_anyactionobject_v2_to_v1():
+def downgrade_anyactionobject_v2_to_v1() -> list[Callable]:
     return [
         drop("syft_action_data_str"),
         drop("syft_resolved"),
@@ -2054,7 +2076,7 @@ def downgrade_anyactionobject_v2_to_v1():
 
 
 @migrate(AnyActionObjectV1, AnyActionObject)
-def upgrade_anyactionobject_v1_to_v2():
+def upgrade_anyactionobject_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("syft_action_data_str", ""),
         make_set_default("syft_resolved", True),

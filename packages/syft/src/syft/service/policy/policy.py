@@ -17,13 +17,16 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Type
 from typing import Union
+from typing import cast
 
 # third party
 from RestrictedPython import compile_restricted
 from result import Ok
 
 # relative
+from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...client.api import NodeIdentity
 from ...node.credentials import SyftVerifyKey
@@ -92,7 +95,7 @@ class Policy(SyftObject):
     id: UID
     init_kwargs: Dict[Any, Any] = {}
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         if "init_kwargs" in kwargs:
             init_kwargs = kwargs["init_kwargs"]
             del kwargs["init_kwargs"]
@@ -102,10 +105,9 @@ class Policy(SyftObject):
                 del init_kwargs["id"]
         super().__init__(init_kwargs=init_kwargs, *args, **kwargs)  # noqa: B026
 
-    @classmethod
     @property
-    def policy_code(cls) -> str:
-        mro = reversed(cls.mro())
+    def policy_code(self) -> str:
+        mro = reversed(type(self).mro())
         op_code = ""
         for klass in mro:
             if "Policy" in klass.__name__:
@@ -113,8 +115,11 @@ class Policy(SyftObject):
                 op_code += "\n"
         return op_code
 
-    def is_valid(self, output_history: List) -> Union[SyftSuccess, SyftError]:
+    def is_valid(self, *args, **kwargs) -> Union[SyftSuccess, SyftError]:
         return SyftSuccess(message="Policy is valid.")
+
+    def public_state(self) -> Any:
+        raise NotImplementedError
 
 
 @serializable()
@@ -185,10 +190,11 @@ class InputPolicy(Policy):
     def inputs(self) -> Dict[NodeIdentity, Any]:
         return self.init_kwargs
 
-    def _inputs_for_context(self, context: ChangeContext):
+    def _inputs_for_context(self, context: ChangeContext) -> Union[dict, SyftError]:
         user_node_view = NodeIdentity.from_change_context(context)
         inputs = self.inputs[user_node_view]
-
+        if context.node is None:
+            return SyftError(f"context {context}'s node is None")
         root_context = AuthedServiceContext(
             node=context.node, credentials=context.approving_user_credentials
         ).as_root_context()
@@ -214,6 +220,8 @@ def retrieve_from_db(
 ) -> Dict:
     # relative
     from ...service.action.action_object import TwinMode
+
+    context.node = cast(AbstractNode, context.node)
 
     action_service = context.node.get_service("actionservice")
     code_inputs = {}
@@ -257,6 +265,7 @@ def allowed_ids_only(
     kwargs: Dict[str, Any],
     context: AuthedServiceContext,
 ) -> Dict[str, UID]:
+    context.node = cast(AbstractNode, context.node)
     if context.node.node_type == NodeType.DOMAIN:
         node_identity = NodeIdentity(
             node_name=context.node.name,
@@ -332,6 +341,16 @@ class OutputPolicy(Policy):
         context: NodeServiceContext,
         outputs: Any,
     ) -> Any:
+        # output_uids: Union[Dict[str, Any], list] = filter_only_uids(outputs)
+        # if isinstance(output_uids, UID):
+        #     output_uids = [output_uids]
+        # history = OutputHistory(
+        #     output_time=DateTime.now(),
+        #     outputs=output_uids,
+        #     executing_user_verify_key=context.credentials,
+        # )
+        # self.output_history.append(history)
+
         return outputs
 
     def is_valid(self, output_history: List) -> Union[SyftSuccess, SyftError]:
@@ -360,6 +379,9 @@ class OutputPolicyExecuteCount(OutputPolicy):
         return SyftError(
             message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
         )
+
+    def public_state(self) -> dict[str, int]:
+        return {"limit": self.limit, "count": self.count}
 
 
 @serializable()
@@ -431,7 +453,8 @@ class UserPolicy(Policy):
     byte_code: PyCodeObject
     status: UserPolicyStatus = UserPolicyStatus.SUBMITTED
 
-    @property
+    # TODO: fix the mypy issue
+    @property  # type: ignore
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
 
@@ -447,14 +470,14 @@ class UserPolicy(Policy):
         return outputs
 
 
-def new_getfile(object):
+def new_getfile(object: Any) -> Any:  # TODO: fix the mypy issue
     if not inspect.isclass(object):
         return inspect.getfile(object)
 
     # Lookup by parent module (as in current inspect)
     if hasattr(object, "__module__"):
         object_ = sys.modules.get(object.__module__)
-        if hasattr(object_, "__file__"):
+        if object_ is not None and hasattr(object_, "__file__"):
             return object_.__file__
 
     # If parent module is __main__, lookup by methods (NEW)
@@ -468,7 +491,7 @@ def new_getfile(object):
         raise TypeError(f"Source for {object!r} not found")
 
 
-def get_code_from_class(policy):
+def get_code_from_class(policy: Type[CustomPolicy]) -> str:
     klasses = [inspect.getmro(policy)[0]]  #
     whole_str = ""
     for klass in klasses:
@@ -688,7 +711,7 @@ def add_class_to_user_module(klass: type, unique_name: str) -> type:
     return klass
 
 
-def execute_policy_code(user_policy: UserPolicy):
+def execute_policy_code(user_policy: UserPolicy) -> Any:
     stdout_ = sys.stdout
     stderr_ = sys.stderr
 
@@ -729,7 +752,7 @@ def load_policy_code(user_policy: UserPolicy) -> Any:
         raise Exception(f"Exception loading code. {user_policy}. {e}")
 
 
-def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]):
+def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]) -> Any:
     policy_class = load_policy_code(user_policy)
     policy_object = policy_class()
     policy_object.__user_init__(**init_args)

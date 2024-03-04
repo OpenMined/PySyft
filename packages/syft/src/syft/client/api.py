@@ -511,7 +511,7 @@ def debox_signed_syftapicall_response(
     signed_result: SignedSyftAPICall,
 ) -> Union[Any, SyftError]:
     if not isinstance(signed_result, SignedSyftAPICall):
-        return SyftError(message="The result is not signed")  # type: ignore
+        return SyftError(message="The result is not signed")
 
     if not signed_result.is_valid:
         return SyftError(message="The result signature is invalid")
@@ -1011,7 +1011,7 @@ def validate_callable_args_and_kwargs(
                             if issubclass(v, EmailStr):
                                 v = str
                             try:
-                                check_type(key, value, v)  # raises Exception
+                                check_type(value, v)  # raises Exception
                                 success = True
                                 break  # only need one to match
                             except Exception:  # nosec
@@ -1019,7 +1019,7 @@ def validate_callable_args_and_kwargs(
                         if not success:
                             raise TypeError()
                     else:
-                        check_type(key, value, t)  # raises Exception
+                        check_type(value, t)  # raises Exception
             except TypeError:
                 _type_str = getattr(t, "__name__", str(t))
                 msg = f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
@@ -1047,10 +1047,10 @@ def validate_callable_args_and_kwargs(
                         for v in t.__args__:
                             if issubclass(v, EmailStr):
                                 v = str
-                            check_type(param_key, arg, v)  # raises Exception
+                            check_type(arg, v)  # raises Exception
                             break  # only need one to match
                     else:
-                        check_type(param_key, arg, t)  # raises Exception
+                        check_type(arg, t)  # raises Exception
             except TypeError:
                 t_arg = type(arg)
                 if (

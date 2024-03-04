@@ -1,0 +1,50 @@
+name: PR Tests - Lint Helm Charts
+
+on:
+  # temporary disabled
+  # pull_request:
+  #   branches:
+  #     - dev
+  #   paths:
+  #     - packages/grid/helm/syft/**
+
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Tests Manually"
+        required: false
+
+concurrency:
+  group: pr-tests-helm-lint
+  cancel-in-progress: true
+
+jobs:
+  pr-tests-helm-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew update
+          brew tap FairwindsOps/tap
+          brew install kube-linter FairwindsOps/tap/polaris
+
+          # Install python deps
+          pip install --upgrade pip
+          pip install tox
+
+          kube-linter version
+          polaris version
+
+      - name: Run Polaris
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          polaris audit --helm-chart packages/grid/helm/syft --helm-values packages/grid/helm/syft/values.yaml --format=pretty --only-show-failed-tests
+
+      - name: Run Linter
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          tox -e syft.lint.helm

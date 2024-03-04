@@ -1,5 +1,7 @@
 # stdlib
 from typing import Dict
+from typing import Optional
+from typing import Type
 from typing import Union
 
 # relative
@@ -18,6 +20,7 @@ from ..code.user_code import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..network.routes import route_to_connection
+from ..policy.policy import InputPolicy
 from ..service import AbstractService
 from ..service import service_method
 
@@ -95,7 +98,7 @@ class EnclaveService(AbstractService):
         return SyftSuccess(message="Enclave Code Status Updated Successfully")
 
 
-def get_oblv_service():
+def get_oblv_service() -> Union[Type[AbstractService], SyftError]:
     # relative
     from ...external import OBLV
 
@@ -114,7 +117,9 @@ def get_oblv_service():
 
 
 # Checks if the given user code would  propogate value to enclave on acceptance
-def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
+def propagate_inputs_to_enclave(
+    user_code: UserCode, context: ChangeContext
+) -> Union[SyftSuccess, SyftError]:
     # Temporarily disable Oblivious Enclave
     # from ...external.oblv.deployment_client import OblvMetadata
 
@@ -131,6 +136,8 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
     #         worker_name=context.node.name,
     #     )
     #     send_method = api.services.oblv.send_user_code_inputs_to_enclave
+    if context.node is None:
+        return SyftError(message=f"context {context}'s node is None")
 
     if isinstance(user_code.enclave_metadata, EnclaveMetadata):
         # TODO 🟣 Restructure url it work for local mode host.docker.internal
@@ -148,9 +155,12 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
     else:
         return SyftSuccess(message="Current Request does not require Enclave Transfer")
 
-    inputs = user_code.get_input_policy(context.to_service_ctx())._inputs_for_context(
-        context
+    input_policy: Optional[InputPolicy] = user_code.get_input_policy(
+        context.to_service_ctx()
     )
+    if input_policy is None:
+        return SyftError(message=f"{user_code}'s input policy is None")
+    inputs = input_policy._inputs_for_context(context)
     if isinstance(inputs, SyftError):
         return inputs
 

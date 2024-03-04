@@ -1,10 +1,13 @@
 # stdlib
 from typing import Any
+from typing import Callable
 from typing import ClassVar
 from typing import Type
+from typing import Union
 
 # third party
 import numpy as np
+from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable
@@ -15,6 +18,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from .action_object import ActionObject
+from .action_object import ActionObjectPointer
 from .action_object import ActionObjectV1
 from .action_object import ActionObjectV2
 from .action_object import BASE_PASSTHROUGH_ATTRS
@@ -30,7 +34,7 @@ from .action_types import action_types
 #         return domain_client.api.services.action.get(self.id).syft_action_data
 
 
-class NumpyArrayObjectPointer:
+class NumpyArrayObjectPointer(ActionObjectPointer):
     pass
 
 
@@ -87,7 +91,9 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     #         )
     #     return self == other
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+    def __array_ufunc__(
+        self, ufunc: Any, method: str, *inputs: Any, **kwargs: Any
+    ) -> Union[Self, tuple[Self, ...]]:
         inputs = tuple(
             np.array(x.syft_action_data, dtype=x.dtype)
             if isinstance(x, NumpyArrayObject)
@@ -108,14 +114,14 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
 
 
 @migrate(NumpyArrayObject, NumpyArrayObjectV1)
-def downgrade_numpyarrayobject_v2_to_v1():
+def downgrade_numpyarrayobject_v2_to_v1() -> list[Callable]:
     return [
         drop("syft_resolved"),
     ]
 
 
 @migrate(NumpyArrayObjectV1, NumpyArrayObject)
-def upgrade_numpyarrayobject_v1_to_v2():
+def upgrade_numpyarrayobject_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("syft_resolved", True),
     ]
@@ -155,14 +161,14 @@ class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
 
 
 @migrate(NumpyScalarObject, NumpyScalarObjectV1)
-def downgrade_numpyscalarobject_v2_to_v1():
+def downgrade_numpyscalarobject_v2_to_v1() -> list[Callable]:
     return [
         drop("syft_resolved"),
     ]
 
 
 @migrate(NumpyScalarObjectV1, NumpyScalarObject)
-def upgrade_numpyscalarobject_v1_to_v2():
+def upgrade_numpyscalarobject_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("syft_resolved", True),
     ]
@@ -199,14 +205,14 @@ class NumpyBoolObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
 
 
 @migrate(NumpyBoolObject, NumpyBoolObjectV1)
-def downgrade_numpyboolobject_v2_to_v1():
+def downgrade_numpyboolobject_v2_to_v1() -> list[Callable]:
     return [
         drop("syft_resolved"),
     ]
 
 
 @migrate(NumpyBoolObjectV1, NumpyBoolObject)
-def upgrade_numpyboolobject_v1_to_v2():
+def upgrade_numpyboolobject_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("syft_resolved", True),
     ]
