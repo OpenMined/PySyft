@@ -33,7 +33,7 @@ If you're running Add the following in `.vscode/launch.json`
         }
     ]
 }
-``` 
+```
 
 Then run
 
@@ -51,6 +51,7 @@ Add the following to `packages/grid/backend/grid/__init__.py`
 import pydevd_pycharm
 pydevd_pycharm.settrace('your-local-addr', port=5678, suspend=False)
 ```
+
 Ensure that `your-local-addr` is reachable from the containers.
 
 Next, replace the debugpy install and `DEBUG_CMD` in `packages/grid/backend/grid/start.sh`:
@@ -66,7 +67,7 @@ fi
 
 If it fails to connect, check the backend logs. You might need to install a different pydevd-pycharm version. The version to be installed is shown in the log error message.
 
-Whenever you start a container, it attempts to connect to PyCharm. 
+Whenever you start a container, it attempts to connect to PyCharm.
 
 ```bash
 tox -e dev.k8s.hotreload
