@@ -1152,8 +1152,8 @@ class UserCodeStatusChange(Change):
 
     def __repr_syft_nested__(self) -> str:
         msg = (
-            f"Request to change <b>{self.link.service_func_name}</b> "
-            f"(Pool Id: <b>{self.link.worker_pool_name}</b>) "
+            f"Request to change <b>{self.code.service_func_name}</b> "
+            f"(Pool Id: <b>{self.code.worker_pool_name}</b>) "
         )
         msg += "to permission <b>RequestStatus.APPROVED</b>"
         if self.nested_solved:
