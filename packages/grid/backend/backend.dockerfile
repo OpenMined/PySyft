@@ -94,6 +94,7 @@ ENV PATH=$PATH:$HOME/.local/bin \
     SERVICE_NAME="backend" \
     RELEASE="production" \
     DEV_MODE="False" \
+    DEBUGGER_ENABLED="False" \
     CONTAINER_HOST="docker" \
     OBLV_ENABLED="False" \
     OBLV_LOCALHOST_PORT=3030 \

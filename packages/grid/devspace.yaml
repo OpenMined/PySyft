@@ -97,11 +97,14 @@ dev:
       app.kubernetes.io/name: syft
       app.kubernetes.io/component: backend
     env:
-      - name: DEV_MODE
-        value: "True"
       - name: RELEASE
         value: development
-    logs: {}
+      - name: DEV_MODE
+        value: "True"
+      - name: DEBUGGER_ENABLED
+        value: "True"
+    ports:
+      - port: "5678" # debugpy
     sync:
       - path: ./backend/grid:/root/app/grid
       - path: ../syft:/root/app/syft
