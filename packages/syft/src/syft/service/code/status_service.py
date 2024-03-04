@@ -17,7 +17,7 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftError
-from ..service import AbstractService
+from ..service import TYPE_TO_SERVICE, AbstractService
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
@@ -56,6 +56,7 @@ class UserCodeStatusService(AbstractService):
         self.store = store
         self.stash = StatusStash(store=store)
 
+    @service_method(path="code_status.create", name="create", roles=ADMIN_ROLE_LEVEL)
     def create(
         self,
         context: AuthedServiceContext,
@@ -90,3 +91,6 @@ class UserCodeStatusService(AbstractService):
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
+
+
+TYPE_TO_SERVICE[UserCodeStatusCollection] = UserCodeStatusService
