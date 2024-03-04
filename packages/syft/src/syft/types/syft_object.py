@@ -683,7 +683,7 @@ def get_repr_values_table(_self, is_homogenous, extra_fields=None):
                     attrs = field.split(".")
                     for i, attr in enumerate(attrs):
                         # find indexing like abc[1]
-                        res = re.search("\[[+-]?\d+\]", attr)
+                        res = re.search(r"\[[+-]?\d+\]", attr)
                         has_index = False
                         if res:
                             has_index = True

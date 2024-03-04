@@ -23,9 +23,9 @@ jobs:
       max-parallel: 99
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
         include:
-          - python-version: "3.9"
+          - python-version: "3.11"
             os: "ubuntu-latest"
           - python-version: "3.10"
             os: "ubuntu-latest"

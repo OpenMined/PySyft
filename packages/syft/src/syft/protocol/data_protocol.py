@@ -37,7 +37,7 @@ def natural_key(key: PROTOCOL_TYPE) -> List[int]:
     """Define key for natural ordering of strings."""
     if isinstance(key, int):
         key = str(key)
-    return [int(s) if s.isdigit() else s for s in re.split("(\d+)", key)]
+    return [int(s) if s.isdigit() else s for s in re.split(r"(\d+)", key)]
 
 
 def sort_dict_naturally(d: Dict) -> Dict:
