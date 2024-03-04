@@ -187,6 +187,8 @@ class OutputStash(BaseUIDStoreStash):
         )
 
 
+@instrument
+@serializable()
 class OutputService(AbstractService):
     store: DocumentStore
     stash: OutputStash

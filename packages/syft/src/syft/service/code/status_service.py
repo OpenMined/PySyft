@@ -46,6 +46,8 @@ class StatusStash(BaseUIDStoreStash):
         return self.query_one(credentials=credentials, qks=qks)
 
 
+@instrument
+@serializable()
 class UserCodeStatusService(AbstractService):
     store: DocumentStore
     stash: StatusStash

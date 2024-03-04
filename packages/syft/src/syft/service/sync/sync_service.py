@@ -9,10 +9,12 @@ from typing import Union
 # relative
 from ...client.api import NodeIdentity
 from ...node.credentials import SyftVerifyKey
+from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
+from ...util.trace_decorator import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -29,6 +31,8 @@ from .sync_stash import SyncStash
 from .sync_state import SyncState
 
 
+@instrument
+@serializable()
 class SyncService(AbstractService):
     store: DocumentStore
     stash: SyncStash
