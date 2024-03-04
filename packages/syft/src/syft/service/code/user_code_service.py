@@ -416,7 +416,7 @@ class UserCodeService(AbstractService):
             override_execution_permission = (
                 context.has_execute_permissions or context.role == ServiceRole.ADMIN
             )
-            print("override", override_execution_permission)
+
             # Override permissions bypasses the cache, since we do not check in/out policies
             skip_fill_cache = override_execution_permission
             # We do not read from output policy cache if there are mock arguments

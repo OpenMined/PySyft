@@ -9,6 +9,7 @@ from typing import Union
 import pydantic
 
 # relative
+from ...client.api import APIRegistry
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
@@ -41,7 +42,7 @@ class ExecutionOutput(SyftObject):
 
     executing_user_verify_key: SyftVerifyKey
     user_code_link: LinkedObject
-    output_links: Optional[Union[List[LinkedObject], Dict[str, LinkedObject]]]
+    output_ids: Optional[Union[List[UID], Dict[str, UID]]] = None
     job_link: Optional[LinkedObject] = None
     created_at: DateTime = DateTime.now()
 
@@ -71,26 +72,13 @@ class ExecutionOutput(SyftObject):
         output_policy_id: Optional[UID] = None,
     ) -> "ExecutionOutput":
         # relative
-        from ..action.action_service import ActionService
         from ..code.user_code_service import UserCode
         from ..code.user_code_service import UserCodeService
         from ..job.job_service import Job
         from ..job.job_service import JobService
 
-        def make_output_link(uid: UID) -> LinkedObject:
-            return LinkedObject.from_uid(
-                object_uid=uid,
-                object_type=ActionObject,
-                service_type=ActionService,
-                node_uid=node_uid,
-            )
-
-        if isinstance(output_ids, dict):
-            output_links = {k: make_output_link(v) for k, v in output_ids.items()}
-        elif isinstance(output_ids, UID):
-            output_links = [make_output_link(output_ids)]
-        else:
-            output_links = [make_output_link(x) for x in output_ids]
+        if isinstance(output_ids, UID):
+            output_ids = [output_ids]
 
         user_code_link = LinkedObject.from_uid(
             object_uid=user_code_id,
@@ -109,7 +97,7 @@ class ExecutionOutput(SyftObject):
         else:
             job_link = None
         return cls(
-            output_links=output_links,
+            output_ids=output_ids,
             user_code_link=user_code_link,
             job_link=job_link,
             executing_user_verify_key=executing_user_verify_key,
@@ -118,33 +106,34 @@ class ExecutionOutput(SyftObject):
 
     @property
     def outputs(self) -> Union[List[ActionObject], Dict[str, ActionObject]]:
-        if isinstance(self.output_links, dict):
-            return {k: v.resolve for k, v in self.output_links.items()}
+        action_service = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        ).services.action
+        # TODO error handling for action_service.get
+        if isinstance(self.output_ids, dict):
+            res = {k: action_service.get(v) for k, v in self.output_ids.items()}
         else:
-            return [x.resolve for x in self.output_links]
+            res = [action_service.get(v) for v in self.output_ids]
 
-    @property
-    def output_ids(self) -> Union[List[UID], Dict[str, UID]]:
-        if isinstance(self.output_links, dict):
-            return {k: v.object_uid for k, v in self.output_links.items()}
-        else:
-            return [x.object_uid for x in self.output_links]
+        return res
 
     @property
     def output_id_list(self) -> List[UID]:
         ids = self.output_ids
         if isinstance(ids, dict):
             return list(ids.values())
-        else:
-            return ids
+        return ids
 
     @property
     def job_id(self) -> Optional[UID]:
         return self.job_link.object_uid if self.job_link else None
 
     def get_sync_dependencies(self, api=None) -> List[UID]:
-        res = self.output_id_list
+        # Output ids, user code id, job id
+        res = []
 
+        res.extend(self.output_id_list)
         res.append(self.user_code_id)
         if self.job_id:
             res.append(self.job_id)
