@@ -305,10 +305,12 @@ class UserCodeService(AbstractService):
 
             # if the current node is the enclave
             else:
-                if not code.get_status(context).approved:
+                if not code.get_status(context.as_root_context()).approved:
                     return code.status.get_status_message()
 
-                output_history = code.get_output_history(context=context)
+                output_history = code.get_output_history(
+                    context=context.as_root_context()
+                )
                 if isinstance(output_history, SyftError):
                     return output_history
 
