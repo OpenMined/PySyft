@@ -6,7 +6,6 @@ from typing import Any
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
-from typing import cast
 
 # third party
 from hagrid.orchestra import NodeHandle
@@ -89,7 +88,7 @@ class EnclaveClient(SyftClient):
             if isinstance(client, SyftError):
                 return client
 
-        self.metadata: NodeMetadataJSON = cast(NodeMetadataJSON, self.metadata)
+        self.metadata: NodeMetadataJSON = self.metadata
         res = self.exchange_route(client)
 
         if isinstance(res, SyftSuccess):

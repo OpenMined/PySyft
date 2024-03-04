@@ -1360,26 +1360,24 @@ def elect_leader(context: TransformContext) -> TransformContext:
         if len(context.output["members"]) == 0:
             raise ValueError("Project's require at least one member")
         context.output["state_sync_leader"] = context.output["members"][0]
-    else:
-        print("f{context}'s output is None. No trasformation happened.")
 
     return context
 
 
 def check_permissions(context: TransformContext) -> TransformContext:
-    if context.output is not None:
-        if len(context.output["members"]) > 1:
-            # more than 1 node
-            pass
-        # check at least one owner
-        if len(context.output["project_permissions"]) == 0:
-            project_permissions = context.output["project_permissions"]
-            project_permissions = project_permissions.union(
-                add_members_as_owners(context.output["members"])
-            )
-            context.output["project_permissions"] = project_permissions
-    else:
-        print("f{context}'s output is None. No trasformation happened.")
+    if context.output is None:
+        return context
+
+    if len(context.output["members"]) > 1:
+        # more than 1 node
+        pass
+    # check at least one owner
+    if len(context.output["project_permissions"]) == 0:
+        project_permissions = context.output["project_permissions"]
+        project_permissions = project_permissions.union(
+            add_members_as_owners(context.output["members"])
+        )
+        context.output["project_permissions"] = project_permissions
 
     return context
 
@@ -1387,8 +1385,6 @@ def check_permissions(context: TransformContext) -> TransformContext:
 def add_creator_name(context: TransformContext) -> TransformContext:
     if context.output is not None and context.obj is not None:
         context.output["username"] = context.obj.username
-    else:
-        print("f{context}'s output or obj is None. No trasformation happened.")
     return context
 
 

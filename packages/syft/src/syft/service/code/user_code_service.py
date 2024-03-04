@@ -72,7 +72,7 @@ class UserCodeService(AbstractService):
 
     def _submit(
         self, context: AuthedServiceContext, code: Union[UserCode, SubmitUserCode]
-    ) -> Result:
+    ) -> Result[UserCode, str]:
         if not isinstance(code, UserCode):
             code = code.to(UserCode, context=context)  # type: ignore[unreachable]
         result = self.stash.set(context.credentials, code)

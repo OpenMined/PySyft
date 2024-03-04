@@ -826,21 +826,21 @@ class SubmitRequest(SyftObject):
 
 
 def hash_changes(context: TransformContext) -> TransformContext:
-    if context.output is not None:
-        request_time = context.output["request_time"]
-        key = context.output["requesting_user_verify_key"]
-        changes = context.output["changes"]
+    if context.output is None:
+        return context
 
-        time_hash = hashlib.sha256(
-            _serialize(request_time.utc_timestamp, to_bytes=True)
-        ).digest()
-        key_hash = hashlib.sha256(bytes(key.verify_key)).digest()
-        changes_hash = hashlib.sha256(_serialize(changes, to_bytes=True)).digest()
-        final_hash = hashlib.sha256(time_hash + key_hash + changes_hash).hexdigest()
+    request_time = context.output["request_time"]
+    key = context.output["requesting_user_verify_key"]
+    changes = context.output["changes"]
 
-        context.output["request_hash"] = final_hash
-    else:
-        print("f{context}'s output is None. No trasformation happened.")
+    time_hash = hashlib.sha256(
+        _serialize(request_time.utc_timestamp, to_bytes=True)
+    ).digest()
+    key_hash = hashlib.sha256(bytes(key.verify_key)).digest()
+    changes_hash = hashlib.sha256(_serialize(changes, to_bytes=True)).digest()
+    final_hash = hashlib.sha256(time_hash + key_hash + changes_hash).hexdigest()
+
+    context.output["request_hash"] = final_hash
 
     return context
 
@@ -848,8 +848,6 @@ def hash_changes(context: TransformContext) -> TransformContext:
 def add_request_time(context: TransformContext) -> TransformContext:
     if context.output is not None:
         context.output["request_time"] = DateTime.now()
-    else:
-        print("f{context}'s output is None. No trasformation happened.")
     return context
 
 
@@ -863,8 +861,7 @@ def check_requesting_user_verify_key(context: TransformContext) -> TransformCont
             ] = context.obj.requesting_user_verify_key
         else:
             context.output["requesting_user_verify_key"] = context.credentials
-    else:
-        print("f{context}'s output or node or obj is None. No trasformation happened.")
+
     return context
 
 
@@ -881,8 +878,7 @@ def add_requesting_user_info(context: TransformContext) -> TransformContext:
             )
         except Exception:
             context.output["requesting_user_name"] = "guest_user"
-    else:
-        print("f{context}'s output or node is None. No trasformation happened.")
+
     return context
 
 

@@ -75,7 +75,7 @@ class Search:
         ]
 
         # filter out SyftError
-        filtered = [(client, result) for client, result in results if result]
+        filtered = [(client, result) for client, result in results if client and result]
         return filtered
 
     def search(self, name: str) -> SearchResults:

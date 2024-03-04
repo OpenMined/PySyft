@@ -545,14 +545,13 @@ class SubmitUserPolicy(Policy):
 
 
 def hash_code(context: TransformContext) -> TransformContext:
-    if context.output is not None:
-        code = context.output["code"]
-        del context.output["code"]
-        context.output["raw_code"] = code
-        code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
-        context.output["code_hash"] = code_hash
-    else:
-        print("f{context}'s output is None. No trasformation happened.")
+    if context.output is None:
+        return context
+    code = context.output["code"]
+    del context.output["code"]
+    context.output["raw_code"] = code
+    code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
+    context.output["code_hash"] = code_hash
 
     return context
 
@@ -665,17 +664,17 @@ def check_class_code(context: TransformContext) -> TransformContext:
     # check for Policy template -> __init__, apply_output, public_state
     # parse init signature
     # check dangerous libraries, maybe compile_restricted already does that
-    if context.output is not None:
-        try:
-            processed_code = process_class_code(
-                raw_code=context.output["raw_code"],
-                class_name=context.output["unique_name"],
-            )
-            context.output["parsed_code"] = processed_code
-        except Exception as e:
-            raise e
-    else:
-        print("f{context}'s output is None. No trasformation happened.")
+    if context.output is None:
+        return context
+
+    try:
+        processed_code = process_class_code(
+            raw_code=context.output["raw_code"],
+            class_name=context.output["unique_name"],
+        )
+        context.output["parsed_code"] = processed_code
+    except Exception as e:
+        raise e
 
     return context
 
@@ -698,23 +697,22 @@ def add_credentials_for_key(key: str) -> Callable:
     def add_credentials(context: TransformContext) -> TransformContext:
         if context.output is not None:
             context.output[key] = context.credentials
-        else:
-            print("f{context}'s output is None. No trasformation happened.")
+
         return context
 
     return add_credentials
 
 
 def generate_signature(context: TransformContext) -> TransformContext:
-    if context.output is not None:
-        params = [
-            Parameter(name=k, kind=Parameter.POSITIONAL_OR_KEYWORD)
-            for k in context.output["input_kwargs"]
-        ]
-        sig = Signature(parameters=params)
-        context.output["signature"] = sig
-    else:
-        print("f{context}'s output is None. No trasformation happened.")
+    if context.output is None:
+        return context
+
+    params = [
+        Parameter(name=k, kind=Parameter.POSITIONAL_OR_KEYWORD)
+        for k in context.output["input_kwargs"]
+    ]
+    sig = Signature(parameters=params)
+    context.output["signature"] = sig
 
     return context
 

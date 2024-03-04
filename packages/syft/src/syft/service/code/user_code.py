@@ -1090,29 +1090,31 @@ def process_code(
 
 def new_check_code(context: TransformContext) -> TransformContext:
     # TODO: remove this tech debt hack
-    if context.output is not None:
-        input_kwargs = context.output["input_policy_init_kwargs"]
-        node_view_workaround = False
-        for k in input_kwargs.keys():
-            if isinstance(k, NodeIdentity):
-                node_view_workaround = True
+    if context.output is None:
+        return context
 
-        if not node_view_workaround:
-            input_keys = list(input_kwargs.keys())
-        else:
-            input_keys = []
-            for d in input_kwargs.values():
-                input_keys += d.keys()
+    input_kwargs = context.output["input_policy_init_kwargs"]
+    node_view_workaround = False
+    for k in input_kwargs.keys():
+        if isinstance(k, NodeIdentity):
+            node_view_workaround = True
 
-        processed_code = process_code(
-            context,
-            raw_code=context.output["raw_code"],
-            func_name=context.output["unique_func_name"],
-            original_func_name=context.output["service_func_name"],
-            policy_input_kwargs=input_keys,
-            function_input_kwargs=context.output["input_kwargs"],
-        )
-        context.output["parsed_code"] = processed_code
+    if not node_view_workaround:
+        input_keys = list(input_kwargs.keys())
+    else:
+        input_keys = []
+        for d in input_kwargs.values():
+            input_keys += d.keys()
+
+    processed_code = process_code(
+        context,
+        raw_code=context.output["raw_code"],
+        func_name=context.output["unique_func_name"],
+        original_func_name=context.output["service_func_name"],
+        policy_input_kwargs=input_keys,
+        function_input_kwargs=context.output["input_kwargs"],
+    )
+    context.output["parsed_code"] = processed_code
 
     return context
 
@@ -1152,22 +1154,27 @@ def compile_byte_code(parsed_code: str) -> Optional[PyCodeObject]:
 
 
 def compile_code(context: TransformContext) -> TransformContext:
-    if context.output is not None:
-        byte_code = compile_byte_code(context.output["parsed_code"])
-        if byte_code is None:
-            raise ValueError(
-                "Unable to compile byte code from parsed code. "
-                + context.output["parsed_code"]
-            )
+    if context.output is None:
+        return context
+
+    byte_code = compile_byte_code(context.output["parsed_code"])
+    if byte_code is None:
+        raise ValueError(
+            "Unable to compile byte code from parsed code. "
+            + context.output["parsed_code"]
+        )
     return context
 
 
 def hash_code(context: TransformContext) -> TransformContext:
-    if context.output is not None:
-        code = context.output["code"]
-        context.output["raw_code"] = code
-        code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
-        context.output["code_hash"] = code_hash
+    if context.output is None:
+        return context
+
+    code = context.output["code"]
+    context.output["raw_code"] = code
+    code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
+    context.output["code_hash"] = code_hash
+
     return context
 
 
@@ -1193,10 +1200,13 @@ def check_policy(policy: Any, context: TransformContext) -> TransformContext:
 
 
 def check_input_policy(context: TransformContext) -> TransformContext:
-    if context.output is not None:
-        ip = context.output["input_policy_type"]
-        ip = check_policy(policy=ip, context=context)
-        context.output["input_policy_type"] = ip
+    if context.output is None:
+        return context
+
+    ip = context.output["input_policy_type"]
+    ip = check_policy(policy=ip, context=context)
+    context.output["input_policy_type"] = ip
+
     return context
 
 

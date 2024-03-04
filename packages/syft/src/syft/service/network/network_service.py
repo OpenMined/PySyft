@@ -384,8 +384,6 @@ def from_grid_url(context: TransformContext) -> TransformContext:
         context.output["private"] = False
         context.output["proxy_target_uid"] = context.obj.proxy_target_uid
         context.output["priority"] = 1
-    else:
-        print("f{context}'s output or obj is None. No trasformation happened.")
 
     return context
 
@@ -400,8 +398,6 @@ def get_python_node_route(context: TransformContext) -> TransformContext:
         context.output["id"] = context.obj.node.id
         context.output["worker_settings"] = WorkerSettings.from_node(context.obj.node)
         context.output["proxy_target_uid"] = context.obj.proxy_target_uid
-    else:
-        print("f{context}'s output or obj is None. No trasformation happened.")
     return context
 
 

@@ -94,16 +94,16 @@ def default_role(role: ServiceRole) -> Callable:
 
 
 def hash_password(context: TransformContext) -> TransformContext:
-    if context.output is not None:
-        if context.output["password"] is not None and (
-            (context.output["password_verify"] is None)
-            or context.output["password"] == context.output["password_verify"]
-        ):
-            salt, hashed = salt_and_hash_password(context.output["password"], 12)
-            context.output["hashed_password"] = hashed
-            context.output["salt"] = salt
-    else:
-        print("f{context}'s output is None. No trasformation happened.")
+    if context.output is None:
+        return context
+
+    if context.output["password"] is not None and (
+        (context.output["password_verify"] is None)
+        or context.output["password"] == context.output["password_verify"]
+    ):
+        salt, hashed = salt_and_hash_password(context.output["password"], 12)
+        context.output["hashed_password"] = hashed
+        context.output["salt"] = salt
 
     return context
 
@@ -113,8 +113,7 @@ def generate_key(context: TransformContext) -> TransformContext:
         signing_key = SyftSigningKey.generate()
         context.output["signing_key"] = signing_key
         context.output["verify_key"] = signing_key.verify_key
-    else:
-        print("f{context}'s output is None. No trasformation happened.")
+
     return context
 
 

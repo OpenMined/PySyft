@@ -803,10 +803,10 @@ def set_data_subjects(context: TransformContext) -> Union[TransformContext, Syft
 
 
 def add_msg_creation_time(context: TransformContext) -> TransformContext:
-    if context.output is not None:
-        context.output["created_at"] = DateTime.now()
-    else:
-        print("f{context}'s output is None. No trasformation happened.")
+    if context.output is None:
+        return context
+
+    context.output["created_at"] = DateTime.now()
     return context
 
 
@@ -832,26 +832,26 @@ def createasset_to_asset() -> List[Callable]:
 
 
 def convert_asset(context: TransformContext) -> TransformContext:
-    if context.output is not None:
-        assets = context.output.pop("asset_list", [])
-        for idx, create_asset in enumerate(assets):
-            asset_context = TransformContext.from_context(
-                obj=create_asset, context=context
-            )
-            assets[idx] = create_asset.to(Asset, context=asset_context)
-        context.output["asset_list"] = assets
-    else:
-        print("f{context}'s output is None. No trasformation happened.")
+    if context.output is None:
+        return context
+
+    assets = context.output.pop("asset_list", [])
+    for idx, create_asset in enumerate(assets):
+        asset_context = TransformContext.from_context(obj=create_asset, context=context)
+        assets[idx] = create_asset.to(Asset, context=asset_context)
+    context.output["asset_list"] = assets
+
     return context
 
 
 def add_current_date(context: TransformContext) -> TransformContext:
-    if context.output is not None:
-        current_date = datetime.now()
-        formatted_date = current_date.strftime("%b %d, %Y")
-        context.output["updated_at"] = formatted_date
-    else:
-        print("f{context}'s output is None. No trasformation happened.")
+    if context.output is None:
+        return context
+
+    current_date = datetime.now()
+    formatted_date = current_date.strftime("%b %d, %Y")
+    context.output["updated_at"] = formatted_date
+
     return context
 
 

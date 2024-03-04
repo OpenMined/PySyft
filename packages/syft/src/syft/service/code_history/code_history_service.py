@@ -55,7 +55,6 @@ class CodeHistoryService(AbstractService):
             if result.is_err():
                 return SyftError(message=str(result.err()))
             code = result.ok()
-
         elif isinstance(code, UserCode):  # type: ignore[unreachable]
             result = user_code_service.get_by_uid(context=context, uid=code.id)
             if isinstance(result, SyftError):
