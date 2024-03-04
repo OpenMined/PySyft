@@ -11,6 +11,7 @@ import re
 import sys
 import traceback
 import types
+import typing
 from typing import Any
 from typing import Callable
 from typing import ClassVar
@@ -658,6 +659,53 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                 context,
             )
         return self
+
+    ## OVERRIDING pydantic.BaseModel.__getattr__
+    ## return super().__getattribute__(item) -> return self.__getattribute__(item)
+    ## so that ActionObject.__getattribute__ works properly,
+    ## raising AttributeError when underlying object does not have the attribute
+    if not typing.TYPE_CHECKING:
+        # We put `__getattr__` in a non-TYPE_CHECKING block because otherwise, mypy allows arbitrary attribute access
+
+        def __getattr__(self, item: str) -> Any:
+            private_attributes = object.__getattribute__(self, "__private_attributes__")
+            if item in private_attributes:
+                attribute = private_attributes[item]
+                if hasattr(attribute, "__get__"):
+                    return attribute.__get__(self, type(self))  # type: ignore
+
+                try:
+                    # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
+                    return self.__pydantic_private__[item]  # type: ignore
+                except KeyError as exc:
+                    raise AttributeError(
+                        f"{type(self).__name__!r} object has no attribute {item!r}"
+                    ) from exc
+            else:
+                # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
+                # See `BaseModel.__repr_args__` for more details
+                try:
+                    pydantic_extra = object.__getattribute__(self, "__pydantic_extra__")
+                except AttributeError:
+                    pydantic_extra = None
+
+                if pydantic_extra is not None:
+                    try:
+                        return pydantic_extra[item]
+                    except KeyError as exc:
+                        raise AttributeError(
+                            f"{type(self).__name__!r} object has no attribute {item!r}"
+                        ) from exc
+                else:
+                    if hasattr(self.__class__, item):
+                        return self.__getattribute__(
+                            item
+                        )  # Raises AttributeError if appropriate
+                    else:
+                        # this is the current error
+                        raise AttributeError(
+                            f"{type(self).__name__!r} object has no attribute {item!r}"
+                        )
 
 
 def short_qual_name(name: str) -> str:
