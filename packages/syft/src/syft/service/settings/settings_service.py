@@ -96,6 +96,8 @@ class SettingsService(AbstractService):
         email_username: Optional[str] = None,
         email_password: Optional[str] = None,
         email_sender: Optional[str] = None,
+        email_server: Optional[str] = None,
+        email_port: Optional[int] = None,
     ) -> Union[SyftSuccess, SyftError]:
         context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
@@ -104,6 +106,8 @@ class SettingsService(AbstractService):
             email_username=email_username,
             email_password=email_password,
             email_sender=email_sender,
+            email_server=email_server,
+            email_port=email_port,
         )
 
     @service_method(

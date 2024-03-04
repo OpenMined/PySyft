@@ -42,7 +42,9 @@ node:
     defaultRootEmail: "info@openmined.org"
     smtpUserName: "apikey"
     smtpPassword: "password"
-    smtpSender: "info@openmined.org"
+    smtpSender: "noreply@openmined.org"
+    smtpPort: 587
+    smtpHost: "smtp.sendgrid.net"
     logLevel: "info"
     inMemoryWorkers: false
     defaultWorkerPoolCount: 1

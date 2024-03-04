@@ -118,6 +118,10 @@ spec:
           value: {{ .Values.node.settings.smtpPassword }}
         - name: EMAIL_SENDER
           value: {{ .Values.node.settings.smtpSender }}
+        - name: SMTP_PORT
+          value: {{ .Values.node.settings.smtpPort }}
+        - name: SMTP_HOST
+          value: {{ .Values.node.settings.smtpHost }}
         - name: INMEMORY_WORKERS
           value: "{{ .Values.node.settings.inMemoryWorkers }}"
         - name: LOG_LEVEL

@@ -27,12 +27,8 @@ from ..response import SyftSuccess
 from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
 
-DEFAULT_EMAIL_SERVER = "smtp.sendgrid.net"
-
 
 class BaseNotifier:
-    EMAIL_SERVER = DEFAULT_EMAIL_SERVER
-
     def send(
         self, target: SyftVerifyKey, notification: Notification
     ) -> Union[SyftSuccess, SyftError]:
@@ -51,7 +47,7 @@ class EmailNotifier(BaseNotifier):
         username: str,
         password: str,
         sender: str,
-        server: str = DEFAULT_EMAIL_SERVER,
+        server: str,
         port: int = 587,
     ) -> None:
         self.sender = sender
@@ -67,7 +63,7 @@ class EmailNotifier(BaseNotifier):
         cls,
         username: str,
         password: str,
-        server: str = DEFAULT_EMAIL_SERVER,
+        server: str,
         port: int = 587,
     ) -> Result[Ok, Err]:
         return SMTPClient.check_credentials(
@@ -161,7 +157,7 @@ class NotifierSettings(SyftObject):
     }
 
     email_sender: Optional[str] = ""
-    email_server: Optional[str] = DEFAULT_EMAIL_SERVER
+    email_server: Optional[str] = ""
     email_port: Optional[int] = 587
     email_username: Optional[str] = ""
     email_password: Optional[str] = ""
@@ -186,12 +182,12 @@ class NotifierSettings(SyftObject):
         self,
         username: str,
         password: str,
-        server: Optional[str] = None,
-        port: Optional[int] = None,
+        server: str,
+        port: int,
     ) -> Result[Ok, Err]:
         return self.notifiers[NOTIFIERS.EMAIL].check_credentials(
-            server=server if server else self.email_server,
-            port=port if port else self.email_port,
+            server=server,
+            port=port,
             username=username,
             password=password,
         )
@@ -233,6 +229,7 @@ class NotifierSettings(SyftObject):
                             username=self.email_username,
                             password=self.email_password,
                             sender=self.email_sender,
+                            server=self.email_server,
                         )
                     )
                 # If notifier is not email, we just create the notifier object

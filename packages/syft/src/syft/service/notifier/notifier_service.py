@@ -73,6 +73,8 @@ class NotifierService(AbstractService):
         email_username: Optional[str] = None,
         email_password: Optional[str] = None,
         email_sender: Optional[str] = None,
+        email_server: Optional[str] = None,
+        email_port: Optional[int] = 587,
     ) -> Union[SyftSuccess, SyftError]:
         """Turn on email notifications.
 
@@ -104,6 +106,13 @@ class NotifierService(AbstractService):
             return SyftError(message="You must provide both username and password")
 
         notifier = result.ok()
+
+        # 3 - If notifier doesn't have a email server / port and the user didn't provide them, return an error
+        if not (email_server and email_port) and not notifier.email_server:
+            return SyftError(
+                message="You must provide both server and port to enable notifications."
+            )
+
         print("[LOG] Got notifier from db")
         # If no new credentials provided, check for existing ones
         if not (email_username and email_password):
@@ -120,7 +129,10 @@ class NotifierService(AbstractService):
         print("[LOG] Validating credentials...")
 
         validation_result = notifier.validate_email_credentials(
-            username=email_username, password=email_password
+            username=email_username,
+            password=email_password,
+            server=email_server if email_server else notifier.email_server,
+            port=email_port if email_port else notifier.email_port,
         )
 
         if validation_result.is_err():
@@ -130,6 +142,11 @@ class NotifierService(AbstractService):
 
         notifier.email_password = email_password
         notifier.email_username = email_username
+
+        if email_server:
+            notifier.email_server = email_server
+        if email_port:
+            notifier.email_port = email_port
 
         # Email sender verification
         if not email_sender and not notifier.email_sender:
@@ -204,6 +221,8 @@ class NotifierService(AbstractService):
         email_username: Optional[str] = None,
         email_password: Optional[str] = None,
         email_sender: Optional[str] = None,
+        smtp_port: Optional[str] = None,
+        smtp_host: Optional[str] = None,
     ) -> Result[Ok, Err]:
         """Initialize Notifier settings for a Node.
         If settings already exist, it will use the existing one.
@@ -237,7 +256,10 @@ class NotifierService(AbstractService):
             # TODO: this should be a method in NotifierSettings
             if email_username and email_password:
                 validation_result = notifier.validate_email_credentials(
-                    username=email_username, password=email_password
+                    username=email_username,
+                    password=email_password,
+                    server=smtp_host,
+                    port=smtp_port,
                 )
 
                 sender_not_set = not email_sender and not notifier.email_sender
@@ -251,6 +273,8 @@ class NotifierService(AbstractService):
                     notifier.email_password = email_password
                     notifier.email_username = email_username
                     notifier.email_sender = email_sender
+                    notifier.email_server = smtp_host
+                    notifier.email_port = smtp_port
                     notifier.active = True
 
             notifier_stash.set(node.signing_key.verify_key, notifier)

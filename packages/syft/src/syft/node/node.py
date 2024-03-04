@@ -313,6 +313,8 @@ class Node(AbstractNode):
         smtp_username: Optional[str] = None,
         smtp_password: Optional[str] = None,
         email_sender: Optional[str] = None,
+        smtp_port: Optional[str] = None,
+        smtp_host: Optional[str] = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -404,6 +406,8 @@ class Node(AbstractNode):
             email_password=smtp_password,
             email_username=smtp_username,
             email_sender=email_sender,
+            smtp_port=smtp_port,
+            smtp_host=smtp_host,
         )
 
         self.client_cache = {}

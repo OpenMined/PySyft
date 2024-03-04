@@ -68,9 +68,6 @@ class Settings(BaseSettings):
             return None
         return v
 
-    SMTP_TLS: bool = True
-    SMTP_PORT: Optional[int] = None
-    SMTP_HOST: Optional[str] = None
     EMAILS_FROM_EMAIL: Optional[EmailStr] = None
     EMAILS_FROM_NAME: Optional[str] = None
 
@@ -145,6 +142,9 @@ class Settings(BaseSettings):
     SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
     EMAIL_SENDER: str = os.getenv("EMAIL_SENDER", "")
     SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_TLS: bool = True
+    SMTP_PORT: Optional[str] = os.getenv("SMTP_PORT", "")
+    SMTP_HOST: Optional[str] = os.getenv("SMTP_HOST", "")
 
     TEST_MODE: bool = (
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False
