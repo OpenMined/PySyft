@@ -49,9 +49,11 @@ class SyncStateRow(SyftObject):
     ]
 
     def _coll_repr_(self) -> Dict[str, Any]:
+        current_state = f"{self.status}\n{self.current_state}"
+        previous_state = f"{self.status}\n{self.previous_state}"
         return {
-            "previous_state": html.escape(self.previous_state),
-            "current_state": html.escape(self.current_state),
+            "previous_state": html.escape(previous_state),
+            "current_state": html.escape(current_state),
         }
 
     @property
@@ -127,15 +129,19 @@ class SyncState(SyftObject):
     @property
     def rows(self) -> List[SyncStateRow]:
         result = []
+        ids = set()
 
         previous_diff = self.get_previous_state_diff()
         for hierarchy in previous_diff.hierarchies:
             for diff, level in zip(hierarchy.diffs, hierarchy.hierarchy_levels):
+                if diff.object_id in ids:
+                    continue
+                ids.add(diff.object_id)
                 row = SyncStateRow(
                     object=diff.high_obj,
                     previous_object=diff.low_obj,
-                    current_state=diff.high_state,
-                    previous_state=diff.low_state,
+                    current_state=diff.diff_side_str("high"),
+                    previous_state=diff.diff_side_str("low"),
                     level=level,
                 )
                 result.append(row)

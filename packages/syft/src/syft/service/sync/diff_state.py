@@ -252,8 +252,10 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
             return attrs_str
 
     def diff_side_str(self, side: str) -> str:
-        uid = self.object_uid
-        res = f"{self.obj_type.__name__.upper()} #{uid}:\n"
+        obj = self.low_obj if side == "low" else self.high_obj
+        if obj is None:
+            return ""
+        res = f"{self.obj_type.__name__.upper()} #{obj.id}:\n"
         res += self.diff_attributes_str(side)
         return res
 
@@ -300,9 +302,11 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
             return "Error"
 
     def _coll_repr_(self) -> Dict[str, Any]:
+        low_state = f"{self.status}\n{self.diff_side_str('low')}"
+        high_state = f"{self.status}\n{self.diff_side_str('high')}"
         return {
-            "low_state": html.escape(self.low_state),
-            "high_state": html.escape(self.high_state),
+            "low_state": html.escape(low_state),
+            "high_state": html.escape(high_state),
         }
 
     def _repr_html_(self) -> str:
@@ -502,7 +506,9 @@ class ObjectDiffBatch(SyftObject):
 
         visual_hierarchy = self.get_visual_hierarchy()
         res = _hierarchy_str_recursive(visual_hierarchy, 0)
-        return f"""{side.upper()} SIDE BATCH STATE:
+        if res == "":
+            res = f"No {side} side changes."
+        return f"""{side.upper()} SIDE STATE:
 
 {res}"""
 
@@ -545,11 +551,54 @@ class NodeDiff(SyftObject):
 
     @property
     def diffs(self) -> List[ObjectDiff]:
-        # Returns a list of diffs, in depth-first order.
-        return [diff for hierarchy in self.hierarchies for diff in hierarchy.diffs]
+        diffs_depthfirst = [
+            diff for hierarchy in self.hierarchies for diff in hierarchy.diffs
+        ]
+        # deduplicate
+        diffs = []
+        ids = set()
+        for diff in diffs_depthfirst:
+            if diff.object_id not in ids:
+                diffs.append(diff)
+                ids.add(diff.object_id)
+        return diffs
 
     def _repr_html_(self) -> Any:
         return self.diffs._repr_html_()
+
+    def _sort_hierarchies(
+        self, hierarchies: List[ObjectDiffBatch]
+    ) -> List[ObjectDiffBatch]:
+        without_usercode = []
+        grouped_by_usercode: Dict[UID, List[ObjectDiffBatch]] = {}
+        for hierarchy in hierarchies:
+            has_usercode = False
+            for diff in hierarchy.diffs:
+                obj = diff.low_obj if diff.low_obj is not None else diff.high_obj
+                if isinstance(obj, UserCode):
+                    grouped_by_usercode[obj.id] = hierarchy
+                    has_usercode = True
+                    break
+            if not has_usercode:
+                without_usercode.append(hierarchy)
+
+        # Order of hierarchies, by root object type
+        hierarchy_order = [UserCodeStatusCollection, Request, ExecutionOutput]
+        # Sort group by hierarchy_order, then by root object id
+        for hierarchy_group in grouped_by_usercode.values():
+            hierarchy_group.sort(
+                key=lambda x: (
+                    hierarchy_order.index(x.root.obj_type),
+                    x.root.object_id,
+                )
+            )
+
+        # sorted = sorted groups + without_usercode
+        sorted_hierarchies = []
+        for grp in grouped_by_usercode.values():
+            sorted_hierarchies.extend(grp)
+        sorted_hierarchies.extend(without_usercode)
+        return sorted_hierarchies
 
     @property
     def hierarchies(self) -> List[ObjectDiffBatch]:

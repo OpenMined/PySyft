@@ -348,7 +348,6 @@ class OutputPolicyExecuteCount(OutputPolicy):
     def is_valid(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:
         output_service = context.node.get_service("outputservice")
         output_history = output_service.get_by_output_policy_id(context, self.id)
-        print("output_history", output_history, self.id)
         if isinstance(output_history, SyftError):
             return output_history
         execution_count = len(output_history)
