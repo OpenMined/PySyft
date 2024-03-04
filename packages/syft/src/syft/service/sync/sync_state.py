@@ -89,12 +89,13 @@ class SyncState(SyftObject):
     def previous_state(self) -> Optional["SyncState"]:
         if self.previous_state_link is not None:
             return self.previous_state_link.resolve
+        return None
 
     @property
     def all_ids(self) -> Set[UID]:
         return set(self.objects.keys())
 
-    def add_objects(self, objects: List[SyftObject], api=None) -> None:
+    def add_objects(self, objects: List[SyftObject], api: Any = None) -> None:
         for obj in objects:
             if isinstance(obj.id, LineageID):
                 self.objects[obj.id.id] = obj
@@ -106,7 +107,7 @@ class SyncState(SyftObject):
         # in dependencies that are not in objects
         self._build_dependencies(api=api)
 
-    def _build_dependencies(self, api=None) -> None:
+    def _build_dependencies(self, api: Any = None) -> None:
         self.dependencies = {}
 
         all_ids = self.all_ids
@@ -147,5 +148,5 @@ class SyncState(SyftObject):
                 result.append(row)
         return result
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         return self.rows._repr_html_()

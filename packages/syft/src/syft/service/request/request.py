@@ -81,7 +81,7 @@ class Change(SyftObject):
     linked_obj: Optional[LinkedObject]
 
     def change_object_is_type(self, type_: type) -> bool:
-        return self.linked_obj and type_ == self.linked_obj.object_type
+        return self.linked_obj is not None and type_ == self.linked_obj.object_type
 
 
 @serializable()
@@ -662,7 +662,7 @@ class Request(SyftObject):
 
         return job
 
-    def _is_action_object_from_job(self, action_object: ActionObject) -> Optional[Job]:
+    def _is_action_object_from_job(self, action_object: ActionObject) -> Optional[Job]:  # type: ignore
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         job_service = api.services.job
         existing_jobs = job_service.get_by_user_code_id(self.code.id)
@@ -744,7 +744,7 @@ class Request(SyftObject):
                     message="Already approved, if you want to force updating the result use force=True"
                 )
             # TODO: this should overwrite the output history instead
-            action_obj_id = output_history[0].output_ids[0]
+            action_obj_id = output_history[0].output_ids[0]  # type: ignore
 
             if not isinstance(result, ActionObject):
                 action_object = ActionObject.from_obj(
@@ -835,6 +835,7 @@ class Request(SyftObject):
         job_info.result = action_object
 
         existing_result = job.result.id if job.result is not None else None
+        print("New result", action_object)
         print(
             f"Job({job.id}) Setting new result {existing_result} -> {job_info.result.id}"
         )
@@ -863,7 +864,7 @@ class Request(SyftObject):
         job.apply_info(job_info)
         return job_service.update(job)
 
-    def get_sync_dependencies(self, api=None) -> Union[List[UID], SyftError]:
+    def get_sync_dependencies(self, api: Any = None) -> Union[List[UID], SyftError]:
         dependencies = []
 
         code_id = self.code_id
@@ -1163,7 +1164,7 @@ class UserCodeStatusChange(Change):
         if node is None:
             node = self.code.nested_codes
 
-        for service_func_name, (_, new_node) in node.items():
+        for service_func_name, (_, new_node) in node.items():  # type: ignore
             msg = "├──" + "──" * level + f"{service_func_name}<br>"
             msg += self.nested_repr(node=new_node, level=level + 1)
         return msg
@@ -1175,7 +1176,7 @@ class UserCodeStatusChange(Change):
         )
         msg += "to permission <b>RequestStatus.APPROVED</b>"
         if self.nested_solved:
-            if self.link.nested_codes == {}:
+            if self.link.nested_codes == {}:  # type: ignore
                 msg += ". No nested requests"
             else:
                 msg += ".<br><br>This change requests the following nested functions calls:<br>"
@@ -1291,13 +1292,13 @@ class UserCodeStatusChange(Change):
                 # relative
                 from ..enclave.enclave_service import propagate_inputs_to_enclave
 
-                self.linked_obj.update_with_context(context, updated_status)
                 if self.is_enclave_request(user_code):
                     enclave_res = propagate_inputs_to_enclave(
                         user_code=user_code, context=context
                     )
                     if isinstance(enclave_res, SyftError):
                         return enclave_res
+                self.linked_obj.update_with_context(context, updated_status)
             else:
                 updated_status = self.mutate(user_code_status, context, undo=True)
                 if isinstance(updated_status, SyftError):

@@ -1,3 +1,7 @@
+# stdlib
+from typing import Any
+from typing import List
+
 # relative
 from ...serde.serializable import serializable
 from ...types.syft_migration import migrate
@@ -25,7 +29,7 @@ class SyftLog(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     __repr_attrs__ = ["stdout", "stderr"]
-    __exclude_sync_diff_attrs__ = []
+    __exclude_sync_diff_attrs__: List[str] = []
 
     stdout: str = ""
     stderr: str = ""
@@ -42,14 +46,14 @@ class SyftLog(SyftObject):
 
 
 @migrate(SyftLogV1, SyftLog)
-def upgrade_syftlog_v1_to_v2():
+def upgrade_syftlog_v1_to_v2() -> Any:
     return [
         make_set_default("stderr", ""),
     ]
 
 
 @migrate(SyftLog, SyftLogV1)
-def downgrade_syftlog_v2_to_v1():
+def downgrade_syftlog_v2_to_v1() -> Any:
     return [
         drop("stderr"),
     ]

@@ -34,7 +34,7 @@ class StatusStash(BaseUIDStoreStash):
         object_type=UserCodeStatusCollection,
     )
 
-    def __init__(self, store):
+    def __init__(self, store: DocumentStore) -> None:
         super().__init__(store)
         self.store = store
         self.settings = self.settings

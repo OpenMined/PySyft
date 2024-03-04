@@ -320,7 +320,7 @@ class ActionService(AbstractService):
             and code_item.get_input_policy(context) is not None
         ):
             expected_input_kwargs = set()
-            for _inp_kwarg in code_item.get_input_policy(context).inputs.values():
+            for _inp_kwarg in code_item.get_input_policy(context).inputs.values():  # type: ignore
                 keys = _inp_kwarg.keys()
                 for k in keys:
                     if k not in kwargs:

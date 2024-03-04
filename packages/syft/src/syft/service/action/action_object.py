@@ -694,7 +694,7 @@ class ActionObject(SyftObject):
     syft_action_data_node_id: Optional[UID]
     # syft_dont_wrap_attrs = ["shape"]
 
-    def get_diff(self, ext_obj) -> List[AttrDiff]:
+    def get_diff(self, ext_obj: Any) -> List[AttrDiff]:
         # relative
         from ...service.sync.diff_state import AttrDiff
 
@@ -713,7 +713,7 @@ class ActionObject(SyftObject):
             diff_attrs.append(diff_attr)
         return diff_attrs
 
-    def _set_obj_location_(self, node_uid, credentials):
+    def _set_obj_location_(self, node_uid: UID, credentials: SyftVerifyKey) -> None:
         self.syft_node_location = node_uid
         self.syft_client_verify_key = credentials
         if self.syft_action_data_node_id is None:
@@ -1186,7 +1186,7 @@ class ActionObject(SyftObject):
         else:
             return res.syft_action_data
 
-    def refresh_object(self):
+    def refresh_object(self) -> ActionObject:
         # relative
         from ...client.api import APIRegistry
 
@@ -1207,7 +1207,7 @@ class ActionObject(SyftObject):
         res = self.refresh_object()
 
         if not isinstance(res, ActionObject):
-            return SyftError(message=f"{res}")
+            return SyftError(message=f"{res}")  # type: ignore
         else:
             nested_res = res.syft_action_data
             if isinstance(nested_res, ActionObject):
@@ -1276,7 +1276,7 @@ class ActionObject(SyftObject):
         syft_node_location: Optional[UID] = None,
         syft_resolved: Optional[bool] = True,
         data_node_id: Optional[UID] = None,
-        syft_blob_storage_entry_id=None,
+        syft_blob_storage_entry_id: Optional[UID] = None,
     ) -> ActionObject:
         """Create an ActionObject from an existing object.
 
@@ -1378,7 +1378,7 @@ class ActionObject(SyftObject):
         syft_lineage_id: Optional[LineageID] = None,
         syft_resolved: Optional[bool] = True,
         data_node_id: Optional[UID] = None,
-        syft_blob_storage_entry_id=None,
+        syft_blob_storage_entry_id: Optional[UID] = None,
     ) -> ActionObject:
         """Create an ActionObject from a type, using a ActionDataEmpty object
 

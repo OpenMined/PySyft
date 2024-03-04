@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import List
 from typing import Union
 from typing import cast
@@ -204,7 +205,7 @@ class JobService(AbstractService):
     )
     def add_read_permission_job_for_code_owner(
         self, context: AuthedServiceContext, job: Job, user_code: UserCode
-    ):
+    ) -> None:
         permission = ActionObjectPermission(
             job.id, ActionPermission.READ, user_code.user_verify_key
         )
@@ -217,8 +218,8 @@ class JobService(AbstractService):
     )
     def add_read_permission_log_for_code_owner(
         self, context: AuthedServiceContext, log_id: UID, user_code: UserCode
-    ):
-        log_service = context.node.get_service("logservice")
+    ) -> Any:
+        log_service = context.node.get_service("logservice")  # type: ignore
         return log_service.stash.add_permission(
             ActionObjectPermission(
                 log_id, ActionPermission.READ, user_code.user_verify_key
