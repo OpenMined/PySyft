@@ -1,5 +1,5 @@
 {{/*
-Common Pod resource limit presets
+Pod resource limit presets
 
 Usage:
   {{- include "common.resources.preset" (dict "type" "nano") }}
@@ -46,5 +46,29 @@ Params:
 {{- index $presets .type | toYaml -}}
 {{- else -}}
 {{- printf "ERROR: Preset key '%s' invalid. Allowed values are %s" .type (join "," (keys $presets)) | fail -}}
+{{- end -}}
+{{- end -}}
+
+
+{{/*
+Set resource limits based on preset or custom values. If both are provided, custom values take precedence.
+Defaults to empty limits and requests.
+
+Usage:
+  resources: {{ include "common.resources.set" (dict "preset" "nano") | indent 4 }}
+  resources: {{ include "common.resources.set" (dict "resources" (dict "cpu" "100m" "memory" "128Mi")) | indent 12 }}
+  resources: {{ include "common.resources.set" (dict "preset" "nano" "resources" (dict "cpu" "100m" "memory" "128Mi")) | indent 2 }}
+
+Params:
+  resources - Dict (Optional) - Custom resources values
+  preset - String (Optional) - One of resource presets: nano, micro, small, medium, large, xlarge, 2xlarge, 4xlarge
+*/}}
+{{- define "common.resources.set" -}}
+{{- if .resources -}}
+  {{- .resources | toYaml -}}
+{{- else if .preset -}}
+  {{- include "common.resources.preset" (dict "type" .preset) -}}
+{{- else -}}
+  {{- (dict "requests" nil "limits" nil) | toYaml -}}
 {{- end -}}
 {{- end -}}

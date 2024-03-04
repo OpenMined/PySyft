@@ -23,11 +23,7 @@ spec:
         - name: frontend-container
           image: {{ .Values.global.registry }}/openmined/grid-frontend:{{ .Values.global.version }}
           imagePullPolicy: Always
-          {{- if .Values.node.resources }}
-          resources: {{- toYaml .Values.frontend.resources | nindent 12 }}
-          {{- else if ne .Values.frontend.resourcesPreset "none" }}
-          resources: {{- include "common.resources.preset" (dict "type" .Values.frontend.resourcesPreset ) | nindent 12 -}}
-          {{- end }}
+          resources: {{ include "common.resources.set" (dict "resources" .Values.frontend.resources "preset" .Values.frontend.resourcesPreset) | nindent 12 }}
           {{- if .Values.frontend.env }}
           env: {{ toYaml .Values.frontend.env | nindent 12 }}
           {{- end }}

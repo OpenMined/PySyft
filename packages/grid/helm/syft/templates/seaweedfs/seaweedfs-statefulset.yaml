@@ -26,11 +26,7 @@ spec:
         - name: seaweedfs-container
           image: {{ .Values.global.registry }}/openmined/grid-seaweedfs:{{ .Values.global.version }}
           imagePullPolicy: Always
-          {{- if .Values.seaweedfs.resources }}
-          resources: {{- toYaml .Values.seaweedfs.resources | nindent 12 }}
-          {{- else if ne .Values.seaweedfs.resourcesPreset "none" }}
-          resources: {{- include "common.resources.preset" (dict "type" .Values.seaweedfs.resourcesPreset ) | nindent 12 -}}
-          {{- end }}
+          resources: {{ include "common.resources.set" (dict "resources" .Values.seaweedfs.resources "preset" .Values.seaweedfs.resourcesPreset) | nindent 12 }}
           env:
             - name: S3_VOLUME_SIZE_MB
               value: {{ .Values.seaweedfs.s3.volumeSizeMB | quote }}

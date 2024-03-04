@@ -24,11 +24,7 @@ spec:
         - name: registry-container
           image: registry:2
           imagePullPolicy: Always
-          {{- if .Values.registry.resources }}
-          resources: {{- toYaml .Values.registry.resources | nindent 12 }}
-          {{- else if ne .Values.registry.resourcesPreset "none" }}
-          resources: {{- include "common.resources.preset" (dict "type" .Values.registry.resourcesPreset ) | nindent 12 -}}
-          {{- end }}
+          resources: {{ include "common.resources.set" (dict "resources" .Values.registry.resources "preset" .Values.registry.resourcesPreset) | nindent 12 }}
           env:
             - name: REGISTRY_STORAGE_DELETE_ENABLED
               value: "true"

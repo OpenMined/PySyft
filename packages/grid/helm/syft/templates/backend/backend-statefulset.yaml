@@ -25,11 +25,7 @@ spec:
         - name: backend-container
           image: "{{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}"
           imagePullPolicy: Always
-          {{- if .Values.node.resources }}
-          resources: {{- toYaml .Values.node.resources | nindent 12 }}
-          {{- else if ne .Values.node.resourcesPreset "none" }}
-          resources: {{- include "common.resources.preset" (dict "type" .Values.node.resourcesPreset ) | nindent 12 -}}
-          {{- end }}
+          resources: {{ include "common.resources.set" (dict "resources" .Values.node.resources "preset" .Values.node.resourcesPreset) | nindent 12 }}
           env:
             # kubernetes runtime
             - name: K8S_POD_NAME

@@ -23,11 +23,7 @@ spec:
         - name: proxy-container
           image: traefik:v2.11
           imagePullPolicy: Always
-          {{- if .Values.proxy.resources }}
-          resources: {{- toYaml .Values.proxy.resources | nindent 12 }}
-          {{- else if ne .Values.proxy.resourcesPreset "none" }}
-          resources: {{- include "common.resources.preset" (dict "type" .Values.proxy.resourcesPreset ) | nindent 12 -}}
-          {{- end }}
+          resources: {{ include "common.resources.set" (dict "resources" .Values.proxy.resources "preset" .Values.proxy.resourcesPreset) | nindent 12 }}
           {{- if .Values.proxy.env }}
           env: {{ toYaml .Values.proxy.env | nindent 12 }}
           {{- end }}
