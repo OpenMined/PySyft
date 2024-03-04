@@ -1,13 +1,10 @@
 # stdlib
 import os
+from typing import Any
 from typing import Callable
 from typing import Optional
 from typing import TypeVar
 from typing import Union
-
-# third party
-from typing_extensions import Concatenate
-from typing_extensions import ParamSpec
 
 
 def str_to_bool(bool_str: Optional[str]) -> bool:
@@ -22,16 +19,15 @@ TRACE_MODE = str_to_bool(os.environ.get("TRACE", "False"))
 
 
 T = TypeVar("T", bound=Union[Callable, type])
-P = ParamSpec("P")
 
 
-def setup_tracer() -> Callable[Concatenate[T, P], T]:
-    def noop(func: T) -> T:
-        return func
+def noop(__func_or_class: T, /, *args: Any, **kwargs: Any) -> T:
+    return __func_or_class
 
-    if not TRACE_MODE:
-        return noop
 
+if not TRACE_MODE:
+    instrument = noop
+else:
     try:
         print("OpenTelemetry Tracing enabled")
         service_name = os.environ.get("SERVICE_NAME", "client")
@@ -79,10 +75,7 @@ def setup_tracer() -> Callable[Concatenate[T, P], T]:
         # https://github.com/digma-ai/opentelemetry-instrumentation-digma/pull/41
         from .trace_decorator import instrument as _instrument
 
-        return _instrument
+        instrument = _instrument
     except Exception:  # nosec
         print("Failed to import opentelemetry")
-        return noop
-
-
-instrument = setup_tracer()
+        instrument = noop

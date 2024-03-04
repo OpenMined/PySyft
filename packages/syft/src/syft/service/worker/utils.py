@@ -1,9 +1,12 @@
 # stdlib
 import contextlib
 import os
+from pathlib import Path
 import socket
 import socketserver
 import sys
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -11,6 +14,8 @@ from typing import Union
 
 # third party
 import docker
+from docker.models.containers import Container
+from kr8s.objects import Pod
 
 # relative
 from ...abstract_node import AbstractNode
@@ -19,6 +24,7 @@ from ...custom_worker.builder_types import ImageBuildResult
 from ...custom_worker.builder_types import ImagePushResult
 from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import PrebuiltWorkerConfig
+from ...custom_worker.k8s import KubeUtils
 from ...custom_worker.k8s import PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
 from ...node.credentials import SyftVerifyKey
@@ -36,6 +42,7 @@ from .worker_pool import WorkerStatus
 
 DEFAULT_WORKER_IMAGE_TAG = "openmined/default-worker-image-cpu:0.0.1"
 DEFAULT_WORKER_POOL_NAME = "default-pool"
+K8S_NODE_CREDS_NAME = "node-creds"
 
 
 def backend_container_name() -> str:
@@ -44,7 +51,9 @@ def backend_container_name() -> str:
     return f"{hostname}-{service_name}-1"
 
 
-def get_container(docker_client: docker.DockerClient, container_name: str):
+def get_container(
+    docker_client: docker.DockerClient, container_name: str
+) -> Optional[Container]:
     try:
         existing_container = docker_client.containers.get(container_name)
     except docker.errors.NotFound:
@@ -53,14 +62,20 @@ def get_container(docker_client: docker.DockerClient, container_name: str):
     return existing_container
 
 
-def extract_config_from_backend(worker_name: str, docker_client: docker.DockerClient):
+def extract_config_from_backend(
+    worker_name: str, docker_client: docker.DockerClient
+) -> Dict[str, Any]:
     # Existing main backend container
     backend_container = get_container(
         docker_client, container_name=backend_container_name()
     )
 
     # Config with defaults
-    extracted_config = {"volume_binds": {}, "network_mode": None, "environment": {}}
+    extracted_config: Dict[str, Any] = {
+        "volume_binds": {},
+        "network_mode": None,
+        "environment": {},
+    }
 
     if backend_container is None:
         return extracted_config
@@ -91,7 +106,7 @@ def extract_config_from_backend(worker_name: str, docker_client: docker.DockerCl
     return extracted_config
 
 
-def get_free_tcp_port():
+def get_free_tcp_port() -> int:
     with socketserver.TCPServer(("localhost", 0), None) as s:
         free_port = s.server_address[1]
         return free_port
@@ -110,7 +125,7 @@ def run_container_using_docker(
     registry_url: Optional[str] = None,
 ) -> ContainerSpawnStatus:
     if not worker_image.is_built:
-        raise Exception("Image must be built before running it.")
+        raise ValueError("Image must be built before running it.")
 
     # Get hostname
     hostname = socket.gethostname()
@@ -162,8 +177,11 @@ def run_container_using_docker(
         environment["QUEUE_PORT"] = queue_port
         environment["CONTAINER_HOST"] = "docker"
 
+        if worker_image.image_identifier is None:
+            raise ValueError(f"Image {worker_image} does not have an identifier")
+
         container = docker_client.containers.run(
-            worker_image.image_identifier.full_name_with_tag,
+            image=worker_image.image_identifier.full_name_with_tag,
             name=f"{hostname}-{worker_name}",
             detach=True,
             auto_remove=True,
@@ -237,7 +255,7 @@ def run_workers_in_threads(
             )
         except Exception as e:
             print(
-                "Failed to start consumer for"
+                "Failed to start consumer for "
                 f"pool={pool_name} worker={worker_name}. Error: {e}"
             )
             worker.status = WorkerStatus.STOPPED
@@ -254,14 +272,57 @@ def run_workers_in_threads(
     return results
 
 
+def prepare_kubernetes_pool_env(
+    runner: KubernetesRunner, env_vars: dict
+) -> Tuple[List, Dict]:
+    # get current backend pod name
+    backend_pod_name = os.getenv("K8S_POD_NAME")
+    if not backend_pod_name:
+        raise ValueError("Pod name not provided in environment variable")
+
+    # get current backend's credentials path
+    creds_path: Optional[Union[str, Path]] = os.getenv("CREDENTIALS_PATH")
+    if not creds_path:
+        raise ValueError("Credentials path not provided")
+
+    creds_path = Path(creds_path)
+    if creds_path is not None and not creds_path.exists():
+        raise ValueError("Credentials file does not exist")
+
+    # create a secret for the node credentials owned by the backend, not the pool.
+    node_secret = KubeUtils.create_secret(
+        secret_name=K8S_NODE_CREDS_NAME,
+        type="Opaque",
+        component=backend_pod_name,
+        data={creds_path.name: creds_path.read_text()},
+        encoded=False,
+    )
+
+    # clone and patch backend environment variables
+    backend_env = runner.get_pod_env_vars(backend_pod_name) or []
+    env_vars_: List = KubeUtils.patch_env_vars(backend_env, env_vars)
+    mount_secrets = {
+        node_secret.metadata.name: {
+            "mountPath": str(creds_path),
+            "subPath": creds_path.name,
+        },
+    }
+
+    return env_vars_, mount_secrets
+
+
 def create_kubernetes_pool(
     runner: KubernetesRunner,
-    worker_image: SyftWorker,
+    tag: str,
     pool_name: str,
     replicas: int,
     queue_port: int,
     debug: bool,
-):
+    reg_username: Optional[str] = None,
+    reg_password: Optional[str] = None,
+    reg_url: Optional[str] = None,
+    **kwargs: Any,
+) -> Union[List[Pod], SyftError]:
     pool = None
     error = False
 
@@ -269,14 +330,13 @@ def create_kubernetes_pool(
         print(
             "Creating new pool "
             f"name={pool_name} "
-            f"tag={worker_image.image_identifier.full_name_with_tag} "
+            f"tag={tag} "
             f"replicas={replicas}"
         )
-        pool = runner.create_pool(
-            pool_name=pool_name,
-            tag=worker_image.image_identifier.full_name_with_tag,
-            replicas=replicas,
-            env_vars={
+
+        env_vars, mount_secrets = prepare_kubernetes_pool_env(
+            runner,
+            {
                 "SYFT_WORKER": "True",
                 "DEV_MODE": f"{debug}",
                 "QUEUE_PORT": f"{queue_port}",
@@ -286,6 +346,18 @@ def create_kubernetes_pool(
                 "INMEMORY_WORKERS": "False",
             },
         )
+
+        # run the pool with args + secret
+        pool = runner.create_pool(
+            pool_name=pool_name,
+            tag=tag,
+            replicas=replicas,
+            env_vars=env_vars,
+            mount_secrets=mount_secrets,
+            reg_username=reg_username,
+            reg_password=reg_password,
+            reg_url=reg_url,
+        )
     except Exception as e:
         error = True
         return SyftError(message=f"Failed to start workers {e}")
@@ -293,14 +365,14 @@ def create_kubernetes_pool(
         if error and pool:
             pool.delete()
 
-    return runner.get_pods(pool_name=pool_name)
+    return runner.get_pool_pods(pool_name=pool_name)
 
 
 def scale_kubernetes_pool(
     runner: KubernetesRunner,
     pool_name: str,
     replicas: int,
-):
+) -> Union[List[Pod], SyftError]:
     pool = runner.get_pool(pool_name)
     if not pool:
         return SyftError(message=f"Pool does not exist. name={pool_name}")
@@ -311,7 +383,7 @@ def scale_kubernetes_pool(
     except Exception as e:
         return SyftError(message=f"Failed to scale workers {e}")
 
-    return runner.get_pods(pool_name=pool_name)
+    return runner.get_pool_pods(pool_name=pool_name)
 
 
 def run_workers_in_kubernetes(
@@ -319,25 +391,33 @@ def run_workers_in_kubernetes(
     worker_count: int,
     pool_name: str,
     queue_port: int,
-    start_idx=0,
+    start_idx: int = 0,
     debug: bool = False,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    registry_url: Optional[str] = None,
-    **kwargs,
+    reg_username: Optional[str] = None,
+    reg_password: Optional[str] = None,
+    reg_url: Optional[str] = None,
+    **kwargs: Any,
 ) -> Union[List[ContainerSpawnStatus], SyftError]:
     spawn_status = []
     runner = KubernetesRunner()
 
-    if start_idx == 0:
-        pool_pods = create_kubernetes_pool(
-            runner,
-            worker_image,
-            pool_name,
-            worker_count,
-            queue_port,
-            debug,
-        )
+    if not runner.exists(pool_name=pool_name):
+        if worker_image.image_identifier is not None:
+            pool_pods = create_kubernetes_pool(
+                runner=runner,
+                tag=worker_image.image_identifier.full_name_with_tag,
+                pool_name=pool_name,
+                replicas=worker_count,
+                queue_port=queue_port,
+                debug=debug,
+                reg_username=reg_username,
+                reg_password=reg_password,
+                reg_url=reg_url,
+            )
+        else:
+            return SyftError(
+                message=f"image with uid {worker_image.id} does not have an image identifier"
+            )
     else:
         pool_pods = scale_kubernetes_pool(runner, pool_name, worker_count)
 
@@ -412,9 +492,9 @@ def run_containers(
     queue_port: int,
     dev_mode: bool = False,
     start_idx: int = 0,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    registry_url: Optional[str] = None,
+    reg_username: Optional[str] = None,
+    reg_password: Optional[str] = None,
+    reg_url: Optional[str] = None,
 ) -> Union[List[ContainerSpawnStatus], SyftError]:
     results = []
 
@@ -435,9 +515,9 @@ def run_containers(
                     pool_name=pool_name,
                     queue_port=queue_port,
                     debug=dev_mode,
-                    username=username,
-                    password=password,
-                    registry_url=registry_url,
+                    username=reg_username,
+                    password=reg_password,
+                    registry_url=reg_url,
                 )
                 results.append(spawn_result)
     elif orchestration == WorkerOrchestrationType.KUBERNETES:
@@ -448,6 +528,9 @@ def run_containers(
             queue_port=queue_port,
             debug=dev_mode,
             start_idx=start_idx,
+            reg_username=reg_username,
+            reg_password=reg_password,
+            reg_url=reg_url,
         )
 
     return results
@@ -523,28 +606,35 @@ def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
         return WorkerHealth.UNHEALTHY
 
 
-def image_build(image: SyftWorkerImage, **kwargs) -> Union[ImageBuildResult, SyftError]:
-    full_tag = image.image_identifier.full_name_with_tag
-    try:
-        builder = CustomWorkerBuilder()
-        return builder.build_image(
-            config=image.config,
-            tag=full_tag,
-            rm=True,
-            forcerm=True,
-            **kwargs,
-        )
-    except docker.errors.APIError as e:
+def image_build(
+    image: SyftWorkerImage, **kwargs: Dict[str, Any]
+) -> Union[ImageBuildResult, SyftError]:
+    if image.image_identifier is not None:
+        full_tag = image.image_identifier.full_name_with_tag
+        try:
+            builder = CustomWorkerBuilder()
+            return builder.build_image(
+                config=image.config,
+                tag=full_tag,
+                rm=True,
+                forcerm=True,
+                **kwargs,
+            )
+        except docker.errors.APIError as e:
+            return SyftError(
+                message=f"Docker API error when building '{full_tag}'. Reason - {e}"
+            )
+        except docker.errors.DockerException as e:
+            return SyftError(
+                message=f"Docker exception when building '{full_tag}'. Reason - {e}"
+            )
+        except Exception as e:
+            return SyftError(
+                message=f"Unknown exception when building '{full_tag}'. Reason - {e}"
+            )
+    else:
         return SyftError(
-            message=f"Docker API error when building '{full_tag}'. Reason - {e}"
-        )
-    except docker.errors.DockerException as e:
-        return SyftError(
-            message=f"Docker exception when building '{full_tag}'. Reason - {e}"
-        )
-    except Exception as e:
-        return SyftError(
-            message=f"Unknown exception when building '{full_tag}'. Reason - {e}"
+            message=f"image with uid {image.id} does not have an image identifier"
         )
 
 
@@ -553,34 +643,40 @@ def image_push(
     username: Optional[str] = None,
     password: Optional[str] = None,
 ) -> Union[ImagePushResult, SyftError]:
-    full_tag = image.image_identifier.full_name_with_tag
-    try:
-        builder = CustomWorkerBuilder()
-        result = builder.push_image(
-            # this should be consistent with docker build command
-            tag=image.image_identifier.full_name_with_tag,
-            registry_url=image.image_identifier.registry_host,
-            username=username,
-            password=password,
-        )
-
-        if "error" in result.logs.lower() or result.exit_code:
-            return SyftError(
-                message=f"Failed to push {full_tag}. "
-                f"Exit code: {result.exit_code}. "
-                f"Logs:\n{result.logs}"
+    if image.image_identifier is not None:
+        full_tag = image.image_identifier.full_name_with_tag
+        try:
+            builder = CustomWorkerBuilder()
+            result = builder.push_image(
+                # this should be consistent with docker build command
+                tag=image.image_identifier.full_name_with_tag,
+                registry_url=image.image_identifier.registry_host,
+                username=username,
+                password=password,
             )
 
-        return result
-    except docker.errors.APIError as e:
-        return SyftError(message=f"Docker API error when pushing {full_tag}. {e}")
-    except docker.errors.DockerException as e:
+            if "error" in result.logs.lower() or result.exit_code:
+                return SyftError(
+                    message=f"Failed to push {full_tag}. "
+                    f"Exit code: {result.exit_code}. "
+                    f"Logs:\n{result.logs}"
+                )
+
+            return result
+        except docker.errors.APIError as e:
+            return SyftError(message=f"Docker API error when pushing {full_tag}. {e}")
+        except docker.errors.DockerException as e:
+            return SyftError(
+                message=f"Docker exception when pushing {full_tag}. Reason - {e}"
+            )
+        except Exception as e:
+            return SyftError(
+                message=f"Unknown exception when pushing {image.image_identifier}. Reason - {e}"
+            )
+    else:
         return SyftError(
-            message=f"Docker exception when pushing {full_tag}. Reason - {e}"
-        )
-    except Exception as e:
-        return SyftError(
-            message=f"Unknown exception when pushing {image.image_identifier}. Reason - {e}"
+            message=f"image with uid {image.id} does not have an "
+            "image identifier and tag, hence we can't push it."
         )
 
 

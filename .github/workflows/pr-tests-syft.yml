@@ -174,7 +174,7 @@ jobs:
           pip install --upgrade tox packaging wheel --default-timeout=60
 
       - name: Run notebook tests
-        uses: nick-fields/retry@v2
+        uses: nick-fields/retry@v3
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         env:
           ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"

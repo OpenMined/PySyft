@@ -54,11 +54,13 @@ MappingIntStrAny = Mapping[IntStr, Any]
 SYFT_OBJECT_VERSION_1 = 1
 SYFT_OBJECT_VERSION_2 = 2
 SYFT_OBJECT_VERSION_3 = 3
+SYFT_OBJECT_VERSION_4 = 4
 
 supported_object_versions = [
     SYFT_OBJECT_VERSION_1,
     SYFT_OBJECT_VERSION_2,
     SYFT_OBJECT_VERSION_3,
+    SYFT_OBJECT_VERSION_4,
 ]
 
 HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
@@ -99,7 +101,7 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
     syft_node_location: Optional[UID]
     syft_client_verify_key: Optional[SyftVerifyKey]
 
-    def _set_obj_location_(self, node_uid, credentials):
+    def _set_obj_location_(self, node_uid: UID, credentials: SyftVerifyKey):
         self.syft_node_location = node_uid
         self.syft_client_verify_key = credentials
 
@@ -448,9 +450,11 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                 value = value.__repr_syft_nested__()
             if isinstance(value, list):
                 value = [
-                    elem.__repr_syft_nested__()
-                    if hasattr(elem, "__repr_syft_nested__")
-                    else elem
+                    (
+                        elem.__repr_syft_nested__()
+                        if hasattr(elem, "__repr_syft_nested__")
+                        else elem
+                    )
                     for elem in value
                 ]
             value = f'"{value}"' if isinstance(value, str) else value
@@ -562,7 +566,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                     value = decl.default_factory(value)
                 elif var_annotation is not None:
                     # Otherwise validate value against the variable annotation
-                    check_type(attr, value, var_annotation)
+                    check_type(value, var_annotation)
                 setattr(self, attr, value)
             else:
                 # check if the private is optional
@@ -703,9 +707,11 @@ def get_repr_values_table(_self, is_homogenous, extra_fields=None):
                             and hasattr(value[0], "__repr_syft_nested__")
                         ):
                             value = [
-                                x.__repr_syft_nested__()
-                                if hasattr(x, "__repr_syft_nested__")
-                                else x
+                                (
+                                    x.__repr_syft_nested__()
+                                    if hasattr(x, "__repr_syft_nested__")
+                                    else x
+                                )
                                 for x in value
                             ]
                     if value is None:

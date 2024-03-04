@@ -45,7 +45,7 @@ class UserCodeStash(BaseUIDStoreStash):
 
     def get_by_service_func_name(
         self, credentials: SyftVerifyKey, service_func_name: str
-    ) -> Result[Optional[UserCode], str]:
+    ) -> Result[List[UserCode], str]:
         qks = QueryKeys(qks=[ServiceFuncNamePartitionKey.with_obj(service_func_name)])
         return self.query_all(
             credentials=credentials, qks=qks, order_by=SubmitTimePartitionKey

@@ -1,0 +1,89 @@
+name: E2E - Notebook Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      syft_version:
+        description: "Syft version to test"
+        required: true
+        type: string
+      node_url:
+        description: "Node URL to use"
+        required: true
+        type: string
+      node_port:
+        description: "Node port"
+        required: true
+        type: number
+      exclude_notebooks:
+        description: "Notebooks to exclude ex: not 11-container-images-k8s.ipynb"
+        required: false
+        type: string
+
+  workflow_call:
+    inputs:
+      syft_version:
+        description: "Syft version to test"
+        required: true
+        type: string
+      node_url:
+        description: "Node URL to use"
+        required: true
+        type: string
+      node_port:
+        description: "Node port"
+        required: true
+        type: number
+      exclude_notebooks:
+        description: "Notebooks to exclude ex: not 11-container-images-k8s.ipynb"
+        required: false
+        type: string
+
+jobs:
+  notebook-test-hagrid:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11"]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: pip cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install tox
+        run: |
+          pip install tox
+
+      - name: Run Notebook tests
+        env:
+          SYFT_VERSION: ${{ inputs.syft_version }}
+          NODE_URL: ${{ inputs.node_url }}
+          NODE_PORT: ${{ inputs.node_port }}
+          EXCLUDE_NOTEBOOKS: ${{ inputs.exclude_notebooks }}
+        run: |
+          tox -e e2e.test.notebook

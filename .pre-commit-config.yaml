@@ -172,15 +172,15 @@ repos:
       - id: mypy
         name: "mypy: syft"
         always_run: true
-        files: "^packages/syft/src/syft/serde|^packages/syft/src/syft/util/env.py|^packages/syft/src/syft/util/logger.py|^packages/syft/src/syft/util/markdown.py|^packages/syft/src/syft/util/notebook_ui/notebook_addons.py"
-        #files: "^packages/syft/src/syft/serde"
+        files: "^packages/syft/src/syft/serde|^packages/syft/src/syft/util|^packages/syft/src/syft/service"
+        # files: "^packages/syft/src/syft/"
         args: [
             "--follow-imports=skip",
             "--ignore-missing-imports",
             "--scripts-are-modules",
             "--disallow-incomplete-defs",
             "--no-implicit-optional",
-            "--warn-unused-ignores",
+            # "--warn-unused-ignores",
             "--warn-redundant-casts",
             "--strict-equality",
             "--warn-unreachable",
