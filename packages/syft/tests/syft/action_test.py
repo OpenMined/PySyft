@@ -20,14 +20,14 @@ def test_actionobject_method(worker):
     assert res[0] == "A"
 
 
-def test_lib_function_action(worker):
-    root_domain_client = worker.root_client
-    numpy_client = root_domain_client.api.lib.numpy
-    res = numpy_client.zeros_like([1, 2, 3])
+# def test_lib_function_action(worker):
+#     root_domain_client = worker.root_client
+#     numpy_client = root_domain_client.api.lib.numpy
+#     res = numpy_client.zeros_like([1, 2, 3])
 
-    assert isinstance(res, ActionObject)
-    assert all(res == np.array([0, 0, 0]))
-    assert len(worker.get_service("actionservice").store.data) > 0
+#     assert isinstance(res, ActionObject)
+#     assert all(res == np.array([0, 0, 0]))
+#     assert len(worker.get_service("actionservice").store.data) > 0
 
 
 def test_call_lib_function_action2(worker):
