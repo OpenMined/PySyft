@@ -1,6 +1,8 @@
 checks:
   addAllBuiltIn: true
   exclude:
+    - "access-to-create-pods"
+    - "default-service-account"
     - "dnsconfig-options"
     - "minimum-three-replicas"
     - "no-node-affinity"
@@ -11,5 +13,3 @@ checks:
     - "required-label-owner"
     - "run-as-non-root"
     - "use-namespace"
-    - "access-to-create-pods"
-    - "default-service-account"
