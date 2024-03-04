@@ -645,10 +645,10 @@ jobs:
         shell: bash
         run: |
           mkdir -p ./k8s-logs
-          kubectl describe all -A --context k3d-testgateway1 --namespace testgateway1 > ./k8s-logs/testgateway1-desc-${{ steps.date.outputs.date }}.txt
-          kubectl describe all -A --context k3d-testdomain1 --namespace testdomain1 > ./k8s-logs/testdomain1-desc-${{ steps.date.outputs.date }}.txt
-          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-testgateway1 --namespace testgateway1 > ./k8s-logs/testgateway1-logs-${{ steps.date.outputs.date }}.txt
-          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-testdomain1 --namespace testdomain1 > ./k8s-logs/testdomain1-logs-${{ steps.date.outputs.date }}.txt
+          kubectl describe all -A --context k3d-testgateway1 --namespace syft > ./k8s-logs/testgateway1-desc-${{ steps.date.outputs.date }}.txt
+          kubectl describe all -A --context k3d-testdomain1 --namespace syft > ./k8s-logs/testdomain1-desc-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-testgateway1 --namespace syft > ./k8s-logs/testgateway1-logs-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-testdomain1 --namespace syft > ./k8s-logs/testdomain1-logs-${{ steps.date.outputs.date }}.txt
           ls -la ./k8s-logs
 
       - name: Upload logs to GitHub
