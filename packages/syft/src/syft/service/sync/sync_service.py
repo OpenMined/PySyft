@@ -14,7 +14,7 @@ from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
-from ...util.trace_decorator import instrument
+from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
