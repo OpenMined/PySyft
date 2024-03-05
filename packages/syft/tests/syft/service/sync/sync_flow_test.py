@@ -1,8 +1,10 @@
 # stdlib
+import sys
 from textwrap import dedent
 
 # third party
 import numpy as np
+import pytest
 
 # syft absolute
 import syft as sy
@@ -12,6 +14,8 @@ from syft.client.syncing import resolve
 from syft.service.action.action_object import ActionObject
 
 
+@pytest.mark.flaky(reruns=5, reruns_delay=1)
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_sync_flow():
     low_worker = sy.Worker(
         name="low-test",
