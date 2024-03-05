@@ -32,13 +32,11 @@ from ..service.user.roles import Roles
 from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..types.blob_storage import BlobFile
-from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.fonts import fonts_css
 from ..util.util import get_mb_size
 from ..util.util import prompt_warning_message
 from .api import APIModule
-from .api import APIRegistry
 from .client import SyftClient
 from .client import login
 from .client import login_as_guest
@@ -150,30 +148,26 @@ class DomainClient(SyftClient):
             return valid
         return self.api.services.dataset.add(dataset=dataset)
 
-    def create_actionobject(self, action_object: SyftObject) -> None:
-        action_object = action_object.refresh_object()
-        action_object.send(self)
-
-    def get_permissions_for_other_node(
-        self,
-        items: list[Union[ActionObject, SyftObject]],
-    ) -> dict:
-        if len(items) > 0:
-            if not len({i.syft_node_location for i in items}) == 1 or (
-                not len({i.syft_client_verify_key for i in items}) == 1
-            ):
-                raise ValueError("permissions from different nodes")
-            item = items[0]
-            api = APIRegistry.api_for(
-                item.syft_node_location, item.syft_client_verify_key
-            )
-            if api is None:
-                raise ValueError(
-                    f"Can't access the api. Please log in to {item.syft_node_location}"
-                )
-            return api.services.sync.get_permissions(items)
-        else:
-            return {}
+    # def get_permissions_for_other_node(
+    #     self,
+    #     items: list[Union[ActionObject, SyftObject]],
+    # ) -> dict:
+    #     if len(items) > 0:
+    #         if not len({i.syft_node_location for i in items}) == 1 or (
+    #             not len({i.syft_client_verify_key for i in items}) == 1
+    #         ):
+    #             raise ValueError("permissions from different nodes")
+    #         item = items[0]
+    #         api = APIRegistry.api_for(
+    #             item.syft_node_location, item.syft_client_verify_key
+    #         )
+    #         if api is None:
+    #             raise ValueError(
+    #                 f"Can't access the api. Please log in to {item.syft_node_location}"
+    #             )
+    #         return api.services.sync.get_permissions(items)
+    #     else:
+    #         return {}
 
     def apply_state(
         self, resolved_state: ResolvedSyncState
@@ -192,7 +186,8 @@ class DomainClient(SyftClient):
                 permissions[p.uid] = {p.permission_string}
 
         for action_object in action_objects:
-            self.create_actionobject(action_object)
+            action_object = action_object.refresh_object()
+            action_object.send(self)
 
         res = self.api.services.sync.sync_items(items, permissions)
         if isinstance(res, SyftError):
