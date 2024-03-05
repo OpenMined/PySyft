@@ -1364,9 +1364,9 @@ def downgrade_usercodestatuschange_v3_to_v2() -> List[Callable]:
 
 
 def user_code_from_code_status(context: TransformContext) -> TransformContext:
-    linked_obj: LinkedObject = context.output["linked_object"]
+    linked_obj: LinkedObject = context.output["linked_object"]  # type: ignore
     code_status: UserCodeStatusCollection = linked_obj.resolve
-    context.output["linked_user_code"] = code_status.user_code_link
+    context.output["linked_user_code"] = code_status.user_code_link  # type: ignore
     return context
 
 

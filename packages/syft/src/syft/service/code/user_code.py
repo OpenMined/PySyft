@@ -358,14 +358,14 @@ class UserCodeV3(SyftObject):
         "status",
         "service_func_name",
         "code_hash",
-    ]
-    __attr_unique__: List[str] = []
+    ]  # type: ignore
+    __attr_unique__: List[str] = []  # type: ignore
     __repr_attrs__: List[str] = [
         "service_func_name",
         "input_owners",
         "code_status",
         "worker_pool_name",
-    ]
+    ]  # type: ignore
 
 
 @serializable()
