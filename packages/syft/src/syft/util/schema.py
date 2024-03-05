@@ -29,7 +29,7 @@ primitive_mapping = {
 
 
 def make_fake_type(_type_str: str) -> dict[str, Any]:
-    jsonschema: dict = {}
+    jsonschema: dict[str, Any] = {}
     jsonschema["title"] = _type_str
     jsonschema["type"] = "object"
     jsonschema["properties"] = {}
@@ -37,7 +37,7 @@ def make_fake_type(_type_str: str) -> dict[str, Any]:
     return jsonschema
 
 
-def get_type_mapping(_type: Any) -> str:
+def get_type_mapping(_type: Type) -> str:
     if _type in primitive_mapping:
         return primitive_mapping[_type]
     return _type.__name__
@@ -62,9 +62,9 @@ def get_types(cls: Type, keys: List[str]) -> Optional[Dict[str, Type]]:
 
 
 def convert_attribute_types(
-    cls: Any, attribute_list: Any, attribute_types: Any
+    cls: Type, attribute_list: list[str], attribute_types: list[Type]
 ) -> dict[str, Any]:
-    jsonschema: dict = {}
+    jsonschema: dict[str, Any] = {}
     jsonschema["title"] = cls.__name__
     jsonschema["type"] = "object"
     jsonschema["properties"] = {}
@@ -81,7 +81,7 @@ def process_type_bank(type_bank: Dict[str, Tuple[Any, ...]]) -> Dict[str, Dict]:
     # first pass gets each type into basic json schema format
     json_mappings = {}
     count = 0
-    converted_types: defaultdict = defaultdict(int)
+    converted_types: Dict[str, int] = defaultdict(int)
     for k in type_bank:
         count += 1
         t = type_bank[k]

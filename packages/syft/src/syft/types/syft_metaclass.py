@@ -100,7 +100,7 @@ class PartialModelMetaclass(ModelMetaclass):
 
         cls.__init__ = __init__
 
-        def iter_exclude_empty(self) -> TupleGenerator:
+        def iter_exclude_empty(self: BaseModel) -> TupleGenerator:
             for key, value in self.__dict__.items():
                 if value is not Empty:
                     yield key, value

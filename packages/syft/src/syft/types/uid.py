@@ -40,7 +40,7 @@ class UID:
     __slots__ = "value"
     value: uuid_type
 
-    def __init__(self, value: Optional[Union[uuid_type, str, bytes]] = None):
+    def __init__(self, value: Optional[Union[uuid_type, str, bytes, "UID"]] = None):
         """Initializes the internal id using the uuid package.
 
         This initializes the object. Normal use for this object is
@@ -80,6 +80,7 @@ class UID:
         except ValueError as e:
             critical(f"Unable to convert {value} to UUID. {e}")
             traceback_and_raise(e)
+            raise
 
     @staticmethod
     def with_seed(value: str) -> "UID":
@@ -215,7 +216,7 @@ class LineageID(UID):
 
     def __init__(
         self,
-        value: Optional[Union[uuid_type, str, bytes]] = None,
+        value: Optional[Union[uuid_type, str, bytes, "LineageID"]] = None,
         syft_history_hash: Optional[int] = None,
     ):
         if isinstance(value, LineageID):
@@ -232,7 +233,7 @@ class LineageID(UID):
     def id(self) -> UID:
         return UID(self.value)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.syft_history_hash, self.value))
 
     def __eq__(self, other: Any) -> bool:

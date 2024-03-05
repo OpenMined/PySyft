@@ -73,9 +73,9 @@ class UserCodeService(AbstractService):
 
     def _submit(
         self, context: AuthedServiceContext, code: Union[UserCode, SubmitUserCode]
-    ) -> Result:
+    ) -> Result[UserCode, str]:
         if not isinstance(code, UserCode):
-            code = code.to(UserCode, context=context)
+            code = code.to(UserCode, context=context)  # type: ignore[unreachable]
 
         result = self.stash.set(context.credentials, code)
         return result
@@ -278,6 +278,10 @@ class UserCodeService(AbstractService):
                     connection=connection,
                     credentials=context.node.signing_key,
                 )
+                if enclave_client.code is None:
+                    return SyftError(
+                        message=f"{enclave_client} can't access the user code api"
+                    )
                 outputs = enclave_client.code.get_results(code.id)
                 if isinstance(outputs, list):
                     for output in outputs:

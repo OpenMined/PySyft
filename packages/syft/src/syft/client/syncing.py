@@ -12,6 +12,7 @@ from ..service.code.user_code import UserCode
 from ..service.job.job_stash import Job
 from ..service.log.log import SyftLog
 from ..service.sync.diff_state import NodeDiff
+from ..service.sync.diff_state import ObjectDiffBatch
 from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.sync_state import SyncState
 
@@ -20,7 +21,7 @@ def compare_states(low_state: SyncState, high_state: SyncState) -> NodeDiff:
     return NodeDiff.from_sync_state(low_state=low_state, high_state=high_state)
 
 
-def get_user_input_for_resolve():
+def get_user_input_for_resolve() -> Optional[str]:
     print(
         "Do you want to keep the low state or the high state for these objects? choose 'low' or 'high'"
     )
@@ -36,8 +37,8 @@ def get_user_input_for_resolve():
 
 
 def resolve(
-    state: NodeDiff, decision: Optional[str] = None, share_private_objects=False
-):
+    state: NodeDiff, decision: Optional[str] = None, share_private_objects: bool = False
+) -> tuple[ResolvedSyncState, ResolvedSyncState]:
     # TODO: only add permissions for objects where we manually give permission
     # Maybe default read permission for some objects (high -> low)
     resolved_state_low: ResolvedSyncState = ResolvedSyncState(alias="low")
@@ -81,7 +82,9 @@ def resolve(
     return resolved_state_low, resolved_state_high
 
 
-def get_user_input_for_batch_permissions(batch_diff, share_private_objects=False):
+def get_user_input_for_batch_permissions(
+    batch_diff: ObjectDiffBatch, share_private_objects: bool = False
+) -> None:
     private_high_objects: List[Union[SyftLog, ActionObject]] = []
 
     for diff in batch_diff.diffs:

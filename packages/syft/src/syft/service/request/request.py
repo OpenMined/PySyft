@@ -89,7 +89,7 @@ class ChangeStatus(SyftObject):
     __canonical_name__ = "ChangeStatus"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
+    id: Optional[UID]  # type: ignore[assignment]
     change_id: UID
     applied: bool = False
 
@@ -114,7 +114,7 @@ class ActionStoreChange(Change):
         try:
             if context.node is None:
                 return Err(SyftError(message=f"context {context}'s node is None"))
-            action_service: ActionService = context.node.get_service(ActionService)
+            action_service: ActionService = context.node.get_service(ActionService)  # type: ignore[assignment]
             blob_storage_service = context.node.get_service(BlobStorageService)
             action_store = action_service.store
 
@@ -405,8 +405,10 @@ class Request(SyftObject):
                 f"outputs are <strong>shared</strong> with the owners of {owners_string} once computed"
             )
 
-        metadata = api.services.metadata.get_metadata()
-        node_name = api.node_name.capitalize() if api.node_name is not None else ""
+        if api is not None:
+            metadata = api.services.metadata.get_metadata()
+            node_name = api.node_name.capitalize() if api.node_name is not None else ""
+            node_type = metadata.node_type.value.capitalize()
 
         email_str = (
             f"({self.requesting_user_email})" if self.requesting_user_email else ""
@@ -429,7 +431,7 @@ class Request(SyftObject):
                 {shared_with_line}
                 <p><strong>Status: </strong>{self.status}</p>
                 <p><strong>Requested on: </strong> {node_name} of type <strong> \
-                    {metadata.node_type.value.capitalize()}</strong></p>
+                    {node_type}</strong></p>
                 <p><strong>Requested by:</strong> {self.requesting_user_name} {email_str} {institution_str}</p>
                 <p><strong>Changes: </strong> {str_changes}</p>
             </div>
@@ -526,8 +528,13 @@ class Request(SyftObject):
             self.node_uid,
             self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(message=f"api is None. You must login to {self.node_uid}")
         # TODO: Refactor so that object can also be passed to generate warnings
-        metadata = api.connection.get_node_metadata(api.signing_key)
+        if api.connection:
+            metadata = api.connection.get_node_metadata(api.signing_key)
+        else:
+            metadata = None
         message, is_enclave = None, False
 
         is_code_request = not isinstance(self.codes, SyftError)
@@ -542,13 +549,13 @@ class Request(SyftObject):
 
         if is_enclave:
             message = "On approval, the result will be released to the enclave."
-        elif metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
+        elif metadata and metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
             message = (
                 "You're approving a request on "
                 f"{metadata.node_side_type} side {metadata.node_type} "
                 "which may host datasets with private information."
             )
-        if message and metadata.show_warnings and not disable_warnings:
+        if message and metadata and metadata.show_warnings and not disable_warnings:
             prompt_warning_message(message=message, confirm=True)
 
         print(f"Approving request for domain {api.node_name}")
@@ -567,6 +574,8 @@ class Request(SyftObject):
             self.node_uid,
             self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(message=f"api is None. You must login to {self.node_uid}")
         return api.services.request.undo(uid=self.id, reason=reason)
 
     def approve_with_client(self, client: SyftClient) -> Result[SyftSuccess, SyftError]:
@@ -640,6 +649,8 @@ class Request(SyftObject):
     def _get_latest_or_create_job(self) -> Union[Job, SyftError]:
         """Get the latest job for this requests user_code, or creates one if no jobs exist"""
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        if api is None:
+            return SyftError(message=f"api is None. You must login to {self.node_uid}")
         job_service = api.services.job
 
         existing_jobs = job_service.get_by_user_code_id(self.code.id)
@@ -664,6 +675,8 @@ class Request(SyftObject):
 
     def _is_action_object_from_job(self, action_object: ActionObject) -> Optional[Job]:  # type: ignore
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        if api is None:
+            raise ValueError(f"Can't access the api. You must login to {self.node_uid}")
         job_service = api.services.job
         existing_jobs = job_service.get_by_user_code_id(self.code.id)
         for job in existing_jobs:
@@ -717,8 +730,11 @@ class Request(SyftObject):
 
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         if not api:
-            raise Exception(f"Login to {self.node_uid} first.")
-
+            raise Exception(
+                f"No access to Syft API. Please login to {self.node_uid} first."
+            )
+        if api.signing_key is None:
+            raise ValueError(f"{api}'s signing key is None")
         is_approved = user_code_status_change.approved
 
         permission_request = self.approve(approve_nested=True)
@@ -840,7 +856,6 @@ class Request(SyftObject):
         )
         job.apply_info(job_info)
 
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         job_service = api.services.job
         res = job_service.update(job)
         if isinstance(res, SyftError):
@@ -856,7 +871,11 @@ class Request(SyftObject):
                 message="This JobInfo includes a Result. Please use Request.accept_by_depositing_result instead."
             )
 
-        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid, user_verify_key=self.syft_client_verify_key
+        )
+        if api is None:
+            return SyftError(message=f"api is None. You must login to {self.node_uid}")
         job_service = api.services.job
 
         job = self._get_latest_or_create_job()
@@ -905,6 +924,9 @@ class SubmitRequest(SyftObject):
 
 
 def hash_changes(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+
     request_time = context.output["request_time"]
     key = context.output["requesting_user_verify_key"]
     changes = context.output["changes"]
@@ -917,38 +939,44 @@ def hash_changes(context: TransformContext) -> TransformContext:
     final_hash = hashlib.sha256(time_hash + key_hash + changes_hash).hexdigest()
 
     context.output["request_hash"] = final_hash
+
     return context
 
 
 def add_request_time(context: TransformContext) -> TransformContext:
-    context.output["request_time"] = DateTime.now()
+    if context.output is not None:
+        context.output["request_time"] = DateTime.now()
     return context
 
 
 def check_requesting_user_verify_key(context: TransformContext) -> TransformContext:
-    if context.obj.requesting_user_verify_key and context.node.is_root(
-        context.credentials
-    ):
-        context.output[
-            "requesting_user_verify_key"
-        ] = context.obj.requesting_user_verify_key
-    else:
-        context.output["requesting_user_verify_key"] = context.credentials
+    if context.output and context.node and context.obj:
+        if context.obj.requesting_user_verify_key and context.node.is_root(
+            context.credentials
+        ):
+            context.output[
+                "requesting_user_verify_key"
+            ] = context.obj.requesting_user_verify_key
+        else:
+            context.output["requesting_user_verify_key"] = context.credentials
+
     return context
 
 
 def add_requesting_user_info(context: TransformContext) -> TransformContext:
-    try:
-        user_key = context.output["requesting_user_verify_key"]
-        user_service = context.node.get_service("UserService")
-        user = user_service.get_by_verify_key(user_key)
-        context.output["requesting_user_name"] = user.name
-        context.output["requesting_user_email"] = user.email
-        context.output["requesting_user_institution"] = (
-            user.institution if user.institution else ""
-        )
-    except Exception:
-        context.output["requesting_user_name"] = "guest_user"
+    if context.output is not None and context.node is not None:
+        try:
+            user_key = context.output["requesting_user_verify_key"]
+            user_service = context.node.get_service("UserService")
+            user = user_service.get_by_verify_key(user_key)
+            context.output["requesting_user_name"] = user.name
+            context.output["requesting_user_email"] = user.email
+            context.output["requesting_user_institution"] = (
+                user.institution if user.institution else ""
+            )
+        except Exception:
+            context.output["requesting_user_name"] = "guest_user"
+
     return context
 
 
@@ -1184,7 +1212,7 @@ class UserCodeStatusChange(Change):
             msg += ". Nested Requests not resolved"
         return msg
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         code = self.code
         input_policy_type = (
             code.input_policy_type.__canonical_name__
