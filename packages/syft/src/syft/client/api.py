@@ -1025,7 +1025,7 @@ def validate_callable_args_and_kwargs(
                         if not success:
                             raise TypeError()
                     else:
-                        check_type(key, value, t)  # raises Exception
+                        check_type(value, t)  # raises Exception
             except TypeError:
                 _type_str = getattr(t, "__name__", str(t))
                 msg = f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
@@ -1056,7 +1056,7 @@ def validate_callable_args_and_kwargs(
                             check_type(arg, v)  # raises Exception
                             break  # only need one to match
                     else:
-                        check_type(param_key, arg, t)  # raises Exception
+                        check_type(arg, t)  # raises Exception
             except TypeError:
                 t_arg = type(arg)
                 if (
