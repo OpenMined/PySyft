@@ -109,13 +109,6 @@
           "action": "add"
         }
       },
-      "ActionFileData": {
-        "1": {
-          "version": 1,
-          "hash": "1f32d94b75b0a6b4e86cec93d94aa905738219e3e7e75f51dd335ee832a6ed3e",
-          "action": "remove"
-        }
-      },
       "NumpyBoolObject": {
         "3": {
           "version": 3,
@@ -155,6 +148,23 @@
         "1": {
           "version": 1,
           "hash": "6da39adb0ecffb4ca7873c0d95ed31c8bf037610cde144662285b921de5d8f04",
+          "action": "add"
+        }
+      },
+      "SyftObjectRetrieval": {
+        "1": {
+          "version": 1,
+          "hash": "7ccc62d5b434d2d438b3df661b4d753b0c7c8d593d451d8b86d364da83998c89",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "d9d7a7e1b8843145c9687fd013c9223700285886073547734267e91ac53e0996",
+          "action": "remove"
+        },
+        "4": {
+          "version": 4,
+          "hash": "939934f46b72eb2c903606bce8e7ac2e59b1707b73c65fa2b9de8eed6e35f9da",
           "action": "add"
         }
       }
