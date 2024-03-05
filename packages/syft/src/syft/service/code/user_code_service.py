@@ -321,7 +321,7 @@ class UserCodeService(AbstractService):
         elif not code.is_output_policy_approved(context):
             return SyftError("Output policy not approved", code)
 
-        policy_is_valid = output_policy is not None and output_policy.is_valid(context)
+        policy_is_valid = output_policy is not None and output_policy._is_valid(context)
         if not policy_is_valid:
             return policy_is_valid
         else:
@@ -423,7 +423,7 @@ class UserCodeService(AbstractService):
                         return Err(
                             "Execution denied: Your code is waiting for approval"
                         )
-                    if not (is_valid := output_policy.is_valid(context)):  # type: ignore
+                    if not (is_valid := output_policy._is_valid(context)):  # type: ignore
                         if len(output_history) > 0 and not skip_read_cache:
                             result = resolve_outputs(
                                 context=context,

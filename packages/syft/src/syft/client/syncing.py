@@ -93,7 +93,8 @@ def get_user_input_for_batch_permissions(batch_diff, share_private_objects=False
         for diff in batch_diff.diffs
         if isinstance(diff.high_obj, UserCode)
     ]
-    assert len(user_codes_high) < 2
+    if not len(user_codes_high) < 2:
+        raise ValueError("too many user codes")
 
     if user_codes_high:
         user_code_high = user_codes_high[0]
@@ -127,7 +128,8 @@ def get_user_input_for_batch_permissions(batch_diff, share_private_objects=False
             )
             while True:
                 if len(private_high_objects) > 0:
-                    assert user_code_high
+                    if user_code_high is None:
+                        raise ValueError("No usercode found for private objects")
                     objects_str = "\n".join(
                         [
                             f"{diff.object_type} #{diff.object_id}"

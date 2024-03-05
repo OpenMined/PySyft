@@ -835,7 +835,6 @@ class Request(SyftObject):
         job_info.result = action_object
 
         existing_result = job.result.id if job.result is not None else None
-        print("New result", action_object)
         print(
             f"Job({job.id}) Setting new result {existing_result} -> {job_info.result.id}"
         )
@@ -1292,13 +1291,13 @@ class UserCodeStatusChange(Change):
                 # relative
                 from ..enclave.enclave_service import propagate_inputs_to_enclave
 
+                self.linked_obj.update_with_context(context, updated_status)
                 if self.is_enclave_request(user_code):
                     enclave_res = propagate_inputs_to_enclave(
                         user_code=user_code, context=context
                     )
                     if isinstance(enclave_res, SyftError):
                         return enclave_res
-                self.linked_obj.update_with_context(context, updated_status)
             else:
                 updated_status = self.mutate(user_code_status, context, undo=True)
                 if isinstance(updated_status, SyftError):

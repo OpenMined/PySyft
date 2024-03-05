@@ -597,6 +597,8 @@ class UserCode(SyftObject):
                 )
 
             if output_policy is not None:
+                output_policy.syft_node_location = self.syft_node_location
+                output_policy.syft_client_verify_key = self.syft_client_verify_key
                 output_blob = _serialize(output_policy, to_bytes=True)
                 self.output_policy_state = output_blob
                 return output_policy

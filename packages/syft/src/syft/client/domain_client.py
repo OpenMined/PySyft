@@ -147,8 +147,10 @@ class DomainClient(SyftClient):
 
     def get_permissions_for_other_node(self, items):
         if len(items) > 0:
-            assert len({i.syft_node_location for i in items}) == 1
-            assert len({i.syft_client_verify_key for i in items}) == 1
+            if not len({i.syft_node_location for i in items}) == 1 or (
+                not len({i.syft_client_verify_key for i in items}) == 1
+            ):
+                raise ValueError("permissions from different nodes")
             item = items[0]
             api = APIRegistry.api_for(
                 item.syft_node_location, item.syft_client_verify_key

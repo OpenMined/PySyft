@@ -28,6 +28,7 @@ from result import Ok
 # relative
 from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
+from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
 from ...node.credentials import SyftVerifyKey
 from ...serde.recursive_primitives import recursive_serde_register_type
@@ -364,7 +365,28 @@ class OutputPolicyExecuteCount(OutputPolicy):
 
     limit: int
 
-    def is_valid(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:  # type: ignore
+    @property
+    def count(self) -> Union[SyftError, int]:
+        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        output_history = api.services.output.get_by_output_policy_id(self.id)
+
+        if isinstance(output_history, SyftError):
+            return output_history
+        return len(output_history)
+
+    @property
+    def is_valid(self) -> Union[SyftSuccess, SyftError]:  # type: ignore
+        execution_count = self.count
+        is_valid = execution_count < self.limit
+        if is_valid:
+            return SyftSuccess(
+                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}"
+            )
+        return SyftError(
+            message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
+        )
+
+    def _is_valid(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:  # type: ignore
         output_service = context.node.get_service("outputservice")  # type: ignore
         output_history = output_service.get_by_output_policy_id(context, self.id)
         if isinstance(output_history, SyftError):
@@ -755,5 +777,6 @@ def load_policy_code(user_policy: UserPolicy) -> Any:
 def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]) -> Any:
     policy_class = load_policy_code(user_policy)
     policy_object = policy_class()
+    init_args = {k: v for k, v in init_args.items() if k != "id"}
     policy_object.__user_init__(**init_args)
     return policy_object
