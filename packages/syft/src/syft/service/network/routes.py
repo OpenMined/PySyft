@@ -145,4 +145,4 @@ def connection_to_route(connection: NodeConnection) -> NodeRoute:
     if isinstance(connection, HTTPConnection):
         return connection.to(HTTPNodeRoute)
     else:
-        return connection.to(PythonNodeRoute)
+        return connection.to(PythonNodeRoute)  # type: ignore[unreachable]

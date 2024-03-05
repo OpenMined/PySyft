@@ -428,7 +428,7 @@ def run_workers_in_kubernetes(
 
     # create worker object
     for pod in pool_pods:
-        status = runner.get_pod_status(pod)
+        status: Optional[Union[PodStatus, WorkerStatus]] = runner.get_pod_status(pod)
         status, healthcheck, error = map_pod_to_worker_status(status)
 
         # this worker id will be the same as the one in the worker

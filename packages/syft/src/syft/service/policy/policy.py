@@ -28,6 +28,7 @@ from result import Ok
 # relative
 from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
+from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
 from ...node.credentials import SyftVerifyKey
 from ...serde.recursive_primitives import recursive_serde_register_type
@@ -70,7 +71,7 @@ def extract_uid(v: Any) -> UID:
     return value
 
 
-def filter_only_uids(results: Any) -> Union[list, dict]:
+def filter_only_uids(results: Any) -> Union[list[UID], dict[str, UID], UID]:
     if not hasattr(results, "__len__"):
         results = [results]
 
@@ -89,7 +90,7 @@ def filter_only_uids(results: Any) -> Union[list, dict]:
 
 class Policy(SyftObject):
     # version
-    __canonical_name__ = "Policy"
+    __canonical_name__: str = "Policy"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
@@ -115,12 +116,11 @@ class Policy(SyftObject):
                 op_code += "\n"
         return op_code
 
+    def is_valid(self, *args: List, **kwargs: Dict) -> Union[SyftSuccess, SyftError]:  # type: ignore
+        return SyftSuccess(message="Policy is valid.")
+
     def public_state(self) -> Any:
         raise NotImplementedError
-
-    @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
-        return SyftSuccess(message="Policy is valid.")
 
 
 @serializable()
@@ -130,7 +130,7 @@ class UserPolicyStatus(Enum):
     APPROVED = "approved"
 
 
-def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
+def partition_by_node(kwargs: Dict[str, Any]) -> dict[NodeIdentity, dict[str, UID]]:
     # relative
     from ...client.api import APIRegistry
     from ...client.api import NodeIdentity
@@ -262,7 +262,7 @@ def retrieve_from_db(
 
 
 def allowed_ids_only(
-    allowed_inputs: Dict[str, UID],
+    allowed_inputs: dict[NodeIdentity, Any],
     kwargs: Dict[str, Any],
     context: AuthedServiceContext,
 ) -> Dict[str, UID]:
@@ -333,7 +333,6 @@ class OutputPolicy(Policy):
     __canonical_name__ = "OutputPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    output_history: List[OutputHistory] = []
     output_kwargs: List[str] = []
     node_uid: Optional[UID]
     output_readers: List[SyftVerifyKey] = []
@@ -343,24 +342,20 @@ class OutputPolicy(Policy):
         context: NodeServiceContext,
         outputs: Any,
     ) -> Any:
-        output_uids: Union[Dict[str, Any], list] = filter_only_uids(outputs)
-        if isinstance(output_uids, UID):
-            output_uids = [output_uids]
-        history = OutputHistory(
-            output_time=DateTime.now(),
-            outputs=output_uids,
-            executing_user_verify_key=context.credentials,
-        )
-        self.output_history.append(history)
+        # output_uids: Union[Dict[str, Any], list] = filter_only_uids(outputs)
+        # if isinstance(output_uids, UID):
+        #     output_uids = [output_uids]
+        # history = OutputHistory(
+        #     output_time=DateTime.now(),
+        #     outputs=output_uids,
+        #     executing_user_verify_key=context.credentials,
+        # )
+        # self.output_history.append(history)
+
         return outputs
 
-    @property
-    def outputs(self) -> List[str]:
-        return self.output_kwargs
-
-    @property
-    def last_output_ids(self) -> Optional[Union[List[UID], Dict[str, UID]]]:
-        return self.output_history[-1].outputs
+    def is_valid(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:  # type: ignore
+        raise NotImplementedError()
 
 
 @serializable()
@@ -368,29 +363,48 @@ class OutputPolicyExecuteCount(OutputPolicy):
     __canonical_name__ = "OutputPolicyExecuteCount"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    count: int = 0
     limit: int
 
-    def apply_output(
-        self,
-        context: NodeServiceContext,
-        outputs: Any,
-    ) -> Optional[Any]:
-        if self.count < self.limit:
-            super().apply_output(context, outputs)
-            self.count += 1
-            return outputs
-        return None
+    @property
+    def count(self) -> Union[SyftError, int]:
+        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        if api is None:
+            raise ValueError(
+                f"api is None. You must login to {self.syft_node_location}"
+            )
+        output_history = api.services.output.get_by_output_policy_id(self.id)
+
+        if isinstance(output_history, SyftError):
+            return output_history
+        return len(output_history)
 
     @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
-        is_valid = self.count < self.limit
+    def is_valid(self) -> Union[SyftSuccess, SyftError]:  # type: ignore
+        execution_count = self.count
+        is_valid = execution_count < self.limit
         if is_valid:
             return SyftSuccess(
-                message=f"Policy is still valid. count: {self.count} < limit: {self.limit}"
+                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}"
             )
         return SyftError(
-            message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
+            message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
+        )
+
+    def _is_valid(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:
+        context.node = cast(AbstractNode, context.node)
+        output_service = context.node.get_service("outputservice")
+        output_history = output_service.get_by_output_policy_id(context, self.id)
+        if isinstance(output_history, SyftError):
+            return output_history
+        execution_count = len(output_history)
+
+        is_valid = execution_count < self.limit
+        if is_valid:
+            return SyftSuccess(
+                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}"
+            )
+        return SyftError(
+            message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
         )
 
     def public_state(self) -> dict[str, int]:
@@ -451,7 +465,7 @@ class CustomInputPolicy(metaclass=CustomPolicy):
 
 @serializable()
 class UserPolicy(Policy):
-    __canonical_name__ = "UserPolicy"
+    __canonical_name__: str = "UserPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
@@ -525,7 +539,7 @@ class SubmitUserPolicy(Policy):
     __canonical_name__ = "SubmitUserPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
+    id: Optional[UID]  # type: ignore[assignment]
     code: str
     class_name: str
     input_kwargs: List[str]
@@ -545,20 +559,27 @@ class SubmitUserPolicy(Policy):
 
 
 def hash_code(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
     code = context.output["code"]
     del context.output["code"]
     context.output["raw_code"] = code
     code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
     context.output["code_hash"] = code_hash
+
     return context
 
 
 def generate_unique_class_name(context: TransformContext) -> TransformContext:
     # TODO: Do we need to check if the initial name contains underscores?
-    code_hash = context.output["code_hash"]
-    service_class_name = context.output["class_name"]
-    unique_name = f"{service_class_name}_{context.credentials}_{code_hash}"
-    context.output["unique_name"] = unique_name
+    if context.output is not None:
+        code_hash = context.output["code_hash"]
+        service_class_name = context.output["class_name"]
+        unique_name = f"{service_class_name}_{context.credentials}_{code_hash}"
+        context.output["unique_name"] = unique_name
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
+
     return context
 
 
@@ -657,6 +678,9 @@ def check_class_code(context: TransformContext) -> TransformContext:
     # check for Policy template -> __init__, apply_output, public_state
     # parse init signature
     # check dangerous libraries, maybe compile_restricted already does that
+    if context.output is None:
+        return context
+
     try:
         processed_code = process_class_code(
             raw_code=context.output["raw_code"],
@@ -665,34 +689,45 @@ def check_class_code(context: TransformContext) -> TransformContext:
         context.output["parsed_code"] = processed_code
     except Exception as e:
         raise e
+
     return context
 
 
 def compile_code(context: TransformContext) -> TransformContext:
-    byte_code = compile_byte_code(context.output["parsed_code"])
-    if byte_code is None:
-        raise Exception(
-            "Unable to compile byte code from parsed code. "
-            + context.output["parsed_code"]
-        )
+    if context.output is not None:
+        byte_code = compile_byte_code(context.output["parsed_code"])
+        if byte_code is None:
+            raise Exception(
+                "Unable to compile byte code from parsed code. "
+                + context.output["parsed_code"]
+            )
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
+
     return context
 
 
 def add_credentials_for_key(key: str) -> Callable:
     def add_credentials(context: TransformContext) -> TransformContext:
-        context.output[key] = context.credentials
+        if context.output is not None:
+            context.output[key] = context.credentials
+
         return context
 
     return add_credentials
 
 
 def generate_signature(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+
     params = [
         Parameter(name=k, kind=Parameter.POSITIONAL_OR_KEYWORD)
         for k in context.output["input_kwargs"]
     ]
     sig = Signature(parameters=params)
     context.output["signature"] = sig
+
     return context
 
 
@@ -768,5 +803,6 @@ def load_policy_code(user_policy: UserPolicy) -> Any:
 def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]) -> Any:
     policy_class = load_policy_code(user_policy)
     policy_object = policy_class()
+    init_args = {k: v for k, v in init_args.items() if k != "id"}
     policy_object.__user_init__(**init_args)
     return policy_object

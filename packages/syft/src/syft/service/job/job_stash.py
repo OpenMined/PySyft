@@ -122,6 +122,7 @@ class Job(SyftObject):
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
+    __exclude_sync_diff_attrs__ = ["action"]
 
     @pydantic.root_validator()
     def check_time(cls, values: dict) -> dict:
@@ -177,6 +178,10 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         return api.services.worker.get(self.job_worker_id)
 
     @property
@@ -267,6 +272,10 @@ class Job(SyftObject):
                 node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
+            if api is None:
+                raise ValueError(
+                    f"Can't access Syft API. You must login to {self.syft_node_location}"
+                )
             call = SyftAPICall(
                 node_uid=self.node_uid,
                 path="job.restart",
@@ -288,6 +297,10 @@ class Job(SyftObject):
                 node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
+            if api is None:
+                return SyftError(
+                    message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+                )
             call = SyftAPICall(
                 node_uid=self.node_uid,
                 path="job.kill",
@@ -307,6 +320,10 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            raise ValueError(
+                f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         call = SyftAPICall(
             node_uid=self.node_uid,
             path="job.get",
@@ -329,6 +346,10 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         return api.services.job.get_subjobs(self.id)
 
     @property
@@ -337,7 +358,20 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         return api.services.user.get_current_user(self.id)
+
+    def _get_log_objs(self) -> Union[SyftObject, SyftError]:
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            raise ValueError(f"api is None. You must login to {self.node_uid}")
+        return api.services.log.get(self.log_id)
 
     def logs(
         self, stdout: bool = True, stderr: bool = True, _print: bool = True
@@ -346,10 +380,15 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return f"Can't access Syft API. You must login to {self.syft_node_location}"
         results = []
         if stdout:
-            stdout_log = api.services.log.get(self.log_id)
-            results.append(stdout_log)
+            stdout_log = api.services.log.get_stdout(self.log_id)
+            if isinstance(stdout_log, SyftError):
+                results.append(f"Log {self.log_id} not available")
+            else:
+                results.append(stdout_log)
 
         if stderr:
             try:
@@ -403,7 +442,7 @@ class Job(SyftObject):
     def has_parent(self) -> bool:
         return self.parent_job_id is not None
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _ = self.resolve
         logs = self.logs(_print=False)
         if logs is not None:
@@ -433,7 +472,6 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-
         # todo: timeout
         if self.resolved:
             return self.resolve
@@ -441,6 +479,10 @@ class Job(SyftObject):
         if not job_only and self.result is not None:
             self.result.wait()
 
+        if api is None:
+            raise ValueError(
+                f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         print_warning = True
         while True:
             self.fetch()
@@ -469,6 +511,22 @@ class Job(SyftObject):
         if self.resolved:
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
+
+    def get_sync_dependencies(self, **kwargs: Dict) -> List[UID]:
+        dependencies = []
+        if self.result is not None:
+            dependencies.append(self.result.id.id)
+
+        if self.log_id:
+            dependencies.append(self.log_id)
+
+        subjob_ids = [subjob.id for subjob in self.subjobs]
+        dependencies.extend(subjob_ids)
+
+        if self.user_code_id is not None:
+            dependencies.append(self.user_code_id)
+
+        return dependencies
 
 
 @serializable()
@@ -501,7 +559,7 @@ class JobInfo(SyftObject):
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
 
-    result: Optional[Any] = None
+    result: Optional[ActionObject] = None
 
     def _repr_html_(self) -> str:
         metadata_str = ""
@@ -550,7 +608,7 @@ class JobInfo(SyftObject):
                 raise ValueError("Cannot sync result of unresolved job")
             if not isinstance(job.result, ActionObject):
                 raise ValueError("Could not sync result of job")
-            info.result = job.result.get()
+            info.result = job.result
 
         return info
 

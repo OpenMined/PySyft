@@ -62,7 +62,7 @@ class SyftImageRegistryService(AbstractService):
     def delete(
         self,
         context: AuthedServiceContext,
-        uid: UID = None,
+        uid: Optional[UID] = None,
         url: Optional[str] = None,
     ) -> Union[SyftSuccess, SyftError]:
         # TODO - we need to make sure that there are no workers running an image bound to this registry

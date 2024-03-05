@@ -15,7 +15,7 @@ from .object_migration_state import SyftObjectMigrationState
 @serializable()
 class MigrateStateService(AbstractService):
     store: DocumentStore
-    stash: SyftObjectMigrationState
+    stash: SyftMigrationStateStash
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store

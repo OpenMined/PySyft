@@ -105,10 +105,11 @@ class ProjectService(AbstractService):
                     verify_key=leader_node.verify_key,
                 )
                 if peer.is_err():
+                    this_node_id = context.node.id.short() if context.node.id else ""
                     return SyftError(
                         message=(
                             f"Leader Node(id={leader_node.id.short()}) is not a "
-                            f"peer of this Node(id={context.node.id.short()})"
+                            f"peer of this Node(id={this_node_id})"
                         )
                     )
                 leader_node_peer = peer.ok()

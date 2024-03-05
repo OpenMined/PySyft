@@ -70,8 +70,14 @@ class CodeHistoryView(SyftObject):
         # rows = sorted(rows, key=lambda x: x["Version"])
         return create_table_template(rows, "CodeHistory", table_icon=None)
 
-    def __getitem__(self, index: int) -> Union[UserCode, SyftError]:
+    def __getitem__(self, index: Union[int, str]) -> Union[UserCode, SyftError]:
+        if isinstance(index, str):
+            raise TypeError(f"index {index} must be an integer, not a string")
         api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        if api is None:
+            return SyftError(
+                message=f"Can't access the api. You must login to {self.node_uid}"
+            )
         if api.user_role.value >= ServiceRole.DATA_OWNER.value and index < 0:
             return SyftError(
                 message="For security concerns we do not allow negative indexing. \
@@ -97,7 +103,9 @@ class CodeHistoriesDict(SyftObject):
     def add_func(self, versions: CodeHistoryView) -> Any:
         self.code_versions[versions.service_func_name] = versions
 
-    def __getitem__(self, name: str) -> Any:
+    def __getitem__(self, name: Union[str, int]) -> Any:
+        if isinstance(name, int):
+            raise TypeError("name argument ({name}) must be a string, not an integer.")
         return self.code_versions[name]
 
     def __getattr__(self, name: str) -> Any:
@@ -123,8 +131,12 @@ class UsersCodeHistoriesDict(SyftObject):
     def available_keys(self) -> str:
         return json.dumps(self.user_dict, sort_keys=True, indent=4)
 
-    def __getitem__(self, key: int) -> Union[CodeHistoriesDict, SyftError]:
+    def __getitem__(self, key: Union[str, int]) -> Union[CodeHistoriesDict, SyftError]:
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        if api is None:
+            return SyftError(
+                message=f"Can't access the api. You must login to {self.node_uid}"
+            )
         return api.services.code_history.get_history_for_user(key)
 
     def _repr_html_(self) -> str:

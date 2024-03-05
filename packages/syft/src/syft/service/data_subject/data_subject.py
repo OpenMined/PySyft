@@ -64,7 +64,7 @@ class DataSubject(SyftObject):
     def __repr__(self) -> str:
         return f"<DataSubject: {self.name}>"
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"DataSubject: {self.name}\n"
         _repr_str += f"Description: {self.description}\n"
         _repr_str += f"Aliases: {self.aliases}\n"
@@ -78,7 +78,7 @@ class DataSubjectCreate(SyftObject):
     __canonical_name__ = "DataSubjectCreate"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID] = None
+    id: Optional[UID] = None  # type: ignore[assignment]
     name: str
     description: Optional[str]
     aliases: Optional[List[str]] = []
@@ -120,7 +120,7 @@ class DataSubjectCreate(SyftObject):
     def __repr__(self) -> str:
         return f"<DataSubject: {self.name}>"
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"DataSubject: {self.name}\n"
         _repr_str += f"Description: {self.description}\n"
         _repr_str += f"Aliases: {self.aliases}\n"
@@ -129,7 +129,8 @@ class DataSubjectCreate(SyftObject):
 
 
 def remove_members_list(context: TransformContext) -> TransformContext:
-    context.output.pop("members", [])
+    if context.output is not None:
+        context.output.pop("members", [])
     return context
 
 
