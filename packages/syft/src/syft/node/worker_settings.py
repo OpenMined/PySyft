@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from typing import Callable
 from typing import Optional
 
 # third party
@@ -55,16 +56,20 @@ class WorkerSettings(SyftObject):
     blob_store_config: Optional[BlobStorageConfig] = None
     queue_config: Optional[QueueConfig] = None
 
-    @staticmethod
-    def from_node(node: AbstractNode) -> Self:
-        return WorkerSettings(
+    @classmethod
+    def from_node(cls, node: AbstractNode) -> Self:
+        if node.node_side_type:
+            node_side_type: str = node.node_side_type.value
+        else:
+            node_side_type = NodeSideType.HIGH_SIDE
+        return cls(
             id=node.id,
             name=node.name,
             node_type=node.node_type,
             signing_key=node.signing_key,
             document_store_config=node.document_store_config,
             action_store_config=node.action_store_config,
-            node_side_type=node.node_side_type.value,
+            node_side_type=node_side_type,
             blob_store_config=node.blob_store_config,
             queue_config=node.queue_config,
         )
@@ -74,14 +79,14 @@ class WorkerSettings(SyftObject):
 
 
 @migrate(WorkerSettings, WorkerSettingsV1)
-def downgrade_workersettings_v2_to_v1():
+def downgrade_workersettings_v2_to_v1() -> list[Callable]:
     return [
         drop(["queue_config"]),
     ]
 
 
 @migrate(WorkerSettingsV1, WorkerSettings)
-def upgrade_workersettings_v1_to_v2():
+def upgrade_workersettings_v1_to_v2() -> list[Callable]:
     # relative
     from ..service.queue.zmq_queue import ZMQQueueConfig
 

@@ -2,11 +2,16 @@
 from enum import Enum
 from typing import Callable
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Union
 
 # relative
 from .serde.serializable import serializable
 from .types.uid import UID
+
+if TYPE_CHECKING:
+    # relative
+    from .service.service import AbstractService
 
 
 @serializable()
@@ -37,5 +42,5 @@ class AbstractNode:
     node_side_type: Optional[NodeSideType]
     in_memory_workers: bool
 
-    def get_service(self, path_or_func: Union[str, Callable]) -> Callable:
+    def get_service(self, path_or_func: Union[str, Callable]) -> "AbstractService":
         raise NotImplementedError

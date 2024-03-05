@@ -17,6 +17,7 @@ from typing import Callable
 from typing import ClassVar
 from typing import Dict
 from typing import Generator
+from typing import Iterable
 from typing import KeysView
 from typing import List
 from typing import Optional
@@ -39,6 +40,7 @@ from pydantic import model_validator
 from pydantic.fields import PydanticUndefined
 from result import OkErr
 from typeguard import check_type
+from typing_extensions import Self
 
 # relative
 from ..node.credentials import SyftVerifyKey
@@ -116,7 +118,7 @@ def _get_optional_inner_type(x: Any) -> Any:
 
 
 class SyftHashableObject:
-    __hash_exclude_attrs__ = []
+    __hash_exclude_attrs__: list = []
 
     def __hash__(self) -> int:
         return int.from_bytes(self.__sha256__(), byteorder="big")
@@ -140,7 +142,7 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
     syft_node_location: Optional[UID] = Field(default=None, exclude=True)
     syft_client_verify_key: Optional[SyftVerifyKey] = Field(default=None, exclude=True)
 
-    def _set_obj_location_(self, node_uid: UID, credentials: SyftVerifyKey):
+    def _set_obj_location_(self, node_uid: UID, credentials: SyftVerifyKey) -> None:
         self.syft_node_location = node_uid
         self.syft_client_verify_key = credentials
 
@@ -153,7 +155,9 @@ class Context(SyftBaseObject):
 
 
 class SyftObjectRegistry:
-    __object_version_registry__: Dict[str, Type["SyftObject"]] = {}
+    __object_version_registry__: Dict[
+        str, Union[Type["SyftObject"], Type["SyftObjectRegistry"]]
+    ] = {}
     __object_transform_registry__: Dict[str, Callable] = {}
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
@@ -184,7 +188,9 @@ class SyftObjectRegistry:
                 cls.__object_version_registry__[mapping_string] = cls
 
     @classmethod
-    def versioned_class(cls, name: str, version: int) -> Optional[Type["SyftObject"]]:
+    def versioned_class(
+        cls, name: str, version: int
+    ) -> Optional[Union[Type["SyftObject"], Type["SyftObjectRegistry"]]]:
         mapping_string = f"{name}_{version}"
         if mapping_string not in cls.__object_version_registry__:
             return None
@@ -253,7 +259,7 @@ class SyftMigrationRegistry:
         cls.register_version(klass=klass)
 
     @classmethod
-    def register_version(cls, klass: type):
+    def register_version(cls, klass: type) -> None:
         if hasattr(klass, "__canonical_name__") and hasattr(klass, "__version__"):
             mapping_string = klass.__canonical_name__
             klass_version = klass.__version__
@@ -343,6 +349,10 @@ class SyftMigrationRegistry:
                             return cls.__migration_transform_registry__[klass_from][
                                 mapping_string
                             ]
+        raise ValueError(
+            f"No migration found for class type: {type_from} to "
+            f"type: {type_to} in the migration registry."
+        )
 
     @classmethod
     def get_migration_for_version(
@@ -375,7 +385,7 @@ class SyftMigrationRegistry:
         )
 
 
-print_type_cache = defaultdict(list)
+print_type_cache: dict = defaultdict(list)
 
 
 base_attrs_sync_ignore = [
@@ -418,7 +428,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
 
     __repr_attrs__: ClassVar[List[str]] = []  # show these in html repr collections
     __attr_custom_repr__: ClassVar[
-        List[str]
+        Optional[List[str]]
     ] = None  # show these in html repr of an object
 
     def __syft_get_funcs__(self) -> List[Tuple[str, Signature]]:
@@ -466,7 +476,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             _repr_str += f"  {attr}: {value_type} = {value}\n"
         return _repr_str
 
-    def _repr_markdown_(self, wrap_as_python=True, indent=0) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         s_indent = " " * indent * 2
         class_name = get_qualname_for(type(self))
         if self.__attr_custom_repr__ is not None:
@@ -474,7 +484,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         elif self.__repr_attrs__ is not None:
             fields = self.__repr_attrs__
         else:
-            fields = list(getattr(self, "__fields__", {}).keys())
+            fields = list(getattr(self, "__fields__", {}).keys())  # type: ignore[unreachable]
 
         if "id" not in fields:
             fields = ["id"] + fields
@@ -483,7 +493,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         fields = [x for x in fields if x not in dynam_attrs]
         _repr_str = f"{s_indent}class {class_name}:\n"
         for attr in fields:
-            value = self
+            value: Any = self
             # if it's a compound string
             if "." in attr:
                 # break it into it's bits & fetch the attr
@@ -529,8 +539,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         return self.__dict__.keys()
 
     # allows splatting with **
-    def __getitem__(self, key: str) -> Any:
-        return self.__dict__.__getitem__(key)
+    def __getitem__(self, key: Union[str, int]) -> Any:
+        return self.__dict__.__getitem__(key)  # type: ignore
 
     def _upgrade_version(self, latest: bool = True) -> "SyftObject":
         constructor = SyftObjectRegistry.versioned_class(
@@ -577,7 +587,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     def __post_init__(self) -> None:
         pass
 
-    def _syft_set_validate_private_attrs_(self, **kwargs):
+    def _syft_set_validate_private_attrs_(self, **kwargs: Any) -> None:
         # Validate and set private attributes
         # https://github.com/pydantic/pydantic/issues/2105
         for attr, decl in self.__private_attributes__.items():
@@ -594,7 +604,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                         f"{attr}\n field required (type=value_error.missing)"
                     )
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._syft_set_validate_private_attrs_(**kwargs)
         self.__post_init__()
@@ -647,7 +657,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             )
         return self
 
-    def syft_eq(self, ext_obj) -> bool:
+    def syft_eq(self, ext_obj: Optional[Self]) -> bool:
         if ext_obj is None:
             return False
         attrs_to_check = self.__dict__.keys()
@@ -664,7 +674,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                     return False
         return True
 
-    def get_diffs(self, ext_obj) -> List["AttrDiff"]:
+    def get_diffs(self, ext_obj: Self) -> List["AttrDiff"]:
         # self is low, ext is high
         # relative
         from ..service.sync.diff_state import AttrDiff
@@ -761,14 +771,18 @@ def short_qual_name(name: str) -> str:
     return name.split(".")[-1]
 
 
-def short_uid(uid: UID) -> str:
+def short_uid(uid: Optional[UID]) -> Optional[str]:
     if uid is None:
         return uid
     else:
         return str(uid)[:6] + "..."
 
 
-def get_repr_values_table(_self, is_homogenous, extra_fields=None):
+def get_repr_values_table(
+    _self: Union[Mapping, Iterable],
+    is_homogenous: bool,
+    extra_fields: Optional[list] = None,
+) -> dict:
     if extra_fields is None:
         extra_fields = []
 
@@ -856,14 +870,14 @@ def get_repr_values_table(_self, is_homogenous, extra_fields=None):
     return df.to_dict("records")
 
 
-def list_dict_repr_html(self) -> str:
+def list_dict_repr_html(self: Union[Mapping, Set, Iterable]) -> str:
     try:
         max_check = 1
         items_checked = 0
         has_syft = False
-        extra_fields = []
+        extra_fields: list = []
         if isinstance(self, Mapping):
-            values = list(self.values())
+            values: Any = list(self.values())
         elif isinstance(self, Set):
             values = list(self)
         else:
@@ -878,7 +892,7 @@ def list_dict_repr_html(self) -> str:
                 break
 
             if hasattr(type(item), "mro") and type(item) != type:
-                mro = type(item).mro()
+                mro: Union[list, str] = type(item).mro()
             elif hasattr(item, "mro") and type(item) != type:
                 mro = item.mro()
             else:
@@ -940,6 +954,9 @@ class StorableObjectType:
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
 
 TupleGenerator = Generator[Tuple[str, Any], None, None]
 
@@ -968,7 +985,7 @@ def attach_attribute_to_syft_object(result: Any, attr_dict: Dict[str, Any]) -> A
         result = result.value
 
     if isinstance(result, MutableMapping):
-        iterable_keys = result.keys()
+        iterable_keys: Iterable = result.keys()
     elif isinstance(result, MutableSequence):
         iterable_keys = range(len(result))
     elif isinstance(result, tuple):

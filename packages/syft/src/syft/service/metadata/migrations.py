@@ -35,15 +35,16 @@ def upgrade_metadata_v2_to_v3() -> list[Callable]:
 def _downgrade_metadata_v3_to_v2() -> Callable:
     def set_defaults_from_settings(context: TransformContext) -> TransformContext:
         # Extract from settings if node is attached to context
-        if context.node is not None:
-            context.output["deployed_on"] = context.node.settings.deployed_on
-            context.output["on_board"] = context.node.settings.on_board
-            context.output["signup_enabled"] = context.node.settings.signup_enabled
-            context.output["admin_email"] = context.node.settings.admin_email
-        else:
-            # Else set default value
-            context.output["signup_enabled"] = False
-            context.output["admin_email"] = ""
+        if context.output is not None:
+            if context.node is not None:
+                context.output["deployed_on"] = context.node.settings.deployed_on
+                context.output["on_board"] = context.node.settings.on_board
+                context.output["signup_enabled"] = context.node.settings.signup_enabled
+                context.output["admin_email"] = context.node.settings.admin_email
+            else:
+                # Else set default value
+                context.output["signup_enabled"] = False
+                context.output["admin_email"] = ""
 
         return context
 

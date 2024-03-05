@@ -71,7 +71,7 @@ def extract_uid(v: Any) -> UID:
     return value
 
 
-def filter_only_uids(results: Any) -> Union[List[UID], Dict[str, UID]]:
+def filter_only_uids(results: Any) -> Union[list[UID], dict[str, UID], UID]:
     if not hasattr(results, "__len__"):
         results = [results]
 
@@ -90,7 +90,7 @@ def filter_only_uids(results: Any) -> Union[List[UID], Dict[str, UID]]:
 
 class Policy(SyftObject):
     # version
-    __canonical_name__ = "Policy"
+    __canonical_name__: str = "Policy"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
@@ -130,7 +130,7 @@ class UserPolicyStatus(Enum):
     APPROVED = "approved"
 
 
-def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
+def partition_by_node(kwargs: Dict[str, Any]) -> dict[NodeIdentity, dict[str, UID]]:
     # relative
     from ...client.api import APIRegistry
     from ...client.api import NodeIdentity
@@ -262,7 +262,7 @@ def retrieve_from_db(
 
 
 def allowed_ids_only(
-    allowed_inputs: Dict[str, UID],
+    allowed_inputs: dict[NodeIdentity, Any],
     kwargs: Dict[str, Any],
     context: AuthedServiceContext,
 ) -> Dict[str, UID]:
@@ -368,6 +368,10 @@ class OutputPolicyExecuteCount(OutputPolicy):
     @property
     def count(self) -> Union[SyftError, int]:
         api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        if api is None:
+            raise ValueError(
+                f"api is None. You must login to {self.syft_node_location}"
+            )
         output_history = api.services.output.get_by_output_policy_id(self.id)
 
         if isinstance(output_history, SyftError):
@@ -386,8 +390,9 @@ class OutputPolicyExecuteCount(OutputPolicy):
             message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
         )
 
-    def _is_valid(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:  # type: ignore
-        output_service = context.node.get_service("outputservice")  # type: ignore
+    def _is_valid(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:
+        context.node = cast(AbstractNode, context.node)
+        output_service = context.node.get_service("outputservice")
         output_history = output_service.get_by_output_policy_id(context, self.id)
         if isinstance(output_history, SyftError):
             return output_history
@@ -460,7 +465,7 @@ class CustomInputPolicy(metaclass=CustomPolicy):
 
 @serializable()
 class UserPolicy(Policy):
-    __canonical_name__ = "UserPolicy"
+    __canonical_name__: str = "UserPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
@@ -533,7 +538,7 @@ class SubmitUserPolicy(Policy):
     __canonical_name__ = "SubmitUserPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID] = None
+    id: Optional[UID] = None  # type: ignore[assignment]
     code: str
     class_name: str
     input_kwargs: List[str]
@@ -553,20 +558,27 @@ class SubmitUserPolicy(Policy):
 
 
 def hash_code(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
     code = context.output["code"]
     del context.output["code"]
     context.output["raw_code"] = code
     code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
     context.output["code_hash"] = code_hash
+
     return context
 
 
 def generate_unique_class_name(context: TransformContext) -> TransformContext:
     # TODO: Do we need to check if the initial name contains underscores?
-    code_hash = context.output["code_hash"]
-    service_class_name = context.output["class_name"]
-    unique_name = f"{service_class_name}_{context.credentials}_{code_hash}"
-    context.output["unique_name"] = unique_name
+    if context.output is not None:
+        code_hash = context.output["code_hash"]
+        service_class_name = context.output["class_name"]
+        unique_name = f"{service_class_name}_{context.credentials}_{code_hash}"
+        context.output["unique_name"] = unique_name
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
+
     return context
 
 
@@ -665,6 +677,9 @@ def check_class_code(context: TransformContext) -> TransformContext:
     # check for Policy template -> __init__, apply_output, public_state
     # parse init signature
     # check dangerous libraries, maybe compile_restricted already does that
+    if context.output is None:
+        return context
+
     try:
         processed_code = process_class_code(
             raw_code=context.output["raw_code"],
@@ -673,34 +688,45 @@ def check_class_code(context: TransformContext) -> TransformContext:
         context.output["parsed_code"] = processed_code
     except Exception as e:
         raise e
+
     return context
 
 
 def compile_code(context: TransformContext) -> TransformContext:
-    byte_code = compile_byte_code(context.output["parsed_code"])
-    if byte_code is None:
-        raise Exception(
-            "Unable to compile byte code from parsed code. "
-            + context.output["parsed_code"]
-        )
+    if context.output is not None:
+        byte_code = compile_byte_code(context.output["parsed_code"])
+        if byte_code is None:
+            raise Exception(
+                "Unable to compile byte code from parsed code. "
+                + context.output["parsed_code"]
+            )
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
+
     return context
 
 
 def add_credentials_for_key(key: str) -> Callable:
     def add_credentials(context: TransformContext) -> TransformContext:
-        context.output[key] = context.credentials
+        if context.output is not None:
+            context.output[key] = context.credentials
+
         return context
 
     return add_credentials
 
 
 def generate_signature(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+
     params = [
         Parameter(name=k, kind=Parameter.POSITIONAL_OR_KEYWORD)
         for k in context.output["input_kwargs"]
     ]
     sig = Signature(parameters=params)
     context.output["signature"] = sig
+
     return context
 
 

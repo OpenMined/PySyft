@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
 from typing import Union
+from typing import cast
 
 # third party
 from pydantic import ConfigDict
@@ -112,7 +113,7 @@ class ActionV1(SyftObject):
     __canonical_name__ = "Action"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __attr_searchable__: List[str] = []
+    __attr_searchable__: ClassVar[List[str]] = []
 
     path: str
     op: str
@@ -146,7 +147,7 @@ class Action(SyftObject):
     __canonical_name__ = "Action"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    __attr_searchable__: List[str] = []
+    __attr_searchable__: ClassVar[List[str]] = []
 
     path: Optional[str] = None
     op: Optional[str] = None
@@ -170,11 +171,11 @@ class Action(SyftObject):
 
     @property
     def job_display_name(self) -> str:
-        if self.user_code_id is not None:
-            api = APIRegistry.api_for(
-                node_uid=self.syft_node_location,
-                user_verify_key=self.syft_client_verify_key,
-            )
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if self.user_code_id is not None and api is not None:
             user_code = api.services.code.get_by_id(self.user_code_id)
             return user_code.service_func_name
         else:
@@ -450,7 +451,7 @@ def make_action_side_effect(
 
 class TraceResult:
     result: list = []
-    _client: SyftClient = None
+    _client: Optional[SyftClient] = None
     is_tracing: bool = False
 
     @classmethod
@@ -481,7 +482,10 @@ def convert_to_pointers(
     kwarg_dict = {}
     if args is not None:
         for arg in args:
-            if not isinstance(arg, (ActionObject, Asset, UID)):
+            if (
+                not isinstance(arg, (ActionObject, Asset, UID))
+                and api.signing_key is not None  # type: ignore[unreachable]
+            ):
                 arg = ActionObject.from_obj(  # type: ignore[unreachable]
                     syft_action_data=arg,
                     syft_client_verify_key=api.signing_key.verify_key,
@@ -496,7 +500,10 @@ def convert_to_pointers(
 
     if kwargs is not None:
         for k, arg in kwargs.items():
-            if not isinstance(arg, (ActionObject, Asset, UID)):
+            if (
+                not isinstance(arg, (ActionObject, Asset, UID))
+                and api.signing_key is not None  # type: ignore[unreachable]
+            ):
                 arg = ActionObject.from_obj(  # type: ignore[unreachable]
                     syft_action_data=arg,
                     syft_client_verify_key=api.signing_key.verify_key,
@@ -595,7 +602,7 @@ def debox_args_and_kwargs(args: Any, kwargs: Any) -> Tuple[Any, Any]:
     return tuple(filtered_args), filtered_kwargs
 
 
-BASE_PASSTHROUGH_ATTRS = [
+BASE_PASSTHROUGH_ATTRS: list[str] = [
     "is_mock",
     "is_real",
     "is_twin",
@@ -634,7 +641,7 @@ class ActionObjectV1(SyftObject):
     __canonical_name__ = "ActionObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __attr_searchable__: List[str] = []
+    __attr_searchable__: List[str] = []  # type: ignore[misc]
     syft_action_data_cache: Optional[Any] = None
     syft_blob_storage_entry_id: Optional[UID] = None
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
@@ -666,9 +673,7 @@ class ActionObjectV2(SyftObject):
     __canonical_name__ = "ActionObject"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    __attr_searchable__: List[str] = []
-
-    id: UID
+    __attr_searchable__: List[str] = []  # type: ignore[misc]
     syft_action_data_cache: Optional[Any] = None
     syft_blob_storage_entry_id: Optional[UID] = None
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
@@ -701,7 +706,7 @@ class ActionObject(SyftObject):
     __canonical_name__ = "ActionObject"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    __attr_searchable__: List[str] = []
+    __attr_searchable__: List[str] = []  # type: ignore[misc]
     syft_action_data_cache: Optional[Any] = None
     syft_blob_storage_entry_id: Optional[UID] = None
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
@@ -960,7 +965,8 @@ class ActionObject(SyftObject):
             node_uid=self.syft_node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
-
+        if api is None:
+            raise ValueError(f"api is None. You must login to {self.syft_node_uid}")
         kwargs = {"action": action}
         api_call = SyftAPICall(
             node_uid=self.syft_node_uid, path="action.execute", args=[], kwargs=kwargs
@@ -976,7 +982,8 @@ class ActionObject(SyftObject):
         permission_change = ActionStoreChange(
             linked_obj=action_object_link, apply_permission_type=ActionPermission.READ
         )
-
+        if client.credentials is None:
+            return SyftError(f"{client} has no signing key")
         submit_request = SubmitRequest(
             changes=[permission_change],
             requesting_user_verify_key=client.credentials.verify_key,
@@ -1009,7 +1016,7 @@ class ActionObject(SyftObject):
         if TraceResult._client is not None:
             api = TraceResult._client.api
 
-        if api is not None:
+        if api is not None and api.signing_key is not None:
             obj._set_obj_location_(api.node_uid, api.signing_key.verify_key)
 
         action = Action(
@@ -1030,6 +1037,12 @@ class ActionObject(SyftObject):
                 node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
+            if api is None:
+                print(
+                    f"failed saving {obj} to blob storage, api is None. You must login to {self.syft_node_location}"
+                )
+
+        api = cast(SyftAPI, api)
         res = api.services.action.execute(action)
         if isinstance(res, SyftError):
             print(f"Failed to to store (arg) {obj} to store, {res}")
@@ -1207,6 +1220,11 @@ class ActionObject(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(
+                message=f"api is None. You must login to {self.syft_node_location}"
+            )
+
         res = api.services.action.get(self.id)
         return res
 
@@ -1354,7 +1372,7 @@ class ActionObject(SyftObject):
         else:
             obj_id = self.id
 
-        while not api.services.action.is_resolved(obj_id):
+        while api and not api.services.action.is_resolved(obj_id):
             time.sleep(1)
 
         return self
@@ -1835,7 +1853,7 @@ class ActionObject(SyftObject):
     # if we do not implement these boiler plate __method__'s then special infix
     # operations like x + y won't trigger __getattribute__
     # unless there is a super special reason we should write no code in these functions
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         if self.is_mock:
             res = "TwinPointer(Mock)"
         elif self.is_real:

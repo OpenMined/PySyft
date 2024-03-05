@@ -58,6 +58,7 @@ from ..response import SyftException
 from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
+from ..user.user import UserView
 
 
 @serializable()
@@ -140,7 +141,7 @@ class ProjectEvent(SyftObject):
             return valid
 
         if prev_event:
-            prev_event_id = prev_event.id
+            prev_event_id: Optional[UID] = prev_event.id
             prev_event_hash = prev_event.event_hash
             prev_seq_no = prev_event.seq_no
         else:
@@ -293,7 +294,7 @@ class ProjectRequest(ProjectEventAddObject):
         "request.changes[-1].code.service_func_name",
     ]
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         func_name = None
         if len(self.request.changes) > 0:
             func_name = self.request.changes[-1].code.service_func_name
@@ -327,13 +328,12 @@ class ProjectRequest(ProjectEventAddObject):
 
         During Request  status calculation, we do not allow multiple responses
         """
-        responses = project.get_children(self)
+        responses: list[ProjectEvent] = project.get_children(self)
         if len(responses) == 0:
             return SyftInfo(
                 "No one has responded to the request yet. Kindly recheck later 🙂"
             )
-
-        if len(responses) > 1:
+        elif len(responses) > 1:
             return SyftError(
                 message="The Request Contains more than one Response"
                 "which is currently not possible"
@@ -343,7 +343,7 @@ class ProjectRequest(ProjectEventAddObject):
             )
         response = responses[0]
         if not isinstance(response, ProjectRequestResponse):
-            return SyftError(
+            return SyftError(  # type: ignore[unreachable]
                 message=f"Response : {type(response)} is not of type ProjectRequestResponse"
             )
 
@@ -583,7 +583,7 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
         respondents = {}
         for poll_answer in poll_answers[::-1]:
             if not isinstance(poll_answer, AnswerProjectPoll):
-                return SyftError(
+                return SyftError(  # type: ignore[unreachable]
                     message=f"Poll answer: {type(poll_answer)} is not of type AnswerProjectPoll"
                 )
             creator_verify_key = poll_answer.creator_verify_key
@@ -623,7 +623,7 @@ class DemocraticConsensusModel(ConsensusModel):
 def add_code_request_to_project(
     project: Union[ProjectSubmit, Project],
     code: SubmitUserCode,
-    client: SyftClient,
+    client: Union[SyftClient, Any],
     reason: Optional[str] = None,
 ) -> Union[SyftError, SyftSuccess]:
     # TODO: fix the mypy issue
@@ -677,7 +677,7 @@ class Project(SyftObject):
         "event_id_hashmap",
     ]
 
-    id: Optional[UID] = None
+    id: Optional[UID] = None  # type: ignore[assignment]
     name: str
     description: Optional[str] = None
     members: List[NodeIdentity]
@@ -994,7 +994,7 @@ class Project(SyftObject):
         reply_event: Union[ProjectMessage, ProjectThreadMessage]
         if isinstance(message, ProjectMessage):
             reply_event = message.reply(reply)
-        elif isinstance(message, ProjectThreadMessage):
+        elif isinstance(message, ProjectThreadMessage):  # type: ignore[unreachable]
             reply_event = ProjectThreadMessage(
                 message=reply, parent_event_id=message.parent_event_id
             )
@@ -1039,7 +1039,7 @@ class Project(SyftObject):
             poll = self.event_id_hashmap[poll]
 
         if not isinstance(poll, ProjectMultipleChoicePoll):
-            return SyftError(
+            return SyftError(  # type: ignore[unreachable]
                 message=f"You can only reply to a poll: {type(poll)}"
                 "Kindly re-check the poll"
             )
@@ -1083,7 +1083,7 @@ class Project(SyftObject):
             if isinstance(request_event, SyftError):
                 return request_event
         else:
-            return SyftError(
+            return SyftError(  # type: ignore[unreachable]
                 message=f"You can only approve a request: {type(request)}"
                 "Kindly re-check the request"
             )
@@ -1205,7 +1205,10 @@ class ProjectSubmit(SyftObject):
         self.users = [UserIdentity.from_client(client) for client in self.clients]
 
         # Assign logged in user name as project creator
-        self.username = self.clients[0].me.name or ""
+        if isinstance(self.clients[0].me, UserView):
+            self.username = self.clients[0].me.name
+        else:
+            self.username = ""
 
         # Convert SyftClients to NodeIdentities
         self.members = list(map(self.to_node_identity, self.members))
@@ -1249,7 +1252,7 @@ class ProjectSubmit(SyftObject):
     def to_node_identity(val: Union[SyftClient, NodeIdentity]) -> NodeIdentity:
         if isinstance(val, NodeIdentity):
             return val
-        elif isinstance(val, SyftClient):
+        elif isinstance(val, SyftClient) and val.metadata is not None:
             metadata = val.metadata.to(NodeMetadataV3)
             return metadata.to(NodeIdentity)
         else:
@@ -1350,19 +1353,21 @@ def add_members_as_owners(members: List[SyftVerifyKey]) -> Set[str]:
 
 
 def elect_leader(context: TransformContext) -> TransformContext:
-    if len(context.output["members"]) == 0:
-        raise Exception("Project's require at least one member")
-
-    context.output["state_sync_leader"] = context.output["members"][0]
+    if context.output is not None:
+        if len(context.output["members"]) == 0:
+            raise ValueError("Project's require at least one member")
+        context.output["state_sync_leader"] = context.output["members"][0]
 
     return context
 
 
 def check_permissions(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+
     if len(context.output["members"]) > 1:
         # more than 1 node
         pass
-
     # check at least one owner
     if len(context.output["project_permissions"]) == 0:
         project_permissions = context.output["project_permissions"]
@@ -1375,7 +1380,8 @@ def check_permissions(context: TransformContext) -> TransformContext:
 
 
 def add_creator_name(context: TransformContext) -> TransformContext:
-    context.output["username"] = context.obj.username
+    if context.output is not None and context.obj is not None:
+        context.output["username"] = context.obj.username
     return context
 
 

@@ -61,7 +61,7 @@ class NodeActionData(SyftObject):
     __canonical_name__ = "NodeActionData"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID] = None
+    id: Optional[UID] = None  # type: ignore[assignment]
     type: NodeType
     status: ExecutionStatus = ExecutionStatus.PROCESSING
     retry: int = 0
@@ -203,15 +203,17 @@ class InMemoryStoreClientConfig(StoreClientConfig):
 @serializable(without=["_lock"])
 class NetworkXBackingStore(BaseGraphStore):
     def __init__(self, store_config: StoreConfig, reset: bool = False) -> None:
-        self.path_str = store_config.client_config.file_path.as_posix()
-
+        if store_config.client_config:
+            self.path_str = store_config.client_config.file_path.as_posix()
+        else:
+            self.path_str = ""
         if not reset and os.path.exists(self.path_str):
             self._db = self._load_from_path(self.path_str)
         else:
             self._db = nx.DiGraph()
 
         self.locking_config = store_config.locking_config
-        self._lock = None
+        self._lock: Optional[SyftLock] = None
 
     @property
     def lock(self) -> SyftLock:

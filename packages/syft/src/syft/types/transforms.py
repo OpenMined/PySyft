@@ -33,14 +33,16 @@ class TransformContext(Context):
     credentials: Optional[SyftVerifyKey] = None
     obj: Optional[Any] = None
 
-    @staticmethod
-    def from_context(obj: Any, context: Optional[Context] = None) -> Self:
-        t_context = TransformContext()
+    @classmethod
+    def from_context(cls, obj: Any, context: Optional[Context] = None) -> Self:
+        t_context = cls()
         t_context.obj = obj
         try:
             t_context.output = obj.to_dict(exclude_empty=True)
         except Exception:
             t_context.output = dict(obj)
+        if context is None:
+            return t_context
         if hasattr(context, "credentials"):
             t_context.credentials = context.credentials
         if hasattr(context, "node"):
@@ -67,7 +69,7 @@ def geteitherattr(
 
 def make_set_default(key: str, value: Any) -> Callable:
     def set_default(context: TransformContext) -> TransformContext:
-        if not geteitherattr(context.obj, context.output, key, None):
+        if context.output and not geteitherattr(context.obj, context.output, key, None):
             context.output[key] = value
         return context
 
@@ -76,9 +78,10 @@ def make_set_default(key: str, value: Any) -> Callable:
 
 def drop(list_keys: List[str]) -> Callable:
     def drop_keys(context: TransformContext) -> TransformContext:
-        for key in list_keys:
-            if key in context.output:
-                del context.output[key]
+        if context.output:
+            for key in list_keys:
+                if key in context.output:
+                    del context.output[key]
         return context
 
     return drop_keys
@@ -86,9 +89,12 @@ def drop(list_keys: List[str]) -> Callable:
 
 def rename(old_key: str, new_key: str) -> Callable:
     def drop_keys(context: TransformContext) -> TransformContext:
-        context.output[new_key] = geteitherattr(context.obj, context.output, old_key)
-        if old_key in context.output:
-            del context.output[old_key]
+        if context.output:
+            context.output[new_key] = geteitherattr(
+                context.obj, context.output, old_key
+            )
+            if old_key in context.output:
+                del context.output[old_key]
         return context
 
     return drop_keys
@@ -96,6 +102,9 @@ def rename(old_key: str, new_key: str) -> Callable:
 
 def keep(list_keys: List[str]) -> Callable:
     def drop_keys(context: TransformContext) -> TransformContext:
+        if context.output is None:
+            return context
+
         for key in list_keys:
             if key not in context.output:
                 context.output[key] = getattr(context.obj, key, None)
@@ -111,7 +120,9 @@ def keep(list_keys: List[str]) -> Callable:
     return drop_keys
 
 
-def convert_types(list_keys: List[str], types: Union[type, List[type]]) -> Callable:
+def convert_types(
+    list_keys: List[str], types: Union[type, List[type]]
+) -> Callable[[TransformContext], TransformContext]:
     if not isinstance(types, list):
         types = [types] * len(list_keys)
 
@@ -119,41 +130,48 @@ def convert_types(list_keys: List[str], types: Union[type, List[type]]) -> Calla
         raise Exception("convert types lists must be the same length")
 
     def run_convert_types(context: TransformContext) -> TransformContext:
-        for key, _type in zip(list_keys, types):
-            context.output[key] = _type(geteitherattr(context.obj, context.output, key))
+        if context.output:
+            for key, _type in zip(list_keys, types):
+                context.output[key] = _type(
+                    geteitherattr(context.obj, context.output, key)
+                )
         return context
 
     return run_convert_types
 
 
 def generate_id(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
     if "id" not in context.output or not isinstance(context.output["id"], UID):
         context.output["id"] = UID()
     return context
 
 
 def validate_url(context: TransformContext) -> TransformContext:
-    if context.output["url"] is not None:
+    if context.output and context.output["url"] is not None:
         context.output["url"] = GridURL.from_url(context.output["url"]).url_no_port
     return context
 
 
 def validate_email(context: TransformContext) -> TransformContext:
-    if context.output["email"] is not None:
+    if context.output and context.output["email"] is not None:
         EmailStr._validate(context.output["email"])
     return context
 
 
 def str_url_to_grid_url(context: TransformContext) -> TransformContext:
-    url = context.output.get("url", None)
-    if url is not None and isinstance(url, str):
-        context.output["url"] = GridURL.from_url(str)
+    if context.output:
+        url = context.output.get("url", None)
+        if url is not None and isinstance(url, str):
+            context.output["url"] = GridURL.from_url(str)
     return context
 
 
 def add_credentials_for_key(key: str) -> Callable:
     def add_credentials(context: TransformContext) -> TransformContext:
-        context.output[key] = context.credentials
+        if context.output is not None:
+            context.output[key] = context.credentials
         return context
 
     return add_credentials
@@ -161,7 +179,8 @@ def add_credentials_for_key(key: str) -> Callable:
 
 def add_node_uid_for_key(key: str) -> Callable:
     def add_node_uid(context: TransformContext) -> TransformContext:
-        context.output[key] = context.node.id
+        if context.output is not None and context.node is not None:
+            context.output[key] = context.node.id
         return context
 
     return add_node_uid
@@ -187,7 +206,7 @@ def validate_klass_and_version(
     klass_to: Union[Type, str],
     version_from: Optional[int] = None,
     version_to: Optional[int] = None,
-):
+) -> tuple[str, Optional[int], str, Optional[int]]:
     if not isinstance(klass_from, (type, str)):
         raise NotImplementedError(
             "Arguments to `klass_from` should be either of `Type` or `str` type."
@@ -237,7 +256,7 @@ def transform_method(
         version_to=version_to,
     )
 
-    def decorator(function: Callable):
+    def decorator(function: Callable) -> Callable:
         SyftObjectRegistry.add_transform(
             klass_from=klass_from_str,
             version_from=version_from,
@@ -269,7 +288,7 @@ def transform(
         version_to=version_to,
     )
 
-    def decorator(function: Callable):
+    def decorator(function: Callable) -> Callable:
         transforms = function()
 
         wrapper = generate_transform_wrapper(

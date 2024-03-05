@@ -93,6 +93,9 @@ sys.path.append(str(Path(__file__)))
 logger.start()
 
 try:
+    # third party
+    from IPython import get_ipython
+
     get_ipython()  # noqa: F821
     # TODO: add back later or auto detect
     # display(

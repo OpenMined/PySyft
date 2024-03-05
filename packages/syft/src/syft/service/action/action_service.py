@@ -103,7 +103,7 @@ class ActionService(AbstractService):
         if isinstance(action_object, ActionObject):
             action_object.syft_created_at = DateTime.now()
         else:
-            action_object.private_obj.syft_created_at = DateTime.now()
+            action_object.private_obj.syft_created_at = DateTime.now()  # type: ignore[unreachable]
             action_object.mock_obj.syft_created_at = DateTime.now()
 
         # If either context or argument is True, has_result_read_permission is True
@@ -231,11 +231,11 @@ class ActionService(AbstractService):
             )
             # Resolve graph links
             if (
-                not isinstance(obj, TwinObject)
+                not isinstance(obj, TwinObject)  # type: ignore[unreachable]
                 and resolve_nested
                 and isinstance(obj.syft_action_data, ActionDataLink)
             ):
-                if not self.is_resolved(
+                if not self.is_resolved(  # type: ignore[unreachable]
                     context, obj.syft_action_data.action_object_id.id
                 ).ok():
                     return SyftError(message="This object is not resolved yet.")
@@ -400,7 +400,7 @@ class ActionService(AbstractService):
 
     def set_result_to_store(
         self,
-        result_action_object: ActionObject,
+        result_action_object: Union[ActionObject, TwinObject],
         context: AuthedServiceContext,
         output_policy: Optional[OutputPolicy] = None,
     ) -> Union[Result[ActionObject, str], SyftError]:
@@ -430,7 +430,7 @@ class ActionService(AbstractService):
         if isinstance(result_action_object, TwinObject):
             result_blob_id = result_action_object.private.syft_blob_storage_entry_id
         else:
-            result_blob_id = result_action_object.syft_blob_storage_entry_id
+            result_blob_id = result_action_object.syft_blob_storage_entry_id  # type: ignore[unreachable]
 
         # pass permission information to the action store as extra kwargs
         context.extra_kwargs = {"has_result_read_permission": True}
@@ -440,7 +440,7 @@ class ActionService(AbstractService):
         if set_result.is_err():
             return set_result
 
-        blob_storage_service: BlobStorageService = context.node.get_service(
+        blob_storage_service: AbstractService = context.node.get_service(
             BlobStorageService
         )
 
@@ -553,7 +553,7 @@ class ActionService(AbstractService):
             )
         else:
             # TODO: Implement for twinobject args
-            args = filter_twin_args(args, twin_mode=TwinMode.NONE)
+            args = filter_twin_args(args, twin_mode=TwinMode.NONE)  # type: ignore[unreachable]
             val = args[0]
             setattr(resolved_self.syft_action_data, name, val)
             return Ok(
@@ -580,7 +580,7 @@ class ActionService(AbstractService):
                 )
             )
         else:
-            val = getattr(resolved_self.syft_action_data, action.op)
+            val = getattr(resolved_self.syft_action_data, action.op)  # type: ignore[unreachable]
             return Ok(wrap_result(action.result_id, val))
 
     def call_method(
@@ -623,7 +623,7 @@ class ActionService(AbstractService):
                 )
             )
         else:
-            return execute_object(self, context, resolved_self, action)
+            return execute_object(self, context, resolved_self, action)  # type:ignore[unreachable]
 
     @service_method(path="action.execute", name="execute", roles=GUEST_ROLE_LEVEL)
     def execute(

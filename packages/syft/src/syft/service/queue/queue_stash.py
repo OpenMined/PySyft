@@ -105,7 +105,7 @@ class QueueItem(SyftObject):
     def __repr__(self) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"
 
     @property

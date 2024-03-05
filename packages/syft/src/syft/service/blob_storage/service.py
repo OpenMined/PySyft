@@ -201,7 +201,7 @@ class BlobStorageService(AbstractService):
     ) -> Union[BlobRetrieval, SyftError]:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
-            obj: BlobStorageEntry = result.ok()
+            obj: Optional[BlobStorageEntry] = result.ok()
             if obj is None:
                 return SyftError(
                     message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"

@@ -17,6 +17,7 @@ import time
 import traceback
 from typing import Any
 from typing import Callable
+from typing import ClassVar
 from typing import Dict
 from typing import Generator
 from typing import List
@@ -70,6 +71,7 @@ from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..job.job_stash import Job
 from ..output.output_service import ExecutionOutput
+from ..output.output_service import OutputService
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
 from ..policy.policy import EmpyInputPolicy
@@ -389,7 +391,7 @@ class UserCode(SyftObject):
         "service_func_name",
         "code_hash",
     ]
-    __attr_unique__: list = []
+    __attr_unique__: ClassVar[List[str]] = []
     __repr_attrs__ = [
         "service_func_name",
         "input_owners",
@@ -623,6 +625,10 @@ class UserCode(SyftObject):
     @property
     def output_history(self) -> Union[List[ExecutionOutput], SyftError]:
         api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        if api is None:
+            return SyftError(
+                message=f"Can't access the api. You must login to {self.syft_node_location}"
+            )
         return api.services.output.get_by_user_code_id(self.id)
 
     def get_output_history(
@@ -632,8 +638,8 @@ class UserCode(SyftObject):
             return SyftError(
                 message="Execution denied, Please wait for the code to be approved"
             )
-
-        output_service = context.node.get_service("outputservice")  # type: ignore
+        node = cast(AbstractNode, context.node)
+        output_service = cast(OutputService, node.get_service("outputservice"))
         return output_service.get_by_user_code_id(context, self.id)
 
     def apply_output(
@@ -649,7 +655,9 @@ class UserCode(SyftObject):
             )
 
         output_ids = filter_only_uids(outputs)
-        output_service = context.node.get_service("outputservice")  # type: ignore
+        context.node = cast(AbstractNode, context.node)
+        output_service = context.node.get_service("outputservice")
+        output_service = cast(OutputService, output_service)
         execution_result = output_service.create(
             context,
             user_code_id=self.id,
@@ -672,6 +680,10 @@ class UserCode(SyftObject):
         from ...client.api import APIRegistry
 
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        if api is None:
+            return SyftError(
+                message=f"Can't access the api. You must login to {self.node_uid}"
+            )
         return api.services.code.get_results(self)
 
     @property
@@ -793,7 +805,7 @@ class UserCode(SyftObject):
 
         return md
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return as_markdown_code(self._inner_repr())
 
     @property
@@ -845,7 +857,7 @@ class SubmitUserCodeV2(SyftObject):
     __canonical_name__ = "SubmitUserCode"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID] = None
+    id: Optional[UID] = None  # type: ignore[assignment]
     code: str
     func_name: str
     signature: inspect.Signature
@@ -864,7 +876,7 @@ class SubmitUserCode(SyftObject):
     __canonical_name__ = "SubmitUserCode"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    id: Optional[UID] = None
+    id: Optional[UID] = None  # type: ignore[assignment]
     code: str
     func_name: str
     signature: inspect.Signature
@@ -965,7 +977,10 @@ class SubmitUserCode(SyftObject):
             #     node_uid=node_id.node_id, user_verify_key=node_id.verify_key
             # )
             api = APIRegistry.get_by_recent_node_uid(node_uid=node_id.node_id)
-
+            if api is None:
+                return SyftError(
+                    f"Can't access the api. You must login to {node_id.node_id}"
+                )
             # Creating TwinObject from the ids of the kwargs
             # Maybe there are some corner cases where this is not enough
             # And need only ActionObjects
@@ -1128,15 +1143,16 @@ def syft_function(
 
 
 def generate_unique_func_name(context: TransformContext) -> TransformContext:
-    code_hash = context.output["code_hash"]
-    service_func_name = context.output["func_name"]
-    context.output["service_func_name"] = service_func_name
-    func_name = f"user_func_{service_func_name}_{context.credentials}_{code_hash}"
-    user_unique_func_name = (
-        f"user_func_{service_func_name}_{context.credentials}_{time.time()}"
-    )
-    context.output["unique_func_name"] = func_name
-    context.output["user_unique_func_name"] = user_unique_func_name
+    if context.output is not None:
+        code_hash = context.output["code_hash"]
+        service_func_name = context.output["func_name"]
+        context.output["service_func_name"] = service_func_name
+        func_name = f"user_func_{service_func_name}_{context.credentials}_{code_hash}"
+        user_unique_func_name = (
+            f"user_func_{service_func_name}_{context.credentials}_{time.time()}"
+        )
+        context.output["unique_func_name"] = func_name
+        context.output["user_unique_func_name"] = user_unique_func_name
     return context
 
 
@@ -1158,7 +1174,7 @@ def process_code(
     f.decorator_list = []
 
     call_args = function_input_kwargs
-    if "domain" in function_input_kwargs:
+    if "domain" in function_input_kwargs and context.output is not None:
         context.output["uses_domain"] = True
     call_stmt_keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in call_args]
     call_stmt = ast.Assign(
@@ -1185,7 +1201,10 @@ def process_code(
 
 
 def new_check_code(context: TransformContext) -> TransformContext:
-    # TODO remove this tech debt hack
+    # TODO: remove this tech debt hack
+    if context.output is None:
+        return context
+
     input_kwargs = context.output["input_policy_init_kwargs"]
     node_view_workaround = False
     for k in input_kwargs.keys():
@@ -1213,25 +1232,28 @@ def new_check_code(context: TransformContext) -> TransformContext:
 
 
 def locate_launch_jobs(context: TransformContext) -> TransformContext:
-    nested_codes = {}
-    tree = ast.parse(context.output["raw_code"])
-
-    # look for domain arg
-    if "domain" in [arg.arg for arg in tree.body[0].args.args]:
-        v = LaunchJobVisitor()
-        v.visit(tree)
-        nested_calls = v.nested_calls
-        user_code_service = context.node.get_service("usercodeService")
-        for call in nested_calls:
-            user_codes = user_code_service.get_by_service_name(context, call)
-            if isinstance(user_codes, SyftError):
-                raise Exception(user_codes.message)
-            # TODO: Not great
-            user_code = user_codes[-1]
-            user_code_link = LinkedObject.from_obj(user_code, node_uid=context.node.id)
-
-            nested_codes[call] = (user_code_link, user_code.nested_codes)
-    context.output["nested_codes"] = nested_codes
+    if context.node is None:
+        raise ValueError(f"context {context}'s node is None")
+    if context.output is not None:
+        nested_codes = {}
+        tree = ast.parse(context.output["raw_code"])
+        # look for domain arg
+        if "domain" in [arg.arg for arg in tree.body[0].args.args]:
+            v = LaunchJobVisitor()
+            v.visit(tree)
+            nested_calls = v.nested_calls
+            user_code_service = context.node.get_service("usercodeService")
+            for call in nested_calls:
+                user_codes = user_code_service.get_by_service_name(context, call)
+                if isinstance(user_codes, SyftError):
+                    raise Exception(user_codes.message)
+                # TODO: Not great
+                user_code = user_codes[-1]
+                user_code_link = LinkedObject.from_obj(
+                    user_code, node_uid=context.node.id
+                )
+                nested_codes[call] = (user_code_link, user_code.nested_codes)
+        context.output["nested_codes"] = nested_codes
     return context
 
 
@@ -1244,9 +1266,12 @@ def compile_byte_code(parsed_code: str) -> Optional[PyCodeObject]:
 
 
 def compile_code(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+
     byte_code = compile_byte_code(context.output["parsed_code"])
     if byte_code is None:
-        raise Exception(
+        raise ValueError(
             "Unable to compile byte code from parsed code. "
             + context.output["parsed_code"]
         )
@@ -1254,50 +1279,66 @@ def compile_code(context: TransformContext) -> TransformContext:
 
 
 def hash_code(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+
     code = context.output["code"]
     context.output["raw_code"] = code
     code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
     context.output["code_hash"] = code_hash
+
     return context
 
 
 def add_credentials_for_key(key: str) -> Callable:
     def add_credentials(context: TransformContext) -> TransformContext:
-        context.output[key] = context.credentials
+        if context.output is not None:
+            context.output[key] = context.credentials
         return context
 
     return add_credentials
 
 
 def check_policy(policy: Any, context: TransformContext) -> TransformContext:
-    policy_service = context.node.get_service(PolicyService)
-    if isinstance(policy, SubmitUserPolicy):
-        policy = policy.to(UserPolicy, context=context)
-    elif isinstance(policy, UID):
-        policy = policy_service.get_policy_by_uid(context, policy)
-        if policy.is_ok():
-            policy = policy.ok()
-
+    if context.node is not None:
+        policy_service = context.node.get_service(PolicyService)
+        if isinstance(policy, SubmitUserPolicy):
+            policy = policy.to(UserPolicy, context=context)
+        elif isinstance(policy, UID):
+            policy = policy_service.get_policy_by_uid(context, policy)
+            if policy.is_ok():
+                policy = policy.ok()
     return policy
 
 
 def check_input_policy(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+
     ip = context.output["input_policy_type"]
     ip = check_policy(policy=ip, context=context)
     context.output["input_policy_type"] = ip
+
     return context
 
 
 def check_output_policy(context: TransformContext) -> TransformContext:
-    op = context.output["output_policy_type"]
-    op = check_policy(policy=op, context=context)
-    context.output["output_policy_type"] = op
+    if context.output is not None:
+        op = context.output["output_policy_type"]
+        op = check_policy(policy=op, context=context)
+        context.output["output_policy_type"] = op
     return context
 
 
 def create_code_status(context: TransformContext) -> TransformContext:
     # relative
     from .user_code_service import UserCodeService
+
+    if context.node is None:
+        raise ValueError(f"{context}'s node is None")
+
+    if context.output is None:
+        return context
 
     input_keys = list(context.output["input_policy_init_kwargs"].keys())
     code_link = LinkedObject.from_uid(
@@ -1344,12 +1385,17 @@ def create_code_status(context: TransformContext) -> TransformContext:
 
 
 def add_submit_time(context: TransformContext) -> TransformContext:
-    context.output["submit_time"] = DateTime.now()
+    if context.output:
+        context.output["submit_time"] = DateTime.now()
     return context
 
 
 def set_default_pool_if_empty(context: TransformContext) -> TransformContext:
-    if context.output.get("worker_pool_name", None) is None:
+    if (
+        context.node
+        and context.output
+        and context.output.get("worker_pool_name", None) is None
+    ):
         default_pool = context.node.get_default_worker_pool()
         context.output["worker_pool_name"] = default_pool.name
     return context
