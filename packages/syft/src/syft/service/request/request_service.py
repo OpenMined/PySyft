@@ -210,20 +210,23 @@ class RequestService(AbstractService):
 
             link = LinkedObject.with_context(request, context=context)
             if not request.status == RequestStatus.PENDING:
-                mark_as_read = context.node.get_service_method(
-                    NotificationService.mark_as_read
-                )
-                mark_as_read(context=context, uid=request_notification.id)
+                if request_notification is not None and not isinstance(
+                    request_notification, SyftError
+                ):
+                    mark_as_read = context.node.get_service_method(
+                        NotificationService.mark_as_read
+                    )
+                    mark_as_read(context=context, uid=request_notification.id)
 
-                notification = CreateNotification(
-                    subject=f"{request.changes} for Request id: {uid} has status updated to {request.status}",
-                    to_user_verify_key=request.requesting_user_verify_key,
-                    linked_obj=link,
-                )
-                send_notification = context.node.get_service_method(
-                    NotificationService.send
-                )
-                send_notification(context=context, notification=notification)
+                    notification = CreateNotification(
+                        subject=f"{request.changes} for Request id: {uid} has status updated to {request.status}",
+                        to_user_verify_key=request.requesting_user_verify_key,
+                        linked_obj=link,
+                    )
+                    send_notification = context.node.get_service_method(
+                        NotificationService.send
+                    )
+                    send_notification(context=context, notification=notification)
 
             # TODO: check whereever we're return SyftError encapsulate it in Result.
             if hasattr(result, "value"):

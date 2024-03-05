@@ -92,6 +92,7 @@ ENV PATH=$PATH:$HOME/.local/bin \
     SERVICE_NAME="backend" \
     RELEASE="production" \
     DEV_MODE="False" \
+    DEBUGGER_ENABLED="False" \
     CONTAINER_HOST="docker" \
     PORT=80\
     HTTP_PORT=80 \

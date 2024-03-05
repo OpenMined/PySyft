@@ -55,7 +55,7 @@ class NodeMetadataUpdate(SyftObject):
     organization: Optional[str]
     description: Optional[str]
     on_board: Optional[bool]
-    id: Optional[UID]
+    id: Optional[UID]  # type: ignore[assignment]
     verify_key: Optional[SyftVerifyKey]
     highest_object_version: Optional[int]
     lowest_object_version: Optional[int]

@@ -33,7 +33,9 @@ def get_operator(version_string: str) -> Tuple[str, Callable, str]:
     return version_string, op, op_char
 
 
-def check_rule(version_string: str, LATEST_STABLE_SYFT: str, __version__: str) -> tuple:
+def check_rule(
+    version_string: str, LATEST_STABLE_SYFT: str, __version__: str
+) -> tuple[Any, list[str], list[str]]:
     version_string, op, op_char = get_operator(version_string)
     syft_version = version.parse(__version__)
     stable_version = version.parse(LATEST_STABLE_SYFT)

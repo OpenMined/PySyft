@@ -225,12 +225,12 @@ class UserService(AbstractService):
     def update(
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate
     ) -> Union[UserView, SyftError]:
-        updates_role = user_update.role is not Empty
+        updates_role = user_update.role is not Empty  # type: ignore[comparison-overlap]
         can_edit_roles = ServiceRoleCapability.CAN_EDIT_ROLES in context.capabilities()
 
         if updates_role and not can_edit_roles:
             return SyftError(message=f"{context.role} is not allowed to edit roles")
-        if (user_update.mock_execution_permission is not Empty) and not can_edit_roles:
+        if (user_update.mock_execution_permission is not Empty) and not can_edit_roles:  # type: ignore[comparison-overlap]
             return SyftError(
                 message=f"{context.role} is not allowed to update permissions"
             )

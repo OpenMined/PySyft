@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 
 # third party
 from result import Result
@@ -13,6 +14,7 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ..action.action_permissions import ActionObjectPermission
 from .settings import NodeSettingsV2
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
@@ -31,7 +33,11 @@ class SettingsStash(BaseUIDStoreStash):
         super().__init__(store=store)
 
     def set(
-        self, credentials: SyftVerifyKey, settings: NodeSettingsV2
+        self,
+        credentials: SyftVerifyKey,
+        settings: NodeSettingsV2,
+        add_permissions: Optional[List[ActionObjectPermission]] = None,
+        ignore_duplicates: bool = False,
     ) -> Result[NodeSettingsV2, str]:
         res = self.check_type(settings, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
@@ -40,7 +46,10 @@ class SettingsStash(BaseUIDStoreStash):
         return super().set(credentials=credentials, obj=res.ok())
 
     def update(
-        self, credentials: SyftVerifyKey, settings: NodeSettingsV2
+        self,
+        credentials: SyftVerifyKey,
+        settings: NodeSettingsV2,
+        has_permission: bool = False,
     ) -> Result[NodeSettingsV2, str]:
         res = self.check_type(settings, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments

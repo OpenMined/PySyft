@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
 from typing import _GenericAlias
+from typing import cast
 from typing import get_args
 from typing import get_origin
 
@@ -63,6 +64,7 @@ from .connection import NodeConnection
 
 if TYPE_CHECKING:
     # relative
+    from ..node import Node
     from ..service.job.job_stash import Job
 
 
@@ -240,8 +242,8 @@ class RemoteFunction(SyftObject):
         return self.signature
 
     def prepare_args_and_kwargs(
-        self, args: List[Any], kwargs: Dict[str, Any]
-    ) -> Union[SyftError, Tuple[List[Any], Dict[str, Any]]]:
+        self, args: Union[list, tuple], kwargs: dict[str, Any]
+    ) -> Union[SyftError, tuple[tuple, dict[str, Any]]]:
         # Validate and migrate args and kwargs
         res = validate_callable_args_and_kwargs(args, kwargs, self.signature)
         if isinstance(res, SyftError):
@@ -278,7 +280,7 @@ class RemoteFunction(SyftObject):
         api_call = SyftAPICall(
             node_uid=self.node_uid,
             path=self.path,
-            args=_valid_args,
+            args=list(_valid_args),
             kwargs=_valid_kwargs,
             blocking=blocking,
         )
@@ -303,8 +305,8 @@ class RemoteUserCodeFunction(RemoteFunction):
     api: SyftAPI
 
     def prepare_args_and_kwargs(
-        self, args: List[Any], kwargs: Dict[str, Any]
-    ) -> Union[SyftError, Tuple[List[Any], Dict[str, Any]]]:
+        self, args: Union[list, tuple], kwargs: Dict[str, Any]
+    ) -> Union[SyftError, tuple[tuple, dict[str, Any]]]:
         # relative
         from ..service.action.action_object import convert_to_pointers
 
@@ -505,9 +507,12 @@ class APIModule:
         results = self.get_all()
         return results._repr_html_()
 
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return NotImplementedError
+
 
 def debox_signed_syftapicall_response(
-    signed_result: SignedSyftAPICall,
+    signed_result: Union[SignedSyftAPICall, Any],
 ) -> Union[Any, SyftError]:
     if not isinstance(signed_result, SignedSyftAPICall):
         return SyftError(message="The result is not signed")
@@ -824,16 +829,16 @@ class SyftAPI(SyftObject):
         )
 
     @property
-    def services(self) -> Optional[APIModule]:
+    def services(self) -> APIModule:
         if self.api_module is None:
             self.generate_endpoints()
-        return self.api_module
+        return cast(APIModule, self.api_module)
 
     @property
-    def lib(self) -> Optional[APIModule]:
+    def lib(self) -> APIModule:
         if self.libs is None:
             self.generate_endpoints()
-        return self.libs
+        return cast(APIModule, self.libs)
 
     def has_service(self, service_name: str) -> bool:
         return hasattr(self.services, service_name)
@@ -939,23 +944,33 @@ class NodeIdentity(Identity):
     node_name: str
 
     @staticmethod
-    def from_api(api: SyftAPI) -> Optional[NodeIdentity]:
+    def from_api(api: SyftAPI) -> NodeIdentity:
         # stores the name root verify key of the domain node
-        if api.connection is not None:
-            node_metadata = api.connection.get_node_metadata(api.signing_key)
-            return NodeIdentity(
-                node_name=node_metadata.name,
-                node_id=api.node_uid,
-                verify_key=SyftVerifyKey.from_string(node_metadata.verify_key),
-            )
-        return None
+        if api.connection is None:
+            raise ValueError("{api}'s connection is None. Can't get the node identity")
+        node_metadata = api.connection.get_node_metadata(api.signing_key)
+        return NodeIdentity(
+            node_name=node_metadata.name,
+            node_id=api.node_uid,
+            verify_key=SyftVerifyKey.from_string(node_metadata.verify_key),
+        )
 
     @classmethod
     def from_change_context(cls, context: ChangeContext) -> NodeIdentity:
+        if context.node is None:
+            raise ValueError(f"{context}'s node is None")
         return cls(
             node_name=context.node.name,
             node_id=context.node.id,
             verify_key=context.node.signing_key.verify_key,
+        )
+
+    @classmethod
+    def from_node(cls, node: Node) -> NodeIdentity:
+        return cls(
+            node_name=node.name,
+            node_id=node.id,
+            verify_key=node.signing_key.verify_key,
         )
 
     def __eq__(self, other: Any) -> bool:

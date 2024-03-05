@@ -3,7 +3,10 @@ from io import BytesIO
 import math
 from queue import Queue
 import threading
+from typing import Any
+from typing import Callable
 from typing import Dict
+from typing import Generator
 from typing import List
 from typing import Optional
 from typing import Type
@@ -94,7 +97,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                     self.urls,
                     start=1,
                 ):
-                    if api is not None:
+                    if api is not None and api.connection is not None:
                         blob_url = api.connection.to_blob_route(
                             url.url_path, host=url.host_or_ip
                         )
@@ -103,10 +106,12 @@ class SeaweedFSBlobDeposit(BlobDeposit):
 
                     # read a chunk untill we have read part_size
                     class PartGenerator:
-                        def __init__(self):
+                        def __init__(self) -> None:
                             self.no_lines = 0
 
-                        def async_generator(self, chunk_size=DEFAULT_UPLOAD_CHUNK_SIZE):
+                        def async_generator(
+                            self, chunk_size: int = DEFAULT_UPLOAD_CHUNK_SIZE
+                        ) -> Generator:
                             item_queue: Queue = Queue()
                             threading.Thread(
                                 target=self.add_chunks_to_queue,
@@ -120,8 +125,10 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                                 item = item_queue.get()
 
                         def add_chunks_to_queue(
-                            self, queue, chunk_size=DEFAULT_UPLOAD_CHUNK_SIZE
-                        ):
+                            self,
+                            queue: Queue,
+                            chunk_size: int = DEFAULT_UPLOAD_CHUNK_SIZE,
+                        ) -> None:
                             """Creates a data geneator for the part"""
                             n = 0
 
@@ -160,20 +167,22 @@ class SeaweedFSBlobDeposit(BlobDeposit):
             syft_node_location=self.syft_node_location,
             syft_client_verify_key=self.syft_client_verify_key,
         )
+        if mark_write_complete_method is None:
+            return SyftError(message="mark_write_complete_method is None")
         return mark_write_complete_method(
             etags=etags, uid=self.blob_storage_entry_id, no_lines=no_lines
         )
 
 
 @migrate(SeaweedFSBlobDeposit, SeaweedFSBlobDepositV1)
-def downgrade_seaweedblobdeposit_v2_to_v1():
+def downgrade_seaweedblobdeposit_v2_to_v1() -> list[Callable]:
     return [
         drop(["size"]),
     ]
 
 
 @migrate(SeaweedFSBlobDepositV1, SeaweedFSBlobDeposit)
-def upgrade_seaweedblobdeposit_v1_to_v2():
+def upgrade_seaweedblobdeposit_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("size", 1),
     ]
@@ -240,11 +249,14 @@ class SeaweedFSConnection(BlobStorageConnection):
     def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, *exc) -> None:
+    def __exit__(self, *exc: Any) -> None:
         self.client.close()
 
     def read(
-        self, fp: SecureFilePathLocation, type_: Optional[Type], bucket_name=None
+        self,
+        fp: SecureFilePathLocation,
+        type_: Optional[Type],
+        bucket_name: Optional[str] = None,
     ) -> BlobRetrieval:
         if bucket_name is None:
             bucket_name = self.default_bucket_name
