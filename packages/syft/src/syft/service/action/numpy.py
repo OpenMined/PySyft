@@ -96,9 +96,11 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
         self, ufunc: Any, method: str, *inputs: Any, **kwargs: Any
     ) -> Union[Self, tuple[Self, ...]]:
         inputs = tuple(
-            np.array(x.syft_action_data, dtype=x.dtype)
-            if isinstance(x, NumpyArrayObject)
-            else x
+            (
+                np.array(x.syft_action_data, dtype=x.dtype)
+                if isinstance(x, NumpyArrayObject)
+                else x
+            )
             for x in inputs
         )
 

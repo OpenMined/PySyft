@@ -346,8 +346,8 @@ passthrough_attrs = [
     "model_validate",  # pydantic
     "model_validate_json",  # pydantic
     "copy",  # pydantic
-    "__sha256__",
-    "__hash_exclude_attrs__",
+    "__sha256__",  # syft
+    "__hash_exclude_attrs__",  # syft
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -623,6 +623,7 @@ BASE_PASSTHROUGH_ATTRS = [
     "node_uid",
     "__sha256__",
     "__hash_exclude_attrs__",
+    "__hash__",
 ]
 
 
@@ -1886,6 +1887,9 @@ class ActionObject(SyftObject):
 
     def __len__(self) -> int:
         return self.__len__()
+
+    def __hash__(self, *args: Any, **kwargs: Any) -> int:
+        return super().__hash__(*args, **kwargs)
 
     def __getitem__(self, key: Any) -> Any:
         return self._syft_output_action_object(self.__getitem__(key))
