@@ -82,6 +82,9 @@ class AbstractService:
             obj = Ok(obj)
         return obj
 
+    def get_all(*arg: Any, **kwargs: Any) -> Any:
+        pass
+
 
 @serializable()
 class BaseConfig(SyftBaseObject):

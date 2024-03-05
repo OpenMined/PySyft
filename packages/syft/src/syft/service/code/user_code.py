@@ -71,6 +71,7 @@ from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..job.job_stash import Job
 from ..output.output_service import ExecutionOutput
+from ..output.output_service import OutputService
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
 from ..policy.policy import EmpyInputPolicy
@@ -637,8 +638,8 @@ class UserCode(SyftObject):
             return SyftError(
                 message="Execution denied, Please wait for the code to be approved"
             )
-
-        output_service = context.node.get_service("outputservice")  # type: ignore
+        node = cast(AbstractNode, context.node)
+        output_service = cast(OutputService, node.get_service("outputservice"))
         return output_service.get_by_user_code_id(context, self.id)
 
     def apply_output(
@@ -654,7 +655,9 @@ class UserCode(SyftObject):
             )
 
         output_ids = filter_only_uids(outputs)
-        output_service = context.node.get_service("outputservice")  # type: ignore
+        context.node = cast(AbstractNode, context.node)
+        output_service = context.node.get_service("outputservice")
+        output_service = cast(OutputService, output_service)
         execution_result = output_service.create(
             context,
             user_code_id=self.id,
@@ -1329,6 +1332,12 @@ def check_output_policy(context: TransformContext) -> TransformContext:
 def create_code_status(context: TransformContext) -> TransformContext:
     # relative
     from .user_code_service import UserCodeService
+
+    if context.node is None:
+        raise ValueError(f"{context}'s node is None")
+
+    if context.output is None:
+        return context
 
     input_keys = list(context.output["input_policy_init_kwargs"].keys())
     code_link = LinkedObject.from_uid(

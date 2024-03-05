@@ -15,6 +15,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
+from ..log.log_service import LogService
 from ..queue.queue_stash import ActionQueueItem
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -219,7 +220,9 @@ class JobService(AbstractService):
     def add_read_permission_log_for_code_owner(
         self, context: AuthedServiceContext, log_id: UID, user_code: UserCode
     ) -> Any:
-        log_service = context.node.get_service("logservice")  # type: ignore
+        context.node = cast(AbstractNode, context.node)
+        log_service = context.node.get_service("logservice")
+        log_service = cast(LogService, log_service)
         return log_service.stash.add_permission(
             ActionObjectPermission(
                 log_id, ActionPermission.READ, user_code.user_verify_key

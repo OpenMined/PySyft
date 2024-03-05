@@ -71,7 +71,7 @@ def extract_uid(v: Any) -> UID:
     return value
 
 
-def filter_only_uids(results: Any) -> Union[List[UID], Dict[str, UID]]:
+def filter_only_uids(results: Any) -> Union[list[UID], dict[str, UID], UID]:
     if not hasattr(results, "__len__"):
         results = [results]
 
@@ -390,8 +390,9 @@ class OutputPolicyExecuteCount(OutputPolicy):
             message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
         )
 
-    def _is_valid(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:  # type: ignore
-        output_service = context.node.get_service("outputservice")  # type: ignore
+    def _is_valid(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:
+        context.node = cast(AbstractNode, context.node)
+        output_service = context.node.get_service("outputservice")
         output_history = output_service.get_by_output_policy_id(context, self.id)
         if isinstance(output_history, SyftError):
             return output_history
