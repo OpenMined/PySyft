@@ -18,6 +18,11 @@ spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className | quote }}
   {{- end }}
+  defaultBackend:
+    service:
+      name: proxy
+      port:
+        number: 80
   rules:
   - host: {{ .Values.ingress.hostname | quote }}
     http:
