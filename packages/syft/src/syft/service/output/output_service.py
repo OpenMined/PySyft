@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import ClassVar
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -54,8 +55,17 @@ class ExecutionOutput(SyftObject):
     # Output policy is not a linked object because its saved on the usercode
     output_policy_id: Optional[UID] = None
 
-    __attr_searchable__: List[str] = ["user_code_id", "created_at", "output_policy_id"]
-    __repr_attrs__: List[str] = ["created_at", "user_code_id", "job_id", "output_ids"]
+    __attr_searchable__: ClassVar[List[str]] = [
+        "user_code_id",
+        "created_at",
+        "output_policy_id",
+    ]
+    __repr_attrs__: ClassVar[List[str]] = [
+        "created_at",
+        "user_code_id",
+        "job_id",
+        "output_ids",
+    ]
 
     @pydantic.root_validator(pre=True)
     def add_user_code_id(cls, values: dict) -> dict:
@@ -108,12 +118,17 @@ class ExecutionOutput(SyftObject):
 
     @property
     def outputs(self) -> Optional[Union[List[ActionObject], Dict[str, ActionObject]]]:
-        action_service = APIRegistry.api_for(
+        api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
-        ).services.action
-        # TODO error handling for action_service.get
+        )
+        if api is None:
+            raise ValueError(
+                f"Can't access the api. Please log in to {self.syft_node_location}"
+            )
+        action_service = api.services.action
 
+        # TODO: error handling for action_service.get
         if isinstance(self.output_ids, dict):
             return {k: action_service.get(v) for k, v in self.output_ids.items()}
         elif isinstance(self.output_ids, list):

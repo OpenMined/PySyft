@@ -2,6 +2,7 @@
 import contextlib
 import io
 from pathlib import Path
+from typing import Any
 from typing import Iterable
 from typing import Optional
 
@@ -22,11 +23,11 @@ class DockerBuilder(BuilderBase):
     def build_image(
         self,
         tag: str,
-        dockerfile: str = None,
-        dockerfile_path: Path = None,
+        dockerfile: Optional[str] = None,
+        dockerfile_path: Optional[Path] = None,
         buildargs: Optional[dict] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> ImageBuildResult:
         if dockerfile:
             # convert dockerfile string to file-like object
             kwargs["fileobj"] = io.BytesIO(dockerfile.encode("utf-8"))
@@ -53,9 +54,10 @@ class DockerBuilder(BuilderBase):
     def push_image(
         self,
         tag: str,
-        registry_url: str,
         username: str,
         password: str,
+        registry_url: str,
+        **kwargs: Any,
     ) -> ImagePushResult:
         with contextlib.closing(docker.from_env()) as client:
             if registry_url and username and password:

@@ -25,7 +25,7 @@ from .user.user_roles import ServiceRoleCapability
 class NodeServiceContext(Context, SyftObject):
     __canonical_name__ = "NodeServiceContext"
     __version__ = SYFT_OBJECT_VERSION_1
-    id: Optional[UID]
+    id: Optional[UID]  # type: ignore[assignment]
     node: Optional[AbstractNode]
 
 

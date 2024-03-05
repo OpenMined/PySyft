@@ -1,6 +1,7 @@
 # stdlib
 from hashlib import sha256
 from pathlib import Path
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -33,16 +34,16 @@ class BuildFailed(Exception):
 class KubernetesBuilder(BuilderBase):
     COMPONENT = "builder"
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = get_kr8s_client()
 
     def build_image(
         self,
         tag: str,
-        dockerfile: str = None,
-        dockerfile_path: Path = None,
+        dockerfile: Optional[str] = None,
+        dockerfile_path: Optional[Path] = None,
         buildargs: Optional[dict] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> ImageBuildResult:
         image_digest = None
         logs = None
@@ -102,7 +103,7 @@ class KubernetesBuilder(BuilderBase):
         username: str,
         password: str,
         registry_url: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> ImagePushResult:
         exit_code = 1
         logs = None
@@ -354,7 +355,9 @@ class KubernetesBuilder(BuilderBase):
         )
         return KubeUtils.create_or_get(job)
 
-    def _create_push_secret(self, id: str, url: str, username: str, password: str):
+    def _create_push_secret(
+        self, id: str, url: str, username: str, password: str
+    ) -> Secret:
         return KubeUtils.create_dockerconfig_secret(
             secret_name=f"push-secret-{id}",
             component=KubernetesBuilder.COMPONENT,

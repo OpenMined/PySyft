@@ -41,6 +41,7 @@ from ...types.uid import UID
 from ...util.util import get_queue_address
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..service import AbstractService
 from ..worker.worker_pool import ConsumerState
 from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
@@ -200,7 +201,7 @@ class ZMQProducer(QueueProducer):
             self._stop.clear()
 
     @property
-    def action_service(self) -> Callable:
+    def action_service(self) -> AbstractService:
         if self.auth_context.node is not None:
             return self.auth_context.node.get_service("ActionService")
         else:
@@ -793,7 +794,7 @@ class ZMQClientConfigV1(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
+    id: Optional[UID]  # type: ignore[assignment]
     hostname: str = "127.0.0.1"
 
 
@@ -801,7 +802,7 @@ class ZMQClientConfigV2(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID]
+    id: Optional[UID]  # type: ignore[assignment]
     hostname: str = "127.0.0.1"
     queue_port: Optional[int] = None
     # TODO: setting this to false until we can fix the ZMQ
@@ -815,7 +816,7 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    id: Optional[UID]
+    id: Optional[UID]  # type: ignore[assignment]
     hostname: str = "127.0.0.1"
     queue_port: Optional[int] = None
     # TODO: setting this to false until we can fix the ZMQ

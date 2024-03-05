@@ -174,13 +174,13 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     @classmethod
     def from_objects(
         cls,
-        low_obj: SyftObject,
-        high_obj: SyftObject,
+        low_obj: Optional[SyftObject],
+        high_obj: Optional[SyftObject],
         low_permissions: List[ActionObjectPermission],
         high_permissions: List[ActionObjectPermission],
     ) -> "ObjectDiff":
         if low_obj is None and high_obj is None:
-            raise Exception("Both objects are None")
+            raise ValueError("Both low and high objects are None")
         obj_type = type(low_obj if low_obj is not None else high_obj)
 
         if low_obj is None or high_obj is None:
@@ -218,7 +218,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         return uid
 
     @property
-    def non_empty_object(self) -> SyftObject:
+    def non_empty_object(self) -> Optional[SyftObject]:
         return self.low_obj or self.high_obj
 
     @property
@@ -271,6 +271,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         return res
 
     def state_str(self, side: str) -> str:
+        other_obj: Optional[SyftObject] = None
         if side == "high":
             obj = self.high_obj
             other_obj = self.low_obj
@@ -286,7 +287,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         if isinstance(obj, ActionObject):
             return obj.__repr__()
 
-        if other_obj is None:
+        if other_obj is None:  # type: ignore[unreachable]
             attrs_str = ""
             attrs = getattr(obj, "__repr_attrs__", [])
             for attr in attrs:
@@ -306,7 +307,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
         return attr_text
 
-    def get_obj(self) -> SyftObject:
+    def get_obj(self) -> Optional[SyftObject]:
         if self.status == "NEW":
             return self.low_obj if self.low_obj is not None else self.high_obj
         else:
@@ -416,7 +417,7 @@ class ObjectDiffBatch(SyftObject):
     @property
     def visual_hierarchy(self) -> Tuple[Type, dict]:
         # Returns
-        root_obj = (
+        root_obj: Union[Request, UserCodeStatusCollection, ExecutionOutput, Any] = (
             self.root.low_obj if self.root.low_obj is not None else self.root.high_obj
         )
         if isinstance(root_obj, Request):
@@ -459,8 +460,8 @@ class ObjectDiffBatch(SyftObject):
 {self.hierarchy_str('high')}
 """
 
-    def _repr_markdown_(self) -> None:
-        return None  # Turns off the _repr_markdown_ of SyftObject
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
+        return ""  # Turns off the _repr_markdown_ of SyftObject
 
     def _get_visual_hierarchy(self, node: ObjectDiff) -> dict[ObjectDiff, dict]:
         _, child_types_map = self.visual_hierarchy
@@ -681,7 +682,7 @@ class NodeDiff(SyftObject):
         return hierarchies
 
     def objs_to_sync(self) -> List[SyftObject]:
-        objs = []
+        objs: list[SyftObject] = []
         for diff in self.diffs:
             if diff.status == "NEW":
                 objs.append(diff.get_obj())

@@ -178,6 +178,10 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         return api.services.worker.get(self.job_worker_id)
 
     @property
@@ -268,6 +272,10 @@ class Job(SyftObject):
                 node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
+            if api is None:
+                raise ValueError(
+                    f"Can't access Syft API. You must login to {self.syft_node_location}"
+                )
             call = SyftAPICall(
                 node_uid=self.node_uid,
                 path="job.restart",
@@ -289,6 +297,10 @@ class Job(SyftObject):
                 node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
+            if api is None:
+                return SyftError(
+                    message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+                )
             call = SyftAPICall(
                 node_uid=self.node_uid,
                 path="job.kill",
@@ -308,6 +320,10 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            raise ValueError(
+                f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         call = SyftAPICall(
             node_uid=self.node_uid,
             path="job.get",
@@ -330,6 +346,10 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         return api.services.job.get_subjobs(self.id)
 
     @property
@@ -338,6 +358,10 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         return api.services.user.get_current_user(self.id)
 
     def _get_log_objs(self) -> Union[SyftObject, SyftError]:
@@ -345,6 +369,8 @@ class Job(SyftObject):
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            raise ValueError(f"api is None. You must login to {self.node_uid}")
         return api.services.log.get(self.log_id)
 
     def logs(
@@ -354,6 +380,8 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return f"Can't access Syft API. You must login to {self.syft_node_location}"
         results = []
         if stdout:
             stdout_log = api.services.log.get_stdout(self.log_id)
@@ -414,7 +442,7 @@ class Job(SyftObject):
     def has_parent(self) -> bool:
         return self.parent_job_id is not None
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _ = self.resolve
         logs = self.logs(_print=False)
         if logs is not None:
@@ -444,7 +472,6 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-
         # todo: timeout
         if self.resolved:
             return self.resolve
@@ -452,6 +479,10 @@ class Job(SyftObject):
         if not job_only and self.result is not None:
             self.result.wait()
 
+        if api is None:
+            raise ValueError(
+                f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         print_warning = True
         while True:
             self.fetch()

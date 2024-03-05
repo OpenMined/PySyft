@@ -5,11 +5,13 @@ from typing import Dict
 from typing import List
 from typing import Set
 from typing import Union
+from typing import cast
 
 # third party
 from result import Result
 
 # relative
+from ...abstract_node import AbstractNode
 from ...client.api import NodeIdentity
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
@@ -166,7 +168,7 @@ class SyncService(AbstractService):
                     context, item, other_node_permissions
                 )
             else:
-                item = self.transform_item(context, item)
+                item = self.transform_item(context, item)  # type: ignore[unreachable]
                 res = self.set_object(context, item)
 
                 if res.is_ok():
@@ -212,7 +214,7 @@ class SyncService(AbstractService):
     ) -> Union[SyncState, SyftError]:
         new_state = SyncState()
 
-        node = context.node
+        node = cast(AbstractNode, context.node)
 
         services_to_sync = [
             "projectservice",
@@ -225,7 +227,7 @@ class SyncService(AbstractService):
         ]
 
         for service_name in services_to_sync:
-            service = node.get_service(service_name)  # type: ignore
+            service = node.get_service(service_name)
             items = service.get_all(context)
             new_state.add_objects(items, api=node.root_client.api)  # type: ignore
 
