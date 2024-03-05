@@ -14,9 +14,12 @@ from syft.client.syncing import resolve
 from syft.service.action.action_object import ActionObject
 
 
-@pytest.mark.flaky(reruns=5, reruns_delay=1)
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
+@pytest.mark.flaky(reruns=5, reruns_delay=1)
 def test_sync_flow():
+    # somehow skipif does not work
+    if sys.platform == "win32":
+        return
     low_worker = sy.Worker(
         name="low-test",
         local_db=True,
