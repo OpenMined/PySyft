@@ -53,7 +53,7 @@ class ReplyNotification(SyftObject):
 
     text: str
     target_msg: UID
-    id: Optional[UID]
+    id: Optional[UID]  # type: ignore[assignment]
     from_user_verify_key: Optional[SyftVerifyKey]
 
 
@@ -115,14 +115,22 @@ class NotificationV1(SyftObject):
 
     def mark_read(self) -> None:
         api = APIRegistry.api_for(
-            self.node_uid, user_verify_key=self.syft_client_verify_key
+            node_uid=self.node_uid, user_verify_key=self.syft_client_verify_key
         )
+        if api is None:
+            raise ValueError(
+                f"Can't access Syft API. You must login to {self.node_uid}"
+            )
         return api.services.notifications.mark_as_read(uid=self.id)
 
     def mark_unread(self) -> None:
         api = APIRegistry.api_for(
             self.node_uid, user_verify_key=self.syft_client_verify_key
         )
+        if api is None:
+            raise ValueError(
+                f"Can't access Syft API. You must login to {self.node_uid}"
+            )
         return api.services.notifications.mark_as_unread(uid=self.id)
 
     def determine_status(self) -> Enum:
@@ -231,10 +239,10 @@ class CreateNotificationV1(NotificationV1):
     __canonical_name__ = "CreateNotification"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
-    node_uid: Optional[UID]
-    from_user_verify_key: Optional[SyftVerifyKey]
-    created_at: Optional[DateTime]
+    id: Optional[UID]  # type: ignore[assignment]
+    node_uid: Optional[UID]  # type: ignore[assignment]
+    from_user_verify_key: Optional[SyftVerifyKey]  # type: ignore[assignment]
+    created_at: Optional[DateTime]  # type: ignore[assignment]
 
 
 @serializable()
@@ -264,7 +272,10 @@ def downgrade_create_notification_v2_to_v1() -> List[Callable]:
 
 
 def add_msg_creation_time(context: TransformContext) -> TransformContext:
-    context.output["created_at"] = DateTime.now()
+    if context.output is not None:
+        context.output["created_at"] = DateTime.now()
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
     return context
 
 

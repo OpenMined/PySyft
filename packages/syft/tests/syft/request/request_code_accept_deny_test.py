@@ -11,6 +11,7 @@ from syft.client.client import SyftClient
 from syft.node.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.action.action_permissions import ActionPermission
+from syft.service.code.user_code import UserCode
 from syft.service.code.user_code import UserCodeStatus
 from syft.service.context import ChangeContext
 from syft.service.request.request import ActionStoreChange
@@ -137,12 +138,14 @@ def test_user_code_status_change(faker: Faker, worker: Worker):
     result = ds_client.code.submit(simple_function)
     assert isinstance(result, SyftSuccess)
 
-    user_code = ds_client.code.get_all()[0]
+    user_code: UserCode = ds_client.code.get_all()[0]
 
-    linked_obj = LinkedObject.from_obj(user_code, node_uid=worker.id)
+    linked_user_code = LinkedObject.from_obj(user_code, node_uid=worker.id)
 
     user_code_change = UserCodeStatusChange(
-        value=UserCodeStatus.APPROVED, linked_obj=linked_obj
+        value=UserCodeStatus.APPROVED,
+        linked_user_code=linked_user_code,
+        linked_obj=user_code.status_link,
     )
 
     change_context = ChangeContext(

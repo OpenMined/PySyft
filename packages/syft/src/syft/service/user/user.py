@@ -6,6 +6,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Type
 from typing import Union
 
 # third party
@@ -65,7 +66,7 @@ class UserV2(SyftObject):
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID]
+    id: Optional[UID]  # type: ignore[assignment]
 
     # fields
     email: Optional[EmailStr]
@@ -129,6 +130,9 @@ def default_role(role: ServiceRole) -> Callable:
 
 
 def hash_password(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+
     if context.output["password"] is not None and (
         (context.output["password_verify"] is None)
         or context.output["password"] == context.output["password_verify"]
@@ -136,13 +140,16 @@ def hash_password(context: TransformContext) -> TransformContext:
         salt, hashed = salt_and_hash_password(context.output["password"], 12)
         context.output["hashed_password"] = hashed
         context.output["salt"] = salt
+
     return context
 
 
 def generate_key(context: TransformContext) -> TransformContext:
-    signing_key = SyftSigningKey.generate()
-    context.output["signing_key"] = signing_key
-    context.output["verify_key"] = signing_key.verify_key
+    if context.output is not None:
+        signing_key = SyftSigningKey.generate()
+        context.output["signing_key"] = signing_key
+        context.output["verify_key"] = signing_key.verify_key
+
     return context
 
 
@@ -229,7 +236,7 @@ class UserCreateV1(UserUpdateV1):
     role: Optional[ServiceRole] = None  # type: ignore[assignment]
     password: str
     password_verify: Optional[str] = None  # type: ignore[assignment]
-    verify_key: Optional[SyftVerifyKey]
+    verify_key: Optional[SyftVerifyKey]  # type: ignore[assignment]
     institution: Optional[str]  # type: ignore[assignment]
     website: Optional[str]  # type: ignore[assignment]
     created_by: Optional[SyftSigningKey]
@@ -245,7 +252,7 @@ class UserCreateV2(UserUpdateV2):
     role: Optional[ServiceRole] = None  # type: ignore[assignment]
     password: str
     password_verify: Optional[str] = None  # type: ignore[assignment]
-    verify_key: Optional[SyftVerifyKey]
+    verify_key: Optional[SyftVerifyKey]  # type: ignore[assignment]
     institution: Optional[str]  # type: ignore[assignment]
     website: Optional[str]  # type: ignore[assignment]
     created_by: Optional[SyftSigningKey]
@@ -358,8 +365,7 @@ class UserView(SyftObject):
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
-        if api.services is None:
-            return SyftError(message=f"Services for api {api} is None")
+
         api.services.user.update(
             uid=self.id, user_update=UserUpdate(password=new_password)
         )
@@ -396,8 +402,6 @@ class UserView(SyftObject):
         except ValidationError:
             return SyftError(message="{email} is not a valid email address.")
 
-        if api.services is None:
-            return SyftError(message=f"Services for {api} is None")
         result = api.services.user.update(uid=self.id, user_update=user_update)
 
         if isinstance(result, SyftError):
@@ -411,11 +415,11 @@ class UserView(SyftObject):
 
     def update(
         self,
-        name: Union[Empty, str] = Empty,
-        institution: Union[Empty, str] = Empty,
-        website: Union[str, Empty] = Empty,
-        role: Union[str, Empty] = Empty,
-        mock_execution_permission: Union[bool, Empty] = Empty,
+        name: Union[Type[Empty], str] = Empty,
+        institution: Union[Type[Empty], str] = Empty,
+        website: Union[Type[Empty], str] = Empty,
+        role: Union[Type[Empty], str] = Empty,
+        mock_execution_permission: Union[Type[Empty], bool] = Empty,
     ) -> Union[SyftSuccess, SyftError]:
         """Used to update name, institution, website of a user."""
         api = APIRegistry.api_for(
@@ -431,8 +435,6 @@ class UserView(SyftObject):
             role=role,
             mock_execution_permission=mock_execution_permission,
         )
-        if api.services is None:
-            return SyftError(message=f"Services for {api} is None")
         result = api.services.user.update(uid=self.id, user_update=user_update)
 
         if isinstance(result, SyftError):

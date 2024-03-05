@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -24,7 +25,7 @@ from .user.user_roles import ServiceRoleCapability
 class NodeServiceContext(Context, SyftObject):
     __canonical_name__ = "NodeServiceContext"
     __version__ = SYFT_OBJECT_VERSION_1
-    id: Optional[UID]
+    id: Optional[UID]  # type: ignore[assignment]
     node: Optional[AbstractNode]
 
 
@@ -37,6 +38,10 @@ class AuthedServiceContext(NodeServiceContext):
     job_id: Optional[UID]
     extra_kwargs: Dict = {}
     has_execute_permissions: bool = False
+
+    @property
+    def dev_mode(self) -> Any:
+        return self.node.dev_mode  # type: ignore
 
     def capabilities(self) -> List[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES.get(self.role, [])

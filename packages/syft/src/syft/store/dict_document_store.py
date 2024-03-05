@@ -18,11 +18,12 @@ from .locks import ThreadingLockingConfig
 
 
 @serializable()
-class DictBackingStore(dict, KeyValueBackingStore):
+class DictBackingStore(dict, KeyValueBackingStore):  # type: ignore[misc]
+    # TODO: fix the mypy issue
     """Dictionary-based Store core logic"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super(dict).__init__()
+        super().__init__()
         self._ddtype = kwargs.get("ddtype", None)
 
     def __getitem__(self, key: Any) -> Any:
@@ -46,7 +47,7 @@ class DictStorePartition(KeyValueStorePartition):
             DictStore specific configuration
     """
 
-    def prune(self):
+    def prune(self) -> None:
         self.init_store()
 
 
@@ -71,7 +72,7 @@ class DictDocumentStore(DocumentStore):
             store_config = DictStoreConfig()
         super().__init__(root_verify_key=root_verify_key, store_config=store_config)
 
-    def reset(self):
+    def reset(self) -> None:
         for _, partition in self.partitions.items():
             partition.prune()
 
