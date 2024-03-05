@@ -1162,7 +1162,7 @@ class UserCodeStatusChange(Change):
 
     @property
     def code(self) -> UserCode:
-        return self.linked_obj.resolve
+        return self.linked_user_code.resolve
 
     @property
     def codes(self) -> List[UserCode]:
@@ -1363,8 +1363,15 @@ def downgrade_usercodestatuschange_v3_to_v2() -> List[Callable]:
     ]
 
 
+def user_code_from_code_status(context: TransformContext) -> TransformContext:
+    linked_obj: LinkedObject = context.output["linked_object"]
+    code_status: UserCodeStatusCollection = linked_obj.resolve
+    context.output["linked_user_code"] = code_status.user_code_link
+    return context
+
+
 @migrate(UserCodeStatusChangeV2, UserCodeStatusChange)
 def upgrade_usercodestatuschange_v2to_v3() -> List[Callable]:
     return [
-        make_set_default("linked_user_code", None),
+        user_code_from_code_status,
     ]

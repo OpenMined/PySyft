@@ -639,16 +639,6 @@ def upgrade_job_v1_to_v2() -> list[Callable]:
     return [make_set_default("job_pid", None)]
 
 
-@migrate(JobInfoV1, JobInfo)
-def upgrade_job_info_v1_to_v2() -> list[Callable]:
-    return [make_set_default("result", None)]
-
-
-@migrate(JobInfo, JobInfoV1)
-def downgrade_job_info_v2_to_v1() -> list[Callable]:
-    return [drop("result")]
-
-
 @instrument
 @serializable()
 class JobStash(BaseStash):
