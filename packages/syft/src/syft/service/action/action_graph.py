@@ -62,7 +62,7 @@ class NodeActionData(SyftObject):
     __canonical_name__ = "NodeActionData"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
+    id: Optional[UID]  # type: ignore[assignment]
     type: NodeType
     status: ExecutionStatus = ExecutionStatus.PROCESSING
     retry: int = 0
@@ -78,37 +78,39 @@ class NodeActionData(SyftObject):
     def make_created_at(cls, v: Optional[DateTime]) -> DateTime:
         return DateTime.now() if v is None else v
 
-    @staticmethod
-    def from_action(action: Action, credentials: SyftVerifyKey):
+    @classmethod
+    def from_action(cls, action: Action, credentials: SyftVerifyKey) -> Self:
         is_mutagen = action.remote_self is not None and (
             action.remote_self == action.result_id
         )
-        return NodeActionData(
+        return cls(
             id=action.id,
             type=NodeType.ACTION,
             user_verify_key=credentials,
             is_mutagen=is_mutagen,
         )
 
-    @staticmethod
-    def from_action_obj(action_obj: ActionObject, credentials: SyftVerifyKey):
-        return NodeActionData(
+    @classmethod
+    def from_action_obj(
+        cls, action_obj: ActionObject, credentials: SyftVerifyKey
+    ) -> Self:
+        return cls(
             id=action_obj.id,
             type=NodeType.ACTION_OBJECT,
             user_verify_key=credentials,
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.id)
 
-    def __eq__(self, other: Self):
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, NodeActionData):
             raise NotImplementedError(
                 "Comparisions can be made with NodeActionData type objects only."
             )
         return hash(self) == hash(other)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self._repr_debug_()
 
 
@@ -148,7 +150,7 @@ class BaseGraphStore:
     def delete(self, uid: Any) -> None:
         raise NotImplementedError
 
-    def find_neighbors(self, uid: Any) -> List[Any]:
+    def find_neighbors(self, uid: Any) -> Optional[List]:
         raise NotImplementedError
 
     def update(self, uid: Any, data: Any) -> None:
@@ -209,15 +211,17 @@ class InMemoryStoreClientConfig(StoreClientConfig):
 @serializable(without=["_lock"])
 class NetworkXBackingStore(BaseGraphStore):
     def __init__(self, store_config: StoreConfig, reset: bool = False) -> None:
-        self.path_str = store_config.client_config.file_path.as_posix()
-
+        if store_config.client_config:
+            self.path_str = store_config.client_config.file_path.as_posix()
+        else:
+            self.path_str = ""
         if not reset and os.path.exists(self.path_str):
             self._db = self._load_from_path(self.path_str)
         else:
             self._db = nx.DiGraph()
 
         self.locking_config = store_config.locking_config
-        self._lock = None
+        self._lock: Optional[SyftLock] = None
 
     @property
     def lock(self) -> SyftLock:
@@ -229,7 +233,9 @@ class NetworkXBackingStore(BaseGraphStore):
     def db(self) -> nx.Graph:
         return self._db
 
-    def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
+    def _thread_safe_cbk(
+        self, cbk: Callable, *args: Any, **kwargs: Any
+    ) -> Result[Any, str]:
         # TODO copied method from document_store, have it in one place and reuse?
         locked = self.lock.acquire(blocking=True)
         if not locked:
@@ -267,10 +273,11 @@ class NetworkXBackingStore(BaseGraphStore):
             self.db.remove_node(uid)
         self.save()
 
-    def find_neighbors(self, uid: UID) -> Optional[Iterable]:
+    def find_neighbors(self, uid: UID) -> Optional[List]:
         if self.exists(uid=uid):
             neighbors = self.db.neighbors(uid)
             return neighbors
+        return None
 
     def update(self, uid: UID, data: Any) -> None:
         self._thread_safe_cbk(self._update, uid=uid, data=data)
@@ -294,7 +301,7 @@ class NetworkXBackingStore(BaseGraphStore):
         self.db.remove_edge(parent, child)
         self.save()
 
-    def visualize(self, seed: int = 3113794652, figsize=(20, 10)) -> None:
+    def visualize(self, seed: int = 3113794652, figsize: tuple = (20, 10)) -> None:
         plt.figure(figsize=figsize)
         pos = nx.spring_layout(self.db, seed=seed)
         return nx.draw_networkx(self.db, pos=pos, with_labels=True)
@@ -305,10 +312,10 @@ class NetworkXBackingStore(BaseGraphStore):
     def edges(self) -> Iterable:
         return self.db.edges()
 
-    def get_predecessors(self, uid: UID) -> Iterable:
+    def get_predecessors(self, uid: UID) -> List:
         return self.db.predecessors(uid)
 
-    def get_successors(self, uid: UID) -> Iterable:
+    def get_successors(self, uid: UID) -> List:
         return self.db.successors(uid)
 
     def is_parent(self, parent: Any, child: Any) -> bool:
@@ -362,7 +369,7 @@ class InMemoryActionGraphStore(ActionGraphStore):
 
     def __init__(self, store_config: StoreConfig, reset: bool = False):
         self.store_config: StoreConfig = store_config
-        self.graph: Type[BaseGraphStore] = self.store_config.store_type(
+        self.graph: BaseGraphStore = self.store_config.store_type(
             self.store_config, reset
         )
 

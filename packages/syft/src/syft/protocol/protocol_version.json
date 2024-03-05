@@ -5,120 +5,74 @@
   "2": {
     "release_name": "0.8.3.json"
   },
+  "3": {
+    "release_name": "0.8.4.json"
+  },
   "dev": {
     "object_versions": {
-      "SyftWorkerImage": {
-        "1": {
-          "version": 1,
-          "hash": "2a9585b6a286e24f1a9f3f943d0128730cf853edc549184dc1809d19e1eec54b",
-          "action": "add"
-        }
-      },
-      "ActionDataLink": {
-        "1": {
-          "version": 1,
-          "hash": "10bf94e99637695f1ba283f0b10e70743a4ebcb9ee75aefb1a05e6d6e1d21a71",
-          "action": "add"
-        }
-      },
-      "ObjectNotReady": {
-        "1": {
-          "version": 1,
-          "hash": "88207988639b11eaca686b6e079616d9caecc3dbc2a8112258e0f39ee5c3e113",
-          "action": "add"
-        }
-      },
-      "JobItem": {
+      "ActionObject": {
         "3": {
           "version": 3,
-          "hash": "5b93a59e28574691339d22826d5650969336a2e930b93d6b3fe6d5409ca0cfc4",
+          "hash": "9cc29f4b637e7a9407ff5f56e282b5411c2709e8195214c452e44b65f9051d56",
           "action": "add"
         }
       },
-      "SeaweedSecureFilePathLocation": {
+      "AnyActionObject": {
+        "3": {
+          "version": 3,
+          "hash": "ad6b897da9bdf2fcacc853fad73b7d7b98c8d0ecb58c35110e236edefd99f561",
+          "action": "add"
+        }
+      },
+      "BlobFileOBject": {
         "2": {
           "version": 2,
-          "hash": "5fd63fed2a4efba8c2b6c7a7b5e9b5939181781c331230896aa130b6fd558739",
+          "hash": "eb895881610723d674755033b0f1798219725d5ad70791d25a44f473ddff318b",
           "action": "add"
         }
       },
-      "AzureSecureFilePathLocation": {
-        "1": {
-          "version": 1,
-          "hash": "1bb15f3f9d7082779f1c9f58de94011487924cb8a8c9c2ec18fd7c161c27fd0e",
-          "action": "add"
-        }
-      },
-      "RemoteConfig": {
-        "1": {
-          "version": 1,
-          "hash": "ad7bc4780a8ad52e14ce68601852c93d2fe07bda489809cad7cae786d2461754",
-          "action": "add"
-        }
-      },
-      "AzureRemoteConfig": {
-        "1": {
-          "version": 1,
-          "hash": "c05c6caa27db4e385c642536d4b0ecabc0c71e91220d2e6ce21a2761ca68a673",
-          "action": "add"
-        }
-      },
-      "BlobRetrievalByURL": {
+      "JobInfo": {
         "2": {
           "version": 2,
-          "hash": "8059ee03016c4d74e408dad9529e877f91829672e0cc42d8cfff9c8e14058adc",
+          "hash": "5c1f7d5e6a991123a1907c1823be14a75458ba06af1fe5a1b77aaac7fa546c78",
+          "action": "add"
+        }
+      },
+      "ExecutionOutput": {
+        "1": {
+          "version": 1,
+          "hash": "833addc66807a638939aac00a4be306c93bd8d80a8f4ce6fcdb16d98e87ceb8b",
+          "action": "add"
+        }
+      },
+      "OutputPolicyExecuteCount": {
+        "1": {
+          "version": 1,
+          "hash": "6bb24b3b35e19564c43b838ca3f46ccdeadb6596511917f2d220681a378e439d",
           "action": "remove"
         },
-        "3": {
-          "version": 3,
-          "hash": "0b664100ea08413ca4ef04665ca910c2cf9535539617ea4ba33687d05cdfe747",
-          "action": "add"
-        }
-      },
-      "QueueItem": {
-        "3": {
-          "version": 3,
-          "hash": "3495f406d2c97050ce86be80c230f49b6b846c63b9a9230cbd6631952f2bad0f",
-          "action": "add"
-        }
-      },
-      "ActionQueueItem": {
         "2": {
           "version": 2,
-          "hash": "6413ed01e949cac169299a43ce40651f9bf8053e408b6942853f8afa8a693b3d",
+          "hash": "ca0ba249f4f32379f5b83279a27df4a21eb23c531a86538c821a10ddf2c799ff",
           "action": "add"
         }
       },
-      "ZMQClientConfig": {
-        "2": {
-          "version": 2,
-          "hash": "0f9bc88d56cd6eed6fc75459d1f914aed840c66e1195b9e41cc501b488fef2ed",
+      "OutputPolicyExecuteOnce": {
+        "1": {
+          "version": 1,
+          "hash": "32a40fc9966b277528eebc61c01041f3a5447417731954abdaffbb14dabc76bb",
           "action": "remove"
         },
-        "3": {
-          "version": 3,
-          "hash": "91ce5953cced58e12c576aa5174d5ca0c91981b01cf42edd5283d347baa3390b",
+        "2": {
+          "version": 2,
+          "hash": "e6b0f23047037734c1cc448771bc2770f5bf6c8b8f80cf46939eb7ba66dd377e",
           "action": "add"
         }
       },
-      "SyftWorker": {
+      "UserCodeStatusCollection": {
         "1": {
           "version": 1,
-          "hash": "0d5b367162f3ce55ab090cc1b49bd30e50d4eb144e8431eadc679bd0e743aa70",
-          "action": "add"
-        }
-      },
-      "WorkerPool": {
-        "1": {
-          "version": 1,
-          "hash": "250699eb4c452fc427995353d5c5ad6245fb3e9fdac8814f8348784816a0733b",
-          "action": "add"
-        }
-      },
-      "SyftImageRegistry": {
-        "1": {
-          "version": 1,
-          "hash": "dc83910c91947e3d9eaa3e6f8592237448f0408668c7cca80450b5fcd54722e1",
+          "hash": "4afcdcebd4b0ba95a8ac65eda9fcaa88129b7c520e8e6b093c6ab5208641a617",
           "action": "add"
         }
       },
@@ -126,94 +80,32 @@
         "3": {
           "version": 3,
           "hash": "90fcae0f556f375ba1e91d2e345f57241660695c6e2b84c8e311df89d09e6c66",
+          "action": "remove"
+        },
+        "4": {
+          "version": 4,
+          "hash": "4acb1fa6856da943966b6a93eb7874000f785b29f12ecbed9025606f8fe51aa4",
           "action": "add"
         }
       },
-      "SubmitUserCode": {
+      "UserCodeExecutionOutput": {
+        "1": {
+          "version": 1,
+          "hash": "94c18d2dec05b39993c1a7a70bca2c991c95bd168005a93e578a810e57ef3164",
+          "action": "add"
+        }
+      },
+      "NumpyArrayObject": {
         "3": {
           "version": 3,
-          "hash": "a29160c16d2e2620800d42cdcd9f3637d063a570c477a5d05217a2e64b4bb396",
+          "hash": "8572cdfb6a9f8b20c276aeebaf12cd26e424703ea624cf52efdbe33a8ab3d4ef",
           "action": "add"
         }
       },
-      "CreateCustomImageChange": {
-        "1": {
-          "version": 1,
-          "hash": "bc09dca7995938f3b3a2bd9c8b3c2feffc8484df466144a425cb69cadb2ab635",
-          "action": "add"
-        }
-      },
-      "CreateCustomWorkerPoolChange": {
-        "1": {
-          "version": 1,
-          "hash": "86894f8ccc037de61f44f9698fd113ba02c3cf3870a3048c00a46e15dcd1941c",
-          "action": "add"
-        }
-      },
-      "JobInfo": {
-        "1": {
-          "version": 1,
-          "hash": "cf26eeac3d9254dfa439917493b816341f8a379a77d182bbecba3b7ed2c1d00a",
-          "action": "add"
-        }
-      },
-      "User": {
-        "1": {
-          "version": 1,
-          "hash": "078636e64f737e60245b39cf348d30fb006531e80c12b70aa7cf98254e1bb37a",
-          "action": "remove"
-        },
-        "2": {
-          "version": 2,
-          "hash": "ded970c92f202716ed33a2117cf541789f35fad66bd4b1db39da5026b1d7d0e7",
-          "action": "add"
-        }
-      },
-      "UserUpdate": {
-        "1": {
-          "version": 1,
-          "hash": "839dd90aeb611e1dc471c8fd6daf230e913465c0625c6a297079cb7f0a271195",
-          "action": "remove"
-        },
-        "2": {
-          "version": 2,
-          "hash": "32cba8fbd786c575f92e26c31384d282e68e3ebfe5c4b0a0e793820b1228d246",
-          "action": "add"
-        }
-      },
-      "UserCreate": {
-        "1": {
-          "version": 1,
-          "hash": "dab78b63544ae91c09f9843c323cb237c0a6fcfeb71c1acf5f738e2fcf5c277f",
-          "action": "remove"
-        },
-        "2": {
-          "version": 2,
-          "hash": "2540188c5aaea866914dccff459df6e0f4727108a503414bb1567ff6297d4646",
-          "action": "add"
-        }
-      },
-      "UserView": {
-        "1": {
-          "version": 1,
-          "hash": "63289383fe7e7584652f242a4362ce6e2f0ade52f6416ab6149b326a506b0675",
-          "action": "remove"
-        },
-        "2": {
-          "version": 2,
-          "hash": "e410de583bb15bc5af57acef7be55ea5fc56b5b0fc169daa3869f4203c4d7473",
-          "action": "add"
-        }
-      },
-      "BlobFile": {
-        "2": {
-          "version": 2,
-          "hash": "f2b29d28fe81a04bf5e946c819010283a9f98a97d50519358bead773865a2e09",
-          "action": "remove"
-        },
+      "NumpyScalarObject": {
         "3": {
           "version": 3,
-          "hash": "8f1710c754bb3b39f546b97fd69c4826291398b247976bbc41fa873af431bca9",
+          "hash": "d3107530ef42a6f3b234423a3c5efcb13f4b43a5959642a0b1e3c093992d59d1",
           "action": "add"
         }
       },
@@ -224,10 +116,45 @@
           "action": "remove"
         }
       },
-      "SeaweedFSBlobDeposit": {
-        "2": {
-          "version": 2,
-          "hash": "07d84a95324d95d9c868cd7d1c33c908f77aa468671d76c144586aab672bcbb5",
+      "NumpyBoolObject": {
+        "3": {
+          "version": 3,
+          "hash": "b9cd5c27630b0c67465d21e1d67a0b2591cd59aa6ac7d60ab1f5f64a746114df",
+          "action": "add"
+        }
+      },
+      "PandasDataframeObject": {
+        "3": {
+          "version": 3,
+          "hash": "f1ec7d6debb6d2d81e752418dd84544995b16d0386da791c4770914a227700d9",
+          "action": "add"
+        }
+      },
+      "PandasSeriesObject": {
+        "3": {
+          "version": 3,
+          "hash": "96f75160ec2a966fc3866cf2e86b151914012514e2b89f618933cdfbb639e528",
+          "action": "add"
+        }
+      },
+      "UserCodeStatusChange": {
+        "3": {
+          "version": 3,
+          "hash": "999ab977d4fe5a7b74ee2d90370599ce9caa1b38fd6e6c29bd543d379c4dae31",
+          "action": "add"
+        }
+      },
+      "SyncStateItem": {
+        "1": {
+          "version": 1,
+          "hash": "7e1f22d0e24bb615b077d76feae7bed96a49a998358bd842aba18e8d69a22481",
+          "action": "add"
+        }
+      },
+      "SyncState": {
+        "1": {
+          "version": 1,
+          "hash": "6da39adb0ecffb4ca7873c0d95ed31c8bf037610cde144662285b921de5d8f04",
           "action": "add"
         }
       }

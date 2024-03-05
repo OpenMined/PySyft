@@ -1,15 +1,15 @@
 # stdlib
-from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Union
+from typing import cast
 
 # third party
 from result import Err
 from result import Ok
 
 # relative
+from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
@@ -17,7 +17,6 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
-from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
 from ..notification.notification_service import CreateNotification
 from ..notification.notification_service import NotificationService
@@ -37,7 +36,6 @@ from .request import RequestInfo
 from .request import RequestInfoFilter
 from .request import RequestStatus
 from .request import SubmitRequest
-from .request import UserCodeStatusChange
 from .request_stash import RequestStash
 
 
@@ -74,6 +72,7 @@ class RequestService(AbstractService):
             if result.is_ok():
                 request = result.ok()
                 link = LinkedObject.with_context(request, context=context)
+                context.node = cast(AbstractNode, context.node)
                 admin_verify_key = context.node.get_service_method(
                     UserService.admin_verify_key
                 )
@@ -104,56 +103,14 @@ class RequestService(AbstractService):
             print("Failed to submit Request", e)
             raise e
 
-    def expand_node(self, context: AuthedServiceContext, code_obj: UserCode):
-        user_code_service = context.node.get_service("usercodeservice")
-        nested_requests = user_code_service.solve_nested_requests(context, code_obj)
-
-        new_nested_requests = {}
-        for func_name, code in nested_requests.items():
-            nested_dict = self.expand_node(context, code)
-            if isinstance(nested_dict, SyftError):
-                return nested_dict
-            code.nested_codes = nested_dict
-            res = user_code_service.stash.update(context.credentials, code)
-            if isinstance(res, Err):
-                return res
-            linked_obj = LinkedObject.from_obj(code, node_uid=context.node.id)
-            new_nested_requests[func_name] = (linked_obj, nested_dict)
-
-        return new_nested_requests
-
-    def resolve_nested_requests(self, context, request):
-        # TODO: change this if we have more UserCode Changes
-        if len(request.changes) != 1:
-            return request
-
-        change = request.changes[0]
-        if isinstance(change, UserCodeStatusChange):
-            if change.nested_solved:
-                return request
-            code_obj = change.linked_obj.resolve_with_context(context=context).ok()
-            # recursively check what other UserCodes to approve
-            nested_requests: Dict[str : Tuple[LinkedObject, Dict]] = self.expand_node(
-                context, code_obj
-            )
-            if isinstance(nested_requests, Err):
-                return SyftError(message=nested_requests.value)
-            change.nested_solved = True
-            code_obj.nested_codes = nested_requests
-            change.linked_obj.update_with_context(context=context, obj=code_obj)
-
-            request.changes = [change]
-            new_request = self.save(context=context, request=request)
-            return new_request
-        return request
-
     @service_method(path="request.get_all", name="get_all")
     def get_all(self, context: AuthedServiceContext) -> Union[List[Request], SyftError]:
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
         requests = result.ok()
-        return [self.resolve_nested_requests(context, request) for request in requests]
+        # return [self.resolve_nested_requests(context, request) for request in requests]
+        return requests
 
     @service_method(path="request.get_all_info", name="get_all_info")
     def get_all_info(
@@ -161,33 +118,32 @@ class RequestService(AbstractService):
         context: AuthedServiceContext,
         page_index: Optional[int] = 0,
         page_size: Optional[int] = 0,
-    ) -> Union[List[RequestInfo], SyftError]:
-        """Get a Dataset"""
+    ) -> Union[List[List[RequestInfo]], List[RequestInfo], SyftError]:
+        """Get the information of all requests"""
+        context.node = cast(AbstractNode, context.node)
         result = self.stash.get_all(context.credentials)
+        if result.is_err():
+            return SyftError(message=result.err())
+
         method = context.node.get_service_method(UserService.get_by_verify_key)
         get_message = context.node.get_service_method(NotificationService.filter_by_obj)
 
-        requests = []
-        if result.is_ok():
-            for req in result.ok():
-                user = method(req.requesting_user_verify_key).to(UserView)
-                message = get_message(context=context, obj_uid=req.id)
-                requests.append(
-                    RequestInfo(user=user, request=req, notification=message)
-                )
-
-            # If chunk size is defined, then split list into evenly sized chunks
-            if page_size:
-                requests = [
-                    requests[i : i + page_size]
-                    for i in range(0, len(requests), page_size)
-                ]
-                # Return the proper slice using chunk_index
-                requests = requests[page_index]
-
+        requests: List[RequestInfo] = []
+        for req in result.ok():
+            user = method(req.requesting_user_verify_key).to(UserView)
+            message = get_message(context=context, obj_uid=req.id)
+            requests.append(RequestInfo(user=user, request=req, notification=message))
+        if not page_size:
             return requests
 
-        return SyftError(message=result.err())
+        # If chunk size is defined, then split list into evenly sized chunks
+        chunked_requests: List[List[RequestInfo]] = [
+            requests[i : i + page_size] for i in range(0, len(requests), page_size)
+        ]
+        if page_index:
+            return chunked_requests[page_index]
+        else:
+            return chunked_requests
 
     @service_method(path="request.add_changes", name="add_changes")
     def add_changes(
@@ -223,8 +179,9 @@ class RequestService(AbstractService):
             requests = [
                 requests[i : i + page_size] for i in range(0, len(requests), page_size)
             ]
-            # Return the proper slice using chunk_index
-            requests = requests[page_index]
+            if page_index is not None:
+                # Return the proper slice using chunk_index
+                requests = requests[page_index]
 
         return requests
 
@@ -238,6 +195,7 @@ class RequestService(AbstractService):
         uid: UID,
         **kwargs: dict,
     ) -> Union[SyftSuccess, SyftError]:
+        context.node = cast(AbstractNode, context.node)
         request = self.stash.get_by_uid(context.credentials, uid)
         if request.is_ok():
             request = request.ok()
@@ -252,20 +210,23 @@ class RequestService(AbstractService):
 
             link = LinkedObject.with_context(request, context=context)
             if not request.status == RequestStatus.PENDING:
-                mark_as_read = context.node.get_service_method(
-                    NotificationService.mark_as_read
-                )
-                mark_as_read(context=context, uid=request_notification.id)
+                if request_notification is not None and not isinstance(
+                    request_notification, SyftError
+                ):
+                    mark_as_read = context.node.get_service_method(
+                        NotificationService.mark_as_read
+                    )
+                    mark_as_read(context=context, uid=request_notification.id)
 
-                notification = CreateNotification(
-                    subject=f"{request.changes} for Request id: {uid} has status updated to {request.status}",
-                    to_user_verify_key=request.requesting_user_verify_key,
-                    linked_obj=link,
-                )
-                send_notification = context.node.get_service_method(
-                    NotificationService.send
-                )
-                send_notification(context=context, notification=notification)
+                    notification = CreateNotification(
+                        subject=f"{request.changes} for Request id: {uid} has status updated to {request.status}",
+                        to_user_verify_key=request.requesting_user_verify_key,
+                        linked_obj=link,
+                    )
+                    send_notification = context.node.get_service_method(
+                        NotificationService.send
+                    )
+                    send_notification(context=context, notification=notification)
 
             # TODO: check whereever we're return SyftError encapsulate it in Result.
             if hasattr(result, "value"):
@@ -306,6 +267,7 @@ class RequestService(AbstractService):
             to_user_verify_key=request.requesting_user_verify_key,
             linked_obj=link,
         )
+        context.node = cast(AbstractNode, context.node)
         send_notification = context.node.get_service_method(NotificationService.send)
         send_notification(context=context, notification=notification)
 

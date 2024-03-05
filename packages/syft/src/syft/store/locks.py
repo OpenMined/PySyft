@@ -5,14 +5,17 @@ import json
 from pathlib import Path
 import threading
 import time
+from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import Optional
+from typing import Union
 import uuid
 
 # third party
 from pydantic import BaseModel
 import redis
+from redis.client import Redis
 from sherlock.lock import BaseLock
 from sherlock.lock import FileLock
 from sherlock.lock import RedisLock
@@ -94,13 +97,13 @@ class ThreadingLock(BaseLock):
     Threading-based Lock. Used to provide the same API as the rest of the locks.
     """
 
-    def __init__(self, expire: int, **kwargs):
+    def __init__(self, expire: int, **kwargs: Any) -> None:
         self.expire = expire
-        self.locked_timestamp = 0
+        self.locked_timestamp: float = 0.0
         self.lock = threading.Lock()
 
     @property
-    def _locked(self):
+    def _locked(self) -> bool:
         """
         Implementation of method to check if lock has been acquired. Must be
         :returns: if the lock is acquired or not
@@ -116,7 +119,7 @@ class ThreadingLock(BaseLock):
 
         return self.lock.locked()
 
-    def _acquire(self):
+    def _acquire(self) -> bool:
         """
         Implementation of acquiring a lock in a non-blocking fashion.
         :returns: if the lock was successfully acquired or not
@@ -137,7 +140,7 @@ class ThreadingLock(BaseLock):
             self.locked_timestamp = time.time()
         return status
 
-    def _release(self):
+    def _release(self) -> None:
         """
         Implementation of releasing an acquired lock.
         """
@@ -166,7 +169,7 @@ class PatchedFileLock(FileLock):
 
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._lock_file_enabled = True
         try:
             super().__init__(*args, **kwargs)
@@ -203,7 +206,7 @@ class PatchedFileLock(FileLock):
     def _acquire(self) -> bool:
         return self._thread_safe_cbk(self._acquire_file_lock)
 
-    def _release(self) -> None:
+    def _release(self) -> bool:
         res = self._thread_safe_cbk(self._release_file_lock)
         return res
 
@@ -245,12 +248,12 @@ class PatchedFileLock(FileLock):
             self._data_file.write_text(json.dumps(data))
 
             # We succeeded in writing to the file so we now hold the lock.
-            self._owner = owner
+            self._owner: Optional[str] = owner
 
             return True
 
     @property
-    def _locked(self):
+    def _locked(self) -> bool:
         if self._lock_py_thread.locked():
             return True
 
@@ -340,7 +343,7 @@ class SyftLock(BaseLock):
         elif isinstance(config, ThreadingLockingConfig):
             self._lock = ThreadingLock(**base_params)
         elif isinstance(config, FileLockingConfig):
-            client = config.client_path
+            client: Optional[Union[Path, Redis]] = config.client_path
             self._lock = PatchedFileLock(
                 **base_params,
                 client=client,
@@ -356,7 +359,7 @@ class SyftLock(BaseLock):
             raise ValueError("Unsupported config type")
 
     @property
-    def _locked(self):
+    def _locked(self) -> bool:
         """
         Implementation of method to check if lock has been acquired.
 
@@ -365,8 +368,7 @@ class SyftLock(BaseLock):
         """
         if self.passthrough:
             return False
-
-        return self._lock.locked()
+        return self._lock.locked() if self._lock else False
 
     def acquire(self, blocking: bool = True) -> bool:
         """
@@ -380,9 +382,9 @@ class SyftLock(BaseLock):
         if not blocking:
             return self._acquire()
 
-        timeout = self.timeout
+        timeout: float = float(self.timeout)
         start_time = time.time()
-        elapsed = 0
+        elapsed: float = 0.0
         while timeout >= elapsed:
             if not self._acquire():
                 time.sleep(self.retry_interval)
@@ -407,21 +409,22 @@ class SyftLock(BaseLock):
             return True
 
         try:
-            return self._lock._acquire()
+            return self._lock._acquire() if self._lock else False
         except BaseException:
             return False
 
-    def _release(self):
+    def _release(self) -> Optional[bool]:
         """
         Implementation of releasing an acquired lock.
         """
         if self.passthrough:
-            return
-
+            return None
+        if not self._lock:
+            return None
         try:
             return self._lock._release()
         except BaseException:
-            pass
+            return None
 
     def _renew(self) -> bool:
         """
@@ -430,4 +433,4 @@ class SyftLock(BaseLock):
         if self.passthrough:
             return True
 
-        return self._lock._renew()
+        return self._lock._renew() if self._lock else False

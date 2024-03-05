@@ -3,7 +3,7 @@ import base64
 
 
 # allows images to work with offline mode
-def base64read(fname):
+def base64read(fname: str) -> str:
     # relative
     from .. import SYFT_PATH
 

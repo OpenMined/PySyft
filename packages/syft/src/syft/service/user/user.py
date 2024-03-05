@@ -6,6 +6,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Type
 from typing import Union
 
 # third party
@@ -62,7 +63,7 @@ class User(SyftObject):
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID]
+    id: Optional[UID]  # type: ignore[assignment]
 
     @pydantic.validator("email", pre=True, always=True)
     def make_email(cls, v: EmailStr) -> EmailStr:
@@ -93,6 +94,9 @@ def default_role(role: ServiceRole) -> Callable:
 
 
 def hash_password(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+
     if context.output["password"] is not None and (
         (context.output["password_verify"] is None)
         or context.output["password"] == context.output["password_verify"]
@@ -100,13 +104,16 @@ def hash_password(context: TransformContext) -> TransformContext:
         salt, hashed = salt_and_hash_password(context.output["password"], 12)
         context.output["hashed_password"] = hashed
         context.output["salt"] = salt
+
     return context
 
 
 def generate_key(context: TransformContext) -> TransformContext:
-    signing_key = SyftSigningKey.generate()
-    context.output["signing_key"] = signing_key
-    context.output["verify_key"] = signing_key.verify_key
+    if context.output is not None:
+        signing_key = SyftSigningKey.generate()
+        context.output["signing_key"] = signing_key
+        context.output["verify_key"] = signing_key.verify_key
+
     return context
 
 
@@ -172,12 +179,12 @@ class UserCreateV1(UserUpdateV1):
 
     email: EmailStr
     name: str
-    role: Optional[ServiceRole] = None
+    role: Optional[ServiceRole] = None  # type: ignore[assignment]
     password: str
-    password_verify: Optional[str] = None
-    verify_key: Optional[SyftVerifyKey]
-    institution: Optional[str]
-    website: Optional[str]
+    password_verify: Optional[str] = None  # type: ignore[assignment]
+    verify_key: Optional[SyftVerifyKey]  # type: ignore[assignment]
+    institution: Optional[str]  # type: ignore[assignment]
+    website: Optional[str]  # type: ignore[assignment]
     created_by: Optional[SyftSigningKey]
 
 
@@ -188,12 +195,12 @@ class UserCreate(UserUpdate):
 
     email: EmailStr
     name: str
-    role: Optional[ServiceRole] = None  # make sure role cant be set without uid
+    role: Optional[ServiceRole] = None  # type: ignore[assignment]
     password: str
-    password_verify: Optional[str] = None
-    verify_key: Optional[SyftVerifyKey]
-    institution: Optional[str]
-    website: Optional[str]
+    password_verify: Optional[str] = None  # type: ignore[assignment]
+    verify_key: Optional[SyftVerifyKey]  # type: ignore[assignment]
+    institution: Optional[str]  # type: ignore[assignment]
+    website: Optional[str]  # type: ignore[assignment]
     created_by: Optional[SyftSigningKey]
     mock_execution_permission: bool = False
 
@@ -252,6 +259,7 @@ class UserView(SyftObject):
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
+
         api.services.user.update(
             uid=self.id, user_update=UserUpdate(password=new_password)
         )
@@ -301,11 +309,11 @@ class UserView(SyftObject):
 
     def update(
         self,
-        name: Union[Empty, str] = Empty,
-        institution: Union[Empty, str] = Empty,
-        website: Union[str, Empty] = Empty,
-        role: Union[str, Empty] = Empty,
-        mock_execution_permission: Union[bool, Empty] = Empty,
+        name: Union[Type[Empty], str] = Empty,
+        institution: Union[Type[Empty], str] = Empty,
+        website: Union[Type[Empty], str] = Empty,
+        role: Union[Type[Empty], str] = Empty,
+        mock_execution_permission: Union[Type[Empty], bool] = Empty,
     ) -> Union[SyftSuccess, SyftError]:
         """Used to update name, institution, website of a user."""
         api = APIRegistry.api_for(
@@ -399,40 +407,40 @@ def user_to_user_verify() -> List[Callable]:
 
 
 @migrate(UserV1, User)
-def upgrade_user_v1_to_v2():
+def upgrade_user_v1_to_v2() -> List[Callable]:
     return [make_set_default(key="mock_execution_permission", value=False)]
 
 
 @migrate(User, UserV1)
-def downgrade_user_v2_to_v1():
+def downgrade_user_v2_to_v1() -> List[Callable]:
     return [drop(["mock_execution_permission"])]
 
 
 @migrate(UserUpdateV1, UserUpdate)
-def upgrade_user_update_v1_to_v2():
+def upgrade_user_update_v1_to_v2() -> List[Callable]:
     return [make_set_default(key="mock_execution_permission", value=False)]
 
 
 @migrate(UserUpdate, UserUpdateV1)
-def downgrade_user_update_v2_to_v1():
+def downgrade_user_update_v2_to_v1() -> List[Callable]:
     return [drop(["mock_execution_permission"])]
 
 
 @migrate(UserCreateV1, UserCreate)
-def upgrade_user_create_v1_to_v2():
+def upgrade_user_create_v1_to_v2() -> List[Callable]:
     return [make_set_default(key="mock_execution_permission", value=False)]
 
 
 @migrate(UserCreate, UserCreateV1)
-def downgrade_user_create_v2_to_v1():
+def downgrade_user_create_v2_to_v1() -> List[Callable]:
     return [drop(["mock_execution_permission"])]
 
 
 @migrate(UserViewV1, UserView)
-def upgrade_user_view_v1_to_v2():
+def upgrade_user_view_v1_to_v2() -> List[Callable]:
     return [make_set_default(key="mock_execution_permission", value=False)]
 
 
 @migrate(UserView, UserViewV1)
-def downgrade_user_view_v2_to_v1():
+def downgrade_user_view_v2_to_v1() -> List[Callable]:
     return [drop(["mock_execution_permission"])]

@@ -84,15 +84,18 @@ class SyftWorker(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
         return api.services.worker.logs(uid=self.id)
 
-    def get_job_repr(self):
+    def get_job_repr(self) -> str:
         if self.job_id is not None:
             api = APIRegistry.api_for(
                 node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
+            if api is None:
+                return SyftError(message=f"You must login to {self.node_uid}")
             job = api.services.job.get(self.job_id)
             if job.action.user_code_id is not None:
                 func_name = api.services.code.get_by_id(
@@ -104,27 +107,35 @@ class SyftWorker(SyftObject):
         else:
             return ""
 
-    def refresh_status(self) -> None:
+    def refresh_status(self) -> Optional[SyftError]:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
 
         res = api.services.worker.status(uid=self.id)
         if isinstance(res, SyftError):
             return res
+
         self.status, self.healthcheck = res
+        return None
 
     def _coll_repr_(self) -> Dict[str, Any]:
         self.refresh_status()
+
         if self.image and self.image.image_identifier:
             image_name_with_tag = self.image.image_identifier.full_name_with_tag
         else:
             image_name_with_tag = "In Memory Worker"
+
+        healthcheck = self.healthcheck.value if self.healthcheck is not None else ""
+
         return {
             "Name": self.name,
             "Image": image_name_with_tag,
-            "Healthcheck (health / unhealthy)": f"{self.healthcheck.value}",
+            "Healthcheck (health / unhealthy)": f"{healthcheck}",
             "Status": f"{self.status.value}",
             "Job": self.get_job_repr(),
             "Created at": str(self.created_at),
@@ -164,11 +175,13 @@ class WorkerPool(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-        if api is not None:
+        if api is not None and api.services is not None:
             return api.services.worker_image.get_by_uid(uid=self.image_id)
+        else:
+            return None
 
     @property
-    def running_workers(self) -> Union[List[UID], SyftError]:
+    def running_workers(self) -> Union[List[SyftWorker], SyftError]:
         """Query the running workers using an API call to the server"""
         _running_workers = []
         for worker in self.workers:
@@ -178,7 +191,7 @@ class WorkerPool(SyftObject):
         return _running_workers
 
     @property
-    def healthy_workers(self) -> Union[List[UID], SyftError]:
+    def healthy_workers(self) -> Union[List[SyftWorker], SyftError]:
         """
         Query the healthy workers using an API call to the server
         """
@@ -236,7 +249,7 @@ class WorkerPool(SyftObject):
         resolved_workers = []
         for worker in self.worker_list:
             resolved_worker = worker.resolve
-            if resolved_worker is None:
+            if isinstance(resolved_worker, SyftError) or resolved_worker is None:
                 continue
             resolved_worker.refresh_status()
             resolved_workers.append(resolved_worker)

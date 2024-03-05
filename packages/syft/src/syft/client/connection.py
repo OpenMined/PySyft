@@ -10,7 +10,7 @@ class NodeConnection(SyftObject):
     __canonical_name__ = "NodeConnection"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    def get_cache_key() -> str:
+    def get_cache_key(self) -> str:
         raise NotImplementedError
 
     def __repr__(self) -> str:

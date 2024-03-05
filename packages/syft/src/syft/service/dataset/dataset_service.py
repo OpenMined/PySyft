@@ -2,6 +2,7 @@
 from collections.abc import Collection
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Union
 
 # relative
@@ -52,7 +53,7 @@ def _paginate_collection(
 
 
 def _paginate_dataset_collection(
-    datasets: Collection[Dataset],
+    datasets: Sequence[Dataset],
     page_size: Optional[int] = 0,
     page_index: Optional[int] = 0,
 ) -> Union[DictTuple[str, Dataset], DatasetPageView]:
@@ -98,10 +99,16 @@ class DatasetService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
-        return SyftSuccess(
-            message=f"Dataset uploaded to '{context.node.name}'. "
-            f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
-        )
+        if context.node is not None:
+            return SyftSuccess(
+                message=f"Dataset uploaded to '{context.node.name}'. "
+                f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
+            )
+        else:
+            return SyftSuccess(
+                message="Dataset uploaded not to a node."
+                "To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
+            )
 
     @service_method(
         path="dataset.get_all",
@@ -123,7 +130,8 @@ class DatasetService(AbstractService):
         datasets = result.ok()
 
         for dataset in datasets:
-            dataset.node_uid = context.node.id
+            if context.node is not None:
+                dataset.node_uid = context.node.id
 
         return _paginate_dataset_collection(
             datasets=datasets, page_size=page_size, page_index=page_index
@@ -161,7 +169,8 @@ class DatasetService(AbstractService):
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             dataset = result.ok()
-            dataset.node_uid = context.node.id
+            if context.node is not None:
+                dataset.node_uid = context.node.id
             return dataset
         return SyftError(message=result.err())
 
@@ -174,7 +183,8 @@ class DatasetService(AbstractService):
         if result.is_ok():
             datasets = result.ok()
             for dataset in datasets:
-                dataset.node_uid = context.node.id
+                if context.node is not None:
+                    dataset.node_uid = context.node.id
             return datasets
         return SyftError(message=result.err())
 
@@ -204,7 +214,9 @@ class DatasetService(AbstractService):
         name="dataset_delete_by_id",
         warning=HighSideCRUDWarning(confirmation=True),
     )
-    def delete_dataset(self, context: AuthedServiceContext, uid: UID):
+    def delete_dataset(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
         result = self.stash.delete_by_uid(context.credentials, uid)
         if result.is_ok():
             return result.ok()

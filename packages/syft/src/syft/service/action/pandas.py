@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Callable
 from typing import ClassVar
 from typing import Type
 
@@ -12,10 +13,12 @@ from ...serde.serializable import serializable
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from .action_object import ActionObject
 from .action_object import ActionObjectV1
+from .action_object import ActionObjectV2
 from .action_object import BASE_PASSTHROUGH_ATTRS
 from .action_types import action_types
 
@@ -30,9 +33,18 @@ class PandasDataFrameObjectV1(ActionObjectV1):
 
 
 @serializable()
-class PandasDataFrameObject(ActionObject):
+class PandasDataFrameObjectV2(ActionObjectV2):
     __canonical_name__ = "PandasDataframeObject"
     __version__ = SYFT_OBJECT_VERSION_2
+
+    syft_internal_type: ClassVar[Type[Any]] = DataFrame
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+
+
+@serializable()
+class PandasDataFrameObject(ActionObject):
+    __canonical_name__ = "PandasDataframeObject"
+    __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type: ClassVar[Type[Any]] = DataFrame
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
@@ -56,14 +68,14 @@ class PandasDataFrameObject(ActionObject):
 
 
 @migrate(PandasDataFrameObject, PandasDataFrameObjectV1)
-def downgrade_pandasdataframeobject_v2_to_v1():
+def downgrade_pandasdataframeobject_v2_to_v1() -> list[Callable]:
     return [
         drop("syft_resolved"),
     ]
 
 
 @migrate(PandasDataFrameObjectV1, PandasDataFrameObject)
-def upgrade_pandasdataframeobject_v1_to_v2():
+def upgrade_pandasdataframeobject_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("syft_resolved", True),
     ]
@@ -79,9 +91,18 @@ class PandasSeriesObjectV1(ActionObjectV1):
 
 
 @serializable()
-class PandasSeriesObject(ActionObject):
+class PandasSeriesObjectV2(ActionObjectV2):
     __canonical_name__ = "PandasSeriesObject"
     __version__ = SYFT_OBJECT_VERSION_2
+
+    syft_internal_type = Series
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+
+
+@serializable()
+class PandasSeriesObject(ActionObject):
+    __canonical_name__ = "PandasSeriesObject"
+    __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type = Series
     syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
@@ -105,14 +126,14 @@ class PandasSeriesObject(ActionObject):
 
 
 @migrate(PandasSeriesObject, PandasSeriesObjectV1)
-def downgrade_pandasseriesframeobject_v2_to_v1():
+def downgrade_pandasseriesframeobject_v2_to_v1() -> list[Callable]:
     return [
         drop("syft_resolved"),
     ]
 
 
 @migrate(PandasSeriesObjectV1, PandasSeriesObject)
-def upgrade_pandasseriesframeobject_v1_to_v2():
+def upgrade_pandasseriesframeobject_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("syft_resolved", True),
     ]

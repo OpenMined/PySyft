@@ -1,5 +1,6 @@
 # stdlib
 from enum import Enum
+from typing import Callable
 from typing import List
 from typing import Optional
 
@@ -44,7 +45,7 @@ class ReplyNotification(SyftObject):
 
     text: str
     target_msg: UID
-    id: Optional[UID]
+    id: Optional[UID]  # type: ignore[assignment]
     from_user_verify_key: Optional[SyftVerifyKey]
 
 
@@ -91,31 +92,44 @@ class Notification(SyftObject):
             return self.linked_obj.resolve
         return None
 
-    def _coll_repr_(self):
+    def _coll_repr_(self) -> dict[str, str]:
+        linked_obj_name: str = ""
+        linked_obj_uid: Optional[UID] = None
+        if self.linked_obj is not None:
+            linked_obj_name = self.linked_obj.object_type.__canonical_name__
+            linked_obj_uid = self.linked_obj.object_uid
         return {
             "Subject": self.subject,
             "Status": self.determine_status().name.capitalize(),
             "Created At": str(self.created_at),
-            "Linked object": f"{self.linked_obj.object_type.__canonical_name__} ({self.linked_obj.object_uid})",
+            "Linked object": f"{linked_obj_name} ({linked_obj_uid})",
         }
 
     def mark_read(self) -> None:
         api = APIRegistry.api_for(
-            self.node_uid, user_verify_key=self.syft_client_verify_key
+            node_uid=self.node_uid, user_verify_key=self.syft_client_verify_key
         )
+        if api is None:
+            raise ValueError(
+                f"Can't access Syft API. You must login to {self.node_uid}"
+            )
         return api.services.notifications.mark_as_read(uid=self.id)
 
     def mark_unread(self) -> None:
         api = APIRegistry.api_for(
             self.node_uid, user_verify_key=self.syft_client_verify_key
         )
+        if api is None:
+            raise ValueError(
+                f"Can't access Syft API. You must login to {self.node_uid}"
+            )
         return api.services.notifications.mark_as_unread(uid=self.id)
 
     def determine_status(self) -> Enum:
         # relative
         from ..request.request import Request
 
-        if isinstance(self.linked_obj.resolve, Request):
+        if self.linked_obj is not None and isinstance(self.linked_obj.resolve, Request):
             return self.linked_obj.resolve.status
 
         return NotificationRequestStatus.NO_ACTION
@@ -126,19 +140,22 @@ class CreateNotification(Notification):
     __canonical_name__ = "CreateNotification"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
-    node_uid: Optional[UID]
-    from_user_verify_key: Optional[SyftVerifyKey]
-    created_at: Optional[DateTime]
+    id: Optional[UID]  # type: ignore[assignment]
+    node_uid: Optional[UID]  # type: ignore[assignment]
+    from_user_verify_key: Optional[SyftVerifyKey]  # type: ignore[assignment]
+    created_at: Optional[DateTime]  # type: ignore[assignment]
 
 
 def add_msg_creation_time(context: TransformContext) -> TransformContext:
-    context.output["created_at"] = DateTime.now()
+    if context.output is not None:
+        context.output["created_at"] = DateTime.now()
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
     return context
 
 
 @transform(CreateNotification, Notification)
-def createnotification_to_notification():
+def createnotification_to_notification() -> list[Callable]:
     return [
         generate_id,
         add_msg_creation_time,

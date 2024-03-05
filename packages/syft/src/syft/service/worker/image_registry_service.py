@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 from typing import Union
 
 # relative
@@ -61,8 +62,8 @@ class SyftImageRegistryService(AbstractService):
     def delete(
         self,
         context: AuthedServiceContext,
-        uid: UID = None,
-        url: str = None,
+        uid: Optional[UID] = None,
+        url: Optional[str] = None,
     ) -> Union[SyftSuccess, SyftError]:
         # TODO - we need to make sure that there are no workers running an image bound to this registry
 
