@@ -51,7 +51,7 @@ class TwinObject(SyftObject):
     @model_validator(mode="after")
     def make_private_obj_id(self) -> Self:
         if self.private_obj_id is None:
-            self.private_obj_id = self.private_obj.id
+            self.private_obj_id = self.private_obj.id  # type: ignore[unreachable]
         return self
 
     @field_validator("mock_obj", mode="before")
@@ -62,7 +62,7 @@ class TwinObject(SyftObject):
     @model_validator(mode="after")
     def make_mock_obj_id(self) -> Self:
         if self.mock_obj_id is None:
-            self.mock_obj_id = self.mock_obj.id
+            self.mock_obj_id = self.mock_obj.id  # type: ignore[unreachable]
         return self
 
     @property
