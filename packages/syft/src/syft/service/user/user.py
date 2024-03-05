@@ -93,7 +93,7 @@ class User(SyftObject):
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    id: Optional[UID]
+    id: Optional[UID]  # type: ignore[assignment]
 
     @pydantic.validator("email", pre=True, always=True)
     def make_email(cls, v: EmailStr) -> EmailStr:
@@ -271,7 +271,7 @@ class UserCreate(UserUpdate):
     role: Optional[ServiceRole] = None  # type: ignore[assignment]
     password: str
     password_verify: Optional[str] = None  # type: ignore[assignment]
-    verify_key: Optional[SyftVerifyKey]
+    verify_key: Optional[SyftVerifyKey]  # type: ignore[assignment]
     institution: Optional[str]  # type: ignore[assignment]
     website: Optional[str]  # type: ignore[assignment]
     created_by: Optional[SyftSigningKey]

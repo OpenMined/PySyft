@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 
 # third party
 from result import Err
@@ -15,6 +16,7 @@ from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ..action.action_permissions import ActionObjectPermission
 from .notifier import NotifierSettings
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
@@ -53,7 +55,11 @@ class NotifierStash(BaseStash):
             return Err(message=result.err())
 
     def set(
-        self, credentials: SyftVerifyKey, settings: NotifierSettings
+        self,
+        credentials: SyftVerifyKey,
+        settings: NotifierSettings,
+        add_permissions: Optional[List[ActionObjectPermission]] = None,
+        ignore_duplicates: bool = False,
     ) -> Result[NotifierSettings, Err]:
         result = self.check_type(settings, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
@@ -64,7 +70,10 @@ class NotifierStash(BaseStash):
         )  # TODO check if result isInstance(Ok)
 
     def update(
-        self, credentials: SyftVerifyKey, settings: NotifierSettings
+        self,
+        credentials: SyftVerifyKey,
+        settings: NotifierSettings,
+        has_permission: bool = False,
     ) -> Result[NotifierSettings, Err]:
         result = self.check_type(settings, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments

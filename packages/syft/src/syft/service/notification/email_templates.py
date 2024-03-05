@@ -117,7 +117,6 @@ class RequestEmailTemplate(EmailTemplate):
         notification.linked_obj = cast(LinkedObject, notification.linked_obj)
         request_obj = notification.linked_obj.resolve_with_context(context=context).ok()
 
-        context.node = cast(AbstractNode, context.node)
         return f"Domain {context.node.name}: A New Request ({str(request_obj.id)[:4]}) has been received!"
 
     @staticmethod

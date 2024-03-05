@@ -8,6 +8,7 @@ from typing import cast
 
 # relative
 from ...client.api import APIRegistry
+from ...client.api import SyftAPI
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
@@ -198,14 +199,20 @@ class Notification(SyftObject):
         }
 
     def mark_read(self) -> None:
-        api = APIRegistry.api_for(
-            self.node_uid, user_verify_key=self.syft_client_verify_key
+        api: SyftAPI = cast(
+            SyftAPI,
+            APIRegistry.api_for(
+                self.node_uid, user_verify_key=self.syft_client_verify_key
+            ),
         )
         return api.services.notifications.mark_as_read(uid=self.id)
 
     def mark_unread(self) -> None:
-        api = APIRegistry.api_for(
-            self.node_uid, user_verify_key=self.syft_client_verify_key
+        api: SyftAPI = cast(
+            SyftAPI,
+            APIRegistry.api_for(
+                self.node_uid, user_verify_key=self.syft_client_verify_key
+            ),
         )
         return api.services.notifications.mark_as_unread(uid=self.id)
 
@@ -217,7 +224,7 @@ class Notification(SyftObject):
         if isinstance(self.linked_obj.resolve, Request):
             return self.linked_obj.resolve.status
 
-        return NotificationRequestStatus.NO_ACTION
+        return NotificationRequestStatus.NO_ACTION  # type: ignore[unreachable]
 
 
 @migrate(NotificationV1, Notification)
@@ -250,10 +257,10 @@ class CreateNotification(Notification):
     __canonical_name__ = "CreateNotification"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID]
-    node_uid: Optional[UID]
-    from_user_verify_key: Optional[SyftVerifyKey]
-    created_at: Optional[DateTime]
+    id: Optional[UID]  # type: ignore[assignment]
+    node_uid: Optional[UID]  # type: ignore[assignment]
+    from_user_verify_key: Optional[SyftVerifyKey]  # type: ignore[assignment]
+    created_at: Optional[DateTime]  # type: ignore[assignment]
     notifier_types: List[NOTIFIERS] = []
 
 
