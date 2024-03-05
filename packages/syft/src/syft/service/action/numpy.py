@@ -200,7 +200,7 @@ class NumpyBoolObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyBoolObject"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    syft_internal_type = np.bool_
+    syft_internal_type: ClassVar[Type] = np.bool_
     syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
     syft_dont_wrap_attrs: List[str] = ["dtype", "shape"]
 
