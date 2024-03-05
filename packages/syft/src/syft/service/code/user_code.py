@@ -353,6 +353,20 @@ class UserCodeV3(SyftObject):
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
     worker_pool_name: Optional[str]
 
+    __attr_searchable__: List[str] = [
+        "user_verify_key",
+        "status",
+        "service_func_name",
+        "code_hash",
+    ]
+    __attr_unique__: List[str] = []
+    __repr_attrs__: List[str] = [
+        "service_func_name",
+        "input_owners",
+        "code_status",
+        "worker_pool_name",
+    ]
+
 
 @serializable()
 class UserCode(SyftObject):
