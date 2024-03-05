@@ -24,6 +24,7 @@ from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
+from ..service.sync.diff_state import ResolvedSyncState
 from ..service.user.roles import Roles
 from ..service.user.user_roles import ServiceRole
 from ..types.blob_storage import BlobFile
@@ -32,6 +33,7 @@ from ..util.fonts import fonts_css
 from ..util.util import get_mb_size
 from ..util.util import prompt_warning_message
 from .api import APIModule
+from .api import APIRegistry
 from .client import SyftClient
 from .client import login
 from .client import login_as_guest
@@ -138,6 +140,55 @@ class DomainClient(SyftClient):
             if len(valid.err()) > 0:
                 return tuple(valid.err())
             return valid.err()
+
+    def create_actionobject(self, action_object):
+        action_object = action_object.refresh_object()
+        action_object.send(self)
+
+    def get_permissions_for_other_node(self, items):
+        if len(items) > 0:
+            if not len({i.syft_node_location for i in items}) == 1 or (
+                not len({i.syft_client_verify_key for i in items}) == 1
+            ):
+                raise ValueError("permissions from different nodes")
+            item = items[0]
+            api = APIRegistry.api_for(
+                item.syft_node_location, item.syft_client_verify_key
+            )
+            return api.services.sync.get_permissions(items)
+        else:
+            return {}
+
+    def apply_state(
+        self, resolved_state: ResolvedSyncState
+    ) -> Union[SyftSuccess, SyftError]:
+        if len(resolved_state.delete_objs):
+            raise NotImplementedError("TODO implement delete")
+        items = resolved_state.create_objs + resolved_state.update_objs
+
+        action_objects = [x for x in items if isinstance(x, ActionObject)]
+        # permissions = self.get_permissions_for_other_node(items)
+        permissions = {}
+        for p in resolved_state.new_permissions:
+            if p.uid in permissions:
+                permissions[p.uid].add(p.permission_string)
+            else:
+                permissions[p.uid] = {p.permission_string}
+
+        for action_object in action_objects:
+            self.create_actionobject(action_object)
+
+        res = self.api.services.sync.sync_items(items, permissions)
+        if isinstance(res, SyftError):
+            return res
+
+        # Add updated node state to store to have a previous_state for next sync
+        new_state = self.api.services.sync.get_state(add_to_store=True)
+        if isinstance(new_state, SyftError):
+            return new_state
+
+        self._fetch_api(self.credentials)
+        return res
 
     def upload_files(
         self,
@@ -301,6 +352,24 @@ class DomainClient(SyftClient):
     def worker_images(self) -> Optional[APIModule]:
         if self.api.has_service("worker_image"):
             return self.api.services.worker_image
+        return None
+
+    @property
+    def sync(self) -> Optional[APIModule]:
+        if self.api.has_service("sync"):
+            return self.api.services.sync
+        return None
+
+    @property
+    def code_status(self) -> Optional[APIModule]:
+        if self.api.has_service("code_status"):
+            return self.api.services.code_status
+        return None
+
+    @property
+    def output(self) -> Optional[APIModule]:
+        if self.api.has_service("output"):
+            return self.api.services.output
         return None
 
     def get_project(

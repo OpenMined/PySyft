@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -37,6 +38,10 @@ class AuthedServiceContext(NodeServiceContext):
     job_id: Optional[UID]
     extra_kwargs: Dict = {}
     has_execute_permissions: bool = False
+
+    @property
+    def dev_mode(self) -> Any:
+        return self.node.dev_mode  # type: ignore
 
     def capabilities(self) -> List[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES.get(self.role, [])

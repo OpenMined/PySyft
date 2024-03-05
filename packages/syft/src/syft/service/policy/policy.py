@@ -28,6 +28,7 @@ from result import Ok
 # relative
 from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
+from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
 from ...node.credentials import SyftVerifyKey
 from ...serde.recursive_primitives import recursive_serde_register_type
@@ -70,7 +71,7 @@ def extract_uid(v: Any) -> UID:
     return value
 
 
-def filter_only_uids(results: Any) -> Union[list, dict]:
+def filter_only_uids(results: Any) -> Union[List[UID], Dict[str, UID]]:
     if not hasattr(results, "__len__"):
         results = [results]
 
@@ -115,12 +116,11 @@ class Policy(SyftObject):
                 op_code += "\n"
         return op_code
 
+    def is_valid(self, *args: List, **kwargs: Dict) -> Union[SyftSuccess, SyftError]:  # type: ignore
+        return SyftSuccess(message="Policy is valid.")
+
     def public_state(self) -> Any:
         raise NotImplementedError
-
-    @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
-        return SyftSuccess(message="Policy is valid.")
 
 
 @serializable()
@@ -333,7 +333,6 @@ class OutputPolicy(Policy):
     __canonical_name__ = "OutputPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    output_history: List[OutputHistory] = []
     output_kwargs: List[str] = []
     node_uid: Optional[UID]
     output_readers: List[SyftVerifyKey] = []
@@ -343,24 +342,20 @@ class OutputPolicy(Policy):
         context: NodeServiceContext,
         outputs: Any,
     ) -> Any:
-        output_uids: Union[Dict[str, Any], list] = filter_only_uids(outputs)
-        if isinstance(output_uids, UID):
-            output_uids = [output_uids]
-        history = OutputHistory(
-            output_time=DateTime.now(),
-            outputs=output_uids,
-            executing_user_verify_key=context.credentials,
-        )
-        self.output_history.append(history)
+        # output_uids: Union[Dict[str, Any], list] = filter_only_uids(outputs)
+        # if isinstance(output_uids, UID):
+        #     output_uids = [output_uids]
+        # history = OutputHistory(
+        #     output_time=DateTime.now(),
+        #     outputs=output_uids,
+        #     executing_user_verify_key=context.credentials,
+        # )
+        # self.output_history.append(history)
+
         return outputs
 
-    @property
-    def outputs(self) -> List[str]:
-        return self.output_kwargs
-
-    @property
-    def last_output_ids(self) -> Optional[Union[List[UID], Dict[str, UID]]]:
-        return self.output_history[-1].outputs
+    def is_valid(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:  # type: ignore
+        raise NotImplementedError()
 
 
 @serializable()
@@ -368,29 +363,43 @@ class OutputPolicyExecuteCount(OutputPolicy):
     __canonical_name__ = "OutputPolicyExecuteCount"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    count: int = 0
     limit: int
 
-    def apply_output(
-        self,
-        context: NodeServiceContext,
-        outputs: Any,
-    ) -> Optional[Any]:
-        if self.count < self.limit:
-            super().apply_output(context, outputs)
-            self.count += 1
-            return outputs
-        return None
+    @property
+    def count(self) -> Union[SyftError, int]:
+        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        output_history = api.services.output.get_by_output_policy_id(self.id)
+
+        if isinstance(output_history, SyftError):
+            return output_history
+        return len(output_history)
 
     @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
-        is_valid = self.count < self.limit
+    def is_valid(self) -> Union[SyftSuccess, SyftError]:  # type: ignore
+        execution_count = self.count
+        is_valid = execution_count < self.limit
         if is_valid:
             return SyftSuccess(
-                message=f"Policy is still valid. count: {self.count} < limit: {self.limit}"
+                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}"
             )
         return SyftError(
-            message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
+            message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
+        )
+
+    def _is_valid(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:  # type: ignore
+        output_service = context.node.get_service("outputservice")  # type: ignore
+        output_history = output_service.get_by_output_policy_id(context, self.id)
+        if isinstance(output_history, SyftError):
+            return output_history
+        execution_count = len(output_history)
+
+        is_valid = execution_count < self.limit
+        if is_valid:
+            return SyftSuccess(
+                message=f"Policy is still valid. count: {execution_count} < limit: {self.limit}"
+            )
+        return SyftError(
+            message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
         )
 
     def public_state(self) -> dict[str, int]:
@@ -768,5 +777,6 @@ def load_policy_code(user_policy: UserPolicy) -> Any:
 def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]) -> Any:
     policy_class = load_policy_code(user_policy)
     policy_object = policy_class()
+    init_args = {k: v for k, v in init_args.items() if k != "id"}
     policy_object.__user_init__(**init_args)
     return policy_object

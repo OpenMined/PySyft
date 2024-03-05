@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from enum import Enum
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Set
@@ -123,7 +124,8 @@ class KeyValueStorePartition(StorePartition):
             self.searchable_keys = self.store_config.backing_store(
                 "searchable_keys", self.settings, self.store_config
             )
-            self.permissions = self.store_config.backing_store(
+            # uid -> set['<uid>_permission']
+            self.permissions: Dict[UID, Set[str]] = self.store_config.backing_store(
                 "permissions", self.settings, self.store_config, ddtype=set
             )
 

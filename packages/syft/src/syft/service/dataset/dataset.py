@@ -310,7 +310,7 @@ def check_mock(data: Any, mock: Any) -> bool:
     if type(data) == type(mock):
         return True
 
-    return _is_action_data_empty(mock)
+    return _is_action_data_empty(mock) or _is_action_data_empty(data)
 
 
 @serializable()
