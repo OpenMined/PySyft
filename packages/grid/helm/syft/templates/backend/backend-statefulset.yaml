@@ -40,13 +40,13 @@ spec:
               value: "k8s"
             # syft
             - name: NODE_TYPE
-              value: {{ .Values.node.type | default "domain" }}
+              value: {{ .Values.node.type | default "domain" | quote }}
             - name: NODE_NAME
-              value: {{ .Values.node.name | default .Release.Name }}
+              value: {{ .Values.node.name | default .Release.Name | quote }}
             - name: NODE_SIDE_TYPE
-              value: {{ .Values.node.side }}
+              value: {{ .Values.node.side | quote }}
             - name: DEFAULT_ROOT_EMAIL
-              value: {{ .Values.node.rootEmail | required "node.rootEmail is required" }}
+              value: {{ .Values.node.rootEmail | required "node.rootEmail is required" | quote }}
             - name: DEFAULT_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -61,7 +61,7 @@ spec:
             - name: INMEMORY_WORKERS
               value: {{ .Values.node.inMemoryWorkers | quote }}
             - name: DEFAULT_WORKER_POOL_IMAGE
-              value: {{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}
+              value: "{{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}"
             - name: DEFAULT_WORKER_POOL_COUNT
               value: {{ .Values.node.defaultWorkerPoolCount | quote }}
             {{- if .Values.node.debuggerEnabled }}
@@ -74,7 +74,7 @@ spec:
             - name: MONGO_HOST
               value: "mongo"
             - name: MONGO_USERNAME
-              value: {{ .Values.mongo.username }}
+              value: {{ .Values.mongo.username | quote }}
             - name: MONGO_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -84,9 +84,9 @@ spec:
             - name: TRACE
               value: "false"
             - name: SERVICE_NAME
-              value: backend
+              value: "backend"
             - name: JAEGER_HOST
-              value: localhost
+              value: "localhost"
             - name: JAEGER_PORT
               value: "14268"
             # Oblivious
@@ -99,7 +99,7 @@ spec:
             # SeaweedFS
             {{- if ne .Values.node.type "gateway"}}
             - name: S3_ROOT_USER
-              value: {{ .Values.seaweedfs.s3.rootUser }}
+              value: {{ .Values.seaweedfs.s3.rootUser | quote }}
             - name: S3_ROOT_PWD
               valueFrom:
                 secretKeyRef:

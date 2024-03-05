@@ -38,9 +38,9 @@ spec:
                     name: {{ .Values.seaweedfs.secretKeyName | required "seaweedfs.secretKeyName is required" }}
                     key: s3RootPassword
             - name: S3_PORT
-              value: "{{ .Values.seaweedfs.s3.port }}"
+              value: {{ .Values.seaweedfs.s3.port | quote }}
             - name: SEAWEED_MOUNT_PORT
-              value: "{{ .Values.seaweedfs.mountApi.port }}"
+              value: {{ .Values.seaweedfs.mountApi.port | quote }}
             {{- if .Values.seaweedfs.env }}
             {{- toYaml .Values.seaweedfs.env | nindent 12 }}
             {{- end }}

@@ -28,7 +28,7 @@ spec:
           resources: {{ include "common.resources.set" (dict "resources" .Values.mongo.resources "preset" .Values.mongo.resourcesPreset) | nindent 12 }}
           env:
             - name: MONGO_INITDB_ROOT_USERNAME
-              value: {{ .Values.mongo.username | required "mongo.username is required" }}
+              value: {{ .Values.mongo.username | required "mongo.username is required" | quote }}
             - name: MONGO_INITDB_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
