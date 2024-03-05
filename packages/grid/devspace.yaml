@@ -108,6 +108,7 @@ dev:
     sync:
       - path: ./backend/grid:/root/app/grid
       - path: ../syft:/root/app/syft
+    ssh: {}
 
 profiles:
   - name: gateway

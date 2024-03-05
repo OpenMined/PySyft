@@ -26,7 +26,7 @@ mongo:
 
   # Dev mode default passwords
   defaultSecret:
-    rootPassword: "example"
+    rootPassword: example
 
 frontend:
   # Extra environment vars
@@ -64,7 +64,7 @@ seaweedfs:
 
   # Dev mode default passwords
   defaultSecret:
-    s3RootPassword: "admin"
+    s3RootPassword: admin
 
 proxy:
   # Extra environment vars
@@ -116,7 +116,7 @@ node:
 
   # Dev mode default passwords
   defaultSecret:
-    rootPassword: "changethis"
+    defaultRootPassword: changethis
 
 ingress:
   hostname: null # do not make this localhost
