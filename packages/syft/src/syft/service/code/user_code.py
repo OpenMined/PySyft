@@ -17,6 +17,7 @@ import time
 import traceback
 from typing import Any
 from typing import Callable
+from typing import ClassVar
 from typing import Dict
 from typing import Generator
 from typing import List
@@ -353,14 +354,14 @@ class UserCodeV3(SyftObject):
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
     worker_pool_name: Optional[str]
 
-    __attr_searchable__: List[str] = [
+    __attr_searchable__: ClassVar[List[str]] = [
         "user_verify_key",
         "status",
         "service_func_name",
         "code_hash",
     ]  # type: ignore
-    __attr_unique__: List[str] = []  # type: ignore
-    __repr_attrs__: List[str] = [
+    __attr_unique__: ClassVar[List[str]] = []  # type: ignore
+    __repr_attrs__: ClassVar[List[str]] = [
         "service_func_name",
         "input_owners",
         "code_status",
@@ -398,20 +399,20 @@ class UserCode(SyftObject):
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
     worker_pool_name: Optional[str]
 
-    __attr_searchable__ = [
+    __attr_searchable__: ClassVar[List[str]] = [
         "user_verify_key",
         "service_func_name",
         "code_hash",
     ]
-    __attr_unique__: list = []
-    __repr_attrs__ = [
+    __attr_unique__: ClassVar[List[str]] = []
+    __repr_attrs__: ClassVar[List[str]] = [
         "service_func_name",
         "input_owners",
         "code_status",
         "worker_pool_name",
     ]
 
-    __exclude_sync_diff_attrs__ = [
+    __exclude_sync_diff_attrs__: ClassVar[List[str]] = [
         "node_uid",
         "input_policy_type",
         "input_policy_init_kwargs",
