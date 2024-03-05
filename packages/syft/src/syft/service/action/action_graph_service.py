@@ -4,7 +4,7 @@ from typing import Optional
 from typing import Union
 
 # third party
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 
 # relative
 from ...node.credentials import SyftVerifyKey
