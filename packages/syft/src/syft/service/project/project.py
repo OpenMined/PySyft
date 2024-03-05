@@ -296,16 +296,16 @@ class ProjectRequest(ProjectEventAddObject):
 
     __repr_attrs__ = [
         "request.status",
-        "request.changes[-1].link.service_func_name",
+        "request.changes[-1].code.service_func_name",
     ]
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         func_name = None
         if len(self.request.changes) > 0:
-            func_name = self.request.changes[-1].link.service_func_name
+            func_name = self.request.changes[-1].code.service_func_name
         repr_dict = {
             "request.status": self.request.status,
-            "request.changes[-1].link.service_func_name": func_name,
+            "request.changes[-1].code.service_func_name": func_name,
         }
         return markdown_as_class_with_fields(self, repr_dict)
 

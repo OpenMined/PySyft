@@ -35,6 +35,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import UserLibConfigRegistry
 from ..service import service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
 from .action_object import Action
@@ -299,7 +300,7 @@ class ActionService(AbstractService):
         )
 
         if not override_execution_permission:
-            input_policy = code_item.input_policy
+            input_policy = code_item.get_input_policy(context)
             if input_policy is None:
                 if not code_item.output_policy_approved:
                     return Err("Execution denied: Your code is waiting for approval")
@@ -313,11 +314,13 @@ class ActionService(AbstractService):
         else:
             filtered_kwargs = retrieve_from_db(code_item.id, kwargs, context).ok()
         # update input policy to track any input state
-        # code_item.input_policy = input_policy
 
-        if not override_execution_permission and code_item.input_policy is not None:
+        if (
+            not override_execution_permission
+            and code_item.get_input_policy(context) is not None
+        ):
             expected_input_kwargs = set()
-            for _inp_kwarg in code_item.input_policy.inputs.values():
+            for _inp_kwarg in code_item.get_input_policy(context).inputs.values():  # type: ignore
                 keys = _inp_kwarg.keys()
                 for k in keys:
                     if k not in kwargs:
@@ -731,6 +734,15 @@ class ActionService(AbstractService):
             return SyftSuccess(message=f"Object: {obj_id} exists")
         else:
             return SyftError(message=f"Object: {obj_id} does not exist")
+
+    @service_method(path="action.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
+    def delete(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
+        res = self.store.delete(context.credentials, uid)
+        if res.is_err():
+            return SyftError(message=res.err())
+        return SyftSuccess(message="Great Success!")
 
 
 def resolve_action_args(

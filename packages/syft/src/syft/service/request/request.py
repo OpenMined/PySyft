@@ -54,6 +54,7 @@ from ..action.action_store import ActionPermission
 from ..blob_storage.service import BlobStorageService
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
+from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..job.job_stash import Job
@@ -79,8 +80,8 @@ class Change(SyftObject):
 
     linked_obj: Optional[LinkedObject]
 
-    def is_type(self, type_: type) -> bool:
-        return (self.linked_obj is not None) and (type_ == self.linked_obj.object_type)
+    def change_object_is_type(self, type_: type) -> bool:
+        return self.linked_obj is not None and type_ == self.linked_obj.object_type
 
 
 @serializable()
@@ -157,6 +158,9 @@ class ActionStoreChange(Change):
                     permission=self.apply_permission_type,
                 )
                 if apply:
+                    print(
+                        "ADDING PERMISSION", requesting_permission_action_obj, id_action
+                    )
                     action_store.add_permission(requesting_permission_action_obj)
                     blob_storage_service.stash.add_permission(
                         requesting_permission_blob_obj
@@ -457,6 +461,15 @@ class Request(SyftObject):
         }
 
     @property
+    def code_id(self) -> UID:
+        for change in self.changes:
+            if isinstance(change, UserCodeStatusChange):
+                return change.linked_user_code.object_uid
+        return SyftError(
+            message="This type of request does not have code associated with it."
+        )
+
+    @property
     def codes(self) -> Any:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
@@ -546,7 +559,10 @@ class Request(SyftObject):
             prompt_warning_message(message=message, confirm=True)
 
         print(f"Approving request for domain {api.node_name}")
-        return api.services.request.apply(self.id, **kwargs)
+        res = api.services.request.apply(self.id, **kwargs)
+        # if isinstance(res, SyftSuccess):
+
+        return res
 
     def deny(self, reason: str) -> Union[SyftSuccess, SyftError]:
         """Denies the particular request.
@@ -642,11 +658,30 @@ class Request(SyftObject):
             return existing_jobs
 
         if len(existing_jobs) == 0:
+            print("Creating job for existing user code")
             job = job_service.create_job_for_user_code_id(self.code.id)
         else:
+            print("returning existing job")
+            print("setting permission")
             job = existing_jobs[-1]
+            res = job_service.add_read_permission_job_for_code_owner(job, self.code)
+            print(res)
+            res = job_service.add_read_permission_log_for_code_owner(
+                job.log_id, self.code
+            )
+            print(res)
 
         return job
+
+    def _is_action_object_from_job(self, action_object: ActionObject) -> Optional[Job]:  # type: ignore
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        if api is None:
+            raise ValueError(f"Can't access the api. You must login to {self.node_uid}")
+        job_service = api.services.job
+        existing_jobs = job_service.get_by_user_code_id(self.code.id)
+        for job in existing_jobs:
+            if job.result and job.result.id == action_object.id:
+                return job
 
     def accept_by_depositing_result(
         self, result: Any, force: bool = False
@@ -662,6 +697,16 @@ class Request(SyftObject):
                     message="JobInfo should not include result. Use sync_job instead."
                 )
             result = job_info.result
+        elif isinstance(result, ActionObject):
+            # Do not allow accepting a result produced by a Job,
+            # This can cause an inconsistent Job state
+            if self._is_action_object_from_job(result):
+                action_object_job = self._is_action_object_from_job(result)
+                if action_object_job is not None:
+                    return SyftError(
+                        message=f"This ActionObject is the result of Job {action_object_job.id}, "
+                        f"please use the `Job.info` instead."
+                    )
         else:
             # NOTE result is added at the end of function (once ActionObject is created)
             job_info = JobInfo(
@@ -671,21 +716,16 @@ class Request(SyftObject):
                 resolved=True,
             )
 
-        change = self.changes[0]
-        if not change.is_type(UserCode):
-            if change.linked_obj is not None:
-                raise TypeError(
-                    f"accept_by_depositing_result can only be run on {UserCode} not "
-                    f"{change.linked_obj.object_type}"
-                )
-            else:
-                raise TypeError(
-                    f"accept_by_depositing_result can only be run on {UserCode}"
-                )
-        if not type(change) == UserCodeStatusChange:
+        user_code_status_change: UserCodeStatusChange = self.changes[0]
+        if not user_code_status_change.change_object_is_type(UserCodeStatusCollection):
+            raise TypeError(
+                f"accept_by_depositing_result can only be run on {UserCodeStatusCollection} not "
+                f"{user_code_status_change.linked_obj.object_type}"
+            )
+        if not type(user_code_status_change) == UserCodeStatusChange:
             raise TypeError(
                 f"accept_by_depositing_result can only be run on {UserCodeStatusChange} not "
-                f"{type(change)}"
+                f"{type(user_code_status_change)}"
             )
 
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
@@ -695,14 +735,22 @@ class Request(SyftObject):
             )
         if api.signing_key is None:
             raise ValueError(f"{api}'s signing key is None")
-        is_approved = change.approved
+        is_approved = user_code_status_change.approved
 
         permission_request = self.approve(approve_nested=True)
         if isinstance(permission_request, SyftError):
             return permission_request
 
-        code = change.linked_obj.resolve  # type: ignore[union-attr]
-        state = code.output_policy
+        code = user_code_status_change.code
+        output_history = code.output_history
+        if isinstance(output_history, SyftError):
+            return output_history
+        output_policy = code.output_policy
+        if isinstance(output_policy, SyftError):
+            return output_policy
+        job = self._get_latest_or_create_job()
+        if isinstance(job, SyftError):
+            return job
 
         # This weird order is due to the fact that state is None before calling approve
         # we could fix it in a future release
@@ -711,41 +759,70 @@ class Request(SyftObject):
                 return SyftError(
                     message="Already approved, if you want to force updating the result use force=True"
                 )
-            action_obj_id = state.output_history[0].outputs[0]
-            action_object = ActionObject.from_obj(
-                result,
-                id=action_obj_id,
-                syft_client_verify_key=api.signing_key.verify_key,
-                syft_node_location=api.node_uid,
+            # TODO: this should overwrite the output history instead
+            action_obj_id = output_history[0].output_ids[0]  # type: ignore
+
+            if not isinstance(result, ActionObject):
+                action_object = ActionObject.from_obj(
+                    result,
+                    id=action_obj_id,
+                    syft_client_verify_key=api.signing_key.verify_key,
+                    syft_node_location=api.node_uid,
+                )
+            else:
+                action_object = result
+            action_object_is_from_this_node = (
+                self.syft_node_location == action_object.syft_node_location
             )
-            blob_store_result = action_object._save_to_blob_storage()
-            if isinstance(blob_store_result, SyftError):
-                return blob_store_result
-            result = api.services.action.set(action_object)
-            if isinstance(result, SyftError):
-                return result
+            if (
+                action_object.syft_blob_storage_entry_id is None
+                or not action_object_is_from_this_node
+            ):
+                action_object.reload_cache()
+                action_object.syft_node_location = self.syft_node_location
+                action_object.syft_client_verify_key = self.syft_client_verify_key
+                blob_store_result = action_object._save_to_blob_storage()
+                if isinstance(blob_store_result, SyftError):
+                    return blob_store_result
+                result = api.services.action.set(action_object)
+                if isinstance(result, SyftError):
+                    return result
         else:
-            action_object = ActionObject.from_obj(
-                result,
-                syft_client_verify_key=api.signing_key.verify_key,
-                syft_node_location=api.node_uid,
-            )
-            blob_store_result = action_object._save_to_blob_storage()
-            if isinstance(blob_store_result, SyftError):
-                return blob_store_result
-            result = api.services.action.set(action_object)
-            if isinstance(result, SyftError):
-                return result
+            if not isinstance(result, ActionObject):
+                action_object = ActionObject.from_obj(
+                    result,
+                    syft_client_verify_key=api.signing_key.verify_key,
+                    syft_node_location=api.node_uid,
+                )
+            else:
+                action_object = result
 
-            ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
-
-            state.apply_output(context=ctx, outputs=result)
-            policy_state_mutation = ObjectMutation(
-                linked_obj=change.linked_obj,
-                attr_name="output_policy",
-                match_type=True,
-                value=state,
+            # TODO: proper check for if actionobject is already uploaded
+            # we also need this for manualy syncing
+            action_object_is_from_this_node = (
+                self.syft_node_location == action_object.syft_node_location
             )
+            if (
+                action_object.syft_blob_storage_entry_id is None
+                or not action_object_is_from_this_node
+            ):
+                action_object.reload_cache()
+                action_object.syft_node_location = self.syft_node_location
+                action_object.syft_client_verify_key = self.syft_client_verify_key
+                blob_store_result = action_object._save_to_blob_storage()
+                if isinstance(blob_store_result, SyftError):
+                    return blob_store_result
+                result = api.services.action.set(action_object)
+                if isinstance(result, SyftError):
+                    return result
+
+            # Do we still need this?
+            # policy_state_mutation = ObjectMutation(
+            #     linked_obj=user_code_status_change.linked_obj,
+            #     attr_name="output_policy",
+            #     match_type=True,
+            #     value=output_policy,
+            # )
 
             action_object_link = LinkedObject.from_obj(result, node_uid=self.node_uid)
             permission_change = ActionStoreChange(
@@ -753,7 +830,7 @@ class Request(SyftObject):
                 apply_permission_type=ActionPermission.READ,
             )
 
-            new_changes = [policy_state_mutation, permission_change]
+            new_changes = [permission_change]
             result_request = api.services.request.add_changes(
                 uid=self.id, changes=new_changes
             )
@@ -765,8 +842,18 @@ class Request(SyftObject):
             if isinstance(approved, SyftError):
                 return approved
 
+            res = api.services.code.apply_output(
+                user_code_id=code.id, outputs=result, job_id=job.id
+            )
+            if isinstance(res, SyftError):
+                return res
+
         job_info.result = action_object
-        job = self._get_latest_or_create_job()
+
+        existing_result = job.result.id if job.result is not None else None
+        print(
+            f"Job({job.id}) Setting new result {existing_result} -> {job_info.result.id}"
+        )
         job.apply_info(job_info)
 
         job_service = api.services.job
@@ -794,6 +881,17 @@ class Request(SyftObject):
         job = self._get_latest_or_create_job()
         job.apply_info(job_info)
         return job_service.update(job)
+
+    def get_sync_dependencies(self, api: Any = None) -> Union[List[UID], SyftError]:
+        dependencies = []
+
+        code_id = self.code_id
+        if isinstance(code_id, SyftError):
+            return code_id
+
+        dependencies.append(code_id)
+
+        return dependencies
 
 
 @serializable()
@@ -1060,22 +1158,23 @@ class UserCodeStatusChange(Change):
 
     value: UserCodeStatus
     linked_obj: LinkedObject
+    linked_user_code: LinkedObject
     nested_solved: bool = False
     match_type: bool = True
     __repr_attrs__ = [
-        "link.service_func_name",
-        "link.input_policy_type.__canonical_name__",
-        "link.output_policy_type.__canonical_name__",
-        "link.worker_pool_name",
-        "link.status.approved",
+        "code.service_func_name",
+        "code.input_policy_type.__canonical_name__",
+        "code.output_policy_type.__canonical_name__",
+        "code.worker_pool_name",
+        "code.status.approved",
     ]
 
     @property
-    def code(self) -> Optional[SyftObject]:
-        return self.link
+    def code(self) -> UserCode:
+        return self.linked_user_code.resolve
 
     @property
-    def codes(self) -> List:
+    def codes(self) -> List[UserCode]:
         def recursive_code(node: Any) -> List:
             codes = []
             for _, (obj, new_node) in node.items():
@@ -1083,68 +1182,59 @@ class UserCodeStatusChange(Change):
                 codes.extend(recursive_code(new_node))
             return codes
 
-        codes = [self.link]
-        if self.link is not None:
-            codes.extend(recursive_code(self.link.nested_codes))
-
+        codes = [self.code]
+        codes.extend(recursive_code(self.code.nested_codes))
         return codes
 
     def nested_repr(self, node: Optional[Any] = None, level: int = 0) -> str:
         msg = ""
-        if node is None and self.link is not None:
-            node = self.link.nested_codes
         if node is None:
-            return msg
-        for service_func_name, (_, new_node) in node.items():
+            node = self.code.nested_codes
+
+        for service_func_name, (_, new_node) in node.items():  # type: ignore
             msg = "├──" + "──" * level + f"{service_func_name}<br>"
             msg += self.nested_repr(node=new_node, level=level + 1)
         return msg
 
     def __repr_syft_nested__(self) -> str:
-        if self.link is not None:
-            msg = (
-                f"Request to change <b>{self.link.service_func_name}</b> "
-                f"(Pool Id: <b>{self.link.worker_pool_name}</b>) "
-            )
-            msg += "to permission <b>RequestStatus.APPROVED</b>"
-            if self.nested_solved:
-                if self.link.nested_codes == {}:
-                    msg += ". No nested requests"
-                else:
-                    msg += ".<br><br>This change requests the following nested functions calls:<br>"
-                    msg += self.nested_repr()
+        msg = (
+            f"Request to change <b>{self.code.service_func_name}</b> "
+            f"(Pool Id: <b>{self.code.worker_pool_name}</b>) "
+        )
+        msg += "to permission <b>RequestStatus.APPROVED</b>"
+        if self.nested_solved:
+            if self.link.nested_codes == {}:  # type: ignore
+                msg += ". No nested requests"
             else:
-                msg += ". Nested Requests not resolved"
+                msg += ".<br><br>This change requests the following nested functions calls:<br>"
+                msg += self.nested_repr()
         else:
-            msg = f"LinkedObject of {self} is None."
+            msg += ". Nested Requests not resolved"
         return msg
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
-        link = self.link
-        if link is None:
-            return f"{self}'s linked object is None"
-
+        code = self.code
         input_policy_type = (
-            link.input_policy_type.__canonical_name__
-            if link.input_policy_type is not None
+            code.input_policy_type.__canonical_name__
+            if code.input_policy_type is not None
             else None
         )
         output_policy_type = (
-            link.output_policy_type.__canonical_name__
-            if link.output_policy_type is not None
+            code.output_policy_type.__canonical_name__
+            if code.output_policy_type is not None
             else None
         )
         repr_dict = {
-            "function": link.service_func_name,
+            "function": code.service_func_name,
             "input_policy_type": f"{input_policy_type}",
             "output_policy_type": f"{output_policy_type}",
-            "approved": f"{link.status.approved}",
+            "approved": f"{code.status.approved}",
         }
         return markdown_as_class_with_fields(self, repr_dict)
 
     @property
     def approved(self) -> bool:
-        return self.linked_obj.resolve.status.approved
+        return self.linked_obj.resolve.approved
 
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:
@@ -1169,12 +1259,18 @@ class UserCodeStatusChange(Change):
 
     #     return approved_nested_codes
 
-    def mutate(self, obj: UserCode, context: ChangeContext, undo: bool) -> Any:
+    def mutate(
+        self,
+        status: UserCodeStatusCollection,
+        context: ChangeContext,
+        undo: bool,
+    ) -> Union[UserCodeStatusCollection, SyftError]:
         if context.node is None:
             return SyftError(message=f"context {context}'s node is None")
         reason: str = context.extra_kwargs.get("reason", "")
+
         if not undo:
-            res = obj.status.mutate(
+            res = status.mutate(
                 value=(self.value, reason),
                 node_name=context.node.name,
                 node_id=context.node.id,
@@ -1183,15 +1279,12 @@ class UserCodeStatusChange(Change):
             if isinstance(res, SyftError):
                 return res
         else:
-            res = obj.status.mutate(
+            res = status.mutate(
                 value=(UserCodeStatus.DENIED, reason),
                 node_name=context.node.name,
                 node_id=context.node.id,
                 verify_key=context.node.signing_key.verify_key,
             )
-        if not isinstance(res, SyftError):
-            obj.status = res
-            return obj
         return res
 
     def is_enclave_request(self, user_code: UserCode) -> bool:
@@ -1207,35 +1300,39 @@ class UserCodeStatusChange(Change):
             valid = self.valid
             if not valid:
                 return Err(valid)
-            obj = self.linked_obj.resolve_with_context(context)
-            if obj.is_err():
-                return Err(SyftError(message=obj.err()))
-            obj = obj.ok()
-            if apply:
-                res = self.mutate(obj, context, undo=False)
+            user_code = self.linked_user_code.resolve_with_context(context)
+            if user_code.is_err():
+                return Err(SyftError(message=user_code.err()))
+            user_code = user_code.ok()
+            user_code_status = self.linked_obj.resolve_with_context(context)
+            if user_code_status.is_err():
+                return Err(SyftError(message=user_code_status.err()))
+            user_code_status = user_code_status.ok()
 
-                if isinstance(res, SyftError):
-                    return Err(res.message)
+            if apply:
+                # Only mutate, does not write to stash
+                updated_status = self.mutate(user_code_status, context, undo=False)
+
+                if isinstance(updated_status, SyftError):
+                    return Err(updated_status.message)
 
                 # relative
                 from ..enclave.enclave_service import propagate_inputs_to_enclave
 
-                user_code = res
-
+                self.linked_obj.update_with_context(context, updated_status)
                 if self.is_enclave_request(user_code):
                     enclave_res = propagate_inputs_to_enclave(
-                        user_code=res, context=context
+                        user_code=user_code, context=context
                     )
                     if isinstance(enclave_res, SyftError):
                         return enclave_res
-                self.linked_obj.update_with_context(context, user_code)
             else:
-                res = self.mutate(obj, context, undo=True)
-                if isinstance(res, SyftError):
-                    return Err(res.message)
+                updated_status = self.mutate(user_code_status, context, undo=True)
+                if isinstance(updated_status, SyftError):
+                    return Err(updated_status.message)
 
                 # TODO: Handle Enclave approval.
-                self.linked_obj.update_with_context(context, res)
+                self.linked_obj.update_with_context(context, updated_status)
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
             print(f"failed to apply {type(self)}. {e}")

@@ -1,6 +1,7 @@
 # stdlib
 from datetime import datetime
 from functools import total_ordering
+from typing import Any
 from typing import Optional
 
 # third party
@@ -33,7 +34,9 @@ class DateTime(SyftObject):
     def __hash__(self) -> int:
         return hash(self.utc_timestamp)
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
+        if other is None:
+            return False
         return self.utc_timestamp == other.utc_timestamp
 
     def __lt__(self, other: Self) -> bool:

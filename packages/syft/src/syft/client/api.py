@@ -64,6 +64,7 @@ from .connection import NodeConnection
 
 if TYPE_CHECKING:
     # relative
+    from ..node import Node
     from ..service.job.job_stash import Job
 
 
@@ -962,6 +963,14 @@ class NodeIdentity(Identity):
             node_name=context.node.name,
             node_id=context.node.id,
             verify_key=context.node.signing_key.verify_key,
+        )
+
+    @classmethod
+    def from_node(cls, node: Node) -> NodeIdentity:
+        return cls(
+            node_name=node.name,
+            node_id=node.id,
+            verify_key=node.signing_key.verify_key,
         )
 
     def __eq__(self, other: Any) -> bool:

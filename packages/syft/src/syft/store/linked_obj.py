@@ -29,6 +29,8 @@ class LinkedObject(SyftObject):
     object_type: Type[SyftObject]
     object_uid: UID
 
+    __exclude_sync_diff_attrs__ = ["node_uid"]
+
     def __str__(self) -> str:
         resolved_obj_type = (
             type(self.resolve) if self.object_type is None else self.object_type

@@ -19,6 +19,7 @@ from typing import KeysView
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -31,6 +32,7 @@ from pydantic import EmailStr
 from pydantic.fields import Undefined
 from result import OkErr
 from typeguard import check_type
+from typing_extensions import Self
 
 # relative
 from ..node.credentials import SyftVerifyKey
@@ -46,6 +48,10 @@ from .dicttuple import DictTuple
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
+
+if TYPE_CHECKING:
+    # relative
+    from ..service.sync.diff_state import AttrDiff
 
 IntStr = Union[int, str]
 AbstractSetIntStr = Set[IntStr]
@@ -348,6 +354,12 @@ class SyftMigrationRegistry:
 print_type_cache: dict = defaultdict(list)
 
 
+base_attrs_sync_ignore = [
+    "syft_node_location",
+    "syft_client_verify_key",
+]
+
+
 class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -637,6 +649,66 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             )
         return self
 
+    def syft_eq(self, ext_obj: Optional[Self]) -> bool:
+        if ext_obj is None:
+            return False
+        attrs_to_check = self.__dict__.keys()
+
+        obj_exclude_attrs = getattr(self, "__exclude_sync_diff_attrs__", [])
+        for attr in attrs_to_check:
+            if attr not in base_attrs_sync_ignore and attr not in obj_exclude_attrs:
+                obj_attr = getattr(self, attr)
+                ext_obj_attr = getattr(ext_obj, attr)
+                if hasattr(obj_attr, "syft_eq") and not inspect.isclass(obj_attr):
+                    if not obj_attr.syft_eq(ext_obj=ext_obj_attr):
+                        return False
+                elif obj_attr != ext_obj_attr:
+                    return False
+        return True
+
+    def get_diffs(self, ext_obj: Self) -> List["AttrDiff"]:
+        # self is low, ext is high
+        # relative
+        from ..service.sync.diff_state import AttrDiff
+        from ..service.sync.diff_state import ListDiff
+
+        diff_attrs = []
+
+        # Sanity check
+        if self.id != ext_obj.id:
+            raise Exception("Not the same id for low side and high side requests")
+
+        attrs_to_check = self.__dict__.keys()
+
+        obj_exclude_attrs = getattr(self, "__exclude_sync_diff_attrs__", [])
+
+        for attr in attrs_to_check:
+            if attr not in base_attrs_sync_ignore and attr not in obj_exclude_attrs:
+                obj_attr = getattr(self, attr)
+                ext_obj_attr = getattr(ext_obj, attr)
+
+                if isinstance(obj_attr, list) and isinstance(ext_obj_attr, list):
+                    list_diff = ListDiff.from_lists(
+                        attr_name=attr, low_list=obj_attr, high_list=ext_obj_attr
+                    )
+                    if not list_diff.is_empty:
+                        diff_attrs.append(list_diff)
+
+                # TODO: to the same check as above for Dicts when we use them
+                else:
+                    cmp = obj_attr.__eq__
+                    if hasattr(obj_attr, "syft_eq"):
+                        cmp = obj_attr.syft_eq
+
+                    if not cmp(ext_obj_attr):
+                        diff_attr = AttrDiff(
+                            attr_name=attr,
+                            low_attr=obj_attr,
+                            high_attr=ext_obj_attr,
+                        )
+                        diff_attrs.append(diff_attr)
+        return diff_attrs
+
 
 def short_qual_name(name: str) -> str:
     # If the name is a qualname of formax a.b.c.d we will only get d
@@ -789,7 +861,12 @@ def list_dict_repr_html(self: Union[Mapping, Set, Iterable]) -> str:
                 cls_name = first_value.__class__.__name__
             else:
                 cls_name = ""
-            vals = get_repr_values_table(self, is_homogenous, extra_fields=extra_fields)
+            try:
+                vals = get_repr_values_table(
+                    self, is_homogenous, extra_fields=extra_fields
+                )
+            except Exception:
+                return str(self)
 
             return create_table_template(
                 vals,

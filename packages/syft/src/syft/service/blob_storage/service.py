@@ -203,7 +203,10 @@ class BlobStorageService(AbstractService):
         if result.is_ok():
             obj: Optional[BlobStorageEntry] = result.ok()
             if obj is None:
-                return SyftError(message=f"No blob storage entry exists for uid: {uid}")
+                return SyftError(
+                    message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
+                )
+
             context.node = cast(AbstractNode, context.node)
             with context.node.blob_storage_client.connect() as conn:
                 res: BlobRetrieval = conn.read(
@@ -262,7 +265,9 @@ class BlobStorageService(AbstractService):
         obj: Optional[BlobStorageEntry] = result.ok()
 
         if obj is None:
-            return SyftError(message=f"No blob storage entry exists for uid: {uid}")
+            return SyftError(
+                message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
+            )
 
         try:
             Path(obj.location.path).write_bytes(data)
@@ -292,7 +297,9 @@ class BlobStorageService(AbstractService):
         obj: Optional[BlobStorageEntry] = result.ok()
 
         if obj is None:
-            return SyftError(message=f"No blob storage entry exists for uid: {uid}")
+            return SyftError(
+                message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
+            )
 
         obj.no_lines = no_lines
         result = self.stash.update(
@@ -316,7 +323,9 @@ class BlobStorageService(AbstractService):
             obj = result.ok()
 
             if obj is None:
-                return SyftError(message=f"No blob storage entry exists for uid: {uid}")
+                return SyftError(
+                    message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
+                )
 
             context.node = cast(AbstractNode, context.node)
 

@@ -531,6 +531,7 @@ class SyftClient:
     def sync_code_from_request(self, request: Any) -> Union[SyftSuccess, SyftError]:
         # relative
         from ..service.code.user_code import UserCode
+        from ..service.code.user_code import UserCodeStatusCollection
         from ..store.linked_obj import LinkedObject
 
         code: Union[UserCode, SyftError] = request.code
@@ -542,33 +543,41 @@ class SyftClient:
         code.user_verify_key = self.verify_key
 
         def get_nested_codes(code: UserCode) -> list[UserCode]:
-            result = []
-            if code.nested_codes is not None:
-                for __, (linked_code_obj, _) in code.nested_codes.items():
-                    nested_code = linked_code_obj.resolve
-                    nested_code = deepcopy(nested_code)
-                    nested_code.node_uid = code.node_uid
-                    nested_code.user_verify_key = code.user_verify_key
-                    result.append(nested_code)
-                    result += get_nested_codes(nested_code)
+            result: list[UserCode] = []
+            if code.nested_codes is None:
+                return result
 
-                updated_code_links: dict[str, tuple[LinkedObject, dict]] = {
-                    nested_code.service_func_name: (
-                        LinkedObject.from_obj(nested_code),
-                        {},
-                    )
-                    for nested_code in result
-                }
-                code.nested_codes = updated_code_links
+            for _, (linked_code_obj, _) in code.nested_codes.items():
+                nested_code = linked_code_obj.resolve
+                nested_code = deepcopy(nested_code)
+                nested_code.node_uid = code.node_uid
+                nested_code.user_verify_key = code.user_verify_key
+                result.append(nested_code)
+                result += get_nested_codes(nested_code)
 
             return result
 
+        def get_code_statusses(codes: List[UserCode]) -> List[UserCodeStatusCollection]:
+            statusses = []
+            for code in codes:
+                status = deepcopy(code.status)
+                statusses.append(status)
+                code.status_link = LinkedObject.from_obj(status, node_uid=code.node_uid)
+            return statusses
+
         nested_codes = get_nested_codes(code)
+        statusses = get_code_statusses(nested_codes + [code])
 
         for c in nested_codes + [code]:
             res = self.code.submit(c)
             if isinstance(res, SyftError):
                 return res
+
+        for status in statusses:
+            res = self.api.services.code_status.create(status)
+            if isinstance(res, SyftError):
+                return res
+
         self._fetch_api(self.credentials)
         return SyftSuccess(message="User Code Submitted")
 
@@ -805,7 +814,7 @@ class SyftClient:
         from ..service.code.user_code import load_approved_policy_code
 
         user_code_items = self.code.get_all_for_user()
-        load_approved_policy_code(user_code_items)
+        load_approved_policy_code(user_code_items=user_code_items, context=None)
 
     def register(
         self,

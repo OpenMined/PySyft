@@ -1,5 +1,7 @@
 # stdlib
 from enum import Enum
+from typing import Any
+from typing import Dict
 from typing import Optional
 
 # relative
@@ -49,6 +51,13 @@ class ActionObjectPermission:
             if self.credentials is not None:
                 return f"{self.credentials.verify}_{self.permission.name}"
             return f"{self.permission.name}"
+
+    def _coll_repr_(self) -> Dict[str, Any]:
+        return {
+            "uid": str(self.uid),
+            "credentials": str(self.credentials),
+            "permission": str(self.permission),
+        }
 
     def __repr__(self) -> str:
         if self.credentials is not None:
