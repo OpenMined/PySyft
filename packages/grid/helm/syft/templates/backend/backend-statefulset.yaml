@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: backend-container
-          image: "{{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}"
+          image: {{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}
           imagePullPolicy: Always
           resources: {{ include "common.resources.set" (dict "resources" .Values.node.resources "preset" .Values.node.resourcesPreset) | nindent 12 }}
           env:
