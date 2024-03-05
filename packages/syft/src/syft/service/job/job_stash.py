@@ -123,6 +123,7 @@ class Job(SyftObject):
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
+    __exclude_sync_diff_attrs__ = ["action"]
 
     @field_validator("creation_time")
     @classmethod
@@ -337,6 +338,13 @@ class Job(SyftObject):
         )
         return api.services.user.get_current_user(self.id)
 
+    def _get_log_objs(self) -> Union[SyftObject, SyftError]:
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        return api.services.log.get(self.log_id)
+
     def logs(
         self, stdout: bool = True, stderr: bool = True, _print: bool = True
     ) -> Optional[str]:
@@ -346,8 +354,11 @@ class Job(SyftObject):
         )
         results = []
         if stdout:
-            stdout_log = api.services.log.get(self.log_id)
-            results.append(stdout_log)
+            stdout_log = api.services.log.get_stdout(self.log_id)
+            if isinstance(stdout_log, SyftError):
+                results.append(f"Log {self.log_id} not available")
+            else:
+                results.append(stdout_log)
 
         if stderr:
             try:
@@ -468,6 +479,22 @@ class Job(SyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
+    def get_sync_dependencies(self, **kwargs: Dict) -> List[UID]:
+        dependencies = []
+        if self.result is not None:
+            dependencies.append(self.result.id.id)
+
+        if self.log_id:
+            dependencies.append(self.log_id)
+
+        subjob_ids = [subjob.id for subjob in self.subjobs]
+        dependencies.extend(subjob_ids)
+
+        if self.user_code_id is not None:
+            dependencies.append(self.user_code_id)
+
+        return dependencies
+
 
 @serializable()
 class JobInfo(SyftObject):
@@ -499,7 +526,7 @@ class JobInfo(SyftObject):
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
 
-    result: Optional[Any] = None
+    result: Optional[ActionObject] = None
 
     def _repr_html_(self) -> str:
         metadata_str = ""
@@ -548,7 +575,7 @@ class JobInfo(SyftObject):
                 raise ValueError("Cannot sync result of unresolved job")
             if not isinstance(job.result, ActionObject):
                 raise ValueError("Could not sync result of job")
-            info.result = job.result.get()
+            info.result = job.result
 
         return info
 

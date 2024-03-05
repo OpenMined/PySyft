@@ -50,6 +50,7 @@ from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
 from ..service.blob_storage.service import BlobStorageService
+from ..service.code.status_service import UserCodeStatusService
 from ..service.code.user_code_service import UserCodeService
 from ..service.code.user_code_stash import UserCodeStash
 from ..service.code_history.code_history_service import CodeHistoryService
@@ -69,6 +70,7 @@ from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
 from ..service.object_search.migration_state_service import MigrateStateService
+from ..service.output.output_service import OutputService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
 from ..service.queue.base_queue import AbstractMessageHandler
@@ -91,6 +93,7 @@ from ..service.service import UserServiceConfigRegistry
 from ..service.settings.settings import NodeSettingsV2
 from ..service.settings.settings_service import SettingsService
 from ..service.settings.settings_stash import SettingsStash
+from ..service.sync.sync_service import SyncService
 from ..service.user.user import User
 from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
@@ -361,6 +364,9 @@ class Node(AbstractNode):
                 SyftWorkerImageService,
                 SyftWorkerPoolService,
                 SyftImageRegistryService,
+                SyncService,
+                OutputService,
+                UserCodeStatusService,
             ]
             if services is None
             else services
@@ -943,6 +949,9 @@ class Node(AbstractNode):
                 SyftWorkerImageService,
                 SyftWorkerPoolService,
                 SyftImageRegistryService,
+                SyncService,
+                OutputService,
+                UserCodeStatusService,
             ]
 
             if OBLV:

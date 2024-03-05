@@ -16,7 +16,7 @@ from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
-from .log import SyftLogV2
+from .log import SyftLog
 from .log_stash import LogStash
 
 
@@ -34,7 +34,7 @@ class LogService(AbstractService):
     def add(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
-        new_log = SyftLogV2(id=uid)
+        new_log = SyftLog(id=uid)
         result = self.stash.set(context.credentials, new_log)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -65,6 +65,18 @@ class LogService(AbstractService):
 
     @service_method(path="log.get", name="get", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def get(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
+        result = self.stash.get_by_uid(context.credentials, uid)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        return result
+
+    @service_method(
+        path="log.get_stdout", name="get_stdout", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
+    def get_stdout(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
         result = self.stash.get_by_uid(context.credentials, uid)

@@ -26,6 +26,7 @@ from ..serde import serialize
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
 from ..service.action.action_object import ActionObjectPointer
+from ..service.action.action_object import ActionObjectV2
 from ..service.action.action_object import BASE_PASSTHROUGH_ATTRS
 from ..service.action.action_types import action_types
 from ..service.response import SyftError
@@ -206,13 +207,23 @@ class BlobFileObjectPointer:
 
 
 @serializable()
-class BlobFileObject(ActionObject):
+class BlobFileObjectV1(ActionObjectV2):
     __canonical_name__ = "BlobFileOBject"
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[Type[Any]] = BlobFile
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]] = BlobFileObjectPointer
     syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
+
+
+@serializable()
+class BlobFileObject(ActionObject):
+    __canonical_name__ = "BlobFileOBject"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    syft_internal_type: ClassVar[Type[Any]] = BlobFile
+    syft_pointer_type = BlobFileObjectPointer
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
 
 
 @serializable()

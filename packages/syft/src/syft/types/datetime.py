@@ -34,6 +34,8 @@ class DateTime(SyftObject):
         return hash(self.utc_timestamp)
 
     def __eq__(self, other: Self) -> bool:
+        if other is None:
+            return False
         return self.utc_timestamp == other.utc_timestamp
 
     def __lt__(self, other: Self) -> bool:

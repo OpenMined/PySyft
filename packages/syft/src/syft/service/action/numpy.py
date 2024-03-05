@@ -15,11 +15,13 @@ from ...serde.serializable import serializable
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
 from .action_object import ActionObjectV1
+from .action_object import ActionObjectV2
 from .action_object import BASE_PASSTHROUGH_ATTRS
 from .action_types import action_types
 
@@ -58,12 +60,23 @@ class NumpyArrayObjectV1(ActionObjectV1, np.lib.mixins.NDArrayOperatorsMixin):
     syft_dont_wrap_attrs: List[str] = ["dtype", "shape"]
 
 
+@serializable()
+class NumpyArrayObjectV2(ActionObjectV2, np.lib.mixins.NDArrayOperatorsMixin):
+    __canonical_name__ = "NumpyArrayObject"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    syft_internal_type: ClassVar[Type[Any]] = np.ndarray
+    syft_pointer_type = NumpyArrayObjectPointer
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_dont_wrap_attrs = ["dtype", "shape"]
+
+
 # 🔵 TODO 7: Map TPActionObjects and their 3rd Party types like numpy type to these
 # classes for bi-directional lookup.
 @serializable()
 class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyArrayObject"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type: ClassVar[Type[Any]] = np.ndarray
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]] = NumpyArrayObjectPointer
@@ -126,13 +139,23 @@ class NumpyScalarObjectV1(ActionObjectV1, np.lib.mixins.NDArrayOperatorsMixin):
 
 
 @serializable()
-class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
+class NumpyScalarObjectV2(ActionObjectV2, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyScalarObject"
     __version__ = SYFT_OBJECT_VERSION_2
 
     syft_internal_type: ClassVar[Type] = np.number
     syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
     syft_dont_wrap_attrs: List[str] = ["dtype", "shape"]
+
+
+@serializable()
+class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
+    __canonical_name__ = "NumpyScalarObject"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    syft_internal_type = np.number
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_dont_wrap_attrs = ["dtype", "shape"]
 
     def __float__(self) -> float:
         return float(self.syft_action_data)
@@ -163,13 +186,23 @@ class NumpyBoolObjectV1(ActionObjectV1, np.lib.mixins.NDArrayOperatorsMixin):
 
 
 @serializable()
-class NumpyBoolObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
+class NumpyBoolObjectV2(ActionObjectV2, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyBoolObject"
     __version__ = SYFT_OBJECT_VERSION_2
 
     syft_internal_type: ClassVar[Type] = np.bool_
     syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
     syft_dont_wrap_attrs: List[str] = ["dtype", "shape"]
+
+
+@serializable()
+class NumpyBoolObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
+    __canonical_name__ = "NumpyBoolObject"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    syft_internal_type = np.bool_
+    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_dont_wrap_attrs = ["dtype", "shape"]
 
 
 @migrate(NumpyBoolObject, NumpyBoolObjectV1)
@@ -213,5 +246,5 @@ SUPPORTED_FLOAT_TYPES = [
     np.float64,
 ]
 
-for scalar_type in SUPPORTED_INT_TYPES + SUPPORTED_FLOAT_TYPES:
+for scalar_type in SUPPORTED_INT_TYPES + SUPPORTED_FLOAT_TYPES:  # type: ignore
     action_types[scalar_type] = NumpyScalarObject

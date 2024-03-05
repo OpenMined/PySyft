@@ -99,7 +99,10 @@ dev:
     env:
       - name: DEV_MODE
         value: "True"
-    logs: {}
+      - name: DEBUGGER_ENABLED
+        value: "True"
+    ports:
+      - port: "5678" # debugpy
     sync:
       - path: ./backend/grid:/root/app/grid
       - path: ../syft:/root/app/syft
