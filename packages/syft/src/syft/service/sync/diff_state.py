@@ -14,7 +14,6 @@ from typing import ClassVar
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Self
 from typing import Set
 from typing import Tuple
 from typing import Type
@@ -28,6 +27,7 @@ from rich.console import Group
 from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.panel import Panel
+from typing_extensions import Self
 
 # relative
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
