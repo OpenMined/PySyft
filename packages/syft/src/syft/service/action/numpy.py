@@ -67,8 +67,8 @@ class NumpyArrayObjectV2(ActionObjectV2, np.lib.mixins.NDArrayOperatorsMixin):
 
     syft_internal_type: ClassVar[Type[Any]] = np.ndarray
     syft_pointer_type = NumpyArrayObjectPointer
-    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
-    syft_dont_wrap_attrs = ["dtype", "shape"]
+    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
+    syft_dont_wrap_attrs: List[str] = ["dtype", "shape"]
 
 
 # 🔵 TODO 7: Map TPActionObjects and their 3rd Party types like numpy type to these
@@ -153,9 +153,9 @@ class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyScalarObject"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    syft_internal_type = np.number
-    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
-    syft_dont_wrap_attrs = ["dtype", "shape"]
+    syft_internal_type: ClassVar[Type] = np.number
+    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
+    syft_dont_wrap_attrs: List[str] = ["dtype", "shape"]
 
     def __float__(self) -> float:
         return float(self.syft_action_data)
@@ -201,8 +201,8 @@ class NumpyBoolObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type = np.bool_
-    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
-    syft_dont_wrap_attrs = ["dtype", "shape"]
+    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
+    syft_dont_wrap_attrs: List[str] = ["dtype", "shape"]
 
 
 @migrate(NumpyBoolObject, NumpyBoolObjectV1)

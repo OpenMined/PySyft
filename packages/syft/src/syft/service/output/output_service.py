@@ -7,7 +7,7 @@ from typing import Type
 from typing import Union
 
 # third party
-import pydantic
+from pydantic import model_validator
 from result import Result
 
 # relative
@@ -48,7 +48,7 @@ class ExecutionOutput(SyftObject):
     job_link: Optional[LinkedObject] = None
     created_at: DateTime = DateTime.now()
 
-    # Required for __attr_searchable__, set by root_validator
+    # Required for __attr_searchable__, set by model_validator
     user_code_id: UID
 
     # Output policy is not a linked object because its saved on the usercode
@@ -57,7 +57,8 @@ class ExecutionOutput(SyftObject):
     __attr_searchable__: List[str] = ["user_code_id", "created_at", "output_policy_id"]
     __repr_attrs__: List[str] = ["created_at", "user_code_id", "job_id", "output_ids"]
 
-    @pydantic.root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def add_user_code_id(cls, values: dict) -> dict:
         if "user_code_link" in values:
             values["user_code_id"] = values["user_code_link"].object_uid

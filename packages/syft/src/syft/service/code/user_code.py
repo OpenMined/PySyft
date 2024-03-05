@@ -30,7 +30,7 @@ from typing import final
 
 # third party
 from IPython.display import display
-import pydantic
+from pydantic import field_validator
 from result import Err
 from typing_extensions import Self
 
@@ -879,10 +879,11 @@ class SubmitUserCode(SyftObject):
 
     __repr_attrs__ = ["func_name", "code"]
 
-    @pydantic.root_validator(pre=True)
-    def add_output_policy_ids(cls, values: dict) -> dict:
-        if "id" not in values["output_policy_init_kwargs"]:
-            values["output_policy_init_kwargs"]["id"] = UID()
+    @field_validator("output_policy_init_kwargs", mode="after")
+    @classmethod
+    def add_output_policy_ids(cls, values: Any) -> Any:
+        if isinstance(values, dict) and "id" not in values:
+            values["id"] = UID()
         return values
 
     @property
@@ -1395,7 +1396,7 @@ class UserCodeExecutionOutput(SyftObject):
     user_code_id: UID
     stdout: str
     stderr: str
-    result: Any
+    result: Any = None
 
 
 class SecureContext:

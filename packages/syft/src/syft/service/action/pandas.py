@@ -106,7 +106,7 @@ class PandasSeriesObject(ActionObject):
     __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type = Series
-    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
 
     # name: Optional[str] = None
     # syft_dont_wrap_attrs = ["shape"]

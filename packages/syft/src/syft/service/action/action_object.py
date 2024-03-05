@@ -716,7 +716,7 @@ class ActionObject(SyftObject):
     syft_pre_hooks__: Dict[str, List] = {}
     syft_post_hooks__: Dict[str, List] = {}
     syft_twin_type: TwinMode = TwinMode.NONE
-    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
     syft_action_data_type: Optional[Type] = None
     syft_action_data_repr_: Optional[str] = None
     syft_action_data_str_: Optional[str] = None
@@ -2074,7 +2074,7 @@ class AnyActionObject(ActionObject):
     syft_internal_type: ClassVar[Type[Any]] = NoneType  # type: ignore
     # syft_passthrough_attrs: List[str] = []
     syft_dont_wrap_attrs: List[str] = ["__str__", "__repr__", "syft_action_data_str_"]
-    syft_action_data_str_ = ""
+    syft_action_data_str_: str = ""
 
     def __float__(self) -> float:
         return float(self.syft_action_data)
