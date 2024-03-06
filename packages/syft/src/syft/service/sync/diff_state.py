@@ -718,24 +718,27 @@ class ResolvedSyncState(SyftObject):
         if diff.status == "SAME":
             return
 
-        my_obj = diff.low_obj if self.alias == "low" else diff.high_obj
-        other_obj = diff.low_obj if self.alias == "high" else diff.high_obj
+        my_obj: SyftObject = diff.low_obj if self.alias == "low" else diff.high_obj
+        other_obj: SyftObject = diff.low_obj if self.alias == "high" else diff.high_obj
 
         if other_obj is not None and sync_decision.mockify:
             other_obj = other_obj.create_shareable_sync_copy(mock=True)
 
         if sync_decision.decision != self.alias:  # chose for the other
             if diff.status == "DIFF":
-                if other_obj not in self.update_objs:
+                # keep IDs comparison here, otherwise it will break with actionobjects
+                if other_obj.id not in [x.id for x in self.update_objs]:  # type: ignore
                     self.update_objs.append(other_obj)
 
             elif diff.status == "NEW":
                 if my_obj is None:
-                    if other_obj not in self.create_objs:
+                    # keep IDs comparison here, otherwise it will break with actionobjects
+                    if other_obj.id not in [x.id for x in self.create_objs]:  # type: ignore
                         self.create_objs.append(other_obj)
 
                 elif other_obj is None:
-                    if my_obj not in self.delete_objs:
+                    # keep IDs comparison here, otherwise it will break with actionobjects
+                    if my_obj.id not in [x.id for x in self.delete_objs]:
                         self.delete_objs.append(my_obj)
 
         if self.alias == "low":

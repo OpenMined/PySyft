@@ -51,14 +51,6 @@ def resolve(
 
         print(batch_diff.__repr__())
 
-        # ask question: which side do you want
-        # ask question: The batch has private items that you may want to share with the related user
-        # user with verify key: abc. The items are
-        # Log with id (123)
-        # Result with id (567)
-        # do you want to give read permission to items
-        # TODO: get decision
-        # get items
         if batch_decision is None:
             batch_decision = get_user_input_for_resolve()
 
@@ -140,7 +132,7 @@ def get_sync_decisions_for_batch_items(
                 ActionObjectPermission(
                     uid=diff.object_id,
                     permission=ActionPermission.READ,
-                    credentials=user_code_high.user_verify_key,
+                    credentials=user_code_high.user_verify_key,  # type: ignore
                 )
             ]
             mockify = False
@@ -180,7 +172,9 @@ this will become effective when you call client.apply_state(<resolved_state>))
 """
 
 
-def ask_user_input_permission(user_code, all_private_high_diffs) -> list[ObjectDiff]:
+def ask_user_input_permission(
+    user_code: UserCode, all_private_high_diffs: list[ObjectDiff]
+) -> list[ObjectDiff]:
     if len(all_private_high_diffs) == 0:
         return []
 
