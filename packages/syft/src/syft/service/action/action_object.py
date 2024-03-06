@@ -48,6 +48,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
+from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import LineageID
@@ -349,6 +350,8 @@ passthrough_attrs = [
     "copy",  # pydantic
     "__sha256__",  # syft
     "__hash_exclude_attrs__",  # syft
+    "__private_sync_attrs__",  # syft
+    "from_private_sync",  # syft
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -631,6 +634,9 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "__sha256__",
     "__hash_exclude_attrs__",
     "__hash__",
+    "from_private_sync",
+    "create_shareable_sync_copy",
+    "_has_private_sync_attrs",
 ]
 
 
@@ -700,11 +706,15 @@ class ActionObjectV2(SyftObject):
 
 
 @serializable(without=["syft_pre_hooks__", "syft_post_hooks__"])
-class ActionObject(SyftObject):
+class ActionObject(SyncableSyftObject):
     """Action object for remote execution."""
 
     __canonical_name__ = "ActionObject"
     __version__ = SYFT_OBJECT_VERSION_3
+    __private_sync_attrs__: ClassVar[dict[str, Any]] = {
+        "syft_action_data_cache": None,
+        "syft_blob_storage_entry_id": None,
+    }
 
     __attr_searchable__: List[str] = []  # type: ignore[misc]
     syft_action_data_cache: Optional[Any] = None
@@ -862,7 +872,7 @@ class ActionObject(SyftObject):
             self.syft_action_data_str_ = str(data)
             self.syft_has_bool_attr = hasattr(data, "__bool__")
         else:
-            debug("skipping writing action object to store, passed data was empty.")
+            print("skipping writing action object to store, passed data was empty.")
 
         self.syft_action_data_cache = data
 
@@ -1258,6 +1268,15 @@ class ActionObject(SyftObject):
             self.syft_resolved,
             syft_blob_storage_entry_id=self.syft_blob_storage_entry_id,
         )
+
+    def create_shareable_sync_copy(self, mock: bool) -> ActionObject:
+        if mock:
+            res = self.as_empty()
+            for k, v in self.__private_sync_attrs__.items():
+                setattr(res, k, v)
+            res.from_private_sync = True
+            return res
+        return self
 
     @staticmethod
     def from_path(

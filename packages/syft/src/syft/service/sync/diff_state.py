@@ -32,6 +32,7 @@ from typing_extensions import Self
 # relative
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util import options
@@ -157,13 +158,11 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     # version
     __canonical_name__ = "ObjectDiff"
     __version__ = SYFT_OBJECT_VERSION_1
-    low_obj: Optional[SyftObject] = None
-    high_obj: Optional[SyftObject] = None
+    low_obj: Optional[SyncableSyftObject] = None
+    high_obj: Optional[SyncableSyftObject] = None
     low_permissions: List[ActionObjectPermission] = []
     high_permissions: List[ActionObjectPermission] = []
 
-    new_low_permissions: List[ActionObjectPermission] = []
-    new_high_permissions: List[ActionObjectPermission] = []
     obj_type: Type
     diff_list: List[AttrDiff] = []
 
@@ -175,8 +174,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     @classmethod
     def from_objects(
         cls,
-        low_obj: Optional[SyftObject],
-        high_obj: Optional[SyftObject],
+        low_obj: Optional[SyncableSyftObject],
+        high_obj: Optional[SyncableSyftObject],
         low_permissions: List[ActionObjectPermission],
         high_permissions: List[ActionObjectPermission],
     ) -> "ObjectDiff":
@@ -590,7 +589,10 @@ class NodeDiff(SyftObject):
             for diff in hierarchy.diffs:
                 obj = diff.low_obj if diff.low_obj is not None else diff.high_obj
                 if isinstance(obj, UserCode):
-                    grouped_by_usercode[obj.id] = hierarchy
+                    usercode_id = obj.id
+                    if usercode_id not in grouped_by_usercode:
+                        grouped_by_usercode[usercode_id] = []
+                    grouped_by_usercode[usercode_id].append(hierarchy)
                     has_usercode = True
                     break
             if not has_usercode:
@@ -679,7 +681,8 @@ class NodeDiff(SyftObject):
             )
             hierarchies.append(batch)
 
-        return hierarchies
+        hierarchies_sorted = self._sort_hierarchies(hierarchies)
+        return hierarchies_sorted
 
     def objs_to_sync(self) -> List[SyftObject]:
         objs: list[SyftObject] = []
@@ -689,34 +692,54 @@ class NodeDiff(SyftObject):
         return objs
 
 
+class SyncDecision(SyftObject):
+    __canonical_name__ = "SyncDecision"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    diff: ObjectDiff
+    decision: Optional[str]
+    new_permissions_lowside: List[ActionObjectPermission]
+    mockify: bool
+
+
 class ResolvedSyncState(SyftObject):
     __canonical_name__ = "SyncUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    create_objs: List[SyftObject] = []
-    update_objs: List[SyftObject] = []
+    create_objs: List[SyncableSyftObject] = []
+    update_objs: List[SyncableSyftObject] = []
     delete_objs: List[SyftObject] = []
     new_permissions: List[ActionObjectPermission] = []
     alias: str
 
-    def add_cruds_from_diff(self, diff: ObjectDiff, decision: str) -> None:
+    def add_sync_decision(self, sync_decision: SyncDecision) -> None:
+        diff = sync_decision.diff
+
         if diff.status == "SAME":
             return
 
         my_obj = diff.low_obj if self.alias == "low" else diff.high_obj
         other_obj = diff.low_obj if self.alias == "high" else diff.high_obj
 
-        if decision != self.alias:  # chose for the other
+        if other_obj is not None and sync_decision.mockify:
+            other_obj = other_obj.create_shareable_sync_copy(mock=True)
+
+        if sync_decision.decision != self.alias:  # chose for the other
             if diff.status == "DIFF":
                 if other_obj not in self.update_objs:
                     self.update_objs.append(other_obj)
+
             elif diff.status == "NEW":
                 if my_obj is None:
                     if other_obj not in self.create_objs:
                         self.create_objs.append(other_obj)
+
                 elif other_obj is None:
                     if my_obj not in self.delete_objs:
                         self.delete_objs.append(my_obj)
+
+        if self.alias == "low":
+            self.new_permissions.extend(sync_decision.new_permissions_lowside)
 
     def __repr__(self) -> str:
         return (

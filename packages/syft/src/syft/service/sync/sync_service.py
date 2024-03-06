@@ -205,11 +205,11 @@ class SyncService(AbstractService):
         return permissions
 
     @service_method(
-        path="sync.get_state",
-        name="get_state",
+        path="sync._get_state",
+        name="_get_state",
         roles=ADMIN_ROLE_LEVEL,
     )
-    def get_state(
+    def _get_state(
         self, context: AuthedServiceContext, add_to_store: bool = False
     ) -> Union[SyncState, SyftError]:
         new_state = SyncState()
@@ -217,7 +217,6 @@ class SyncService(AbstractService):
         node = cast(AbstractNode, context.node)
 
         services_to_sync = [
-            "projectservice",
             "requestservice",
             "usercodeservice",
             "jobservice",

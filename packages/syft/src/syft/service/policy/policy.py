@@ -578,7 +578,7 @@ def generate_unique_class_name(context: TransformContext) -> TransformContext:
         unique_name = f"{service_class_name}_{context.credentials}_{code_hash}"
         context.output["unique_name"] = unique_name
     else:
-        print("f{context}'s output is None. No trasformation happened.")
+        print(f"{context}'s output is None. No transformation happened.")
 
     return context
 
@@ -702,7 +702,7 @@ def compile_code(context: TransformContext) -> TransformContext:
                 + context.output["parsed_code"]
             )
     else:
-        print("f{context}'s output is None. No trasformation happened.")
+        print(f"{context}'s output is None. No transformation happened.")
 
     return context
 

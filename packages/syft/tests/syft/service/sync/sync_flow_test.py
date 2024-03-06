@@ -95,8 +95,8 @@ def test_sync_flow():
     print(res)
     print("LOW CODE:", low_client.code.get_all())
 
-    low_state = low_client.sync.get_state()
-    high_state = high_client.sync.get_state()
+    low_state = low_client.get_sync_state()
+    high_state = high_client.get_sync_state()
 
     print(low_state.objects, high_state.objects)
 
@@ -111,8 +111,8 @@ def test_sync_flow():
 
     high_client.apply_state(high_items_to_sync)
 
-    low_state = low_client.sync.get_state()
-    high_state = high_client.sync.get_state()
+    low_state = low_client.get_sync_state()
+    high_state = high_client.get_sync_state()
 
     diff_state = compare_states(low_state, high_state)
 
@@ -151,8 +151,8 @@ def test_sync_flow():
         in blob_store_high.permissions[job_high.result.syft_blob_storage_entry_id]
     )
 
-    low_state = low_client.sync.get_state()
-    high_state = high_client.sync.get_state()
+    low_state = low_client.get_sync_state()
+    high_state = high_client.get_sync_state()
 
     diff_state_2 = compare_states(low_state, high_state)
 
@@ -174,8 +174,8 @@ def test_sync_flow():
         in blob_store_low.permissions[job_high.result.syft_blob_storage_entry_id]
     )
 
-    low_state = low_client.sync.get_state()
-    high_state = high_client.sync.get_state()
+    low_state = low_client.get_sync_state()
+    high_state = high_client.get_sync_state()
     res_low = client_low_ds.code.compute_mean(data=data_low)
     print("Res Low", res_low)
 

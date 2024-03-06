@@ -23,7 +23,7 @@ from ...store.document_store import QueryKeys
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
@@ -39,7 +39,7 @@ OutputPolicyIdPartitionKey = PartitionKey(key="output_policy_id", type_=UID)
 
 
 @serializable()
-class ExecutionOutput(SyftObject):
+class ExecutionOutput(SyncableSyftObject):
     __canonical_name__ = "ExecutionOutput"
     __version__ = SYFT_OBJECT_VERSION_1
 

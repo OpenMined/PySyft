@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import ClassVar
 from typing import List
 
 # relative
@@ -8,6 +9,7 @@ from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
+from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 
@@ -24,12 +26,16 @@ class SyftLogV1(SyftObject):
 
 
 @serializable()
-class SyftLog(SyftObject):
+class SyftLog(SyncableSyftObject):
     __canonical_name__ = "SyftLog"
     __version__ = SYFT_OBJECT_VERSION_2
 
     __repr_attrs__ = ["stdout", "stderr"]
     __exclude_sync_diff_attrs__: List[str] = []
+    __private_sync_attrs__: ClassVar[dict[str, Any]] = {
+        "stderr": "",
+        "stdout": "",
+    }
 
     stdout: str = ""
     stderr: str = ""
@@ -43,6 +49,11 @@ class SyftLog(SyftObject):
     def restart(self) -> None:
         self.stderr = ""
         self.stdout = ""
+
+    def get_sync_object(self, private: bool) -> "SyftLog":
+        if private:
+            return SyftLog(id=self.id)
+        return self
 
 
 @migrate(SyftLogV1, SyftLog)

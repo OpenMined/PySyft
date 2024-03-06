@@ -28,6 +28,7 @@ from ..service.dataset.dataset import CreateDataset
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.sync.diff_state import ResolvedSyncState
+from ..service.sync.sync_state import SyncState
 from ..service.user.roles import Roles
 from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
@@ -169,6 +170,13 @@ class DomainClient(SyftClient):
     #     else:
     #         return {}
 
+    def get_sync_state(self) -> Union[SyncState, SyftError]:
+        state: SyncState = self.api.services.sync._get_state()
+        for uid, obj in state.objects.items():
+            if isinstance(obj, ActionObject):
+                state.objects[uid] = obj.refresh_object()
+        return state
+
     def apply_state(
         self, resolved_state: ResolvedSyncState
     ) -> Union[SyftSuccess, SyftError]:
@@ -186,7 +194,6 @@ class DomainClient(SyftClient):
                 permissions[p.uid] = {p.permission_string}
 
         for action_object in action_objects:
-            action_object = action_object.refresh_object()
             action_object.send(self)
 
         res = self.api.services.sync.sync_items(items, permissions)
@@ -194,7 +201,7 @@ class DomainClient(SyftClient):
             return res
 
         # Add updated node state to store to have a previous_state for next sync
-        new_state = self.api.services.sync.get_state(add_to_store=True)
+        new_state = self.api.services.sync._get_state(add_to_store=True)
         if isinstance(new_state, SyftError):
             return new_state
 

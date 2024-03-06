@@ -13,6 +13,7 @@ from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ..action.action_permissions import ActionPermission
@@ -77,7 +78,7 @@ class SyncState(SyftObject):
     __canonical_name__ = "SyncState"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    objects: Dict[UID, SyftObject] = {}
+    objects: Dict[UID, SyncableSyftObject] = {}
     dependencies: Dict[UID, List[UID]] = {}
     created_at: DateTime = DateTime.now()
     previous_state_link: Optional[LinkedObject] = None
@@ -95,7 +96,7 @@ class SyncState(SyftObject):
     def all_ids(self) -> Set[UID]:
         return set(self.objects.keys())
 
-    def add_objects(self, objects: List[SyftObject], api: Any = None) -> None:
+    def add_objects(self, objects: List[SyncableSyftObject], api: Any = None) -> None:
         for obj in objects:
             if isinstance(obj.id, LineageID):
                 self.objects[obj.id.id] = obj

@@ -862,6 +862,9 @@ class SyftAPI(SyftObject):
         return _repr_str
 
 
+SyftAPI.model_rebuild()
+
+
 # code from here:
 # https://github.com/ipython/ipython/blob/339c0d510a1f3cb2158dd8c6e7f4ac89aa4c89d8/IPython/core/oinspect.py#L370
 def _render_signature(obj_signature: Signature, obj_name: str) -> str:

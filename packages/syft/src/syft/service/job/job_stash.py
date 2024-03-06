@@ -37,6 +37,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
+from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import UID
@@ -101,7 +102,7 @@ class JobV2(SyftObject):
 
 
 @serializable()
-class Job(SyftObject):
+class Job(SyncableSyftObject):
     __canonical_name__ = "JobItem"
     __version__ = SYFT_OBJECT_VERSION_3
 
