@@ -69,9 +69,6 @@ def pytest_collection_modifyitems(items):
         elif "test_sqlite_" in item.nodeid:
             item.add_marker(pytest.mark.xdist_group(name="sqlite"))
 
-        elif "test_actionobject_" in item.nodeid:
-            item.add_marker(pytest.mark.xdist_group(name="action_object"))
-
 
 @pytest.fixture(autouse=True)
 def protocol_file():
@@ -145,17 +142,23 @@ def action_store(worker):
 
 
 @pytest.fixture(scope="session")
-def redis_client(monkeypatch):
+def redis_client_global():
     # third party
     import fakeredis
 
-    client = fakeredis.FakeRedis()
+    return fakeredis.FakeRedis()
 
-    # Current Lock implementation creates it's own StrictRedis, this is a way to circumvent that issue
-    monkeypatch.setattr("redis.Redis", lambda *args, **kwargs: client)
-    monkeypatch.setattr("redis.StrictRedis", lambda *args, **kwargs: client)
 
-    return client
+@pytest.fixture(scope="function")
+def redis_client(redis_client_global, monkeypatch):
+    # Current Lock implementation creates it's own StrictRedis client
+    # this is a way to override all the instances of StrictRedis
+    monkeypatch.setattr("redis.Redis", lambda *args, **kwargs: redis_client_global)
+    monkeypatch.setattr(
+        "redis.StrictRedis", lambda *args, **kwargs: redis_client_global
+    )
+
+    return redis_client_global
 
 
 @pytest.fixture(scope="session")
