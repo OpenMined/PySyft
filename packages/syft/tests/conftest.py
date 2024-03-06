@@ -24,7 +24,6 @@ from .syft.stores.store_fixtures_test import dict_store_partition  # noqa: F401
 from .syft.stores.store_fixtures_test import mongo_action_store  # noqa: F401
 from .syft.stores.store_fixtures_test import mongo_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import mongo_queue_stash  # noqa: F401
-from .syft.stores.store_fixtures_test import mongo_server_mock  # noqa: F401
 from .syft.stores.store_fixtures_test import mongo_store_partition  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_action_store  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_document_store  # noqa: F401
@@ -54,6 +53,24 @@ def pytest_xdist_auto_num_workers(config):
     if num == "auto" or num == "logical":
         return os.cpu_count()
     return None
+
+
+def pytest_collection_modifyitems(items):
+    for item in items:
+        item_fixtures = getattr(item, "fixturenames", ())
+
+        # group tests so that they run on the same worker
+        if "test_mongo_" in item.nodeid or "mongo_client" in item_fixtures:
+            item.add_marker(pytest.mark.xdist_group(name="mongo"))
+
+        elif "redis_client" in item_fixtures:
+            item.add_marker(pytest.mark.xdist_group(name="redis"))
+
+        elif "test_sqlite_" in item.nodeid:
+            item.add_marker(pytest.mark.xdist_group(name="sqlite"))
+
+        elif "test_actionobject_" in item.nodeid:
+            item.add_marker(pytest.mark.xdist_group(name="action_object"))
 
 
 @pytest.fixture(autouse=True)
@@ -127,9 +144,32 @@ def action_store(worker):
     return worker.action_store
 
 
+@pytest.fixture(scope="session")
+def redis_client(monkeypatch):
+    # third party
+    import fakeredis
+
+    client = fakeredis.FakeRedis()
+
+    # Current Lock implementation creates it's own StrictRedis, this is a way to circumvent that issue
+    monkeypatch.setattr("redis.Redis", lambda *args, **kwargs: client)
+    monkeypatch.setattr("redis.StrictRedis", lambda *args, **kwargs: client)
+
+    return client
+
+
+@pytest.fixture(scope="session")
+def mongo_client():
+    # third party
+    import pymongo_inmemory
+
+    client = pymongo_inmemory.MongoClient()
+
+    return client
+
+
 __all__ = [
     "mongo_store_partition",
-    "mongo_server_mock",
     "mongo_document_store",
     "mongo_queue_stash",
     "mongo_action_store",

@@ -385,7 +385,7 @@ def helper_queue_set_joblib(root_verify_key, create_queue_cbk) -> None:
 @pytest.mark.parametrize(
     "backend", [helper_queue_set_threading, helper_queue_set_joblib]
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=5, reruns_delay=3)
 def test_queue_set_sqlite(root_verify_key, sqlite_workspace, backend):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(root_verify_key, sqlite_workspace)

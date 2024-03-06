@@ -22,6 +22,8 @@ from syft.store.locks import RedisLockingConfig
 from syft.store.locks import SyftLock
 from syft.store.locks import ThreadingLockingConfig
 
+REDIS_CLIENT_CACHE = None
+
 def_params = {
     "lock_name": "testing_lock",
     "expire": 5,  # seconds,
@@ -51,20 +53,6 @@ def locks_threading_config(request):
 def locks_file_config():
     def_params["lock_name"] = generate_lock_name()
     return FileLockingConfig(**def_params)
-
-
-@pytest.fixture
-def redis_client(monkeypatch):
-    # third party
-    import fakeredis
-
-    redis_client = fakeredis.FakeRedis()
-
-    # make sure redis client instances always returns our fake client
-    monkeypatch.setattr("redis.Redis", lambda *args, **kwargs: redis_client)
-    monkeypatch.setattr("redis.StrictRedis", lambda *args, **kwargs: redis_client)
-
-    return redis_client
 
 
 @pytest.fixture(scope="function")
