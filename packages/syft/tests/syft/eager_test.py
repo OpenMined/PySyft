@@ -1,16 +1,13 @@
-# stdlib
-import sys
-
 # third party
 import numpy as np
-import pytest
 
 # syft absolute
 from syft.service.action.action_object import ActionObject
 from syft.service.action.plan import planify
 from syft.types.twin_object import TwinObject
 
-PYTHON_AT_LEAST_3_12 = sys.version_info >= (3, 12)
+# relative
+from .utils import currently_fail_on_python_3_12
 
 
 def test_eager_permissions(worker, guest_client):
@@ -76,11 +73,7 @@ def test_plan(worker):
     assert res_ptr.get_from(guest_client) == 729
 
 
-@pytest.mark.xfail(
-    PYTHON_AT_LEAST_3_12,
-    raises=AttributeError,
-    reason="Does not work yet on Python>=3.12 and numpy>=1.26",
-)
+@currently_fail_on_python_3_12(raises=AttributeError)
 def test_plan_with_function_call(worker, guest_client):
     root_domain_client = worker.root_client
     guest_client = worker.guest_client

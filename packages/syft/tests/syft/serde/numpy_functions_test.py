@@ -1,6 +1,3 @@
-# stdlib
-import sys
-
 # third party
 import numpy as np
 import pytest
@@ -9,11 +6,13 @@ import pytest
 from syft import ActionObject
 from syft.service.response import SyftAttributeError
 
+# relative
+from ..utils import PYTHON_AT_LEAST_3_12
+from ..utils import currently_fail_on_python_3_12
+
 PYTHON_ARRAY = [0, 1, 1, 2, 2, 3]
 NP_ARRAY = np.array([0, 1, 1, 5, 5, 3])
 NP_2dARRAY = np.array([[3, 4, 5, 2], [6, 7, 2, 6]])
-
-PYTHON_AT_LEAST_3_12 = sys.version_info >= (3, 12)
 
 NOT_WORK_YET_ON_NUMPY_1_26_PYTHON_3_12: list[tuple[str, str]] = [
     ("linspace", "10,10,10"),
@@ -85,10 +84,7 @@ NOT_WORK_YET_ON_NUMPY_1_26_PYTHON_3_12: list[tuple[str, str]] = [
         pytest.param(
             func,
             func_arguments,
-            marks=pytest.mark.xfail(
-                PYTHON_AT_LEAST_3_12,
-                reason="Does not work yet on Python>=3.12 and numpy>=1.26",
-            ),
+            marks=currently_fail_on_python_3_12(),
         )
         for func, func_arguments in NOT_WORK_YET_ON_NUMPY_1_26_PYTHON_3_12
     ],
