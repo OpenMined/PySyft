@@ -42,17 +42,13 @@ from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
-from ...types.transforms import drop
 from ...types.transforms import generate_id
-from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
@@ -252,116 +248,6 @@ class UserCodeStatusCollection(SyftObject):
 
     def get_sync_dependencies(self, api: Any = None) -> list[UID]:
         return [self.user_code_link.object_uid]
-
-
-@serializable()
-class UserCodeV1(SyftObject):
-    # version
-    __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: UID
-    node_uid: UID | None = None
-    user_verify_key: SyftVerifyKey
-    raw_code: str
-    input_policy_type: type[InputPolicy] | UserPolicy
-    input_policy_init_kwargs: dict[Any, Any] | None = None
-    input_policy_state: bytes = b""
-    output_policy_type: type[OutputPolicy] | UserPolicy
-    output_policy_init_kwargs: dict[Any, Any] | None = None
-    output_policy_state: bytes = b""
-    parsed_code: str
-    service_func_name: str
-    unique_func_name: str
-    user_unique_func_name: str
-    code_hash: str
-    signature: inspect.Signature
-    status: UserCodeStatusCollection
-    input_kwargs: list[str]
-    enclave_metadata: EnclaveMetadata | None = None
-    submit_time: DateTime | None = None
-
-    __attr_searchable__ = [
-        "user_verify_key",
-        "status",
-        "service_func_name",
-        "code_hash",
-    ]
-
-
-@serializable()
-class UserCodeV2(SyftObject):
-    # version
-    __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    id: UID
-    node_uid: UID | None = None
-    user_verify_key: SyftVerifyKey
-    raw_code: str
-    input_policy_type: type[InputPolicy] | UserPolicy
-    input_policy_init_kwargs: dict[Any, Any] | None = None
-    input_policy_state: bytes = b""
-    output_policy_type: type[OutputPolicy] | UserPolicy
-    output_policy_init_kwargs: dict[Any, Any] | None = None
-    output_policy_state: bytes = b""
-    parsed_code: str
-    service_func_name: str
-    unique_func_name: str
-    user_unique_func_name: str
-    code_hash: str
-    signature: inspect.Signature
-    status: UserCodeStatusCollection
-    input_kwargs: list[str]
-    enclave_metadata: EnclaveMetadata | None = None
-    submit_time: DateTime | None = None
-    uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
-    nested_requests: dict[str, str] = {}
-    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
-
-
-class UserCodeV3(SyftObject):
-    __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_3
-
-    id: UID
-    node_uid: UID | None = None
-    user_verify_key: SyftVerifyKey
-    raw_code: str
-    input_policy_type: type[InputPolicy] | UserPolicy
-    input_policy_init_kwargs: dict[Any, Any] | None = None
-    input_policy_state: bytes = b""
-    output_policy_type: type[OutputPolicy] | UserPolicy
-    output_policy_init_kwargs: dict[Any, Any] | None = None
-    output_policy_state: bytes = b""
-    parsed_code: str
-    service_func_name: str
-    unique_func_name: str
-    user_unique_func_name: str
-    code_hash: str
-    signature: inspect.Signature
-    status: UserCodeStatusCollection
-    input_kwargs: list[str]
-    enclave_metadata: EnclaveMetadata | None = None
-    submit_time: DateTime | None = None
-    uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
-    nested_requests: dict[str, str] = {}
-    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
-    worker_pool_name: str | None = None
-
-    __attr_searchable__: ClassVar[list[str]] = [
-        "user_verify_key",
-        "status",
-        "service_func_name",
-        "code_hash",
-    ]  # type: ignore
-    __attr_unique__: ClassVar[list[str]] = []  # type: ignore
-    __repr_attrs__: ClassVar[list[str]] = [
-        "service_func_name",
-        "input_owners",
-        "code_status",
-        "worker_pool_name",
-    ]  # type: ignore
 
 
 @serializable()
@@ -829,53 +715,6 @@ class UserCode(SyftObject):
         ip.set_next_input(warning_message + self.raw_code)
 
 
-@migrate(UserCodeV3, UserCodeV2)
-def downgrade_usercode_v3_to_v2() -> list[Callable]:
-    return [
-        drop("worker_pool_name"),
-    ]
-
-
-@migrate(UserCodeV2, UserCodeV3)
-def upgrade_usercode_v2_to_v3() -> list[Callable]:
-    return [
-        make_set_default("worker_pool_name", None),
-    ]
-
-
-@migrate(UserCode, UserCodeV3)
-def downgrade_usercode_v4_to_v3() -> list[Callable]:
-    return [
-        make_set_default("nested_requests", {}),
-    ]
-
-
-@migrate(UserCodeV3, UserCode)
-def upgrade_usercode_v3_to_v4() -> list[Callable]:
-    return [
-        drop("nested_requests"),
-    ]
-
-
-@serializable(without=["local_function"])
-class SubmitUserCodeV2(SyftObject):
-    # version
-    __canonical_name__ = "SubmitUserCode"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    id: UID | None = None  # type: ignore[assignment]
-    code: str
-    func_name: str
-    signature: inspect.Signature
-    input_policy_type: SubmitUserPolicy | UID | type[InputPolicy]
-    input_policy_init_kwargs: dict[Any, Any] | None = {}
-    output_policy_type: SubmitUserPolicy | UID | type[OutputPolicy]
-    output_policy_init_kwargs: dict[Any, Any] | None = {}
-    local_function: Callable | None = None
-    input_kwargs: list[str]
-    enclave_metadata: EnclaveMetadata | None = None
-
-
 @serializable(without=["local_function"])
 class SubmitUserCode(SyftObject):
     # version
@@ -1046,20 +885,6 @@ class SubmitUserCode(SyftObject):
         if self.input_policy_init_kwargs is not None:
             return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
         return None
-
-
-@migrate(SubmitUserCode, SubmitUserCodeV2)
-def downgrade_submitusercode_v3_to_v2() -> list[Callable]:
-    return [
-        drop("worker_pool_name"),
-    ]
-
-
-@migrate(SubmitUserCodeV2, SubmitUserCode)
-def upgrade_submitusercode_v2_to_v3() -> list[Callable]:
-    return [
-        make_set_default("worker_pool_name", None),
-    ]
 
 
 class ArgumentType(Enum):

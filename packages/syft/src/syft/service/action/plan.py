@@ -8,7 +8,7 @@ from ... import ActionObject
 from ... import Worker
 from ...client.client import SyftClient
 from ...serde.recursive import recursive_serde_register
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from .action_object import Action
 from .action_object import TraceResult
@@ -16,7 +16,8 @@ from .action_object import TraceResult
 
 class Plan(SyftObject):
     __canonical_name__ = "Plan"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
+
     syft_passthrough_attrs: list[str] = [
         "inputs",
         "outputs",

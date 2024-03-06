@@ -1,5 +1,4 @@
 # stdlib
-from collections.abc import Callable
 from typing import Any
 from typing import ClassVar
 
@@ -9,16 +8,9 @@ from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
-from .action_object import ActionObjectV1
-from .action_object import ActionObjectV2
 from .action_object import BASE_PASSTHROUGH_ATTRS
 from .action_types import action_types
 
@@ -44,28 +36,6 @@ def numpy_like_eq(left: Any, right: Any) -> bool:
     if hasattr(result, "all"):
         return (result).all()
     return bool(result)
-
-
-@serializable()
-class NumpyArrayObjectV1(ActionObjectV1, np.lib.mixins.NDArrayOperatorsMixin):
-    __canonical_name__ = "NumpyArrayObject"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    syft_internal_type: ClassVar[type[Any]] = np.ndarray
-    syft_pointer_type: ClassVar[type[ActionObjectPointer]] = NumpyArrayObjectPointer
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
-    syft_dont_wrap_attrs: list[str] = ["dtype", "shape"]
-
-
-@serializable()
-class NumpyArrayObjectV2(ActionObjectV2, np.lib.mixins.NDArrayOperatorsMixin):
-    __canonical_name__ = "NumpyArrayObject"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    syft_internal_type: ClassVar[type[Any]] = np.ndarray
-    syft_pointer_type = NumpyArrayObjectPointer
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
-    syft_dont_wrap_attrs: list[str] = ["dtype", "shape"]
 
 
 # 🔵 TODO 7: Map TPActionObjects and their 3rd Party types like numpy type to these
@@ -113,40 +83,6 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
             )
 
 
-@migrate(NumpyArrayObject, NumpyArrayObjectV1)
-def downgrade_numpyarrayobject_v2_to_v1() -> list[Callable]:
-    return [
-        drop("syft_resolved"),
-    ]
-
-
-@migrate(NumpyArrayObjectV1, NumpyArrayObject)
-def upgrade_numpyarrayobject_v1_to_v2() -> list[Callable]:
-    return [
-        make_set_default("syft_resolved", True),
-    ]
-
-
-@serializable()
-class NumpyScalarObjectV1(ActionObjectV1, np.lib.mixins.NDArrayOperatorsMixin):
-    __canonical_name__ = "NumpyScalarObject"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    syft_internal_type: ClassVar[type] = np.number
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
-    syft_dont_wrap_attrs: list[str] = ["dtype", "shape"]
-
-
-@serializable()
-class NumpyScalarObjectV2(ActionObjectV2, np.lib.mixins.NDArrayOperatorsMixin):
-    __canonical_name__ = "NumpyScalarObject"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    syft_internal_type: ClassVar[type] = np.number
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
-    syft_dont_wrap_attrs: list[str] = ["dtype", "shape"]
-
-
 @serializable()
 class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyScalarObject"
@@ -160,40 +96,6 @@ class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
         return float(self.syft_action_data)
 
 
-@migrate(NumpyScalarObject, NumpyScalarObjectV1)
-def downgrade_numpyscalarobject_v2_to_v1() -> list[Callable]:
-    return [
-        drop("syft_resolved"),
-    ]
-
-
-@migrate(NumpyScalarObjectV1, NumpyScalarObject)
-def upgrade_numpyscalarobject_v1_to_v2() -> list[Callable]:
-    return [
-        make_set_default("syft_resolved", True),
-    ]
-
-
-@serializable()
-class NumpyBoolObjectV1(ActionObjectV1, np.lib.mixins.NDArrayOperatorsMixin):
-    __canonical_name__ = "NumpyBoolObject"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    syft_internal_type: ClassVar[type] = np.bool_
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
-    syft_dont_wrap_attrs: list[str] = ["dtype", "shape"]
-
-
-@serializable()
-class NumpyBoolObjectV2(ActionObjectV2, np.lib.mixins.NDArrayOperatorsMixin):
-    __canonical_name__ = "NumpyBoolObject"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    syft_internal_type: ClassVar[type] = np.bool_
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
-    syft_dont_wrap_attrs: list[str] = ["dtype", "shape"]
-
-
 @serializable()
 class NumpyBoolObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyBoolObject"
@@ -202,20 +104,6 @@ class NumpyBoolObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     syft_internal_type: ClassVar[type] = np.bool_
     syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
     syft_dont_wrap_attrs: list[str] = ["dtype", "shape"]
-
-
-@migrate(NumpyBoolObject, NumpyBoolObjectV1)
-def downgrade_numpyboolobject_v2_to_v1() -> list[Callable]:
-    return [
-        drop("syft_resolved"),
-    ]
-
-
-@migrate(NumpyBoolObjectV1, NumpyBoolObject)
-def upgrade_numpyboolobject_v1_to_v2() -> list[Callable]:
-    return [
-        make_set_default("syft_resolved", True),
-    ]
 
 
 np_array = np.array([1, 2, 3])
