@@ -43,9 +43,6 @@ PERMISSIONS = [
 ]
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
 def test_mongo_store_partition_sanity(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
@@ -56,9 +53,7 @@ def test_mongo_store_partition_sanity(
     assert hasattr(mongo_store_partition, "_permissions")
 
 
-@pytest.mark.skip(
-    reason="Test gets stuck at store.init_store() OR does not return res.is_err()"
-)
+@pytest.mark.skip(reason="Test gets stuck at store.init_store()")
 def test_mongo_store_partition_init_failed(root_verify_key) -> None:
     # won't connect
     mongo_config = MongoStoreClientConfig(
@@ -74,7 +69,6 @@ def test_mongo_store_partition_init_failed(root_verify_key) -> None:
         settings=settings,
         store_config=store_config,
     )
-    print(store)
 
     res = store.init_store()
     assert res.is_err()
@@ -84,7 +78,6 @@ def test_mongo_store_partition_init_failed(root_verify_key) -> None:
     sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
-@pytest.mark.xfail
 def test_mongo_store_partition_set(
     root_verify_key, mongo_store_partition: MongoStorePartition
 ) -> None:
@@ -304,7 +297,6 @@ def test_mongo_store_partition_update(
     sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
 )
 @pytest.mark.flaky(reruns=5, reruns_delay=2)
-@pytest.mark.xfail
 def test_mongo_store_partition_set_threading(root_verify_key, mongo_client) -> None:
     thread_cnt = 3
     repeats = REPEATS
@@ -418,7 +410,6 @@ def test_mongo_store_partition_set_joblib(
     sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
 )
 @pytest.mark.flaky(reruns=5, reruns_delay=2)
-@pytest.mark.xfail(reason="Fails in CI sometimes")
 def test_mongo_store_partition_update_threading(
     root_verify_key,
     mongo_client,

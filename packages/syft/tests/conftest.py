@@ -2,6 +2,8 @@
 import json
 import os
 from pathlib import Path
+import shutil
+from tempfile import gettempdir
 from unittest import mock
 
 # third party
@@ -30,6 +32,10 @@ from .syft.stores.store_fixtures_test import sqlite_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_queue_stash  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_store_partition  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_workspace  # noqa: F401
+
+TMP_DIR = Path(gettempdir())
+MONGODB_TMP_DIR = Path(TMP_DIR, "mongodb")
+SHERLOCK_TMP_DIR = Path(TMP_DIR, "sherlock")
 
 
 @pytest.fixture()
@@ -63,11 +69,18 @@ def pytest_collection_modifyitems(items):
         if "test_mongo_" in item.nodeid or "mongo_client" in item_fixtures:
             item.add_marker(pytest.mark.xdist_group(name="mongo"))
 
-        elif "redis_client" in item_fixtures:
+        if "redis_client" in item_fixtures:
             item.add_marker(pytest.mark.xdist_group(name="redis"))
 
         elif "test_sqlite_" in item.nodeid:
             item.add_marker(pytest.mark.xdist_group(name="sqlite"))
+
+
+def pytest_unconfigure(config):
+    purge_dirs = [MONGODB_TMP_DIR, SHERLOCK_TMP_DIR]
+    for _dir in purge_dirs:
+        if _dir.exists():
+            shutil.rmtree(_dir, ignore_errors=True)
 
 
 @pytest.fixture(autouse=True)
@@ -161,14 +174,59 @@ def redis_client(redis_client_global, monkeypatch):
     return redis_client_global
 
 
+def start_mongo_server():
+    # third party
+    from pymongo_inmemory import Mongod
+    from pymongo_inmemory.context import Context
+
+    data_dir = Path(MONGODB_TMP_DIR, "data")
+    data_dir.mkdir(exist_ok=True, parents=True)
+
+    # Because Context cannot be configured :/
+    # ... and don't set port else Popen will fail
+    os.environ["PYMONGOIM__DOWNLOAD_FOLDER"] = str(MONGODB_TMP_DIR / "download")
+    os.environ["PYMONGOIM__EXTRACT_FOLDER"] = str(MONGODB_TMP_DIR / "extract")
+    os.environ["PYMONGOIM__MONGOD_DATA_FOLDER"] = str(data_dir)
+    os.environ["PYMONGOIM__DBNAME"] = "syft"
+
+    # start the local mongodb server
+    context = Context()
+    mongod = Mongod(context)
+    mongod.start()
+
+    # return the connection string
+    return mongod.connection_string
+
+
+def get_mongo_client():
+    """A race-free way to start a local mongodb server and connect to it."""
+
+    # third party
+    from filelock import FileLock
+    from pymongo import MongoClient
+
+    # file based communication for pytest-xdist workers
+    lock = FileLock(str(MONGODB_TMP_DIR / "server.lock"))
+    ready = Path(MONGODB_TMP_DIR / "server.ready")
+    connection_string = None
+
+    with lock:
+        if ready.exists():
+            # if server is ready, read the connection string from the file
+            connection_string = ready.read_text()
+        else:
+            # start the server and write the connection string to the file
+            connection_string = start_mongo_server()
+            ready.write_text(connection_string)
+
+    # connect to the local mongodb server
+    client = MongoClient(connection_string)
+    return client
+
+
 @pytest.fixture(scope="session")
 def mongo_client():
-    # third party
-    import pymongo_inmemory
-
-    client = pymongo_inmemory.MongoClient()
-
-    return client
+    return get_mongo_client()
 
 
 __all__ = [
