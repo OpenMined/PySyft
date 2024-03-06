@@ -2,17 +2,19 @@
 import os
 import secrets
 from typing import Any
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
 
 # third party
 from pydantic import AnyHttpUrl
-from pydantic import BaseSettings
 from pydantic import EmailStr
 from pydantic import HttpUrl
-from pydantic import validator
+from pydantic import field_validator
+from pydantic import model_validator
+from pydantic_settings import BaseSettings
+from pydantic_settings import SettingsConfigDict
+from typing_extensions import Self
 
 _truthy = {"yes", "y", "true", "t", "on", "1"}
 _falsy = {"no", "n", "false", "f", "off", "0"}
@@ -50,7 +52,8 @@ class Settings(BaseSettings):
     # "http://localhost:8080", "http://local.dockertoolbox.tiangolo.com"]'
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
@@ -62,7 +65,8 @@ class Settings(BaseSettings):
 
     SENTRY_DSN: Optional[HttpUrl] = None
 
-    @validator("SENTRY_DSN", pre=True)
+    @field_validator("SENTRY_DSN", mode="before")
+    @classmethod
     def sentry_dsn_can_be_blank(cls, v: str) -> Optional[str]:
         if v is None or len(v) == 0:
             return None
@@ -71,11 +75,12 @@ class Settings(BaseSettings):
     EMAILS_FROM_EMAIL: Optional[EmailStr] = None
     EMAILS_FROM_NAME: Optional[str] = None
 
-    @validator("EMAILS_FROM_NAME")
-    def get_project_name(cls, v: Optional[str], values: Dict[str, Any]) -> str:
-        if not v:
-            return values["PROJECT_NAME"]
-        return v
+    @model_validator(mode="after")
+    def get_project_name(self) -> Self:
+        if not self.EMAILS_FROM_NAME:
+            self.EMAILS_FROM_NAME = self.PROJECT_NAME
+
+        return self
 
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
     EMAIL_TEMPLATES_DIR: str = os.path.expandvars(
@@ -83,15 +88,15 @@ class Settings(BaseSettings):
     )
     EMAILS_ENABLED: bool = False
 
-    @validator("EMAILS_ENABLED", pre=True)
-    def get_emails_enabled(cls, v: bool, values: Dict[str, Any]) -> bool:
-        return bool(
-            values.get("SMTP_HOST")
-            and values.get("SMTP_PORT")
-            and values.get("EMAILS_FROM_EMAIL")
+    @model_validator(mode="after")
+    def get_emails_enabled(self) -> Self:
+        self.EMAILS_ENABLED = bool(
+            self.SMTP_HOST and self.SMTP_PORT and self.EMAILS_FROM_EMAIL
         )
 
-    DEFAULT_ROOT_EMAIL: EmailStr = EmailStr("info@openmined.org")
+        return self
+
+    DEFAULT_ROOT_EMAIL: EmailStr = "info@openmined.org"
     DEFAULT_ROOT_PASSWORD: str = "changethis"
     USERS_OPEN_REGISTRATION: bool = False
 
@@ -150,9 +155,7 @@ class Settings(BaseSettings):
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False
     )
     ASSOCIATION_TIMEOUT: int = 10
-
-    class Config:
-        case_sensitive = True
+    model_config = SettingsConfigDict(case_sensitive=True)
 
 
 settings = Settings()

@@ -25,8 +25,9 @@ from .user.user_roles import ServiceRoleCapability
 class NodeServiceContext(Context, SyftObject):
     __canonical_name__ = "NodeServiceContext"
     __version__ = SYFT_OBJECT_VERSION_1
-    id: Optional[UID]  # type: ignore[assignment]
-    node: Optional[AbstractNode]
+
+    id: Optional[UID] = None  # type: ignore[assignment]
+    node: Optional[AbstractNode] = None
 
 
 class AuthedServiceContext(NodeServiceContext):
@@ -35,7 +36,7 @@ class AuthedServiceContext(NodeServiceContext):
 
     credentials: SyftVerifyKey
     role: ServiceRole = ServiceRole.NONE
-    job_id: Optional[UID]
+    job_id: Optional[UID] = None
     extra_kwargs: Dict = {}
     has_execute_permissions: bool = False
 
@@ -73,7 +74,7 @@ class UnauthedServiceContext(NodeServiceContext):
     __version__ = SYFT_OBJECT_VERSION_1
 
     login_credentials: UserLoginCredentials
-    node: Optional[AbstractNode]
+    node: Optional[AbstractNode] = None
     role: ServiceRole = ServiceRole.NONE
 
 
@@ -82,8 +83,8 @@ class ChangeContext(SyftBaseObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     node: Optional[AbstractNode] = None
-    approving_user_credentials: Optional[SyftVerifyKey]
-    requesting_user_credentials: Optional[SyftVerifyKey]
+    approving_user_credentials: Optional[SyftVerifyKey] = None
+    requesting_user_credentials: Optional[SyftVerifyKey] = None
     extra_kwargs: Dict = {}
 
     @classmethod

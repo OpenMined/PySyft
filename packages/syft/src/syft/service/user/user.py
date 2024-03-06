@@ -13,9 +13,9 @@ from typing import Union
 from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
-import pydantic
+from pydantic import EmailStr
 from pydantic import ValidationError
-from pydantic.networks import EmailStr
+from pydantic import field_validator
 
 # relative
 from ...client.api import APIRegistry
@@ -48,14 +48,14 @@ class UserV1(SyftObject):
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    email: Optional[EmailStr]
-    name: Optional[str]
-    hashed_password: Optional[str]
-    salt: Optional[str]
-    signing_key: Optional[SyftSigningKey]
-    verify_key: Optional[SyftVerifyKey]
-    role: Optional[ServiceRole]
-    institution: Optional[str]
+    email: Optional[EmailStr] = None
+    name: Optional[str] = None
+    hashed_password: Optional[str] = None
+    salt: Optional[str] = None
+    signing_key: Optional[SyftSigningKey] = None
+    verify_key: Optional[SyftVerifyKey] = None
+    role: Optional[ServiceRole] = None
+    institution: Optional[str] = None
     website: Optional[str] = None
     created_at: Optional[str] = None
 
@@ -66,17 +66,17 @@ class UserV2(SyftObject):
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID]  # type: ignore[assignment]
+    id: Optional[UID] = None  # type: ignore[assignment]
 
     # fields
-    email: Optional[EmailStr]
-    name: Optional[str]
-    hashed_password: Optional[str]
-    salt: Optional[str]
-    signing_key: Optional[SyftSigningKey]
-    verify_key: Optional[SyftVerifyKey]
-    role: Optional[ServiceRole]
-    institution: Optional[str]
+    email: Optional[EmailStr] = None
+    name: Optional[str] = None
+    hashed_password: Optional[str] = None
+    salt: Optional[str] = None
+    signing_key: Optional[SyftSigningKey] = None
+    verify_key: Optional[SyftVerifyKey] = None
+    role: Optional[ServiceRole] = None
+    institution: Optional[str] = None
     website: Optional[str] = None
     created_at: Optional[str] = None
     # TODO where do we put this flag?
@@ -89,15 +89,7 @@ class UserV2(SyftObject):
 
 @serializable()
 class User(SyftObject):
-    # version
-    __canonical_name__ = "User"
-    __version__ = SYFT_OBJECT_VERSION_3
-
-    id: Optional[UID]  # type: ignore[assignment]
-
-    @pydantic.validator("email", pre=True, always=True)
-    def make_email(cls, v: EmailStr) -> EmailStr:
-        return EmailStr(v)
+    id: Optional[UID] = None  # type: ignore[assignment]
 
     # fields
     notifications_enabled: Dict[NOTIFIERS, bool] = {
@@ -106,14 +98,14 @@ class User(SyftObject):
         NOTIFIERS.SLACK: False,
         NOTIFIERS.APP: False,
     }
-    email: Optional[EmailStr]
-    name: Optional[str]
-    hashed_password: Optional[str]
-    salt: Optional[str]
-    signing_key: Optional[SyftSigningKey]
-    verify_key: Optional[SyftVerifyKey]
-    role: Optional[ServiceRole]
-    institution: Optional[str]
+    email: Optional[EmailStr] = None
+    name: Optional[str] = None
+    hashed_password: Optional[str] = None
+    salt: Optional[str] = None
+    signing_key: Optional[SyftSigningKey] = None
+    verify_key: Optional[SyftVerifyKey] = None
+    role: Optional[ServiceRole] = None
+    institution: Optional[str] = None
     website: Optional[str] = None
     created_at: Optional[str] = None
     # TODO where do we put this flag?
@@ -205,11 +197,8 @@ class UserUpdate(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    @pydantic.validator("email", pre=True)
-    def make_email(cls, v: Any) -> Any:
-        return EmailStr(v) if isinstance(v, str) and not isinstance(v, EmailStr) else v
-
-    @pydantic.validator("role", pre=True)
+    @field_validator("role", mode="before")
+    @classmethod
     def str_to_role(cls, v: Any) -> Any:
         if isinstance(v, str) and hasattr(ServiceRole, v.upper()):
             return getattr(ServiceRole, v.upper())
@@ -236,10 +225,10 @@ class UserCreateV1(UserUpdateV1):
     role: Optional[ServiceRole] = None  # type: ignore[assignment]
     password: str
     password_verify: Optional[str] = None  # type: ignore[assignment]
-    verify_key: Optional[SyftVerifyKey]  # type: ignore[assignment]
-    institution: Optional[str]  # type: ignore[assignment]
-    website: Optional[str]  # type: ignore[assignment]
-    created_by: Optional[SyftSigningKey]
+    verify_key: Optional[SyftVerifyKey] = None  # type: ignore[assignment]
+    institution: Optional[str] = None  # type: ignore[assignment]
+    website: Optional[str] = None  # type: ignore[assignment]
+    created_by: Optional[SyftSigningKey] = None
 
 
 @serializable()
@@ -252,10 +241,10 @@ class UserCreateV2(UserUpdateV2):
     role: Optional[ServiceRole] = None  # type: ignore[assignment]
     password: str
     password_verify: Optional[str] = None  # type: ignore[assignment]
-    verify_key: Optional[SyftVerifyKey]  # type: ignore[assignment]
-    institution: Optional[str]  # type: ignore[assignment]
-    website: Optional[str]  # type: ignore[assignment]
-    created_by: Optional[SyftSigningKey]
+    verify_key: Optional[SyftVerifyKey] = None  # type: ignore[assignment]
+    institution: Optional[str] = None  # type: ignore[assignment]
+    website: Optional[str] = None  # type: ignore[assignment]
+    created_by: Optional[SyftSigningKey] = None
     mock_execution_permission: bool = False
 
     __repr_attrs__ = ["name", "email"]
@@ -299,8 +288,8 @@ class UserViewV1(SyftObject):
     email: EmailStr
     name: str
     role: ServiceRole  # make sure role cant be set without uid
-    institution: Optional[str]
-    website: Optional[str]
+    institution: Optional[str] = None
+    website: Optional[str] = None
 
 
 @serializable()
@@ -311,8 +300,8 @@ class UserViewV2(SyftObject):
     email: EmailStr
     name: str
     role: ServiceRole  # make sure role cant be set without uid
-    institution: Optional[str]
-    website: Optional[str]
+    institution: Optional[str] = None
+    website: Optional[str] = None
     mock_execution_permission: bool
 
     __repr_attrs__ = ["name", "email", "institution", "website", "role"]

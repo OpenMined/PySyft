@@ -29,7 +29,7 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
         https://docs.docker.com/engine/reference/commandline/tag/#tag-an-image-referenced-by-name-and-tag
     """
 
-    registry: Optional[Union[SyftImageRegistry, str]]
+    registry: Optional[Union[SyftImageRegistry, str]] = None
     repo: str
     tag: str
 

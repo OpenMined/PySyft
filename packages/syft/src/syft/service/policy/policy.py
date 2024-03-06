@@ -325,7 +325,7 @@ class OutputHistory(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     output_time: DateTime
-    outputs: Optional[Union[List[UID], Dict[str, UID]]]
+    outputs: Optional[Union[List[UID], Dict[str, UID]]] = None
     executing_user_verify_key: SyftVerifyKey
 
 
@@ -335,7 +335,7 @@ class OutputPolicy(Policy):
     __version__ = SYFT_OBJECT_VERSION_1
 
     output_kwargs: List[str] = []
-    node_uid: Optional[UID]
+    node_uid: Optional[UID] = None
     output_readers: List[SyftVerifyKey] = []
 
     def apply_output(
@@ -470,7 +470,7 @@ class UserPolicy(Policy):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
-    node_uid: Optional[UID]
+    node_uid: Optional[UID] = None
     user_verify_key: SyftVerifyKey
     raw_code: str
     parsed_code: str
@@ -478,7 +478,6 @@ class UserPolicy(Policy):
     class_name: str
     unique_name: str
     code_hash: str
-    byte_code: PyCodeObject
     status: UserPolicyStatus = UserPolicyStatus.SUBMITTED
 
     # TODO: fix the mypy issue
@@ -540,7 +539,7 @@ class SubmitUserPolicy(Policy):
     __canonical_name__ = "SubmitUserPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]  # type: ignore[assignment]
+    id: Optional[UID] = None  # type: ignore[assignment]
     code: str
     class_name: str
     input_kwargs: List[str]
