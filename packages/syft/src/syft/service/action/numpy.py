@@ -11,7 +11,7 @@ from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
 from .action_object import BASE_PASSTHROUGH_ATTRS
@@ -46,7 +46,7 @@ def numpy_like_eq(left: Any, right: Any) -> bool:
 @serializable()
 class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyArrayObject"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type: ClassVar[Type[Any]] = np.ndarray
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]] = NumpyArrayObjectPointer
@@ -89,7 +89,7 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
 @serializable()
 class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyScalarObject"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type: ClassVar[Type] = np.number
     syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
@@ -102,7 +102,7 @@ class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
 @serializable()
 class NumpyBoolObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyBoolObject"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type: ClassVar[Type] = np.bool_
     syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS

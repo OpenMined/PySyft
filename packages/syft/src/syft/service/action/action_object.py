@@ -44,7 +44,6 @@ from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.uid import LineageID
@@ -588,7 +587,7 @@ class ActionObject(SyftObject):
     """Action object for remote execution."""
 
     __canonical_name__ = "ActionObject"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_3
 
     __attr_searchable__: List[str] = []  # type: ignore[misc]
     syft_action_data_cache: Optional[Any] = None
@@ -1940,7 +1939,7 @@ class ActionObject(SyftObject):
 @serializable()
 class AnyActionObject(ActionObject):
     __canonical_name__ = "AnyActionObject"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type: ClassVar[Type[Any]] = NoneType  # type: ignore
     # syft_passthrough_attrs: List[str] = []
