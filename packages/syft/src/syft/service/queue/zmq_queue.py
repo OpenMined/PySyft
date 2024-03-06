@@ -7,7 +7,6 @@ import threading
 import time
 from time import sleep
 from typing import Any
-from typing import Callable
 from typing import DefaultDict
 from typing import Dict
 from typing import List
@@ -30,13 +29,8 @@ from ...serde.serialize import _serialize as serialize
 from ...service.action.action_object import ActionObject
 from ...service.context import AuthedServiceContext
 from ...types.base import SyftBaseModel
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.util import get_queue_address
 from ..response import SyftError
@@ -793,28 +787,6 @@ class ZMQConsumer(QueueConsumer):
 
 
 @serializable()
-class ZMQClientConfigV1(SyftObject, QueueClientConfig):
-    __canonical_name__ = "ZMQClientConfig"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: Optional[UID] = None  # type: ignore[assignment]
-    hostname: str = "127.0.0.1"
-
-
-class ZMQClientConfigV2(SyftObject, QueueClientConfig):
-    __canonical_name__ = "ZMQClientConfig"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    id: Optional[UID] = None  # type: ignore[assignment]
-    hostname: str = "127.0.0.1"
-    queue_port: Optional[int] = None
-    # TODO: setting this to false until we can fix the ZMQ
-    # port issue causing tests to randomly fail
-    create_producer: bool = False
-    n_consumers: int = 0
-
-
-@serializable()
 class ZMQClientConfig(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
     __version__ = SYFT_OBJECT_VERSION_3
@@ -827,22 +799,6 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     create_producer: bool = False
     n_consumers: int = 0
     consumer_service: Optional[str] = None
-
-
-@migrate(ZMQClientConfig, ZMQClientConfigV1)
-def downgrade_zmqclientconfig_v2_to_v1() -> list[Callable]:
-    return [
-        drop(["queue_port", "create_producer", "n_consumers"]),
-    ]
-
-
-@migrate(ZMQClientConfigV1, ZMQClientConfig)
-def upgrade_zmqclientconfig_v1_to_v2() -> list[Callable]:
-    return [
-        make_set_default("queue_port", None),
-        make_set_default("create_producer", False),
-        make_set_default("n_consumers", 0),
-    ]
 
 
 @serializable(attrs=["host"])

@@ -4,7 +4,6 @@ import math
 from queue import Queue
 import threading
 from typing import Any
-from typing import Callable
 from typing import Dict
 from typing import Generator
 from typing import List
@@ -38,24 +37,12 @@ from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SeaweedSecureFilePathLocation
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.grid_url import GridURL
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...util.constants import DEFAULT_TIMEOUT
 
 WRITE_EXPIRATION_TIME = 900  # seconds
 DEFAULT_FILE_PART_SIZE = (1024**3) * 5  # 5GB
 DEFAULT_UPLOAD_CHUNK_SIZE = 819200
-
-
-@serializable()
-class SeaweedFSBlobDepositV1(BlobDeposit):
-    __canonical_name__ = "SeaweedFSBlobDeposit"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    urls: List[GridURL]
 
 
 @serializable()
@@ -172,20 +159,6 @@ class SeaweedFSBlobDeposit(BlobDeposit):
         return mark_write_complete_method(
             etags=etags, uid=self.blob_storage_entry_id, no_lines=no_lines
         )
-
-
-@migrate(SeaweedFSBlobDeposit, SeaweedFSBlobDepositV1)
-def downgrade_seaweedblobdeposit_v2_to_v1() -> list[Callable]:
-    return [
-        drop(["size"]),
-    ]
-
-
-@migrate(SeaweedFSBlobDepositV1, SeaweedFSBlobDeposit)
-def upgrade_seaweedblobdeposit_v1_to_v2() -> list[Callable]:
-    return [
-        make_set_default("size", 1),
-    ]
 
 
 @serializable()

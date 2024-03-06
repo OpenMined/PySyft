@@ -3,7 +3,6 @@ from datetime import datetime
 from datetime import timedelta
 from enum import Enum
 from typing import Any
-from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -31,14 +30,10 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
@@ -61,43 +56,6 @@ class JobStatus(str, Enum):
     ERRORED = "errored"
     COMPLETED = "completed"
     INTERRUPTED = "interrupted"
-
-
-@serializable()
-class JobV1(SyftObject):
-    __canonical_name__ = "JobItem"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: UID
-    node_uid: UID
-    result: Optional[Any] = None
-    resolved: bool = False
-    status: JobStatus = JobStatus.CREATED
-    log_id: Optional[UID] = None
-    parent_job_id: Optional[UID] = None
-    n_iters: Optional[int] = 0
-    current_iter: Optional[int] = None
-    creation_time: Optional[str] = None
-    action: Optional[Action] = None
-
-
-@serializable()
-class JobV2(SyftObject):
-    __canonical_name__ = "JobItem"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    id: UID
-    node_uid: UID
-    result: Optional[Any] = None
-    resolved: bool = False
-    status: JobStatus = JobStatus.CREATED
-    log_id: Optional[UID] = None
-    parent_job_id: Optional[UID] = None
-    n_iters: Optional[int] = 0
-    current_iter: Optional[int] = None
-    creation_time: Optional[str] = None
-    action: Optional[Action] = None
-    job_pid: Optional[int] = None
 
 
 @serializable()
@@ -528,38 +486,6 @@ class Job(SyftObject):
 
 
 @serializable()
-class JobInfoV1(SyftObject):
-    __canonical_name__ = "JobInfo"
-    __version__ = SYFT_OBJECT_VERSION_1
-    __repr_attrs__ = [
-        "resolved",
-        "status",
-        "n_iters",
-        "current_iter",
-        "creation_time",
-    ]
-    __public_metadata_attrs__ = [
-        "resolved",
-        "status",
-        "n_iters",
-        "current_iter",
-        "creation_time",
-    ]
-    # Separate check if the job has logs, result, or metadata
-    # None check is not enough because the values we set could be None
-    includes_metadata: bool
-    includes_result: bool
-    # TODO add logs (error reporting PRD)
-
-    resolved: Optional[bool] = None
-    status: Optional[JobStatus] = None
-    n_iters: Optional[int] = None
-    current_iter: Optional[int] = None
-    creation_time: Optional[str] = None
-    result: Optional[Any] = None
-
-
-@serializable()
 class JobInfo(SyftObject):
     __canonical_name__ = "JobInfo"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -641,31 +567,6 @@ class JobInfo(SyftObject):
             info.result = job.result
 
         return info
-
-
-@migrate(Job, JobV2)
-def downgrade_job_v3_to_v2() -> list[Callable]:
-    return [drop(["job_worker_id", "user_code_id"])]
-
-
-@migrate(JobV2, Job)
-def upgrade_job_v2_to_v3() -> list[Callable]:
-    return [
-        make_set_default("job_worker_id", None),
-        make_set_default("user_code_id", None),
-    ]
-
-
-@migrate(JobV2, JobV1)
-def downgrade_job_v2_to_v1() -> list[Callable]:
-    return [
-        drop("job_pid"),
-    ]
-
-
-@migrate(JobV1, JobV2)
-def upgrade_job_v1_to_v2() -> list[Callable]:
-    return [make_set_default("job_pid", None)]
 
 
 @instrument

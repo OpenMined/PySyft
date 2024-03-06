@@ -23,7 +23,6 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.syft_metaclass import Empty
-from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -41,50 +40,6 @@ from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftError
 from ..response import SyftSuccess
 from .user_roles import ServiceRole
-
-
-@serializable()
-class UserV1(SyftObject):
-    __canonical_name__ = "User"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    email: Optional[EmailStr] = None
-    name: Optional[str] = None
-    hashed_password: Optional[str] = None
-    salt: Optional[str] = None
-    signing_key: Optional[SyftSigningKey] = None
-    verify_key: Optional[SyftVerifyKey] = None
-    role: Optional[ServiceRole] = None
-    institution: Optional[str] = None
-    website: Optional[str] = None
-    created_at: Optional[str] = None
-
-
-@serializable()
-class UserV2(SyftObject):
-    # version
-    __canonical_name__ = "User"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    id: Optional[UID] = None  # type: ignore[assignment]
-
-    # fields
-    email: Optional[EmailStr] = None
-    name: Optional[str] = None
-    hashed_password: Optional[str] = None
-    salt: Optional[str] = None
-    signing_key: Optional[SyftSigningKey] = None
-    verify_key: Optional[SyftVerifyKey] = None
-    role: Optional[ServiceRole] = None
-    institution: Optional[str] = None
-    website: Optional[str] = None
-    created_at: Optional[str] = None
-    # TODO where do we put this flag?
-    mock_execution_permission: bool = False
-
-    __attr_searchable__ = ["name", "email", "verify_key", "role"]
-    __attr_unique__ = ["email", "signing_key", "verify_key"]
-    __repr_attrs__ = ["name", "email"]
 
 
 @serializable()
@@ -166,24 +121,9 @@ def check_pwd(password: str, hashed_password: str) -> bool:
 
 
 @serializable()
-class UserUpdateV1(PartialSyftObject):
-    __canonical_name__ = "UserUpdate"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    email: EmailStr
-    name: str
-    role: ServiceRole
-    password: str
-    password_verify: str
-    verify_key: SyftVerifyKey
-    institution: str
-    website: str
-
-
-@serializable()
 class UserUpdate(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     @field_validator("role", mode="before")
     @classmethod
@@ -204,25 +144,9 @@ class UserUpdate(PartialSyftObject):
 
 
 @serializable()
-class UserCreateV1(UserUpdateV1):
-    __canonical_name__ = "UserCreate"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    email: EmailStr
-    name: str
-    role: Optional[ServiceRole] = None  # type: ignore[assignment]
-    password: str
-    password_verify: Optional[str] = None  # type: ignore[assignment]
-    verify_key: Optional[SyftVerifyKey] = None  # type: ignore[assignment]
-    institution: Optional[str] = None  # type: ignore[assignment]
-    website: Optional[str] = None  # type: ignore[assignment]
-    created_by: Optional[SyftSigningKey] = None
-
-
-@serializable()
 class UserCreate(UserUpdate):
     __canonical_name__ = "UserCreate"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     email: EmailStr
     name: str
@@ -241,39 +165,12 @@ class UserCreate(UserUpdate):
 @serializable()
 class UserSearch(PartialSyftObject):
     __canonical_name__ = "UserSearch"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     email: EmailStr
     verify_key: SyftVerifyKey
     name: str
-
-
-@serializable()
-class UserViewV1(SyftObject):
-    __canonical_name__ = "UserView"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    email: EmailStr
-    name: str
-    role: ServiceRole  # make sure role cant be set without uid
-    institution: Optional[str] = None
-    website: Optional[str] = None
-
-
-@serializable()
-class UserViewV2(SyftObject):
-    __canonical_name__ = "UserView"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    email: EmailStr
-    name: str
-    role: ServiceRole  # make sure role cant be set without uid
-    institution: Optional[str] = None
-    website: Optional[str] = None
-    mock_execution_permission: bool
-
-    __repr_attrs__ = ["name", "email", "institution", "website", "role"]
 
 
 @serializable()
@@ -469,65 +366,3 @@ class UserPrivateKey(SyftObject):
 @transform(User, UserPrivateKey)
 def user_to_user_verify() -> List[Callable]:
     return [keep(["email", "signing_key", "id", "role"])]
-
-
-@migrate(UserV1, UserV2)
-def upgrade_user_v1_to_v2() -> List[Callable]:
-    return [make_set_default(key="mock_execution_permission", value=False)]
-
-
-@migrate(UserV2, UserV1)
-def downgrade_user_v2_to_v1() -> List[Callable]:
-    return [drop(["mock_execution_permission"])]
-
-
-@migrate(UserUpdateV1, UserUpdate)
-def upgrade_user_update_v1_to_v2() -> List[Callable]:
-    return [make_set_default(key="mock_execution_permission", value=False)]
-
-
-@migrate(UserUpdate, UserUpdateV1)
-def downgrade_user_update_v2_to_v1() -> List[Callable]:
-    return [drop(["mock_execution_permission"])]
-
-
-@migrate(UserCreateV1, UserCreate)
-def upgrade_user_create_v1_to_v2() -> List[Callable]:
-    return [make_set_default(key="mock_execution_permission", value=False)]
-
-
-@migrate(UserCreate, UserCreateV1)
-def downgrade_user_create_v2_to_v1() -> List[Callable]:
-    return [drop(["mock_execution_permission"])]
-
-
-@migrate(UserViewV1, UserViewV2)
-def upgrade_user_view_v1_to_v2() -> List[Callable]:
-    return [make_set_default(key="mock_execution_permission", value=False)]
-
-
-@migrate(UserViewV2, UserViewV1)
-def downgrade_user_view_v2_to_v1() -> List[Callable]:
-    return [drop(["mock_execution_permission"])]
-
-
-# User
-@migrate(UserV2, User)
-def upgrade_user_v2_to_v3() -> List[Callable]:
-    return [make_set_default(key="notifications_enabled", value=True)]
-
-
-@migrate(User, UserV2)
-def downgrade_user_v3_to_v2() -> List[Callable]:
-    return [drop(["notifications_enabled"])]
-
-
-# View
-@migrate(UserViewV2, UserView)
-def upgrade_user_view_v2_to_v3() -> List[Callable]:
-    return [make_set_default(key="notifications_enabled", value=True)]
-
-
-@migrate(UserView, UserViewV2)
-def downgrade_user_view_v3_to_v2() -> List[Callable]:
-    return [drop(["notifications_enabled"])]
