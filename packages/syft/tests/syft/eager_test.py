@@ -1,10 +1,16 @@
+# stdlib
+import sys
+
 # third party
 import numpy as np
+import pytest
 
 # syft absolute
 from syft.service.action.action_object import ActionObject
 from syft.service.action.plan import planify
 from syft.types.twin_object import TwinObject
+
+PYTHON_AT_LEAST_3_12 = sys.version_info >= (3, 12)
 
 
 def test_eager_permissions(worker, guest_client):
@@ -70,27 +76,32 @@ def test_plan(worker):
     assert res_ptr.get_from(guest_client) == 729
 
 
-# def test_plan_with_function_call(worker, guest_client):
-#     root_domain_client = worker.root_client
-#     guest_client = worker.guest_client
+@pytest.mark.xfail(
+    PYTHON_AT_LEAST_3_12,
+    raises=AttributeError,
+    reason="Does not work yet on Python>=3.12 and numpy>=1.26",
+)
+def test_plan_with_function_call(worker, guest_client):
+    root_domain_client = worker.root_client
+    guest_client = worker.guest_client
 
-#     @planify
-#     def my_plan(x=np.array([[2, 2, 2], [2, 2, 2]])):  # noqa: B008
-#         y = x.flatten()
-#         w = guest_client.api.lib.numpy.sum(y)
-#         return w
+    @planify
+    def my_plan(x=np.array([[2, 2, 2], [2, 2, 2]])):  # noqa: B008
+        y = x.flatten()
+        w = guest_client.api.lib.numpy.sum(y)
+        return w
 
-#     plan_ptr = my_plan.send(guest_client)
-#     input_obj = TwinObject(
-#         private_obj=np.array([[3, 3, 3], [3, 3, 3]]),
-#         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
-#     )
+    plan_ptr = my_plan.send(guest_client)
+    input_obj = TwinObject(
+        private_obj=np.array([[3, 3, 3], [3, 3, 3]]),
+        mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
+    )
 
-#     input_obj = root_domain_client.api.services.action.set(input_obj)
-#     pointer = guest_client.api.services.action.get_pointer(input_obj.id)
-#     res_ptr = plan_ptr(x=pointer)
+    input_obj = root_domain_client.api.services.action.set(input_obj)
+    pointer = guest_client.api.services.action.get_pointer(input_obj.id)
+    res_ptr = plan_ptr(x=pointer)
 
-#     assert root_domain_client.api.services.action.get(res_ptr.id) == 18
+    assert root_domain_client.api.services.action.get(res_ptr.id) == 18
 
 
 def test_plan_with_object_instantiation(worker, guest_client):
