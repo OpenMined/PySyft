@@ -17,7 +17,7 @@ from typing import Union
 
 # third party
 from loguru import logger
-from pydantic import validator
+from pydantic import field_validator
 from zmq import Frame
 from zmq import LINGER
 from zmq.error import ContextTerminated
@@ -121,8 +121,11 @@ class Worker(SyftBaseModel):
     syft_worker_id: Optional[UID] = None
     expiry_t: Timeout = Timeout(WORKER_TIMEOUT_SEC)
 
-    @validator("syft_worker_id", pre=True, always=True)
-    def set_syft_worker_id(cls, v: Any, values: Any) -> Union[UID, Any]:
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
+    @field_validator("syft_worker_id", mode="before")
+    @classmethod
+    def set_syft_worker_id(cls, v: Any) -> Any:
         if isinstance(v, str):
             return UID(v)
         return v
@@ -794,7 +797,7 @@ class ZMQClientConfigV1(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]  # type: ignore[assignment]
+    id: Optional[UID] = None  # type: ignore[assignment]
     hostname: str = "127.0.0.1"
 
 
@@ -802,7 +805,7 @@ class ZMQClientConfigV2(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID]  # type: ignore[assignment]
+    id: Optional[UID] = None  # type: ignore[assignment]
     hostname: str = "127.0.0.1"
     queue_port: Optional[int] = None
     # TODO: setting this to false until we can fix the ZMQ
@@ -816,14 +819,14 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    id: Optional[UID]  # type: ignore[assignment]
+    id: Optional[UID] = None  # type: ignore[assignment]
     hostname: str = "127.0.0.1"
     queue_port: Optional[int] = None
     # TODO: setting this to false until we can fix the ZMQ
     # port issue causing tests to randomly fail
     create_producer: bool = False
     n_consumers: int = 0
-    consumer_service: Optional[str]
+    consumer_service: Optional[str] = None
 
 
 @migrate(ZMQClientConfig, ZMQClientConfigV1)

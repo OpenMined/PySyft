@@ -55,7 +55,7 @@ class QueueItemV1(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any]
+    result: Optional[Any] = None
     resolved: bool = False
     status: Status = Status.CREATED
 
@@ -67,7 +67,7 @@ class QueueItemV2(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any]
+    result: Optional[Any] = None
     resolved: bool = False
     status: Status = Status.CREATED
 
@@ -75,8 +75,8 @@ class QueueItemV2(SyftObject):
     service: str
     args: List
     kwargs: Dict[str, Any]
-    job_id: Optional[UID]
-    worker_settings: Optional[WorkerSettings]
+    job_id: Optional[UID] = None
+    worker_settings: Optional[WorkerSettings] = None
     has_execute_permissions: bool = False
 
 
@@ -89,7 +89,7 @@ class QueueItem(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any]
+    result: Optional[Any] = None
     resolved: bool = False
     status: Status = Status.CREATED
 
@@ -97,8 +97,8 @@ class QueueItem(SyftObject):
     service: str
     args: List
     kwargs: Dict[str, Any]
-    job_id: Optional[UID]
-    worker_settings: Optional[WorkerSettings]
+    job_id: Optional[UID] = None
+    worker_settings: Optional[WorkerSettings] = None
     has_execute_permissions: bool = False
     worker_pool: LinkedObject
 

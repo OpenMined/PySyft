@@ -45,8 +45,8 @@ class ReplyNotification(SyftObject):
 
     text: str
     target_msg: UID
-    id: Optional[UID]  # type: ignore[assignment]
-    from_user_verify_key: Optional[SyftVerifyKey]
+    id: Optional[UID] = None  # type: ignore[assignment]
+    from_user_verify_key: Optional[SyftVerifyKey] = None
 
 
 @serializable()
@@ -60,7 +60,7 @@ class Notification(SyftObject):
     to_user_verify_key: SyftVerifyKey
     created_at: DateTime
     status: NotificationStatus = NotificationStatus.UNREAD
-    linked_obj: Optional[LinkedObject]
+    linked_obj: Optional[LinkedObject] = None
     replies: Optional[List[ReplyNotification]] = []
 
     __attr_searchable__ = [
@@ -140,10 +140,10 @@ class CreateNotification(Notification):
     __canonical_name__ = "CreateNotification"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]  # type: ignore[assignment]
-    node_uid: Optional[UID]  # type: ignore[assignment]
-    from_user_verify_key: Optional[SyftVerifyKey]  # type: ignore[assignment]
-    created_at: Optional[DateTime]  # type: ignore[assignment]
+    id: Optional[UID] = None  # type: ignore[assignment]
+    node_uid: Optional[UID] = None  # type: ignore[assignment]
+    from_user_verify_key: Optional[SyftVerifyKey] = None  # type: ignore[assignment]
+    created_at: Optional[DateTime] = None  # type: ignore[assignment]
 
 
 def add_msg_creation_time(context: TransformContext) -> TransformContext:

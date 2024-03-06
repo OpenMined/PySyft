@@ -16,7 +16,7 @@ from typing import Union
 
 # third party
 from pydantic import Field
-from pydantic import validator
+from pydantic import field_validator
 from result import Err
 from result import Ok
 from result import Result
@@ -437,7 +437,8 @@ class SQLiteStoreClientConfig(StoreClientConfig):
 
     # We need this in addition to Field(default_factory=...)
     # so users can still do SQLiteStoreClientConfig(path=None)
-    @validator("path", pre=True)
+    @field_validator("path", mode="before")
+    @classmethod
     def __default_path(cls, path: Optional[Union[str, Path]]) -> Union[str, Path]:
         if path is None:
             return tempfile.gettempdir()

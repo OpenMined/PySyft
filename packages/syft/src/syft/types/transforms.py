@@ -28,19 +28,19 @@ class NotNone:
 
 
 class TransformContext(Context):
-    output: Optional[Dict[str, Any]]
-    node: Optional[AbstractNode]
-    credentials: Optional[SyftVerifyKey]
-    obj: Optional[Any]
+    output: Optional[Dict[str, Any]] = None
+    node: Optional[AbstractNode] = None
+    credentials: Optional[SyftVerifyKey] = None
+    obj: Optional[Any] = None
 
     @classmethod
     def from_context(cls, obj: Any, context: Optional[Context] = None) -> Self:
         t_context = cls()
         t_context.obj = obj
         try:
-            t_context.output = dict(obj)
+            t_context.output = obj.to_dict(exclude_empty=True)
         except Exception:
-            t_context.output = obj.to_dict()
+            t_context.output = dict(obj)
         if context is None:
             return t_context
         if hasattr(context, "credentials"):
@@ -156,8 +156,7 @@ def validate_url(context: TransformContext) -> TransformContext:
 
 def validate_email(context: TransformContext) -> TransformContext:
     if context.output and context.output["email"] is not None:
-        context.output["email"] = EmailStr(context.output["email"])
-        EmailStr.validate(context.output["email"])
+        EmailStr._validate(context.output["email"])
     return context
 
 
