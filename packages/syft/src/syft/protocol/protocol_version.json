@@ -490,6 +490,66 @@
           "hash": "bd3f62b8fe4b2718a6380c8f05a93c5c40169fc4ab174db291929298e588429e",
           "action": "remove"
         }
+      },
+      "SignedSyftAPICall": {
+        "1": {
+          "version": 1,
+          "hash": "e66a116de2fa44ebdd0d4c2d7d5a047dedb555fd201a0f431cd8017d9d33a61d",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "ecc6891b770f1f543d02c1eb0007443b0eb3553fd0b9347522b8aa4b22c4cdba",
+          "action": "add"
+        }
+      },
+      "UserUpdate": {
+        "2": {
+          "version": 2,
+          "hash": "32cba8fbd786c575f92e26c31384d282e68e3ebfe5c4b0a0e793820b1228d246",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "ca32926b95a88406796d2d7ea23eeeb15b7a632ec46f0cf300d3890a19ae78e3",
+          "action": "add"
+        }
+      },
+      "UserCreate": {
+        "2": {
+          "version": 2,
+          "hash": "2540188c5aaea866914dccff459df6e0f4727108a503414bb1567ff6297d4646",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "8d87bd936564628f5e7c08ab1dedc9b26e9cd8a53899ce1604c91fbd281ae0ab",
+          "action": "add"
+        }
+      },
+      "UserSearch": {
+        "1": {
+          "version": 1,
+          "hash": "69d1e10b81c8a4143cf70e4f911d8562732af2458ebbc455ca64542f11373dd1",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "79f95cd9b4dabca88773a54e7993a0f7c80f5fad1f1aa144d82bd13375173ea3",
+          "action": "add"
+        }
+      },
+      "NodeSettingsUpdate": {
+        "1": {
+          "version": 1,
+          "hash": "b6ddc66ff270a3c2c4760e31e1a55d72ed04ccae2d0115ebe2fba6f2bf9bd119",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "859a91c8229a59e03ed4c20d38de569f7670bdea4b0a8cf2d4bd702da37aeabe",
+          "action": "add"
+        }
       }
     }
   }
