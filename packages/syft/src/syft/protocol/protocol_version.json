@@ -57,6 +57,11 @@
         }
       },
       "JobInfo": {
+        "1": {
+          "version": 1,
+          "hash": "cf26eeac3d9254dfa439917493b816341f8a379a77d182bbecba3b7ed2c1d00a",
+          "action": "remove"
+        },
         "2": {
           "version": 2,
           "hash": "5c1f7d5e6a991123a1907c1823be14a75458ba06af1fe5a1b77aaac7fa546c78",
@@ -102,6 +107,16 @@
         }
       },
       "UserCode": {
+        "1": {
+          "version": 1,
+          "hash": "e14c22686cdc7d1fb2b0d01c0aebdea37e62a61b051677c1d30234214f05cd42",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "660e1abc15034f525e91ffdd820c2a2179bfddf83b7b9e3ce7823b2efc515c69",
+          "action": "remove"
+        },
         "3": {
           "version": 3,
           "hash": "90fcae0f556f375ba1e91d2e345f57241660695c6e2b84c8e311df89d09e6c66",
@@ -347,6 +362,133 @@
           "version": 2,
           "hash": "6103055aebe436855987c18aeb63d6ec90e0ec6654f960eaa8212c0a6d2964aa",
           "action": "add"
+        }
+      },
+      "NodeMetadata": {
+        "1": {
+          "version": 1,
+          "hash": "6bee018894dfdf697ea624740d0bf051750e0b0d8470ced59646f6d8812068ac",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "f856169fea72486cd436875ce4411ef935da11eb7c5af48121adfa00d4c0cdb6",
+          "action": "remove"
+        }
+      },
+      "NodeSettings": {
+        "1": {
+          "version": 1,
+          "hash": "b662047bb278f4f5db77c102f94b733c3a929839271b3d6b82ea174a60e2aaf0",
+          "action": "remove"
+        }
+      },
+      "BlobFile": {
+        "1": {
+          "version": 1,
+          "hash": "47ed55183d619c6c624e35412360a41de42833e2c24223c1de1ad12a84fdafc2",
+          "action": "remove"
+        }
+      },
+      "SeaweedSecureFilePathLocation": {
+        "1": {
+          "version": 1,
+          "hash": "5724a38b1a92b8a55da3d9cc34a720365a6d0c32683acda630fc44067173e201",
+          "action": "remove"
+        }
+      },
+      "BlobStorageEntry": {
+        "1": {
+          "version": 1,
+          "hash": "9f1b027cce390ee6f71c7a81e7420bb71a477b29c6c62ba74e781a97bc5434e6",
+          "action": "remove"
+        }
+      },
+      "BlobStorageMetadata": {
+        "1": {
+          "version": 1,
+          "hash": "6888943be3f97186190dd26d7eefbdf29b15c6f2fa459e13608065ebcdb799e2",
+          "action": "remove"
+        }
+      },
+      "BlobRetrieval": {
+        "1": {
+          "version": 1,
+          "hash": "a8d7e1d6483e7a9b5a130e837fa398862aa6cbb316cc5f4470450d835755fdd9",
+          "action": "remove"
+        }
+      },
+      "SyftObjectRetrieval": {
+        "2": {
+          "version": 2,
+          "hash": "d9d7a7e1b8843145c9687fd013c9223700285886073547734267e91ac53e0996",
+          "action": "remove"
+        }
+      },
+      "WorkerSettings": {
+        "1": {
+          "version": 1,
+          "hash": "0dcd95422ec8a7c74e45ee68a125084c08f898dc94a13d25fe5a5fd0e4fc5027",
+          "action": "remove"
+        }
+      },
+      "SubmitUserCode": {
+        "2": {
+          "version": 2,
+          "hash": "9b29e060973a3de8d3564a2b7d2bb5c53745aa445bf257576994b613505d7194",
+          "action": "remove"
+        }
+      },
+      "SeaweedFSBlobDeposit": {
+        "1": {
+          "version": 1,
+          "hash": "382a9ac178deed2a9591e1ebbb39f265cbe67027fb93a420d473a4c26b7fda11",
+          "action": "remove"
+        }
+      },
+      "QueueItem": {
+        "1": {
+          "version": 1,
+          "hash": "5aa94681d9d0715d5b605f9625a54e114927271378cf2ea7245f85c488035e0b",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "9503b878de4b5b7a1793580301353523b7d6219ebd27d38abe598061979b7570",
+          "action": "remove"
+        }
+      },
+      "ZMQClientConfig": {
+        "1": {
+          "version": 1,
+          "hash": "e6054969b495791569caaf33239039beae3d116e1fe74e9575467c48b9007c45",
+          "action": "remove"
+        }
+      },
+      "ActionQueueItem": {
+        "1": {
+          "version": 1,
+          "hash": "11a43caf9164eb2a5a21f4bcb0ca361d0a5d134bf3c60173f2c502d0d80219de",
+          "action": "remove"
+        }
+      },
+      "JobItem": {
+        "1": {
+          "version": 1,
+          "hash": "7b8723861837b0b7e948b2cf9244159d232185f3407dd6bef108346f941ddf6e",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "e99cf5a78c6dd3a0adc37af3472c7c21570a9e747985dff540a2b06d24de6446",
+          "action": "remove"
+        }
+      },
+      "SyftLog": {
+        "1": {
+          "version": 1,
+          "hash": "bd3f62b8fe4b2718a6380c8f05a93c5c40169fc4ab174db291929298e588429e",
+          "action": "remove"
         }
       }
     }
