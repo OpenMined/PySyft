@@ -89,6 +89,10 @@ class UserV2(SyftObject):
 
 @serializable()
 class User(SyftObject):
+    # version
+    __canonical_name__ = "User"
+    __version__ = SYFT_OBJECT_VERSION_3
+
     id: Optional[UID] = None  # type: ignore[assignment]
 
     # fields
@@ -177,25 +181,9 @@ class UserUpdateV1(PartialSyftObject):
 
 
 @serializable()
-class UserUpdateV2(PartialSyftObject):
-    __canonical_name__ = "UserUpdate"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    email: EmailStr
-    name: str
-    role: ServiceRole  # make sure role cant be set without uid
-    password: str
-    password_verify: str
-    verify_key: SyftVerifyKey
-    institution: str
-    website: str
-    mock_execution_permission: bool
-
-
-@serializable()
 class UserUpdate(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_2
 
     @field_validator("role", mode="before")
     @classmethod
@@ -232,28 +220,9 @@ class UserCreateV1(UserUpdateV1):
 
 
 @serializable()
-class UserCreateV2(UserUpdateV2):
-    __canonical_name__ = "UserCreate"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    email: EmailStr
-    name: str
-    role: Optional[ServiceRole] = None  # type: ignore[assignment]
-    password: str
-    password_verify: Optional[str] = None  # type: ignore[assignment]
-    verify_key: Optional[SyftVerifyKey] = None  # type: ignore[assignment]
-    institution: Optional[str] = None  # type: ignore[assignment]
-    website: Optional[str] = None  # type: ignore[assignment]
-    created_by: Optional[SyftSigningKey] = None
-    mock_execution_permission: bool = False
-
-    __repr_attrs__ = ["name", "email"]
-
-
-@serializable()
 class UserCreate(UserUpdate):
     __canonical_name__ = "UserCreate"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_2
 
     email: EmailStr
     name: str
