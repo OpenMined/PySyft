@@ -253,15 +253,16 @@ class CreateNotificationV1(NotificationV1):
 
 
 @serializable()
-class CreateNotification(Notification):
+class CreateNotification(SyftObject):
     __canonical_name__ = "CreateNotification"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID]  # type: ignore[assignment]
-    node_uid: Optional[UID]  # type: ignore[assignment]
-    from_user_verify_key: Optional[SyftVerifyKey]  # type: ignore[assignment]
-    created_at: Optional[DateTime]  # type: ignore[assignment]
+    subject: str
+    from_user_verify_key: Optional[SyftVerifyKey] = None  # type: ignore[assignment]
+    to_user_verify_key: Optional[SyftVerifyKey] = None  # type: ignore[assignment]
+    linked_obj: Optional[LinkedObject] = None
     notifier_types: List[NOTIFIERS] = []
+    email_template: Optional[Type[EmailTemplate]] = None
 
 
 @migrate(CreateNotificationV1, CreateNotification)

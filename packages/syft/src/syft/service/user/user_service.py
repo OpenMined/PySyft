@@ -472,7 +472,7 @@ class UserService(AbstractService):
         if new_user.created_by:
             link = LinkedObject.with_context(user, context=root_context)
         message = CreateNotification(
-            subject="Not allowed register attempt",
+            subject=success_message,
             from_user_verify_key=root_key,
             to_user_verify_key=user.verify_key,
             linked_obj=link,

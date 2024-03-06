@@ -156,7 +156,7 @@ class NotifierService(AbstractService):
 
         if email_sender:
             try:
-                EmailStr.validate(email_sender)
+                EmailStr._validate(email_sender)
             except ValueError:
                 return SyftError(
                     message="Invalid sender email address. Please check your email address."
