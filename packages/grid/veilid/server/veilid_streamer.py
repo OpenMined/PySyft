@@ -43,15 +43,25 @@ class VeilidStreamer:
         We are using 3 different structs to serialize and deserialize the metadata:
 
         1. stream_start_struct = Struct("!8s32sQ")  # 48 bytes
-           [RequestType.STREAM_START (8 bytes string)][Message hash (32 bytes string)][Total chunks count (8 bytes unsigned long long)] = 48 bytes
-        2. stream_chunk_header_struct = Struct("!8s32sQ")  # 48 bytes
-           [RequestType.STREAM_CHUNK (8 bytes string)][Message hash (32 bytes string)][Chunk Number (8 bytes unsigned long long)] = 48 bytes
-        3. stream_end_struct = Struct("!8s32s")  # 40 bytes
-           [RequestType.STREAM_END (8 bytes string)][Message hash (32 bytes string)] = 40 bytes
+            [RequestType.STREAM_START (8 bytes string)] +
+            [Message hash (32 bytes string)] +
+            [Total chunks count (8 bytes unsigned long long)]
 
-        The message is divided into chunks of 32720 bytes each, and each chunk is sent as a separate STREAM_CHUNK request.
-        This helps in keeping the size of each request within the 32KB limit of the Veilid API.
-        [stream_chunk_header_struct (48 bytes)][Actual Message Chunk (32720 bytes)] = 32768 bytes
+        2. stream_chunk_header_struct = Struct("!8s32sQ")  # 48 bytes
+            [RequestType.STREAM_CHUNK (8 bytes string)] +
+            [Message hash (32 bytes string)] +
+            [Chunk Number (8 bytes unsigned long long)]
+
+        3. stream_end_struct = Struct("!8s32s")  # 40 bytes
+            [RequestType.STREAM_END (8 bytes string)] +
+            [Message hash (32 bytes string)] = 40 bytes
+
+        The message is divided into chunks of 32720 bytes each, and each chunk is sent
+        as a separate STREAM_CHUNK request. This helps in keeping the size of each
+        request within the 32KB limit of the Veilid API.
+            [stream_chunk_header_struct (48 bytes)] +
+            [Actual Message Chunk (32720 bytes)]
+            = 32768 bytes
 
     Usage:
         1. Add this preferably as a Singleton near the code where you are initializing
@@ -102,7 +112,7 @@ class VeilidStreamer:
         self.chunk_size = chunk_size
 
         # Key is the message hash, value is a list of chunks
-        self.receive_buffer: Dict[bytes, List[bytes]] = {}
+        self.receive_buffer: Dict[bytes, List[bytes | None]] = {}
 
         # Structs for serializing and deserializing metadata as bytes of fixed length
         # '!' - big-endian byte order (recommended for networks as per IETF RFC 1700)

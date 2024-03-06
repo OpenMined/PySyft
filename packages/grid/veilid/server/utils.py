@@ -4,11 +4,12 @@ from functools import wraps
 from typing import Any
 from typing import Callable
 from typing import Tuple
+from typing import Type
 from typing import Union
 
 
 def retry(
-    exceptions: Union[Tuple[Exception, ...], Exception],
+    exceptions: Union[Tuple[Type[BaseException], ...], Type[BaseException]],
     tries: int = 3,
     delay: int = 1,
     backoff: int = 2,
@@ -38,9 +39,8 @@ def retry(
                     )
                     await asyncio.sleep(current_delay)
                     current_delay *= backoff
-            return await func(
-                *args, **kwargs
-            )  # Retry one last time before raising the exception
+            # Retry one last time before raising the exception
+            return await func(*args, **kwargs)
 
         return wrapper
 
