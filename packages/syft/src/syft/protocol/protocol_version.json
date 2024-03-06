@@ -550,6 +550,68 @@
           "hash": "859a91c8229a59e03ed4c20d38de569f7670bdea4b0a8cf2d4bd702da37aeabe",
           "action": "add"
         }
+      },
+      "User": {
+        "2": {
+          "version": 2,
+          "hash": "ded970c92f202716ed33a2117cf541789f35fad66bd4b1db39da5026b1d7d0e7",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "4550a80d1e4682de38adb71f79f89b42bb42fa85b1383ece51bb737a30bd5522",
+          "action": "add"
+        }
+      },
+      "UserView": {
+        "2": {
+          "version": 2,
+          "hash": "e410de583bb15bc5af57acef7be55ea5fc56b5b0fc169daa3869f4203c4d7473",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "9849a2182fed2f54ecaf03bd9febf0efec6639b8e27e5b1501683aa846b5a2d3",
+          "action": "add"
+        }
+      },
+      "Notification": {
+        "1": {
+          "version": 1,
+          "hash": "d13981f721fe2b3e2717640ee07dc716c596e4ecd442461665c3fdab0b85bf0e",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "9032bac0e8ede1a3d118a0e31e0f1f05699d1efc88327fceb0917d40185a7930",
+          "action": "add"
+        }
+      },
+      "CreateNotification": {
+        "1": {
+          "version": 1,
+          "hash": "b1f459de374fe674f873a4a5f3fb8a8aabe0d83faad84a933f0a77dd1141159a",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "5098e1ab1cf7ffd8da4ba5bff36ebdb235d3983453185035d6796a7517f8272c",
+          "action": "add"
+        }
+      },
+      "NotificationPreferences": {
+        "1": {
+          "version": 1,
+          "hash": "57e033e2ebac5414a057b80599a31f277027a4980e49d31770f96017c57e638f",
+          "action": "add"
+        }
+      },
+      "NotifierSettings": {
+        "1": {
+          "version": 1,
+          "hash": "8753b4ee72d673958783879bc3726c51077bf6a1deca37bacac3f3475605e812",
+          "action": "add"
+        }
       }
     }
   }
