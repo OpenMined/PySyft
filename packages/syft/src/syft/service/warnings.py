@@ -22,8 +22,8 @@ from .user.user_roles import ServiceRole
 class WarningContext(
     Context,
 ):
-    node: Optional[AbstractNode]
-    credentials: Optional[SyftCredentials]
+    node: Optional[AbstractNode] = None
+    credentials: Optional[SyftCredentials] = None
     role: ServiceRole
 
 

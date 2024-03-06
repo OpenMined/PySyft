@@ -10,7 +10,8 @@ from typing import Optional
 from typing import Union
 
 # third party
-import pydantic
+from pydantic import field_validator
+from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
@@ -69,11 +70,11 @@ class JobV1(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any]
+    result: Optional[Any] = None
     resolved: bool = False
     status: JobStatus = JobStatus.CREATED
-    log_id: Optional[UID]
-    parent_job_id: Optional[UID]
+    log_id: Optional[UID] = None
+    parent_job_id: Optional[UID] = None
     n_iters: Optional[int] = 0
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
@@ -87,11 +88,11 @@ class JobV2(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any]
+    result: Optional[Any] = None
     resolved: bool = False
     status: JobStatus = JobStatus.CREATED
-    log_id: Optional[UID]
-    parent_job_id: Optional[UID]
+    log_id: Optional[UID] = None
+    parent_job_id: Optional[UID] = None
     n_iters: Optional[int] = 0
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
@@ -106,11 +107,11 @@ class Job(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any]
+    result: Optional[Any] = None
     resolved: bool = False
     status: JobStatus = JobStatus.CREATED
-    log_id: Optional[UID]
-    parent_job_id: Optional[UID]
+    log_id: Optional[UID] = None
+    parent_job_id: Optional[UID] = None
     n_iters: Optional[int] = 0
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
@@ -124,26 +125,23 @@ class Job(SyftObject):
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
     __exclude_sync_diff_attrs__ = ["action"]
 
-    @pydantic.root_validator()
-    def check_time(cls, values: dict) -> dict:
-        if values.get("creation_time", None) is None:
-            values["creation_time"] = str(datetime.now())
-        return values
+    @field_validator("creation_time")
+    @classmethod
+    def check_time(cls, time: Any) -> Any:
+        return str(datetime.now()) if time is None else time
 
-    @pydantic.root_validator()
-    def check_user_code_id(cls, values: dict) -> dict:
-        action = values.get("action")
-        user_code_id = values.get("user_code_id")
-
-        if action is not None:
-            if user_code_id is None:
-                values["user_code_id"] = action.user_code_id
-            elif action.user_code_id != user_code_id:
-                raise pydantic.ValidationError(
-                    "user_code_id does not match the action's user_code_id", cls
+    @model_validator(mode="after")
+    def check_user_code_id(self) -> Self:
+        if self.action is not None:
+            if self.user_code_id is None:
+                self.user_code_id = self.action.user_code_id
+            elif self.action.user_code_id != self.user_code_id:
+                raise ValueError(
+                    "user_code_id does not match the action's user_code_id",
+                    self.__class__,
                 )
 
-        return values
+        return self
 
     @property
     def action_display_name(self) -> str:

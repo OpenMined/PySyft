@@ -63,9 +63,9 @@ class ContainerStatus(BaseModel):
     ready: bool
     running: bool
     waiting: bool
-    reason: Optional[str]  # when waiting=True
-    message: Optional[str]  # when waiting=True
-    startedAt: Optional[str]  # when running=True
+    reason: Optional[str] = None  # when waiting=True
+    message: Optional[str] = None  # when waiting=True
+    startedAt: Optional[str] = None  # when running=True
 
     @classmethod
     def from_status(cls, cstatus: dict) -> Self:

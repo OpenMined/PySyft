@@ -21,7 +21,13 @@ from .action_object import TraceResult
 class Plan(SyftObject):
     __canonical_name__ = "Plan"
     __version__ = SYFT_OBJECT_VERSION_1
-    syft_passthrough_attrs = ["inputs", "outputs", "code", "actions", "client"]
+    syft_passthrough_attrs: List[str] = [
+        "inputs",
+        "outputs",
+        "code",
+        "actions",
+        "client",
+    ]
 
     inputs: Dict[str, ActionObject]
     outputs: List[ActionObject]

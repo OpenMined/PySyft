@@ -8,12 +8,15 @@ from hashlib import sha256
 import inspect
 from inspect import Signature
 import re
+import sys
 import traceback
 import types
+import typing
 from typing import Any
 from typing import Callable
 from typing import ClassVar
 from typing import Dict
+from typing import Generator
 from typing import Iterable
 from typing import KeysView
 from typing import List
@@ -23,13 +26,18 @@ from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
 from typing import Union
+from typing import get_args
+from typing import get_origin
 import warnings
 
 # third party
 import pandas as pd
 import pydantic
+from pydantic import ConfigDict
 from pydantic import EmailStr
-from pydantic.fields import Undefined
+from pydantic import Field
+from pydantic import model_validator
+from pydantic.fields import PydanticUndefined
 from result import OkErr
 from typeguard import check_type
 from typing_extensions import Self
@@ -48,6 +56,14 @@ from .dicttuple import DictTuple
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
+
+if sys.version_info >= (3, 10):
+    # stdlib
+    from types import NoneType
+    from types import UnionType
+else:
+    UnionType = Union
+    NoneType = type(None)
 
 if TYPE_CHECKING:
     # relative
@@ -82,6 +98,25 @@ DYNAMIC_SYFT_ATTRIBUTES = [
 ]
 
 
+def _is_optional(x: Any) -> bool:
+    return get_origin(x) in (Optional, UnionType, Union) and any(
+        arg is NoneType for arg in get_args(x)
+    )
+
+
+def _get_optional_inner_type(x: Any) -> Any:
+    if get_origin(x) not in (Optional, UnionType, Union):
+        return x
+
+    args = get_args(x)
+
+    if not any(arg is NoneType for arg in args):
+        return x
+
+    non_none = [arg for arg in args if arg is not NoneType]
+    return non_none[0] if len(non_none) == 1 else x
+
+
 class SyftHashableObject:
     __hash_exclude_attrs__: list = []
 
@@ -98,15 +133,14 @@ class SyftHashableObject:
 
 
 class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # the name which doesn't change even when there are multiple classes
     __canonical_name__: str
     __version__: int  # data is always versioned
 
-    syft_node_location: Optional[UID]
-    syft_client_verify_key: Optional[SyftVerifyKey]
+    syft_node_location: Optional[UID] = Field(default=None, exclude=True)
+    syft_client_verify_key: Optional[SyftVerifyKey] = Field(default=None, exclude=True)
 
     def _set_obj_location_(self, node_uid: UID, credentials: SyftVerifyKey) -> None:
         self.syft_node_location = node_uid
@@ -364,18 +398,22 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders={UID: str},
+    )
 
     # all objects have a UID
     id: UID
 
     # # move this to transforms
-    @pydantic.root_validator(pre=True)
-    def make_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        id_field = cls.__fields__["id"]
-        if "id" not in values and id_field.required:
-            values["id"] = id_field.type_()
+    @model_validator(mode="before")
+    @classmethod
+    def make_id(cls, values: Any) -> Any:
+        if isinstance(values, dict):
+            id_field = cls.model_fields["id"]
+            if "id" not in values and id_field.is_required():
+                values["id"] = id_field.annotation()
         return values
 
     __attr_searchable__: ClassVar[
@@ -425,7 +463,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     def _repr_debug_(self) -> str:
         class_name = get_qualname_for(type(self))
         _repr_str = f"class {class_name}:\n"
-        fields = getattr(self, "__fields__", {})
+        fields = getattr(self, "model_fields", {})
         for attr in fields.keys():
             if attr in DYNAMIC_SYFT_ATTRIBUTES:
                 continue
@@ -546,32 +584,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                     new_dict[k] = v
             return new_dict
 
-    def dict(
-        self,
-        *,
-        include: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,
-        exclude: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,
-        by_alias: bool = False,
-        skip_defaults: Optional[bool] = None,
-        exclude_unset: bool = False,
-        exclude_defaults: bool = False,
-        exclude_none: bool = False,
-    ) -> dict:
-        if exclude is None:
-            exclude = set()
-
-        for attr in DYNAMIC_SYFT_ATTRIBUTES:
-            exclude.add(attr)  # type: ignore
-        return super().dict(
-            include=include,
-            exclude=exclude,
-            by_alias=by_alias,
-            skip_defaults=skip_defaults,
-            exclude_unset=exclude_unset,
-            exclude_defaults=exclude_defaults,
-            exclude_none=exclude_none,
-        )
-
     def __post_init__(self) -> None:
         pass
 
@@ -581,18 +593,13 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         for attr, decl in self.__private_attributes__.items():
             value = kwargs.get(attr, decl.get_default())
             var_annotation = self.__annotations__.get(attr)
-            if value is not Undefined:
-                if decl.default_factory:
-                    # If the value is defined via PrivateAttr with default factory
-                    value = decl.default_factory(value)
-                elif var_annotation is not None:
+            if value is not PydanticUndefined:
+                if var_annotation is not None:
                     # Otherwise validate value against the variable annotation
                     check_type(value, var_annotation)
                 setattr(self, attr, value)
             else:
-                # check if the private is optional
-                is_optional_attr = type(None) in getattr(var_annotation, "__args__", [])
-                if not is_optional_attr:
+                if not _is_optional(var_annotation):
                     raise ValueError(
                         f"{attr}\n field required (type=value_error.missing)"
                     )
@@ -610,8 +617,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     def _syft_keys_types_dict(cls, attr_name: str) -> Dict[str, type]:
         kt_dict = {}
         for key in getattr(cls, attr_name, []):
-            if key in cls.__fields__:
-                type_ = cls.__fields__[key].type_
+            if key in cls.model_fields:
+                type_ = _get_optional_inner_type(cls.model_fields[key].annotation)
             else:
                 try:
                     method = getattr(cls, key)
@@ -625,8 +632,9 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             # EmailStr seems to be lost every time the value is set even with a validator
             # this means the incoming type is str so our validators fail
 
-            if type(type_) is type and issubclass(type_, EmailStr):
+            if type_ is EmailStr:
                 type_ = str
+
             kt_dict[key] = type_
         return kt_dict
 
@@ -708,6 +716,53 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                         )
                         diff_attrs.append(diff_attr)
         return diff_attrs
+
+    ## OVERRIDING pydantic.BaseModel.__getattr__
+    ## return super().__getattribute__(item) -> return self.__getattribute__(item)
+    ## so that ActionObject.__getattribute__ works properly,
+    ## raising AttributeError when underlying object does not have the attribute
+    if not typing.TYPE_CHECKING:
+        # We put `__getattr__` in a non-TYPE_CHECKING block because otherwise, mypy allows arbitrary attribute access
+
+        def __getattr__(self, item: str) -> Any:
+            private_attributes = object.__getattribute__(self, "__private_attributes__")
+            if item in private_attributes:
+                attribute = private_attributes[item]
+                if hasattr(attribute, "__get__"):
+                    return attribute.__get__(self, type(self))  # type: ignore
+
+                try:
+                    # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
+                    return self.__pydantic_private__[item]  # type: ignore
+                except KeyError as exc:
+                    raise AttributeError(
+                        f"{type(self).__name__!r} object has no attribute {item!r}"
+                    ) from exc
+            else:
+                # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
+                # See `BaseModel.__repr_args__` for more details
+                try:
+                    pydantic_extra = object.__getattribute__(self, "__pydantic_extra__")
+                except AttributeError:
+                    pydantic_extra = None
+
+                if pydantic_extra is not None:
+                    try:
+                        return pydantic_extra[item]
+                    except KeyError as exc:
+                        raise AttributeError(
+                            f"{type(self).__name__!r} object has no attribute {item!r}"
+                        ) from exc
+                else:
+                    if hasattr(self.__class__, item):
+                        return self.__getattribute__(
+                            item
+                        )  # Raises AttributeError if appropriate
+                    else:
+                        # this is the current error
+                        raise AttributeError(
+                            f"{type(self).__name__!r} object has no attribute {item!r}"
+                        )
 
 
 def short_qual_name(name: str) -> str:
@@ -903,51 +958,17 @@ class StorableObjectType:
         super().__init__(*args, **kwargs)
 
 
+TupleGenerator = Generator[Tuple[str, Any], None, None]
+
+
 class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     """Syft Object to which partial arguments can be provided."""
 
     __canonical_name__ = "PartialSyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        # Filter out Empty values from args and kwargs
-        args_, kwargs_ = (), {}
-        for arg in args:
-            if arg is not Empty:
-                args_.append(arg)
-
-        for key, val in kwargs.items():
-            if val is not Empty:
-                kwargs_[key] = val
-
-        super().__init__(*args_, **kwargs_)
-
-        fields_with_default = set()
-        for _field_name, _field in self.__fields__.items():
-            if _field.default is not None or _field.allow_none:
-                fields_with_default.add(_field_name)
-
-        # Fields whose values are set via a validator hook
-        fields_set_via_validator = []
-
-        for _field_name in self.__validators__.keys():
-            _field = self.__fields__[_field_name]
-            if self.__dict__[_field_name] is None:
-                # Since all fields are None, only allow None
-                # where either none is allowed or default is None
-                if _field.allow_none or _field.default is None:
-                    fields_set_via_validator.append(_field)
-
-        # Exclude unset fields
-        unset_fields = (
-            set(self.__fields__)
-            - set(self.__fields_set__)
-            - set(fields_set_via_validator)
-        )
-
-        empty_fields = unset_fields - fields_with_default
-        for field_name in empty_fields:
-            self.__dict__[field_name] = Empty
+    def __iter__(self) -> TupleGenerator:
+        yield from ((k, v) for k, v in super().__iter__() if v is not Empty)
 
 
 recursive_serde_register_type(PartialSyftObject)

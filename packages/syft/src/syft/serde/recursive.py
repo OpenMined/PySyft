@@ -111,9 +111,14 @@ def recursive_serde_register(
         # if pydantic object and attrs are provided, the get attrs from __fields__
         # cls.__fields__ auto inherits attrs
         pydantic_fields = [
-            f.name
-            for f in cls.__fields__.values()
-            if f.outer_type_ not in (Callable, types.FunctionType, types.LambdaType)
+            field
+            for field, field_info in cls.model_fields.items()
+            if not (
+                field_info.annotation is not None
+                and hasattr(field_info.annotation, "__origin__")
+                and field_info.annotation.__origin__
+                in (Callable, types.FunctionType, types.LambdaType)
+            )
         ]
         attribute_list.update(pydantic_fields)
 
@@ -125,7 +130,9 @@ def recursive_serde_register(
         attribute_list.update(["value"])
 
     exclude_attrs = [] if exclude_attrs is None else exclude_attrs
-    attribute_list = attribute_list - set(exclude_attrs)
+    attribute_list = (
+        attribute_list - set(exclude_attrs) - {"syft_pre_hooks__", "syft_post_hooks__"}
+    )
 
     if inheritable_attrs and attribute_list and not is_pydantic:
         # only set __syft_serializable__ for non-pydantic classes because

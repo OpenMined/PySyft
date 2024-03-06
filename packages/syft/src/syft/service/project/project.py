@@ -18,8 +18,8 @@ from typing import Type
 from typing import Union
 
 # third party
-import pydantic
-from pydantic import validator
+from pydantic import Field
+from pydantic import field_validator
 from rich.progress import Progress
 from typing_extensions import Self
 
@@ -79,29 +79,23 @@ class ProjectEvent(SyftObject):
 
     # 1. Creation attrs
     id: UID
-    timestamp: DateTime
+    timestamp: DateTime = Field(default_factory=DateTime.now)
     allowed_sub_types: Optional[List] = []
     # 2. Rebase attrs
-    project_id: Optional[UID]
-    seq_no: Optional[int]
-    prev_event_uid: Optional[UID]
-    prev_event_hash: Optional[str]
-    event_hash: Optional[str]
+    project_id: Optional[UID] = None
+    seq_no: Optional[int] = None
+    prev_event_uid: Optional[UID] = None
+    prev_event_hash: Optional[str] = None
+    event_hash: Optional[str] = None
     # 3. Signature attrs
-    creator_verify_key: Optional[SyftVerifyKey]
-    signature: Optional[bytes]  # dont use in signing
+    creator_verify_key: Optional[SyftVerifyKey] = None
+    signature: Optional[bytes] = None  # dont use in signing
 
     def __repr_syft_nested__(self) -> tuple[str, str]:
         return (
             short_qual_name(full_name_with_qualname(self)),
             f"{str(self.id)[:4]}...{str(self.id)[-3:]}",
         )
-
-    @pydantic.root_validator(pre=True)
-    def make_timestamp(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if "timestamp" not in values or values["timestamp"] is None:
-            values["timestamp"] = DateTime.now()
-        return values
 
     def _pre_add_update(self, project: Project) -> None:
         pass
@@ -278,8 +272,9 @@ class ProjectRequest(ProjectEventAddObject):
     linked_request: LinkedObject
     allowed_sub_types: List[Type] = [ProjectRequestResponse]
 
-    @validator("linked_request", pre=True)
-    def _validate_linked_request(cls, v: Any) -> Union[Request, LinkedObject]:
+    @field_validator("linked_request", mode="before")
+    @classmethod
+    def _validate_linked_request(cls, v: Any) -> LinkedObject:
         if isinstance(v, Request):
             linked_request = LinkedObject.from_obj(v, node_uid=v.node_uid)
             return linked_request
@@ -557,8 +552,9 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
     choices: List[str]
     allowed_sub_types: List[Type] = [AnswerProjectPoll]
 
-    @validator("choices")
-    def choices_min_length(cls, v: str) -> str:
+    @field_validator("choices")
+    @classmethod
+    def choices_min_length(cls, v: list[str]) -> list[str]:
         if len(v) < 1:
             raise ValueError("choices must have at least one item")
         return v
@@ -681,14 +677,14 @@ class Project(SyftObject):
         "event_id_hashmap",
     ]
 
-    id: Optional[UID]  # type: ignore[assignment]
+    id: Optional[UID] = None  # type: ignore[assignment]
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     members: List[NodeIdentity]
     users: List[UserIdentity] = []
-    username: Optional[str]
+    username: Optional[str] = None
     created_by: str
-    start_hash: Optional[str]
+    start_hash: Optional[str] = None
     # WARNING:  Do not add it to hash keys or print directly
     user_signing_key: Optional[SyftSigningKey] = None
 
@@ -698,7 +694,7 @@ class Project(SyftObject):
 
     # Project sync
     state_sync_leader: NodeIdentity
-    leader_node_peer: Optional[NodePeer]
+    leader_node_peer: Optional[NodePeer] = None
 
     # Unused
     consensus_model: ConsensusModel
@@ -1172,19 +1168,19 @@ class ProjectSubmit(SyftObject):
 
     # Init args
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     members: Union[List[SyftClient], List[NodeIdentity]]
 
     # These will be automatically populated
     users: List[UserIdentity] = []
     created_by: Optional[str] = None
-    username: Optional[str]
+    username: Optional[str] = None
     clients: List[SyftClient] = []  # List of member clients
     start_hash: str = ""
 
     # Project sync args
-    leader_node_route: Optional[NodeRoute]
-    state_sync_leader: Optional[NodeIdentity]
+    leader_node_route: Optional[NodeRoute] = None
+    state_sync_leader: Optional[NodeIdentity] = None
     bootstrap_events: Optional[List[ProjectEvent]] = []
 
     # Unused at the moment
@@ -1231,7 +1227,8 @@ class ProjectSubmit(SyftObject):
             + "</div>"
         )
 
-    @validator("members", pre=True)
+    @field_validator("members", mode="before")
+    @classmethod
     def verify_members(
         cls, val: Union[List[SyftClient], List[NodeIdentity]]
     ) -> Union[List[SyftClient], List[NodeIdentity]]:

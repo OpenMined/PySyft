@@ -154,7 +154,7 @@ class ProxyClient(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     routing_client: GatewayClient
-    node_type: Optional[NodeType]
+    node_type: Optional[NodeType] = None
 
     def retrieve_nodes(self) -> List[NodePeer]:
         if self.node_type in [NodeType.DOMAIN, NodeType.ENCLAVE]:

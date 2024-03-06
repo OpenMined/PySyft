@@ -9,7 +9,7 @@ from typing import Optional
 # third party
 from packaging import version
 from pydantic import BaseModel
-from pydantic import root_validator
+from pydantic import model_validator
 
 # relative
 from ...abstract_node import NodeType
@@ -51,16 +51,16 @@ class NodeMetadataUpdate(SyftObject):
     __canonical_name__ = "NodeMetadataUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    name: Optional[str]
-    organization: Optional[str]
-    description: Optional[str]
-    on_board: Optional[bool]
-    id: Optional[UID]  # type: ignore[assignment]
-    verify_key: Optional[SyftVerifyKey]
-    highest_object_version: Optional[int]
-    lowest_object_version: Optional[int]
-    syft_version: Optional[str]
-    admin_email: Optional[str]
+    name: Optional[str] = None
+    organization: Optional[str] = None
+    description: Optional[str] = None
+    on_board: Optional[bool] = None
+    id: Optional[UID] = None  # type: ignore[assignment]
+    verify_key: Optional[SyftVerifyKey] = None
+    highest_object_version: Optional[int] = None
+    lowest_object_version: Optional[int] = None
+    syft_version: Optional[str] = None
+    admin_email: Optional[str] = None
 
 
 @serializable()
@@ -152,8 +152,8 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     name: str
     id: str
     verify_key: str
-    highest_object_version: Optional[int]
-    lowest_object_version: Optional[int]
+    highest_object_version: Optional[int] = None
+    lowest_object_version: Optional[int] = None
     syft_version: str
     node_type: str = NodeType.DOMAIN.value
     organization: str = "OpenMined"
@@ -164,7 +164,8 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     show_warnings: bool
     supported_protocols: List = []
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def add_protocol_versions(cls, values: dict) -> dict:
         if "supported_protocols" not in values:
             data_protocol = get_data_protocol()
