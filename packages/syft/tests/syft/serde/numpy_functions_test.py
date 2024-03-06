@@ -68,7 +68,7 @@ NOT_WORK_YET_ON_NUMPY_1_26_PYTHON_3_12: list[tuple[str, str]] = [
             "np.array([[3, 4, 5, 2], [6, 7, 2, 6]]), 2",
             marks=pytest.mark.xfail(
                 raises=ValueError if not PYTHON_AT_LEAST_3_12 else AssertionError,
-                reason="Value error insinde Syft",
+                reason="Value error ininde Syft",
             ),
         ),
         pytest.param(
@@ -76,7 +76,7 @@ NOT_WORK_YET_ON_NUMPY_1_26_PYTHON_3_12: list[tuple[str, str]] = [
             "np.array([0, 1, 1, 5, 5, 3]), return_counts=True",
             marks=pytest.mark.xfail(
                 raises=(ValueError, AssertionError),
-                reason="Kwargs Can not be properly unpacked",
+                reason="Kwargs can not be properly unpacked",
             ),
         ),
     ]
