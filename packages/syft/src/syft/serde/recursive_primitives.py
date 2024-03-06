@@ -12,8 +12,6 @@ from pathlib import PurePath
 import sys
 from types import MappingProxyType
 from types import UnionType
-
-# import types unsupported on python 3.8
 from typing import Any
 from typing import GenericAlias
 from typing import Optional
