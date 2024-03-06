@@ -43,6 +43,13 @@ def faker():
     return Faker()
 
 
+def pytest_configure(config):
+    cleanup_dirs = [MONGODB_TMP_DIR, SHERLOCK_TMP_DIR]
+    for _dir in cleanup_dirs:
+        if _dir.exists():
+            shutil.rmtree(_dir, ignore_errors=True)
+
+
 def patch_protocol_file(filepath: Path):
     dp = get_data_protocol()
     original_protocol = dp.read_json(dp.file_path)
@@ -66,21 +73,14 @@ def pytest_collection_modifyitems(items):
         item_fixtures = getattr(item, "fixturenames", ())
 
         # group tests so that they run on the same worker
-        if "test_mongo_" in item.nodeid or "mongo_client" in item_fixtures:
+        if "mongo_client" in item_fixtures:
             item.add_marker(pytest.mark.xdist_group(name="mongo"))
 
-        if "redis_client" in item_fixtures:
+        elif "redis_client" in item_fixtures:
             item.add_marker(pytest.mark.xdist_group(name="redis"))
 
         elif "test_sqlite_" in item.nodeid:
             item.add_marker(pytest.mark.xdist_group(name="sqlite"))
-
-
-def pytest_unconfigure(config):
-    purge_dirs = [MONGODB_TMP_DIR, SHERLOCK_TMP_DIR]
-    for _dir in purge_dirs:
-        if _dir.exists():
-            shutil.rmtree(_dir, ignore_errors=True)
 
 
 @pytest.fixture(autouse=True)
