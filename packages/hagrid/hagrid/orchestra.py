@@ -9,6 +9,7 @@ import getpass
 import inspect
 import os
 import subprocess  # nosec
+import sys
 from threading import Thread
 from typing import Any
 from typing import Callable
@@ -598,7 +599,10 @@ class Orchestra:
             elif "No resource found to remove for project" in land_output:
                 print(f" ✅ {snake_name} Container does not exist")
             else:
-                print(f"❌ Unable to remove container: {snake_name} :{land_output}")
+                print(
+                    f"❌ Unable to remove container: {snake_name} :{land_output}",
+                    file=sys.stderr,
+                )
 
     @staticmethod
     def reset(name: str, deployment_type_enum: DeploymentType) -> None:

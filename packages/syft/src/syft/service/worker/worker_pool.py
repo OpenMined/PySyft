@@ -69,14 +69,14 @@ class SyftWorker(SyftObject):
 
     id: UID
     name: str
-    container_id: Optional[str]
+    container_id: Optional[str] = None
     created_at: DateTime = DateTime.now()
-    healthcheck: Optional[WorkerHealth]
+    healthcheck: Optional[WorkerHealth] = None
     status: WorkerStatus
-    image: Optional[SyftWorkerImage]
+    image: Optional[SyftWorkerImage] = None
     worker_pool_name: str
     consumer_state: ConsumerState = ConsumerState.DETACHED
-    job_id: Optional[UID]
+    job_id: Optional[UID] = None
 
     @property
     def logs(self) -> Union[str, SyftError]:
@@ -160,7 +160,7 @@ class WorkerPool(SyftObject):
     ]
 
     name: str
-    image_id: Optional[UID]
+    image_id: Optional[UID] = None
     max_count: int
     worker_list: List[LinkedObject]
     created_at: DateTime = DateTime.now()
@@ -268,8 +268,8 @@ class ContainerSpawnStatus(SyftBaseModel):
     __repr_attrs__ = ["worker_name", "worker", "error"]
 
     worker_name: str
-    worker: Optional[SyftWorker]
-    error: Optional[str]
+    worker: Optional[SyftWorker] = None
+    error: Optional[str] = None
 
 
 def _get_worker_container(

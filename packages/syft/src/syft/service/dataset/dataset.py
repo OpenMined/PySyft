@@ -15,12 +15,13 @@ from IPython.display import HTML
 from IPython.display import display
 import itables
 import pandas as pd
-from pydantic import ValidationError
-from pydantic import root_validator
-from pydantic import validator
+from pydantic import ConfigDict
+from pydantic import field_validator
+from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
+from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable
@@ -62,10 +63,10 @@ class Contributor(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     name: str
-    role: Optional[str]
+    role: Optional[str] = None
     email: str
-    phone: Optional[str]
-    note: Optional[str]
+    phone: Optional[str] = None
+    note: Optional[str] = None
 
     __repr_attrs__ = ["name", "role", "email"]
 
@@ -131,9 +132,9 @@ class Asset(SyftObject):
     contributors: Set[Contributor] = set()
     data_subjects: List[DataSubject] = []
     mock_is_real: bool = False
-    shape: Optional[Tuple]
+    shape: Optional[Tuple] = None
     created_at: DateTime = DateTime.now()
-    uploader: Optional[Contributor]
+    uploader: Optional[Contributor] = None
 
     __repr_attrs__ = ["name", "shape"]
 
@@ -322,40 +323,29 @@ class CreateAsset(SyftObject):
     description: Optional[MarkdownDescription] = None
     contributors: Set[Contributor] = set()
     data_subjects: List[DataSubjectCreate] = []
-    node_uid: Optional[UID]
-    action_id: Optional[UID]
-    data: Optional[Any]
-    mock: Optional[Any]
-    shape: Optional[Tuple]
+    node_uid: Optional[UID] = None
+    action_id: Optional[UID] = None
+    data: Optional[Any] = None
+    mock: Optional[Any] = None
+    shape: Optional[Tuple] = None
     mock_is_real: bool = False
-    created_at: Optional[DateTime]
-    uploader: Optional[Contributor]
+    created_at: Optional[DateTime] = None
+    uploader: Optional[Contributor] = None
 
     __repr_attrs__ = ["name"]
-
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True)
 
     def __init__(self, description: Optional[str] = "", **data: Any) -> None:
         super().__init__(**data, description=MarkdownDescription(text=str(description)))
 
-    @root_validator()
-    def __empty_mock_cannot_be_real(cls, values: dict[str, Any]) -> Dict:
-        """set mock_is_real to False whenever mock is None or empty"""
+    @model_validator(mode="after")
+    def __mock_is_real_for_empty_mock_must_be_false(self) -> Self:
+        if self.mock_is_real and (
+            self.mock is None or _is_action_data_empty(self.mock)
+        ):
+            self.__dict__["mock_is_real"] = False
 
-        if (mock := values.get("mock")) is None or _is_action_data_empty(mock):
-            values["mock_is_real"] = False
-
-        return values
-
-    @validator("mock_is_real")
-    def __mock_is_real_for_empty_mock_must_be_false(
-        cls, v: bool, values: dict[str, Any], **kwargs: Any
-    ) -> bool:
-        if v and ((mock := values.get("mock")) is None or _is_action_data_empty(mock)):
-            raise ValueError("mock_is_real must be False if mock is not provided")
-
-        return v
+        return self
 
     def add_data_subject(self, data_subject: DataSubject) -> None:
         self.data_subjects.append(data_subject)
@@ -397,14 +387,11 @@ class CreateAsset(SyftObject):
         if isinstance(mock_data, SyftError):
             raise SyftException(mock_data)
 
-        current_mock = self.mock
-        self.mock = mock_data
+        if mock_is_real and (mock_data is None or _is_action_data_empty(mock_data)):
+            raise SyftException("`mock_is_real` must be False if mock is empty")
 
-        try:
-            self.mock_is_real = mock_is_real
-        except ValidationError as e:
-            self.mock = current_mock
-            raise e
+        self.mock = mock_data
+        self.mock_is_real = mock_is_real
 
     def no_mock(self) -> None:
         # relative
@@ -460,15 +447,15 @@ class Dataset(SyftObject):
 
     id: UID
     name: str
-    node_uid: Optional[UID]
+    node_uid: Optional[UID] = None
     asset_list: List[Asset] = []
     contributors: Set[Contributor] = set()
-    citation: Optional[str]
-    url: Optional[str]
+    citation: Optional[str] = None
+    url: Optional[str] = None
     description: Optional[MarkdownDescription] = None
-    updated_at: Optional[str]
+    updated_at: Optional[str] = None
     requests: Optional[int] = 0
-    mb_size: Optional[int]
+    mb_size: Optional[float] = None
     created_at: DateTime = DateTime.now()
     uploader: Contributor
 
@@ -635,16 +622,16 @@ class CreateDataset(Dataset):
     __repr_attrs__ = ["name", "url"]
 
     id: Optional[UID] = None  # type: ignore[assignment]
-    created_at: Optional[DateTime]  # type: ignore[assignment]
-    uploader: Optional[Contributor]  # type: ignore[assignment]
+    created_at: Optional[DateTime] = None  # type: ignore[assignment]
+    uploader: Optional[Contributor] = None  # type: ignore[assignment]
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True)
 
     def _check_asset_must_contain_mock(self) -> None:
         _check_asset_must_contain_mock(self.asset_list)
 
-    @validator("asset_list")
+    @field_validator("asset_list")
+    @classmethod
     def __assets_must_contain_mock(
         cls, asset_list: List[CreateAsset]
     ) -> List[CreateAsset]:

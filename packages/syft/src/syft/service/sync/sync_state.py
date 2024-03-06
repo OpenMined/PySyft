@@ -37,7 +37,7 @@ class SyncStateRow(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     object: SyftObject
-    previous_object: Optional[SyftObject]
+    previous_object: Optional[SyftObject] = None
     current_state: str
     previous_state: str
     level: int = 0

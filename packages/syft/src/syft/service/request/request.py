@@ -79,7 +79,7 @@ class Change(SyftObject):
     __canonical_name__ = "Change"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    linked_obj: Optional[LinkedObject]
+    linked_obj: Optional[LinkedObject] = None
 
     def change_object_is_type(self, type_: type) -> bool:
         return self.linked_obj is not None and type_ == self.linked_obj.object_type
@@ -90,7 +90,7 @@ class ChangeStatus(SyftObject):
     __canonical_name__ = "ChangeStatus"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]  # type: ignore[assignment]
+    id: Optional[UID] = None  # type: ignore[assignment]
     change_id: UID
     applied: bool = False
 
@@ -204,7 +204,7 @@ class CreateCustomImageChange(Change):
 
     config: WorkerConfig
     tag: str
-    registry_uid: Optional[UID]
+    registry_uid: Optional[UID] = None
 
     __repr_attrs__ = ["config", "tag"]
 
@@ -283,8 +283,8 @@ class CreateCustomWorkerPoolChange(Change):
 
     pool_name: str
     num_workers: int
-    image_uid: Optional[UID]
-    config: Optional[WorkerConfig]
+    image_uid: Optional[UID] = None
+    config: Optional[WorkerConfig] = None
 
     __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
 
@@ -353,9 +353,9 @@ class Request(SyftObject):
     requesting_user_name: str = ""
     requesting_user_email: Optional[str] = ""
     requesting_user_institution: Optional[str] = ""
-    approving_user_verify_key: Optional[SyftVerifyKey]
+    approving_user_verify_key: Optional[SyftVerifyKey] = None
     request_time: DateTime
-    updated_at: Optional[DateTime]
+    updated_at: Optional[DateTime] = None
     node_uid: UID
     request_hash: str
     changes: List[Change]
@@ -912,7 +912,7 @@ class RequestInfoFilter(SyftObject):
     __canonical_name__ = "RequestInfoFilter"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    name: Optional[str]
+    name: Optional[str] = None
 
 
 @serializable()
@@ -921,7 +921,7 @@ class SubmitRequest(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     changes: List[Change]
-    requesting_user_verify_key: Optional[SyftVerifyKey]
+    requesting_user_verify_key: Optional[SyftVerifyKey] = None
 
 
 def hash_changes(context: TransformContext) -> TransformContext:
@@ -998,11 +998,11 @@ class ObjectMutation(Change):
     __canonical_name__ = "ObjectMutation"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    linked_obj: Optional[LinkedObject]
+    linked_obj: Optional[LinkedObject] = None
     attr_name: str
-    value: Optional[Any]
+    value: Optional[Any] = None
     match_type: bool
-    previous_value: Optional[Any]
+    previous_value: Optional[Any] = None
 
     __repr_attrs__ = ["linked_obj", "attr_name"]
 
@@ -1070,7 +1070,7 @@ class EnumMutation(ObjectMutation):
     __version__ = SYFT_OBJECT_VERSION_1
 
     enum_type: Type[Enum]
-    value: Optional[Enum]
+    value: Optional[Enum] = None
     match_type: bool = True
 
     __repr_attrs__ = ["linked_obj", "attr_name", "value"]
