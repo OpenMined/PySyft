@@ -29,7 +29,7 @@ from ..service.action.action_permissions import ActionObjectPermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -780,7 +780,7 @@ class StoreConfig(SyftBaseObject):
     """
 
     __canonical_name__ = "StoreConfig"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     store_type: Type[DocumentStore]
     client_config: Optional[StoreClientConfig] = None

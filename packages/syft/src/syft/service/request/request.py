@@ -29,16 +29,12 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
-from ...types.transforms import drop
 from ...types.transforms import generate_id
-from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
@@ -1137,40 +1133,6 @@ class EnumMutation(ObjectMutation):
 
 
 @serializable()
-class UserCodeStatusChangeV1(Change):
-    __canonical_name__ = "UserCodeStatusChange"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    value: UserCodeStatus
-    linked_obj: LinkedObject
-    match_type: bool = True
-    __repr_attrs__ = [
-        "link.service_func_name",
-        "link.input_policy_type.__canonical_name__",
-        "link.output_policy_type.__canonical_name__",
-        "link.status.approved",
-    ]
-
-
-@serializable()
-class UserCodeStatusChangeV2(Change):
-    __canonical_name__ = "UserCodeStatusChange"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    value: UserCodeStatus
-    linked_obj: LinkedObject
-    nested_solved: bool = False
-    match_type: bool = True
-    __repr_attrs__ = [
-        "code.service_func_name",
-        "code.input_policy_type.__canonical_name__",
-        "code.output_policy_type.__canonical_name__",
-        "code.worker_pool_name",
-        "code.status.approved",
-    ]
-
-
-@serializable()
 class UserCodeStatusChange(Change):
     __canonical_name__ = "UserCodeStatusChange"
     __version__ = SYFT_OBJECT_VERSION_3
@@ -1368,38 +1330,3 @@ class UserCodeStatusChange(Change):
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
-
-
-@migrate(UserCodeStatusChangeV2, UserCodeStatusChangeV1)
-def downgrade_usercodestatuschange_v2_to_v1() -> List[Callable]:
-    return [
-        drop("nested_solved"),
-    ]
-
-
-@migrate(UserCodeStatusChangeV1, UserCodeStatusChangeV2)
-def upgrade_usercodestatuschange_v1_to_v2() -> List[Callable]:
-    return [
-        make_set_default("nested_solved", True),
-    ]
-
-
-@migrate(UserCodeStatusChange, UserCodeStatusChangeV2)
-def downgrade_usercodestatuschange_v3_to_v2() -> List[Callable]:
-    return [
-        drop("linked_user_code"),
-    ]
-
-
-def user_code_from_code_status(context: TransformContext) -> TransformContext:
-    linked_obj: LinkedObject = context.output["linked_object"]  # type: ignore
-    code_status: UserCodeStatusCollection = linked_obj.resolve
-    context.output["linked_user_code"] = code_status.user_code_link  # type: ignore
-    return context
-
-
-@migrate(UserCodeStatusChangeV2, UserCodeStatusChange)
-def upgrade_usercodestatuschange_v2to_v3() -> List[Callable]:
-    return [
-        user_code_from_code_status,
-    ]

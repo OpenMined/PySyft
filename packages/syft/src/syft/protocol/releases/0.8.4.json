@@ -1,0 +1,242 @@
+{
+  "3": {
+    "object_versions": {
+      "SyftWorkerImage": {
+        "1": {
+          "version": 1,
+          "hash": "2a9585b6a286e24f1a9f3f943d0128730cf853edc549184dc1809d19e1eec54b",
+          "action": "add"
+        }
+      },
+      "ActionDataLink": {
+        "1": {
+          "version": 1,
+          "hash": "10bf94e99637695f1ba283f0b10e70743a4ebcb9ee75aefb1a05e6d6e1d21a71",
+          "action": "add"
+        }
+      },
+      "ObjectNotReady": {
+        "1": {
+          "version": 1,
+          "hash": "88207988639b11eaca686b6e079616d9caecc3dbc2a8112258e0f39ee5c3e113",
+          "action": "add"
+        }
+      },
+      "JobItem": {
+        "3": {
+          "version": 3,
+          "hash": "5b93a59e28574691339d22826d5650969336a2e930b93d6b3fe6d5409ca0cfc4",
+          "action": "add"
+        }
+      },
+      "SeaweedSecureFilePathLocation": {
+        "2": {
+          "version": 2,
+          "hash": "5fd63fed2a4efba8c2b6c7a7b5e9b5939181781c331230896aa130b6fd558739",
+          "action": "add"
+        }
+      },
+      "AzureSecureFilePathLocation": {
+        "1": {
+          "version": 1,
+          "hash": "1bb15f3f9d7082779f1c9f58de94011487924cb8a8c9c2ec18fd7c161c27fd0e",
+          "action": "add"
+        }
+      },
+      "RemoteConfig": {
+        "1": {
+          "version": 1,
+          "hash": "ad7bc4780a8ad52e14ce68601852c93d2fe07bda489809cad7cae786d2461754",
+          "action": "add"
+        }
+      },
+      "AzureRemoteConfig": {
+        "1": {
+          "version": 1,
+          "hash": "c05c6caa27db4e385c642536d4b0ecabc0c71e91220d2e6ce21a2761ca68a673",
+          "action": "add"
+        }
+      },
+      "BlobRetrievalByURL": {
+        "2": {
+          "version": 2,
+          "hash": "8059ee03016c4d74e408dad9529e877f91829672e0cc42d8cfff9c8e14058adc",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "0b664100ea08413ca4ef04665ca910c2cf9535539617ea4ba33687d05cdfe747",
+          "action": "add"
+        }
+      },
+      "QueueItem": {
+        "3": {
+          "version": 3,
+          "hash": "3495f406d2c97050ce86be80c230f49b6b846c63b9a9230cbd6631952f2bad0f",
+          "action": "add"
+        }
+      },
+      "ActionQueueItem": {
+        "2": {
+          "version": 2,
+          "hash": "6413ed01e949cac169299a43ce40651f9bf8053e408b6942853f8afa8a693b3d",
+          "action": "add"
+        }
+      },
+      "ZMQClientConfig": {
+        "2": {
+          "version": 2,
+          "hash": "0f9bc88d56cd6eed6fc75459d1f914aed840c66e1195b9e41cc501b488fef2ed",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "91ce5953cced58e12c576aa5174d5ca0c91981b01cf42edd5283d347baa3390b",
+          "action": "add"
+        }
+      },
+      "SyftWorker": {
+        "1": {
+          "version": 1,
+          "hash": "0d5b367162f3ce55ab090cc1b49bd30e50d4eb144e8431eadc679bd0e743aa70",
+          "action": "add"
+        }
+      },
+      "WorkerPool": {
+        "1": {
+          "version": 1,
+          "hash": "250699eb4c452fc427995353d5c5ad6245fb3e9fdac8814f8348784816a0733b",
+          "action": "add"
+        }
+      },
+      "SyftImageRegistry": {
+        "1": {
+          "version": 1,
+          "hash": "dc83910c91947e3d9eaa3e6f8592237448f0408668c7cca80450b5fcd54722e1",
+          "action": "add"
+        }
+      },
+      "UserCode": {
+        "3": {
+          "version": 3,
+          "hash": "90fcae0f556f375ba1e91d2e345f57241660695c6e2b84c8e311df89d09e6c66",
+          "action": "add"
+        }
+      },
+      "SubmitUserCode": {
+        "3": {
+          "version": 3,
+          "hash": "a29160c16d2e2620800d42cdcd9f3637d063a570c477a5d05217a2e64b4bb396",
+          "action": "add"
+        }
+      },
+      "CreateCustomImageChange": {
+        "1": {
+          "version": 1,
+          "hash": "bc09dca7995938f3b3a2bd9c8b3c2feffc8484df466144a425cb69cadb2ab635",
+          "action": "add"
+        }
+      },
+      "CreateCustomWorkerPoolChange": {
+        "1": {
+          "version": 1,
+          "hash": "86894f8ccc037de61f44f9698fd113ba02c3cf3870a3048c00a46e15dcd1941c",
+          "action": "add"
+        }
+      },
+      "JobInfo": {
+        "1": {
+          "version": 1,
+          "hash": "cf26eeac3d9254dfa439917493b816341f8a379a77d182bbecba3b7ed2c1d00a",
+          "action": "add"
+        }
+      },
+      "User": {
+        "1": {
+          "version": 1,
+          "hash": "078636e64f737e60245b39cf348d30fb006531e80c12b70aa7cf98254e1bb37a",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "ded970c92f202716ed33a2117cf541789f35fad66bd4b1db39da5026b1d7d0e7",
+          "action": "add"
+        }
+      },
+      "UserUpdate": {
+        "1": {
+          "version": 1,
+          "hash": "839dd90aeb611e1dc471c8fd6daf230e913465c0625c6a297079cb7f0a271195",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "32cba8fbd786c575f92e26c31384d282e68e3ebfe5c4b0a0e793820b1228d246",
+          "action": "add"
+        }
+      },
+      "UserCreate": {
+        "1": {
+          "version": 1,
+          "hash": "dab78b63544ae91c09f9843c323cb237c0a6fcfeb71c1acf5f738e2fcf5c277f",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "2540188c5aaea866914dccff459df6e0f4727108a503414bb1567ff6297d4646",
+          "action": "add"
+        }
+      },
+      "UserView": {
+        "1": {
+          "version": 1,
+          "hash": "63289383fe7e7584652f242a4362ce6e2f0ade52f6416ab6149b326a506b0675",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "e410de583bb15bc5af57acef7be55ea5fc56b5b0fc169daa3869f4203c4d7473",
+          "action": "add"
+        }
+      },
+      "BlobFile": {
+        "2": {
+          "version": 2,
+          "hash": "f2b29d28fe81a04bf5e946c819010283a9f98a97d50519358bead773865a2e09",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "8f1710c754bb3b39f546b97fd69c4826291398b247976bbc41fa873af431bca9",
+          "action": "add"
+        }
+      },
+      "SyftObjectRetrieval": {
+        "1": {
+          "version": 1,
+          "hash": "7ccc62d5b434d2d438b3df661b4d753b0c7c8d593d451d8b86d364da83998c89",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "952958e9afae007bef3cb89aa15be95dddc4c310e3a8ce4191576f90ac6fcbc8",
+          "action": "add"
+        }
+      },
+      "ActionFileData": {
+        "1": {
+          "version": 1,
+          "hash": "1f32d94b75b0a6b4e86cec93d94aa905738219e3e7e75f51dd335ee832a6ed3e",
+          "action": "remove"
+        }
+      },
+      "SeaweedFSBlobDeposit": {
+        "2": {
+          "version": 2,
+          "hash": "07d84a95324d95d9c868cd7d1c33c908f77aa468671d76c144586aab672bcbb5",
+          "action": "add"
+        }
+      }
+    }
+  }
+}
