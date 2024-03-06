@@ -11,6 +11,7 @@ import pathlib
 from pathlib import PurePath
 import sys
 from types import MappingProxyType
+from types import UnionType
 
 # import types unsupported on python 3.8
 from typing import Any
@@ -359,6 +360,34 @@ def deserialize_generic_alias(type_blob: bytes) -> type:
         raise e
 
 
+def serialize_union_type(serialized_type: UnionType) -> bytes:
+    # relative
+    from ..util.util import full_name_with_name
+    from .serialize import _serialize
+
+    fqn = full_name_with_name(klass=serialized_type)
+    module_parts = fqn.split(".")
+
+    obj_dict = {
+        "path": ".".join(module_parts),
+        "__args__": serialized_type.__args__,
+    }
+    return _serialize(obj_dict, to_bytes=True)
+
+
+def deserialize_union_type(type_blob: bytes) -> type:
+    # relative
+    from .deserialize import _deserialize
+
+    obj_dict = _deserialize(type_blob, from_bytes=True)
+
+    try:
+        args = obj_dict["__args__"]
+        return functools.reduce(lambda x, y: x | y, args)
+    except Exception as e:
+        raise e
+
+
 # 🟡 TODO 5: add tests and all typing options for signatures
 def recursive_serde_register_type(t: type, serialize_attrs: list | None = None) -> None:
     if (isinstance(t, type) and issubclass(t, _GenericAlias)) or issubclass(
@@ -401,3 +430,9 @@ recursive_serde_register_type(GenericAlias)
 
 recursive_serde_register_type(Any)
 recursive_serde_register_type(EnumMeta)
+
+recursive_serde_register(
+    UnionType,
+    serialize=serialize_union_type,
+    deserialize=deserialize_union_type,
+)
