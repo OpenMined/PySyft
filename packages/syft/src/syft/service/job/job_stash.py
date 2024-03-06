@@ -1,13 +1,9 @@
 # stdlib
+from collections.abc import Callable
 from datetime import datetime
 from datetime import timedelta
 from enum import Enum
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
 
 # third party
 from pydantic import field_validator
@@ -70,15 +66,15 @@ class JobV1(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any] = None
+    result: Any | None = None
     resolved: bool = False
     status: JobStatus = JobStatus.CREATED
-    log_id: Optional[UID] = None
-    parent_job_id: Optional[UID] = None
-    n_iters: Optional[int] = 0
-    current_iter: Optional[int] = None
-    creation_time: Optional[str] = None
-    action: Optional[Action] = None
+    log_id: UID | None = None
+    parent_job_id: UID | None = None
+    n_iters: int | None = 0
+    current_iter: int | None = None
+    creation_time: str | None = None
+    action: Action | None = None
 
 
 @serializable()
@@ -88,16 +84,16 @@ class JobV2(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any] = None
+    result: Any | None = None
     resolved: bool = False
     status: JobStatus = JobStatus.CREATED
-    log_id: Optional[UID] = None
-    parent_job_id: Optional[UID] = None
-    n_iters: Optional[int] = 0
-    current_iter: Optional[int] = None
-    creation_time: Optional[str] = None
-    action: Optional[Action] = None
-    job_pid: Optional[int] = None
+    log_id: UID | None = None
+    parent_job_id: UID | None = None
+    n_iters: int | None = 0
+    current_iter: int | None = None
+    creation_time: str | None = None
+    action: Action | None = None
+    job_pid: int | None = None
 
 
 @serializable()
@@ -107,19 +103,19 @@ class Job(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any] = None
+    result: Any | None = None
     resolved: bool = False
     status: JobStatus = JobStatus.CREATED
-    log_id: Optional[UID] = None
-    parent_job_id: Optional[UID] = None
-    n_iters: Optional[int] = 0
-    current_iter: Optional[int] = None
-    creation_time: Optional[str] = None
-    action: Optional[Action] = None
-    job_pid: Optional[int] = None
-    job_worker_id: Optional[UID] = None
-    updated_at: Optional[DateTime] = None
-    user_code_id: Optional[UID] = None
+    log_id: UID | None = None
+    parent_job_id: UID | None = None
+    n_iters: int | None = 0
+    current_iter: int | None = None
+    creation_time: str | None = None
+    action: Action | None = None
+    job_pid: int | None = None
+    job_worker_id: UID | None = None
+    updated_at: DateTime | None = None
+    user_code_id: UID | None = None
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
@@ -154,7 +150,7 @@ class Job(SyftObject):
             return self.action.job_display_name
 
     @property
-    def time_remaining_string(self) -> Optional[str]:
+    def time_remaining_string(self) -> str | None:
         # update state
         self.fetch()
         if (
@@ -171,7 +167,7 @@ class Job(SyftObject):
         return None
 
     @property
-    def worker(self) -> Union[SyftWorker, SyftError]:
+    def worker(self) -> SyftWorker | SyftError:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -183,7 +179,7 @@ class Job(SyftObject):
         return api.services.worker.get(self.job_worker_id)
 
     @property
-    def eta_string(self) -> Optional[str]:
+    def eta_string(self) -> str | None:
         if (
             self.current_iter is None
             or self.current_iter == 0
@@ -223,7 +219,7 @@ class Job(SyftObject):
         return f"[{time_passed_str}<{time_remaining_str}]\n{iter_duration_str}"
 
     @property
-    def progress(self) -> Optional[str]:
+    def progress(self) -> str | None:
         if self.status in [JobStatus.PROCESSING, JobStatus.COMPLETED]:
             if self.current_iter is None:
                 return ""
@@ -289,7 +285,7 @@ class Job(SyftObject):
             )
         return None
 
-    def kill(self) -> Optional[SyftError]:
+    def kill(self) -> SyftError | None:
         if self.job_pid is not None:
             api = APIRegistry.api_for(
                 node_uid=self.syft_node_location,
@@ -339,7 +335,7 @@ class Job(SyftObject):
         self.current_iter = job.current_iter
 
     @property
-    def subjobs(self) -> Union[list[QueueItem], SyftError]:
+    def subjobs(self) -> list[QueueItem] | SyftError:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -351,7 +347,7 @@ class Job(SyftObject):
         return api.services.job.get_subjobs(self.id)
 
     @property
-    def owner(self) -> Union[UserView, SyftError]:
+    def owner(self) -> UserView | SyftError:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -362,7 +358,7 @@ class Job(SyftObject):
             )
         return api.services.user.get_current_user(self.id)
 
-    def _get_log_objs(self) -> Union[SyftObject, SyftError]:
+    def _get_log_objs(self) -> SyftObject | SyftError:
         api = APIRegistry.api_for(
             node_uid=self.node_uid,
             user_verify_key=self.syft_client_verify_key,
@@ -373,7 +369,7 @@ class Job(SyftObject):
 
     def logs(
         self, stdout: bool = True, stderr: bool = True, _print: bool = True
-    ) -> Optional[str]:
+    ) -> str | None:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -411,7 +407,7 @@ class Job(SyftObject):
     # def __repr__(self) -> str:
     #     return f"<Job: {self.id}>: {self.status}"
 
-    def _coll_repr_(self) -> Dict[str, Any]:
+    def _coll_repr_(self) -> dict[str, Any]:
         logs = self.logs(_print=False, stderr=False)
         if logs is not None:
             log_lines = logs.split("\n")
@@ -462,7 +458,7 @@ class Job(SyftObject):
     """
         return as_markdown_code(md)
 
-    def wait(self, job_only: bool = False) -> Union[Any, SyftNotReady]:
+    def wait(self, job_only: bool = False) -> Any | SyftNotReady:
         # stdlib
         from time import sleep
 
@@ -502,7 +498,7 @@ class Job(SyftObject):
         return self.resolve  # type: ignore[unreachable]
 
     @property
-    def resolve(self) -> Union[Any, SyftNotReady]:
+    def resolve(self) -> Any | SyftNotReady:
         if not self.resolved:
             self.fetch()
 
@@ -510,7 +506,7 @@ class Job(SyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
-    def get_sync_dependencies(self, **kwargs: Dict) -> List[UID]:
+    def get_sync_dependencies(self, **kwargs: dict) -> list[UID]:
         dependencies = []
         if self.result is not None:
             dependencies.append(self.result.id.id)
@@ -551,12 +547,12 @@ class JobInfoV1(SyftObject):
     includes_result: bool
     # TODO add logs (error reporting PRD)
 
-    resolved: Optional[bool] = None
-    status: Optional[JobStatus] = None
-    n_iters: Optional[int] = None
-    current_iter: Optional[int] = None
-    creation_time: Optional[str] = None
-    result: Optional[Any] = None
+    resolved: bool | None = None
+    status: JobStatus | None = None
+    n_iters: int | None = None
+    current_iter: int | None = None
+    creation_time: str | None = None
+    result: Any | None = None
 
 
 @serializable()
@@ -583,13 +579,13 @@ class JobInfo(SyftObject):
     includes_result: bool
     # TODO add logs (error reporting PRD)
 
-    resolved: Optional[bool] = None
-    status: Optional[JobStatus] = None
-    n_iters: Optional[int] = None
-    current_iter: Optional[int] = None
-    creation_time: Optional[str] = None
+    resolved: bool | None = None
+    status: JobStatus | None = None
+    n_iters: int | None = None
+    current_iter: int | None = None
+    creation_time: str | None = None
 
-    result: Optional[ActionObject] = None
+    result: ActionObject | None = None
 
     def _repr_html_(self) -> str:
         metadata_str = ""
@@ -683,8 +679,8 @@ class JobStash(BaseStash):
         self,
         credentials: SyftVerifyKey,
         item: Job,
-        add_permissions: Optional[List[ActionObjectPermission]] = None,
-    ) -> Result[Optional[Job], str]:
+        add_permissions: list[ActionObjectPermission] | None = None,
+    ) -> Result[Job | None, str]:
         valid = self.check_type(item, self.object_type)
         if valid.is_err():
             return SyftError(message=valid.err())
@@ -694,7 +690,7 @@ class JobStash(BaseStash):
         self,
         credentials: SyftVerifyKey,
         item: Job,
-        add_permissions: Optional[List[ActionObjectPermission]] = None,
+        add_permissions: list[ActionObjectPermission] | None = None,
     ) -> Result[Job, str]:
         # 🟡 TODO 36: Needs distributed lock
         if not item.resolved:
@@ -708,14 +704,14 @@ class JobStash(BaseStash):
 
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Optional[Job], str]:
+    ) -> Result[Job | None, str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         item = self.query_one(credentials=credentials, qks=qks)
         return item
 
     def get_by_parent_id(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Optional[Job], str]:
+    ) -> Result[Job | None, str]:
         qks = QueryKeys(
             qks=[PartitionKey(key="parent_job_id", type_=UID).with_obj(uid)]
         )
@@ -743,7 +739,7 @@ class JobStash(BaseStash):
 
     def get_by_worker(
         self, credentials: SyftVerifyKey, worker_id: str
-    ) -> Result[List[Job], str]:
+    ) -> Result[list[Job], str]:
         qks = QueryKeys(
             qks=[PartitionKey(key="job_worker_id", type_=str).with_obj(worker_id)]
         )
@@ -751,7 +747,7 @@ class JobStash(BaseStash):
 
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
-    ) -> Result[List[Job], str]:
+    ) -> Result[list[Job], str]:
         qks = QueryKeys(
             qks=[PartitionKey(key="user_code_id", type_=UID).with_obj(user_code_id)]
         )

@@ -1,8 +1,6 @@
 # stdlib
+from collections.abc import Callable
 from enum import Enum
-from typing import Callable
-from typing import List
-from typing import Optional
 
 # relative
 from ...client.api import APIRegistry
@@ -45,8 +43,8 @@ class ReplyNotification(SyftObject):
 
     text: str
     target_msg: UID
-    id: Optional[UID] = None  # type: ignore[assignment]
-    from_user_verify_key: Optional[SyftVerifyKey] = None
+    id: UID | None = None  # type: ignore[assignment]
+    from_user_verify_key: SyftVerifyKey | None = None
 
 
 @serializable()
@@ -60,8 +58,8 @@ class Notification(SyftObject):
     to_user_verify_key: SyftVerifyKey
     created_at: DateTime
     status: NotificationStatus = NotificationStatus.UNREAD
-    linked_obj: Optional[LinkedObject] = None
-    replies: Optional[List[ReplyNotification]] = []
+    linked_obj: LinkedObject | None = None
+    replies: list[ReplyNotification] | None = []
 
     __attr_searchable__ = [
         "from_user_verify_key",
@@ -87,14 +85,14 @@ class Notification(SyftObject):
         """
 
     @property
-    def link(self) -> Optional[SyftObject]:
+    def link(self) -> SyftObject | None:
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
 
     def _coll_repr_(self) -> dict[str, str]:
         linked_obj_name: str = ""
-        linked_obj_uid: Optional[UID] = None
+        linked_obj_uid: UID | None = None
         if self.linked_obj is not None:
             linked_obj_name = self.linked_obj.object_type.__canonical_name__
             linked_obj_uid = self.linked_obj.object_uid
@@ -140,10 +138,10 @@ class CreateNotification(Notification):
     __canonical_name__ = "CreateNotification"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID] = None  # type: ignore[assignment]
-    node_uid: Optional[UID] = None  # type: ignore[assignment]
-    from_user_verify_key: Optional[SyftVerifyKey] = None  # type: ignore[assignment]
-    created_at: Optional[DateTime] = None  # type: ignore[assignment]
+    id: UID | None = None  # type: ignore[assignment]
+    node_uid: UID | None = None  # type: ignore[assignment]
+    from_user_verify_key: SyftVerifyKey | None = None  # type: ignore[assignment]
+    created_at: DateTime | None = None  # type: ignore[assignment]
 
 
 def add_msg_creation_time(context: TransformContext) -> TransformContext:

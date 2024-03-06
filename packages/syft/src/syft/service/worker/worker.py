@@ -1,8 +1,6 @@
 # stdlib
+from collections.abc import Callable
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
 
 # relative
 from ...serde.serializable import serializable
@@ -43,7 +41,7 @@ class DockerWorker(SyftObject):
     container_id: str
     created_at: DateTime = DateTime.now()
 
-    def _coll_repr_(self) -> Dict[str, Any]:
+    def _coll_repr_(self) -> dict[str, Any]:
         return {
             "container_name": self.container_name,
             "container_id": self.container_id,
@@ -52,10 +50,10 @@ class DockerWorker(SyftObject):
 
 
 @migrate(DockerWorker, DockerWorkerV1)
-def downgrade_job_v2_to_v1() -> List[Callable]:
+def downgrade_job_v2_to_v1() -> list[Callable]:
     return [drop(["container_name"])]
 
 
 @migrate(DockerWorkerV1, DockerWorker)
-def upgrade_job_v2_to_v3() -> List[Callable]:
+def upgrade_job_v2_to_v3() -> list[Callable]:
     return [make_set_default("job_consumer_id", None)]

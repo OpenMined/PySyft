@@ -1,16 +1,11 @@
 # stdlib
+from collections.abc import Callable
+from collections.abc import Generator
 from io import BytesIO
 import math
 from queue import Queue
 import threading
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import Generator
-from typing import List
-from typing import Optional
-from typing import Type
-from typing import Union
 
 # third party
 import boto3
@@ -55,7 +50,7 @@ class SeaweedFSBlobDepositV1(BlobDeposit):
     __canonical_name__ = "SeaweedFSBlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    urls: List[GridURL]
+    urls: list[GridURL]
 
 
 @serializable()
@@ -63,10 +58,10 @@ class SeaweedFSBlobDeposit(BlobDeposit):
     __canonical_name__ = "SeaweedFSBlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    urls: List[GridURL]
+    urls: list[GridURL]
     size: int
 
-    def write(self, data: BytesIO) -> Union[SyftSuccess, SyftError]:
+    def write(self, data: BytesIO) -> SyftSuccess | SyftError:
         # relative
         from ...client.api import APIRegistry
 
@@ -192,12 +187,12 @@ def upgrade_seaweedblobdeposit_v1_to_v2() -> list[Callable]:
 class SeaweedFSClientConfig(BlobStorageClientConfig):
     host: str
     port: int
-    mount_port: Optional[int] = None
+    mount_port: int | None = None
     access_key: str
     secret_key: str
     region: str
     default_bucket_name: str = "defaultbucket"
-    remote_profiles: Dict[str, AzureRemoteProfile] = {}
+    remote_profiles: dict[str, AzureRemoteProfile] = {}
 
     @property
     def endpoint_url(self) -> str:
@@ -255,8 +250,8 @@ class SeaweedFSConnection(BlobStorageConnection):
     def read(
         self,
         fp: SecureFilePathLocation,
-        type_: Optional[Type],
-        bucket_name: Optional[str] = None,
+        type_: type | None,
+        bucket_name: str | None = None,
     ) -> BlobRetrieval:
         if bucket_name is None:
             bucket_name = self.default_bucket_name
@@ -266,7 +261,7 @@ class SeaweedFSConnection(BlobStorageConnection):
 
     def allocate(
         self, obj: CreateBlobStorageEntry
-    ) -> Union[SecureFilePathLocation, SyftError]:
+    ) -> SecureFilePathLocation | SyftError:
         try:
             file_name = obj.file_name
             result = self.client.create_multipart_upload(
@@ -305,8 +300,8 @@ class SeaweedFSConnection(BlobStorageConnection):
     def complete_multipart_upload(
         self,
         blob_entry: BlobStorageEntry,
-        etags: List,
-    ) -> Union[SyftError, SyftSuccess]:
+        etags: list,
+    ) -> SyftError | SyftSuccess:
         try:
             self.client.complete_multipart_upload(
                 Bucket=self.default_bucket_name,
@@ -321,7 +316,7 @@ class SeaweedFSConnection(BlobStorageConnection):
     def delete(
         self,
         fp: SecureFilePathLocation,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         try:
             self.client.delete_object(Bucket=self.default_bucket_name, Key=fp.path)
             return SyftSuccess(message="Successfully deleted file.")
@@ -331,5 +326,5 @@ class SeaweedFSConnection(BlobStorageConnection):
 
 @serializable()
 class SeaweedFSConfig(BlobStorageConfig):
-    client_type: Type[BlobStorageClient] = SeaweedFSClient
+    client_type: type[BlobStorageClient] = SeaweedFSClient
     client_config: SeaweedFSClientConfig

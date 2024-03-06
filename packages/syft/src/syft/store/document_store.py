@@ -2,17 +2,10 @@
 from __future__ import annotations
 
 # stdlib
-import sys
+from collections.abc import Callable
 import types
 import typing
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Type
-from typing import Union
 
 # third party
 from pydantic import BaseModel
@@ -57,15 +50,8 @@ def first_or_none(result: Any) -> Ok:
     return Ok(None)
 
 
-if sys.version_info >= (3, 9):
-
-    def is_generic_alias(t: type) -> bool:
-        return isinstance(t, (types.GenericAlias, typing._GenericAlias))
-
-else:
-
-    def is_generic_alias(t: type):
-        return isinstance(t, typing._GenericAlias)
+def is_generic_alias(t: type) -> bool:
+    return isinstance(t, types.GenericAlias | typing._GenericAlias)
 
 
 class StoreClientConfig(BaseModel):
@@ -77,7 +63,7 @@ class StoreClientConfig(BaseModel):
 @serializable()
 class PartitionKey(BaseModel):
     key: str
-    type_: Union[type, object]
+    type_: type | object
 
     def __eq__(self, other: Any) -> bool:
         return (
@@ -89,12 +75,12 @@ class PartitionKey(BaseModel):
     def with_obj(self, obj: Any) -> QueryKey:
         return QueryKey.from_obj(partition_key=self, obj=obj)
 
-    def extract_list(self, obj: Any) -> List:
+    def extract_list(self, obj: Any) -> list:
         # not a list and matches the internal list type of the _GenericAlias
         if not isinstance(obj, list):
             if not isinstance(obj, typing.get_args(self.type_)):
                 obj = getattr(obj, self.key)
-                if isinstance(obj, (types.FunctionType, types.MethodType)):
+                if isinstance(obj, types.FunctionType | types.MethodType):
                     obj = obj()
 
             if not isinstance(obj, list) and isinstance(
@@ -114,12 +100,12 @@ class PartitionKey(BaseModel):
 
 @serializable()
 class PartitionKeys(BaseModel):
-    pks: Union[PartitionKey, Tuple[PartitionKey, ...], List[PartitionKey]]
+    pks: PartitionKey | tuple[PartitionKey, ...] | list[PartitionKey]
 
     @property
-    def all(self) -> Union[tuple[PartitionKey, ...], list[PartitionKey]]:
+    def all(self) -> tuple[PartitionKey, ...] | list[PartitionKey]:
         # make sure we always return a list even if there's a single value
-        return self.pks if isinstance(self.pks, (tuple, list)) else [self.pks]
+        return self.pks if isinstance(self.pks, tuple | list) else [self.pks]
 
     def with_obj(self, obj: Any) -> QueryKeys:
         return QueryKeys.from_obj(partition_keys=self, obj=obj)
@@ -131,7 +117,7 @@ class PartitionKeys(BaseModel):
         return PartitionKeys(pks=list(self.all) + [pk])
 
     @staticmethod
-    def from_dict(cks_dict: Dict[str, type]) -> PartitionKeys:
+    def from_dict(cks_dict: dict[str, type]) -> PartitionKeys:
         pks = []
         for k, t in cks_dict.items():
             pks.append(PartitionKey(key=k, type_=t))
@@ -171,7 +157,7 @@ class QueryKey(PartitionKey):
                 # we can't use properties because we don't seem to be able to get the
                 # return types
                 # TODO: fix the mypy issue
-                if isinstance(pk_value, (types.FunctionType, types.MethodType)):  # type: ignore[unreachable]
+                if isinstance(pk_value, types.FunctionType | types.MethodType):  # type: ignore[unreachable]
                     pk_value = pk_value()  # type: ignore[unreachable]
 
             if pk_value and not isinstance(pk_value, pk_type):
@@ -200,8 +186,8 @@ class PartitionKeysWithUID(PartitionKeys):
     uid_pk: PartitionKey
 
     @property
-    def all(self) -> Union[tuple[PartitionKey, ...], list[PartitionKey]]:
-        all_keys = list(self.pks) if isinstance(self.pks, (tuple, list)) else [self.pks]
+    def all(self) -> tuple[PartitionKey, ...] | list[PartitionKey]:
+        all_keys = list(self.pks) if isinstance(self.pks, tuple | list) else [self.pks]
         if self.uid_pk not in all_keys:
             all_keys.insert(0, self.uid_pk)
         return all_keys
@@ -209,12 +195,12 @@ class PartitionKeysWithUID(PartitionKeys):
 
 @serializable()
 class QueryKeys(SyftBaseModel):
-    qks: Union[QueryKey, Tuple[QueryKey, ...], List[QueryKey]]
+    qks: QueryKey | tuple[QueryKey, ...] | list[QueryKey]
 
     @property
-    def all(self) -> Union[tuple[QueryKey, ...], list[QueryKey]]:
+    def all(self) -> tuple[QueryKey, ...] | list[QueryKey]:
         # make sure we always return a list even if there's a single value
-        return self.qks if isinstance(self.qks, (tuple, list)) else [self.qks]
+        return self.qks if isinstance(self.qks, tuple | list) else [self.qks]
 
     @staticmethod
     def from_obj(partition_keys: PartitionKeys, obj: SyftObject) -> QueryKeys:
@@ -226,7 +212,7 @@ class QueryKeys(SyftBaseModel):
             # object has a method for getting these types
             # we can't use properties because we don't seem to be able to get the
             # return types
-            if isinstance(pk_value, (types.FunctionType, types.MethodType)):
+            if isinstance(pk_value, types.FunctionType | types.MethodType):
                 pk_value = pk_value()
             if partition_key.type_list:
                 pk_value = partition_key.extract_list(obj)
@@ -240,7 +226,7 @@ class QueryKeys(SyftBaseModel):
         return QueryKeys(qks=qks)
 
     @staticmethod
-    def from_tuple(partition_keys: PartitionKeys, args: Tuple) -> QueryKeys:
+    def from_tuple(partition_keys: PartitionKeys, args: tuple) -> QueryKeys:
         qks = []
         for partition_key, pk_value in zip(partition_keys.all, args):
             pk_key = partition_key.key
@@ -254,7 +240,7 @@ class QueryKeys(SyftBaseModel):
         return QueryKeys(qks=qks)
 
     @staticmethod
-    def from_dict(qks_dict: Dict[str, Any]) -> QueryKeys:
+    def from_dict(qks_dict: dict[str, Any]) -> QueryKeys:
         qks = []
         for k, v in qks_dict.items():
             qks.append(QueryKey(key=k, type_=type(v), value=v))
@@ -317,7 +303,7 @@ class StorePartition:
 
     def __init__(
         self,
-        root_verify_key: Optional[SyftVerifyKey],
+        root_verify_key: SyftVerifyKey | None,
         settings: PartitionSettings,
         store_config: StoreConfig,
     ) -> None:
@@ -353,9 +339,7 @@ class StorePartition:
         return QueryKeys(qks=[self.store_query_key(obj) for obj in objs])
 
     # Thread-safe methods
-    def _thread_safe_cbk(
-        self, cbk: Callable, *args: Any, **kwargs: Any
-    ) -> Union[Any, Err]:
+    def _thread_safe_cbk(self, cbk: Callable, *args: Any, **kwargs: Any) -> Any | Err:
         locked = self.lock.acquire(blocking=True)
         if not locked:
             print("FAILED TO LOCK")
@@ -373,7 +357,7 @@ class StorePartition:
         self,
         credentials: SyftVerifyKey,
         obj: SyftObject,
-        add_permissions: Optional[List[ActionObjectPermission]] = None,
+        add_permissions: list[ActionObjectPermission] | None = None,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         return self._thread_safe_cbk(
@@ -400,8 +384,8 @@ class StorePartition:
         credentials: SyftVerifyKey,
         index_qks: QueryKeys,
         search_qks: QueryKeys,
-        order_by: Optional[PartitionKey] = None,
-    ) -> Result[List[SyftObject], str]:
+        order_by: PartitionKey | None = None,
+    ) -> Result[list[SyftObject], str]:
         return self._thread_safe_cbk(
             self._find_index_or_search_keys,
             credentials,
@@ -440,8 +424,8 @@ class StorePartition:
         self,
         credentials: SyftVerifyKey,
         qks: QueryKeys,
-        order_by: Optional[PartitionKey] = None,
-    ) -> Result[List[SyftObject], str]:
+        order_by: PartitionKey | None = None,
+    ) -> Result[list[SyftObject], str]:
         return self._thread_safe_cbk(
             self._get_all_from_store, credentials, qks, order_by
         )
@@ -456,16 +440,16 @@ class StorePartition:
     def all(
         self,
         credentials: SyftVerifyKey,
-        order_by: Optional[PartitionKey] = None,
-        has_permission: Optional[bool] = False,
-    ) -> Result[List[BaseStash.object_type], str]:
+        order_by: PartitionKey | None = None,
+        has_permission: bool | None = False,
+    ) -> Result[list[BaseStash.object_type], str]:
         return self._thread_safe_cbk(self._all, credentials, order_by, has_permission)
 
     def migrate_data(
         self,
         to_klass: SyftObject,
         context: AuthedServiceContext,
-        has_permission: Optional[bool] = False,
+        has_permission: bool | None = False,
     ) -> Result[bool, str]:
         return self._thread_safe_cbk(
             self._migrate_data, to_klass, context, has_permission
@@ -480,7 +464,7 @@ class StorePartition:
         self,
         credentials: SyftVerifyKey,
         obj: SyftObject,
-        add_permissions: Optional[List[ActionObjectPermission]] = None,
+        add_permissions: list[ActionObjectPermission] | None = None,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         raise NotImplementedError
@@ -499,8 +483,8 @@ class StorePartition:
         self,
         credentials: SyftVerifyKey,
         qks: QueryKeys,
-        order_by: Optional[PartitionKey] = None,
-    ) -> Result[List[SyftObject], str]:
+        order_by: PartitionKey | None = None,
+    ) -> Result[list[SyftObject], str]:
         raise NotImplementedError
 
     def _delete(
@@ -511,15 +495,15 @@ class StorePartition:
     def _all(
         self,
         credentials: SyftVerifyKey,
-        order_by: Optional[PartitionKey] = None,
-        has_permission: Optional[bool] = False,
-    ) -> Result[List[BaseStash.object_type], str]:
+        order_by: PartitionKey | None = None,
+        has_permission: bool | None = False,
+    ) -> Result[list[BaseStash.object_type], str]:
         raise NotImplementedError
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
         raise NotImplementedError
 
-    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+    def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
         raise NotImplementedError
 
     def remove_permission(self, permission: ActionObjectPermission) -> None:
@@ -547,11 +531,11 @@ class DocumentStore:
             Store specific configuration.
     """
 
-    partitions: Dict[str, StorePartition]
-    partition_type: Type[StorePartition]
+    partitions: dict[str, StorePartition]
+    partition_type: type[StorePartition]
 
     def __init__(
-        self, root_verify_key: Optional[SyftVerifyKey], store_config: StoreConfig
+        self, root_verify_key: SyftVerifyKey | None, store_config: StoreConfig
     ) -> None:
         if store_config is None:
             raise Exception("must have store config")
@@ -571,7 +555,7 @@ class DocumentStore:
 
 @instrument
 class BaseStash:
-    object_type: Type[SyftObject]
+    object_type: type[SyftObject]
     settings: PartitionSettings
     partition: StorePartition
 
@@ -589,12 +573,12 @@ class BaseStash:
     def get_all(
         self,
         credentials: SyftVerifyKey,
-        order_by: Optional[PartitionKey] = None,
+        order_by: PartitionKey | None = None,
         has_permission: bool = False,
-    ) -> Result[List[BaseStash.object_type], str]:
+    ) -> Result[list[BaseStash.object_type], str]:
         return self.partition.all(credentials, order_by, has_permission)
 
-    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+    def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
         self.partition.add_permissions(permissions)
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
@@ -613,7 +597,7 @@ class BaseStash:
         self,
         credentials: SyftVerifyKey,
         obj: BaseStash.object_type,
-        add_permissions: Optional[List[ActionObjectPermission]] = None,
+        add_permissions: list[ActionObjectPermission] | None = None,
         ignore_duplicates: bool = False,
     ) -> Result[BaseStash.object_type, str]:
         return self.partition.set(
@@ -626,9 +610,9 @@ class BaseStash:
     def query_all(
         self,
         credentials: SyftVerifyKey,
-        qks: Union[QueryKey, QueryKeys],
-        order_by: Optional[PartitionKey] = None,
-    ) -> Result[List[BaseStash.object_type], str]:
+        qks: QueryKey | QueryKeys,
+        order_by: PartitionKey | None = None,
+    ) -> Result[list[BaseStash.object_type], str]:
         if isinstance(qks, QueryKey):
             qks = QueryKeys(qks=qks)
 
@@ -659,8 +643,8 @@ class BaseStash:
     def query_all_kwargs(
         self,
         credentials: SyftVerifyKey,
-        **kwargs: Dict[str, Any],
-    ) -> Result[List[BaseStash.object_type], str]:
+        **kwargs: dict[str, Any],
+    ) -> Result[list[BaseStash.object_type], str]:
         order_by = kwargs.pop("order_by", None)
         qks = QueryKeys.from_dict(kwargs)
         return self.query_all(credentials=credentials, qks=qks, order_by=order_by)
@@ -668,9 +652,9 @@ class BaseStash:
     def query_one(
         self,
         credentials: SyftVerifyKey,
-        qks: Union[QueryKey, QueryKeys],
-        order_by: Optional[PartitionKey] = None,
-    ) -> Result[Optional[BaseStash.object_type], str]:
+        qks: QueryKey | QueryKeys,
+        order_by: PartitionKey | None = None,
+    ) -> Result[BaseStash.object_type | None, str]:
         return self.query_all(
             credentials=credentials, qks=qks, order_by=order_by
         ).and_then(first_or_none)
@@ -678,22 +662,22 @@ class BaseStash:
     def query_one_kwargs(
         self,
         credentials: SyftVerifyKey,
-        **kwargs: Dict[str, Any],
-    ) -> Result[Optional[BaseStash.object_type], str]:
+        **kwargs: dict[str, Any],
+    ) -> Result[BaseStash.object_type | None, str]:
         return self.query_all_kwargs(credentials, **kwargs).and_then(first_or_none)
 
     def find_all(
-        self, credentials: SyftVerifyKey, **kwargs: Dict[str, Any]
-    ) -> Result[List[BaseStash.object_type], str]:
+        self, credentials: SyftVerifyKey, **kwargs: dict[str, Any]
+    ) -> Result[list[BaseStash.object_type], str]:
         return self.query_all_kwargs(credentials=credentials, **kwargs)
 
     def find_one(
-        self, credentials: SyftVerifyKey, **kwargs: Dict[str, Any]
-    ) -> Result[Optional[BaseStash.object_type], str]:
+        self, credentials: SyftVerifyKey, **kwargs: dict[str, Any]
+    ) -> Result[BaseStash.object_type | None, str]:
         return self.query_one_kwargs(credentials=credentials, **kwargs)
 
     def find_and_delete(
-        self, credentials: SyftVerifyKey, **kwargs: Dict[str, Any]
+        self, credentials: SyftVerifyKey, **kwargs: dict[str, Any]
     ) -> Result[SyftSuccess, Err]:
         obj = self.query_one_kwargs(credentials=credentials, **kwargs)
         if obj.is_err():
@@ -738,7 +722,7 @@ class BaseUIDStoreStash(BaseStash):
 
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Optional[BaseUIDStoreStash.object_type], str]:
+    ) -> Result[BaseUIDStoreStash.object_type | None, str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return self.query_one(credentials=credentials, qks=qks)
 
@@ -746,7 +730,7 @@ class BaseUIDStoreStash(BaseStash):
         self,
         credentials: SyftVerifyKey,
         obj: BaseUIDStoreStash.object_type,
-        add_permissions: Optional[List[ActionObjectPermission]] = None,
+        add_permissions: list[ActionObjectPermission] | None = None,
         ignore_duplicates: bool = False,
     ) -> Result[BaseUIDStoreStash.object_type, str]:
         res = self.check_type(obj, self.object_type)
@@ -782,6 +766,6 @@ class StoreConfig(SyftBaseObject):
     __canonical_name__ = "StoreConfig"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    store_type: Type[DocumentStore]
-    client_config: Optional[StoreClientConfig] = None
+    store_type: type[DocumentStore]
+    client_config: StoreClientConfig | None = None
     locking_config: LockingConfig = NoLockingConfig()

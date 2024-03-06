@@ -1,15 +1,12 @@
 # stdlib
 from collections import defaultdict
+from collections.abc import Callable
 import datetime
 import json
 from pathlib import Path
 import threading
 import time
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import Optional
-from typing import Union
 import uuid
 
 # third party
@@ -23,7 +20,7 @@ from sherlock.lock import RedisLock
 # relative
 from ..serde.serializable import serializable
 
-THREAD_FILE_LOCKS: Dict[int, Dict[str, int]] = defaultdict(dict)
+THREAD_FILE_LOCKS: dict[int, dict[str, int]] = defaultdict(dict)
 
 
 @serializable()
@@ -45,9 +42,9 @@ class LockingConfig(BaseModel):
     """
 
     lock_name: str = "syft_lock"
-    namespace: Optional[str] = None
-    expire: Optional[int] = 60
-    timeout: Optional[int] = 30
+    namespace: str | None = None
+    expire: int | None = 60
+    timeout: int | None = 30
     retry_interval: float = 0.1
 
 
@@ -73,7 +70,7 @@ class ThreadingLockingConfig(LockingConfig):
 class FileLockingConfig(LockingConfig):
     """File locking policy"""
 
-    client_path: Optional[Path] = None
+    client_path: Path | None = None
 
 
 @serializable()
@@ -81,8 +78,8 @@ class RedisClientConfig(BaseModel):
     host: str = "localhost"
     port: int = 6379
     db: int = 0
-    username: Optional[str] = None
-    password: Optional[str] = None
+    username: str | None = None
+    password: str | None = None
 
 
 @serializable()
@@ -248,7 +245,7 @@ class PatchedFileLock(FileLock):
             self._data_file.write_text(json.dumps(data))
 
             # We succeeded in writing to the file so we now hold the lock.
-            self._owner: Optional[str] = owner
+            self._owner: str | None = owner
 
             return True
 
@@ -329,7 +326,7 @@ class SyftLock(BaseLock):
 
         self.passthrough = False
 
-        self._lock: Optional[BaseLock] = None
+        self._lock: BaseLock | None = None
 
         base_params = {
             "lock_name": config.lock_name,
@@ -343,7 +340,7 @@ class SyftLock(BaseLock):
         elif isinstance(config, ThreadingLockingConfig):
             self._lock = ThreadingLock(**base_params)
         elif isinstance(config, FileLockingConfig):
-            client: Optional[Union[Path, Redis]] = config.client_path
+            client: Path | Redis | None = config.client_path
             self._lock = PatchedFileLock(
                 **base_params,
                 client=client,
@@ -413,7 +410,7 @@ class SyftLock(BaseLock):
         except BaseException:
             return False
 
-    def _release(self) -> Optional[bool]:
+    def _release(self) -> bool | None:
         """
         Implementation of releasing an acquired lock.
         """

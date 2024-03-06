@@ -2,9 +2,7 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Callable
-from typing import List
-from typing import Optional
+from collections.abc import Callable
 
 # third party
 from packaging import version
@@ -51,16 +49,16 @@ class NodeMetadataUpdate(SyftObject):
     __canonical_name__ = "NodeMetadataUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    name: Optional[str] = None
-    organization: Optional[str] = None
-    description: Optional[str] = None
-    on_board: Optional[bool] = None
-    id: Optional[UID] = None  # type: ignore[assignment]
-    verify_key: Optional[SyftVerifyKey] = None
-    highest_object_version: Optional[int] = None
-    lowest_object_version: Optional[int] = None
-    syft_version: Optional[str] = None
-    admin_email: Optional[str] = None
+    name: str | None = None
+    organization: str | None = None
+    description: str | None = None
+    on_board: bool | None = None
+    id: UID | None = None  # type: ignore[assignment]
+    verify_key: SyftVerifyKey | None = None
+    highest_object_version: int | None = None
+    lowest_object_version: int | None = None
+    syft_version: str | None = None
+    admin_email: str | None = None
 
 
 @serializable()
@@ -152,8 +150,8 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     name: str
     id: str
     verify_key: str
-    highest_object_version: Optional[int] = None
-    lowest_object_version: Optional[int] = None
+    highest_object_version: int | None = None
+    lowest_object_version: int | None = None
     syft_version: str
     node_type: str = NodeType.DOMAIN.value
     organization: str = "OpenMined"
@@ -162,7 +160,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     admin_email: str = ""
     node_side_type: str
     show_warnings: bool
-    supported_protocols: List = []
+    supported_protocols: list = []
 
     @model_validator(mode="before")
     @classmethod
@@ -181,7 +179,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
 
 
 @transform(NodeMetadataV3, NodeMetadataJSON)
-def metadata_to_json() -> List[Callable]:
+def metadata_to_json() -> list[Callable]:
     return [
         drop(["__canonical_name__"]),
         rename("__version__", "metadata_version"),
@@ -192,7 +190,7 @@ def metadata_to_json() -> List[Callable]:
 
 
 @transform(NodeMetadataJSON, NodeMetadataV3)
-def json_to_metadata() -> List[Callable]:
+def json_to_metadata() -> list[Callable]:
     return [
         drop(["metadata_version", "supported_protocols"]),
         convert_types(["id", "verify_key"], [UID, SyftVerifyKey]),

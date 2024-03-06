@@ -1,8 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
 from typing import cast
 
 # third party
@@ -26,8 +23,8 @@ class NodeServiceContext(Context, SyftObject):
     __canonical_name__ = "NodeServiceContext"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID] = None  # type: ignore[assignment]
-    node: Optional[AbstractNode] = None
+    id: UID | None = None  # type: ignore[assignment]
+    node: AbstractNode | None = None
 
 
 class AuthedServiceContext(NodeServiceContext):
@@ -36,15 +33,15 @@ class AuthedServiceContext(NodeServiceContext):
 
     credentials: SyftVerifyKey
     role: ServiceRole = ServiceRole.NONE
-    job_id: Optional[UID] = None
-    extra_kwargs: Dict = {}
+    job_id: UID | None = None
+    extra_kwargs: dict = {}
     has_execute_permissions: bool = False
 
     @property
     def dev_mode(self) -> Any:
         return self.node.dev_mode  # type: ignore
 
-    def capabilities(self) -> List[ServiceRoleCapability]:
+    def capabilities(self) -> list[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES.get(self.role, [])
 
     def with_credentials(self, credentials: SyftVerifyKey, role: ServiceRole) -> Self:
@@ -74,7 +71,7 @@ class UnauthedServiceContext(NodeServiceContext):
     __version__ = SYFT_OBJECT_VERSION_1
 
     login_credentials: UserLoginCredentials
-    node: Optional[AbstractNode] = None
+    node: AbstractNode | None = None
     role: ServiceRole = ServiceRole.NONE
 
 
@@ -82,10 +79,10 @@ class ChangeContext(SyftBaseObject):
     __canonical_name__ = "ChangeContext"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    node: Optional[AbstractNode] = None
-    approving_user_credentials: Optional[SyftVerifyKey] = None
-    requesting_user_credentials: Optional[SyftVerifyKey] = None
-    extra_kwargs: Dict = {}
+    node: AbstractNode | None = None
+    approving_user_credentials: SyftVerifyKey | None = None
+    requesting_user_credentials: SyftVerifyKey | None = None
+    extra_kwargs: dict = {}
 
     @classmethod
     def from_service(cls, context: AuthedServiceContext) -> Self:

@@ -1,9 +1,5 @@
 # stdlib
 from typing import Any
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
 from typing import cast
 
 # third party
@@ -70,11 +66,11 @@ class SyftWorkerPoolService(AbstractService):
         self,
         context: AuthedServiceContext,
         name: str,
-        image_uid: Optional[UID],
+        image_uid: UID | None,
         num_workers: int,
-        reg_username: Optional[str] = None,
-        reg_password: Optional[str] = None,
-    ) -> Union[List[ContainerSpawnStatus], SyftError]:
+        reg_username: str | None = None,
+        reg_password: str | None = None,
+    ) -> list[ContainerSpawnStatus] | SyftError:
         """Creates a pool of workers from the given SyftWorkerImage.
 
         - Retrieves the image for the given UID
@@ -165,8 +161,8 @@ class SyftWorkerPoolService(AbstractService):
         pool_name: str,
         num_workers: int,
         image_uid: UID,
-        reason: Optional[str] = "",
-    ) -> Union[SyftError, SyftSuccess]:
+        reason: str | None = "",
+    ) -> SyftError | SyftSuccess:
         """
         Create a request to launch the worker pool based on a built image.
 
@@ -187,7 +183,7 @@ class SyftWorkerPoolService(AbstractService):
         if search_result.is_err():
             return SyftError(message=str(search_result.err()))
 
-        worker_image: Optional[SyftWorkerImage] = search_result.ok()
+        worker_image: SyftWorkerImage | None = search_result.ok()
 
         # Raise error if worker image doesn't exists
         if worker_image is None:
@@ -217,7 +213,7 @@ class SyftWorkerPoolService(AbstractService):
             image_uid=image_uid,
         )
 
-        changes: List[Change] = [create_worker_pool_change]
+        changes: list[Change] = [create_worker_pool_change]
 
         # Create a the request object with the changes and submit it
         # for approval.
@@ -240,9 +236,9 @@ class SyftWorkerPoolService(AbstractService):
         num_workers: int,
         tag: str,
         config: WorkerConfig,
-        registry_uid: Optional[UID] = None,
-        reason: Optional[str] = "",
-    ) -> Union[SyftError, SyftSuccess]:
+        registry_uid: UID | None = None,
+        reason: str | None = "",
+    ) -> SyftError | SyftSuccess:
         """
         Create a request to launch the worker pool based on a built image.
 
@@ -269,7 +265,7 @@ class SyftWorkerPoolService(AbstractService):
         if search_result.is_err():
             return SyftError(message=str(search_result.err()))
 
-        worker_image: Optional[SyftWorkerImage] = search_result.ok()
+        worker_image: SyftWorkerImage | None = search_result.ok()
 
         if worker_image is not None:
             return SyftError(
@@ -285,7 +281,7 @@ class SyftWorkerPoolService(AbstractService):
 
         # create a list of Change objects and submit a
         # request for these changes for approval
-        changes: List[Change] = []
+        changes: list[Change] = []
 
         # Add create custom image change
         # If this change is approved, then build an image using the config
@@ -333,15 +329,15 @@ class SyftWorkerPoolService(AbstractService):
     )
     def get_all(
         self, context: AuthedServiceContext
-    ) -> Union[DictTuple[str, WorkerPool], SyftError]:
+    ) -> DictTuple[str, WorkerPool] | SyftError:
         # TODO: During get_all, we should dynamically make a call to docker to get the status of the containers
         # and update the status of the workers in the pool.
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_err():
             return SyftError(message=f"{result.err()}")
-        worker_pools: List[WorkerPool] = result.ok()
+        worker_pools: list[WorkerPool] = result.ok()
 
-        res: List[Tuple] = []
+        res: list[tuple] = []
         for pool in worker_pools:
             res.append((pool.name, pool))
         return DictTuple(res)
@@ -355,11 +351,11 @@ class SyftWorkerPoolService(AbstractService):
         self,
         context: AuthedServiceContext,
         number: int,
-        pool_id: Optional[UID] = None,
-        pool_name: Optional[str] = None,
-        reg_username: Optional[str] = None,
-        reg_password: Optional[str] = None,
-    ) -> Union[List[ContainerSpawnStatus], SyftError]:
+        pool_id: UID | None = None,
+        pool_name: str | None = None,
+        reg_username: str | None = None,
+        reg_password: str | None = None,
+    ) -> list[ContainerSpawnStatus] | SyftError:
         """Add workers to existing worker pool.
 
         Worker pool is fetched either using the unique pool id or pool name.
@@ -448,9 +444,9 @@ class SyftWorkerPoolService(AbstractService):
         self,
         context: AuthedServiceContext,
         number: int,
-        pool_id: Optional[UID] = None,
-        pool_name: Optional[str] = None,
-    ) -> Union[SyftError, SyftSuccess]:
+        pool_id: UID | None = None,
+        pool_name: str | None = None,
+    ) -> SyftError | SyftSuccess:
         """
         Scale the worker pool to the given number of workers in Kubernetes.
         Allows both scaling up and down the worker pool.
@@ -536,7 +532,7 @@ class SyftWorkerPoolService(AbstractService):
     )
     def filter_by_image_id(
         self, context: AuthedServiceContext, image_uid: UID
-    ) -> Union[List[WorkerPool], SyftError]:
+    ) -> list[WorkerPool] | SyftError:
         result = self.stash.get_by_image_uid(context.credentials, image_uid)
 
         if result.is_err():
@@ -551,7 +547,7 @@ class SyftWorkerPoolService(AbstractService):
     )
     def get_by_name(
         self, context: AuthedServiceContext, pool_name: str
-    ) -> Union[List[WorkerPool], SyftError]:
+    ) -> list[WorkerPool] | SyftError:
         result = self.stash.get_by_name(context.credentials, pool_name)
 
         if result.is_err():
@@ -570,7 +566,7 @@ class SyftWorkerPoolService(AbstractService):
         self,
         context: AuthedServiceContext,
         request: Request,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Re-submit request from a different node"""
 
         num_of_changes = len(request.changes)
@@ -613,9 +609,9 @@ class SyftWorkerPoolService(AbstractService):
     def _get_worker_pool(
         self,
         context: AuthedServiceContext,
-        pool_id: Optional[UID] = None,
-        pool_name: Optional[str] = None,
-    ) -> Union[WorkerPool, SyftError]:
+        pool_id: UID | None = None,
+        pool_name: str | None = None,
+    ) -> WorkerPool | SyftError:
         if pool_id:
             result = self.stash.get_by_uid(
                 credentials=context.credentials,
@@ -648,9 +644,9 @@ def _create_workers_in_pool(
     worker_cnt: int,
     worker_image: SyftWorkerImage,
     worker_stash: WorkerStash,
-    reg_username: Optional[str] = None,
-    reg_password: Optional[str] = None,
-) -> Union[Tuple[List[LinkedObject], List[ContainerSpawnStatus]], SyftError]:
+    reg_username: str | None = None,
+    reg_password: str | None = None,
+) -> tuple[list[LinkedObject], list[ContainerSpawnStatus]] | SyftError:
     context.node = cast(AbstractNode, context.node)
     queue_port = context.node.queue_config.client_config.queue_port
 
@@ -659,7 +655,7 @@ def _create_workers_in_pool(
 
     if start_workers_in_memory:
         # Run in-memory workers in threads
-        container_statuses: List[ContainerSpawnStatus] = run_workers_in_threads(
+        container_statuses: list[ContainerSpawnStatus] = run_workers_in_threads(
             node=context.node,
             pool_name=pool_name,
             start_idx=existing_worker_cnt,

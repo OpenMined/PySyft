@@ -40,17 +40,13 @@ Read/retrieve SyftObject from blob storage
 - use `BlobRetrieval.read` to retrieve the SyftObject `syft_object = blob_retrieval.read()`
 """
 
-
 # stdlib
+from collections.abc import Callable
+from collections.abc import Generator
 from io import BytesIO
 import os
 from pathlib import Path
 from typing import Any
-from typing import Callable
-from typing import Generator
-from typing import Optional
-from typing import Type
-from typing import Union
 
 # third party
 from pydantic import BaseModel
@@ -89,7 +85,7 @@ class BlobRetrievalV1(SyftObject):
     __canonical_name__ = "BlobRetrieval"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    type_: Optional[Type] = None
+    type_: type | None = None
     file_name: str
 
 
@@ -98,10 +94,10 @@ class BlobRetrieval(SyftObject):
     __canonical_name__ = "BlobRetrieval"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    type_: Optional[Type] = None
+    type_: type | None = None
     file_name: str
-    syft_blob_storage_entry_id: Optional[UID] = None
-    file_size: Optional[int] = None
+    syft_blob_storage_entry_id: UID | None = None
+    file_size: int | None = None
 
 
 @migrate(BlobRetrieval, BlobRetrievalV1)
@@ -157,7 +153,7 @@ class SyftObjectRetrieval(BlobRetrieval):
         else:
             return res
 
-    def read(self, _deserialize: bool = True) -> Union[SyftObject, SyftError]:
+    def read(self, _deserialize: bool = True) -> SyftObject | SyftError:
         return self._read_data(_deserialize=_deserialize)
 
 
@@ -183,7 +179,7 @@ class BlobRetrievalByURLV1(BlobRetrievalV1):
 
 
 def syft_iter_content(
-    blob_url: Union[str, GridURL],
+    blob_url: str | GridURL,
     chunk_size: int,
     max_retries: int = MAX_RETRIES,
     timeout: int = DEFAULT_TIMEOUT,
@@ -226,9 +222,9 @@ class BlobRetrievalByURL(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    url: Union[GridURL, str]
+    url: GridURL | str
 
-    def read(self) -> Union[SyftObject, SyftError]:
+    def read(self) -> SyftObject | SyftError:
         if self.type_ is BlobFileType:
             return BlobFile(
                 file_name=self.file_name,
@@ -310,7 +306,7 @@ class BlobDeposit(SyftObject):
 
     blob_storage_entry_id: UID
 
-    def write(self, data: BytesIO) -> Union[SyftSuccess, SyftError]:
+    def write(self, data: BytesIO) -> SyftSuccess | SyftError:
         raise NotImplementedError
 
 
@@ -326,12 +322,12 @@ class BlobStorageConnection:
     def __exit__(self, *exc: Any) -> None:
         raise NotImplementedError
 
-    def read(self, fp: SecureFilePathLocation, type_: Optional[Type]) -> BlobRetrieval:
+    def read(self, fp: SecureFilePathLocation, type_: type | None) -> BlobRetrieval:
         raise NotImplementedError
 
     def allocate(
         self, obj: CreateBlobStorageEntry
-    ) -> Union[SecureFilePathLocation, SyftError]:
+    ) -> SecureFilePathLocation | SyftError:
         raise NotImplementedError
 
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
@@ -351,5 +347,5 @@ class BlobStorageClient(SyftBaseModel):
 
 @serializable()
 class BlobStorageConfig(SyftBaseModel):
-    client_type: Type[BlobStorageClient]
+    client_type: type[BlobStorageClient]
     client_config: BlobStorageClientConfig

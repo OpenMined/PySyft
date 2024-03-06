@@ -4,7 +4,6 @@ from __future__ import annotations
 # stdlib
 from typing import Any
 from typing import ClassVar
-from typing import Optional
 
 # third party
 from pydantic import field_validator
@@ -81,7 +80,7 @@ class TwinObject(SyftObject):
         mock.id = twin_id
         return mock
 
-    def _save_to_blob_storage(self) -> Optional[SyftError]:
+    def _save_to_blob_storage(self) -> SyftError | None:
         # Set node location and verify key
         self.private_obj._set_obj_location_(
             self.syft_node_location,

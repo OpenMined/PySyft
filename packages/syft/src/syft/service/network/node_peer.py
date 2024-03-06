@@ -1,7 +1,4 @@
 # stdlib
-from typing import List
-from typing import Optional
-from typing import Tuple
 
 # third party
 from typing_extensions import Self
@@ -35,14 +32,14 @@ class NodePeer(SyftObject):
     __attr_unique__ = ["verify_key"]
     __repr_attrs__ = ["name", "node_type", "admin_email"]
 
-    id: Optional[UID] = None  # type: ignore[assignment]
+    id: UID | None = None  # type: ignore[assignment]
     name: str
     verify_key: SyftVerifyKey
-    node_routes: List[NodeRouteType] = []
+    node_routes: list[NodeRouteType] = []
     node_type: NodeType
     admin_email: str
 
-    def update_routes(self, new_routes: List[NodeRoute]) -> None:
+    def update_routes(self, new_routes: list[NodeRoute]) -> None:
         add_routes = []
         new_routes = self.update_route_priorities(new_routes)
         for new_route in new_routes:
@@ -56,7 +53,7 @@ class NodePeer(SyftObject):
 
         self.node_routes += add_routes
 
-    def update_route_priorities(self, new_routes: List[NodeRoute]) -> List[NodeRoute]:
+    def update_route_priorities(self, new_routes: list[NodeRoute]) -> list[NodeRoute]:
         """
         Since we pick the newest route has the highest priority, we
         update the priority of the newly added routes here to be increments of
@@ -68,7 +65,7 @@ class NodePeer(SyftObject):
             current_max_priority += 1
         return new_routes
 
-    def existed_route(self, route: NodeRoute) -> Tuple[bool, Optional[int]]:
+    def existed_route(self, route: NodeRoute) -> tuple[bool, int | None]:
         """Check if a route exists in self.node_routes
         - For HTTPNodeRoute: check based on protocol, host_or_ip (url) and port
         - For PythonNodeRoute: check if the route exists in the set of all node_routes

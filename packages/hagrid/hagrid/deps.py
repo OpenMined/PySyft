@@ -8,6 +8,7 @@ installation commands where applicable."""
 from __future__ import annotations
 
 # stdlib
+from collections.abc import Callable
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
@@ -21,12 +22,6 @@ import subprocess  # nosec
 import sys
 import traceback
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
 
 # third party
 from packaging import version
@@ -87,8 +82,8 @@ def get_version_string() -> str:
 class SetupIssue:
     issue_name: str
     description: str
-    command: Optional[str] = None
-    solution: Optional[str] = None
+    command: str | None = None
+    solution: str | None = None
 
 
 @dataclass
@@ -97,9 +92,9 @@ class Dependency:
     name: str = ""
     display: str = ""
     only_os: str = ""
-    version: Optional[Version] = version.parse("0.0")
+    version: Version | None = version.parse("0.0")
     valid: bool = False
-    issues: List[SetupIssue] = field(default_factory=list)
+    issues: list[SetupIssue] = field(default_factory=list)
     output_in_text: bool = False
 
     def check(self) -> None:
@@ -239,7 +234,7 @@ class DependencyPyPI(Dependency):
 
 def new_pypi_version(
     package: str, current: Version, pre: bool = False
-) -> Tuple[bool, Version]:
+) -> tuple[bool, Version]:
     pypi_json = get_pypi_versions(package_name=package)
     if (
         "info" not in pypi_json
@@ -269,7 +264,7 @@ def new_pypi_version(
             return (False, latest_release)
 
 
-def get_pypi_versions(package_name: str) -> Dict[str, Any]:
+def get_pypi_versions(package_name: str) -> dict[str, Any]:
     try:
         pypi_url = f"https://pypi.org/pypi/{package_name}/json"
         req = requests.get(pypi_url)  # nosec
@@ -284,7 +279,7 @@ def get_pypi_versions(package_name: str) -> Dict[str, Any]:
         raise e
 
 
-def get_pip_package(package_name: str) -> Optional[Dict[str, str]]:
+def get_pip_package(package_name: str) -> dict[str, str] | None:
     packages = get_pip_packages()
     for package in packages:
         if package["name"] == package_name:
@@ -292,7 +287,7 @@ def get_pip_package(package_name: str) -> Optional[Dict[str, str]]:
     return None
 
 
-def get_pip_packages() -> List[Dict[str, str]]:
+def get_pip_packages() -> list[dict[str, str]]:
     try:
         cmd = "python -m pip list --format=json --disable-pip-version-check"
         output = subprocess.check_output(cmd, shell=True)  # nosec
@@ -302,7 +297,7 @@ def get_pip_packages() -> List[Dict[str, str]]:
         raise e
 
 
-def get_location(binary: str) -> Optional[str]:
+def get_location(binary: str) -> str | None:
     return shutil.which(binary)
 
 
@@ -310,9 +305,9 @@ def get_location(binary: str) -> Optional[str]:
 class BinaryInfo:
     binary: str
     version_cmd: str
-    error: Optional[str] = None
-    path: Optional[str] = None
-    version: Optional[Union[str, Version]] = version.parse("0.0")
+    error: str | None = None
+    path: str | None = None
+    version: str | Version | None = version.parse("0.0")
     version_regex = (
         r"[^\d]*("
         + r"(0|[1-9][0-9]*)\.*(0|[1-9][0-9]*)\.*(0|[1-9][0-9]*)"
@@ -322,7 +317,7 @@ class BinaryInfo:
         + r"[^\d].*"
     )
 
-    def extract_version(self, lines: List[str]) -> None:
+    def extract_version(self, lines: list[str]) -> None:
         for line in lines:
             matches = re.match(self.version_regex, line)
             if matches is not None:
@@ -353,7 +348,7 @@ class BinaryInfo:
         return self
 
 
-def get_cli_output(cmd: str, timeout: Optional[float] = None) -> Tuple[int, List[str]]:
+def get_cli_output(cmd: str, timeout: float | None = None) -> tuple[int, list[str]]:
     try:
         proc = subprocess.Popen(  # nosec
             cmd.split(" "),
@@ -373,14 +368,14 @@ def get_cli_output(cmd: str, timeout: Optional[float] = None) -> Tuple[int, List
         return (-1, [str(e)])
 
 
-def gather_debug() -> Dict[str, Any]:
+def gather_debug() -> dict[str, Any]:
     # relative
     from .lib import commit_hash
     from .lib import hagrid_root
 
     now = datetime.now().astimezone()
     dt_string = now.strftime("%d/%m/%Y %H:%M:%S %Z")
-    debug_info: Dict[str, Any] = {}
+    debug_info: dict[str, Any] = {}
     debug_info["datetime"] = dt_string
     debug_info["python_binary"] = sys.executable
     debug_info["dependencies"] = DEPENDENCIES
@@ -396,7 +391,7 @@ def gather_debug() -> Dict[str, Any]:
     return debug_info
 
 
-def get_environment() -> Dict[str, Any]:
+def get_environment() -> dict[str, Any]:
     return {
         "uname": platform.uname(),
         "platform": platform.system().lower(),
@@ -445,7 +440,7 @@ if is_windows():
     commands.append("wsl")
 
 
-def check_deps_old() -> Dict[str, Optional[str]]:
+def check_deps_old() -> dict[str, str | None]:
     paths = {}
     for dep in commands:
         paths[dep] = shutil.which(dep)
@@ -485,7 +480,7 @@ def wsl_linux_info() -> str:
         return str(e)
 
 
-def check_docker_version() -> Optional[str]:
+def check_docker_version() -> str | None:
     if is_windows():
         return "N/A"  # todo fix to work with windows
     result = os.popen("docker compose version", "r").read()  # nosec
@@ -504,7 +499,7 @@ def check_docker_version() -> Optional[str]:
     return version
 
 
-def docker_running(timeout: Optional[float] = None) -> Tuple[bool, str]:
+def docker_running(timeout: float | None = None) -> tuple[bool, str]:
     status, error_msg = False, ""
 
     try:
@@ -527,11 +522,8 @@ To start your docker service:\n
 2 - {WHITE}Ubuntu: {GREEN}sudo service docker start {NO_COLOR}
 -------------------------------------------------------------------------------------------------------\n
 """
-        error_msg += (
-            f"""{YELLOW}{BOLD}Std Output Logs{NO_COLOR}
-=================\n\n"""
-            + "\n".join(msg)
-        )
+        error_msg += f"""{YELLOW}{BOLD}Std Output Logs{NO_COLOR}
+=================\n\n""" + "\n".join(msg)
 
     except Exception as e:  # nosec
         error_msg = str(e)
@@ -539,7 +531,7 @@ To start your docker service:\n
     return status, error_msg
 
 
-def allowed_to_run_docker() -> Tuple[bool, str]:
+def allowed_to_run_docker() -> tuple[bool, str]:
     bool_result, msg = True, ""
     if platform.system().lower() == "linux":
         _, line = get_cli_output("getent group docker")
@@ -599,11 +591,11 @@ def check_docker_service_status(animated: bool = True) -> None:
 
 
 def check_deps(
-    deps: Dict[str, Dependency],
+    deps: dict[str, Dependency],
     of: str = "",
     display: bool = True,
     output_in_text: bool = False,
-) -> Union[Dict[str, Dependency], NBOutput]:
+) -> dict[str, Dependency] | NBOutput:
     output = ""
     if len(of) > 0:
         of = f" {of}"
@@ -647,9 +639,9 @@ def check_deps(
 
 def check_grid_docker(
     display: bool = True, output_in_text: bool = False
-) -> Union[Dict[str, Dependency], NBOutput]:
+) -> dict[str, Dependency] | NBOutput:
     try:
-        deps: Dict[str, Dependency] = {}
+        deps: dict[str, Dependency] = {}
         deps["git"] = DependencyGridGit(name="git")
         deps["docker"] = DependencyGridDocker(name="docker")
         deps["docker_compose"] = DependencyGridDockerCompose(name="docker compose")
@@ -689,9 +681,9 @@ def debug_exception(e: Exception) -> str:
     return exception
 
 
-def check_syft_deps(display: bool = True) -> Union[Dict[str, Dependency], NBOutput]:
+def check_syft_deps(display: bool = True) -> dict[str, Dependency] | NBOutput:
     try:
-        deps: Dict[str, Dependency] = {}
+        deps: dict[str, Dependency] = {}
         deps["os"] = DependencySyftOS(name="os")
         deps["python"] = DependencySyftPython(name="python")
         return check_deps(of="Syft", deps=deps, display=display)
@@ -706,9 +698,9 @@ def check_syft_deps(display: bool = True) -> Union[Dict[str, Dependency], NBOutp
         raise e
 
 
-def check_hagrid(display: bool = True) -> Union[Dict[str, Dependency], NBOutput]:
+def check_hagrid(display: bool = True) -> dict[str, Dependency] | NBOutput:
     try:
-        deps: Dict[str, Dependency] = {}
+        deps: dict[str, Dependency] = {}
         deps["hagrid"] = DependencyPyPI(
             package_name="hagrid",
             package_display_name="HAGrid",
@@ -728,9 +720,9 @@ def check_hagrid(display: bool = True) -> Union[Dict[str, Dependency], NBOutput]
 
 def check_syft(
     display: bool = True, pre: bool = False
-) -> Union[Dict[str, Dependency], NBOutput]:
+) -> dict[str, Dependency] | NBOutput:
     try:
-        deps: Dict[str, Dependency] = {}
+        deps: dict[str, Dependency] = {}
         deps["os"] = DependencySyftOS(name="os")
         deps["python"] = DependencySyftPython(name="python")
         deps["syft"] = DependencyPyPI(
@@ -789,7 +781,7 @@ PACKAGE_MANAGERS = {
 
 def os_package_manager_install_cmd(
     package_name: str, package_display_name: str, output_in_text: bool = False
-) -> Tuple[Optional[str], Optional[str]]:
+) -> tuple[str | None, str | None]:
     os = ENVIRONMENT["os"].lower()
     cmd = None
     url = None

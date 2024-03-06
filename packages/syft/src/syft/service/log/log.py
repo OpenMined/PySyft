@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import List
 
 # relative
 from ...serde.serializable import serializable
@@ -29,7 +28,7 @@ class SyftLog(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     __repr_attrs__ = ["stdout", "stderr"]
-    __exclude_sync_diff_attrs__: List[str] = []
+    __exclude_sync_diff_attrs__: list[str] = []
 
     stdout: str = ""
     stderr: str = ""

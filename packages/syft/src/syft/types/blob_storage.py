@@ -1,4 +1,6 @@
 # stdlib
+from collections.abc import Callable
+from collections.abc import Iterator
 from datetime import datetime
 from datetime import timedelta
 import mimetypes
@@ -8,14 +10,8 @@ import sys
 import threading
 from time import sleep
 from typing import Any
-from typing import Callable
 from typing import ClassVar
-from typing import Iterator
-from typing import List
-from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Type
-from typing import Union
 
 # third party
 from azure.storage.blob import BlobSasPermissions
@@ -75,8 +71,8 @@ class BlobFileV2(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     file_name: str
-    syft_blob_storage_entry_id: Optional[UID] = None
-    file_size: Optional[int] = None
+    syft_blob_storage_entry_id: UID | None = None
+    file_size: int | None = None
 
     __repr_attrs__ = ["id", "file_name"]
 
@@ -87,9 +83,9 @@ class BlobFile(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_3
 
     file_name: str
-    syft_blob_storage_entry_id: Optional[UID] = None
-    file_size: Optional[int] = None
-    path: Optional[Path] = None
+    syft_blob_storage_entry_id: UID | None = None
+    file_size: int | None = None
+    path: Path | None = None
     uploaded: bool = False
 
     __repr_attrs__ = ["id", "file_name"]
@@ -113,13 +109,13 @@ class BlobFile(SyftObject):
             return None
 
     @classmethod
-    def upload_from_path(cls, path: Union[str, Path], client: SyftClient) -> Any:
+    def upload_from_path(cls, path: str | Path, client: SyftClient) -> Any:
         # syft absolute
         import syft as sy
 
         return sy.ActionObject.from_path(path=path).send(client).syft_action_data
 
-    def _upload_to_blobstorage_from_api(self, api: SyftAPI) -> Optional[SyftError]:
+    def _upload_to_blobstorage_from_api(self, api: SyftAPI) -> SyftError | None:
         if self.path is None:
             raise ValueError("cannot upload BlobFile, no path specified")
         storage_entry = CreateBlobStorageEntry.from_path(self.path)
@@ -140,7 +136,7 @@ class BlobFile(SyftObject):
 
         return None
 
-    def upload_to_blobstorage(self, client: SyftClient) -> Optional[SyftError]:
+    def upload_to_blobstorage(self, client: SyftClient) -> SyftError | None:
         self.syft_node_location = client.id
         self.syft_client_verify_key = client.verify_key
         return self._upload_to_blobstorage_from_api(client.api)
@@ -240,9 +236,9 @@ class BlobFileObjectV1(ActionObjectV2):
     __canonical_name__ = "BlobFileOBject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    syft_internal_type: ClassVar[Type[Any]] = BlobFile
-    syft_pointer_type: ClassVar[Type[ActionObjectPointer]] = BlobFileObjectPointer
-    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
+    syft_internal_type: ClassVar[type[Any]] = BlobFile
+    syft_pointer_type: ClassVar[type[ActionObjectPointer]] = BlobFileObjectPointer
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
 
 
 @serializable()
@@ -250,9 +246,9 @@ class BlobFileObject(ActionObject):
     __canonical_name__ = "BlobFileOBject"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    syft_internal_type: ClassVar[Type[Any]] = BlobFile
-    syft_pointer_type: ClassVar[Type[ActionObjectPointer]] = BlobFileObjectPointer
-    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
+    syft_internal_type: ClassVar[type[Any]] = BlobFile
+    syft_pointer_type: ClassVar[type[ActionObjectPointer]] = BlobFileObjectPointer
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
 
 
 @serializable()
@@ -269,8 +265,8 @@ class SecureFilePathLocation(SyftObject):
     def generate_url(
         self,
         connection: "BlobStorageConnection",
-        type_: Optional[Type],
-        bucket_name: Optional[str],
+        type_: type | None,
+        bucket_name: str | None,
         *args: Any,
     ) -> "BlobRetrievalByURL":
         raise NotImplementedError
@@ -289,13 +285,13 @@ class SeaweedSecureFilePathLocation(SecureFilePathLocation):
     __canonical_name__ = "SeaweedSecureFilePathLocation"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    upload_id: Optional[str] = None
+    upload_id: str | None = None
 
     def generate_url(
         self,
         connection: "BlobStorageConnection",
-        type_: Optional[Type],
-        bucket_name: Optional[str],
+        type_: type | None,
+        bucket_name: str | None,
         *args: Any,
     ) -> "BlobRetrievalByURL":
         try:
@@ -337,7 +333,7 @@ class AzureSecureFilePathLocation(SecureFilePathLocation):
     bucket_name: str
 
     def generate_url(
-        self, connection: "BlobStorageConnection", type_: Optional[Type], *args: Any
+        self, connection: "BlobStorageConnection", type_: type | None, *args: Any
     ) -> "BlobRetrievalByURL":
         # SAS is almost the same thing as the presigned url
         config = connection.config.remote_profiles[self.azure_profile_name]
@@ -366,8 +362,8 @@ class BlobStorageEntryV1(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
-    location: Union[SecureFilePathLocation, SeaweedSecureFilePathLocation]
-    type_: Optional[Type] = None
+    location: SecureFilePathLocation | SeaweedSecureFilePathLocation
+    type_: type | None = None
     mimetype: str = "bytes"
     file_size: int
     uploaded_by: SyftVerifyKey
@@ -382,14 +378,14 @@ class BlobStorageEntry(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
-    location: Union[SecureFilePathLocation, SeaweedSecureFilePathLocation]
-    type_: Optional[Type] = None
+    location: SecureFilePathLocation | SeaweedSecureFilePathLocation
+    type_: type | None = None
     mimetype: str = "bytes"
     file_size: int
-    no_lines: Optional[int] = 0
+    no_lines: int | None = 0
     uploaded_by: SyftVerifyKey
     created_at: DateTime = DateTime.now()
-    bucket_name: Optional[str] = None
+    bucket_name: str | None = None
 
     __attr_searchable__ = ["bucket_name"]
 
@@ -411,7 +407,7 @@ class BlobStorageMetadataV1(SyftObject):
     __canonical_name__ = "BlobStorageMetadata"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    type_: Optional[Type[SyftObject]] = None
+    type_: type[SyftObject] | None = None
     mimetype: str = "bytes"
     file_size: int
 
@@ -421,10 +417,10 @@ class BlobStorageMetadata(SyftObject):
     __canonical_name__ = "BlobStorageMetadata"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    type_: Optional[Type[SyftObject]] = None
+    type_: type[SyftObject] | None = None
     mimetype: str = "bytes"
     file_size: int
-    no_lines: Optional[int] = 0
+    no_lines: int | None = 0
 
 
 @migrate(BlobStorageMetadata, BlobStorageMetadataV1)
@@ -445,10 +441,10 @@ class CreateBlobStorageEntry(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
-    type_: Optional[Type] = None
+    type_: type | None = None
     mimetype: str = "bytes"
     file_size: int
-    extensions: List[str] = []
+    extensions: list[str] = []
 
     @classmethod
     def from_obj(cls, obj: SyftObject) -> Self:
@@ -456,7 +452,7 @@ class CreateBlobStorageEntry(SyftObject):
         return cls(file_size=file_size, type_=type(obj))
 
     @classmethod
-    def from_path(cls, fp: Union[str, Path], mimetype: Optional[str] = None) -> Self:
+    def from_path(cls, fp: str | Path, mimetype: str | None = None) -> Self:
         path = Path(fp)
         if not path.exists():
             raise SyftException(f"{fp} does not exist.")

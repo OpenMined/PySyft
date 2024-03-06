@@ -2,7 +2,6 @@
 from datetime import datetime
 from functools import total_ordering
 from typing import Any
-from typing import Optional
 
 # third party
 from typing_extensions import Self
@@ -20,7 +19,7 @@ class DateTime(SyftObject):
     __canonical_name__ = "DateTime"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID] = None  # type: ignore
+    id: UID | None = None  # type: ignore
     utc_timestamp: float
 
     @classmethod

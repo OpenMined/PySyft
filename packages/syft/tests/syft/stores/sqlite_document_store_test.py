@@ -1,6 +1,5 @@
 # stdlib
 from threading import Thread
-from typing import Tuple
 
 # third party
 from joblib import Parallel
@@ -231,7 +230,7 @@ def test_sqlite_store_partition_update(
 
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_set_threading(
-    sqlite_workspace: Tuple,
+    sqlite_workspace: tuple,
     root_verify_key,
 ) -> None:
     thread_cnt = 3
@@ -287,7 +286,7 @@ def test_sqlite_store_partition_set_threading(
 @pytest.mark.skip(reason="The tests are highly flaky, delaying progress on PR's")
 def test_sqlite_store_partition_set_joblib(
     root_verify_key,
-    sqlite_workspace: Tuple,
+    sqlite_workspace: tuple,
 ) -> None:
     thread_cnt = 3
     repeats = REPEATS
@@ -332,7 +331,7 @@ def test_sqlite_store_partition_set_joblib(
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_update_threading(
     root_verify_key,
-    sqlite_workspace: Tuple,
+    sqlite_workspace: tuple,
 ) -> None:
     thread_cnt = 3
     repeats = REPEATS
@@ -379,7 +378,7 @@ def test_sqlite_store_partition_update_threading(
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_update_joblib(
     root_verify_key,
-    sqlite_workspace: Tuple,
+    sqlite_workspace: tuple,
 ) -> None:
     thread_cnt = 3
     repeats = REPEATS
@@ -418,7 +417,7 @@ def test_sqlite_store_partition_update_joblib(
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_set_delete_threading(
     root_verify_key,
-    sqlite_workspace: Tuple,
+    sqlite_workspace: tuple,
 ) -> None:
     thread_cnt = 3
     repeats = REPEATS
@@ -478,7 +477,7 @@ def test_sqlite_store_partition_set_delete_threading(
 @pytest.mark.xfail(reason="Fails in CI sometimes")
 def test_sqlite_store_partition_set_delete_joblib(
     root_verify_key,
-    sqlite_workspace: Tuple,
+    sqlite_workspace: tuple,
 ) -> None:
     thread_cnt = 3
     repeats = REPEATS

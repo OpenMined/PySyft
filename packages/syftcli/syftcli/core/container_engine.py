@@ -1,8 +1,6 @@
 # stdlib
 from abc import ABC
 from abc import abstractmethod
-from typing import List
-from typing import Optional
 
 # third party
 from rich.progress import track
@@ -24,13 +22,13 @@ class ContainerEngine(ABC):
 
     @abstractmethod
     def pull(
-        self, images: List[str], dryrun: bool, stream_output: Optional[dict]
-    ) -> List[CompletedProcess]:
+        self, images: list[str], dryrun: bool, stream_output: dict | None
+    ) -> list[CompletedProcess]:
         raise NotImplementedError()
 
     @abstractmethod
     def save(
-        self, images: List[str], archive_path: str, dryrun: bool
+        self, images: list[str], archive_path: str, dryrun: bool
     ) -> CompletedProcess:
         raise NotImplementedError()
 
@@ -48,10 +46,10 @@ class Podman(ContainerEngine):
 
     def pull(
         self,
-        images: List[str],
+        images: list[str],
         dryrun: bool = False,
-        stream_output: Optional[dict] = None,
-    ) -> List[CompletedProcess]:
+        stream_output: dict | None = None,
+    ) -> list[CompletedProcess]:
         results = []
 
         for image in track(images, description=""):
@@ -64,7 +62,7 @@ class Podman(ContainerEngine):
 
     def save(
         self,
-        images: List[str],
+        images: list[str],
         archive_path: str,
         dryrun: bool = False,
     ) -> CompletedProcess:
@@ -83,10 +81,10 @@ class Docker(ContainerEngine):
 
     def pull(
         self,
-        images: List[str],
+        images: list[str],
         dryrun: bool = False,
-        stream_output: Optional[dict] = None,
-    ) -> List[CompletedProcess]:
+        stream_output: dict | None = None,
+    ) -> list[CompletedProcess]:
         results = []
 
         for image in track(images, description=""):
@@ -99,7 +97,7 @@ class Docker(ContainerEngine):
 
     def save(
         self,
-        images: List[str],
+        images: list[str],
         archive_path: str,
         dryrun: bool = False,
     ) -> CompletedProcess:

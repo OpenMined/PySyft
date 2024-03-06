@@ -1,11 +1,7 @@
 # stdlib
+from collections.abc import Callable
 from enum import Enum
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
 
 # third party
 from result import Ok
@@ -55,7 +51,7 @@ class QueueItemV1(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any] = None
+    result: Any | None = None
     resolved: bool = False
     status: Status = Status.CREATED
 
@@ -67,16 +63,16 @@ class QueueItemV2(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any] = None
+    result: Any | None = None
     resolved: bool = False
     status: Status = Status.CREATED
 
     method: str
     service: str
-    args: List
-    kwargs: Dict[str, Any]
-    job_id: Optional[UID] = None
-    worker_settings: Optional[WorkerSettings] = None
+    args: list
+    kwargs: dict[str, Any]
+    job_id: UID | None = None
+    worker_settings: WorkerSettings | None = None
     has_execute_permissions: bool = False
 
 
@@ -89,16 +85,16 @@ class QueueItem(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any] = None
+    result: Any | None = None
     resolved: bool = False
     status: Status = Status.CREATED
 
     method: str
     service: str
-    args: List
-    kwargs: Dict[str, Any]
-    job_id: Optional[UID] = None
-    worker_settings: Optional[WorkerSettings] = None
+    args: list
+    kwargs: dict[str, Any]
+    job_id: UID | None = None
+    worker_settings: WorkerSettings | None = None
     has_execute_permissions: bool = False
     worker_pool: LinkedObject
 
@@ -113,7 +109,7 @@ class QueueItem(SyftObject):
         return self.service_path == "Action" and self.method_name == "execute"
 
     @property
-    def action(self) -> Union[Any, SyftError]:
+    def action(self) -> Any | SyftError:
         if self.is_action:
             return self.kwargs["action"]
         return SyftError(message="QueueItem not an Action")
@@ -182,8 +178,8 @@ class QueueStash(BaseStash):
         self,
         credentials: SyftVerifyKey,
         item: QueueItem,
-        add_permissions: Optional[List[ActionObjectPermission]] = None,
-    ) -> Result[Optional[QueueItem], str]:
+        add_permissions: list[ActionObjectPermission] | None = None,
+    ) -> Result[QueueItem | None, str]:
         if item.resolved:
             valid = self.check_type(item, self.object_type)
             if valid.is_err():
@@ -195,7 +191,7 @@ class QueueStash(BaseStash):
         self,
         credentials: SyftVerifyKey,
         item: QueueItem,
-        add_permissions: Optional[List[ActionObjectPermission]] = None,
+        add_permissions: list[ActionObjectPermission] | None = None,
     ) -> Result[QueueItem, str]:
         # 🟡 TODO 36: Needs distributed lock
         if not item.resolved:
@@ -209,21 +205,21 @@ class QueueStash(BaseStash):
 
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Optional[QueueItem], str]:
+    ) -> Result[QueueItem | None, str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         item = self.query_one(credentials=credentials, qks=qks)
         return item
 
     def pop(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Optional[QueueItem], str]:
+    ) -> Result[QueueItem | None, str]:
         item = self.get_by_uid(credentials=credentials, uid=uid)
         self.delete_by_uid(credentials=credentials, uid=uid)
         return item
 
     def pop_on_complete(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Optional[QueueItem], str]:
+    ) -> Result[QueueItem | None, str]:
         item = self.get_by_uid(credentials=credentials, uid=uid)
         if item.is_ok():
             queue_item = item.ok()
@@ -242,7 +238,7 @@ class QueueStash(BaseStash):
 
     def get_by_status(
         self, credentials: SyftVerifyKey, status: Status
-    ) -> Result[List[QueueItem], str]:
+    ) -> Result[list[QueueItem], str]:
         qks = QueryKeys(qks=StatusPartitionKey.with_obj(status))
 
         return self.query_all(credentials=credentials, qks=qks)

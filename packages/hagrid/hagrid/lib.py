@@ -11,10 +11,6 @@ import random
 import shutil
 import socket
 import subprocess  # nosec
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
 
 # third party
 import git
@@ -78,9 +74,9 @@ class GitRemoteProgress(git.RemoteProgress):
     def update(
         self,
         op_code: int,
-        cur_count: Union[str, float],
-        max_count: Optional[Union[str, float]] = None,
-        message: Optional[str] = None,
+        cur_count: str | float,
+        max_count: str | float | None = None,
+        message: str | None = None,
     ) -> None:
         # Start new bar on each BEGIN-flag
         if op_code & self.BEGIN:
@@ -164,7 +160,7 @@ def is_gitpod() -> bool:
     return bool(os.environ.get("GITPOD_WORKSPACE_URL", None))
 
 
-def gitpod_url(port: Optional[int] = None) -> str:
+def gitpod_url(port: int | None = None) -> str:
     workspace_url = os.environ.get("GITPOD_WORKSPACE_URL", "")
     if port:
         workspace_url = workspace_url.replace("https://", f"https://{port}-")
@@ -250,7 +246,7 @@ def use_branch(branch: str) -> None:
 
 
 def should_provision_remote(
-    username: Optional[str], password: Optional[str], key_path: Optional[str]
+    username: str | None, password: str | None, key_path: str | None
 ) -> bool:
     is_remote = username is not None or password is not None or key_path is not None
     if username and password or username and key_path:
@@ -265,7 +261,7 @@ def name_tag(name: str) -> str:
 
 
 def find_available_port(
-    host: str, port: Optional[int] = None, search: bool = False
+    host: str, port: int | None = None, search: bool = False
 ) -> int:
     if port is None:
         port = random.randint(1500, 65000)  # nosec
@@ -298,7 +294,7 @@ def find_available_port(
     return port
 
 
-def get_version_module() -> Tuple[str, str]:
+def get_version_module() -> tuple[str, str]:
     try:
         version_file_path = f"{grid_src_path()}/VERSION"
         loader = importlib.machinery.SourceFileLoader("VERSION", version_file_path)
@@ -355,10 +351,10 @@ def check_api_metadata(ip: str, timeout: int = 30, silent: bool = False) -> bool
         return False
 
 
-def save_vm_details_as_json(username: str, password: str, process_list: List) -> None:
+def save_vm_details_as_json(username: str, password: str, process_list: list) -> None:
     """Saves the launched hosts details as json."""
 
-    host_ip_details: List = []
+    host_ip_details: list = []
 
     # file path to save host details
     dir_path = os.path.expanduser("~/.hagrid")
@@ -381,7 +377,7 @@ def save_vm_details_as_json(username: str, password: str, process_list: List) ->
     print(f"Saved vm details at: {file_path}")
 
 
-def generate_user_table(username: str, password: str) -> Union[Table, str]:
+def generate_user_table(username: str, password: str) -> Table | str:
     if not username and not password:
         return ""
 
@@ -404,7 +400,7 @@ def get_process_status(process: subprocess.Popen) -> str:
         return ProcessStatus.DONE.value
 
 
-def generate_process_status_table(process_list: List) -> Tuple[Table, bool]:
+def generate_process_status_table(process_list: list) -> tuple[Table, bool]:
     """Generate a table to show the status of the processes being exected.
 
     Args:
@@ -415,7 +411,7 @@ def generate_process_status_table(process_list: List) -> Tuple[Table, bool]:
         Tuple[Table, bool]: table of process status and flag to indicate if all processes are executed.
     """
 
-    process_statuses: List[str] = []
+    process_statuses: list[str] = []
     lines_to_display = 5  # Number of lines to display as output
 
     table = Table(title="Virtual Machine Status")

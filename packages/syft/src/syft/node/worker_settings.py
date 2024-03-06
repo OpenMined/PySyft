@@ -2,8 +2,7 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Callable
-from typing import Optional
+from collections.abc import Callable
 
 # third party
 from typing_extensions import Self
@@ -38,7 +37,7 @@ class WorkerSettingsV1(SyftObject):
     signing_key: SyftSigningKey
     document_store_config: StoreConfig
     action_store_config: StoreConfig
-    blob_store_config: Optional[BlobStorageConfig] = None
+    blob_store_config: BlobStorageConfig | None = None
 
 
 @serializable()
@@ -53,8 +52,8 @@ class WorkerSettings(SyftObject):
     signing_key: SyftSigningKey
     document_store_config: StoreConfig
     action_store_config: StoreConfig
-    blob_store_config: Optional[BlobStorageConfig] = None
-    queue_config: Optional[QueueConfig] = None
+    blob_store_config: BlobStorageConfig | None = None
+    queue_config: QueueConfig | None = None
 
     @classmethod
     def from_node(cls, node: AbstractNode) -> Self:

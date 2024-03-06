@@ -1,7 +1,6 @@
 # stdlib
 
 # stdlib
-from typing import Union
 from typing import cast
 
 # third party
@@ -90,7 +89,7 @@ class SettingsService(AbstractService):
     )
     def allow_guest_signup(
         self, context: AuthedServiceContext, enable: bool
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Enable/Disable Registration for Data Scientist or Guest Users."""
         flags.CAN_REGISTER = enable
         context.node = cast(AbstractNode, context.node)

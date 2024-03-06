@@ -1,5 +1,4 @@
 # stdlib
-from typing import Optional
 from uuid import uuid4
 
 # syft absolute
@@ -13,7 +12,7 @@ from syft.types.syft_object import SyftHashableObject
 class MockObject(SyftHashableObject):
     key: str
     value: str
-    flag: Optional[bool]
+    flag: bool | None
 
     # Serialize `flag`, but don't use it for hashing
     __hash_exclude_attrs__ = ["flag"]
@@ -30,7 +29,7 @@ class MockWrapper(SyftBaseObject, SyftHashableObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: str
-    data: Optional[MockObject]
+    data: MockObject | None
 
 
 def test_simple_hashing():

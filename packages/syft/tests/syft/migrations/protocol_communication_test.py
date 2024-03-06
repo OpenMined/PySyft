@@ -1,9 +1,6 @@
 # stdlib
 from copy import deepcopy
 from pathlib import Path
-from typing import List
-from typing import Type
-from typing import Union
 from unittest import mock
 
 # third party
@@ -77,7 +74,7 @@ def setup_migration_transforms(mock_klass_v1, mock_klass_v2):
     return mock_v1_to_v2, mock_v2_to_v1
 
 
-def get_stash_klass(syft_object: Type[SyftBaseObject]):
+def get_stash_klass(syft_object: type[SyftBaseObject]):
     @serializable()
     class SyftMockObjectStash(BaseStash):
         object_type = syft_object
@@ -110,9 +107,7 @@ def setup_service_method(syft_object):
             name="get",
             roles=GUEST_ROLE_LEVEL,
         )
-        def get(
-            self, context: AuthedServiceContext
-        ) -> Union[List[syft_object], SyftError]:
+        def get(self, context: AuthedServiceContext) -> list[syft_object] | SyftError:
             result = self.stash.get_all(context.credentials, has_permission=True)
             if result.is_ok():
                 return result.ok()

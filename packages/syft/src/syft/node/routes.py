@@ -1,5 +1,7 @@
 # stdlib
-from typing import Dict
+
+# stdlib
+from typing import Annotated
 
 # third party
 from fastapi import APIRouter
@@ -10,7 +12,6 @@ from fastapi import Response
 from fastapi.responses import JSONResponse
 from loguru import logger
 from pydantic import ValidationError
-from typing_extensions import Annotated
 
 # relative
 from ..abstract_node import AbstractNode
@@ -51,7 +52,7 @@ def make_routes(worker: Worker) -> APIRouter:
         status_code=200,
         response_class=JSONResponse,
     )
-    def root() -> Dict[str, str]:
+    def root() -> dict[str, str]:
         """
         Currently, all service backends must satisfy either of the following requirements to
         pass the HTTP health checks sent to it from the GCE loadbalancer: 1. Respond with a

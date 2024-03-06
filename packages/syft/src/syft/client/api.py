@@ -3,18 +3,13 @@ from __future__ import annotations
 
 # stdlib
 from collections import OrderedDict
+from collections.abc import Callable
 import inspect
 from inspect import Parameter
 from inspect import signature
 import types
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Tuple
-from typing import Union
 from typing import _GenericAlias
 from typing import cast
 from typing import get_args
@@ -69,13 +64,13 @@ if TYPE_CHECKING:
 
 
 class APIRegistry:
-    __api_registry__: Dict[Tuple, SyftAPI] = OrderedDict()
+    __api_registry__: dict[tuple, SyftAPI] = OrderedDict()
 
     @classmethod
     def set_api_for(
         cls,
-        node_uid: Union[UID, str],
-        user_verify_key: Union[SyftVerifyKey, str],
+        node_uid: UID | str,
+        user_verify_key: SyftVerifyKey | str,
         api: SyftAPI,
     ) -> None:
         if isinstance(node_uid, str):
@@ -89,18 +84,16 @@ class APIRegistry:
         cls.__api_registry__[key] = api
 
     @classmethod
-    def api_for(
-        cls, node_uid: UID, user_verify_key: SyftVerifyKey
-    ) -> Optional[SyftAPI]:
+    def api_for(cls, node_uid: UID, user_verify_key: SyftVerifyKey) -> SyftAPI | None:
         key = (node_uid, user_verify_key)
         return cls.__api_registry__.get(key, None)
 
     @classmethod
-    def get_all_api(cls) -> List[SyftAPI]:
+    def get_all_api(cls) -> list[SyftAPI]:
         return list(cls.__api_registry__.values())
 
     @classmethod
-    def get_by_recent_node_uid(cls, node_uid: UID) -> Optional[SyftAPI]:
+    def get_by_recent_node_uid(cls, node_uid: UID) -> SyftAPI | None:
         for key, api in reversed(cls.__api_registry__.items()):
             if key[0] == node_uid:
                 return api
@@ -117,11 +110,11 @@ class APIEndpoint(SyftObject):
     module_path: str
     name: str
     description: str
-    doc_string: Optional[str] = None
+    doc_string: str | None = None
     signature: Signature
     has_self: bool = False
-    pre_kwargs: Optional[Dict[str, Any]] = None
-    warning: Optional[APIEndpointWarning] = None
+    pre_kwargs: dict[str, Any] | None = None
+    warning: APIEndpointWarning | None = None
 
 
 @serializable()
@@ -134,10 +127,10 @@ class LibEndpoint(SyftBaseObject):
     module_path: str
     name: str
     description: str
-    doc_string: Optional[str] = None
+    doc_string: str | None = None
     signature: Signature
     has_self: bool = False
-    pre_kwargs: Optional[Dict[str, Any]] = None
+    pre_kwargs: dict[str, Any] | None = None
 
 
 @serializable(attrs=["signature", "credentials", "serialized_message"])
@@ -148,7 +141,7 @@ class SignedSyftAPICall(SyftObject):
     credentials: SyftVerifyKey
     signature: bytes
     serialized_message: bytes
-    cached_deseralized_message: Optional[SyftAPICall] = None
+    cached_deseralized_message: SyftAPICall | None = None
 
     @property
     def message(self) -> SyftAPICall:
@@ -185,8 +178,8 @@ class SyftAPICall(SyftObject):
     # fields
     node_uid: UID
     path: str
-    args: List
-    kwargs: Dict[str, Any]
+    args: list
+    kwargs: dict[str, Any]
     blocking: bool = True
 
     def sign(self, credentials: SyftSigningKey) -> SignedSyftAPICall:
@@ -233,17 +226,17 @@ class RemoteFunction(SyftObject):
     signature: Signature
     path: str
     make_call: Callable
-    pre_kwargs: Optional[Dict[str, Any]] = None
+    pre_kwargs: dict[str, Any] | None = None
     communication_protocol: PROTOCOL_TYPE
-    warning: Optional[APIEndpointWarning] = None
+    warning: APIEndpointWarning | None = None
 
     @property
-    def __ipython_inspector_signature_override__(self) -> Optional[Signature]:
+    def __ipython_inspector_signature_override__(self) -> Signature | None:
         return self.signature
 
     def prepare_args_and_kwargs(
-        self, args: Union[list, tuple], kwargs: dict[str, Any]
-    ) -> Union[SyftError, tuple[tuple, dict[str, Any]]]:
+        self, args: list | tuple, kwargs: dict[str, Any]
+    ) -> SyftError | tuple[tuple, dict[str, Any]]:
         # Validate and migrate args and kwargs
         res = validate_callable_args_and_kwargs(args, kwargs, self.signature)
         if isinstance(res, SyftError):
@@ -305,8 +298,8 @@ class RemoteUserCodeFunction(RemoteFunction):
     api: SyftAPI
 
     def prepare_args_and_kwargs(
-        self, args: Union[list, tuple], kwargs: Dict[str, Any]
-    ) -> Union[SyftError, tuple[tuple, dict[str, Any]]]:
+        self, args: list | tuple, kwargs: dict[str, Any]
+    ) -> SyftError | tuple[tuple, dict[str, Any]]:
         # relative
         from ..service.action.action_object import convert_to_pointers
 
@@ -330,14 +323,14 @@ class RemoteUserCodeFunction(RemoteFunction):
         return args, kwargs
 
     @property
-    def user_code_id(self) -> Optional[UID]:
+    def user_code_id(self) -> UID | None:
         if self.pre_kwargs:
             return self.pre_kwargs.get("uid", None)
         else:
             return None
 
     @property
-    def jobs(self) -> Union[List[Job], SyftError]:
+    def jobs(self) -> list[Job] | SyftError:
         if self.user_code_id is None:
             return SyftError(message="Could not find user_code_id")
         api_call = SyftAPICall(
@@ -356,9 +349,9 @@ def generate_remote_function(
     signature: Signature,
     path: str,
     make_call: Callable,
-    pre_kwargs: Optional[Dict[str, Any]],
+    pre_kwargs: dict[str, Any] | None,
     communication_protocol: PROTOCOL_TYPE,
-    warning: Optional[APIEndpointWarning],
+    warning: APIEndpointWarning | None,
 ) -> RemoteFunction:
     if "blocking" in signature.parameters:
         raise Exception(
@@ -400,14 +393,14 @@ def generate_remote_lib_function(
     module_path: str,
     make_call: Callable,
     communication_protocol: PROTOCOL_TYPE,
-    pre_kwargs: Dict[str, Any],
+    pre_kwargs: dict[str, Any],
 ) -> Any:
     if "blocking" in signature.parameters:
         raise Exception(
             f"Signature {signature} can't have 'blocking' kwarg because its reserved"
         )
 
-    def wrapper(*args: Any, **kwargs: Any) -> Union[SyftError, Any]:
+    def wrapper(*args: Any, **kwargs: Any) -> SyftError | Any:
         # relative
         from ..service.action.action_object import TraceResult
 
@@ -474,7 +467,7 @@ def generate_remote_lib_function(
 
 @serializable()
 class APIModule:
-    _modules: List[str]
+    _modules: list[str]
     path: str
 
     def __init__(self, path: str) -> None:
@@ -482,7 +475,7 @@ class APIModule:
         self.path = path
 
     def _add_submodule(
-        self, attr_name: str, module_or_func: Union[Callable, APIModule]
+        self, attr_name: str, module_or_func: Callable | APIModule
     ) -> None:
         setattr(self, attr_name, module_or_func)
         self._modules.append(attr_name)
@@ -496,7 +489,7 @@ class APIModule:
                 "you may not have permission to access the module you are trying to access"
             )
 
-    def __getitem__(self, key: Union[str, int]) -> Any:
+    def __getitem__(self, key: str | int) -> Any:
         if hasattr(self, "get_all"):
             return self.get_all()[key]
         raise NotImplementedError
@@ -512,8 +505,8 @@ class APIModule:
 
 
 def debox_signed_syftapicall_response(
-    signed_result: Union[SignedSyftAPICall, Any],
-) -> Union[Any, SyftError]:
+    signed_result: SignedSyftAPICall | Any,
+) -> Any | SyftError:
     if not isinstance(signed_result, SignedSyftAPICall):
         return SyftError(message="The result is not signed")
 
@@ -522,7 +515,7 @@ def debox_signed_syftapicall_response(
     return signed_result.message.data
 
 
-def downgrade_signature(signature: Signature, object_versions: Dict) -> Signature:
+def downgrade_signature(signature: Signature, object_versions: dict) -> Signature:
     migrated_parameters = []
     for _, parameter in signature.parameters.items():
         annotation = unwrap_and_migrate_annotation(
@@ -551,7 +544,7 @@ def downgrade_signature(signature: Signature, object_versions: Dict) -> Signatur
     return new_signature
 
 
-def unwrap_and_migrate_annotation(annotation: Any, object_versions: Dict) -> Any:
+def unwrap_and_migrate_annotation(annotation: Any, object_versions: dict) -> Any:
     args = get_args(annotation)
     origin = get_origin(annotation)
     if len(args) == 0:
@@ -602,16 +595,16 @@ class SyftAPI(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
-    connection: Optional[NodeConnection] = None
-    node_uid: Optional[UID] = None
-    node_name: Optional[str] = None
-    endpoints: Dict[str, APIEndpoint]
-    lib_endpoints: Optional[Dict[str, LibEndpoint]] = None
-    api_module: Optional[APIModule] = None
-    libs: Optional[APIModule] = None
-    signing_key: Optional[SyftSigningKey] = None
+    connection: NodeConnection | None = None
+    node_uid: UID | None = None
+    node_name: str | None = None
+    endpoints: dict[str, APIEndpoint]
+    lib_endpoints: dict[str, LibEndpoint] | None = None
+    api_module: APIModule | None = None
+    libs: APIModule | None = None
+    signing_key: SyftSigningKey | None = None
     # serde / storage rules
-    refresh_api_callback: Optional[Callable] = None
+    refresh_api_callback: Callable | None = None
     __user_role: ServiceRole = ServiceRole.NONE
     communication_protocol: PROTOCOL_TYPE
 
@@ -622,7 +615,7 @@ class SyftAPI(SyftObject):
     def for_user(
         node: AbstractNode,
         communication_protocol: PROTOCOL_TYPE,
-        user_verify_key: Optional[SyftVerifyKey] = None,
+        user_verify_key: SyftVerifyKey | None = None,
     ) -> SyftAPI:
         # relative
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
@@ -633,8 +626,8 @@ class SyftAPI(SyftObject):
         role = node.get_role_for_credentials(user_verify_key)
         _user_service_config_registry = UserServiceConfigRegistry.from_role(role)
         _user_lib_config_registry = UserLibConfigRegistry.from_user(user_verify_key)
-        endpoints: Dict[str, APIEndpoint] = {}
-        lib_endpoints: Dict[str, LibEndpoint] = {}
+        endpoints: dict[str, APIEndpoint] = {}
+        lib_endpoints: dict[str, LibEndpoint] = {}
         warning_context = WarningContext(
             node=node, role=role, credentials=user_verify_key
         )
@@ -785,7 +778,7 @@ class SyftAPI(SyftObject):
 
     def generate_endpoints(self) -> None:
         def build_endpoint_tree(
-            endpoints: Dict[str, LibEndpoint], communication_protocol: PROTOCOL_TYPE
+            endpoints: dict[str, LibEndpoint], communication_protocol: PROTOCOL_TYPE
         ) -> APIModule:
             api_module = APIModule(path="")
             for _, v in endpoints.items():
@@ -905,7 +898,7 @@ def _render_signature(obj_signature: Signature, obj_name: str) -> str:
     return rendered
 
 
-def _getdef(self: Any, obj: Any, oname: str = "") -> Union[str, None]:
+def _getdef(self: Any, obj: Any, oname: str = "") -> str | None:
     """Return the call signature for any callable object.
     If any exception is generated, None is returned instead and the
     exception is suppressed."""
@@ -915,7 +908,7 @@ def _getdef(self: Any, obj: Any, oname: str = "") -> Union[str, None]:
         return None
 
 
-def monkey_patch_getdef(self: Any, obj: Any, oname: str = "") -> Union[str, None]:
+def monkey_patch_getdef(self: Any, obj: Any, oname: str = "") -> str | None:
     try:
         if hasattr(obj, "__ipython_inspector_signature_override__"):
             return _render_signature(
@@ -990,8 +983,8 @@ class NodeIdentity(Identity):
 
 
 def validate_callable_args_and_kwargs(
-    args: List, kwargs: Dict, signature: Signature
-) -> Union[Tuple[List, Dict], SyftError]:
+    args: list, kwargs: dict, signature: Signature
+) -> tuple[list, dict] | SyftError:
     _valid_kwargs = {}
     if "kwargs" in signature.parameters:
         _valid_kwargs = kwargs

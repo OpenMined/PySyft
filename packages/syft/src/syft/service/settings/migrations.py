@@ -1,5 +1,5 @@
 # stdlib
-from typing import Callable
+from collections.abc import Callable
 
 # relative
 from ...types.syft_migration import migrate

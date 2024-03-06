@@ -1,8 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Optional
-from typing import Type
-from typing import Union
 
 # third party
 from typing_extensions import Self
@@ -25,8 +22,8 @@ class LinkedObject(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     node_uid: UID
-    service_type: Type[Any]
-    object_type: Type[SyftObject]
+    service_type: type[Any]
+    object_type: type[SyftObject]
     object_uid: UID
 
     __exclude_sync_diff_attrs__ = ["node_uid"]
@@ -59,8 +56,8 @@ class LinkedObject(SyftObject):
         )
 
     def update_with_context(
-        self, context: Union[NodeServiceContext, ChangeContext, Any], obj: Any
-    ) -> Union[SyftSuccess, SyftError]:
+        self, context: NodeServiceContext | ChangeContext | Any, obj: Any
+    ) -> SyftSuccess | SyftError:
         if isinstance(context, AuthedServiceContext):
             credentials = context.credentials
         elif isinstance(context, ChangeContext):
@@ -79,9 +76,9 @@ class LinkedObject(SyftObject):
     @classmethod
     def from_obj(
         cls,
-        obj: Union[SyftObject, Type[SyftObject]],
-        service_type: Optional[Type[Any]] = None,
-        node_uid: Optional[UID] = None,
+        obj: SyftObject | type[SyftObject],
+        service_type: type[Any] | None = None,
+        node_uid: UID | None = None,
     ) -> Self:
         if service_type is None:
             # relative
@@ -116,8 +113,8 @@ class LinkedObject(SyftObject):
         cls,
         obj: SyftObject,
         context: NodeServiceContext,
-        object_uid: Optional[UID] = None,
-        service_type: Optional[Type[Any]] = None,
+        object_uid: UID | None = None,
+        service_type: type[Any] | None = None,
     ) -> Self:
         if service_type is None:
             # relative
@@ -145,8 +142,8 @@ class LinkedObject(SyftObject):
     def from_uid(
         cls,
         object_uid: UID,
-        object_type: Type[SyftObject],
-        service_type: Type[Any],
+        object_type: type[SyftObject],
+        service_type: type[Any],
         node_uid: UID,
     ) -> Self:
         return cls(

@@ -1,10 +1,9 @@
 # stdlib
+from collections.abc import Iterable
 import contextlib
 import io
 from pathlib import Path
 from typing import Any
-from typing import Iterable
-from typing import Optional
 
 # third party
 import docker
@@ -23,9 +22,9 @@ class DockerBuilder(BuilderBase):
     def build_image(
         self,
         tag: str,
-        dockerfile: Optional[str] = None,
-        dockerfile_path: Optional[Path] = None,
-        buildargs: Optional[dict] = None,
+        dockerfile: str | None = None,
+        dockerfile_path: Path | None = None,
+        buildargs: dict | None = None,
         **kwargs: Any,
     ) -> ImageBuildResult:
         if dockerfile:

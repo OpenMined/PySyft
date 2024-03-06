@@ -1,6 +1,4 @@
 # stdlib
-from typing import List
-from typing import Optional
 
 # third party
 from result import Result
@@ -29,7 +27,7 @@ class SyftObjectMigrationState(SyftObject):
     current_version: int
 
     @property
-    def latest_version(self) -> Optional[int]:
+    def latest_version(self) -> int | None:
         available_versions = SyftMigrationRegistry.get_versions(
             canonical_name=self.canonical_name,
         )
@@ -39,7 +37,7 @@ class SyftObjectMigrationState(SyftObject):
         return sorted(available_versions, reverse=True)[0]
 
     @property
-    def supported_versions(self) -> List:
+    def supported_versions(self) -> list:
         return SyftMigrationRegistry.get_versions(self.canonical_name)
 
 
@@ -61,7 +59,7 @@ class SyftMigrationStateStash(BaseStash):
         self,
         credentials: SyftVerifyKey,
         migration_state: SyftObjectMigrationState,
-        add_permissions: Optional[List[ActionObjectPermission]] = None,
+        add_permissions: list[ActionObjectPermission] | None = None,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObjectMigrationState, str]:
         res = self.check_type(migration_state, self.object_type)

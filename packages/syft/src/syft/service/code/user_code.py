@@ -3,6 +3,8 @@ from __future__ import annotations
 
 # stdlib
 import ast
+from collections.abc import Callable
+from collections.abc import Generator
 from copy import deepcopy
 import datetime
 from enum import Enum
@@ -16,16 +18,8 @@ from threading import Thread
 import time
 import traceback
 from typing import Any
-from typing import Callable
 from typing import ClassVar
-from typing import Dict
-from typing import Generator
-from typing import List
-from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Tuple
-from typing import Type
-from typing import Union
 from typing import cast
 from typing import final
 
@@ -124,10 +118,10 @@ class UserCodeStatusCollection(SyftObject):
 
     __repr_attrs__ = ["approved", "status_dict"]
 
-    status_dict: Dict[NodeIdentity, Tuple[UserCodeStatus, str]] = {}
+    status_dict: dict[NodeIdentity, tuple[UserCodeStatus, str]] = {}
     user_code_link: LinkedObject
 
-    def get_diffs(self, ext_obj: Any) -> List[AttrDiff]:
+    def get_diffs(self, ext_obj: Any) -> list[AttrDiff]:
         # relative
         from ...service.sync.diff_state import AttrDiff
 
@@ -176,7 +170,7 @@ class UserCodeStatusCollection(SyftObject):
             string += f"{node_identity.node_name}: {status}, {reason}<br>"
         return string
 
-    def get_status_message(self) -> Union[SyftSuccess, SyftNotReady, SyftError]:
+    def get_status_message(self) -> SyftSuccess | SyftNotReady | SyftError:
         if self.approved:
             return SyftSuccess(message=f"{type(self)} approved")
         denial_string = ""
@@ -238,11 +232,11 @@ class UserCodeStatusCollection(SyftObject):
 
     def mutate(
         self,
-        value: Tuple[UserCodeStatus, str],
+        value: tuple[UserCodeStatus, str],
         node_name: str,
         node_id: UID,
         verify_key: SyftVerifyKey,
-    ) -> Union[SyftError, Self]:
+    ) -> SyftError | Self:
         node_identity = NodeIdentity(
             node_name=node_name, node_id=node_id, verify_key=verify_key
         )
@@ -256,7 +250,7 @@ class UserCodeStatusCollection(SyftObject):
                 message="Cannot Modify Status as the Domain's data is not included in the request"
             )
 
-    def get_sync_dependencies(self, api: Any = None) -> List[UID]:
+    def get_sync_dependencies(self, api: Any = None) -> list[UID]:
         return [self.user_code_link.object_uid]
 
 
@@ -267,14 +261,14 @@ class UserCodeV1(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
-    node_uid: Optional[UID] = None
+    node_uid: UID | None = None
     user_verify_key: SyftVerifyKey
     raw_code: str
-    input_policy_type: Union[Type[InputPolicy], UserPolicy]
-    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    input_policy_type: type[InputPolicy] | UserPolicy
+    input_policy_init_kwargs: dict[Any, Any] | None = None
     input_policy_state: bytes = b""
-    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
-    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    output_policy_type: type[OutputPolicy] | UserPolicy
+    output_policy_init_kwargs: dict[Any, Any] | None = None
     output_policy_state: bytes = b""
     parsed_code: str
     service_func_name: str
@@ -283,9 +277,9 @@ class UserCodeV1(SyftObject):
     code_hash: str
     signature: inspect.Signature
     status: UserCodeStatusCollection
-    input_kwargs: List[str]
-    enclave_metadata: Optional[EnclaveMetadata] = None
-    submit_time: Optional[DateTime] = None
+    input_kwargs: list[str]
+    enclave_metadata: EnclaveMetadata | None = None
+    submit_time: DateTime | None = None
 
     __attr_searchable__ = [
         "user_verify_key",
@@ -302,14 +296,14 @@ class UserCodeV2(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
-    node_uid: Optional[UID] = None
+    node_uid: UID | None = None
     user_verify_key: SyftVerifyKey
     raw_code: str
-    input_policy_type: Union[Type[InputPolicy], UserPolicy]
-    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    input_policy_type: type[InputPolicy] | UserPolicy
+    input_policy_init_kwargs: dict[Any, Any] | None = None
     input_policy_state: bytes = b""
-    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
-    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    output_policy_type: type[OutputPolicy] | UserPolicy
+    output_policy_init_kwargs: dict[Any, Any] | None = None
     output_policy_state: bytes = b""
     parsed_code: str
     service_func_name: str
@@ -318,12 +312,12 @@ class UserCodeV2(SyftObject):
     code_hash: str
     signature: inspect.Signature
     status: UserCodeStatusCollection
-    input_kwargs: List[str]
-    enclave_metadata: Optional[EnclaveMetadata] = None
-    submit_time: Optional[DateTime] = None
+    input_kwargs: list[str]
+    enclave_metadata: EnclaveMetadata | None = None
+    submit_time: DateTime | None = None
     uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
-    nested_requests: Dict[str, str] = {}
-    nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
+    nested_requests: dict[str, str] = {}
+    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
 
 
 class UserCodeV3(SyftObject):
@@ -331,14 +325,14 @@ class UserCodeV3(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_3
 
     id: UID
-    node_uid: Optional[UID] = None
+    node_uid: UID | None = None
     user_verify_key: SyftVerifyKey
     raw_code: str
-    input_policy_type: Union[Type[InputPolicy], UserPolicy]
-    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    input_policy_type: type[InputPolicy] | UserPolicy
+    input_policy_init_kwargs: dict[Any, Any] | None = None
     input_policy_state: bytes = b""
-    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
-    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    output_policy_type: type[OutputPolicy] | UserPolicy
+    output_policy_init_kwargs: dict[Any, Any] | None = None
     output_policy_state: bytes = b""
     parsed_code: str
     service_func_name: str
@@ -347,22 +341,22 @@ class UserCodeV3(SyftObject):
     code_hash: str
     signature: inspect.Signature
     status: UserCodeStatusCollection
-    input_kwargs: List[str]
-    enclave_metadata: Optional[EnclaveMetadata] = None
-    submit_time: Optional[DateTime] = None
+    input_kwargs: list[str]
+    enclave_metadata: EnclaveMetadata | None = None
+    submit_time: DateTime | None = None
     uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
-    nested_requests: Dict[str, str] = {}
-    nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
-    worker_pool_name: Optional[str] = None
+    nested_requests: dict[str, str] = {}
+    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
+    worker_pool_name: str | None = None
 
-    __attr_searchable__: ClassVar[List[str]] = [
+    __attr_searchable__: ClassVar[list[str]] = [
         "user_verify_key",
         "status",
         "service_func_name",
         "code_hash",
     ]  # type: ignore
-    __attr_unique__: ClassVar[List[str]] = []  # type: ignore
-    __repr_attrs__: ClassVar[List[str]] = [
+    __attr_unique__: ClassVar[list[str]] = []  # type: ignore
+    __repr_attrs__: ClassVar[list[str]] = [
         "service_func_name",
         "input_owners",
         "code_status",
@@ -377,14 +371,14 @@ class UserCode(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_4
 
     id: UID
-    node_uid: Optional[UID] = None
+    node_uid: UID | None = None
     user_verify_key: SyftVerifyKey
     raw_code: str
-    input_policy_type: Union[Type[InputPolicy], UserPolicy]
-    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    input_policy_type: type[InputPolicy] | UserPolicy
+    input_policy_init_kwargs: dict[Any, Any] | None = None
     input_policy_state: bytes = b""
-    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
-    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    output_policy_type: type[OutputPolicy] | UserPolicy
+    output_policy_init_kwargs: dict[Any, Any] | None = None
     output_policy_state: bytes = b""
     parsed_code: str
     service_func_name: str
@@ -393,27 +387,27 @@ class UserCode(SyftObject):
     code_hash: str
     signature: inspect.Signature
     status_link: LinkedObject
-    input_kwargs: List[str]
-    enclave_metadata: Optional[EnclaveMetadata] = None
-    submit_time: Optional[DateTime] = None
+    input_kwargs: list[str]
+    enclave_metadata: EnclaveMetadata | None = None
+    submit_time: DateTime | None = None
     uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
-    nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
-    worker_pool_name: Optional[str] = None
+    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
+    worker_pool_name: str | None = None
 
-    __attr_searchable__: ClassVar[List[str]] = [
+    __attr_searchable__: ClassVar[list[str]] = [
         "user_verify_key",
         "service_func_name",
         "code_hash",
     ]
-    __attr_unique__: ClassVar[List[str]] = []
-    __repr_attrs__: ClassVar[List[str]] = [
+    __attr_unique__: ClassVar[list[str]] = []
+    __repr_attrs__: ClassVar[list[str]] = [
         "service_func_name",
         "input_owners",
         "code_status",
         "worker_pool_name",
     ]
 
-    __exclude_sync_diff_attrs__: ClassVar[List[str]] = [
+    __exclude_sync_diff_attrs__: ClassVar[list[str]] = [
         "node_uid",
         "input_policy_type",
         "input_policy_init_kwargs",
@@ -435,7 +429,7 @@ class UserCode(SyftObject):
         else:
             return super().__setattr__(key, value)
 
-    def _coll_repr_(self) -> Dict[str, Any]:
+    def _coll_repr_(self) -> dict[str, Any]:
         status = [status for status, _ in self.status.status_dict.values()][0].value
         if status == UserCodeStatus.PENDING.value:
             badge_color = "badge-purple"
@@ -457,14 +451,14 @@ class UserCode(SyftObject):
         }
 
     @property
-    def status(self) -> Union[UserCodeStatusCollection, SyftError]:
+    def status(self) -> UserCodeStatusCollection | SyftError:
         # Clientside only
         res = self.status_link.resolve
         return res
 
     def get_status(
         self, context: AuthedServiceContext
-    ) -> Union[UserCodeStatusCollection, SyftError]:
+    ) -> UserCodeStatusCollection | SyftError:
         status = self.status_link.resolve_with_context(context)
         if status.is_err():
             return SyftError(message=status.err())
@@ -475,19 +469,19 @@ class UserCode(SyftObject):
         return self.enclave_metadata is not None
 
     @property
-    def input_owners(self) -> Optional[List[str]]:
+    def input_owners(self) -> list[str] | None:
         if self.input_policy_init_kwargs is not None:
             return [str(x.node_name) for x in self.input_policy_init_kwargs.keys()]
         return None
 
     @property
-    def input_owner_verify_keys(self) -> Optional[List[SyftVerifyKey]]:
+    def input_owner_verify_keys(self) -> list[SyftVerifyKey] | None:
         if self.input_policy_init_kwargs is not None:
             return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
         return None
 
     @property
-    def output_reader_names(self) -> Optional[List[SyftVerifyKey]]:
+    def output_reader_names(self) -> list[SyftVerifyKey] | None:
         if (
             self.input_policy_init_kwargs is not None
             and self.output_policy_init_kwargs is not None
@@ -500,7 +494,7 @@ class UserCode(SyftObject):
         return None
 
     @property
-    def output_readers(self) -> Optional[List[SyftVerifyKey]]:
+    def output_readers(self) -> list[SyftVerifyKey] | None:
         if self.output_policy_init_kwargs is not None:
             return self.output_policy_init_kwargs.get("output_readers", [])
         return None
@@ -515,18 +509,18 @@ class UserCode(SyftObject):
         return status_list
 
     @property
-    def input_policy(self) -> Optional[InputPolicy]:
+    def input_policy(self) -> InputPolicy | None:
         if not self.status.approved:
             return None
         return self._get_input_policy()
 
-    def get_input_policy(self, context: AuthedServiceContext) -> Optional[InputPolicy]:
+    def get_input_policy(self, context: AuthedServiceContext) -> InputPolicy | None:
         status = self.get_status(context)
         if not status.approved:
             return None
         return self._get_input_policy()
 
-    def _get_input_policy(self) -> Optional[InputPolicy]:
+    def _get_input_policy(self) -> InputPolicy | None:
         if len(self.input_policy_state) == 0:
             input_policy = None
             if (
@@ -580,19 +574,17 @@ class UserCode(SyftObject):
             raise Exception(f"You can't set {type(value)} as input_policy_state")
 
     @property
-    def output_policy(self) -> Optional[OutputPolicy]:  # type: ignore
+    def output_policy(self) -> OutputPolicy | None:  # type: ignore
         if not self.status.approved:
             return None
         return self._get_output_policy()
 
-    def get_output_policy(
-        self, context: AuthedServiceContext
-    ) -> Optional[OutputPolicy]:
+    def get_output_policy(self, context: AuthedServiceContext) -> OutputPolicy | None:
         if not self.get_status(context).approved:
             return None
         return self._get_output_policy()
 
-    def _get_output_policy(self) -> Optional[OutputPolicy]:
+    def _get_output_policy(self) -> OutputPolicy | None:
         # if not self.status.approved:
         #     return None
         if len(self.output_policy_state) == 0:
@@ -637,7 +629,7 @@ class UserCode(SyftObject):
             raise Exception(f"You can't set {type(value)} as output_policy_state")
 
     @property
-    def output_history(self) -> Union[List[ExecutionOutput], SyftError]:
+    def output_history(self) -> list[ExecutionOutput] | SyftError:
         api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
         if api is None:
             return SyftError(
@@ -647,7 +639,7 @@ class UserCode(SyftObject):
 
     def get_output_history(
         self, context: AuthedServiceContext
-    ) -> Union[List[ExecutionOutput], SyftError]:
+    ) -> list[ExecutionOutput] | SyftError:
         if not self.get_status(context).approved:
             return SyftError(
                 message="Execution denied, Please wait for the code to be approved"
@@ -660,8 +652,8 @@ class UserCode(SyftObject):
         self,
         context: AuthedServiceContext,
         outputs: Any,
-        job_id: Optional[UID] = None,
-    ) -> Union[ExecutionOutput, SyftError]:
+        job_id: UID | None = None,
+    ) -> ExecutionOutput | SyftError:
         output_policy = self.get_output_policy(context)
         if output_policy is None:
             return SyftError(
@@ -686,7 +678,7 @@ class UserCode(SyftObject):
         return execution_result
 
     @property
-    def byte_code(self) -> Optional[PyCodeObject]:
+    def byte_code(self) -> PyCodeObject | None:
         return compile_byte_code(self.parsed_code)
 
     def get_results(self) -> Any:
@@ -701,7 +693,7 @@ class UserCode(SyftObject):
         return api.services.code.get_results(self)
 
     @property
-    def assets(self) -> List[Asset]:
+    def assets(self) -> list[Asset]:
         # relative
         from ...client.api import APIRegistry
 
@@ -727,7 +719,7 @@ class UserCode(SyftObject):
                 all_assets += assets
         return all_assets
 
-    def get_sync_dependencies(self, api: Any = None) -> Union[List[UID], SyftError]:
+    def get_sync_dependencies(self, api: Any = None) -> list[UID] | SyftError:
         dependencies = []
 
         if self.nested_codes is not None:
@@ -737,14 +729,14 @@ class UserCode(SyftObject):
         return dependencies
 
     @property
-    def unsafe_function(self) -> Optional[Callable]:
+    def unsafe_function(self) -> Callable | None:
         warning = SyftWarning(
             message="This code was submitted by a User and could be UNSAFE."
         )
         display(warning)
 
         # 🟡 TODO: re-use the same infrastructure as the execute_byte_code function
-        def wrapper(*args: Any, **kwargs: Any) -> Union[Callable, SyftError]:
+        def wrapper(*args: Any, **kwargs: Any) -> Callable | SyftError:
             try:
                 filtered_kwargs = {}
                 on_private_data, on_mock_data = False, False
@@ -871,17 +863,17 @@ class SubmitUserCodeV2(SyftObject):
     __canonical_name__ = "SubmitUserCode"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID] = None  # type: ignore[assignment]
+    id: UID | None = None  # type: ignore[assignment]
     code: str
     func_name: str
     signature: inspect.Signature
-    input_policy_type: Union[SubmitUserPolicy, UID, Type[InputPolicy]]
-    input_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
-    output_policy_type: Union[SubmitUserPolicy, UID, Type[OutputPolicy]]
-    output_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
-    local_function: Optional[Callable] = None
-    input_kwargs: List[str]
-    enclave_metadata: Optional[EnclaveMetadata] = None
+    input_policy_type: SubmitUserPolicy | UID | type[InputPolicy]
+    input_policy_init_kwargs: dict[Any, Any] | None = {}
+    output_policy_type: SubmitUserPolicy | UID | type[OutputPolicy]
+    output_policy_init_kwargs: dict[Any, Any] | None = {}
+    local_function: Callable | None = None
+    input_kwargs: list[str]
+    enclave_metadata: EnclaveMetadata | None = None
 
 
 @serializable(without=["local_function"])
@@ -890,18 +882,18 @@ class SubmitUserCode(SyftObject):
     __canonical_name__ = "SubmitUserCode"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    id: Optional[UID] = None  # type: ignore[assignment]
+    id: UID | None = None  # type: ignore[assignment]
     code: str
     func_name: str
     signature: inspect.Signature
-    input_policy_type: Union[SubmitUserPolicy, UID, Type[InputPolicy]]
-    input_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
-    output_policy_type: Union[SubmitUserPolicy, UID, Type[OutputPolicy]]
-    output_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
-    local_function: Optional[Callable] = None
-    input_kwargs: List[str]
-    enclave_metadata: Optional[EnclaveMetadata] = None
-    worker_pool_name: Optional[str] = None
+    input_policy_type: SubmitUserPolicy | UID | type[InputPolicy]
+    input_policy_init_kwargs: dict[Any, Any] | None = {}
+    output_policy_type: SubmitUserPolicy | UID | type[OutputPolicy]
+    output_policy_init_kwargs: dict[Any, Any] | None = {}
+    local_function: Callable | None = None
+    input_kwargs: list[str]
+    enclave_metadata: EnclaveMetadata | None = None
+    worker_pool_name: str | None = None
 
     __repr_attrs__ = ["func_name", "code"]
 
@@ -913,7 +905,7 @@ class SubmitUserCode(SyftObject):
         return values
 
     @property
-    def kwargs(self) -> Optional[dict[Any, Any]]:
+    def kwargs(self) -> dict[Any, Any] | None:
         return self.input_policy_init_kwargs
 
     def __call__(self, *args: Any, syft_no_node: bool = False, **kwargs: Any) -> Any:
@@ -949,8 +941,8 @@ class SubmitUserCode(SyftObject):
 
     def _ephemeral_node_call(
         self,
-        time_alive: Optional[int] = None,
-        n_consumers: Optional[int] = None,
+        time_alive: int | None = None,
+        n_consumers: int | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> Any:
@@ -1050,7 +1042,7 @@ class SubmitUserCode(SyftObject):
         return result
 
     @property
-    def input_owner_verify_keys(self) -> Optional[List[str]]:
+    def input_owner_verify_keys(self) -> list[str] | None:
         if self.input_policy_init_kwargs is not None:
             return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
         return None
@@ -1092,7 +1084,7 @@ def debox_asset(arg: Any) -> Any:
 def syft_function_single_use(
     *args: Any,
     share_results_with_owners: bool = False,
-    worker_pool_name: Optional[str] = None,
+    worker_pool_name: str | None = None,
     **kwargs: Any,
 ) -> Callable:
     return syft_function(
@@ -1104,10 +1096,10 @@ def syft_function_single_use(
 
 
 def syft_function(
-    input_policy: Optional[Union[InputPolicy, UID]] = None,
-    output_policy: Optional[Union[OutputPolicy, UID]] = None,
+    input_policy: InputPolicy | UID | None = None,
+    output_policy: OutputPolicy | UID | None = None,
     share_results_with_owners: bool = False,
-    worker_pool_name: Optional[str] = None,
+    worker_pool_name: str | None = None,
 ) -> Callable:
     if input_policy is None:
         input_policy = EmpyInputPolicy()
@@ -1140,9 +1132,9 @@ def syft_function(
         )
 
         if share_results_with_owners and res.output_policy_init_kwargs is not None:
-            res.output_policy_init_kwargs[
-                "output_readers"
-            ] = res.input_owner_verify_keys
+            res.output_policy_init_kwargs["output_readers"] = (
+                res.input_owner_verify_keys
+            )
 
         success_message = SyftSuccess(
             message=f"Syft function '{f.__name__}' successfully created. "
@@ -1175,8 +1167,8 @@ def process_code(
     raw_code: str,
     func_name: str,
     original_func_name: str,
-    policy_input_kwargs: List[str],
-    function_input_kwargs: List[str],
+    policy_input_kwargs: list[str],
+    function_input_kwargs: list[str],
 ) -> str:
     tree = ast.parse(raw_code)
 
@@ -1271,7 +1263,7 @@ def locate_launch_jobs(context: TransformContext) -> TransformContext:
     return context
 
 
-def compile_byte_code(parsed_code: str) -> Optional[PyCodeObject]:
+def compile_byte_code(parsed_code: str) -> PyCodeObject | None:
     try:
         return compile(parsed_code, "<string>", "exec")
     except Exception as e:
@@ -1416,7 +1408,7 @@ def set_default_pool_if_empty(context: TransformContext) -> TransformContext:
 
 
 @transform(SubmitUserCode, UserCode)
-def submit_user_code_to_user_code() -> List[Callable]:
+def submit_user_code_to_user_code() -> list[Callable]:
     return [
         generate_id,
         hash_code,
@@ -1503,7 +1495,7 @@ class SecureContext:
         #         api=user_api,
         #     )
 
-        def launch_job(func: UserCode, **kwargs: Any) -> Optional[Job]:
+        def launch_job(func: UserCode, **kwargs: Any) -> Job | None:
             # relative
 
             kw2id = {}
@@ -1539,7 +1531,7 @@ class SecureContext:
 
 
 def execute_byte_code(
-    code_item: UserCode, kwargs: Dict[str, Any], context: AuthedServiceContext
+    code_item: UserCode, kwargs: dict[str, Any], context: AuthedServiceContext
 ) -> Any:
     stdout_ = sys.stdout
     stderr_ = sys.stderr
@@ -1565,7 +1557,7 @@ def execute_byte_code(
                 self._set_progress(by=n)
 
             def _set_progress(
-                self, to: Optional[int] = None, by: Optional[int] = None
+                self, to: int | None = None, by: int | None = None
             ) -> None:
                 if safe_context.is_async is not None:
                     if by is None and to is None:
@@ -1576,7 +1568,7 @@ def execute_byte_code(
                         safe_context.job_set_current_iter(to)
 
             @final
-            def launch_job(self, func: UserCode, **kwargs: Any) -> Optional[Job]:
+            def launch_job(self, func: UserCode, **kwargs: Any) -> Job | None:
                 return safe_context.launch_job(func, **kwargs)
 
             def __setattr__(self, __name: str, __value: Any) -> None:
@@ -1586,7 +1578,7 @@ def execute_byte_code(
             job_id = context.job_id
             log_id = context.job.log_id
 
-            def print(*args: Any, sep: str = " ", end: str = "\n") -> Optional[str]:
+            def print(*args: Any, sep: str = " ", end: str = "\n") -> str | None:
                 def to_str(arg: Any) -> str:
                     if isinstance(arg, bytes):
                         return arg.decode("utf-8")
@@ -1697,7 +1689,7 @@ def traceback_from_error(e: Exception, code: UserCode) -> str:
     lines = code.parsed_code.split("\n")
     start_line = max(0, line_nr - 2)
     end_line = min(len(lines), line_nr + 2)
-    error_lines: Union[list[str], str] = [
+    error_lines: list[str] | str = [
         (
             e.replace("   ", f"    {i} ", 1)
             if i != line_nr
@@ -1716,7 +1708,7 @@ Encountered while executing {code.service_func_name}:
 
 
 def load_approved_policy_code(
-    user_code_items: List[UserCode], context: Optional[AuthedServiceContext]
+    user_code_items: list[UserCode], context: AuthedServiceContext | None
 ) -> Any:
     """Reload the policy code in memory for user code that is approved."""
     try:

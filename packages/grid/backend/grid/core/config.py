@@ -2,9 +2,6 @@
 import os
 import secrets
 from typing import Any
-from typing import List
-from typing import Optional
-from typing import Union
 
 # third party
 from pydantic import AnyHttpUrl
@@ -50,35 +47,35 @@ class Settings(BaseSettings):
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
     # e.g: '["http://localhost", "http://localhost:4200", "http://localhost:3000", \
     # "http://localhost:8080", "http://local.dockertoolbox.tiangolo.com"]'
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    BACKEND_CORS_ORIGINS: list[AnyHttpUrl] = []
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
+    def assemble_cors_origins(cls, v: str | list[str]) -> list[str] | str:
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
-        elif isinstance(v, (list, str)):
+        elif isinstance(v, list | str):
             return v
         raise ValueError(v)
 
     PROJECT_NAME: str = "grid"
 
-    SENTRY_DSN: Optional[HttpUrl] = None
+    SENTRY_DSN: HttpUrl | None = None
 
     @field_validator("SENTRY_DSN", mode="before")
     @classmethod
-    def sentry_dsn_can_be_blank(cls, v: str) -> Optional[str]:
+    def sentry_dsn_can_be_blank(cls, v: str) -> str | None:
         if v is None or len(v) == 0:
             return None
         return v
 
     SMTP_TLS: bool = True
-    SMTP_PORT: Optional[int] = None
-    SMTP_HOST: Optional[str] = None
-    SMTP_USER: Optional[str] = None
-    SMTP_PASSWORD: Optional[str] = None
-    EMAILS_FROM_EMAIL: Optional[EmailStr] = None
-    EMAILS_FROM_NAME: Optional[str] = None
+    SMTP_PORT: int | None = None
+    SMTP_HOST: str | None = None
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    EMAILS_FROM_EMAIL: EmailStr | None = None
+    EMAILS_FROM_NAME: str | None = None
 
     @model_validator(mode="after")
     def get_project_name(self) -> Self:
@@ -118,7 +115,7 @@ class Settings(BaseSettings):
     S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "seaweedfs")
     S3_PORT: int = int(os.getenv("S3_PORT", 8333))
     S3_ROOT_USER: str = os.getenv("S3_ROOT_USER", "admin")
-    S3_ROOT_PWD: Optional[str] = os.getenv("S3_ROOT_PWD", "admin")
+    S3_ROOT_PWD: str | None = os.getenv("S3_ROOT_PWD", "admin")
     S3_REGION: str = os.getenv("S3_REGION", "us-east-1")
     S3_PRESIGNED_TIMEOUT_SECS: int = int(
         os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800)
@@ -147,7 +144,7 @@ class Settings(BaseSettings):
     N_CONSUMERS: int = int(os.getenv("N_CONSUMERS", 1))
     SQLITE_PATH: str = os.path.expandvars("$HOME/data/db/")
     SINGLE_CONTAINER_MODE: bool = str_to_bool(os.getenv("SINGLE_CONTAINER_MODE", False))
-    CONSUMER_SERVICE_NAME: Optional[str] = os.getenv("CONSUMER_SERVICE_NAME")
+    CONSUMER_SERVICE_NAME: str | None = os.getenv("CONSUMER_SERVICE_NAME")
     INMEMORY_WORKERS: bool = str_to_bool(os.getenv("INMEMORY_WORKERS", True))
 
     TEST_MODE: bool = (

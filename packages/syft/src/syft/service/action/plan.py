@@ -1,11 +1,7 @@
 # stdlib
+from collections.abc import Callable
 import inspect
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
 
 # relative
 from ... import ActionObject
@@ -21,7 +17,7 @@ from .action_object import TraceResult
 class Plan(SyftObject):
     __canonical_name__ = "Plan"
     __version__ = SYFT_OBJECT_VERSION_1
-    syft_passthrough_attrs: List[str] = [
+    syft_passthrough_attrs: list[str] = [
         "inputs",
         "outputs",
         "code",
@@ -29,11 +25,11 @@ class Plan(SyftObject):
         "client",
     ]
 
-    inputs: Dict[str, ActionObject]
-    outputs: List[ActionObject]
-    actions: List[Action]
+    inputs: dict[str, ActionObject]
+    outputs: list[ActionObject]
+    actions: list[Action]
     code: str
-    client: Optional[SyftClient] = None
+    client: SyftClient | None = None
 
     def __repr__(self) -> str:
         obj_str = "Plan"
@@ -56,9 +52,7 @@ class Plan(SyftObject):
     def remap_actions_to_inputs(self, **new_inputs: Any) -> None:
         pass
 
-    def __call__(
-        self, *args: Any, **kwargs: Any
-    ) -> Union[ActionObject, list[ActionObject]]:
+    def __call__(self, *args: Any, **kwargs: Any) -> ActionObject | list[ActionObject]:
         if len(self.outputs) == 1:
             return self.outputs[0]
         else:
@@ -91,7 +85,7 @@ def planify(func: Callable) -> ActionObject:
 
 def build_plan_inputs(
     forward_func: Callable, client: SyftClient
-) -> Dict[str, ActionObject]:
+) -> dict[str, ActionObject]:
     signature = inspect.signature(forward_func)
     res = {}
     for k, v in signature.parameters.items():
