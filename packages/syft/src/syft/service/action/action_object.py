@@ -42,14 +42,11 @@ from ...serde.serialize import _serialize as serialize
 from ...service.response import SyftError
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.logger import debug
@@ -92,40 +89,6 @@ def repr_cls(c: Any) -> str:
 
 
 @serializable()
-class ActionV1(SyftObject):
-    """Serializable Action object.
-
-    Parameters:
-        path: str
-            The path of the Type of the remote object.
-        op: str
-            The method to be executed from the remote object.
-        remote_self: Optional[LineageID]
-            The extended UID of the SyftObject
-        args: List[LineageID]
-            `op` args
-        kwargs: Dict[str, LineageID]
-            `op` kwargs
-        result_id: Optional[LineageID]
-            Extended UID of the resulted SyftObject
-    """
-
-    __canonical_name__ = "Action"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    __attr_searchable__: ClassVar[List[str]] = []
-
-    path: str
-    op: str
-    remote_self: Optional[LineageID] = None
-    args: List[LineageID]
-    kwargs: Dict[str, LineageID]
-    result_id: Optional[LineageID] = None
-    action_type: Optional[ActionType] = None
-    create_object: Optional[SyftObject] = None
-
-
-@serializable()
 class Action(SyftObject):
     """Serializable Action object.
 
@@ -145,7 +108,7 @@ class Action(SyftObject):
     """
 
     __canonical_name__ = "Action"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     __attr_searchable__: ClassVar[List[str]] = []
 
@@ -251,20 +214,6 @@ class Action(SyftObject):
         return (
             f"ActionObject {self.path}{_coll_repr_}.{self.op}({arg_repr},{kwargs_repr})"
         )
-
-
-@migrate(Action, ActionV1)
-def downgrade_action_v2_to_v1() -> list[Callable]:
-    return [
-        drop("user_code_id"),
-        make_set_default("op", ""),
-        make_set_default("path", ""),
-    ]
-
-
-@migrate(ActionV1, Action)
-def upgrade_action_v1_to_v2() -> list[Callable]:
-    return [make_set_default("user_code_id", None)]
 
 
 class ActionObjectPointer:
@@ -634,77 +583,12 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
 ]
 
 
-@serializable()
-class ActionObjectV1(SyftObject):
-    """Action object for remote execution."""
-
-    __canonical_name__ = "ActionObject"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    __attr_searchable__: List[str] = []  # type: ignore[misc]
-    syft_action_data_cache: Optional[Any] = None
-    syft_blob_storage_entry_id: Optional[UID] = None
-    syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
-
-    # Help with calculating history hash for code verification
-    syft_parent_hashes: Optional[Union[int, List[int]]] = None
-    syft_parent_op: Optional[str] = None
-    syft_parent_args: Optional[Any] = None
-    syft_parent_kwargs: Optional[Any] = None
-    syft_history_hash: Optional[int] = None
-    syft_internal_type: ClassVar[Type[Any]]
-    syft_node_uid: Optional[UID] = None
-    syft_pre_hooks__: Dict[str, List] = {}
-    syft_post_hooks__: Dict[str, List] = {}
-    syft_twin_type: TwinMode = TwinMode.NONE
-    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
-    syft_action_data_type: Optional[Type] = None
-    syft_action_data_repr_: Optional[str] = None
-    syft_action_data_str_: Optional[str] = None
-    syft_has_bool_attr: Optional[bool] = None
-    syft_resolve_data: Optional[bool] = None
-    syft_created_at: Optional[DateTime] = None
-
-
-@serializable()
-class ActionObjectV2(SyftObject):
-    """Action object for remote execution."""
-
-    __canonical_name__ = "ActionObject"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    __attr_searchable__: List[str] = []  # type: ignore[misc]
-    syft_action_data_cache: Optional[Any] = None
-    syft_blob_storage_entry_id: Optional[UID] = None
-    syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
-
-    # Help with calculating history hash for code verification
-    syft_parent_hashes: Optional[Union[int, List[int]]] = None
-    syft_parent_op: Optional[str] = None
-    syft_parent_args: Optional[Any] = None
-    syft_parent_kwargs: Optional[Any] = None
-    syft_history_hash: Optional[int] = None
-    syft_internal_type: ClassVar[Type[Any]]
-    syft_node_uid: Optional[UID] = None
-    syft_pre_hooks__: Dict[str, List] = {}
-    syft_post_hooks__: Dict[str, List] = {}
-    syft_twin_type: TwinMode = TwinMode.NONE
-    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
-    syft_action_data_type: Optional[Type] = None
-    syft_action_data_repr_: Optional[str] = None
-    syft_action_data_str_: Optional[str] = None
-    syft_has_bool_attr: Optional[bool] = None
-    syft_resolve_data: Optional[bool] = None
-    syft_created_at: Optional[DateTime] = None
-    syft_resolved: bool = True
-
-
 @serializable(without=["syft_pre_hooks__", "syft_post_hooks__"])
 class ActionObject(SyftObject):
     """Action object for remote execution."""
 
     __canonical_name__ = "ActionObject"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     __attr_searchable__: List[str] = []  # type: ignore[misc]
     syft_action_data_cache: Optional[Any] = None
@@ -2053,45 +1937,10 @@ class ActionObject(SyftObject):
         return self._syft_output_action_object(self.__rrshift__(other))
 
 
-@migrate(ActionObject, ActionObjectV1)
-def downgrade_actionobject_v2_to_v1() -> list[Callable]:
-    return [
-        drop("syft_resolved"),
-    ]
-
-
-@migrate(ActionObjectV1, ActionObject)
-def upgrade_actionobject_v1_to_v2() -> list[Callable]:
-    return [
-        make_set_default("syft_resolved", True),
-    ]
-
-
-@serializable()
-class AnyActionObjectV1(ActionObjectV1):
-    __canonical_name__ = "AnyActionObject"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    syft_internal_type: ClassVar[Type[Any]] = NoneType  # type: ignore
-    # syft_passthrough_attrs: List[str] = []
-    syft_dont_wrap_attrs: List[str] = ["__str__", "__repr__", "syft_action_data_str_"]
-
-
-@serializable()
-class AnyActionObjectV2(ActionObjectV2):
-    __canonical_name__ = "AnyActionObject"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    syft_internal_type: ClassVar[Type[Any]] = NoneType  # type: ignore
-    # syft_passthrough_attrs: List[str] = []
-    syft_dont_wrap_attrs: List[str] = ["__str__", "__repr__", "syft_action_data_str_"]
-    syft_action_data_str_: str = ""
-
-
 @serializable()
 class AnyActionObject(ActionObject):
     __canonical_name__ = "AnyActionObject"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     syft_internal_type: ClassVar[Type[Any]] = NoneType  # type: ignore
     # syft_passthrough_attrs: List[str] = []
@@ -2103,22 +1952,6 @@ class AnyActionObject(ActionObject):
 
     def __int__(self) -> float:
         return int(self.syft_action_data)
-
-
-@migrate(AnyActionObject, AnyActionObjectV1)
-def downgrade_anyactionobject_v2_to_v1() -> list[Callable]:
-    return [
-        drop("syft_action_data_str"),
-        drop("syft_resolved"),
-    ]
-
-
-@migrate(AnyActionObjectV1, AnyActionObject)
-def upgrade_anyactionobject_v1_to_v2() -> list[Callable]:
-    return [
-        make_set_default("syft_action_data_str", ""),
-        make_set_default("syft_resolved", True),
-    ]
 
 
 action_types[Any] = AnyActionObject
