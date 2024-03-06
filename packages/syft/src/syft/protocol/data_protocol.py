@@ -5,6 +5,7 @@ from collections.abc import MutableMapping
 from collections.abc import MutableSequence
 import hashlib
 import json
+from operator import itemgetter
 import os
 from pathlib import Path
 import re
@@ -66,10 +67,11 @@ class DataProtocol:
     @staticmethod
     def _calculate_object_hash(klass: type[SyftBaseObject]) -> str:
         # TODO: this depends on what is marked as serde
-        field_name_keys = sorted(klass.__fields__.keys())
         field_data = {
-            field_name: repr(klass.__fields__[field_name].annotation)
-            for field_name in field_name_keys
+            field: repr(field_info.annotation)
+            for field, field_info in sorted(
+                klass.model_fields.items(), key=itemgetter(0)
+            )
         }
         obj_meta_info = {
             "canonical_name": klass.__canonical_name__,
