@@ -528,9 +528,41 @@ class Job(SyftObject):
 
 
 @serializable()
-class JobInfo(SyftObject):
+class JobInfoV1(SyftObject):
     __canonical_name__ = "JobInfo"
     __version__ = SYFT_OBJECT_VERSION_1
+    __repr_attrs__ = [
+        "resolved",
+        "status",
+        "n_iters",
+        "current_iter",
+        "creation_time",
+    ]
+    __public_metadata_attrs__ = [
+        "resolved",
+        "status",
+        "n_iters",
+        "current_iter",
+        "creation_time",
+    ]
+    # Separate check if the job has logs, result, or metadata
+    # None check is not enough because the values we set could be None
+    includes_metadata: bool
+    includes_result: bool
+    # TODO add logs (error reporting PRD)
+
+    resolved: Optional[bool] = None
+    status: Optional[JobStatus] = None
+    n_iters: Optional[int] = None
+    current_iter: Optional[int] = None
+    creation_time: Optional[str] = None
+    result: Optional[Any] = None
+
+
+@serializable()
+class JobInfo(SyftObject):
+    __canonical_name__ = "JobInfo"
+    __version__ = SYFT_OBJECT_VERSION_2
     __repr_attrs__ = [
         "resolved",
         "status",

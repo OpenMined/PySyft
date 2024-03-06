@@ -36,6 +36,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
@@ -361,7 +362,7 @@ class OutputPolicy(Policy):
 @serializable()
 class OutputPolicyExecuteCount(OutputPolicy):
     __canonical_name__ = "OutputPolicyExecuteCount"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     limit: int
 
@@ -414,7 +415,7 @@ class OutputPolicyExecuteCount(OutputPolicy):
 @serializable()
 class OutputPolicyExecuteOnce(OutputPolicyExecuteCount):
     __canonical_name__ = "OutputPolicyExecuteOnce"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     limit: int = 1
 
