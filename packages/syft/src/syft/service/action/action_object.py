@@ -1258,16 +1258,21 @@ class ActionObject(SyncableSyftObject):
 
     def as_empty(self) -> ActionObject:
         id = self.id
-        # TODO: fix
+
         if isinstance(id, LineageID):
             id = id.id
-        return ActionObject.empty(
+
+        res = ActionObject.empty(
             self.syft_internal_type,
             id,
             self.syft_lineage_id,
             self.syft_resolved,
             syft_blob_storage_entry_id=self.syft_blob_storage_entry_id,
         )
+        if isinstance(self.id, LineageID):
+            res.id = self.id
+
+        return res
 
     def create_shareable_sync_copy(self, mock: bool) -> ActionObject:
         if mock:

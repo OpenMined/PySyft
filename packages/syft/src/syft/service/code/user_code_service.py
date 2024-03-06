@@ -3,13 +3,13 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TypeVar
 from typing import Union
 from typing import cast
 
 # third party
 from result import Err
 from result import Ok
-from result import OkErr
 from result import Result
 
 # relative
@@ -302,10 +302,13 @@ class UserCodeService(AbstractService):
                     return output_history
 
                 if len(output_history) > 0:
-                    return resolve_outputs(
+                    res = resolve_outputs(
                         context=context,
                         output_ids=output_history[-1].output_ids,
                     )
+                    if res.is_err():
+                        return res
+                    return Ok(delist_if_single(res.ok()))
                 else:
                     return SyftError(message="No results available")
         else:
@@ -429,11 +432,14 @@ class UserCodeService(AbstractService):
                         )
                     if not (is_valid := output_policy._is_valid(context)):  # type: ignore
                         if len(output_history) > 0 and not skip_read_cache:
-                            result = resolve_outputs(
+                            result: Result[ActionObject, str] = resolve_outputs(
                                 context=context,
                                 output_ids=output_history[-1].output_ids,
                             )
-                            return Ok(result.as_empty())
+                            if result.is_err():
+                                return result
+
+                            return Ok(delist_if_single(result.ok()))
                         else:
                             return is_valid.to_result()
                     return can_execute.to_result()  # type: ignore
@@ -532,8 +538,8 @@ class UserCodeService(AbstractService):
 
 def resolve_outputs(
     context: AuthedServiceContext,
-    output_ids: Optional[Union[List[UID], Dict[str, UID]]],
-) -> Any:
+    output_ids: List[UID],
+) -> Result[List[ActionObject], str]:
     # relative
     from ...service.action.action_object import TwinMode
 
@@ -547,14 +553,21 @@ def resolve_outputs(
                 result = action_service.get(
                     context, uid=output_id, twin_mode=TwinMode.PRIVATE
                 )
-                if isinstance(result, OkErr):
-                    result = result.value
-                outputs.append(result)
-        if len(outputs) == 1:
-            return outputs[0]
-        return outputs
+                if result.is_err():
+                    return result
+                outputs.append(result.ok())
+        return Ok(outputs)
     else:
         raise NotImplementedError
+
+
+T = TypeVar("T")
+
+
+def delist_if_single(result: List[T]) -> Union[List[T], T]:
+    if len(result) == 1:
+        return result[0]
+    return result
 
 
 def map_kwargs_to_id(kwargs: Dict[str, Any]) -> Dict[str, Any]:
