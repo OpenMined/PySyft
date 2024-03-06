@@ -142,7 +142,6 @@ class UserService(AbstractService):
         self, credentials: Union[SyftVerifyKey, SyftSigningKey]
     ) -> Union[Optional[ServiceRole], SyftError]:
         # they could be different
-
         if isinstance(credentials, SyftVerifyKey):
             result = self.stash.get_by_verify_key(
                 credentials=credentials, verify_key=credentials
@@ -442,8 +441,12 @@ class UserService(AbstractService):
             )
 
         user = new_user.to(User)
-        result = self.stash.email_exists(email=user.email)
-        if result:
+        result = self.stash.get_by_email(credentials=user.verify_key, email=user.email)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        user_exists = result.ok() is not None
+        if user_exists:
             return SyftError(message=f"User already exists with email: {user.email}")
 
         result = self.stash.set(
