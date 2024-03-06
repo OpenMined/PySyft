@@ -144,7 +144,7 @@ class UserUpdate(PartialSyftObject):
 
 
 @serializable()
-class UserCreate(UserUpdate):
+class UserCreate(SyftObject):
     __canonical_name__ = "UserCreate"
     __version__ = SYFT_OBJECT_VERSION_3
 
@@ -153,10 +153,10 @@ class UserCreate(UserUpdate):
     role: Optional[ServiceRole] = None  # type: ignore[assignment]
     password: str
     password_verify: Optional[str] = None  # type: ignore[assignment]
-    verify_key: Optional[SyftVerifyKey]  # type: ignore[assignment]
-    institution: Optional[str]  # type: ignore[assignment]
-    website: Optional[str]  # type: ignore[assignment]
-    created_by: Optional[SyftSigningKey]
+    verify_key: Optional[SyftVerifyKey] = None  # type: ignore[assignment]
+    institution: Optional[str] = ""  # type: ignore[assignment]
+    website: Optional[str] = ""  # type: ignore[assignment]
+    created_by: Optional[SyftSigningKey] = None  # type: ignore[assignment]
     mock_execution_permission: bool = False
 
     __repr_attrs__ = ["name", "email"]
