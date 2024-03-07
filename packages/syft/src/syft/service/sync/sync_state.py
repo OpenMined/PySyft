@@ -16,7 +16,6 @@ from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ..action.action_permissions import ActionPermission
 
 if TYPE_CHECKING:
     # relative
@@ -78,11 +77,13 @@ class SyncState(SyftObject):
     __canonical_name__ = "SyncState"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    node_uid: UID
     objects: Dict[UID, SyncableSyftObject] = {}
     dependencies: Dict[UID, List[UID]] = {}
     created_at: DateTime = DateTime.now()
     previous_state_link: Optional[LinkedObject] = None
-    permissions: Dict[UID, List[ActionPermission]] = {}
+    permissions: Dict[UID, Set[str]] = {}
+    storage_permissions: Dict[UID, Set[UID]] = {}
 
     __attr_searchable__ = ["created_at"]
 
@@ -125,7 +126,7 @@ class SyncState(SyftObject):
         # relative
         from .diff_state import NodeDiff
 
-        previous_state = self.previous_state or SyncState()
+        previous_state = self.previous_state or SyncState(node_uid=self.node_uid)
         return NodeDiff.from_sync_state(previous_state, self)
 
     @property

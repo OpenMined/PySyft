@@ -19,11 +19,13 @@ from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
 from ...types.syft_object import SyftObject
+from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
+from ..action.action_permissions import StoragePermission
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
@@ -31,10 +33,19 @@ from ..output.output_service import ExecutionOutput
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
+from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from .sync_stash import SyncStash
 from .sync_state import SyncState
+
+
+def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> Any:
+    if isinstance(item, ActionObject):
+        service = context.node.get_service("actionservice")
+        return service.store
+    service = context.node.get_service(TYPE_TO_SERVICE[type(item)])
+    return service.stash.partition
 
 
 @instrument
@@ -135,8 +146,22 @@ class SyncService(AbstractService):
                 )
                 job_store.add_permission(permission)
 
+    def add_storage_permissions_for_item(
+        self,
+        context: AuthedServiceContext,
+        item: SyftObject,
+        permissions_other: Set[UID],
+    ) -> None:
+        _id = item.id.id
+        permissions = [
+            StoragePermission(uid=_id, node_uid=p) for p in permissions_other
+        ]
+
+        store = get_store(context, item)
+        store.add_storage_permissions(permissions)
+
     def set_object(
-        self, context: AuthedServiceContext, item: SyftObject
+        self, context: AuthedServiceContext, item: SyncableSyftObject
     ) -> Result[SyftObject, str]:
         stash = self.get_stash_for_item(context, item)
         creds = context.credentials
@@ -145,8 +170,14 @@ class SyncService(AbstractService):
         if exists:
             res = stash.update(creds, item)
         else:
-            #                 res = stash.delete_by_uid(node.python_node.verify_key, item.id)
-            res = stash.set(creds, item)
+            # If the item is a mock object, do not add storage permissions
+            add_storage_permission = not item.from_mock_sync
+            res = stash.set(
+                creds,
+                item,
+                add_storage_permission=add_storage_permission,
+            )
+
         return res
 
     @service_method(
@@ -159,13 +190,19 @@ class SyncService(AbstractService):
         context: AuthedServiceContext,
         items: List[Union[ActionObject, SyftObject]],
         permissions: Dict[UID, Set[str]],
+        storage_permissions: Dict[UID, Set[UID]],
     ) -> Union[SyftSuccess, SyftError]:
-        permissions = defaultdict(list, permissions)
+        permissions = defaultdict(set, permissions)
+        storage_permissions = defaultdict(set, storage_permissions)
         for item in items:
             other_node_permissions = permissions[item.id.id]
+            other_node_storage_permissions = storage_permissions[item.id.id]
             if isinstance(item, ActionObject):
                 self.add_actionobject_read_permissions(
                     context, item, other_node_permissions
+                )
+                self.add_storage_permissions_for_item(
+                    context, item, other_node_storage_permissions
                 )
             else:
                 item = self.transform_item(context, item)  # type: ignore[unreachable]
@@ -173,6 +210,9 @@ class SyncService(AbstractService):
 
                 if res.is_ok():
                     self.add_permissions_for_item(context, item, other_node_permissions)
+                    self.add_storage_permissions_for_item(
+                        context, item, other_node_storage_permissions
+                    )
                 else:
                     return SyftError(message=f"Failed to sync {res.err()}")
         return SyftSuccess(message=f"Synced {len(items)} items")
@@ -185,24 +225,18 @@ class SyncService(AbstractService):
     def get_permissions(
         self,
         context: AuthedServiceContext,
-        items: List[Union[ActionObject, SyftObject]],
-    ) -> Dict:
-        permissions: Dict = {}
-
-        def get_store(item):  # type: ignore
-            if isinstance(item, ActionObject):
-                return context.node.get_service("actionservice").store
-            elif isinstance(item, Job):
-                return context.node.get_service("jobservice").stash.partition
-            else:
-                return None
+        items: List[SyncableSyftObject],
+    ) -> tuple[dict[UID, Set[str]], dict[UID, Set[str]]]:
+        permissions = {}
+        storage_permissions = {}
 
         for item in items:
-            store = get_store(item)
+            store = get_store(context, item)
             if store is not None:
                 _id = item.id.id
-                permissions[item.id.id] = store.permissions[_id]
-        return permissions
+                permissions[_id] = store.permissions[_id]
+                storage_permissions[_id] = store.storage_permissions[_id]
+        return permissions, storage_permissions
 
     @service_method(
         path="sync._get_state",
@@ -212,9 +246,9 @@ class SyncService(AbstractService):
     def _get_state(
         self, context: AuthedServiceContext, add_to_store: bool = False
     ) -> Union[SyncState, SyftError]:
-        new_state = SyncState()
-
         node = cast(AbstractNode, context.node)
+
+        new_state = SyncState(node_uid=node.id)
 
         services_to_sync = [
             "requestservice",
@@ -250,7 +284,11 @@ class SyncService(AbstractService):
 
         new_state._build_dependencies(api=node.root_client.api)  # type: ignore
 
-        new_state.permissions = self.get_permissions(context, new_state.objects)
+        permissions, storage_permissions = self.get_permissions(
+            context, new_state.objects.values()
+        )
+        new_state.permissions = permissions
+        new_state.storage_permissions = storage_permissions
 
         previous_state = self.stash.get_latest(context=context)
         if previous_state is not None:

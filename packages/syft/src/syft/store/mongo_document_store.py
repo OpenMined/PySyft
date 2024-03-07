@@ -245,6 +245,7 @@ class MongoStorePartition(StorePartition):
         credentials: SyftVerifyKey,
         obj: SyftObject,
         add_permissions: Optional[List[ActionObjectPermission]] = None,
+        add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         # TODO: Refactor this function since now it's doing both set and
@@ -292,6 +293,10 @@ class MongoStorePartition(StorePartition):
 
             if add_permissions is not None:
                 self.add_permissions(add_permissions)
+
+            if add_storage_permission:
+                # TODO: add storage permissions to Mongo store
+                pass
 
             return Ok(obj)
         else:

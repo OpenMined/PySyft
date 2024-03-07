@@ -22,7 +22,8 @@ OrderByDatePartitionKey = PartitionKey(key="created_at", type_=DateTime)
 class SyncStash(BaseUIDStoreStash):
     object_type = SyncState
     settings: PartitionSettings = PartitionSettings(
-        name=SyncState.__canonical_name__, object_type=SyncState
+        name=SyncState.__canonical_name__,
+        object_type=SyncState,
     )
 
     def __init__(self, store: DocumentStore):

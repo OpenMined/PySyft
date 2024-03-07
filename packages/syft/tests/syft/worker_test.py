@@ -78,7 +78,7 @@ def test_signing_key() -> None:
 
 def test_action_store() -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-    action_store = DictActionStore()
+    action_store = DictActionStore(node_uid=UID())
     uid = UID()
     raw_data = np.array([1, 2, 3])
     test_object = ActionObject.from_obj(raw_data)

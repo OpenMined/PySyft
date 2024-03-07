@@ -351,7 +351,7 @@ passthrough_attrs = [
     "__sha256__",  # syft
     "__hash_exclude_attrs__",  # syft
     "__private_sync_attrs__",  # syft
-    "from_private_sync",  # syft
+    "from_mock_sync",  # syft
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -634,7 +634,7 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "__sha256__",
     "__hash_exclude_attrs__",
     "__hash__",
-    "from_private_sync",
+    "from_mock_sync",
     "create_shareable_sync_copy",
     "_has_private_sync_attrs",
 ]
@@ -1205,11 +1205,13 @@ class ActionObject(SyncableSyftObject):
 
         return wrapper
 
-    def send(self, client: SyftClient) -> Self:
+    def send(self, client: SyftClient, add_storage_permission: bool = True) -> Self:
         """Send the object to a Syft Client"""
         self._set_obj_location_(client.id, client.verify_key)
         self._save_to_blob_storage()
-        res = client.api.services.action.set(self)
+        res = client.api.services.action.set(
+            self, add_storage_permission=add_storage_permission
+        )
         if isinstance(res, ActionObject):
             self.syft_created_at = res.syft_created_at
         return res
@@ -1279,7 +1281,7 @@ class ActionObject(SyncableSyftObject):
             res = self.as_empty()
             for k, v in self.__private_sync_attrs__.items():
                 setattr(res, k, v)
-            res.from_private_sync = True
+            res.from_mock_sync = True
             return res
         return self
 

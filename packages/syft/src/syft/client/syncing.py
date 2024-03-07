@@ -6,6 +6,7 @@ from typing import Optional
 # relative
 from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionPermission
+from ..service.action.action_permissions import StoragePermission
 from ..service.code.user_code import UserCode
 from ..service.job.job_stash import Job
 from ..service.sync.diff_state import NodeDiff
@@ -82,8 +83,11 @@ def get_sync_decisions_for_batch_items(
 
     unpublished_private_high_diffs: list[ObjectDiff] = []
     for diff in batch_diff.diffs:
-        if diff.high_obj is not None and diff.high_obj._has_private_sync_attrs():
-            # TODO check for existing storage permissions
+        is_high_private_object = (
+            diff.high_obj is not None and diff.high_obj._has_private_sync_attrs()
+        )
+        is_low_published_object = diff.low_node_uid in diff.low_storage_permissions
+        if is_high_private_object and not is_low_published_object:
             unpublished_private_high_diffs.append(diff)
 
     user_codes_high: List[UserCode] = [
@@ -116,7 +120,6 @@ def get_sync_decisions_for_batch_items(
             if user_code_high is None:
                 raise ValueError("Job without user code")
             # Jobs are always shared
-            # TODO make job result cache empty
             new_permissions_low_side = [
                 ActionObjectPermission(
                     uid=diff.object_id,
@@ -147,11 +150,18 @@ def get_sync_decisions_for_batch_items(
             new_permissions_low_side = []
             mockify = False
 
+        new_storage_permissions_lowside = []
+        if not mockify:
+            new_storage_permissions_lowside = [
+                StoragePermission(uid=diff.object_id, node_uid=diff.low_node_uid)
+            ]
+
         sync_decisions.append(
             SyncDecision(
                 diff=diff,
                 decision=decision,
                 new_permissions_lowside=new_permissions_low_side,
+                new_storage_permissions_lowside=new_storage_permissions_lowside,
                 mockify=mockify,
             )
         )

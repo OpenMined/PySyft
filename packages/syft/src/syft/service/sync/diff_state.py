@@ -41,6 +41,7 @@ from ...util.fonts import ITABLES_CSS
 from ...util.fonts import fonts_css
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import StoragePermission
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatusCollection
 from ..job.job_stash import Job
@@ -160,8 +161,12 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     __version__ = SYFT_OBJECT_VERSION_1
     low_obj: Optional[SyncableSyftObject] = None
     high_obj: Optional[SyncableSyftObject] = None
-    low_permissions: List[ActionObjectPermission] = []
-    high_permissions: List[ActionObjectPermission] = []
+    low_node_uid: UID
+    high_node_uid: UID
+    low_permissions: List[str] = []
+    high_permissions: List[str] = []
+    low_storage_permissions: Set[UID] = set()
+    high_storage_permissions: Set[UID] = set()
 
     obj_type: Type
     diff_list: List[AttrDiff] = []
@@ -176,8 +181,12 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         cls,
         low_obj: Optional[SyncableSyftObject],
         high_obj: Optional[SyncableSyftObject],
-        low_permissions: List[ActionObjectPermission],
-        high_permissions: List[ActionObjectPermission],
+        low_permissions: Set[str],
+        high_permissions: Set[str],
+        low_storage_permissions: Set[UID],
+        high_storage_permissions: Set[UID],
+        low_node_uid: UID,
+        high_node_uid: UID,
     ) -> "ObjectDiff":
         if low_obj is None and high_obj is None:
             raise ValueError("Both low and high objects are None")
@@ -192,8 +201,12 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
             low_obj=low_obj,
             high_obj=high_obj,
             obj_type=obj_type,
+            low_node_uid=low_node_uid,
+            high_node_uid=high_node_uid,
             low_permissions=low_permissions,
             high_permissions=high_permissions,
+            low_storage_permissions=low_storage_permissions,
+            high_storage_permissions=high_storage_permissions,
             diff_list=diff_list,
         )
 
@@ -408,7 +421,7 @@ class ObjectDiffBatch(SyftObject):
     ORDER: ClassVar[Dict] = {"low": 0, "high": 1}
 
     # Diffs are ordered in depth-first order,
-    # so the first diff is the root of the hierarchy
+    # the first diff is the root of the hierarchy
     diffs: List[ObjectDiff]
     hierarchy_levels: List[int]
     dependencies: Dict[UID, List[UID]] = {}
@@ -530,6 +543,8 @@ class NodeDiff(SyftObject):
     __canonical_name__ = "NodeDiff"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    low_node_uid: UID
+    high_node_uid: UID
     obj_uid_to_diff: Dict[UID, ObjectDiff] = {}
     dependencies: Dict[UID, List[UID]] = {}
 
@@ -540,15 +555,28 @@ class NodeDiff(SyftObject):
         obj_uid_to_diff = {}
         for obj_id in set(low_state.objects.keys()) | set(high_state.objects.keys()):
             low_obj = low_state.objects.get(obj_id, None)
-            low_permissions: List = low_state.permissions.get(obj_id, [])
+            low_permissions = low_state.permissions.get(obj_id, set())
+            low_storage_permissions = low_state.storage_permissions.get(obj_id, set())
             high_obj = high_state.objects.get(obj_id, None)
-            high_permissions: List = high_state.permissions.get(obj_id, [])
+            high_permissions = high_state.permissions.get(obj_id, set())
+            high_storage_permissions = high_state.storage_permissions.get(obj_id, set())
             diff = ObjectDiff.from_objects(
-                low_obj, high_obj, low_permissions, high_permissions
+                low_obj=low_obj,
+                high_obj=high_obj,
+                low_permissions=low_permissions,
+                high_permissions=high_permissions,
+                low_storage_permissions=low_storage_permissions,
+                high_storage_permissions=high_storage_permissions,
+                low_node_uid=low_state.node_uid,
+                high_node_uid=high_state.node_uid,
             )
             obj_uid_to_diff[diff.object_id] = diff
 
-        node_diff = cls(obj_uid_to_diff=obj_uid_to_diff)
+        node_diff = cls(
+            low_node_uid=low_state.node_uid,
+            high_node_uid=high_state.node_uid,
+            obj_uid_to_diff=obj_uid_to_diff,
+        )
 
         node_diff._init_dependencies(low_state, high_state)
         return node_diff
@@ -677,7 +705,9 @@ class NodeDiff(SyftObject):
             }
 
             batch = ObjectDiffBatch(
-                diffs=diffs, hierarchy_levels=levels, dependencies=dependencies
+                diffs=diffs,
+                hierarchy_levels=levels,
+                dependencies=dependencies,
             )
             hierarchies.append(batch)
 
@@ -699,6 +729,7 @@ class SyncDecision(SyftObject):
     diff: ObjectDiff
     decision: Optional[str]
     new_permissions_lowside: List[ActionObjectPermission]
+    new_storage_permissions_lowside: List[StoragePermission]
     mockify: bool
 
 
@@ -710,6 +741,7 @@ class ResolvedSyncState(SyftObject):
     update_objs: List[SyncableSyftObject] = []
     delete_objs: List[SyftObject] = []
     new_permissions: List[ActionObjectPermission] = []
+    new_storage_permissions: List[StoragePermission] = []
     alias: str
 
     def add_sync_decision(self, sync_decision: SyncDecision) -> None:
@@ -743,6 +775,9 @@ class ResolvedSyncState(SyftObject):
 
         if self.alias == "low":
             self.new_permissions.extend(sync_decision.new_permissions_lowside)
+            self.new_storage_permissions.extend(
+                sync_decision.new_storage_permissions_lowside
+            )
 
     def __repr__(self) -> str:
         return (
