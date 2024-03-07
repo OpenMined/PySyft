@@ -165,26 +165,6 @@ def action_store(worker):
     return worker.action_store
 
 
-@pytest.fixture(scope="session")
-def redis_client_global():
-    # third party
-    import fakeredis
-
-    return fakeredis.FakeRedis()
-
-
-@pytest.fixture(scope="function")
-def redis_client(redis_client_global, monkeypatch):
-    # Current Lock implementation creates it's own StrictRedis client
-    # this is a way to override all the instances of StrictRedis
-    monkeypatch.setattr("redis.Redis", lambda *args, **kwargs: redis_client_global)
-    monkeypatch.setattr(
-        "redis.StrictRedis", lambda *args, **kwargs: redis_client_global
-    )
-
-    return redis_client_global
-
-
 def start_mongo_server(port=MONGO_PORT, dbname="syft"):
     # third party
     import docker
