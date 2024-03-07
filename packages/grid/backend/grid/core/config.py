@@ -69,11 +69,6 @@ class Settings(BaseSettings):
             return None
         return v
 
-    SMTP_TLS: bool = True
-    SMTP_PORT: int | None = None
-    SMTP_HOST: str | None = None
-    SMTP_USER: str | None = None
-    SMTP_PASSWORD: str | None = None
     EMAILS_FROM_EMAIL: EmailStr | None = None
     EMAILS_FROM_NAME: str | None = None
 
@@ -146,6 +141,12 @@ class Settings(BaseSettings):
     SINGLE_CONTAINER_MODE: bool = str_to_bool(os.getenv("SINGLE_CONTAINER_MODE", False))
     CONSUMER_SERVICE_NAME: str | None = os.getenv("CONSUMER_SERVICE_NAME")
     INMEMORY_WORKERS: bool = str_to_bool(os.getenv("INMEMORY_WORKERS", True))
+    SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
+    EMAIL_SENDER: str = os.getenv("EMAIL_SENDER", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_TLS: bool = True
+    SMTP_PORT: str | None = os.getenv("SMTP_PORT", "")
+    SMTP_HOST: str | None = os.getenv("SMTP_HOST", "")
 
     TEST_MODE: bool = (
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False

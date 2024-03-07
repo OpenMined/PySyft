@@ -1,14 +1,17 @@
 # stdlib
 from collections.abc import Callable
 from enum import Enum
+from typing import cast
 
 # relative
 from ...client.api import APIRegistry
+from ...client.api import SyftAPI
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_credentials_for_key
@@ -18,6 +21,8 @@ from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
+from ..notifier.notifier_enums import NOTIFIERS
+from .email_templates import EmailTemplate
 
 
 @serializable()
@@ -50,7 +55,7 @@ class ReplyNotification(SyftObject):
 @serializable()
 class Notification(SyftObject):
     __canonical_name__ = "Notification"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     subject: str
     node_uid: UID
@@ -59,6 +64,8 @@ class Notification(SyftObject):
     created_at: DateTime
     status: NotificationStatus = NotificationStatus.UNREAD
     linked_obj: LinkedObject | None = None
+    notifier_types: list[NOTIFIERS] = []
+    email_template: type[EmailTemplate] | None = None
     replies: list[ReplyNotification] | None = []
 
     __attr_searchable__ = [
@@ -91,57 +98,54 @@ class Notification(SyftObject):
         return None
 
     def _coll_repr_(self) -> dict[str, str]:
-        linked_obj_name: str = ""
-        linked_obj_uid: UID | None = None
-        if self.linked_obj is not None:
-            linked_obj_name = self.linked_obj.object_type.__canonical_name__
-            linked_obj_uid = self.linked_obj.object_uid
+        self.linked_obj = cast(LinkedObject, self.linked_obj)
         return {
             "Subject": self.subject,
             "Status": self.determine_status().name.capitalize(),
             "Created At": str(self.created_at),
-            "Linked object": f"{linked_obj_name} ({linked_obj_uid})",
+            "Linked object": f"{self.linked_obj.object_type.__canonical_name__} ({self.linked_obj.object_uid})",
         }
 
     def mark_read(self) -> None:
-        api = APIRegistry.api_for(
-            node_uid=self.node_uid, user_verify_key=self.syft_client_verify_key
+        api: SyftAPI = cast(
+            SyftAPI,
+            APIRegistry.api_for(
+                self.node_uid, user_verify_key=self.syft_client_verify_key
+            ),
         )
-        if api is None:
-            raise ValueError(
-                f"Can't access Syft API. You must login to {self.node_uid}"
-            )
         return api.services.notifications.mark_as_read(uid=self.id)
 
     def mark_unread(self) -> None:
-        api = APIRegistry.api_for(
-            self.node_uid, user_verify_key=self.syft_client_verify_key
+        api: SyftAPI = cast(
+            SyftAPI,
+            APIRegistry.api_for(
+                self.node_uid, user_verify_key=self.syft_client_verify_key
+            ),
         )
-        if api is None:
-            raise ValueError(
-                f"Can't access Syft API. You must login to {self.node_uid}"
-            )
         return api.services.notifications.mark_as_unread(uid=self.id)
 
     def determine_status(self) -> Enum:
         # relative
         from ..request.request import Request
 
-        if self.linked_obj is not None and isinstance(self.linked_obj.resolve, Request):
+        self.linked_obj = cast(LinkedObject, self.linked_obj)
+        if isinstance(self.linked_obj.resolve, Request):
             return self.linked_obj.resolve.status
 
-        return NotificationRequestStatus.NO_ACTION
+        return NotificationRequestStatus.NO_ACTION  # type: ignore[unreachable]
 
 
 @serializable()
-class CreateNotification(Notification):
+class CreateNotification(SyftObject):
     __canonical_name__ = "CreateNotification"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    id: UID | None = None  # type: ignore[assignment]
-    node_uid: UID | None = None  # type: ignore[assignment]
+    subject: str
     from_user_verify_key: SyftVerifyKey | None = None  # type: ignore[assignment]
-    created_at: DateTime | None = None  # type: ignore[assignment]
+    to_user_verify_key: SyftVerifyKey | None = None  # type: ignore[assignment]
+    linked_obj: LinkedObject | None = None
+    notifier_types: list[NOTIFIERS] = []
+    email_template: type[EmailTemplate] | None = None
 
 
 def add_msg_creation_time(context: TransformContext) -> TransformContext:

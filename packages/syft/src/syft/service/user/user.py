@@ -30,6 +30,7 @@ from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_email
 from ...types.uid import UID
+from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftError
 from ..response import SyftSuccess
 from .user_roles import ServiceRole
@@ -39,11 +40,17 @@ from .user_roles import ServiceRole
 class User(SyftObject):
     # version
     __canonical_name__ = "User"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     id: UID | None = None  # type: ignore[assignment]
 
     # fields
+    notifications_enabled: dict[NOTIFIERS, bool] = {
+        NOTIFIERS.EMAIL: True,
+        NOTIFIERS.SMS: False,
+        NOTIFIERS.SLACK: False,
+        NOTIFIERS.APP: False,
+    }
     email: EmailStr | None = None
     name: str | None = None
     hashed_password: str | None = None
@@ -131,7 +138,7 @@ class UserUpdate(PartialSyftObject):
 
 
 @serializable()
-class UserCreate(UserUpdate):
+class UserCreate(SyftObject):
     __canonical_name__ = "UserCreate"
     __version__ = SYFT_OBJECT_VERSION_3
 
@@ -141,9 +148,9 @@ class UserCreate(UserUpdate):
     password: str
     password_verify: str | None = None  # type: ignore[assignment]
     verify_key: SyftVerifyKey | None = None  # type: ignore[assignment]
-    institution: str | None = None  # type: ignore[assignment]
-    website: str | None = None  # type: ignore[assignment]
-    created_by: SyftSigningKey | None = None
+    institution: str | None = ""  # type: ignore[assignment]
+    website: str | None = ""  # type: ignore[assignment]
+    created_by: SyftSigningKey | None = None  # type: ignore[assignment]
     mock_execution_permission: bool = False
 
     __repr_attrs__ = ["name", "email"]
@@ -163,8 +170,14 @@ class UserSearch(PartialSyftObject):
 @serializable()
 class UserView(SyftObject):
     __canonical_name__ = "UserView"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
+    notifications_enabled: dict[NOTIFIERS, bool] = {
+        NOTIFIERS.EMAIL: True,
+        NOTIFIERS.SMS: False,
+        NOTIFIERS.SLACK: False,
+        NOTIFIERS.APP: False,
+    }
     email: EmailStr
     name: str
     role: ServiceRole  # make sure role cant be set without uid
@@ -172,7 +185,14 @@ class UserView(SyftObject):
     website: str | None = None
     mock_execution_permission: bool
 
-    __repr_attrs__ = ["name", "email", "institution", "website", "role"]
+    __repr_attrs__ = [
+        "name",
+        "email",
+        "institution",
+        "website",
+        "role",
+        "notifications_enabled",
+    ]
 
     def _coll_repr_(self) -> dict[str, Any]:
         return {
@@ -181,6 +201,10 @@ class UserView(SyftObject):
             "Institute": self.institution,
             "Website": self.website,
             "Role": self.role.name.capitalize(),
+            "Notifications": "Email: "
+            + (
+                "Enabled" if self.notifications_enabled[NOTIFIERS.EMAIL] else "Disabled"
+            ),
         }
 
     def _set_password(self, new_password: str) -> SyftError | SyftSuccess:
@@ -317,6 +341,7 @@ def user_to_view_user() -> list[Callable]:
                 "institution",
                 "website",
                 "mock_execution_permission",
+                "notifications_enabled",
             ]
         )
     ]
