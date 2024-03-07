@@ -695,12 +695,14 @@ class SyftClient:
 
     @property
     def notifications(self) -> Optional[APIModule]:
-        print(
-            "WARNING: Notifications is currently is in a beta state, so use carefully!"
-        )
-        print("If possible try using client.requests/client.projects")
         if self.api.has_service("notifications"):
             return self.api.services.notifications
+        return None
+
+    @property
+    def notifier(self) -> Optional[APIModule]:
+        if self.api.has_service("notifier"):
+            return self.api.services.notifier
         return None
 
     @property
