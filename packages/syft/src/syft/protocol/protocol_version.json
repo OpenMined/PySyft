@@ -501,7 +501,7 @@
         },
         "4": {
           "version": 4,
-          "hash": "dbda300bab14f31b40d91ae11aca2197334fb835dd501cb88a749d66deaab24a",
+          "hash": "dd6527e200e7d21e5f4166b2874daf6aeb0b41fafeb8f07f96b675c8625d4cf7",
           "action": "add"
         }
       },
@@ -769,7 +769,7 @@
       "NotifierSettings": {
         "2": {
           "version": 2,
-          "hash": "c3b22eb3d91028796a576f439253bcdb1e767cae9d8e5c9bbaf9a0c636435fb0",
+          "hash": "92d39ab02b4942d57773cd2d9c781f0e7e89e459276799e8cd7d56bf7d5ca543",
           "action": "add"
         }
       },
