@@ -94,7 +94,6 @@ class BlobFile(SyftObject):
 
         return sy.ActionObject.from_path(path=path).send(client).syft_action_data
 
-
     def _upload_to_blobstorage_from_api(self, api: SyftAPI) -> Optional[SyftError]:
         if self.path is None:
             raise ValueError("cannot upload BlobFile, no path specified")
