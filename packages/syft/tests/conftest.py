@@ -37,6 +37,8 @@ TMP_DIR = Path(gettempdir())
 MONGODB_TMP_DIR = Path(TMP_DIR, "mongodb")
 SHERLOCK_TMP_DIR = Path(TMP_DIR, "sherlock")
 
+MONGO_PORT = 37017
+
 
 @pytest.fixture()
 def faker():
@@ -44,6 +46,14 @@ def faker():
 
 
 def pytest_configure(config):
+    cleanup_tmp_dirs()
+
+
+def pytest_sessionfinish(session, exitstatus):
+    destroy_mongo_container()
+
+
+def cleanup_tmp_dirs():
     cleanup_dirs = [MONGODB_TMP_DIR, SHERLOCK_TMP_DIR]
     for _dir in cleanup_dirs:
         if _dir.exists():
@@ -174,28 +184,46 @@ def redis_client(redis_client_global, monkeypatch):
     return redis_client_global
 
 
-def start_mongo_server():
+def start_mongo_server(port=MONGO_PORT, dbname="syft"):
     # third party
-    from pymongo_inmemory import Mongod
-    from pymongo_inmemory.context import Context
+    import docker
 
-    data_dir = Path(MONGODB_TMP_DIR, "data")
-    data_dir.mkdir(exist_ok=True, parents=True)
+    client = docker.from_env()
+    container_name = f"pytest_mongo_{port}"
 
-    # Because Context cannot be configured :/
-    # ... and don't set port else Popen will fail
-    os.environ["PYMONGOIM__DOWNLOAD_FOLDER"] = str(MONGODB_TMP_DIR / "download")
-    os.environ["PYMONGOIM__EXTRACT_FOLDER"] = str(MONGODB_TMP_DIR / "extract")
-    os.environ["PYMONGOIM__MONGOD_DATA_FOLDER"] = str(data_dir)
-    os.environ["PYMONGOIM__DBNAME"] = "syft"
+    try:
+        client.containers.get(container_name)
+    except docker.errors.NotFound:
+        client.containers.run(
+            name=container_name,
+            image="mongo:7",
+            ports={"27017/tcp": port},
+            detach=True,
+            remove=True,
+            auto_remove=True,
+            labels={"name": "pytest-syft"},
+        )
+    except Exception as e:
+        raise RuntimeError(f"Docker error: {e}")
 
-    # start the local mongodb server
-    context = Context()
-    mongod = Mongod(context)
-    mongod.start()
+    return f"mongodb://127.0.0.1:{port}/{dbname}"
 
-    # return the connection string
-    return mongod.connection_string
+
+def destroy_mongo_container(port=MONGO_PORT):
+    # third party
+    import docker
+
+    client = docker.from_env()
+    container_name = f"mongo_test_{port}"
+
+    try:
+        container = client.containers.get(container_name)
+        container.stop()
+        container.remove()
+    except docker.errors.NotFound:
+        pass
+    except Exception:
+        pass
 
 
 def get_mongo_client():
