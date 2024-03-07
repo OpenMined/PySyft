@@ -889,13 +889,6 @@ class ActionObject(SyftObject):
         if obj.syft_node_location is None:
             obj.syft_node_location = obj.syft_node_uid
 
-        api = None
-        if TraceResult._client is not None:
-            api = TraceResult._client.api
-
-        if api is not None and api.signing_key is not None:
-            obj._set_obj_location_(api.node_uid, api.signing_key.verify_key)
-
         action = Action(
             path="",
             op="",
@@ -907,17 +900,20 @@ class ActionObject(SyftObject):
             create_object=obj,
         )
 
-        if api is not None:
+        if TraceResult.is_tracing:
             TraceResult.result += [action]
-        else:
-            api = APIRegistry.api_for(
-                node_uid=self.syft_node_location,
-                user_verify_key=self.syft_client_verify_key,
+
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            print(
+                f"failed saving {obj} to blob storage, api is None. You must login to {self.syft_node_location}"
             )
-            if api is None:
-                print(
-                    f"failed saving {obj} to blob storage, api is None. You must login to {self.syft_node_location}"
-                )
+            return
+        else:
+            obj._set_obj_location_(api.node_uid, api.signing_key.verify_key)
 
         api = cast(SyftAPI, api)
         res = api.services.action.execute(action)
