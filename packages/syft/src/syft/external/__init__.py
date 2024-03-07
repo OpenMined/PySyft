@@ -16,7 +16,7 @@ from ..util.util import str_to_bool
 # if the external library is not installed, we prompt the user
 # to install it with the pip package name.
 
-OBLV = str_to_bool(os.getenv("ENABLE_OBLV", "false"))
+OBLV = str_to_bool(os.getenv("OBLV_ENABLED", "false"))
 
 EXTERNAL_LIBS = {
     "oblv": {

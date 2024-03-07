@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: registry
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: registry
+spec:
+  replicas: 1
+  serviceName: registry
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: registry
+  template:
+    metadata:
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+        app.kubernetes.io/component: registry
+    spec:
+      containers:
+        - name: registry-container
+          image: registry:2
+          imagePullPolicy: Always
+          resources: {{ include "common.resources.set" (dict "resources" .Values.registry.resources "preset" .Values.registry.resourcesPreset) | nindent 12 }}
+          env:
+            - name: REGISTRY_STORAGE_DELETE_ENABLED
+              value: "true"
+            {{- if .Values.registry.env }}
+            {{- toYaml .Values.registry.env | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: registry-port
+              containerPort: 5000
+          volumeMounts:
+            - mountPath: /var/lib/registry
+              name: registry-data
+          startupProbe:
+            httpGet:
+              path: /v2/?probe=startupProbe
+              port: registry-port
+            failureThreshold: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /v2/?probe=livenessProbe
+              port: registry-port
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+      terminationGracePeriodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: registry-data
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+        app.kubernetes.io/component: registry
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.registry.storageSize | quote }}
