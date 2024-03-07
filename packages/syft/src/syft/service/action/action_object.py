@@ -913,9 +913,9 @@ class ActionObject(SyftObject):
             )
             return
         else:
-            obj._set_obj_location_(api.node_uid, api.signing_key.verify_key)
+            obj._set_obj_location_(api.node_uid, api.signing_key.verify_key)  # type: ignore
 
-        api = cast(SyftAPI, api)
+        api = cast(SyftAPI, api)  # type: ignore
         res = api.services.action.execute(action)
         if isinstance(res, SyftError):
             print(f"Failed to to store (arg) {obj} to store, {res}")
