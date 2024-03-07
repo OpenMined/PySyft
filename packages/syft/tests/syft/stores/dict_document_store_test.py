@@ -4,9 +4,9 @@ from threading import Thread
 # syft absolute
 from syft.store.dict_document_store import DictStorePartition
 from syft.store.document_store import QueryKeys
+from syft.types.uid import UID
 
 # relative
-from ....src.syft.types.uid import UID
 from .store_mocks_test import MockObjectType
 from .store_mocks_test import MockSyftObject
 
