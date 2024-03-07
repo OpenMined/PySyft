@@ -80,6 +80,31 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.mongo.secretKeyName }}
                   key: rootPassword
+            # SMTP
+            - name: SMTP_HOST
+              value: {{ .Values.node.smtp.host | quote }}
+            - name: SMTP_PORT
+              value: {{ .Values.node.smtp.port | quote }}
+            - name: SMTP_USERNAME
+              value: {{ .Values.node.smtp.username | quote }}
+            - name: SMTP_PASSWORD
+              value: {{ .Values.node.smtp.password | quote }}
+            - name: EMAIL_SENDER
+              value: {{ .Values.node.smtp.from | quote}}
+            # SeaweedFS
+            {{- if ne .Values.node.type "gateway"}}
+            - name: S3_ROOT_USER
+              value: {{ .Values.seaweedfs.s3.rootUser | quote }}
+            - name: S3_ROOT_PWD
+              valueFrom:
+                secretKeyRef:
+                    name: {{ .Values.seaweedfs.secretKeyName }}
+                    key: s3RootPassword
+            - name: S3_PORT
+              value: {{ .Values.seaweedfs.s3.port | quote }}
+            - name: SEAWEED_MOUNT_PORT
+              value: {{ .Values.seaweedfs.mountApi.port | quote }}
+            {{- end }}
             # Tracing
             - name: TRACE
               value: "false"
@@ -95,20 +120,6 @@ spec:
               value: {{ .Values.node.oblv.port | quote }}
             - name: OBLV_ENABLED
               value: {{ .Values.node.oblv.enabled | quote }}
-            {{- end }}
-            # SeaweedFS
-            {{- if ne .Values.node.type "gateway"}}
-            - name: S3_ROOT_USER
-              value: {{ .Values.seaweedfs.s3.rootUser | quote }}
-            - name: S3_ROOT_PWD
-              valueFrom:
-                secretKeyRef:
-                    name: {{ .Values.seaweedfs.secretKeyName }}
-                    key: s3RootPassword
-            - name: S3_PORT
-              value: {{ .Values.seaweedfs.s3.port | quote }}
-            - name: SEAWEED_MOUNT_PORT
-              value: {{ .Values.seaweedfs.mountApi.port | quote }}
             {{- end }}
             {{- if .Values.node.env }}
             {{- toYaml .Values.node.env | nindent 12 }}

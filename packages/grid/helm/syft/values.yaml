@@ -97,6 +97,14 @@ node:
   logLevel: info
   debuggerEnabled: false
 
+  # SMTP Settings
+  smtp:
+    host: smtp.sendgrid.net
+    port: 587
+    from: noreply@openmined.org
+    username: apikey
+    password: password
+
   # Oblivious settings
   oblv:
     enabled: false

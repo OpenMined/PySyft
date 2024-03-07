@@ -323,6 +323,41 @@ def clean(location: str) -> None:
     help="Container image tag to use",
 )
 @click.option(
+    "--smtp-username",
+    default=None,
+    required=False,
+    type=str,
+    help="Username used to auth in email server and enable notification via emails",
+)
+@click.option(
+    "--smtp-password",
+    default=None,
+    required=False,
+    type=str,
+    help="Password used to auth in email server and enable notification via emails",
+)
+@click.option(
+    "--smtp-port",
+    default=None,
+    required=False,
+    type=str,
+    help="Port used by email server to send notification via emails",
+)
+@click.option(
+    "--smtp-host",
+    default=None,
+    required=False,
+    type=str,
+    help="Address used by email server to send notification via emails",
+)
+@click.option(
+    "--smtp-sender",
+    default=None,
+    required=False,
+    type=str,
+    help="Sender email used to deliver PyGrid email notifications.",
+)
+@click.option(
     "--build-src",
     default=DEFAULT_BRANCH,
     required=False,
@@ -1309,6 +1344,12 @@ def create_launch_cmd(
     else:
         parsed_kwargs["node_side_type"] = NodeSideType.HIGH_SIDE.value
 
+    parsed_kwargs["smtp_username"] = kwargs["smtp_username"]
+    parsed_kwargs["smtp_password"] = kwargs["smtp_password"]
+    parsed_kwargs["smtp_port"] = kwargs["smtp_port"]
+    parsed_kwargs["smtp_host"] = kwargs["smtp_host"]
+    parsed_kwargs["smtp_sender"] = kwargs["smtp_sender"]
+
     parsed_kwargs["enable_warnings"] = not kwargs["no_warnings"]
 
     # choosing deployment type
@@ -2156,6 +2197,11 @@ def create_launch_docker_cmd(
 
     single_container_mode = kwargs["deployment_type"] == "single_container"
     in_mem_workers = kwargs.get("in_mem_workers")
+    smtp_username = kwargs.get("smtp_username")
+    smtp_sender = kwargs.get("smtp_sender")
+    smtp_password = kwargs.get("smtp_password")
+    smtp_port = kwargs.get("smtp_port")
+    smtp_host = kwargs.get("smtp_host")
 
     enable_oblv = bool(kwargs["oblv"])
     print("  - NAME: " + str(snake_name))
@@ -2220,6 +2266,11 @@ def create_launch_docker_cmd(
         "NODE_SIDE_TYPE": kwargs["node_side_type"],
         "SINGLE_CONTAINER_MODE": single_container_mode,
         "INMEMORY_WORKERS": in_mem_workers,
+        "SMTP_USERNAME": smtp_username,
+        "SMTP_PASSWORD": smtp_password,
+        "EMAIL_SENDER": smtp_sender,
+        "SMTP_PORT": smtp_port,
+        "SMTP_HOST": smtp_host,
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:
