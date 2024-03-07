@@ -118,7 +118,7 @@ class BlobFile(SyftObject):
     def upload_to_blobstorage(self, client: SyftClient) -> Optional[SyftError]:
         self.syft_node_location = client.id
         self.syft_client_verify_key = client.verify_key
-        return self.upload_to_blobstorage_from_api(client.api)
+        return self._upload_to_blobstorage_from_api(client.api)
 
     def _iter_lines(self, chunk_size: int = DEFAULT_CHUNK_SIZE) -> Iterator[bytes]:
         """Synchronous version of the async iter_lines. This implementation
