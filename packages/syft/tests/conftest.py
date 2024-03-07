@@ -38,6 +38,7 @@ MONGODB_TMP_DIR = Path(TMP_DIR, "mongodb")
 SHERLOCK_TMP_DIR = Path(TMP_DIR, "sherlock")
 
 MONGO_PORT = 37017
+MONGO_CONTAINER_PREFIX = "pytest_mongo"
 
 
 @pytest.fixture()
@@ -189,7 +190,7 @@ def start_mongo_server(port=MONGO_PORT, dbname="syft"):
     import docker
 
     client = docker.from_env()
-    container_name = f"pytest_mongo_{port}"
+    container_name = f"{MONGO_CONTAINER_PREFIX}_{port}"
 
     try:
         client.containers.get(container_name)
@@ -214,7 +215,7 @@ def destroy_mongo_container(port=MONGO_PORT):
     import docker
 
     client = docker.from_env()
-    container_name = f"mongo_test_{port}"
+    container_name = f"{MONGO_CONTAINER_PREFIX}_{port}"
 
     try:
         container = client.containers.get(container_name)
