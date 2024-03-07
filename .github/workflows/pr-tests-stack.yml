@@ -441,7 +441,6 @@ jobs:
           ORCHESTRA_DEPLOYMENT_TYPE: "container_stack"
           TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
-        shell: bash
         run: |
           tox -e stack.test.notebook
 
