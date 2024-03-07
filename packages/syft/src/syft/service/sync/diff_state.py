@@ -20,13 +20,14 @@ from typing import Type
 from typing import Union
 
 # third party
-import pydantic
+from pydantic import model_validator
 from rich import box
 from rich.console import Console
 from rich.console import Group
 from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.panel import Panel
+from typing_extensions import Self
 
 # relative
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -56,8 +57,8 @@ class AttrDiff(SyftObject):
     __canonical_name__ = "AttrDiff"
     __version__ = SYFT_OBJECT_VERSION_1
     attr_name: str
-    low_attr: Any
-    high_attr: Any
+    low_attr: Any = None
+    high_attr: Any = None
 
     def _repr_html_(self) -> str:
         return f"""{self.attr_name}:
@@ -437,15 +438,14 @@ class ObjectDiffBatch(SyftObject):
             }
         raise ValueError(f"Unknown root type: {self.root.obj_type}")
 
-    @pydantic.root_validator
-    def make_dependents(cls, values: dict) -> dict:
-        dependencies = values.get("dependencies", {})
+    @model_validator(mode="after")
+    def make_dependents(self) -> Self:
         dependents: Dict = {}
-        for parent, children in dependencies.items():
+        for parent, children in self.dependencies.items():
             for child in children:
                 dependents[child] = dependents.get(child, []) + [parent]
-        values["dependents"] = dependents
-        return values
+        self.dependents = dependents
+        return self
 
     @property
     def root(self) -> ObjectDiff:

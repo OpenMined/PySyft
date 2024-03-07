@@ -53,6 +53,7 @@ from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
 from ..types.identity import Identity
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftMigrationRegistry
 from ..types.syft_object import SyftObject
@@ -117,11 +118,11 @@ class APIEndpoint(SyftObject):
     module_path: str
     name: str
     description: str
-    doc_string: Optional[str]
+    doc_string: Optional[str] = None
     signature: Signature
     has_self: bool = False
-    pre_kwargs: Optional[Dict[str, Any]]
-    warning: Optional[APIEndpointWarning]
+    pre_kwargs: Optional[Dict[str, Any]] = None
+    warning: Optional[APIEndpointWarning] = None
 
 
 @serializable()
@@ -134,16 +135,16 @@ class LibEndpoint(SyftBaseObject):
     module_path: str
     name: str
     description: str
-    doc_string: Optional[str]
+    doc_string: Optional[str] = None
     signature: Signature
     has_self: bool = False
-    pre_kwargs: Optional[Dict[str, Any]]
+    pre_kwargs: Optional[Dict[str, Any]] = None
 
 
 @serializable(attrs=["signature", "credentials", "serialized_message"])
 class SignedSyftAPICall(SyftObject):
     __canonical_name__ = "SignedSyftAPICall"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     credentials: SyftVerifyKey
     signature: bytes
@@ -207,7 +208,7 @@ class SyftAPIData(SyftBaseObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
-    data: Any
+    data: Any = None
 
     def sign(self, credentials: SyftSigningKey) -> SignedSyftAPICall:
         signed_message = credentials.signing_key.sign(_serialize(self, to_bytes=True))
@@ -233,9 +234,9 @@ class RemoteFunction(SyftObject):
     signature: Signature
     path: str
     make_call: Callable
-    pre_kwargs: Optional[Dict[str, Any]]
+    pre_kwargs: Optional[Dict[str, Any]] = None
     communication_protocol: PROTOCOL_TYPE
-    warning: Optional[APIEndpointWarning]
+    warning: Optional[APIEndpointWarning] = None
 
     @property
     def __ipython_inspector_signature_override__(self) -> Optional[Signature]:
@@ -1078,5 +1079,5 @@ def validate_callable_args_and_kwargs(
     return _valid_args, _valid_kwargs
 
 
-RemoteFunction.update_forward_refs()
-RemoteUserCodeFunction.update_forward_refs()
+RemoteFunction.model_rebuild(force=True)
+RemoteUserCodeFunction.model_rebuild(force=True)

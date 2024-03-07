@@ -864,13 +864,12 @@ class MongoStoreConfig(StoreConfig):
                 * NoLockingConfig: no locking, ideal for single-thread stores.
                 * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
                 * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
-                * RedisLockingConfig: Redis-based locking, ideal for multi-device stores.
             Defaults to NoLockingConfig.
     """
 
     client_config: MongoStoreClientConfig
     store_type: Type[DocumentStore] = MongoDocumentStore
     db_name: str = "app"
-    backing_store = MongoBackingStore
+    backing_store: Type[KeyValueBackingStore] = MongoBackingStore
     # TODO: should use a distributed lock, with RedisLockingConfig
     locking_config: LockingConfig = NoLockingConfig()

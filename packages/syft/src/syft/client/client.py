@@ -19,7 +19,7 @@ from typing import cast
 
 # third party
 from argon2 import PasswordHasher
-import pydantic
+from pydantic import field_validator
 import requests
 from requests import Response
 from requests import Session
@@ -135,14 +135,19 @@ class HTTPConnection(NodeConnection):
     __canonical_name__ = "HTTPConnection"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    proxy_target_uid: Optional[UID]
     url: GridURL
+    proxy_target_uid: Optional[UID] = None
     routes: Type[Routes] = Routes
-    session_cache: Optional[Session]
+    session_cache: Optional[Session] = None
 
-    @pydantic.validator("url", pre=True, always=True)
-    def make_url(cls, v: Union[GridURL, str]) -> GridURL:
-        return GridURL.from_url(v).as_container_host()
+    @field_validator("url", mode="before")
+    @classmethod
+    def make_url(cls, v: Any) -> Any:
+        return (
+            GridURL.from_url(v).as_container_host()
+            if isinstance(v, (str, GridURL))
+            else v
+        )
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         return HTTPConnection(url=self.url, proxy_target_uid=proxy_target_uid)
@@ -329,7 +334,7 @@ class PythonConnection(NodeConnection):
     __version__ = SYFT_OBJECT_VERSION_1
 
     node: AbstractNode
-    proxy_target_uid: Optional[UID]
+    proxy_target_uid: Optional[UID] = None
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         return PythonConnection(node=self.node, proxy_target_uid=proxy_target_uid)
@@ -690,12 +695,14 @@ class SyftClient:
 
     @property
     def notifications(self) -> Optional[APIModule]:
-        print(
-            "WARNING: Notifications is currently is in a beta state, so use carefully!"
-        )
-        print("If possible try using client.requests/client.projects")
         if self.api.has_service("notifications"):
             return self.api.services.notifications
+        return None
+
+    @property
+    def notifier(self) -> Optional[APIModule]:
+        if self.api.has_service("notifier"):
+            return self.api.services.notifier
         return None
 
     @property

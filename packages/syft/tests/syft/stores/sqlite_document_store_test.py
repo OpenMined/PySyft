@@ -246,9 +246,8 @@ def test_sqlite_store_partition_set_threading(
             root_verify_key, sqlite_workspace
         )
         for idx in range(repeats):
-            obj = MockObjectType(data=idx)
-
             for _ in range(10):
+                obj = MockObjectType(data=idx)
                 res = sqlite_store_partition.set(
                     root_verify_key, obj, ignore_duplicates=False
                 )

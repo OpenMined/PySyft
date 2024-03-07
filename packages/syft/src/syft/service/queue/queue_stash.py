@@ -1,7 +1,6 @@
 # stdlib
 from enum import Enum
 from typing import Any
-from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -22,13 +21,9 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...store.linked_obj import LinkedObject
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
@@ -49,38 +44,6 @@ StatusPartitionKey = PartitionKey(key="status", type_=Status)
 
 
 @serializable()
-class QueueItemV1(SyftObject):
-    __canonical_name__ = "QueueItem"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: UID
-    node_uid: UID
-    result: Optional[Any]
-    resolved: bool = False
-    status: Status = Status.CREATED
-
-
-@serializable()
-class QueueItemV2(SyftObject):
-    __canonical_name__ = "QueueItem"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    id: UID
-    node_uid: UID
-    result: Optional[Any]
-    resolved: bool = False
-    status: Status = Status.CREATED
-
-    method: str
-    service: str
-    args: List
-    kwargs: Dict[str, Any]
-    job_id: Optional[UID]
-    worker_settings: Optional[WorkerSettings]
-    has_execute_permissions: bool = False
-
-
-@serializable()
 class QueueItem(SyftObject):
     __canonical_name__ = "QueueItem"
     __version__ = SYFT_OBJECT_VERSION_3
@@ -89,7 +52,7 @@ class QueueItem(SyftObject):
 
     id: UID
     node_uid: UID
-    result: Optional[Any]
+    result: Optional[Any] = None
     resolved: bool = False
     status: Status = Status.CREATED
 
@@ -97,8 +60,8 @@ class QueueItem(SyftObject):
     service: str
     args: List
     kwargs: Dict[str, Any]
-    job_id: Optional[UID]
-    worker_settings: Optional[WorkerSettings]
+    job_id: Optional[UID] = None
+    worker_settings: Optional[WorkerSettings] = None
     has_execute_permissions: bool = False
     worker_pool: LinkedObject
 
@@ -117,45 +80,6 @@ class QueueItem(SyftObject):
         if self.is_action:
             return self.kwargs["action"]
         return SyftError(message="QueueItem not an Action")
-
-
-@migrate(QueueItem, QueueItemV1)
-def downgrade_queueitem_v2_to_v1() -> list[Callable]:
-    return [
-        drop(
-            [
-                "method",
-                "service",
-                "args",
-                "kwargs",
-                "job_id",
-                "worker_settings",
-                "has_execute_permissions",
-            ]
-        ),
-    ]
-
-
-@migrate(QueueItemV1, QueueItem)
-def upgrade_queueitem_v1_to_v2() -> list[Callable]:
-    return [
-        make_set_default("method", ""),
-        make_set_default("service", ""),
-        make_set_default("args", []),
-        make_set_default("kwargs", {}),
-        make_set_default("job_id", None),
-        make_set_default("worker_settings", None),
-        make_set_default("has_execute_permissions", False),
-    ]
-
-
-@serializable()
-class ActionQueueItemV1(QueueItemV2):
-    __canonical_name__ = "ActionQueueItem"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    method: str = "execute"
-    service: str = "actionservice"
 
 
 @serializable()

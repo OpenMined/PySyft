@@ -31,7 +31,7 @@ from typing import final
 
 # third party
 from IPython.display import display
-import pydantic
+from pydantic import field_validator
 from result import Err
 from typing_extensions import Self
 
@@ -48,17 +48,13 @@ from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
-from ...types.transforms import drop
 from ...types.transforms import generate_id
-from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
@@ -261,123 +257,13 @@ class UserCodeStatusCollection(SyftObject):
 
 
 @serializable()
-class UserCodeV1(SyftObject):
-    # version
-    __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: UID
-    node_uid: Optional[UID]
-    user_verify_key: SyftVerifyKey
-    raw_code: str
-    input_policy_type: Union[Type[InputPolicy], UserPolicy]
-    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
-    input_policy_state: bytes = b""
-    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
-    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
-    output_policy_state: bytes = b""
-    parsed_code: str
-    service_func_name: str
-    unique_func_name: str
-    user_unique_func_name: str
-    code_hash: str
-    signature: inspect.Signature
-    status: UserCodeStatusCollection
-    input_kwargs: List[str]
-    enclave_metadata: Optional[EnclaveMetadata] = None
-    submit_time: Optional[DateTime]
-
-    __attr_searchable__ = [
-        "user_verify_key",
-        "status",
-        "service_func_name",
-        "code_hash",
-    ]
-
-
-@serializable()
-class UserCodeV2(SyftObject):
-    # version
-    __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    id: UID
-    node_uid: Optional[UID]
-    user_verify_key: SyftVerifyKey
-    raw_code: str
-    input_policy_type: Union[Type[InputPolicy], UserPolicy]
-    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
-    input_policy_state: bytes = b""
-    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
-    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
-    output_policy_state: bytes = b""
-    parsed_code: str
-    service_func_name: str
-    unique_func_name: str
-    user_unique_func_name: str
-    code_hash: str
-    signature: inspect.Signature
-    status: UserCodeStatusCollection
-    input_kwargs: List[str]
-    enclave_metadata: Optional[EnclaveMetadata] = None
-    submit_time: Optional[DateTime]
-    uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
-    nested_requests: Dict[str, str] = {}
-    nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
-
-
-class UserCodeV3(SyftObject):
-    __canonical_name__ = "UserCode"
-    __version__ = SYFT_OBJECT_VERSION_3
-
-    id: UID
-    node_uid: Optional[UID]
-    user_verify_key: SyftVerifyKey
-    raw_code: str
-    input_policy_type: Union[Type[InputPolicy], UserPolicy]
-    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
-    input_policy_state: bytes = b""
-    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
-    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
-    output_policy_state: bytes = b""
-    parsed_code: str
-    service_func_name: str
-    unique_func_name: str
-    user_unique_func_name: str
-    code_hash: str
-    signature: inspect.Signature
-    status: UserCodeStatusCollection
-    input_kwargs: List[str]
-    enclave_metadata: Optional[EnclaveMetadata] = None
-    submit_time: Optional[DateTime]
-    uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
-    nested_requests: Dict[str, str] = {}
-    nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
-    worker_pool_name: Optional[str]
-
-    __attr_searchable__: ClassVar[List[str]] = [
-        "user_verify_key",
-        "status",
-        "service_func_name",
-        "code_hash",
-    ]  # type: ignore
-    __attr_unique__: ClassVar[List[str]] = []  # type: ignore
-    __repr_attrs__: ClassVar[List[str]] = [
-        "service_func_name",
-        "input_owners",
-        "code_status",
-        "worker_pool_name",
-    ]  # type: ignore
-
-
-@serializable()
 class UserCode(SyftObject):
     # version
     __canonical_name__ = "UserCode"
     __version__ = SYFT_OBJECT_VERSION_4
 
     id: UID
-    node_uid: Optional[UID]
+    node_uid: Optional[UID] = None
     user_verify_key: SyftVerifyKey
     raw_code: str
     input_policy_type: Union[Type[InputPolicy], UserPolicy]
@@ -395,10 +281,10 @@ class UserCode(SyftObject):
     status_link: LinkedObject
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
-    submit_time: Optional[DateTime]
-    uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
+    submit_time: Optional[DateTime] = None
+    uses_domain: bool = False  # tracks if the code calls domain.something, variable is set during parsing
     nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
-    worker_pool_name: Optional[str]
+    worker_pool_name: Optional[str] = None
 
     __attr_searchable__: ClassVar[List[str]] = [
         "user_verify_key",
@@ -837,60 +723,13 @@ class UserCode(SyftObject):
         ip.set_next_input(warning_message + self.raw_code)
 
 
-@migrate(UserCodeV3, UserCodeV2)
-def downgrade_usercode_v3_to_v2() -> list[Callable]:
-    return [
-        drop("worker_pool_name"),
-    ]
-
-
-@migrate(UserCodeV2, UserCodeV3)
-def upgrade_usercode_v2_to_v3() -> list[Callable]:
-    return [
-        make_set_default("worker_pool_name", None),
-    ]
-
-
-@migrate(UserCode, UserCodeV3)
-def downgrade_usercode_v4_to_v3() -> list[Callable]:
-    return [
-        make_set_default("nested_requests", {}),
-    ]
-
-
-@migrate(UserCodeV3, UserCode)
-def upgrade_usercode_v3_to_v4() -> list[Callable]:
-    return [
-        drop("nested_requests"),
-    ]
-
-
-@serializable(without=["local_function"])
-class SubmitUserCodeV2(SyftObject):
-    # version
-    __canonical_name__ = "SubmitUserCode"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    id: Optional[UID]  # type: ignore[assignment]
-    code: str
-    func_name: str
-    signature: inspect.Signature
-    input_policy_type: Union[SubmitUserPolicy, UID, Type[InputPolicy]]
-    input_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
-    output_policy_type: Union[SubmitUserPolicy, UID, Type[OutputPolicy]]
-    output_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
-    local_function: Optional[Callable]
-    input_kwargs: List[str]
-    enclave_metadata: Optional[EnclaveMetadata] = None
-
-
 @serializable(without=["local_function"])
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    id: Optional[UID]  # type: ignore[assignment]
+    id: Optional[UID] = None  # type: ignore[assignment]
     code: str
     func_name: str
     signature: inspect.Signature
@@ -898,17 +737,18 @@ class SubmitUserCode(SyftObject):
     input_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
     output_policy_type: Union[SubmitUserPolicy, UID, Type[OutputPolicy]]
     output_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
-    local_function: Optional[Callable]
+    local_function: Optional[Callable] = None
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
     worker_pool_name: Optional[str] = None
 
     __repr_attrs__ = ["func_name", "code"]
 
-    @pydantic.root_validator(pre=True)
-    def add_output_policy_ids(cls, values: dict) -> dict:
-        if "id" not in values["output_policy_init_kwargs"]:
-            values["output_policy_init_kwargs"]["id"] = UID()
+    @field_validator("output_policy_init_kwargs", mode="after")
+    @classmethod
+    def add_output_policy_ids(cls, values: Any) -> Any:
+        if isinstance(values, dict) and "id" not in values:
+            values["id"] = UID()
         return values
 
     @property
@@ -1053,20 +893,6 @@ class SubmitUserCode(SyftObject):
         if self.input_policy_init_kwargs is not None:
             return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
         return None
-
-
-@migrate(SubmitUserCode, SubmitUserCodeV2)
-def downgrade_submitusercode_v3_to_v2() -> list[Callable]:
-    return [
-        drop("worker_pool_name"),
-    ]
-
-
-@migrate(SubmitUserCodeV2, SubmitUserCode)
-def upgrade_submitusercode_v2_to_v3() -> list[Callable]:
-    return [
-        make_set_default("worker_pool_name", None),
-    ]
 
 
 class ArgumentType(Enum):
@@ -1442,7 +1268,7 @@ class UserCodeExecutionResult(SyftObject):
     user_code_id: UID
     stdout: str
     stderr: str
-    result: Any
+    result: Any = None
 
 
 @serializable()
@@ -1455,7 +1281,7 @@ class UserCodeExecutionOutput(SyftObject):
     user_code_id: UID
     stdout: str
     stderr: str
-    result: Any
+    result: Any = None
 
 
 class SecureContext:

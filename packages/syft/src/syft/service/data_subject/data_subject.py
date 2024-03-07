@@ -14,6 +14,7 @@ from typing_extensions import Self
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
@@ -34,7 +35,7 @@ class DataSubject(SyftObject):
 
     node_uid: UID
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     aliases: List[str] = []
 
     @property
@@ -76,11 +77,11 @@ class DataSubject(SyftObject):
 class DataSubjectCreate(SyftObject):
     # version
     __canonical_name__ = "DataSubjectCreate"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: Optional[UID] = None  # type: ignore[assignment]
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     aliases: Optional[List[str]] = []
     members: Dict[str, "DataSubjectCreate"] = {}
 

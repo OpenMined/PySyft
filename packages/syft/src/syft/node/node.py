@@ -71,6 +71,7 @@ from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
+from ..service.notifier.notifier_service import NotifierService
 from ..service.object_search.migration_state_service import MigrateStateService
 from ..service.output.output_service import OutputService
 from ..service.policy.policy_service import PolicyService
@@ -316,6 +317,11 @@ class Node(AbstractNode):
         dev_mode: bool = False,
         migrate: bool = False,
         in_memory_workers: bool = True,
+        smtp_username: Optional[str] = None,
+        smtp_password: Optional[str] = None,
+        email_sender: Optional[str] = None,
+        smtp_port: Optional[str] = None,
+        smtp_host: Optional[str] = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -357,6 +363,7 @@ class Node(AbstractNode):
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
+                NotifierService,
                 NotificationService,
                 DataSubjectMemberService,
                 ProjectService,
@@ -404,7 +411,17 @@ class Node(AbstractNode):
             node=self,
         )
 
+        NotifierService.init_notifier(
+            node=self,
+            email_password=smtp_password,
+            email_username=smtp_username,
+            email_sender=email_sender,
+            smtp_port=smtp_port,
+            smtp_host=smtp_host,
+        )
+
         self.client_cache: dict = {}
+
         if isinstance(node_type, str):
             node_type = NodeType(node_type)
         self.node_type = node_type
@@ -948,6 +965,7 @@ class Node(AbstractNode):
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
+                NotifierService,
                 NotificationService,
                 DataSubjectMemberService,
                 ProjectService,
@@ -1213,8 +1231,8 @@ class Node(AbstractNode):
             if api_call.path not in user_config_registry:
                 if ServiceConfigRegistry.path_exists(api_call.path):
                     return SyftError(
-                        message=f"As a `{role}`,"
-                        f"you have has no access to: {api_call.path}"
+                        message=f"As a `{role}`, "
+                        f"you have no access to: {api_call.path}"
                     )
                 else:
                     return SyftError(

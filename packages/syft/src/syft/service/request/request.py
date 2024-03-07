@@ -29,16 +29,12 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
-from ...types.transforms import drop
 from ...types.transforms import generate_id
-from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.twin_object import TwinObject
 from ...types.uid import LineageID
@@ -79,7 +75,7 @@ class Change(SyftObject):
     __canonical_name__ = "Change"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    linked_obj: Optional[LinkedObject]
+    linked_obj: Optional[LinkedObject] = None
 
     def change_object_is_type(self, type_: type) -> bool:
         return self.linked_obj is not None and type_ == self.linked_obj.object_type
@@ -90,7 +86,7 @@ class ChangeStatus(SyftObject):
     __canonical_name__ = "ChangeStatus"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]  # type: ignore[assignment]
+    id: Optional[UID] = None  # type: ignore[assignment]
     change_id: UID
     applied: bool = False
 
@@ -204,7 +200,7 @@ class CreateCustomImageChange(Change):
 
     config: WorkerConfig
     tag: str
-    registry_uid: Optional[UID]
+    registry_uid: Optional[UID] = None
 
     __repr_attrs__ = ["config", "tag"]
 
@@ -283,8 +279,8 @@ class CreateCustomWorkerPoolChange(Change):
 
     pool_name: str
     num_workers: int
-    image_uid: Optional[UID]
-    config: Optional[WorkerConfig]
+    image_uid: Optional[UID] = None
+    config: Optional[WorkerConfig] = None
 
     __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
 
@@ -353,9 +349,9 @@ class Request(SyftObject):
     requesting_user_name: str = ""
     requesting_user_email: Optional[str] = ""
     requesting_user_institution: Optional[str] = ""
-    approving_user_verify_key: Optional[SyftVerifyKey]
+    approving_user_verify_key: Optional[SyftVerifyKey] = None
     request_time: DateTime
-    updated_at: Optional[DateTime]
+    updated_at: Optional[DateTime] = None
     node_uid: UID
     request_hash: str
     changes: List[Change]
@@ -912,7 +908,7 @@ class RequestInfoFilter(SyftObject):
     __canonical_name__ = "RequestInfoFilter"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    name: Optional[str]
+    name: Optional[str] = None
 
 
 @serializable()
@@ -921,7 +917,7 @@ class SubmitRequest(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     changes: List[Change]
-    requesting_user_verify_key: Optional[SyftVerifyKey]
+    requesting_user_verify_key: Optional[SyftVerifyKey] = None
 
 
 def hash_changes(context: TransformContext) -> TransformContext:
@@ -998,11 +994,11 @@ class ObjectMutation(Change):
     __canonical_name__ = "ObjectMutation"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    linked_obj: Optional[LinkedObject]
+    linked_obj: Optional[LinkedObject] = None
     attr_name: str
-    value: Optional[Any]
+    value: Optional[Any] = None
     match_type: bool
-    previous_value: Optional[Any]
+    previous_value: Optional[Any] = None
 
     __repr_attrs__ = ["linked_obj", "attr_name"]
 
@@ -1070,7 +1066,7 @@ class EnumMutation(ObjectMutation):
     __version__ = SYFT_OBJECT_VERSION_1
 
     enum_type: Type[Enum]
-    value: Optional[Enum]
+    value: Optional[Enum] = None
     match_type: bool = True
 
     __repr_attrs__ = ["linked_obj", "attr_name", "value"]
@@ -1134,40 +1130,6 @@ class EnumMutation(ObjectMutation):
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
-
-
-@serializable()
-class UserCodeStatusChangeV1(Change):
-    __canonical_name__ = "UserCodeStatusChange"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    value: UserCodeStatus
-    linked_obj: LinkedObject
-    match_type: bool = True
-    __repr_attrs__ = [
-        "link.service_func_name",
-        "link.input_policy_type.__canonical_name__",
-        "link.output_policy_type.__canonical_name__",
-        "link.status.approved",
-    ]
-
-
-@serializable()
-class UserCodeStatusChangeV2(Change):
-    __canonical_name__ = "UserCodeStatusChange"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    value: UserCodeStatus
-    linked_obj: LinkedObject
-    nested_solved: bool = False
-    match_type: bool = True
-    __repr_attrs__ = [
-        "code.service_func_name",
-        "code.input_policy_type.__canonical_name__",
-        "code.output_policy_type.__canonical_name__",
-        "code.worker_pool_name",
-        "code.status.approved",
-    ]
 
 
 @serializable()
@@ -1368,38 +1330,3 @@ class UserCodeStatusChange(Change):
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
-
-
-@migrate(UserCodeStatusChangeV2, UserCodeStatusChangeV1)
-def downgrade_usercodestatuschange_v2_to_v1() -> List[Callable]:
-    return [
-        drop("nested_solved"),
-    ]
-
-
-@migrate(UserCodeStatusChangeV1, UserCodeStatusChangeV2)
-def upgrade_usercodestatuschange_v1_to_v2() -> List[Callable]:
-    return [
-        make_set_default("nested_solved", True),
-    ]
-
-
-@migrate(UserCodeStatusChange, UserCodeStatusChangeV2)
-def downgrade_usercodestatuschange_v3_to_v2() -> List[Callable]:
-    return [
-        drop("linked_user_code"),
-    ]
-
-
-def user_code_from_code_status(context: TransformContext) -> TransformContext:
-    linked_obj: LinkedObject = context.output["linked_object"]  # type: ignore
-    code_status: UserCodeStatusCollection = linked_obj.resolve
-    context.output["linked_user_code"] = code_status.user_code_link  # type: ignore
-    return context
-
-
-@migrate(UserCodeStatusChangeV2, UserCodeStatusChange)
-def upgrade_usercodestatuschange_v2to_v3() -> List[Callable]:
-    return [
-        user_code_from_code_status,
-    ]

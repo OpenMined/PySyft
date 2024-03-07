@@ -172,7 +172,7 @@ def test_userservice_view_user_success(
     monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
     response = user_service.view(authed_context, uid_to_view)
     assert isinstance(response, UserView)
-    assert response == expected_output
+    assert response.model_dump() == expected_output.model_dump()
 
 
 def test_userservice_get_all_success(
@@ -192,7 +192,10 @@ def test_userservice_get_all_success(
     response = user_service.get_all(authed_context)
     assert isinstance(response, List)
     assert len(response) == len(expected_output)
-    assert response == expected_output
+    assert all(
+        r.model_dump() == expected.model_dump()
+        for r, expected in zip(response, expected_output)
+    )
 
 
 def test_userservice_get_all_error(
@@ -230,17 +233,27 @@ def test_userservice_search(
     # Search via id
     response = user_service.search(authed_context, id=guest_user.id)
     assert isinstance(response, List)
-    assert response == expected_output
+    assert all(
+        r.model_dump() == expected.model_dump()
+        for r, expected in zip(response, expected_output)
+    )
+    # assert response.model_dump() == expected_output.model_dump()
 
     # Search via email
     response = user_service.search(authed_context, email=guest_user.email)
     assert isinstance(response, List)
-    assert response == expected_output
+    assert all(
+        r.model_dump() == expected.model_dump()
+        for r, expected in zip(response, expected_output)
+    )
 
     # Search via name
     response = user_service.search(authed_context, name=guest_user.name)
     assert isinstance(response, List)
-    assert response == expected_output
+    assert all(
+        r.model_dump() == expected.model_dump()
+        for r, expected in zip(response, expected_output)
+    )
 
     # Search via verify_key
     response = user_service.search(
@@ -248,14 +261,20 @@ def test_userservice_search(
         verify_key=guest_user.verify_key,
     )
     assert isinstance(response, List)
-    assert response == expected_output
+    assert all(
+        r.model_dump() == expected.model_dump()
+        for r, expected in zip(response, expected_output)
+    )
 
     # Search via multiple kwargs
     response = user_service.search(
         authed_context, name=guest_user.name, email=guest_user.email
     )
     assert isinstance(response, List)
-    assert response == expected_output
+    assert all(
+        r.model_dump() == expected.model_dump()
+        for r, expected in zip(response, expected_output)
+    )
 
 
 def test_userservice_search_with_invalid_kwargs(
