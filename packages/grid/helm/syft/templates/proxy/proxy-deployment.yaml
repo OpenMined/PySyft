@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proxy
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: proxy
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+        app.kubernetes.io/component: proxy
+    spec:
+      containers:
+        - name: proxy-container
+          image: traefik:v2.11
+          imagePullPolicy: Always
+          resources: {{ include "common.resources.set" (dict "resources" .Values.proxy.resources "preset" .Values.proxy.resourcesPreset) | nindent 12 }}
+          {{- if .Values.proxy.env }}
+          env: {{ toYaml .Values.proxy.env | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: proxy-port
+              containerPort: 80
+            - name: ping-port
+              containerPort: 8082
+          volumeMounts:
+            - mountPath: /etc/traefik
+              name: traefik-conf
+              readOnly: false
+          startupProbe: null
+          livenessProbe:
+            httpGet:
+              path: /ping?probe=livenessProbe
+              port: ping-port
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe: null
+      terminationGracePeriodSeconds: 5
+      volumes:
+      - configMap:
+          name: proxy-config
+        name: traefik-conf
