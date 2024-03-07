@@ -1,11 +1,18 @@
-import pytest
+# stdlib
 import os
 
+# third party
+import pytest
 
+# syft absolute
 import syft as sy
 
+
+@pytest.mark.container_workload
 def test_mount_azure_blob_storage(domain_1_port):
-    domain_client = sy.login(email="info@openmined.org", password="changethis", port=domain_1_port)
+    domain_client = sy.login(
+        email="info@openmined.org", password="changethis", port=domain_1_port
+    )
     domain_client.api.services.blob_storage.mount_azure(
         account_name="citestingstorageaccount",
         container_name="citestingcontainer",
