@@ -17,8 +17,8 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...store.linked_obj import LinkedObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -42,7 +42,7 @@ StatusPartitionKey = PartitionKey(key="status", type_=Status)
 @serializable()
 class QueueItem(SyftObject):
     __canonical_name__ = "QueueItem"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     __attr_searchable__ = ["status"]
 
@@ -81,7 +81,7 @@ class QueueItem(SyftObject):
 @serializable()
 class ActionQueueItem(QueueItem):
     __canonical_name__ = "ActionQueueItem"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     method: str = "execute"
     service: str = "actionservice"

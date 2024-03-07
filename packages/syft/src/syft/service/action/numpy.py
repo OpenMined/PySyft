@@ -18,7 +18,7 @@ from .action_types import action_types
 # class NumpyArrayObjectPointer(ActionObjectPointer):
 #     _inflix_operations = ["__add__", "__sub__", "__eq__", "__mul__"]
 #     __canonical_name__ = "NumpyArrayObjectPointer"
-#     __version__ = SYFT_OBJECT_VERSION_1
+#     __version__ = SYFT_OBJECT_VERSION_2
 
 #     def get_from(self, domain_client) -> Any:
 #         return domain_client.api.services.action.get(self.id).syft_action_data

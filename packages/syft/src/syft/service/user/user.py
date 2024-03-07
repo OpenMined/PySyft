@@ -18,7 +18,6 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
@@ -301,7 +300,7 @@ class UserView(SyftObject):
 @serializable()
 class UserViewPage(SyftObject):
     __canonical_name__ = "UserViewPage"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     users: list[UserView]
     total: int
@@ -350,7 +349,7 @@ def user_to_view_user() -> list[Callable]:
 @serializable()
 class UserPrivateKey(SyftObject):
     __canonical_name__ = "UserPrivateKey"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     email: str
     signing_key: SyftSigningKey

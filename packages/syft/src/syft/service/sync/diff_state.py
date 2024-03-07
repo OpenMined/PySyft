@@ -23,7 +23,7 @@ from rich.panel import Panel
 from typing_extensions import Self
 
 # relative
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
@@ -48,7 +48,7 @@ sketchy_tab = "‎ " * 4
 class AttrDiff(SyftObject):
     # version
     __canonical_name__ = "AttrDiff"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
     attr_name: str
     low_attr: Any = None
     high_attr: Any = None
@@ -76,7 +76,7 @@ class AttrDiff(SyftObject):
 class ListDiff(AttrDiff):
     # version
     __canonical_name__ = "ListDiff"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
     diff_ids: list[int] = []
     new_low_ids: list[int] = []
     new_high_ids: list[int] = []
@@ -149,7 +149,7 @@ def recursive_attr_repr(value_attr: list | dict | bytes, num_tabs: int = 0) -> s
 class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     # version
     __canonical_name__ = "ObjectDiff"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
     low_obj: SyftObject | None = None
     high_obj: SyftObject | None = None
     low_permissions: list[ActionObjectPermission] = []
@@ -396,7 +396,7 @@ def _wrap_text(text: str, width: int, indent: int = 4) -> str:
 
 class ObjectDiffBatch(SyftObject):
     __canonical_name__ = "DiffHierarchy"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
     LINE_LENGTH: ClassVar[int] = 100
     INDENT: ClassVar[int] = 4
     ORDER: ClassVar[dict] = {"low": 0, "high": 1}
@@ -522,7 +522,7 @@ class ObjectDiffBatch(SyftObject):
 
 class NodeDiff(SyftObject):
     __canonical_name__ = "NodeDiff"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     obj_uid_to_diff: dict[UID, ObjectDiff] = {}
     dependencies: dict[UID, list[UID]] = {}
@@ -684,7 +684,7 @@ class NodeDiff(SyftObject):
 
 class ResolvedSyncState(SyftObject):
     __canonical_name__ = "SyncUpdate"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     create_objs: list[SyftObject] = []
     update_objs: list[SyftObject] = []

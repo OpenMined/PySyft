@@ -30,7 +30,6 @@ from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -87,7 +86,7 @@ def filter_only_uids(results: Any) -> list[UID] | dict[str, UID] | UID:
 class Policy(SyftObject):
     # version
     __canonical_name__: str = "Policy"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     init_kwargs: dict[Any, Any] = {}
@@ -167,7 +166,7 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
 
 class InputPolicy(Policy):
     __canonical_name__ = "InputPolicy"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         if "init_kwargs" in kwargs:
@@ -299,7 +298,7 @@ def allowed_ids_only(
 class ExactMatch(InputPolicy):
     # version
     __canonical_name__ = "ExactMatch"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     def filter_kwargs(
         self, kwargs: dict[Any, Any], context: AuthedServiceContext, code_item_id: UID
@@ -317,7 +316,7 @@ class ExactMatch(InputPolicy):
 class OutputHistory(SyftObject):
     # version
     __canonical_name__ = "OutputHistory"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     output_time: DateTime
     outputs: list[UID] | dict[str, UID] | None = None
@@ -327,7 +326,7 @@ class OutputHistory(SyftObject):
 class OutputPolicy(Policy):
     # version
     __canonical_name__ = "OutputPolicy"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     output_kwargs: list[str] = []
     node_uid: UID | None = None
@@ -462,7 +461,7 @@ class CustomInputPolicy(metaclass=CustomPolicy):
 @serializable()
 class UserPolicy(Policy):
     __canonical_name__: str = "UserPolicy"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     node_uid: UID | None = None
@@ -532,7 +531,7 @@ def get_code_from_class(policy: type[CustomPolicy]) -> str:
 @serializable()
 class SubmitUserPolicy(Policy):
     __canonical_name__ = "SubmitUserPolicy"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID | None = None  # type: ignore[assignment]
     code: str

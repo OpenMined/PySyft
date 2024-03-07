@@ -7,7 +7,7 @@ from ...client.api import APIRegistry
 from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...service.user.user_roles import ServiceRole
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
 from ...types.syft_object import get_repr_values_table
@@ -21,7 +21,7 @@ from ..response import SyftError
 class CodeHistory(SyftObject):
     # version
     __canonical_name__ = "CodeHistory"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     node_uid: UID
@@ -44,7 +44,7 @@ class CodeHistory(SyftObject):
 class CodeHistoryView(SyftObject):
     # version
     __canonical_name__ = "CodeHistoryView"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     user_code_history: list[UserCode] = []
@@ -86,7 +86,7 @@ class CodeHistoryView(SyftObject):
 class CodeHistoriesDict(SyftObject):
     # version
     __canonical_name__ = "CodeHistoriesDict"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     code_versions: dict[str, CodeHistoryView] = {}
@@ -115,7 +115,7 @@ class CodeHistoriesDict(SyftObject):
 class UsersCodeHistoriesDict(SyftObject):
     # version
     __canonical_name__ = "UsersCodeHistoriesDict"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     node_uid: UID

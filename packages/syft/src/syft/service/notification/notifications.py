@@ -10,7 +10,6 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -44,7 +43,7 @@ class NotificationExpiryStatus(Enum):
 @serializable()
 class ReplyNotification(SyftObject):
     __canonical_name__ = "ReplyNotification"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     text: str
     target_msg: UID

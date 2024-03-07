@@ -116,7 +116,7 @@ from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.experimental_flags import flags
@@ -1041,8 +1041,8 @@ class Node(AbstractNode):
             name=name,
             id=self.id,
             verify_key=self.verify_key,
-            highest_version=SYFT_OBJECT_VERSION_1,
-            lowest_version=SYFT_OBJECT_VERSION_1,
+            highest_version=SYFT_OBJECT_VERSION_2,
+            lowest_version=SYFT_OBJECT_VERSION_2,
             syft_version=__version__,
             description=description,
             organization=organization,

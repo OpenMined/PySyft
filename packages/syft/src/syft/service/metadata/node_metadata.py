@@ -14,8 +14,8 @@ from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
 from ...protocol.data_protocol import get_data_protocol
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import StorableObjectType
 from ...types.syft_object import SyftObject
 from ...types.transforms import convert_types
@@ -46,7 +46,7 @@ def check_version(
 @serializable()
 class NodeMetadataUpdate(SyftObject):
     __canonical_name__ = "NodeMetadataUpdate"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     name: str | None = None
     organization: str | None = None
@@ -63,7 +63,7 @@ class NodeMetadataUpdate(SyftObject):
 @serializable()
 class NodeMetadataV3(SyftObject):
     __canonical_name__ = "NodeMetadata"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     name: str
     id: UID

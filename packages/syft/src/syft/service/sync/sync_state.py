@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
@@ -31,7 +31,7 @@ class SyncStateRow(SyftObject):
     """A row in the SyncState table"""
 
     __canonical_name__ = "SyncStateItem"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     object: SyftObject
     previous_object: SyftObject | None = None
@@ -72,7 +72,7 @@ class SyncStateRow(SyftObject):
 @serializable()
 class SyncState(SyftObject):
     __canonical_name__ = "SyncState"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     objects: dict[UID, SyftObject] = {}
     dependencies: dict[UID, list[UID]] = {}

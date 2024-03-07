@@ -11,7 +11,7 @@ from ..service.context import ChangeContext
 from ..service.context import NodeServiceContext
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 
@@ -19,7 +19,7 @@ from ..types.uid import UID
 @serializable()
 class LinkedObject(SyftObject):
     __canonical_name__ = "LinkedObject"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     node_uid: UID
     service_type: type[Any]

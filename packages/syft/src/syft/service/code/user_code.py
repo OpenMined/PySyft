@@ -42,8 +42,7 @@ from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -110,7 +109,7 @@ class UserCodeStatus(Enum):
 @serializable()
 class UserCodeStatusCollection(SyftObject):
     __canonical_name__ = "UserCodeStatusCollection"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     __repr_attrs__ = ["approved", "status_dict"]
 
@@ -719,7 +718,7 @@ class UserCode(SyftObject):
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     id: UID | None = None  # type: ignore[assignment]
     code: str
@@ -1254,7 +1253,7 @@ def submit_user_code_to_user_code() -> list[Callable]:
 class UserCodeExecutionResult(SyftObject):
     # version
     __canonical_name__ = "UserCodeExecutionResult"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     user_code_id: UID
@@ -1267,7 +1266,7 @@ class UserCodeExecutionResult(SyftObject):
 class UserCodeExecutionOutput(SyftObject):
     # version
     __canonical_name__ = "UserCodeExecutionOutput"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     user_code_id: UID

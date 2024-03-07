@@ -13,7 +13,7 @@ from ..serde.serializable import serializable
 from ..service.queue.base_queue import QueueConfig
 from ..store.blob_storage import BlobStorageConfig
 from ..store.document_store import StoreConfig
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 
@@ -21,7 +21,7 @@ from ..types.uid import UID
 @serializable()
 class WorkerSettings(SyftObject):
     __canonical_name__ = "WorkerSettings"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     id: UID
     name: str

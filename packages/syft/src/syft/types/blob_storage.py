@@ -36,9 +36,9 @@ from ..types.grid_url import GridURL
 from ..types.transforms import keep
 from ..types.transforms import transform
 from .datetime import DateTime
-from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SYFT_OBJECT_VERSION_2
 from .syft_object import SYFT_OBJECT_VERSION_3
+from .syft_object import SYFT_OBJECT_VERSION_4
 from .syft_object import SyftObject
 from .uid import UID
 
@@ -55,7 +55,7 @@ DEFAULT_CHUNK_SIZE = 10000 * 1024
 @serializable()
 class BlobFile(SyftObject):
     __canonical_name__ = "BlobFile"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     file_name: str
     syft_blob_storage_entry_id: UID | None = None
@@ -204,7 +204,7 @@ class BlobFileObject(ActionObject):
 @serializable()
 class SecureFilePathLocation(SyftObject):
     __canonical_name__ = "SecureFilePathLocation"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     path: str
@@ -225,7 +225,7 @@ class SecureFilePathLocation(SyftObject):
 @serializable()
 class SeaweedSecureFilePathLocation(SecureFilePathLocation):
     __canonical_name__ = "SeaweedSecureFilePathLocation"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     upload_id: str | None = None
 
@@ -256,7 +256,7 @@ class SeaweedSecureFilePathLocation(SecureFilePathLocation):
 @serializable()
 class AzureSecureFilePathLocation(SecureFilePathLocation):
     __canonical_name__ = "AzureSecureFilePathLocation"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     # upload_id: str
     azure_profile_name: str  # Used by Seaweedfs to refer to a remote config
@@ -289,7 +289,7 @@ class AzureSecureFilePathLocation(SecureFilePathLocation):
 @serializable()
 class BlobStorageEntry(SyftObject):
     __canonical_name__ = "BlobStorageEntry"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     id: UID
     location: SecureFilePathLocation | SeaweedSecureFilePathLocation
@@ -307,7 +307,7 @@ class BlobStorageEntry(SyftObject):
 @serializable()
 class BlobStorageMetadata(SyftObject):
     __canonical_name__ = "BlobStorageMetadata"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     type_: type[SyftObject] | None = None
     mimetype: str = "bytes"
@@ -318,7 +318,7 @@ class BlobStorageMetadata(SyftObject):
 @serializable()
 class CreateBlobStorageEntry(SyftObject):
     __canonical_name__ = "CreateBlobStorageEntry"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     type_: type | None = None

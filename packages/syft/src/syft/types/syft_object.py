@@ -63,13 +63,13 @@ AbstractSetIntStr = Set[IntStr]
 MappingIntStrAny = Mapping[IntStr, Any]
 
 
-SYFT_OBJECT_VERSION_1 = 1
+SYFT_OBJECT_VERSION_2 = 1
 SYFT_OBJECT_VERSION_2 = 2
 SYFT_OBJECT_VERSION_3 = 3
 SYFT_OBJECT_VERSION_4 = 4
 
 supported_object_versions = [
-    SYFT_OBJECT_VERSION_1,
+    SYFT_OBJECT_VERSION_2,
     SYFT_OBJECT_VERSION_2,
     SYFT_OBJECT_VERSION_3,
     SYFT_OBJECT_VERSION_4,
@@ -138,7 +138,7 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
 
 class Context(SyftBaseObject):
     __canonical_name__ = "Context"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     pass
 
@@ -385,7 +385,7 @@ base_attrs_sync_ignore = [
 
 class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     __canonical_name__ = "SyftObject"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -954,7 +954,7 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     """Syft Object to which partial arguments can be provided."""
 
     __canonical_name__ = "PartialSyftObject"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     def __iter__(self) -> TupleGenerator:
         yield from ((k, v) for k, v in super().__iter__() if v is not Empty)

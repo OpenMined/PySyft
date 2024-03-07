@@ -24,7 +24,6 @@ from syft.store.document_store import BaseStash
 from syft.store.document_store import DocumentStore
 from syft.store.document_store import PartitionSettings
 from syft.types.syft_migration import migrate
-from syft.types.syft_object import SYFT_OBJECT_VERSION_1
 from syft.types.syft_object import SYFT_OBJECT_VERSION_2
 from syft.types.syft_object import SyftBaseObject
 from syft.types.syft_object import SyftObject
@@ -40,7 +39,7 @@ def get_klass_version_1():
     @serializable()
     class SyftMockObjectTestV1(SyftObject):
         __canonical_name__ = "SyftMockObjectTest"
-        __version__ = SYFT_OBJECT_VERSION_1
+        __version__ = SYFT_OBJECT_VERSION_2
 
         id: UID
         name: str

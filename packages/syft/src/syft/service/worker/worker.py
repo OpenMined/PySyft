@@ -4,11 +4,10 @@ from typing import Any
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import SYFT_OBJECT_VERSION_1
+from ...store.document_store import SYFT_OBJECT_VERSION_2
 from ...store.document_store import SyftObject
 from ...types.datetime import DateTime
 from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 
@@ -17,7 +16,7 @@ from ...types.transforms import make_set_default
 class DockerWorkerV1(SyftObject):
     # version
     __canonical_name__ = "ContainerImage"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     __attr_searchable__ = ["container_id"]
     __attr_unique__ = ["container_id"]

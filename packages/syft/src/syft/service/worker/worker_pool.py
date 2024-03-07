@@ -13,7 +13,7 @@ from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
 from ...types.uid import UID
@@ -49,7 +49,7 @@ class WorkerHealth(Enum):
 @serializable()
 class SyftWorker(SyftObject):
     __canonical_name__ = "SyftWorker"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     __attr_unique__ = ["name"]
     __attr_searchable__ = ["name", "container_id"]
@@ -143,7 +143,7 @@ class SyftWorker(SyftObject):
 @serializable()
 class WorkerPool(SyftObject):
     __canonical_name__ = "WorkerPool"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     __attr_unique__ = ["name"]
     __attr_searchable__ = ["name", "image_id"]

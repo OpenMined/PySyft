@@ -10,7 +10,7 @@ from ..serde.serializable import serializable
 from ..service.network.node_peer import NodePeer
 from ..service.response import SyftError
 from ..service.response import SyftException
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 from ..util.fonts import fonts_css
 from .client import SyftClient
@@ -147,7 +147,7 @@ class GatewayClient(SyftClient):
 
 class ProxyClient(SyftObject):
     __canonical_name__ = "ProxyClient"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     routing_client: GatewayClient
     node_type: NodeType | None = None

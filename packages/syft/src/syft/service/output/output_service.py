@@ -17,7 +17,7 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -36,7 +36,7 @@ OutputPolicyIdPartitionKey = PartitionKey(key="output_policy_id", type_=UID)
 @serializable()
 class ExecutionOutput(SyftObject):
     __canonical_name__ = "ExecutionOutput"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     executing_user_verify_key: SyftVerifyKey
     user_code_link: LinkedObject

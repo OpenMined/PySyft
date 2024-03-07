@@ -32,7 +32,7 @@ from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SeaweedSecureFilePathLocation
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.grid_url import GridURL
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...util.constants import DEFAULT_TIMEOUT
 
 WRITE_EXPIRATION_TIME = 900  # seconds
@@ -43,7 +43,7 @@ DEFAULT_UPLOAD_CHUNK_SIZE = 819200
 @serializable()
 class SeaweedFSBlobDeposit(BlobDeposit):
     __canonical_name__ = "SeaweedFSBlobDeposit"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     urls: list[GridURL]
     size: int

@@ -10,7 +10,7 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...service.response import SyftError
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..context import NodeServiceContext
@@ -26,7 +26,7 @@ from .routes import route_to_connection
 class NodePeer(SyftObject):
     # version
     __canonical_name__ = "NodePeer"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     __attr_searchable__ = ["name", "node_type"]
     __attr_unique__ = ["verify_key"]

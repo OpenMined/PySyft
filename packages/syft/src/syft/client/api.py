@@ -47,7 +47,6 @@ from ..service.user.user_roles import ServiceRole
 from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
 from ..types.identity import Identity
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftMigrationRegistry
@@ -104,7 +103,7 @@ class APIRegistry:
 @serializable()
 class APIEndpoint(SyftObject):
     __canonical_name__ = "APIEndpoint"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     service_path: str
@@ -121,7 +120,7 @@ class APIEndpoint(SyftObject):
 @serializable()
 class LibEndpoint(SyftBaseObject):
     __canonical_name__ = "LibEndpoint"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     # TODO: bad name, change
     service_path: str
@@ -174,7 +173,7 @@ class SignedSyftAPICall(SyftObject):
 class SyftAPICall(SyftObject):
     # version
     __canonical_name__ = "SyftAPICall"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     # fields
     node_uid: UID
@@ -198,7 +197,7 @@ class SyftAPICall(SyftObject):
 class SyftAPIData(SyftBaseObject):
     # version
     __canonical_name__ = "SyftAPIData"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     # fields
     data: Any = None
@@ -215,7 +214,7 @@ class SyftAPIData(SyftBaseObject):
 
 class RemoteFunction(SyftObject):
     __canonical_name__ = "RemoteFunction"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
     __repr_attrs__ = [
         "id",
         "node_uid",
@@ -293,7 +292,7 @@ class RemoteFunction(SyftObject):
 
 class RemoteUserCodeFunction(RemoteFunction):
     __canonical_name__ = "RemoteUserFunction"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
     __repr_attrs__ = RemoteFunction.__repr_attrs__ + ["user_code_id"]
 
     api: SyftAPI
@@ -593,7 +592,7 @@ def unwrap_and_migrate_annotation(annotation: Any, object_versions: dict) -> Any
 class SyftAPI(SyftObject):
     # version
     __canonical_name__ = "SyftAPI"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     # fields
     connection: NodeConnection | None = None

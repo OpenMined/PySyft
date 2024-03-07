@@ -24,7 +24,7 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -68,7 +68,7 @@ class RequestStatus(Enum):
 @serializable()
 class Change(SyftObject):
     __canonical_name__ = "Change"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     linked_obj: LinkedObject | None = None
 
@@ -79,7 +79,7 @@ class Change(SyftObject):
 @serializable()
 class ChangeStatus(SyftObject):
     __canonical_name__ = "ChangeStatus"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID | None = None  # type: ignore[assignment]
     change_id: UID
@@ -93,7 +93,7 @@ class ChangeStatus(SyftObject):
 @serializable()
 class ActionStoreChange(Change):
     __canonical_name__ = "ActionStoreChange"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     linked_obj: LinkedObject
     apply_permission_type: ActionPermission
@@ -191,7 +191,7 @@ class ActionStoreChange(Change):
 @serializable()
 class CreateCustomImageChange(Change):
     __canonical_name__ = "CreateCustomImageChange"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     config: WorkerConfig
     tag: str
@@ -270,7 +270,7 @@ class CreateCustomImageChange(Change):
 @serializable()
 class CreateCustomWorkerPoolChange(Change):
     __canonical_name__ = "CreateCustomWorkerPoolChange"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     pool_name: str
     num_workers: int
@@ -338,7 +338,7 @@ class CreateCustomWorkerPoolChange(Change):
 @serializable()
 class Request(SyftObject):
     __canonical_name__ = "Request"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     requesting_user_verify_key: SyftVerifyKey
     requesting_user_name: str = ""
@@ -890,7 +890,7 @@ class Request(SyftObject):
 class RequestInfo(SyftObject):
     # version
     __canonical_name__ = "RequestInfo"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     user: UserView
     request: Request
@@ -901,7 +901,7 @@ class RequestInfo(SyftObject):
 class RequestInfoFilter(SyftObject):
     # version
     __canonical_name__ = "RequestInfoFilter"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     name: str | None = None
 
@@ -909,7 +909,7 @@ class RequestInfoFilter(SyftObject):
 @serializable()
 class SubmitRequest(SyftObject):
     __canonical_name__ = "SubmitRequest"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     changes: list[Change]
     requesting_user_verify_key: SyftVerifyKey | None = None
@@ -987,7 +987,7 @@ def submit_request_to_request() -> list[Callable]:
 @serializable()
 class ObjectMutation(Change):
     __canonical_name__ = "ObjectMutation"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     linked_obj: LinkedObject | None = None
     attr_name: str
@@ -1058,7 +1058,7 @@ def type_for_field(object_type: type, attr_name: str) -> type | None:
 @serializable()
 class EnumMutation(ObjectMutation):
     __canonical_name__ = "EnumMutation"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     enum_type: type[Enum]
     value: Enum | None = None

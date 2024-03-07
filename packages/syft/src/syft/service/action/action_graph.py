@@ -32,7 +32,6 @@ from ...store.locks import SyftLock
 from ...store.locks import ThreadingLockingConfig
 from ...types.datetime import DateTime
 from ...types.syft_object import PartialSyftObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
@@ -56,7 +55,7 @@ class NodeType(Enum):
 @serializable()
 class NodeActionData(SyftObject):
     __canonical_name__ = "NodeActionData"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID | None = None  # type: ignore[assignment]
     type: NodeType
