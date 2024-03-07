@@ -4,6 +4,7 @@ from threading import Thread
 # syft absolute
 from syft.store.dict_document_store import DictStorePartition
 from syft.store.document_store import QueryKeys
+from syft.types.uid import UID
 
 # relative
 from .store_mocks_test import MockObjectType
@@ -25,7 +26,7 @@ def test_dict_store_partition_set(
     res = dict_store_partition.init_store()
     assert res.is_ok()
 
-    obj = MockSyftObject(data=1)
+    obj = MockSyftObject(id=UID(), data=1)
     res = dict_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
 
     assert res.is_ok()
