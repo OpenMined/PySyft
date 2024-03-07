@@ -78,7 +78,7 @@ spec:
             - name: MONGO_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.mongo.secretKeyName }}
+                  name: {{ .Values.mongo.secretKeyName | required "mongo.secretKeyName is required" }}
                   key: rootPassword
             # SMTP
             - name: SMTP_HOST
@@ -98,7 +98,7 @@ spec:
             - name: S3_ROOT_PWD
               valueFrom:
                 secretKeyRef:
-                    name: {{ .Values.seaweedfs.secretKeyName }}
+                    name: {{ .Values.seaweedfs.secretKeyName | required "seaweedfs.secretKeyName is required" }}
                     key: s3RootPassword
             - name: S3_PORT
               value: {{ .Values.seaweedfs.s3.port | quote }}
