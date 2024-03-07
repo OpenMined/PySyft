@@ -70,7 +70,10 @@ class NetworkStash(BaseUIDStoreStash):
         return self.query_one(credentials=credentials, qks=qks)
 
     def update(
-        self, credentials: SyftVerifyKey, peer: NodePeer
+        self,
+        credentials: SyftVerifyKey,
+        peer: NodePeer,
+        has_permission: bool = False,
     ) -> Result[NodePeer, str]:
         valid = self.check_type(peer, NodePeer)
         if valid.is_err():
@@ -229,7 +232,6 @@ class NetworkService(AbstractService):
         except Exception as e:
             return SyftError(message=str(e))
 
-        context.node = cast(AbstractNode, context.node)
         result = self.stash.update_peer(context.node.verify_key, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -243,7 +245,6 @@ class NetworkService(AbstractService):
 
         # Q,TODO: Should the returned node peer also be signed
         # as the challenge is already signed
-        context.node = cast(AbstractNode, context.node)
         challenge_signature = context.node.signing_key.signing_key.sign(
             challenge
         ).signature
@@ -310,7 +311,6 @@ class NetworkService(AbstractService):
                 )
             )
         peer.update_routes([route])
-        context.node = cast(AbstractNode, context.node)
         result = self.stash.update_peer(context.node.verify_key, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -376,13 +376,15 @@ SERVICE_TO_TYPES[NetworkService].update({NodePeer})
 
 
 def from_grid_url(context: TransformContext) -> TransformContext:
-    url = context.obj.url.as_container_host()
-    context.output["host_or_ip"] = url.host_or_ip
-    context.output["protocol"] = url.protocol
-    context.output["port"] = url.port
-    context.output["private"] = False
-    context.output["proxy_target_uid"] = context.obj.proxy_target_uid
-    context.output["priority"] = 1
+    if context.obj is not None and context.output is not None:
+        url = context.obj.url.as_container_host()
+        context.output["host_or_ip"] = url.host_or_ip
+        context.output["protocol"] = url.protocol
+        context.output["port"] = url.port
+        context.output["private"] = False
+        context.output["proxy_target_uid"] = context.obj.proxy_target_uid
+        context.output["priority"] = 1
+
     return context
 
 
@@ -392,9 +394,10 @@ def http_connection_to_node_route() -> List[Callable]:
 
 
 def get_python_node_route(context: TransformContext) -> TransformContext:
-    context.output["id"] = context.obj.node.id
-    context.output["worker_settings"] = WorkerSettings.from_node(context.obj.node)
-    context.output["proxy_target_uid"] = context.obj.proxy_target_uid
+    if context.output is not None and context.obj is not None:
+        context.output["id"] = context.obj.node.id
+        context.output["worker_settings"] = WorkerSettings.from_node(context.obj.node)
+        context.output["proxy_target_uid"] = context.obj.proxy_target_uid
     return context
 
 

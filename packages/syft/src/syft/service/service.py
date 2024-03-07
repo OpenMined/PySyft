@@ -10,6 +10,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Set
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -46,6 +47,10 @@ from .user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .user.user_roles import ServiceRole
 from .warnings import APIEndpointWarning
 
+if TYPE_CHECKING:
+    # relative
+    from ..client.api import APIModule
+
 TYPE_TO_SERVICE: dict = {}
 SERVICE_TO_TYPES: defaultdict = defaultdict(set)
 
@@ -77,6 +82,9 @@ class AbstractService:
             obj = Ok(obj)
         return obj
 
+    def get_all(*arg: Any, **kwargs: Any) -> Any:
+        pass
+
 
 @serializable()
 class BaseConfig(SyftBaseObject):
@@ -87,10 +95,10 @@ class BaseConfig(SyftBaseObject):
     private_path: str
     public_name: str
     method_name: str
-    doc_string: Optional[str]
-    signature: Optional[Signature]
+    doc_string: Optional[str] = None
+    signature: Optional[Signature] = None
     is_from_lib: bool = False
-    warning: Optional[APIEndpointWarning]
+    warning: Optional[APIEndpointWarning] = None
 
 
 @serializable()
@@ -439,7 +447,7 @@ def from_api_or_context(
     func_or_path: str,
     syft_node_location: Optional[UID] = None,
     syft_client_verify_key: Optional[SyftVerifyKey] = None,
-) -> Optional[Union[Callable, SyftError, partial]]:
+) -> Optional[Union["APIModule", SyftError, partial]]:
     # relative
     from ..client.api import APIRegistry
     from ..node.node import AuthNodeContextRegistry
@@ -464,7 +472,7 @@ def from_api_or_context(
         node_uid=syft_node_location,
         user_verify_key=syft_client_verify_key,
     )
-    if node_context is not None:
+    if node_context is not None and node_context.node is not None:
         user_config_registry = UserServiceConfigRegistry.from_role(
             node_context.role,
         )

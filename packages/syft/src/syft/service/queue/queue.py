@@ -5,6 +5,7 @@ from typing import Any
 from typing import Optional
 from typing import Type
 from typing import Union
+from typing import cast
 
 # third party
 import psutil
@@ -146,6 +147,8 @@ def handle_message_multiprocessing(
     # this is a temp hack to prevent some multithreading issues
     time.sleep(0.5)
     queue_config = worker_settings.queue_config
+    if queue_config is None:
+        raise ValueError(f"{worker_settings} has no queue configurations!")
     queue_config.client_config.create_producer = False
     queue_config.client_config.n_consumers = 0
 
@@ -305,7 +308,7 @@ class APICallMessageHandler(AbstractMessageHandler):
         queue_item.node_uid = worker.id
 
         job_item.status = JobStatus.PROCESSING
-        job_item.node_uid = worker.id
+        job_item.node_uid = cast(UID, worker.id)
         job_item.updated_at = DateTime.now()
 
         # try:

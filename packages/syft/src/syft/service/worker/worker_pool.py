@@ -69,14 +69,14 @@ class SyftWorker(SyftObject):
 
     id: UID
     name: str
-    container_id: Optional[str]
+    container_id: Optional[str] = None
     created_at: DateTime = DateTime.now()
-    healthcheck: Optional[WorkerHealth]
+    healthcheck: Optional[WorkerHealth] = None
     status: WorkerStatus
-    image: Optional[SyftWorkerImage]
+    image: Optional[SyftWorkerImage] = None
     worker_pool_name: str
     consumer_state: ConsumerState = ConsumerState.DETACHED
-    job_id: Optional[UID]
+    job_id: Optional[UID] = None
 
     @property
     def logs(self) -> Union[str, SyftError]:
@@ -86,8 +86,6 @@ class SyftWorker(SyftObject):
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
-        if api.services is None:
-            return SyftError(message=f"Services for {api} is None")
         return api.services.worker.logs(uid=self.id)
 
     def get_job_repr(self) -> str:
@@ -98,8 +96,6 @@ class SyftWorker(SyftObject):
             )
             if api is None:
                 return SyftError(message=f"You must login to {self.node_uid}")
-            if api.services is None:
-                return f"Services for api {api} is None"
             job = api.services.job.get(self.job_id)
             if job.action.user_code_id is not None:
                 func_name = api.services.code.get_by_id(
@@ -118,8 +114,6 @@ class SyftWorker(SyftObject):
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
-        if api.services is None:
-            return SyftError(message=f"Services for {api} is None")
 
         res = api.services.worker.status(uid=self.id)
         if isinstance(res, SyftError):
@@ -166,7 +160,7 @@ class WorkerPool(SyftObject):
     ]
 
     name: str
-    image_id: Optional[UID]
+    image_id: Optional[UID] = None
     max_count: int
     worker_list: List[LinkedObject]
     created_at: DateTime = DateTime.now()
@@ -187,7 +181,7 @@ class WorkerPool(SyftObject):
             return None
 
     @property
-    def running_workers(self) -> Union[List[UID], SyftError]:
+    def running_workers(self) -> Union[List[SyftWorker], SyftError]:
         """Query the running workers using an API call to the server"""
         _running_workers = []
         for worker in self.workers:
@@ -197,7 +191,7 @@ class WorkerPool(SyftObject):
         return _running_workers
 
     @property
-    def healthy_workers(self) -> Union[List[UID], SyftError]:
+    def healthy_workers(self) -> Union[List[SyftWorker], SyftError]:
         """
         Query the healthy workers using an API call to the server
         """
@@ -255,7 +249,7 @@ class WorkerPool(SyftObject):
         resolved_workers = []
         for worker in self.worker_list:
             resolved_worker = worker.resolve
-            if resolved_worker is None:
+            if isinstance(resolved_worker, SyftError) or resolved_worker is None:
                 continue
             resolved_worker.refresh_status()
             resolved_workers.append(resolved_worker)
@@ -274,8 +268,8 @@ class ContainerSpawnStatus(SyftBaseModel):
     __repr_attrs__ = ["worker_name", "worker", "error"]
 
     worker_name: str
-    worker: Optional[SyftWorker]
-    error: Optional[str]
+    worker: Optional[SyftWorker] = None
+    error: Optional[str] = None
 
 
 def _get_worker_container(

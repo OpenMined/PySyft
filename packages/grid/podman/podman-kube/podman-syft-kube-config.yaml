@@ -58,7 +58,7 @@ data:
   USE_NEW_SERVICE: False
 
   # Frontend
-  VITE_PUBLIC_API_BASE_URL: "/api/v2"
+  BACKEND_API_BASE_URL: "/api/v2"
 
   # SeaweedFS
   S3_ENDPOINT: "seaweedfs"
@@ -104,9 +104,9 @@ data:
   USE_BLOB_STORAGE: False
 
   #Oblivious
-  ENABLE_OBLV: false
+  OBLV_ENABLED: false
   OBLV_KEY_PATH: "~/.oblv"
-  DOMAIN_CONNECTION_PORT: 3030
+  OBLV_LOCALHOST_PORT: 3030
 
   # Registation
   ENABLE_SIGNUP: False

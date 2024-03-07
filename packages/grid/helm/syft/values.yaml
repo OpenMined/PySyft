@@ -1,59 +1,147 @@
-secrets:
-  syft: syft-default-secret
-  mongo: mongo-default-secret
-  seaweedfs: seaweedfs-default-secret
-
-configuration:
-  devmode: false
-
-mongo:
-  port: 27017
-  host: "mongo"
-  username: "root"
-
-seaweedfs:
-  # SeaweedFS config
-  mountPort: 4001
-  # SeaweedFS S3 Config
-  s3VolumeSizeMB: 1024
-  s3Port: 8333
-  s3RootUser: "admin"
-  # storage limits
-  maxStorage: "5Gi"
-
-queue:
-  port: 5556
-
-registry:
-  maxStorage: "10Gi"
-
-syft:
-  registry: "docker.io"
+global:
+  # Affects only backend, frontend, and seaweedfs containers
+  registry: docker.io
   version: 0.8.5-beta.1
 
-node:
-  settings:
-    tls: false
-    hostname: "" # do not make this localhost
-    nodeName: "mynode"
-    nodeType: "domain"
-    versionHash: "abc"
-    nodeSideType: "high"
-    defaultRootEmail: "info@openmined.org"
-    logLevel: "info"
-    inMemoryWorkers: false
-    defaultWorkerPoolCount: 1
+  # Force default secret values for development. DO NOT USE IN PRODUCTION
+  useDefaultSecrets: false
 
-# ----------------------------------------
-# For Azure
-# className: "azure-application-gateway"
-# ----------------------------------------
-# For AWS
-# className: "alb"
-# ----------------------------------------
-# For GCE, https://cloud.google.com/kubernetes-engine/docs/how-to/load-balance-ingress#create-ingress
-# class: "gce"
-# ----------------------------------------
+mongo:
+  # MongoDB config
+  port: 27017
+  username: root
+
+  # Extra environment vars
+  env: null
+
+  # Pod Resource Limits
+  resourcesPreset: nano
+  resources: null
+
+  # PVC storage size
+  storageSize: 5Gi
+
+  # Mongo secret name. Override this if you want to use a self-managed secret.
+  secretKeyName: mongo-secret
+
+  # Dev mode default passwords
+  defaultSecret:
+    rootPassword: example
+
+frontend:
+  # Extra environment vars
+  env: null
+
+  # Pod Resource Limits
+  resourcesPreset: nano
+  resources: null
+
+seaweedfs:
+  # S3 settings
+  s3:
+    port: 8333
+    rootUser: admin
+    volumeSizeMB: 1024
+
+  # Mount API settings
+  mountApi:
+    port: 4001
+
+  # Extra environment vars
+  env: null
+
+  # PVC storage size
+  storageSize: 5Gi
+
+  # Seaweed secret name. Override this if you want to use a self-managed secret.
+  # Secret must contain the following keys:
+  # - s3RootPassword
+  secretKeyName: seaweedfs-secret
+
+  # Pod Resource Limits
+  resourcesPreset: nano
+  resources: null
+
+  # Dev mode default passwords
+  defaultSecret:
+    s3RootPassword: admin
+
+proxy:
+  # Extra environment vars
+  env: null
+
+  # Pod Resource Limits
+  resourcesPreset: nano
+  resources: null
+
+registry:
+  # Extra environment vars
+  env: null
+
+  # PVC storage size
+  storageSize: 5Gi
+
+  # Pod Resource Limits
+  resourcesPreset: nano
+  resources: null
+
+node:
+  # Syft settings
+  name: null
+  rootEmail: info@openmined.org
+  type: domain
+  side: high
+  inMemoryWorkers: false
+  defaultWorkerPoolCount: 1
+  queuePort: 5556
+  logLevel: info
+  debuggerEnabled: false
+
+  # SMTP Settings
+  smtp:
+    host: smtp.sendgrid.net
+    port: 587
+    from: noreply@openmined.org
+    username: apikey
+    password: password
+
+  # Oblivious settings
+  oblv:
+    enabled: false
+    port: 3030
+
+  # Extra environment vars
+  env: null
+
+  # Pod Resource Limits
+  resourcesPreset: small
+  resources: null
+
+  # Seaweed secret name. Override this if you want to use a self-managed secret.
+  # Secret must contain the following keys:
+  # - defaultRootPassword
+  secretKeyName: backend-secret
+
+  # Dev mode default passwords
+  defaultSecret:
+    defaultRootPassword: changethis
+
 ingress:
+  hostname: null # do not make this localhost
+
+  tls:
+    enabled: false
+    secretName: null
+
+  # ----------------------------------------
+  # For Azure
+  # className: azure-application-gateway
+  # ----------------------------------------
+  # For AWS
+  # className: alb
+  # ----------------------------------------
+  # For GCE, https://cloud.google.com/kubernetes-engine/docs/how-to/load-balance-ingress#create-ingress
+  # class: gce
+  # ----------------------------------------
   class: null
   className: null

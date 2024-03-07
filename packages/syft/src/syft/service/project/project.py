@@ -18,8 +18,8 @@ from typing import Type
 from typing import Union
 
 # third party
-import pydantic
-from pydantic import validator
+from pydantic import Field
+from pydantic import field_validator
 from rich.progress import Progress
 from typing_extensions import Self
 
@@ -58,6 +58,7 @@ from ..response import SyftException
 from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
+from ..user.user import UserView
 
 
 @serializable()
@@ -78,29 +79,23 @@ class ProjectEvent(SyftObject):
 
     # 1. Creation attrs
     id: UID
-    timestamp: DateTime
+    timestamp: DateTime = Field(default_factory=DateTime.now)
     allowed_sub_types: Optional[List] = []
     # 2. Rebase attrs
-    project_id: Optional[UID]
-    seq_no: Optional[int]
-    prev_event_uid: Optional[UID]
-    prev_event_hash: Optional[str]
-    event_hash: Optional[str]
+    project_id: Optional[UID] = None
+    seq_no: Optional[int] = None
+    prev_event_uid: Optional[UID] = None
+    prev_event_hash: Optional[str] = None
+    event_hash: Optional[str] = None
     # 3. Signature attrs
-    creator_verify_key: Optional[SyftVerifyKey]
-    signature: Optional[bytes]  # dont use in signing
+    creator_verify_key: Optional[SyftVerifyKey] = None
+    signature: Optional[bytes] = None  # dont use in signing
 
     def __repr_syft_nested__(self) -> tuple[str, str]:
         return (
             short_qual_name(full_name_with_qualname(self)),
             f"{str(self.id)[:4]}...{str(self.id)[-3:]}",
         )
-
-    @pydantic.root_validator(pre=True)
-    def make_timestamp(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if "timestamp" not in values or values["timestamp"] is None:
-            values["timestamp"] = DateTime.now()
-        return values
 
     def _pre_add_update(self, project: Project) -> None:
         pass
@@ -146,7 +141,7 @@ class ProjectEvent(SyftObject):
             return valid
 
         if prev_event:
-            prev_event_id = prev_event.id
+            prev_event_id: Optional[UID] = prev_event.id
             prev_event_hash = prev_event.event_hash
             prev_seq_no = prev_event.seq_no
         else:
@@ -277,8 +272,9 @@ class ProjectRequest(ProjectEventAddObject):
     linked_request: LinkedObject
     allowed_sub_types: List[Type] = [ProjectRequestResponse]
 
-    @validator("linked_request", pre=True)
-    def _validate_linked_request(cls, v: Any) -> Union[Request, LinkedObject]:
+    @field_validator("linked_request", mode="before")
+    @classmethod
+    def _validate_linked_request(cls, v: Any) -> LinkedObject:
         if isinstance(v, Request):
             linked_request = LinkedObject.from_obj(v, node_uid=v.node_uid)
             return linked_request
@@ -295,16 +291,16 @@ class ProjectRequest(ProjectEventAddObject):
 
     __repr_attrs__ = [
         "request.status",
-        "request.changes[-1].link.service_func_name",
+        "request.changes[-1].code.service_func_name",
     ]
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         func_name = None
         if len(self.request.changes) > 0:
-            func_name = self.request.changes[-1].link.service_func_name
+            func_name = self.request.changes[-1].code.service_func_name
         repr_dict = {
             "request.status": self.request.status,
-            "request.changes[-1].link.service_func_name": func_name,
+            "request.changes[-1].code.service_func_name": func_name,
         }
         return markdown_as_class_with_fields(self, repr_dict)
 
@@ -332,13 +328,12 @@ class ProjectRequest(ProjectEventAddObject):
 
         During Request  status calculation, we do not allow multiple responses
         """
-        responses = project.get_children(self)
+        responses: list[ProjectEvent] = project.get_children(self)
         if len(responses) == 0:
             return SyftInfo(
                 "No one has responded to the request yet. Kindly recheck later 🙂"
             )
-
-        if len(responses) > 1:
+        elif len(responses) > 1:
             return SyftError(
                 message="The Request Contains more than one Response"
                 "which is currently not possible"
@@ -348,7 +343,7 @@ class ProjectRequest(ProjectEventAddObject):
             )
         response = responses[0]
         if not isinstance(response, ProjectRequestResponse):
-            return SyftError(
+            return SyftError(  # type: ignore[unreachable]
                 message=f"Response : {type(response)} is not of type ProjectRequestResponse"
             )
 
@@ -557,8 +552,9 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
     choices: List[str]
     allowed_sub_types: List[Type] = [AnswerProjectPoll]
 
-    @validator("choices")
-    def choices_min_length(cls, v: str) -> str:
+    @field_validator("choices")
+    @classmethod
+    def choices_min_length(cls, v: list[str]) -> list[str]:
         if len(v) < 1:
             raise ValueError("choices must have at least one item")
         return v
@@ -587,7 +583,7 @@ class ProjectMultipleChoicePoll(ProjectEventAddObject):
         respondents = {}
         for poll_answer in poll_answers[::-1]:
             if not isinstance(poll_answer, AnswerProjectPoll):
-                return SyftError(
+                return SyftError(  # type: ignore[unreachable]
                     message=f"Poll answer: {type(poll_answer)} is not of type AnswerProjectPoll"
                 )
             creator_verify_key = poll_answer.creator_verify_key
@@ -627,7 +623,7 @@ class DemocraticConsensusModel(ConsensusModel):
 def add_code_request_to_project(
     project: Union[ProjectSubmit, Project],
     code: SubmitUserCode,
-    client: SyftClient,
+    client: Union[SyftClient, Any],
     reason: Optional[str] = None,
 ) -> Union[SyftError, SyftSuccess]:
     # TODO: fix the mypy issue
@@ -681,14 +677,14 @@ class Project(SyftObject):
         "event_id_hashmap",
     ]
 
-    id: Optional[UID]
+    id: Optional[UID] = None  # type: ignore[assignment]
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     members: List[NodeIdentity]
     users: List[UserIdentity] = []
-    username: Optional[str]
+    username: Optional[str] = None
     created_by: str
-    start_hash: Optional[str]
+    start_hash: Optional[str] = None
     # WARNING:  Do not add it to hash keys or print directly
     user_signing_key: Optional[SyftSigningKey] = None
 
@@ -698,7 +694,7 @@ class Project(SyftObject):
 
     # Project sync
     state_sync_leader: NodeIdentity
-    leader_node_peer: Optional[NodePeer]
+    leader_node_peer: Optional[NodePeer] = None
 
     # Unused
     consensus_model: ConsensusModel
@@ -998,7 +994,7 @@ class Project(SyftObject):
         reply_event: Union[ProjectMessage, ProjectThreadMessage]
         if isinstance(message, ProjectMessage):
             reply_event = message.reply(reply)
-        elif isinstance(message, ProjectThreadMessage):
+        elif isinstance(message, ProjectThreadMessage):  # type: ignore[unreachable]
             reply_event = ProjectThreadMessage(
                 message=reply, parent_event_id=message.parent_event_id
             )
@@ -1043,7 +1039,7 @@ class Project(SyftObject):
             poll = self.event_id_hashmap[poll]
 
         if not isinstance(poll, ProjectMultipleChoicePoll):
-            return SyftError(
+            return SyftError(  # type: ignore[unreachable]
                 message=f"You can only reply to a poll: {type(poll)}"
                 "Kindly re-check the poll"
             )
@@ -1087,7 +1083,7 @@ class Project(SyftObject):
             if isinstance(request_event, SyftError):
                 return request_event
         else:
-            return SyftError(
+            return SyftError(  # type: ignore[unreachable]
                 message=f"You can only approve a request: {type(request)}"
                 "Kindly re-check the request"
             )
@@ -1172,19 +1168,19 @@ class ProjectSubmit(SyftObject):
 
     # Init args
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     members: Union[List[SyftClient], List[NodeIdentity]]
 
     # These will be automatically populated
     users: List[UserIdentity] = []
     created_by: Optional[str] = None
-    username: Optional[str]
+    username: Optional[str] = None
     clients: List[SyftClient] = []  # List of member clients
     start_hash: str = ""
 
     # Project sync args
-    leader_node_route: Optional[NodeRoute]
-    state_sync_leader: Optional[NodeIdentity]
+    leader_node_route: Optional[NodeRoute] = None
+    state_sync_leader: Optional[NodeIdentity] = None
     bootstrap_events: Optional[List[ProjectEvent]] = []
 
     # Unused at the moment
@@ -1209,7 +1205,10 @@ class ProjectSubmit(SyftObject):
         self.users = [UserIdentity.from_client(client) for client in self.clients]
 
         # Assign logged in user name as project creator
-        self.username = self.clients[0].me.name or ""
+        if isinstance(self.clients[0].me, UserView):
+            self.username = self.clients[0].me.name
+        else:
+            self.username = ""
 
         # Convert SyftClients to NodeIdentities
         self.members = list(map(self.to_node_identity, self.members))
@@ -1228,7 +1227,8 @@ class ProjectSubmit(SyftObject):
             + "</div>"
         )
 
-    @validator("members", pre=True)
+    @field_validator("members", mode="before")
+    @classmethod
     def verify_members(
         cls, val: Union[List[SyftClient], List[NodeIdentity]]
     ) -> Union[List[SyftClient], List[NodeIdentity]]:
@@ -1252,7 +1252,7 @@ class ProjectSubmit(SyftObject):
     def to_node_identity(val: Union[SyftClient, NodeIdentity]) -> NodeIdentity:
         if isinstance(val, NodeIdentity):
             return val
-        elif isinstance(val, SyftClient):
+        elif isinstance(val, SyftClient) and val.metadata is not None:
             metadata = val.metadata.to(NodeMetadataV3)
             return metadata.to(NodeIdentity)
         else:
@@ -1353,19 +1353,21 @@ def add_members_as_owners(members: List[SyftVerifyKey]) -> Set[str]:
 
 
 def elect_leader(context: TransformContext) -> TransformContext:
-    if len(context.output["members"]) == 0:
-        raise Exception("Project's require at least one member")
-
-    context.output["state_sync_leader"] = context.output["members"][0]
+    if context.output is not None:
+        if len(context.output["members"]) == 0:
+            raise ValueError("Project's require at least one member")
+        context.output["state_sync_leader"] = context.output["members"][0]
 
     return context
 
 
 def check_permissions(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+
     if len(context.output["members"]) > 1:
         # more than 1 node
         pass
-
     # check at least one owner
     if len(context.output["project_permissions"]) == 0:
         project_permissions = context.output["project_permissions"]
@@ -1378,7 +1380,8 @@ def check_permissions(context: TransformContext) -> TransformContext:
 
 
 def add_creator_name(context: TransformContext) -> TransformContext:
-    context.output["username"] = context.obj.username
+    if context.output is not None and context.obj is not None:
+        context.output["username"] = context.obj.username
     return context
 
 

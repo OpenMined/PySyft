@@ -117,7 +117,7 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_image: SyftWorkerImage = result.ok()
         context.node = cast(AbstractNode, context.node)
-        worker_service: WorkerService = context.node.get_service("WorkerService")
+        worker_service: AbstractService = context.node.get_service("WorkerService")
         worker_stash = worker_service.stash
 
         # Create worker pool from given image, with the given worker pool
@@ -406,7 +406,7 @@ class SyftWorkerPoolService(AbstractService):
         worker_image: SyftWorkerImage = result.ok()
 
         context.node = cast(AbstractNode, context.node)
-        worker_service: WorkerService = context.node.get_service("WorkerService")
+        worker_service: AbstractService = context.node.get_service("WorkerService")
         worker_stash = worker_service.stash
 
         # Add workers to given pool from the given image
@@ -586,7 +586,7 @@ class SyftWorkerPoolService(AbstractService):
                 pool_name = change.pool_name
                 num_workers = change.num_workers
                 image_uid = change.image_uid
-            elif isinstance(change, CreateCustomImageChange):
+            elif isinstance(change, CreateCustomImageChange):  # type: ignore[unreachable]
                 config = change.config
                 tag = change.tag
 
@@ -598,7 +598,7 @@ class SyftWorkerPoolService(AbstractService):
                 image_uid=image_uid,
             )
         elif config is not None:
-            return self.create_image_and_pool_request(
+            return self.create_image_and_pool_request(  # type: ignore[unreachable]
                 context=context,
                 pool_name=pool_name,
                 num_workers=num_workers,
@@ -699,7 +699,7 @@ def _create_workers_in_pool(
         )
 
         if isinstance(result, OkErr):
-            node = cast(AbstractNode, context.node)
+            node = context.node
             if result.is_ok():
                 worker_obj = LinkedObject.from_obj(
                     obj=result.ok(),

@@ -40,7 +40,10 @@ class DatasetStash(BaseUIDStoreStash):
         return self.query_one(credentials=credentials, qks=qks)
 
     def update(
-        self, credentials: SyftVerifyKey, dataset_update: DatasetUpdate
+        self,
+        credentials: SyftVerifyKey,
+        dataset_update: DatasetUpdate,
+        has_permission: bool = False,
     ) -> Result[Dataset, str]:
         res = self.check_type(dataset_update, DatasetUpdate)
         # we dont use and_then logic here as it is hard because of the order of the arguments

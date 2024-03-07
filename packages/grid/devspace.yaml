@@ -60,21 +60,21 @@ images:
 deployments:
   syft:
     helm:
+      releaseName: syft-dev
       chart:
         name: ./helm/syft
       values:
-        syft:
+        global:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
+          useDefaultSecrets: true
         registry:
-          maxStorage: "5Gi"
+          storageSize: "5Gi"
         node:
-          settings:
-            nodeName: ${NODE_NAME}
-            nodeType: "domain"
-            defaultWorkerPoolCount: 1
-        configuration:
-          devmode: True
+          name: ${NODE_NAME}
+          rootEmail: info@openmined.org
+          defaultWorkerPoolCount: 1
+          resourcesPreset: micro
 
 dev:
   mongo:
@@ -97,16 +97,22 @@ dev:
       app.kubernetes.io/name: syft
       app.kubernetes.io/component: backend
     env:
+      - name: RELEASE
+        value: development
       - name: DEV_MODE
         value: "True"
-    logs: {}
+      - name: DEBUGGER_ENABLED
+        value: "True"
+    ports:
+      - port: "5678" # debugpy
     sync:
       - path: ./backend/grid:/root/app/grid
       - path: ../syft:/root/app/syft
+    ssh: {}
 
 profiles:
   - name: gateway
     patches:
       - op: replace
-        path: deployments.syft.helm.values.node.settings.nodeType
+        path: deployments.syft.helm.values.node.type
         value: "gateway"

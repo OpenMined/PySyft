@@ -35,6 +35,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import UserLibConfigRegistry
 from ..service import service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
 from .action_object import Action
@@ -102,7 +103,7 @@ class ActionService(AbstractService):
         if isinstance(action_object, ActionObject):
             action_object.syft_created_at = DateTime.now()
         else:
-            action_object.private_obj.syft_created_at = DateTime.now()
+            action_object.private_obj.syft_created_at = DateTime.now()  # type: ignore[unreachable]
             action_object.mock_obj.syft_created_at = DateTime.now()
 
         # If either context or argument is True, has_result_read_permission is True
@@ -230,11 +231,11 @@ class ActionService(AbstractService):
             )
             # Resolve graph links
             if (
-                not isinstance(obj, TwinObject)
+                not isinstance(obj, TwinObject)  # type: ignore[unreachable]
                 and resolve_nested
                 and isinstance(obj.syft_action_data, ActionDataLink)
             ):
-                if not self.is_resolved(
+                if not self.is_resolved(  # type: ignore[unreachable]
                     context, obj.syft_action_data.action_object_id.id
                 ).ok():
                     return SyftError(message="This object is not resolved yet.")
@@ -299,7 +300,7 @@ class ActionService(AbstractService):
         )
 
         if not override_execution_permission:
-            input_policy = code_item.input_policy
+            input_policy = code_item.get_input_policy(context)
             if input_policy is None:
                 if not code_item.output_policy_approved:
                     return Err("Execution denied: Your code is waiting for approval")
@@ -313,11 +314,13 @@ class ActionService(AbstractService):
         else:
             filtered_kwargs = retrieve_from_db(code_item.id, kwargs, context).ok()
         # update input policy to track any input state
-        # code_item.input_policy = input_policy
 
-        if not override_execution_permission and code_item.input_policy is not None:
+        if (
+            not override_execution_permission
+            and code_item.get_input_policy(context) is not None
+        ):
             expected_input_kwargs = set()
-            for _inp_kwarg in code_item.input_policy.inputs.values():
+            for _inp_kwarg in code_item.get_input_policy(context).inputs.values():  # type: ignore
                 keys = _inp_kwarg.keys()
                 for k in keys:
                     if k not in kwargs:
@@ -397,7 +400,7 @@ class ActionService(AbstractService):
 
     def set_result_to_store(
         self,
-        result_action_object: ActionObject,
+        result_action_object: Union[ActionObject, TwinObject],
         context: AuthedServiceContext,
         output_policy: Optional[OutputPolicy] = None,
     ) -> Union[Result[ActionObject, str], SyftError]:
@@ -427,7 +430,7 @@ class ActionService(AbstractService):
         if isinstance(result_action_object, TwinObject):
             result_blob_id = result_action_object.private.syft_blob_storage_entry_id
         else:
-            result_blob_id = result_action_object.syft_blob_storage_entry_id
+            result_blob_id = result_action_object.syft_blob_storage_entry_id  # type: ignore[unreachable]
 
         # pass permission information to the action store as extra kwargs
         context.extra_kwargs = {"has_result_read_permission": True}
@@ -437,7 +440,7 @@ class ActionService(AbstractService):
         if set_result.is_err():
             return set_result
 
-        blob_storage_service: BlobStorageService = context.node.get_service(
+        blob_storage_service: AbstractService = context.node.get_service(
             BlobStorageService
         )
 
@@ -550,7 +553,7 @@ class ActionService(AbstractService):
             )
         else:
             # TODO: Implement for twinobject args
-            args = filter_twin_args(args, twin_mode=TwinMode.NONE)
+            args = filter_twin_args(args, twin_mode=TwinMode.NONE)  # type: ignore[unreachable]
             val = args[0]
             setattr(resolved_self.syft_action_data, name, val)
             return Ok(
@@ -577,7 +580,7 @@ class ActionService(AbstractService):
                 )
             )
         else:
-            val = getattr(resolved_self.syft_action_data, action.op)
+            val = getattr(resolved_self.syft_action_data, action.op)  # type: ignore[unreachable]
             return Ok(wrap_result(action.result_id, val))
 
     def call_method(
@@ -620,7 +623,7 @@ class ActionService(AbstractService):
                 )
             )
         else:
-            return execute_object(self, context, resolved_self, action)
+            return execute_object(self, context, resolved_self, action)  # type:ignore[unreachable]
 
     @service_method(path="action.execute", name="execute", roles=GUEST_ROLE_LEVEL)
     def execute(
@@ -731,6 +734,15 @@ class ActionService(AbstractService):
             return SyftSuccess(message=f"Object: {obj_id} exists")
         else:
             return SyftError(message=f"Object: {obj_id} does not exist")
+
+    @service_method(path="action.delete", name="delete", roles=ADMIN_ROLE_LEVEL)
+    def delete(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
+        res = self.store.delete(context.credentials, uid)
+        if res.is_err():
+            return SyftError(message=res.err())
+        return SyftSuccess(message="Great Success!")
 
 
 def resolve_action_args(

@@ -18,9 +18,12 @@ from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
+from ..notification.email_templates import RequestEmailTemplate
+from ..notification.email_templates import RequestUpdateEmailTemplate
 from ..notification.notification_service import CreateNotification
 from ..notification.notification_service import NotificationService
 from ..notification.notifications import Notification
+from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -86,6 +89,8 @@ class RequestService(AbstractService):
                         from_user_verify_key=context.credentials,
                         to_user_verify_key=root_verify_key,
                         linked_obj=link,
+                        notifier_types=[NOTIFIERS.EMAIL],
+                        email_template=RequestEmailTemplate,
                     )
                     method = context.node.get_service_method(NotificationService.send)
                     result = method(context=context, notification=message)
@@ -210,20 +215,26 @@ class RequestService(AbstractService):
 
             link = LinkedObject.with_context(request, context=context)
             if not request.status == RequestStatus.PENDING:
-                mark_as_read = context.node.get_service_method(
-                    NotificationService.mark_as_read
-                )
-                mark_as_read(context=context, uid=request_notification.id)
+                if request_notification is not None and not isinstance(
+                    request_notification, SyftError
+                ):
+                    mark_as_read = context.node.get_service_method(
+                        NotificationService.mark_as_read
+                    )
+                    mark_as_read(context=context, uid=request_notification.id)
 
-                notification = CreateNotification(
-                    subject=f"{request.changes} for Request id: {uid} has status updated to {request.status}",
-                    to_user_verify_key=request.requesting_user_verify_key,
-                    linked_obj=link,
-                )
-                send_notification = context.node.get_service_method(
-                    NotificationService.send
-                )
-                send_notification(context=context, notification=notification)
+                    notification = CreateNotification(
+                        subject=f"Your request ({str(uid)[:4]}) has been approved!",
+                        from_user_verify_key=context.credentials,
+                        to_user_verify_key=request.requesting_user_verify_key,
+                        linked_obj=link,
+                        notifier_types=[NOTIFIERS.EMAIL],
+                        email_template=RequestUpdateEmailTemplate,
+                    )
+                    send_notification = context.node.get_service_method(
+                        NotificationService.send
+                    )
+                    send_notification(context=context, notification=notification)
 
             # TODO: check whereever we're return SyftError encapsulate it in Result.
             if hasattr(result, "value"):
@@ -254,15 +265,15 @@ class RequestService(AbstractService):
             )
 
         link = LinkedObject.with_context(request, context=context)
-        message_subject = (
-            f"Your request for uid: {uid} has been denied. "
-            f"Reason specified by Data Owner: {reason}."
-        )
+        message_subject = f"Your request ({str(uid)[:4]}) has been denied. "
 
         notification = CreateNotification(
             subject=message_subject,
+            from_user_verify_key=context.credentials,
             to_user_verify_key=request.requesting_user_verify_key,
             linked_obj=link,
+            notifier_types=[NOTIFIERS.EMAIL],
+            email_template=RequestUpdateEmailTemplate,
         )
         context.node = cast(AbstractNode, context.node)
         send_notification = context.node.get_service_method(NotificationService.send)

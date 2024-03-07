@@ -23,7 +23,6 @@ from ..util.constants import DEFAULT_TIMEOUT
 from ..util.logger import error
 from ..util.logger import warning
 from .client import SyftClient as Client
-from .enclave_client import EnclaveClient
 
 NETWORK_REGISTRY_URL = (
     "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/gateways.json"
@@ -200,8 +199,10 @@ class DomainRegistry:
         return online_networks
 
     @property
-    def online_domains(self) -> List[Tuple[NodePeer, NodeMetadataJSON]]:
-        def check_domain(peer: NodePeer) -> Optional[Tuple[NodePeer, NodeMetadataJSON]]:
+    def online_domains(self) -> List[Tuple[NodePeer, Optional[NodeMetadataJSON]]]:
+        def check_domain(
+            peer: NodePeer,
+        ) -> Optional[tuple[NodePeer, Optional[NodeMetadataJSON]]]:
             try:
                 guest_client = peer.guest_client
                 metadata = guest_client.metadata
@@ -232,14 +233,15 @@ class DomainRegistry:
                 online_domains.append(each)
         return online_domains
 
-    def __make_dict__(self) -> List[Dict[str, str]]:
+    def __make_dict__(self) -> list[dict[str, Any]]:
         on = self.online_domains
         domains = []
-        domain_dict = {}
+        domain_dict: dict[str, Any] = {}
         for domain, metadata in on:
             domain_dict["name"] = domain.name
-            domain_dict["organization"] = metadata.organization
-            domain_dict["version"] = metadata.syft_version
+            if metadata is not None:
+                domain_dict["organization"] = metadata.organization
+                domain_dict["version"] = metadata.syft_version
             route = None
             if len(domain.node_routes) > 0:
                 route = domain.pick_highest_priority_route()
@@ -371,7 +373,7 @@ class EnclaveRegistry:
             error(f"Failed to login with: {enclave}. {e}")
             raise SyftException(f"Failed to login with: {enclave}. {e}")
 
-    def __getitem__(self, key: Union[str, int]) -> EnclaveClient:
+    def __getitem__(self, key: Union[str, int]) -> Client:
         if isinstance(key, int):
             return self.create_client(enclave=self.online_enclaves[key])
         else:

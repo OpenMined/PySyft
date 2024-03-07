@@ -3,14 +3,14 @@ from datetime import datetime
 from datetime import timedelta
 from enum import Enum
 from typing import Any
-from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
 
 # third party
-import pydantic
+from pydantic import field_validator
+from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
@@ -30,14 +30,10 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...types.datetime import DateTime
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
@@ -63,54 +59,17 @@ class JobStatus(str, Enum):
 
 
 @serializable()
-class JobV1(SyftObject):
-    __canonical_name__ = "JobItem"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: UID
-    node_uid: UID
-    result: Optional[Any]
-    resolved: bool = False
-    status: JobStatus = JobStatus.CREATED
-    log_id: Optional[UID]
-    parent_job_id: Optional[UID]
-    n_iters: Optional[int] = 0
-    current_iter: Optional[int] = None
-    creation_time: Optional[str] = None
-    action: Optional[Action] = None
-
-
-@serializable()
-class JobV2(SyftObject):
-    __canonical_name__ = "JobItem"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    id: UID
-    node_uid: UID
-    result: Optional[Any]
-    resolved: bool = False
-    status: JobStatus = JobStatus.CREATED
-    log_id: Optional[UID]
-    parent_job_id: Optional[UID]
-    n_iters: Optional[int] = 0
-    current_iter: Optional[int] = None
-    creation_time: Optional[str] = None
-    action: Optional[Action] = None
-    job_pid: Optional[int] = None
-
-
-@serializable()
 class Job(SyftObject):
     __canonical_name__ = "JobItem"
     __version__ = SYFT_OBJECT_VERSION_3
 
     id: UID
     node_uid: UID
-    result: Optional[Any]
+    result: Optional[Any] = None
     resolved: bool = False
     status: JobStatus = JobStatus.CREATED
-    log_id: Optional[UID]
-    parent_job_id: Optional[UID]
+    log_id: Optional[UID] = None
+    parent_job_id: Optional[UID] = None
     n_iters: Optional[int] = 0
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
@@ -122,27 +81,25 @@ class Job(SyftObject):
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
     __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
+    __exclude_sync_diff_attrs__ = ["action"]
 
-    @pydantic.root_validator()
-    def check_time(cls, values: dict) -> dict:
-        if values.get("creation_time", None) is None:
-            values["creation_time"] = str(datetime.now())
-        return values
+    @field_validator("creation_time")
+    @classmethod
+    def check_time(cls, time: Any) -> Any:
+        return str(datetime.now()) if time is None else time
 
-    @pydantic.root_validator()
-    def check_user_code_id(cls, values: dict) -> dict:
-        action = values.get("action")
-        user_code_id = values.get("user_code_id")
-
-        if action is not None:
-            if user_code_id is None:
-                values["user_code_id"] = action.user_code_id
-            elif action.user_code_id != user_code_id:
-                raise pydantic.ValidationError(
-                    "user_code_id does not match the action's user_code_id", cls
+    @model_validator(mode="after")
+    def check_user_code_id(self) -> Self:
+        if self.action is not None:
+            if self.user_code_id is None:
+                self.user_code_id = self.action.user_code_id
+            elif self.action.user_code_id != self.user_code_id:
+                raise ValueError(
+                    "user_code_id does not match the action's user_code_id",
+                    self.__class__,
                 )
 
-        return values
+        return self
 
     @property
     def action_display_name(self) -> str:
@@ -177,6 +134,10 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         return api.services.worker.get(self.job_worker_id)
 
     @property
@@ -267,6 +228,10 @@ class Job(SyftObject):
                 node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
+            if api is None:
+                raise ValueError(
+                    f"Can't access Syft API. You must login to {self.syft_node_location}"
+                )
             call = SyftAPICall(
                 node_uid=self.node_uid,
                 path="job.restart",
@@ -288,6 +253,10 @@ class Job(SyftObject):
                 node_uid=self.syft_node_location,
                 user_verify_key=self.syft_client_verify_key,
             )
+            if api is None:
+                return SyftError(
+                    message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+                )
             call = SyftAPICall(
                 node_uid=self.node_uid,
                 path="job.kill",
@@ -307,6 +276,10 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            raise ValueError(
+                f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         call = SyftAPICall(
             node_uid=self.node_uid,
             path="job.get",
@@ -329,6 +302,10 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         return api.services.job.get_subjobs(self.id)
 
     @property
@@ -337,7 +314,20 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         return api.services.user.get_current_user(self.id)
+
+    def _get_log_objs(self) -> Union[SyftObject, SyftError]:
+        api = APIRegistry.api_for(
+            node_uid=self.node_uid,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            raise ValueError(f"api is None. You must login to {self.node_uid}")
+        return api.services.log.get(self.log_id)
 
     def logs(
         self, stdout: bool = True, stderr: bool = True, _print: bool = True
@@ -346,10 +336,15 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+        if api is None:
+            return f"Can't access Syft API. You must login to {self.syft_node_location}"
         results = []
         if stdout:
-            stdout_log = api.services.log.get(self.log_id)
-            results.append(stdout_log)
+            stdout_log = api.services.log.get_stdout(self.log_id)
+            if isinstance(stdout_log, SyftError):
+                results.append(f"Log {self.log_id} not available")
+            else:
+                results.append(stdout_log)
 
         if stderr:
             try:
@@ -403,7 +398,7 @@ class Job(SyftObject):
     def has_parent(self) -> bool:
         return self.parent_job_id is not None
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _ = self.resolve
         logs = self.logs(_print=False)
         if logs is not None:
@@ -433,7 +428,6 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-
         # todo: timeout
         if self.resolved:
             return self.resolve
@@ -441,6 +435,10 @@ class Job(SyftObject):
         if not job_only and self.result is not None:
             self.result.wait()
 
+        if api is None:
+            raise ValueError(
+                f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
         print_warning = True
         while True:
             self.fetch()
@@ -470,11 +468,27 @@ class Job(SyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
+    def get_sync_dependencies(self, **kwargs: Dict) -> List[UID]:
+        dependencies = []
+        if self.result is not None:
+            dependencies.append(self.result.id.id)
+
+        if self.log_id:
+            dependencies.append(self.log_id)
+
+        subjob_ids = [subjob.id for subjob in self.subjobs]
+        dependencies.extend(subjob_ids)
+
+        if self.user_code_id is not None:
+            dependencies.append(self.user_code_id)
+
+        return dependencies
+
 
 @serializable()
 class JobInfo(SyftObject):
     __canonical_name__ = "JobInfo"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
     __repr_attrs__ = [
         "resolved",
         "status",
@@ -501,7 +515,7 @@ class JobInfo(SyftObject):
     current_iter: Optional[int] = None
     creation_time: Optional[str] = None
 
-    result: Optional[Any] = None
+    result: Optional[ActionObject] = None
 
     def _repr_html_(self) -> str:
         metadata_str = ""
@@ -550,34 +564,9 @@ class JobInfo(SyftObject):
                 raise ValueError("Cannot sync result of unresolved job")
             if not isinstance(job.result, ActionObject):
                 raise ValueError("Could not sync result of job")
-            info.result = job.result.get()
+            info.result = job.result
 
         return info
-
-
-@migrate(Job, JobV2)
-def downgrade_job_v3_to_v2() -> list[Callable]:
-    return [drop(["job_worker_id", "user_code_id"])]
-
-
-@migrate(JobV2, Job)
-def upgrade_job_v2_to_v3() -> list[Callable]:
-    return [
-        make_set_default("job_worker_id", None),
-        make_set_default("user_code_id", None),
-    ]
-
-
-@migrate(JobV2, JobV1)
-def downgrade_job_v2_to_v1() -> list[Callable]:
-    return [
-        drop("job_pid"),
-    ]
-
-
-@migrate(JobV1, JobV2)
-def upgrade_job_v1_to_v2() -> list[Callable]:
-    return [make_set_default("job_pid", None)]
 
 
 @instrument
