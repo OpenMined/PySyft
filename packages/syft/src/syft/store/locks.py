@@ -9,16 +9,12 @@ from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import Optional
-from typing import Union
 import uuid
 
 # third party
 from pydantic import BaseModel
-import redis
-from redis.client import Redis
 from sherlock.lock import BaseLock
 from sherlock.lock import FileLock
-from sherlock.lock import RedisLock
 
 # relative
 from ..serde.serializable import serializable
@@ -74,22 +70,6 @@ class FileLockingConfig(LockingConfig):
     """File locking policy"""
 
     client_path: Optional[Path] = None
-
-
-@serializable()
-class RedisClientConfig(BaseModel):
-    host: str = "localhost"
-    port: int = 6379
-    db: int = 0
-    username: Optional[str] = None
-    password: Optional[str] = None
-
-
-@serializable()
-class RedisLockingConfig(LockingConfig):
-    """Redis locking policy"""
-
-    client: RedisClientConfig = RedisClientConfig()
 
 
 class ThreadingLock(BaseLock):
@@ -343,15 +323,8 @@ class SyftLock(BaseLock):
         elif isinstance(config, ThreadingLockingConfig):
             self._lock = ThreadingLock(**base_params)
         elif isinstance(config, FileLockingConfig):
-            client: Optional[Union[Path, Redis]] = config.client_path
+            client: Optional[Path] = config.client_path
             self._lock = PatchedFileLock(
-                **base_params,
-                client=client,
-            )
-        elif isinstance(config, RedisLockingConfig):
-            client = redis.StrictRedis(**config.client.dict())
-
-            self._lock = RedisLock(
                 **base_params,
                 client=client,
             )
