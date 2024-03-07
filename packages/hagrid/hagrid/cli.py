@@ -2261,7 +2261,7 @@ def create_launch_docker_cmd(
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
-        "ENABLE_OBLV": str(enable_oblv).lower(),
+        "OBLV_ENABLED": str(enable_oblv).lower(),
         "CREDENTIALS_VOLUME": host_path,
         "NODE_SIDE_TYPE": kwargs["node_side_type"],
         "SINGLE_CONTAINER_MODE": single_container_mode,
