@@ -42,8 +42,6 @@ Read/retrieve SyftObject from blob storage
 
 # stdlib
 from io import BytesIO
-import os
-from pathlib import Path
 from typing import Any
 from typing import Generator
 from typing import Optional
@@ -71,6 +69,7 @@ from ...types.grid_url import GridURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 
@@ -92,26 +91,18 @@ class BlobRetrieval(SyftObject):
 @serializable()
 class SyftObjectRetrieval(BlobRetrieval):
     __canonical_name__ = "SyftObjectRetrieval"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     syft_object: bytes
-    path: Path
 
     def _read_data(
         self, stream: bool = False, _deserialize: bool = True, **kwargs: Any
     ) -> Any:
         # development setup, we can access the same filesystem
-        if os.access(self.path, os.R_OK) and self.path.is_file():
-            with open(self.path, "rb") as fp:
-                res = fp.read()
-                if _deserialize:
-                    res = deserialize(res, from_bytes=True)
-        # single container setup, we have to use the data in the object
+        if not _deserialize:
+            res = self.syft_object
         else:
-            if not _deserialize:
-                res = self.syft_object
-            else:
-                res = deserialize(self.syft_object, from_bytes=True)
+            res = deserialize(self.syft_object, from_bytes=True)
 
         # TODO: implement proper streaming from local files
         if stream:
