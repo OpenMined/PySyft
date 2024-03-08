@@ -721,6 +721,10 @@ class Node(AbstractNode):
             object_version = object_type.__version__
 
             migration_state = migration_state_service.get_state(context, canonical_name)
+            if isinstance(migration_state, SyftError):
+                raise Exception(
+                    f"Failed to get migration state for {canonical_name}. Error: {migration_state}"
+                )
             if (
                 migration_state is not None
                 and migration_state.current_version != migration_state.latest_version

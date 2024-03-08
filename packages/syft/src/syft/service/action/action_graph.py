@@ -232,7 +232,9 @@ class NetworkXBackingStore(BaseGraphStore):
         # TODO copied method from document_store, have it in one place and reuse?
         locked = self.lock.acquire(blocking=True)
         if not locked:
-            return Err("Failed to acquire lock for the operation")
+            return Err(
+                f"Failed to acquire lock for the operation {self.lock.lock_name} ({self.lock._lock})"
+            )
         try:
             result = cbk(*args, **kwargs)
         except BaseException as e:
