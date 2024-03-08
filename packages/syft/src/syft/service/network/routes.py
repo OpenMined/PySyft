@@ -164,7 +164,7 @@ def route_to_connection(
 def connection_to_route(connection: NodeConnection) -> NodeRoute:
     if isinstance(connection, HTTPConnection):
         return connection.to(HTTPNodeRoute)
-    elif isinstance(connection, PythonConnection):
+    elif isinstance(connection, PythonConnection):  # type: ignore[unreachable]
         return connection.to(PythonNodeRoute)
     elif isinstance(connection, VeilidConnection):
         return connection.to(VeilidNodeRoute)

@@ -464,7 +464,7 @@ class VeilidConnection(NodeConnection):
 
         return obj
 
-    def register(self, new_user: UserCreate) -> SyftSigningKey:
+    def register(self, new_user: UserCreate) -> Any:
         # TODO: Implement message proxy forwarding for gateway
 
         data = _serialize(new_user, to_bytes=True)

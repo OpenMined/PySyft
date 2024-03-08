@@ -384,6 +384,7 @@ class NetworkService(AbstractService):
         remote_node_route: NodeRoute,
     ) -> Union[SyftSuccess, SyftError]:
         """Exchange Route With Another Node"""
+        context.node = cast(AbstractNode, context.node)
         # Step 1: Get our own Veilid Node Peer to send to the remote node
         self_node_peer: NodePeer = context.node.settings.to(NodePeer)
 
@@ -426,7 +427,7 @@ class NetworkService(AbstractService):
         peer: NodePeer,
     ) -> Union[NodePeer, SyftError]:
         """Add a Veilid Node Peer"""
-
+        context.node = cast(AbstractNode, context.node)
         # Step 1: Using the verify_key of the peer to verify the signature
         # It is also our single source of truth for the peer
         if peer.verify_key != context.credentials:
