@@ -1,6 +1,7 @@
 # third party
 from faker import Faker
 from hagrid.orchestra import NodeHandle
+import pytest
 
 # syft absolute
 import syft as sy
@@ -35,6 +36,7 @@ def get_admin_client(node_type: str):
     return node.login(email="info@openmined.org", password="changethis")
 
 
+@pytest.mark.local_node
 def test_create_gateway_client(faker: Faker):
     node_handle = get_node_handle(NodeType.GATEWAY.value)
     client = node_handle.client
@@ -42,6 +44,7 @@ def test_create_gateway_client(faker: Faker):
     assert client.metadata.node_type == NodeType.GATEWAY.value
 
 
+@pytest.mark.local_node
 def test_domain_connect_to_gateway(faker: Faker):
     gateway_node_handle = get_node_handle(NodeType.GATEWAY.value)
     gateway_client: GatewayClient = gateway_node_handle.login(
@@ -100,6 +103,7 @@ def test_domain_connect_to_gateway(faker: Faker):
     assert all_peers[0].node_routes[0].priority == 2
 
 
+@pytest.mark.local_node
 def test_domain_connect_to_gateway_routes_priority() -> None:
     """
     A test for routes' priority (PythonNodeRoute)
@@ -141,6 +145,7 @@ def test_domain_connect_to_gateway_routes_priority() -> None:
             assert peer.node_routes[0].priority == 1
 
 
+@pytest.mark.local_node
 def test_enclave_connect_to_gateway(faker: Faker):
     gateway_node_handle = get_node_handle(NodeType.GATEWAY.value)
     gateway_client = gateway_node_handle.client

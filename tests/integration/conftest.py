@@ -9,6 +9,7 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line(
         "markers", "container_workload: container workload integration tests"
     )
+    config.addinivalue_line("markers", "local_node: local node integration tests")
 
 
 @pytest.fixture

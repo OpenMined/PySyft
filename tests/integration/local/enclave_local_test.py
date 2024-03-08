@@ -1,8 +1,12 @@
+# third party
+import pytest
+
 # syft absolute
 import syft as sy
 from syft.service.response import SyftError
 
 
+@pytest.mark.local_node
 def test_enclave_root_client_exception():
     enclave_node = sy.orchestra.launch(
         name="enclave_node",
