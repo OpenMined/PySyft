@@ -3,7 +3,6 @@ import datetime
 from pathlib import Path
 import random
 import string
-import sys
 import tempfile
 from threading import Thread
 import time
@@ -57,9 +56,6 @@ def locks_file_config():
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
 def test_sanity(config: LockingConfig):
     lock = SyftLock(config)
 
@@ -94,9 +90,6 @@ def test_acquire_nop(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_release(config: LockingConfig):
     lock = SyftLock(config)
@@ -124,9 +117,6 @@ def test_acquire_release(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_release_with(config: LockingConfig):
     was_locked = True
@@ -142,9 +132,6 @@ def test_acquire_release_with(config: LockingConfig):
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
     ],
-)
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_acquire_expire(config: LockingConfig):
     config.expire = 1  # second
@@ -173,9 +160,6 @@ def test_acquire_expire(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
     config.timeout = 1
@@ -198,9 +182,6 @@ def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
     ],
-)
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
@@ -227,9 +208,6 @@ def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
     config.timeout = 2
@@ -254,9 +232,6 @@ def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
     ],
-)
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
@@ -284,9 +259,6 @@ def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_double_release(config: LockingConfig):
     lock = SyftLock(config)
@@ -303,9 +275,6 @@ def test_acquire_double_release(config: LockingConfig):
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
     ],
-)
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_acquire_same_name_diff_namespace(config: LockingConfig):
@@ -328,9 +297,6 @@ def test_acquire_same_name_diff_namespace(config: LockingConfig):
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
     ],
-)
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_locks_parallel_multithreading(config: LockingConfig) -> None:
     thread_cnt = 3
