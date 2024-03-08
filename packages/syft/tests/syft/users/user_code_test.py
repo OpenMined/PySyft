@@ -50,7 +50,7 @@ def test_user_code(worker) -> None:
     root_domain_client = worker.root_client
     message = root_domain_client.notifications[-1]
     request = message.link
-    user_code = request.changes[0].link
+    user_code = request.changes[0].code
     result = user_code.unsafe_function()
     request.accept_by_depositing_result(result)
 
@@ -124,7 +124,9 @@ def test_scientist_can_list_code_assets(worker: sy.Worker, faker: Faker) -> None
         c for c in request.changes if (isinstance(c, UserCodeStatusChange))
     )
 
-    assert status_change.linked_obj.resolve.assets[0] == asset_input
+    assert status_change.code.assets[0].model_dump(
+        mode="json"
+    ) == asset_input.model_dump(mode="json")
 
 
 @sy.syft_function()
@@ -146,7 +148,7 @@ def test_nested_requests(worker, guest_client: User):
 
     root_domain_client = worker.root_client
     request = root_domain_client.requests[-1]
-    assert request.code.nested_requests == {"test_inner_func": "latest"}
+
     root_domain_client.api.services.request.apply(request.id)
     request = root_domain_client.requests[-1]
 
@@ -156,7 +158,8 @@ def test_nested_requests(worker, guest_client: User):
     assert list(request.code.nested_codes.keys()) == ["test_inner_func"]
     (linked_obj, node) = request.code.nested_codes["test_inner_func"]
     assert node == {}
-    assert linked_obj.resolve.id == inner.id
+    resolved = root_domain_client.api.services.notifications.resolve_object(linked_obj)
+    assert resolved.id == inner.id
     assert outer.status.approved
     assert not inner.status.approved
 

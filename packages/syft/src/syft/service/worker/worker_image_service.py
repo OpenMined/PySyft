@@ -3,12 +3,14 @@ import contextlib
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import cast
 
 # third party
 import docker
 import pydantic
 
 # relative
+from ...abstract_node import AbstractNode
 from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
@@ -77,6 +79,8 @@ class SyftWorkerImageService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         registry: Optional[SyftImageRegistry] = None
 
+        context.node = cast(AbstractNode, context.node)
+
         if IN_KUBERNETES and registry_uid is None:
             return SyftError(message="Registry UID is required in Kubernetes mode.")
 
@@ -90,7 +94,7 @@ class SyftWorkerImageService(AbstractService):
 
         if registry_uid:
             # get registry from image registry service
-            image_registry_service: SyftImageRegistryService = context.node.get_service(
+            image_registry_service: AbstractService = context.node.get_service(
                 SyftImageRegistryService
             )
             registry_result = image_registry_service.get_by_id(context, registry_uid)
@@ -229,6 +233,7 @@ class SyftWorkerImageService(AbstractService):
             return SyftError(message=f"{res.err()}")
         image: SyftWorkerImage = res.ok()
 
+        context.node = cast(AbstractNode, context.node)
         if context.node.in_memory_workers:
             pass
         elif IN_KUBERNETES:

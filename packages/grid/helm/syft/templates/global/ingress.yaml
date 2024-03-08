@@ -1,0 +1,44 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ingress
+  {{- if or .Values.ingress.annotations .Values.ingress.class }}
+  annotations:
+    {{- if .Values.ingress.class }}
+    kubernetes.io/ingress.class: {{ .Values.ingress.class | quote }}
+    {{- end }}
+    {{- if .Values.ingress.annotations }}
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className | quote }}
+  {{- end }}
+  defaultBackend:
+    service:
+      name: proxy
+      port:
+        number: 80
+  rules:
+  - host: {{ .Values.ingress.hostname | quote }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: proxy
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+  - hosts:
+    - {{ .Values.ingress.hostname | required "ingress.hostname is required when TLS is enabled" | quote }}
+    {{- if .Values.ingress.tls.secretName }}
+    secretName: {{ .Values.ingress.tls.secretName }}
+    {{- end}}
+  {{- end }}

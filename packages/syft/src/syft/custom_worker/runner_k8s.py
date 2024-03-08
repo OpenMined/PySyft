@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -21,7 +22,7 @@ SCALE_POOL_TIMEOUT_SEC = 60
 
 
 class KubernetesRunner:
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = get_kr8s_client()
 
     def create_pool(
@@ -34,7 +35,7 @@ class KubernetesRunner:
         reg_username: Optional[str] = None,
         reg_password: Optional[str] = None,
         reg_url: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> StatefulSet:
         try:
             # create pull secret if registry credentials are passed
@@ -134,8 +135,8 @@ class KubernetesRunner:
         reg_username: str,
         reg_password: str,
         reg_url: str,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> Secret:
         return KubeUtils.create_dockerconfig_secret(
             secret_name=f"pull-secret-{pool_name}",
             component=pool_name,
@@ -148,11 +149,11 @@ class KubernetesRunner:
         self,
         pool_name: str,
         tag: str,
-        replicas=1,
+        replicas: int = 1,
         env_vars: Optional[List[Dict]] = None,
         mount_secrets: Optional[Dict] = None,
         pull_secret: Optional[Secret] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> StatefulSet:
         """Create a stateful set for a pool"""
 

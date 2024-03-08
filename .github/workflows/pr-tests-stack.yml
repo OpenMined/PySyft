@@ -141,7 +141,7 @@ jobs:
 
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.0.0
+        uses: crazy-max/ghaction-setup-docker@v3.1.0
 
       - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
@@ -168,6 +168,7 @@ jobs:
           HAGRID_ART: false
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
         run: |
+          export AZURE_BLOB_STORAGE_KEY="${{ secrets.AZURE_BLOB_STORAGE_KEY }}"
           tox -e stack.test.integration
 
       #Run log collector python script
@@ -413,7 +414,7 @@ jobs:
 
       - name: Docker on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.0.0
+        uses: crazy-max/ghaction-setup-docker@v3.1.0
 
       - name: Docker Compose on MacOS
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
@@ -645,10 +646,10 @@ jobs:
         shell: bash
         run: |
           mkdir -p ./k8s-logs
-          kubectl describe all -A --context k3d-testgateway1 --namespace testgateway1 > ./k8s-logs/testgateway1-desc-${{ steps.date.outputs.date }}.txt
-          kubectl describe all -A --context k3d-testdomain1 --namespace testdomain1 > ./k8s-logs/testdomain1-desc-${{ steps.date.outputs.date }}.txt
-          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-testgateway1 --namespace testgateway1 > ./k8s-logs/testgateway1-logs-${{ steps.date.outputs.date }}.txt
-          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-testdomain1 --namespace testdomain1 > ./k8s-logs/testdomain1-logs-${{ steps.date.outputs.date }}.txt
+          kubectl describe all -A --context k3d-testgateway1 --namespace syft > ./k8s-logs/testgateway1-desc-${{ steps.date.outputs.date }}.txt
+          kubectl describe all -A --context k3d-testdomain1 --namespace syft > ./k8s-logs/testdomain1-desc-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-testgateway1 --namespace syft > ./k8s-logs/testgateway1-logs-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-testdomain1 --namespace syft > ./k8s-logs/testdomain1-logs-${{ steps.date.outputs.date }}.txt
           ls -la ./k8s-logs
 
       - name: Upload logs to GitHub

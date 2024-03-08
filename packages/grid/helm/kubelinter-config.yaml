@@ -1,0 +1,15 @@
+checks:
+  addAllBuiltIn: true
+  exclude:
+    - "access-to-create-pods"
+    - "default-service-account"
+    - "dnsconfig-options"
+    - "minimum-three-replicas"
+    - "no-node-affinity"
+    - "non-isolated-pod"
+    - "privileged-ports"
+    - "read-secret-from-env-var"
+    - "required-annotation-email"
+    - "required-label-owner"
+    - "run-as-non-root"
+    - "use-namespace"

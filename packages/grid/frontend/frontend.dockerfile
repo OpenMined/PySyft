@@ -1,10 +1,11 @@
-FROM node:18-alpine as base
+FROM cgr.dev/chainguard/wolfi-base as base
 
-ARG VITE_PUBLIC_API_BASE_URL
-ENV VITE_PUBLIC_API_BASE_URL ${VITE_PUBLIC_API_BASE_URL}
-ENV NODE_TYPE domain
+ARG BACKEND_API_BASE_URL="/api/v2/"
+ENV BACKEND_API_BASE_URL ${BACKEND_API_BASE_URL}
 
-RUN apk update && apk upgrade --available
+RUN apk update && \
+    apk upgrade && \
+    apk add --no-cache nodejs-20 pnpm corepack
 
 WORKDIR /app
 

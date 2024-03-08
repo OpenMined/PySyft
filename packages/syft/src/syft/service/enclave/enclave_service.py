@@ -1,5 +1,7 @@
 # stdlib
 from typing import Dict
+from typing import Optional
+from typing import Type
 from typing import Union
 
 # relative
@@ -13,11 +15,12 @@ from ...store.document_store import DocumentStore
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ..action.action_object import ActionObject
-from ..code.user_code_service import UserCode
-from ..code.user_code_service import UserCodeStatus
+from ..code.user_code import UserCode
+from ..code.user_code import UserCodeStatus
 from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..network.routes import route_to_connection
+from ..policy.policy import InputPolicy
 from ..service import AbstractService
 from ..service import service_method
 
@@ -58,7 +61,7 @@ class EnclaveService(AbstractService):
             return user_code
 
         reason: str = context.extra_kwargs.get("reason", "")
-        status_update = user_code.status.mutate(
+        status_update = user_code.get_status(root_context).mutate(
             value=(UserCodeStatus.APPROVED, reason),
             node_name=node_name,
             node_id=node_id,
@@ -67,13 +70,9 @@ class EnclaveService(AbstractService):
         if isinstance(status_update, SyftError):
             return status_update
 
-        user_code.status = status_update
-
-        user_code_update = user_code_service.update_code_state(
-            context=root_context, code_item=user_code
-        )
-        if isinstance(user_code_update, SyftError):
-            return user_code_update
+        res = user_code.status_link.update_with_context(root_context, status_update)
+        if isinstance(res, SyftError):
+            return res
 
         root_context = context.as_root_context()
         if not action_service.exists(context=context, obj_id=user_code_id):
@@ -99,7 +98,7 @@ class EnclaveService(AbstractService):
         return SyftSuccess(message="Enclave Code Status Updated Successfully")
 
 
-def get_oblv_service():
+def get_oblv_service() -> Union[Type[AbstractService], SyftError]:
     # relative
     from ...external import OBLV
 
@@ -118,7 +117,9 @@ def get_oblv_service():
 
 
 # Checks if the given user code would  propogate value to enclave on acceptance
-def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
+def propagate_inputs_to_enclave(
+    user_code: UserCode, context: ChangeContext
+) -> Union[SyftSuccess, SyftError]:
     # Temporarily disable Oblivious Enclave
     # from ...external.oblv.deployment_client import OblvMetadata
 
@@ -135,6 +136,8 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
     #         worker_name=context.node.name,
     #     )
     #     send_method = api.services.oblv.send_user_code_inputs_to_enclave
+    if context.node is None:
+        return SyftError(message=f"context {context}'s node is None")
 
     if isinstance(user_code.enclave_metadata, EnclaveMetadata):
         # TODO 🟣 Restructure url it work for local mode host.docker.internal
@@ -152,7 +155,12 @@ def propagate_inputs_to_enclave(user_code: UserCode, context: ChangeContext):
     else:
         return SyftSuccess(message="Current Request does not require Enclave Transfer")
 
-    inputs = user_code.input_policy._inputs_for_context(context)
+    input_policy: Optional[InputPolicy] = user_code.get_input_policy(
+        context.to_service_ctx()
+    )
+    if input_policy is None:
+        return SyftError(message=f"{user_code}'s input policy is None")
+    inputs = input_policy._inputs_for_context(context)
     if isinstance(inputs, SyftError):
         return inputs
 

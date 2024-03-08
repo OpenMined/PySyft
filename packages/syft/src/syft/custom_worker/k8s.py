@@ -17,6 +17,7 @@ from kr8s.objects import APIObject
 from kr8s.objects import Pod
 from kr8s.objects import Secret
 from pydantic import BaseModel
+from typing_extensions import Self
 
 # Time after which Job will be deleted
 JOB_COMPLETION_TTL = 60
@@ -47,7 +48,7 @@ class PodCondition(BaseModel):
     ready: bool
 
     @classmethod
-    def from_conditions(cls, conditions: list):
+    def from_conditions(cls, conditions: list) -> Self:
         pod_cond = KubeUtils.list_dict_unpack(conditions, key="type", value="status")
         pod_cond_flags = {k: v == "True" for k, v in pod_cond.items()}
         return cls(
@@ -62,12 +63,12 @@ class ContainerStatus(BaseModel):
     ready: bool
     running: bool
     waiting: bool
-    reason: Optional[str]  # when waiting=True
-    message: Optional[str]  # when waiting=True
-    startedAt: Optional[str]  # when running=True
+    reason: Optional[str] = None  # when waiting=True
+    message: Optional[str] = None  # when waiting=True
+    startedAt: Optional[str] = None  # when running=True
 
     @classmethod
-    def from_status(cls, cstatus: dict):
+    def from_status(cls, cstatus: dict) -> Self:
         cstate = cstatus.get("state", {})
 
         return cls(
@@ -86,7 +87,7 @@ class PodStatus(BaseModel):
     container: ContainerStatus
 
     @classmethod
-    def from_status_dict(cls: "PodStatus", status: dict):
+    def from_status_dict(cls, status: dict) -> Self:
         return cls(
             phase=PodPhase(status.get("phase", "Unknown")),
             condition=PodCondition.from_conditions(status.get("conditions", [])),
@@ -120,8 +121,10 @@ class KubeUtils:
         for _pod in client.get("pods", pod):
             return _pod
 
+        return None
+
     @staticmethod
-    def get_logs(pods: List[Pod]):
+    def get_logs(pods: List[Pod]) -> str:
         """Combine and return logs for all the pods as string"""
         logs = []
         for pod in pods:
@@ -142,10 +145,12 @@ class KubeUtils:
     def get_pod_env(pod: Pod) -> Optional[List[Dict]]:
         """Return the environment variables of the first container in the pod."""
         if not pod:
-            return
+            return None
 
         for container in pod.spec.containers:
             return container.env.to_list()
+
+        return None
 
     @staticmethod
     def get_container_exit_code(pods: List[Pod]) -> List[int]:
@@ -203,11 +208,11 @@ class KubeUtils:
         type: str,
         component: str,
         data: str,
-        encoded=True,
+        encoded: bool = True,
     ) -> Secret:
         if not encoded:
             for k, v in data.items():
-                data[k] = KubeUtils.b64encode_secret(v)
+                data[k] = KubeUtils.b64encode_secret(v)  # type: ignore
 
         secret = Secret(
             {

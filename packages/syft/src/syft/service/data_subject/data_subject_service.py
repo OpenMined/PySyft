@@ -2,11 +2,13 @@
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import cast
 
 # third party
 from result import Result
 
 # relative
+from ...abstract_node import AbstractNode
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
@@ -45,7 +47,10 @@ class DataSubjectStash(BaseUIDStoreStash):
         return self.query_one(credentials, qks=qks)
 
     def update(
-        self, credentials: SyftVerifyKey, data_subject: DataSubject
+        self,
+        credentials: SyftVerifyKey,
+        data_subject: DataSubject,
+        has_permission: bool = False,
     ) -> Result[DataSubject, str]:
         res = self.check_type(data_subject, DataSubject)
         # we dont use and_then logic here as it is hard because of the order of the arguments
@@ -70,6 +75,7 @@ class DataSubjectService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Register a data subject."""
 
+        context.node = cast(AbstractNode, context.node)
         member_relationship_add = context.node.get_service_method(
             DataSubjectMemberService.add
         )
@@ -108,6 +114,7 @@ class DataSubjectService(AbstractService):
     def get_members(
         self, context: AuthedServiceContext, data_subject_name: str
     ) -> Union[List[DataSubject], SyftError]:
+        context.node = cast(AbstractNode, context.node)
         get_relatives = context.node.get_service_method(
             DataSubjectMemberService.get_relatives
         )

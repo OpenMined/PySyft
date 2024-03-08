@@ -2,6 +2,7 @@
 from abc import ABC
 from abc import abstractmethod
 from pathlib import Path
+from typing import Any
 from typing import Optional
 
 # third party
@@ -33,20 +34,22 @@ class ImagePushResult(BaseModel):
 class BuilderBase(ABC):
     @abstractmethod
     def build_image(
+        self,
         tag: str,
-        dockerfile: str = None,
-        dockerfile_path: Path = None,
+        dockerfile: Optional[str] = None,
+        dockerfile_path: Optional[Path] = None,
         buildargs: Optional[dict] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> ImageBuildResult:
         pass
 
     @abstractmethod
     def push_image(
+        self,
         tag: str,
         username: str,
         password: str,
         registry_url: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> ImagePushResult:
         pass

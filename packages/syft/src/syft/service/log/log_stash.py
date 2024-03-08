@@ -4,15 +4,15 @@ from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...util.telemetry import instrument
-from .log import SyftLogV2
+from .log import SyftLog
 
 
 @instrument
 @serializable()
 class LogStash(BaseUIDStoreStash):
-    object_type = SyftLogV2
+    object_type = SyftLog
     settings: PartitionSettings = PartitionSettings(
-        name=SyftLogV2.__canonical_name__, object_type=SyftLogV2
+        name=SyftLog.__canonical_name__, object_type=SyftLog
     )
 
     def __init__(self, store: DocumentStore) -> None:
