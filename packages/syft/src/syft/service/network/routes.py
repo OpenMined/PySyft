@@ -145,7 +145,6 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         return self == other
 
 
-NodeRouteTypeV1 = Union[HTTPNodeRoute, PythonNodeRoute]
 NodeRouteType = Union[HTTPNodeRoute, PythonNodeRoute, VeilidNodeRoute]
 
 
