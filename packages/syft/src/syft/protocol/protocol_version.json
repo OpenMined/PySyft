@@ -423,6 +423,16 @@
           "version": 2,
           "hash": "d9d7a7e1b8843145c9687fd013c9223700285886073547734267e91ac53e0996",
           "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "952958e9afae007bef3cb89aa15be95dddc4c310e3a8ce4191576f90ac6fcbc8",
+          "action": "remove"
+        },
+        "4": {
+          "version": 4,
+          "hash": "939934f46b72eb2c903606bce8e7ac2e59b1707b73c65fa2b9de8eed6e35f9da",
+          "action": "add"
         }
       },
       "WorkerSettings": {
