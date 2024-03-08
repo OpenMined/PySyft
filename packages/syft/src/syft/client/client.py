@@ -343,9 +343,9 @@ class VeilidConnection(NodeConnection):
     vld_forward_proxy: GridURL = GridURL.from_url(VEILID_SERVICE_URL)
     vld_reverse_proxy: GridURL = GridURL.from_url(VEILID_SYFT_PROXY_URL)
     dht_key: str
-    proxy_target_uid: Optional[UID]
+    proxy_target_uid: Optional[UID] = None
     routes: Type[Routes] = Routes
-    session_cache: Optional[Session]
+    session_cache: Optional[Session] = None
 
     @field_validator("vld_forward_proxy", mode="before")
     def make_forward_proxy_url(cls, v: Union[GridURL, str]) -> GridURL:
