@@ -1,14 +1,11 @@
 # stdlib
-import base64
 import json
-import lzma
 from typing import Callable
 from typing import Optional
 from typing import Tuple
 from typing import Union
 
 # third party
-import httpx
 from loguru import logger
 import veilid
 from veilid import KeyPair
@@ -34,7 +31,7 @@ from .veilid_streamer import VeilidStreamer
 vs = VeilidStreamer()
 
 
-async def handle_streamed_message(message: bytes) -> bytes:
+async def handle_app_call(message: bytes) -> bytes:
     msg = f"Received message of length: {len(message)}"
     logger.debug(msg)
     return json.dumps({"response": msg}).encode()
@@ -45,34 +42,15 @@ async def main_callback(update: VeilidUpdate) -> None:
     # when our private route goes
     if VeilidStreamer.is_stream_update(update):
         async with await get_veilid_conn() as conn:
-            await vs.receive_stream(conn, update, callback=handle_streamed_message)
+            await vs.receive_stream(conn, update, callback=handle_app_call)
 
     elif update.kind == veilid.VeilidUpdateKind.APP_MESSAGE:
         logger.info(f"Received App Message: {update.detail.message}")
 
     elif update.kind == veilid.VeilidUpdateKind.APP_CALL:
-        logger.info(f"Received App Call: {update.detail.message}")
-        message: dict = json.loads(update.detail.message)
-
-        async with httpx.AsyncClient() as client:
-            data = message.get("data", None)
-            # TODO: can we optimize this?
-            # We encode the data to base64,as while sending
-            # json expects valid utf-8 strings
-            if data:
-                message["data"] = base64.b64decode(data)
-            response = await client.request(
-                method=message.get("method"),
-                url=message.get("url"),
-                data=message.get("data", None),
-                params=message.get("params", None),
-                json=message.get("json", None),
-            )
-
+        response = await handle_app_call(update.detail.message)
         async with await get_veilid_conn() as conn:
-            compressed_response = lzma.compress(response.content)
-            logger.info(f"Compression response size: {len(compressed_response)}")
-            await conn.app_call_reply(update.detail.call_id, compressed_response)
+            await conn.app_call_reply(update.detail.call_id, response)
 
 
 async def noop_callback(update: VeilidUpdate) -> None:
