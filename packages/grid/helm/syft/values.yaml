@@ -155,3 +155,10 @@ veilid:
   veilidFlags: ""
   appLogLevel: "info"
   uvicornLogLevel: "info"
+
+  # Extra environment vars
+  env: null
+
+  # Pod Resource Limits
+  resourcesPreset: nano
+  resources: null
