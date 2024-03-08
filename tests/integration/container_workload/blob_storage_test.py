@@ -22,5 +22,7 @@ def test_mount_azure_blob_storage(domain_1_port):
     blob_files = domain_client.api.services.blob_storage.get_files_from_bucket(
         bucket_name="helmazurebucket"
     )
+    assert isinstance(blob_files, list), blob_files
+    assert len(blob_files) > 0
     document = [f for f in blob_files if "testfile.txt" in f.file_name][0]
     assert document.read() == b"abc\n"
