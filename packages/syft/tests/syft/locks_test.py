@@ -9,8 +9,6 @@ from threading import Thread
 import time
 
 # third party
-from joblib import Parallel
-from joblib import delayed
 import pytest
 
 # syft absolute
@@ -386,42 +384,39 @@ def test_locks_parallel_multithreading(config: LockingConfig) -> None:
     assert stored == thread_cnt * repeats
 
 
-@pytest.mark.skip(reason="The tests are highly flaky, delaying progress on PR's")
-@pytest.mark.parametrize(
-    "config",
-    [
-        pytest.lazy_fixture("locks_file_config"),
-    ],
-)
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
-def test_parallel_joblib(
-    config: LockingConfig,
-) -> None:
-    thread_cnt = 3
-    repeats = 100
+# @pytest.mark.skip(reason="Joblib is flaky")
+# @pytest.mark.parametrize(
+#     "config",
+#     [
+#         pytest.lazy_fixture("locks_file_config"),
+#     ],
+# )
+# def test_parallel_joblib(
+#     config: LockingConfig,
+# ) -> None:
+#     thread_cnt = 3
+#     repeats = 100
 
-    temp_dir = Path(tempfile.TemporaryDirectory().name)
-    temp_dir.mkdir(parents=True, exist_ok=True)
-    temp_file = temp_dir / "dbg.txt"
-    if temp_file.exists():
-        temp_file.unlink()
+#     temp_dir = Path(tempfile.TemporaryDirectory().name)
+#     temp_dir.mkdir(parents=True, exist_ok=True)
+#     temp_file = temp_dir / "dbg.txt"
+#     if temp_file.exists():
+#         temp_file.unlink()
 
-    with open(temp_file, "w") as f:
-        f.write("0")
+#     with open(temp_file, "w") as f:
+#         f.write("0")
 
-    def _kv_cbk(tid: int) -> None:
-        for _idx in range(repeats):
-            with SyftLock(config):
-                with open(temp_file) as f:
-                    prev = int(f.read())
-                with open(temp_file, "w") as f:
-                    f.write(str(prev + 1))
+#     def _kv_cbk(tid: int) -> None:
+#         for _idx in range(repeats):
+#             with SyftLock(config):
+#                 with open(temp_file) as f:
+#                     prev = int(f.read())
+#                 with open(temp_file, "w") as f:
+#                     f.write(str(prev + 1))
 
-    Parallel(n_jobs=thread_cnt)(delayed(_kv_cbk)(idx) for idx in range(thread_cnt))
+#     Parallel(n_jobs=thread_cnt)(delayed(_kv_cbk)(idx) for idx in range(thread_cnt))
 
-    with open(temp_file) as f:
-        stored = int(f.read())
+#     with open(temp_file) as f:
+#         stored = int(f.read())
 
-    assert stored == thread_cnt * repeats
+#     assert stored == thread_cnt * repeats
