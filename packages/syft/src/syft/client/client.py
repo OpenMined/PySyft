@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 # stdlib
+from copy import deepcopy
 from enum import Enum
 from getpass import getpass
 import json
+import os
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -153,7 +155,7 @@ class HTTPConnection(NodeConnection):
     def api_url(self) -> GridURL:
         return self.url.with_path(self.routes.ROUTE_API_CALL.value)
 
-    def to_blob_route(self, path: str) -> GridURL:
+    def to_blob_route(self, path: str, **kwargs) -> GridURL:
         _path = self.routes.ROUTE_BLOB_STORE.value + path
         return self.url.with_path(_path)
 
@@ -345,6 +347,13 @@ class PythonConnection(NodeConnection):
         else:
             return self.node.metadata.to(NodeMetadataJSON)
 
+    def to_blob_route(self, path: str, host=None) -> GridURL:
+        # TODO: FIX!
+        if host is not None:
+            return GridURL(host_or_ip=host, port=8333).with_path(path)
+        else:
+            return GridURL(port=8333).with_path(path)
+
     def get_api(
         self, credentials: SyftSigningKey, communication_protocol: int
     ) -> SyftAPI:
@@ -519,6 +528,45 @@ class SyftClient:
         project = project_create.start()
         return project
 
+    def sync_code_from_request(self, request):
+        # relative
+        from ..service.code.user_code import UserCode
+        from ..store.linked_obj import LinkedObject
+
+        code: Union[UserCode, SyftError] = request.code
+        if isinstance(code, SyftError):
+            return code
+
+        code = deepcopy(code)
+        code.node_uid = self.id
+        code.user_verify_key = self.verify_key
+
+        def get_nested_codes(code: UserCode):
+            result = []
+            for __, (linked_code_obj, _) in code.nested_codes.items():
+                nested_code = linked_code_obj.resolve
+                nested_code = deepcopy(nested_code)
+                nested_code.node_uid = code.node_uid
+                nested_code.user_verify_key = code.user_verify_key
+                result.append(nested_code)
+                result += get_nested_codes(nested_code)
+
+            updated_code_links = {
+                nested_code.service_func_name: (LinkedObject.from_obj(nested_code), {})
+                for nested_code in result
+            }
+            code.nested_codes = updated_code_links
+            return result
+
+        nested_codes = get_nested_codes(code)
+
+        for c in nested_codes + [code]:
+            res = self.code.submit(c)
+            if isinstance(res, SyftError):
+                return res
+        self._fetch_api(self.credentials)
+        return SyftSuccess(message="User Code Submitted")
+
     @property
     def authed(self) -> bool:
         return bool(self.credentials)
@@ -603,6 +651,12 @@ class SyftClient:
         return result
 
     @property
+    def jobs(self) -> Optional[APIModule]:
+        if self.api.has_service("job"):
+            return self.api.services.job
+        return None
+
+    @property
     def users(self) -> Optional[APIModule]:
         if self.api.has_service("user"):
             return self.api.services.user
@@ -660,6 +714,14 @@ class SyftClient:
         register: bool = False,
         **kwargs: Any,
     ) -> Self:
+        # If SYFT_LOGIN_{NODE_NAME}_PASSWORD is set, use that as the password
+        # for the login. This is useful for CI/CD environments to test password
+        # randomization that is implemented by helm charts
+        if self.name is not None and email == "info@openmined.org":
+            pass_env_var = f"SYFT_LOGIN_{self.name}_PASSWORD"
+            if pass_env_var in os.environ:
+                password = os.environ[pass_env_var]
+
         if email is None:
             email = input("Email: ")
         if password is None:

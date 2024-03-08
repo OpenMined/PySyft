@@ -37,7 +37,10 @@ class TransformContext(Context):
     def from_context(obj: Any, context: Optional[Context] = None) -> Self:
         t_context = TransformContext()
         t_context.obj = obj
-        t_context.output = dict(obj)
+        try:
+            t_context.output = dict(obj)
+        except Exception:
+            t_context.output = obj.to_dict()
         if hasattr(context, "credentials"):
             t_context.credentials = context.credentials
         if hasattr(context, "node"):
@@ -139,6 +142,13 @@ def validate_email(context: TransformContext) -> TransformContext:
     if context.output["email"] is not None:
         context.output["email"] = EmailStr(context.output["email"])
         EmailStr.validate(context.output["email"])
+    return context
+
+
+def str_url_to_grid_url(context: TransformContext) -> TransformContext:
+    url = context.output.get("url", None)
+    if url is not None and isinstance(url, str):
+        context.output["url"] = GridURL.from_url(str)
     return context
 
 

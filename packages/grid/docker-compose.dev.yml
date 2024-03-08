@@ -1,19 +1,13 @@
 version: "3.8"
 services:
   proxy:
-    profiles:
-      - proxy
     ports:
       - "8080"
-    extra_hosts:
-      - host.docker.internal:host-gateway
     command:
       - "--api" # admin panel
       - "--api.insecure=true" # admin panel no password
 
   frontend:
-    profiles:
-      - frontend
     volumes:
       - ${RELATIVE_PATH}./frontend/src:/app/src
       - ${RELATIVE_PATH}./frontend/static:/app/static
@@ -34,14 +28,10 @@ services:
   #     # - "5672" # AMQP port
 
   mongo:
-    profiles:
-      - mongo
     ports:
       - "27017"
 
   backend:
-    profiles:
-      - backend
     volumes:
       - ${RELATIVE_PATH}./backend/grid:/root/app/grid
       - ${RELATIVE_PATH}../syft:/root/app/syft
@@ -52,14 +42,13 @@ services:
     tty: true
 
   worker:
-    profiles:
-      - worker
     volumes:
       - ${RELATIVE_PATH}./backend/grid:/root/app/grid
       - ${RELATIVE_PATH}../syft:/root/app/syft
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
     environment:
       - DEV_MODE=True
+      - WATCHFILES_FORCE_POLLING=true
     stdin_open: true
     tty: true
 
@@ -80,10 +69,8 @@ services:
   #     - DEV_MODE=True
 
   seaweedfs:
-    profiles:
-      - blob-storage
-    # volumes:
-    #   - ./data/seaweedfs:/data
+    volumes:
+      - ./data/seaweedfs:/data
     ports:
       - "9333" # admin web port
       - "8888" # filer web port

@@ -355,6 +355,7 @@ class StorePartition:
     def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
         locked = self.lock.acquire(blocking=True)
         if not locked:
+            print("FAILED TO LOCK")
             return Err("Failed to acquire lock for the operation")
 
         try:
@@ -698,7 +699,7 @@ class BaseStash:
         credentials: SyftVerifyKey,
         obj: BaseStash.object_type,
         has_permission=False,
-    ) -> Optional[Result[BaseStash.object_type, str]]:
+    ) -> Result[BaseStash.object_type, str]:
         qk = self.partition.store_query_key(obj)
         return self.partition.update(
             credentials=credentials, qk=qk, obj=obj, has_permission=has_permission

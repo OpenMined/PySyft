@@ -46,10 +46,10 @@ jobs:
           echo "deleting ${GITHUB_WORKSPACE}/.git/config"
           rm ${GITHUB_WORKSPACE}/.git/config
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check for file changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           base: ${{ github.ref }}
@@ -57,7 +57,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         if: steps.changes.outputs.syft == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -75,7 +75,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
-        uses: buildjet/cache@v3
+        uses: actions/cache@v4
         if: steps.changes.outputs.syft == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -90,7 +90,7 @@ jobs:
 
       - name: Docker on MacOS
         if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v2.1.0
+        uses: crazy-max/ghaction-setup-docker@v3.0.0
 
       - name: Run unit tests
         if: steps.changes.outputs.syft == 'true'
@@ -131,10 +131,10 @@ jobs:
           echo "deleting ${GITHUB_WORKSPACE}/.git/config"
           rm ${GITHUB_WORKSPACE}/.git/config
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check for file changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           base: ${{ github.ref }}
@@ -142,7 +142,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -160,7 +160,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
-        uses: buildjet/cache@v3
+        uses: actions/cache@v4
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -201,7 +201,7 @@ jobs:
       #   if: matrix.os == 'ubuntu-latest'
       #   run: |
       #     sudo chown -R $USER:$USER $HOME
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # free 10GB of space
       - name: Remove unnecessary files
@@ -214,7 +214,7 @@ jobs:
           docker system prune --all --force
 
       - name: Check for file changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           base: ${{ github.ref }}
@@ -222,7 +222,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -240,7 +240,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
-        uses: buildjet/cache@v3
+        uses: actions/cache@v4
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -265,7 +265,7 @@ jobs:
 
       - name: Docker on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v2.1.0
+        uses: crazy-max/ghaction-setup-docker@v3.0.0
 
       - name: Docker Compose on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
@@ -310,9 +310,9 @@ jobs:
       #   if: matrix.os == 'ubuntu-latest'
       #   run: |
       #     sudo chown -R $USER:$USER $HOME
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Check for file changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           base: ${{ github.ref }}
@@ -320,7 +320,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         if: steps.changes.outputs.syft == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -338,7 +338,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
-        uses: buildjet/cache@v3
+        uses: actions/cache@v4
         if: steps.changes.outputs.syft == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}

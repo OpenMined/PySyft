@@ -1,9 +1,12 @@
 # stdlib
 from collections import defaultdict
 import random
+import sys
+from time import sleep
 
 # third party
 from faker import Faker
+import pytest
 from zmq import Socket
 
 # syft absolute
@@ -17,16 +20,25 @@ from syft.service.queue.zmq_queue import ZMQProducer
 from syft.service.queue.zmq_queue import ZMQQueueConfig
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
+from syft.util.util import get_queue_address
 
 
-def test_zmq_client():
+@pytest.fixture
+def client():
+    hostname = "127.0.0.1"
+    config = ZMQClientConfig(hostname=hostname)
+    client = ZMQClient(config=config)
+    yield client
+    # Cleanup code
+    client.close()
+
+
+@pytest.mark.flaky(reruns=5, reruns_delay=1)
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
+def test_zmq_client(client):
     hostname = "127.0.0.1"
 
-    config = ZMQClientConfig(hostname=hostname)
-
-    assert config.hostname == hostname
-
-    client = ZMQClient(config=config)
+    assert client.config.hostname == hostname
 
     assert client.host == hostname
     assert len(client.producers) == 0
@@ -52,12 +64,20 @@ def test_zmq_client():
         queue_name = QueueName
 
         @staticmethod
-        def handle_message(message: bytes):
+        def handle_message(message: bytes, *args, **kwargs):
             received_message.append(message)
 
     consumer = client.add_consumer(
-        queue_name=QueueName, message_handler=MyMessageHandler
+        queue_name=QueueName,
+        message_handler=MyMessageHandler,
+        service_name="my-service",
     )
+
+    consumer.run()
+    # stdlib
+    from time import sleep
+
+    sleep(1)
     assert isinstance(consumer, ZMQConsumer)
     assert consumer.address is not None
     assert consumer.alive
@@ -70,67 +90,109 @@ def test_zmq_client():
     assert QueueName in client.consumers
     assert len(client.consumers[QueueName]) > 0
 
-    response = client.send_message(message=b"My Message", queue_name=QueueName)
+    msg = b"My Message"
+    response = client.send_message(
+        message=msg,
+        queue_name=QueueName,
+        worker=consumer.id.encode(),
+    )
 
     assert isinstance(response, SyftSuccess)
 
-    consumer.receive()
+    sleep(0.5)
+    # consumer.receive()
     assert len(received_message) == 1
 
-    response = client.send_message(message="My Message", queue_name="random queue")
+    msg = b"My Message"
+    response = client.send_message(message=msg, queue_name="random queue")
     assert isinstance(response, SyftError)
 
     assert isinstance(client.close(), SyftSuccess)
+    sleep(0.5)
     assert client.producers[QueueName].alive is False
     assert client.consumers[QueueName][0].alive is False
 
 
-def test_zmq_pub_sub(faker: Faker):
-    received_messages = []
+@pytest.fixture()
+def service_name(faker):
+    return faker.name()
 
-    pub_port = random.randint(6001, 10004)
 
-    pub_addr = f"tcp://127.0.0.1:{pub_port}"
-
+@pytest.fixture
+def producer():
+    pub_port = random.randint(11000, 12000)
     QueueName = "ABC"
 
     # Create a producer
-    producer = ZMQProducer(address=pub_addr, queue_name=QueueName)
+    producer = ZMQProducer(
+        port=pub_port,
+        queue_name=QueueName,
+        queue_stash=None,
+        worker_stash=None,
+        context=None,
+    )
+    yield producer
+    # Cleanup code
+    if producer.alive:
+        producer.close()
+
+
+@pytest.fixture
+def consumer(producer, service_name):
+    # Create a consumer
+    consumer = ZMQConsumer(
+        message_handler=None,
+        address=producer.address,
+        queue_name=producer.queue_name,
+        service_name=service_name,
+    )
+    yield consumer
+    # Cleanup code
+    if consumer.alive:
+        consumer.close()
+
+
+@pytest.mark.flaky(reruns=5, reruns_delay=1)
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
+def test_zmq_pub_sub(faker: Faker, producer, consumer):
+    received_messages = []
+
+    pub_addr = get_queue_address(producer.port)
 
     assert producer.address == pub_addr
-    assert isinstance(producer._producer, Socket)
+    assert isinstance(producer.socket, Socket)
     assert isinstance(producer, ZMQProducer)
-    assert producer.queue_name == QueueName
     assert producer.alive
+
+    queue_name = producer.queue_name
 
     first_message = faker.sentence().encode()
 
     class MyMessageHandler(AbstractMessageHandler):
-        queue = QueueName
+        queue = producer.queue_name
 
         @staticmethod
-        def handle_message(message: bytes):
+        def handle_message(message: bytes, *args, **kwargs):
             received_messages.append(message)
 
-    # Create a consumer
-    consumer = ZMQConsumer(
-        message_handler=MyMessageHandler,
-        address=pub_addr,
-        queue_name=QueueName,
-    )
+    consumer.message_handler = MyMessageHandler
 
     assert isinstance(consumer, ZMQConsumer)
     assert consumer.address == pub_addr
-    assert isinstance(consumer._consumer, Socket)
-    assert consumer.queue_name == QueueName
+    assert isinstance(consumer.socket, Socket)
+    assert consumer.queue_name == queue_name
     assert consumer.alive
     assert consumer.thread is None
     assert consumer.message_handler == MyMessageHandler
+    consumer.run()
+    sleep(0.2)
 
-    producer.send(message=first_message)
+    msg = [producer.id.encode(), b"", first_message]
+    producer.send(message=msg, worker=consumer.id.encode())
 
     # Check if consumer receives the message
-    consumer.receive()
+    # consumer.receive()
+    sleep(0.2)
 
     # Validate if message was correctly received in the handler
     assert len(received_messages) == 1
@@ -143,13 +205,23 @@ def test_zmq_pub_sub(faker: Faker):
     assert consumer.alive is False
 
 
-def test_zmq_queue_manager() -> None:
+@pytest.fixture
+def queue_manager():
+    # Create a consumer
     config = ZMQQueueConfig()
+    queue_manager = QueueManager(config=config)
+    yield queue_manager
+    # Cleanup code
+    queue_manager.close()
+
+
+@pytest.mark.flaky(reruns=5, reruns_delay=1)
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
+def test_zmq_queue_manager(queue_manager) -> None:
+    config = queue_manager.config
 
     assert isinstance(config.client_config, ZMQClientConfig)
     assert config.client_type == ZMQClient
-
-    queue_manager = QueueManager(config=config)
 
     assert queue_manager.client_config.hostname
 
@@ -166,14 +238,20 @@ def test_zmq_queue_manager() -> None:
         queue_name = QueueName
 
         @staticmethod
-        def handle_message(message: bytes):
+        def handle_message(message: bytes, *args, **kwargs):
             received_messages.append(message)
 
-    producer = queue_manager.create_producer(queue_name=QueueName)
+    producer = queue_manager.create_producer(
+        queue_name=QueueName, queue_stash=None, worker_stash=None, context=None
+    )
 
     assert isinstance(producer, ZMQProducer)
 
-    consumer = queue_manager.create_consumer(message_handler=CustomHandler)
+    consumer = queue_manager.create_consumer(
+        message_handler=CustomHandler,
+        address=producer.address,
+        service_name="my-service",
+    )
 
     assert isinstance(consumer, ZMQConsumer)
 

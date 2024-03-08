@@ -2,6 +2,7 @@
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import cast
 
 # third party
 from typing_extensions import Self
@@ -33,18 +34,33 @@ class AuthedServiceContext(NodeServiceContext):
 
     credentials: SyftVerifyKey
     role: ServiceRole = ServiceRole.NONE
+    job_id: Optional[UID]
     extra_kwargs: Dict = {}
+    has_execute_permissions: bool = False
 
     def capabilities(self) -> List[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES.get(self.role, [])
 
-    def with_credentials(self, credentials: SyftVerifyKey, role: ServiceRole):
+    def with_credentials(self, credentials: SyftVerifyKey, role: ServiceRole) -> Self:
         return AuthedServiceContext(credentials=credentials, role=role, node=self.node)
 
-    def as_root_context(self):
+    def as_root_context(self) -> Self:
+        self.node = cast(AbstractNode, self.node)
         return AuthedServiceContext(
             credentials=self.node.verify_key, role=ServiceRole.ADMIN, node=self.node
         )
+
+    @property
+    def job(self):  # type: ignore
+        # TODO: fix the mypy issue. The return type is Optional[Job].
+        # but we can't import Job since it's a circular import
+        if self.job_id is None:
+            return None
+        res = self.node.job_stash.get_by_uid(self.credentials, self.job_id)
+        if res.is_err():
+            return None
+        else:
+            return res.ok()
 
 
 class UnauthedServiceContext(NodeServiceContext):
@@ -65,10 +81,17 @@ class ChangeContext(SyftBaseObject):
     requesting_user_credentials: Optional[SyftVerifyKey]
     extra_kwargs: Dict = {}
 
-    @staticmethod
-    def from_service(context: AuthedServiceContext) -> Self:
-        return ChangeContext(
+    @classmethod
+    def from_service(cls, context: AuthedServiceContext) -> Self:
+        return cls(
             node=context.node,
             approving_user_credentials=context.credentials,
             extra_kwargs=context.extra_kwargs,
+        )
+
+    def to_service_ctx(self) -> AuthedServiceContext:
+        return AuthedServiceContext(
+            node=self.node,
+            credentials=self.approving_user_credentials,
+            extra_kwargs=self.extra_kwargs,
         )

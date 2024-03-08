@@ -60,14 +60,14 @@ asset_with_empty_mock = pytest.fixture(make_asset_with_empty_mock)
     ],
 )
 def test_asset_without_mock_mock_is_real_must_be_false(
-    asset_without_mock: dict[str, Any]
+    asset_without_mock: dict[str, Any],
 ):
     with pytest.raises(ValidationError):
         Asset(**asset_without_mock, mock_is_real=True)
 
 
 def test_mock_always_not_real_after_calling_no_mock(
-    asset_with_mock: dict[str, Any]
+    asset_with_mock: dict[str, Any],
 ) -> None:
     asset = Asset(**asset_with_mock, mock_is_real=True)
     assert asset.mock_is_real
@@ -77,7 +77,7 @@ def test_mock_always_not_real_after_calling_no_mock(
 
 
 def test_mock_always_not_real_after_set_mock_to_empty(
-    asset_with_mock: dict[str, Any]
+    asset_with_mock: dict[str, Any],
 ) -> None:
     asset = Asset(**asset_with_mock, mock_is_real=True)
     assert asset.mock_is_real
@@ -94,7 +94,7 @@ def test_mock_always_not_real_after_set_mock_to_empty(
 
 
 def test_mock_always_not_real_after_set_to_empty(
-    asset_with_mock: dict[str, Any]
+    asset_with_mock: dict[str, Any],
 ) -> None:
     asset = Asset(**asset_with_mock, mock_is_real=True)
     assert asset.mock_is_real

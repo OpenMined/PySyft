@@ -15,7 +15,7 @@ Perform data science on `data` that remains in `someone else's` server
 ## Install Client
 
 ```bash
-$ pip install -U syft
+$ pip install -U syft[data_science]
 ```
 
 ## Launch Server
@@ -23,7 +23,7 @@ $ pip install -U syft
 ```python
 # from Jupyter / Python
 import syft as sy
-sy.requires(">=0.8.2,<0.8.3")
+sy.requires(">=0.8.4,<0.8.5")
 node = sy.orchestra.launch(name="my-domain", port=8080, dev_mode=True, reset=True)
 ```
 
@@ -38,7 +38,7 @@ Starting syft-node server on 0.0.0.0:8080
 
 ```python
 import syft as sy
-sy.requires(">=0.8.2,<0.8.3")
+sy.requires(">=0.8.4,<0.8.5")
 domain_client = sy.login(port=8080, email="info@openmined.org", password="changethis")
 ```
 
@@ -54,6 +54,10 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 - <a href="notebooks/api/0.8/05-custom-policy.ipynb">05-custom-policy.ipynb</a>
 - <a href="notebooks/api/0.8/06-multiple-code-requests.ipynb">06-multiple-code-requests.ipynb</a>
 - <a href="notebooks/api/0.8/07-domain-register-control-flow.ipynb">07-domain-register-control-flow.ipynb</a>
+- <a href="notebooks/api/0.8/08-code-version.ipynb">08-code-version.ipynb</a>
+- <a href="notebooks/api/0.8/09-blob-storage.ipynb">09-blob-storage.ipynb</a>
+- <a href="notebooks/api/0.8/10-container-images.ipynb">10-container-images.ipynb</a>
+- <a href="notebooks/api/0.8/11-container-images-k8s.ipynb">11-container-images-k8s.ipynb</a>
 
 ## Deploy Kubernetes Helm Chart
 
@@ -62,14 +66,14 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 #### 1. Add and update Helm repo for Syft
 
 ```sh
-$ helm repo add openmined https://openmined.github.io/PySyft/helm
-$ helm repo update openmined
+helm repo add openmined https://openmined.github.io/PySyft/helm
+helm repo update openmined
 ```
 
 #### 2. Search for available Syft versions
 
 ```sh
-$ helm search repo openmined/syft --versions --devel
+helm search repo openmined/syft --versions --devel
 ```
 
 #### 3. Set your preferred Syft Chart version
@@ -81,14 +85,27 @@ SYFT_VERSION="<paste the chart version number>"
 #### 4. Provisioning Helm Charts
 
 ```sh
-$ helm install my-domain openmined/syft --version $SYFT_VERSION --namespace syft --create-namespace --set ingress.ingressClass=traefik
+helm install my-domain openmined/syft --version $SYFT_VERSION --namespace syft --create-namespace --set ingress.className="traefik"
 ```
 
-### Azure or GCP Ingress
+### Ingress Controllers
 
+For Azure AKS
+
+```sh
+helm install ... --set ingress.className="azure-application-gateway"
 ```
-$ helm install ... --set ingress.ingressClass="azure/application-gateway"
-$ helm install ... --set ingress.ingressClass="gce"
+
+For AWS EKS
+
+```sh
+helm install ... --set ingress.className="alb"
+```
+
+For Google GKE we need the [`gce` annotation](https://cloud.google.com/kubernetes-engine/docs/how-to/load-balance-ingress#create-ingress) annotation.
+
+```sh
+helm install ... --set ingress.class="gce"
 ```
 
 ## Deploy to a Container Engine or Cloud
@@ -119,11 +136,13 @@ $ helm install ... --set ingress.ingressClass="gce"
 # Versions
 
 `0.9.0` - Coming soon...  
-`0.8.3` (Beta) - `dev` branch 👈🏽 <a href="https://github.com/OpenMined/PySyft/tree/dev/notebooks/api/0.8">API</a> - Coming soon...  
-`0.8.2` (Stable) - <a href="https://github.com/OpenMined/PySyft/tree/0.8.2/notebooks/api/0.8">API</a>
+`0.8.5` (Beta) - `dev` branch 👈🏽 <a href="https://github.com/OpenMined/PySyft/tree/dev/notebooks/api/0.8">API</a> - Coming soon...  
+`0.8.4` (Stable) - <a href="https://github.com/OpenMined/PySyft/tree/0.8.4/notebooks/api/0.8">API</a>
 
 Deprecated:
 
+- `0.8.3` - <a href="https://github.com/OpenMined/PySyft/tree/0.8.3/notebooks/api/0.8">API</a>
+- `0.8.2` - <a href="https://github.com/OpenMined/PySyft/tree/0.8.2/notebooks/api/0.8">API</a>
 - `0.8.1` - <a href="https://github.com/OpenMined/PySyft/tree/0.8.1/notebooks/api/0.8">API</a>
 - `0.8.0` - <a href="https://github.com/OpenMined/PySyft/tree/0.8/notebooks/api/0.8">API</a>
 - `0.7.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science-dev">Course 3 Updated</a>

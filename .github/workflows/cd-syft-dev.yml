@@ -27,7 +27,7 @@ jobs:
       - name: Check for new changes
         if: github.event_name == 'schedule' || github.event.inputs.check-cache == 'true'
         id: cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /tmp/k8s_dev_hash.txt # we don't care about the file, just the key
           key: k8s-dev-${{ github.sha }}
@@ -62,7 +62,7 @@ jobs:
           path: infrastructure
 
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -70,27 +70,19 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Install Azure CLI
-        run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-          az version
-
-      - name: Login to Azure CLI
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS_GITHUB_CI }}
-
       - name: Login to Azure Container Registry
-        uses: azure/docker-login@v1
+        uses: docker/login-action@v3
         with:
-          login-server: ${{ secrets.ACR_SERVER }}
+          registry: ${{ secrets.ACR_SERVER }}
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
       - name: Set Grid package version
         id: grid
         shell: bash
-        run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
+        run: |
+          echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
+          echo "SEAWEEDFS_VERSION=$(grep 'SEAWEEDFS_VERSION' packages/grid/default.env | cut -d '=' -f2)" >> $GITHUB_OUTPUT
 
       - name: Build and push `grid-backend` image to registry
         uses: docker/build-push-action@v5
@@ -115,6 +107,19 @@ jobs:
             ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:dev-${{ github.sha }}
             ${{ secrets.ACR_SERVER }}/openmined/grid-frontend:${{ steps.grid.outputs.GRID_VERSION }}
           target: grid-ui-development
+
+      - name: Build and push `grid-seaweedfs` image to registry
+        uses: docker/build-push-action@v5
+        with:
+          context: ./packages/grid/seaweedfs
+          file: ./packages/grid/seaweedfs/seaweedfs.dockerfile
+          build-args: |
+            SEAWEEDFS_VERSION=${{ steps.grid.outputs.SEAWEEDFS_VERSION }}
+          push: true
+          tags: |
+            ${{ secrets.ACR_SERVER }}/openmined/grid-seaweedfs:dev
+            ${{ secrets.ACR_SERVER }}/openmined/grid-seaweedfs:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-seaweedfs:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build Helm Chart & Copy to infra
         if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'
@@ -143,13 +148,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox
 
-          export CONTAINER_REGISTRY=${{ secrets.ACR_SERVER }}
-          export VERSION=dev-${{github.sha}}
           tox -e syft.build.helm
 
           rm -rf infrastructure/gitops/environments/dev/
           mkdir -p infrastructure/gitops/environments/dev/
-          cp -R packages/grid/helm/syft/. packages/grid/helm/manifests.yaml infrastructure/gitops/environments/dev/
+
+          cp -R packages/grid/helm/syft/. infrastructure/gitops/environments/dev/
+
+          # write version to VERSION.txt file
+          echo "dev-${{github.sha}}" > infrastructure/gitops/environments/dev/VERSION.txt
 
       - name: Commit & push changes to Infra Repo
         if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'
@@ -161,29 +168,3 @@ jobs:
           add: "."
           push: "origin main"
           cwd: "./infrastructure/"
-
-      - name: Cleanup Azure Container Registry
-        run: |
-          ACR_REGISTRY_NAME=${{ secrets.ACR_REGISTRY_NAME }}
-
-          echo ">> Fetching repo list.."
-          REPO_LIST=$(az acr repository list -n $ACR_REGISTRY_NAME -o tsv)
-
-          KEEP_PREV_VERSIONS=5
-          TAIL_FROM_LINE=$(($KEEP_PREV_VERSIONS + 1))
-
-          for repo in $REPO_LIST
-          do
-              echo "Cleaning up '$repo'"
-              az acr repository show-tags --name $ACR_REGISTRY_NAME --repository $repo --orderby time_desc --output tsv \
-                | grep dev- \
-                | tail -n +$TAIL_FROM_LINE \
-                | xargs -r -I% az acr repository untag --name $ACR_REGISTRY_NAME --image $repo:%
-          done
-
-      - name: Logout and cleanup Azure account
-        if: always()
-        run: |
-          az logout
-          az cache purge
-          az account clear

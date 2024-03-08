@@ -1,5 +1,6 @@
 # stdlib
 from enum import Enum
+from typing import Callable
 from typing import List
 from typing import Optional
 
@@ -91,12 +92,17 @@ class Notification(SyftObject):
             return self.linked_obj.resolve
         return None
 
-    def _coll_repr_(self):
+    def _coll_repr_(self) -> dict[str, str]:
+        linked_obj_name: str = ""
+        linked_obj_uid: Optional[UID] = None
+        if self.linked_obj is not None:
+            linked_obj_name = self.linked_obj.object_type.__canonical_name__
+            linked_obj_uid = self.linked_obj.object_uid
         return {
             "Subject": self.subject,
             "Status": self.determine_status().name.capitalize(),
             "Created At": str(self.created_at),
-            "Linked object": f"{self.linked_obj.object_type.__canonical_name__} ({self.linked_obj.object_uid})",
+            "Linked object": f"{linked_obj_name} ({linked_obj_uid})",
         }
 
     def mark_read(self) -> None:
@@ -115,7 +121,7 @@ class Notification(SyftObject):
         # relative
         from ..request.request import Request
 
-        if isinstance(self.linked_obj.resolve, Request):
+        if self.linked_obj is not None and isinstance(self.linked_obj.resolve, Request):
             return self.linked_obj.resolve.status
 
         return NotificationRequestStatus.NO_ACTION
@@ -138,7 +144,7 @@ def add_msg_creation_time(context: TransformContext) -> TransformContext:
 
 
 @transform(CreateNotification, Notification)
-def createnotification_to_notification():
+def createnotification_to_notification() -> list[Callable]:
     return [
         generate_id,
         add_msg_creation_time,

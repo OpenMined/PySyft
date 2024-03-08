@@ -1,6 +1,6 @@
 # stdlib
 from typing import List
-from typing import Tuple
+from typing import Optional
 from typing import Union
 
 # third party
@@ -39,7 +39,7 @@ class ActionGraphService(AbstractService):
     @service_method(path="graph.add_action", name="add_action")
     def add_action(
         self, context: AuthedServiceContext, action: Action
-    ) -> Union[NodeActionData, SyftError]:
+    ) -> Union[tuple[NodeActionData, NodeActionData], SyftError]:
         # Create a node for the action
         input_uids, output_uid = self._extract_input_and_output_from_action(
             action=action
@@ -60,6 +60,8 @@ class ActionGraphService(AbstractService):
         if action_node.is_mutagen:
             # updated non-mutated successor for all nodes between
             # node_id and nm_successor_id
+            if action.remote_self is None:
+                return SyftError(message=f"action {action}'s remote_self is None")
             result = self.store.update_non_mutated_successor(
                 node_id=action.remote_self.id,
                 nm_successor_id=action_node.id,
@@ -102,7 +104,9 @@ class ActionGraphService(AbstractService):
 
         return result.ok()
 
-    def _extract_input_and_output_from_action(self, action: Action) -> Tuple[UID]:
+    def _extract_input_and_output_from_action(
+        self, action: Action
+    ) -> tuple[set[UID], Optional[UID]]:
         input_uids = set()
 
         if action.remote_self is not None:
@@ -114,7 +118,10 @@ class ActionGraphService(AbstractService):
         for _, kwarg in action.kwargs.items():
             input_uids.add(kwarg.id)
 
-        output_uid = action.result_id.id
+        if action.result_id is not None:
+            output_uid = action.result_id.id
+        else:
+            output_uid = None
 
         return input_uids, output_uid
 

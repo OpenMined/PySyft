@@ -2,9 +2,6 @@
 import os
 from typing import Optional
 
-# third party
-from gevent import monkey
-
 
 def str_to_bool(bool_str: Optional[str]) -> bool:
     result = False
@@ -23,8 +20,11 @@ GEVENT_MONKEYPATCH = str_to_bool(os.environ.get("GEVENT_MONKEYPATCH", "False"))
 
 
 def is_notebook() -> bool:
+    # third party
+    from IPython import get_ipython
+
     try:
-        shell = get_ipython().__class__.__name__  # type: ignore
+        shell = get_ipython().__class__.__name__
         if shell == "ZMQInteractiveShell":
             return True  # Jupyter notebook or qtconsole
         elif shell == "TerminalInteractiveShell":
@@ -36,7 +36,3 @@ def is_notebook() -> bool:
 
 
 jupyter_notebook = is_notebook()
-
-if jupyter_notebook:
-    # print("Patching Gevent in Jupyter")
-    monkey.patch_all(thread=False)

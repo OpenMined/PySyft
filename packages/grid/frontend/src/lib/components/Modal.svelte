@@ -1,9 +1,11 @@
 <div
-  class="flex flex-col justify-center items-center gap-4 border border-gray-50 flex-nowrap bg-white rounded-lg w-full h-fit shadow-modal-1 desktop:w-[662px]"
+  class="flex flex-col justify-center items-center gap-4 border border-gray-50 flex-nowrap bg-white rounded-lg h-fit shadow-modal-1 min-w-[256px] w-[80vw] tablet:max-w-[662px] mx-auto"
   on:click|stopPropagation
 >
   <!-- header -->
-  <div class="flex flex-shrink-0 justify-between p-4 pb-0 flex-nowrap w-full h-min">
+  <div
+    class="flex flex-shrink-0 justify-between p-4 pb-0 flex-nowrap w-full h-min"
+  >
     <slot name="header" />
   </div>
   <!-- body -->

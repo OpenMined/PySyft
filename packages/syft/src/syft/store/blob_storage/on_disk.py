@@ -56,11 +56,14 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
     def __exit__(self, *exc) -> None:
         pass
 
-    def read(self, fp: SecureFilePathLocation, type_: Optional[Type]) -> BlobRetrieval:
+    def read(
+        self, fp: SecureFilePathLocation, type_: Optional[Type], **kwargs
+    ) -> BlobRetrieval:
         file_path = self._base_directory / fp.path
         return SyftObjectRetrieval(
             syft_object=file_path.read_bytes(),
             file_name=file_path.name,
+            path=file_path,
             type_=type_,
         )
 

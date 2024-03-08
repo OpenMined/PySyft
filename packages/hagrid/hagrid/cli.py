@@ -50,7 +50,6 @@ from .cache import DEFAULT_REPO
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import LATEST_BETA_SYFT
-from .deps import LATEST_STABLE_SYFT
 from .deps import allowed_hosts
 from .deps import check_docker_service_status
 from .deps import check_docker_version
@@ -93,6 +92,7 @@ from .quickstart_ui import fetch_notebooks_for_url
 from .quickstart_ui import fetch_notebooks_from_zipfile
 from .quickstart_ui import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
+from .stable_version import LATEST_STABLE_SYFT
 from .style import RichGroup
 from .util import fix_windows_virtualenv_api
 from .util import from_url
@@ -227,6 +227,11 @@ def clean(location: str) -> None:
     "--jupyter",
     is_flag=True,
     help="Enable Jupyter Notebooks",
+)
+@click.option(
+    "--in-mem-workers",
+    is_flag=True,
+    help="Enable InMemory Workers",
 )
 @click.option(
     "--enable-signup",
@@ -454,6 +459,13 @@ def clean(location: str) -> None:
     required=False,
     type=str,
     help="Set root password for s3 blob storage",
+)
+@click.option(
+    "--set-volume-size-limit-mb",
+    default=1024,
+    required=False,
+    type=click.IntRange(1024, 50000),
+    help="Set the volume size limit (in MBs)",
 )
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
@@ -1248,9 +1260,12 @@ def create_launch_cmd(
 
     parsed_kwargs["use_blob_storage"] = not bool(kwargs["no_blob_storage"])
 
+    parsed_kwargs["in_mem_workers"] = bool(kwargs["in_mem_workers"])
+
     if parsed_kwargs["use_blob_storage"]:
         parsed_kwargs["set_s3_username"] = kwargs["set_s3_username"]
         parsed_kwargs["set_s3_password"] = kwargs["set_s3_password"]
+        parsed_kwargs["set_volume_size_limit_mb"] = kwargs["set_volume_size_limit_mb"]
 
     parsed_kwargs["node_count"] = (
         int(kwargs["node_count"]) if "node_count" in kwargs else 1
@@ -1276,7 +1291,7 @@ def create_launch_cmd(
     parsed_kwargs["trace"] = False
     if ("trace" not in kwargs or kwargs["trace"] is None) and parsed_kwargs["dev"]:
         # default to trace on in dev mode
-        parsed_kwargs["trace"] = True
+        parsed_kwargs["trace"] = False
     elif "trace" in kwargs:
         parsed_kwargs["trace"] = str_to_bool(cast(str, kwargs["trace"]))
 
@@ -2140,6 +2155,7 @@ def create_launch_docker_cmd(
         )
 
     single_container_mode = kwargs["deployment_type"] == "single_container"
+    in_mem_workers = kwargs.get("in_mem_workers")
 
     enable_oblv = bool(kwargs["oblv"])
     print("  - NAME: " + str(snake_name))
@@ -2158,6 +2174,7 @@ def create_launch_docker_cmd(
         print("  - HAGRID_REPO_SHA: " + commit_hash())
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
+    print("  - IN-MEMORY WORKERS: " + str(in_mem_workers))
     if enable_oblv:
         print("  - OBLV: ", enable_oblv)
 
@@ -2202,6 +2219,7 @@ def create_launch_docker_cmd(
         "CREDENTIALS_VOLUME": host_path,
         "NODE_SIDE_TYPE": kwargs["node_side_type"],
         "SINGLE_CONTAINER_MODE": single_container_mode,
+        "INMEMORY_WORKERS": in_mem_workers,
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:
@@ -2251,6 +2269,12 @@ def create_launch_docker_cmd(
 
     if "set_s3_password" in kwargs and kwargs["set_s3_password"] is not None:
         envs["S3_ROOT_PWD"] = kwargs["set_s3_password"]
+
+    if (
+        "set_volume_size_limit_mb" in kwargs
+        and kwargs["set_volume_size_limit_mb"] is not None
+    ):
+        envs["S3_VOLUME_SIZE_MB"] = kwargs["set_volume_size_limit_mb"]
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
@@ -3278,6 +3302,8 @@ def create_land_docker_cmd(verb: GrammarVerb, prune_volumes: bool = False) -> st
         cmd += (
             f' && docker volume rm $(docker volume ls --filter name="{snake_name}" -q)'
         )
+
+    cmd += f" && docker rm $(docker ps --filter name={snake_name} -q) --force"
 
     cmd = "cd " + path + env_var + cmd
     return cmd

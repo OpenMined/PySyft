@@ -25,7 +25,7 @@ from ...client.api import SyftAPI
 from ...client.client import SyftClient
 from ...client.client import login
 from ...client.client import login_as_guest
-from ...enclave.metadata import EnclaveMetadata
+from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...types.uid import UID
 from ...util.util import bcolors

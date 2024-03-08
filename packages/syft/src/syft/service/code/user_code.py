@@ -3,28 +3,39 @@ from __future__ import annotations
 
 # stdlib
 import ast
+from copy import deepcopy
+import datetime
 from enum import Enum
 import hashlib
 import inspect
 from io import StringIO
 import itertools
+import random
 import sys
+from threading import Thread
 import time
+import traceback
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import Generator
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import Union
+from typing import cast
+from typing import final
 
 # third party
 from IPython.display import display
+from result import Err
 from typing_extensions import Self
 
 # relative
+from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
+from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
 from ...client.enclave_client import EnclaveMetadata
 from ...node.credentials import SyftVerifyKey
@@ -32,27 +43,37 @@ from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
+from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftHashableObject
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
+from ...types.transforms import drop
 from ...types.transforms import generate_id
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
+from ..action.action_object import Action
+from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
+from ..job.job_stash import Job
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
+from ..policy.policy import EmpyInputPolicy
 from ..policy.policy import ExactMatch
 from ..policy.policy import InputPolicy
 from ..policy.policy import OutputPolicy
-from ..policy.policy import Policy
 from ..policy.policy import SingleExecutionExactOutput
 from ..policy.policy import SubmitUserPolicy
 from ..policy.policy import UserPolicy
@@ -65,10 +86,14 @@ from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..response import SyftWarning
 from .code_parse import GlobalsVisitor
+from .code_parse import LaunchJobVisitor
 from .unparse import unparse
+from .utils import submit_subjobs_code
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
-CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
+CodeHashPartitionKey = PartitionKey(key="code_hash", type_=str)
+ServiceFuncNamePartitionKey = PartitionKey(key="service_func_name", type_=str)
+SubmitTimePartitionKey = PartitionKey(key="submit_time", type_=DateTime)
 
 PyCodeObject = Any
 
@@ -115,10 +140,10 @@ class UserCodeStatusCollection(SyftHashableObject):
     def __init__(self, status_dict: Dict):
         self.status_dict = status_dict
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.status_dict)
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         string = f"""
             <style>
                 .syft-user_code {{color: {SURFACE[options.color_theme]};}}
@@ -141,13 +166,13 @@ class UserCodeStatusCollection(SyftHashableObject):
         string += "</p></div>"
         return string
 
-    def __repr_syft_nested__(self):
+    def __repr_syft_nested__(self) -> str:
         string = ""
         for node_identity, (status, reason) in self.status_dict.items():
             string += f"{node_identity.node_name}: {status}, {reason}<br>"
         return string
 
-    def get_status_message(self):
+    def get_status_message(self) -> Union[SyftSuccess, SyftNotReady, SyftError]:
         if self.approved:
             return SyftSuccess(message=f"{type(self)} approved")
         denial_string = ""
@@ -178,6 +203,7 @@ class UserCodeStatusCollection(SyftHashableObject):
         return False
 
     def for_user_context(self, context: AuthedServiceContext) -> UserCodeStatus:
+        context.node = cast(AbstractNode, context.node)
         if context.node.node_type == NodeType.ENCLAVE:
             keys = {status for status, _ in self.status_dict.values()}
             if len(keys) == 1 and UserCodeStatus.APPROVED in keys:
@@ -187,7 +213,7 @@ class UserCodeStatusCollection(SyftHashableObject):
             elif UserCodeStatus.DENIED in keys:
                 return UserCodeStatus.DENIED
             else:
-                return Exception(f"Invalid types in {keys} for Code Submission")
+                raise Exception(f"Invalid types in {keys} for Code Submission")
 
         elif context.node.node_type == NodeType.DOMAIN:
             node_identity = NodeIdentity(
@@ -210,7 +236,7 @@ class UserCodeStatusCollection(SyftHashableObject):
         self,
         value: Tuple[UserCodeStatus, str],
         node_name: str,
-        node_id,
+        node_id: UID,
         verify_key: SyftVerifyKey,
     ) -> Union[SyftError, Self]:
         node_identity = NodeIdentity(
@@ -228,7 +254,7 @@ class UserCodeStatusCollection(SyftHashableObject):
 
 
 @serializable()
-class UserCode(SyftObject):
+class UserCodeV1(SyftObject):
     # version
     __canonical_name__ = "UserCode"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -254,14 +280,130 @@ class UserCode(SyftObject):
     enclave_metadata: Optional[EnclaveMetadata] = None
     submit_time: Optional[DateTime]
 
-    __attr_searchable__ = ["user_verify_key", "status", "service_func_name"]
-    __attr_unique__ = []
-    __repr_attrs__ = ["service_func_name", "input_owners", "code_status"]
+    __attr_searchable__ = [
+        "user_verify_key",
+        "status",
+        "service_func_name",
+        "code_hash",
+    ]
+
+
+@serializable()
+class UserCodeV2(SyftObject):
+    # version
+    __canonical_name__ = "UserCode"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    id: UID
+    node_uid: Optional[UID]
+    user_verify_key: SyftVerifyKey
+    raw_code: str
+    input_policy_type: Union[Type[InputPolicy], UserPolicy]
+    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    input_policy_state: bytes = b""
+    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
+    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    output_policy_state: bytes = b""
+    parsed_code: str
+    service_func_name: str
+    unique_func_name: str
+    user_unique_func_name: str
+    code_hash: str
+    signature: inspect.Signature
+    status: UserCodeStatusCollection
+    input_kwargs: List[str]
+    enclave_metadata: Optional[EnclaveMetadata] = None
+    submit_time: Optional[DateTime]
+    uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
+    nested_requests: Dict[str, str] = {}
+    nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
+
+
+@serializable()
+class UserCodeV3(SyftObject):
+    # version
+    __canonical_name__ = "UserCode"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    id: UID
+    node_uid: Optional[UID]
+    user_verify_key: SyftVerifyKey
+    raw_code: str
+    input_policy_type: Union[Type[InputPolicy], UserPolicy]
+    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    input_policy_state: bytes = b""
+    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
+    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    output_policy_state: bytes = b""
+    parsed_code: str
+    service_func_name: str
+    unique_func_name: str
+    user_unique_func_name: str
+    code_hash: str
+    signature: inspect.Signature
+    status: UserCodeStatusCollection
+    input_kwargs: List[str]
+    enclave_metadata: Optional[EnclaveMetadata] = None
+    submit_time: Optional[DateTime]
+    uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
+    nested_requests: Dict[str, str] = {}
+    nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
+    worker_pool_name: Optional[str]
+
+
+@serializable()
+class UserCode(SyftObject):
+    # version
+    __canonical_name__ = "UserCode"
+    __version__ = SYFT_OBJECT_VERSION_4
+
+    id: UID
+    node_uid: Optional[UID]
+    user_verify_key: SyftVerifyKey
+    raw_code: str
+    input_policy_type: Union[Type[InputPolicy], UserPolicy]
+    input_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    input_policy_state: bytes = b""
+    output_policy_type: Union[Type[OutputPolicy], UserPolicy]
+    output_policy_init_kwargs: Optional[Dict[Any, Any]] = None
+    output_policy_state: bytes = b""
+    parsed_code: str
+    service_func_name: str
+    unique_func_name: str
+    user_unique_func_name: str
+    code_hash: str
+    signature: inspect.Signature
+    status: UserCodeStatusCollection
+    input_kwargs: List[str]
+    enclave_metadata: Optional[EnclaveMetadata] = None
+    submit_time: Optional[DateTime]
+    uses_domain = False  # tracks if the code calls domain.something, variable is set during parsing
+    nested_codes: Optional[Dict[str, Tuple[LinkedObject, Dict]]] = {}
+    worker_pool_name: Optional[str]
+
+    __attr_searchable__ = [
+        "user_verify_key",
+        "status",
+        "service_func_name",
+        "code_hash",
+    ]
+    __attr_unique__: list = []
+    __repr_attrs__ = [
+        "service_func_name",
+        "input_owners",
+        "code_status",
+        "worker_pool_name",
+    ]
 
     def __setattr__(self, key: str, value: Any) -> None:
+        # Get the attribute from the class, it might be a descriptor or None
         attr = getattr(type(self), key, None)
+        # Check if the attribute is a data descriptor
         if inspect.isdatadescriptor(attr):
-            attr.fset(self, value)
+            if hasattr(attr, "fset"):
+                attr.fset(self, value)
+            else:
+                raise AttributeError(f"The attribute {key} is not settable.")
         else:
             return super().__setattr__(key, value)
 
@@ -291,22 +433,35 @@ class UserCode(SyftObject):
         return self.enclave_metadata is not None
 
     @property
-    def input_owners(self) -> List[str]:
-        return [str(x.node_name) for x in self.input_policy_init_kwargs.keys()]
+    def input_owners(self) -> Optional[List[str]]:
+        if self.input_policy_init_kwargs is not None:
+            return [str(x.node_name) for x in self.input_policy_init_kwargs.keys()]
+        return None
 
     @property
-    def input_owner_verify_keys(self) -> List[SyftVerifyKey]:
-        return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
+    def input_owner_verify_keys(self) -> Optional[List[SyftVerifyKey]]:
+        if self.input_policy_init_kwargs is not None:
+            return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
+        return None
 
     @property
-    def output_reader_names(self) -> List[SyftVerifyKey]:
-        keys = self.output_policy_init_kwargs.get("output_readers", [])
-        inpkey2name = {x.verify_key: x.node_name for x in self.input_policy_init_kwargs}
-        return [inpkey2name[k] for k in keys if k in inpkey2name]
+    def output_reader_names(self) -> Optional[List[SyftVerifyKey]]:
+        if (
+            self.input_policy_init_kwargs is not None
+            and self.output_policy_init_kwargs is not None
+        ):
+            keys = self.output_policy_init_kwargs.get("output_readers", [])
+            inpkey2name = {
+                x.verify_key: x.node_name for x in self.input_policy_init_kwargs
+            }
+            return [inpkey2name[k] for k in keys if k in inpkey2name]
+        return None
 
     @property
-    def output_readers(self) -> List[SyftVerifyKey]:
-        return self.output_policy_init_kwargs.get("output_readers", [])
+    def output_readers(self) -> Optional[List[SyftVerifyKey]]:
+        if self.output_policy_init_kwargs is not None:
+            return self.output_policy_init_kwargs.get("output_readers", [])
+        return None
 
     @property
     def code_status(self) -> list:
@@ -324,8 +479,10 @@ class UserCode(SyftObject):
 
         if len(self.input_policy_state) == 0:
             input_policy = None
-            if isinstance(self.input_policy_type, type) and issubclass(
-                self.input_policy_type, InputPolicy
+            if (
+                isinstance(self.input_policy_type, type)
+                and issubclass(self.input_policy_type, InputPolicy)
+                and self.input_policy_init_kwargs is not None
             ):
                 # TODO: Tech Debt here
                 node_view_workaround = False
@@ -359,6 +516,19 @@ class UserCode(SyftObject):
         except Exception as e:
             print(f"Failed to deserialize custom input policy state. {e}")
             return None
+
+    @input_policy.setter
+    def input_policy(self, value: Any) -> None:
+        if isinstance(value, InputPolicy):
+            self.input_policy_state = _serialize(value, to_bytes=True)
+        elif (isinstance(value, bytes) and len(value) == 0) or value is None:
+            self.input_policy_state = b""
+        else:
+            raise Exception(f"You can't set {type(value)} as input_policy_state")
+
+    @property
+    def output_policy_approved(self) -> bool:
+        return self.status.approved
 
     @property
     def output_policy(self) -> Optional[OutputPolicy]:
@@ -395,15 +565,6 @@ class UserCode(SyftObject):
             print(f"Failed to deserialize custom output policy state. {e}")
             return None
 
-    @input_policy.setter
-    def input_policy(self, value: Any) -> None:
-        if isinstance(value, InputPolicy):
-            self.input_policy_state = _serialize(value, to_bytes=True)
-        elif (isinstance(value, bytes) and len(value) == 0) or value is None:
-            self.input_policy_state = b""
-        else:
-            raise Exception(f"You can't set {type(value)} as input_policy_state")
-
     @output_policy.setter
     def output_policy(self, value: Any) -> None:
         if isinstance(value, OutputPolicy):
@@ -433,11 +594,14 @@ class UserCode(SyftObject):
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
 
-        inputs = (
-            uids
-            for node_identity, uids in self.input_policy_init_kwargs.items()
-            if node_identity.node_name == api.node_name
-        )
+        inputs: Generator = (x for x in range(0))  # create an empty generator
+        if self.input_policy_init_kwargs is not None:
+            inputs = (
+                uids
+                for node_identity, uids in self.input_policy_init_kwargs.items()
+                if node_identity.node_name == api.node_name
+            )
+
         all_assets = []
         for uid in itertools.chain.from_iterable(x.values() for x in inputs):
             if isinstance(uid, UID):
@@ -456,7 +620,7 @@ class UserCode(SyftObject):
         display(warning)
 
         # 🟡 TODO: re-use the same infrastructure as the execute_byte_code function
-        def wrapper(*args: Any, **kwargs: Any) -> Callable:
+        def wrapper(*args: Any, **kwargs: Any) -> Union[Callable, SyftError]:
             try:
                 filtered_kwargs = {}
                 on_private_data, on_mock_data = False, False
@@ -491,13 +655,13 @@ class UserCode(SyftObject):
                 # return the results
                 return result
             except Exception as e:
-                print(f"Failed to run unsafe_function. {e}")
+                return SyftError(f"Failed to run unsafe_function. Error: {e}")
 
         return wrapper
 
-    def _repr_markdown_(self):
+    def _inner_repr(self, level: int = 0) -> str:
         shared_with_line = ""
-        if len(self.output_readers) > 0:
+        if len(self.output_readers) > 0 and self.output_reader_names is not None:
             owners_string = " and ".join([f"*{x}*" for x in self.output_reader_names])
             shared_with_line += (
                 f"Custom Policy: "
@@ -512,14 +676,33 @@ class UserCode(SyftObject):
     {shared_with_line}
     code:
 
-{self.raw_code}"""
-        return as_markdown_code(md)
+{self.raw_code}
+"""
+        if self.nested_codes != {}:
+            md += """
+
+  Nested Requests:
+  """
+
+        md = "\n".join(
+            [f"{'  '*level}{substring}" for substring in md.split("\n")[:-1]]
+        )
+        if self.nested_codes is not None:
+            for _, (obj, _) in self.nested_codes.items():
+                code = obj.resolve
+                md += "\n"
+                md += code._inner_repr(level=level + 1)
+
+        return md
+
+    def _repr_markdown_(self) -> str:
+        return as_markdown_code(self._inner_repr())
 
     @property
     def show_code(self) -> CodeMarkdown:
         return CodeMarkdown(self.raw_code)
 
-    def show_code_cell(self):
+    def show_code_cell(self) -> None:
         warning_message = """# WARNING: \n# Before you submit
 # change the name of the function \n# for no duplicates\n\n"""
 
@@ -530,11 +713,39 @@ class UserCode(SyftObject):
         ip.set_next_input(warning_message + self.raw_code)
 
 
+@migrate(UserCodeV3, UserCodeV2)
+def downgrade_usercode_v3_to_v2() -> list[Callable]:
+    return [
+        drop("worker_pool_name"),
+    ]
+
+
+@migrate(UserCodeV2, UserCodeV3)
+def upgrade_usercode_v2_to_v3() -> list[Callable]:
+    return [
+        make_set_default("worker_pool_name", None),
+    ]
+
+
+@migrate(UserCode, UserCodeV3)
+def downgrade_usercode_v4_to_v3() -> list[Callable]:
+    return [
+        make_set_default("nested_requests", {}),
+    ]
+
+
+@migrate(UserCodeV3, UserCode)
+def upgrade_usercode_v3_to_v4() -> list[Callable]:
+    return [
+        drop("nested_requests"),
+    ]
+
+
 @serializable(without=["local_function"])
-class SubmitUserCode(SyftObject):
+class SubmitUserCodeV2(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: Optional[UID]
     code: str
@@ -548,13 +759,38 @@ class SubmitUserCode(SyftObject):
     input_kwargs: List[str]
     enclave_metadata: Optional[EnclaveMetadata] = None
 
+
+@serializable(without=["local_function"])
+class SubmitUserCode(SyftObject):
+    # version
+    __canonical_name__ = "SubmitUserCode"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    id: Optional[UID]
+    code: str
+    func_name: str
+    signature: inspect.Signature
+    input_policy_type: Union[SubmitUserPolicy, UID, Type[InputPolicy]]
+    input_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
+    output_policy_type: Union[SubmitUserPolicy, UID, Type[OutputPolicy]]
+    output_policy_init_kwargs: Optional[Dict[Any, Any]] = {}
+    local_function: Optional[Callable]
+    input_kwargs: List[str]
+    enclave_metadata: Optional[EnclaveMetadata] = None
+    worker_pool_name: Optional[str] = None
+
     __repr_attrs__ = ["func_name", "code"]
 
     @property
-    def kwargs(self) -> List[str]:
+    def kwargs(self) -> Optional[dict[Any, Any]]:
         return self.input_policy_init_kwargs
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    def __call__(self, *args: Any, syft_no_node: bool = False, **kwargs: Any) -> Any:
+        if syft_no_node:
+            return self.local_call(*args, **kwargs)
+        return self._ephemeral_node_call(*args, **kwargs)
+
+    def local_call(self, *args: Any, **kwargs: Any) -> Any:
         # only run this on the client side
         if self.local_function:
             tree = ast.parse(inspect.getsource(self.local_function))
@@ -580,9 +816,124 @@ class SubmitUserCode(SyftObject):
         else:
             raise NotImplementedError
 
+    def _ephemeral_node_call(
+        self,
+        time_alive: Optional[int] = None,
+        n_consumers: Optional[int] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        # relative
+        from ... import _orchestra
+
+        # Right now we only create a number of workers
+        # In the future we might need to have the same pools/images as well
+
+        if n_consumers is None:
+            print(
+                SyftInfo(
+                    message="Creating a node with n_consumers=2 (the default value)"
+                )
+            )
+            n_consumers = 2
+
+        if time_alive is None and "blocking" in kwargs and not kwargs["blocking"]:
+            print(
+                SyftInfo(
+                    message="Closing the node after time_alive=300 (the default value)"
+                )
+            )
+            time_alive = 300
+
+        # This could be changed given the work on containers
+        ep_node = _orchestra().launch(
+            name=f"ephemeral_node_{self.func_name}_{random.randint(a=0, b=10000)}",  # nosec
+            reset=True,
+            create_producer=True,
+            n_consumers=n_consumers,
+            deploy_to="python",
+        )
+        ep_client = ep_node.login(email="info@openmined.org", password="changethis")  # nosec
+        self.input_policy_init_kwargs = cast(dict, self.input_policy_init_kwargs)
+        for node_id, obj_dict in self.input_policy_init_kwargs.items():
+            # api = APIRegistry.api_for(
+            #     node_uid=node_id.node_id, user_verify_key=node_id.verify_key
+            # )
+            api = APIRegistry.get_by_recent_node_uid(node_uid=node_id.node_id)
+
+            # Creating TwinObject from the ids of the kwargs
+            # Maybe there are some corner cases where this is not enough
+            # And need only ActionObjects
+            # Also, this works only on the assumption that all inputs
+            # are ActionObjects, which might change in the future
+            for _, id in obj_dict.items():
+                mock_obj = api.services.action.get_mock(id)
+                if isinstance(mock_obj, SyftError):
+                    data_obj = api.services.action.get(id)
+                    if isinstance(data_obj, SyftError):
+                        return SyftError(
+                            message="You do not have access to object you want \
+                                to use, or the private object does not have mock \
+                                data. Contact the Node Admin."
+                        )
+                else:
+                    data_obj = mock_obj
+                data_obj.id = id
+                new_obj = ActionObject.from_obj(
+                    data_obj.syft_action_data,
+                    id=id,
+                    syft_node_location=node_id.node_id,
+                    syft_client_verify_key=node_id.verify_key,
+                )
+                res = ep_client.api.services.action.set(new_obj)
+                if isinstance(res, SyftError):
+                    return res
+
+        new_syft_func = deepcopy(self)
+
+        # This will only be used without worker_pools
+        new_syft_func.worker_pool_name = None
+
+        # We will look for subjos, and if we find any will submit them
+        # to the ephemeral_node
+        submit_subjobs_code(self, ep_client)
+
+        ep_client.code.request_code_execution(new_syft_func)
+        ep_client.requests[-1].approve(approve_nested=True)
+        func_call = getattr(ep_client.code, new_syft_func.func_name)
+        result = func_call(*args, **kwargs)
+
+        def task() -> None:
+            if "blocking" in kwargs and not kwargs["blocking"]:
+                time.sleep(time_alive)
+            print(SyftInfo(message="Landing the ephmeral node..."))
+            ep_node.land()
+            print(SyftInfo(message="Node Landed!"))
+
+        thread = Thread(target=task)
+        thread.start()
+
+        return result
+
     @property
-    def input_owner_verify_keys(self) -> List[str]:
-        return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
+    def input_owner_verify_keys(self) -> Optional[List[str]]:
+        if self.input_policy_init_kwargs is not None:
+            return [x.verify_key for x in self.input_policy_init_kwargs.keys()]
+        return None
+
+
+@migrate(SubmitUserCode, SubmitUserCodeV2)
+def downgrade_submitusercode_v3_to_v2() -> list[Callable]:
+    return [
+        drop("worker_pool_name"),
+    ]
+
+
+@migrate(SubmitUserCodeV2, SubmitUserCode)
+def upgrade_submitusercode_v2_to_v3() -> list[Callable]:
+    return [
+        make_set_default("worker_pool_name", None),
+    ]
 
 
 class ArgumentType(Enum):
@@ -605,20 +956,28 @@ def debox_asset(arg: Any) -> Any:
 
 
 def syft_function_single_use(
-    *args: Any, share_results_with_owners=False, **kwargs: Any
-):
+    *args: Any,
+    share_results_with_owners: bool = False,
+    worker_pool_name: Optional[str] = None,
+    **kwargs: Any,
+) -> Callable:
     return syft_function(
         input_policy=ExactMatch(*args, **kwargs),
         output_policy=SingleExecutionExactOutput(),
         share_results_with_owners=share_results_with_owners,
+        worker_pool_name=worker_pool_name,
     )
 
 
 def syft_function(
-    input_policy: Union[InputPolicy, UID],
+    input_policy: Optional[Union[InputPolicy, UID]] = None,
     output_policy: Optional[Union[OutputPolicy, UID]] = None,
-    share_results_with_owners=False,
-) -> SubmitUserCode:
+    share_results_with_owners: bool = False,
+    worker_pool_name: Optional[str] = None,
+) -> Callable:
+    if input_policy is None:
+        input_policy = EmpyInputPolicy()
+
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_type = SubmitUserPolicy.from_obj(input_policy)
     else:
@@ -632,20 +991,21 @@ def syft_function(
     else:
         output_policy_type = type(output_policy)
 
-    def decorator(f):
+    def decorator(f: Any) -> SubmitUserCode:
         res = SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
             signature=inspect.signature(f),
             input_policy_type=input_policy_type,
-            input_policy_init_kwargs=input_policy.init_kwargs,
+            input_policy_init_kwargs=getattr(input_policy, "init_kwargs", {}),
             output_policy_type=output_policy_type,
-            output_policy_init_kwargs=output_policy.init_kwargs,
+            output_policy_init_kwargs=getattr(output_policy, "init_kwargs", {}),
             local_function=f,
             input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
+            worker_pool_name=worker_pool_name,
         )
 
-        if share_results_with_owners:
+        if share_results_with_owners and res.output_policy_init_kwargs is not None:
             res.output_policy_init_kwargs[
                 "output_readers"
             ] = res.input_owner_verify_keys
@@ -676,10 +1036,12 @@ def generate_unique_func_name(context: TransformContext) -> TransformContext:
 
 
 def process_code(
+    context: TransformContext,
     raw_code: str,
     func_name: str,
     original_func_name: str,
-    input_kwargs: List[str],
+    policy_input_kwargs: List[str],
+    function_input_kwargs: List[str],
 ) -> str:
     tree = ast.parse(raw_code)
 
@@ -690,11 +1052,14 @@ def process_code(
     f = tree.body[0]
     f.decorator_list = []
 
-    keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in input_kwargs]
+    call_args = function_input_kwargs
+    if "domain" in function_input_kwargs:
+        context.output["uses_domain"] = True
+    call_stmt_keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in call_args]
     call_stmt = ast.Assign(
         targets=[ast.Name(id="result")],
         value=ast.Call(
-            func=ast.Name(id=original_func_name), args=[], keywords=keywords
+            func=ast.Name(id=original_func_name), args=[], keywords=call_stmt_keywords
         ),
         lineno=0,
     )
@@ -730,13 +1095,38 @@ def new_check_code(context: TransformContext) -> TransformContext:
             input_keys += d.keys()
 
     processed_code = process_code(
+        context,
         raw_code=context.output["raw_code"],
         func_name=context.output["unique_func_name"],
         original_func_name=context.output["service_func_name"],
-        input_kwargs=input_keys,
+        policy_input_kwargs=input_keys,
+        function_input_kwargs=context.output["input_kwargs"],
     )
     context.output["parsed_code"] = processed_code
 
+    return context
+
+
+def locate_launch_jobs(context: TransformContext) -> TransformContext:
+    nested_codes = {}
+    tree = ast.parse(context.output["raw_code"])
+
+    # look for domain arg
+    if "domain" in [arg.arg for arg in tree.body[0].args.args]:
+        v = LaunchJobVisitor()
+        v.visit(tree)
+        nested_calls = v.nested_calls
+        user_code_service = context.node.get_service("usercodeService")
+        for call in nested_calls:
+            user_codes = user_code_service.get_by_service_name(context, call)
+            if isinstance(user_codes, SyftError):
+                raise Exception(user_codes.message)
+            # TODO: Not great
+            user_code = user_codes[-1]
+            user_code_link = LinkedObject.from_obj(user_code, node_uid=context.node.id)
+
+            nested_codes[call] = (user_code_link, user_code.nested_codes)
+    context.output["nested_codes"] = nested_codes
     return context
 
 
@@ -760,7 +1150,6 @@ def compile_code(context: TransformContext) -> TransformContext:
 
 def hash_code(context: TransformContext) -> TransformContext:
     code = context.output["code"]
-    del context.output["code"]
     context.output["raw_code"] = code
     code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
     context.output["code_hash"] = code_hash
@@ -775,7 +1164,7 @@ def add_credentials_for_key(key: str) -> Callable:
     return add_credentials
 
 
-def check_policy(policy: Policy, context: TransformContext) -> TransformContext:
+def check_policy(policy: Any, context: TransformContext) -> TransformContext:
     policy_service = context.node.get_service(PolicyService)
     if isinstance(policy, SubmitUserPolicy):
         policy = policy.to(UserPolicy, context=context)
@@ -833,6 +1222,13 @@ def add_submit_time(context: TransformContext) -> TransformContext:
     return context
 
 
+def set_default_pool_if_empty(context: TransformContext) -> TransformContext:
+    if context.output.get("worker_pool_name", None) is None:
+        default_pool = context.node.get_default_worker_pool()
+        context.output["worker_pool_name"] = default_pool.name
+    return context
+
+
 @transform(SubmitUserCode, UserCode)
 def submit_user_code_to_user_code() -> List[Callable]:
     return [
@@ -842,10 +1238,12 @@ def submit_user_code_to_user_code() -> List[Callable]:
         check_input_policy,
         check_output_policy,
         new_check_code,
+        locate_launch_jobs,
         add_credentials_for_key("user_verify_key"),
         add_custom_status,
         add_node_uid_for_key("node_uid"),
         add_submit_time,
+        set_default_pool_if_empty,
     ]
 
 
@@ -862,24 +1260,203 @@ class UserCodeExecutionResult(SyftObject):
     result: Any
 
 
-def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
+class SecureContext:
+    def __init__(self, context: AuthedServiceContext) -> None:
+        node = context.node
+        if node is None:
+            raise ValueError(f"{context}'s node is None")
+
+        job_service = node.get_service("jobservice")
+        action_service = node.get_service("actionservice")
+        # user_service = node.get_service("userservice")
+
+        def job_set_n_iters(n_iters: int) -> None:
+            job = context.job
+            job.n_iters = n_iters
+            job_service.update(context, job)
+
+        def job_set_current_iter(current_iter: int) -> None:
+            job = context.job
+            job.current_iter = current_iter
+            job_service.update(context, job)
+
+        def job_increase_current_iter(current_iter: int) -> None:
+            job = context.job
+            job.current_iter += current_iter
+            job_service.update(context, job)
+
+        # def set_api_registry():
+        #     user_signing_key = [
+        #         x.signing_key
+        #         for x in user_service.stash.partition.data.values()
+        #         if x.verify_key == context.credentials
+        #     ][0]
+        #     data_protcol = get_data_protocol()
+        #     user_api = node.get_api(context.credentials, data_protcol.latest_version)
+        #     user_api.signing_key = user_signing_key
+        #     # We hardcode a python connection here since we have access to the node
+        #     # TODO: this is not secure
+        #     user_api.connection = PythonConnection(node=node)
+
+        #     APIRegistry.set_api_for(
+        #         node_uid=node.id,
+        #         user_verify_key=context.credentials,
+        #         api=user_api,
+        #     )
+
+        def launch_job(func: UserCode, **kwargs: Any) -> Optional[Job]:
+            # relative
+
+            kw2id = {}
+            for k, v in kwargs.items():
+                value = ActionObject.from_obj(v)
+                ptr = action_service._set(context, value)
+                ptr = ptr.ok()
+                kw2id[k] = ptr.id
+            try:
+                # TODO: check permissions here
+                action = Action.syft_function_action_from_kwargs_and_id(kw2id, func.id)
+
+                job = node.add_action_to_queue(
+                    action=action,
+                    credentials=context.credentials,
+                    parent_job_id=context.job_id,
+                    has_execute_permissions=True,
+                    worker_pool_name=func.worker_pool_name,
+                )
+                # # set api in global scope to enable using .get(), .wait())
+                # set_api_registry()
+
+                return job
+            except Exception as e:
+                print(f"ERROR {e}")
+                raise ValueError(f"error while launching job:\n{e}")
+
+        self.job_set_n_iters = job_set_n_iters
+        self.job_set_current_iter = job_set_current_iter
+        self.job_increase_current_iter = job_increase_current_iter
+        self.launch_job = launch_job
+        self.is_async = context.job is not None
+
+
+def execute_byte_code(
+    code_item: UserCode, kwargs: Dict[str, Any], context: AuthedServiceContext
+) -> Any:
     stdout_ = sys.stdout
     stderr_ = sys.stderr
 
     try:
+        # stdlib
+        import builtins as __builtin__
+
+        original_print = __builtin__.print
+
+        safe_context = SecureContext(context=context)
+
+        class LocalDomainClient:
+            def init_progress(self, n_iters: int) -> None:
+                if safe_context.is_async:
+                    safe_context.job_set_current_iter(0)
+                    safe_context.job_set_n_iters(n_iters)
+
+            def set_progress(self, to: int) -> None:
+                self._set_progress(to)
+
+            def increment_progress(self, n: int = 1) -> None:
+                self._set_progress(by=n)
+
+            def _set_progress(
+                self, to: Optional[int] = None, by: Optional[int] = None
+            ) -> None:
+                if safe_context.is_async is not None:
+                    if by is None and to is None:
+                        by = 1
+                    if to is None:
+                        safe_context.job_increase_current_iter(current_iter=by)
+                    else:
+                        safe_context.job_set_current_iter(to)
+
+            @final
+            def launch_job(self, func: UserCode, **kwargs: Any) -> Optional[Job]:
+                return safe_context.launch_job(func, **kwargs)
+
+            def __setattr__(self, __name: str, __value: Any) -> None:
+                raise Exception("Attempting to alter read-only value")
+
+        if context.job is not None:
+            job_id = context.job_id
+            log_id = context.job.log_id
+
+            def print(*args: Any, sep: str = " ", end: str = "\n") -> Optional[str]:
+                def to_str(arg: Any) -> str:
+                    if isinstance(arg, bytes):
+                        return arg.decode("utf-8")
+                    if isinstance(arg, Job):
+                        return f"JOB: {arg.id}"
+                    if isinstance(arg, SyftError):
+                        return f"JOB: {arg.message}"
+                    if isinstance(arg, ActionObject):
+                        return str(arg.syft_action_data)
+                    return str(arg)
+
+                new_args = [to_str(arg) for arg in args]
+                new_str = sep.join(new_args) + end
+                if context.node is not None:
+                    log_service = context.node.get_service("LogService")
+                    log_service.append(context=context, uid=log_id, new_str=new_str)
+                time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
+                return __builtin__.print(
+                    f"{time} FUNCTION LOG ({job_id}):",
+                    *new_args,
+                    end=end,
+                    sep=sep,
+                    file=sys.stderr,
+                )
+
+        else:
+            print = original_print
+
+        if code_item.uses_domain:
+            kwargs["domain"] = LocalDomainClient()
+
         stdout = StringIO()
         stderr = StringIO()
-
-        sys.stdout = stdout
-        sys.stderr = stderr
 
         # statisfy lint checker
         result = None
 
-        exec(code_item.byte_code)  # nosec
+        # We only need access to local kwargs
+        _locals = {"kwargs": kwargs}
+        _globals = {}
+        if code_item.nested_codes is not None:
+            for service_func_name, (linked_obj, _) in code_item.nested_codes.items():
+                code_obj = linked_obj.resolve_with_context(context=context)
+                if isinstance(code_obj, Err):
+                    raise Exception(code_obj.err())
+                _globals[service_func_name] = code_obj.ok()
+        _globals["print"] = print
+        exec(code_item.parsed_code, _globals, _locals)  # nosec
 
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
-        result = eval(evil_string, None, locals())  # nosec
+        try:
+            result = eval(evil_string, _globals, _locals)  # nosec
+        except Exception as e:
+            if context.job is not None:
+                error_msg = traceback_from_error(e, code_item)
+                time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
+                original_print(
+                    f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
+                )
+                if context.node is not None:
+                    log_service = context.node.get_service("LogService")
+                    log_service.append(context=context, uid=log_id, new_err=error_msg)
+            result = Err(
+                f"Exception encountered while running {code_item.service_func_name}"
+                ", please contact the Node Admin for more info."
+            )
+
+        # reset print
+        print = original_print
 
         # restore stdout and stderr
         sys.stdout = stdout_
@@ -893,10 +1470,45 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
         )
 
     except Exception as e:
-        print("execute_byte_code failed", e, file=stderr_)
+        # stdlib
+
+        print = original_print
+        # print("execute_byte_code failed", e, file=stderr_)
+        print(traceback.format_exc())
+        print("execute_byte_code failed", e)
     finally:
         sys.stdout = stdout_
         sys.stderr = stderr_
+
+
+def traceback_from_error(e: Exception, code: UserCode) -> str:
+    """We do this because the normal traceback.format_exc() does not work well for exec,
+    it missed the references to the actual code"""
+    line_nr = 0
+    tb = e.__traceback__
+    while tb is not None:
+        line_nr = tb.tb_lineno - 1
+        tb = tb.tb_next
+
+    lines = code.parsed_code.split("\n")
+    start_line = max(0, line_nr - 2)
+    end_line = min(len(lines), line_nr + 2)
+    error_lines: Union[list[str], str] = [
+        (
+            e.replace("   ", f"    {i} ", 1)
+            if i != line_nr
+            else e.replace("   ", f"--> {i} ", 1)
+        )
+        for i, e in enumerate(lines)
+        if i >= start_line and i < end_line
+    ]
+    error_lines = "\n".join(error_lines)
+
+    error_msg = f"""
+Encountered while executing {code.service_func_name}:
+{traceback.format_exc()}
+{error_lines}"""
+    return error_msg
 
 
 def load_approved_policy_code(user_code_items: List[UserCode]) -> Any:
