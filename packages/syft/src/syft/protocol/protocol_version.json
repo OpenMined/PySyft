@@ -622,6 +622,44 @@
           "hash": "8753b4ee72d673958783879bc3726c51077bf6a1deca37bacac3f3475605e812",
           "action": "add"
         }
+      },
+      "VeilidConnection": {
+        "1": {
+          "version": 1,
+          "hash": "a5380a21dd2ff4de88b6c012dfe0c9aeb5cd16ef1df7b285f943a220dba05468",
+          "action": "add"
+        }
+      },
+      "VeilidNodeRoute": {
+        "1": {
+          "version": 1,
+          "hash": "a84de892654b354b8d2ecc36d6487d900311a18bf8751f062ad49bfa0731952c",
+          "action": "add"
+        }
+      },
+      "EnclaveMetadata": {
+        "1": {
+          "version": 1,
+          "hash": "39f85e475015e6f860ddcc5fea819423eba2db8f4b7d8e004c05a44d6f8444c6",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "aaa03d8cc546c9d368d84fe100dc0e4f64f6b0102971edc709493c9dc06e193a",
+          "action": "add"
+        }
+      },
+      "NodePeer": {
+        "1": {
+          "version": 1,
+          "hash": "7b88de7e38490e2d69f31295137673e7ddabc16ab0e2272ff491f6cea1835d63",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "e1fb2a76c054cb81356bf398fab20e050b5bbc72495cd78d0cb5135530a69fa0",
+          "action": "add"
+        }
       }
     }
   }
