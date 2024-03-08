@@ -36,7 +36,10 @@ def get_user_input_for_resolve() -> Optional[str]:
 
 
 def resolve(
-    state: NodeDiff, decision: Optional[str] = None, share_private_objects: bool = False
+    state: NodeDiff, 
+    decision: Optional[str] = None, 
+    share_private_objects: bool = False,
+    ask_for_input: bool =True,
 ) -> tuple[ResolvedSyncState, ResolvedSyncState]:
     # TODO: only add permissions for objects where we manually give permission
     # Maybe default read permission for some objects (high -> low)
@@ -58,6 +61,7 @@ def resolve(
             batch_diff,
             batch_decision,
             share_private_objects=share_private_objects,
+            ask_for_input=ask_for_input,
         )
 
         print(f"Decision: Syncing {len(batch_diff)} objects from {batch_decision} side")
@@ -77,6 +81,7 @@ def get_sync_decisions_for_batch_items(
     batch_diff: ObjectDiffBatch,
     decision: str,
     share_private_objects: bool = False,
+    ask_for_input: bool =True,
 ) -> list[SyncDecision]:
     sync_decisions: list[SyncDecision] = []
 
@@ -103,10 +108,12 @@ def get_sync_decisions_for_batch_items(
 
     if share_private_objects:
         private_high_diffs_to_share = unpublished_private_high_diffs
-    else:
+    elif ask_for_input:
         private_high_diffs_to_share = ask_user_input_permission(
             user_code_high, unpublished_private_high_diffs
         )
+    else:
+        private_high_diffs_to_share = []
 
     for diff in batch_diff.diffs:
         is_unpublished_private_diff = diff in unpublished_private_high_diffs
