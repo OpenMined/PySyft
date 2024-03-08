@@ -2,12 +2,11 @@
 import json
 import os
 from pathlib import Path
-import shutil
-from tempfile import gettempdir
 from unittest import mock
 
 # third party
 from faker import Faker
+from pymongo import MongoClient
 import pytest
 
 # syft absolute
@@ -32,33 +31,14 @@ from .syft.stores.store_fixtures_test import sqlite_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_queue_stash  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_store_partition  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_workspace  # noqa: F401
-
-TMP_DIR = Path(gettempdir())
-MONGODB_TMP_DIR = Path(TMP_DIR, "mongodb")
-SHERLOCK_TMP_DIR = Path(TMP_DIR, "sherlock")
-
-MONGO_PORT = 37017
-MONGO_CONTAINER_PREFIX = "pytest_mongo"
+from .utils.mongodb import start_mongo_server
+from .utils.mongodb import stop_mongo_server
+from .utils.xdist_state import SharedState
 
 
 @pytest.fixture()
 def faker():
     return Faker()
-
-
-def pytest_configure(config):
-    cleanup_tmp_dirs()
-
-
-def pytest_sessionfinish(session, exitstatus):
-    destroy_mongo_container()
-
-
-def cleanup_tmp_dirs():
-    cleanup_dirs = [MONGODB_TMP_DIR, SHERLOCK_TMP_DIR]
-    for _dir in cleanup_dirs:
-        if _dir.exists():
-            shutil.rmtree(_dir, ignore_errors=True)
 
 
 def patch_protocol_file(filepath: Path):
@@ -165,77 +145,43 @@ def action_store(worker):
     return worker.action_store
 
 
-def start_mongo_server(port=MONGO_PORT, dbname="syft"):
-    # third party
-    import docker
-
-    client = docker.from_env()
-    container_name = f"{MONGO_CONTAINER_PREFIX}_{port}"
-
-    try:
-        client.containers.get(container_name)
-    except docker.errors.NotFound:
-        client.containers.run(
-            name=container_name,
-            image="mongo:7",
-            ports={"27017/tcp": port},
-            detach=True,
-            remove=True,
-            auto_remove=True,
-            labels={"name": "pytest-syft"},
-        )
-    except Exception as e:
-        raise RuntimeError(f"Docker error: {e}")
-
-    return f"mongodb://127.0.0.1:{port}/{dbname}"
-
-
-def destroy_mongo_container(port=MONGO_PORT):
-    # third party
-    import docker
-
-    client = docker.from_env()
-    container_name = f"{MONGO_CONTAINER_PREFIX}_{port}"
-
-    try:
-        container = client.containers.get(container_name)
-        container.stop()
-        container.remove()
-    except docker.errors.NotFound:
-        pass
-    except Exception:
-        pass
-
-
-def get_mongo_client():
-    """A race-free way to start a local mongodb server and connect to it."""
-
-    # third party
-    from filelock import FileLock
-    from pymongo import MongoClient
-
-    # file based communication for pytest-xdist workers
-    lock = FileLock(str(MONGODB_TMP_DIR / "server.lock"))
-    ready = Path(MONGODB_TMP_DIR / "server.ready")
-    connection_string = None
-
-    with lock:
-        if ready.exists():
-            # if server is ready, read the connection string from the file
-            connection_string = ready.read_text()
-        else:
-            # start the server and write the connection string to the file
-            connection_string = start_mongo_server()
-            ready.write_text(connection_string)
-
-    # connect to the local mongodb server
-    client = MongoClient(connection_string)
-    return client
-
-
 @pytest.fixture(scope="session")
-def mongo_client():
-    return get_mongo_client()
+def mongo_client(testrun_uid):
+    """
+    A race-free fixture that starts a MongoDB server for an entire pytest session.
+    Cleans up the server when the session ends, or when the last client disconnects.
+    """
+
+    state = SharedState(testrun_uid)
+    KEY_CONN_STR = "mongoConnectionString"
+    KEY_CLIENTS = "mongoClients"
+
+    # start the server if it's not already running
+    with state.lock:
+        conn_str = state.get(KEY_CONN_STR, None)
+
+        if not conn_str:
+            conn_str = start_mongo_server(testrun_uid)
+            state.set(KEY_CONN_STR, conn_str)
+
+        # increment the number of clients
+        clients = state.get(KEY_CLIENTS, 0) + 1
+        state.set(KEY_CLIENTS, clients)
+
+    # create a client, and test the connection
+    client = MongoClient(conn_str)
+    assert client.server_info().get("ok") == 1.0
+
+    yield client
+
+    # decrement the number of clients
+    with state.lock:
+        clients = state.get(KEY_CLIENTS, 0) - 1
+        state.set(KEY_CLIENTS, clients)
+
+    # if no clients are connected, destroy the container
+    if clients <= 0:
+        stop_mongo_server(testrun_uid)
 
 
 __all__ = [
