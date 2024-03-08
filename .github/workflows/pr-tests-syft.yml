@@ -91,6 +91,8 @@ jobs:
       - name: Docker on MacOS
         if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
         uses: crazy-max/ghaction-setup-docker@v3.1.0
+        with:
+          set-host: true
 
       - name: Run unit tests
         if: steps.changes.outputs.syft == 'true'
