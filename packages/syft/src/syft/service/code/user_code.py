@@ -128,7 +128,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
     status_dict: Dict[NodeIdentity, Tuple[UserCodeStatus, str]] = {}
     user_code_link: LinkedObject
 
-    def get_diffs(self, ext_obj: Any) -> List[AttrDiff]:
+    def syft_get_diffs(self, ext_obj: Any) -> List[AttrDiff]:
         # relative
         from ...service.sync.diff_state import AttrDiff
 

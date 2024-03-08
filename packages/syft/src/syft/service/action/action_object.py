@@ -743,7 +743,7 @@ class ActionObject(SyncableSyftObject):
     syft_action_data_node_id: Optional[UID] = None
     # syft_dont_wrap_attrs = ["shape"]
 
-    def get_diff(self, ext_obj: Any) -> List[AttrDiff]:
+    def syft_get_diffs(self, ext_obj: Any) -> List[AttrDiff]:
         # relative
         from ...service.sync.diff_state import AttrDiff
 

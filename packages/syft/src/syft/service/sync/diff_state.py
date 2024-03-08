@@ -195,7 +195,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         if low_obj is None or high_obj is None:
             diff_list = []
         else:
-            diff_list = low_obj.get_diffs(high_obj)
+            diff_list = low_obj.syft_get_diffs(high_obj)
 
         return cls(
             low_obj=low_obj,
