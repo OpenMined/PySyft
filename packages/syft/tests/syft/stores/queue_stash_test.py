@@ -451,16 +451,13 @@ def test_queue_update_threading_sqlite(root_verify_key, sqlite_workspace, backen
     backend(root_verify_key, create_queue_cbk)
 
 
-@pytest.mark.xfail(
-    reason="MongoDocumentStore is not serializable, but the same instance is needed for the partitions"
-)
 @pytest.mark.parametrize("backend", [helper_queue_update_threading])
 @pytest.mark.flaky(reruns=5, reruns_delay=2)
-def test_queue_update_threading_mongo(mongo_document_store, backend):
+def test_queue_update_threading_mongo(root_verify_key, mongo_document_store, backend):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
 
-    backend(create_queue_cbk)
+    backend(root_verify_key, create_queue_cbk)
 
 
 def helper_queue_set_delete_threading(

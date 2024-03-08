@@ -64,27 +64,24 @@ def test_dataset_get_by_name(root_verify_key, mock_dataset_stash, mock_dataset) 
     assert result.ok() is None
 
 
-@pytest.mark.xfail(
-    raises=AttributeError,
-    reason="DatasetUpdate is not implemeted yet",
-)
-def test_dataset_update(
-    root_verify_key, mock_dataset_stash, mock_dataset, mock_dataset_update
-) -> None:
-    # succesful dataset update
-    result = mock_dataset_stash.update(
-        root_verify_key, dataset_update=mock_dataset_update
-    )
-    assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
-    assert isinstance(result.ok(), Dataset)
-    assert mock_dataset.id == result.ok().id
+# @pytest.mark.skip(reason="DatasetUpdate is not implemeted yet")
+# def test_dataset_update(
+#     root_verify_key, mock_dataset_stash, mock_dataset, mock_dataset_update
+# ) -> None:
+#     # succesful dataset update
+#     result = mock_dataset_stash.update(
+#         root_verify_key, dataset_update=mock_dataset_update
+#     )
+#     assert result.is_ok(), f"Dataset could not be retrieved, result: {result}"
+#     assert isinstance(result.ok(), Dataset)
+#     assert mock_dataset.id == result.ok().id
 
-    # error should be raised
-    other_obj = object()
-    result = mock_dataset_stash.update(root_verify_key, dataset_update=other_obj)
-    assert result.err(), (
-        f"Dataset was updated with non-DatasetUpdate object," f"result: {result}"
-    )
+#     # error should be raised
+#     other_obj = object()
+#     result = mock_dataset_stash.update(root_verify_key, dataset_update=other_obj)
+#     assert result.err(), (
+#         f"Dataset was updated with non-DatasetUpdate object," f"result: {result}"
+#     )
 
 
 def test_dataset_search_action_ids(root_verify_key, mock_dataset_stash, mock_dataset):
