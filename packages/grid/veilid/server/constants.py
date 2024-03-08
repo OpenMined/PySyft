@@ -8,3 +8,4 @@ DHT_KEY_CREDS = (
 # Credentials refer to the Public and Private Key created for the DHT Key
 
 USE_DIRECT_CONNECTION = True
+MAX_MESSAGE_SIZE = 32768  # 32KB

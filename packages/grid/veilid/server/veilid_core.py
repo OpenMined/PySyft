@@ -23,17 +23,31 @@ from veilid.types import RouteId
 
 # relative
 from .constants import HOST
+from .constants import MAX_MESSAGE_SIZE
 from .constants import PORT
 from .constants import USE_DIRECT_CONNECTION
 from .veilid_db import load_dht_key
 from .veilid_db import store_dht_key
 from .veilid_db import store_dht_key_creds
+from .veilid_streamer import VeilidStreamer
+
+vs = VeilidStreamer()
+
+
+async def handle_streamed_message(message: bytes) -> bytes:
+    msg = f"Received message of length: {len(message)}"
+    logger.debug(msg)
+    return json.dumps({"response": msg}).encode()
 
 
 async def main_callback(update: VeilidUpdate) -> None:
     # TODO: Handle other types of network events like
     # when our private route goes
-    if update.kind == veilid.VeilidUpdateKind.APP_MESSAGE:
+    if VeilidStreamer.is_stream_update(update):
+        async with await get_veilid_conn() as conn:
+            await vs.receive_stream(conn, update, callback=handle_streamed_message)
+
+    elif update.kind == veilid.VeilidUpdateKind.APP_MESSAGE:
         logger.info(f"Received App Message: {update.detail.message}")
 
     elif update.kind == veilid.VeilidUpdateKind.APP_CALL:
@@ -245,6 +259,10 @@ async def app_call(dht_key: str, message: bytes) -> dict[str, str]:
                 # TODO: change to debug
                 logger.info(f"Private Route of  Peer: {route} ")
 
-            result = await router.app_call(route, message)
+            result = (
+                await vs.stream(router, route, message)
+                if len(message) > MAX_MESSAGE_SIZE
+                else await router.app_call(route, message)
+            )
 
-            return result
+            return json.loads(result)
