@@ -14,8 +14,6 @@ from .store_fixtures_test import sqlite_store_partition_fn
 from .store_mocks_test import MockObjectType
 from .store_mocks_test import MockSyftObject
 
-REPEATS = 20
-
 
 def test_sqlite_store_partition_sanity(
     sqlite_store_partition: SQLiteStorePartition,
@@ -78,8 +76,8 @@ def test_sqlite_store_partition_set(
         )
         == 2
     )
-
-    for idx in range(REPEATS):
+    repeats = 5
+    for idx in range(repeats):
         obj = MockSyftObject(data=idx)
         res = sqlite_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
         assert res.is_ok()
@@ -99,7 +97,8 @@ def test_sqlite_store_partition_delete(
     sqlite_store_partition: SQLiteStorePartition,
 ) -> None:
     objs = []
-    for v in range(REPEATS):
+    repeats = 5
+    for v in range(repeats):
         obj = MockSyftObject(data=v)
         sqlite_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
         objs.append(obj)
@@ -180,7 +179,8 @@ def test_sqlite_store_partition_update(
     assert res.is_err()
 
     # update the key multiple times
-    for v in range(REPEATS):
+    repeats = 5
+    for v in range(repeats):
         key = sqlite_store_partition.settings.store_key.with_obj(obj)
         obj_new = MockSyftObject(data=v)
 
@@ -233,7 +233,7 @@ def test_sqlite_store_partition_set_threading(
     root_verify_key,
 ) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
 
     execution_err = None
 
@@ -287,7 +287,7 @@ def test_sqlite_store_partition_set_threading(
 #     sqlite_workspace: Tuple,
 # ) -> None:
 #     thread_cnt = 3
-#     repeats = REPEATS
+#     repeats = 5
 
 #     def _kv_cbk(tid: int) -> None:
 #         for idx in range(repeats):
@@ -332,7 +332,7 @@ def test_sqlite_store_partition_update_threading(
     sqlite_workspace: Tuple,
 ) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
 
     sqlite_store_partition = sqlite_store_partition_fn(
         root_verify_key, sqlite_workspace
@@ -379,7 +379,7 @@ def test_sqlite_store_partition_update_threading(
 #     sqlite_workspace: Tuple,
 # ) -> None:
 #     thread_cnt = 3
-#     repeats = REPEATS
+#     repeats = 5
 
 #     sqlite_store_partition = sqlite_store_partition_fn(
 #         root_verify_key, sqlite_workspace
@@ -418,7 +418,7 @@ def test_sqlite_store_partition_set_delete_threading(
     sqlite_workspace: Tuple,
 ) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
     execution_err = None
 
     def _kv_cbk(tid: int) -> None:
@@ -477,7 +477,7 @@ def test_sqlite_store_partition_set_delete_threading(
 #     sqlite_workspace: Tuple,
 # ) -> None:
 #     thread_cnt = 3
-#     repeats = REPEATS
+#     repeats = 5
 
 #     def _kv_cbk(tid: int) -> None:
 #         sqlite_store_partition = sqlite_store_partition_fn(

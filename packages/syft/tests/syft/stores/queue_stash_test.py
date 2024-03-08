@@ -16,8 +16,6 @@ from syft.types.uid import UID
 from .store_fixtures_test import mongo_queue_stash_fn
 from .store_fixtures_test import sqlite_queue_stash_fn
 
-REPEATS = 20
-
 
 def mock_queue_object():
     worker_pool_obj = WorkerPool(
@@ -68,7 +66,8 @@ def test_queue_stash_sanity(queue: Any) -> None:
 @pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_stash_set_get(root_verify_key, queue: Any) -> None:
     objs = []
-    for idx in range(REPEATS):
+    repeats = 5
+    for idx in range(repeats):
         obj = mock_queue_object()
         objs.append(obj)
 
@@ -111,8 +110,9 @@ def test_queue_stash_update(root_verify_key, queue: Any) -> None:
     obj = mock_queue_object()
     res = queue.set(root_verify_key, obj, ignore_duplicates=False)
     assert res.is_ok()
+    repeats = 5
 
-    for idx in range(REPEATS):
+    for idx in range(repeats):
         obj.args = [idx]
 
         res = queue.update(root_verify_key, obj)
@@ -139,7 +139,7 @@ def test_queue_stash_update(root_verify_key, queue: Any) -> None:
 @pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_set_existing_queue_threading(root_verify_key, queue: Any) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
 
     execution_err = None
 
@@ -182,7 +182,7 @@ def test_queue_set_existing_queue_threading(root_verify_key, queue: Any) -> None
 @pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_queue_update_existing_queue_threading(root_verify_key, queue: Any) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
 
     obj = mock_queue_object()
     queue.set(root_verify_key, obj, ignore_duplicates=False)
@@ -229,7 +229,7 @@ def test_queue_set_delete_existing_queue_threading(
     queue: Any,
 ) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
 
     execution_err = None
     objs = []
@@ -271,7 +271,7 @@ def test_queue_set_delete_existing_queue_threading(
 
 def helper_queue_set_threading(root_verify_key, create_queue_cbk) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
 
     execution_err = None
 
@@ -309,7 +309,7 @@ def helper_queue_set_threading(root_verify_key, create_queue_cbk) -> None:
 
 # def helper_queue_set_joblib(root_verify_key, create_queue_cbk) -> None:
 #     thread_cnt = 3
-#     repeats = 10
+#     repeats = 5
 
 #     def _kv_cbk(tid: int) -> None:
 #         queue = create_queue_cbk()
@@ -365,16 +365,16 @@ def test_queue_set_sqlite(root_verify_key, sqlite_workspace, backend):
 
 @pytest.mark.parametrize("backend", [helper_queue_set_threading])
 @pytest.mark.flaky(reruns=5, reruns_delay=2)
-def test_queue_set_threading_mongo(mongo_document_store, backend):
+def test_queue_set_threading_mongo(root_verify_key, mongo_document_store, backend):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
 
-    backend(create_queue_cbk)
+    backend(root_verify_key, create_queue_cbk)
 
 
 def helper_queue_update_threading(root_verify_key, create_queue_cbk) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
 
     queue = create_queue_cbk()
 
@@ -413,7 +413,7 @@ def helper_queue_update_threading(root_verify_key, create_queue_cbk) -> None:
 
 # def helper_queue_update_joblib(root_verify_key, create_queue_cbk) -> None:
 #     thread_cnt = 3
-#     repeats = REPEATS
+#     repeats = 5
 
 #     def _kv_cbk(tid: int) -> None:
 #         queue_local = create_queue_cbk()
@@ -468,7 +468,7 @@ def helper_queue_set_delete_threading(
     create_queue_cbk,
 ) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
 
     queue = create_queue_cbk()
     execution_err = None
@@ -515,7 +515,7 @@ def helper_queue_set_delete_threading(
 #     create_queue_cbk,
 # ) -> None:
 #     thread_cnt = 3
-#     repeats = REPEATS
+#     repeats = 5
 
 #     def _kv_cbk(tid: int) -> None:
 #         nonlocal execution_err

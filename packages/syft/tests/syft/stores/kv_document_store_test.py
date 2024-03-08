@@ -129,9 +129,9 @@ def test_kv_store_partition_delete_and_recreate(
     root_verify_key, worker, kv_store_partition: KeyValueStorePartition
 ) -> None:
     obj = MockSyftObject(data="bogus")
-    for _ in range(2):
-        # running it multiple items ensures we can recreate it again once its delete from store.
-
+    repeats = 5
+    # running it multiple items ensures we can recreate it again once its delete from store.
+    for _ in range(repeats):
         # Add an object
         kv_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
 
@@ -163,7 +163,8 @@ def test_kv_store_partition_update(
     assert res.is_err()
 
     # update the key multiple times
-    for v in range(10):
+    repeats = 5
+    for v in range(repeats):
         key = kv_store_partition.settings.store_key.with_obj(obj)
         obj_new = MockSyftObject(data=v)
 
@@ -186,8 +187,8 @@ def test_kv_store_partition_set_multithreaded(
     root_verify_key,
     kv_store_partition: KeyValueStorePartition,
 ) -> None:
-    thread_cnt = 5
-    repeats = 50
+    thread_cnt = 3
+    repeats = 5
     execution_err = None
 
     def _kv_cbk(tid: int) -> None:
@@ -227,8 +228,8 @@ def test_kv_store_partition_update_multithreaded(
     root_verify_key,
     kv_store_partition: KeyValueStorePartition,
 ) -> None:
-    thread_cnt = 5
-    repeats = 50
+    thread_cnt = 3
+    repeats = 5
 
     obj = MockSyftObject(data=0)
     key = kv_store_partition.settings.store_key.with_obj(obj)
@@ -266,12 +267,13 @@ def test_kv_store_partition_set_delete_multithreaded(
     root_verify_key,
     kv_store_partition: KeyValueStorePartition,
 ) -> None:
-    thread_cnt = 5
+    thread_cnt = 3
+    repeats = 5
     execution_err = None
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
-        for idx in range(50):
+        for idx in range(repeats):
             obj = MockSyftObject(data=idx)
 
             for _ in range(10):

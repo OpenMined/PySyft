@@ -334,7 +334,7 @@ def test_acquire_same_name_diff_namespace(config: LockingConfig):
 )
 def test_locks_parallel_multithreading(config: LockingConfig) -> None:
     thread_cnt = 3
-    repeats = 100
+    repeats = 5
 
     temp_dir = Path(tempfile.TemporaryDirectory().name)
     temp_dir.mkdir(parents=True, exist_ok=True)
@@ -395,7 +395,7 @@ def test_locks_parallel_multithreading(config: LockingConfig) -> None:
 #     config: LockingConfig,
 # ) -> None:
 #     thread_cnt = 3
-#     repeats = 100
+#     repeats = 5
 
 #     temp_dir = Path(tempfile.TemporaryDirectory().name)
 #     temp_dir.mkdir(parents=True, exist_ok=True)

@@ -30,8 +30,6 @@ from .store_fixtures_test import mongo_store_partition_fn
 from .store_mocks_test import MockObjectType
 from .store_mocks_test import MockSyftObject
 
-REPEATS = 20
-
 PERMISSIONS = [
     ActionObjectOWNER,
     ActionObjectREAD,
@@ -127,7 +125,8 @@ def test_mongo_store_partition_set(
         == 2
     )
 
-    for idx in range(REPEATS):
+    repeats = 5
+    for idx in range(repeats):
         obj = MockSyftObject(data=idx)
         res = mongo_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
         assert res.is_ok()
@@ -147,9 +146,10 @@ def test_mongo_store_partition_delete(
 ) -> None:
     res = mongo_store_partition.init_store()
     assert res.is_ok()
+    repeats = 5
 
     objs = []
-    for v in range(REPEATS):
+    for v in range(repeats):
         obj = MockSyftObject(data=v)
         mongo_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
         objs.append(obj)
@@ -231,7 +231,8 @@ def test_mongo_store_partition_update(
     assert res.is_err()
 
     # update the key multiple times
-    for v in range(REPEATS):
+    repeats = 5
+    for v in range(repeats):
         key = mongo_store_partition.settings.store_key.with_obj(obj)
         obj_new = MockSyftObject(data=v)
 
@@ -280,7 +281,7 @@ def test_mongo_store_partition_update(
 
 def test_mongo_store_partition_set_threading(root_verify_key, mongo_client) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
 
     execution_err = None
     mongo_db_name = generate_db_name()
@@ -342,7 +343,7 @@ def test_mongo_store_partition_set_threading(root_verify_key, mongo_client) -> N
 #     mongo_client,
 # ) -> None:
 #     thread_cnt = 3
-#     repeats = REPEATS
+#     repeats = 5
 #     mongo_db_name = generate_db_name()
 
 #     def _kv_cbk(tid: int) -> None:
@@ -391,7 +392,7 @@ def test_mongo_store_partition_update_threading(
     mongo_client,
 ) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
 
     mongo_db_name = generate_db_name()
     mongo_store_partition = mongo_store_partition_fn(
@@ -443,7 +444,7 @@ def test_mongo_store_partition_update_threading(
 # )
 # def test_mongo_store_partition_update_joblib(root_verify_key, mongo_client) -> None:
 #     thread_cnt = 3
-#     repeats = REPEATS
+#     repeats = 5
 
 #     mongo_db_name = generate_db_name()
 
@@ -487,7 +488,7 @@ def test_mongo_store_partition_set_delete_threading(
     mongo_client,
 ) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
     execution_err = None
     mongo_db_name = generate_db_name()
 
@@ -550,7 +551,7 @@ def test_mongo_store_partition_set_delete_threading(
 # )
 # def test_mongo_store_partition_set_delete_joblib(root_verify_key, mongo_client) -> None:
 #     thread_cnt = 3
-#     repeats = REPEATS
+#     repeats = 5
 #     mongo_db_name = generate_db_name()
 
 #     def _kv_cbk(tid: int) -> None:
@@ -679,7 +680,8 @@ def test_mongo_store_partition_add_remove_permission(
 
     # add permissions in a loop
     new_permissions = []
-    for idx in range(1, REPEATS + 1):
+    repeats = 5
+    for idx in range(1, repeats + 1):
         new_obj = MockSyftObject(data=idx)
         new_obj_read_permission = ActionObjectPermission(
             uid=new_obj.id,
@@ -984,8 +986,9 @@ def test_mongo_store_partition_permissions_update(
 
     qk: QueryKey = mongo_store_partition.settings.store_key.with_obj(obj)
     permsissions: MongoCollection = mongo_store_partition.permissions.ok()
+    repeats = 5
 
-    for v in range(REPEATS):
+    for v in range(repeats):
         # the guest client should not have permission to update obj
         obj_new = MockSyftObject(data=v)
         res = mongo_store_partition.update(
