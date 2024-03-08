@@ -135,6 +135,8 @@ class NodePeer(SyftObject):
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
             return client_type
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         return client_type(connection=connection, credentials=context.node.signing_key)
 
     def client_with_key(self, credentials: SyftSigningKey) -> SyftClient:
