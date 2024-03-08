@@ -866,7 +866,7 @@ class SyftClient:
         )
 
     def exchange_route(
-        self, client: Self, protocol: SyftProtocol
+        self, client: Self, protocol: SyftProtocol = SyftProtocol.HTTP
     ) -> Union[SyftSuccess, SyftError]:
         if protocol == SyftProtocol.HTTP:
             # relative

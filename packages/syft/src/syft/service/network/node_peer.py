@@ -34,26 +34,24 @@ class NodePeer(SyftObject):
     __attr_unique__ = ["verify_key"]
     __repr_attrs__ = ["name", "node_type", "admin_email"]
 
-    id: Optional[UID]
+    id: Optional[UID] = None  # type: ignore[assignment]
     name: str
     verify_key: SyftVerifyKey
     node_routes: List[NodeRouteType] = []
     node_type: NodeType
     admin_email: str
 
-    def update_routes(self, routes: List[NodeRoute]) -> None:
+    def update_routes(self, new_routes: List[NodeRoute]) -> None:
         add_routes = []
-        new_routes: List[NodeRoute] = self.update_route_priorities(routes)
+        new_routes = self.update_route_priorities(new_routes)
         for new_route in new_routes:
             existed, index = self.existed_route(new_route)
-            if not existed:
-                add_routes.append(new_route)
-            else:
-                if index is None:
-                    raise ValueError("Index is None for an existing route")
+            if existed and index is not None:
                 # if the route already exists, we do not append it to self.new_route,
                 # but update its priority
                 self.node_routes[index].priority = new_route.priority
+            else:
+                add_routes.append(new_route)
 
         self.node_routes += add_routes
 
