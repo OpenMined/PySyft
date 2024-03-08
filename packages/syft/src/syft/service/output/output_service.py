@@ -30,6 +30,7 @@ from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..service import AbstractService
+from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
 
@@ -273,3 +274,6 @@ class OutputService(AbstractService):
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
+
+
+TYPE_TO_SERVICE[ExecutionOutput] = OutputService

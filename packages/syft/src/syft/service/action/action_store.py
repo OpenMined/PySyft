@@ -30,6 +30,7 @@ from .action_permissions import ActionObjectPermission
 from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionObjectWRITE
 from .action_permissions import ActionPermission
+from .action_permissions import StoragePermission
 
 lock = threading.RLock()
 
@@ -50,8 +51,12 @@ class KeyValueActionStore(ActionStore):
     """
 
     def __init__(
-        self, store_config: StoreConfig, root_verify_key: Optional[SyftVerifyKey] = None
+        self,
+        node_uid: UID,
+        store_config: StoreConfig,
+        root_verify_key: Optional[SyftVerifyKey] = None,
     ) -> None:
+        self.node_uid = node_uid
         self.store_config = store_config
         self.settings = BasePartitionSettings(name="Action")
         self.data = self.store_config.backing_store(
@@ -60,6 +65,10 @@ class KeyValueActionStore(ActionStore):
         self.permissions = self.store_config.backing_store(
             "permissions", self.settings, self.store_config, ddtype=set
         )
+        self.storage_permissions = self.store_config.backing_store(
+            "storage_permissions", self.settings, self.store_config, ddtype=set
+        )
+
         if root_verify_key is None:
             root_verify_key = SyftSigningKey.generate().verify_key
         self.root_verify_key = root_verify_key
@@ -138,6 +147,7 @@ class KeyValueActionStore(ActionStore):
         credentials: SyftVerifyKey,
         syft_object: SyftObject,
         has_result_read_permission: bool = False,
+        add_storage_permission: bool = True,
     ) -> Result[SyftSuccess, Err]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
@@ -159,10 +169,10 @@ class KeyValueActionStore(ActionStore):
 
         if can_write:
             self.data[uid] = syft_object
+            if uid not in self.permissions:
+                # create default permissions
+                self.permissions[uid] = set()
             if has_result_read_permission:
-                if uid not in self.permissions:
-                    # create default permissions
-                    self.permissions[uid] = set()
                 self.add_permission(ActionObjectREAD(uid=uid, credentials=credentials))
             else:
                 self.add_permissions(
@@ -170,6 +180,15 @@ class KeyValueActionStore(ActionStore):
                         ActionObjectWRITE(uid=uid, credentials=credentials),
                         ActionObjectEXECUTE(uid=uid, credentials=credentials),
                     ]
+                )
+
+            if uid not in self.storage_permissions:
+                # create default storage permissions
+                self.storage_permissions[uid] = set()
+            if add_storage_permission:
+                print("ADDING STORE PERMISSION ON SET", uid, self.node_uid)
+                self.add_storage_permission(
+                    StoragePermission(uid=uid, node_uid=self.node_uid)
                 )
 
             return Ok(SyftSuccess(message=f"Set for ID: {uid}"))
@@ -253,6 +272,25 @@ class KeyValueActionStore(ActionStore):
         for permission in permissions:
             self.add_permission(permission)
 
+    def add_storage_permission(self, permission: StoragePermission) -> None:
+        permissions = self.storage_permissions[permission.uid]
+        permissions.add(permission.node_uid)
+        self.storage_permissions[permission.uid] = permissions
+
+    def add_storage_permissions(self, permissions: List[StoragePermission]) -> None:
+        for permission in permissions:
+            self.add_storage_permission(permission)
+
+    def remove_storage_permission(self, permission: StoragePermission) -> None:
+        permissions = self.storage_permissions[permission.uid]
+        permissions.remove(permission.node_uid)
+        self.storage_permissions[permission.uid] = permissions
+
+    def has_storage_permission(self, permission: StoragePermission) -> bool:
+        if permission.uid in self.storage_permissions:
+            return permission.node_uid in self.storage_permissions[permission.uid]
+        return False
+
     def migrate_data(
         self, to_klass: SyftObject, credentials: SyftVerifyKey
     ) -> Result[bool, str]:
@@ -295,11 +333,16 @@ class DictActionStore(KeyValueActionStore):
 
     def __init__(
         self,
+        node_uid: UID,
         store_config: Optional[StoreConfig] = None,
         root_verify_key: Optional[SyftVerifyKey] = None,
     ) -> None:
         store_config = store_config if store_config is not None else DictStoreConfig()
-        super().__init__(store_config=store_config, root_verify_key=root_verify_key)
+        super().__init__(
+            node_uid=node_uid,
+            store_config=store_config,
+            root_verify_key=root_verify_key,
+        )
 
 
 @serializable()

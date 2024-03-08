@@ -186,6 +186,7 @@ class DomainClient(SyftClient):
 
         action_objects = [x for x in items if isinstance(x, ActionObject)]
         # permissions = self.get_permissions_for_other_node(items)
+
         permissions: dict[UID, set[str]] = {}
         for p in resolved_state.new_permissions:
             if p.uid in permissions:
@@ -193,10 +194,23 @@ class DomainClient(SyftClient):
             else:
                 permissions[p.uid] = {p.permission_string}
 
-        for action_object in action_objects:
-            action_object.send(self)
+        storage_permissions: dict[UID, set[UID]] = {}
+        for sp in resolved_state.new_storage_permissions:
+            if sp.uid in storage_permissions:
+                storage_permissions[sp.uid].add(sp.node_uid)
+            else:
+                storage_permissions[sp.uid] = {sp.node_uid}
 
-        res = self.api.services.sync.sync_items(items, permissions)
+        for action_object in action_objects:
+            action_object.send(
+                self, add_storage_permission=not action_object.from_mock_sync
+            )
+
+        res = self.api.services.sync.sync_items(
+            items,
+            permissions,
+            storage_permissions,
+        )
         if isinstance(res, SyftError):
             return res
 
