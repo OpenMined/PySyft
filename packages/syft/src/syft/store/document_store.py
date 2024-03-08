@@ -29,7 +29,7 @@ from ..service.action.action_permissions import ActionObjectPermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -59,7 +59,7 @@ def first_or_none(result: Any) -> Ok:
 
 if sys.version_info >= (3, 9):
 
-    def is_generic_alias(t: type):
+    def is_generic_alias(t: type) -> bool:
         return isinstance(t, (types.GenericAlias, typing._GenericAlias))
 
 else:
@@ -104,7 +104,7 @@ class PartitionKey(BaseModel):
                 obj = [obj]
 
         # is a list type so lets compare directly
-        check_type("obj", obj, self.type_)
+        check_type(obj, self.type_)
         return obj
 
     @property
@@ -117,7 +117,7 @@ class PartitionKeys(BaseModel):
     pks: Union[PartitionKey, Tuple[PartitionKey, ...], List[PartitionKey]]
 
     @property
-    def all(self) -> List[PartitionKey]:
+    def all(self) -> Union[tuple[PartitionKey, ...], list[PartitionKey]]:
         # make sure we always return a list even if there's a single value
         return self.pks if isinstance(self.pks, (tuple, list)) else [self.pks]
 
@@ -140,7 +140,7 @@ class PartitionKeys(BaseModel):
 
 @serializable()
 class QueryKey(PartitionKey):
-    value: Any
+    value: Any = None
 
     def __eq__(self, other: Any) -> bool:
         return (
@@ -170,8 +170,9 @@ class QueryKey(PartitionKey):
                 # object has a method for getting these types
                 # we can't use properties because we don't seem to be able to get the
                 # return types
-                if isinstance(pk_value, (types.FunctionType, types.MethodType)):
-                    pk_value = pk_value()
+                # TODO: fix the mypy issue
+                if isinstance(pk_value, (types.FunctionType, types.MethodType)):  # type: ignore[unreachable]
+                    pk_value = pk_value()  # type: ignore[unreachable]
 
             if pk_value and not isinstance(pk_value, pk_type):
                 raise Exception(
@@ -180,11 +181,11 @@ class QueryKey(PartitionKey):
         return QueryKey(key=pk_key, type_=pk_type, value=pk_value)
 
     @property
-    def as_dict(self):
+    def as_dict(self) -> dict[str, Any]:
         return {self.key: self.value}
 
     @property
-    def as_dict_mongo(self):
+    def as_dict_mongo(self) -> dict[str, Any]:
         key = self.key
         if key == "id":
             key = "_id"
@@ -199,8 +200,8 @@ class PartitionKeysWithUID(PartitionKeys):
     uid_pk: PartitionKey
 
     @property
-    def all(self) -> List[PartitionKey]:
-        all_keys = self.pks if isinstance(self.pks, (tuple, list)) else [self.pks]
+    def all(self) -> Union[tuple[PartitionKey, ...], list[PartitionKey]]:
+        all_keys = list(self.pks) if isinstance(self.pks, (tuple, list)) else [self.pks]
         if self.uid_pk not in all_keys:
             all_keys.insert(0, self.uid_pk)
         return all_keys
@@ -211,7 +212,7 @@ class QueryKeys(SyftBaseModel):
     qks: Union[QueryKey, Tuple[QueryKey, ...], List[QueryKey]]
 
     @property
-    def all(self) -> List[QueryKey]:
+    def all(self) -> Union[tuple[QueryKey, ...], list[QueryKey]]:
         # make sure we always return a list even if there's a single value
         return self.qks if isinstance(self.qks, (tuple, list)) else [self.qks]
 
@@ -260,7 +261,7 @@ class QueryKeys(SyftBaseModel):
         return QueryKeys(qks=qks)
 
     @property
-    def as_dict(self):
+    def as_dict(self) -> dict:
         qk_dict = {}
         for qk in self.all:
             qk_key = qk.key
@@ -269,7 +270,7 @@ class QueryKeys(SyftBaseModel):
         return qk_dict
 
     @property
-    def as_dict_mongo(self):
+    def as_dict_mongo(self) -> dict:
         qk_dict = {}
         for qk in self.all:
             qk_key = qk.key
@@ -316,7 +317,7 @@ class StorePartition:
 
     def __init__(
         self,
-        root_verify_key: SyftVerifyKey,
+        root_verify_key: Optional[SyftVerifyKey],
         settings: PartitionSettings,
         store_config: StoreConfig,
     ) -> None:
@@ -337,7 +338,7 @@ class StorePartition:
         except BaseException as e:
             return Err(str(e))
 
-        return Ok()
+        return Ok(True)
 
     def matches_unique_cks(self, partition_key: PartitionKey) -> bool:
         return partition_key in self.unique_cks
@@ -352,7 +353,9 @@ class StorePartition:
         return QueryKeys(qks=[self.store_query_key(obj) for obj in objs])
 
     # Thread-safe methods
-    def _thread_safe_cbk(self, cbk: Callable, *args, **kwargs):
+    def _thread_safe_cbk(
+        self, cbk: Callable, *args: Any, **kwargs: Any
+    ) -> Union[Any, Err]:
         locked = self.lock.acquire(blocking=True)
         if not locked:
             print("FAILED TO LOCK")
@@ -423,7 +426,7 @@ class StorePartition:
         credentials: SyftVerifyKey,
         qk: QueryKey,
         obj: SyftObject,
-        has_permission=False,
+        has_permission: bool = False,
     ) -> Result[SyftObject, str]:
         return self._thread_safe_cbk(
             self._update,
@@ -444,7 +447,7 @@ class StorePartition:
         )
 
     def delete(
-        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission=False
+        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
     ) -> Result[SyftSuccess, Err]:
         return self._thread_safe_cbk(
             self._delete, credentials, qk, has_permission=has_permission
@@ -475,12 +478,21 @@ class StorePartition:
     # These methods are called from the public thread-safe API, and will hang the process.
     def _set(
         self,
+        credentials: SyftVerifyKey,
         obj: SyftObject,
+        add_permissions: Optional[List[ActionObjectPermission]] = None,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         raise NotImplementedError
 
-    def _update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
+    def _update(
+        self,
+        credentials: SyftVerifyKey,
+        qk: QueryKey,
+        obj: SyftObject,
+        has_permission: bool = False,
+        overwrite: bool = False,
+    ) -> Result[SyftObject, str]:
         raise NotImplementedError
 
     def _get_all_from_store(
@@ -491,10 +503,17 @@ class StorePartition:
     ) -> Result[List[SyftObject], str]:
         raise NotImplementedError
 
-    def _delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
+    def _delete(
+        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
+    ) -> Result[SyftSuccess, Err]:
         raise NotImplementedError
 
-    def _all(self) -> Result[List[BaseStash.object_type], str]:
+    def _all(
+        self,
+        credentials: SyftVerifyKey,
+        order_by: Optional[PartitionKey] = None,
+        has_permission: Optional[bool] = False,
+    ) -> Result[List[BaseStash.object_type], str]:
         raise NotImplementedError
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
@@ -688,7 +707,7 @@ class BaseStash:
         return self.delete(credentials=credentials, qk=qk)
 
     def delete(
-        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission=False
+        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
     ) -> Result[SyftSuccess, Err]:
         return self.partition.delete(
             credentials=credentials, qk=qk, has_permission=has_permission
@@ -698,7 +717,7 @@ class BaseStash:
         self,
         credentials: SyftVerifyKey,
         obj: BaseStash.object_type,
-        has_permission=False,
+        has_permission: bool = False,
     ) -> Result[BaseStash.object_type, str]:
         qk = self.partition.store_query_key(obj)
         return self.partition.update(
@@ -756,13 +775,12 @@ class StoreConfig(SyftBaseObject):
                 * NoLockingConfig: no locking, ideal for single-thread stores.
                 * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
                 * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
-                * RedisLockingConfig: Redis-based locking, ideal for multi-device stores.
             Defaults to NoLockingConfig.
     """
 
     __canonical_name__ = "StoreConfig"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     store_type: Type[DocumentStore]
-    client_config: Optional[StoreClientConfig]
+    client_config: Optional[StoreClientConfig] = None
     locking_config: LockingConfig = NoLockingConfig()

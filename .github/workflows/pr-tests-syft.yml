@@ -90,7 +90,7 @@ jobs:
 
       - name: Docker on MacOS
         if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.0.0
+        uses: crazy-max/ghaction-setup-docker@v3.1.0
 
       - name: Run unit tests
         if: steps.changes.outputs.syft == 'true'
@@ -174,7 +174,7 @@ jobs:
           pip install --upgrade tox packaging wheel --default-timeout=60
 
       - name: Run notebook tests
-        uses: nick-fields/retry@v2
+        uses: nick-fields/retry@v3
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         env:
           ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
@@ -265,7 +265,7 @@ jobs:
 
       - name: Docker on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.0.0
+        uses: crazy-max/ghaction-setup-docker@v3.1.0
 
       - name: Docker Compose on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'

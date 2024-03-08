@@ -81,16 +81,16 @@ def run_uvicorn(
     queue_port: Optional[int],
     create_producer: bool,
     n_consumers: int,
-):
+) -> None:
     async def _run_uvicorn(
         name: str,
-        node_type: Enum,
+        node_type: NodeType,
         host: str,
         port: int,
         reset: bool,
         dev_mode: bool,
         node_side_type: Enum,
-    ):
+    ) -> None:
         if node_type not in worker_classes:
             raise NotImplementedError(f"node_type: {node_type} is not supported")
         worker_class = worker_classes[node_type]
@@ -205,7 +205,7 @@ def serve_node(
         ),
     )
 
-    def stop():
+    def stop() -> None:
         print(f"Stopping {name}")
         server_process.terminate()
         server_process.join(3)
@@ -214,7 +214,7 @@ def serve_node(
             server_process.kill()
             print("killed")
 
-    def start():
+    def start() -> None:
         print(f"Starting {name} server on {host}:{port}")
         server_process.start()
 

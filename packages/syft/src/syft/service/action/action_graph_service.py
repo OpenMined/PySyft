@@ -4,7 +4,7 @@ from typing import Optional
 from typing import Union
 
 # third party
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -118,10 +118,7 @@ class ActionGraphService(AbstractService):
         for _, kwarg in action.kwargs.items():
             input_uids.add(kwarg.id)
 
-        if action.result_id is not None:
-            output_uid = action.result_id.id
-        else:
-            output_uid = None
+        output_uid = action.result_id.id if action.result_id is not None else None
 
         return input_uids, output_uid
 
