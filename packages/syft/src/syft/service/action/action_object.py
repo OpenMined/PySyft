@@ -13,7 +13,6 @@ import types
 from typing import Any
 from typing import ClassVar
 from typing import TYPE_CHECKING
-from typing import cast
 
 # third party
 from pydantic import ConfigDict
@@ -913,9 +912,8 @@ class ActionObject(SyftObject):
             )
             return
         else:
-            obj._set_obj_location_(api.node_uid, api.signing_key.verify_key)  # type: ignore
+            obj._set_obj_location_(api.node_uid, api.signing_key.verify_key)  # type: ignore[union-attr]
 
-        api = cast(SyftAPI, api)  # type: ignore
         res = api.services.action.execute(action)
         if isinstance(res, SyftError):
             print(f"Failed to to store (arg) {obj} to store, {res}")
