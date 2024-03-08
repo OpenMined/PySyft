@@ -3,6 +3,7 @@ from typing import List
 
 # third party
 import pytest
+from typeguard import TypeCheckError
 
 # syft absolute
 from syft.service.dataset.dataset import Dataset
@@ -46,7 +47,7 @@ def test_dataset_actionidpartitionkey() -> None:
         ActionIDsPartitionKey.with_obj(obj="dummy_str")
 
     # Not sure what Exception should be raised here, Type or Attibute
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeCheckError):
         ActionIDsPartitionKey.with_obj(obj=["first_str", "second_str"])
 
 

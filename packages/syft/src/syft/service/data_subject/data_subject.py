@@ -1,4 +1,6 @@
 # stdlib
+from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -12,6 +14,7 @@ from typing_extensions import Self
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
@@ -32,7 +35,7 @@ class DataSubject(SyftObject):
 
     node_uid: UID
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     aliases: List[str] = []
 
     @property
@@ -53,16 +56,16 @@ class DataSubject(SyftObject):
     def __hash__(self) -> int:
         return hash(self.name)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return hash(self) == hash(other)
 
-    def __repr_syft_nested__(self):
+    def __repr_syft_nested__(self) -> str:
         return f"DataSubject({self.name})"
 
     def __repr__(self) -> str:
         return f"<DataSubject: {self.name}>"
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"DataSubject: {self.name}\n"
         _repr_str += f"Description: {self.description}\n"
         _repr_str += f"Aliases: {self.aliases}\n"
@@ -74,11 +77,11 @@ class DataSubject(SyftObject):
 class DataSubjectCreate(SyftObject):
     # version
     __canonical_name__ = "DataSubjectCreate"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID] = None
+    id: Optional[UID] = None  # type: ignore[assignment]
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     aliases: Optional[List[str]] = []
     members: Dict[str, "DataSubjectCreate"] = {}
 
@@ -87,19 +90,21 @@ class DataSubjectCreate(SyftObject):
     __repr_attrs__ = ["name", "member_count"]
 
     @property
-    def member_count(self):
+    def member_count(self) -> int:
         return len(self.members)
 
     def __hash__(self) -> int:
         return hash(self.name)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return hash(self) == hash(other)
 
-    def __repr_syft_nested__(self):
+    def __repr_syft_nested__(self) -> str:
         return f"DataSubject({self.name})"
 
-    def _create_member_relationship(self, data_subject, _relationship_set):
+    def _create_member_relationship(
+        self, data_subject: Self, _relationship_set: set
+    ) -> None:
         for member in data_subject.members.values():
             _relationship_set.add((data_subject, member))
             self._create_member_relationship(member, _relationship_set)
@@ -109,14 +114,14 @@ class DataSubjectCreate(SyftObject):
 
     @property
     def member_relationships(self) -> Set[Tuple[str, str]]:
-        relationships = set()
+        relationships: set = set()
         self._create_member_relationship(self, relationships)
         return relationships
 
     def __repr__(self) -> str:
         return f"<DataSubject: {self.name}>"
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"DataSubject: {self.name}\n"
         _repr_str += f"Description: {self.description}\n"
         _repr_str += f"Aliases: {self.aliases}\n"
@@ -125,10 +130,11 @@ class DataSubjectCreate(SyftObject):
 
 
 def remove_members_list(context: TransformContext) -> TransformContext:
-    context.output.pop("members", [])
+    if context.output is not None:
+        context.output.pop("members", [])
     return context
 
 
 @transform(DataSubjectCreate, DataSubject)
-def create_data_subject_to_data_subject():
+def create_data_subject_to_data_subject() -> list[Callable]:
     return [generate_id, remove_members_list, add_node_uid_for_key("node_uid")]

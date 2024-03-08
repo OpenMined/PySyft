@@ -9,7 +9,8 @@ from IPython import get_ipython
 from .code_parse import LaunchJobVisitor
 
 
-def submit_subjobs_code(submit_user_code, ep_client):
+def submit_subjobs_code(submit_user_code, ep_client) -> None:  # type: ignore
+    # TODO: fix the mypy issue. Reason: circular import
     # We are exploring the source code to automatically upload
     # subjobs in the ephemeral node
     # Usually, a DS would manually submit the code for subjobs,

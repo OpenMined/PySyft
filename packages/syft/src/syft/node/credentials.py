@@ -9,7 +9,7 @@ from typing import Union
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-import pydantic
+from pydantic import field_validator
 
 # relative
 from ..serde.serializable import serializable
@@ -54,8 +54,9 @@ class SyftVerifyKey(SyftBaseModel):
 class SyftSigningKey(SyftBaseModel):
     signing_key: SigningKey
 
-    @pydantic.validator("signing_key", pre=True, always=True)
-    def make_signing_key(cls, v: Union[str, SigningKey]) -> SigningKey:
+    @field_validator("signing_key", mode="before")
+    @classmethod
+    def make_signing_key(cls, v: Any) -> Any:
         return SigningKey(bytes.fromhex(v)) if isinstance(v, str) else v
 
     @property

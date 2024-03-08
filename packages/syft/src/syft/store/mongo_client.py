@@ -126,7 +126,7 @@ class MongoStoreClientConfig(StoreClientConfig):
 
 
 class MongoClientCache:
-    __client_cache__: Dict[str, Type["MongoClient"]] = {}
+    __client_cache__: Dict[int, Optional[Type["MongoClient"]]] = {}
     _lock: Lock = Lock()
 
     @classmethod
@@ -184,7 +184,7 @@ class MongoClient:
             self.client = None
             return Err(str(e))
 
-        return Ok()
+        return Ok(True)
 
     def with_db(self, db_name: str) -> Result[MongoDatabase, Err]:
         try:
@@ -239,6 +239,6 @@ class MongoClient:
 
         return Ok(collection_permissions)
 
-    def close(self):
+    def close(self) -> None:
         self.client.close()
         MongoClientCache.__client_cache__.pop(hash(str(self.config)), None)

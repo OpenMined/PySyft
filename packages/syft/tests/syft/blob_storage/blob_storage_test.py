@@ -60,7 +60,7 @@ def test_blob_storage_write_syft_object():
     )
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
-    user = UserCreate(email="info@openmined.org")
+    user = UserCreate(email="info@openmined.org", name="Jana Doe", password="password")
     file_data = io.BytesIO(sy.serialize(user, to_bytes=True))
     written_data = blob_deposit.write(file_data)
 

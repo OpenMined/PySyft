@@ -39,7 +39,7 @@ def migrate(
             f"{klass_from_str} has version: {version_from}, {klass_to_str} has version: {version_to}"
         )
 
-    def decorator(function: Callable):
+    def decorator(function: Callable) -> Callable:
         transforms = function()
 
         wrapper = generate_transform_wrapper(

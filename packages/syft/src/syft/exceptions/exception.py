@@ -2,6 +2,9 @@
 from typing import List
 from typing import Optional
 
+# third party
+from typing_extensions import Self
+
 # relative
 from ..service.context import NodeServiceContext
 from ..service.response import SyftError
@@ -16,7 +19,7 @@ class PySyftException(Exception):
         self.message = message
         self.roles = roles if roles else [ServiceRole.ADMIN]
 
-    def raise_with_context(self, context: NodeServiceContext):
+    def raise_with_context(self, context: NodeServiceContext) -> Self:
         self.context = context
         return self
 

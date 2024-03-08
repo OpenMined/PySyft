@@ -4,11 +4,14 @@ from __future__ import annotations
 # stdlib
 from pathlib import Path
 import re
+from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
+from typing import cast
 
 # third party
+from hagrid.orchestra import NodeHandle
 from loguru import logger
 from tqdm import tqdm
 
@@ -24,7 +27,9 @@ from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
+from ..service.sync.diff_state import ResolvedSyncState
 from ..service.user.roles import Roles
+from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..types.blob_storage import BlobFile
 from ..types.uid import UID
@@ -35,6 +40,7 @@ from .api import APIModule
 from .client import SyftClient
 from .client import login
 from .client import login_as_guest
+from .connection import NodeConnection
 from .protocol import SyftProtocol
 
 if TYPE_CHECKING:
@@ -42,7 +48,7 @@ if TYPE_CHECKING:
     from ..service.project.project import Project
 
 
-def _get_files_from_glob(glob_path: str) -> list:
+def _get_files_from_glob(glob_path: str) -> list[Path]:
     files = Path().glob(glob_path)
     return [f for f in files if f.is_file() and not f.name.startswith(".")]
 
@@ -60,7 +66,7 @@ def _contains_subdir(dir: Path) -> bool:
 
 
 def add_default_uploader(
-    user, obj: Union[CreateDataset, CreateAsset]
+    user: UserView, obj: Union[CreateDataset, CreateAsset]
 ) -> Union[CreateDataset, CreateAsset]:
     uploader = None
     for contributor in obj.contributors:
@@ -89,6 +95,9 @@ class DomainClient(SyftClient):
         # relative
         from ..types.twin_object import TwinObject
 
+        if self.users is None:
+            return SyftError(f"can't get user service for {self}")
+
         user = self.users.get_current_user()
         dataset = add_default_uploader(user, dataset)
         for i in range(len(dataset.asset_list)):
@@ -96,9 +105,12 @@ class DomainClient(SyftClient):
             dataset.asset_list[i] = add_default_uploader(user, asset)
 
         dataset._check_asset_must_contain_mock()
-        dataset_size = 0
+        dataset_size: float = 0.0
 
         # TODO: Refactor so that object can also be passed to generate warnings
+
+        self.api.connection = cast(NodeConnection, self.api.connection)
+
         metadata = self.api.connection.get_node_metadata(self.api.signing_key)
 
         if (
@@ -133,26 +145,77 @@ class DomainClient(SyftClient):
             dataset_size += get_mb_size(asset.data)
         dataset.mb_size = dataset_size
         valid = dataset.check()
-        if valid.ok():
-            return self.api.services.dataset.add(dataset=dataset)
-        else:
-            if len(valid.err()) > 0:
-                return tuple(valid.err())
-            return valid.err()
+        if isinstance(valid, SyftError):
+            return valid
+        return self.api.services.dataset.add(dataset=dataset)
+
+    # def get_permissions_for_other_node(
+    #     self,
+    #     items: list[Union[ActionObject, SyftObject]],
+    # ) -> dict:
+    #     if len(items) > 0:
+    #         if not len({i.syft_node_location for i in items}) == 1 or (
+    #             not len({i.syft_client_verify_key for i in items}) == 1
+    #         ):
+    #             raise ValueError("permissions from different nodes")
+    #         item = items[0]
+    #         api = APIRegistry.api_for(
+    #             item.syft_node_location, item.syft_client_verify_key
+    #         )
+    #         if api is None:
+    #             raise ValueError(
+    #                 f"Can't access the api. Please log in to {item.syft_node_location}"
+    #             )
+    #         return api.services.sync.get_permissions(items)
+    #     else:
+    #         return {}
+
+    def apply_state(
+        self, resolved_state: ResolvedSyncState
+    ) -> Union[SyftSuccess, SyftError]:
+        if len(resolved_state.delete_objs):
+            raise NotImplementedError("TODO implement delete")
+        items = resolved_state.create_objs + resolved_state.update_objs
+
+        action_objects = [x for x in items if isinstance(x, ActionObject)]
+        # permissions = self.get_permissions_for_other_node(items)
+        permissions: dict[UID, set[str]] = {}
+        for p in resolved_state.new_permissions:
+            if p.uid in permissions:
+                permissions[p.uid].add(p.permission_string)
+            else:
+                permissions[p.uid] = {p.permission_string}
+
+        for action_object in action_objects:
+            action_object = action_object.refresh_object()
+            action_object.send(self)
+
+        res = self.api.services.sync.sync_items(items, permissions)
+        if isinstance(res, SyftError):
+            return res
+
+        # Add updated node state to store to have a previous_state for next sync
+        new_state = self.api.services.sync.get_state(add_to_store=True)
+        if isinstance(new_state, SyftError):
+            return new_state
+
+        self._fetch_api(self.credentials)
+        return res
 
     def upload_files(
         self,
         file_list: Union[BlobFile, list[BlobFile], str, list[str], Path, list[Path]],
-        allow_recursive=False,
-        show_files=False,
+        allow_recursive: bool = False,
+        show_files: bool = False,
     ) -> Union[SyftSuccess, SyftError]:
         if not file_list:
             return SyftError(message="No files to upload")
 
         if not isinstance(file_list, list):
-            file_list = [file_list]
+            file_list = [file_list]  # type: ignore[assignment]
+        file_list = cast(list, file_list)
 
-        expanded_file_list = []
+        expanded_file_list: List[Union[BlobFile, Path]] = []
 
         for file in file_list:
             if isinstance(file, BlobFile):
@@ -214,7 +277,7 @@ class DomainClient(SyftClient):
         email: Optional[str] = None,
         password: Optional[str] = None,
         protocol: Union[str, SyftProtocol] = SyftProtocol.HTTP,
-    ) -> None:
+    ) -> Optional[Union[SyftSuccess, SyftError]]:
         if isinstance(protocol, str):
             protocol = SyftProtocol(protocol)
 
@@ -233,9 +296,12 @@ class DomainClient(SyftClient):
 
         res = self.exchange_route(client, protocol=protocol)
         if isinstance(res, SyftSuccess):
-            return SyftSuccess(
-                message=f"Connected {self.metadata.node_type} to {client.name} gateway"
-            )
+            if self.metadata:
+                return SyftSuccess(
+                    message=f"Connected {self.metadata.node_type} to {client.name} gateway"
+                )
+            else:
+                return SyftSuccess(message=f"Connected to {client.name} gateway")
         return res
 
     @property
@@ -308,10 +374,28 @@ class DomainClient(SyftClient):
             return self.api.services.worker_image
         return None
 
+    @property
+    def sync(self) -> Optional[APIModule]:
+        if self.api.has_service("sync"):
+            return self.api.services.sync
+        return None
+
+    @property
+    def code_status(self) -> Optional[APIModule]:
+        if self.api.has_service("code_status"):
+            return self.api.services.code_status
+        return None
+
+    @property
+    def output(self) -> Optional[APIModule]:
+        if self.api.has_service("output"):
+            return self.api.services.output
+        return None
+
     def get_project(
         self,
-        name: str = None,
-        uid: UID = None,
+        name: Optional[str] = None,
+        uid: Optional[UID] = None,
     ) -> Optional[Project]:
         """Get project by name or UID"""
 
@@ -378,18 +462,17 @@ class DomainClient(SyftClient):
 
         url = getattr(self.connection, "url", None)
         node_details = f"<strong>URL:</strong> {url}<br />" if url else ""
-        node_details += (
-            f"<strong>Node Type:</strong> {self.metadata.node_type.capitalize()}<br />"
-        )
-        node_side_type = (
-            "Low Side"
-            if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value
-            else "High Side"
-        )
-        node_details += f"<strong>Node Side Type:</strong> {node_side_type}<br />"
-        node_details += (
-            f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
-        )
+        if self.metadata is not None:
+            node_details += f"<strong>Node Type:</strong> {self.metadata.node_type.capitalize()}<br />"
+            node_side_type = (
+                "Low Side"
+                if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value
+                else "High Side"
+            )
+            node_details += f"<strong>Node Side Type:</strong> {node_side_type}<br />"
+            node_details += (
+                f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
+            )
 
         return f"""
         <style>
