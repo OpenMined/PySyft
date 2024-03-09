@@ -88,6 +88,7 @@ async def proxy(request: Request) -> dict[str, str]:
     message = json.dumps(request_data).encode()
     logger.info(f"Final Message: {message!r}")
     res = await app_call(dht_key=dht_key, message=message)
+    logger.info(f"Response: {res}")
     decompressed_res = lzma.decompress(res)
     return Response(decompressed_res, media_type="application/octet-stream")
 
