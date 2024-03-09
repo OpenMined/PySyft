@@ -20,7 +20,7 @@ def test_mount_azure_blob_storage(domain_1_port):
     domain_client.api.services.blob_storage.mount_azure(
         account_name="citestingstorageaccount",
         container_name="citestingcontainer",
-        account_key=os.environ["AZURE_BLOB_STORAGE_KEY"],
+        account_key=azure_storage_key,
         bucket_name="helmazurebucket",
     )
     blob_files = domain_client.api.services.blob_storage.get_files_from_bucket(
