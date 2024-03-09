@@ -94,7 +94,7 @@ class NetworkStash(BaseUIDStoreStash):
         )
         if existing.is_ok() and existing.ok():
             existing = existing.ok()
-            existing.update_routes(routes=peer.node_routes)
+            existing.update_routes(peer.node_routes)
             result = self.update(credentials, existing)
             return result
         else:
