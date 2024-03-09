@@ -102,7 +102,7 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
-from ..service.veilid.veilid_service import VeilidService
+from ..service.veilid import VEILID_ENABLED
 from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
@@ -379,7 +379,6 @@ class Node(AbstractNode):
                 SyncService,
                 OutputService,
                 UserCodeStatusService,
-                VeilidService,
             ]
             if services is None
             else services
@@ -399,6 +398,12 @@ class Node(AbstractNode):
 
             services += [OblvService]
             create_oblv_key_pair(worker=self)
+
+        if VEILID_ENABLED:
+            # relative
+            from ..service.veilid.veilid_service import VeilidService
+
+            services += [VeilidService]
 
         self.enable_warnings = enable_warnings
         self.in_memory_workers = in_memory_workers
@@ -982,7 +987,6 @@ class Node(AbstractNode):
                 SyncService,
                 OutputService,
                 UserCodeStatusService,
-                VeilidService,
             ]
 
             if OBLV:
@@ -990,6 +994,12 @@ class Node(AbstractNode):
                 from ..external.oblv.oblv_service import OblvService
 
                 store_services += [OblvService]
+
+            if VEILID_ENABLED:
+                # relative
+                from ..service.veilid.veilid_service import VeilidService
+
+                store_services += [VeilidService]
 
             if service_klass in store_services:
                 kwargs["store"] = self.document_store  # type: ignore[assignment]

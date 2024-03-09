@@ -120,6 +120,9 @@ spec:
               value: {{ .Values.node.oblv.port | quote }}
             - name: OBLV_ENABLED
               value: {{ .Values.node.oblv.enabled | quote }}
+            # Veilid
+            - name: VEILID_ENABLED
+              value: {{ .Values.veilid.enabled | quote }}
             {{- end }}
             {{- if .Values.node.env }}
             {{- toYaml .Values.node.env | nindent 12 }}
