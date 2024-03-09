@@ -133,12 +133,12 @@ async def get_node_id(conn: _JsonVeilidAPI) -> str:
     return node_id
 
 
-async def generate_dht_key() -> dict[str, str]:
+async def generate_dht_key() -> str:
     logger.info("Generating DHT Key")
 
     async with await get_veilid_conn() as conn:
         if await load_dht_key(conn):
-            return {"message": "DHT Key already exists"}
+            return "DHT Key already exists"
 
         async with await get_routing_context(conn) as router:
             dht_record = await router.create_dht_record(veilid.DHTSchema.dflt(1))
@@ -159,16 +159,16 @@ async def generate_dht_key() -> dict[str, str]:
             await store_dht_key(conn, dht_record.key)
             await store_dht_key_creds(conn, keypair)
 
-    return {"message": "DHT Key generated successfully"}
+    return "DHT Key generated successfully"
 
 
-async def retrieve_dht_key() -> dict[str, str]:
+async def retrieve_dht_key() -> str:
     async with await get_veilid_conn() as conn:
         dht_key = await load_dht_key(conn)
 
         if dht_key is None:
-            return {"message": "DHT Key does not exist"}
-        return {"message": str(dht_key)}
+            raise Exception("DHT Key does not exist. Please generate one.")
+        return str(dht_key)
 
 
 async def get_dht_value(
@@ -248,3 +248,9 @@ async def app_call(dht_key: str, message: bytes) -> dict[str, str]:
             result = await router.app_call(route, message)
 
             return result
+
+
+async def healthcheck() -> bool:
+    async with await get_veilid_conn() as conn:
+        state = await conn.get_state()
+        return state.network.started

@@ -7,17 +7,19 @@ import sys
 # third party
 from fastapi import Body
 from fastapi import FastAPI
+from fastapi import HTTPException
 from fastapi import Request
 from fastapi import Response
 from loguru import logger
 from typing_extensions import Annotated
 
 # relative
+from .models import ResponseModel
 from .veilid_core import VeilidConnectionSingleton
 from .veilid_core import app_call
 from .veilid_core import app_message
 from .veilid_core import generate_dht_key
-from .veilid_core import get_veilid_conn
+from .veilid_core import healthcheck
 from .veilid_core import retrieve_dht_key
 
 # Logging Configuration
@@ -29,29 +31,36 @@ app = FastAPI(title="Veilid")
 veilid_conn = VeilidConnectionSingleton()
 
 
-@app.get("/")
-async def read_root() -> dict[str, str]:
-    return {"message": "Hello World"}
+@app.get("/", response_model=ResponseModel)
+async def read_root() -> ResponseModel:
+    return ResponseModel(message="Veilid has started")
 
 
-@app.get("/healthcheck")
-async def healthcheck() -> dict[str, str]:
-    async with await get_veilid_conn() as conn:
-        state = await conn.get_state()
-        if state.network.started:
-            return {"message": "OK"}
-        else:
-            return {"message": "FAIL"}
+@app.get("/healthcheck", response_model=ResponseModel)
+async def healthcheck_endpoint() -> ResponseModel:
+    res = await healthcheck()
+    if res:
+        return ResponseModel(message="OK")
+    else:
+        return ResponseModel(message="FAIL")
 
 
-@app.post("/generate_dht_key")
-async def generate_dht_key_endpoint() -> dict[str, str]:
-    return await generate_dht_key()
+@app.post("/generate_dht_key", response_model=ResponseModel)
+async def generate_dht_key_endpoint() -> ResponseModel:
+    try:
+        res = await generate_dht_key()
+        return ResponseModel(message=res)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate DHT key: {e}")
 
 
-@app.get("/retrieve_dht_key")
-async def retrieve_dht_key_endpoint() -> dict[str, str]:
-    return await retrieve_dht_key()
+@app.get("/retrieve_dht_key", response_model=ResponseModel)
+async def retrieve_dht_key_endpoint() -> ResponseModel:
+    try:
+        res = await retrieve_dht_key()
+        return ResponseModel(message=res)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/app_message")
