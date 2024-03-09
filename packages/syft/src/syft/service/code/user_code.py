@@ -794,7 +794,7 @@ class SubmitUserCode(SyftObject):
         **kwargs: Any,
     ) -> Any:
         # relative
-        from ... import _orchestra
+        from ... import orchestra
 
         # Right now we only create a number of workers
         # In the future we might need to have the same pools/images as well
@@ -816,7 +816,7 @@ class SubmitUserCode(SyftObject):
             time_alive = 300
 
         # This could be changed given the work on containers
-        ep_node = _orchestra().launch(
+        ep_node = orchestra().launch(
             name=f"ephemeral_node_{self.func_name}_{random.randint(a=0, b=10000)}",  # nosec
             reset=True,
             create_producer=True,

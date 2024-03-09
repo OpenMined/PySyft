@@ -16,7 +16,7 @@ from syft.service.job.job_stash import JobStatus
 def node_1():
     name = secrets.token_hex(4)
     print(name)
-    node = sy.Orchestra.launch(
+    node = sy.orchestra.launch(
         name=name,
         dev_mode=True,
         node_side_type="low",
@@ -33,7 +33,7 @@ def node_1():
 def node_2():
     name = secrets.token_hex(4)
     print(name)
-    node = sy.Orchestra.launch(
+    node = sy.orchestra.launch(
         name=name,
         dev_mode=True,
         node_side_type="high",
