@@ -76,7 +76,9 @@ class NetworkRegistry:
                     # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
                     try:
                         version_url = url + "api/v2/metadata"
-                        res = requests.get(version_url, timeout=DEFAULT_TIMEOUT)  # nosec
+                        res = requests.get(
+                            version_url, timeout=DEFAULT_TIMEOUT
+                        )  # nosec
                         if res.status_code == 200:
                             network["version"] = res.json()["syft_version"]
                         else:
@@ -324,7 +326,9 @@ class EnclaveRegistry:
                     # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
                     try:
                         version_url = url + "api/v2/metadata"
-                        res = requests.get(version_url, timeout=DEFAULT_TIMEOUT)  # nosec
+                        res = requests.get(
+                            version_url, timeout=DEFAULT_TIMEOUT
+                        )  # nosec
                         if res.status_code == 200:
                             enclave["version"] = res.json()["syft_version"]
                         else:
