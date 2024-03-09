@@ -30,15 +30,6 @@ class VeilidService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
 
-    @staticmethod
-    def is_veilid_service_healthy() -> bool:
-        try:
-            response = requests.get(f"{VEILID_SERVICE_URL}{HEALTHCHECK_ENDPOINT}")
-            response.raise_for_status()
-            return response.json().get("message") == "OK"
-        except requests.RequestException:
-            return False
-
     def perform_request(
         self, method: Callable, endpoint: str, raw: bool = False
     ) -> Union[SyftSuccess, SyftError, str]:
@@ -51,6 +42,12 @@ class VeilidService(AbstractService):
             return SyftError(message=f"{response.json()['detail']}")
         except requests.RequestException as e:
             return SyftError(message=f"Failed to perform request. {e}")
+
+    def is_veilid_service_healthy(self) -> bool:
+        res = self.perform_request(
+            method=requests.get, endpoint=HEALTHCHECK_ENDPOINT, raw=True
+        )
+        return res == "OK"
 
     @service_method(
         path="veilid.generate_dht_key",
