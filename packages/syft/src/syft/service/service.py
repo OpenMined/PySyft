@@ -27,6 +27,9 @@ from ..protocol.data_protocol import migrate_args_and_kwargs
 from ..serde.lib_permissions import CMPCRUDPermission
 from ..serde.lib_permissions import CMPPermission
 from ..serde.lib_service_registry import CMPBase
+from ..serde.lib_service_registry import CMPClass
+from ..serde.lib_service_registry import CMPFunction
+from ..serde.lib_service_registry import action_execute_registry_libs
 from ..serde.serializable import serializable
 from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
@@ -230,14 +233,14 @@ def register_lib_obj(lib_obj: CMPBase) -> None:
             LibConfigRegistry.register(lib_config)
 
 
-# # hacky, prevent circular imports
-# for lib_obj in action_execute_registry_libs.flatten():
-#     # # for functions
-#     # func_name = func.__name__
-#     # # for classes
-#     # func_name = path.split(".")[-1]
-#     if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
-#         register_lib_obj(lib_obj)
+# hacky, prevent circular imports
+for lib_obj in action_execute_registry_libs.flatten():
+    # # for functions
+    # func_name = func.__name__
+    # # for classes
+    # func_name = path.split(".")[-1]
+    if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
+        register_lib_obj(lib_obj)
 
 
 def deconstruct_param(param: inspect.Parameter) -> Dict[str, Any]:
