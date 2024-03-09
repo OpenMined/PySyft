@@ -7,6 +7,7 @@ import os
 import platform
 import signal
 import subprocess  # nosec
+import sys
 import time
 from typing import Callable
 from typing import List
@@ -206,16 +207,16 @@ def serve_node(
     )
 
     def stop() -> None:
-        print(f"Stopping {name}")
+        sys.stdout.write(f"Landing {name}...")
         server_process.terminate()
         server_process.join(3)
         if server_process.is_alive():
             # this is needed because often the process is still alive
             server_process.kill()
-            print("killed")
+            print(" Landed!")
 
     def start() -> None:
-        print(f"Starting {name} server on {host}:{port}")
+        sys.stdout.write(f"Launching {name} on {host}:{port}")
         server_process.start()
 
         if tail:
@@ -228,21 +229,18 @@ def serve_node(
                 except SystemExit:
                     os._exit(130)
         else:
-            for i in range(WAIT_TIME_SECONDS):
+            for _ in range(WAIT_TIME_SECONDS):
                 try:
                     req = requests.get(
                         f"http://{host}:{port}{API_PATH}/metadata",
                         timeout=DEFAULT_TIMEOUT,
                     )
                     if req.status_code == 200:
-                        print(" Done.")
+                        print(" Launched!")
                         break
                 except Exception:
                     time.sleep(1)
-                    if i == 0:
-                        print("Waiting for server to start", end="")
-                    else:
-                        print(".", end="")
+                    sys.stdout.write(".")
 
     return start, stop
 
