@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - uses: buildjet/cache-delete@v1
         with:
           cache_key: ${{ inputs.cache_key }}

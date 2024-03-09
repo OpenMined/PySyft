@@ -1,19 +1,20 @@
 <script>
-  import { metadata, user } from '$lib/store';
-  import { getInitials } from '$lib/utils';
-  import Avatar from '../Avatar.svelte';
-  import BellIcon from '../icons/BellIcon.svelte';
-  import CollegeIcon from '../icons/CollegeIcon.svelte';
-  import QuestionIcon from '../icons/QuestionIcon.svelte';
+  import { getInitials } from "$lib/utils"
+  import Avatar from "../Avatar.svelte"
+  import BellIcon from "../icons/BellIcon.svelte"
+  import CollegeIcon from "../icons/CollegeIcon.svelte"
+  import QuestionIcon from "../icons/QuestionIcon.svelte"
+
+  export let metadata, user
 
   const links = [
-    { href: 'https://github.com/OpenMined/PySyft', icon: QuestionIcon },
-    { href: 'https://courses.openmined.org', icon: CollegeIcon },
-    { href: '', icon: BellIcon }
-  ];
+    { href: "https://github.com/OpenMined/PySyft", icon: QuestionIcon },
+    { href: "https://courses.openmined.org", icon: CollegeIcon },
+    { href: "", icon: BellIcon, disabled: true },
+  ]
 
-  $: domainInitials = getInitials($metadata?.name);
-  $: userInitials = getInitials($user?.name);
+  $: domainInitials = getInitials(metadata.name)
+  $: userInitials = getInitials(user.name)
 </script>
 
 <div
@@ -25,7 +26,13 @@
   <ul class="flex w-min items-center text-primary-500">
     {#each links as link}
       <li class="items-center justify-center w-13 h-13 hidden tablet:flex">
-        <a class="block w-6 h-6" href={link.href} target="_blank" rel="noopener noreferrer">
+        <a
+          class="block w-6 h-6"
+          href={link.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-disabled={link.disabled}
+        >
           <svelte:component this={link.icon} />
         </a>
       </li>
@@ -37,3 +44,11 @@
     </li> -->
   </ul>
 </div>
+
+<style lang="postcss">
+  [aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+</style>

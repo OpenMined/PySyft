@@ -29,6 +29,8 @@ class Identity(SyftBaseModel):
 
     @classmethod
     def from_client(cls, client: SyftClient) -> Self:
+        if not client.credentials:
+            raise ValueError(f"{client} has no signing key!")
         return cls(node_id=client.id, verify_key=client.credentials.verify_key)
 
 

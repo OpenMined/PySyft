@@ -3,8 +3,6 @@ services:
   proxy:
     ports:
       - "8080"
-    extra_hosts:
-      - host.docker.internal:host-gateway
     command:
       - "--api" # admin panel
       - "--api.insecure=true" # admin panel no password
@@ -43,6 +41,17 @@ services:
     stdin_open: true
     tty: true
 
+  worker:
+    volumes:
+      - ${RELATIVE_PATH}./backend/grid:/root/app/grid
+      - ${RELATIVE_PATH}../syft:/root/app/syft
+      - ${RELATIVE_PATH}./data/package-cache:/root/.cache
+    environment:
+      - DEV_MODE=True
+      - WATCHFILES_FORCE_POLLING=true
+    stdin_open: true
+    tty: true
+
   # backend_stream:
   #   volumes:
   #     - ${RELATIVE_PATH}./backend/grid:/root/app/grid
@@ -60,10 +69,8 @@ services:
   #     - DEV_MODE=True
 
   seaweedfs:
-    profiles:
-      - blob-storage
-    # volumes:
-    #   - ./data/seaweedfs:/data
+    volumes:
+      - ./data/seaweedfs:/data
     ports:
       - "9333" # admin web port
       - "8888" # filer web port

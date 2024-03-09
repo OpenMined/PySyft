@@ -12,6 +12,7 @@ from syft.protocol.data_protocol import stage_protocol_changes
 # grid absolute
 from grid.api.router import api_router
 from grid.core.config import settings
+from grid.core.node import worker
 from grid.logger.handler import get_log_handler
 
 app = FastAPI(
@@ -32,12 +33,19 @@ if settings.BACKEND_CORS_ORIGINS:
     )
 
 app.include_router(api_router, prefix=settings.API_V2_STR)
+print("Included routes, app should now be reachable")
 
 
 if settings.DEV_MODE:
     print("Staging protocol changes...")
     status = stage_protocol_changes()
     print(status)
+
+
+@app.on_event("shutdown")
+def shutdown() -> None:
+    worker.stop()
+    print("Worker Stop !!!")
 
 
 # needed for Google Kubernetes Engine LoadBalancer Healthcheck

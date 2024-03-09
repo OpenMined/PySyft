@@ -8,27 +8,39 @@ from hashlib import sha256
 import inspect
 from inspect import Signature
 import re
+import sys
+import traceback
 import types
+import typing
 from typing import Any
 from typing import Callable
 from typing import ClassVar
 from typing import Dict
+from typing import Generator
+from typing import Iterable
 from typing import KeysView
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
 from typing import Union
+from typing import get_args
+from typing import get_origin
 import warnings
 
 # third party
 import pandas as pd
 import pydantic
+from pydantic import ConfigDict
 from pydantic import EmailStr
-from pydantic.fields import Undefined
+from pydantic import Field
+from pydantic import model_validator
+from pydantic.fields import PydanticUndefined
 from result import OkErr
 from typeguard import check_type
+from typing_extensions import Self
 
 # relative
 from ..node.credentials import SyftVerifyKey
@@ -45,6 +57,18 @@ from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
 
+if sys.version_info >= (3, 10):
+    # stdlib
+    from types import NoneType
+    from types import UnionType
+else:
+    UnionType = Union
+    NoneType = type(None)
+
+if TYPE_CHECKING:
+    # relative
+    from ..service.sync.diff_state import AttrDiff
+
 IntStr = Union[int, str]
 AbstractSetIntStr = Set[IntStr]
 MappingIntStrAny = Mapping[IntStr, Any]
@@ -53,11 +77,13 @@ MappingIntStrAny = Mapping[IntStr, Any]
 SYFT_OBJECT_VERSION_1 = 1
 SYFT_OBJECT_VERSION_2 = 2
 SYFT_OBJECT_VERSION_3 = 3
+SYFT_OBJECT_VERSION_4 = 4
 
 supported_object_versions = [
     SYFT_OBJECT_VERSION_1,
     SYFT_OBJECT_VERSION_2,
     SYFT_OBJECT_VERSION_3,
+    SYFT_OBJECT_VERSION_4,
 ]
 
 HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
@@ -72,8 +98,27 @@ DYNAMIC_SYFT_ATTRIBUTES = [
 ]
 
 
+def _is_optional(x: Any) -> bool:
+    return get_origin(x) in (Optional, UnionType, Union) and any(
+        arg is NoneType for arg in get_args(x)
+    )
+
+
+def _get_optional_inner_type(x: Any) -> Any:
+    if get_origin(x) not in (Optional, UnionType, Union):
+        return x
+
+    args = get_args(x)
+
+    if not any(arg is NoneType for arg in args):
+        return x
+
+    non_none = [arg for arg in args if arg is not NoneType]
+    return non_none[0] if len(non_none) == 1 else x
+
+
 class SyftHashableObject:
-    __hash_exclude_attrs__ = []
+    __hash_exclude_attrs__: list = []
 
     def __hash__(self) -> int:
         return int.from_bytes(self.__sha256__(), byteorder="big")
@@ -88,17 +133,16 @@ class SyftHashableObject:
 
 
 class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # the name which doesn't change even when there are multiple classes
     __canonical_name__: str
     __version__: int  # data is always versioned
 
-    syft_node_location: Optional[UID]
-    syft_client_verify_key: Optional[SyftVerifyKey]
+    syft_node_location: Optional[UID] = Field(default=None, exclude=True)
+    syft_client_verify_key: Optional[SyftVerifyKey] = Field(default=None, exclude=True)
 
-    def _set_obj_location_(self, node_uid, credentials):
+    def _set_obj_location_(self, node_uid: UID, credentials: SyftVerifyKey) -> None:
         self.syft_node_location = node_uid
         self.syft_client_verify_key = credentials
 
@@ -111,7 +155,9 @@ class Context(SyftBaseObject):
 
 
 class SyftObjectRegistry:
-    __object_version_registry__: Dict[str, Type["SyftObject"]] = {}
+    __object_version_registry__: Dict[
+        str, Union[Type["SyftObject"], Type["SyftObjectRegistry"]]
+    ] = {}
     __object_transform_registry__: Dict[str, Callable] = {}
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
@@ -142,7 +188,9 @@ class SyftObjectRegistry:
                 cls.__object_version_registry__[mapping_string] = cls
 
     @classmethod
-    def versioned_class(cls, name: str, version: int) -> Optional[Type["SyftObject"]]:
+    def versioned_class(
+        cls, name: str, version: int
+    ) -> Optional[Union[Type["SyftObject"], Type["SyftObjectRegistry"]]]:
         mapping_string = f"{name}_{version}"
         if mapping_string not in cls.__object_version_registry__:
             return None
@@ -211,7 +259,7 @@ class SyftMigrationRegistry:
         cls.register_version(klass=klass)
 
     @classmethod
-    def register_version(cls, klass: type):
+    def register_version(cls, klass: type) -> None:
         if hasattr(klass, "__canonical_name__") and hasattr(klass, "__version__"):
             mapping_string = klass.__canonical_name__
             klass_version = klass.__version__
@@ -301,6 +349,10 @@ class SyftMigrationRegistry:
                             return cls.__migration_transform_registry__[klass_from][
                                 mapping_string
                             ]
+        raise ValueError(
+            f"No migration found for class type: {type_from} to "
+            f"type: {type_to} in the migration registry."
+        )
 
     @classmethod
     def get_migration_for_version(
@@ -333,25 +385,35 @@ class SyftMigrationRegistry:
         )
 
 
-print_type_cache = defaultdict(list)
+print_type_cache: dict = defaultdict(list)
+
+
+base_attrs_sync_ignore = [
+    "syft_node_location",
+    "syft_client_verify_key",
+]
 
 
 class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders={UID: str},
+    )
 
     # all objects have a UID
     id: UID
 
     # # move this to transforms
-    @pydantic.root_validator(pre=True)
-    def make_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        id_field = cls.__fields__["id"]
-        if "id" not in values and id_field.required:
-            values["id"] = id_field.type_()
+    @model_validator(mode="before")
+    @classmethod
+    def make_id(cls, values: Any) -> Any:
+        if isinstance(values, dict):
+            id_field = cls.model_fields["id"]
+            if "id" not in values and id_field.is_required():
+                values["id"] = id_field.annotation()
         return values
 
     __attr_searchable__: ClassVar[
@@ -366,7 +428,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
 
     __repr_attrs__: ClassVar[List[str]] = []  # show these in html repr collections
     __attr_custom_repr__: ClassVar[
-        List[str]
+        Optional[List[str]]
     ] = None  # show these in html repr of an object
 
     def __syft_get_funcs__(self) -> List[Tuple[str, Signature]]:
@@ -401,7 +463,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     def _repr_debug_(self) -> str:
         class_name = get_qualname_for(type(self))
         _repr_str = f"class {class_name}:\n"
-        fields = getattr(self, "__fields__", {})
+        fields = getattr(self, "model_fields", {})
         for attr in fields.keys():
             if attr in DYNAMIC_SYFT_ATTRIBUTES:
                 continue
@@ -414,7 +476,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             _repr_str += f"  {attr}: {value_type} = {value}\n"
         return _repr_str
 
-    def _repr_markdown_(self, wrap_as_python=True, indent=0) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         s_indent = " " * indent * 2
         class_name = get_qualname_for(type(self))
         if self.__attr_custom_repr__ is not None:
@@ -422,7 +484,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         elif self.__repr_attrs__ is not None:
             fields = self.__repr_attrs__
         else:
-            fields = list(getattr(self, "__fields__", {}).keys())
+            fields = list(getattr(self, "__fields__", {}).keys())  # type: ignore[unreachable]
 
         if "id" not in fields:
             fields = ["id"] + fields
@@ -431,7 +493,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         fields = [x for x in fields if x not in dynam_attrs]
         _repr_str = f"{s_indent}class {class_name}:\n"
         for attr in fields:
-            value = self
+            value: Any = self
             # if it's a compound string
             if "." in attr:
                 # break it into it's bits & fetch the attr
@@ -447,9 +509,11 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                 value = value.__repr_syft_nested__()
             if isinstance(value, list):
                 value = [
-                    elem.__repr_syft_nested__()
-                    if hasattr(elem, "__repr_syft_nested__")
-                    else elem
+                    (
+                        elem.__repr_syft_nested__()
+                        if hasattr(elem, "__repr_syft_nested__")
+                        else elem
+                    )
                     for elem in value
                 ]
             value = f'"{value}"' if isinstance(value, str) else value
@@ -475,8 +539,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         return self.__dict__.keys()
 
     # allows splatting with **
-    def __getitem__(self, key: str) -> Any:
-        return self.__dict__.__getitem__(key)
+    def __getitem__(self, key: Union[str, int]) -> Any:
+        return self.__dict__.__getitem__(key)  # type: ignore
 
     def _upgrade_version(self, latest: bool = True) -> "SyftObject":
         constructor = SyftObjectRegistry.versioned_class(
@@ -520,58 +584,27 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                     new_dict[k] = v
             return new_dict
 
-    def dict(
-        self,
-        *,
-        include: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,
-        exclude: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,
-        by_alias: bool = False,
-        skip_defaults: Optional[bool] = None,
-        exclude_unset: bool = False,
-        exclude_defaults: bool = False,
-        exclude_none: bool = False,
-    ):
-        if exclude is None:
-            exclude = set()
-
-        for attr in DYNAMIC_SYFT_ATTRIBUTES:
-            exclude.add(attr)
-        return super().dict(
-            include=include,
-            exclude=exclude,
-            by_alias=by_alias,
-            skip_defaults=skip_defaults,
-            exclude_unset=exclude_unset,
-            exclude_defaults=exclude_defaults,
-            exclude_none=exclude_none,
-        )
-
     def __post_init__(self) -> None:
         pass
 
-    def _syft_set_validate_private_attrs_(self, **kwargs):
+    def _syft_set_validate_private_attrs_(self, **kwargs: Any) -> None:
         # Validate and set private attributes
         # https://github.com/pydantic/pydantic/issues/2105
         for attr, decl in self.__private_attributes__.items():
             value = kwargs.get(attr, decl.get_default())
             var_annotation = self.__annotations__.get(attr)
-            if value is not Undefined:
-                if decl.default_factory:
-                    # If the value is defined via PrivateAttr with default factory
-                    value = decl.default_factory(value)
-                elif var_annotation is not None:
+            if value is not PydanticUndefined:
+                if var_annotation is not None:
                     # Otherwise validate value against the variable annotation
-                    check_type(attr, value, var_annotation)
+                    check_type(value, var_annotation)
                 setattr(self, attr, value)
             else:
-                # check if the private is optional
-                is_optional_attr = type(None) in getattr(var_annotation, "__args__", [])
-                if not is_optional_attr:
+                if not _is_optional(var_annotation):
                     raise ValueError(
                         f"{attr}\n field required (type=value_error.missing)"
                     )
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._syft_set_validate_private_attrs_(**kwargs)
         self.__post_init__()
@@ -584,8 +617,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     def _syft_keys_types_dict(cls, attr_name: str) -> Dict[str, type]:
         kt_dict = {}
         for key in getattr(cls, attr_name, []):
-            if key in cls.__fields__:
-                type_ = cls.__fields__[key].type_
+            if key in cls.model_fields:
+                type_ = _get_optional_inner_type(cls.model_fields[key].annotation)
             else:
                 try:
                     method = getattr(cls, key)
@@ -599,8 +632,9 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             # EmailStr seems to be lost every time the value is set even with a validator
             # this means the incoming type is str so our validators fail
 
-            if type(type_) is type and issubclass(type_, EmailStr):
+            if type_ is EmailStr:
                 type_ = str
+
             kt_dict[key] = type_
         return kt_dict
 
@@ -623,6 +657,113 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             )
         return self
 
+    def syft_eq(self, ext_obj: Optional[Self]) -> bool:
+        if ext_obj is None:
+            return False
+        attrs_to_check = self.__dict__.keys()
+
+        obj_exclude_attrs = getattr(self, "__exclude_sync_diff_attrs__", [])
+        for attr in attrs_to_check:
+            if attr not in base_attrs_sync_ignore and attr not in obj_exclude_attrs:
+                obj_attr = getattr(self, attr)
+                ext_obj_attr = getattr(ext_obj, attr)
+                if hasattr(obj_attr, "syft_eq") and not inspect.isclass(obj_attr):
+                    if not obj_attr.syft_eq(ext_obj=ext_obj_attr):
+                        return False
+                elif obj_attr != ext_obj_attr:
+                    return False
+        return True
+
+    def get_diffs(self, ext_obj: Self) -> List["AttrDiff"]:
+        # self is low, ext is high
+        # relative
+        from ..service.sync.diff_state import AttrDiff
+        from ..service.sync.diff_state import ListDiff
+
+        diff_attrs = []
+
+        # Sanity check
+        if self.id != ext_obj.id:
+            raise Exception("Not the same id for low side and high side requests")
+
+        attrs_to_check = self.__dict__.keys()
+
+        obj_exclude_attrs = getattr(self, "__exclude_sync_diff_attrs__", [])
+
+        for attr in attrs_to_check:
+            if attr not in base_attrs_sync_ignore and attr not in obj_exclude_attrs:
+                obj_attr = getattr(self, attr)
+                ext_obj_attr = getattr(ext_obj, attr)
+
+                if isinstance(obj_attr, list) and isinstance(ext_obj_attr, list):
+                    list_diff = ListDiff.from_lists(
+                        attr_name=attr, low_list=obj_attr, high_list=ext_obj_attr
+                    )
+                    if not list_diff.is_empty:
+                        diff_attrs.append(list_diff)
+
+                # TODO: to the same check as above for Dicts when we use them
+                else:
+                    cmp = obj_attr.__eq__
+                    if hasattr(obj_attr, "syft_eq"):
+                        cmp = obj_attr.syft_eq
+
+                    if not cmp(ext_obj_attr):
+                        diff_attr = AttrDiff(
+                            attr_name=attr,
+                            low_attr=obj_attr,
+                            high_attr=ext_obj_attr,
+                        )
+                        diff_attrs.append(diff_attr)
+        return diff_attrs
+
+    ## OVERRIDING pydantic.BaseModel.__getattr__
+    ## return super().__getattribute__(item) -> return self.__getattribute__(item)
+    ## so that ActionObject.__getattribute__ works properly,
+    ## raising AttributeError when underlying object does not have the attribute
+    if not typing.TYPE_CHECKING:
+        # We put `__getattr__` in a non-TYPE_CHECKING block because otherwise, mypy allows arbitrary attribute access
+
+        def __getattr__(self, item: str) -> Any:
+            private_attributes = object.__getattribute__(self, "__private_attributes__")
+            if item in private_attributes:
+                attribute = private_attributes[item]
+                if hasattr(attribute, "__get__"):
+                    return attribute.__get__(self, type(self))  # type: ignore
+
+                try:
+                    # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
+                    return self.__pydantic_private__[item]  # type: ignore
+                except KeyError as exc:
+                    raise AttributeError(
+                        f"{type(self).__name__!r} object has no attribute {item!r}"
+                    ) from exc
+            else:
+                # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
+                # See `BaseModel.__repr_args__` for more details
+                try:
+                    pydantic_extra = object.__getattribute__(self, "__pydantic_extra__")
+                except AttributeError:
+                    pydantic_extra = None
+
+                if pydantic_extra is not None:
+                    try:
+                        return pydantic_extra[item]
+                    except KeyError as exc:
+                        raise AttributeError(
+                            f"{type(self).__name__!r} object has no attribute {item!r}"
+                        ) from exc
+                else:
+                    if hasattr(self.__class__, item):
+                        return self.__getattribute__(
+                            item
+                        )  # Raises AttributeError if appropriate
+                    else:
+                        # this is the current error
+                        raise AttributeError(
+                            f"{type(self).__name__!r} object has no attribute {item!r}"
+                        )
+
 
 def short_qual_name(name: str) -> str:
     # If the name is a qualname of formax a.b.c.d we will only get d
@@ -630,14 +771,18 @@ def short_qual_name(name: str) -> str:
     return name.split(".")[-1]
 
 
-def short_uid(uid: UID) -> str:
+def short_uid(uid: Optional[UID]) -> Optional[str]:
     if uid is None:
         return uid
     else:
         return str(uid)[:6] + "..."
 
 
-def get_repr_values_table(_self, is_homogenous, extra_fields=None):
+def get_repr_values_table(
+    _self: Union[Mapping, Iterable],
+    is_homogenous: bool,
+    extra_fields: Optional[list] = None,
+) -> dict:
     if extra_fields is None:
         extra_fields = []
 
@@ -702,9 +847,11 @@ def get_repr_values_table(_self, is_homogenous, extra_fields=None):
                             and hasattr(value[0], "__repr_syft_nested__")
                         ):
                             value = [
-                                x.__repr_syft_nested__()
-                                if hasattr(x, "__repr_syft_nested__")
-                                else x
+                                (
+                                    x.__repr_syft_nested__()
+                                    if hasattr(x, "__repr_syft_nested__")
+                                    else x
+                                )
                                 for x in value
                             ]
                     if value is None:
@@ -723,14 +870,14 @@ def get_repr_values_table(_self, is_homogenous, extra_fields=None):
     return df.to_dict("records")
 
 
-def list_dict_repr_html(self) -> str:
+def list_dict_repr_html(self: Union[Mapping, Set, Iterable]) -> str:
     try:
         max_check = 1
         items_checked = 0
         has_syft = False
-        extra_fields = []
+        extra_fields: list = []
         if isinstance(self, Mapping):
-            values = list(self.values())
+            values: Any = list(self.values())
         elif isinstance(self, Set):
             values = list(self)
         else:
@@ -745,7 +892,7 @@ def list_dict_repr_html(self) -> str:
                 break
 
             if hasattr(type(item), "mro") and type(item) != type:
-                mro = type(item).mro()
+                mro: Union[list, str] = type(item).mro()
             elif hasattr(item, "mro") and type(item) != type:
                 mro = item.mro()
             else:
@@ -769,7 +916,12 @@ def list_dict_repr_html(self) -> str:
                 cls_name = first_value.__class__.__name__
             else:
                 cls_name = ""
-            vals = get_repr_values_table(self, is_homogenous, extra_fields=extra_fields)
+            try:
+                vals = get_repr_values_table(
+                    self, is_homogenous, extra_fields=extra_fields
+                )
+            except Exception:
+                return str(self)
 
             return create_table_template(
                 vals,
@@ -778,7 +930,9 @@ def list_dict_repr_html(self) -> str:
             )
 
     except Exception as e:
-        print(f"error representing {type(self)} of objects. {e}")
+        print(
+            f"error representing {type(self)} of objects. {e}, {traceback.format_exc()}"
+        )
         pass
 
     # stdlib
@@ -800,6 +954,12 @@ class StorableObjectType:
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+
+TupleGenerator = Generator[Tuple[str, Any], None, None]
+
 
 class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     """Syft Object to which partial arguments can be provided."""
@@ -807,45 +967,8 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     __canonical_name__ = "PartialSyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    def __init__(self, *args, **kwargs) -> None:
-        # Filter out Empty values from args and kwargs
-        args_, kwargs_ = (), {}
-        for arg in args:
-            if arg is not Empty:
-                args_.append(arg)
-
-        for key, val in kwargs.items():
-            if val is not Empty:
-                kwargs_[key] = val
-
-        super().__init__(*args_, **kwargs_)
-
-        fields_with_default = set()
-        for _field_name, _field in self.__fields__.items():
-            if _field.default or _field.allow_none:
-                fields_with_default.add(_field_name)
-
-        # Fields whose values are set via a validator hook
-        fields_set_via_validator = []
-
-        for _field_name in self.__validators__.keys():
-            _field = self.__fields__[_field_name]
-            if self.__dict__[_field_name] is None:
-                # Since all fields are None, only allow None
-                # where either none is allowed or default is None
-                if _field.allow_none or _field.default is None:
-                    fields_set_via_validator.append(_field)
-
-        # Exclude unset fields
-        unset_fields = (
-            set(self.__fields__)
-            - set(self.__fields_set__)
-            - set(fields_set_via_validator)
-        )
-
-        empty_fields = unset_fields - fields_with_default
-        for field_name in empty_fields:
-            self.__dict__[field_name] = Empty
+    def __iter__(self) -> TupleGenerator:
+        yield from ((k, v) for k, v in super().__iter__() if v is not Empty)
 
 
 recursive_serde_register_type(PartialSyftObject)
@@ -862,7 +985,7 @@ def attach_attribute_to_syft_object(result: Any, attr_dict: Dict[str, Any]) -> A
         result = result.value
 
     if isinstance(result, MutableMapping):
-        iterable_keys = result.keys()
+        iterable_keys: Iterable = result.keys()
     elif isinstance(result, MutableSequence):
         iterable_keys = range(len(result))
     elif isinstance(result, tuple):

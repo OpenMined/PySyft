@@ -40,12 +40,13 @@ Read/retrieve SyftObject from blob storage
 - use `BlobRetrieval.read` to retrieve the SyftObject `syft_object = blob_retrieval.read()`
 """
 
-
 # stdlib
+from io import BytesIO
+from typing import Any
+from typing import Generator
 from typing import Optional
 from typing import Type
 from typing import Union
-from urllib.request import urlretrieve
 
 # third party
 from pydantic import BaseModel
@@ -62,49 +63,115 @@ from ...types.blob_storage import BlobFile
 from ...types.blob_storage import BlobFileType
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
+from ...types.blob_storage import DEFAULT_CHUNK_SIZE
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.grid_url import GridURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
-from ...util.constants import DEFAULT_TIMEOUT
+
+DEFAULT_TIMEOUT = 10
+MAX_RETRIES = 20
 
 
 @serializable()
 class BlobRetrieval(SyftObject):
     __canonical_name__ = "BlobRetrieval"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    type_: Optional[Type]
+    type_: Optional[Type] = None
     file_name: str
-
-    def read(self) -> Union[SyftObject, SyftError]:
-        pass
+    syft_blob_storage_entry_id: Optional[UID] = None
+    file_size: Optional[int] = None
 
 
 @serializable()
 class SyftObjectRetrieval(BlobRetrieval):
     __canonical_name__ = "SyftObjectRetrieval"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_4
 
     syft_object: bytes
 
-    def read(self) -> Union[SyftObject, SyftError]:
-        if self.type_ is BlobFileType:
-            with open(self.file_name, "wb") as fp:
-                fp.write(self.syft_object)
-            return BlobFile(file_name=self.file_name)
-        return deserialize(self.syft_object, from_bytes=True)
+    def _read_data(
+        self, stream: bool = False, _deserialize: bool = True, **kwargs: Any
+    ) -> Any:
+        # development setup, we can access the same filesystem
+        if not _deserialize:
+            res = self.syft_object
+        else:
+            res = deserialize(self.syft_object, from_bytes=True)
+
+        # TODO: implement proper streaming from local files
+        if stream:
+            return [res]
+        else:
+            return res
+
+    def read(self, _deserialize: bool = True) -> Union[SyftObject, SyftError]:
+        return self._read_data(_deserialize=_deserialize)
+
+
+def syft_iter_content(
+    blob_url: Union[str, GridURL],
+    chunk_size: int,
+    max_retries: int = MAX_RETRIES,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> Generator:
+    """custom iter content with smart retries (start from last byte read)"""
+    current_byte = 0
+    for attempt in range(max_retries):
+        try:
+            headers = {"Range": f"bytes={current_byte}-"}
+            with requests.get(
+                str(blob_url), stream=True, headers=headers, timeout=(timeout, timeout)
+            ) as response:
+                response.raise_for_status()
+                for chunk in response.iter_content(
+                    chunk_size=chunk_size, decode_unicode=False
+                ):
+                    current_byte += len(chunk)
+                    yield chunk
+                return
+
+        except requests.exceptions.RequestException as e:
+            if attempt < max_retries:
+                print(
+                    f"Attempt {attempt}/{max_retries} failed: {e} at byte {current_byte}. Retrying..."
+                )
+            else:
+                print(f"Max retries reached. Failed with error: {e}")
+                raise
 
 
 @serializable()
 class BlobRetrievalByURL(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_3
 
-    url: GridURL
+    url: Union[GridURL, str]
 
     def read(self) -> Union[SyftObject, SyftError]:
+        if self.type_ is BlobFileType:
+            return BlobFile(
+                file_name=self.file_name,
+                syft_client_verify_key=self.syft_client_verify_key,
+                syft_node_location=self.syft_node_location,
+                syft_blob_storage_entry_id=self.syft_blob_storage_entry_id,
+                file_size=self.file_size,
+            )
+        else:
+            return self._read_data()
+
+    def _read_data(
+        self,
+        stream: bool = False,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
         # relative
         from ...client.api import APIRegistry
 
@@ -112,17 +179,24 @@ class BlobRetrievalByURL(BlobRetrieval):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-        if api is not None:
-            blob_url = api.connection.to_blob_route(self.url.url_path)
+        if api and api.connection and isinstance(self.url, GridURL):
+            blob_url = api.connection.to_blob_route(
+                self.url.url_path, host=self.url.host_or_ip
+            )
         else:
             blob_url = self.url
         try:
             if self.type_ is BlobFileType:
-                urlretrieve(str(blob_url), filename=self.file_name)  # nosec
-                return BlobFile(file_name=self.file_name)
-            response = requests.get(str(blob_url), timeout=DEFAULT_TIMEOUT)
-            response.raise_for_status()
-            return deserialize(response.content, from_bytes=True)
+                if stream:
+                    return syft_iter_content(blob_url, chunk_size)
+                else:
+                    response = requests.get(str(blob_url), stream=False)  # nosec
+                    response.raise_for_status()
+                    return response.content
+            else:
+                response = requests.get(str(blob_url), stream=stream)  # nosec
+                response.raise_for_status()
+                return deserialize(response.content, from_bytes=True)
         except requests.RequestException as e:
             return SyftError(message=f"Failed to retrieve with Error: {e}")
 
@@ -134,8 +208,8 @@ class BlobDeposit(SyftObject):
 
     blob_storage_entry_id: UID
 
-    def write(self, data: bytes) -> Union[SyftSuccess, SyftError]:
-        pass
+    def write(self, data: BytesIO) -> Union[SyftSuccess, SyftError]:
+        raise NotImplementedError
 
 
 @serializable()
@@ -147,7 +221,7 @@ class BlobStorageConnection:
     def __enter__(self) -> Self:
         raise NotImplementedError
 
-    def __exit__(self, *exc) -> None:
+    def __exit__(self, *exc: Any) -> None:
         raise NotImplementedError
 
     def read(self, fp: SecureFilePathLocation, type_: Optional[Type]) -> BlobRetrieval:

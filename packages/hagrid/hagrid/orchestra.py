@@ -1,4 +1,5 @@
 """Python Level API to launch Docker Containers using Hagrid"""
+
 # future
 from __future__ import annotations
 
@@ -8,35 +9,31 @@ import getpass
 import inspect
 import os
 import subprocess  # nosec
+import sys
+from threading import Thread
 from typing import Any
 from typing import Callable
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Union
-
-# third party
-import gevent
 
 # relative
 from .cli import str_to_bool
 from .grammar import find_available_port
 from .names import random_name
+from .util import ImportFromSyft
+from .util import NodeSideType
 from .util import shell
 
-try:
-    # syft absolute
-    from syft.abstract_node import NodeSideType
-    from syft.abstract_node import NodeType
-    from syft.protocol.data_protocol import stage_protocol_changes
-    from syft.service.response import SyftError
-except Exception:  # nosec
-    # print("Please install syft with `pip install syft`")
-    pass
-
 DEFAULT_PORT = 8080
+DEFAULT_URL = "http://localhost"
 # Gevent used instead of threading module ,as we monkey patch gevent in syft
 # and this causes context switch error when we use normal threading in hagrid
 
 ClientAlias = Any  # we don't want to import Client in case it changes
+
+if TYPE_CHECKING:
+    NodeType = ImportFromSyft.import_node_type()
 
 
 # Define a function to read and print a stream
@@ -46,7 +43,6 @@ def read_stream(stream: subprocess.PIPE) -> None:
         if not line:
             break
         print(line, end="")
-        gevent.sleep(0)
 
 
 def to_snake_case(name: str) -> str:
@@ -103,6 +99,7 @@ def container_exists_with(name: str, port: int) -> bool:
 
 
 def get_node_type(node_type: Optional[Union[str, NodeType]]) -> Optional[NodeType]:
+    NodeType = ImportFromSyft.import_node_type()
     if node_type is None:
         node_type = os.environ.get("ORCHESTRA_NODE_TYPE", NodeType.DOMAIN)
     try:
@@ -197,6 +194,7 @@ class NodeHandle:
         institution: Optional[str] = None,
         website: Optional[str] = None,
     ) -> Any:
+        SyftError = ImportFromSyft.import_syft_error()
         if not email:
             email = input("Email: ")
         if not password:
@@ -237,7 +235,13 @@ def deploy_to_python(
     local_db: bool,
     node_side_type: NodeSideType,
     enable_warnings: bool,
+    n_consumers: int,
+    thread_workers: bool,
+    create_producer: bool = False,
+    queue_port: Optional[int] = None,
 ) -> Optional[NodeHandle]:
+    stage_protocol_changes = ImportFromSyft.import_stage_protocol_changes()
+    NodeType = ImportFromSyft.import_node_type()
     sy = get_syft_client()
     if sy is None:
         return sy
@@ -253,33 +257,34 @@ def deploy_to_python(
         print("Staging Protocol Changes...")
         stage_protocol_changes()
 
+    kwargs = {
+        "name": name,
+        "host": host,
+        "port": port,
+        "reset": reset,
+        "processes": processes,
+        "dev_mode": dev_mode,
+        "tail": tail,
+        "node_type": node_type_enum,
+        "node_side_type": node_side_type,
+        "enable_warnings": enable_warnings,
+        # new kwargs
+        "queue_port": queue_port,
+        "n_consumers": n_consumers,
+        "create_producer": create_producer,
+    }
+
     if port:
+        kwargs["in_memory_workers"] = True
         if port == "auto":
             # dont use default port to prevent port clashes in CI
             port = find_available_port(host="localhost", port=None, search=True)
+            kwargs["port"] = port
+
         sig = inspect.signature(sy.serve_node)
-        if "node_type" in sig.parameters.keys():
-            start, stop = sy.serve_node(
-                name=name,
-                host=host,
-                port=port,
-                reset=reset,
-                dev_mode=dev_mode,
-                tail=tail,
-                node_type=node_type_enum,
-                node_side_type=node_side_type,
-                enable_warnings=enable_warnings,
-            )
-        else:
-            # syft <= 0.8.1
-            start, stop = sy.serve_node(
-                name=name,
-                host=host,
-                port=port,
-                reset=reset,
-                dev_mode=dev_mode,
-                tail=tail,
-            )
+        supported_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
+
+        start, stop = sy.serve_node(**supported_kwargs)
         start()
         return NodeHandle(
             node_type=node_type_enum,
@@ -291,35 +296,28 @@ def deploy_to_python(
             node_side_type=node_side_type,
         )
     else:
+        kwargs["local_db"] = local_db
+        kwargs["thread_workers"] = thread_workers
         if node_type_enum in worker_classes:
             worker_class = worker_classes[node_type_enum]
             sig = inspect.signature(worker_class.named)
-            if "node_type" in sig.parameters.keys():
-                worker = worker_class.named(
-                    name=name,
-                    processes=processes,
-                    reset=reset,
-                    local_db=local_db,
-                    node_type=node_type_enum,
-                    node_side_type=node_side_type,
-                    enable_warnings=enable_warnings,
-                )
-            else:
-                # syft <= 0.8.1
-                worker = worker_class.named(
-                    name=name,
-                    processes=processes,
-                    reset=reset,
-                    local_db=local_db,
-                )
+            supported_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
+            if "node_type" in sig.parameters.keys() and "migrate" in sig.parameters:
+                supported_kwargs["migrate"] = True
+            worker = worker_class.named(**supported_kwargs)
         else:
             raise NotImplementedError(f"node_type: {node_type_enum} is not supported")
+
+        def stop() -> None:
+            worker.stop()
+
         return NodeHandle(
             node_type=node_type_enum,
             deployment_type=deployment_type_enum,
             name=name,
             python_node=worker,
             node_side_type=node_side_type,
+            shutdown=stop,
         )
 
 
@@ -330,12 +328,13 @@ def deploy_to_k8s(
     node_side_type: NodeSideType,
 ) -> NodeHandle:
     node_port = int(os.environ.get("NODE_PORT", f"{DEFAULT_PORT}"))
+    node_url = str(os.environ.get("NODE_URL", f"{DEFAULT_URL}"))
     return NodeHandle(
         node_type=node_type_enum,
         deployment_type=deployment_type_enum,
         name=name,
         port=node_port,
-        url="http://localhost",
+        url=node_url,
         node_side_type=node_side_type,
     )
 
@@ -371,6 +370,7 @@ def deploy_to_container(
     port: Union[int, str],
     name: str,
     enable_warnings: bool,
+    in_memory_workers: bool,
 ) -> Optional[NodeHandle]:
     if port == "auto" or port is None:
         if container_exists(name=name):
@@ -407,6 +407,12 @@ def deploy_to_container(
     if not enable_warnings:
         commands.append("--no-warnings")
 
+    if node_side_type.lower() == NodeSideType.LOW_SIDE.value.lower():
+        commands.append("--low-side")
+
+    if in_memory_workers:
+        commands.append("--in-mem-workers")
+
     # by default , we deploy as container stack
     if deployment_type_enum == DeploymentType.SINGLE_CONTAINER:
         commands.append("--deployment-type=single_container")
@@ -434,12 +440,14 @@ def deploy_to_container(
     process = subprocess.Popen(  # nosec
         commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
     )
-    # Start gevent threads to read and print the output and error streams
-    stdout_thread = gevent.spawn(read_stream, process.stdout)
-    stderr_thread = gevent.spawn(read_stream, process.stderr)
-
-    # Wait for the threads to finish
-    gevent.joinall([stdout_thread, stderr_thread], raise_error=True)
+    # Start threads to read and print the output and error streams
+    stdout_thread = Thread(target=read_stream, args=(process.stdout,))
+    stderr_thread = Thread(target=read_stream, args=(process.stderr,))
+    # todo, raise errors
+    stdout_thread.start()
+    stderr_thread.start()
+    stdout_thread.join()
+    stderr_thread.join()
 
     if not cmd:
         return NodeHandle(
@@ -474,9 +482,16 @@ class Orchestra:
         verbose: bool = False,
         render: bool = False,
         enable_warnings: bool = False,
+        n_consumers: int = 0,
+        thread_workers: bool = False,
+        create_producer: bool = False,
+        queue_port: Optional[int] = None,
+        in_memory_workers: bool = True,
     ) -> Optional[NodeHandle]:
+        NodeType = ImportFromSyft.import_node_type()
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"
+            thread_workers = True
 
         # syft 0.8.1
         if node_type == "python":
@@ -487,8 +502,6 @@ class Orchestra:
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
         node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
-        if not node_type_enum:
-            return None
 
         node_side_type_enum = (
             NodeSideType.HIGH_SIDE
@@ -516,6 +529,10 @@ class Orchestra:
                 local_db=local_db,
                 node_side_type=node_side_type_enum,
                 enable_warnings=enable_warnings,
+                n_consumers=n_consumers,
+                thread_workers=thread_workers,
+                create_producer=create_producer,
+                queue_port=queue_port,
             )
 
         elif deployment_type_enum == DeploymentType.K8S:
@@ -544,6 +561,7 @@ class Orchestra:
                 name=name,
                 node_side_type=node_side_type_enum,
                 enable_warnings=enable_warnings,
+                in_memory_workers=in_memory_workers,
             )
         elif deployment_type_enum == DeploymentType.PODMAN:
             return deploy_to_podman(
@@ -552,9 +570,9 @@ class Orchestra:
                 name=name,
                 node_side_type=node_side_type_enum,
             )
-        else:
-            print(f"deployment_type: {deployment_type_enum} is not supported")
-            return None
+        # else:
+        #     print(f"deployment_type: {deployment_type_enum} is not supported")
+        #     return None
 
     @staticmethod
     def land(
@@ -578,14 +596,19 @@ class Orchestra:
                 land_output = shell(f"hagrid land {snake_name} --force")
             if "Removed" in land_output:
                 print(f" ✅ {snake_name} Container Removed")
+            elif "No resource found to remove for project" in land_output:
+                print(f" ✅ {snake_name} Container does not exist")
             else:
-                print(f"❌ Unable to remove container: {snake_name} :{land_output}")
+                print(
+                    f"❌ Unable to remove container: {snake_name} :{land_output}",
+                    file=sys.stderr,
+                )
 
     @staticmethod
     def reset(name: str, deployment_type_enum: DeploymentType) -> None:
         if deployment_type_enum == DeploymentType.PYTHON:
             sy = get_syft_client()
-            _ = sy.Worker.named(name, processes=1, reset=True)  # type: ignore
+            _ = sy.Worker.named(name=name, processes=1, reset=True)  # type: ignore
         elif (
             deployment_type_enum == DeploymentType.CONTAINER_STACK
             or deployment_type_enum == DeploymentType.SINGLE_CONTAINER

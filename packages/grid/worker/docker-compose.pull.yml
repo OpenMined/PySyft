@@ -1,4 +1,0 @@
-version: "3.8"
-services:
-  worker:
-    image: "${DOCKER_IMAGE_WORKER?Variable not set}:${VERSION-latest}"

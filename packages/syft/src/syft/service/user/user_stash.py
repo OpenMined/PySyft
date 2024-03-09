@@ -47,19 +47,23 @@ class UserStash(BaseStash):
         credentials: SyftVerifyKey,
         user: User,
         add_permissions: Optional[List[ActionObjectPermission]] = None,
+        ignore_duplicates: bool = False,
     ) -> Result[User, str]:
         res = self.check_type(user, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
             return res
         return super().set(
-            credentials=credentials, obj=res.ok(), add_permissions=add_permissions
+            credentials=credentials,
+            obj=res.ok(),
+            add_permissions=add_permissions,
+            ignore_duplicates=ignore_duplicates,
         )
 
-    def admin_verify_key(self):
+    def admin_verify_key(self) -> Result[Optional[SyftVerifyKey], str]:
         return Ok(self.partition.root_verify_key)
 
-    def admin_user(self):
+    def admin_user(self) -> Result[Optional[User], str]:
         return self.get_by_role(
             credentials=self.admin_verify_key().ok(), role=ServiceRole.ADMIN
         )
@@ -106,7 +110,7 @@ class UserStash(BaseStash):
         return self.query_one(credentials=credentials, qks=qks)
 
     def delete_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID, has_permission=False
+        self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
     ) -> Result[SyftSuccess, str]:
         qk = UIDPartitionKey.with_obj(uid)
         result = super().delete(
@@ -117,7 +121,7 @@ class UserStash(BaseStash):
         return result
 
     def update(
-        self, credentials: SyftVerifyKey, user: User, has_permission=False
+        self, credentials: SyftVerifyKey, user: User, has_permission: bool = False
     ) -> Result[User, str]:
         res = self.check_type(user, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments

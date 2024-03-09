@@ -30,7 +30,7 @@ from syft.service.action.action_graph_service import ExecutionStatusPartitionKey
 from syft.service.action.action_object import Action
 from syft.service.action.action_object import ActionObject
 from syft.store.document_store import QueryKeys
-from syft.store.locks import NoLockingConfig
+from syft.store.locks import ThreadingLockingConfig
 from syft.types.datetime import DateTime
 from syft.types.syft_metaclass import Empty
 from syft.types.uid import UID
@@ -164,7 +164,7 @@ def test_in_memory_store_client_config() -> None:
 def test_in_memory_graph_config() -> None:
     store_config = InMemoryGraphConfig()
     default_client_conf = InMemoryStoreClientConfig()
-    locking_config = NoLockingConfig()
+    locking_config = ThreadingLockingConfig()
 
     assert store_config.client_config == default_client_conf
     assert store_config.store_type == NetworkXBackingStore

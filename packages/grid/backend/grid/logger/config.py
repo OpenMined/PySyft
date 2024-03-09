@@ -11,7 +11,7 @@ from typing import Optional
 from typing import Union
 
 # third party
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 
 # LOGURU_LEVEL type for version>3.8
@@ -38,16 +38,11 @@ class LogConfig(BaseSettings):
         "<level>{message}</level>"
     )
 
-    LOGURU_LEVEL: str = LogLevel.DEBUG.value
+    LOGURU_LEVEL: str = LogLevel.INFO.value
     LOGURU_SINK: Optional[str] = "/var/log/pygrid/grid.log"
-    LOGURU_COMPRESSION: Optional[str]
-    LOGURU_ROTATION: Union[
-        Optional[str],
-        Optional[int],
-        Optional[time],
-        Optional[timedelta],
-    ]
-    LOGURU_RETENTION: Union[Optional[str], Optional[int], Optional[timedelta]]
+    LOGURU_COMPRESSION: Optional[str] = None
+    LOGURU_ROTATION: Union[str, int, time, timedelta, None] = None
+    LOGURU_RETENTION: Union[str, int, timedelta, None] = None
     LOGURU_COLORIZE: Optional[bool] = True
     LOGURU_SERIALIZE: Optional[bool] = False
     LOGURU_BACKTRACE: Optional[bool] = True

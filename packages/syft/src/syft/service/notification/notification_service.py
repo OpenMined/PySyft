@@ -1,20 +1,24 @@
 # stdlib
 from typing import List
 from typing import Union
+from typing import cast
 
 # relative
+from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
+from ..notifier.notifier import NotifierSettings
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .notification_stash import NotificationStash
@@ -40,7 +44,6 @@ class NotificationService(AbstractService):
         self, context: AuthedServiceContext, notification: CreateNotification
     ) -> Union[Notification, SyftError]:
         """Send a new notification"""
-
         new_notification = notification.to(Notification, context=context)
 
         # Add read permissions to person receiving this message
@@ -53,6 +56,12 @@ class NotificationService(AbstractService):
         result = self.stash.set(
             context.credentials, new_notification, add_permissions=permissions
         )
+        context.node = cast(AbstractNode, context.node)
+        notifier_service = context.node.get_service("notifierservice")
+
+        res = notifier_service.dispatch_notification(context, new_notification)
+        if isinstance(res, SyftError):
+            return res
 
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -67,21 +76,75 @@ class NotificationService(AbstractService):
         msg = self.stash.get_by_uid(
             credentials=context.credentials, uid=reply.target_msg
         )
-        if msg.is_ok():
-            msg = msg.ok()
-            reply.from_user_verify_key = context.credentials
-            msg.replies.append(reply)
-            result = self.stash.update(credentials=context.credentials, obj=msg)
-            if result.is_ok():
-                return result.ok()
-            else:
-                SyftError(
-                    message="Couldn't add a new notification reply in the target notification."
-                )
-        else:
-            SyftError(
-                message="The target notification id {reply.target_msg} was not found!"
+        if msg.is_err():
+            return SyftError(
+                message=f"The target notification id {reply.target_msg} was not found!. Error: {msg.err()}"
             )
+        msg = msg.ok()
+        reply.from_user_verify_key = context.credentials
+        msg.replies.append(reply)
+        result = self.stash.update(credentials=context.credentials, obj=msg)
+
+        if result.is_err():
+            return SyftError(
+                message=f"Couldn't add a new notification reply in the target notification. Error: {result.err()}"
+            )
+
+        return result.ok()
+
+    @service_method(
+        path="notifications.user_settings",
+        name="user_settings",
+    )
+    def user_settings(
+        self,
+        context: AuthedServiceContext,
+    ) -> Union[NotifierSettings, SyftError]:
+        context.node = cast(AbstractNode, context.node)
+        notifier_service = context.node.get_service("notifierservice")
+        return notifier_service.user_settings(context)
+
+    @service_method(
+        path="notifications.settings",
+        name="settings",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def settings(
+        self,
+        context: AuthedServiceContext,
+    ) -> Union[NotifierSettings, SyftError]:
+        context.node = cast(AbstractNode, context.node)
+        notifier_service = context.node.get_service("notifierservice")
+        result = notifier_service.settings(context)
+        return result
+
+    @service_method(
+        path="notifications.activate",
+        name="activate",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def activate(
+        self,
+        context: AuthedServiceContext,
+    ) -> Union[Notification, SyftError]:
+        context.node = cast(AbstractNode, context.node)
+        notifier_service = context.node.get_service("notifierservice")
+        result = notifier_service.activate(context)
+        return result
+
+    @service_method(
+        path="notifications.deactivate",
+        name="deactivate",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def deactivate(
+        self,
+        context: AuthedServiceContext,
+    ) -> Union[Notification, SyftError]:
+        context.node = cast(AbstractNode, context.node)
+        notifier_service = context.node.get_service("notifierservice")
+        result = notifier_service.deactivate(context)
+        return result
 
     @service_method(
         path="notifications.get_all",
@@ -191,6 +254,7 @@ class NotificationService(AbstractService):
     def resolve_object(
         self, context: AuthedServiceContext, linked_obj: LinkedObject
     ) -> Union[Notification, SyftError]:
+        context.node = cast(AbstractNode, context.node)
         service = context.node.get_service(linked_obj.service_type)
         result = service.resolve_link(context=context, linked_obj=linked_obj)
         if result.is_err():
@@ -210,15 +274,15 @@ class NotificationService(AbstractService):
         self, context: AuthedServiceContext, obj_uid: UID
     ) -> Union[Notification, SyftError]:
         notifications = self.stash.get_all(context.credentials)
-        if notifications.is_ok():
-            for notification in notifications.ok():
-                if (
-                    notification.linked_obj
-                    and notification.linked_obj.object_uid == obj_uid
-                ):
-                    return notification
-        else:
+        if notifications.is_err():
             return SyftError(message="Could not get notifications!!")
+        for notification in notifications.ok():
+            if (
+                notification.linked_obj
+                and notification.linked_obj.object_uid == obj_uid
+            ):
+                return notification
+        return SyftError(message="Could not get notifications!!")
 
 
 TYPE_TO_SERVICE[Notification] = NotificationService

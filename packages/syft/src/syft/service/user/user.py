@@ -6,15 +6,16 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Type
 from typing import Union
 
 # third party
 from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
-import pydantic
+from pydantic import EmailStr
 from pydantic import ValidationError
-from pydantic.networks import EmailStr
+from pydantic import field_validator
 
 # relative
 from ...client.api import APIRegistry
@@ -24,6 +25,8 @@ from ...serde.serializable import serializable
 from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import drop
@@ -33,6 +36,7 @@ from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_email
 from ...types.uid import UID
+from ..notifier.notifier_enums import NOTIFIERS
 from ..response import SyftError
 from ..response import SyftSuccess
 from .user_roles import ServiceRole
@@ -42,25 +46,29 @@ from .user_roles import ServiceRole
 class User(SyftObject):
     # version
     __canonical_name__ = "User"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_3
 
-    id: Optional[UID]
-
-    @pydantic.validator("email", pre=True, always=True)
-    def make_email(cls, v: EmailStr) -> EmailStr:
-        return EmailStr(v)
+    id: Optional[UID] = None  # type: ignore[assignment]
 
     # fields
-    email: Optional[EmailStr]
-    name: Optional[str]
-    hashed_password: Optional[str]
-    salt: Optional[str]
-    signing_key: Optional[SyftSigningKey]
-    verify_key: Optional[SyftVerifyKey]
-    role: Optional[ServiceRole]
-    institution: Optional[str]
+    notifications_enabled: Dict[NOTIFIERS, bool] = {
+        NOTIFIERS.EMAIL: True,
+        NOTIFIERS.SMS: False,
+        NOTIFIERS.SLACK: False,
+        NOTIFIERS.APP: False,
+    }
+    email: Optional[EmailStr] = None
+    name: Optional[str] = None
+    hashed_password: Optional[str] = None
+    salt: Optional[str] = None
+    signing_key: Optional[SyftSigningKey] = None
+    verify_key: Optional[SyftVerifyKey] = None
+    role: Optional[ServiceRole] = None
+    institution: Optional[str] = None
     website: Optional[str] = None
     created_at: Optional[str] = None
+    # TODO where do we put this flag?
+    mock_execution_permission: bool = False
 
     # serde / storage rules
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
@@ -73,6 +81,9 @@ def default_role(role: ServiceRole) -> Callable:
 
 
 def hash_password(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+
     if context.output["password"] is not None and (
         (context.output["password_verify"] is None)
         or context.output["password"] == context.output["password_verify"]
@@ -80,13 +91,16 @@ def hash_password(context: TransformContext) -> TransformContext:
         salt, hashed = salt_and_hash_password(context.output["password"], 12)
         context.output["hashed_password"] = hashed
         context.output["salt"] = salt
+
     return context
 
 
 def generate_key(context: TransformContext) -> TransformContext:
-    signing_key = SyftSigningKey.generate()
-    context.output["signing_key"] = signing_key
-    context.output["verify_key"] = signing_key.verify_key
+    if context.output is not None:
+        signing_key = SyftSigningKey.generate()
+        context.output["signing_key"] = signing_key
+        context.output["verify_key"] = signing_key.verify_key
+
     return context
 
 
@@ -109,13 +123,10 @@ def check_pwd(password: str, hashed_password: str) -> bool:
 @serializable()
 class UserUpdate(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_3
 
-    @pydantic.validator("email", pre=True)
-    def make_email(cls, v: Any) -> Any:
-        return EmailStr(v) if isinstance(v, str) and not isinstance(v, EmailStr) else v
-
-    @pydantic.validator("role", pre=True)
+    @field_validator("role", mode="before")
+    @classmethod
     def str_to_role(cls, v: Any) -> Any:
         if isinstance(v, str) and hasattr(ServiceRole, v.upper()):
             return getattr(ServiceRole, v.upper())
@@ -129,22 +140,24 @@ class UserUpdate(PartialSyftObject):
     verify_key: SyftVerifyKey
     institution: str
     website: str
+    mock_execution_permission: bool
 
 
 @serializable()
-class UserCreate(UserUpdate):
+class UserCreate(SyftObject):
     __canonical_name__ = "UserCreate"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_3
 
     email: EmailStr
     name: str
-    role: Optional[ServiceRole] = None  # make sure role cant be set without uid
+    role: Optional[ServiceRole] = None  # type: ignore[assignment]
     password: str
-    password_verify: Optional[str] = None
-    verify_key: Optional[SyftVerifyKey]
-    institution: Optional[str]
-    website: Optional[str]
-    created_by: Optional[SyftSigningKey]
+    password_verify: Optional[str] = None  # type: ignore[assignment]
+    verify_key: Optional[SyftVerifyKey] = None  # type: ignore[assignment]
+    institution: Optional[str] = ""  # type: ignore[assignment]
+    website: Optional[str] = ""  # type: ignore[assignment]
+    created_by: Optional[SyftSigningKey] = None  # type: ignore[assignment]
+    mock_execution_permission: bool = False
 
     __repr_attrs__ = ["name", "email"]
 
@@ -152,7 +165,7 @@ class UserCreate(UserUpdate):
 @serializable()
 class UserSearch(PartialSyftObject):
     __canonical_name__ = "UserSearch"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     email: EmailStr
@@ -163,15 +176,29 @@ class UserSearch(PartialSyftObject):
 @serializable()
 class UserView(SyftObject):
     __canonical_name__ = "UserView"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_3
 
+    notifications_enabled: Dict[NOTIFIERS, bool] = {
+        NOTIFIERS.EMAIL: True,
+        NOTIFIERS.SMS: False,
+        NOTIFIERS.SLACK: False,
+        NOTIFIERS.APP: False,
+    }
     email: EmailStr
     name: str
     role: ServiceRole  # make sure role cant be set without uid
     institution: Optional[str]
     website: Optional[str]
+    mock_execution_permission: bool
 
-    __repr_attrs__ = ["name", "email", "institution", "website", "role"]
+    __repr_attrs__ = [
+        "name",
+        "email",
+        "institution",
+        "website",
+        "role",
+        "notifications_enabled",
+    ]
 
     def _coll_repr_(self) -> Dict[str, Any]:
         return {
@@ -180,6 +207,10 @@ class UserView(SyftObject):
             "Institute": self.institution,
             "Website": self.website,
             "Role": self.role.name.capitalize(),
+            "Notifications": "Email: "
+            + (
+                "Enabled" if self.notifications_enabled[NOTIFIERS.EMAIL] else "Disabled"
+            ),
         }
 
     def _set_password(self, new_password: str) -> Union[SyftError, SyftSuccess]:
@@ -189,6 +220,7 @@ class UserView(SyftObject):
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
+
         api.services.user.update(
             uid=self.id, user_update=UserUpdate(password=new_password)
         )
@@ -238,10 +270,11 @@ class UserView(SyftObject):
 
     def update(
         self,
-        name: Union[Empty, str] = Empty,
-        institution: Union[Empty, str] = Empty,
-        website: Union[str, Empty] = Empty,
-        role: Union[str, Empty] = Empty,
+        name: Union[Type[Empty], str] = Empty,
+        institution: Union[Type[Empty], str] = Empty,
+        website: Union[Type[Empty], str] = Empty,
+        role: Union[Type[Empty], str] = Empty,
+        mock_execution_permission: Union[Type[Empty], bool] = Empty,
     ) -> Union[SyftSuccess, SyftError]:
         """Used to update name, institution, website of a user."""
         api = APIRegistry.api_for(
@@ -255,6 +288,7 @@ class UserView(SyftObject):
             institution=institution,
             website=website,
             role=role,
+            mock_execution_permission=mock_execution_permission,
         )
         result = api.services.user.update(uid=self.id, user_update=user_update)
 
@@ -265,6 +299,9 @@ class UserView(SyftObject):
             setattr(self, attr, val)
 
         return SyftSuccess(message="User details successfully updated.")
+
+    def allow_mock_execution(self, allow: bool = True) -> Union[SyftSuccess, SyftError]:
+        return self.update(mock_execution_permission=allow)
 
 
 @serializable()
@@ -300,7 +337,20 @@ def user_create_to_user() -> List[Callable]:
 
 @transform(User, UserView)
 def user_to_view_user() -> List[Callable]:
-    return [keep(["id", "email", "name", "role", "institution", "website"])]
+    return [
+        keep(
+            [
+                "id",
+                "email",
+                "name",
+                "role",
+                "institution",
+                "website",
+                "mock_execution_permission",
+                "notifications_enabled",
+            ]
+        )
+    ]
 
 
 @serializable()

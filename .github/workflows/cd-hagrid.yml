@@ -11,6 +11,12 @@ on:
         required: false
         default: "false"
 
+# Prevents concurrent runs of the same workflow
+# while the previous run is still in progress
+concurrency:
+  group: "CD - Hagrid"
+  cancel-in-progress: false
+
 jobs:
   call-pr-tests-linting:
     if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
@@ -44,7 +50,7 @@ jobs:
       current_hash: ${{ steps.get_hash.outputs.current_hash }}
       previous_hash: ${{ steps.get_hash.outputs.previous_hash }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
       - name: Install checksumdir
@@ -59,7 +65,7 @@ jobs:
           previous_hash=$(cat ./scripts/hagrid_hash)
 
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 

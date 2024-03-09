@@ -16,6 +16,7 @@ from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
 from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
 from syft.service.response import SyftError
+from syft.service.response import SyftException
 from syft.service.response import SyftSuccess
 from syft.types.twin_object import TwinMode
 
@@ -60,14 +61,15 @@ asset_with_empty_mock = pytest.fixture(make_asset_with_empty_mock)
     ],
 )
 def test_asset_without_mock_mock_is_real_must_be_false(
-    asset_without_mock: dict[str, Any]
+    asset_without_mock: dict[str, Any],
 ):
-    with pytest.raises(ValidationError):
-        Asset(**asset_without_mock, mock_is_real=True)
+    asset = Asset(**asset_without_mock, mock_is_real=True)
+    asset.mock_is_real = True
+    assert not asset.mock_is_real
 
 
 def test_mock_always_not_real_after_calling_no_mock(
-    asset_with_mock: dict[str, Any]
+    asset_with_mock: dict[str, Any],
 ) -> None:
     asset = Asset(**asset_with_mock, mock_is_real=True)
     assert asset.mock_is_real
@@ -77,7 +79,7 @@ def test_mock_always_not_real_after_calling_no_mock(
 
 
 def test_mock_always_not_real_after_set_mock_to_empty(
-    asset_with_mock: dict[str, Any]
+    asset_with_mock: dict[str, Any],
 ) -> None:
     asset = Asset(**asset_with_mock, mock_is_real=True)
     assert asset.mock_is_real
@@ -85,8 +87,8 @@ def test_mock_always_not_real_after_set_mock_to_empty(
     asset.no_mock()
     assert not asset.mock_is_real
 
-    with pytest.raises(ValidationError):
-        asset.mock_is_real = True
+    asset.mock_is_real = True
+    assert not asset.mock_is_real
 
     asset.mock = mock()
     asset.mock_is_real = True
@@ -94,7 +96,7 @@ def test_mock_always_not_real_after_set_mock_to_empty(
 
 
 def test_mock_always_not_real_after_set_to_empty(
-    asset_with_mock: dict[str, Any]
+    asset_with_mock: dict[str, Any],
 ) -> None:
     asset = Asset(**asset_with_mock, mock_is_real=True)
     assert asset.mock_is_real
@@ -102,8 +104,8 @@ def test_mock_always_not_real_after_set_to_empty(
     asset.mock = ActionObject.empty()
     assert not asset.mock_is_real
 
-    with pytest.raises(ValidationError):
-        asset.mock_is_real = True
+    asset.mock_is_real = True
+    assert not asset.mock_is_real
 
     asset.mock = mock()
     asset.mock_is_real = True
@@ -123,7 +125,7 @@ def test_cannot_set_empty_mock_with_true_mock_is_real(
     asset = Asset(**asset_with_mock, mock_is_real=True)
     assert asset.mock_is_real
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(SyftException):
         asset.set_mock(empty_mock, mock_is_real=True)
 
     assert asset.mock is asset_with_mock["mock"]

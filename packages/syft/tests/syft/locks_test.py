@@ -12,17 +12,13 @@ import time
 from joblib import Parallel
 from joblib import delayed
 import pytest
-from pytest_mock_resources import create_redis_fixture
 
 # syft absolute
 from syft.store.locks import FileLockingConfig
 from syft.store.locks import LockingConfig
 from syft.store.locks import NoLockingConfig
-from syft.store.locks import RedisLockingConfig
 from syft.store.locks import SyftLock
 from syft.store.locks import ThreadingLockingConfig
-
-redis_server_mock = create_redis_fixture(scope="session")
 
 def_params = {
     "lock_name": "testing_lock",
@@ -55,20 +51,12 @@ def locks_file_config():
     return FileLockingConfig(**def_params)
 
 
-@pytest.fixture(scope="function")
-def locks_redis_config(redis_server_mock):
-    def_params["lock_name"] = generate_lock_name()
-    redis_config = redis_server_mock.pmr_credentials.as_redis_kwargs()
-    return RedisLockingConfig(**def_params, client=redis_config)
-
-
 @pytest.mark.parametrize(
     "config",
     [
         pytest.lazy_fixture("locks_nop_config"),
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
-        pytest.lazy_fixture("locks_redis_config"),
     ],
 )
 @pytest.mark.skipif(
@@ -106,7 +94,6 @@ def test_acquire_nop(config: LockingConfig):
     [
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
-        pytest.lazy_fixture("locks_redis_config"),
     ],
 )
 @pytest.mark.skipif(
@@ -137,7 +124,6 @@ def test_acquire_release(config: LockingConfig):
     [
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
-        pytest.lazy_fixture("locks_redis_config"),
     ],
 )
 @pytest.mark.skipif(
@@ -158,7 +144,6 @@ def test_acquire_release_with(config: LockingConfig):
     [
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
-        pytest.lazy_fixture("locks_redis_config"),
     ],
 )
 @pytest.mark.skipif(
@@ -189,7 +174,6 @@ def test_acquire_expire(config: LockingConfig):
     [
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
-        pytest.lazy_fixture("locks_redis_config"),
     ],
 )
 @pytest.mark.skipif(
@@ -216,7 +200,6 @@ def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
     [
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
-        pytest.lazy_fixture("locks_redis_config"),
     ],
 )
 @pytest.mark.skipif(
@@ -245,7 +228,6 @@ def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
     [
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
-        pytest.lazy_fixture("locks_redis_config"),
     ],
 )
 @pytest.mark.skipif(
@@ -274,7 +256,6 @@ def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
     [
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
-        pytest.lazy_fixture("locks_redis_config"),
     ],
 )
 @pytest.mark.skipif(
@@ -304,7 +285,6 @@ def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
     [
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
-        pytest.lazy_fixture("locks_redis_config"),
     ],
 )
 @pytest.mark.skipif(
@@ -325,7 +305,6 @@ def test_acquire_double_release(config: LockingConfig):
     [
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
-        pytest.lazy_fixture("locks_redis_config"),
     ],
 )
 @pytest.mark.skipif(
@@ -351,7 +330,6 @@ def test_acquire_same_name_diff_namespace(config: LockingConfig):
     [
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
-        pytest.lazy_fixture("locks_redis_config"),
     ],
 )
 @pytest.mark.skipif(
@@ -414,7 +392,6 @@ def test_locks_parallel_multithreading(config: LockingConfig) -> None:
     "config",
     [
         pytest.lazy_fixture("locks_file_config"),
-        pytest.lazy_fixture("locks_redis_config"),
     ],
 )
 @pytest.mark.skipif(
