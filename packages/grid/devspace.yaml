@@ -10,8 +10,8 @@ pipelines:
       purge_deployments --all
       run_dependencies --all       # 1. Deploy any projects this project needs (see "dependencies")
       ensure_pull_secrets --all    # 2. Ensure pull secrets
-      create_deployments --all     # 3. Deploy Helm charts and manifests specfied as "deployments"
       build_images --all
+      create_deployments --all     # 3. Deploy Helm charts and manifests specfied as "deployments"
       start_dev --all              # 4. Start dev mode "app" (see "dev" section)
   # You can run this pipeline via `devspace deploy` (or `devspace run-pipeline deploy`)
   deploy:
@@ -139,3 +139,7 @@ profiles:
       - op: replace
         path: deployments.syft.helm.values.node.type
         value: "gateway"
+      - op: remove
+        path: images.seaweedfs
+      - op: remove
+        path: dev.seaweedfs
