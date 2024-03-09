@@ -9,16 +9,20 @@ from pathlib import Path
 import re
 from typing import Any
 from typing import Dict
+from typing import Iterable
+from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import Union
 
 # third party
+from packaging.version import parse
 from result import OkErr
 from result import Result
 
 # relative
+from .. import __version__
 from ..serde.recursive import TYPE_BANK
 from ..service.response import SyftError
 from ..service.response import SyftException
@@ -30,29 +34,33 @@ PROTOCOL_STATE_FILENAME = "protocol_version.json"
 PROTOCOL_TYPE = Union[str, int]
 
 
-def natural_key(key: PROTOCOL_TYPE) -> list[int]:
+def natural_key(key: PROTOCOL_TYPE) -> List[Union[int, str, Any]]:
     """Define key for natural ordering of strings."""
     if isinstance(key, int):
         key = str(key)
     return [int(s) if s.isdigit() else s for s in re.split("(\d+)", key)]
 
 
-def sort_dict_naturally(d: dict) -> dict:
+def sort_dict_naturally(d: Dict) -> Dict:
     """Sort dictionary by keys in natural order."""
     return {k: d[k] for k in sorted(d.keys(), key=natural_key)}
 
 
-def data_protocol_file_name():
+def data_protocol_file_name() -> str:
     return PROTOCOL_STATE_FILENAME
 
 
-def data_protocol_dir():
-    return os.path.abspath(str(Path(__file__).parent))
+def data_protocol_dir() -> Path:
+    return Path(os.path.abspath(str(Path(__file__).parent)))
+
+
+def protocol_release_dir() -> Path:
+    return data_protocol_dir() / "releases"
 
 
 class DataProtocol:
     def __init__(self, filename: str) -> None:
-        self.file_path = Path(data_protocol_dir()) / filename
+        self.file_path = data_protocol_dir() / filename
         self.load_state()
 
     def load_state(self) -> None:
@@ -78,10 +86,34 @@ class DataProtocol:
 
         return hashlib.sha256(json.dumps(obj_meta_info).encode()).hexdigest()
 
-    def read_history(self) -> Dict:
-        return json.loads(self.file_path.read_text())
+    @staticmethod
+    def read_json(file_path: Path) -> Dict:
+        try:
+            return json.loads(file_path.read_text())
+        except Exception:
+            return {}
 
-    def save_history(self, history: dict) -> None:
+    def read_history(self) -> Dict:
+        protocol_history = self.read_json(self.file_path)
+
+        for version in protocol_history.keys():
+            if version == "dev":
+                continue
+            release_version_path = (
+                protocol_release_dir() / protocol_history[version]["release_name"]
+            )
+            released_version = self.read_json(file_path=release_version_path)
+            protocol_history[version] = released_version.get(version, {})
+
+        return protocol_history
+
+    def save_history(self, history: Dict) -> None:
+        for file_path in protocol_release_dir().iterdir():
+            for version in self.read_json(file_path):
+                # Skip adding file if the version is not part of the history
+                if version not in history.keys():
+                    continue
+                history[version] = {"release_name": file_path.name}
         self.file_path.write_text(json.dumps(history, indent=2) + "\n")
 
     @property
@@ -97,7 +129,7 @@ class DataProtocol:
 
     def build_state(self, stop_key: Optional[str] = None) -> dict:
         sorted_dict = sort_dict_naturally(self.protocol_history)
-        state_dict = defaultdict(dict)
+        state_dict: dict = defaultdict(dict)
         for protocol_number in sorted_dict:
             object_versions = sorted_dict[protocol_number]["object_versions"]
             for canonical_name, versions in object_versions.items():
@@ -133,9 +165,9 @@ class DataProtocol:
                 return state_dict
         return state_dict
 
-    def diff_state(self, state: dict) -> tuple[dict, dict]:
-        compare_dict = defaultdict(dict)  # what versions are in the latest code
-        object_diff = defaultdict(dict)  # diff in latest code with saved json
+    def diff_state(self, state: Dict) -> tuple[Dict, Dict]:
+        compare_dict: dict = defaultdict(dict)  # what versions are in the latest code
+        object_diff: dict = defaultdict(dict)  # diff in latest code with saved json
         for k in TYPE_BANK:
             (
                 nonrecursive,
@@ -250,7 +282,7 @@ class DataProtocol:
 
             # Sort the version dict
             object_versions[canonical_name] = sort_dict_naturally(
-                object_versions[canonical_name]
+                object_versions.get(canonical_name, {})
             )
 
         current_history["dev"]["object_versions"] = object_versions
@@ -271,6 +303,7 @@ class DataProtocol:
 
         keys = self.protocol_history.keys()
         if "dev" not in keys:
+            self.validate_release()
             print("You can't bump the protocol if there are no staged changes.")
             return SyftError(
                 message="Failed to bump version as there are no staged changes."
@@ -284,10 +317,109 @@ class DataProtocol:
 
         next_highest_protocol = highest_protocol + 1
         self.protocol_history[str(next_highest_protocol)] = self.protocol_history["dev"]
+        self.freeze_release(self.protocol_history, str(next_highest_protocol))
         del self.protocol_history["dev"]
         self.save_history(self.protocol_history)
         self.load_state()
         return SyftSuccess(message=f"Protocol Updated to {next_highest_protocol}")
+
+    @staticmethod
+    def freeze_release(protocol_history: Dict, latest_protocol: str) -> None:
+        """Freezes latest release as a separate release file."""
+
+        # Get release history
+        release_history = protocol_history[latest_protocol]
+
+        # Create new file for the version
+        syft_version = parse(__version__)
+        release_file_name = f"{syft_version.public}.json"
+        release_file = protocol_release_dir() / release_file_name
+
+        # Save the new released version
+        release_file.write_text(
+            json.dumps({latest_protocol: release_history}, indent=2)
+        )
+
+    def validate_release(self) -> None:
+        """Validate if latest release name is consistent with syft version"""
+        # Read the protocol history
+        protocol_history = self.read_json(self.file_path)
+        sorted_protocol_versions = sorted(protocol_history.keys(), key=natural_key)
+
+        # Grab the latest protocol
+        latest_protocol = (
+            sorted_protocol_versions[-1] if len(sorted_protocol_versions) > 0 else None
+        )
+
+        # Skip validation if latest protocol is dev
+        if latest_protocol is None or latest_protocol == "dev":
+            return
+
+        # Get filename of the latest protocol
+        release_name = protocol_history[latest_protocol]["release_name"]
+        # Extract syft version from release name
+        protocol_syft_version = parse(release_name.split(".json")[0])
+        current_syft_version = parse(__version__)
+
+        # If base syft version in latest protocol version is not same as current syft version
+        # Skip updating the release name
+        if protocol_syft_version.base_version != current_syft_version.base_version:
+            return
+
+        # Update release name to latest beta, stable or post based on current syft version
+        print(
+            f"Current release {release_name} will be updated to {current_syft_version}"
+        )
+
+        # Get latest protocol file path
+        latest_protocol_fp: Path = protocol_release_dir() / release_name
+
+        # New protocol file path
+        new_protocol_file_path = (
+            protocol_release_dir() / f"{current_syft_version.public}.json"
+        )
+
+        # Update older file path to newer file path
+        latest_protocol_fp.rename(new_protocol_file_path)
+        protocol_history[latest_protocol][
+            "release_name"
+        ] = f"{current_syft_version}.json"
+
+        # Save history
+        self.file_path.write_text(json.dumps(protocol_history, indent=2) + "\n")
+
+        # Reload protocol
+        self.read_history()
+
+    def revert_latest_protocol(self) -> Result[SyftSuccess, SyftError]:
+        """Revert latest protocol changes to dev"""
+
+        # Get current protocol history
+        protocol_history = self.read_json(self.file_path)
+
+        # Get latest released protocol
+        sorted_protocol_versions = sorted(protocol_history.keys(), key=natural_key)
+        latest_protocol = (
+            sorted_protocol_versions[-1] if len(sorted_protocol_versions) > 0 else None
+        )
+
+        # If current protocol is dev, skip revert
+        if latest_protocol is None or latest_protocol == "dev":
+            return SyftError(message="Revert skipped !! Already running dev protocol.")
+
+        # Read the current released protocol
+        release_name = protocol_history[latest_protocol]["release_name"]
+        protocol_file_path: Path = protocol_release_dir() / release_name
+
+        released_protocol = self.read_json(protocol_file_path)
+        protocol_history["dev"] = released_protocol[latest_protocol]
+
+        # Delete the current released protocol
+        protocol_history.pop(latest_protocol)
+        protocol_file_path.unlink()
+
+        # Save history
+        self.save_history(protocol_history)
 
     def check_protocol(self) -> Result[SyftSuccess, SyftError]:
         if len(self.diff) != 0:
@@ -335,7 +467,7 @@ class DataProtocol:
         return False
 
 
-def get_data_protocol():
+def get_data_protocol() -> DataProtocol:
     return DataProtocol(filename=data_protocol_file_name())
 
 
@@ -354,7 +486,7 @@ def check_or_stage_protocol() -> Result[SyftSuccess, SyftError]:
     return data_protocol.check_or_stage_protocol()
 
 
-def debox_arg_and_migrate(arg: Any, protocol_state: dict):
+def debox_arg_and_migrate(arg: Any, protocol_state: dict) -> Any:
     """Debox the argument based on whether it is iterable or single entity."""
     constructor = None
     extra_args = []
@@ -366,7 +498,7 @@ def debox_arg_and_migrate(arg: Any, protocol_state: dict):
         arg = arg.value
 
     if isinstance(arg, MutableMapping):
-        iterable_keys = arg.keys()
+        iterable_keys: Iterable = arg.keys()
     elif isinstance(arg, MutableSequence):
         iterable_keys = range(len(arg))
     elif isinstance(arg, tuple):
@@ -417,7 +549,7 @@ def migrate_args_and_kwargs(
         to_protocol = data_protocol.latest_version if to_latest_protocol else None
 
     if to_protocol is None:
-        raise SyftException(message="Protocol version missing.")
+        raise SyftException("Protocol version missing.")
 
     # If latest protocol being used is equal to the protocol to be migrate
     # then skip migration of the object

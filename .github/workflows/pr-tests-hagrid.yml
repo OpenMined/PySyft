@@ -32,10 +32,10 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check for file changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           base: ${{ github.ref }}
@@ -43,7 +43,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         if: steps.changes.outputs.hagrid == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -61,7 +61,7 @@ jobs:
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: steps.changes.outputs.hagrid == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -80,7 +80,7 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           bandit -r hagrid
-          safety check -i 42923 -i 54229 -i 54230
+          safety check -i 42923 -i 54229 -i 54230 -i 54230 -i 54229 -i 62044
 
       - name: Run normal tests
         if: steps.changes.outputs.hagrid == 'true'
@@ -106,3 +106,65 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           twine check dist/*.whl
+
+  pr-tests-syft-hagrid-comptability:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11"]
+        syft-version: ["0.8.2", "0.8.2b6", "0.8.3"]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        if: steps.changes.outputs.hagrid == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        if: steps.changes.outputs.hagrid == 'true'
+        shell: bash
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: pip cache
+        uses: actions/cache@v4
+        if: steps.changes.outputs.hagrid == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('packages/syft/setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('packages/syft/setup.cfg') }}
+
+      # https://github.com/google/jax/issues/17693
+      # pinning ml-dtypes due to jax version==0.4.10
+      - name: Install Syft ${{ matrix.syft-version }}
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          pip install ml-dtypes==0.2.0
+          pip install syft==${{ matrix.syft-version }}
+          pip install .
+
+      - name: Run Orchestra Command
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          python -c "import syft as sy; domain1 = sy.orchestra.launch(name='test-domain-1', dev_mode=True, reset=True)"
+          python -c "import syft as sy; domain2 = sy.orchestra.launch(name='test-domain-2',dev_mode=False, reset=True)"

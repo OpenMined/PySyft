@@ -3,6 +3,9 @@ import sys
 import traceback
 from typing import Any
 
+# third party
+from result import Err
+
 # relative
 from ..serde.serializable import serializable
 from ..types.base import SyftBaseModel
@@ -15,7 +18,7 @@ class SyftResponseMessage(SyftBaseModel):
     def __bool__(self) -> bool:
         return self._bool
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, SyftResponseMessage):
             return self.message == other.message and self._bool == other._bool
         return self._bool == other
@@ -45,6 +48,9 @@ class SyftError(SyftResponseMessage):
     @property
     def _repr_html_class_(self) -> str:
         return "alert-danger"
+
+    def to_result(self) -> Err:
+        return Err(value=self.message)
 
 
 @serializable()
@@ -123,6 +129,9 @@ def syft_exception_handler(
 
 
 try:
+    # third party
+    from IPython import get_ipython
+
     get_ipython().set_custom_exc((SyftException,), syft_exception_handler)  # noqa: F821
 except Exception:
     pass  # nosec

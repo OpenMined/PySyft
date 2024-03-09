@@ -8,7 +8,6 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import cast
 
 # third party
@@ -36,8 +35,8 @@ from ...service.user.user_roles import GUEST_ROLE_LEVEL
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.util import find_available_port
-from .constants import DOMAIN_CONNECTION_PORT
 from .constants import LOCAL_MODE
+from .constants import OBLV_LOCALHOST_PORT
 from .deployment_client import OblvMetadata
 from .exceptions import OblvEnclaveError
 from .exceptions import OblvProxyConnectPCRError
@@ -191,7 +190,7 @@ def make_request_to_enclave(
 
 def create_keys_from_db(
     oblv_keys_stash: OblvKeysStash, verify_key: SyftVerifyKey, oblv_key_name: str
-):
+) -> None:
     oblv_key_path = os.path.expanduser(os.getenv("OBLV_KEY_PATH", "~/.oblv"))
 
     os.makedirs(oblv_key_path, exist_ok=True)
@@ -211,7 +210,7 @@ def create_keys_from_db(
     f_public.close()
 
 
-def generate_oblv_key(oblv_key_name: str) -> Tuple[bytes]:
+def generate_oblv_key(oblv_key_name: str) -> tuple[bytes, bytes]:
     oblv_key_path = os.path.expanduser(os.getenv("OBLV_KEY_PATH", "~/.oblv"))
     os.makedirs(oblv_key_path, exist_ok=True)
 
@@ -256,11 +255,12 @@ class OblvService(AbstractService):
     def create_key(
         self,
         context: AuthedServiceContext,
+        oblv_key_name: str,
         override_existing_key: bool = False,
     ) -> Result[Ok, Err]:
         """Domain Public/Private Key pair creation"""
         # TODO 🟣 Check for permission after it is fully integrated
-        public_key, private_key = generate_oblv_key()
+        public_key, private_key = generate_oblv_key(oblv_key_name)
 
         if override_existing_key:
             self.oblv_keys_stash.clear()
@@ -323,7 +323,7 @@ class OblvService(AbstractService):
                 )
             connection_string = f"http://127.0.0.1:{port}"
         else:
-            port = os.getenv("DOMAIN_CONNECTION_PORT", DOMAIN_CONNECTION_PORT)
+            port = os.getenv("OBLV_LOCALHOST_PORT", OBLV_LOCALHOST_PORT)
             connection_string = f"http://127.0.0.1:{port}"
 
             # To identify if we are in docker container

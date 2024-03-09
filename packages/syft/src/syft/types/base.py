@@ -2,8 +2,8 @@
 
 # third party
 from pydantic import BaseModel
+from pydantic import ConfigDict
 
 
 class SyftBaseModel(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)

@@ -20,6 +20,7 @@ from pandas._libs.tslibs.timestamps import Timestamp
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pydantic
+from pydantic._internal._model_construction import ModelMetaclass
 from pymongo.collection import Collection
 from result import Err
 from result import Ok
@@ -29,6 +30,8 @@ import zmq.green as zmq
 # relative
 from ..types.dicttuple import DictTuple
 from ..types.dicttuple import _Meta as _DictTupleMetaClass
+from ..types.syft_metaclass import EmptyType
+from ..types.syft_metaclass import PartialModelMetaclass
 from .deserialize import _deserialize as deserialize
 from .recursive_primitives import _serialize_kv_pairs
 from .recursive_primitives import deserialize_kv
@@ -54,8 +57,6 @@ recursive_serde_register(
 # result Ok and Err
 recursive_serde_register(Ok, serialize_attrs=["_value"])
 recursive_serde_register(Err, serialize_attrs=["_value"])
-
-recursive_serde_register_type(pydantic.main.ModelMetaclass)
 recursive_serde_register(Result)
 
 # exceptions
@@ -96,8 +97,8 @@ recursive_serde_register(
 
 
 def deserialize_series(blob: bytes) -> Series:
-    df = DataFrame.from_dict(deserialize(blob, from_bytes=True))
-    return df[df.columns[0]]
+    df: DataFrame = DataFrame.from_dict(deserialize(blob, from_bytes=True))
+    return Series(df[df.columns[0]])
 
 
 recursive_serde_register(
@@ -148,6 +149,17 @@ recursive_serde_register(
 )
 
 
+recursive_serde_register(
+    EmptyType,
+    serialize=serialize_type,
+    deserialize=deserialize_type,
+)
+
+
+recursive_serde_register_type(ModelMetaclass)
+recursive_serde_register_type(PartialModelMetaclass)
+
+
 def serialize_bytes_io(io: BytesIO) -> bytes:
     io.seek(0)
     return serialize(io.read(), to_bytes=True)
@@ -180,9 +192,9 @@ recursive_serde_register(
 recursive_serde_register(np.core._ufunc_config._unspecified())
 
 recursive_serde_register(
-    pydantic.networks.EmailStr,
+    pydantic.EmailStr,
     serialize=lambda x: x.encode(),
-    deserialize=lambda x: pydantic.networks.EmailStr(x.decode()),
+    deserialize=lambda x: pydantic.EmailStr(x.decode()),
 )
 
 recursive_serde_register(

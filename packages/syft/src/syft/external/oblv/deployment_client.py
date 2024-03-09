@@ -14,10 +14,11 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
+from typing import Union
 
 # third party
 from oblv_ctl import OblvClient
-from pydantic import validator
+from pydantic import field_validator
 import requests
 
 # relative
@@ -25,8 +26,10 @@ from ...client.api import SyftAPI
 from ...client.client import SyftClient
 from ...client.client import login
 from ...client.client import login_as_guest
-from ...enclave.metadata import EnclaveMetadata
+from ...client.enclave_client import EnclaveMetadata
+from ...node.credentials import SyftSigningKey
 from ...serde.serializable import serializable
+from ...service.response import SyftError
 from ...types.uid import UID
 from ...util.util import bcolors
 from .constants import LOCAL_MODE
@@ -43,10 +46,11 @@ if TYPE_CHECKING:
 class OblvMetadata(EnclaveMetadata):
     """Contains Metadata to connect to Oblivious Enclave"""
 
-    deployment_id: Optional[str]
-    oblv_client: Optional[OblvClient]
+    deployment_id: Optional[str] = None
+    oblv_client: Optional[OblvClient] = None
 
-    @validator("deployment_id")
+    @field_validator("deployment_id")
+    @classmethod
     def check_valid_deployment_id(cls, deployment_id: str) -> str:
         if not deployment_id and not LOCAL_MODE:
             raise ValueError(
@@ -56,7 +60,8 @@ class OblvMetadata(EnclaveMetadata):
             )
         return deployment_id
 
-    @validator("oblv_client")
+    @field_validator("oblv_client")
+    @classmethod
     def check_valid_oblv_client(cls, oblv_client: OblvClient) -> OblvClient:
         if not oblv_client and not LOCAL_MODE:
             raise ValueError(
@@ -75,7 +80,7 @@ class DeploymentClient:
     __conn_string: str
     __logs: Any
     __process: Any
-    __enclave_client: SyftClient
+    __enclave_client: Optional[SyftClient]
 
     def __init__(
         self,
@@ -90,14 +95,14 @@ class DeploymentClient:
                 "domain_clients should be populated with valid domain nodes"
             )
         self.deployment_id = deployment_id
-        self.key_name = key_name
+        self.key_name: Optional[str] = key_name
         self.oblv_client = oblv_client
         self.domain_clients = domain_clients
         self.__conn_string = ""
         self.__process = None
         self.__logs = None
         self._api = api
-        self.__enclave_client = None
+        self.__enclave_client: Optional[SyftClient] = None
 
     def make_request_to_enclave(
         self,
@@ -245,7 +250,7 @@ class DeploymentClient:
         password: str,
         institution: Optional[str] = None,
         website: Optional[str] = None,
-    ):
+    ) -> Optional[Union[SyftError, SyftSigningKey]]:
         self.check_connection_string()
         guest_client = login_as_guest(url=self.__conn_string)
         return guest_client.register(

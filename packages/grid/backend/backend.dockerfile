@@ -18,11 +18,13 @@ ARG USER
 ARG UID
 
 # Setup Python DEV
-RUN apk update && \
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
+    apk update && \
+    apk upgrade && \
     apk add build-base gcc tzdata python-$PYTHON_VERSION-dev py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-    # uncomment for creating rootless user
-    # && adduser -D -u $UID $USER
+# uncomment for creating rootless user
+# && adduser -D -u $UID $USER
 
 # ==================== [BUILD STEP] Install Syft Dependency ==================== #
 
@@ -39,17 +41,22 @@ WORKDIR $APPDIR
 ENV PATH=$PATH:$HOME/.local/bin
 
 # copy skeleton to do package install
-COPY --chown=$USER_GRP syft/setup.py ./syft/setup.py
-COPY --chown=$USER_GRP syft/setup.cfg ./syft/setup.cfg
-COPY --chown=$USER_GRP syft/pyproject.toml ./syft/pyproject.toml
-COPY --chown=$USER_GRP syft/MANIFEST.in ./syft/MANIFEST.in
-COPY --chown=$USER_GRP syft/src/syft/VERSION ./syft/src/syft/VERSION
-COPY --chown=$USER_GRP syft/src/syft/capnp ./syft/src/syft/capnp
+COPY --chown=$USER_GRP \
+    syft/setup.py \
+    syft/setup.cfg \
+    syft/pyproject.toml \
+    syft/MANIFEST.in \
+    syft/
+
+COPY --chown=$USER_GRP \
+    syft/src/syft/VERSION \
+    syft/src/syft/capnp \
+    syft/src/syft/
 
 # Install all dependencies together here to avoid any version conflicts across pkgs
-RUN --mount=type=cache,target=$HOME/.cache/,rw,uid=$UID \
-    pip install --user torch==2.1.0 -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
-    pip install --user pip-autoremove jupyterlab==4.0.7 -e ./syft/ && \
+RUN --mount=type=cache,id=pip-$UID,target=$HOME/.cache/pip,uid=$UID,gid=$UID,sharing=locked \
+    pip install --user torch==2.1.1 -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
+    pip install --user pip-autoremove jupyterlab -e ./syft[data_science] && \
     pip-autoremove ansible ansible-core -y
 
 # ==================== [Final] Setup Syft Server ==================== #
@@ -65,14 +72,15 @@ ARG USER
 ARG USER_GRP
 
 # Setup Python
-RUN apk update && \
-    apk add --no-cache tzdata bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
+    apk update && \
+    apk upgrade && \
+    apk add tzdata git bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
-    rm -rf /var/cache/apk/* && \
     # Uncomment for rootless user
     # adduser -D -u 1000 $USER && \
     mkdir -p /var/log/pygrid $HOME/data/creds $HOME/data/db $HOME/.cache $HOME/.local
-    # chown -R $USER_GRP /var/log/pygrid $HOME/
+# chown -R $USER_GRP /var/log/pygrid $HOME/
 
 USER $USER
 WORKDIR $APPDIR
@@ -86,12 +94,10 @@ ENV PATH=$PATH:$HOME/.local/bin \
     SERVICE_NAME="backend" \
     RELEASE="production" \
     DEV_MODE="False" \
+    DEBUGGER_ENABLED="False" \
     CONTAINER_HOST="docker" \
-    PORT=80\
-    HTTP_PORT=80 \
-    HTTPS_PORT=443 \
-    DOMAIN_CONNECTION_PORT=3030 \
-    IGNORE_TLS_ERRORS="False" \
+    OBLV_ENABLED="False" \
+    OBLV_LOCALHOST_PORT=3030 \
     DEFAULT_ROOT_EMAIL="info@openmined.org" \
     DEFAULT_ROOT_PASSWORD="changethis" \
     STACK_API_KEY="changeme" \
@@ -105,7 +111,7 @@ ENV PATH=$PATH:$HOME/.local/bin \
 COPY --chown=$USER_GRP --from=syft_deps $HOME/.local $HOME/.local
 
 # copy grid
-COPY --chown=$USER_GRP grid/backend/grid ./grid
+COPY --chown=$USER_GRP grid/backend/grid grid/backend/worker_cpu.dockerfile ./grid/
 
 # copy syft
 COPY --chown=$USER_GRP syft/ ./syft/

@@ -79,14 +79,14 @@ def full_name_with_name(klass: type) -> str:
         raise e
 
 
-def get_qualname_for(klass: type):
+def get_qualname_for(klass: type) -> str:
     qualname = getattr(klass, "__qualname__", None) or getattr(klass, "__name__", None)
     if qualname is None:
         qualname = extract_name(klass)
     return qualname
 
 
-def get_name_for(klass: type):
+def get_name_for(klass: type) -> str:
     klass_name = getattr(klass, "__name__", None)
     if klass_name is None:
         klass_name = extract_name(klass)
@@ -97,20 +97,25 @@ def get_mb_size(data: Any) -> float:
     return sys.getsizeof(data) / (1024 * 1024)
 
 
-def extract_name(klass: type):
+def extract_name(klass: type) -> str:
     name_regex = r".+class.+?([\w\._]+).+"
     regex2 = r"([\w\.]+)"
     matches = re.match(name_regex, str(klass))
+
     if matches is None:
         matches = re.match(regex2, str(klass))
-    try:
-        fqn = matches[1]
-        if "." in fqn:
-            return fqn.split(".")[-1]
-        return fqn
-    except Exception as e:
-        print(f"Failed to get klass name {klass}")
-        raise e
+
+    if matches:
+        try:
+            fqn: str = matches[1]
+            if "." in fqn:
+                return fqn.split(".")[-1]
+            return fqn
+        except Exception as e:
+            print(f"Failed to get klass name {klass}")
+            raise e
+    else:
+        raise ValueError(f"Failed to match regex for klass {klass}")
 
 
 def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
@@ -269,7 +274,7 @@ def print_process(  # type: ignore
     refresh_rate=0.1,
 ) -> None:
     with lock:
-        while not finish.is_set():  # type: ignore
+        while not finish.is_set():
             print(f"{bcolors.bold(message)} .", end="\r")
             time.sleep(refresh_rate)
             sys.stdout.flush()
@@ -279,7 +284,7 @@ def print_process(  # type: ignore
             print(f"{bcolors.bold(message)} ...", end="\r")
             time.sleep(refresh_rate)
             sys.stdout.flush()
-        if success.is_set():  # type: ignore
+        if success.is_set():
             print(f"{bcolors.success(message)}" + (" " * len(message)), end="\n")
         else:
             print(f"{bcolors.failure(message)}" + (" " * len(message)), end="\n")
@@ -445,7 +450,7 @@ def obj2pointer_type(obj: Optional[object] = None, fqn: Optional[str] = None) ->
         critical(log)
         raise Exception(log)
 
-    return ref.pointer_type  # type: ignore
+    return ref.pointer_type
 
 
 def prompt_warning_message(message: str, confirm: bool = False) -> bool:
@@ -661,7 +666,7 @@ def inherit_tags(
 ) -> None:
     tags = []
     if self_obj is not None and hasattr(self_obj, "tags"):
-        tags.extend(list(self_obj.tags))  # type: ignore
+        tags.extend(list(self_obj.tags))
 
     for arg in args:
         if hasattr(arg, "tags"):
@@ -692,6 +697,7 @@ def autocache(
         return download_file(url, file_path)
     except Exception as e:
         print(f"Failed to autocache: {url}. {e}")
+        return None
 
 
 def str_to_bool(bool_str: Optional[str]) -> bool:
@@ -856,6 +862,9 @@ def is_interpreter_standard() -> bool:
 
 def get_interpreter_module() -> str:
     try:
+        # third party
+        from IPython import get_ipython
+
         shell = get_ipython().__class__.__module__
         return shell
     except NameError:
@@ -868,14 +877,42 @@ if os_name() == "macOS":
     multiprocessing.set_start_method("spawn", True)
 
 
-def thread_ident() -> int:
+def thread_ident() -> Optional[int]:
     return threading.current_thread().ident
 
 
-def set_klass_module_to_syft(klass, module_name):
+def proc_id() -> int:
+    return os.getpid()
+
+
+def set_klass_module_to_syft(klass: type, module_name: str) -> None:
     if module_name not in sys.modules["syft"].__dict__:
         new_module = types.ModuleType(module_name)
     else:
         new_module = sys.modules["syft"].__dict__[module_name]
     setattr(new_module, klass.__name__, klass)
     sys.modules["syft"].__dict__[module_name] = new_module
+
+
+def get_syft_src_path() -> Path:
+    return Path(__file__).parent.parent.parent.expanduser()
+
+
+def get_grid_src_path() -> Path:
+    syft_path = get_syft_src_path()
+    return syft_path.parent.parent / "grid"
+
+
+def get_syft_cpu_dockerfile() -> Path:
+    return get_grid_src_path() / "backend" / "worker_cpu.dockerfile"
+
+
+def get_queue_address(port: int) -> str:
+    """Get queue address based on container host name."""
+
+    container_host = os.getenv("CONTAINER_HOST", None)
+    if container_host == "k8s":
+        return f"tcp://backend:{port}"
+    elif container_host == "docker":
+        return f"tcp://{socket.gethostname()}:{port}"
+    return f"tcp://localhost:{port}"

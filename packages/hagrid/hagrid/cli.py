@@ -50,7 +50,6 @@ from .cache import DEFAULT_REPO
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import LATEST_BETA_SYFT
-from .deps import LATEST_STABLE_SYFT
 from .deps import allowed_hosts
 from .deps import check_docker_service_status
 from .deps import check_docker_version
@@ -93,6 +92,7 @@ from .quickstart_ui import fetch_notebooks_for_url
 from .quickstart_ui import fetch_notebooks_from_zipfile
 from .quickstart_ui import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
+from .stable_version import LATEST_STABLE_SYFT
 from .style import RichGroup
 from .util import fix_windows_virtualenv_api
 from .util import from_url
@@ -141,9 +141,6 @@ def get_compose_src_path(
         path = grid_path
     else:
         path = deployment_dir(node_name)
-
-    if kwargs["deployment_type"] == "single_container":
-        path = path + "/worker"
 
     os.makedirs(path, exist_ok=True)
     return path
@@ -230,6 +227,11 @@ def clean(location: str) -> None:
     "--jupyter",
     is_flag=True,
     help="Enable Jupyter Notebooks",
+)
+@click.option(
+    "--in-mem-workers",
+    is_flag=True,
+    help="Enable InMemory Workers",
 )
 @click.option(
     "--enable-signup",
@@ -319,6 +321,41 @@ def clean(location: str) -> None:
     required=False,
     type=str,
     help="Container image tag to use",
+)
+@click.option(
+    "--smtp-username",
+    default=None,
+    required=False,
+    type=str,
+    help="Username used to auth in email server and enable notification via emails",
+)
+@click.option(
+    "--smtp-password",
+    default=None,
+    required=False,
+    type=str,
+    help="Password used to auth in email server and enable notification via emails",
+)
+@click.option(
+    "--smtp-port",
+    default=None,
+    required=False,
+    type=str,
+    help="Port used by email server to send notification via emails",
+)
+@click.option(
+    "--smtp-host",
+    default=None,
+    required=False,
+    type=str,
+    help="Address used by email server to send notification via emails",
+)
+@click.option(
+    "--smtp-sender",
+    default=None,
+    required=False,
+    type=str,
+    help="Sender email used to deliver PyGrid email notifications.",
 )
 @click.option(
     "--build-src",
@@ -457,6 +494,13 @@ def clean(location: str) -> None:
     required=False,
     type=str,
     help="Set root password for s3 blob storage",
+)
+@click.option(
+    "--set-volume-size-limit-mb",
+    default=1024,
+    required=False,
+    type=click.IntRange(1024, 50000),
+    help="Set the volume size limit (in MBs)",
 )
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
@@ -1251,9 +1295,12 @@ def create_launch_cmd(
 
     parsed_kwargs["use_blob_storage"] = not bool(kwargs["no_blob_storage"])
 
+    parsed_kwargs["in_mem_workers"] = bool(kwargs["in_mem_workers"])
+
     if parsed_kwargs["use_blob_storage"]:
         parsed_kwargs["set_s3_username"] = kwargs["set_s3_username"]
         parsed_kwargs["set_s3_password"] = kwargs["set_s3_password"]
+        parsed_kwargs["set_volume_size_limit_mb"] = kwargs["set_volume_size_limit_mb"]
 
     parsed_kwargs["node_count"] = (
         int(kwargs["node_count"]) if "node_count" in kwargs else 1
@@ -1279,7 +1326,7 @@ def create_launch_cmd(
     parsed_kwargs["trace"] = False
     if ("trace" not in kwargs or kwargs["trace"] is None) and parsed_kwargs["dev"]:
         # default to trace on in dev mode
-        parsed_kwargs["trace"] = True
+        parsed_kwargs["trace"] = False
     elif "trace" in kwargs:
         parsed_kwargs["trace"] = str_to_bool(cast(str, kwargs["trace"]))
 
@@ -1296,6 +1343,12 @@ def create_launch_cmd(
         parsed_kwargs["node_side_type"] = NodeSideType.LOW_SIDE.value
     else:
         parsed_kwargs["node_side_type"] = NodeSideType.HIGH_SIDE.value
+
+    parsed_kwargs["smtp_username"] = kwargs["smtp_username"]
+    parsed_kwargs["smtp_password"] = kwargs["smtp_password"]
+    parsed_kwargs["smtp_port"] = kwargs["smtp_port"]
+    parsed_kwargs["smtp_host"] = kwargs["smtp_host"]
+    parsed_kwargs["smtp_sender"] = kwargs["smtp_sender"]
 
     parsed_kwargs["enable_warnings"] = not kwargs["no_warnings"]
 
@@ -2142,6 +2195,14 @@ def create_launch_docker_cmd(
             **kwargs,
         )
 
+    single_container_mode = kwargs["deployment_type"] == "single_container"
+    in_mem_workers = kwargs.get("in_mem_workers")
+    smtp_username = kwargs.get("smtp_username")
+    smtp_sender = kwargs.get("smtp_sender")
+    smtp_password = kwargs.get("smtp_password")
+    smtp_port = kwargs.get("smtp_port")
+    smtp_host = kwargs.get("smtp_host")
+
     enable_oblv = bool(kwargs["oblv"])
     print("  - NAME: " + str(snake_name))
     print("  - TEMPLATE DIR: " + template_grid_dir)
@@ -2159,6 +2220,7 @@ def create_launch_docker_cmd(
         print("  - HAGRID_REPO_SHA: " + commit_hash())
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
+    print("  - IN-MEMORY WORKERS: " + str(in_mem_workers))
     if enable_oblv:
         print("  - OBLV: ", enable_oblv)
 
@@ -2199,9 +2261,16 @@ def create_launch_docker_cmd(
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
-        "ENABLE_OBLV": str(enable_oblv).lower(),
+        "OBLV_ENABLED": str(enable_oblv).lower(),
         "CREDENTIALS_VOLUME": host_path,
         "NODE_SIDE_TYPE": kwargs["node_side_type"],
+        "SINGLE_CONTAINER_MODE": single_container_mode,
+        "INMEMORY_WORKERS": in_mem_workers,
+        "SMTP_USERNAME": smtp_username,
+        "SMTP_PASSWORD": smtp_password,
+        "EMAIL_SENDER": smtp_sender,
+        "SMTP_PORT": smtp_port,
+        "SMTP_HOST": smtp_host,
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:
@@ -2251,6 +2320,12 @@ def create_launch_docker_cmd(
 
     if "set_s3_password" in kwargs and kwargs["set_s3_password"] is not None:
         envs["S3_ROOT_PWD"] = kwargs["set_s3_password"]
+
+    if (
+        "set_volume_size_limit_mb" in kwargs
+        and kwargs["set_volume_size_limit_mb"] is not None
+    ):
+        envs["S3_VOLUME_SIZE_MB"] = kwargs["set_volume_size_limit_mb"]
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
@@ -2323,21 +2398,25 @@ def create_launch_docker_cmd(
     except Exception:  # nosec
         pass
 
-    if kwargs["deployment_type"] == "single_container":
-        return create_launch_worker_cmd(cmd=cmd, kwargs=kwargs, build=build, tail=tail)
+    if single_container_mode:
+        cmd += " --profile worker"
+    else:
+        cmd += " --profile backend"
+        cmd += " --profile proxy"
+        cmd += " --profile mongo"
 
-    if str(node_type.input) in ["network", "gateway"]:
-        cmd += " --profile network"
+        if str(node_type.input) in ["network", "gateway"]:
+            cmd += " --profile network"
 
-    if use_blob_storage:
-        cmd += " --profile blob-storage"
+        if use_blob_storage:
+            cmd += " --profile blob-storage"
 
-    # no frontend container so expect bad gateway on the / route
-    if not bool(kwargs["headless"]):
-        cmd += " --profile frontend"
+        # no frontend container so expect bad gateway on the / route
+        if not bool(kwargs["headless"]):
+            cmd += " --profile frontend"
 
-    if "trace" in kwargs and kwargs["trace"]:
-        cmd += " --profile telemetry"
+        if "trace" in kwargs and kwargs["trace"]:
+            cmd += " --profile telemetry"
 
     final_commands = {}
     final_commands["Pulling"] = pull_command(cmd, kwargs)
@@ -2347,25 +2426,6 @@ def create_launch_docker_cmd(
         cmd += " --file docker-compose.tls.yml"
     if "test" in kwargs and kwargs["test"] is True:
         cmd += " --file docker-compose.test.yml"
-
-    if build:
-        my_build_command = build_command(cmd)
-        final_commands["Building"] = my_build_command
-
-    dev_mode = kwargs.get("dev", False)
-    final_commands["Launching"] = deploy_command(cmd, tail, dev_mode)
-    return final_commands
-
-
-def create_launch_worker_cmd(
-    cmd: str,
-    kwargs: TypeDict[str, Any],
-    build: bool,
-    tail: bool = True,
-) -> TypeDict[str, TypeList[str]]:
-    final_commands = {}
-    final_commands["Pulling"] = pull_command(cmd, kwargs)
-    cmd += " --file docker-compose.yml"
 
     if build:
         my_build_command = build_command(cmd)
@@ -3279,16 +3339,9 @@ def create_land_docker_cmd(verb: GrammarVerb, prune_volumes: bool = False) -> st
     """
     node_name = verb.get_named_term_type(name="node_name")
     snake_name = str(node_name.snake_input)
-    containers = shell("docker ps --format '{{.Names}}' | " + f"grep {snake_name}")
 
-    # Check if the container name belongs to worker container
-    grid_path = GRID_SRC_PATH()
-    if "proxy" in containers:
-        path = grid_path
-        env_var = ";export $(cat .env | sed 's/#.*//g' | xargs);"
-    else:
-        path = grid_path + "/worker"
-        env_var = ";export $(cat ../.env | sed 's/#.*//g' | xargs);"
+    path = GRID_SRC_PATH()
+    env_var = ";export $(cat .env | sed 's/#.*//g' | xargs);"
 
     cmd = ""
     cmd += "docker compose"
@@ -3300,6 +3353,8 @@ def create_land_docker_cmd(verb: GrammarVerb, prune_volumes: bool = False) -> st
         cmd += (
             f' && docker volume rm $(docker volume ls --filter name="{snake_name}" -q)'
         )
+
+    cmd += f" && docker rm $(docker ps --filter name={snake_name} -q) --force"
 
     cmd = "cd " + path + env_var + cmd
     return cmd

@@ -1,15 +1,19 @@
 # stdlib
 from typing import Any
 from typing import ClassVar
+from typing import List
 from typing import Type
+from typing import Union
 
 # third party
 import numpy as np
+from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from .action_object import ActionObject
+from .action_object import ActionObjectPointer
 from .action_object import BASE_PASSTHROUGH_ATTRS
 from .action_types import action_types
 
@@ -23,7 +27,7 @@ from .action_types import action_types
 #         return domain_client.api.services.action.get(self.id).syft_action_data
 
 
-class NumpyArrayObjectPointer:
+class NumpyArrayObjectPointer(ActionObjectPointer):
     pass
 
 
@@ -42,12 +46,12 @@ def numpy_like_eq(left: Any, right: Any) -> bool:
 @serializable()
 class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyArrayObject"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type: ClassVar[Type[Any]] = np.ndarray
-    syft_pointer_type = NumpyArrayObjectPointer
-    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
-    syft_dont_wrap_attrs = ["dtype", "shape"]
+    syft_pointer_type: ClassVar[Type[ActionObjectPointer]] = NumpyArrayObjectPointer
+    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
+    syft_dont_wrap_attrs: List[str] = ["dtype", "shape"]
 
     # def __eq__(self, other: Any) -> bool:
     #     # 🟡 TODO 8: move __eq__ to a Data / Serdeable type interface on ActionObject
@@ -58,11 +62,15 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     #         )
     #     return self == other
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+    def __array_ufunc__(
+        self, ufunc: Any, method: str, *inputs: Any, **kwargs: Any
+    ) -> Union[Self, tuple[Self, ...]]:
         inputs = tuple(
-            np.array(x.syft_action_data, dtype=x.dtype)
-            if isinstance(x, NumpyArrayObject)
-            else x
+            (
+                np.array(x.syft_action_data, dtype=x.dtype)
+                if isinstance(x, NumpyArrayObject)
+                else x
+            )
             for x in inputs
         )
 
@@ -81,11 +89,11 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
 @serializable()
 class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyScalarObject"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_3
 
-    syft_internal_type = np.number
-    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
-    syft_dont_wrap_attrs = ["dtype", "shape"]
+    syft_internal_type: ClassVar[Type] = np.number
+    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
+    syft_dont_wrap_attrs: List[str] = ["dtype", "shape"]
 
     def __float__(self) -> float:
         return float(self.syft_action_data)
@@ -94,11 +102,11 @@ class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
 @serializable()
 class NumpyBoolObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     __canonical_name__ = "NumpyBoolObject"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_3
 
-    syft_internal_type = np.bool_
-    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
-    syft_dont_wrap_attrs = ["dtype", "shape"]
+    syft_internal_type: ClassVar[Type] = np.bool_
+    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
+    syft_dont_wrap_attrs: List[str] = ["dtype", "shape"]
 
 
 np_array = np.array([1, 2, 3])
@@ -128,5 +136,5 @@ SUPPORTED_FLOAT_TYPES = [
     np.float64,
 ]
 
-for scalar_type in SUPPORTED_INT_TYPES + SUPPORTED_FLOAT_TYPES:
+for scalar_type in SUPPORTED_INT_TYPES + SUPPORTED_FLOAT_TYPES:  # type: ignore
     action_types[scalar_type] = NumpyScalarObject

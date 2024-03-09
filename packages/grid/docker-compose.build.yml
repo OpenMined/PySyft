@@ -11,3 +11,16 @@ services:
       context: ${RELATIVE_PATH}../
       dockerfile: ./grid/backend/backend.dockerfile
       target: "backend"
+
+  seaweedfs:
+    build:
+      context: ${RELATIVE_PATH}./seaweedfs
+      dockerfile: seaweedfs.dockerfile
+      args:
+        - SEAWEEDFS_VERSION=${SEAWEEDFS_VERSION}
+
+  worker:
+    build:
+      context: ${RELATIVE_PATH}../
+      dockerfile: ./grid/backend/backend.dockerfile
+      target: "backend"

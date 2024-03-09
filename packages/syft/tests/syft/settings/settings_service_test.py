@@ -158,8 +158,12 @@ def test_settingsservice_update_success(
 
     assert response.is_ok() is True
     assert len(response.ok()) == len(mock_stash_get_all_output)
-    assert updated_settings == new_settings  # the first settings is updated
-    assert not_updated_settings == settings  # the second settings is not updated
+    assert (
+        updated_settings.model_dump() == new_settings.model_dump()
+    )  # the first settings is updated
+    assert (
+        not_updated_settings.model_dump() == settings.model_dump()
+    )  # the second settings is not updated
 
 
 def test_settingsservice_update_stash_get_all_fail(

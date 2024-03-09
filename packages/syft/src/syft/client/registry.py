@@ -7,7 +7,6 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
 
@@ -23,11 +22,7 @@ from ..types.grid_url import GridURL
 from ..util.constants import DEFAULT_TIMEOUT
 from ..util.logger import error
 from ..util.logger import warning
-from .enclave_client import EnclaveClient
-
-if TYPE_CHECKING:
-    # relative
-    from .client import Client
+from .client import SyftClient as Client
 
 NETWORK_REGISTRY_URL = (
     "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/gateways.json"
@@ -114,7 +109,7 @@ class NetworkRegistry:
         return pd.DataFrame(on).to_string()
 
     @staticmethod
-    def create_client(network: Dict[str, Any]) -> Client:  # type: ignore
+    def create_client(network: Dict[str, Any]) -> Client:
         # relative
         from ..client.client import connect
 
@@ -129,7 +124,7 @@ class NetworkRegistry:
             error(f"Failed to login with: {network}. {e}")
             raise SyftException(f"Failed to login with: {network}. {e}")
 
-    def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
+    def __getitem__(self, key: Union[str, int]) -> Client:
         if isinstance(key, int):
             return self.create_client(network=self.online_networks[key])
         else:
@@ -206,8 +201,10 @@ class DomainRegistry:
         return online_networks
 
     @property
-    def online_domains(self) -> List[Tuple[NodePeer, NodeMetadataJSON]]:
-        def check_domain(peer: NodePeer) -> Optional[Tuple[NodePeer, NodeMetadataJSON]]:
+    def online_domains(self) -> List[Tuple[NodePeer, Optional[NodeMetadataJSON]]]:
+        def check_domain(
+            peer: NodePeer,
+        ) -> Optional[tuple[NodePeer, Optional[NodeMetadataJSON]]]:
             try:
                 guest_client = peer.guest_client
                 metadata = guest_client.metadata
@@ -238,14 +235,15 @@ class DomainRegistry:
                 online_domains.append(each)
         return online_domains
 
-    def __make_dict__(self) -> List[Dict[str, str]]:
+    def __make_dict__(self) -> list[dict[str, Any]]:
         on = self.online_domains
         domains = []
-        domain_dict = {}
+        domain_dict: dict[str, Any] = {}
         for domain, metadata in on:
             domain_dict["name"] = domain.name
-            domain_dict["organization"] = metadata.organization
-            domain_dict["version"] = metadata.syft_version
+            if metadata is not None:
+                domain_dict["organization"] = metadata.organization
+                domain_dict["version"] = metadata.syft_version
             route = None
             if len(domain.node_routes) > 0:
                 route = domain.pick_highest_priority_route()
@@ -268,14 +266,14 @@ class DomainRegistry:
             return "(no domains online - try syft.domains.all_domains to see offline domains)"
         return pd.DataFrame(on).to_string()
 
-    def create_client(self, peer: NodePeer) -> Client:  # type: ignore
+    def create_client(self, peer: NodePeer) -> Client:
         try:
             return peer.guest_client
         except Exception as e:
             error(f"Failed to login to: {peer}. {e}")
             raise SyftException(f"Failed to login to: {peer}. {e}")
 
-    def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
+    def __getitem__(self, key: Union[str, int]) -> Client:
         if isinstance(key, int):
             return self.create_client(self.online_domains[key][0])
         else:
@@ -364,7 +362,7 @@ class EnclaveRegistry:
         return pd.DataFrame(on).to_string()
 
     @staticmethod
-    def create_client(enclave: Dict[str, Any]) -> Client:  # type: ignore
+    def create_client(enclave: Dict[str, Any]) -> Client:
         # relative
         from ..client.client import connect
 
@@ -379,7 +377,7 @@ class EnclaveRegistry:
             error(f"Failed to login with: {enclave}. {e}")
             raise SyftException(f"Failed to login with: {enclave}. {e}")
 
-    def __getitem__(self, key: Union[str, int]) -> EnclaveClient:  # type: ignore
+    def __getitem__(self, key: Union[str, int]) -> Client:
         if isinstance(key, int):
             return self.create_client(enclave=self.online_enclaves[key])
         else:

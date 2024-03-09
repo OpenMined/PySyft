@@ -1,34 +1,147 @@
-# Default values for syft.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+global:
+  # Affects only backend, frontend, and seaweedfs containers
+  registry: docker.io
+  version: 0.8.5-beta.1
 
-secrets:
-  syft:
-    stackApiKey: "changeme"
-    defaultRootEmail: "info@openmined.org"
-    defaultRootPassword: "changethis"
-  db:
-    mongo:
-      mongoPassword: "example"
-      mongoInitdbRootPassword: "example"
-      mongoUsername: "root"
-      mongoInitdbRootUsername: "root"
+  # Force default secret values for development. DO NOT USE IN PRODUCTION
+  useDefaultSecrets: false
 
-db:
-  mongo:
-    settings:
-      mongoPort: "'27017'"
-      mongoHost: "mongo"
+mongo:
+  # MongoDB config
+  port: 27017
+  username: root
+
+  # Extra environment vars
+  env: null
+
+  # Pod Resource Limits
+  resourcesPreset: nano
+  resources: null
+
+  # PVC storage size
+  storageSize: 5Gi
+
+  # Mongo secret name. Override this if you want to use a self-managed secret.
+  secretKeyName: mongo-secret
+
+  # Dev mode default passwords
+  defaultSecret:
+    rootPassword: example
+
+frontend:
+  # Extra environment vars
+  env: null
+
+  # Pod Resource Limits
+  resourcesPreset: nano
+  resources: null
+
+seaweedfs:
+  # S3 settings
+  s3:
+    port: 8333
+    rootUser: admin
+    volumeSizeMB: 1024
+
+  # Mount API settings
+  mountApi:
+    port: 4001
+
+  # Extra environment vars
+  env: null
+
+  # PVC storage size
+  storageSize: 5Gi
+
+  # Seaweed secret name. Override this if you want to use a self-managed secret.
+  # Secret must contain the following keys:
+  # - s3RootPassword
+  secretKeyName: seaweedfs-secret
+
+  # Pod Resource Limits
+  resourcesPreset: nano
+  resources: null
+
+  # Dev mode default passwords
+  defaultSecret:
+    s3RootPassword: admin
+
+proxy:
+  # Extra environment vars
+  env: null
+
+  # Pod Resource Limits
+  resourcesPreset: nano
+  resources: null
+
+registry:
+  # Extra environment vars
+  env: null
+
+  # PVC storage size
+  storageSize: 5Gi
+
+  # Pod Resource Limits
+  resourcesPreset: nano
+  resources: null
 
 node:
-  settings:
-    tls: false
-    hostname: "" # do not make this localhost
-    nodeName: "mynode"
-    nodeType: "domain"
-    versionHash: "abc"
+  # Syft settings
+  name: null
+  rootEmail: info@openmined.org
+  type: domain
+  side: high
+  inMemoryWorkers: false
+  defaultWorkerPoolCount: 1
+  queuePort: 5556
+  logLevel: info
+  debuggerEnabled: false
+
+  # SMTP Settings
+  smtp:
+    host: smtp.sendgrid.net
+    port: 587
+    from: noreply@openmined.org
+    username: apikey
+    password: password
+
+  # Oblivious settings
+  oblv:
+    enabled: false
+    port: 3030
+
+  # Extra environment vars
+  env: null
+
+  # Pod Resource Limits
+  resourcesPreset: small
+  resources: null
+
+  # Seaweed secret name. Override this if you want to use a self-managed secret.
+  # Secret must contain the following keys:
+  # - defaultRootPassword
+  secretKeyName: backend-secret
+
+  # Dev mode default passwords
+  defaultSecret:
+    defaultRootPassword: changethis
 
 ingress:
-  ingressClass: ""
-  # ingressClass: "azure/application-gateway"
-  # ingressClass: "gce"
+  hostname: null # do not make this localhost
+
+  tls:
+    enabled: false
+    secretName: null
+
+  # ----------------------------------------
+  # For Azure
+  # className: azure-application-gateway
+  # ----------------------------------------
+  # For AWS
+  # className: alb
+  # ----------------------------------------
+  # For GCE, https://cloud.google.com/kubernetes-engine/docs/how-to/load-balance-ingress#create-ingress
+  # class: gce
+  # ----------------------------------------
+  class: null
+  className: null

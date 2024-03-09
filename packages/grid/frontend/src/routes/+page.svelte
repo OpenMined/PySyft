@@ -1,21 +1,19 @@
-<script>
-  import { metadata } from '$lib/store';
-  import DomainMetadataPanel from '$lib/components/authentication/DomainMetadataPanel.svelte';
-  import AuthCircles from '$lib/components/AuthCircles.svelte';
-  import Nav from '$lib/components/authentication/Nav.svelte';
-  import Footer from '$lib/components/authentication/Footer.svelte';
+<script lang="ts">
+  import { goto } from "$app/navigation"
+  import { onMount } from "svelte"
+  import type { PageData } from "./$types"
+
+  export let data: PageData
+
+  onMount(() => {
+    if (data?.current_user && data.current_user?.email) {
+      goto("/users")
+    } else {
+      goto("/login")
+    }
+  })
 </script>
 
-<title>PySyft</title>
-<div class="fixed top-0 right-0 w-full h-full max-w-[808px] max-h-[880px] z-[-1]">
-  <AuthCircles />
-</div>
-<main class="flex flex-col p-10 gap-10 h-screen">
-  <Nav />
-  <div class="grow flex-shrink-0">
-    <div class="flex flex-col xl:flex-row w-full h-full xl:justify-around items-center gap-12">
-      <DomainMetadataPanel metadata={$metadata} />
-    </div>
-  </div>
-  <Footer />
+<main>
+  <title>PyGrid</title>
 </main>

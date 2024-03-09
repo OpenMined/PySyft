@@ -35,7 +35,7 @@ class NodePeer(SyftObject):
     __attr_unique__ = ["verify_key"]
     __repr_attrs__ = ["name", "node_type", "admin_email"]
 
-    id: Optional[UID]
+    id: Optional[UID] = None  # type: ignore[assignment]
     name: str
     verify_key: SyftVerifyKey
     node_routes: List[NodeRouteType] = []
@@ -44,15 +44,15 @@ class NodePeer(SyftObject):
 
     def update_routes(self, new_routes: List[NodeRoute]) -> None:
         add_routes = []
-        new_routes: List[NodeRoute] = self.update_route_priorities(new_routes)
+        new_routes = self.update_route_priorities(new_routes)
         for new_route in new_routes:
             existed, index = self.existed_route(new_route)
-            if not existed:
-                add_routes.append(new_route)
-            else:
+            if existed and index is not None:
                 # if the route already exists, we do not append it to self.new_route,
                 # but update its priority
                 self.node_routes[index].priority = new_route.priority
+            else:
+                add_routes.append(new_route)
 
         self.node_routes += add_routes
 
@@ -105,8 +105,8 @@ class NodePeer(SyftObject):
                     return (True, i)
             return (False, None)
 
-    @staticmethod
-    def from_client(client: SyftClient) -> Self:
+    @classmethod
+    def from_client(cls, client: SyftClient) -> Self:
         if not client.metadata:
             raise Exception("Client has to have metadata first")
 
@@ -125,6 +125,8 @@ class NodePeer(SyftObject):
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
             return client_type
+        if context.node is None:
+            return SyftError(message=f"context {context}'s node is None")
         return client_type(connection=connection, credentials=context.node.signing_key)
 
     def client_with_key(self, credentials: SyftSigningKey) -> SyftClient:

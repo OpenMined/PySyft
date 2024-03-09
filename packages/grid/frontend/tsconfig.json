@@ -8,6 +8,7 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
-    "types": ["vitest/globals"]
+    "types": ["vitest/globals"],
+    "plugins": [{ "name": "typescript-svelte-plugin" }]
   }
 }

@@ -25,7 +25,7 @@ from .capnp import get_capnp_schema
 
 TYPE_BANK = {}
 
-recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde  # type: ignore
+recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde
 
 
 def get_types(cls: Type, keys: Optional[List[str]] = None) -> Optional[List[Type]]:
@@ -111,9 +111,14 @@ def recursive_serde_register(
         # if pydantic object and attrs are provided, the get attrs from __fields__
         # cls.__fields__ auto inherits attrs
         pydantic_fields = [
-            f.name
-            for f in cls.__fields__.values()
-            if f.outer_type_ not in (Callable, types.FunctionType, types.LambdaType)
+            field
+            for field, field_info in cls.model_fields.items()
+            if not (
+                field_info.annotation is not None
+                and hasattr(field_info.annotation, "__origin__")
+                and field_info.annotation.__origin__
+                in (Callable, types.FunctionType, types.LambdaType)
+            )
         ]
         attribute_list.update(pydantic_fields)
 
@@ -125,7 +130,9 @@ def recursive_serde_register(
         attribute_list.update(["value"])
 
     exclude_attrs = [] if exclude_attrs is None else exclude_attrs
-    attribute_list = attribute_list - set(exclude_attrs)
+    attribute_list = (
+        attribute_list - set(exclude_attrs) - {"syft_pre_hooks__", "syft_post_hooks__"}
+    )
 
     if inheritable_attrs and attribute_list and not is_pydantic:
         # only set __syft_serializable__ for non-pydantic classes because
@@ -256,7 +263,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
 def rs_bytes2object(blob: bytes) -> Any:
     MAX_TRAVERSAL_LIMIT = 2**64 - 1
 
-    with recursive_scheme.from_bytes(  # type: ignore
+    with recursive_scheme.from_bytes(
         blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
     ) as msg:
         return rs_proto2object(msg)
@@ -269,11 +276,11 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     # clean this mess, Tudor
     module_parts = proto.fullyQualifiedName.split(".")
     klass = module_parts.pop()
-    class_type: Type = type(None)
+    class_type: Union[Type, Any] = type(None)
 
     if klass != "NoneType":
         try:
-            class_type = index_syft_by_module_name(proto.fullyQualifiedName)  # type: ignore
+            class_type = index_syft_by_module_name(proto.fullyQualifiedName)  # type: ignore[assignment,unused-ignore]
         except Exception:  # nosec
             try:
                 class_type = getattr(sys.modules[".".join(module_parts)], klass)
@@ -338,7 +345,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
         return class_type.serde_constructor(kwargs)
 
     if issubclass(class_type, Enum) and "value" in kwargs:
-        obj = class_type.__new__(class_type, kwargs["value"])  # type: ignore
+        obj = class_type.__new__(class_type, kwargs["value"])
     elif issubclass(class_type, BaseModel):
         # if we skip the __new__ flow of BaseModel we get the error
         # AttributeError: object has no attribute '__fields_set__'
