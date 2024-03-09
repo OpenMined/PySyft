@@ -8,8 +8,7 @@ from hide_warnings import hide_warnings
 
 
 @hide_warnings
-def load_capnp(capnp_path):
-
+def load_capnp(capnp_path: str) -> type:
     # # suppress warnings for a moment, specifically the common Jupyter warning:
     # # kj/filesystem-disk-unix.c++:1734: warning: PWD environment variable
     # # doesn't match current directory; pwd = /big/local/path/on/your/machine
