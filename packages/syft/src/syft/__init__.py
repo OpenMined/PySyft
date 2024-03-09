@@ -6,6 +6,8 @@ from pathlib import Path
 import sys
 from typing import Any
 from typing import Callable
+from typing import Optional
+from typing import Union
 
 # relative
 from . import gevent_patch  # noqa: F401
@@ -154,3 +156,60 @@ def _settings() -> UserSettings:
 
 def search(name: str) -> SearchResults:
     return Search(_domains()).search(name=name)
+
+
+def launch(
+    # node information and deployment
+    name: Optional[str] = None,
+    node_type: Optional[Union[str, NodeType]] = None,
+    deploy_to: Optional[str] = None,
+    node_side_type: Optional[str] = None,
+    # worker related inputs
+    port: Optional[Union[int, str]] = "auto",
+    processes: int = 1,  # temporary work around for jax in subprocess
+    local_db: bool = False,
+    dev_mode: bool = False,
+    cmd: bool = False,
+    reset: bool = False,
+    tail: bool = False,
+    host: Optional[str] = "0.0.0.0",  # nosec
+    tag: Optional[str] = "latest",
+    verbose: bool = False,
+    render: bool = False,
+    enable_warnings: bool = False,
+    n_consumers: int = 0,
+    thread_workers: bool = False,
+    create_producer: bool = False,
+    queue_port: Optional[int] = None,
+    in_memory_workers: bool = True,
+) -> DomainClient:
+    node = orchestra.launch(
+        name=name,
+        node_type=node_type,
+        deploy_to=deploy_to,
+        node_side_type=node_side_type,
+        port=port,
+        processes=processes,
+        local_db=local_db,
+        dev_mode=dev_mode,
+        cmd=cmd,
+        reset=reset,
+        tail=tail,
+        host=host,
+        tag=tag,
+        verbose=verbose,
+        render=render,
+        enable_warnings=enable_warnings,
+        n_consumers=n_consumers,
+        thread_workers=thread_workers,
+        create_producer=create_producer,
+        queue_port=queue_port,
+        in_memory_workers=in_memory_workers,
+    )
+
+    client = node.login(email="info@openmined.org", password="changethis")
+
+    # so that the user doesn't need to keep up with a node_handlne and client
+    client.land = node.land
+
+    return client
