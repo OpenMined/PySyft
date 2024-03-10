@@ -220,7 +220,7 @@ async def app_message(dht_key: str, message: bytes) -> str:
             return "Message sent successfully"
 
 
-async def app_call(dht_key: str, message: bytes) -> dict[str, str]:
+async def app_call(dht_key: str, message: bytes) -> bytes:
     async with await get_veilid_conn() as conn:
         async with await get_routing_context(conn) as router:
             dht_key = veilid.TypedKey(dht_key)
@@ -229,8 +229,6 @@ async def app_call(dht_key: str, message: bytes) -> dict[str, str]:
             dht_value = await get_dht_value(router, dht_key, 0)
             # TODO: change to debug
             logger.info(f"DHT Value:{dht_value}")
-            if isinstance(dht_value, dict):
-                return dht_value
 
             if USE_DIRECT_CONNECTION:
                 # Direct Connection by Node ID
