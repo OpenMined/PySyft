@@ -236,8 +236,7 @@ class StdCaptureFD(Capture):
         if hasattr(self, "err") and not self.err.tmpfile.closed:
             errfile = self.err.done()
         if hasattr(self, "in_"):
-            tmpfile = self.in_.done()
-            print(f"tmpfile = {tmpfile}")
+            self.in_.done()
         if save:
             self._save()
         return outfile, errfile
