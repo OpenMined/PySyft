@@ -63,11 +63,15 @@ async def retrieve_dht_key_endpoint() -> ResponseModel:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/app_message")
+@app.post("/app_message", response_model=ResponseModel)
 async def app_message_endpoint(
     request: Request, dht_key: Annotated[str, Body()], message: Annotated[bytes, Body()]
-) -> dict[str, str]:
-    return await app_message(dht_key=dht_key, message=message)
+) -> ResponseModel:
+    try:
+        res = await app_message(dht_key=dht_key, message=message)
+        return ResponseModel(message=res)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/app_call")

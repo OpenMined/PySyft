@@ -5,7 +5,6 @@ import lzma
 from typing import Callable
 from typing import Optional
 from typing import Tuple
-from typing import Union
 
 # third party
 import httpx
@@ -176,11 +175,11 @@ async def get_dht_value(
     dht_key: TypedKey,
     subkey: int,
     force_refresh: bool = True,
-) -> Union[dict[str, str], ValueData]:
+) -> ValueData:
     try:
         await router.open_dht_record(key=dht_key, writer=None)
     except Exception as e:
-        return {"message": f"DHT Key:{dht_key} does not exist. Exception: {e}"}
+        raise Exception(f"Unable to open DHT Record:{dht_key} . Exception: {e}")
 
     try:
         dht_value = await router.get_dht_value(
@@ -190,12 +189,12 @@ async def get_dht_value(
         await router.close_dht_record(dht_key)
         return dht_value
     except Exception as e:
-        return {
-            "message": f"Subkey:{subkey} does not exist in the DHT Key:{dht_key}. Exception: {e}"
-        }
+        raise Exception(
+            f"Unable to get subkey value:{subkey} from DHT Record:{dht_key}. Exception: {e}"
+        )
 
 
-async def app_message(dht_key: str, message: bytes) -> dict[str, str]:
+async def app_message(dht_key: str, message: bytes) -> str:
     async with await get_veilid_conn() as conn:
         async with await get_routing_context(conn) as router:
             dht_key = veilid.TypedKey(dht_key)
@@ -204,8 +203,6 @@ async def app_message(dht_key: str, message: bytes) -> dict[str, str]:
             dht_value = await get_dht_value(router, dht_key, 0)
             # TODO: change to debug
             logger.info(f"DHT Value:{dht_value}")
-            if isinstance(dht_value, dict):
-                return dht_value
 
             if USE_DIRECT_CONNECTION:
                 # Direct Connection by Node ID
@@ -220,7 +217,7 @@ async def app_message(dht_key: str, message: bytes) -> dict[str, str]:
             # Send app message to peer
             await router.app_message(route, message)
 
-            return {"message": "Message sent successfully"}
+            return "Message sent successfully"
 
 
 async def app_call(dht_key: str, message: bytes) -> dict[str, str]:
