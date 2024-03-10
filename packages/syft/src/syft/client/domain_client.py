@@ -456,7 +456,11 @@ class DomainClient(SyftClient):
         small_grid_symbol_logo = base64read("small-grid-symbol-logo.png")
 
         url = getattr(self.connection, "url", None)
-        node_details = f"<strong>URL:</strong> {url}<br />" if url else ""
+        node_details = (
+            f'<strong>URL:</strong> <a href="{url}/api/v2/">{url}</a><br />'
+            if url
+            else ""
+        )
         if self.metadata is not None:
             node_details += f"<strong>Node Type:</strong> {self.metadata.node_type.capitalize()}<br />"
             node_side_type = (
