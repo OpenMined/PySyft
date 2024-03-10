@@ -184,6 +184,7 @@ def launch(
     create_producer: bool = False,
     queue_port: Optional[int] = None,
     in_memory_workers: bool = True,
+    skip_signup: bool = False,
 ) -> DomainClient:
     node = orchestra.launch(
         name=name,
@@ -219,27 +220,32 @@ def launch(
     # so that the user doesn't need to keep up with a node_handlne and client
     client.land = node.land
 
-    name = input("Name:")
-    email = input("Email:")
-    password = getpass("Password:")
+    if not skip_signup:
+        name = input("Name:")
+        email = input("Email:")
+        password = getpass("Password:")
 
-    client.me.set_name(name)
-    client.me.set_email(email)
-    client.me.set_password(password)
+        client.me.set_name(name)
+        client.me.set_email(email)
+        client.me.set_password(password)
 
-    # set default email notifier (note: each email account can only send 300 emails a day,
-    # and it might go to people's junk folders.)
-    emails_and_passwords = list()  # noqa: C408
-    emails_and_passwords.append(("syftforwarder@outlook.com", "Wh8fHys!Nrw7VyXLMj7r"))
-    emails_and_passwords.append(("andrewtrask1@outlook.com", "notasecurepassword123"))
+        # set default email notifier (note: each email account can only send 300 emails a day,
+        # and it might go to people's junk folders.)
+        emails_and_passwords = list()  # noqa: C408
+        emails_and_passwords.append(
+            ("syftforwarder@outlook.com", "Wh8fHys!Nrw7VyXLMj7r")
+        )
+        emails_and_passwords.append(
+            ("andrewtrask1@outlook.com", "notasecurepassword123")
+        )
 
-    sender, sender_pwd = random.choice(emails_and_passwords)
-    client.settings.enable_notifications(
-        email_username=sender,
-        email_password=sender_pwd,
-        email_sender=sender,
-        email_server="smtp-mail.outlook.com",
-        email_port=587,
-    )
+        sender, sender_pwd = random.choice(emails_and_passwords)
+        client.settings.enable_notifications(
+            email_username=sender,
+            email_password=sender_pwd,
+            email_sender=sender,
+            email_server="smtp-mail.outlook.com",
+            email_port=587,
+        )
 
     return client
