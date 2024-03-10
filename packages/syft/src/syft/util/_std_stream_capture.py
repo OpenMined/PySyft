@@ -1,27 +1,19 @@
 """
-Code to hide warnings when importing syft due to the capnp package's
-underlying C++ code raises a warning about path inconsistencie.
-We could have use the `hide-warnings` library, but it depends on `py`, which has been
-deprecated for a while and will raise a security alert by `bandit`
-Furthermore, `py` is a heavy dependency to add to syft just to suppress a warning
-
-Solution: Use only the necessary code from `hide-warnings` and `py` so we don't
-have to install these libraries. Credit: Kien Dang
+Capture stdout, stderr and stdin streams
 
 References:
 - https://github.com/OpenMined/PySyft/pull/8560
-- https://github.com/Rainbow-Dreamer/hide_warnings/blob/main/hide_warnings.py
 - https://github.com/pytest-dev/py/blob/master/py/_io/capture.py
 """
 # stdlib
-import functools
+import contextlib
 import os
 import sys
 import tempfile
 from typing import Any
 from typing import Callable
+from typing import Generator
 from typing import Optional
-from typing import TypeVar
 from typing import cast
 
 patchsysdict = {0: "stdin", 1: "stdout", 2: "stderr"}
@@ -320,39 +312,15 @@ def dupfile(
     return os.fdopen(newfd, mode, buffering, encoding, closefd=True)
 
 
-# hide_warnings
-def get_capture(out: bool, in_: bool) -> Optional[StdCaptureFD]:
+@contextlib.contextmanager
+def std_stream_capture(out: bool = True, err: bool = True) -> Generator[Any, None, Any]:
     try:
-        capture = StdCaptureFD(out=out, in_=in_)
-    except Exception as e:
-        print(f"got execption in get_capture with error {e}. Set capture to None")
+        capture = StdCaptureFD(out=out, err=err)
+    except Exception:
         capture = None
-    return capture
 
-
-def reset_capture(capture: Optional[StdCaptureFD]) -> None:
-    if capture is not None:
-        capture.reset()
-
-
-# T is a type variable that can represent any function regardless of
-# its argument types and number, with a return type that can be anything
-T = TypeVar("T", bound=Callable[..., Any])
-
-
-def hide_warnings(
-    function: Optional[T] = None, out: bool = True, in_: bool = False
-) -> Any:
-    def decorator_hide_warnings(func: T) -> Any:
-        @functools.wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            capture = get_capture(out, in_)
-            result = func(*args, **kwargs)
-            reset_capture(capture)
-            return result
-
-        return wrapper
-
-    if function:
-        return decorator_hide_warnings(function)
-    return decorator_hide_warnings
+    try:
+        yield
+    finally:
+        if capture is not None:
+            capture.reset()
