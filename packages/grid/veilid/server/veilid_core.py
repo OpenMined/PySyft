@@ -195,24 +195,20 @@ async def get_dht_value(
         )
 
 
+# TODO: change verbosity of logs to debug at appropriate places
 async def get_route_from_dht_record(
     dht_key: str, conn: _JsonVeilidAPI, router: _JsonRoutingContext
 ) -> Union[str, RouteId]:
     dht_key = veilid.TypedKey(dht_key)
-    # TODO: change to debug
     logger.info(f"App Call to DHT Key: {dht_key}")
     dht_value = await get_dht_value(router, dht_key, 0)
-    # TODO: change to debug
     logger.info(f"DHT Value:{dht_value}")
 
     if USE_DIRECT_CONNECTION:
-        # Direct Connection by Node ID
         route = dht_value.data.decode()
         logger.info(f"Node ID: {route}")
     else:
-        # Private Router to peer
         route = await conn.import_remote_private_route(dht_value.data)
-        # TODO: change to debug
         logger.info(f"Private Route of  Peer: {route} ")
 
     return route
