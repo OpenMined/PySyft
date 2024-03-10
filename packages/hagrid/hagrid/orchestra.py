@@ -163,7 +163,7 @@ class NodeHandle:
     def client(self) -> Any:
         if self.port:
             sy = get_syft_client()
-            return sy.login_as_guest(url=self.url, port=self.port)  # type: ignore
+            return sy.login_as_guest(url=self.url, port=self.port, verbose=False)  # type: ignore
         elif self.deployment_type == DeploymentType.PYTHON:
             return self.python_node.get_guest_client(verbose=False)  # type: ignore
         else:
@@ -171,11 +171,15 @@ class NodeHandle:
                 f"client not implemented for the deployment type:{self.deployment_type}"
             )
 
-    def login_as_guest(self, **kwargs: Any) -> ClientAlias:
-        return self.client.login_as_guest(**kwargs)
+    def login_as_guest(self, verbose: bool = False, **kwargs: Any) -> ClientAlias:
+        return self.client.login_as_guest(verbose=verbose, **kwargs)
 
     def login(
-        self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
+        self,
+        email: Optional[str] = None,
+        password: Optional[str] = None,
+        verbose: bool = False,
+        **kwargs: Any,
     ) -> ClientAlias:
         if not email:
             email = input("Email: ")
@@ -183,7 +187,9 @@ class NodeHandle:
         if not password:
             password = getpass.getpass("Password: ")
 
-        return self.client.login(email=email, password=password, **kwargs)
+        return self.client.login(
+            email=email, password=password, verbose=verbose, **kwargs
+        )
 
     def register(
         self,

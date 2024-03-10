@@ -207,7 +207,9 @@ def launch(
         in_memory_workers=in_memory_workers,
     )
 
-    client = node.login(email="info@openmined.org", password="changethis")
+    client = node.login(
+        email="info@openmined.org", password="changethis", verbose=False
+    )
 
     # so that the user doesn't need to keep up with a node_handlne and client
     client.land = node.land

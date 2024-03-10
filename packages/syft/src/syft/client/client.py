@@ -717,10 +717,10 @@ class SyftClient:
             return self.api.services.user.get_current_user()
         return None
 
-    def login_as_guest(self) -> Self:
+    def login_as_guest(self, verbose: bool = True) -> Self:
         _guest_client = self.guest()
 
-        if self.metadata is not None:
+        if self.metadata is not None and verbose:
             print(
                 f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()}-side "
                 f"{self.metadata.node_type.capitalize()}> as GUEST"
@@ -734,6 +734,7 @@ class SyftClient:
         password: Optional[str] = None,
         cache: bool = True,
         register: bool = False,
+        verbose: bool = True,
         **kwargs: Any,
     ) -> Self:
         # If SYFT_LOGIN_{NODE_NAME}_PASSWORD is set, use that as the password
@@ -773,10 +774,11 @@ class SyftClient:
             client.__logged_in_username = client.users.get_current_user().name
 
         if signing_key is not None and client.metadata is not None:
-            print(
-                f"Logged into <{client.name}: {client.metadata.node_side_type.capitalize()} side "
-                f"{client.metadata.node_type.capitalize()}> as <{email}>"
-            )
+            if verbose:
+                print(
+                    f"Logged into <{client.name}: {client.metadata.node_side_type.capitalize()} side "
+                    f"{client.metadata.node_type.capitalize()}> as <{email}>"
+                )
             # relative
             from ..node.node import get_default_root_password
 
