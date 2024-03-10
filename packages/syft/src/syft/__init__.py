@@ -1,6 +1,8 @@
 __version__ = "0.8.5-beta.1"
 
 # stdlib
+# third-party
+from getpass import getpass
 import pathlib
 from pathlib import Path
 import sys
@@ -216,5 +218,13 @@ def launch(
 
     # so that the user doesn't need to keep up with a node_handlne and client
     client.land = node.land
+
+    name = input("Name:")
+    email = input("Email:")
+    password = getpass("Password:")
+
+    client.me.set_name(name)
+    client.me.set_email(email)
+    client.me.set_password(password)
 
     return client
