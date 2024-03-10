@@ -5,6 +5,7 @@ import lzma
 from typing import Callable
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 import httpx
@@ -194,27 +195,34 @@ async def get_dht_value(
         )
 
 
+async def get_route_from_dht_record(
+    dht_key: str, conn: _JsonVeilidAPI, router: _JsonRoutingContext
+) -> Union[str, RouteId]:
+    dht_key = veilid.TypedKey(dht_key)
+    # TODO: change to debug
+    logger.info(f"App Call to DHT Key: {dht_key}")
+    dht_value = await get_dht_value(router, dht_key, 0)
+    # TODO: change to debug
+    logger.info(f"DHT Value:{dht_value}")
+
+    if USE_DIRECT_CONNECTION:
+        # Direct Connection by Node ID
+        route = dht_value.data.decode()
+        logger.info(f"Node ID: {route}")
+    else:
+        # Private Router to peer
+        route = await conn.import_remote_private_route(dht_value.data)
+        # TODO: change to debug
+        logger.info(f"Private Route of  Peer: {route} ")
+
+    return route
+
+
 async def app_message(dht_key: str, message: bytes) -> str:
     async with await get_veilid_conn() as conn:
         async with await get_routing_context(conn) as router:
-            dht_key = veilid.TypedKey(dht_key)
-            # TODO: change to debug
-            logger.info(f"App Message to DHT Key: {dht_key}")
-            dht_value = await get_dht_value(router, dht_key, 0)
-            # TODO: change to debug
-            logger.info(f"DHT Value:{dht_value}")
+            route = await get_route_from_dht_record(dht_key, conn, router)
 
-            if USE_DIRECT_CONNECTION:
-                # Direct Connection by Node ID
-                route = dht_value.data.decode()
-                logger.info(f"Node ID: {route}")
-            else:
-                # Private Router to peer
-                route = await conn.import_remote_private_route(dht_value.data)
-                # TODO: change to debug
-                logger.info(f"Private Route of  Peer: {route} ")
-
-            # Send app message to peer
             await router.app_message(route, message)
 
             return "Message sent successfully"
@@ -223,22 +231,7 @@ async def app_message(dht_key: str, message: bytes) -> str:
 async def app_call(dht_key: str, message: bytes) -> bytes:
     async with await get_veilid_conn() as conn:
         async with await get_routing_context(conn) as router:
-            dht_key = veilid.TypedKey(dht_key)
-            # TODO: change to debug
-            logger.info(f"App Call to DHT Key: {dht_key}")
-            dht_value = await get_dht_value(router, dht_key, 0)
-            # TODO: change to debug
-            logger.info(f"DHT Value:{dht_value}")
-
-            if USE_DIRECT_CONNECTION:
-                # Direct Connection by Node ID
-                route = dht_value.data.decode()
-                logger.info(f"Node ID: {route}")
-            else:
-                # Private Router to peer
-                route = await conn.import_remote_private_route(dht_value.data)
-                # TODO: change to debug
-                logger.info(f"Private Route of  Peer: {route} ")
+            route = await get_route_from_dht_record(dht_key, conn, router)
 
             result = await router.app_call(route, message)
 
