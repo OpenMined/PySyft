@@ -31,6 +31,7 @@ from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.transforms import transform_method
+from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
@@ -372,6 +373,20 @@ class NetworkService(AbstractService):
 
         # Return peers or an empty list when result is None
         return result.ok() or []
+
+    @service_method(
+        path="network.delete_peer_by_id",
+        name="delete_peer_by_id",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def delete_peer_by_id(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
+        """Delete Node Peer"""
+        result = self.stash.delete_by_uid(context.credentials, uid)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return SyftSuccess(message="Node Peer Deleted")
 
     @service_method(
         path="network.exchange_veilid_route",
