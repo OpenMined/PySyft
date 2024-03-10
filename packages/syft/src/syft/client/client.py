@@ -735,6 +735,7 @@ class SyftClient:
         cache: bool = True,
         register: bool = False,
         verbose: bool = True,
+        suppress_warnings: bool = False,
         **kwargs: Any,
     ) -> Self:
         # If SYFT_LOGIN_{NODE_NAME}_PASSWORD is set, use that as the password
@@ -783,11 +784,12 @@ class SyftClient:
             from ..node.node import get_default_root_password
 
             if password == get_default_root_password():
-                message = (
-                    "You are using a default password. Please change the password "
-                    "using `[your_client].me.set_password([new_password])`."
-                )
-                prompt_warning_message(message)
+                if not suppress_warnings:
+                    message = (
+                        "You are using a default password. Please change the password "
+                        "using `[your_client].me.set_password([new_password])`."
+                    )
+                    prompt_warning_message(message)
 
             if cache:
                 SyftClientSessionCache.add_client(

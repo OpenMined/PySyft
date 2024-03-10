@@ -208,7 +208,10 @@ def launch(
     )
 
     client = node.login(
-        email="info@openmined.org", password="changethis", verbose=False
+        email="info@openmined.org",
+        password="changethis",
+        verbose=False,
+        suppress_warnings=True,
     )
 
     # so that the user doesn't need to keep up with a node_handlne and client

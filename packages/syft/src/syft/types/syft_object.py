@@ -596,7 +596,13 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             if value is not PydanticUndefined:
                 if var_annotation is not None:
                     # Otherwise validate value against the variable annotation
-                    check_type(value, var_annotation)
+                    if var_annotation != "ServiceRole":
+                        # skip if ServiceRole becuase there's some sort of local conflict
+                        # which triggers an extraneous warning. The check_type method
+                        # skips the check anyway becuase of this property but it
+                        # throws a warning which makes for a messy user UX.
+                        check_type(value, var_annotation)
+
                 setattr(self, attr, value)
             else:
                 if not _is_optional(var_annotation):
