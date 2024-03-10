@@ -1,7 +1,6 @@
 __version__ = "0.8.5-beta.1"
 
 # stdlib
-# third-party
 from getpass import getpass
 import pathlib
 from pathlib import Path
