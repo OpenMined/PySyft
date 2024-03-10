@@ -294,7 +294,7 @@ def dupfile(
     mode: Optional[str] = None,
     buffering: int = 0,
     raising: bool = False,
-    encoding: str | None = None,
+    encoding: Optional[str] = None,
 ) -> Any:
     """return a new open file object that's a duplicate of f
 
