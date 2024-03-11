@@ -112,7 +112,7 @@ jobs:
       max-parallel: 99
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.12"]
+        python-version: ["3.11"]
         syft-version: ["0.8.2", "0.8.2b6", "0.8.3"]
 
     runs-on: ${{ matrix.os }}
@@ -159,7 +159,7 @@ jobs:
       - name: Install Syft ${{ matrix.syft-version }}
         if: steps.changes.outputs.hagrid == 'true'
         run: |
-          # pip install ml-dtypes==0.2.0
+          pip install ml-dtypes==0.2.0
           pip install syft==${{ matrix.syft-version }}
           pip install .
 
