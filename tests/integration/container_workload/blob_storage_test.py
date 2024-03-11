@@ -9,7 +9,8 @@ import syft as sy
 
 
 @pytest.mark.skipif(
-    os.environ["AZURE_BLOB_STORAGE_KEY"] == "",
+    "AZURE_BLOB_STORAGE_KEY" not in os.environ
+    or os.environ["AZURE_BLOB_STORAGE_KEY"] == "",
     reason="AZURE_BLOB_STORAGE_KEY is not set",
 )
 @pytest.mark.container_workload
