@@ -13,7 +13,6 @@ import veilid
 
 # relative
 from .constants import MAX_MESSAGE_SIZE
-from .utils import retry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -114,6 +113,10 @@ class VeilidStreamer:
     def __init__(self) -> None:
         self.chunk_size = MAX_MESSAGE_SIZE
 
+        MAX_CONCURRENT_REQUESTS = 200
+        self._send_request_semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
+        self._send_response_semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
+
         # Structs for serializing and deserializing metadata as bytes of fixed length
         # '!' - big-endian byte order (recommended for networks as per IETF RFC 1700)
         # '8s' - String of length 8
@@ -151,20 +154,11 @@ class VeilidStreamer:
         await self._send_request(router, dht_key, stream_start_request)
 
         # Send chunks
-        asyncio_gather_with_retries = retry(
-            veilid.VeilidAPIErrorTimeout, tries=3, delay=1, backoff=2
-        )(asyncio.gather)
-
-        batch = []
-        batch_size = 65
-
+        tasks = []
         for chunk_number in range(chunks_count):
             chunk = self._get_chunk(message, message_hash, chunk_number)
-            batch.append(self._send_request(router, dht_key, chunk))
-            if len(batch) == batch_size or chunk_number == chunks_count - 1:
-                await asyncio_gather_with_retries(*batch)
-                await asyncio.sleep(0.5)  # hack: cooldown to avoid backpressure
-                batch = []
+            tasks.append(self._send_request(router, dht_key, chunk))
+        await asyncio.gather(*tasks)
 
         # Send STREAM_END request
         stream_end_message = self.stream_end_struct.pack(
@@ -198,11 +192,12 @@ class VeilidStreamer:
         self, router: veilid.RoutingContext, dht_key: str, request_data: bytes
     ) -> bytes:
         """Send an app call to the Veilid server and return the response."""
-        response = await router.app_call(dht_key, request_data)
-        ok_prefix = VeilidStreamer.ResponseType.OK.value
-        if not response.startswith(ok_prefix):
-            raise Exception("Unexpected response from server")
-        return response[len(ok_prefix) :]
+        async with self._send_request_semaphore:
+            response = await router.app_call(dht_key, request_data)
+            ok_prefix = VeilidStreamer.ResponseType.OK.value
+            if not response.startswith(ok_prefix):
+                raise Exception("Unexpected response from server")
+            return response[len(ok_prefix) :]
 
     async def _send_response(
         self,
@@ -211,7 +206,8 @@ class VeilidStreamer:
         response: bytes,
     ) -> None:
         """Send a response to an app call."""
-        await connection.app_call_reply(call_id, response)
+        async with self._send_response_semaphore:
+            await connection.app_call_reply(call_id, response)
 
     def _calculate_chunks_count(self, message: bytes) -> int:
         message_size = len(message)
@@ -281,7 +277,9 @@ class VeilidStreamer:
         buffer = self.receive_buffer[message_hash]
         message = b"".join(buffer)
         hash_matches = hashlib.sha256(message).digest() == message_hash
-        logger.debug(f"Message reassembled, hash matches: {hash_matches}")
+        logger.debug(
+            f"Message of {len(message) // 1024} KB reassembled, hash matches: {hash_matches}"
+        )
         if not hash_matches:
             await self._send_response(
                 connection, call_id, VeilidStreamer.ResponseType.ERROR.value
