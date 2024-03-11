@@ -277,7 +277,6 @@ def test_mongo_store_partition_update(
         assert stored.ok()[0].data == v
 
 
-
 def test_mongo_store_partition_set_threading(root_verify_key, mongo_client) -> None:
     thread_cnt = 3
     repeats = 5
