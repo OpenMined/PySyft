@@ -2,17 +2,12 @@
 from typing import Any
 from typing import List
 from typing import Union
-
-# third party
-from result import Ok
-from result import Result
+from typing import cast
 
 # relative
-from ...node.credentials import SyftVerifyKey
+from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionSettings
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -21,52 +16,7 @@ from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .api import CustomAPIEndpoint
-
-
-@serializable()
-class CustomAPIEndpointStash(BaseUIDStoreStash):
-    object_type = CustomAPIEndpoint
-    settings: PartitionSettings = PartitionSettings(
-        name=CustomAPIEndpoint.__canonical_name__, object_type=CustomAPIEndpoint
-    )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
-
-    def get_by_path(
-        self, credentials: SyftVerifyKey, path: str
-    ) -> Result[List[CustomAPIEndpoint], str]:
-        results = self.get_all(credentials=credentials)
-        items = []
-        if results.is_ok() and results.ok():
-            results = results.ok()
-            for result in results:
-                if result.path == path:
-                    items.append(result)
-            return Ok(items)
-        else:
-            return results
-
-    def update(
-        self, credentials: SyftVerifyKey, endpoint: CustomAPIEndpoint
-    ) -> Result[CustomAPIEndpoint, str]:
-        res = self.check_type(endpoint, CustomAPIEndpoint)
-        if res.is_err():
-            return res
-        old_endpoint = self.get_by_path(credentials=credentials, path=endpoint.path)
-        if old_endpoint and old_endpoint.ok():
-            old_endpoint = old_endpoint.ok()
-            old_endpoint = old_endpoint[0]
-
-            if old_endpoint == endpoint:
-                return Ok(endpoint)
-            else:
-                super().delete_by_uid(credentials=credentials, uid=old_endpoint.id)
-
-        result = super().set(
-            credentials=credentials, obj=res.ok(), ignore_duplicates=True
-        )
-        return result
+from .api_stash import CustomAPIEndpointStash
 
 
 @instrument
@@ -96,6 +46,7 @@ class APIService(AbstractService):
     ) -> Union[List[CustomAPIEndpoint], SyftError]:
         # TODO: Add ability to specify which roles see which endpoints
         # for now skip auth
+        context.node = cast(AbstractNode, context.node)
         results = self.stash.get_all(context.node.verify_key)
         if results.is_ok():
             return results.ok()
@@ -110,6 +61,7 @@ class APIService(AbstractService):
         **kwargs: Any,
     ) -> Union[SyftSuccess, SyftError]:
         """Call a Custom API Method"""
+        context.node = cast(AbstractNode, context.node)
         result = self.stash.get_by_path(context.node.verify_key, path=path)
         if not result.is_ok():
             return SyftError(message=f"CustomAPIEndpoint: {path} does not exist")

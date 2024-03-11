@@ -62,8 +62,8 @@ def get_signature(func: Callable) -> Signature:
     return sig
 
 
-def api_endpoint(path: str) -> CustomAPIEndpoint:
-    def decorator(f):
+def api_endpoint(path: str) -> Callable[..., CustomAPIEndpoint]:
+    def decorator(f: Callable) -> CustomAPIEndpoint:
         res = CustomAPIEndpoint(
             path=path,
             api_code=inspect.getsource(f),
