@@ -159,7 +159,7 @@ jobs:
       - name: Install Syft ${{ matrix.syft-version }}
         if: steps.changes.outputs.hagrid == 'true'
         run: |
-          pip install ml-dtypes==0.2.0
+          # pip install ml-dtypes==0.2.0
           pip install syft==${{ matrix.syft-version }}
           pip install .
 
