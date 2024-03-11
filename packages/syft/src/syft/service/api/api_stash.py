@@ -1,5 +1,4 @@
 # stdlib
-from typing import List
 
 # third party
 from result import Ok
@@ -26,7 +25,7 @@ class CustomAPIEndpointStash(BaseUIDStoreStash):
 
     def get_by_path(
         self, credentials: SyftVerifyKey, path: str
-    ) -> Result[List[CustomAPIEndpoint], str]:
+    ) -> Result[list[CustomAPIEndpoint], str]:
         results = self.get_all(credentials=credentials)
         items = []
         if results.is_ok() and results.ok():
@@ -39,7 +38,10 @@ class CustomAPIEndpointStash(BaseUIDStoreStash):
             return results
 
     def update(
-        self, credentials: SyftVerifyKey, endpoint: CustomAPIEndpoint, has_permission: bool = False
+        self,
+        credentials: SyftVerifyKey,
+        endpoint: CustomAPIEndpoint,
+        has_permission: bool = False,
     ) -> Result[CustomAPIEndpoint, str]:
         res = self.check_type(endpoint, CustomAPIEndpoint)
         if res.is_err():

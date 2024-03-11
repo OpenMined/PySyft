@@ -1,7 +1,5 @@
 # stdlib
 from typing import Any
-from typing import List
-from typing import Union
 from typing import cast
 
 # relative
@@ -32,7 +30,7 @@ class APIService(AbstractService):
     @service_method(path="api.set", name="set")
     def set(
         self, context: AuthedServiceContext, endpoint: CustomAPIEndpoint
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Register an CustomAPIEndpoint."""
         result = self.stash.update(context.credentials, endpoint=endpoint)
         if result.is_ok():
@@ -43,7 +41,7 @@ class APIService(AbstractService):
 
     def get_endpoints(
         self, context: AuthedServiceContext
-    ) -> Union[List[CustomAPIEndpoint], SyftError]:
+    ) -> list[CustomAPIEndpoint] | SyftError:
         # TODO: Add ability to specify which roles see which endpoints
         # for now skip auth
         context.node = cast(AbstractNode, context.node)
@@ -59,7 +57,7 @@ class APIService(AbstractService):
         path: str,
         *args: Any,
         **kwargs: Any,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Call a Custom API Method"""
         context.node = cast(AbstractNode, context.node)
         result = self.stash.get_by_path(context.node.verify_key, path=path)

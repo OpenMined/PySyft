@@ -3,7 +3,7 @@ import ast
 import inspect
 from inspect import Signature
 from typing import Any
-from typing import Callable
+from collections.abc import Callable
 
 # relative
 from ...serde.serializable import serializable

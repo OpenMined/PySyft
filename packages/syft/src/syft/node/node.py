@@ -375,7 +375,6 @@ class Node(AbstractNode):
                 SyncService,
                 OutputService,
                 UserCodeStatusService,
-
             ]
             if services is None
             else services
@@ -979,7 +978,6 @@ class Node(AbstractNode):
                 SyncService,
                 OutputService,
                 UserCodeStatusService,
-
             ]
 
             if OBLV:
