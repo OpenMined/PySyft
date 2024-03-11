@@ -1,7 +1,4 @@
 # stdlib
-from typing import List
-from typing import Optional
-from typing import Union
 from typing import cast
 
 # third party
@@ -42,7 +39,7 @@ class DataSubjectStash(BaseUIDStoreStash):
 
     def get_by_name(
         self, credentials: SyftVerifyKey, name: str
-    ) -> Result[Optional[DataSubject], str]:
+    ) -> Result[DataSubject | None, str]:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
         return self.query_one(credentials, qks=qks)
 
@@ -72,7 +69,7 @@ class DataSubjectService(AbstractService):
     @service_method(path="data_subject.add", name="add_data_subject")
     def add(
         self, context: AuthedServiceContext, data_subject: DataSubjectCreate
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Register a data subject."""
 
         context.node = cast(AbstractNode, context.node)
@@ -100,9 +97,7 @@ class DataSubjectService(AbstractService):
         )
 
     @service_method(path="data_subject.get_all", name="get_all")
-    def get_all(
-        self, context: AuthedServiceContext
-    ) -> Union[List[DataSubject], SyftError]:
+    def get_all(self, context: AuthedServiceContext) -> list[DataSubject] | SyftError:
         """Get all Data subjects"""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
@@ -113,7 +108,7 @@ class DataSubjectService(AbstractService):
     @service_method(path="data_subject.get_members", name="members_for")
     def get_members(
         self, context: AuthedServiceContext, data_subject_name: str
-    ) -> Union[List[DataSubject], SyftError]:
+    ) -> list[DataSubject] | SyftError:
         context.node = cast(AbstractNode, context.node)
         get_relatives = context.node.get_service_method(
             DataSubjectMemberService.get_relatives
@@ -136,7 +131,7 @@ class DataSubjectService(AbstractService):
     @service_method(path="data_subject.get_by_name", name="get_by_name")
     def get_by_name(
         self, context: AuthedServiceContext, name: str
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Get a Data Subject by its name."""
         result = self.stash.get_by_name(context.credentials, name=name)
         if result.is_ok():

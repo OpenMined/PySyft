@@ -2,8 +2,6 @@
 import json
 import os
 import subprocess  # nosec
-from typing import Dict as TypeDict
-from typing import Optional
 
 # third party
 from azure.identity import ClientSecretCredential
@@ -39,7 +37,7 @@ def login_azure() -> bool:
     return False
 
 
-def azure_service_principal() -> Optional[TypeDict[str, str]]:
+def azure_service_principal() -> dict[str, str] | None:
     sp_json = {}
     if not os.path.exists(AZURE_SERVICE_PRINCIPAL_PATH):
         raise AzureException("No service principal so we need to create one first")

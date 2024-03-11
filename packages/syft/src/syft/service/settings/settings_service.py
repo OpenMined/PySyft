@@ -1,8 +1,6 @@
 # stdlib
 
 # stdlib
-from typing import Optional
-from typing import Union
 from typing import cast
 
 # third party
@@ -93,12 +91,12 @@ class SettingsService(AbstractService):
     def enable_notifications(
         self,
         context: AuthedServiceContext,
-        email_username: Optional[str] = None,
-        email_password: Optional[str] = None,
-        email_sender: Optional[str] = None,
-        email_server: Optional[str] = None,
-        email_port: Optional[int] = None,
-    ) -> Union[SyftSuccess, SyftError]:
+        email_username: str | None = None,
+        email_password: str | None = None,
+        email_sender: str | None = None,
+        email_server: str | None = None,
+        email_port: str | None = None,
+    ) -> SyftSuccess | SyftError:
         context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         return notifier_service.turn_on(
@@ -118,7 +116,7 @@ class SettingsService(AbstractService):
     def disable_notifications(
         self,
         context: AuthedServiceContext,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         return notifier_service.turn_off(context=context)
@@ -130,7 +128,7 @@ class SettingsService(AbstractService):
     )
     def allow_guest_signup(
         self, context: AuthedServiceContext, enable: bool
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Enable/Disable Registration for Data Scientist or Guest Users."""
         flags.CAN_REGISTER = enable
         context.node = cast(AbstractNode, context.node)

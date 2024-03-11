@@ -1,5 +1,4 @@
 # stdlib
-from typing import Union
 
 # third party
 from result import Ok
@@ -32,9 +31,7 @@ class LogService(AbstractService):
         self.stash = LogStash(store=store)
 
     @service_method(path="log.add", name="add", roles=DATA_SCIENTIST_ROLE_LEVEL)
-    def add(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    def add(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess | SyftError:
         new_log = SyftLog(id=uid)
         result = self.stash.set(context.credentials, new_log)
         if result.is_err():
@@ -48,7 +45,7 @@ class LogService(AbstractService):
         uid: UID,
         new_str: str = "",
         new_err: str = "",
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -65,9 +62,7 @@ class LogService(AbstractService):
         return SyftSuccess(message="Log Append successful!")
 
     @service_method(path="log.get", name="get", roles=DATA_SCIENTIST_ROLE_LEVEL)
-    def get(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    def get(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -79,7 +74,7 @@ class LogService(AbstractService):
     )
     def get_stdout(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -91,7 +86,7 @@ class LogService(AbstractService):
         self,
         context: AuthedServiceContext,
         uid: UID,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -106,7 +101,7 @@ class LogService(AbstractService):
     @service_method(path="log.get_error", name="get_error", roles=ADMIN_ROLE_LEVEL)
     def get_error(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -114,7 +109,7 @@ class LogService(AbstractService):
         return Ok(result.ok().stderr)
 
     @service_method(path="log.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL)
-    def get_all(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:
+    def get_all(self, context: AuthedServiceContext) -> SyftSuccess | SyftError:
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -123,7 +118,7 @@ class LogService(AbstractService):
     @service_method(path="log.delete", name="delete", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def delete(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         result = self.stash.delete_by_uid(context.credentials, uid)
         if result.is_ok():
             return result.ok()

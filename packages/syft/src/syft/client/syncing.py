@@ -1,7 +1,5 @@
 # stdlib
 from time import sleep
-from typing import List
-from typing import Optional
 
 # relative
 from ..service.action.action_permissions import ActionObjectPermission
@@ -21,7 +19,7 @@ def compare_states(low_state: SyncState, high_state: SyncState) -> NodeDiff:
     return NodeDiff.from_sync_state(low_state=low_state, high_state=high_state)
 
 
-def get_user_input_for_resolve() -> Optional[str]:
+def get_user_input_for_resolve() -> str | None:
     print(
         "Do you want to keep the low state or the high state for these objects? choose 'low' or 'high'"
     )
@@ -38,7 +36,7 @@ def get_user_input_for_resolve() -> Optional[str]:
 
 def resolve(
     state: NodeDiff,
-    decision: Optional[str] = None,
+    decision: str | None = None,
     share_private_objects: bool = False,
     ask_for_input: bool = True,
 ) -> tuple[ResolvedSyncState, ResolvedSyncState]:
@@ -95,7 +93,7 @@ def get_sync_decisions_for_batch_items(
         if is_high_private_object and not is_low_published_object:
             unpublished_private_high_diffs.append(diff)
 
-    user_codes_high: List[UserCode] = [
+    user_codes_high: list[UserCode] = [
         diff.high_obj
         for diff in batch_diff.diffs
         if isinstance(diff.high_obj, UserCode)

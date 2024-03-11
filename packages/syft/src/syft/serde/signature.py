@@ -1,12 +1,11 @@
 # stdlib
+from collections.abc import Callable
 import inspect
 from inspect import Parameter
 from inspect import Signature
 from inspect import _ParameterKind
 from inspect import _signature_fromstr
 import re
-from typing import Callable
-from typing import Optional
 
 # relative
 from .deserialize import _deserialize
@@ -77,7 +76,7 @@ def signature_remove_context(signature: Signature) -> Signature:
     )
 
 
-def get_str_signature_from_docstring(doc: str, callable_name: str) -> Optional[str]:
+def get_str_signature_from_docstring(doc: str, callable_name: str) -> str | None:
     if not doc or callable_name not in doc:
         return None
     else:

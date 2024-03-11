@@ -2,7 +2,6 @@
 import copy
 from typing import Any
 from typing import ClassVar
-from typing import Type
 
 # third party
 from typing_extensions import Self
@@ -19,7 +18,7 @@ class SyncableSyftObject(SyftObject):
     __private_sync_attr_mocks__: ClassVar[dict[str, any]] = {}
 
     @classmethod
-    def _has_private_sync_attrs(cls: Type[Self]) -> bool:
+    def _has_private_sync_attrs(cls: type[Self]) -> bool:
         return len(cls.__private_sync_attr_mocks__) > 0
 
     def create_shareable_sync_copy(self, mock: bool) -> Self:

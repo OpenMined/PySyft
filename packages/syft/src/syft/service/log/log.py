@@ -1,21 +1,20 @@
 # stdlib
 from typing import Any
 from typing import ClassVar
-from typing import List
 
 # relative
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syncable_object import SyncableSyftObject
 
 
 @serializable()
 class SyftLog(SyncableSyftObject):
     __canonical_name__ = "SyftLog"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     __repr_attrs__ = ["stdout", "stderr"]
-    __exclude_sync_diff_attrs__: List[str] = []
+    __exclude_sync_diff_attrs__: list[str] = []
     __private_sync_attr_mocks__: ClassVar[dict[str, Any]] = {
         "stderr": "",
         "stdout": "",

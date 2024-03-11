@@ -11,13 +11,6 @@ import html
 import textwrap
 from typing import Any
 from typing import ClassVar
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Set
-from typing import Tuple
-from typing import Type
-from typing import Union
 
 # third party
 from pydantic import model_validator
@@ -30,7 +23,7 @@ from rich.panel import Panel
 from typing_extensions import Self
 
 # relative
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
@@ -57,7 +50,7 @@ sketchy_tab = "‎ " * 4
 class AttrDiff(SyftObject):
     # version
     __canonical_name__ = "AttrDiff"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
     attr_name: str
     low_attr: Any = None
     high_attr: Any = None
@@ -74,7 +67,7 @@ class AttrDiff(SyftObject):
         else:
             return recursive_attr_repr(self.high_attr)
 
-    def _coll_repr_(self) -> Dict[str, Any]:
+    def _coll_repr_(self) -> dict[str, Any]:
         return {
             "attr name": self.attr_name,
             "low attr": html.escape(f"{self.low_attr}"),
@@ -85,10 +78,10 @@ class AttrDiff(SyftObject):
 class ListDiff(AttrDiff):
     # version
     __canonical_name__ = "ListDiff"
-    __version__ = SYFT_OBJECT_VERSION_1
-    diff_ids: List[int] = []
-    new_low_ids: List[int] = []
-    new_high_ids: List[int] = []
+    __version__ = SYFT_OBJECT_VERSION_2
+    diff_ids: list[int] = []
+    new_low_ids: list[int] = []
+    new_high_ids: list[int] = []
 
     @property
     def is_empty(self) -> bool:
@@ -99,7 +92,7 @@ class ListDiff(AttrDiff):
         )
 
     @classmethod
-    def from_lists(cls, attr_name: str, low_list: List, high_list: List) -> "ListDiff":
+    def from_lists(cls, attr_name: str, low_list: list, high_list: list) -> "ListDiff":
         diff_ids = []
         new_low_ids = []
         new_high_ids = []
@@ -131,7 +124,7 @@ class ListDiff(AttrDiff):
         return change_diff
 
 
-def recursive_attr_repr(value_attr: Union[List, Dict, bytes], num_tabs: int = 0) -> str:
+def recursive_attr_repr(value_attr: list | dict | bytes, num_tabs: int = 0) -> str:
     new_num_tabs = num_tabs + 1
 
     if isinstance(value_attr, list):
@@ -158,18 +151,18 @@ def recursive_attr_repr(value_attr: Union[List, Dict, bytes], num_tabs: int = 0)
 class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     # version
     __canonical_name__ = "ObjectDiff"
-    __version__ = SYFT_OBJECT_VERSION_1
-    low_obj: Optional[SyncableSyftObject] = None
-    high_obj: Optional[SyncableSyftObject] = None
+    __version__ = SYFT_OBJECT_VERSION_2
+    low_obj: SyncableSyftObject | None = None
+    high_obj: SyncableSyftObject | None = None
     low_node_uid: UID
     high_node_uid: UID
-    low_permissions: List[str] = []
-    high_permissions: List[str] = []
-    low_storage_permissions: Set[UID] = set()
-    high_storage_permissions: Set[UID] = set()
+    low_permissions: list[str] = []
+    high_permissions: list[str] = []
+    low_storage_permissions: set[UID] = set()
+    high_storage_permissions: set[UID] = set()
 
-    obj_type: Type
-    diff_list: List[AttrDiff] = []
+    obj_type: type
+    diff_list: list[AttrDiff] = []
 
     __repr_attrs__ = [
         "low_state",
@@ -203,12 +196,12 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     @classmethod
     def from_objects(
         cls,
-        low_obj: Optional[SyncableSyftObject],
-        high_obj: Optional[SyncableSyftObject],
-        low_permissions: Set[str],
-        high_permissions: Set[str],
-        low_storage_permissions: Set[UID],
-        high_storage_permissions: Set[UID],
+        low_obj: SyncableSyftObject | None,
+        high_obj: SyncableSyftObject | None,
+        low_permissions: set[str],
+        high_permissions: set[str],
+        low_storage_permissions: set[UID],
+        high_storage_permissions: set[UID],
         low_node_uid: UID,
         high_node_uid: UID,
     ) -> "ObjectDiff":
@@ -254,7 +247,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
     @property
     def object_id(self) -> UID:
-        uid: Union[UID, LineageID] = (
+        uid: UID | LineageID = (
             self.low_obj.id if self.low_obj is not None else self.high_obj.id  # type: ignore
         )
         if isinstance(uid, LineageID):
@@ -262,7 +255,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         return uid
 
     @property
-    def non_empty_object(self) -> Optional[SyftObject]:
+    def non_empty_object(self) -> SyftObject | None:
         return self.low_obj or self.high_obj
 
     @property
@@ -315,7 +308,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         return res
 
     def state_str(self, side: str) -> str:
-        other_obj: Optional[SyftObject] = None
+        other_obj: SyftObject | None = None
         if side == "high":
             obj = self.high_obj
             other_obj = self.low_obj
@@ -351,13 +344,13 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
         return attr_text
 
-    def get_obj(self) -> Optional[SyftObject]:
+    def get_obj(self) -> SyftObject | None:
         if self.status == "NEW":
             return self.low_obj if self.low_obj is not None else self.high_obj
         else:
             raise ValueError("ERROR")
 
-    def _coll_repr_(self) -> Dict[str, Any]:
+    def _coll_repr_(self) -> dict[str, Any]:
         low_state = f"{self.status}\n{self.diff_side_str('low')}"
         high_state = f"{self.status}\n{self.diff_side_str('high')}"
         return {
@@ -446,22 +439,22 @@ def _wrap_text(text: str, width: int, indent: int = 4) -> str:
 
 class ObjectDiffBatch(SyftObject):
     __canonical_name__ = "DiffHierarchy"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
     LINE_LENGTH: ClassVar[int] = 100
     INDENT: ClassVar[int] = 4
-    ORDER: ClassVar[Dict] = {"low": 0, "high": 1}
+    ORDER: ClassVar[dict] = {"low": 0, "high": 1}
 
     # Diffs are ordered in depth-first order,
     # the first diff is the root of the hierarchy
-    diffs: List[ObjectDiff]
-    hierarchy_levels: List[int]
-    dependencies: Dict[UID, List[UID]] = {}
-    dependents: Dict[UID, List[UID]] = {}
+    diffs: list[ObjectDiff]
+    hierarchy_levels: list[int]
+    dependencies: dict[UID, list[UID]] = {}
+    dependents: dict[UID, list[UID]] = {}
 
     @property
-    def visual_hierarchy(self) -> Tuple[Type, dict]:
+    def visual_hierarchy(self) -> tuple[type, dict]:
         # Returns
-        root_obj: Union[Request, UserCodeStatusCollection, ExecutionOutput, Any] = (
+        root_obj: Request | UserCodeStatusCollection | ExecutionOutput | Any = (
             self.root.low_obj if self.root.low_obj is not None else self.root.high_obj
         )
         if isinstance(root_obj, Request):
@@ -483,7 +476,7 @@ class ObjectDiffBatch(SyftObject):
 
     @model_validator(mode="after")
     def make_dependents(self) -> Self:
-        dependents: Dict = {}
+        dependents: dict = {}
         for parent, children in self.dependencies.items():
             for child in children:
                 dependents[child] = dependents.get(child, []) + [parent]
@@ -554,7 +547,7 @@ class ObjectDiffBatch(SyftObject):
 """
 
     def hierarchy_str(self, side: str) -> str:
-        def _hierarchy_str_recursive(tree: Dict, level: int) -> str:
+        def _hierarchy_str_recursive(tree: dict, level: int) -> str:
             result = ""
             for node, children in tree.items():
                 result += self._get_obj_str(node, level, side)
@@ -572,16 +565,16 @@ class ObjectDiffBatch(SyftObject):
 
 class NodeDiff(SyftObject):
     __canonical_name__ = "NodeDiff"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     low_node_uid: UID
     high_node_uid: UID
-    obj_uid_to_diff: Dict[UID, ObjectDiff] = {}
-    dependencies: Dict[UID, List[UID]] = {}
+    obj_uid_to_diff: dict[UID, ObjectDiff] = {}
+    dependencies: dict[UID, list[UID]] = {}
 
     @classmethod
     def from_sync_state(
-        cls: Type["NodeDiff"], low_state: SyncState, high_state: SyncState
+        cls: type["NodeDiff"], low_state: SyncState, high_state: SyncState
     ) -> "NodeDiff":
         obj_uid_to_diff = {}
         for obj_id in set(low_state.objects.keys()) | set(high_state.objects.keys()):
@@ -622,7 +615,7 @@ class NodeDiff(SyftObject):
             self.dependencies[parent] = list(set(low_deps) | set(high_deps))
 
     @property
-    def diffs(self) -> List[ObjectDiff]:
+    def diffs(self) -> list[ObjectDiff]:
         diffs_depthfirst = [
             diff for hierarchy in self.hierarchies for diff in hierarchy.diffs
         ]
@@ -639,10 +632,10 @@ class NodeDiff(SyftObject):
         return self.diffs._repr_html_()
 
     def _sort_hierarchies(
-        self, hierarchies: List[ObjectDiffBatch]
-    ) -> List[ObjectDiffBatch]:
+        self, hierarchies: list[ObjectDiffBatch]
+    ) -> list[ObjectDiffBatch]:
         without_usercode = []
-        grouped_by_usercode: Dict[UID, List[ObjectDiffBatch]] = {}
+        grouped_by_usercode: dict[UID, list[ObjectDiffBatch]] = {}
         for hierarchy in hierarchies:
             has_usercode = False
             for diff in hierarchy.diffs:
@@ -676,7 +669,7 @@ class NodeDiff(SyftObject):
         return sorted_hierarchies
 
     @property
-    def hierarchies(self) -> List[ObjectDiffBatch]:
+    def hierarchies(self) -> list[ObjectDiffBatch]:
         # Returns a list of hierarchies, where each hierarchy is a list of tuples (ObjectDiff, level),
         # in depth-first order.
 
@@ -688,8 +681,8 @@ class NodeDiff(SyftObject):
         # -- Diff4
 
         def _build_hierarchy_helper(
-            uid: UID, level: int = 0, visited: Optional[Set] = None
-        ) -> List:
+            uid: UID, level: int = 0, visited: set | None = None
+        ) -> list:
             visited = visited if visited is not None else set()
 
             if uid in visited:
@@ -745,7 +738,7 @@ class NodeDiff(SyftObject):
         hierarchies_sorted = self._sort_hierarchies(hierarchies)
         return hierarchies_sorted
 
-    def objs_to_sync(self) -> List[SyftObject]:
+    def objs_to_sync(self) -> list[SyftObject]:
         objs: list[SyftObject] = []
         for diff in self.diffs:
             if diff.status == "NEW":
@@ -755,26 +748,26 @@ class NodeDiff(SyftObject):
 
 class SyncDecision(SyftObject):
     __canonical_name__ = "SyncDecision"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     diff: ObjectDiff
-    decision: Optional[str]
-    new_permissions_lowside: List[ActionObjectPermission]
-    new_storage_permissions_lowside: List[StoragePermission]
-    new_storage_permissions_highside: List[StoragePermission]
+    decision: str | None
+    new_permissions_lowside: list[ActionObjectPermission]
+    new_storage_permissions_lowside: list[StoragePermission]
+    new_storage_permissions_highside: list[StoragePermission]
     mockify: bool
 
 
 class ResolvedSyncState(SyftObject):
     __canonical_name__ = "SyncUpdate"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     node_uid: UID
-    create_objs: List[SyncableSyftObject] = []
-    update_objs: List[SyncableSyftObject] = []
-    delete_objs: List[SyftObject] = []
-    new_permissions: List[ActionObjectPermission] = []
-    new_storage_permissions: List[StoragePermission] = []
+    create_objs: list[SyncableSyftObject] = []
+    update_objs: list[SyncableSyftObject] = []
+    delete_objs: list[SyftObject] = []
+    new_permissions: list[ActionObjectPermission] = []
+    new_storage_permissions: list[StoragePermission] = []
     alias: str
 
     def add_sync_decision(self, sync_decision: SyncDecision) -> None:
@@ -783,8 +776,8 @@ class ResolvedSyncState(SyftObject):
         if diff.status == "SAME":
             return
 
-        my_obj: SyftObject = diff.low_obj if self.alias == "low" else diff.high_obj
-        other_obj: SyftObject = diff.low_obj if self.alias == "high" else diff.high_obj
+        my_obj = diff.low_obj if self.alias == "low" else diff.high_obj
+        other_obj = diff.low_obj if self.alias == "high" else diff.high_obj
 
         if other_obj is not None and sync_decision.mockify:
             other_obj = other_obj.create_shareable_sync_copy(mock=True)
@@ -829,7 +822,7 @@ class ResolvedSyncState(SyftObject):
         )
 
 
-def display_diff_object(obj_state: Optional[str]) -> Panel:
+def display_diff_object(obj_state: str | None) -> Panel:
     if obj_state is None:
         return Panel(Markdown("None"), box=box.ROUNDED, expand=False)
     return Panel(
@@ -839,7 +832,7 @@ def display_diff_object(obj_state: Optional[str]) -> Panel:
     )
 
 
-def display_diff_hierarchy(diff_hierarchy: List[Tuple[ObjectDiff, int]]) -> None:
+def display_diff_hierarchy(diff_hierarchy: list[tuple[ObjectDiff, int]]) -> None:
     console = Console()
 
     for diff, level in diff_hierarchy:

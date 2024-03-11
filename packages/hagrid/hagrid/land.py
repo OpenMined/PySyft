@@ -1,7 +1,4 @@
 # stdlib
-from typing import Dict as TypeDict
-from typing import List as TypeList
-from typing import Optional
 
 # relative
 from .grammar import GrammarTerm
@@ -33,7 +30,7 @@ def get_land_verb() -> GrammarVerb:
         },
     ]
 
-    abbreviations: TypeDict[int, TypeList[Optional[str]]] = {
+    abbreviations: dict[int, list[str | None]] = {
         3: [
             "adjective",
             "preposition",

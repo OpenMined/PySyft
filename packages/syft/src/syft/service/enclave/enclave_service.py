@@ -1,8 +1,4 @@
 # stdlib
-from typing import Dict
-from typing import Optional
-from typing import Type
-from typing import Union
 
 # relative
 from ...client.enclave_client import EnclaveClient
@@ -43,10 +39,10 @@ class EnclaveService(AbstractService):
         self,
         context: AuthedServiceContext,
         user_code_id: UID,
-        inputs: Dict,
+        inputs: dict,
         node_name: str,
         node_id: UID,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         if not context.node or not context.node.signing_key:
             return SyftError(message=f"{type(context)} has no node")
 
@@ -98,7 +94,7 @@ class EnclaveService(AbstractService):
         return SyftSuccess(message="Enclave Code Status Updated Successfully")
 
 
-def get_oblv_service() -> Union[Type[AbstractService], SyftError]:
+def get_oblv_service() -> type[AbstractService] | SyftError:
     # relative
     from ...external import OBLV
 
@@ -119,7 +115,7 @@ def get_oblv_service() -> Union[Type[AbstractService], SyftError]:
 # Checks if the given user code would  propogate value to enclave on acceptance
 def propagate_inputs_to_enclave(
     user_code: UserCode, context: ChangeContext
-) -> Union[SyftSuccess, SyftError]:
+) -> SyftSuccess | SyftError:
     # Temporarily disable Oblivious Enclave
     # from ...external.oblv.deployment_client import OblvMetadata
 
@@ -155,7 +151,7 @@ def propagate_inputs_to_enclave(
     else:
         return SyftSuccess(message="Current Request does not require Enclave Transfer")
 
-    input_policy: Optional[InputPolicy] = user_code.get_input_policy(
+    input_policy: InputPolicy | None = user_code.get_input_policy(
         context.to_service_ctx()
     )
     if input_policy is None:
@@ -166,7 +162,7 @@ def propagate_inputs_to_enclave(
 
     # Save inputs to blob store
     for var_name, var_value in inputs.items():
-        if isinstance(var_value, (ActionObject, TwinObject)):
+        if isinstance(var_value, ActionObject | TwinObject):
             # Set the obj location to enclave
             var_value._set_obj_location_(
                 enclave_client.api.node_uid,

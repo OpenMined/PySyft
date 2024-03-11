@@ -1,10 +1,6 @@
 # stdlib
 from enum import Enum
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Tuple
-from typing import Union
 
 # third party
 from typing_extensions import Self
@@ -37,14 +33,14 @@ class ServiceRole(Enum):
     # Disabling it, as both property and classmethod only works for python >= 3.9
     # @property
     @classmethod
-    def roles_descending(cls) -> List[Tuple[int, Self]]:
+    def roles_descending(cls) -> list[tuple[int, Self]]:
         tuples = []
         for x in cls:
             tuples.append((x.value, x))
         return sorted(tuples, reverse=True)
 
     @classmethod
-    def roles_for_level(cls, level: Union[int, Self]) -> List[Self]:
+    def roles_for_level(cls, level: int | Self) -> list[Self]:
         if isinstance(level, ServiceRole):
             level = level.value
         roles = []
@@ -60,7 +56,7 @@ class ServiceRole(Enum):
                 level_float = level_float % role_num
         return roles
 
-    def capabilities(self) -> List[ServiceRoleCapability]:
+    def capabilities(self) -> list[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES[self]
 
     def __add__(self, other: Any) -> int:
@@ -91,21 +87,21 @@ GUEST_ROLE_LEVEL = ServiceRole.roles_for_level(
     + ServiceRole.ADMIN
 )
 
-DATA_SCIENTIST_ROLE_LEVEL: List[ServiceRole] = ServiceRole.roles_for_level(
+DATA_SCIENTIST_ROLE_LEVEL: list[ServiceRole] = ServiceRole.roles_for_level(
     ServiceRole.DATA_SCIENTIST + ServiceRole.DATA_OWNER + ServiceRole.ADMIN
 )
 
-ONLY_DATA_SCIENTIST_ROLE_LEVEL: List[ServiceRole] = ServiceRole.roles_for_level(
+ONLY_DATA_SCIENTIST_ROLE_LEVEL: list[ServiceRole] = ServiceRole.roles_for_level(
     ServiceRole.DATA_SCIENTIST
 )
 
-DATA_OWNER_ROLE_LEVEL: List[ServiceRole] = ServiceRole.roles_for_level(
+DATA_OWNER_ROLE_LEVEL: list[ServiceRole] = ServiceRole.roles_for_level(
     ServiceRole.DATA_OWNER + ServiceRole.ADMIN
 )
 
 ADMIN_ROLE_LEVEL = ServiceRole.roles_for_level(ServiceRole.ADMIN)
 
-ROLE_TO_CAPABILITIES: Dict[ServiceRole, List[ServiceRoleCapability]] = {
+ROLE_TO_CAPABILITIES: dict[ServiceRole, list[ServiceRoleCapability]] = {
     ServiceRole.NONE: [],
     ServiceRole.GUEST: [
         ServiceRoleCapability.CAN_MAKE_DATA_REQUESTS,

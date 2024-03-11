@@ -1,12 +1,10 @@
 # stdlib
+from collections.abc import Callable
 from enum import Enum
 import os
 import subprocess  # nosec
 import sys
 from typing import Any
-from typing import Callable
-from typing import Tuple
-from typing import Union
 from urllib.parse import urlparse
 
 # relative
@@ -56,7 +54,7 @@ class ImportFromSyft:
         return NodeType
 
 
-def from_url(url: str) -> Tuple[str, str, int, str, Union[Any, str]]:
+def from_url(url: str) -> tuple[str, str, int, str, Any | str]:
     try:
         # urlparse doesnt handle no protocol properly
         if "://" not in url:

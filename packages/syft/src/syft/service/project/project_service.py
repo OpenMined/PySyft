@@ -1,6 +1,4 @@
 # stdlib
-from typing import List
-from typing import Union
 from typing import cast
 
 # relative
@@ -46,9 +44,7 @@ class ProjectService(AbstractService):
         name="can_create_project",
         roles=ONLY_DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def can_create_project(
-        self, context: AuthedServiceContext
-    ) -> Union[bool, SyftError]:
+    def can_create_project(self, context: AuthedServiceContext) -> bool | SyftError:
         context.node = cast(AbstractNode, context.node)
         user_service = context.node.get_service("userservice")
         role = user_service.get_role_for_credentials(credentials=context.credentials)
@@ -63,7 +59,7 @@ class ProjectService(AbstractService):
     )
     def create_project(
         self, context: AuthedServiceContext, project: ProjectSubmit
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Start a Project"""
 
         check_role = self.can_create_project(context)
@@ -153,7 +149,7 @@ class ProjectService(AbstractService):
     )
     def add_event(
         self, context: AuthedServiceContext, project_event: ProjectEvent
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """To add events to a projects"""
         context.node = cast(AbstractNode, context.node)
         # Event object should be received from the leader of the project
@@ -196,7 +192,7 @@ class ProjectService(AbstractService):
     )
     def broadcast_event(
         self, context: AuthedServiceContext, project_event: ProjectEvent
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """To add events to a projects"""
         # Only the leader of the project could add events to the projects
         # Any Event to be added to the project should be sent to the leader of the project
@@ -266,7 +262,7 @@ class ProjectService(AbstractService):
     )
     def sync(
         self, context: AuthedServiceContext, project_id: UID, seq_no: int
-    ) -> Union[List[ProjectEvent], SyftError]:
+    ) -> list[ProjectEvent] | SyftError:
         """To fetch unsynced events from the project"""
         context.node = cast(AbstractNode, context.node)
         # Event object should be received from the leader of the project
@@ -292,7 +288,7 @@ class ProjectService(AbstractService):
         return project.events[seq_no:]
 
     @service_method(path="project.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
-    def get_all(self, context: AuthedServiceContext) -> Union[List[Project], SyftError]:
+    def get_all(self, context: AuthedServiceContext) -> list[Project] | SyftError:
         result = self.stash.get_all(
             context.credentials,
         )
@@ -316,7 +312,7 @@ class ProjectService(AbstractService):
     )
     def get_by_name(
         self, context: AuthedServiceContext, name: str
-    ) -> Union[Project, SyftError]:
+    ) -> Project | SyftError:
         result = self.stash.get_by_name(context.credentials, project_name=name)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -332,7 +328,7 @@ class ProjectService(AbstractService):
     )
     def get_by_uid(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[Project, SyftError]:
+    ) -> Project | SyftError:
         context.node = cast(AbstractNode, context.node)
         result = self.stash.get_by_uid(
             credentials=context.node.verify_key,
@@ -346,7 +342,7 @@ class ProjectService(AbstractService):
 
     def add_signing_key_to_project(
         self, context: AuthedServiceContext, project: Project
-    ) -> Union[Project, SyftError]:
+    ) -> Project | SyftError:
         # Automatically infuse signing key of user
         # requesting get_all() or creating the project object
         context.node = cast(AbstractNode, context.node)
@@ -370,7 +366,7 @@ class ProjectService(AbstractService):
         project: Project,
         project_event: ProjectEvent,
         context: AuthedServiceContext,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """To check for project request event and create a message for the root user
 
         Args:

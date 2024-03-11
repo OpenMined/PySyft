@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Dict
 
 # third party
 from nacl.exceptions import BadSignatureError
@@ -245,7 +244,7 @@ def test_worker_serde() -> None:
 @pytest.mark.parametrize("blocking", [False, True])
 @pytest.mark.parametrize("n_processes", [0])
 def test_worker_handle_api_request(
-    path: str, kwargs: Dict, blocking: bool, n_processes: int
+    path: str, kwargs: dict, blocking: bool, n_processes: int
 ) -> None:
     node_uid = UID()
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
@@ -304,7 +303,7 @@ def test_worker_handle_api_request(
 # @pytest.mark.parametrize("n_processes", [0, 1])
 @pytest.mark.parametrize("n_processes", [0])
 def test_worker_handle_api_response(
-    path: str, kwargs: Dict, blocking: bool, n_processes: int
+    path: str, kwargs: dict, blocking: bool, n_processes: int
 ) -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
 

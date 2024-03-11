@@ -3,8 +3,6 @@ from __future__ import annotations
 
 # stdlib
 import threading
-from typing import List
-from typing import Optional
 
 # third party
 from result import Err
@@ -54,7 +52,7 @@ class KeyValueActionStore(ActionStore):
         self,
         node_uid: UID,
         store_config: StoreConfig,
-        root_verify_key: Optional[SyftVerifyKey] = None,
+        root_verify_key: SyftVerifyKey | None = None,
     ) -> None:
         self.node_uid = node_uid
         self.store_config = store_config
@@ -254,7 +252,7 @@ class KeyValueActionStore(ActionStore):
 
         return False
 
-    def has_permissions(self, permissions: List[ActionObjectPermission]) -> bool:
+    def has_permissions(self, permissions: list[ActionObjectPermission]) -> bool:
         return all(self.has_permission(p) for p in permissions)
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
@@ -267,7 +265,7 @@ class KeyValueActionStore(ActionStore):
         permissions.remove(permission.permission_string)
         self.permissions[permission.uid] = permissions
 
-    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+    def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
         for permission in permissions:
             self.add_permission(permission)
 
@@ -276,7 +274,7 @@ class KeyValueActionStore(ActionStore):
         permissions.add(permission.node_uid)
         self.storage_permissions[permission.uid] = permissions
 
-    def add_storage_permissions(self, permissions: List[StoragePermission]) -> None:
+    def add_storage_permissions(self, permissions: list[StoragePermission]) -> None:
         for permission in permissions:
             self.add_storage_permission(permission)
 
@@ -333,8 +331,8 @@ class DictActionStore(KeyValueActionStore):
     def __init__(
         self,
         node_uid: UID,
-        store_config: Optional[StoreConfig] = None,
-        root_verify_key: Optional[SyftVerifyKey] = None,
+        store_config: StoreConfig | None = None,
+        root_verify_key: SyftVerifyKey | None = None,
     ) -> None:
         store_config = store_config if store_config is not None else DictStoreConfig()
         super().__init__(

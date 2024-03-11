@@ -3,7 +3,6 @@ Source: https://github.com/google/jax/blob/main/examples/datasets.py
 Code for the MNIST dataset
 """
 
-
 # stdlib
 import array
 import gzip

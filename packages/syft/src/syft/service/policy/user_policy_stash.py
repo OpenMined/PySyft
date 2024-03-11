@@ -1,5 +1,4 @@
 # stdlib
-from typing import List
 
 # third party
 from result import Result
@@ -27,6 +26,6 @@ class UserPolicyStash(BaseUIDStoreStash):
 
     def get_all_by_user_verify_key(
         self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey
-    ) -> Result[List[UserPolicy], str]:
+    ) -> Result[list[UserPolicy], str]:
         qks = QueryKeys(qks=[PolicyUserVerifyKeyPartitionKey.with_obj(user_verify_key)])
         return self.query_one(credentials=credentials, qks=qks)

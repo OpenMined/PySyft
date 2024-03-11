@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from collections.abc import Callable
 from enum import Enum
 import inspect
 from io import BytesIO
@@ -10,16 +11,8 @@ import time
 import traceback
 import types
 from typing import Any
-from typing import Callable
 from typing import ClassVar
-from typing import Dict
-from typing import List
-from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Tuple
-from typing import Type
-from typing import Union
-from typing import cast
 
 # third party
 from pydantic import ConfigDict
@@ -42,7 +35,7 @@ from ...serde.serialize import _serialize as serialize
 from ...service.response import SyftError
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
@@ -110,17 +103,17 @@ class Action(SyftObject):
     __canonical_name__ = "Action"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    __attr_searchable__: ClassVar[List[str]] = []
+    __attr_searchable__: ClassVar[list[str]] = []
 
-    path: Optional[str] = None
-    op: Optional[str] = None
-    remote_self: Optional[LineageID] = None
-    args: List[LineageID]
-    kwargs: Dict[str, LineageID]
+    path: str | None = None
+    op: str | None = None
+    remote_self: LineageID | None = None
+    args: list[LineageID]
+    kwargs: dict[str, LineageID]
     result_id: LineageID = Field(default_factory=lambda: LineageID(UID()))
-    action_type: Optional[ActionType] = None
-    create_object: Optional[SyftObject] = None
-    user_code_id: Optional[UID] = None
+    action_type: ActionType | None = None
+    create_object: SyftObject | None = None
+    user_code_id: UID | None = None
 
     @field_validator("result_id", mode="before")
     @classmethod
@@ -341,7 +334,7 @@ action_data_empty_must_run = [
 
 class PreHookContext(SyftBaseObject):
     __canonical_name__ = "PreHookContext"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     """Hook context
 
@@ -360,16 +353,16 @@ class PreHookContext(SyftBaseObject):
 
     obj: Any = None
     op_name: str
-    node_uid: Optional[UID] = None
-    result_id: Optional[Union[UID, LineageID]] = None
-    result_twin_type: Optional[TwinMode] = None
-    action: Optional[Action] = None
-    action_type: Optional[ActionType] = None
+    node_uid: UID | None = None
+    result_id: UID | LineageID | None = None
+    result_twin_type: TwinMode | None = None
+    action: Action | None = None
+    action_type: ActionType | None = None
 
 
 def make_action_side_effect(
     context: PreHookContext, *args: Any, **kwargs: Any
-) -> Result[Ok[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]], Err[str]]:
+) -> Result[Ok[tuple[PreHookContext, tuple[Any, ...], dict[str, Any]]], Err[str]]:
     """Create a new action from context_op_name, and add it to the PreHookContext
 
     Parameters:
@@ -402,7 +395,7 @@ def make_action_side_effect(
 
 class TraceResult:
     result: list = []
-    _client: Optional[SyftClient] = None
+    _client: SyftClient | None = None
     is_tracing: bool = False
 
     @classmethod
@@ -413,7 +406,7 @@ class TraceResult:
 
 def trace_action_side_effect(
     context: PreHookContext, *args: Any, **kwargs: Any
-) -> Result[Ok[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]], Err[str]]:
+) -> Result[Ok[tuple[PreHookContext, tuple[Any, ...], dict[str, Any]]], Err[str]]:
     action = context.action
     if action is not None:
         TraceResult.result += [action]
@@ -422,10 +415,10 @@ def trace_action_side_effect(
 
 def convert_to_pointers(
     api: SyftAPI,
-    node_uid: Optional[UID] = None,
-    args: Optional[List] = None,
-    kwargs: Optional[Dict] = None,
-) -> Tuple[List, Dict]:
+    node_uid: UID | None = None,
+    args: list | None = None,
+    kwargs: dict | None = None,
+) -> tuple[list, dict]:
     # relative
     from ..dataset.dataset import Asset
 
@@ -434,7 +427,7 @@ def convert_to_pointers(
     if args is not None:
         for arg in args:
             if (
-                not isinstance(arg, (ActionObject, Asset, UID))
+                not isinstance(arg, ActionObject | Asset | UID)
                 and api.signing_key is not None  # type: ignore[unreachable]
             ):
                 arg = ActionObject.from_obj(  # type: ignore[unreachable]
@@ -452,7 +445,7 @@ def convert_to_pointers(
     if kwargs is not None:
         for k, arg in kwargs.items():
             if (
-                not isinstance(arg, (ActionObject, Asset, UID))
+                not isinstance(arg, ActionObject | Asset | UID)
                 and api.signing_key is not None  # type: ignore[unreachable]
             ):
                 arg = ActionObject.from_obj(  # type: ignore[unreachable]
@@ -473,7 +466,7 @@ def convert_to_pointers(
 
 def send_action_side_effect(
     context: PreHookContext, *args: Any, **kwargs: Any
-) -> Result[Ok[Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]], Err[str]]:
+) -> Result[Ok[tuple[PreHookContext, tuple[Any, ...], dict[str, Any]]], Err[str]]:
     """Create a new action from the context.op_name, and execute it on the remote node."""
     try:
         if context.action is None:
@@ -535,7 +528,7 @@ def propagate_node_uid(
     return Ok(result)
 
 
-def debox_args_and_kwargs(args: Any, kwargs: Any) -> Tuple[Any, Any]:
+def debox_args_and_kwargs(args: Any, kwargs: Any) -> tuple[Any, Any]:
     filtered_args = []
     filtered_kwargs = {}
     for a in args:
@@ -598,34 +591,34 @@ class ActionObject(SyncableSyftObject):
         "syft_blob_storage_entry_id": None,
     }
 
-    __attr_searchable__: List[str] = []  # type: ignore[misc]
-    syft_action_data_cache: Optional[Any] = None
-    syft_blob_storage_entry_id: Optional[UID] = None
-    syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
+    __attr_searchable__: list[str] = []  # type: ignore[misc]
+    syft_action_data_cache: Any | None = None
+    syft_blob_storage_entry_id: UID | None = None
+    syft_pointer_type: ClassVar[type[ActionObjectPointer]]
 
     # Help with calculating history hash for code verification
-    syft_parent_hashes: Optional[Union[int, List[int]]] = None
-    syft_parent_op: Optional[str] = None
-    syft_parent_args: Optional[Any] = None
-    syft_parent_kwargs: Optional[Any] = None
-    syft_history_hash: Optional[int] = None
-    syft_internal_type: ClassVar[Type[Any]]
-    syft_node_uid: Optional[UID] = None
-    syft_pre_hooks__: Dict[str, List] = {}
-    syft_post_hooks__: Dict[str, List] = {}
+    syft_parent_hashes: int | list[int] | None = None
+    syft_parent_op: str | None = None
+    syft_parent_args: Any | None = None
+    syft_parent_kwargs: Any | None = None
+    syft_history_hash: int | None = None
+    syft_internal_type: ClassVar[type[Any]]
+    syft_node_uid: UID | None = None
+    syft_pre_hooks__: dict[str, list] = {}
+    syft_post_hooks__: dict[str, list] = {}
     syft_twin_type: TwinMode = TwinMode.NONE
-    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
-    syft_action_data_type: Optional[Type] = None
-    syft_action_data_repr_: Optional[str] = None
-    syft_action_data_str_: Optional[str] = None
-    syft_has_bool_attr: Optional[bool] = None
-    syft_resolve_data: Optional[bool] = None
-    syft_created_at: Optional[DateTime] = None
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
+    syft_action_data_type: type | None = None
+    syft_action_data_repr_: str | None = None
+    syft_action_data_str_: str | None = None
+    syft_has_bool_attr: bool | None = None
+    syft_resolve_data: bool | None = None
+    syft_created_at: DateTime | None = None
     syft_resolved: bool = True
-    syft_action_data_node_id: Optional[UID] = None
+    syft_action_data_node_id: UID | None = None
     # syft_dont_wrap_attrs = ["shape"]
 
-    def syft_get_diffs(self, ext_obj: Any) -> List[AttrDiff]:
+    def syft_get_diffs(self, ext_obj: Any) -> list[AttrDiff]:
         # relative
         from ...service.sync.diff_state import AttrDiff
 
@@ -661,7 +654,7 @@ class ActionObject(SyncableSyftObject):
 
         return self.syft_action_data_cache
 
-    def reload_cache(self) -> Optional[SyftError]:
+    def reload_cache(self) -> SyftError | None:
         # If ActionDataEmpty then try to fetch it from store.
         if isinstance(self.syft_action_data_cache, ActionDataEmpty):
             blob_storage_read_method = from_api_or_context(
@@ -703,7 +696,7 @@ class ActionObject(SyncableSyftObject):
 
         return None
 
-    def _save_to_blob_storage_(self, data: Any) -> Optional[SyftError]:
+    def _save_to_blob_storage_(self, data: Any) -> SyftError | None:
         # relative
         from ...types.blob_storage import BlobFile
         from ...types.blob_storage import CreateBlobStorageEntry
@@ -760,7 +753,7 @@ class ActionObject(SyncableSyftObject):
 
         return None
 
-    def _save_to_blob_storage(self) -> Optional[SyftError]:
+    def _save_to_blob_storage(self) -> SyftError | None:
         data = self.syft_action_data
         if isinstance(data, SyftError):
             return data
@@ -865,7 +858,7 @@ class ActionObject(SyncableSyftObject):
         )
         return api.make_call(api_call)
 
-    def request(self, client: SyftClient) -> Union[Any, SyftError]:
+    def request(self, client: SyftClient) -> Any | SyftError:
         # relative
         from ..request.request import ActionStoreChange
         from ..request.request import SubmitRequest
@@ -904,13 +897,6 @@ class ActionObject(SyncableSyftObject):
         if obj.syft_node_location is None:
             obj.syft_node_location = obj.syft_node_uid
 
-        api = None
-        if TraceResult._client is not None:
-            api = TraceResult._client.api
-
-        if api is not None and api.signing_key is not None:
-            obj._set_obj_location_(api.node_uid, api.signing_key.verify_key)
-
         action = Action(
             path="",
             op="",
@@ -922,26 +908,28 @@ class ActionObject(SyncableSyftObject):
             create_object=obj,
         )
 
-        if api is not None:
+        if TraceResult.is_tracing:
             TraceResult.result += [action]
-        else:
-            api = APIRegistry.api_for(
-                node_uid=self.syft_node_location,
-                user_verify_key=self.syft_client_verify_key,
-            )
-            if api is None:
-                print(
-                    f"failed saving {obj} to blob storage, api is None. You must login to {self.syft_node_location}"
-                )
 
-        api = cast(SyftAPI, api)
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            print(
+                f"failed saving {obj} to blob storage, api is None. You must login to {self.syft_node_location}"
+            )
+            return
+        else:
+            obj._set_obj_location_(api.node_uid, api.signing_key.verify_key)  # type: ignore[union-attr]
+
         res = api.services.action.execute(action)
         if isinstance(res, SyftError):
             print(f"Failed to to store (arg) {obj} to store, {res}")
 
     def _syft_prepare_obj_uid(self, obj: Any) -> LineageID:
         # We got the UID
-        if isinstance(obj, (UID, LineageID)):
+        if isinstance(obj, UID | LineageID):
             return LineageID(obj.id)
 
         # We got the ActionObjectPointer
@@ -968,14 +956,12 @@ class ActionObject(SyncableSyftObject):
         self,
         path: str,
         op: str,
-        remote_self: Optional[Union[UID, LineageID]] = None,
-        args: Optional[
-            List[Union[UID, LineageID, ActionObjectPointer, ActionObject, Any]]
-        ] = None,
-        kwargs: Optional[
-            Dict[str, Union[UID, LineageID, ActionObjectPointer, ActionObject, Any]]
-        ] = None,
-        action_type: Optional[ActionType] = None,
+        remote_self: UID | LineageID | None = None,
+        args: list[UID | LineageID | ActionObjectPointer | ActionObject | Any]
+        | None = None,
+        kwargs: dict[str, UID | LineageID | ActionObjectPointer | ActionObject | Any]
+        | None = None,
+        action_type: ActionType | None = None,
     ) -> Action:
         """Generate new action from the information
 
@@ -1024,9 +1010,9 @@ class ActionObject(SyncableSyftObject):
     def syft_make_action_with_self(
         self,
         op: str,
-        args: Optional[List[Union[UID, ActionObjectPointer]]] = None,
-        kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer]]] = None,
-        action_type: Optional[ActionType] = None,
+        args: list[UID | ActionObjectPointer] | None = None,
+        kwargs: dict[str, UID | ActionObjectPointer] | None = None,
+        action_type: ActionType | None = None,
     ) -> Action:
         """Generate new method action from the current object.
 
@@ -1080,8 +1066,8 @@ class ActionObject(SyncableSyftObject):
         """
 
         def wrapper(
-            *args: Optional[List[Union[UID, ActionObjectPointer]]],
-            **kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer]]],
+            *args: list[UID | ActionObjectPointer] | None,
+            **kwargs: dict[str, UID | ActionObjectPointer] | None,
         ) -> Action:
             return self.syft_make_action_with_self(op=op, args=args, kwargs=kwargs)
 
@@ -1171,11 +1157,11 @@ class ActionObject(SyncableSyftObject):
 
     @staticmethod
     def from_path(
-        path: Union[str, Path],
-        id: Optional[UID] = None,
-        syft_lineage_id: Optional[LineageID] = None,
-        syft_client_verify_key: Optional[SyftVerifyKey] = None,
-        syft_node_location: Optional[UID] = None,
+        path: str | Path,
+        id: UID | None = None,
+        syft_lineage_id: LineageID | None = None,
+        syft_client_verify_key: SyftVerifyKey | None = None,
+        syft_node_location: UID | None = None,
     ) -> ActionObject:
         """Create an Action Object from a file."""
         # relative
@@ -1211,13 +1197,13 @@ class ActionObject(SyncableSyftObject):
     @staticmethod
     def from_obj(
         syft_action_data: Any,
-        id: Optional[UID] = None,
-        syft_lineage_id: Optional[LineageID] = None,
-        syft_client_verify_key: Optional[SyftVerifyKey] = None,
-        syft_node_location: Optional[UID] = None,
-        syft_resolved: Optional[bool] = True,
-        data_node_id: Optional[UID] = None,
-        syft_blob_storage_entry_id: Optional[UID] = None,
+        id: UID | None = None,
+        syft_lineage_id: LineageID | None = None,
+        syft_client_verify_key: SyftVerifyKey | None = None,
+        syft_node_location: UID | None = None,
+        syft_resolved: bool | None = True,
+        data_node_id: UID | None = None,
+        syft_blob_storage_entry_id: UID | None = None,
     ) -> ActionObject:
         """Create an ActionObject from an existing object.
 
@@ -1290,7 +1276,7 @@ class ActionObject(SyncableSyftObject):
     @staticmethod
     def link(
         result_id: UID,
-        pointer_id: Optional[UID] = None,
+        pointer_id: UID | None = None,
     ) -> ActionObject:
         link = ActionDataLink(action_object_id=pointer_id)
         res = ActionObject.from_obj(
@@ -1315,12 +1301,12 @@ class ActionObject(SyncableSyftObject):
     def empty(
         # TODO: fix the mypy issue
         cls,
-        syft_internal_type: Optional[Type[Any]] = None,
-        id: Optional[UID] = None,
-        syft_lineage_id: Optional[LineageID] = None,
-        syft_resolved: Optional[bool] = True,
-        data_node_id: Optional[UID] = None,
-        syft_blob_storage_entry_id: Optional[UID] = None,
+        syft_internal_type: type[Any] | None = None,
+        id: UID | None = None,
+        syft_lineage_id: LineageID | None = None,
+        syft_resolved: bool | None = True,
+        data_node_id: UID | None = None,
+        syft_blob_storage_entry_id: UID | None = None,
     ) -> Self:
         """Create an ActionObject from a type, using a ActionDataEmpty object
 
@@ -1385,7 +1371,7 @@ class ActionObject(SyncableSyftObject):
 
     def _syft_run_pre_hooks__(
         self, context: PreHookContext, name: str, args: Any, kwargs: Any
-    ) -> Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]:
+    ) -> tuple[PreHookContext, tuple[Any, ...], dict[str, Any]]:
         """Hooks executed before the actual call"""
         result_args, result_kwargs = args, kwargs
         if name in self.syft_pre_hooks__:
@@ -1453,7 +1439,7 @@ class ActionObject(SyncableSyftObject):
         return new_result
 
     def _syft_output_action_object(
-        self, result: Any, context: Optional[PreHookContext] = None
+        self, result: Any, context: PreHookContext | None = None
     ) -> Any:
         """Wrap the result in an ActionObject"""
         if issubclass(type(result), ActionObject):
@@ -1471,11 +1457,11 @@ class ActionObject(SyncableSyftObject):
         )
         return result
 
-    def _syft_passthrough_attrs(self) -> List[str]:
+    def _syft_passthrough_attrs(self) -> list[str]:
         """These attributes are forwarded to the `object` base class."""
         return passthrough_attrs + getattr(self, "syft_passthrough_attrs", [])
 
-    def _syft_dont_wrap_attrs(self) -> List[str]:
+    def _syft_dont_wrap_attrs(self) -> list[str]:
         """The results from these attributes are ignored from UID patching."""
         return dont_wrap_output_attrs + getattr(self, "syft_dont_wrap_attrs", [])
 
@@ -1968,9 +1954,9 @@ class AnyActionObject(ActionObject):
     __canonical_name__ = "AnyActionObject"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    syft_internal_type: ClassVar[Type[Any]] = NoneType  # type: ignore
+    syft_internal_type: ClassVar[type[Any]] = NoneType  # type: ignore
     # syft_passthrough_attrs: List[str] = []
-    syft_dont_wrap_attrs: List[str] = ["__str__", "__repr__", "syft_action_data_str_"]
+    syft_dont_wrap_attrs: list[str] = ["__str__", "__repr__", "syft_action_data_str_"]
     syft_action_data_str_: str = ""
 
     def __float__(self) -> float:

@@ -8,11 +8,6 @@ from pathlib import Path
 import sqlite3
 import tempfile
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Type
-from typing import Union
 
 # third party
 from pydantic import Field
@@ -43,9 +38,9 @@ from .locks import SyftLock
 # by its filename and optionally the thread that its running in
 # we keep track of each SQLiteBackingStore init in REF_COUNTS
 # when it hits 0 we can close the connection and release the file descriptor
-SQLITE_CONNECTION_POOL_DB: Dict[str, sqlite3.Connection] = {}
-SQLITE_CONNECTION_POOL_CUR: Dict[str, sqlite3.Cursor] = {}
-REF_COUNTS: Dict[str, int] = defaultdict(int)
+SQLITE_CONNECTION_POOL_DB: dict[str, sqlite3.Connection] = {}
+SQLITE_CONNECTION_POOL_CUR: dict[str, sqlite3.Cursor] = {}
+REF_COUNTS: dict[str, int] = defaultdict(int)
 
 
 def cache_key(db_name: str) -> str:
@@ -95,7 +90,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         index_name: str,
         settings: PartitionSettings,
         store_config: StoreConfig,
-        ddtype: Optional[type] = None,
+        ddtype: type | None = None,
     ) -> None:
         self.index_name = index_name
         self.settings = settings
@@ -182,10 +177,10 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.db.commit()
 
     def _execute(
-        self, sql: str, *args: Optional[List[Any]]
+        self, sql: str, *args: list[Any] | None
     ) -> Result[Ok[sqlite3.Cursor], Err[str]]:
         with SyftLock(self.lock_config):
-            cursor: Optional[sqlite3.Cursor] = None
+            cursor: sqlite3.Cursor | None = None
             # err = None
             try:
                 cursor = self.cur.execute(sql, *args)
@@ -430,8 +425,8 @@ class SQLiteStoreClientConfig(StoreClientConfig):
             database, it will be locked until that transaction is committed. Default five seconds.
     """
 
-    filename: Optional[str] = None
-    path: Union[str, Path] = Field(default_factory=tempfile.gettempdir)
+    filename: str | None = None
+    path: str | Path = Field(default_factory=tempfile.gettempdir)
     check_same_thread: bool = True
     timeout: int = 5
 
@@ -439,13 +434,13 @@ class SQLiteStoreClientConfig(StoreClientConfig):
     # so users can still do SQLiteStoreClientConfig(path=None)
     @field_validator("path", mode="before")
     @classmethod
-    def __default_path(cls, path: Optional[Union[str, Path]]) -> Union[str, Path]:
+    def __default_path(cls, path: str | Path | None) -> str | Path:
         if path is None:
             return tempfile.gettempdir()
         return path
 
     @property
-    def file_path(self) -> Optional[Path]:
+    def file_path(self) -> Path | None:
         return Path(self.path) / self.filename if self.filename is not None else None
 
 
@@ -470,6 +465,6 @@ class SQLiteStoreConfig(StoreConfig):
     """
 
     client_config: SQLiteStoreClientConfig
-    store_type: Type[DocumentStore] = SQLiteDocumentStore
-    backing_store: Type[KeyValueBackingStore] = SQLiteBackingStore
+    store_type: type[DocumentStore] = SQLiteDocumentStore
+    backing_store: type[KeyValueBackingStore] = SQLiteBackingStore
     locking_config: LockingConfig = FileLockingConfig()

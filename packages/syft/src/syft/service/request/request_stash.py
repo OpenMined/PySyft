@@ -1,5 +1,4 @@
 # stdlib
-from typing import List
 
 # third party
 from result import Result
@@ -34,7 +33,7 @@ class RequestStash(BaseUIDStoreStash):
         self,
         credentials: SyftVerifyKey,
         verify_key: SyftVerifyKey,
-    ) -> Result[List[Request], str]:
+    ) -> Result[list[Request], str]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
         qks = QueryKeys(qks=[RequestingUserVerifyKeyPartitionKey.with_obj(verify_key)])

@@ -3,15 +3,12 @@
 
 # stdlib
 import asyncio
+from collections.abc import Callable
 from functools import wraps
 import inspect
 from typing import Any
-from typing import Callable
 from typing import ClassVar
-from typing import Dict
-from typing import Optional
 from typing import TypeVar
-from typing import Union
 from typing import cast
 
 # third party
@@ -30,22 +27,20 @@ class TracingDecoratorOptions:
         default_scheme = function_qualified_name
 
     naming_scheme: ClassVar[Callable[[Callable], str]] = NamingSchemes.default_scheme
-    default_attributes: ClassVar[Dict[str, str]] = {}
+    default_attributes: ClassVar[dict[str, str]] = {}
 
     @classmethod
     def set_naming_scheme(cls, naming_scheme: Callable[[Callable], str]) -> None:
         cls.naming_scheme = naming_scheme
 
     @classmethod
-    def set_default_attributes(
-        cls, attributes: Optional[Dict[str, str]] = None
-    ) -> None:
+    def set_default_attributes(cls, attributes: dict[str, str] | None = None) -> None:
         if attributes is not None:
             for att in attributes:
                 cls.default_attributes[att] = attributes[att]
 
 
-T = TypeVar("T", bound=Union[Callable, type])
+T = TypeVar("T", bound=Callable | type)
 
 
 def instrument(
@@ -54,8 +49,8 @@ def instrument(
     *,
     span_name: str = "",
     record_exception: bool = True,
-    attributes: Optional[Dict[str, str]] = None,
-    existing_tracer: Optional[Tracer] = None,
+    attributes: dict[str, str] | None = None,
+    existing_tracer: Tracer | None = None,
     ignore: bool = False,
 ) -> T:
     """
@@ -132,7 +127,7 @@ def instrument(
             span.set_attribute(SpanAttributes.CODE_LINENO, func.__code__.co_firstlineno)
 
         def _set_attributes(
-            span: Span, attributes_dict: Optional[Dict[str, str]] = None
+            span: Span, attributes_dict: dict[str, str] | None = None
         ) -> None:
             if attributes_dict is not None:
                 for att in attributes_dict:

@@ -1,7 +1,5 @@
 # stdlib
 from typing import Any
-from typing import List
-from typing import Union
 from typing import cast
 
 # relative
@@ -46,9 +44,7 @@ class JobService(AbstractService):
         name="get",
         roles=GUEST_ROLE_LEVEL,
     )
-    def get(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> Union[List[Job], SyftError]:
+    def get(self, context: AuthedServiceContext, uid: UID) -> list[Job] | SyftError:
         res = self.stash.get_by_uid(context.credentials, uid=uid)
         if res.is_err():
             return SyftError(message=res.err())
@@ -60,7 +56,7 @@ class JobService(AbstractService):
         path="job.get_all",
         name="get_all",
     )
-    def get_all(self, context: AuthedServiceContext) -> Union[List[Job], SyftError]:
+    def get_all(self, context: AuthedServiceContext) -> list[Job] | SyftError:
         res = self.stash.get_all(context.credentials)
         if res.is_err():
             return SyftError(message=res.err())
@@ -75,7 +71,7 @@ class JobService(AbstractService):
     )
     def get_by_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
-    ) -> Union[List[Job], SyftError]:
+    ) -> list[Job] | SyftError:
         res = self.stash.get_by_user_code_id(context.credentials, user_code_id)
         if res.is_err():
             return SyftError(message=res.err())
@@ -90,7 +86,7 @@ class JobService(AbstractService):
     )
     def delete(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         res = self.stash.delete_by_uid(context.credentials, uid)
         if res.is_err():
             return SyftError(message=res.err())
@@ -103,7 +99,7 @@ class JobService(AbstractService):
     )
     def restart(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         res = self.stash.get_by_uid(context.credentials, uid=uid)
         if res.is_err():
             return SyftError(message=res.err())
@@ -145,7 +141,7 @@ class JobService(AbstractService):
     )
     def update(
         self, context: AuthedServiceContext, job: Job
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         res = self.stash.update(context.credentials, obj=job)
         if res.is_err():
             return SyftError(message=res.err())
@@ -157,9 +153,7 @@ class JobService(AbstractService):
         name="kill",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def kill(
-        self, context: AuthedServiceContext, id: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    def kill(self, context: AuthedServiceContext, id: UID) -> SyftSuccess | SyftError:
         res = self.stash.get_by_uid(context.credentials, uid=id)
         if res.is_err():
             return SyftError(message=res.err())
@@ -184,7 +178,7 @@ class JobService(AbstractService):
     )
     def get_subjobs(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[List[Job], SyftError]:
+    ) -> list[Job] | SyftError:
         res = self.stash.get_by_parent_id(context.credentials, uid=uid)
         if res.is_err():
             return SyftError(message=res.err())
@@ -194,7 +188,7 @@ class JobService(AbstractService):
     @service_method(
         path="job.get_active", name="get_active", roles=DATA_SCIENTIST_ROLE_LEVEL
     )
-    def get_active(self, context: AuthedServiceContext) -> Union[List[Job], SyftError]:
+    def get_active(self, context: AuthedServiceContext) -> list[Job] | SyftError:
         res = self.stash.get_active(context.credentials)
         if res.is_err():
             return SyftError(message=res.err())
@@ -237,7 +231,7 @@ class JobService(AbstractService):
     )
     def create_job_for_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
-    ) -> Union[Job, SyftError]:
+    ) -> Job | SyftError:
         context.node = cast(AbstractNode, context.node)
         job = Job(
             id=UID(),
