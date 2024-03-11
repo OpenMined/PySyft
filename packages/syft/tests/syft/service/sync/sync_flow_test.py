@@ -16,7 +16,7 @@ from syft.service.response import SyftError
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-@pytest.mark.flaky(reruns=5, reruns_delay=1)
+# @pytest.mark.flaky(reruns=5, reruns_delay=1)
 def test_sync_flow():
     # somehow skipif does not work
     if sys.platform == "win32":

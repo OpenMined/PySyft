@@ -666,7 +666,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                     return False
         return True
 
-    def get_diffs(self, ext_obj: Self) -> list["AttrDiff"]:
+    def syft_get_diffs(self, ext_obj: Self) -> list["AttrDiff"]:
         # self is low, ext is high
         # relative
         from ..service.sync.diff_state import AttrDiff

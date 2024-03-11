@@ -747,7 +747,7 @@ class ActionObject(SyncableSyftObject):
             self.syft_action_data_str_ = str(data)
             self.syft_has_bool_attr = hasattr(data, "__bool__")
         else:
-            print("skipping writing action object to store, passed data was empty.")
+            debug("skipping writing action object to store, passed data was empty.")
 
         self.syft_action_data_cache = data
 
