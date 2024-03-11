@@ -45,6 +45,7 @@ class UserStash(BaseStash):
         credentials: SyftVerifyKey,
         user: User,
         add_permissions: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[User, str]:
         res = self.check_type(user, self.object_type)
@@ -56,6 +57,7 @@ class UserStash(BaseStash):
             obj=res.ok(),
             add_permissions=add_permissions,
             ignore_duplicates=ignore_duplicates,
+            add_storage_permission=add_storage_permission,
         )
 
     def admin_verify_key(self) -> Result[SyftVerifyKey | None, str]:

@@ -113,7 +113,7 @@ class SyncState(SyftObject):
         for obj in self.objects.values():
             if hasattr(obj, "get_sync_dependencies"):
                 deps = obj.get_sync_dependencies(api=api)
-                deps = [d.id for d in deps if d.id in all_ids]
+                deps = [d.id for d in deps if d.id in all_ids]  # type: ignore
                 if len(deps):
                     self.dependencies[obj.id] = deps
 
