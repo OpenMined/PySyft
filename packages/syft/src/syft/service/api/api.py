@@ -1,9 +1,9 @@
 # stdlib
 import ast
+from collections.abc import Callable
 import inspect
 from inspect import Signature
 from typing import Any
-from collections.abc import Callable
 
 # relative
 from ...serde.serializable import serializable
