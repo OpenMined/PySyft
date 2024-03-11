@@ -29,7 +29,7 @@ from ..service.action.action_permissions import ActionObjectPermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -789,12 +789,11 @@ class StoreConfig(SyftBaseObject):
                 * NoLockingConfig: no locking, ideal for single-thread stores.
                 * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
                 * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
-                * RedisLockingConfig: Redis-based locking, ideal for multi-device stores.
             Defaults to NoLockingConfig.
     """
 
     __canonical_name__ = "StoreConfig"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     store_type: Type[DocumentStore]
     client_config: Optional[StoreClientConfig] = None

@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "common.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+  ports:
+    - name: api
+      protocol: TCP
+      port: 80
+      targetPort: 80
+    - name: queue
+      protocol: TCP
+      port: {{ .Values.node.queuePort }}
+      targetPort: {{ .Values.node.queuePort }}
+    {{- if .Values.node.debuggerEnabled }}
+    - name: debug
+      port: 5678
+      targetPort: 5678
+      protocol: TCP
+    {{- end }}

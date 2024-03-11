@@ -1,0 +1,77 @@
+{{- if ne .Values.node.type "gateway"}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: seaweedfs
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs
+spec:
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: seaweedfs
+  serviceName: seaweedfs
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+        app.kubernetes.io/component: seaweedfs
+    spec:
+      containers:
+        - name: seaweedfs-container
+          image: {{ .Values.global.registry }}/openmined/grid-seaweedfs:{{ .Values.global.version }}
+          imagePullPolicy: Always
+          resources: {{ include "common.resources.set" (dict "resources" .Values.seaweedfs.resources "preset" .Values.seaweedfs.resourcesPreset) | nindent 12 }}
+          env:
+            - name: S3_VOLUME_SIZE_MB
+              value: {{ .Values.seaweedfs.s3.volumeSizeMB | quote }}
+            - name: S3_ROOT_USER
+              value: {{ .Values.seaweedfs.s3.rootUser | quote }}
+            - name: S3_ROOT_PWD
+              valueFrom:
+                secretKeyRef:
+                    name: {{ .Values.seaweedfs.secretKeyName | required "seaweedfs.secretKeyName is required" }}
+                    key: s3RootPassword
+            - name: S3_PORT
+              value: {{ .Values.seaweedfs.s3.port | quote }}
+            - name: SEAWEED_MOUNT_PORT
+              value: {{ .Values.seaweedfs.mountApi.port | quote }}
+            {{- if .Values.seaweedfs.env }}
+            {{- toYaml .Values.seaweedfs.env | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - mountPath: /etc/seaweedfs/filer.toml
+              name: seaweedfs-config
+              readOnly: false
+              subPath: filer.toml
+            - mountPath: /etc/seaweedfs/start.sh
+              name: seaweedfs-config
+              readOnly: false
+              subPath: start.sh
+            - mountPath: /data/blob
+              name: seaweedfs-data
+              readOnly: false
+              subPath: ''
+      terminationGracePeriodSeconds: 5
+      volumes:
+        - configMap:
+            name: seaweedfs-config
+          name: seaweedfs-config
+  volumeClaimTemplates:
+  - metadata:
+      name: seaweedfs-data
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+        app.kubernetes.io/component: seaweedfs
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.seaweedfs.storageSize | quote }}
+{{ end }}

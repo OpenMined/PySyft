@@ -94,4 +94,9 @@ worker: Node = worker_class(
     queue_config=queue_config,
     migrate=True,
     in_memory_workers=settings.INMEMORY_WORKERS,
+    smtp_username=settings.SMTP_USERNAME,
+    smtp_password=settings.SMTP_PASSWORD,
+    email_sender=settings.EMAIL_SENDER,
+    smtp_port=settings.SMTP_PORT,
+    smtp_host=settings.SMTP_HOST,
 )
