@@ -8,7 +8,7 @@ from typing import Any
 # relative
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -18,7 +18,7 @@ from ..response import SyftError
 class CustomAPIEndpoint(SyftObject):
     # version
     __canonical_name__ = "CustomAPIEndpoint"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     path: str
     api_code: str
