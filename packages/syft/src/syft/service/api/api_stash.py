@@ -39,7 +39,7 @@ class CustomAPIEndpointStash(BaseUIDStoreStash):
             return results
 
     def update(
-        self, credentials: SyftVerifyKey, endpoint: CustomAPIEndpoint
+        self, credentials: SyftVerifyKey, endpoint: CustomAPIEndpoint, has_permission: bool = False
     ) -> Result[CustomAPIEndpoint, str]:
         res = self.check_type(endpoint, CustomAPIEndpoint)
         if res.is_err():
