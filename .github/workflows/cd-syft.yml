@@ -486,7 +486,7 @@ jobs:
 
       - name: GitHub Release
         if: github.event.inputs.release_platform  != 'TEST_PYPI'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: v${{ steps.release_checks.outputs.github_release_version }}
           generate_release_notes: true
