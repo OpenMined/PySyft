@@ -245,9 +245,9 @@
         }
       },
       "SyncState": {
-        "1": {
-          "version": 1,
-          "hash": "64e262af795bf79bf4d6325b4f95315b167ff10694f5c11e07102184998e38c5",
+        "2": {
+          "version": 2,
+          "hash": "b5b93ce979a6312986c1ffbc4b88387b8f3b65678d1c3ff658ce44850511fb3d",
           "action": "add"
         }
       },
@@ -659,7 +659,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "d1df30178a2f8948c5902803837096256f034fc021f2664f58bdd6bd42290706",
+          "hash": "6cd89ed24027ed94b3e2bb7a07e8932060e07e481ceb35eb7ee4d2d0b6e34f43",
           "action": "add"
         }
       },
