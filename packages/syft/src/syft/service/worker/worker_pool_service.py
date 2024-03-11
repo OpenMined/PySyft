@@ -238,6 +238,7 @@ class SyftWorkerPoolService(AbstractService):
         config: WorkerConfig,
         registry_uid: UID | None = None,
         reason: str | None = "",
+        pull_image: bool = True,
     ) -> SyftError | SyftSuccess:
         """
         Create a request to launch the worker pool based on a built image.
@@ -289,6 +290,7 @@ class SyftWorkerPoolService(AbstractService):
             config=config,
             tag=tag,
             registry_uid=registry_uid,
+            pull_image=pull_image,
         )
 
         # Check if a pool already exists for given pool name

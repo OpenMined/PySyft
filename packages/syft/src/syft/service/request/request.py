@@ -196,6 +196,7 @@ class CreateCustomImageChange(Change):
     config: WorkerConfig
     tag: str
     registry_uid: UID | None = None
+    pull_image: bool = True
 
     __repr_attrs__ = ["config", "tag"]
 
@@ -230,6 +231,7 @@ class CreateCustomImageChange(Change):
                 image_uid=worker_image.id,
                 tag=self.tag,
                 registry_uid=self.registry_uid,
+                pull=self.pull_image,
             )
 
             if isinstance(build_result, SyftError):

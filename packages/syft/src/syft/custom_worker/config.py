@@ -19,7 +19,7 @@ from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
 from .utils import iterator_to_string
 
-PYTHON_DEFAULT_VER = "3.11"
+PYTHON_DEFAULT_VER = "3.12"
 PYTHON_MIN_VER = version.parse("3.10")
 PYTHON_MAX_VER = version.parse("3.12")
 
