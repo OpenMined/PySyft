@@ -3,7 +3,6 @@
 # stdlib
 
 # stdlib
-from typing import Optional
 
 # third party
 import pytest
@@ -89,7 +88,7 @@ def test_requeststash_get_all_for_verify_key_fail(
     )
 
     def mock_query_all_error(
-        credentials: SyftVerifyKey, qks: QueryKeys, order_by: Optional[PartitionKey]
+        credentials: SyftVerifyKey, qks: QueryKeys, order_by: PartitionKey | None
     ) -> Err:
         return Err(mock_error_message)
 
@@ -116,7 +115,7 @@ def test_requeststash_get_all_for_verify_key_find_index_fail(
         credentials: SyftVerifyKey,
         index_qks: QueryKeys,
         search_qks: QueryKeys,
-        order_by: Optional[PartitionKey],
+        order_by: PartitionKey | None,
     ) -> Err:
         return Err(mock_error_message)
 

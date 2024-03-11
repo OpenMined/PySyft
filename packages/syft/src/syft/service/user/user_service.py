@@ -1,8 +1,4 @@
 # stdlib
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
 from typing import cast
 
 # relative
@@ -63,7 +59,7 @@ class UserService(AbstractService):
     @service_method(path="user.create", name="create")
     def create(
         self, context: AuthedServiceContext, user_create: UserCreate
-    ) -> Union[UserView, SyftError]:
+    ) -> UserView | SyftError:
         """Create a new user"""
         user = user_create.to(User)
         result = self.stash.get_by_email(
@@ -92,7 +88,7 @@ class UserService(AbstractService):
     @service_method(path="user.view", name="view")
     def view(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[Optional[UserView], SyftError]:
+    ) -> UserView | None | SyftError:
         """Get user for given uid"""
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
         if result.is_ok():
@@ -111,9 +107,9 @@ class UserService(AbstractService):
     def get_all(
         self,
         context: AuthedServiceContext,
-        page_size: Optional[int] = 0,
-        page_index: Optional[int] = 0,
-    ) -> Union[list[UserView], UserViewPage, UserView, SyftError]:
+        page_size: int | None = 0,
+        page_index: int | None = 0,
+    ) -> list[UserView] | UserViewPage | UserView | SyftError:
         if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
             result = self.stash.get_all(context.credentials, has_permission=True)
         else:
@@ -139,8 +135,8 @@ class UserService(AbstractService):
         return SyftError(message="No users exists")
 
     def get_role_for_credentials(
-        self, credentials: Union[SyftVerifyKey, SyftSigningKey]
-    ) -> Union[Optional[ServiceRole], SyftError]:
+        self, credentials: SyftVerifyKey | SyftSigningKey
+    ) -> ServiceRole | None | SyftError:
         # they could be different
         if isinstance(credentials, SyftVerifyKey):
             result = self.stash.get_by_verify_key(
@@ -162,9 +158,9 @@ class UserService(AbstractService):
         self,
         context: AuthedServiceContext,
         user_search: UserSearch,
-        page_size: Optional[int] = 0,
-        page_index: Optional[int] = 0,
-    ) -> Union[Optional[UserViewPage], List[UserView], SyftError]:
+        page_size: int | None = 0,
+        page_index: int | None = 0,
+    ) -> UserViewPage | None | list[UserView] | SyftError:
         kwargs = user_search.to_dict(exclude_empty=True)
 
         if len(kwargs) == 0:
@@ -206,9 +202,7 @@ class UserService(AbstractService):
     @service_method(
         path="user.get_current_user", name="get_current_user", roles=GUEST_ROLE_LEVEL
     )
-    def get_current_user(
-        self, context: AuthedServiceContext
-    ) -> Union[UserView, SyftError]:
+    def get_current_user(self, context: AuthedServiceContext) -> UserView | SyftError:
         result = self.stash.get_by_verify_key(
             credentials=context.credentials, verify_key=context.credentials
         )
@@ -228,7 +222,7 @@ class UserService(AbstractService):
     )
     def update(
         self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate
-    ) -> Union[UserView, SyftError]:
+    ) -> UserView | SyftError:
         updates_role = user_update.role is not Empty  # type: ignore[comparison-overlap]
         can_edit_roles = ServiceRoleCapability.CAN_EDIT_ROLES in context.capabilities()
 
@@ -327,7 +321,7 @@ class UserService(AbstractService):
 
     def get_target_object(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Union[User, SyftError]:
+    ) -> User | SyftError:
         user_result = self.stash.get_by_uid(credentials=credentials, uid=uid)
         if user_result.is_err():
             return SyftError(message=str(user_result.err()))
@@ -338,7 +332,7 @@ class UserService(AbstractService):
             return user
 
     @service_method(path="user.delete", name="delete", roles=GUEST_ROLE_LEVEL)
-    def delete(self, context: AuthedServiceContext, uid: UID) -> Union[bool, SyftError]:
+    def delete(self, context: AuthedServiceContext, uid: UID) -> bool | SyftError:
         # third party
         user = self.get_target_object(context.credentials, uid)
         if isinstance(user, SyftError):
@@ -371,7 +365,7 @@ class UserService(AbstractService):
 
     def exchange_credentials(
         self, context: UnauthedServiceContext
-    ) -> Union[UserLoginCredentials, SyftError]:
+    ) -> UserLoginCredentials | SyftError:
         """Verify user
         TODO: We might want to use a SyftObject instead
         """
@@ -405,7 +399,7 @@ class UserService(AbstractService):
             f"{context.login_credentials.email} with error: {result.err()}"
         )
 
-    def admin_verify_key(self) -> Union[SyftVerifyKey, SyftError]:
+    def admin_verify_key(self) -> SyftVerifyKey | SyftError:
         try:
             result = self.stash.admin_verify_key()
             if result.is_ok():
@@ -418,7 +412,7 @@ class UserService(AbstractService):
 
     def register(
         self, context: NodeServiceContext, new_user: UserCreate
-    ) -> Union[Tuple[SyftSuccess, UserPrivateKey], SyftError]:
+    ) -> tuple[SyftSuccess, UserPrivateKey] | SyftError:
         """Register new user"""
 
         context.node = cast(AbstractNode, context.node)
@@ -491,7 +485,7 @@ class UserService(AbstractService):
         msg = SyftSuccess(message=success_message)
         return (msg, user.to(UserPrivateKey))
 
-    def user_verify_key(self, email: str) -> Union[SyftVerifyKey, SyftError]:
+    def user_verify_key(self, email: str) -> SyftVerifyKey | SyftError:
         # we are bypassing permissions here, so dont use to return a result directly to the user
         credentials = self.admin_verify_key()
         result = self.stash.get_by_email(credentials=credentials, email=email)
@@ -499,9 +493,7 @@ class UserService(AbstractService):
             return result.ok().verify_key
         return SyftError(message=f"No user with email: {email}")
 
-    def get_by_verify_key(
-        self, verify_key: SyftVerifyKey
-    ) -> Union[UserView, SyftError]:
+    def get_by_verify_key(self, verify_key: SyftVerifyKey) -> UserView | SyftError:
         # we are bypassing permissions here, so dont use to return a result directly to the user
         credentials = self.admin_verify_key()
         result = self.stash.get_by_verify_key(
@@ -519,7 +511,7 @@ class UserService(AbstractService):
         notifier_type: NOTIFIERS,
         new_status: bool,
         verify_key: SyftVerifyKey,
-    ) -> Optional[SyftError]:
+    ) -> SyftError | None:
         result = self.stash.get_by_verify_key(
             credentials=verify_key, verify_key=verify_key
         )
@@ -542,7 +534,7 @@ class UserService(AbstractService):
 
     def enable_notifications(
         self, context: AuthedServiceContext, notifier_type: NOTIFIERS
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         result = self._set_notification_status(notifier_type, True, context.credentials)
         if result is not None:
             return result
@@ -551,7 +543,7 @@ class UserService(AbstractService):
 
     def disable_notifications(
         self, context: AuthedServiceContext, notifier_type: NOTIFIERS
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         result = self._set_notification_status(
             notifier_type, False, context.credentials
         )

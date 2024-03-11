@@ -1,5 +1,4 @@
 # stdlib
-from typing import Optional
 
 # third party
 from result import Ok
@@ -37,7 +36,7 @@ class SyftImageRegistryStash(BaseUIDStoreStash):
         self,
         credentials: SyftVerifyKey,
         url: str,
-    ) -> Result[Optional[SyftImageRegistry], str]:
+    ) -> Result[SyftImageRegistry | None, str]:
         qks = QueryKeys(qks=[URLPartitionKey.with_obj(url)])
         return self.query_one(credentials=credentials, qks=qks)
 

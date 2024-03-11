@@ -1,4 +1,4 @@
-ARG PYTHON_VERSION="3.11"
+ARG PYTHON_VERSION="3.12"
 ARG TZ="Etc/UTC"
 
 # change to USER="syftuser", UID=1000 and HOME="/home/$USER" for rootless
@@ -55,7 +55,7 @@ COPY --chown=$USER_GRP \
 
 # Install all dependencies together here to avoid any version conflicts across pkgs
 RUN --mount=type=cache,id=pip-$UID,target=$HOME/.cache/pip,uid=$UID,gid=$UID,sharing=locked \
-    pip install --user torch==2.1.1 -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
+    pip install --user --default-timeout=300 torch==2.2.1 -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
     pip install --user pip-autoremove jupyterlab -e ./syft[data_science] && \
     pip-autoremove ansible ansible-core -y
 

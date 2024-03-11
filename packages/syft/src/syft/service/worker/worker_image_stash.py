@@ -1,7 +1,4 @@
 # stdlib
-from typing import List
-from typing import Optional
-from typing import Union
 
 # third party
 from result import Err
@@ -39,7 +36,7 @@ class SyftWorkerImageStash(BaseUIDStoreStash):
         self,
         credentials: SyftVerifyKey,
         obj: SyftWorkerImage,
-        add_permissions: Union[List[ActionObjectPermission], None] = None,
+        add_permissions: list[ActionObjectPermission] | None = None,
         ignore_duplicates: bool = False,
     ) -> Result[SyftWorkerImage, str]:
         add_permissions = [] if add_permissions is None else add_permissions
@@ -60,6 +57,6 @@ class SyftWorkerImageStash(BaseUIDStoreStash):
 
     def get_by_docker_config(
         self, credentials: SyftVerifyKey, config: DockerWorkerConfig
-    ) -> Result[Optional[SyftWorkerImage], str]:
+    ) -> Result[SyftWorkerImage | None, str]:
         qks = QueryKeys(qks=[WorkerConfigPK.with_obj(config)])
         return self.query_one(credentials=credentials, qks=qks)

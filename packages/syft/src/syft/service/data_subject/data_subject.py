@@ -1,11 +1,6 @@
 # stdlib
+from collections.abc import Callable
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Set
-from typing import Tuple
 
 # third party
 from typing_extensions import Self
@@ -13,7 +8,6 @@ from typing_extensions import Self
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -31,15 +25,15 @@ NamePartitionKey = PartitionKey(key="name", type_=str)
 class DataSubject(SyftObject):
     # version
     __canonical_name__ = "DataSubject"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     node_uid: UID
     name: str
-    description: Optional[str] = None
-    aliases: List[str] = []
+    description: str | None = None
+    aliases: list[str] = []
 
     @property
-    def members(self) -> List:
+    def members(self) -> list:
         # relative
         from ...client.api import APIRegistry
 
@@ -79,11 +73,11 @@ class DataSubjectCreate(SyftObject):
     __canonical_name__ = "DataSubjectCreate"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID] = None  # type: ignore[assignment]
+    id: UID | None = None  # type: ignore[assignment]
     name: str
-    description: Optional[str] = None
-    aliases: Optional[List[str]] = []
-    members: Dict[str, "DataSubjectCreate"] = {}
+    description: str | None = None
+    aliases: list[str] | None = []
+    members: dict[str, "DataSubjectCreate"] = {}
 
     __attr_searchable__ = ["name", "description"]
     __attr_unique__ = ["name"]
@@ -113,7 +107,7 @@ class DataSubjectCreate(SyftObject):
         self.members[data_subject.name] = data_subject
 
     @property
-    def member_relationships(self) -> Set[Tuple[str, str]]:
+    def member_relationships(self) -> set[tuple[str, str]]:
         relationships: set = set()
         self._create_member_relationship(self, relationships)
         return relationships

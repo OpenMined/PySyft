@@ -3,12 +3,11 @@ from enum import Enum
 from pathlib import Path
 from shutil import rmtree
 import tarfile
-from typing import List
+from typing import Annotated
 
 # third party
 from typer import Exit
 from typer import Option
-from typing_extensions import Annotated
 
 # relative
 from ..core.console import debug
@@ -125,7 +124,7 @@ def get_container_engine(engine_name: Engine, dryrun: bool = False) -> Container
 
 def pull_images(
     engine_sdk: ContainerEngine,
-    image_tags: List[str],
+    image_tags: list[str],
     dryrun: bool = False,
 ) -> None:
     def fn_print_std(line: str) -> None:
@@ -145,7 +144,7 @@ def pull_images(
 
 def archive_images(
     engine_sdk: ContainerEngine,
-    image_tags: List[str],
+    image_tags: list[str],
     archive_path: Path,
     dryrun: bool = False,
 ) -> None:
@@ -157,7 +156,7 @@ def archive_images(
         raise Exit(e.returncode)
 
 
-def get_syft_images(syft_ver: SyftVersion) -> List[str]:
+def get_syft_images(syft_ver: SyftVersion) -> list[str]:
     manifest = SyftRepo.get_manifest(syft_ver.release_tag)
     return manifest["images"]
 

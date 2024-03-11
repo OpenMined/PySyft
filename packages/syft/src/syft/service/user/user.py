@@ -1,13 +1,7 @@
 # stdlib
+from collections.abc import Callable
 from getpass import getpass
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Type
-from typing import Union
 
 # third party
 from bcrypt import checkpw
@@ -24,7 +18,6 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
@@ -48,25 +41,25 @@ class User(SyftObject):
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    id: Optional[UID] = None  # type: ignore[assignment]
+    id: UID | None = None  # type: ignore[assignment]
 
     # fields
-    notifications_enabled: Dict[NOTIFIERS, bool] = {
+    notifications_enabled: dict[NOTIFIERS, bool] = {
         NOTIFIERS.EMAIL: True,
         NOTIFIERS.SMS: False,
         NOTIFIERS.SLACK: False,
         NOTIFIERS.APP: False,
     }
-    email: Optional[EmailStr] = None
-    name: Optional[str] = None
-    hashed_password: Optional[str] = None
-    salt: Optional[str] = None
-    signing_key: Optional[SyftSigningKey] = None
-    verify_key: Optional[SyftVerifyKey] = None
-    role: Optional[ServiceRole] = None
-    institution: Optional[str] = None
-    website: Optional[str] = None
-    created_at: Optional[str] = None
+    email: EmailStr | None = None
+    name: str | None = None
+    hashed_password: str | None = None
+    salt: str | None = None
+    signing_key: SyftSigningKey | None = None
+    verify_key: SyftVerifyKey | None = None
+    role: ServiceRole | None = None
+    institution: str | None = None
+    website: str | None = None
+    created_at: str | None = None
     # TODO where do we put this flag?
     mock_execution_permission: bool = False
 
@@ -104,7 +97,7 @@ def generate_key(context: TransformContext) -> TransformContext:
     return context
 
 
-def salt_and_hash_password(password: str, rounds: int) -> Tuple[str, str]:
+def salt_and_hash_password(password: str, rounds: int) -> tuple[str, str]:
     bytes_pass = password.encode("UTF-8")
     salt = gensalt(rounds=rounds)
     hashed = hashpw(bytes_pass, salt)
@@ -150,13 +143,13 @@ class UserCreate(SyftObject):
 
     email: EmailStr
     name: str
-    role: Optional[ServiceRole] = None  # type: ignore[assignment]
+    role: ServiceRole | None = None  # type: ignore[assignment]
     password: str
-    password_verify: Optional[str] = None  # type: ignore[assignment]
-    verify_key: Optional[SyftVerifyKey] = None  # type: ignore[assignment]
-    institution: Optional[str] = ""  # type: ignore[assignment]
-    website: Optional[str] = ""  # type: ignore[assignment]
-    created_by: Optional[SyftSigningKey] = None  # type: ignore[assignment]
+    password_verify: str | None = None  # type: ignore[assignment]
+    verify_key: SyftVerifyKey | None = None  # type: ignore[assignment]
+    institution: str | None = ""  # type: ignore[assignment]
+    website: str | None = ""  # type: ignore[assignment]
+    created_by: SyftSigningKey | None = None  # type: ignore[assignment]
     mock_execution_permission: bool = False
 
     __repr_attrs__ = ["name", "email"]
@@ -178,7 +171,7 @@ class UserView(SyftObject):
     __canonical_name__ = "UserView"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    notifications_enabled: Dict[NOTIFIERS, bool] = {
+    notifications_enabled: dict[NOTIFIERS, bool] = {
         NOTIFIERS.EMAIL: True,
         NOTIFIERS.SMS: False,
         NOTIFIERS.SLACK: False,
@@ -187,8 +180,8 @@ class UserView(SyftObject):
     email: EmailStr
     name: str
     role: ServiceRole  # make sure role cant be set without uid
-    institution: Optional[str]
-    website: Optional[str]
+    institution: str | None = None
+    website: str | None = None
     mock_execution_permission: bool
 
     __repr_attrs__ = [
@@ -200,7 +193,7 @@ class UserView(SyftObject):
         "notifications_enabled",
     ]
 
-    def _coll_repr_(self) -> Dict[str, Any]:
+    def _coll_repr_(self) -> dict[str, Any]:
         return {
             "Name": self.name,
             "Email": self.email,
@@ -213,7 +206,7 @@ class UserView(SyftObject):
             ),
         }
 
-    def _set_password(self, new_password: str) -> Union[SyftError, SyftSuccess]:
+    def _set_password(self, new_password: str) -> SyftError | SyftSuccess:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -230,8 +223,8 @@ class UserView(SyftObject):
         )
 
     def set_password(
-        self, new_password: Optional[str] = None, confirm: bool = True
-    ) -> Union[SyftError, SyftSuccess]:
+        self, new_password: str | None = None, confirm: bool = True
+    ) -> SyftError | SyftSuccess:
         """Set a new password interactively with confirmed password from user input"""
         # TODO: Add password validation for special characters
         if not new_password:
@@ -243,7 +236,7 @@ class UserView(SyftObject):
                 return SyftError(message="Passwords do not match !")
         return self._set_password(new_password)
 
-    def set_email(self, email: str) -> Union[SyftSuccess, SyftError]:
+    def set_email(self, email: str) -> SyftSuccess | SyftError:
         # validate email address
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
@@ -270,12 +263,12 @@ class UserView(SyftObject):
 
     def update(
         self,
-        name: Union[Type[Empty], str] = Empty,
-        institution: Union[Type[Empty], str] = Empty,
-        website: Union[Type[Empty], str] = Empty,
-        role: Union[Type[Empty], str] = Empty,
-        mock_execution_permission: Union[Type[Empty], bool] = Empty,
-    ) -> Union[SyftSuccess, SyftError]:
+        name: type[Empty] | str = Empty,
+        institution: type[Empty] | str = Empty,
+        website: type[Empty] | str = Empty,
+        role: type[Empty] | str = Empty,
+        mock_execution_permission: type[Empty] | bool = Empty,
+    ) -> SyftSuccess | SyftError:
         """Used to update name, institution, website of a user."""
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
@@ -300,21 +293,21 @@ class UserView(SyftObject):
 
         return SyftSuccess(message="User details successfully updated.")
 
-    def allow_mock_execution(self, allow: bool = True) -> Union[SyftSuccess, SyftError]:
+    def allow_mock_execution(self, allow: bool = True) -> SyftSuccess | SyftError:
         return self.update(mock_execution_permission=allow)
 
 
 @serializable()
 class UserViewPage(SyftObject):
     __canonical_name__ = "UserViewPage"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    users: List[UserView]
+    users: list[UserView]
     total: int
 
 
 @transform(UserUpdate, User)
-def user_update_to_user() -> List[Callable]:
+def user_update_to_user() -> list[Callable]:
     return [
         validate_email,
         hash_password,
@@ -323,7 +316,7 @@ def user_update_to_user() -> List[Callable]:
 
 
 @transform(UserCreate, User)
-def user_create_to_user() -> List[Callable]:
+def user_create_to_user() -> list[Callable]:
     return [
         generate_id,
         validate_email,
@@ -336,7 +329,7 @@ def user_create_to_user() -> List[Callable]:
 
 
 @transform(User, UserView)
-def user_to_view_user() -> List[Callable]:
+def user_to_view_user() -> list[Callable]:
     return [
         keep(
             [
@@ -356,7 +349,7 @@ def user_to_view_user() -> List[Callable]:
 @serializable()
 class UserPrivateKey(SyftObject):
     __canonical_name__ = "UserPrivateKey"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     email: str
     signing_key: SyftSigningKey
@@ -364,5 +357,5 @@ class UserPrivateKey(SyftObject):
 
 
 @transform(User, UserPrivateKey)
-def user_to_user_verify() -> List[Callable]:
+def user_to_user_verify() -> list[Callable]:
     return [keep(["email", "signing_key", "id", "role"])]

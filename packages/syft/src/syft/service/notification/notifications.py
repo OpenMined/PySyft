@@ -1,9 +1,6 @@
 # stdlib
+from collections.abc import Callable
 from enum import Enum
-from typing import Callable
-from typing import List
-from typing import Optional
-from typing import Type
 from typing import cast
 
 # relative
@@ -13,7 +10,6 @@ from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -47,12 +43,12 @@ class NotificationExpiryStatus(Enum):
 @serializable()
 class ReplyNotification(SyftObject):
     __canonical_name__ = "ReplyNotification"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     text: str
     target_msg: UID
-    id: Optional[UID] = None  # type: ignore[assignment]
-    from_user_verify_key: Optional[SyftVerifyKey] = None
+    id: UID | None = None  # type: ignore[assignment]
+    from_user_verify_key: SyftVerifyKey | None = None
 
 
 @serializable()
@@ -66,10 +62,10 @@ class Notification(SyftObject):
     to_user_verify_key: SyftVerifyKey
     created_at: DateTime
     status: NotificationStatus = NotificationStatus.UNREAD
-    linked_obj: Optional[LinkedObject] = None
-    notifier_types: List[NOTIFIERS] = []
-    email_template: Optional[Type[EmailTemplate]] = None
-    replies: Optional[List[ReplyNotification]] = []
+    linked_obj: LinkedObject | None = None
+    notifier_types: list[NOTIFIERS] = []
+    email_template: type[EmailTemplate] | None = None
+    replies: list[ReplyNotification] | None = []
 
     __attr_searchable__ = [
         "from_user_verify_key",
@@ -95,7 +91,7 @@ class Notification(SyftObject):
         """
 
     @property
-    def link(self) -> Optional[SyftObject]:
+    def link(self) -> SyftObject | None:
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
@@ -144,11 +140,11 @@ class CreateNotification(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     subject: str
-    from_user_verify_key: Optional[SyftVerifyKey] = None  # type: ignore[assignment]
-    to_user_verify_key: Optional[SyftVerifyKey] = None  # type: ignore[assignment]
-    linked_obj: Optional[LinkedObject] = None
-    notifier_types: List[NOTIFIERS] = []
-    email_template: Optional[Type[EmailTemplate]] = None
+    from_user_verify_key: SyftVerifyKey | None = None  # type: ignore[assignment]
+    to_user_verify_key: SyftVerifyKey | None = None  # type: ignore[assignment]
+    linked_obj: LinkedObject | None = None
+    notifier_types: list[NOTIFIERS] = []
+    email_template: type[EmailTemplate] | None = None
 
 
 def add_msg_creation_time(context: TransformContext) -> TransformContext:

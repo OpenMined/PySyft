@@ -1,6 +1,4 @@
 # stdlib
-from typing import List
-from typing import Union
 
 # relative
 from ...serde.serializable import serializable
@@ -33,7 +31,7 @@ class QueueService(AbstractService):
     )
     def get_subjobs(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[List[QueueItem], SyftError]:
+    ) -> list[QueueItem] | SyftError:
         res = self.stash.get_by_parent_id(context.credentials, uid=uid)
         if res.is_err():
             return SyftError(message=res.err())

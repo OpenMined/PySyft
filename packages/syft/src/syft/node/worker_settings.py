@@ -1,9 +1,6 @@
 # future
 from __future__ import annotations
 
-# stdlib
-from typing import Optional
-
 # third party
 from typing_extensions import Self
 
@@ -16,7 +13,7 @@ from ..serde.serializable import serializable
 from ..service.queue.base_queue import QueueConfig
 from ..store.blob_storage import BlobStorageConfig
 from ..store.document_store import StoreConfig
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 
@@ -24,7 +21,7 @@ from ..types.uid import UID
 @serializable()
 class WorkerSettings(SyftObject):
     __canonical_name__ = "WorkerSettings"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     id: UID
     name: str
@@ -33,8 +30,8 @@ class WorkerSettings(SyftObject):
     signing_key: SyftSigningKey
     document_store_config: StoreConfig
     action_store_config: StoreConfig
-    blob_store_config: Optional[BlobStorageConfig] = None
-    queue_config: Optional[QueueConfig] = None
+    blob_store_config: BlobStorageConfig | None = None
+    queue_config: QueueConfig | None = None
 
     @classmethod
     def from_node(cls, node: AbstractNode) -> Self:

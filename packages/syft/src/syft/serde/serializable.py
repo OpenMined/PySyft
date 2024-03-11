@@ -1,7 +1,5 @@
 # stdlib
-from typing import Callable
-from typing import List
-from typing import Optional
+from collections.abc import Callable
 from typing import TypeVar
 
 # syft absolute
@@ -17,10 +15,10 @@ T = TypeVar("T", bound=type)
 
 
 def serializable(
-    attrs: Optional[List[str]] = None,
-    without: Optional[List[str]] = None,
-    inherit: Optional[bool] = True,
-    inheritable: Optional[bool] = True,
+    attrs: list[str] | None = None,
+    without: list[str] | None = None,
+    inherit: bool | None = True,
+    inheritable: bool | None = True,
 ) -> Callable[[T], T]:
     """
     Recursively serialize attributes of the class.

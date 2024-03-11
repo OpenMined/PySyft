@@ -1,9 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
 
 # third party
 from kr8s.objects import Pod
@@ -30,11 +26,11 @@ class KubernetesRunner:
         pool_name: str,
         tag: str,
         replicas: int = 1,
-        env_vars: Optional[List[Dict]] = None,
-        mount_secrets: Optional[Dict] = None,
-        reg_username: Optional[str] = None,
-        reg_password: Optional[str] = None,
-        reg_url: Optional[str] = None,
+        env_vars: list[dict] | None = None,
+        mount_secrets: dict | None = None,
+        reg_username: str | None = None,
+        reg_password: str | None = None,
+        reg_url: str | None = None,
         **kwargs: Any,
     ) -> StatefulSet:
         try:
@@ -73,7 +69,7 @@ class KubernetesRunner:
         # return
         return deployment
 
-    def scale_pool(self, pool_name: str, replicas: int) -> Optional[StatefulSet]:
+    def scale_pool(self, pool_name: str, replicas: int) -> StatefulSet | None:
         deployment = self.get_pool(pool_name)
         if not deployment:
             return None
@@ -87,7 +83,7 @@ class KubernetesRunner:
     def exists(self, pool_name: str) -> bool:
         return bool(self.get_pool(pool_name))
 
-    def get_pool(self, pool_name: str) -> Optional[StatefulSet]:
+    def get_pool(self, pool_name: str) -> StatefulSet | None:
         selector = {"app.kubernetes.io/component": pool_name}
         for _set in self.client.get("statefulsets", label_selector=selector):
             return _set
@@ -110,7 +106,7 @@ class KubernetesRunner:
             return True
         return False
 
-    def get_pool_pods(self, pool_name: str) -> List[Pod]:
+    def get_pool_pods(self, pool_name: str) -> list[Pod]:
         selector = {"app.kubernetes.io/component": pool_name}
         pods = self.client.get("pods", label_selector=selector)
         if len(pods) > 0:
@@ -121,11 +117,11 @@ class KubernetesRunner:
         pods = self.client.get("pods", pod_name)
         return KubeUtils.get_logs(pods)
 
-    def get_pod_status(self, pod: Union[str, Pod]) -> Optional[PodStatus]:
+    def get_pod_status(self, pod: str | Pod) -> PodStatus | None:
         pod = KubeUtils.resolve_pod(self.client, pod)
         return KubeUtils.get_pod_status(pod)
 
-    def get_pod_env_vars(self, pod: Union[str, Pod]) -> Optional[List[Dict]]:
+    def get_pod_env_vars(self, pod: str | Pod) -> list[dict] | None:
         pod = KubeUtils.resolve_pod(self.client, pod)
         return KubeUtils.get_pod_env(pod)
 
@@ -150,9 +146,9 @@ class KubernetesRunner:
         pool_name: str,
         tag: str,
         replicas: int = 1,
-        env_vars: Optional[List[Dict]] = None,
-        mount_secrets: Optional[Dict] = None,
-        pull_secret: Optional[Secret] = None,
+        env_vars: list[dict] | None = None,
+        mount_secrets: dict | None = None,
+        pull_secret: Secret | None = None,
         **kwargs: Any,
     ) -> StatefulSet:
         """Create a stateful set for a pool"""

@@ -1,13 +1,12 @@
 # stdlib
-from typing import Optional
 
 
 class AuthCredentials:
     def __init__(
         self,
         username: str,
-        key_path: Optional[str] = None,
-        password: Optional[str] = None,
+        key_path: str | None = None,
+        password: str | None = None,
     ) -> None:
         self.username = username
         self.key_path = key_path

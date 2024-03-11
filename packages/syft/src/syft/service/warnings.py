@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Optional
 from typing import cast
 
 # third party
@@ -22,15 +21,15 @@ from .user.user_roles import ServiceRole
 class WarningContext(
     Context,
 ):
-    node: Optional[AbstractNode] = None
-    credentials: Optional[SyftCredentials] = None
+    node: AbstractNode | None = None
+    credentials: SyftCredentials | None = None
     role: ServiceRole
 
 
 @serializable()
 class APIEndpointWarning(SyftBaseModel):
     confirmation: bool = False
-    message: Optional[str] = None
+    message: str | None = None
     enabled: bool = True
 
     def __eq__(self, other: Any) -> bool:
@@ -54,7 +53,7 @@ class APIEndpointWarning(SyftBaseModel):
             + f"<strong>SyftWarning</strong>: {self.message}</div><br />"
         )
 
-    def message_from(self, context: Optional[WarningContext]) -> Self:
+    def message_from(self, context: WarningContext | None) -> Self:
         raise NotImplementedError
 
     def show(self) -> bool:
@@ -71,7 +70,7 @@ class APIEndpointWarning(SyftBaseModel):
 
 @serializable()
 class CRUDWarning(APIEndpointWarning):
-    def message_from(self, context: Optional[WarningContext] = None) -> Self:
+    def message_from(self, context: WarningContext | None = None) -> Self:
         message = None
         confirmation = self.confirmation
         if context is not None:
@@ -99,7 +98,7 @@ class CRUDWarning(APIEndpointWarning):
 class CRUDReminder(CRUDWarning):
     confirmation: bool = False
 
-    def message_from(self, context: Optional[WarningContext] = None) -> Self:
+    def message_from(self, context: WarningContext | None = None) -> Self:
         message = None
         confirmation = self.confirmation
         if context is not None:
@@ -124,7 +123,7 @@ class CRUDReminder(CRUDWarning):
 
 @serializable()
 class LowSideCRUDWarning(APIEndpointWarning):
-    def message_from(self, context: Optional[WarningContext] = None) -> Self:
+    def message_from(self, context: WarningContext | None = None) -> Self:
         confirmation = self.confirmation
         message = None
         if context is not None:
@@ -144,7 +143,7 @@ class LowSideCRUDWarning(APIEndpointWarning):
 
 @serializable()
 class HighSideCRUDWarning(APIEndpointWarning):
-    def message_from(self, context: Optional[WarningContext] = None) -> Self:
+    def message_from(self, context: WarningContext | None = None) -> Self:
         confirmation = self.confirmation
         message = None
         if context is not None:

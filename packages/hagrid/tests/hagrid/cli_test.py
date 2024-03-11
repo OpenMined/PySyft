@@ -1,7 +1,5 @@
 # stdlib
 from collections import defaultdict
-from typing import List
-from typing import Tuple
 
 # third party
 from hagrid import cli
@@ -14,7 +12,7 @@ def test_hagrid_launch() -> None:
     up a new node with a randomly chosen name"""
 
     # COMMAND: "hagrid launch"
-    args: List[str] = []
+    args: list[str] = []
 
     verb = cli.get_launch_verb()
     grammar = cli.parse_grammar(args=tuple(args), verb=verb)
@@ -41,7 +39,7 @@ def test_shortand_parse() -> None:
     up a new node with a randomly chosen name."""
 
     # COMMAND: "hagrid launch"
-    args: Tuple = ()
+    args: tuple = ()
     args = grammar.launch_shorthand_support(args)
 
     # check that domain gets added to the end of the command
@@ -54,7 +52,7 @@ def test_hagrid_launch_without_name_with_preposition() -> None:
     up a new node with a randomly chosen name"""
 
     # COMMAND: "hagrid launch on docker"
-    args: List[str] = ["to", "docker"]
+    args: list[str] = ["to", "docker"]
 
     verb = cli.get_launch_verb()
     grammar = cli.parse_grammar(args=tuple(args), verb=verb)
@@ -80,7 +78,7 @@ def test_shortand_parse_without_name_with_preposition() -> None:
     up a new node with a randomly chosen name."""
 
     # COMMAND: "hagrid launch"
-    args: Tuple[str, ...] = ("to", "docker")
+    args: tuple[str, ...] = ("to", "docker")
     args = grammar.launch_shorthand_support(args)
 
     # check that domain gets added to the end of the command
@@ -93,7 +91,7 @@ def test_launch_with_multiword_domain_name() -> None:
     up a new node with a randomly chosen name"""
 
     # COMMAND: "hagrid launch United Nations"
-    args: List[str] = ["United", "Nations"]
+    args: list[str] = ["United", "Nations"]
 
     verb = cli.get_launch_verb()
     grammar = cli.parse_grammar(args=tuple(args), verb=verb)
@@ -119,7 +117,7 @@ def test_launch_with_longer_multiword_domain_name() -> None:
     an arbitrary number of words."""
 
     # COMMAND: "hagrid launch United Nations"
-    args: List[str] = ["United", "States", "of", "America"]
+    args: list[str] = ["United", "States", "of", "America"]
 
     verb = cli.get_launch_verb()
     grammar = cli.parse_grammar(args=tuple(args), verb=verb)
@@ -148,7 +146,7 @@ def test_launch_with_longer_multiword_domain_name_with_preposition() -> None:
     an arbitrary number of words."""
 
     # COMMAND: "hagrid launch United Nations on docker"
-    args: List[str] = ["United", "Nations", "to", "docker"]
+    args: list[str] = ["United", "Nations", "to", "docker"]
 
     verb = cli.get_launch_verb()
     grammar = cli.parse_grammar(args=tuple(args), verb=verb)
@@ -175,7 +173,7 @@ def test_shortand_parse_of_multiword_name() -> None:
     up a new node with a name that has multiple words."""
 
     # COMMAND: "hagrid launch"
-    args: Tuple[str, ...] = ("United", "Nations")
+    args: tuple[str, ...] = ("United", "Nations")
     args = grammar.launch_shorthand_support(args)
 
     # check that domain gets added to the end of the command
@@ -191,7 +189,7 @@ def test_shortand_parse_of_multiword_name_with_domain() -> None:
     up a new node with a name that has multiple words."""
 
     # COMMAND: "hagrid launch"
-    args: Tuple[str, ...] = ("United", "Nations", "domain")
+    args: tuple[str, ...] = ("United", "Nations", "domain")
     args = grammar.launch_shorthand_support(args)
 
     # check that domain gets added to the end of the command
