@@ -25,9 +25,9 @@ jobs:
       max-parallel: 99
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
         include:
-          - python-version: "3.9"
+          - python-version: "3.11"
             os: "ubuntu-latest"
           - python-version: "3.10"
             os: "ubuntu-latest"
@@ -106,11 +106,11 @@ jobs:
         # Disable on windows until its flakyness is reduced.
         # os: [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest, macos-latest]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
         deployment-type: ["python"]
         notebook-paths: ["tutorials"]
         include:
-          - python-version: "3.9"
+          - python-version: "3.11"
             os: "ubuntu-latest"
             deployment-type: "python"
             notebook-paths: "tutorials"
@@ -191,7 +191,7 @@ jobs:
       max-parallel: 99
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.10", "3.11", "3.12"]
         deployment-type: ["single_container"]
         notebook-paths: ["api/0.8"]
       fail-fast: false

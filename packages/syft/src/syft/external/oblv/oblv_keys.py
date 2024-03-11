@@ -1,6 +1,6 @@
 # relative
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 
 
@@ -8,7 +8,7 @@ from ...types.syft_object import SyftObject
 class OblvKeys(SyftObject):
     # version
     __canonical_name__ = "OblvKeys"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     # fields
     public_key: bytes

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 # stdlib
+from collections.abc import Callable
 from enum import Enum
 import getpass
 import inspect
@@ -12,10 +13,7 @@ import subprocess  # nosec
 import sys
 from threading import Thread
 from typing import Any
-from typing import Callable
-from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Union
 
 # relative
 from .cli import str_to_bool
@@ -49,7 +47,7 @@ def to_snake_case(name: str) -> str:
     return name.lower().replace(" ", "_")
 
 
-def get_syft_client() -> Optional[Any]:
+def get_syft_client() -> Any | None:
     try:
         # syft absolute
         import syft as sy
@@ -66,7 +64,7 @@ def container_exists(name: str) -> bool:
     return len(output) > 0
 
 
-def port_from_container(name: str, deployment_type: DeploymentType) -> Optional[int]:
+def port_from_container(name: str, deployment_type: DeploymentType) -> int | None:
     container_suffix = ""
     if deployment_type == DeploymentType.SINGLE_CONTAINER:
         container_suffix = "-worker-1"
@@ -98,7 +96,7 @@ def container_exists_with(name: str, port: int) -> bool:
     return len(output) > 0
 
 
-def get_node_type(node_type: Optional[Union[str, NodeType]]) -> Optional[NodeType]:
+def get_node_type(node_type: str | NodeType | None) -> NodeType | None:
     NodeType = ImportFromSyft.import_node_type()
     if node_type is None:
         node_type = os.environ.get("ORCHESTRA_NODE_TYPE", NodeType.DOMAIN)
@@ -109,7 +107,7 @@ def get_node_type(node_type: Optional[Union[str, NodeType]]) -> Optional[NodeTyp
     return None
 
 
-def get_deployment_type(deployment_type: Optional[str]) -> Optional[DeploymentType]:
+def get_deployment_type(deployment_type: str | None) -> DeploymentType | None:
     if deployment_type is None:
         deployment_type = os.environ.get(
             "ORCHESTRA_DEPLOYMENT_TYPE", DeploymentType.PYTHON
@@ -145,10 +143,10 @@ class NodeHandle:
         deployment_type: DeploymentType,
         node_side_type: NodeSideType,
         name: str,
-        port: Optional[int] = None,
-        url: Optional[str] = None,
-        python_node: Optional[Any] = None,
-        shutdown: Optional[Callable] = None,
+        port: int | None = None,
+        url: str | None = None,
+        python_node: Any | None = None,
+        shutdown: Callable | None = None,
     ) -> None:
         self.node_type = node_type
         self.name = name
@@ -175,7 +173,7 @@ class NodeHandle:
         return self.client.login_as_guest(**kwargs)
 
     def login(
-        self, email: Optional[str] = None, password: Optional[str] = None, **kwargs: Any
+        self, email: str | None = None, password: str | None = None, **kwargs: Any
     ) -> ClientAlias:
         if not email:
             email = input("Email: ")
@@ -188,11 +186,11 @@ class NodeHandle:
     def register(
         self,
         name: str,
-        email: Optional[str] = None,
-        password: Optional[str] = None,
-        password_verify: Optional[str] = None,
-        institution: Optional[str] = None,
-        website: Optional[str] = None,
+        email: str | None = None,
+        password: str | None = None,
+        password_verify: str | None = None,
+        institution: str | None = None,
+        website: str | None = None,
     ) -> Any:
         SyftError = ImportFromSyft.import_syft_error()
         if not email:
@@ -225,7 +223,7 @@ class NodeHandle:
 def deploy_to_python(
     node_type_enum: NodeType,
     deployment_type_enum: DeploymentType,
-    port: Union[int, str],
+    port: int | str,
     name: str,
     host: str,
     reset: bool,
@@ -238,8 +236,8 @@ def deploy_to_python(
     n_consumers: int,
     thread_workers: bool,
     create_producer: bool = False,
-    queue_port: Optional[int] = None,
-) -> Optional[NodeHandle]:
+    queue_port: int | None = None,
+) -> NodeHandle | None:
     stage_protocol_changes = ImportFromSyft.import_stage_protocol_changes()
     NodeType = ImportFromSyft.import_node_type()
     sy = get_syft_client()
@@ -367,11 +365,11 @@ def deploy_to_container(
     tag: str,
     render: bool,
     dev_mode: bool,
-    port: Union[int, str],
+    port: int | str,
     name: str,
     enable_warnings: bool,
     in_memory_workers: bool,
-) -> Optional[NodeHandle]:
+) -> NodeHandle | None:
     if port == "auto" or port is None:
         if container_exists(name=name):
             port = port_from_container(name=name, deployment_type=deployment_type_enum)  # type: ignore
@@ -465,29 +463,29 @@ class Orchestra:
     @staticmethod
     def launch(
         # node information and deployment
-        name: Optional[str] = None,
-        node_type: Optional[Union[str, NodeType]] = None,
-        deploy_to: Optional[str] = None,
-        node_side_type: Optional[str] = None,
+        name: str | None = None,
+        node_type: str | NodeType | None = None,
+        deploy_to: str | None = None,
+        node_side_type: str | None = None,
         # worker related inputs
-        port: Optional[Union[int, str]] = None,
+        port: int | str | None = None,
         processes: int = 1,  # temporary work around for jax in subprocess
         local_db: bool = False,
         dev_mode: bool = False,
         cmd: bool = False,
         reset: bool = False,
         tail: bool = False,
-        host: Optional[str] = "0.0.0.0",  # nosec
-        tag: Optional[str] = "latest",
+        host: str | None = "0.0.0.0",  # nosec
+        tag: str | None = "latest",
         verbose: bool = False,
         render: bool = False,
         enable_warnings: bool = False,
         n_consumers: int = 0,
         thread_workers: bool = False,
         create_producer: bool = False,
-        queue_port: Optional[int] = None,
+        queue_port: int | None = None,
         in_memory_workers: bool = True,
-    ) -> Optional[NodeHandle]:
+    ) -> NodeHandle | None:
         NodeType = ImportFromSyft.import_node_type()
         if dev_mode is True:
             os.environ["DEV_MODE"] = "True"
@@ -501,7 +499,7 @@ class Orchestra:
 
         dev_mode = str_to_bool(os.environ.get("DEV_MODE", f"{dev_mode}"))
 
-        node_type_enum: Optional[NodeType] = get_node_type(node_type=node_type)
+        node_type_enum: NodeType | None = get_node_type(node_type=node_type)
 
         node_side_type_enum = (
             NodeSideType.HIGH_SIDE
@@ -509,7 +507,7 @@ class Orchestra:
             else NodeSideType(node_side_type)
         )
 
-        deployment_type_enum: Optional[DeploymentType] = get_deployment_type(
+        deployment_type_enum: DeploymentType | None = get_deployment_type(
             deployment_type=deploy_to
         )
         if not deployment_type_enum:
@@ -576,7 +574,7 @@ class Orchestra:
 
     @staticmethod
     def land(
-        name: str, deployment_type: Union[str, DeploymentType], reset: bool = False
+        name: str, deployment_type: str | DeploymentType, reset: bool = False
     ) -> None:
         deployment_type_enum = DeploymentType(deployment_type)
         Orchestra.shutdown(name=name, deployment_type_enum=deployment_type_enum)

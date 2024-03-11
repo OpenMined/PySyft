@@ -5,8 +5,6 @@ from __future__ import annotations
 import copy
 import os
 import re
-from typing import Optional
-from typing import Union
 from urllib.parse import urlparse
 
 # third party
@@ -21,7 +19,7 @@ from ..util.util import verify_tls
 @serializable(attrs=["protocol", "host_or_ip", "port", "path", "query"])
 class GridURL:
     @classmethod
-    def from_url(cls, url: Union[str, GridURL]) -> GridURL:
+    def from_url(cls, url: str | GridURL) -> GridURL:
         if isinstance(url, GridURL):
             return url
         try:
@@ -52,7 +50,7 @@ class GridURL:
         self,
         protocol: str = "http",
         host_or_ip: str = "localhost",
-        port: Optional[int] = 80,
+        port: int | None = 80,
         path: str = "",
         query: str = "",
     ) -> None:
@@ -83,7 +81,7 @@ class GridURL:
         dupe.path = path
         return dupe
 
-    def as_container_host(self, container_host: Optional[str] = None) -> Self:
+    def as_container_host(self, container_host: str | None = None) -> Self:
         if self.host_or_ip not in [
             "localhost",
             "host.docker.internal",

@@ -1,7 +1,5 @@
 # stdlib
 from threading import Thread
-from typing import List
-from typing import Set
 
 # third party
 from pymongo.collection import Collection as MongoCollection
@@ -277,6 +275,7 @@ def test_mongo_store_partition_update(
             root_verify_key, QueryKeys(qks=[key])
         )
         assert stored.ok()[0].data == v
+
 
 
 def test_mongo_store_partition_set_threading(root_verify_key, mongo_client) -> None:
@@ -719,7 +718,7 @@ def test_mongo_store_partition_add_permissions(
     permission_3 = ActionObjectPermission(
         uid=obj.id, permission=ActionPermission.READ, credentials=guest_verify_key
     )
-    permissions: List[ActionObjectPermission] = [
+    permissions: list[ActionObjectPermission] = [
         permission_1,
         permission_2,
         permission_3,
@@ -870,7 +869,7 @@ def test_mongo_store_partition_permissions_set(
     assert isinstance(pemissions_collection, MongoCollection)
     permissions = pemissions_collection.find_one({"_id": obj.id})
     assert permissions is not None
-    assert isinstance(permissions["permissions"], Set)
+    assert isinstance(permissions["permissions"], set)
     assert len(permissions["permissions"]) == 4
     for permission in PERMISSIONS:
         assert mongo_store_partition.has_permission(

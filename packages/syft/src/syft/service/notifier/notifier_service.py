@@ -1,8 +1,6 @@
 # stdlib
 
 # stdlib
-from typing import Optional
-from typing import Union
 from typing import cast
 
 # third party
@@ -38,7 +36,7 @@ class NotifierService(AbstractService):
     def settings(  # Maybe just notifier.settings
         self,
         context: AuthedServiceContext,
-    ) -> Union[NotifierSettings, SyftError]:
+    ) -> NotifierSettings | SyftError:
         """Get Notifier Settings
 
         Args:
@@ -70,12 +68,12 @@ class NotifierService(AbstractService):
     def turn_on(
         self,
         context: AuthedServiceContext,
-        email_username: Optional[str] = None,
-        email_password: Optional[str] = None,
-        email_sender: Optional[str] = None,
-        email_server: Optional[str] = None,
-        email_port: Optional[int] = 587,
-    ) -> Union[SyftSuccess, SyftError]:
+        email_username: str | None = None,
+        email_password: str | None = None,
+        email_sender: str | None = None,
+        email_server: str | None = None,
+        email_port: int | None = 587,
+    ) -> SyftSuccess | SyftError:
         """Turn on email notifications.
 
         Args:
@@ -176,7 +174,7 @@ class NotifierService(AbstractService):
     def turn_off(
         self,
         context: AuthedServiceContext,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """
         Turn off email notifications service.
         PySyft notifications will still work.
@@ -196,7 +194,7 @@ class NotifierService(AbstractService):
 
     def activate(
         self, context: AuthedServiceContext, notifier_type: NOTIFIERS = NOTIFIERS.EMAIL
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """
         Activate email notifications for the authenticated user.
         This will only work if the domain owner has enabled notifications.
@@ -207,7 +205,7 @@ class NotifierService(AbstractService):
 
     def deactivate(
         self, context: AuthedServiceContext, notifier_type: NOTIFIERS = NOTIFIERS.EMAIL
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Deactivate email notifications for the authenticated user
         This will only work if the domain owner has enabled notifications.
         """
@@ -218,11 +216,11 @@ class NotifierService(AbstractService):
     @staticmethod
     def init_notifier(
         node: AbstractNode,
-        email_username: Optional[str] = None,
-        email_password: Optional[str] = None,
-        email_sender: Optional[str] = None,
-        smtp_port: Optional[int] = None,
-        smtp_host: Optional[str] = None,
+        email_username: str | None = None,
+        email_password: str | None = None,
+        email_sender: str | None = None,
+        smtp_port: int | None = None,
+        smtp_host: str | None = None,
     ) -> Result[Ok, Err]:
         """Initialize Notifier settings for a Node.
         If settings already exist, it will use the existing one.
@@ -287,7 +285,7 @@ class NotifierService(AbstractService):
     # This method is used by other services to dispatch notifications internally
     def dispatch_notification(
         self, context: AuthedServiceContext, notification: Notification
-    ) -> Union[SyftError]:
+    ) -> SyftError:
         context.node = cast(AbstractNode, context.node)
         admin_key = context.node.get_service("userservice").admin_verify_key()
         notifier = self.stash.get(admin_key)

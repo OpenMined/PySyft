@@ -3,7 +3,6 @@ from functools import cached_property
 import os.path
 from pathlib import Path
 from typing import Any
-from typing import Optional
 
 # relative
 from .builder_docker import DockerBuilder
@@ -40,7 +39,7 @@ class CustomWorkerBuilder:
     def build_image(
         self,
         config: WorkerConfig,
-        tag: Optional[str] = None,
+        tag: str | None = None,
         **kwargs: Any,
     ) -> ImageBuildResult:
         """

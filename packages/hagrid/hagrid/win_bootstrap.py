@@ -1,7 +1,6 @@
 # stdlib
+from collections.abc import Callable
 import subprocess  # nosec
-from typing import Callable
-from typing import List
 
 # one liner to use bootstrap script:
 # CMD: curl https://raw.githubusercontent.com/OpenMined/PySyft/dev/packages/hagrid/hagrid/win_bootstrap.py > win_bootstrap.py && python win_bootstrap.py # noqa
@@ -177,7 +176,7 @@ def install_wsl2() -> None:
     )
 
 
-def install_deps(requirements: List[Requirement]) -> None:
+def install_deps(requirements: list[Requirement]) -> None:
     package_names = []
     for req in requirements:
         package_names.append(req.choco_name)
@@ -205,7 +204,7 @@ def ask_install(requirement: Requirement) -> bool:
     return False
 
 
-def check_all(requirements: List[Requirement]) -> List[Requirement]:
+def check_all(requirements: list[Requirement]) -> list[Requirement]:
     missing = []
     for req in requirements:
         if not req.detect(req):

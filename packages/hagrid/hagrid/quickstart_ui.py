@@ -3,10 +3,6 @@ from dataclasses import dataclass
 import os
 from pathlib import Path
 import sys
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
 from urllib.parse import urlparse
 import zipfile
 
@@ -26,7 +22,7 @@ directory = os.path.expanduser("~/.hagrid/quickstart/")
 
 def quickstart_download_notebook(
     url: str, directory: str, reset: bool = False, overwrite_all: bool = False
-) -> Tuple[str, bool, bool]:
+) -> tuple[str, bool, bool]:
     os.makedirs(directory, exist_ok=True)
     file_name = os.path.basename(url).replace("%20", "_").replace(" ", "_")
     file_path = directory + os.sep + file_name
@@ -68,8 +64,8 @@ def fetch_notebooks_for_url(
     reset: bool = False,
     repo: str = DEFAULT_REPO,
     branch: str = DEFAULT_BRANCH,
-    commit: Optional[str] = None,
-) -> List[str]:
+    commit: str | None = None,
+) -> list[str]:
     downloaded_files = []
     allowed_schemes_as_url = ["http", "https"]
     url_scheme = urlparse(url).scheme
@@ -131,7 +127,7 @@ def quickstart_extract_notebook(
     directory: Path,
     reset: bool = False,
     overwrite_all: bool = False,
-) -> Tuple[str, bool, bool]:
+) -> tuple[str, bool, bool]:
     directory.mkdir(exist_ok=True)
     reset = overwrite_all
 
@@ -169,7 +165,7 @@ def quickstart_extract_notebook(
 
 def fetch_notebooks_from_zipfile(
     path: str, directory: str, reset: bool = False
-) -> List[str]:
+) -> list[str]:
     dir_path = Path(directory)
 
     with zipfile.ZipFile(path, "r") as zf:
@@ -246,7 +242,7 @@ TUTORIALS = {
 
 class QuickstartUI:
     @property
-    def tutorials(self) -> Dict[str, Tutorial]:
+    def tutorials(self) -> dict[str, Tutorial]:
         return TUTORIALS
 
     def download(
@@ -311,8 +307,8 @@ def get_urls_from_dir(
     url: str,
     repo: str,
     branch: str,
-    commit: Optional[str] = None,
-) -> List[str]:
+    commit: str | None = None,
+) -> list[str]:
     notebooks = []
     slug = commit if commit else branch
 

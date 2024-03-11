@@ -1,11 +1,8 @@
 # stdlib
 import argparse
+from collections.abc import Callable
 import json
 import os
-from typing import Callable
-from typing import Dict
-from typing import Optional
-from typing import Union
 import uuid
 
 # third party
@@ -22,7 +19,7 @@ from nacl.signing import SigningKey
 # the values from anywhere are invalid
 
 
-def get_env(key: str, default: str = "") -> Optional[str]:
+def get_env(key: str, default: str = "") -> str | None:
     uid = str(os.environ.get(key, default))
     if len(uid) > 0:
         return uid
@@ -35,7 +32,7 @@ NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
 
 
-def get_credentials_file() -> Dict[str, str]:
+def get_credentials_file() -> dict[str, str]:
     try:
         if os.path.exists(CREDENTIALS_PATH):
             with open(CREDENTIALS_PATH) as f:
@@ -45,7 +42,7 @@ def get_credentials_file() -> Dict[str, str]:
     return {}
 
 
-def get_credentials_file_key(key: str) -> Optional[str]:
+def get_credentials_file_key(key: str) -> str | None:
     credentials = get_credentials_file()
     if key in credentials:
         return credentials[key]
@@ -80,15 +77,15 @@ def generate_private_key() -> str:
     return key_to_str(SigningKey.generate())
 
 
-def get_private_key_env() -> Optional[str]:
+def get_private_key_env() -> str | None:
     return get_env(NODE_PRIVATE_KEY)
 
 
-def get_node_uid_env() -> Optional[str]:
+def get_node_uid_env() -> str | None:
     return get_env(NODE_UID)
 
 
-def validate_private_key(private_key: Union[str, bytes]) -> str:
+def validate_private_key(private_key: str | bytes) -> str:
     try:
         if isinstance(private_key, str):
             key = SigningKey(bytes.fromhex(private_key))

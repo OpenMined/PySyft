@@ -1,18 +1,12 @@
 # stdlib
 from collections import defaultdict
+from collections.abc import Callable
 from copy import deepcopy
 from functools import partial
 import inspect
 from inspect import Parameter
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Set
 from typing import TYPE_CHECKING
-from typing import Tuple
-from typing import Type
 from typing import Union
 
 # third party
@@ -35,7 +29,7 @@ from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
 from ..store.linked_obj import LinkedObject
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.syft_object import attach_attribute_to_syft_object
@@ -61,9 +55,9 @@ class AbstractService:
 
     def resolve_link(
         self,
-        context: Union[AuthedServiceContext, ChangeContext, Any],
+        context: AuthedServiceContext | ChangeContext | Any,
         linked_obj: LinkedObject,
-    ) -> Union[Any, SyftError]:
+    ) -> Any | SyftError:
         if isinstance(context, AuthedServiceContext):
             credentials = context.credentials
         elif isinstance(context, ChangeContext):
@@ -89,23 +83,23 @@ class AbstractService:
 @serializable()
 class BaseConfig(SyftBaseObject):
     __canonical_name__ = "BaseConfig"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     public_path: str
     private_path: str
     public_name: str
     method_name: str
-    doc_string: Optional[str] = None
-    signature: Optional[Signature] = None
+    doc_string: str | None = None
+    signature: Signature | None = None
     is_from_lib: bool = False
-    warning: Optional[APIEndpointWarning] = None
+    warning: APIEndpointWarning | None = None
 
 
 @serializable()
 class ServiceConfig(BaseConfig):
     __canonical_name__ = "ServiceConfig"
-    permissions: List
-    roles: List[ServiceRole]
+    permissions: list
+    roles: list[ServiceRole]
 
     def has_permission(self, user_service_role: ServiceRole) -> bool:
         return user_service_role in self.roles
@@ -114,7 +108,7 @@ class ServiceConfig(BaseConfig):
 @serializable()
 class LibConfig(BaseConfig):
     __canonical_name__ = "LibConfig"
-    permissions: Set[CMPPermission]
+    permissions: set[CMPPermission]
 
     def has_permission(self, credentials: SyftVerifyKey) -> bool:
         # TODO: implement user level permissions
@@ -127,7 +121,7 @@ class LibConfig(BaseConfig):
 
 
 class ServiceConfigRegistry:
-    __service_config_registry__: Dict[str, ServiceConfig] = {}
+    __service_config_registry__: dict[str, ServiceConfig] = {}
     # __public_to_private_path_map__: Dict[str, str] = {}
 
     @classmethod
@@ -137,7 +131,7 @@ class ServiceConfigRegistry:
             # cls.__public_to_private_path_map__[config.public_path] = config.private_path
 
     @classmethod
-    def get_registered_configs(cls) -> Dict[str, ServiceConfig]:
+    def get_registered_configs(cls) -> dict[str, ServiceConfig]:
         return cls.__service_config_registry__
 
     @classmethod
@@ -146,7 +140,7 @@ class ServiceConfigRegistry:
 
 
 class LibConfigRegistry:
-    __service_config_registry__: Dict[str, ServiceConfig] = {}
+    __service_config_registry__: dict[str, ServiceConfig] = {}
 
     @classmethod
     def register(cls, config: ServiceConfig) -> None:
@@ -154,7 +148,7 @@ class LibConfigRegistry:
             cls.__service_config_registry__[config.public_path] = config
 
     @classmethod
-    def get_registered_configs(cls) -> Dict[str, ServiceConfig]:
+    def get_registered_configs(cls) -> dict[str, ServiceConfig]:
         return cls.__service_config_registry__
 
     @classmethod
@@ -163,8 +157,8 @@ class LibConfigRegistry:
 
 
 class UserLibConfigRegistry:
-    def __init__(self, service_config_registry: Dict[str, LibConfig]):
-        self.__service_config_registry__: Dict[str, LibConfig] = service_config_registry
+    def __init__(self, service_config_registry: dict[str, LibConfig]):
+        self.__service_config_registry__: dict[str, LibConfig] = service_config_registry
 
     @classmethod
     def from_user(cls, credentials: SyftVerifyKey) -> Self:
@@ -182,15 +176,15 @@ class UserLibConfigRegistry:
     def private_path_for(self, public_path: str) -> str:
         return self.__service_config_registry__[public_path].private_path
 
-    def get_registered_configs(self) -> Dict[str, LibConfig]:
+    def get_registered_configs(self) -> dict[str, LibConfig]:
         return self.__service_config_registry__
 
 
 class UserServiceConfigRegistry:
-    def __init__(self, service_config_registry: Dict[str, ServiceConfig]):
-        self.__service_config_registry__: Dict[
-            str, ServiceConfig
-        ] = service_config_registry
+    def __init__(self, service_config_registry: dict[str, ServiceConfig]):
+        self.__service_config_registry__: dict[str, ServiceConfig] = (
+            service_config_registry
+        )
 
     @classmethod
     def from_role(cls, user_service_role: ServiceRole) -> Self:
@@ -208,7 +202,7 @@ class UserServiceConfigRegistry:
     def private_path_for(self, public_path: str) -> str:
         return self.__service_config_registry__[public_path].private_path
 
-    def get_registered_configs(self) -> Dict[str, ServiceConfig]:
+    def get_registered_configs(self) -> dict[str, ServiceConfig]:
         return self.__service_config_registry__
 
 
@@ -243,7 +237,7 @@ for lib_obj in action_execute_registry_libs.flatten():
         register_lib_obj(lib_obj)
 
 
-def deconstruct_param(param: inspect.Parameter) -> Dict[str, Any]:
+def deconstruct_param(param: inspect.Parameter) -> dict[str, Any]:
     # Gets the init signature form pydantic object
     param_type = param.annotation
     if not hasattr(param_type, "__signature__"):
@@ -257,7 +251,7 @@ def deconstruct_param(param: inspect.Parameter) -> Dict[str, Any]:
     return sub_mapping
 
 
-def types_for_autosplat(signature: Signature, autosplat: List[str]) -> Dict[str, type]:
+def types_for_autosplat(signature: Signature, autosplat: list[str]) -> dict[str, type]:
     autosplat_types = {}
     for k, v in signature.parameters.items():
         if k in autosplat:
@@ -267,10 +261,10 @@ def types_for_autosplat(signature: Signature, autosplat: List[str]) -> Dict[str,
 
 def reconstruct_args_kwargs(
     signature: Signature,
-    autosplat: List[str],
-    args: Tuple[Any, ...],
-    kwargs: Dict[Any, str],
-) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+    autosplat: list[str],
+    args: tuple[Any, ...],
+    kwargs: dict[Any, str],
+) -> tuple[tuple[Any, ...], dict[str, Any]]:
     autosplat_types = types_for_autosplat(signature=signature, autosplat=autosplat)
 
     autosplat_objs = {}
@@ -295,7 +289,7 @@ def reconstruct_args_kwargs(
     return (args, final_kwargs)
 
 
-def expand_signature(signature: Signature, autosplat: List[str]) -> Signature:
+def expand_signature(signature: Signature, autosplat: list[str]) -> Signature:
     new_mapping = {}
     for k, v in signature.parameters.items():
         if k in autosplat:
@@ -328,11 +322,11 @@ def expand_signature(signature: Signature, autosplat: List[str]) -> Signature:
 
 
 def service_method(
-    name: Optional[str] = None,
-    path: Optional[str] = None,
-    roles: Optional[List[ServiceRole]] = None,
-    autosplat: Optional[List[str]] = None,
-    warning: Optional[APIEndpointWarning] = None,
+    name: str | None = None,
+    path: str | None = None,
+    roles: list[ServiceRole] | None = None,
+    autosplat: list[str] | None = None,
+    warning: APIEndpointWarning | None = None,
 ) -> Callable:
     if roles is None or len(roles) == 0:
         # TODO: this is dangerous, we probably want to be more conservative
@@ -404,7 +398,7 @@ def service_method(
 
 
 class SyftServiceRegistry:
-    __service_registry__: Dict[str, Callable] = {}
+    __service_registry__: dict[str, Callable] = {}
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
@@ -413,7 +407,7 @@ class SyftServiceRegistry:
             cls.__object_version_registry__[mapping_string] = cls
 
     @classmethod
-    def versioned_class(cls, name: str, version: int) -> Optional[Type["SyftObject"]]:
+    def versioned_class(cls, name: str, version: int) -> type["SyftObject"] | None:
         mapping_string = f"{name}_{version}"
         if mapping_string not in cls.__object_version_registry__:
             return None
@@ -433,7 +427,7 @@ class SyftServiceRegistry:
 
     @classmethod
     def get_transform(
-        cls, type_from: Type["SyftObject"], type_to: Type["SyftObject"]
+        cls, type_from: type["SyftObject"], type_to: type["SyftObject"]
     ) -> Callable:
         klass_from = type_from.__canonical_name__
         version_from = type_from.__version__
@@ -445,9 +439,9 @@ class SyftServiceRegistry:
 
 def from_api_or_context(
     func_or_path: str,
-    syft_node_location: Optional[UID] = None,
-    syft_client_verify_key: Optional[SyftVerifyKey] = None,
-) -> Optional[Union["APIModule", SyftError, partial]]:
+    syft_node_location: UID | None = None,
+    syft_client_verify_key: SyftVerifyKey | None = None,
+) -> Union["APIModule", SyftError, partial] | None:
     # relative
     from ..client.api import APIRegistry
     from ..node.node import AuthNodeContextRegistry

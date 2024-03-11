@@ -1,8 +1,4 @@
 # stdlib
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
 
 # relative
 from ..service.dataset.dataset import Dataset
@@ -14,7 +10,7 @@ from .registry import DomainRegistry
 
 
 class SearchResults:
-    def __init__(self, results: List[Tuple[SyftClient, List[Dataset]]]) -> None:
+    def __init__(self, results: list[tuple[SyftClient, list[Dataset]]]) -> None:
         self._dataset_client = {}
         self._datasets = []
         for pairs in results:
@@ -24,7 +20,7 @@ class SearchResults:
                 self._dataset_client[dataset.id] = client
                 self._datasets.append(dataset)
 
-    def __getitem__(self, key: Union[int, str, UID]) -> Dataset:
+    def __getitem__(self, key: int | str | UID) -> Dataset:
         if isinstance(key, int):
             return self._datasets[key]
         else:
@@ -45,7 +41,7 @@ class SearchResults:
     def _repr_html_(self) -> str:
         return self._datasets._repr_html_()
 
-    def client_for(self, key: Union[Dataset, int, str, UID]) -> SyftClient:
+    def client_for(self, key: Dataset | int | str | UID) -> SyftClient:
         if isinstance(key, Dataset):
             dataset = key
         else:
@@ -59,8 +55,8 @@ class Search:
 
     @staticmethod
     def __search_one_node(
-        peer_tuple: Tuple[NodePeer, NodeMetadataJSON], name: str
-    ) -> Tuple[Optional[SyftClient], List[Dataset]]:
+        peer_tuple: tuple[NodePeer, NodeMetadataJSON], name: str
+    ) -> tuple[SyftClient | None, list[Dataset]]:
         try:
             peer, _ = peer_tuple
             client = peer.guest_client
@@ -69,7 +65,7 @@ class Search:
         except:  # noqa
             return (None, [])
 
-    def __search(self, name: str) -> List[Tuple[SyftClient, List[Dataset]]]:
+    def __search(self, name: str) -> list[tuple[SyftClient, list[Dataset]]]:
         results = [
             self.__search_one_node(peer_tuple, name) for peer_tuple in self.domains
         ]

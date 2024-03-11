@@ -1,17 +1,13 @@
 # stdlib
 import json
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
 
 # relative
 from ...client.api import APIRegistry
 from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...service.user.user_roles import ServiceRole
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
 from ...types.syft_object import get_repr_values_table
@@ -25,19 +21,19 @@ from ..response import SyftError
 class CodeHistory(SyftObject):
     # version
     __canonical_name__ = "CodeHistory"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     node_uid: UID
     user_verify_key: SyftVerifyKey
-    enclave_metadata: Optional[EnclaveMetadata] = None
-    user_code_history: List[UID] = []
+    enclave_metadata: EnclaveMetadata | None = None
+    user_code_history: list[UID] = []
     service_func_name: str
-    comment_history: List[str] = []
+    comment_history: list[str] = []
 
     __attr_searchable__ = ["user_verify_key", "service_func_name"]
 
-    def add_code(self, code: UserCode, comment: Optional[str] = None) -> None:
+    def add_code(self, code: UserCode, comment: str | None = None) -> None:
         self.user_code_history.append(code.id)
         if comment is None:
             comment = ""
@@ -48,14 +44,14 @@ class CodeHistory(SyftObject):
 class CodeHistoryView(SyftObject):
     # version
     __canonical_name__ = "CodeHistoryView"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
-    user_code_history: List[UserCode] = []
+    user_code_history: list[UserCode] = []
     service_func_name: str
-    comment_history: List[str] = []
+    comment_history: list[str] = []
 
-    def _coll_repr_(self) -> Dict[str, int]:
+    def _coll_repr_(self) -> dict[str, int]:
         return {"Number of versions": len(self.user_code_history)}
 
     def _repr_html_(self) -> str:
@@ -70,7 +66,7 @@ class CodeHistoryView(SyftObject):
         # rows = sorted(rows, key=lambda x: x["Version"])
         return create_table_template(rows, "CodeHistory", table_icon=None)
 
-    def __getitem__(self, index: Union[int, str]) -> Union[UserCode, SyftError]:
+    def __getitem__(self, index: int | str) -> UserCode | SyftError:
         if isinstance(index, str):
             raise TypeError(f"index {index} must be an integer, not a string")
         api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
@@ -90,10 +86,10 @@ class CodeHistoryView(SyftObject):
 class CodeHistoriesDict(SyftObject):
     # version
     __canonical_name__ = "CodeHistoriesDict"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
-    code_versions: Dict[str, CodeHistoryView] = {}
+    code_versions: dict[str, CodeHistoryView] = {}
 
     def _repr_html_(self) -> str:
         return f"""
@@ -103,7 +99,7 @@ class CodeHistoriesDict(SyftObject):
     def add_func(self, versions: CodeHistoryView) -> Any:
         self.code_versions[versions.service_func_name] = versions
 
-    def __getitem__(self, name: Union[str, int]) -> Any:
+    def __getitem__(self, name: str | int) -> Any:
         if isinstance(name, int):
             raise TypeError("name argument ({name}) must be a string, not an integer.")
         return self.code_versions[name]
@@ -119,11 +115,11 @@ class CodeHistoriesDict(SyftObject):
 class UsersCodeHistoriesDict(SyftObject):
     # version
     __canonical_name__ = "UsersCodeHistoriesDict"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     node_uid: UID
-    user_dict: Dict[str, List[str]] = {}
+    user_dict: dict[str, list[str]] = {}
 
     __repr_attrs__ = ["available_keys"]
 
@@ -131,7 +127,7 @@ class UsersCodeHistoriesDict(SyftObject):
     def available_keys(self) -> str:
         return json.dumps(self.user_dict, sort_keys=True, indent=4)
 
-    def __getitem__(self, key: Union[str, int]) -> Union[CodeHistoriesDict, SyftError]:
+    def __getitem__(self, key: str | int) -> CodeHistoriesDict | SyftError:
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         if api is None:
             return SyftError(

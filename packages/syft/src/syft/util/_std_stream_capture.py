@@ -5,15 +5,15 @@ References:
 - https://github.com/OpenMined/PySyft/pull/8560
 - https://github.com/pytest-dev/py/blob/master/py/_io/capture.py
 """
+
 # stdlib
+from collections.abc import Callable
+from collections.abc import Generator
 import contextlib
 import os
 import sys
 import tempfile
 from typing import Any
-from typing import Callable
-from typing import Generator
-from typing import Optional
 from typing import cast
 
 patchsysdict = {0: "stdin", 1: "stdout", 2: "stderr"}
@@ -96,7 +96,7 @@ class FDCapture:
     def __init__(
         self,
         targetfd: int,
-        tmpfile: Optional[Any] = None,
+        tmpfile: Any | None = None,
         now: bool = True,
         patchsys: bool = False,
     ) -> None:
@@ -228,7 +228,7 @@ class StdCaptureFD(Capture):
         """resume capturing with original temp files."""
         self.startall()
 
-    def done(self, save: bool = True) -> tuple[Optional[Any], Optional[Any]]:
+    def done(self, save: bool = True) -> tuple[Any | None, Any | None]:
         """return (outfile, errfile) and stop capturing."""
         outfile = errfile = None
         if hasattr(self, "out") and not self.out.tmpfile.closed:
@@ -260,7 +260,7 @@ class StdCaptureFD(Capture):
         if enc:
 
             def _totext(
-                obj: Any, encoding: Optional[str] = None, errors: Optional[str] = None
+                obj: Any, encoding: str | None = None, errors: str | None = None
             ) -> str:
                 """
                 Source: https://github.com/pytest-dev/py/blob/master/py/_builtin.py
@@ -282,10 +282,10 @@ class StdCaptureFD(Capture):
 
 def dupfile(
     f: Any,
-    mode: Optional[str] = None,
+    mode: str | None = None,
     buffering: int = 0,
     raising: bool = False,
-    encoding: Optional[str] = None,
+    encoding: str | None = None,
 ) -> Any:
     """return a new open file object that's a duplicate of f
 

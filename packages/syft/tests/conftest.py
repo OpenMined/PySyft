@@ -98,6 +98,7 @@ def stage_protocol(protocol_file: Path):
 
 @pytest.fixture()
 def worker(faker) -> Worker:
+    # creates a worker with dict stores
     return sy.Worker.named(name=faker.name())
 
 

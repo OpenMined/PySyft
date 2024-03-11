@@ -3,8 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Optional
-from typing import Type
 
 # relative
 from ..node.credentials import SyftVerifyKey
@@ -65,8 +63,8 @@ class DictDocumentStore(DocumentStore):
 
     def __init__(
         self,
-        root_verify_key: Optional[SyftVerifyKey],
-        store_config: Optional[DictStoreConfig] = None,
+        root_verify_key: SyftVerifyKey | None,
+        store_config: DictStoreConfig | None = None,
     ) -> None:
         if store_config is None:
             store_config = DictStoreConfig()
@@ -95,6 +93,6 @@ class DictStoreConfig(StoreConfig):
             Defaults to ThreadingLockingConfig.
     """
 
-    store_type: Type[DocumentStore] = DictDocumentStore
-    backing_store: Type[KeyValueBackingStore] = DictBackingStore
+    store_type: type[DocumentStore] = DictDocumentStore
+    backing_store: type[KeyValueBackingStore] = DictBackingStore
     locking_config: LockingConfig = ThreadingLockingConfig()

@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Type
 
 # syft absolute
 from syft.serde.serializable import serializable
@@ -65,7 +64,7 @@ class MockSyftObject(SyftObject):
 @serializable()
 class MockStoreConfig(StoreConfig):
     __canonical_name__ = "MockStoreConfig"
-    store_type: Type[DocumentStore] = MockStore
+    store_type: type[DocumentStore] = MockStore
     db_name: str = "testing"
-    backing_store: Type[KeyValueBackingStore] = MockKeyValueBackingStore
+    backing_store: type[KeyValueBackingStore] = MockKeyValueBackingStore
     is_crashed: bool = False

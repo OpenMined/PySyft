@@ -1,7 +1,4 @@
 # stdlib
-from typing import List
-from typing import Optional
-from typing import Union
 
 # third party
 from result import Result
@@ -36,7 +33,7 @@ class SyftWorkerPoolStash(BaseUIDStoreStash):
 
     def get_by_name(
         self, credentials: SyftVerifyKey, pool_name: str
-    ) -> Result[Optional[WorkerPool], str]:
+    ) -> Result[WorkerPool | None, str]:
         qks = QueryKeys(qks=[PoolNamePartitionKey.with_obj(pool_name)])
         return self.query_one(credentials=credentials, qks=qks)
 
@@ -44,7 +41,7 @@ class SyftWorkerPoolStash(BaseUIDStoreStash):
         self,
         credentials: SyftVerifyKey,
         obj: WorkerPool,
-        add_permissions: Union[List[ActionObjectPermission], None] = None,
+        add_permissions: list[ActionObjectPermission] | None = None,
         ignore_duplicates: bool = False,
     ) -> Result[WorkerPool, str]:
         # By default all worker pools have all read permission
@@ -56,6 +53,6 @@ class SyftWorkerPoolStash(BaseUIDStoreStash):
 
     def get_by_image_uid(
         self, credentials: SyftVerifyKey, image_uid: UID
-    ) -> List[WorkerPool]:
+    ) -> list[WorkerPool]:
         qks = QueryKeys(qks=[PoolImageIDPartitionKey.with_obj(image_uid)])
         return self.query_all(credentials=credentials, qks=qks)

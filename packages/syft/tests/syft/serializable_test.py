@@ -1,7 +1,6 @@
 # stdlib
+from collections.abc import Callable
 from time import time
-from typing import Callable
-from typing import Optional
 
 # third party
 from pydantic import BaseModel
@@ -70,7 +69,7 @@ class DerivedNoInherit(Base):
 class BaseAttrsNonInheritable(AbstractBase):
     """Serialize: uid, value (Derived cannot inherit base attrs)"""
 
-    value: Optional[int]
+    value: int | None
 
     def __init__(self, uid: str = None, value: int = None):
         self.uid = uid
@@ -173,9 +172,9 @@ def test_derived_without_base_attrs():
 class PydBase(BaseModel):
     """Serialize: uid, value, flag"""
 
-    uid: Optional[str] = None
-    value: Optional[int] = None
-    flag: Optional[bool] = None
+    uid: str | None = None
+    value: int | None = None
+    flag: bool | None = None
 
 
 @serializable()
@@ -206,7 +205,7 @@ class PydDerivedWithoutAttrs(PydBase):
 
     source: str
     target: str
-    config: Optional[dict] = None
+    config: dict | None = None
 
 
 @serializable(attrs=["source", "target"])
@@ -217,7 +216,7 @@ class PydDerivedOnly(PydBase):
 
     source: str
     target: str
-    callback: Optional[Callable] = lambda: None  # noqa: E731
+    callback: Callable | None = lambda: None  # noqa: E731
 
 
 def test_pydantic():

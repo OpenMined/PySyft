@@ -2,14 +2,9 @@
 from __future__ import annotations
 
 # stdlib
+from collections.abc import Callable
 import socket
 from typing import Any
-from typing import Callable
-from typing import Dict as TypeDict
-from typing import List as TypeList
-from typing import Optional
-from typing import Tuple as TypeTuple
-from typing import Union
 
 # relative
 from .deps import allowed_hosts
@@ -26,12 +21,10 @@ class GrammarVerb:
     def __init__(
         self,
         command: str,
-        full_sentence: TypeList[TypeDict[str, Any]],
-        abbreviations: TypeDict[int, TypeList[Optional[str]]],
+        full_sentence: list[dict[str, Any]],
+        abbreviations: dict[int, list[str | None]],
     ) -> None:
-        self.grammar: TypeList[
-            Union[GrammarTerm, HostGrammarTerm, SourceGrammarTerm]
-        ] = []
+        self.grammar: list[GrammarTerm | HostGrammarTerm | SourceGrammarTerm] = []
         self.command = command
         self.full_sentence = full_sentence
         self.abbreviations = abbreviations
@@ -49,14 +42,14 @@ class GrammarVerb:
         raise BadGrammar(f"HostGrammarTerm with {name} not found in {self.grammar}")
 
     def get_named_term_type(
-        self, name: str, term_type: Optional[str] = None
-    ) -> Union[GrammarTerm, HostGrammarTerm]:
+        self, name: str, term_type: str | None = None
+    ) -> GrammarTerm | HostGrammarTerm:
         if term_type == "host":
             return self.get_named_term_hostgrammar(name=name)
         return self.get_named_term_grammar(name=name)
 
     def set_named_term_type(
-        self, name: str, new_term: GrammarTerm, term_type: Optional[str] = None
+        self, name: str, new_term: GrammarTerm, term_type: str | None = None
     ) -> None:
         new_grammar = []
         for term in self.grammar:
@@ -73,7 +66,7 @@ class GrammarVerb:
         self.grammar = new_grammar
 
     def load_grammar(
-        self, grammar: TypeList[Union[GrammarTerm, HostGrammarTerm, SourceGrammarTerm]]
+        self, grammar: list[GrammarTerm | HostGrammarTerm | SourceGrammarTerm]
     ) -> None:
         self.grammar = grammar
 
@@ -83,13 +76,13 @@ class GrammarTerm:
         self,
         type: str,
         name: str,
-        default: Optional[Union[str, Callable]] = None,
-        options: Optional[TypeList] = None,
-        example: Optional[str] = None,
+        default: str | Callable | None = None,
+        options: list | None = None,
+        example: str | None = None,
         **kwargs: Any,
     ) -> None:
-        self.raw_input: Optional[str] = None
-        self.input: Optional[str] = None
+        self.raw_input: str | None = None
+        self.input: str | None = None
         self.type = type
         self.name = name
         self.default = default
@@ -97,13 +90,13 @@ class GrammarTerm:
         self.example = example
 
     @property
-    def snake_input(self) -> Optional[str]:
+    def snake_input(self) -> str | None:
         if self.input:
             return self.input.lower().replace(" ", "_")
         return None
 
     @property
-    def kebab_input(self) -> Optional[str]:
+    def kebab_input(self) -> str | None:
         if self.input:
             return self.input.lower().replace(" ", "-")
         return None
@@ -121,7 +114,7 @@ class GrammarTerm:
     def custom_parsing(self, input: str) -> str:
         return input
 
-    def parse_input(self, input: Optional[str]) -> None:
+    def parse_input(self, input: str | None) -> None:
         self.raw_input = input
         if input is None and self.default is None:
             raise BadGrammar(
@@ -143,11 +136,11 @@ class GrammarTerm:
 
 class HostGrammarTerm(GrammarTerm):
     @property
-    def host(self) -> Optional[str]:
+    def host(self) -> str | None:
         return self.parts()[0]
 
     @property
-    def port(self) -> Optional[int]:
+    def port(self) -> int | None:
         return self.parts()[1]
 
     @property
@@ -176,9 +169,9 @@ class HostGrammarTerm(GrammarTerm):
             )
         return find_available_port(host="localhost", port=self.port_tls, search=True)
 
-    def parts(self) -> TypeTuple[Optional[str], Optional[int], bool]:
+    def parts(self) -> tuple[str | None, int | None, bool]:
         host = None
-        port: Optional[int] = None
+        port: int | None = None
         search = False
         if self.input:
             parts = self.input.split(":")
@@ -284,7 +277,7 @@ def validate_arg_count(arg_count: int, verb: GrammarVerb) -> bool:
     return valid
 
 
-def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
+def launch_shorthand_support(args: tuple) -> tuple:
     """When launching, we want to be able to default to 'domain' if it's not provided, to launch
     nodes when no name is provided, and to support node names which have multiple words.
 
@@ -336,7 +329,7 @@ def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
     return args
 
 
-def parse_grammar(args: TypeTuple, verb: GrammarVerb) -> TypeList[GrammarTerm]:
+def parse_grammar(args: tuple, verb: GrammarVerb) -> list[GrammarTerm]:
     # if the command is a launch, check if any shorthands were employed
     if verb.command == "launch":
         args = launch_shorthand_support(args=args)

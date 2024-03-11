@@ -76,14 +76,14 @@ repos:
         always_run: true
 
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.7.1
+    rev: 1.8.3
     hooks:
       - id: nbqa-isort
       - id: nbqa-black
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: "v0.1.11"
+    rev: "v0.3.0"
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --show-fixes]
@@ -193,7 +193,7 @@ repos:
           ]
 
   - repo: https://github.com/kynan/nbstripout
-    rev: 0.6.1
+    rev: 0.7.1
     hooks:
       - id: nbstripout
         files: "^notebooks/api|^notebooks/tutorials"

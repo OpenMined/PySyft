@@ -5,10 +5,6 @@ from __future__ import annotations
 from collections import defaultdict
 from enum import Enum
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Set
 
 # third party
 from result import Err
@@ -103,7 +99,7 @@ class KeyValueStorePartition(StorePartition):
 
     def __init__(
         self,
-        root_verify_key: Optional[SyftVerifyKey],
+        root_verify_key: SyftVerifyKey | None,
         settings: PartitionSettings,
         store_config: StoreConfig,
     ):
@@ -125,7 +121,7 @@ class KeyValueStorePartition(StorePartition):
                 "searchable_keys", self.settings, self.store_config
             )
             # uid -> set['<uid>_permission']
-            self.permissions: Dict[UID, Set[str]] = self.store_config.backing_store(
+            self.permissions: dict[UID, set[str]] = self.store_config.backing_store(
                 "permissions", self.settings, self.store_config, ddtype=set
             )
 
@@ -150,7 +146,7 @@ class KeyValueStorePartition(StorePartition):
         self,
         uid: UID,
         credentials: SyftVerifyKey,
-        has_permission: Optional[bool] = False,
+        has_permission: bool | None = False,
     ) -> Result[SyftObject, str]:
         # relative
         from ..service.action.action_store import ActionObjectREAD
@@ -173,7 +169,7 @@ class KeyValueStorePartition(StorePartition):
         self,
         credentials: SyftVerifyKey,
         obj: SyftObject,
-        add_permissions: Optional[List[ActionObjectPermission]] = None,
+        add_permissions: list[ActionObjectPermission] | None = None,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         try:
@@ -255,7 +251,7 @@ class KeyValueStorePartition(StorePartition):
         permissions.remove(permission.permission_string)
         self.permissions[permission.uid] = permissions
 
-    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+    def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
         for permission in permissions:
             self.add_permission(permission)
 
@@ -298,9 +294,9 @@ class KeyValueStorePartition(StorePartition):
     def _all(
         self,
         credentials: SyftVerifyKey,
-        order_by: Optional[PartitionKey] = None,
-        has_permission: Optional[bool] = False,
-    ) -> Result[List[BaseStash.object_type], str]:
+        order_by: PartitionKey | None = None,
+        has_permission: bool | None = False,
+    ) -> Result[list[BaseStash.object_type], str]:
         # this checks permissions
         res = [self._get(uid, credentials, has_permission) for uid in self.data.keys()]
         result = [x.ok() for x in res if x.is_ok()]
@@ -334,9 +330,9 @@ class KeyValueStorePartition(StorePartition):
         credentials: SyftVerifyKey,
         index_qks: QueryKeys,
         search_qks: QueryKeys,
-        order_by: Optional[PartitionKey] = None,
-    ) -> Result[List[SyftObject], str]:
-        ids: Optional[Set] = None
+        order_by: PartitionKey | None = None,
+    ) -> Result[list[SyftObject], str]:
+        ids: set | None = None
         errors = []
         # third party
         if len(index_qks.all) > 0:
@@ -437,8 +433,8 @@ class KeyValueStorePartition(StorePartition):
         self,
         credentials: SyftVerifyKey,
         qks: QueryKeys,
-        order_by: Optional[PartitionKey] = None,
-    ) -> Result[List[SyftObject], str]:
+        order_by: PartitionKey | None = None,
+    ) -> Result[list[SyftObject], str]:
         matches = []
         for qk in qks.all:
             if qk.value in self.data:
@@ -488,7 +484,7 @@ class KeyValueStorePartition(StorePartition):
             self.searchable_keys[qk.key] = search_keys
         return Ok(SyftSuccess(message="Deleted"))
 
-    def _get_keys_index(self, qks: QueryKeys) -> Result[Set[Any], str]:
+    def _get_keys_index(self, qks: QueryKeys) -> Result[set[Any], str]:
         try:
             # match AND
             subsets: list = []
@@ -515,7 +511,7 @@ class KeyValueStorePartition(StorePartition):
         except Exception as e:
             return Err(f"Failed to query with {qks}. {e}")
 
-    def _find_keys_search(self, qks: QueryKeys) -> Result[Set[QueryKey], str]:
+    def _find_keys_search(self, qks: QueryKeys) -> Result[set[QueryKey], str]:
         try:
             # match AND
             subsets = []
@@ -601,9 +597,9 @@ class KeyValueStorePartition(StorePartition):
             ck_col[pk_value] = store_query_key.value
             self.unique_keys[pk_key] = ck_col
 
-        self.unique_keys[store_query_key.key][
+        self.unique_keys[store_query_key.key][store_query_key.value] = (
             store_query_key.value
-        ] = store_query_key.value
+        )
 
         sqks = searchable_query_keys.all
         for qk in sqks:

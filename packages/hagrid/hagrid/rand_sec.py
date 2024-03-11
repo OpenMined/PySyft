@@ -2,8 +2,6 @@
 from os import urandom
 import string
 import sys
-from typing import List
-from typing import Set
 
 
 def generate_sec_random_password(
@@ -34,7 +32,7 @@ def generate_sec_random_password(
         )
 
     choices: str = ""
-    required_tokens: List[str] = []
+    required_tokens: list[str] = []
     if special_chars:
         special_characters = "!@#$%^&*()_+"
         choices += special_characters
@@ -69,7 +67,7 @@ def generate_sec_random_password(
     password = [choices[c % len(choices)] for c in urandom(length)]
 
     # Pick some random indexes
-    random_indexes: Set[int] = set()
+    random_indexes: set[int] = set()
     while len(random_indexes) < len(required_tokens):
         random_indexes.add(int.from_bytes(urandom(1), sys.byteorder) % len(password))
 

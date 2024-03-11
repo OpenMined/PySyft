@@ -1,9 +1,5 @@
 # stdlib
 from typing import Any
-from typing import List
-from typing import Optional
-from typing import Type
-from typing import Union
 
 # relative
 from ..abstract_node import NodeSideType
@@ -14,7 +10,7 @@ from ..serde.serializable import serializable
 from ..service.network.node_peer import NodePeer
 from ..service.response import SyftError
 from ..service.response import SyftException
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 from ..util.fonts import fonts_css
 from .client import SyftClient
@@ -32,7 +28,7 @@ class GatewayClient(SyftClient):
         connection = self.connection.with_proxy(peer.id)
         metadata = connection.get_node_metadata(credentials=SyftSigningKey.generate())
         if metadata.node_type == NodeType.DOMAIN.value:
-            client_type: Type[SyftClient] = DomainClient
+            client_type: type[SyftClient] = DomainClient
         elif metadata.node_type == NodeType.ENCLAVE.value:
             client_type = EnclaveClient
         else:
@@ -49,8 +45,8 @@ class GatewayClient(SyftClient):
     def proxy_client_for(
         self,
         name: str,
-        email: Optional[str] = None,
-        password: Optional[str] = None,
+        email: str | None = None,
+        password: str | None = None,
         **kwargs: Any,
     ) -> SyftClient:
         peer = None
@@ -64,15 +60,15 @@ class GatewayClient(SyftClient):
         return res
 
     @property
-    def peers(self) -> Optional[Union[List[NodePeer], SyftError]]:
+    def peers(self) -> list[NodePeer] | SyftError | None:
         return ProxyClient(routing_client=self)
 
     @property
-    def domains(self) -> Optional[Union[List[NodePeer], SyftError]]:
+    def domains(self) -> list[NodePeer] | SyftError | None:
         return ProxyClient(routing_client=self, node_type=NodeType.DOMAIN)
 
     @property
-    def enclaves(self) -> Optional[Union[List[NodePeer], SyftError]]:
+    def enclaves(self) -> list[NodePeer] | SyftError | None:
         return ProxyClient(routing_client=self, node_type=NodeType.ENCLAVE)
 
     def _repr_html_(self) -> str:
@@ -151,12 +147,12 @@ class GatewayClient(SyftClient):
 
 class ProxyClient(SyftObject):
     __canonical_name__ = "ProxyClient"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     routing_client: GatewayClient
-    node_type: Optional[NodeType] = None
+    node_type: NodeType | None = None
 
-    def retrieve_nodes(self) -> List[NodePeer]:
+    def retrieve_nodes(self) -> list[NodePeer]:
         if self.node_type in [NodeType.DOMAIN, NodeType.ENCLAVE]:
             return self.routing_client.api.services.network.get_peers_by_type(
                 node_type=self.node_type
@@ -175,7 +171,7 @@ class ProxyClient(SyftObject):
     def __len__(self) -> int:
         return len(self.retrieve_nodes())
 
-    def __getitem__(self, key: Union[int, str]) -> SyftClient:
+    def __getitem__(self, key: int | str) -> SyftClient:
         if not isinstance(key, int):
             raise SyftException(f"Key: {key} must be an integer")
 

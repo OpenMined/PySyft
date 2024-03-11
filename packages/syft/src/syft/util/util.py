@@ -1,6 +1,9 @@
 # stdlib
 import asyncio
 from asyncio.selector_events import BaseSelectorEventLoop
+from collections.abc import Callable
+from collections.abc import Iterator
+from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
@@ -25,15 +28,6 @@ import time
 import types
 from types import ModuleType
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import Iterator
-from typing import List
-from typing import Optional
-from typing import Sequence
-from typing import Tuple
-from typing import Type
-from typing import Union
 
 # third party
 from IPython.display import display
@@ -52,7 +46,7 @@ DATASETS_URL = "https://raw.githubusercontent.com/OpenMined/datasets/main"
 PANDAS_DATA = f"{DATASETS_URL}/pandas_cookbook"
 
 
-def get_env(key: str, default: Optional[Any] = None) -> Optional[str]:
+def get_env(key: str, default: Any | None = None) -> str | None:
     return os.environ.get(key, default)
 
 
@@ -176,7 +170,7 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
 
 def key_emoji(key: object) -> str:
     try:
-        if isinstance(key, (bytes, SigningKey, VerifyKey)):
+        if isinstance(key, bytes | SigningKey | VerifyKey):
             hex_chars = bytes(key).hex()[-8:]
             return char_emoji(hex_chars=hex_chars)
     except Exception as e:
@@ -186,7 +180,7 @@ def key_emoji(key: object) -> str:
 
 
 def char_emoji(hex_chars: str) -> str:
-    base = ord("\U0001F642")
+    base = ord("\U0001f642")
     hex_base = ord("0")
     code = 0
     for char in hex_chars:
@@ -206,7 +200,7 @@ def get_root_data_path() -> Path:
     return data_dir
 
 
-def download_file(url: str, full_path: Union[str, Path]) -> Optional[Path]:
+def download_file(url: str, full_path: str | Path) -> Path | None:
     full_path = Path(full_path)
     if not full_path.exists():
         r = requests.get(url, allow_redirects=True, verify=verify_tls())  # nosec
@@ -226,7 +220,7 @@ def ssl_test() -> bool:
     return len(os.environ.get("REQUESTS_CA_BUNDLE", "")) > 0
 
 
-def initializer(event_loop: Optional[BaseSelectorEventLoop] = None) -> None:
+def initializer(event_loop: BaseSelectorEventLoop | None = None) -> None:
     """Set the same event loop to other threads/processes.
     This is needed because there are new threads/processes started with
     the Executor and they do not have have an event loop set
@@ -237,7 +231,7 @@ def initializer(event_loop: Optional[BaseSelectorEventLoop] = None) -> None:
         asyncio.set_event_loop(event_loop)
 
 
-def split_rows(rows: Sequence, cpu_count: int) -> List:
+def split_rows(rows: Sequence, cpu_count: int) -> list:
     n = len(rows)
     a, b = divmod(n, cpu_count)
     start = 0
@@ -249,7 +243,7 @@ def split_rows(rows: Sequence, cpu_count: int) -> List:
     return output
 
 
-def list_sum(*inp_lst: List[Any]) -> Any:
+def list_sum(*inp_lst: list[Any]) -> Any:
     s = inp_lst[0]
     for i in inp_lst[1:]:
         s = s + i
@@ -293,7 +287,7 @@ def print_process(  # type: ignore
 
 def print_dynamic_log(
     message: str,
-) -> Tuple[EventClass, EventClass]:
+) -> tuple[EventClass, EventClass]:
     """
     Prints a dynamic log message that will change its color (to green or red) when some process is done.
 
@@ -348,7 +342,7 @@ def get_loaded_syft() -> ModuleType:
     return sys.modules[__name__.split(".")[0]]
 
 
-def get_subclasses(obj_type: type) -> List[type]:
+def get_subclasses(obj_type: type) -> list[type]:
     """Recursively generate the list of all classes within the sub-tree of an object
 
     As a paradigm in Syft, we often allow for something to be known about by another
@@ -375,7 +369,7 @@ def get_subclasses(obj_type: type) -> List[type]:
     return classes
 
 
-def index_modules(a_dict: object, keys: List[str]) -> object:
+def index_modules(a_dict: object, keys: list[str]) -> object:
     """Recursively find a syft module from its path
 
     This is the recursive inner function of index_syft_by_module_name.
@@ -427,7 +421,7 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     return index_modules(a_dict=get_loaded_syft(), keys=attr_list[1:])
 
 
-def obj2pointer_type(obj: Optional[object] = None, fqn: Optional[str] = None) -> type:
+def obj2pointer_type(obj: object | None = None, fqn: str | None = None) -> type:
     if fqn is None:
         try:
             fqn = get_fully_qualified_name(obj=obj)
@@ -660,8 +654,8 @@ def random_name() -> str:
 def inherit_tags(
     attr_path_and_name: str,
     result: object,
-    self_obj: Optional[object],
-    args: Union[tuple, list],
+    self_obj: object | None,
+    args: tuple | list,
     kwargs: dict,
 ) -> None:
     tags = []
@@ -683,8 +677,8 @@ def inherit_tags(
 
 
 def autocache(
-    url: str, extension: Optional[str] = None, cache: bool = True
-) -> Optional[Path]:
+    url: str, extension: str | None = None, cache: bool = True
+) -> Path | None:
     try:
         data_path = get_root_data_path()
         file_hash = hashlib.sha256(url.encode("utf8")).hexdigest()
@@ -700,7 +694,7 @@ def autocache(
         return None
 
 
-def str_to_bool(bool_str: Optional[str]) -> bool:
+def str_to_bool(bool_str: str | None) -> bool:
     result = False
     bool_str = str(bool_str).lower()
     if bool_str == "true" or bool_str == "1":
@@ -711,9 +705,9 @@ def str_to_bool(bool_str: Optional[str]) -> bool:
 # local scope functions cant be pickled so this needs to be global
 def parallel_execution(
     fn: Callable[..., Any],
-    parties: Union[None, List[Any]] = None,
+    parties: None | list[Any] = None,
     cpu_bound: bool = False,
-) -> Callable[..., List[Any]]:
+) -> Callable[..., list[Any]]:
     """Wrap a function such that it can be run in parallel at multiple parties.
     Args:
         fn (Callable): The function to run.
@@ -729,9 +723,9 @@ def parallel_execution(
 
     @functools.wraps(fn)
     def wrapper(
-        args: List[List[Any]],
-        kwargs: Optional[Dict[Any, Dict[Any, Any]]] = None,
-    ) -> List[Any]:
+        args: list[list[Any]],
+        kwargs: dict[Any, dict[Any, Any]] | None = None,
+    ) -> list[Any]:
         """Wrap sanity checks and checks what executor should be used.
         Args:
             args (List[List[Any]]): Args.
@@ -743,7 +737,7 @@ def parallel_execution(
             raise Exception("Parallel execution requires more than 0 args")
 
         # _base.Executor
-        executor: Type
+        executor: type
         if cpu_bound:
             executor = ProcessPoolExecutor
             # asyncio objects cannot pickled and sent across processes
@@ -877,7 +871,7 @@ if os_name() == "macOS":
     multiprocessing.set_start_method("spawn", True)
 
 
-def thread_ident() -> Optional[int]:
+def thread_ident() -> int | None:
     return threading.current_thread().ident
 
 

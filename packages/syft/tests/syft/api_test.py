@@ -1,6 +1,6 @@
 # stdlib
+from collections.abc import Callable
 from textwrap import dedent
-from typing import Callable
 
 # third party
 import numpy as np

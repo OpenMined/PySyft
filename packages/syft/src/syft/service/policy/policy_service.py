@@ -1,6 +1,4 @@
 # stdlib
-from typing import List
-from typing import Union
 
 # relative
 from ...serde.serializable import serializable
@@ -29,7 +27,7 @@ class PolicyService(AbstractService):
     @service_method(path="policy.get_all", name="get_all")
     def get_all_user_policy(
         self, context: AuthedServiceContext
-    ) -> Union[List[UserPolicy], SyftError]:
+    ) -> list[UserPolicy] | SyftError:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             return result.ok()
@@ -39,8 +37,8 @@ class PolicyService(AbstractService):
     def add_user_policy(
         self,
         context: AuthedServiceContext,
-        policy_code: Union[SubmitUserPolicy, UserPolicy],
-    ) -> Union[SyftSuccess, SyftError]:
+        policy_code: SubmitUserPolicy | UserPolicy,
+    ) -> SyftSuccess | SyftError:
         if isinstance(policy_code, SubmitUserPolicy):
             policy_code = policy_code.to(UserPolicy, context=context)
         result = self.stash.set(context.credentials, policy_code)
@@ -51,7 +49,7 @@ class PolicyService(AbstractService):
     @service_method(path="policy.get_by_uid", name="get_by_uid")
     def get_policy_by_uid(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             return result.ok()
