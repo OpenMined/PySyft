@@ -8,6 +8,10 @@ import pytest
 import syft as sy
 
 
+@pytest.mark.skipif(
+    "AZURE_BLOB_STORAGE_KEY" not in os.environ,
+    reason="AZURE_BLOB_STORAGE_KEY is not set",
+)
 @pytest.mark.container_workload
 def test_mount_azure_blob_storage(domain_1_port):
     domain_client = sy.login(
