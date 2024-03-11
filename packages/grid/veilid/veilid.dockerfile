@@ -16,6 +16,7 @@ RUN cd veilid-server && cargo build --release -p veilid-server
 # ========== [Stage 2] Dependency Install ========== #
 
 FROM python:3.12-bookworm
+ARG VEILID_VERSION
 COPY --from=build /veilid/target/release/veilid-server /veilid/veilid-server
 WORKDIR /app
 COPY ./requirements.txt /app/requirements.txt
