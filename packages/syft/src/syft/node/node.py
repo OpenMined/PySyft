@@ -320,7 +320,7 @@ class Node(AbstractNode):
         smtp_username: Optional[str] = None,
         smtp_password: Optional[str] = None,
         email_sender: Optional[str] = None,
-        smtp_port: Optional[str] = None,
+        smtp_port: Optional[int] = None,
         smtp_host: Optional[str] = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this

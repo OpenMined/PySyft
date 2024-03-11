@@ -2266,12 +2266,14 @@ def create_launch_docker_cmd(
         "NODE_SIDE_TYPE": kwargs["node_side_type"],
         "SINGLE_CONTAINER_MODE": single_container_mode,
         "INMEMORY_WORKERS": in_mem_workers,
-        "SMTP_USERNAME": smtp_username,
-        "SMTP_PASSWORD": smtp_password,
-        "EMAIL_SENDER": smtp_sender,
-        "SMTP_PORT": smtp_port,
-        "SMTP_HOST": smtp_host,
     }
+
+    if smtp_host and smtp_port and smtp_username and smtp_password:
+        envs["SMTP_HOST"] = smtp_host
+        envs["SMTP_PORT"] = smtp_port
+        envs["SMTP_USERNAME"] = smtp_username
+        envs["SMTP_PASSWORD"] = smtp_password
+        envs["EMAIL_SENDER"] = smtp_sender
 
     if "trace" in kwargs and kwargs["trace"] is True:
         envs["TRACE"] = "True"
