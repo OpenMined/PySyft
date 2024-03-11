@@ -1,6 +1,4 @@
 # stdlib
-from typing import Dict
-from typing import Union
 
 # relative
 from .cache import arg_cache
@@ -18,8 +16,8 @@ steps["check_grid"] = False
 
 
 def complete_install_wizard(
-    output: Union[Dict[str, Dependency], NBOutput],
-) -> Union[Dict[str, Dependency], NBOutput]:
+    output: dict[str, Dependency] | NBOutput,
+) -> dict[str, Dependency] | NBOutput:
     flipped = arg_cache["install_wizard_complete"]
     if not flipped:
         for _, v in steps.items():
@@ -34,31 +32,31 @@ def complete_install_wizard(
 
 class WizardUI:
     @property
-    def check_hagrid(self) -> Union[Dict[str, Dependency], NBOutput]:
+    def check_hagrid(self) -> dict[str, Dependency] | NBOutput:
         steps["check_hagrid"] = True
         return complete_install_wizard(check_hagrid())
 
     @property
-    def check_syft_deps(self) -> Union[Dict[str, Dependency], NBOutput]:
+    def check_syft_deps(self) -> dict[str, Dependency] | NBOutput:
         steps["check_syft"] = True
         return complete_install_wizard(check_syft_deps())
 
     @property
-    def check_syft(self) -> Union[Dict[str, Dependency], NBOutput]:
+    def check_syft(self) -> dict[str, Dependency] | NBOutput:
         steps["check_syft"] = True
         return complete_install_wizard(check_syft())
 
     @property
-    def check_syft_pre(self) -> Union[Dict[str, Dependency], NBOutput]:
+    def check_syft_pre(self) -> dict[str, Dependency] | NBOutput:
         steps["check_syft"] = True
         return complete_install_wizard(check_syft(pre=True))
 
     @property
-    def check_grid_docker(self) -> Union[Dict[str, Dependency], NBOutput]:
+    def check_grid_docker(self) -> dict[str, Dependency] | NBOutput:
         print("Deprecated. Please use .check_docker")
         return self.check_docker
 
     @property
-    def check_docker(self) -> Union[Dict[str, Dependency], NBOutput]:
+    def check_docker(self) -> dict[str, Dependency] | NBOutput:
         steps["check_grid"] = True
         return complete_install_wizard(check_grid_docker())

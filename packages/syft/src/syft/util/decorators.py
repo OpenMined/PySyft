@@ -1,8 +1,7 @@
 # stdlib
+from collections.abc import Callable
 import functools
 from typing import Any
-from typing import Callable
-from typing import Dict
 
 
 def singleton(cls: Any) -> Callable:
@@ -31,7 +30,7 @@ def singleton(cls: Any) -> Callable:
         True
         >>>
     """
-    previous_instances: Dict[Any, Any] = {}
+    previous_instances: dict[Any, Any] = {}
 
     @functools.wraps(cls)
     def wrapper(*args: Any, **kwargs: Any) -> Any:

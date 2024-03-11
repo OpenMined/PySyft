@@ -1,12 +1,10 @@
 # stdlib
+from collections.abc import Callable
 from enum import Enum
 import inspect
 import math
 import sys
 from typing import Any
-from typing import Callable
-from typing import Tuple
-from typing import Type
 
 # third party
 import numpy as np
@@ -58,7 +56,7 @@ def helper_make_action_pointers(worker, obj, *args, **kwargs):
         ("set", "add"),
     ],
 )
-def test_action_sanity(path_op: Tuple[str, str]):
+def test_action_sanity(path_op: tuple[str, str]):
     path, op = path_op
 
     remote_self = LineageID()
@@ -118,7 +116,7 @@ def test_actionobject_from_obj_fail_id_mismatch():
 
 
 @pytest.mark.parametrize("dtype", [int, float, str, Any, bool, dict, set, tuple, list])
-def test_actionobject_make_empty_sanity(dtype: Type):
+def test_actionobject_make_empty_sanity(dtype: type):
     syft_type = action_type_for_type(dtype)
 
     obj = ActionObject.empty(

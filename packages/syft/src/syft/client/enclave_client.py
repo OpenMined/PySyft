@@ -3,9 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Union
 
 # third party
 from hagrid.orchestra import NodeHandle
@@ -49,7 +47,7 @@ class EnclaveClient(SyftClient):
     __api_patched = False
 
     @property
-    def code(self) -> Optional[APIModule]:
+    def code(self) -> APIModule | None:
         if self.api.has_service("code"):
             res = self.api.services.code
             # the order is important here
@@ -62,21 +60,21 @@ class EnclaveClient(SyftClient):
         return None
 
     @property
-    def requests(self) -> Optional[APIModule]:
+    def requests(self) -> APIModule | None:
         if self.api.has_service("request"):
             return self.api.services.request
         return None
 
     def connect_to_gateway(
         self,
-        via_client: Optional[SyftClient] = None,
-        url: Optional[str] = None,
-        port: Optional[int] = None,
-        handle: Optional[NodeHandle] = None,  # noqa: F821
-        email: Optional[str] = None,
-        password: Optional[str] = None,
-        protocol: Union[str, SyftProtocol] = SyftProtocol.HTTP,
-    ) -> Optional[Union[SyftSuccess, SyftError]]:
+        via_client: SyftClient | None = None,
+        url: str | None = None,
+        port: int | None = None,
+        handle: NodeHandle | None = None,  # noqa: F821
+        email: str | None = None,
+        password: str | None = None,
+        protocol: str | SyftProtocol = SyftProtocol.HTTP,
+    ) -> SyftSuccess | SyftError | None:
         if isinstance(protocol, str):
             protocol = SyftProtocol(protocol)
 
@@ -106,7 +104,7 @@ class EnclaveClient(SyftClient):
     def get_enclave_metadata(self) -> EnclaveMetadata:
         return EnclaveMetadata(route=self.connection.route)
 
-    def request_code_execution(self, code: SubmitUserCode) -> Union[Any, SyftError]:
+    def request_code_execution(self, code: SubmitUserCode) -> Any | SyftError:
         # relative
         from ..service.code.user_code_service import SubmitUserCode
 

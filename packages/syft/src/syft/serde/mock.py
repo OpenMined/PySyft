@@ -2,8 +2,6 @@
 from collections import defaultdict
 import secrets
 from typing import Any
-from typing import Dict
-from typing import List
 
 # third party
 from faker import Faker
@@ -16,7 +14,7 @@ class CachedFaker:
 
     def __init__(self) -> None:
         self.fake = Faker()
-        self.cache: Dict[str, List[Any]] = defaultdict(list)
+        self.cache: dict[str, list[Any]] = defaultdict(list)
 
     def __getattr__(self, name: str) -> Any:
         if len(self.cache.get(name, [])) > 100:

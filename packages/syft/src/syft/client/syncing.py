@@ -1,8 +1,5 @@
 # stdlib
 from time import sleep
-from typing import List
-from typing import Optional
-from typing import Union
 
 # relative
 from ..service.action.action_object import ActionObject
@@ -21,7 +18,7 @@ def compare_states(low_state: SyncState, high_state: SyncState) -> NodeDiff:
     return NodeDiff.from_sync_state(low_state=low_state, high_state=high_state)
 
 
-def get_user_input_for_resolve() -> Optional[str]:
+def get_user_input_for_resolve() -> str | None:
     print(
         "Do you want to keep the low state or the high state for these objects? choose 'low' or 'high'"
     )
@@ -37,7 +34,7 @@ def get_user_input_for_resolve() -> Optional[str]:
 
 
 def resolve(
-    state: NodeDiff, decision: Optional[str] = None, share_private_objects: bool = False
+    state: NodeDiff, decision: str | None = None, share_private_objects: bool = False
 ) -> tuple[ResolvedSyncState, ResolvedSyncState]:
     # TODO: only add permissions for objects where we manually give permission
     # Maybe default read permission for some objects (high -> low)
@@ -85,13 +82,13 @@ def resolve(
 def get_user_input_for_batch_permissions(
     batch_diff: ObjectDiffBatch, share_private_objects: bool = False
 ) -> None:
-    private_high_objects: List[Union[SyftLog, ActionObject]] = []
+    private_high_objects: list[SyftLog | ActionObject] = []
 
     for diff in batch_diff.diffs:
-        if isinstance(diff.high_obj, (SyftLog, ActionObject)):
+        if isinstance(diff.high_obj, SyftLog | ActionObject):
             private_high_objects.append(diff)
 
-    user_codes_high: List[UserCode] = [
+    user_codes_high: list[UserCode] = [
         diff.high_obj
         for diff in batch_diff.diffs
         if isinstance(diff.high_obj, UserCode)

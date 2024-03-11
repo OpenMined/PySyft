@@ -1,7 +1,4 @@
 # stdlib
-from typing import Dict as TypeDict
-from typing import List as TypeList
-from typing import Optional
 
 # relative
 from .cache import DEFAULT_BRANCH
@@ -58,7 +55,7 @@ def get_launch_verb() -> GrammarVerb:
         },
     ]
 
-    abbreviations: TypeDict[int, TypeList[Optional[str]]] = {
+    abbreviations: dict[int, list[str | None]] = {
         6: [
             "propernoun",  # name
             "object",  # node_type

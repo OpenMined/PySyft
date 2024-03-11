@@ -8,6 +8,9 @@ from syft.service.action.action_object import Action
 from syft.service.response import SyftError
 from syft.types.uid import LineageID
 
+# relative
+from .utils import currently_fail_on_python_3_12
+
 
 def test_actionobject_method(worker):
     root_domain_client = worker.root_client
@@ -20,6 +23,7 @@ def test_actionobject_method(worker):
     assert res[0] == "A"
 
 
+@currently_fail_on_python_3_12(raises=AttributeError)
 def test_lib_function_action(worker):
     root_domain_client = worker.root_client
     numpy_client = root_domain_client.api.lib.numpy
