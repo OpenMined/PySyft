@@ -4,7 +4,6 @@ from __future__ import annotations
 # stdlib
 from typing import Any
 from typing import ClassVar
-from typing import Optional
 
 # third party
 from pydantic import field_validator
@@ -17,6 +16,7 @@ from ..service.action.action_object import ActionObject
 from ..service.action.action_object import TwinMode
 from ..service.action.action_types import action_types
 from ..service.response import SyftError
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from .syft_object import SyftObject
 from .uid import UID
 
@@ -33,7 +33,7 @@ def to_action_object(obj: Any) -> ActionObject:
 @serializable()
 class TwinObject(SyftObject):
     __canonical_name__ = "TwinObject"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     __attr_searchable__: ClassVar[list[str]] = []
 
@@ -81,7 +81,7 @@ class TwinObject(SyftObject):
         mock.id = twin_id
         return mock
 
-    def _save_to_blob_storage(self) -> Optional[SyftError]:
+    def _save_to_blob_storage(self) -> SyftError | None:
         # Set node location and verify key
         self.private_obj._set_obj_location_(
             self.syft_node_location,

@@ -1,6 +1,4 @@
 # stdlib
-from typing import List
-from typing import Union
 
 # third party
 from result import Result
@@ -62,7 +60,7 @@ class UserCodeStatusService(AbstractService):
         self,
         context: AuthedServiceContext,
         status: UserCodeStatusCollection,
-    ) -> Union[UserCodeStatusCollection, SyftError]:
+    ) -> UserCodeStatusCollection | SyftError:
         result = self.stash.set(
             credentials=context.credentials,
             obj=status,
@@ -76,7 +74,7 @@ class UserCodeStatusService(AbstractService):
     )
     def get_status(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[UserCodeStatusCollection, SyftError]:
+    ) -> UserCodeStatusCollection | SyftError:
         """Get the status of a user code item"""
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
@@ -86,7 +84,7 @@ class UserCodeStatusService(AbstractService):
     @service_method(path="code_status.get_all", name="get_all", roles=ADMIN_ROLE_LEVEL)
     def get_all(
         self, context: AuthedServiceContext
-    ) -> Union[List[UserCodeStatusCollection], SyftError]:
+    ) -> list[UserCodeStatusCollection] | SyftError:
         """Get all user code item statuses"""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():

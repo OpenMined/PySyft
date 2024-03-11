@@ -4,7 +4,7 @@ from typing import Any
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 
 ParentPartitionKey = PartitionKey(key="parent", type_=str)
@@ -14,7 +14,7 @@ ChildPartitionKey = PartitionKey(key="child", type_=str)
 @serializable()
 class DataSubjectMemberRelationship(SyftObject):
     __canonical_name__ = "DataSubjectMemberRelationship"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     parent: str
     child: str

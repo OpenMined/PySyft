@@ -1,10 +1,6 @@
 # stdlib
 from collections import defaultdict
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Set
-from typing import Union
 from typing import cast
 
 # third party
@@ -51,7 +47,7 @@ class SyncService(AbstractService):
         self,
         context: AuthedServiceContext,
         action_object: ActionObject,
-        permissions_other: List[str],
+        permissions_other: list[str],
     ) -> None:
         read_permissions = [x for x in permissions_other if "READ" in x]
 
@@ -77,7 +73,7 @@ class SyncService(AbstractService):
     def set_obj_ids(self, context: AuthedServiceContext, x: Any) -> None:
         if hasattr(x, "__dict__") and isinstance(x, SyftObject):
             for val in x.__dict__.values():
-                if isinstance(val, (list, tuple)):
+                if isinstance(val, list | tuple):
                     for v in val:
                         self.set_obj_ids(context, v)
                 elif isinstance(val, dict):
@@ -121,7 +117,7 @@ class SyncService(AbstractService):
         self,
         context: AuthedServiceContext,
         item: SyftObject,
-        permissions_other: Set[ActionObjectPermission],
+        permissions_other: set[ActionObjectPermission],
     ) -> None:
         if isinstance(item, Job) and context.node.node_side_type.value == "low":  # type: ignore
             _id = item.id
@@ -157,9 +153,9 @@ class SyncService(AbstractService):
     def sync_items(
         self,
         context: AuthedServiceContext,
-        items: List[Union[ActionObject, SyftObject]],
-        permissions: Dict[UID, Set[str]],
-    ) -> Union[SyftSuccess, SyftError]:
+        items: list[ActionObject | SyftObject],
+        permissions: dict[UID, set[str]],
+    ) -> SyftSuccess | SyftError:
         permissions = defaultdict(list, permissions)
         for item in items:
             other_node_permissions = permissions[item.id.id]
@@ -185,9 +181,9 @@ class SyncService(AbstractService):
     def get_permissions(
         self,
         context: AuthedServiceContext,
-        items: List[Union[ActionObject, SyftObject]],
-    ) -> Dict:
-        permissions: Dict = {}
+        items: list[ActionObject | SyftObject],
+    ) -> dict:
+        permissions: dict = {}
 
         def get_store(item):  # type: ignore
             if isinstance(item, ActionObject):
@@ -211,7 +207,7 @@ class SyncService(AbstractService):
     )
     def get_state(
         self, context: AuthedServiceContext, add_to_store: bool = False
-    ) -> Union[SyncState, SyftError]:
+    ) -> SyncState | SyftError:
         new_state = SyncState()
 
         node = cast(AbstractNode, context.node)

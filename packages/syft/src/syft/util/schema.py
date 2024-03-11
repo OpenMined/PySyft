@@ -4,11 +4,6 @@ import json
 import os
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Type
 
 # syft absolute
 import syft as sy
@@ -37,13 +32,13 @@ def make_fake_type(_type_str: str) -> dict[str, Any]:
     return jsonschema
 
 
-def get_type_mapping(_type: Type) -> str:
+def get_type_mapping(_type: type) -> str:
     if _type in primitive_mapping:
         return primitive_mapping[_type]
     return _type.__name__
 
 
-def get_types(cls: Type, keys: List[str]) -> Optional[Dict[str, Type]]:
+def get_types(cls: type, keys: list[str]) -> dict[str, type] | None:
     types = []
     for key in keys:
         _type = None
@@ -62,7 +57,7 @@ def get_types(cls: Type, keys: List[str]) -> Optional[Dict[str, Type]]:
 
 
 def convert_attribute_types(
-    cls: Type, attribute_list: list[str], attribute_types: list[Type]
+    cls: type, attribute_list: list[str], attribute_types: list[type]
 ) -> dict[str, Any]:
     jsonschema: dict[str, Any] = {}
     jsonschema["title"] = cls.__name__
@@ -77,11 +72,11 @@ def convert_attribute_types(
     return jsonschema
 
 
-def process_type_bank(type_bank: Dict[str, Tuple[Any, ...]]) -> Dict[str, Dict]:
+def process_type_bank(type_bank: dict[str, tuple[Any, ...]]) -> dict[str, dict]:
     # first pass gets each type into basic json schema format
     json_mappings = {}
     count = 0
-    converted_types: Dict[str, int] = defaultdict(int)
+    converted_types: dict[str, int] = defaultdict(int)
     for k in type_bank:
         count += 1
         t = type_bank[k]
@@ -118,7 +113,7 @@ def process_type_bank(type_bank: Dict[str, Tuple[Any, ...]]) -> Dict[str, Dict]:
     return json_mappings
 
 
-def resolve_references(json_mappings: Dict[str, Dict]) -> Dict[str, Dict]:
+def resolve_references(json_mappings: dict[str, dict]) -> dict[str, dict]:
     # track second pass generated types
     new_types = {}
     for _, json_schema in json_mappings.items():
@@ -151,7 +146,7 @@ def resolve_references(json_mappings: Dict[str, Dict]) -> Dict[str, Dict]:
     return json_mappings
 
 
-def generate_json_schemas(output_path: Optional[str] = None) -> None:
+def generate_json_schemas(output_path: str | None = None) -> None:
     json_mappings = process_type_bank(sy.serde.recursive.TYPE_BANK)
     json_mappings = resolve_references(json_mappings)
     if not output_path:

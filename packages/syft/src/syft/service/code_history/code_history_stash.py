@@ -1,6 +1,4 @@
 # stdlib
-from typing import List
-from typing import Optional
 
 # third party
 from result import Result
@@ -34,7 +32,7 @@ class CodeHistoryStash(BaseUIDStoreStash):
         credentials: SyftVerifyKey,
         service_func_name: str,
         user_verify_key: SyftVerifyKey,
-    ) -> Result[List[CodeHistory], str]:
+    ) -> Result[list[CodeHistory], str]:
         qks = QueryKeys(
             qks=[
                 NamePartitionKey.with_obj(service_func_name),
@@ -45,13 +43,13 @@ class CodeHistoryStash(BaseUIDStoreStash):
 
     def get_by_service_func_name(
         self, credentials: SyftVerifyKey, service_func_name: str
-    ) -> Result[List[CodeHistory], str]:
+    ) -> Result[list[CodeHistory], str]:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(service_func_name)])
         return self.query_all(credentials=credentials, qks=qks)
 
     def get_by_verify_key(
         self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey
-    ) -> Result[Optional[CodeHistory], str]:
+    ) -> Result[CodeHistory | None, str]:
         if isinstance(user_verify_key, str):
             user_verify_key = SyftVerifyKey.from_string(user_verify_key)
         qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(user_verify_key)])

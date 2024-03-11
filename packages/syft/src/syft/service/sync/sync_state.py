@@ -1,17 +1,14 @@
 # stdlib
 import html
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Optional
-from typing import Set
 from typing import TYPE_CHECKING
 
 # relative
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
@@ -34,10 +31,10 @@ class SyncStateRow(SyftObject):
     """A row in the SyncState table"""
 
     __canonical_name__ = "SyncStateItem"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     object: SyftObject
-    previous_object: Optional[SyftObject] = None
+    previous_object: SyftObject | None = None
     current_state: str
     previous_state: str
     level: int = 0
@@ -48,7 +45,7 @@ class SyncStateRow(SyftObject):
         "current_state",
     ]
 
-    def _coll_repr_(self) -> Dict[str, Any]:
+    def _coll_repr_(self) -> dict[str, Any]:
         current_state = f"{self.status}\n{self.current_state}"
         previous_state = f"{self.status}\n{self.previous_state}"
         return {
@@ -75,13 +72,13 @@ class SyncStateRow(SyftObject):
 @serializable()
 class SyncState(SyftObject):
     __canonical_name__ = "SyncState"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    objects: Dict[UID, SyftObject] = {}
-    dependencies: Dict[UID, List[UID]] = {}
+    objects: dict[UID, SyftObject] = {}
+    dependencies: dict[UID, list[UID]] = {}
     created_at: DateTime = DateTime.now()
-    previous_state_link: Optional[LinkedObject] = None
-    permissions: Dict[UID, List[ActionPermission]] = {}
+    previous_state_link: LinkedObject | None = None
+    permissions: dict[UID, list[ActionPermission]] = {}
 
     __attr_searchable__ = ["created_at"]
 
@@ -92,10 +89,10 @@ class SyncState(SyftObject):
         return None
 
     @property
-    def all_ids(self) -> Set[UID]:
+    def all_ids(self) -> set[UID]:
         return set(self.objects.keys())
 
-    def add_objects(self, objects: List[SyftObject], api: Any = None) -> None:
+    def add_objects(self, objects: list[SyftObject], api: Any = None) -> None:
         for obj in objects:
             if isinstance(obj.id, LineageID):
                 self.objects[obj.id.id] = obj
@@ -128,7 +125,7 @@ class SyncState(SyftObject):
         return NodeDiff.from_sync_state(previous_state, self)
 
     @property
-    def rows(self) -> List[SyncStateRow]:
+    def rows(self) -> list[SyncStateRow]:
         result = []
         ids = set()
 

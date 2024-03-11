@@ -1,7 +1,4 @@
 # stdlib
-from typing import List
-from typing import Optional
-from typing import Union
 
 # relative
 from ...serde.serializable import serializable
@@ -39,7 +36,7 @@ class SyftImageRegistryService(AbstractService):
         self,
         context: AuthedServiceContext,
         url: str,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         try:
             registry = SyftImageRegistry.from_url(url)
         except Exception as e:
@@ -62,9 +59,9 @@ class SyftImageRegistryService(AbstractService):
     def delete(
         self,
         context: AuthedServiceContext,
-        uid: Optional[UID] = None,
-        url: Optional[str] = None,
-    ) -> Union[SyftSuccess, SyftError]:
+        uid: UID | None = None,
+        url: str | None = None,
+    ) -> SyftSuccess | SyftError:
         # TODO - we need to make sure that there are no workers running an image bound to this registry
 
         # if url is provided, get uid from url
@@ -95,7 +92,7 @@ class SyftImageRegistryService(AbstractService):
     def get_all(
         self,
         context: AuthedServiceContext,
-    ) -> Union[List[SyftImageRegistry], SyftError]:
+    ) -> list[SyftImageRegistry] | SyftError:
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=result.err())
@@ -108,7 +105,7 @@ class SyftImageRegistryService(AbstractService):
     )
     def get_by_id(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftImageRegistry, SyftError]:
+    ) -> SyftImageRegistry | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid)
         if result.is_err():
             return SyftError(message=result.err())

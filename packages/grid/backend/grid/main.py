@@ -1,5 +1,4 @@
 # stdlib
-from typing import Dict
 
 # third party
 from fastapi import FastAPI
@@ -55,7 +54,7 @@ def shutdown() -> None:
     status_code=200,
     response_class=JSONResponse,
 )
-def healthcheck() -> Dict[str, str]:
+def healthcheck() -> dict[str, str]:
     """
     Currently, all service backends must satisfy either of the following requirements to
     pass the HTTP health checks sent to it from the GCE loadbalancer: 1. Respond with a

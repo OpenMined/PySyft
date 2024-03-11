@@ -1,10 +1,7 @@
 # stdlib
+from collections.abc import Callable
 import secrets
 from typing import Any
-from typing import Callable
-from typing import List
-from typing import Optional
-from typing import Union
 from typing import cast
 
 # third party
@@ -65,7 +62,7 @@ class NetworkStash(BaseUIDStoreStash):
 
     def get_by_name(
         self, credentials: SyftVerifyKey, name: str
-    ) -> Result[Optional[NodePeer], str]:
+    ) -> Result[NodePeer | None, str]:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
         return self.query_one(credentials=credentials, qks=qks)
 
@@ -86,7 +83,7 @@ class NetworkStash(BaseUIDStoreStash):
         valid = self.check_type(peer, NodePeer)
         if valid.is_err():
             return SyftError(message=valid.err())
-        existing: Union[Result, NodePeer] = self.get_by_uid(
+        existing: Result | NodePeer = self.get_by_uid(
             credentials=credentials, uid=peer.id
         )
         if existing.is_ok() and existing.ok():
@@ -106,7 +103,7 @@ class NetworkStash(BaseUIDStoreStash):
 
     def get_by_node_type(
         self, credentials: SyftVerifyKey, node_type: NodeType
-    ) -> Result[List[NodePeer], SyftError]:
+    ) -> Result[list[NodePeer], SyftError]:
         qks = QueryKeys(qks=[NodeTypePartitionKey.with_obj(node_type)])
         return self.query_all(
             credentials=credentials, qks=qks, order_by=OrderByNamePartitionKey
@@ -137,7 +134,7 @@ class NetworkService(AbstractService):
         self_node_route: NodeRoute,
         remote_node_route: NodeRoute,
         remote_node_verify_key: SyftVerifyKey,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Exchange Route With Another Node"""
 
         # Step 1: Validate the Route
@@ -194,7 +191,7 @@ class NetworkService(AbstractService):
         challenge: bytes,
         self_node_route: NodeRoute,
         verify_key: SyftVerifyKey,
-    ) -> Union[list, SyftError]:
+    ) -> list | SyftError:
         """Add a Network Node Peer"""
         # Using the verify_key of the peer to verify the signature
         # It is also our single source of truth for the peer
@@ -254,7 +251,7 @@ class NetworkService(AbstractService):
     @service_method(path="network.ping", name="ping", roles=GUEST_ROLE_LEVEL)
     def ping(
         self, context: AuthedServiceContext, challenge: bytes
-    ) -> Union[bytes, SyftError]:
+    ) -> bytes | SyftError:
         """To check alivesness/authenticity of a peer"""
 
         # # Only the root user can ping the node to check its state
@@ -276,7 +273,7 @@ class NetworkService(AbstractService):
         context: AuthedServiceContext,
         route: NodeRoute,
         peer: NodePeer,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Add Route for this Node to another Node"""
         # check root user is asking for the exchange
         client = peer.client_with_context(context=context)
@@ -291,7 +288,7 @@ class NetworkService(AbstractService):
     )
     def verify_route(
         self, context: AuthedServiceContext, route: NodeRoute
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Add a Network Node Route"""
         # get the peer asking for route verification from its verify_key
         context.node = cast(AbstractNode, context.node)
@@ -321,7 +318,7 @@ class NetworkService(AbstractService):
     )
     def get_all_peers(
         self, context: AuthedServiceContext
-    ) -> Union[List[NodePeer], SyftError]:
+    ) -> list[NodePeer] | SyftError:
         """Get all Peers"""
         context.node = cast(AbstractNode, context.node)
         result = self.stash.get_all(
@@ -338,7 +335,7 @@ class NetworkService(AbstractService):
     )
     def get_peer_by_name(
         self, context: AuthedServiceContext, name: str
-    ) -> Union[Optional[NodePeer], SyftError]:
+    ) -> NodePeer | None | SyftError:
         """Get Peer by Name"""
         context.node = cast(AbstractNode, context.node)
         result = self.stash.get_by_name(
@@ -357,7 +354,7 @@ class NetworkService(AbstractService):
     )
     def get_peers_by_type(
         self, context: AuthedServiceContext, node_type: NodeType
-    ) -> Union[List[NodePeer], SyftError]:
+    ) -> list[NodePeer] | SyftError:
         context.node = cast(AbstractNode, context.node)
         result = self.stash.get_by_node_type(
             credentials=context.node.verify_key,
@@ -389,7 +386,7 @@ def from_grid_url(context: TransformContext) -> TransformContext:
 
 
 @transform(HTTPConnection, HTTPNodeRoute)
-def http_connection_to_node_route() -> List[Callable]:
+def http_connection_to_node_route() -> list[Callable]:
     return [from_grid_url]
 
 
@@ -402,21 +399,21 @@ def get_python_node_route(context: TransformContext) -> TransformContext:
 
 
 @transform(PythonConnection, PythonNodeRoute)
-def python_connection_to_node_route() -> List[Callable]:
+def python_connection_to_node_route() -> list[Callable]:
     return [get_python_node_route]
 
 
 @transform_method(PythonNodeRoute, PythonConnection)
 def node_route_to_python_connection(
-    obj: Any, context: Optional[TransformContext] = None
-) -> List[Callable]:
+    obj: Any, context: TransformContext | None = None
+) -> list[Callable]:
     return PythonConnection(node=obj.node, proxy_target_uid=obj.proxy_target_uid)
 
 
 @transform_method(HTTPNodeRoute, HTTPConnection)
 def node_route_to_http_connection(
-    obj: Any, context: Optional[TransformContext] = None
-) -> List[Callable]:
+    obj: Any, context: TransformContext | None = None
+) -> list[Callable]:
     url = GridURL(
         protocol=obj.protocol, host_or_ip=obj.host_or_ip, port=obj.port
     ).as_container_host()
@@ -424,14 +421,14 @@ def node_route_to_http_connection(
 
 
 @transform(NodeMetadataV3, NodePeer)
-def metadata_to_peer() -> List[Callable]:
+def metadata_to_peer() -> list[Callable]:
     return [
         keep(["id", "name", "verify_key", "node_type", "admin_email"]),
     ]
 
 
 @transform(NodeSettingsV2, NodePeer)
-def settings_to_peer() -> List[Callable]:
+def settings_to_peer() -> list[Callable]:
     return [
         keep(["id", "name", "verify_key", "node_type", "admin_email"]),
     ]

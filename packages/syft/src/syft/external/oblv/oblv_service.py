@@ -1,13 +1,10 @@
 # stdlib
 from base64 import encodebytes
+from collections.abc import Callable
 import os
 import random
 import subprocess  # nosec
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
 from typing import cast
 
 # third party
@@ -44,7 +41,7 @@ from .oblv_keys import OblvKeys
 from .oblv_keys_stash import OblvKeysStash
 
 # caches the connection to Enclave using the deployment ID
-OBLV_PROCESS_CACHE: Dict[str, List] = {}
+OBLV_PROCESS_CACHE: dict[str, list] = {}
 
 
 def connect_to_enclave(
@@ -54,7 +51,7 @@ def connect_to_enclave(
     deployment_id: str,
     connection_port: int,
     oblv_key_name: str,
-) -> Optional[subprocess.Popen]:
+) -> subprocess.Popen | None:
     global OBLV_PROCESS_CACHE
     if deployment_id in OBLV_PROCESS_CACHE:
         process = OBLV_PROCESS_CACHE[deployment_id][0]
@@ -152,10 +149,10 @@ def make_request_to_enclave(
     connection_string: str,
     connection_port: int,
     oblv_key_name: str,
-    params: Optional[Dict] = None,
-    files: Optional[Dict] = None,
-    data: Optional[Dict] = None,
-    json: Optional[Dict] = None,
+    params: dict | None = None,
+    files: dict | None = None,
+    data: dict | None = None,
+    json: dict | None = None,
 ) -> Any:
     if not LOCAL_MODE:
         _ = connect_to_enclave(
@@ -360,7 +357,7 @@ class OblvService(AbstractService):
         self,
         context: AuthedServiceContext,
         user_code_id: UID,
-        inputs: Dict,
+        inputs: dict,
         node_name: str,
     ) -> Result[Ok, Err]:
         if not context.node or not context.node.signing_key:

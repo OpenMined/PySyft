@@ -1,8 +1,4 @@
 # stdlib
-from typing import List
-from typing import Tuple
-from typing import Type
-from typing import Union
 from unittest import mock
 
 # third party
@@ -29,7 +25,7 @@ from syft.service.user.user_service import UserService
 from syft.types.uid import UID
 
 
-def settings_with_signup_enabled(worker) -> Type:
+def settings_with_signup_enabled(worker) -> type:
     mock_settings = worker.settings
     mock_settings.signup_enabled = True
 
@@ -190,7 +186,7 @@ def test_userservice_get_all_success(
 
     monkeypatch.setattr(user_service.stash, "get_all", mock_get_all)
     response = user_service.get_all(authed_context)
-    assert isinstance(response, List)
+    assert isinstance(response, list)
     assert len(response) == len(expected_output)
     assert all(
         r.model_dump() == expected.model_dump()
@@ -220,7 +216,7 @@ def test_userservice_search(
     authed_context: AuthedServiceContext,
     guest_user: User,
 ) -> None:
-    def mock_find_all(credentials: SyftVerifyKey, **kwargs) -> Union[Ok, Err]:
+    def mock_find_all(credentials: SyftVerifyKey, **kwargs) -> Ok | Err:
         for key, _ in kwargs.items():
             if hasattr(guest_user, key):
                 return Ok([guest_user])
@@ -232,7 +228,7 @@ def test_userservice_search(
 
     # Search via id
     response = user_service.search(authed_context, id=guest_user.id)
-    assert isinstance(response, List)
+    assert isinstance(response, list)
     assert all(
         r.model_dump() == expected.model_dump()
         for r, expected in zip(response, expected_output)
@@ -241,7 +237,7 @@ def test_userservice_search(
 
     # Search via email
     response = user_service.search(authed_context, email=guest_user.email)
-    assert isinstance(response, List)
+    assert isinstance(response, list)
     assert all(
         r.model_dump() == expected.model_dump()
         for r, expected in zip(response, expected_output)
@@ -249,7 +245,7 @@ def test_userservice_search(
 
     # Search via name
     response = user_service.search(authed_context, name=guest_user.name)
-    assert isinstance(response, List)
+    assert isinstance(response, list)
     assert all(
         r.model_dump() == expected.model_dump()
         for r, expected in zip(response, expected_output)
@@ -260,7 +256,7 @@ def test_userservice_search(
         authed_context,
         verify_key=guest_user.verify_key,
     )
-    assert isinstance(response, List)
+    assert isinstance(response, list)
     assert all(
         r.model_dump() == expected.model_dump()
         for r, expected in zip(response, expected_output)
@@ -270,7 +266,7 @@ def test_userservice_search(
     response = user_service.search(
         authed_context, name=guest_user.name, email=guest_user.email
     )
-    assert isinstance(response, List)
+    assert isinstance(response, list)
     assert all(
         r.model_dump() == expected.model_dump()
         for r, expected in zip(response, expected_output)
@@ -566,7 +562,7 @@ def test_userservice_register_success(
         expected_private_key = guest_user.to(UserPrivateKey)
 
         response = user_service.register(node_context, guest_create_user)
-        assert isinstance(response, Tuple)
+        assert isinstance(response, tuple)
 
         syft_success_response, user_private_key = response
         assert isinstance(syft_success_response, SyftSuccess)

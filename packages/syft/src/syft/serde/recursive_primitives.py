@@ -1,6 +1,7 @@
 # stdlib
 from collections import OrderedDict
 from collections import defaultdict
+from collections.abc import Collection
 from collections.abc import Iterable
 from collections.abc import Mapping
 from enum import Enum
@@ -10,16 +11,16 @@ import pathlib
 from pathlib import PurePath
 import sys
 from types import MappingProxyType
+from types import UnionType
 from typing import Any
-from typing import Collection
-from typing import Dict
-from typing import List
+from typing import GenericAlias
 from typing import Optional
-from typing import Type
 from typing import TypeVar
 from typing import Union
 from typing import _GenericAlias
 from typing import _SpecialForm
+from typing import _SpecialGenericAlias
+from typing import _UnionGenericAlias
 from typing import cast
 import weakref
 
@@ -28,14 +29,6 @@ from .capnp import get_capnp_schema
 from .recursive import chunk_bytes
 from .recursive import combine_bytes
 from .recursive import recursive_serde_register
-
-# import types unsupported on python 3.8
-if sys.version_info >= (3, 9):
-    # stdlib
-    from typing import GenericAlias
-    from typing import _SpecialGenericAlias
-    from typing import _UnionGenericAlias
-
 
 iterable_schema = get_capnp_schema("iterable.capnp").Iterable
 kv_iterable_schema = get_capnp_schema("kv_iterable.capnp").KVIterable
@@ -97,7 +90,7 @@ def serialize_kv(map: Mapping) -> bytes:
     return _serialize_kv_pairs(len(map), map.items())
 
 
-def get_deserialized_kv_pairs(blob: bytes) -> List[Any]:
+def get_deserialized_kv_pairs(blob: bytes) -> list[Any]:
     # relative
     from .deserialize import _deserialize
 
@@ -138,7 +131,7 @@ def deserialize_defaultdict(blob: bytes) -> Mapping:
     df_tuple = _deserialize(blob, from_bytes=True)
     df_type_bytes, df_kv_bytes = df_tuple[0], df_tuple[1]
     df_type = _deserialize(df_type_bytes, from_bytes=True)
-    mapping: Dict = defaultdict(df_type)
+    mapping: dict = defaultdict(df_type)
 
     pairs = get_deserialized_kv_pairs(blob=df_kv_bytes)
     mapping.update(pairs)
@@ -189,7 +182,7 @@ def serialize_path(path: PurePath) -> bytes:
     return cast(bytes, _serialize(str(path), to_bytes=True))
 
 
-def deserialize_path(path_type: Type[TPath], buf: bytes) -> TPath:
+def deserialize_path(path_type: type[TPath], buf: bytes) -> TPath:
     # relative
     from .deserialize import _deserialize
 
@@ -366,9 +359,7 @@ def deserialize_generic_alias(type_blob: bytes) -> type:
 
 
 # 🟡 TODO 5: add tests and all typing options for signatures
-def recursive_serde_register_type(
-    t: type, serialize_attrs: Optional[List] = None
-) -> None:
+def recursive_serde_register_type(t: type, serialize_attrs: list | None = None) -> None:
     if (isinstance(t, type) and issubclass(t, _GenericAlias)) or issubclass(
         type(t), _GenericAlias
     ):
@@ -387,26 +378,46 @@ def recursive_serde_register_type(
         )
 
 
+def serialize_union_type(serialized_type: UnionType) -> bytes:
+    # relative
+    from .serialize import _serialize
+
+    return _serialize(serialized_type.__args__, to_bytes=True)
+
+
+def deserialize_union_type(type_blob: bytes) -> type:
+    # relative
+    from .deserialize import _deserialize
+
+    args = _deserialize(type_blob, from_bytes=True)
+    return functools.reduce(lambda x, y: x | y, args)
+
+
+recursive_serde_register(
+    UnionType,
+    serialize=serialize_union_type,
+    deserialize=deserialize_union_type,
+)
+
 recursive_serde_register_type(_SpecialForm)
 recursive_serde_register_type(_GenericAlias)
 recursive_serde_register_type(Union)
 recursive_serde_register_type(TypeVar)
 
-if sys.version_info >= (3, 9):
-    recursive_serde_register_type(
-        _UnionGenericAlias,
-        serialize_attrs=[
-            "__parameters__",
-            "__slots__",
-            "_inst",
-            "_name",
-            "__args__",
-            "__module__",
-            "__origin__",
-        ],
-    )
-    recursive_serde_register_type(_SpecialGenericAlias)
-    recursive_serde_register_type(GenericAlias)
+recursive_serde_register_type(
+    _UnionGenericAlias,
+    serialize_attrs=[
+        "__parameters__",
+        "__slots__",
+        "_inst",
+        "_name",
+        "__args__",
+        "__module__",
+        "__origin__",
+    ],
+)
+recursive_serde_register_type(_SpecialGenericAlias)
+recursive_serde_register_type(GenericAlias)
 
 recursive_serde_register_type(Any)
 recursive_serde_register_type(EnumMeta)

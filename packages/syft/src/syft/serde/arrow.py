@@ -1,5 +1,4 @@
 # stdlib
-from typing import Union
 from typing import cast
 
 # third party
@@ -76,7 +75,7 @@ def numpyutf8toarray(input_index: np.ndarray) -> np.ndarray:
     return np.array(output_list).reshape(shape)
 
 
-def arraytonumpyutf8(string_list: Union[str, np.ndarray]) -> bytes:
+def arraytonumpyutf8(string_list: str | np.ndarray) -> bytes:
     """Encodes string Numpyarray  to utf-8 encoded numpy array.
 
     Args:

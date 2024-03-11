@@ -2,13 +2,13 @@
 from typing import Any
 
 # relative
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 
 
 class NodeConnection(SyftObject):
     __canonical_name__ = "NodeConnection"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     def get_cache_key(self) -> str:
         raise NotImplementedError

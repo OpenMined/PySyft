@@ -1,8 +1,6 @@
 # stdlib
+from collections.abc import Callable
 from typing import Any
-from typing import Callable
-from typing import List
-from typing import Union
 
 # third party
 import numpy as np
@@ -17,12 +15,12 @@ from .action_object import ActionObject
 
 def verify_result(
     func: Callable,
-    private_inputs: Union[ActionObject, List[ActionObject]],
-    private_outputs: Union[ActionObject, List[ActionObject]],
+    private_inputs: ActionObject | list[ActionObject],
+    private_outputs: ActionObject | list[ActionObject],
 ) -> SyftResponseMessage:
     """Verify a single result of Code Verification"""
     trace_assets = []
-    if not isinstance(private_inputs, List):
+    if not isinstance(private_inputs, list):
         private_inputs = [private_inputs]
 
     for asset in private_inputs:
@@ -45,7 +43,7 @@ def verify_result(
     print("Code Verification in progress.")
     traced_results = func(*trace_assets)
 
-    if isinstance(private_outputs, List):
+    if isinstance(private_outputs, list):
         target_hashes_list = [output.syft_history_hash for output in private_outputs]
         traced_hashes_list = [result.syft_history_hash for result in traced_results]
         return compare_hashes(target_hashes_list, traced_hashes_list, traced_results)
@@ -56,10 +54,10 @@ def verify_result(
 
 
 def compare_hashes(
-    target_hashes: Union[List[int], int],
-    traced_hashes: Union[List[int], int],
+    target_hashes: list[int] | int,
+    traced_hashes: list[int] | int,
     traced_results: Any,
-) -> Union[SyftSuccess, SyftError]:
+) -> SyftSuccess | SyftError:
     if target_hashes == traced_hashes:
         msg = "Code Verification passed with matching hashes! Congratulations, and thank you for supporting PySyft!"
         return SyftSuccess(message=msg)
@@ -83,7 +81,7 @@ def code_verification(func: Callable) -> Callable:
     - boolean:: if history hashes match
     """
 
-    def wrapper(*args: Any, **kwargs: Any) -> Union[SyftSuccess, SyftError]:
+    def wrapper(*args: Any, **kwargs: Any) -> SyftSuccess | SyftError:
         trace_assets = []
         for asset in args:
             if not isinstance(asset, ActionObject):

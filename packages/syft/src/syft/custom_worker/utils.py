@@ -1,8 +1,6 @@
 # stdlib
+from collections.abc import Iterable
 import json
-from typing import Iterable
-from typing import Optional
-from typing import Tuple
 
 
 def iterator_to_string(iterator: Iterable) -> str:
@@ -20,7 +18,7 @@ def iterator_to_string(iterator: Iterable) -> str:
 
 class ImageUtils:
     @staticmethod
-    def parse_tag(tag: str) -> Tuple[Optional[str], str, str]:
+    def parse_tag(tag: str) -> tuple[str | None, str, str]:
         url, tag = tag.rsplit(":", 1)
         args = url.rsplit("/", 2)
 

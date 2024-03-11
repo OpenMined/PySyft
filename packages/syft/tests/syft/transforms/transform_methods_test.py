@@ -1,8 +1,7 @@
 # stdlib
+from collections.abc import Callable
 from dataclasses import dataclass
 from types import FunctionType
-from typing import Callable
-from typing import Optional
 
 # third party
 from pydantic import EmailStr
@@ -258,7 +257,7 @@ def test_generate_id(faker, node_context):
 
     @dataclass
     class MockObjectWithId:
-        id: Optional[UID]
+        id: UID | None
         name: str
         age: int
         company: str
@@ -370,7 +369,7 @@ def test_add_node_uid_for_key(faker, node_context):
 def test_validate_url(faker, node_context):
     @dataclass
     class MockObject:
-        url: Optional[str]
+        url: str | None
 
         def __iter__(self):
             yield from self.__dict__.items()
