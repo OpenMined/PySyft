@@ -23,9 +23,10 @@ def node():
         name=name,
         dev_mode=True,
         reset=True,
-        n_consumers=4,
+        n_consumers=1,
         create_producer=True,
-        queue_port=random.randint(13000, 13300),
+        queue_port=None,
+        in_memory_workers=True,
     )
     # startup code here
     yield _node

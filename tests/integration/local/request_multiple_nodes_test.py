@@ -23,6 +23,7 @@ def node_1():
         create_producer=True,
         n_consumers=1,
         in_memory_workers=True,
+        queue_port=None,
     )
     yield node
     node.land()
@@ -39,6 +40,7 @@ def node_2():
         create_producer=True,
         n_consumers=1,
         in_memory_workers=True,
+        queue_port=None,
     )
     yield node
     node.land()
