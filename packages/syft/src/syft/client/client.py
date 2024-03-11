@@ -51,6 +51,7 @@ from ..service.veilid.veilid_endpoints import VEILID_PROXY_PATH
 from ..service.veilid.veilid_endpoints import VEILID_SERVICE_URL
 from ..service.veilid.veilid_endpoints import VEILID_SYFT_PROXY_URL
 from ..types.grid_url import GridURL
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.uid import UID
 from ..util.logger import debug
@@ -333,7 +334,7 @@ class HTTPConnection(NodeConnection):
 )
 class VeilidConnection(NodeConnection):
     __canonical_name__ = "VeilidConnection"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     vld_forward_proxy: GridURL = GridURL.from_url(VEILID_SERVICE_URL)
     vld_reverse_proxy: GridURL = GridURL.from_url(VEILID_SYFT_PROXY_URL)

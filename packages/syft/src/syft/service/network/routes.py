@@ -19,6 +19,7 @@ from ...client.client import SyftClient
 from ...client.client import VeilidConnection
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -94,7 +95,7 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
 @serializable()
 class VeilidNodeRoute(SyftObject, NodeRoute):
     __canonical_name__ = "VeilidNodeRoute"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     dht_key: str
     proxy_target_uid: UID | None = None
