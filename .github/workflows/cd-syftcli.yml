@@ -181,7 +181,7 @@ jobs:
 
       - name: GitHub Release
         if: steps.check-pypi.outputs.released == 'true'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: syftcli-v${{ needs.deploy-syft-cli.outputs.deployed_version }}
           generate_release_notes: false
