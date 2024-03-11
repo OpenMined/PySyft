@@ -36,11 +36,6 @@ from .utils.mongodb import stop_mongo_server
 from .utils.xdist_state import SharedState
 
 
-@pytest.fixture()
-def faker():
-    return Faker()
-
-
 def patch_protocol_file(filepath: Path):
     dp = get_data_protocol()
     original_protocol = dp.read_json(dp.file_path)
@@ -97,9 +92,16 @@ def stage_protocol(protocol_file: Path):
 
 
 @pytest.fixture()
+def faker():
+    return Faker()
+
+
+@pytest.fixture()
 def worker(faker) -> Worker:
-    # creates a worker with dict stores
-    return sy.Worker.named(name=faker.name())
+    worker = sy.Worker.named(name=faker.name())
+    yield worker
+    worker.stop()
+    del worker
 
 
 @pytest.fixture()

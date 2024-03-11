@@ -37,7 +37,7 @@ def get_admin_client(node_type: str):
 
 
 @pytest.mark.local_node
-def test_create_gateway_client(faker: Faker):
+def test_create_gateway_client():
     node_handle = get_node_handle(NodeType.GATEWAY.value)
     client = node_handle.client
     assert isinstance(client, GatewayClient)
@@ -45,7 +45,7 @@ def test_create_gateway_client(faker: Faker):
 
 
 @pytest.mark.local_node
-def test_domain_connect_to_gateway(faker: Faker):
+def test_domain_connect_to_gateway():
     gateway_node_handle = get_node_handle(NodeType.GATEWAY.value)
     gateway_client: GatewayClient = gateway_node_handle.login(
         email="info@openmined.org", password="changethis"

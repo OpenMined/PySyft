@@ -1,5 +1,6 @@
 # third party
 import _pytest
+from faker import Faker
 import pytest
 
 
@@ -25,3 +26,8 @@ def domain_1_port() -> int:
 @pytest.fixture
 def domain_2_port() -> int:
     return 9083
+
+
+@pytest.fixture()
+def faker():
+    return Faker()
