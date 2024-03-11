@@ -23,6 +23,7 @@ from syft.store.document_store import QueryKeys
 from syft.store.mongo_client import MongoStoreClientConfig
 from syft.store.mongo_document_store import MongoStoreConfig
 from syft.store.mongo_document_store import MongoStorePartition
+from syft.types.uid import UID
 
 # relative
 from .store_constants_test import generate_db_name
@@ -62,7 +63,7 @@ def test_mongo_store_partition_init_failed(root_verify_key) -> None:
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
     store = MongoStorePartition(
-        root_verify_key, settings=settings, store_config=store_config
+        UID(), root_verify_key, settings=settings, store_config=store_config
     )
 
     res = store.init_store()

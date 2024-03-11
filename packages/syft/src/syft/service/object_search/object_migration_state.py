@@ -60,6 +60,7 @@ class SyftMigrationStateStash(BaseStash):
         credentials: SyftVerifyKey,
         migration_state: SyftObjectMigrationState,
         add_permissions: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObjectMigrationState, str]:
         res = self.check_type(migration_state, self.object_type)
@@ -67,7 +68,11 @@ class SyftMigrationStateStash(BaseStash):
         if res.is_err():
             return res
         return super().set(
-            credentials=credentials, obj=res.ok(), add_permissions=add_permissions
+            credentials=credentials,
+            obj=res.ok(),
+            add_permissions=add_permissions,
+            add_storage_permission=add_storage_permission,
+            ignore_duplicates=ignore_duplicates,
         )
 
     def get_by_name(

@@ -39,6 +39,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
+from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.logger import debug
@@ -238,6 +239,7 @@ passthrough_attrs = [
     "to_pointer",  # syft
     "to",  # syft
     "send",  # syft
+    "_send",  # syft
     "_copy_and_set_values",  # pydantic
     "get_from",  # syft
     "get",  # syft
@@ -290,6 +292,7 @@ passthrough_attrs = [
     "copy",  # pydantic
     "__sha256__",  # syft
     "__hash_exclude_attrs__",  # syft
+    "__private_sync_attr_mocks__",  # syft
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -572,15 +575,21 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "__sha256__",
     "__hash_exclude_attrs__",
     "__hash__",
+    "create_shareable_sync_copy",
+    "_has_private_sync_attrs",
 ]
 
 
 @serializable(without=["syft_pre_hooks__", "syft_post_hooks__"])
-class ActionObject(SyftObject):
+class ActionObject(SyncableSyftObject):
     """Action object for remote execution."""
 
     __canonical_name__ = "ActionObject"
     __version__ = SYFT_OBJECT_VERSION_3
+    __private_sync_attr_mocks__: ClassVar[dict[str, Any]] = {
+        "syft_action_data_cache": None,
+        "syft_blob_storage_entry_id": None,
+    }
 
     __attr_searchable__: list[str] = []  # type: ignore[misc]
     syft_action_data_cache: Any | None = None
@@ -609,7 +618,7 @@ class ActionObject(SyftObject):
     syft_action_data_node_id: UID | None = None
     # syft_dont_wrap_attrs = ["shape"]
 
-    def get_diff(self, ext_obj: Any) -> list[AttrDiff]:
+    def syft_get_diffs(self, ext_obj: Any) -> list[AttrDiff]:
         # relative
         from ...service.sync.diff_state import AttrDiff
 
@@ -1064,11 +1073,16 @@ class ActionObject(SyftObject):
 
         return wrapper
 
-    def send(self, client: SyftClient) -> Self:
+    def send(self, client: SyftClient) -> Any:
+        return self._send(client, add_storage_permission=True)
+
+    def _send(self, client: SyftClient, add_storage_permission: bool = True) -> Self:
         """Send the object to a Syft Client"""
         self._set_obj_location_(client.id, client.verify_key)
         self._save_to_blob_storage()
-        res = client.api.services.action.set(self)
+        res = client.api.services.action.set(
+            self, add_storage_permission=add_storage_permission
+        )
         if isinstance(res, ActionObject):
             self.syft_created_at = res.syft_created_at
         return res
@@ -1117,16 +1131,29 @@ class ActionObject(SyftObject):
 
     def as_empty(self) -> ActionObject:
         id = self.id
-        # TODO: fix
+
         if isinstance(id, LineageID):
             id = id.id
-        return ActionObject.empty(
+
+        res = ActionObject.empty(
             self.syft_internal_type,
             id,
             self.syft_lineage_id,
             self.syft_resolved,
             syft_blob_storage_entry_id=self.syft_blob_storage_entry_id,
         )
+        if isinstance(self.id, LineageID):
+            res.id = self.id
+
+        return res
+
+    def create_shareable_sync_copy(self, mock: bool) -> ActionObject:
+        if mock:
+            res = self.as_empty()
+            for k, v in self.__private_sync_attr_mocks__.items():
+                setattr(res, k, v)
+            return res
+        return self
 
     @staticmethod
     def from_path(

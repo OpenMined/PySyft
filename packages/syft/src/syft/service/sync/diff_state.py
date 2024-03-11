@@ -25,6 +25,7 @@ from typing_extensions import Self
 # relative
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
+from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util import options
@@ -33,6 +34,7 @@ from ...util.fonts import ITABLES_CSS
 from ...util.fonts import fonts_css
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import StoragePermission
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatusCollection
 from ..job.job_stash import Job
@@ -150,13 +152,15 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     # version
     __canonical_name__ = "ObjectDiff"
     __version__ = SYFT_OBJECT_VERSION_2
-    low_obj: SyftObject | None = None
-    high_obj: SyftObject | None = None
-    low_permissions: list[ActionObjectPermission] = []
-    high_permissions: list[ActionObjectPermission] = []
+    low_obj: SyncableSyftObject | None = None
+    high_obj: SyncableSyftObject | None = None
+    low_node_uid: UID
+    high_node_uid: UID
+    low_permissions: list[str] = []
+    high_permissions: list[str] = []
+    low_storage_permissions: set[UID] = set()
+    high_storage_permissions: set[UID] = set()
 
-    new_low_permissions: list[ActionObjectPermission] = []
-    new_high_permissions: list[ActionObjectPermission] = []
     obj_type: type
     diff_list: list[AttrDiff] = []
 
@@ -165,31 +169,70 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         "high_state",
     ]
 
+    def is_mock(self, side: str) -> bool:
+        # An object is a mock object if it exists on both sides,
+        # and has no storage permissions on `side`
+        # NOTE both sides must have the objects, else it is a new object.
+        # New+mock objects do not appear naturally, but if they do we
+        # want them to show up.
+        if side == "low":
+            obj = self.low_obj
+            other_obj = self.high_obj
+            permissions = self.low_storage_permissions
+            node_uid = self.low_node_uid
+        elif side == "high":
+            obj = self.high_obj
+            other_obj = self.low_obj
+            permissions = self.high_storage_permissions
+            node_uid = self.high_node_uid
+        else:
+            raise ValueError("Invalid side")
+
+        if obj is None or other_obj is None:
+            return False
+
+        return node_uid not in permissions
+
     @classmethod
     def from_objects(
         cls,
-        low_obj: SyftObject | None,
-        high_obj: SyftObject | None,
-        low_permissions: list[ActionObjectPermission],
-        high_permissions: list[ActionObjectPermission],
+        low_obj: SyncableSyftObject | None,
+        high_obj: SyncableSyftObject | None,
+        low_permissions: set[str],
+        high_permissions: set[str],
+        low_storage_permissions: set[UID],
+        high_storage_permissions: set[UID],
+        low_node_uid: UID,
+        high_node_uid: UID,
     ) -> "ObjectDiff":
         if low_obj is None and high_obj is None:
             raise ValueError("Both low and high objects are None")
         obj_type = type(low_obj if low_obj is not None else high_obj)
 
-        if low_obj is None or high_obj is None:
-            diff_list = []
-        else:
-            diff_list = low_obj.get_diffs(high_obj)
-
-        return cls(
+        res = cls(
             low_obj=low_obj,
             high_obj=high_obj,
             obj_type=obj_type,
+            low_node_uid=low_node_uid,
+            high_node_uid=high_node_uid,
             low_permissions=low_permissions,
             high_permissions=high_permissions,
-            diff_list=diff_list,
+            low_storage_permissions=low_storage_permissions,
+            high_storage_permissions=high_storage_permissions,
         )
+
+        if (
+            low_obj is None
+            or high_obj is None
+            or res.is_mock("low")
+            or res.is_mock("high")
+        ):
+            diff_list = []
+        else:
+            diff_list = low_obj.syft_get_diffs(high_obj)
+
+        res.diff_list = diff_list
+        return res
 
     def __hash__(self) -> int:
         return hash(self.id) + hash(self.low_obj) + hash(self.high_obj)
@@ -402,7 +445,7 @@ class ObjectDiffBatch(SyftObject):
     ORDER: ClassVar[dict] = {"low": 0, "high": 1}
 
     # Diffs are ordered in depth-first order,
-    # so the first diff is the root of the hierarchy
+    # the first diff is the root of the hierarchy
     diffs: list[ObjectDiff]
     hierarchy_levels: list[int]
     dependencies: dict[UID, list[UID]] = {}
@@ -524,6 +567,8 @@ class NodeDiff(SyftObject):
     __canonical_name__ = "NodeDiff"
     __version__ = SYFT_OBJECT_VERSION_2
 
+    low_node_uid: UID
+    high_node_uid: UID
     obj_uid_to_diff: dict[UID, ObjectDiff] = {}
     dependencies: dict[UID, list[UID]] = {}
 
@@ -534,15 +579,28 @@ class NodeDiff(SyftObject):
         obj_uid_to_diff = {}
         for obj_id in set(low_state.objects.keys()) | set(high_state.objects.keys()):
             low_obj = low_state.objects.get(obj_id, None)
-            low_permissions: list = low_state.permissions.get(obj_id, [])
+            low_permissions = low_state.permissions.get(obj_id, set())
+            low_storage_permissions = low_state.storage_permissions.get(obj_id, set())
             high_obj = high_state.objects.get(obj_id, None)
-            high_permissions: list = high_state.permissions.get(obj_id, [])
+            high_permissions = high_state.permissions.get(obj_id, set())
+            high_storage_permissions = high_state.storage_permissions.get(obj_id, set())
             diff = ObjectDiff.from_objects(
-                low_obj, high_obj, low_permissions, high_permissions
+                low_obj=low_obj,
+                high_obj=high_obj,
+                low_permissions=low_permissions,
+                high_permissions=high_permissions,
+                low_storage_permissions=low_storage_permissions,
+                high_storage_permissions=high_storage_permissions,
+                low_node_uid=low_state.node_uid,
+                high_node_uid=high_state.node_uid,
             )
             obj_uid_to_diff[diff.object_id] = diff
 
-        node_diff = cls(obj_uid_to_diff=obj_uid_to_diff)
+        node_diff = cls(
+            low_node_uid=low_state.node_uid,
+            high_node_uid=high_state.node_uid,
+            obj_uid_to_diff=obj_uid_to_diff,
+        )
 
         node_diff._init_dependencies(low_state, high_state)
         return node_diff
@@ -583,7 +641,10 @@ class NodeDiff(SyftObject):
             for diff in hierarchy.diffs:
                 obj = diff.low_obj if diff.low_obj is not None else diff.high_obj
                 if isinstance(obj, UserCode):
-                    grouped_by_usercode[obj.id] = hierarchy
+                    usercode_id = obj.id
+                    if usercode_id not in grouped_by_usercode:
+                        grouped_by_usercode[usercode_id] = []
+                    grouped_by_usercode[usercode_id].append(hierarchy)
                     has_usercode = True
                     break
             if not has_usercode:
@@ -668,11 +729,14 @@ class NodeDiff(SyftObject):
             }
 
             batch = ObjectDiffBatch(
-                diffs=diffs, hierarchy_levels=levels, dependencies=dependencies
+                diffs=diffs,
+                hierarchy_levels=levels,
+                dependencies=dependencies,
             )
             hierarchies.append(batch)
 
-        return hierarchies
+        hierarchies_sorted = self._sort_hierarchies(hierarchies)
+        return hierarchies_sorted
 
     def objs_to_sync(self) -> list[SyftObject]:
         objs: list[SyftObject] = []
@@ -682,34 +746,70 @@ class NodeDiff(SyftObject):
         return objs
 
 
+class SyncDecision(SyftObject):
+    __canonical_name__ = "SyncDecision"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    diff: ObjectDiff
+    decision: str | None
+    new_permissions_lowside: list[ActionObjectPermission]
+    new_storage_permissions_lowside: list[StoragePermission]
+    new_storage_permissions_highside: list[StoragePermission]
+    mockify: bool
+
+
 class ResolvedSyncState(SyftObject):
     __canonical_name__ = "SyncUpdate"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    create_objs: list[SyftObject] = []
-    update_objs: list[SyftObject] = []
+    node_uid: UID
+    create_objs: list[SyncableSyftObject] = []
+    update_objs: list[SyncableSyftObject] = []
     delete_objs: list[SyftObject] = []
     new_permissions: list[ActionObjectPermission] = []
+    new_storage_permissions: list[StoragePermission] = []
     alias: str
 
-    def add_cruds_from_diff(self, diff: ObjectDiff, decision: str) -> None:
+    def add_sync_decision(self, sync_decision: SyncDecision) -> None:
+        diff = sync_decision.diff
+
         if diff.status == "SAME":
             return
 
         my_obj = diff.low_obj if self.alias == "low" else diff.high_obj
         other_obj = diff.low_obj if self.alias == "high" else diff.high_obj
 
-        if decision != self.alias:  # chose for the other
+        if other_obj is not None and sync_decision.mockify:
+            other_obj = other_obj.create_shareable_sync_copy(mock=True)
+
+        if sync_decision.decision != self.alias:  # chose for the other
             if diff.status == "DIFF":
-                if other_obj not in self.update_objs:
+                # keep IDs comparison here, otherwise it will break with actionobjects
+                if other_obj.id not in [x.id for x in self.update_objs]:  # type: ignore
                     self.update_objs.append(other_obj)
+
             elif diff.status == "NEW":
                 if my_obj is None:
-                    if other_obj not in self.create_objs:
+                    # keep IDs comparison here, otherwise it will break with actionobjects
+                    if other_obj.id not in [x.id for x in self.create_objs]:  # type: ignore
                         self.create_objs.append(other_obj)
+
                 elif other_obj is None:
-                    if my_obj not in self.delete_objs:
+                    # keep IDs comparison here, otherwise it will break with actionobjects
+                    if my_obj.id not in [x.id for x in self.delete_objs]:
                         self.delete_objs.append(my_obj)
+
+        if self.alias == "low":
+            self.new_permissions.extend(sync_decision.new_permissions_lowside)
+            self.new_storage_permissions.extend(
+                sync_decision.new_storage_permissions_lowside
+            )
+        elif self.alias == "high":
+            self.new_storage_permissions.extend(
+                sync_decision.new_storage_permissions_highside
+            )
+        else:
+            raise ValueError("Invalid alias")
 
     def __repr__(self) -> str:
         return (

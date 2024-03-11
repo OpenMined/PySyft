@@ -42,6 +42,7 @@ class SyftWorkerPoolStash(BaseUIDStoreStash):
         credentials: SyftVerifyKey,
         obj: WorkerPool,
         add_permissions: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[WorkerPool, str]:
         # By default all worker pools have all read permission
@@ -49,7 +50,13 @@ class SyftWorkerPoolStash(BaseUIDStoreStash):
         add_permissions.append(
             ActionObjectPermission(uid=obj.id, permission=ActionPermission.ALL_READ)
         )
-        return super().set(credentials, obj, add_permissions, ignore_duplicates)
+        return super().set(
+            credentials,
+            obj,
+            add_permissions=add_permissions,
+            add_storage_permission=add_storage_permission,
+            ignore_duplicates=ignore_duplicates,
+        )
 
     def get_by_image_uid(
         self, credentials: SyftVerifyKey, image_uid: UID
