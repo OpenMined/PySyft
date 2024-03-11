@@ -146,7 +146,7 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
     SMTP_TLS: bool = True
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", 587))
-    SMTP_HOST: Optional[str] = os.getenv("SMTP_HOST", "")
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "")
 
     TEST_MODE: bool = (
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False

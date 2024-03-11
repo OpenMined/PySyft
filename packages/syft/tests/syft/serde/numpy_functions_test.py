@@ -7,8 +7,8 @@ from syft import ActionObject
 from syft.service.response import SyftAttributeError
 
 # relative
-from ..utils import PYTHON_AT_LEAST_3_12
-from ..utils import currently_fail_on_python_3_12
+from ...utils.custom_markers import PYTHON_AT_LEAST_3_12
+from ...utils.custom_markers import currently_fail_on_python_3_12
 
 PYTHON_ARRAY = [0, 1, 1, 2, 2, 3]
 NP_ARRAY = np.array([0, 1, 1, 5, 5, 3])
