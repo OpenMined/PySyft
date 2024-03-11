@@ -40,9 +40,8 @@ def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> Any:
     if isinstance(item, ActionObject):
         service = context.node.get_service("actionservice")
         return service.store
-    else:
-        service = context.node.get_service(TYPE_TO_SERVICE[type(item)])  # type: ignore
-        return service.stash.partition
+    service = context.node.get_service(TYPE_TO_SERVICE[type(item)])  # type: ignore
+    return service.stash.partition
 
 
 @instrument
