@@ -57,6 +57,7 @@ class NotifierStash(BaseStash):
         credentials: SyftVerifyKey,
         settings: NotifierSettings,
         add_permissions: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[NotifierSettings, Err]:
         result = self.check_type(settings, self.object_type)

@@ -12,6 +12,7 @@ from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
+from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
@@ -123,3 +124,6 @@ class LogService(AbstractService):
             return result.ok()
         else:
             return SyftError(message=result.err())
+
+
+TYPE_TO_SERVICE[SyftLog] = LogService

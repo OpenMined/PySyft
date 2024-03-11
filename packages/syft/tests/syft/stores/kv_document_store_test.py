@@ -9,6 +9,7 @@ import pytest
 from syft.store.document_store import PartitionSettings
 from syft.store.document_store import QueryKeys
 from syft.store.kv_document_store import KeyValueStorePartition
+from syft.types.uid import UID
 
 # relative
 from .store_mocks_test import MockObjectType
@@ -21,6 +22,7 @@ def kv_store_partition(worker):
     store_config = MockStoreConfig()
     settings = PartitionSettings(name="test", object_type=MockObjectType)
     store = KeyValueStorePartition(
+        node_uid=worker.id,
         root_verify_key=worker.root_client.credentials.verify_key,
         settings=settings,
         store_config=store_config,
@@ -43,7 +45,7 @@ def test_kv_store_partition_init_failed(root_verify_key) -> None:
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
     kv_store_partition = KeyValueStorePartition(
-        root_verify_key, settings=settings, store_config=store_config
+        UID(), root_verify_key, settings=settings, store_config=store_config
     )
 
     res = kv_store_partition.init_store()
@@ -80,7 +82,7 @@ def test_kv_store_partition_set_backend_fail(root_verify_key) -> None:
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
     kv_store_partition = KeyValueStorePartition(
-        root_verify_key, settings=settings, store_config=store_config
+        UID(), root_verify_key, settings=settings, store_config=store_config
     )
     kv_store_partition.init_store()
 
@@ -115,12 +117,20 @@ def test_kv_store_partition_delete(
         assert res.is_ok()
         assert len(kv_store_partition.all(root_verify_key).ok()) == len(objs) - idx - 1
         # check that the corresponding permissions were also deleted
-        assert len(kv_store_partition.data) == len(kv_store_partition.permissions)
+        assert (
+            len(kv_store_partition.data)
+            == len(kv_store_partition.permissions)
+            == len(kv_store_partition.storage_permissions)
+        )
 
         res = kv_store_partition.delete(root_verify_key, key)
         assert res.is_err()
         assert len(kv_store_partition.all(root_verify_key).ok()) == len(objs) - idx - 1
-        assert len(kv_store_partition.data) == len(kv_store_partition.permissions)
+        assert (
+            len(kv_store_partition.data)
+            == len(kv_store_partition.permissions)
+            == len(kv_store_partition.storage_permissions)
+        )
 
     assert len(kv_store_partition.all(root_verify_key).ok()) == 0
 

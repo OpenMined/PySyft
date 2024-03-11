@@ -21,16 +21,15 @@ from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
 from ..service.action.action_permissions import ActionPermission
+from ..service.action.action_permissions import StoragePermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from .document_store import BaseStash
 from .document_store import PartitionKey
-from .document_store import PartitionSettings
 from .document_store import QueryKey
 from .document_store import QueryKeys
-from .document_store import StoreConfig
 from .document_store import StorePartition
 
 
@@ -97,14 +96,6 @@ class KeyValueStorePartition(StorePartition):
             Backend specific configuration
     """
 
-    def __init__(
-        self,
-        root_verify_key: SyftVerifyKey | None,
-        settings: PartitionSettings,
-        store_config: StoreConfig,
-    ):
-        super().__init__(root_verify_key, settings, store_config)
-
     def init_store(self) -> Result[Ok, Err]:
         store_status = super().init_store()
         if store_status.is_err():
@@ -123,6 +114,16 @@ class KeyValueStorePartition(StorePartition):
             # uid -> set['<uid>_permission']
             self.permissions: dict[UID, set[str]] = self.store_config.backing_store(
                 "permissions", self.settings, self.store_config, ddtype=set
+            )
+
+            # uid -> set['<node_uid>']
+            self.storage_permissions: dict[UID, set[UID]] = (
+                self.store_config.backing_store(
+                    "storage_permissions",
+                    self.settings,
+                    self.store_config,
+                    ddtype=set,
+                )
             )
 
             for partition_key in self.unique_cks:
@@ -170,6 +171,7 @@ class KeyValueStorePartition(StorePartition):
         credentials: SyftVerifyKey,
         obj: SyftObject,
         add_permissions: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         try:
@@ -210,15 +212,24 @@ class KeyValueStorePartition(StorePartition):
                     obj=obj,
                 )
                 self.data[uid] = obj
+
+                # Add default permissions
                 if uid not in self.permissions:
-                    # create default permissions
                     self.permissions[uid] = set()
-                permission = f"{credentials.verify}_READ"
-                permissions = self.permissions[uid]
-                permissions.add(permission)
+                self.add_permission(ActionObjectREAD(uid=uid, credentials=credentials))
                 if add_permissions is not None:
-                    permissions.update(x.permission_string for x in add_permissions)
-                self.permissions[uid] = permissions
+                    self.add_permissions(add_permissions)
+
+                if uid not in self.storage_permissions:
+                    self.storage_permissions[uid] = set()
+                if add_storage_permission:
+                    self.add_storage_permission(
+                        StoragePermission(
+                            uid=uid,
+                            node_uid=self.node_uid,
+                        )
+                    )
+
                 return Ok(obj)
             else:
                 return Err(f"Permission: {write_permission} denied")
@@ -289,6 +300,25 @@ class KeyValueStorePartition(StorePartition):
         elif permission.permission == ActionPermission.EXECUTE:
             pass
 
+        return False
+
+    def add_storage_permission(self, permission: StoragePermission) -> None:
+        permissions = self.storage_permissions[permission.uid]
+        permissions.add(permission.node_uid)
+        self.storage_permissions[permission.uid] = permissions
+
+    def add_storage_permissions(self, permissions: list[StoragePermission]) -> None:
+        for permission in permissions:
+            self.add_storage_permission(permission)
+
+    def remove_storage_permission(self, permission: StoragePermission) -> None:
+        permissions = self.storage_permissions[permission.uid]
+        permissions.remove(permission.node_uid)
+        self.storage_permissions[permission.uid] = permissions
+
+    def has_storage_permission(self, permission: StoragePermission) -> bool:
+        if permission.uid in self.storage_permissions:
+            return permission.node_uid in self.storage_permissions[permission.uid]
         return False
 
     def _all(
@@ -458,6 +488,7 @@ class KeyValueStorePartition(StorePartition):
             ):
                 _obj = self.data.pop(qk.value)
                 self.permissions.pop(qk.value)
+                self.storage_permissions.pop(qk.value)
                 self._delete_unique_keys_for(_obj)
                 self._delete_search_keys_for(_obj)
                 return Ok(SyftSuccess(message="Deleted"))

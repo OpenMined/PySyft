@@ -77,7 +77,7 @@ def create_unique(
 
 @pytest.fixture
 def base_stash(root_verify_key) -> MockStash:
-    return MockStash(store=DictDocumentStore(root_verify_key))
+    return MockStash(store=DictDocumentStore(UID(), root_verify_key))
 
 
 def random_sentence(faker: Faker) -> str:
