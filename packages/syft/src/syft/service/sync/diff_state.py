@@ -176,6 +176,30 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         "high_state",
     ]
 
+    def is_mock(self, side: str) -> bool:
+        # An object is a mock object if it exists on both sides,
+        # and has no storage permissions on `side`
+        # NOTE both sides must have the objects, else it is a new object.
+        # New+mock objects do not appear naturally, but if they do we
+        # want them to show up.
+        if side == "low":
+            obj = self.low_obj
+            other_obj = self.high_obj
+            permissions = self.low_storage_permissions
+            node_uid = self.low_node_uid
+        elif side == "high":
+            obj = self.high_obj
+            other_obj = self.low_obj
+            permissions = self.high_storage_permissions
+            node_uid = self.high_node_uid
+        else:
+            raise ValueError("Invalid side")
+
+        if obj is None or other_obj is None:
+            return False
+
+        return node_uid not in permissions
+
     @classmethod
     def from_objects(
         cls,
@@ -192,12 +216,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
             raise ValueError("Both low and high objects are None")
         obj_type = type(low_obj if low_obj is not None else high_obj)
 
-        if low_obj is None or high_obj is None:
-            diff_list = []
-        else:
-            diff_list = low_obj.syft_get_diffs(high_obj)
-
-        return cls(
+        res = cls(
             low_obj=low_obj,
             high_obj=high_obj,
             obj_type=obj_type,
@@ -207,8 +226,20 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
             high_permissions=high_permissions,
             low_storage_permissions=low_storage_permissions,
             high_storage_permissions=high_storage_permissions,
-            diff_list=diff_list,
         )
+
+        if (
+            low_obj is None
+            or high_obj is None
+            or res.is_mock("low")
+            or res.is_mock("high")
+        ):
+            diff_list = []
+        else:
+            diff_list = low_obj.syft_get_diffs(high_obj)
+
+        res.diff_list = diff_list
+        return res
 
     def __hash__(self) -> int:
         return hash(self.id) + hash(self.low_obj) + hash(self.high_obj)
@@ -730,6 +761,7 @@ class SyncDecision(SyftObject):
     decision: Optional[str]
     new_permissions_lowside: List[ActionObjectPermission]
     new_storage_permissions_lowside: List[StoragePermission]
+    new_storage_permissions_highside: List[StoragePermission]
     mockify: bool
 
 
@@ -737,6 +769,7 @@ class ResolvedSyncState(SyftObject):
     __canonical_name__ = "SyncUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    node_uid: UID
     create_objs: List[SyncableSyftObject] = []
     update_objs: List[SyncableSyftObject] = []
     delete_objs: List[SyftObject] = []
@@ -778,6 +811,12 @@ class ResolvedSyncState(SyftObject):
             self.new_storage_permissions.extend(
                 sync_decision.new_storage_permissions_lowside
             )
+        elif self.alias == "high":
+            self.new_storage_permissions.extend(
+                sync_decision.new_storage_permissions_highside
+            )
+        else:
+            raise ValueError("Invalid alias")
 
     def __repr__(self) -> str:
         return (

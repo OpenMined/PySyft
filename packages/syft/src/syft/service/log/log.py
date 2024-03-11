@@ -32,7 +32,7 @@ class SyftLog(SyncableSyftObject):
 
     __repr_attrs__ = ["stdout", "stderr"]
     __exclude_sync_diff_attrs__: List[str] = []
-    __private_sync_attrs__: ClassVar[dict[str, Any]] = {
+    __private_sync_attr_mocks__: ClassVar[dict[str, Any]] = {
         "stderr": "",
         "stdout": "",
     }

@@ -5,7 +5,6 @@ from textwrap import dedent
 # third party
 import numpy as np
 import pytest
-import mock
 
 # syft absolute
 import syft as sy
@@ -184,7 +183,9 @@ def test_sync_flow():
     assert res_low.get() == private_high.mean()
 
     assert (
-        res_low.id.id == job_high.result.id.id == code.output_history[-1].outputs[0].id.id
+        res_low.id.id
+        == job_high.result.id.id
+        == code.output_history[-1].outputs[0].id.id
     )
     assert (
         job_high.result.syft_blob_storage_entry_id == res_low.syft_blob_storage_entry_id
@@ -200,6 +201,7 @@ def test_sync_flow():
     )
     low_worker.close()
     high_worker.close()
+
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 @pytest.mark.flaky(reruns=5, reruns_delay=1)
@@ -353,7 +355,10 @@ def test_sync_flow_no_sharing():
     high_state = high_client.get_sync_state()
     res_low = client_low_ds.code.compute_mean(data=data_low)
     assert isinstance(res_low, SyftError)
-    assert res_low.message == f"Permission: [READ: {job_high.result.id.id} as {client_low_ds.verify_key}] denied"
+    assert (
+        res_low.message
+        == f"Permission: [READ: {job_high.result.id.id} as {client_low_ds.verify_key}] denied"
+    )
 
     job_low = client_low_ds.code.compute_mean(data=data_low, blocking=False)
 
@@ -361,7 +366,10 @@ def test_sync_flow_no_sharing():
     assert job_low.result.id == job_high.result.id
     result = job_low.result.get()
     assert isinstance(result, SyftError)
-    assert result.message == f"Permission: [READ: {job_high.result.id.id} as {client_low_ds.verify_key}] denied"
+    assert (
+        result.message
+        == f"Permission: [READ: {job_high.result.id.id} as {client_low_ds.verify_key}] denied"
+    )
 
     low_worker.close()
     high_worker.close()

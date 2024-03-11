@@ -170,12 +170,11 @@ class SyncService(AbstractService):
         if exists:
             res = stash.update(creds, item)
         else:
-            # If the item is a mock object, do not add storage permissions
-            add_storage_permission = not item.from_mock_sync
+            # Storage permissions are added separately
             res = stash.set(
                 creds,
                 item,
-                add_storage_permission=add_storage_permission,
+                add_storage_permission=False,
             )
 
         return res
@@ -195,23 +194,21 @@ class SyncService(AbstractService):
         permissions = defaultdict(set, permissions)
         storage_permissions = defaultdict(set, storage_permissions)
         for item in items:
-            other_node_permissions = permissions[item.id.id]
-            other_node_storage_permissions = storage_permissions[item.id.id]
+            new_permissions = permissions[item.id.id]
+            new_storage_permissions = storage_permissions[item.id.id]
             if isinstance(item, ActionObject):
-                self.add_actionobject_read_permissions(
-                    context, item, other_node_permissions
-                )
+                self.add_actionobject_read_permissions(context, item, new_permissions)
                 self.add_storage_permissions_for_item(
-                    context, item, other_node_storage_permissions
+                    context, item, new_storage_permissions
                 )
             else:
                 item = self.transform_item(context, item)  # type: ignore[unreachable]
                 res = self.set_object(context, item)
 
                 if res.is_ok():
-                    self.add_permissions_for_item(context, item, other_node_permissions)
+                    self.add_permissions_for_item(context, item, new_permissions)
                     self.add_storage_permissions_for_item(
-                        context, item, other_node_storage_permissions
+                        context, item, new_storage_permissions
                     )
                 else:
                     return SyftError(message=f"Failed to sync {res.err()}")

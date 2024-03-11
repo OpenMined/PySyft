@@ -202,9 +202,8 @@ class DomainClient(SyftClient):
                 storage_permissions[sp.uid] = {sp.node_uid}
 
         for action_object in action_objects:
-            action_object.send(
-                self, add_storage_permission=not action_object.from_mock_sync
-            )
+            # NOTE permissions are added separately server side
+            action_object._send(self, add_storage_permission=False)
 
         res = self.api.services.sync.sync_items(
             items,

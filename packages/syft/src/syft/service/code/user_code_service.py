@@ -308,7 +308,8 @@ class UserCodeService(AbstractService):
                     )
                     if res.is_err():
                         return res
-                    return Ok(delist_if_single(res.ok()))
+                    res = delist_if_single(res.ok())
+                    return Ok(res)
                 else:
                     return SyftError(message="No results available")
         else:
@@ -439,7 +440,8 @@ class UserCodeService(AbstractService):
                             if result.is_err():
                                 return result
 
-                            return Ok(delist_if_single(result.ok()))
+                            res = delist_if_single(result.ok())
+                            return Ok(res)
                         else:
                             return is_valid.to_result()
                     return can_execute.to_result()  # type: ignore

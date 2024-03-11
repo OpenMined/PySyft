@@ -16,20 +16,16 @@ class SyncableSyftObject(SyftObject):
     __canonical_name__ = "SyncableSyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
     # mapping of private attributes and their mock values
-    __private_sync_attrs__: ClassVar[dict[str, any]] = {}
-
-    from_mock_sync: bool = False
+    __private_sync_attr_mocks__: ClassVar[dict[str, any]] = {}
 
     @classmethod
     def _has_private_sync_attrs(cls: Type[Self]) -> bool:
-        return len(cls.__private_sync_attrs__) > 0
+        return len(cls.__private_sync_attr_mocks__) > 0
 
     def create_shareable_sync_copy(self, mock: bool) -> Self:
         update: dict[str, Any] = {}
-        if mock:
-            if self._has_private_sync_attrs():
-                update |= copy.deepcopy(self.__private_sync_attrs__)
-            update["from_mock_sync"] = True
+        if mock and self._has_private_sync_attrs():
+            update |= copy.deepcopy(self.__private_sync_attr_mocks__)
         return self.model_copy(update=update, deep=True)
 
     def get_sync_dependencies(self, api: Any = None) -> list[SyftObject]:

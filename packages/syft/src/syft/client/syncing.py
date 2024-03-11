@@ -37,15 +37,15 @@ def get_user_input_for_resolve() -> Optional[str]:
 
 
 def resolve(
-    state: NodeDiff, 
-    decision: Optional[str] = None, 
+    state: NodeDiff,
+    decision: Optional[str] = None,
     share_private_objects: bool = False,
-    ask_for_input: bool =True,
+    ask_for_input: bool = True,
 ) -> tuple[ResolvedSyncState, ResolvedSyncState]:
     # TODO: only add permissions for objects where we manually give permission
     # Maybe default read permission for some objects (high -> low)
-    resolved_state_low: ResolvedSyncState = ResolvedSyncState(alias="low")
-    resolved_state_high: ResolvedSyncState = ResolvedSyncState(alias="high")
+    resolved_state_low = ResolvedSyncState(node_uid=state.low_node_uid, alias="low")
+    resolved_state_high = ResolvedSyncState(node_uid=state.high_node_uid, alias="high")
 
     for batch_diff in state.hierarchies:
         batch_decision = decision
@@ -82,7 +82,7 @@ def get_sync_decisions_for_batch_items(
     batch_diff: ObjectDiffBatch,
     decision: str,
     share_private_objects: bool = False,
-    ask_for_input: bool =True,
+    ask_for_input: bool = True,
 ) -> list[SyncDecision]:
     sync_decisions: list[SyncDecision] = []
 
@@ -163,12 +163,21 @@ def get_sync_decisions_for_batch_items(
                 StoragePermission(uid=diff.object_id, node_uid=diff.low_node_uid)
             ]
 
+        # Always share to high_side
+        if diff.status == "NEW" and diff.high_obj is None:
+            new_storage_permissions_highside = [
+                StoragePermission(uid=diff.object_id, node_uid=diff.high_node_uid)
+            ]
+        else:
+            new_storage_permissions_highside = []
+
         sync_decisions.append(
             SyncDecision(
                 diff=diff,
                 decision=decision,
                 new_permissions_lowside=new_permissions_low_side,
                 new_storage_permissions_lowside=new_storage_permissions_lowside,
+                new_storage_permissions_highside=new_storage_permissions_highside,
                 mockify=mockify,
             )
         )
@@ -240,16 +249,7 @@ def ask_user_input_permission(
 
                 remaining_private_high_diffs.remove(diff)
                 private_high_diffs_to_share.append(diff)
-                # new_permissions_lowside.append(
-                #     ActionObjectPermission(
-                #         uid=diff.object_id,
-                #         permission=ActionPermission.READ,
-                #         credentials=user_code_high.user_verify_key,
-                #     )
-                # )
-                # questions
-                # Q:do we also want to give read permission if we defined that by accept_by_depositing_result?
-                # A:only if we pass: sync_read_permission to resolve
+
             else:
                 print("Found multiple matches for provided id, exiting")
                 break

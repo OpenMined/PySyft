@@ -186,7 +186,6 @@ class KeyValueActionStore(ActionStore):
                 # create default storage permissions
                 self.storage_permissions[uid] = set()
             if add_storage_permission:
-                print("ADDING STORE PERMISSION ON SET", uid, self.node_uid)
                 self.add_storage_permission(
                     StoragePermission(uid=uid, node_uid=self.node_uid)
                 )
