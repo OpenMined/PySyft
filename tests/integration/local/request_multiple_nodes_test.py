@@ -1,4 +1,5 @@
 # stdlib
+from secrets import token_hex
 from textwrap import dedent
 
 # third party
@@ -12,9 +13,9 @@ from syft.service.job.job_stash import JobStatus
 
 
 @pytest.fixture(scope="function")
-def node_1(faker):
+def node_1():
     node = sy.orchestra.launch(
-        name=faker.name(),
+        name=token_hex(8),
         node_side_type="low",
         dev_mode=False,
         reset=True,
@@ -28,9 +29,9 @@ def node_1(faker):
 
 
 @pytest.fixture(scope="function")
-def node_2(faker):
+def node_2():
     node = sy.orchestra.launch(
-        name=faker.name(),
+        name=token_hex(8),
         node_side_type="high",
         dev_mode=False,
         reset=True,
