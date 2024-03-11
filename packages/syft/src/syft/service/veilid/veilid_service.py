@@ -1,6 +1,5 @@
 # stdlib
-from typing import Callable
-from typing import Union
+from collections.abc import Callable
 
 # third party
 import requests
@@ -32,7 +31,7 @@ class VeilidService(AbstractService):
 
     def perform_request(
         self, method: Callable, endpoint: str, raw: bool = False
-    ) -> Union[SyftSuccess, SyftError, str]:
+    ) -> SyftSuccess | SyftError | str:
         try:
             response = method(f"{VEILID_SERVICE_URL}{endpoint}")
             response.raise_for_status()
@@ -54,7 +53,7 @@ class VeilidService(AbstractService):
         name="generate_dht_key",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def generate_dht_key(self, context: AuthedServiceContext) -> Union[str, SyftError]:
+    def generate_dht_key(self, context: AuthedServiceContext) -> str | SyftError:
         if not self.is_veilid_service_healthy():
             return SyftError(
                 message="Veilid service is not healthy. Please try again later."
@@ -69,7 +68,7 @@ class VeilidService(AbstractService):
         name="retrieve_dht_key",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def retrieve_dht_key(self, context: AuthedServiceContext) -> Union[str, SyftError]:
+    def retrieve_dht_key(self, context: AuthedServiceContext) -> str | SyftError:
         if not self.is_veilid_service_healthy():
             return SyftError(
                 message="Veilid service is not healthy. Please try again later."
@@ -86,7 +85,7 @@ class VeilidService(AbstractService):
     )
     def get_veilid_route(
         self, context: AuthedServiceContext
-    ) -> Union[VeilidNodeRoute, SyftError]:
+    ) -> VeilidNodeRoute | SyftError:
         dht_key = self.retrieve_dht_key(context)
         if isinstance(dht_key, SyftError):
             return dht_key

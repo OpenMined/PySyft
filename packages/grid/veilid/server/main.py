@@ -3,6 +3,7 @@ import json
 import lzma
 import os
 import sys
+from typing import Annotated
 
 # third party
 from fastapi import Body
@@ -11,7 +12,6 @@ from fastapi import HTTPException
 from fastapi import Request
 from fastapi import Response
 from loguru import logger
-from typing_extensions import Annotated
 
 # relative
 from .models import ResponseModel

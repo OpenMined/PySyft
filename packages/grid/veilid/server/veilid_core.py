@@ -1,11 +1,8 @@
 # stdlib
 import base64
+from collections.abc import Callable
 import json
 import lzma
-from typing import Callable
-from typing import Optional
-from typing import Tuple
-from typing import Union
 
 # third party
 import httpx
@@ -94,10 +91,10 @@ class VeilidConnectionSingleton:
         return cls._instance
 
     def __init__(self) -> None:
-        self._connection: Optional[_JsonVeilidAPI] = None
+        self._connection: _JsonVeilidAPI | None = None
 
     @property
-    def connection(self) -> Optional[_JsonVeilidAPI]:
+    def connection(self) -> _JsonVeilidAPI | None:
         return self._connection
 
     async def initialize_connection(self) -> None:
@@ -116,7 +113,7 @@ async def create_private_route(
     conn: _JsonVeilidAPI,
     stability: Stability = veilid.Stability.RELIABLE,
     sequencing: Sequencing = veilid.Sequencing.ENSURE_ORDERED,
-) -> Tuple[RouteId, bytes]:
+) -> tuple[RouteId, bytes]:
     route_id, route_blob = await conn.new_custom_private_route(
         [veilid.CryptoKind.CRYPTO_KIND_VLD0],
         stability=stability,
@@ -198,7 +195,7 @@ async def get_dht_value(
 # TODO: change verbosity of logs to debug at appropriate places
 async def get_route_from_dht_record(
     dht_key: str, conn: _JsonVeilidAPI, router: _JsonRoutingContext
-) -> Union[str, RouteId]:
+) -> str | RouteId:
     dht_key = veilid.TypedKey(dht_key)
     logger.info(f"App Call to DHT Key: {dht_key}")
     dht_value = await get_dht_value(router, dht_key, 0)
