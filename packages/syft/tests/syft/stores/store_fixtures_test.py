@@ -33,6 +33,7 @@ from syft.store.sqlite_document_store import SQLiteDocumentStore
 from syft.store.sqlite_document_store import SQLiteStoreClientConfig
 from syft.store.sqlite_document_store import SQLiteStoreConfig
 from syft.store.sqlite_document_store import SQLiteStorePartition
+from syft.types.uid import UID
 
 # relative
 from .store_constants_test import generate_db_name
@@ -143,7 +144,7 @@ def sqlite_store_partition_fn(
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
     store = SQLiteStorePartition(
-        root_verify_key, settings=settings, store_config=store_config
+        UID(), root_verify_key, settings=settings, store_config=store_config
     )
 
     res = store.init_store()
@@ -175,7 +176,7 @@ def sqlite_document_store_fn(
         client_config=sqlite_config, locking_config=locking_config
     )
 
-    return SQLiteDocumentStore(root_verify_key, store_config=store_config)
+    return SQLiteDocumentStore(UID(), root_verify_key, store_config=store_config)
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
@@ -218,7 +219,11 @@ def sqlite_action_store(sqlite_workspace: tuple[Path, str], request):
     )
 
     ver_key = SyftVerifyKey.from_string(test_verify_key_string_root)
-    return SQLiteActionStore(store_config=store_config, root_verify_key=ver_key)
+    return SQLiteActionStore(
+        node_uid=UID(),
+        store_config=store_config,
+        root_verify_key=ver_key,
+    )
 
 
 def mongo_store_partition_fn(
@@ -238,7 +243,7 @@ def mongo_store_partition_fn(
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
     return MongoStorePartition(
-        root_verify_key, settings=settings, store_config=store_config
+        UID(), root_verify_key, settings=settings, store_config=store_config
     )
 
 
@@ -278,7 +283,7 @@ def mongo_document_store_fn(
 
     mongo_client.drop_database(mongo_db_name)
 
-    return MongoDocumentStore(root_verify_key, store_config=store_config)
+    return MongoDocumentStore(UID(), root_verify_key, store_config=store_config)
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
@@ -327,7 +332,9 @@ def mongo_action_store(mongo_server_mock, request):
     )
     ver_key = SyftVerifyKey.from_string(test_verify_key_string_root)
     mongo_action_store = MongoActionStore(
-        store_config=store_config, root_verify_key=ver_key
+        node_uid=UID(),
+        store_config=store_config,
+        root_verify_key=ver_key,
     )
 
     return mongo_action_store
@@ -342,7 +349,7 @@ def dict_store_partition_fn(
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
     return DictStorePartition(
-        root_verify_key, settings=settings, store_config=store_config
+        UID(), root_verify_key, settings=settings, store_config=store_config
     )
 
 
@@ -361,13 +368,17 @@ def dict_action_store(request):
 
     store_config = DictStoreConfig(locking_config=locking_config)
     ver_key = SyftVerifyKey.from_string(test_verify_key_string_root)
-    return DictActionStore(store_config=store_config, root_verify_key=ver_key)
+    return DictActionStore(
+        node_uid=UID(),
+        store_config=store_config,
+        root_verify_key=ver_key,
+    )
 
 
 def dict_document_store_fn(root_verify_key, locking_config_name: str = "nop"):
     locking_config = str_to_locking_config(locking_config_name)
     store_config = DictStoreConfig(locking_config=locking_config)
-    return DictDocumentStore(root_verify_key, store_config=store_config)
+    return DictDocumentStore(UID(), root_verify_key, store_config=store_config)
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)

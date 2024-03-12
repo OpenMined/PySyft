@@ -720,7 +720,7 @@ class CreateDataset(Dataset):
 
 def create_and_store_twin(context: TransformContext) -> TransformContext:
     if context.output is None:
-        raise ValueError("f{context}'s output is None. No trasformation happened")
+        raise ValueError(f"{context}'s output is None. No transformation happened")
 
     action_id = context.output["action_id"]
     if action_id is None:
@@ -760,13 +760,13 @@ def infer_shape(context: TransformContext) -> TransformContext:
         if context.obj is not None and not _is_action_data_empty(context.obj.mock):
             context.output["shape"] = get_shape_or_len(context.obj.mock)
     else:
-        print("f{context}'s output is None. No trasformation happened")
+        print(f"{context}'s output is None. No transformation happened")
     return context
 
 
 def set_data_subjects(context: TransformContext) -> TransformContext | SyftError:
     if context.output is None:
-        return SyftError("f{context}'s output is None. No trasformation happened")
+        return SyftError(f"{context}'s output is None. No transformation happened")
     if context.node is None:
         return SyftError(
             "f{context}'s node is None, please log in. No trasformation happened"
@@ -796,7 +796,7 @@ def add_default_node_uid(context: TransformContext) -> TransformContext:
         if context.output["node_uid"] is None and context.node is not None:
             context.output["node_uid"] = context.node.id
     else:
-        print("f{context}'s output is None. No trasformation happened.")
+        print(f"{context}'s output is None. No transformation happened.")
     return context
 
 

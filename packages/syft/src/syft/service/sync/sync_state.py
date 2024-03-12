@@ -10,9 +10,9 @@ from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ..action.action_permissions import ActionPermission
 
 if TYPE_CHECKING:
     # relative
@@ -74,11 +74,13 @@ class SyncState(SyftObject):
     __canonical_name__ = "SyncState"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    objects: dict[UID, SyftObject] = {}
+    node_uid: UID
+    objects: dict[UID, SyncableSyftObject] = {}
     dependencies: dict[UID, list[UID]] = {}
     created_at: DateTime = DateTime.now()
     previous_state_link: LinkedObject | None = None
-    permissions: dict[UID, list[ActionPermission]] = {}
+    permissions: dict[UID, set[str]] = {}
+    storage_permissions: dict[UID, set[UID]] = {}
 
     __attr_searchable__ = ["created_at"]
 
@@ -92,7 +94,7 @@ class SyncState(SyftObject):
     def all_ids(self) -> set[UID]:
         return set(self.objects.keys())
 
-    def add_objects(self, objects: list[SyftObject], api: Any = None) -> None:
+    def add_objects(self, objects: list[SyncableSyftObject], api: Any = None) -> None:
         for obj in objects:
             if isinstance(obj.id, LineageID):
                 self.objects[obj.id.id] = obj
@@ -111,7 +113,7 @@ class SyncState(SyftObject):
         for obj in self.objects.values():
             if hasattr(obj, "get_sync_dependencies"):
                 deps = obj.get_sync_dependencies(api=api)
-                deps = [d.id for d in deps if d.id in all_ids]
+                deps = [d.id for d in deps if d.id in all_ids]  # type: ignore
                 if len(deps):
                     self.dependencies[obj.id] = deps
 
@@ -121,7 +123,7 @@ class SyncState(SyftObject):
         # relative
         from .diff_state import NodeDiff
 
-        previous_state = self.previous_state or SyncState()
+        previous_state = self.previous_state or SyncState(node_uid=self.node_uid)
         return NodeDiff.from_sync_state(previous_state, self)
 
     @property

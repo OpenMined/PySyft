@@ -895,6 +895,7 @@ class Node(AbstractNode):
             self.document_store_config.client_config.node_obj_python_id = id(self)
 
         self.document_store = document_store(
+            node_uid=self.id,
             root_verify_key=self.verify_key,
             store_config=document_store_config,
         )
@@ -913,6 +914,7 @@ class Node(AbstractNode):
 
         if isinstance(action_store_config, SQLiteStoreConfig):
             self.action_store: ActionStore = SQLiteActionStore(
+                node_uid=self.id,
                 store_config=action_store_config,
                 root_verify_key=self.verify_key,
             )
@@ -924,10 +926,15 @@ class Node(AbstractNode):
             action_store_config.client_config.node_obj_python_id = id(self)
 
             self.action_store = MongoActionStore(
-                root_verify_key=self.verify_key, store_config=action_store_config
+                node_uid=self.id,
+                root_verify_key=self.verify_key,
+                store_config=action_store_config,
             )
         else:
-            self.action_store = DictActionStore(root_verify_key=self.verify_key)
+            self.action_store = DictActionStore(
+                node_uid=self.id,
+                root_verify_key=self.verify_key,
+            )
 
         self.action_store_config = action_store_config
         self.queue_stash = QueueStash(store=self.document_store)
