@@ -9,7 +9,6 @@ from result import Result
 # relative
 from ...abstract_node import AbstractNode
 from ...client.api import NodeIdentity
-from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
@@ -58,28 +57,23 @@ class SyncService(AbstractService):
         self,
         context: AuthedServiceContext,
         action_object: ActionObject,
-        permissions_other: list[str],
+        new_permissions: list[ActionObjectPermission],
     ) -> None:
-        read_permissions = [x for x in permissions_other if "READ" in x]
-
-        _id = action_object.id.id
         blob_id = action_object.syft_blob_storage_entry_id
 
         store_to = context.node.get_service("actionservice").store  # type: ignore
         store_to_blob = context.node.get_service("blobstorageservice").stash.partition  # type: ignore
 
-        for read_permission in read_permissions:
-            creds, perm_str = read_permission.split("_")
-            perm = ActionPermission[perm_str]
-            permission = ActionObjectPermission(
-                uid=_id, permission=perm, credentials=SyftVerifyKey(creds)
-            )
-            store_to.add_permission(permission)
+        for permission in new_permissions:
+            if permission.permission == ActionPermission.READ:
+                store_to.add_permission(permission)
 
-            permission_blob = ActionObjectPermission(
-                uid=blob_id, permission=perm, credentials=SyftVerifyKey(creds)
-            )
-            store_to_blob.add_permission(permission_blob)
+                permission_blob = ActionObjectPermission(
+                    uid=blob_id,
+                    permission=permission.permission,
+                    credentials=permission.credentials,
+                )
+                store_to_blob.add_permission(permission_blob)
 
     def set_obj_ids(self, context: AuthedServiceContext, x: Any) -> None:
         if hasattr(x, "__dict__") and isinstance(x, SyftObject):
@@ -128,33 +122,25 @@ class SyncService(AbstractService):
         self,
         context: AuthedServiceContext,
         item: SyftObject,
-        permissions_other: set[ActionObjectPermission],
+        new_permissions: list[ActionObjectPermission],
     ) -> None:
-        if isinstance(item, Job) and context.node.node_side_type.value == "low":  # type: ignore
-            _id = item.id
-            read_permissions = [x for x in permissions_other if "READ" in x]  # type: ignore
-            job_store = context.node.get_service("jobservice").stash.partition  # type: ignore
-            for read_permission in read_permissions:
-                creds, perm_str = read_permission.split("_")
-                perm = ActionPermission[perm_str]
-                permission = ActionObjectPermission(
-                    uid=_id, permission=perm, credentials=SyftVerifyKey(creds)
-                )
-                job_store.add_permission(permission)
+        if isinstance(item, ActionObject):
+            raise ValueError("ActionObject permissions should be added separately")
+
+        else:
+            store = get_store(context, item)
+            for permission in new_permissions:
+                if permission.permission == ActionPermission.READ:
+                    store.add_permission(permission)
 
     def add_storage_permissions_for_item(
         self,
         context: AuthedServiceContext,
         item: SyftObject,
-        permissions_other: set[UID],
+        new_permissions: list[StoragePermission],
     ) -> None:
-        _id = item.id.id
-        permissions = [
-            StoragePermission(uid=_id, node_uid=p) for p in permissions_other
-        ]
-
         store = get_store(context, item)
-        store.add_storage_permissions(permissions)
+        store.add_storage_permissions(new_permissions)
 
     def set_object(
         self, context: AuthedServiceContext, item: SyncableSyftObject
@@ -184,14 +170,20 @@ class SyncService(AbstractService):
         self,
         context: AuthedServiceContext,
         items: list[ActionObject | SyftObject],
-        permissions: dict[UID, set[str]],
-        storage_permissions: dict[UID, set[UID]],
+        permissions: list[ActionObjectPermission],
+        storage_permissions: list[StoragePermission],
     ) -> SyftSuccess | SyftError:
-        permissions = defaultdict(set, permissions)
-        storage_permissions = defaultdict(set, storage_permissions)
+        permissions_dict = defaultdict(list)
+        for permission in permissions:
+            permissions_dict[permission.uid].append(permission)
+
+        storage_permissions_dict = defaultdict(list)
+        for permission in storage_permissions:
+            storage_permissions_dict[permission.uid].append(permission)
+
         for item in items:
-            new_permissions = permissions[item.id.id]
-            new_storage_permissions = storage_permissions[item.id.id]
+            new_permissions = permissions_dict[item.id.id]
+            new_storage_permissions = storage_permissions_dict[item.id.id]
             if isinstance(item, ActionObject):
                 self.add_actionobject_read_permissions(context, item, new_permissions)
                 self.add_storage_permissions_for_item(

@@ -2,9 +2,14 @@
 from enum import Enum
 from typing import Any
 
+# third party
+from pydantic import model_validator
+
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SyftBaseObject
 from ...types.uid import UID
 
 
@@ -27,19 +32,21 @@ COMPOUND_ACTION_PERMISSION = {
 
 
 @serializable()
-class ActionObjectPermission:
-    def __init__(
-        self,
-        uid: UID,
-        permission: ActionPermission,
-        credentials: SyftVerifyKey | None = None,
-    ):
-        if credentials is None:
+class ActionObjectPermission(SyftBaseObject):
+    __canonical_name__ = "ActionObjectPermission"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    uid: UID
+    credentials: SyftVerifyKey | None = None
+    permission: ActionPermission
+
+    @model_validator(mode="before")
+    def validate_permissions(cls, values: dict) -> dict:
+        if values.get("credentials") is None:
+            permission = values.get("permission")
             if permission not in COMPOUND_ACTION_PERMISSION:
-                raise Exception(f"{permission} not in {COMPOUND_ACTION_PERMISSION}")
-        self.uid = uid
-        self.credentials = credentials
-        self.permission = permission
+                raise ValueError(f"{permission} not in {COMPOUND_ACTION_PERMISSION}")
+        return values
 
     @property
     def permission_string(self) -> str:
@@ -94,10 +101,13 @@ class ActionObjectEXECUTE(ActionObjectPermission):
         self.permission = ActionPermission.EXECUTE
 
 
-class StoragePermission:
-    def __init__(self, uid: UID, node_uid: UID):
-        self.uid = uid
-        self.node_uid = node_uid
+@serializable()
+class StoragePermission(SyftBaseObject):
+    __canonical_name__ = "StoragePermission"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    uid: UID
+    node_uid: UID
 
     def __repr__(self) -> str:
         return f"StoragePermission: {self.uid} on {self.node_uid}"
