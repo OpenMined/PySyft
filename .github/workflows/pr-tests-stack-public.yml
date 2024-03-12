@@ -19,7 +19,7 @@ jobs:
       max-parallel: 99
       matrix:
         os: [ubuntu-latest, macos-latest, windows]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
         pytest-modules: ["frontend network"]
       fail-fast: false
 
