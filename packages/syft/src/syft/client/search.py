@@ -75,4 +75,13 @@ class Search:
         return filtered
 
     def search(self, name: str) -> SearchResults:
+        """
+        Searches for a specific item by name.
+
+        Args:
+            name (str): The name of the dataset to search for.
+
+        Returns:
+            SearchResults: An object containing the search results.
+        """
         return SearchResults(self.__search(name))

@@ -29,8 +29,24 @@ class NetworkRegistry:
     def __init__(self) -> None:
         self.all_networks: list[dict] = []
         try:
-            response = requests.get(NETWORK_REGISTRY_URL)  # nosec
-            network_json = response.json()
+            # response = requests.get(NETWORK_REGISTRY_URL)  # nosec
+            # network_json = response.json()
+            network_json = {
+                "2.0.0": {
+                    "gateways": [
+                        {
+                            "name": "test-gateway",
+                            "host_or_ip": "localhost",
+                            "protocol": "http",
+                            "port": 9082,
+                            "admin_email": "support@openmined.org",
+                            "website": "https://www.openmined.org/",
+                            "slack": "https://slack.openmined.org/",
+                            "slack_channel": "#support",
+                        }
+                    ]
+                }
+            }
             self.all_networks = network_json["2.0.0"]["gateways"]
         except Exception as e:
             warning(
@@ -133,8 +149,24 @@ class DomainRegistry:
         self.all_networks: list[dict] = []
         self.all_domains: list = []
         try:
-            response = requests.get(NETWORK_REGISTRY_URL)  # nosec
-            network_json = response.json()
+            # response = requests.get(NETWORK_REGISTRY_URL)  # nosec
+            # network_json = response.json()
+            network_json = {
+                "2.0.0": {
+                    "gateways": [
+                        {
+                            "name": "test-gateway",
+                            "host_or_ip": "localhost",
+                            "protocol": "http",
+                            "port": 9082,
+                            "admin_email": "support@openmined.org",
+                            "website": "https://www.openmined.org/",
+                            "slack": "https://slack.openmined.org/",
+                            "slack_channel": "#support",
+                        }
+                    ]
+                }
+            }
             self.all_networks = network_json["2.0.0"]["gateways"]
         except Exception as e:
             warning(
@@ -202,8 +234,8 @@ class DomainRegistry:
                 guest_client = peer.guest_client
                 metadata = guest_client.metadata
                 return peer, metadata
-            except Exception:  # nosec
-                pass
+            except Exception as e:  # nosec
+                print(f"Error in checking domain with exception {e}")
             return None
 
         networks = self.online_networks
@@ -216,7 +248,7 @@ class DomainRegistry:
             for network in networks:
                 network_client = NetworkRegistry.create_client(network)
                 domains = network_client.domains
-                self.all_domains += domains
+                self.all_domains += [domains[idx] for idx in range(len(domains))]
                 _online_domains = list(
                     executor.map(lambda domain: check_domain(domain), domains)
                 )
