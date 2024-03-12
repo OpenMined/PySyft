@@ -402,11 +402,13 @@ def generate_remote_lib_function(
 
     def wrapper(*args: Any, **kwargs: Any) -> SyftError | Any:
         # relative
-        from ..service.action.action_object import TraceResult
+        from ..service.action.action_object import TraceResultRegistry
 
-        if TraceResult._client is not None:
-            wrapper_make_call = TraceResult._client.api.make_call
-            wrapper_node_uid = TraceResult._client.api.node_uid
+        trace_result = TraceResultRegistry.get_trace_result_for_thread()
+
+        if trace_result is not None:
+            wrapper_make_call = trace_result._client.api.make_call  # type: ignore
+            wrapper_node_uid = trace_result._client.api.node_uid  # type: ignore
         else:
             # somehow this is necessary to prevent shadowing problems
             wrapper_make_call = make_call
@@ -448,7 +450,8 @@ def generate_remote_lib_function(
         )
         service_args = [action]
         # TODO: implement properly
-        TraceResult.result += [action]
+        if trace_result is not None:
+            trace_result.result += [action]
 
         api_call = SyftAPICall(
             node_uid=wrapper_node_uid,

@@ -7,6 +7,7 @@ from enum import Enum
 import inspect
 from io import BytesIO
 from pathlib import Path
+import threading
 import time
 import traceback
 import types
@@ -15,6 +16,7 @@ from typing import ClassVar
 from typing import TYPE_CHECKING
 
 # third party
+from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
@@ -393,23 +395,49 @@ def make_action_side_effect(
     return Ok((context, args, kwargs))
 
 
-class TraceResult:
+class TraceResultRegistry:
+    __result_registry__: dict[int, TraceResult] = {}
+
+    @classmethod
+    def set_trace_result_for_current_thread(
+        cls,
+        client: SyftClient,
+    ) -> None:
+        cls.__result_registry__[threading.get_ident()] = TraceResult(
+            _client=client, is_tracing=True
+        )
+
+    @classmethod
+    def get_trace_result_for_thread(cls) -> TraceResult | None:
+        return cls.__result_registry__.get(threading.get_ident(), None)
+
+    @classmethod
+    def reset_result_for_thread(cls) -> None:
+        if threading.get_ident() in cls.__result_registry__:
+            del cls.__result_registry__[threading.get_ident()]
+
+    @classmethod
+    def current_thread_is_tracing(cls) -> bool:
+        trace_result = cls.get_trace_result_for_thread()
+        if trace_result is None:
+            return False
+        else:
+            return trace_result.is_tracing
+
+
+class TraceResult(BaseModel):
     result: list = []
     _client: SyftClient | None = None
     is_tracing: bool = False
-
-    @classmethod
-    def reset(cls) -> None:
-        cls.result = []
-        cls._client = None
 
 
 def trace_action_side_effect(
     context: PreHookContext, *args: Any, **kwargs: Any
 ) -> Result[Ok[tuple[PreHookContext, tuple[Any, ...], dict[str, Any]]], Err[str]]:
     action = context.action
-    if action is not None:
-        TraceResult.result += [action]
+    if action is not None and TraceResultRegistry.current_thread_is_tracing():
+        trace_result = TraceResultRegistry.get_trace_result_for_thread()
+        trace_result.result += [action]  # type: ignore
     return Ok((context, args, kwargs))
 
 
@@ -648,7 +676,7 @@ class ActionObject(SyncableSyftObject):
         if (
             self.syft_blob_storage_entry_id
             and self.syft_created_at
-            and not TraceResult.is_tracing
+            and not TraceResultRegistry.current_thread_is_tracing()
         ):
             self.reload_cache()
 
@@ -762,7 +790,7 @@ class ActionObject(SyncableSyftObject):
         result = self._save_to_blob_storage_(data)
         if isinstance(result, SyftError):
             return result
-        if not TraceResult.is_tracing:
+        if not TraceResultRegistry.current_thread_is_tracing():
             self.syft_action_data_cache = self.as_empty_data()
         return None
 
@@ -908,8 +936,9 @@ class ActionObject(SyncableSyftObject):
             create_object=obj,
         )
 
-        if TraceResult.is_tracing:
-            TraceResult.result += [action]
+        if TraceResultRegistry.current_thread_is_tracing():
+            trace_result = TraceResultRegistry.get_trace_result_for_thread()
+            trace_result.result += [action]  # type: ignore
 
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
