@@ -69,9 +69,9 @@
         }
       },
       "ExecutionOutput": {
-        "2": {
-          "version": 2,
-          "hash": "cea37eb81bf90d9072c7b372f34a4c22bbac148e79b75cab6c0673a7a39338fc",
+        "1": {
+          "version": 1,
+          "hash": "abb4ce9172fbba0ea03fcbea7addb06176c8dba6dbcb7143cde350617528a5b7",
           "action": "add"
         }
       },
@@ -100,9 +100,9 @@
         }
       },
       "UserCodeStatusCollection": {
-        "2": {
-          "version": 2,
-          "hash": "457669ef3034f34702678adb27d08b4351f2d9834a4f7b2772f74498ef9d7306",
+        "1": {
+          "version": 1,
+          "hash": "8d8bae10ee1733464272031e7de6fc783668885206fa448c9f7cd8e8cfc7486a",
           "action": "add"
         }
       },
@@ -129,9 +129,9 @@
         }
       },
       "UserCodeExecutionOutput": {
-        "2": {
-          "version": 2,
-          "hash": "4b269be184a959380872144f2e15b0eab4c702a706cb4f69115c4cf32bc0985e",
+        "1": {
+          "version": 1,
+          "hash": "d20e83362df8a5d2d2e7eb26a2c5723739f9cfbe4c0272d3ae7e37a34bbe5317",
           "action": "add"
         }
       },
@@ -238,16 +238,16 @@
         }
       },
       "SyncStateItem": {
-        "2": {
-          "version": 2,
-          "hash": "ec00498874e3dde2977058b4aafbbfa0ed2cb3a52782fe3d5abc91673a592a47",
+        "1": {
+          "version": 1,
+          "hash": "cde09be2cfeca4246d001f3f28c00d8647a4506641104e5dc647f136a64fd06e",
           "action": "add"
         }
       },
       "SyncState": {
-        "2": {
-          "version": 2,
-          "hash": "b5b93ce979a6312986c1ffbc4b88387b8f3b65678d1c3ff658ce44850511fb3d",
+        "1": {
+          "version": 1,
+          "hash": "b91ed9a9eb8ac7e2fadafd9376d8adefc83845d2f29939b30e95ebe94dc78cd9",
           "action": "add"
         }
       },
@@ -760,16 +760,16 @@
         }
       },
       "NotificationPreferences": {
-        "2": {
-          "version": 2,
-          "hash": "1fb990dae28ecf74bb468e517bc5364657d7f11ac4456fc9c816ee36fb9f48d8",
+        "1": {
+          "version": 1,
+          "hash": "127206b9c72d353d9f1b73fb10d8ecd57f28f9bfbfdc2f7648894cb0d2ad2522",
           "action": "add"
         }
       },
       "NotifierSettings": {
-        "2": {
-          "version": 2,
-          "hash": "92d39ab02b4942d57773cd2d9c781f0e7e89e459276799e8cd7d56bf7d5ca543",
+        "1": {
+          "version": 1,
+          "hash": "8505ded16432d1741ee16b0eada22da7c6e36ae7b414cfb59168ac846f3e9f54",
           "action": "add"
         }
       },

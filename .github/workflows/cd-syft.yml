@@ -40,7 +40,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       # The steps ensure that the cron job is able to run only for
       # for beta releases and not for stable releases
@@ -100,7 +100,7 @@ jobs:
         if: ${{ !endsWith(matrix.runner, '-arm64') }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       # Currently psutil package requires gcc to be installed on arm
       # for building psutil from source
@@ -118,7 +118,7 @@ jobs:
         if: ${{ endsWith(matrix.runner, '-arm64') }}
         uses: deadsnakes/action@v3.1.0
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Check python version
         run: |
@@ -362,7 +362,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
