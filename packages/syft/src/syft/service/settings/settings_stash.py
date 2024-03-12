@@ -34,7 +34,8 @@ class SettingsStash(BaseUIDStoreStash):
         self,
         credentials: SyftVerifyKey,
         settings: NodeSettingsV2,
-        add_permissions: list[ActionObjectPermission] | None = None,
+        add_permission: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[NodeSettingsV2, str]:
         res = self.check_type(settings, self.object_type)

@@ -303,12 +303,14 @@ class StorePartition:
 
     def __init__(
         self,
+        node_uid: UID,
         root_verify_key: SyftVerifyKey | None,
         settings: PartitionSettings,
         store_config: StoreConfig,
     ) -> None:
         if root_verify_key is None:
             root_verify_key = SyftSigningKey.generate().verify_key
+        self.node_uid = node_uid
         self.root_verify_key = root_verify_key
         self.settings = settings
         self.store_config = store_config
@@ -358,6 +360,7 @@ class StorePartition:
         credentials: SyftVerifyKey,
         obj: SyftObject,
         add_permissions: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         return self._thread_safe_cbk(
@@ -365,6 +368,7 @@ class StorePartition:
             credentials=credentials,
             obj=obj,
             add_permissions=add_permissions,
+            add_storage_permission=add_storage_permission,
             ignore_duplicates=ignore_duplicates,
         )
 
@@ -465,6 +469,7 @@ class StorePartition:
         credentials: SyftVerifyKey,
         obj: SyftObject,
         add_permissions: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         raise NotImplementedError
@@ -535,17 +540,22 @@ class DocumentStore:
     partition_type: type[StorePartition]
 
     def __init__(
-        self, root_verify_key: SyftVerifyKey | None, store_config: StoreConfig
+        self,
+        node_uid: UID,
+        root_verify_key: SyftVerifyKey | None,
+        store_config: StoreConfig,
     ) -> None:
         if store_config is None:
             raise Exception("must have store config")
         self.partitions = {}
         self.store_config = store_config
+        self.node_uid = node_uid
         self.root_verify_key = root_verify_key
 
     def partition(self, settings: PartitionSettings) -> StorePartition:
         if settings.name not in self.partitions:
             self.partitions[settings.name] = self.partition_type(
+                node_uid=self.node_uid,
                 root_verify_key=self.root_verify_key,
                 settings=settings,
                 store_config=self.store_config,
@@ -598,6 +608,7 @@ class BaseStash:
         credentials: SyftVerifyKey,
         obj: BaseStash.object_type,
         add_permissions: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[BaseStash.object_type, str]:
         return self.partition.set(
@@ -605,6 +616,7 @@ class BaseStash:
             obj=obj,
             ignore_duplicates=ignore_duplicates,
             add_permissions=add_permissions,
+            add_storage_permission=add_storage_permission,
         )
 
     def query_all(
@@ -731,6 +743,7 @@ class BaseUIDStoreStash(BaseStash):
         credentials: SyftVerifyKey,
         obj: BaseUIDStoreStash.object_type,
         add_permissions: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[BaseUIDStoreStash.object_type, str]:
         res = self.check_type(obj, self.object_type)
@@ -742,6 +755,7 @@ class BaseUIDStoreStash(BaseStash):
             obj=res.ok(),
             ignore_duplicates=ignore_duplicates,
             add_permissions=add_permissions,
+            add_storage_permission=add_storage_permission,
         )
 
 

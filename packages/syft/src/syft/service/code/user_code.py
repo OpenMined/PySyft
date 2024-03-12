@@ -45,6 +45,7 @@ from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
+from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
@@ -107,7 +108,7 @@ class UserCodeStatus(Enum):
 
 
 @serializable()
-class UserCodeStatusCollection(SyftObject):
+class UserCodeStatusCollection(SyncableSyftObject):
     __canonical_name__ = "UserCodeStatusCollection"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -250,7 +251,7 @@ class UserCodeStatusCollection(SyftObject):
 
 
 @serializable()
-class UserCode(SyftObject):
+class UserCode(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
     __version__ = SYFT_OBJECT_VERSION_4
