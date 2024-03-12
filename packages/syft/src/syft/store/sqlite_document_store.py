@@ -106,6 +106,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         temp_dir = tempfile.TemporaryDirectory().name
         # lock_path = Path(temp_dir) / "sqlite_locks" / self.db_filename
         # self.lock_config = FileLockingConfig(client_path=lock_path)
+        self.connection = None
         self.create_table()
 
     @property
@@ -149,7 +150,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     @property
     def db(self) -> sqlite3.Connection:
-        self._connect()
+        if not self.connection:
+            self._connect()
         return self.connection
 
     @property
@@ -159,6 +161,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _close(self) -> None:
         self._commit()
         self.db.close()
+        self.connection = None
 
     def _commit(self) -> None:
         self.db.commit()
