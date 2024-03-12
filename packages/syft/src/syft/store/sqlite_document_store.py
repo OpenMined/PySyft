@@ -38,13 +38,13 @@ from .locks import SyftLock
 # by its filename and optionally the thread that its running in
 # we keep track of each SQLiteBackingStore init in REF_COUNTS
 # when it hits 0 we can close the connection and release the file descriptor
-SQLITE_CONNECTION_POOL_DB: dict[str, sqlite3.Connection] = {}
-SQLITE_CONNECTION_POOL_CUR: dict[str, sqlite3.Cursor] = {}
-REF_COUNTS: dict[str, int] = defaultdict(int)
+# SQLITE_CONNECTION_POOL_DB: dict[str, sqlite3.Connection] = {}
+# SQLITE_CONNECTION_POOL_CUR: dict[str, sqlite3.Cursor] = {}
+# REF_COUNTS: dict[str, int] = defaultdict(int)
 
 
 def cache_key(db_name: str) -> str:
-    return f"{db_name}_{thread_ident()}"
+    return db_name
 
 
 def _repr_debug_(value: Any) -> str:
@@ -104,10 +104,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
         # if tempfile.TemporaryDirectory() varies from process to process
         # could this cause different locks on the same file
         temp_dir = tempfile.TemporaryDirectory().name
-        lock_path = Path(temp_dir) / "sqlite_locks" / self.db_filename
-        self.lock_config = FileLockingConfig(client_path=lock_path)
+        # lock_path = Path(temp_dir) / "sqlite_locks" / self.db_filename
+        # self.lock_config = FileLockingConfig(client_path=lock_path)
         self.create_table()
-        REF_COUNTS[cache_key(self.db_filename)] += 1
 
     @property
     def table_name(self) -> str:
@@ -129,49 +128,37 @@ class SQLiteBackingStore(KeyValueBackingStore):
                 self.file_path,
                 timeout=self.store_config.client_config.timeout,
                 check_same_thread=False,  # do we need this if we use the lock?
-                # check_same_thread=self.store_config.client_config.check_same_thread,
+                isolation_level=None,
             )
             # TODO: Review OSX compatibility.
             # Set journal mode to WAL.
-            # connection.execute("pragma journal_mode=wal")
-            SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)] = connection
+            connection.execute("pragma journal_mode=wal")
+            self.connection = connection
 
     def create_table(self) -> None:
         try:
-            with SyftLock(self.lock_config):
-                self.cur.execute(
-                    f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
-                    + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
-                    + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
-                )
-                self.db.commit()
+            # with SyftLock(self.lock_config):
+            self.cur.execute(
+                f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
+                + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
+                + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
+            )
+            self.db.commit()
         except Exception as e:
             raise_exception(self.table_name, e)
 
     @property
     def db(self) -> sqlite3.Connection:
-        if cache_key(self.db_filename) not in SQLITE_CONNECTION_POOL_DB:
-            self._connect()
-        return SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
+        self._connect()
+        return self.connection
 
     @property
     def cur(self) -> sqlite3.Cursor:
-        if cache_key(self.db_filename) not in SQLITE_CONNECTION_POOL_CUR:
-            SQLITE_CONNECTION_POOL_CUR[cache_key(self.db_filename)] = self.db.cursor()
-
-        return SQLITE_CONNECTION_POOL_CUR[cache_key(self.db_filename)]
+        return self.db.cursor()
 
     def _close(self) -> None:
         self._commit()
-        REF_COUNTS[cache_key(self.db_filename)] -= 1
-        if REF_COUNTS[cache_key(self.db_filename)] <= 0:
-            # once you close it seems like other object references can't re-use the
-            # same connection
-            self.db.close()
-            del SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
-        else:
-            # don't close yet because another SQLiteBackingStore is probably still open
-            pass
+        self.db.close()
 
     def _commit(self) -> None:
         self.db.commit()
@@ -179,49 +166,47 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _execute(
         self, sql: str, *args: list[Any] | None
     ) -> Result[Ok[sqlite3.Cursor], Err[str]]:
-        with SyftLock(self.lock_config):
-            cursor: sqlite3.Cursor | None = None
-            # err = None
-            try:
-                cursor = self.cur.execute(sql, *args)
-            except Exception as e:
-                raise_exception(self.table_name, e)
+        # with SyftLock(self.lock_config):
+        cursor: sqlite3.Cursor | None = None
+        # err = None
+        try:
+            cursor = self.cur.execute(sql, *args)
+        except Exception as e:
+            raise_exception(self.table_name, e)
 
-            # TODO: Which exception is safe to rollback on?
-            # we should map out some more clear exceptions that can be returned
-            # rather than halting the program like disk I/O error etc
-            # self.db.rollback()  # Roll back all changes if an exception occurs.
-            # err = Err(str(e))
-            self.db.commit()  # Commit if everything went ok
+        # TODO: Which exception is safe to rollback on?
+        # we should map out some more clear exceptions that can be returned
+        # rather than halting the program like disk I/O error etc
+        # self.db.rollback()  # Roll back all changes if an exception occurs.
+        # err = Err(str(e))
+        self.db.commit()  # Commit if everything went ok
 
-            # if err is not None:
-            #     return err
+        # if err is not None:
+        #     return err
 
-            return Ok(cursor)
+        return Ok(cursor)
 
     def _set(self, key: UID, value: Any) -> None:
         if self._exists(key):
             self._update(key, value)
         else:
-            insert_sql = (
-                f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
-            )
+            insert_sql = f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
             data = _serialize(value, to_bytes=True)
             res = self._execute(insert_sql, [str(key), _repr_debug_(value), data])
             if res.is_err():
                 raise ValueError(res.err())
 
     def _update(self, key: UID, value: Any) -> None:
-        insert_sql = (
-            f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
-        )
+        insert_sql = f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
         data = _serialize(value, to_bytes=True)
         res = self._execute(insert_sql, [str(key), _repr_debug_(value), data, str(key)])
         if res.is_err():
             raise ValueError(res.err())
 
     def _get(self, key: UID) -> Any:
-        select_sql = f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec
+        select_sql = (
+            f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec
+        )
         res = self._execute(select_sql, [str(key)])
         if res.is_err():
             raise KeyError(f"Query {select_sql} failed")
