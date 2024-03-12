@@ -1,7 +1,6 @@
 # stdlib
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import Any
+from typing import cast
 
 # third party
 from typing_extensions import Self
@@ -11,7 +10,7 @@ from ..abstract_node import AbstractNode
 from ..node.credentials import SyftVerifyKey
 from ..node.credentials import UserLoginCredentials
 from ..types.syft_object import Context
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -22,34 +21,42 @@ from .user.user_roles import ServiceRoleCapability
 
 class NodeServiceContext(Context, SyftObject):
     __canonical_name__ = "NodeServiceContext"
-    __version__ = SYFT_OBJECT_VERSION_1
-    id: Optional[UID]
-    node: Optional[AbstractNode]
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    id: UID | None = None  # type: ignore[assignment]
+    node: AbstractNode | None = None
 
 
 class AuthedServiceContext(NodeServiceContext):
     __canonical_name__ = "AuthedServiceContext"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     credentials: SyftVerifyKey
     role: ServiceRole = ServiceRole.NONE
-    job_id: Optional[UID]
-    extra_kwargs: Dict = {}
+    job_id: UID | None = None
+    extra_kwargs: dict = {}
     has_execute_permissions: bool = False
 
-    def capabilities(self) -> List[ServiceRoleCapability]:
+    @property
+    def dev_mode(self) -> Any:
+        return self.node.dev_mode  # type: ignore
+
+    def capabilities(self) -> list[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES.get(self.role, [])
 
-    def with_credentials(self, credentials: SyftVerifyKey, role: ServiceRole):
+    def with_credentials(self, credentials: SyftVerifyKey, role: ServiceRole) -> Self:
         return AuthedServiceContext(credentials=credentials, role=role, node=self.node)
 
-    def as_root_context(self):
+    def as_root_context(self) -> Self:
+        self.node = cast(AbstractNode, self.node)
         return AuthedServiceContext(
             credentials=self.node.verify_key, role=ServiceRole.ADMIN, node=self.node
         )
 
     @property
-    def job(self):
+    def job(self):  # type: ignore
+        # TODO: fix the mypy issue. The return type is Optional[Job].
+        # but we can't import Job since it's a circular import
         if self.job_id is None:
             return None
         res = self.node.job_stash.get_by_uid(self.credentials, self.job_id)
@@ -61,25 +68,25 @@ class AuthedServiceContext(NodeServiceContext):
 
 class UnauthedServiceContext(NodeServiceContext):
     __canonical_name__ = "UnauthedServiceContext"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     login_credentials: UserLoginCredentials
-    node: Optional[AbstractNode]
+    node: AbstractNode | None = None
     role: ServiceRole = ServiceRole.NONE
 
 
 class ChangeContext(SyftBaseObject):
     __canonical_name__ = "ChangeContext"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    node: Optional[AbstractNode] = None
-    approving_user_credentials: Optional[SyftVerifyKey]
-    requesting_user_credentials: Optional[SyftVerifyKey]
-    extra_kwargs: Dict = {}
+    node: AbstractNode | None = None
+    approving_user_credentials: SyftVerifyKey | None = None
+    requesting_user_credentials: SyftVerifyKey | None = None
+    extra_kwargs: dict = {}
 
-    @staticmethod
-    def from_service(context: AuthedServiceContext) -> Self:
-        return ChangeContext(
+    @classmethod
+    def from_service(cls, context: AuthedServiceContext) -> Self:
+        return cls(
             node=context.node,
             approving_user_credentials=context.credentials,
             extra_kwargs=context.extra_kwargs,

@@ -1,12 +1,10 @@
 # stdlib
+from collections.abc import Callable
 from enum import Enum
 import inspect
 import math
 import sys
 from typing import Any
-from typing import Callable
-from typing import Tuple
-from typing import Type
 
 # third party
 import numpy as np
@@ -25,13 +23,12 @@ from syft.service.action.action_object import make_action_side_effect
 from syft.service.action.action_object import propagate_node_uid
 from syft.service.action.action_object import send_action_side_effect
 from syft.service.action.action_types import action_type_for_type
+from syft.types.uid import LineageID
+from syft.types.uid import UID
 
 
 def helper_make_action_obj(orig_obj: Any):
-    obj_id = Action.make_id(None)
-    lin_obj_id = Action.make_result_id(obj_id)
-
-    return ActionObject.from_obj(orig_obj, id=obj_id, syft_lineage_id=lin_obj_id)
+    return ActionObject.from_obj(orig_obj)
 
 
 def helper_make_action_pointers(worker, obj, *args, **kwargs):
@@ -59,18 +56,16 @@ def helper_make_action_pointers(worker, obj, *args, **kwargs):
         ("set", "add"),
     ],
 )
-def test_action_sanity(path_op: Tuple[str, str]):
+def test_action_sanity(path_op: tuple[str, str]):
     path, op = path_op
 
-    remote_self = Action.make_result_id(None)
-    result_id = Action.make_result_id(None)
+    remote_self = LineageID()
     new_action = Action(
         path=path,
         op=op,
         remote_self=remote_self,
         args=[],
         kwargs={},
-        result_id=result_id,
     )
     assert new_action is not None
     assert new_action.full_path == f"{path}.{op}"
@@ -99,29 +94,29 @@ def test_actionobject_from_obj_sanity(orig_obj: Any):
     assert obj.syft_history_hash is not None
 
     # with id
-    obj_id = Action.make_id(None)
+    obj_id = UID()
     obj = ActionObject.from_obj(orig_obj, id=obj_id)
     assert obj.id == obj_id
     assert obj.syft_history_hash == hash(obj_id)
 
     # with id and lineage id
-    obj_id = Action.make_id(None)
-    lin_obj_id = Action.make_result_id(obj_id)
+    obj_id = UID()
+    lin_obj_id = LineageID(obj_id)
     obj = ActionObject.from_obj(orig_obj, id=obj_id, syft_lineage_id=lin_obj_id)
     assert obj.id == obj_id
     assert obj.syft_history_hash == lin_obj_id.syft_history_hash
 
 
 def test_actionobject_from_obj_fail_id_mismatch():
-    obj_id = Action.make_id(None)
-    lineage_id = Action.make_result_id(None)
+    obj_id = UID()
+    lineage_id = LineageID()
 
     with pytest.raises(ValueError):
         ActionObject.from_obj("abc", id=obj_id, syft_lineage_id=lineage_id)
 
 
 @pytest.mark.parametrize("dtype", [int, float, str, Any, bool, dict, set, tuple, list])
-def test_actionobject_make_empty_sanity(dtype: Type):
+def test_actionobject_make_empty_sanity(dtype: type):
     syft_type = action_type_for_type(dtype)
 
     obj = ActionObject.empty(
@@ -131,14 +126,14 @@ def test_actionobject_make_empty_sanity(dtype: Type):
     assert obj.syft_history_hash is not None
 
     # with id
-    obj_id = Action.make_id(None)
+    obj_id = UID()
     obj = ActionObject.empty(syft_internal_type=syft_type, id=obj_id)
     assert obj.id == obj_id
     assert obj.syft_history_hash == hash(obj_id)
 
     # with id and lineage id
-    obj_id = Action.make_id(None)
-    lin_obj_id = Action.make_result_id(obj_id)
+    obj_id = UID()
+    lin_obj_id = LineageID(obj_id)
     obj = ActionObject.empty(
         syft_internal_type=syft_type, id=obj_id, syft_lineage_id=lin_obj_id
     )
@@ -163,12 +158,12 @@ def test_actionobject_make_empty_sanity(dtype: Type):
 def test_actionobject_hooks_init(orig_obj: Any):
     obj = ActionObject.from_obj(orig_obj)
 
-    assert HOOK_ALWAYS in obj._syft_pre_hooks__
-    assert HOOK_ALWAYS in obj._syft_post_hooks__
+    assert HOOK_ALWAYS in obj.syft_pre_hooks__
+    assert HOOK_ALWAYS in obj.syft_post_hooks__
 
-    assert make_action_side_effect in obj._syft_pre_hooks__[HOOK_ALWAYS]
-    assert send_action_side_effect in obj._syft_pre_hooks__[HOOK_ON_POINTERS]
-    assert propagate_node_uid in obj._syft_post_hooks__[HOOK_ALWAYS]
+    assert make_action_side_effect in obj.syft_pre_hooks__[HOOK_ALWAYS]
+    assert send_action_side_effect in obj.syft_pre_hooks__[HOOK_ON_POINTERS]
+    assert propagate_node_uid in obj.syft_post_hooks__[HOOK_ALWAYS]
 
 
 @pytest.mark.parametrize(
@@ -302,7 +297,7 @@ def test_actionobject_hooks_propagate_node_uid_ok():
     orig_obj = "abc"
     op = "capitalize"
 
-    obj_id = Action.make_id(None)
+    obj_id = UID()
     obj = ActionObject.from_obj(orig_obj)
 
     obj.syft_point_to(obj_id)
@@ -315,7 +310,7 @@ def test_actionobject_hooks_propagate_node_uid_ok():
 def test_actionobject_syft_point_to():
     orig_obj = "abc"
 
-    obj_id = Action.make_id(None)
+    obj_id = UID()
     obj = ActionObject.from_obj(orig_obj)
 
     obj.syft_point_to(obj_id)
@@ -587,7 +582,7 @@ def test_actionobject_syft_execute_hooks(worker, testcase):
     )
     assert context.result_id is not None
 
-    context.obj.syft_node_uid = Action.make_id(None)
+    context.obj.syft_node_uid = UID()
     result = obj_pointer._syft_run_post_hooks__(context, name=op, result=obj_pointer)
     assert result.syft_node_uid == context.obj.syft_node_uid
 

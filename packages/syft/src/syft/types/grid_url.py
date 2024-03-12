@@ -5,8 +5,6 @@ from __future__ import annotations
 import copy
 import os
 import re
-from typing import Optional
-from typing import Union
 from urllib.parse import urlparse
 
 # third party
@@ -21,7 +19,7 @@ from ..util.util import verify_tls
 @serializable(attrs=["protocol", "host_or_ip", "port", "path", "query"])
 class GridURL:
     @classmethod
-    def from_url(cls, url: Union[str, GridURL]) -> Self:
+    def from_url(cls, url: str | GridURL) -> GridURL:
         if isinstance(url, GridURL):
             return url
         try:
@@ -37,7 +35,7 @@ class GridURL:
             host_or_ip = host_or_ip_parts[0]
             if parts.scheme == "https":
                 port = 443
-            return cls(
+            return GridURL(
                 host_or_ip=host_or_ip,
                 path=parts.path,
                 port=port,
@@ -52,7 +50,7 @@ class GridURL:
         self,
         protocol: str = "http",
         host_or_ip: str = "localhost",
-        port: Optional[int] = 80,
+        port: int | None = 80,
         path: str = "",
         query: str = "",
     ) -> None:
@@ -83,7 +81,7 @@ class GridURL:
         dupe.path = path
         return dupe
 
-    def as_container_host(self, container_host: Optional[str] = None) -> Self:
+    def as_container_host(self, container_host: str | None = None) -> Self:
         if self.host_or_ip not in [
             "localhost",
             "host.docker.internal",
@@ -141,7 +139,7 @@ class GridURL:
     def url_path(self) -> str:
         return f"{self.path}{self.query_string}"
 
-    def to_tls(self) -> Self:
+    def to_tls(self) -> GridURL:
         if self.protocol == "https":
             return self
 
@@ -165,7 +163,7 @@ class GridURL:
     def __hash__(self) -> int:
         return hash(self.__str__())
 
-    def __copy__(self) -> Self:
+    def __copy__(self) -> GridURL:
         return self.__class__.from_url(self.url)
 
     def set_port(self, port: int) -> Self:

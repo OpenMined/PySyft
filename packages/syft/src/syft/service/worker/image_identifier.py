@@ -1,6 +1,4 @@
 # stdlib
-from typing import Optional
-from typing import Union
 
 # third party
 from typing_extensions import Self
@@ -29,7 +27,7 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
         https://docs.docker.com/engine/reference/commandline/tag/#tag-an-image-referenced-by-name-and-tag
     """
 
-    registry: Optional[Union[SyftImageRegistry, str]]
+    registry: SyftImageRegistry | str | None = None
     repo: str
     tag: str
 
@@ -53,7 +51,7 @@ class SyftWorkerImageIdentifier(SyftBaseModel):
         return cls(repo=repo, registry=registry, tag=tag)
 
     @property
-    def repo_with_tag(self) -> Optional[str]:
+    def repo_with_tag(self) -> str | None:
         if self.repo or self.tag:
             return f"{self.repo}:{self.tag}"
         return None

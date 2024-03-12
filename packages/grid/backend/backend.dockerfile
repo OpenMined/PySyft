@@ -1,4 +1,4 @@
-ARG PYTHON_VERSION="3.11"
+ARG PYTHON_VERSION="3.12"
 ARG TZ="Etc/UTC"
 
 # change to USER="syftuser", UID=1000 and HOME="/home/$USER" for rootless
@@ -20,6 +20,7 @@ ARG UID
 # Setup Python DEV
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     apk update && \
+    apk upgrade && \
     apk add build-base gcc tzdata python-$PYTHON_VERSION-dev py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # uncomment for creating rootless user
@@ -54,7 +55,7 @@ COPY --chown=$USER_GRP \
 
 # Install all dependencies together here to avoid any version conflicts across pkgs
 RUN --mount=type=cache,id=pip-$UID,target=$HOME/.cache/pip,uid=$UID,gid=$UID,sharing=locked \
-    pip install --user torch==2.1.1 -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
+    pip install --user --default-timeout=300 torch==2.2.1 -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
     pip install --user pip-autoremove jupyterlab -e ./syft[data_science] && \
     pip-autoremove ansible ansible-core -y
 
@@ -73,6 +74,7 @@ ARG USER_GRP
 # Setup Python
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     apk update && \
+    apk upgrade && \
     apk add tzdata git bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
     # Uncomment for rootless user
@@ -92,12 +94,10 @@ ENV PATH=$PATH:$HOME/.local/bin \
     SERVICE_NAME="backend" \
     RELEASE="production" \
     DEV_MODE="False" \
+    DEBUGGER_ENABLED="False" \
     CONTAINER_HOST="docker" \
-    PORT=80\
-    HTTP_PORT=80 \
-    HTTPS_PORT=443 \
-    DOMAIN_CONNECTION_PORT=3030 \
-    IGNORE_TLS_ERRORS="False" \
+    OBLV_ENABLED="False" \
+    OBLV_LOCALHOST_PORT=3030 \
     DEFAULT_ROOT_EMAIL="info@openmined.org" \
     DEFAULT_ROOT_PASSWORD="changethis" \
     STACK_API_KEY="changeme" \

@@ -1,7 +1,7 @@
 # stdlib
 
 # stdlib
-from typing import Union
+from typing import cast
 
 # third party
 from result import Err
@@ -9,6 +9,7 @@ from result import Ok
 from result import Result
 
 # relative
+from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...util.experimental_flags import flags
@@ -18,6 +19,7 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..warnings import HighSideCRUDWarning
 from .settings import NodeSettingsUpdate
 from .settings import NodeSettingsV2
@@ -36,6 +38,7 @@ class SettingsService(AbstractService):
     @service_method(path="settings.get", name="get")
     def get(self, context: UnauthedServiceContext) -> Result[Ok, Err]:
         """Get Settings"""
+        context.node = cast(AbstractNode, context.node)
         result = self.stash.get_all(context.node.signing_key.verify_key)
         if result.is_ok():
             settings = result.ok()
@@ -81,15 +84,54 @@ class SettingsService(AbstractService):
             return SyftError(message=result.err())
 
     @service_method(
+        path="settings.enable_notifications",
+        name="enable_notifications",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def enable_notifications(
+        self,
+        context: AuthedServiceContext,
+        email_username: str | None = None,
+        email_password: str | None = None,
+        email_sender: str | None = None,
+        email_server: str | None = None,
+        email_port: str | None = None,
+    ) -> SyftSuccess | SyftError:
+        context.node = cast(AbstractNode, context.node)
+        notifier_service = context.node.get_service("notifierservice")
+        return notifier_service.turn_on(
+            context=context,
+            email_username=email_username,
+            email_password=email_password,
+            email_sender=email_sender,
+            email_server=email_server,
+            email_port=email_port,
+        )
+
+    @service_method(
+        path="settings.disable_notifications",
+        name="disable_notifications",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def disable_notifications(
+        self,
+        context: AuthedServiceContext,
+    ) -> SyftSuccess | SyftError:
+        context.node = cast(AbstractNode, context.node)
+        notifier_service = context.node.get_service("notifierservice")
+        return notifier_service.turn_off(context=context)
+
+    @service_method(
         path="settings.allow_guest_signup",
         name="allow_guest_signup",
         warning=HighSideCRUDWarning(confirmation=True),
     )
     def allow_guest_signup(
         self, context: AuthedServiceContext, enable: bool
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Enable/Disable Registration for Data Scientist or Guest Users."""
         flags.CAN_REGISTER = enable
+        context.node = cast(AbstractNode, context.node)
         method = context.node.get_service_method(SettingsService.update)
         settings = NodeSettingsUpdate(signup_enabled=enable)
 

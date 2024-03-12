@@ -1,15 +1,14 @@
 # stdlib
 from typing import Any
-from typing import Type
 
 # relative
 from ...util.logger import debug
 from .action_data_empty import ActionDataEmpty
 
-action_types = {}
+action_types: dict = {}
 
 
-def action_type_for_type(obj_or_type: Any) -> Type:
+def action_type_for_type(obj_or_type: Any) -> type:
     """Convert standard type to Syft types
 
     Parameters:
@@ -29,7 +28,7 @@ def action_type_for_type(obj_or_type: Any) -> Type:
     return action_types[obj_or_type]
 
 
-def action_type_for_object(obj: Any) -> Type:
+def action_type_for_object(obj: Any) -> type:
     """Convert standard type to Syft types
 
     Parameters:

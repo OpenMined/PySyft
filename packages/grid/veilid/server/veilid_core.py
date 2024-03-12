@@ -1,9 +1,6 @@
 # stdlib
+from collections.abc import Callable
 import json
-from typing import Callable
-from typing import Optional
-from typing import Tuple
-from typing import Union
 
 # third party
 from loguru import logger
@@ -86,10 +83,10 @@ class VeilidConnectionSingleton:
         return cls._instance
 
     def __init__(self) -> None:
-        self._connection: Optional[_JsonVeilidAPI] = None
+        self._connection: _JsonVeilidAPI | None = None
 
     @property
-    def connection(self) -> Optional[_JsonVeilidAPI]:
+    def connection(self) -> _JsonVeilidAPI | None:
         return self._connection
 
     async def initialize_connection(self) -> None:
@@ -108,7 +105,7 @@ async def create_private_route(
     conn: _JsonVeilidAPI,
     stability: Stability = veilid.Stability.RELIABLE,
     sequencing: Sequencing = veilid.Sequencing.ENSURE_ORDERED,
-) -> Tuple[RouteId, bytes]:
+) -> tuple[RouteId, bytes]:
     route_id, route_blob = await conn.new_custom_private_route(
         [veilid.CryptoKind.CRYPTO_KIND_VLD0],
         stability=stability,
@@ -125,12 +122,12 @@ async def get_node_id(conn: _JsonVeilidAPI) -> str:
     return node_id
 
 
-async def generate_dht_key() -> dict[str, str]:
+async def generate_dht_key() -> str:
     logger.info("Generating DHT Key")
 
     async with await get_veilid_conn() as conn:
         if await load_dht_key(conn):
-            return {"message": "DHT Key already exists"}
+            return "DHT Key already exists"
 
         async with await get_routing_context(conn) as router:
             dht_record = await router.create_dht_record(veilid.DHTSchema.dflt(1))
@@ -151,16 +148,16 @@ async def generate_dht_key() -> dict[str, str]:
             await store_dht_key(conn, dht_record.key)
             await store_dht_key_creds(conn, keypair)
 
-    return {"message": "DHT Key generated successfully"}
+    return "DHT Key generated successfully"
 
 
-async def retrieve_dht_key() -> dict[str, str]:
+async def retrieve_dht_key() -> str:
     async with await get_veilid_conn() as conn:
         dht_key = await load_dht_key(conn)
 
         if dht_key is None:
-            return {"message": "DHT Key does not exist"}
-        return {"message": str(dht_key)}
+            raise Exception("DHT Key does not exist. Please generate one.")
+        return str(dht_key)
 
 
 async def get_dht_value(
@@ -168,11 +165,11 @@ async def get_dht_value(
     dht_key: TypedKey,
     subkey: int,
     force_refresh: bool = True,
-) -> Union[dict[str, str], ValueData]:
+) -> ValueData:
     try:
         await router.open_dht_record(key=dht_key, writer=None)
     except Exception as e:
-        return {"message": f"DHT Key:{dht_key} does not exist. Exception: {e}"}
+        raise Exception(f"Unable to open DHT Record:{dht_key} . Exception: {e}")
 
     try:
         dht_value = await router.get_dht_value(
@@ -182,65 +179,54 @@ async def get_dht_value(
         await router.close_dht_record(dht_key)
         return dht_value
     except Exception as e:
-        return {
-            "message": f"Subkey:{subkey} does not exist in the DHT Key:{dht_key}. Exception: {e}"
-        }
+        raise Exception(
+            f"Unable to get subkey value:{subkey} from DHT Record:{dht_key}. Exception: {e}"
+        )
 
 
-async def app_message(dht_key: str, message: bytes) -> dict[str, str]:
+# TODO: change verbosity of logs to debug at appropriate places
+async def get_route_from_dht_record(
+    dht_key: str, conn: _JsonVeilidAPI, router: _JsonRoutingContext
+) -> str | RouteId:
+    dht_key = veilid.TypedKey(dht_key)
+    logger.info(f"App Call to DHT Key: {dht_key}")
+    dht_value = await get_dht_value(router, dht_key, 0)
+    logger.info(f"DHT Value:{dht_value}")
+
+    if USE_DIRECT_CONNECTION:
+        route = dht_value.data.decode()
+        logger.info(f"Node ID: {route}")
+    else:
+        route = await conn.import_remote_private_route(dht_value.data)
+        logger.info(f"Private Route of  Peer: {route} ")
+
+    return route
+
+
+async def app_message(dht_key: str, message: bytes) -> str:
     async with await get_veilid_conn() as conn:
         async with await get_routing_context(conn) as router:
-            dht_key = veilid.TypedKey(dht_key)
-            # TODO: change to debug
-            logger.info(f"App Message to DHT Key: {dht_key}")
-            dht_value = await get_dht_value(router, dht_key, 0)
-            # TODO: change to debug
-            logger.info(f"DHT Value:{dht_value}")
-            if isinstance(dht_value, dict):
-                return dht_value
+            route = await get_route_from_dht_record(dht_key, conn, router)
 
-            if USE_DIRECT_CONNECTION:
-                # Direct Connection by Node ID
-                route = dht_value.data.decode()
-                logger.info(f"Node ID: {route}")
-            else:
-                # Private Router to peer
-                route = await conn.import_remote_private_route(dht_value.data)
-                # TODO: change to debug
-                logger.info(f"Private Route of  Peer: {route} ")
-
-            # Send app message to peer
             await router.app_message(route, message)
 
-            return {"message": "Message sent successfully"}
+            return "Message sent successfully"
 
 
-async def app_call(dht_key: str, message: bytes) -> dict[str, str]:
+async def app_call(dht_key: str, message: bytes) -> bytes:
     async with await get_veilid_conn() as conn:
         async with await get_routing_context(conn) as router:
-            dht_key = veilid.TypedKey(dht_key)
-            # TODO: change to debug
-            logger.info(f"App Call to DHT Key: {dht_key}")
-            dht_value = await get_dht_value(router, dht_key, 0)
-            # TODO: change to debug
-            logger.info(f"DHT Value:{dht_value}")
-            if isinstance(dht_value, dict):
-                return dht_value
-
-            if USE_DIRECT_CONNECTION:
-                # Direct Connection by Node ID
-                route = dht_value.data.decode()
-                logger.info(f"Node ID: {route}")
-            else:
-                # Private Router to peer
-                route = await conn.import_remote_private_route(dht_value.data)
-                # TODO: change to debug
-                logger.info(f"Private Route of  Peer: {route} ")
+            route = await get_route_from_dht_record(dht_key, conn, router)
 
             result = (
                 await vs.stream(router, route, message)
                 if len(message) > MAX_MESSAGE_SIZE
                 else await router.app_call(route, message)
             )
+            return result
 
-            return json.loads(result)
+
+async def healthcheck() -> bool:
+    async with await get_veilid_conn() as conn:
+        state = await conn.get_state()
+        return state.network.started

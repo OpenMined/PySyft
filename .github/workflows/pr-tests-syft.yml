@@ -25,9 +25,9 @@ jobs:
       max-parallel: 99
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
         include:
-          - python-version: "3.9"
+          - python-version: "3.11"
             os: "ubuntu-latest"
           - python-version: "3.10"
             os: "ubuntu-latest"
@@ -90,7 +90,7 @@ jobs:
 
       - name: Docker on MacOS
         if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.0.0
+        uses: crazy-max/ghaction-setup-docker@v3.1.0
 
       - name: Run unit tests
         if: steps.changes.outputs.syft == 'true'
@@ -104,11 +104,11 @@ jobs:
         # Disable on windows until its flakyness is reduced.
         # os: [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest, macos-latest]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
         deployment-type: ["python"]
         notebook-paths: ["tutorials"]
         include:
-          - python-version: "3.9"
+          - python-version: "3.11"
             os: "ubuntu-latest"
             deployment-type: "python"
             notebook-paths: "tutorials"
@@ -174,7 +174,7 @@ jobs:
           pip install --upgrade tox packaging wheel --default-timeout=60
 
       - name: Run notebook tests
-        uses: nick-fields/retry@v2
+        uses: nick-fields/retry@v3
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         env:
           ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
@@ -189,7 +189,7 @@ jobs:
       max-parallel: 99
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.10", "3.11", "3.12"]
         deployment-type: ["single_container"]
         notebook-paths: ["api/0.8"]
       fail-fast: false
@@ -265,7 +265,7 @@ jobs:
 
       - name: Docker on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.0.0
+        uses: crazy-max/ghaction-setup-docker@v3.1.0
 
       - name: Docker Compose on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'

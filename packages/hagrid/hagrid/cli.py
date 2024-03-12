@@ -1,5 +1,6 @@
 # stdlib
 from collections import namedtuple
+from collections.abc import Callable
 from enum import Enum
 import json
 import os
@@ -17,13 +18,6 @@ from threading import Event
 from threading import Thread
 import time
 from typing import Any
-from typing import Callable
-from typing import Dict as TypeDict
-from typing import List as TypeList
-from typing import Optional
-from typing import Tuple
-from typing import Tuple as TypeTuple
-from typing import Union
 from typing import cast
 from urllib.parse import urlparse
 import webbrowser
@@ -126,7 +120,7 @@ def cli() -> None:
 
 def get_compose_src_path(
     node_name: str,
-    template_location: Optional[str] = None,
+    template_location: str | None = None,
     **kwargs: Any,
 ) -> str:
     grid_path = GRID_SRC_PATH()
@@ -323,6 +317,41 @@ def clean(location: str) -> None:
     help="Container image tag to use",
 )
 @click.option(
+    "--smtp-username",
+    default=None,
+    required=False,
+    type=str,
+    help="Username used to auth in email server and enable notification via emails",
+)
+@click.option(
+    "--smtp-password",
+    default=None,
+    required=False,
+    type=str,
+    help="Password used to auth in email server and enable notification via emails",
+)
+@click.option(
+    "--smtp-port",
+    default=None,
+    required=False,
+    type=str,
+    help="Port used by email server to send notification via emails",
+)
+@click.option(
+    "--smtp-host",
+    default=None,
+    required=False,
+    type=str,
+    help="Address used by email server to send notification via emails",
+)
+@click.option(
+    "--smtp-sender",
+    default=None,
+    required=False,
+    type=str,
+    help="Sender email used to deliver PyGrid email notifications.",
+)
+@click.option(
     "--build-src",
     default=DEFAULT_BRANCH,
     required=False,
@@ -467,7 +496,7 @@ def clean(location: str) -> None:
     type=click.IntRange(1024, 50000),
     help="Set the volume size limit (in MBs)",
 )
-def launch(args: TypeTuple[str], **kwargs: Any) -> None:
+def launch(args: tuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
         grammar = parse_grammar(args=args, verb=verb)
@@ -536,7 +565,7 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         )
 
         if run_health_checks:
-            docker_cmds = cast(TypeDict[str, TypeList[str]], cmds)
+            docker_cmds = cast(dict[str, list[str]], cmds)
 
             # get the first command (cmd1) from docker_cmds which is of the form
             # {"<first>": [cmd1, cmd2], "<second>": [cmd3, cmd4]}
@@ -700,15 +729,15 @@ def create_thread_logs(process: subprocess.Popen) -> Queue:
 
 
 def process_cmd(
-    cmds: TypeList[str],
+    cmds: list[str],
     node_type: str,
     dry_run: bool,
     silent: bool,
     compose_src_path: str,
-    progress_bar: Union[Progress, None] = None,
+    progress_bar: Progress | None = None,
     cmd_name: str = "",
 ) -> None:
-    process_list: TypeList = []
+    process_list: list = []
     cwd = compose_src_path
 
     username, password = (
@@ -785,7 +814,7 @@ def process_cmd(
 
 
 def execute_commands(
-    cmds: Union[TypeList[str], TypeDict[str, TypeList[str]]],
+    cmds: list[str] | dict[str, list[str]],
     node_type: str,
     compose_src_path: str,
     dry_run: bool = False,
@@ -833,7 +862,7 @@ def execute_commands(
         )
 
 
-def display_vm_status(process_list: TypeList) -> None:
+def display_vm_status(process_list: list) -> None:
     """Display the status of the processes being executed on the VM.
 
     Args:
@@ -859,7 +888,7 @@ def display_jupyter_token(cmd: str) -> None:
         print(f"Jupyter Token: {token}")
 
 
-def extract_username_and_pass(cmd: str) -> Tuple:
+def extract_username_and_pass(cmd: str) -> tuple:
     # Extract username
     matcher = r"--user (.+?) "
     username = re.findall(matcher, cmd)
@@ -873,7 +902,7 @@ def extract_username_and_pass(cmd: str) -> Tuple:
     return username, password
 
 
-def extract_jupyter_token(cmd: str) -> Optional[str]:
+def extract_jupyter_token(cmd: str) -> str | None:
     matcher = r"jupyter_token='(.+?)'"
     token = re.findall(matcher, cmd)
     if len(token) == 1:
@@ -927,9 +956,9 @@ class Question:
         var_name: str,
         question: str,
         kind: str,
-        default: Optional[str] = None,
+        default: str | None = None,
         cache: bool = False,
-        options: Optional[TypeList[str]] = None,
+        options: list[str] | None = None,
     ) -> None:
         self.var_name = var_name
         self.question = question
@@ -979,7 +1008,7 @@ class Question:
         return value
 
 
-def ask(question: Question, kwargs: TypeDict[str, str]) -> str:
+def ask(question: Question, kwargs: dict[str, str]) -> str:
     if question.var_name in kwargs and kwargs[question.var_name] is not None:
         value = kwargs[question.var_name]
     else:
@@ -1118,7 +1147,7 @@ def login_gcloud() -> bool:
     return False
 
 
-def str_to_bool(bool_str: Optional[str]) -> bool:
+def str_to_bool(bool_str: str | None) -> bool:
     result = False
     bool_str = str(bool_str).lower()
     if bool_str == "true" or bool_str == "1":
@@ -1243,14 +1272,14 @@ def validate_password(password: str) -> str:
 
 def create_launch_cmd(
     verb: GrammarVerb,
-    kwargs: TypeDict[str, Any],
-    ignore_docker_version_check: Optional[bool] = False,
-) -> Union[str, TypeList[str], TypeDict[str, TypeList[str]]]:
-    parsed_kwargs: TypeDict[str, Any] = {}
+    kwargs: dict[str, Any],
+    ignore_docker_version_check: bool | None = False,
+) -> str | list[str] | dict[str, list[str]]:
+    parsed_kwargs: dict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
 
     host = host_term.host
-    auth: Optional[AuthCredentials] = None
+    auth: AuthCredentials | None = None
 
     tail = bool(kwargs["tail"])
 
@@ -1308,6 +1337,12 @@ def create_launch_cmd(
         parsed_kwargs["node_side_type"] = NodeSideType.LOW_SIDE.value
     else:
         parsed_kwargs["node_side_type"] = NodeSideType.HIGH_SIDE.value
+
+    parsed_kwargs["smtp_username"] = kwargs["smtp_username"]
+    parsed_kwargs["smtp_password"] = kwargs["smtp_password"]
+    parsed_kwargs["smtp_port"] = kwargs["smtp_port"]
+    parsed_kwargs["smtp_host"] = kwargs["smtp_host"]
+    parsed_kwargs["smtp_sender"] = kwargs["smtp_sender"]
 
     parsed_kwargs["enable_warnings"] = not kwargs["no_warnings"]
 
@@ -2050,7 +2085,7 @@ def create_launch_cmd(
     )
 
 
-def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
+def pull_command(cmd: str, kwargs: dict[str, Any]) -> list[str]:
     pull_cmd = str(cmd)
     if kwargs["release"] == "production":
         pull_cmd += " --file docker-compose.yml"
@@ -2060,14 +2095,14 @@ def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
     return [pull_cmd]
 
 
-def build_command(cmd: str) -> TypeList[str]:
+def build_command(cmd: str) -> list[str]:
     build_cmd = str(cmd)
     build_cmd += " --file docker-compose.build.yml"
     build_cmd += " build"
     return [build_cmd]
 
 
-def deploy_command(cmd: str, tail: bool, dev_mode: bool) -> TypeList[str]:
+def deploy_command(cmd: str, tail: bool, dev_mode: bool) -> list[str]:
     up_cmd = str(cmd)
     up_cmd += " --file docker-compose.dev.yml" if dev_mode else ""
     up_cmd += " up"
@@ -2079,10 +2114,10 @@ def deploy_command(cmd: str, tail: bool, dev_mode: bool) -> TypeList[str]:
 def create_launch_docker_cmd(
     verb: GrammarVerb,
     docker_version: str,
-    kwargs: TypeDict[str, Any],
+    kwargs: dict[str, Any],
     tail: bool = True,
     silent: bool = False,
-) -> TypeDict[str, TypeList[str]]:
+) -> dict[str, list[str]]:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
@@ -2156,6 +2191,11 @@ def create_launch_docker_cmd(
 
     single_container_mode = kwargs["deployment_type"] == "single_container"
     in_mem_workers = kwargs.get("in_mem_workers")
+    smtp_username = kwargs.get("smtp_username")
+    smtp_sender = kwargs.get("smtp_sender")
+    smtp_password = kwargs.get("smtp_password")
+    smtp_port = kwargs.get("smtp_port")
+    smtp_host = kwargs.get("smtp_host")
 
     enable_oblv = bool(kwargs["oblv"])
     print("  - NAME: " + str(snake_name))
@@ -2215,11 +2255,16 @@ def create_launch_docker_cmd(
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
-        "ENABLE_OBLV": str(enable_oblv).lower(),
+        "OBLV_ENABLED": str(enable_oblv).lower(),
         "CREDENTIALS_VOLUME": host_path,
         "NODE_SIDE_TYPE": kwargs["node_side_type"],
         "SINGLE_CONTAINER_MODE": single_container_mode,
         "INMEMORY_WORKERS": in_mem_workers,
+        "SMTP_USERNAME": smtp_username,
+        "SMTP_PASSWORD": smtp_password,
+        "EMAIL_SENDER": smtp_sender,
+        "SMTP_PORT": smtp_port,
+        "SMTP_HOST": smtp_host,
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:
@@ -2440,7 +2485,7 @@ def get_or_make_resource_group(resource_group: str, location: str = "westus") ->
             )
 
 
-def extract_host_ip(stdout: bytes) -> Optional[str]:
+def extract_host_ip(stdout: bytes) -> str | None:
     output = stdout.decode("utf-8")
 
     try:
@@ -2456,7 +2501,7 @@ def extract_host_ip(stdout: bytes) -> Optional[str]:
     return None
 
 
-def get_vm_host_ips(node_name: str, resource_group: str) -> Optional[TypeList]:
+def get_vm_host_ips(node_name: str, resource_group: str) -> list | None:
     cmd = f"az vm list-ip-addresses -g {resource_group} --query "
     cmd += f""""[?starts_with(virtualMachine.name, '{node_name}')]"""
     cmd += '''.virtualMachine.network.publicIpAddresses[0].ipAddress"'''
@@ -2478,7 +2523,7 @@ def is_valid_ip(host_or_ip: str) -> bool:
     return False
 
 
-def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
+def extract_host_ip_gcp(stdout: bytes) -> str | None:
     output = stdout.decode("utf-8")
 
     try:
@@ -2492,7 +2537,7 @@ def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
     return None
 
 
-def extract_host_ip_from_cmd(cmd: str) -> Optional[str]:
+def extract_host_ip_from_cmd(cmd: str) -> str | None:
     try:
         matcher = r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}"
         ips = re.findall(matcher, cmd)
@@ -2563,10 +2608,10 @@ def open_port_aws(
     )
 
 
-def extract_instance_ids_aws(stdout: bytes) -> TypeList:
+def extract_instance_ids_aws(stdout: bytes) -> list:
     output = stdout.decode("utf-8")
     output_dict = json.loads(output)
-    instance_ids: TypeList = []
+    instance_ids: list = []
     if "Instances" in output_dict:
         for ec2_instance_metadata in output_dict["Instances"]:
             if "InstanceId" in ec2_instance_metadata:
@@ -2576,8 +2621,8 @@ def extract_instance_ids_aws(stdout: bytes) -> TypeList:
 
 
 def get_host_ips_given_instance_ids(
-    instance_ids: TypeList, timeout: int = 600, wait_time: int = 10
-) -> TypeList:
+    instance_ids: list, timeout: int = 600, wait_time: int = 10
+) -> list:
     checks = int(timeout / wait_time)  # 10 minutes in 10 second chunks
     instance_ids_str = " ".join(instance_ids)
     cmd = f"aws ec2 describe-instances --instance-ids {instance_ids_str}"
@@ -2588,7 +2633,7 @@ def get_host_ips_given_instance_ids(
         time.sleep(wait_time)
         desc_ec2_output = subprocess.check_output(cmd, shell=True)  # nosec
         instances_output_json = json.loads(desc_ec2_output.decode("utf-8"))
-        host_ips: TypeList = []
+        host_ips: list = []
         all_instances_running = True
         for reservation in instances_output_json:
             for instance_metadata in reservation:
@@ -2606,7 +2651,7 @@ def get_host_ips_given_instance_ids(
 
 def make_aws_ec2_instance(
     ami_id: str, ec2_instance_type: str, key_name: str, security_group_name: str
-) -> TypeList:
+) -> list:
     # From the docs: "For security groups in a nondefault VPC, you must specify the security group ID".
     # Right now, since we're using default VPC, we can use security group name instead of ID.
 
@@ -2616,7 +2661,7 @@ def make_aws_ec2_instance(
     tmp_cmd = rf"[{{\"DeviceName\":\"/dev/sdf\",\"Ebs\":{{\"VolumeSize\":{ebs_size},\"DeleteOnTermination\":false}}}}]"
     cmd += f'--block-device-mappings "{tmp_cmd}"'
 
-    host_ips: TypeList = []
+    host_ips: list = []
     try:
         print(f"Creating EC2 instance.\nRunning: {cmd}")
         create_ec2_output = subprocess.check_output(cmd, shell=True)  # nosec
@@ -2640,13 +2685,13 @@ def create_launch_aws_cmd(
     key_name: str,
     key_path: str,
     ansible_extras: str,
-    kwargs: TypeDict[str, Any],
+    kwargs: dict[str, Any],
     repo: str,
     branch: str,
     ami_id: str,
     username: str,
     auth: AuthCredentials,
-) -> TypeList[str]:
+) -> list[str]:
     node_name = verb.get_named_term_type(name="node_name")
     snake_name = str(node_name.snake_input)
     create_aws_security_group(security_group_name, region, snake_name)
@@ -2683,7 +2728,7 @@ def create_launch_aws_cmd(
         security_group_name=security_group_name,
     )
 
-    launch_cmds: TypeList[str] = []
+    launch_cmds: list[str] = []
 
     for host_ip in host_ips:
         # get old host
@@ -2723,12 +2768,12 @@ def make_vm_azure(
     node_name: str,
     resource_group: str,
     username: str,
-    password: Optional[str],
-    key_path: Optional[str],
+    password: str | None,
+    key_path: str | None,
     size: str,
     image_name: str,
     node_count: int,
-) -> TypeList:
+) -> list:
     disk_size_gb = "200"
     try:
         temp_dir = tempfile.TemporaryDirectory()
@@ -2750,7 +2795,7 @@ def make_vm_azure(
     cmd += f"--admin-password '{password}' " if password else ""
     cmd += f"--count {node_count} " if node_count > 1 else ""
 
-    host_ips: Optional[TypeList] = []
+    host_ips: list | None = []
     try:
         print(f"Creating vm.\nRunning: {hide_azure_vm_password(cmd)}")
         subprocess.check_output(cmd, shell=True)  # nosec
@@ -2804,7 +2849,7 @@ def create_launch_gcp_cmd(
     zone: str,
     machine_type: str,
     ansible_extras: str,
-    kwargs: TypeDict[str, Any],
+    kwargs: dict[str, Any],
     repo: str,
     branch: str,
     auth: AuthCredentials,
@@ -2913,14 +2958,14 @@ def create_launch_azure_cmd(
     location: str,
     size: str,
     username: str,
-    password: Optional[str],
-    key_path: Optional[str],
+    password: str | None,
+    key_path: str | None,
     repo: str,
     branch: str,
     auth: AuthCredentials,
     ansible_extras: str,
-    kwargs: TypeDict[str, Any],
-) -> TypeList[str]:
+    kwargs: dict[str, Any],
+) -> list[str]:
     get_or_make_resource_group(resource_group=resource_group, location=location)
 
     node_count = kwargs.get("node_count", 1)
@@ -2969,7 +3014,7 @@ def create_launch_azure_cmd(
             priority=502,
         )
 
-    launch_cmds: TypeList[str] = []
+    launch_cmds: list[str] = []
 
     for host_ip in host_ips:
         # get old host
@@ -3011,7 +3056,7 @@ def create_launch_azure_cmd(
 
 
 def create_ansible_land_cmd(
-    verb: GrammarVerb, auth: Optional[AuthCredentials], kwargs: TypeDict[str, Any]
+    verb: GrammarVerb, auth: AuthCredentials | None, kwargs: dict[str, Any]
 ) -> str:
     try:
         host_term = verb.get_named_term_hostgrammar(name="host")
@@ -3062,7 +3107,7 @@ def create_ansible_land_cmd(
 
 
 def create_launch_custom_cmd(
-    verb: GrammarVerb, auth: Optional[AuthCredentials], kwargs: TypeDict[str, Any]
+    verb: GrammarVerb, auth: AuthCredentials | None, kwargs: dict[str, Any]
 ) -> str:
     try:
         host_term = verb.get_named_term_hostgrammar(name="host")
@@ -3184,7 +3229,7 @@ def create_launch_custom_cmd(
         raise e
 
 
-def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
+def create_land_cmd(verb: GrammarVerb, kwargs: dict[str, Any]) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host if host_term.host is not None else ""
 
@@ -3346,7 +3391,7 @@ def create_land_docker_cmd(verb: GrammarVerb, prune_volumes: bool = False) -> st
     is_flag=True,
     help="Prune docker volumes after land.",
 )
-def land(args: TypeTuple[str], **kwargs: Any) -> None:
+def land(args: tuple[str], **kwargs: Any) -> None:
     verb = get_land_verb()
     silent = bool(kwargs["silent"])
     force = bool(kwargs["force"])
@@ -3415,7 +3460,7 @@ cli.add_command(clean)
     help="Show HAGrid debug information", context_settings={"show_default": True}
 )
 @click.argument("args", type=str, nargs=-1)
-def debug(args: TypeTuple[str], **kwargs: Any) -> None:
+def debug(args: tuple[str], **kwargs: Any) -> None:
     debug_info = gather_debug()
     print("\n\nWhen reporting bugs, please copy everything between the lines.")
     print("==================================================================\n")
@@ -3452,7 +3497,7 @@ HEALTH_CHECK_URLS = {
 }
 
 
-def check_host_health(ip_address: str, keys: TypeList[str]) -> TypeDict[str, bool]:
+def check_host_health(ip_address: str, keys: list[str]) -> dict[str, bool]:
     status = {}
     for key in keys:
         func: Callable = HEALTH_CHECK_FUNCTIONS[key]  # type: ignore
@@ -3464,7 +3509,7 @@ def icon_status(status: bool) -> str:
     return "✅" if status else "❌"
 
 
-def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]]]:
+def get_health_checks(ip_address: str) -> tuple[bool, list[list[str]]]:
     keys = list(DEFAULT_HEALTH_CHECKS)
     if "localhost" in ip_address:
         new_keys = []
@@ -3503,7 +3548,7 @@ def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]
 
 
 def create_check_table(
-    table_contents: TypeList[TypeList[str]], time_left: int = 0
+    table_contents: list[list[str]], time_left: int = 0
 ) -> rich.table.Table:
     table = rich.table.Table()
     table.add_column("PyGrid", style="magenta")
@@ -3528,8 +3573,8 @@ def get_host_name(container_name: str, by_suffix: str) -> str:
 
 
 def get_docker_status(
-    ip_address: str, node_name: Optional[str]
-) -> Tuple[bool, Tuple[str, str]]:
+    ip_address: str, node_name: str | None
+) -> tuple[bool, tuple[str, str]]:
     url = from_url(ip_address)
     port = url[2]
     network_container = (
@@ -3631,16 +3676,16 @@ def get_syft_install_status(host_name: str, node_type: str) -> bool:
     help="Refresh output",
 )
 def check(
-    ip_addresses: TypeList[str], verbose: bool = False, timeout: Union[int, str] = 300
+    ip_addresses: list[str], verbose: bool = False, timeout: int | str = 300
 ) -> None:
     check_status(ip_addresses=ip_addresses, silent=not verbose, timeout=timeout)
 
 
 def _check_status(
-    ip_addresses: Union[str, TypeList[str]],
+    ip_addresses: str | list[str],
     silent: bool = True,
-    signal: Optional[Event] = None,
-    node_name: Optional[str] = None,
+    signal: Event | None = None,
+    node_name: str | None = None,
 ) -> None:
     OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
     # Check if ip_addresses is str, then convert to list
@@ -3732,10 +3777,10 @@ def _check_status(
 
 
 def check_status(
-    ip_addresses: Union[str, TypeList[str]],
+    ip_addresses: str | list[str],
     silent: bool = True,
-    timeout: Union[int, str] = 300,
-    node_name: Optional[str] = None,
+    timeout: int | str = 300,
+    node_name: str | None = None,
 ) -> None:
     timeout = int(timeout)
     # third party
@@ -3783,7 +3828,7 @@ cli.add_command(version)
 
 
 def run_quickstart(
-    url: Optional[str] = None,
+    url: str | None = None,
     syft: str = "latest",
     reset: bool = False,
     quiet: bool = False,
@@ -3791,9 +3836,9 @@ def run_quickstart(
     test: bool = False,
     repo: str = DEFAULT_REPO,
     branch: str = DEFAULT_BRANCH,
-    commit: Optional[str] = None,
-    python: Optional[str] = None,
-    zip_file: Optional[str] = None,
+    commit: str | None = None,
+    python: str | None = None,
+    zip_file: str | None = None,
 ) -> None:
     try:
         quickstart_art()
@@ -3998,7 +4043,7 @@ def run_quickstart(
     help="Choose a specific commit to fetch the notebook from",
 )
 def quickstart_cli(
-    url: Optional[str] = None,
+    url: str | None = None,
     syft: str = "latest",
     reset: bool = False,
     quiet: bool = False,
@@ -4006,8 +4051,8 @@ def quickstart_cli(
     test: bool = False,
     repo: str = DEFAULT_REPO,
     branch: str = DEFAULT_BRANCH,
-    commit: Optional[str] = None,
-    python: Optional[str] = None,
+    commit: str | None = None,
+    python: str | None = None,
 ) -> None:
     return run_quickstart(
         url=url,
@@ -4026,7 +4071,7 @@ def quickstart_cli(
 cli.add_command(quickstart_cli, "quickstart")
 
 
-def display_jupyter_url(url_parts: Tuple[str, str, int]) -> None:
+def display_jupyter_url(url_parts: tuple[str, str, int]) -> None:
     url = url_parts[0]
     if is_gitpod():
         parts = urlparse(url)
@@ -4052,7 +4097,7 @@ def open_browser_with_url(url: str) -> None:
     webbrowser.open(url)
 
 
-def extract_jupyter_url(line: str) -> Optional[Tuple[str, str, int]]:
+def extract_jupyter_url(line: str) -> tuple[str, str, int] | None:
     jupyter_regex = r"^.*(http.*127.*)"
     try:
         matches = re.match(jupyter_regex, line)
@@ -4076,7 +4121,7 @@ def quickstart_setup(
     syft_version: str,
     reset: bool = False,
     pre: bool = False,
-    python: Optional[str] = None,
+    python: str | None = None,
 ) -> None:
     console = rich.get_console()
     OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
@@ -4192,7 +4237,7 @@ def ssh_into_remote_machine(
     host_ip: str,
     username: str,
     auth_type: str,
-    private_key_path: Optional[str],
+    private_key_path: str | None,
     cmd: str = "",
 ) -> None:
     """Access or execute command on the remote machine.
@@ -4227,8 +4272,8 @@ def ssh_into_remote_machine(
     help="Optional: command to execute on the remote machine.",
 )
 def ssh(ip_address: str, cmd: str) -> None:
-    kwargs: TypeDict = {}
-    key_path: Optional[str] = None
+    kwargs: dict = {}
+    key_path: str | None = None
 
     if check_ip_for_ssh(ip_address, timeout=10, silent=False):
         username = ask(

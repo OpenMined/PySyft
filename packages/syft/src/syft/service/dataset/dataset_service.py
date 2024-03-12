@@ -1,9 +1,6 @@
 # stdlib
 from collections.abc import Collection
-from typing import List
-from typing import Optional
-from typing import Sequence
-from typing import Union
+from collections.abc import Sequence
 
 # relative
 from ...serde.serializable import serializable
@@ -34,9 +31,9 @@ from .dataset_stash import DatasetStash
 
 def _paginate_collection(
     collection: Collection,
-    page_size: Optional[int] = 0,
-    page_index: Optional[int] = 0,
-) -> Optional[slice]:
+    page_size: int | None = 0,
+    page_index: int | None = 0,
+) -> slice | None:
     if page_size is None or page_size <= 0:
         return None
 
@@ -54,9 +51,9 @@ def _paginate_collection(
 
 def _paginate_dataset_collection(
     datasets: Sequence[Dataset],
-    page_size: Optional[int] = 0,
-    page_index: Optional[int] = 0,
-) -> Union[DictTuple[str, Dataset], DatasetPageView]:
+    page_size: int | None = 0,
+    page_index: int | None = 0,
+) -> DictTuple[str, Dataset] | DatasetPageView:
     slice_ = _paginate_collection(datasets, page_size=page_size, page_index=page_index)
     chunk = datasets[slice_] if slice_ is not None else datasets
     results = DictTuple(chunk, lambda dataset: dataset.name)
@@ -85,7 +82,7 @@ class DatasetService(AbstractService):
     )
     def add(
         self, context: AuthedServiceContext, dataset: CreateDataset
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Add a Dataset"""
         dataset = dataset.to(Dataset, context=context)
         result = self.stash.set(
@@ -99,10 +96,16 @@ class DatasetService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
-        return SyftSuccess(
-            message=f"Dataset uploaded to '{context.node.name}'. "
-            f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
-        )
+        if context.node is not None:
+            return SyftSuccess(
+                message=f"Dataset uploaded to '{context.node.name}'. "
+                f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
+            )
+        else:
+            return SyftSuccess(
+                message="Dataset uploaded not to a node."
+                "To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
+            )
 
     @service_method(
         path="dataset.get_all",
@@ -113,9 +116,9 @@ class DatasetService(AbstractService):
     def get_all(
         self,
         context: AuthedServiceContext,
-        page_size: Optional[int] = 0,
-        page_index: Optional[int] = 0,
-    ) -> Union[DatasetPageView, DictTuple[str, Dataset], SyftError]:
+        page_size: int | None = 0,
+        page_index: int | None = 0,
+    ) -> DatasetPageView | DictTuple[str, Dataset] | SyftError:
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
         if not result.is_ok():
@@ -124,7 +127,8 @@ class DatasetService(AbstractService):
         datasets = result.ok()
 
         for dataset in datasets:
-            dataset.node_uid = context.node.id
+            if context.node is not None:
+                dataset.node_uid = context.node.id
 
         return _paginate_dataset_collection(
             datasets=datasets, page_size=page_size, page_index=page_index
@@ -137,9 +141,9 @@ class DatasetService(AbstractService):
         self,
         context: AuthedServiceContext,
         name: str,
-        page_size: Optional[int] = 0,
-        page_index: Optional[int] = 0,
-    ) -> Union[DatasetPageView, SyftError]:
+        page_size: int | None = 0,
+        page_index: int | None = 0,
+    ) -> DatasetPageView | SyftError:
         """Search a Dataset by name"""
         results = self.get_all(context)
 
@@ -157,25 +161,27 @@ class DatasetService(AbstractService):
     @service_method(path="dataset.get_by_id", name="get_by_id")
     def get_by_id(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Get a Dataset"""
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             dataset = result.ok()
-            dataset.node_uid = context.node.id
+            if context.node is not None:
+                dataset.node_uid = context.node.id
             return dataset
         return SyftError(message=result.err())
 
     @service_method(path="dataset.get_by_action_id", name="get_by_action_id")
     def get_by_action_id(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[List[Dataset], SyftError]:
+    ) -> list[Dataset] | SyftError:
         """Get Datasets by an Action ID"""
         result = self.stash.search_action_ids(context.credentials, uid=uid)
         if result.is_ok():
             datasets = result.ok()
             for dataset in datasets:
-                dataset.node_uid = context.node.id
+                if context.node is not None:
+                    dataset.node_uid = context.node.id
             return datasets
         return SyftError(message=result.err())
 
@@ -186,7 +192,7 @@ class DatasetService(AbstractService):
     )
     def get_assets_by_action_id(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[List[Asset], SyftError]:
+    ) -> list[Asset] | SyftError:
         """Get Assets by an Action ID"""
         datasets = self.get_by_action_id(context=context, uid=uid)
         assets = []
@@ -207,7 +213,7 @@ class DatasetService(AbstractService):
     )
     def delete_dataset(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         result = self.stash.delete_by_uid(context.credentials, uid)
         if result.is_ok():
             return result.ok()

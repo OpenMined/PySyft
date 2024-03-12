@@ -1,22 +1,18 @@
 # stdlib
 from collections import defaultdict
+from collections.abc import Callable
 from copy import deepcopy
 from functools import partial
 import inspect
 from inspect import Parameter
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Set
-from typing import Tuple
-from typing import Type
+from typing import TYPE_CHECKING
 from typing import Union
 
 # third party
 from result import Ok
 from result import OkErr
+from typing_extensions import Self
 
 # relative
 from ..abstract_node import AbstractNode
@@ -25,12 +21,15 @@ from ..protocol.data_protocol import migrate_args_and_kwargs
 from ..serde.lib_permissions import CMPCRUDPermission
 from ..serde.lib_permissions import CMPPermission
 from ..serde.lib_service_registry import CMPBase
+from ..serde.lib_service_registry import CMPClass
+from ..serde.lib_service_registry import CMPFunction
+from ..serde.lib_service_registry import action_execute_registry_libs
 from ..serde.serializable import serializable
 from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
 from ..store.linked_obj import LinkedObject
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.syft_object import attach_attribute_to_syft_object
@@ -40,10 +39,15 @@ from .context import ChangeContext
 from .response import SyftError
 from .user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .user.user_roles import ServiceRole
+from .veilid import VEILID_ENABLED
 from .warnings import APIEndpointWarning
 
-TYPE_TO_SERVICE = {}
-SERVICE_TO_TYPES = defaultdict(set)
+if TYPE_CHECKING:
+    # relative
+    from ..client.api import APIModule
+
+TYPE_TO_SERVICE: dict = {}
+SERVICE_TO_TYPES: defaultdict = defaultdict(set)
 
 
 class AbstractService:
@@ -51,8 +55,10 @@ class AbstractService:
     node_uid: UID
 
     def resolve_link(
-        self, context: AuthedServiceContext, linked_obj: LinkedObject
-    ) -> Union[Any, SyftError]:
+        self,
+        context: AuthedServiceContext | ChangeContext | Any,
+        linked_obj: LinkedObject,
+    ) -> Any | SyftError:
         if isinstance(context, AuthedServiceContext):
             credentials = context.credentials
         elif isinstance(context, ChangeContext):
@@ -64,43 +70,48 @@ class AbstractService:
         if isinstance(obj, OkErr) and obj.is_ok():
             obj = obj.ok()
         if hasattr(obj, "node_uid"):
+            if context.node is None:
+                return SyftError(message=f"context {context}'s node is None")
             obj.node_uid = context.node.id
         if not isinstance(obj, OkErr):
             obj = Ok(obj)
         return obj
 
+    def get_all(*arg: Any, **kwargs: Any) -> Any:
+        pass
+
 
 @serializable()
 class BaseConfig(SyftBaseObject):
     __canonical_name__ = "BaseConfig"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     public_path: str
     private_path: str
     public_name: str
     method_name: str
-    doc_string: Optional[str]
-    signature: Optional[Signature]
+    doc_string: str | None = None
+    signature: Signature | None = None
     is_from_lib: bool = False
-    warning: Optional[APIEndpointWarning]
+    warning: APIEndpointWarning | None = None
 
 
 @serializable()
 class ServiceConfig(BaseConfig):
     __canonical_name__ = "ServiceConfig"
-    permissions: List
-    roles: List[ServiceRole]
+    permissions: list
+    roles: list[ServiceRole]
 
-    def has_permission(self, user_service_role: ServiceRole):
+    def has_permission(self, user_service_role: ServiceRole) -> bool:
         return user_service_role in self.roles
 
 
 @serializable()
 class LibConfig(BaseConfig):
     __canonical_name__ = "LibConfig"
-    permissions: Set[CMPPermission]
+    permissions: set[CMPPermission]
 
-    def has_permission(self, credentials: SyftVerifyKey):
+    def has_permission(self, credentials: SyftVerifyKey) -> bool:
         # TODO: implement user level permissions
         for p in self.permissions:
             if p.permission_string == CMPCRUDPermission.ALL_EXECUTE.name:
@@ -111,7 +122,7 @@ class LibConfig(BaseConfig):
 
 
 class ServiceConfigRegistry:
-    __service_config_registry__: Dict[str, ServiceConfig] = {}
+    __service_config_registry__: dict[str, ServiceConfig] = {}
     # __public_to_private_path_map__: Dict[str, str] = {}
 
     @classmethod
@@ -121,16 +132,16 @@ class ServiceConfigRegistry:
             # cls.__public_to_private_path_map__[config.public_path] = config.private_path
 
     @classmethod
-    def get_registered_configs(cls) -> Dict[str, ServiceConfig]:
+    def get_registered_configs(cls) -> dict[str, ServiceConfig]:
         return cls.__service_config_registry__
 
     @classmethod
-    def path_exists(cls, path: str):
+    def path_exists(cls, path: str) -> bool:
         return path in cls.__service_config_registry__
 
 
 class LibConfigRegistry:
-    __service_config_registry__: Dict[str, ServiceConfig] = {}
+    __service_config_registry__: dict[str, ServiceConfig] = {}
 
     @classmethod
     def register(cls, config: ServiceConfig) -> None:
@@ -138,20 +149,20 @@ class LibConfigRegistry:
             cls.__service_config_registry__[config.public_path] = config
 
     @classmethod
-    def get_registered_configs(cls) -> Dict[str, ServiceConfig]:
+    def get_registered_configs(cls) -> dict[str, ServiceConfig]:
         return cls.__service_config_registry__
 
     @classmethod
-    def path_exists(cls, path: str):
+    def path_exists(cls, path: str) -> bool:
         return path in cls.__service_config_registry__
 
 
 class UserLibConfigRegistry:
-    def __init__(self, service_config_registry: Dict[str, LibConfig]):
-        self.__service_config_registry__: Dict[str, LibConfig] = service_config_registry
+    def __init__(self, service_config_registry: dict[str, LibConfig]):
+        self.__service_config_registry__: dict[str, LibConfig] = service_config_registry
 
     @classmethod
-    def from_user(cls, credentials: SyftVerifyKey):
+    def from_user(cls, credentials: SyftVerifyKey) -> Self:
         return cls(
             {
                 k: lib_config
@@ -160,24 +171,24 @@ class UserLibConfigRegistry:
             }
         )
 
-    def __contains__(self, path: str):
+    def __contains__(self, path: str) -> bool:
         return path in self.__service_config_registry__
 
     def private_path_for(self, public_path: str) -> str:
         return self.__service_config_registry__[public_path].private_path
 
-    def get_registered_configs(self) -> Dict[str, LibConfig]:
+    def get_registered_configs(self) -> dict[str, LibConfig]:
         return self.__service_config_registry__
 
 
 class UserServiceConfigRegistry:
-    def __init__(self, service_config_registry: Dict[str, ServiceConfig]):
-        self.__service_config_registry__: Dict[
-            str, ServiceConfig
-        ] = service_config_registry
+    def __init__(self, service_config_registry: dict[str, ServiceConfig]):
+        self.__service_config_registry__: dict[str, ServiceConfig] = (
+            service_config_registry
+        )
 
     @classmethod
-    def from_role(cls, user_service_role: ServiceRole):
+    def from_role(cls, user_service_role: ServiceRole) -> Self:
         return cls(
             {
                 k: service_config
@@ -186,17 +197,17 @@ class UserServiceConfigRegistry:
             }
         )
 
-    def __contains__(self, path: str):
+    def __contains__(self, path: str) -> bool:
         return path in self.__service_config_registry__
 
     def private_path_for(self, public_path: str) -> str:
         return self.__service_config_registry__[public_path].private_path
 
-    def get_registered_configs(self) -> Dict[str, ServiceConfig]:
+    def get_registered_configs(self) -> dict[str, ServiceConfig]:
         return self.__service_config_registry__
 
 
-def register_lib_obj(lib_obj: CMPBase):
+def register_lib_obj(lib_obj: CMPBase) -> None:
     signature = lib_obj.signature
     path = lib_obj.absolute_path
     func_name = lib_obj.name
@@ -217,17 +228,22 @@ def register_lib_obj(lib_obj: CMPBase):
             LibConfigRegistry.register(lib_config)
 
 
-# # hacky, prevent circular imports
-# for lib_obj in action_execute_registry_libs.flatten():
-#     # # for functions
-#     # func_name = func.__name__
-#     # # for classes
-#     # func_name = path.split(".")[-1]
-#     if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
-#         register_lib_obj(lib_obj)
+# NOTE: Currently we disable adding library enpoints like numpy, torch when veilid is enabled
+# This is because the /api endpoint which return SyftAPI along with the lib enpoints exceeds
+# 2 MB . But veilid has a limit of 32 KB for sending and receiving message.
+# This would be fixed, when chunking is implemented at veilid core.
+if not VEILID_ENABLED:
+    # hacky, prevent circular imports
+    for lib_obj in action_execute_registry_libs.flatten():
+        # # for functions
+        # func_name = func.__name__
+        # # for classes
+        # func_name = path.split(".")[-1]
+        if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
+            register_lib_obj(lib_obj)
 
 
-def deconstruct_param(param: inspect.Parameter) -> Dict[str, Any]:
+def deconstruct_param(param: inspect.Parameter) -> dict[str, Any]:
     # Gets the init signature form pydantic object
     param_type = param.annotation
     if not hasattr(param_type, "__signature__"):
@@ -241,7 +257,7 @@ def deconstruct_param(param: inspect.Parameter) -> Dict[str, Any]:
     return sub_mapping
 
 
-def types_for_autosplat(signature: Signature, autosplat: List[str]) -> Dict[str, type]:
+def types_for_autosplat(signature: Signature, autosplat: list[str]) -> dict[str, type]:
     autosplat_types = {}
     for k, v in signature.parameters.items():
         if k in autosplat:
@@ -251,10 +267,10 @@ def types_for_autosplat(signature: Signature, autosplat: List[str]) -> Dict[str,
 
 def reconstruct_args_kwargs(
     signature: Signature,
-    autosplat: List[str],
-    args: Tuple[Any, ...],
-    kwargs: Dict[Any, str],
-) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+    autosplat: list[str],
+    args: tuple[Any, ...],
+    kwargs: dict[Any, str],
+) -> tuple[tuple[Any, ...], dict[str, Any]]:
     autosplat_types = types_for_autosplat(signature=signature, autosplat=autosplat)
 
     autosplat_objs = {}
@@ -279,7 +295,7 @@ def reconstruct_args_kwargs(
     return (args, final_kwargs)
 
 
-def expand_signature(signature: Signature, autosplat: List[str]) -> Signature:
+def expand_signature(signature: Signature, autosplat: list[str]) -> Signature:
     new_mapping = {}
     for k, v in signature.parameters.items():
         if k in autosplat:
@@ -312,17 +328,17 @@ def expand_signature(signature: Signature, autosplat: List[str]) -> Signature:
 
 
 def service_method(
-    name: Optional[str] = None,
-    path: Optional[str] = None,
-    roles: Optional[List[ServiceRole]] = None,
-    autosplat: Optional[List[str]] = None,
-    warning: Optional[APIEndpointWarning] = None,
-):
+    name: str | None = None,
+    path: str | None = None,
+    roles: list[ServiceRole] | None = None,
+    autosplat: list[str] | None = None,
+    warning: APIEndpointWarning | None = None,
+) -> Callable:
     if roles is None or len(roles) == 0:
         # TODO: this is dangerous, we probably want to be more conservative
         roles = DATA_OWNER_ROLE_LEVEL
 
-    def wrapper(func):
+    def wrapper(func: Any) -> Callable:
         func_name = func.__name__
         class_name = func.__qualname__.split(".")[-2]
         _path = class_name + "." + func_name
@@ -332,7 +348,7 @@ def service_method(
 
         input_signature = deepcopy(signature)
 
-        def _decorator(self, *args, **kwargs):
+        def _decorator(self: Any, *args: Any, **kwargs: Any) -> Callable:
             communication_protocol = kwargs.pop("communication_protocol", None)
 
             if communication_protocol:
@@ -388,7 +404,7 @@ def service_method(
 
 
 class SyftServiceRegistry:
-    __service_registry__: Dict[str, Callable] = {}
+    __service_registry__: dict[str, Callable] = {}
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
@@ -397,7 +413,7 @@ class SyftServiceRegistry:
             cls.__object_version_registry__[mapping_string] = cls
 
     @classmethod
-    def versioned_class(cls, name: str, version: int) -> Optional[Type["SyftObject"]]:
+    def versioned_class(cls, name: str, version: int) -> type["SyftObject"] | None:
         mapping_string = f"{name}_{version}"
         if mapping_string not in cls.__object_version_registry__:
             return None
@@ -417,7 +433,7 @@ class SyftServiceRegistry:
 
     @classmethod
     def get_transform(
-        cls, type_from: Type["SyftObject"], type_to: Type["SyftObject"]
+        cls, type_from: type["SyftObject"], type_to: type["SyftObject"]
     ) -> Callable:
         klass_from = type_from.__canonical_name__
         version_from = type_from.__version__
@@ -429,9 +445,9 @@ class SyftServiceRegistry:
 
 def from_api_or_context(
     func_or_path: str,
-    syft_node_location: Optional[UID] = None,
-    syft_client_verify_key: Optional[SyftVerifyKey] = None,
-):
+    syft_node_location: UID | None = None,
+    syft_client_verify_key: SyftVerifyKey | None = None,
+) -> Union["APIModule", SyftError, partial] | None:
     # relative
     from ..client.api import APIRegistry
     from ..node.node import AuthNodeContextRegistry
@@ -456,7 +472,7 @@ def from_api_or_context(
         node_uid=syft_node_location,
         user_verify_key=syft_client_verify_key,
     )
-    if node_context is not None:
+    if node_context is not None and node_context.node is not None:
         user_config_registry = UserServiceConfigRegistry.from_role(
             node_context.role,
         )
@@ -477,3 +493,4 @@ def from_api_or_context(
         return partial(service_method, node_context)
     else:
         print("Could not get method from api or context")
+        return None

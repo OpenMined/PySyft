@@ -1,14 +1,14 @@
 # stdlib
 from datetime import datetime
 from functools import total_ordering
-from typing import Optional
+from typing import Any
 
 # third party
 from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
-from .syft_object import SYFT_OBJECT_VERSION_1
+from .syft_object import SYFT_OBJECT_VERSION_2
 from .syft_object import SyftObject
 from .uid import UID
 
@@ -17,9 +17,9 @@ from .uid import UID
 @total_ordering
 class DateTime(SyftObject):
     __canonical_name__ = "DateTime"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID]
+    id: UID | None = None  # type: ignore
     utc_timestamp: float
 
     @classmethod
@@ -33,7 +33,9 @@ class DateTime(SyftObject):
     def __hash__(self) -> int:
         return hash(self.utc_timestamp)
 
-    def __eq__(self, other: Self) -> bool:
+    def __eq__(self, other: Any) -> bool:
+        if other is None:
+            return False
         return self.utc_timestamp == other.utc_timestamp
 
     def __lt__(self, other: Self) -> bool:

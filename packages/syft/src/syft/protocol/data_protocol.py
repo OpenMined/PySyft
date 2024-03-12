@@ -1,19 +1,15 @@
 # stdlib
 from collections import defaultdict
+from collections.abc import Iterable
 from collections.abc import MutableMapping
 from collections.abc import MutableSequence
 import hashlib
 import json
+from operator import itemgetter
 import os
 from pathlib import Path
 import re
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Type
-from typing import Union
 
 # third party
 from packaging.version import parse
@@ -30,17 +26,17 @@ from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftBaseObject
 
 PROTOCOL_STATE_FILENAME = "protocol_version.json"
-PROTOCOL_TYPE = Union[str, int]
+PROTOCOL_TYPE = str | int
 
 
-def natural_key(key: PROTOCOL_TYPE) -> List[int]:
+def natural_key(key: PROTOCOL_TYPE) -> list[int | str | Any]:
     """Define key for natural ordering of strings."""
     if isinstance(key, int):
         key = str(key)
-    return [int(s) if s.isdigit() else s for s in re.split("(\d+)", key)]
+    return [int(s) if s.isdigit() else s for s in re.split(r"(\d+)", key)]
 
 
-def sort_dict_naturally(d: Dict) -> Dict:
+def sort_dict_naturally(d: dict) -> dict:
     """Sort dictionary by keys in natural order."""
     return {k: d[k] for k in sorted(d.keys(), key=natural_key)}
 
@@ -69,12 +65,13 @@ class DataProtocol:
         self.protocol_support = self.calculate_supported_protocols()
 
     @staticmethod
-    def _calculate_object_hash(klass: Type[SyftBaseObject]) -> str:
+    def _calculate_object_hash(klass: type[SyftBaseObject]) -> str:
         # TODO: this depends on what is marked as serde
-        field_name_keys = sorted(klass.__fields__.keys())
         field_data = {
-            field_name: repr(klass.__fields__[field_name].annotation)
-            for field_name in field_name_keys
+            field: repr(field_info.annotation)
+            for field, field_info in sorted(
+                klass.model_fields.items(), key=itemgetter(0)
+            )
         }
         obj_meta_info = {
             "canonical_name": klass.__canonical_name__,
@@ -86,13 +83,13 @@ class DataProtocol:
         return hashlib.sha256(json.dumps(obj_meta_info).encode()).hexdigest()
 
     @staticmethod
-    def read_json(file_path: Path) -> Dict:
+    def read_json(file_path: Path) -> dict:
         try:
             return json.loads(file_path.read_text())
         except Exception:
             return {}
 
-    def read_history(self) -> Dict:
+    def read_history(self) -> dict:
         protocol_history = self.read_json(self.file_path)
 
         for version in protocol_history.keys():
@@ -106,7 +103,7 @@ class DataProtocol:
 
         return protocol_history
 
-    def save_history(self, history: Dict) -> None:
+    def save_history(self, history: dict) -> None:
         for file_path in protocol_release_dir().iterdir():
             for version in self.read_json(file_path):
                 # Skip adding file if the version is not part of the history
@@ -123,12 +120,12 @@ class DataProtocol:
         return "dev"
 
     @staticmethod
-    def _hash_to_sha256(obj_dict: Dict) -> str:
+    def _hash_to_sha256(obj_dict: dict) -> str:
         return hashlib.sha256(json.dumps(obj_dict).encode()).hexdigest()
 
-    def build_state(self, stop_key: Optional[str] = None) -> dict:
+    def build_state(self, stop_key: str | None = None) -> dict:
         sorted_dict = sort_dict_naturally(self.protocol_history)
-        state_dict = defaultdict(dict)
+        state_dict: dict = defaultdict(dict)
         for protocol_number in sorted_dict:
             object_versions = sorted_dict[protocol_number]["object_versions"]
             for canonical_name, versions in object_versions.items():
@@ -164,9 +161,9 @@ class DataProtocol:
                 return state_dict
         return state_dict
 
-    def diff_state(self, state: Dict) -> tuple[Dict, Dict]:
-        compare_dict = defaultdict(dict)  # what versions are in the latest code
-        object_diff = defaultdict(dict)  # diff in latest code with saved json
+    def diff_state(self, state: dict) -> tuple[dict, dict]:
+        compare_dict: dict = defaultdict(dict)  # what versions are in the latest code
+        object_diff: dict = defaultdict(dict)  # diff in latest code with saved json
         for k in TYPE_BANK:
             (
                 nonrecursive,
@@ -323,7 +320,7 @@ class DataProtocol:
         return SyftSuccess(message=f"Protocol Updated to {next_highest_protocol}")
 
     @staticmethod
-    def freeze_release(protocol_history: Dict, latest_protocol: str) -> None:
+    def freeze_release(protocol_history: dict, latest_protocol: str) -> None:
         """Freezes latest release as a separate release file."""
 
         # Get release history
@@ -380,9 +377,9 @@ class DataProtocol:
 
         # Update older file path to newer file path
         latest_protocol_fp.rename(new_protocol_file_path)
-        protocol_history[latest_protocol][
-            "release_name"
-        ] = f"{current_syft_version}.json"
+        protocol_history[latest_protocol]["release_name"] = (
+            f"{current_syft_version}.json"
+        )
 
         # Save history
         self.file_path.write_text(json.dumps(protocol_history, indent=2) + "\n")
@@ -433,7 +430,7 @@ class DataProtocol:
         return result
 
     @property
-    def supported_protocols(self) -> list[Union[int, str]]:
+    def supported_protocols(self) -> list[int | str]:
         """Returns a list of protocol numbers that are marked as supported."""
         supported = []
         for version, is_supported in self.protocol_support.items():
@@ -456,7 +453,7 @@ class DataProtocol:
                     break
         return protocol_supported
 
-    def get_object_versions(self, protocol: Union[int, str]) -> list:
+    def get_object_versions(self, protocol: int | str) -> list:
         return self.protocol_history[str(protocol)]["object_versions"]
 
     @property
@@ -497,7 +494,7 @@ def debox_arg_and_migrate(arg: Any, protocol_state: dict) -> Any:
         arg = arg.value
 
     if isinstance(arg, MutableMapping):
-        iterable_keys = arg.keys()
+        iterable_keys: Iterable = arg.keys()
     elif isinstance(arg, MutableSequence):
         iterable_keys = range(len(arg))
     elif isinstance(arg, tuple):
@@ -532,11 +529,11 @@ def debox_arg_and_migrate(arg: Any, protocol_state: dict) -> Any:
 
 
 def migrate_args_and_kwargs(
-    args: Tuple,
-    kwargs: Dict,
-    to_protocol: Optional[PROTOCOL_TYPE] = None,
+    args: tuple,
+    kwargs: dict,
+    to_protocol: PROTOCOL_TYPE | None = None,
     to_latest_protocol: bool = False,
-) -> Tuple[Tuple, Dict]:
+) -> tuple[tuple, dict]:
     """Migrate args and kwargs to latest version for given protocol.
 
     If `to_protocol` is None, then migrate to latest protocol version.
@@ -548,7 +545,7 @@ def migrate_args_and_kwargs(
         to_protocol = data_protocol.latest_version if to_latest_protocol else None
 
     if to_protocol is None:
-        raise SyftException(message="Protocol version missing.")
+        raise SyftException("Protocol version missing.")
 
     # If latest protocol being used is equal to the protocol to be migrate
     # then skip migration of the object

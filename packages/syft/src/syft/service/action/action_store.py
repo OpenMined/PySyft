@@ -3,8 +3,6 @@ from __future__ import annotations
 
 # stdlib
 import threading
-from typing import List
-from typing import Optional
 
 # third party
 from result import Err
@@ -50,7 +48,7 @@ class KeyValueActionStore(ActionStore):
     """
 
     def __init__(
-        self, store_config: StoreConfig, root_verify_key: Optional[SyftVerifyKey] = None
+        self, store_config: StoreConfig, root_verify_key: SyftVerifyKey | None = None
     ) -> None:
         self.store_config = store_config
         self.settings = BasePartitionSettings(name="Action")
@@ -65,7 +63,7 @@ class KeyValueActionStore(ActionStore):
         self.root_verify_key = root_verify_key
 
     def get(
-        self, uid: UID, credentials: SyftVerifyKey, has_permission=False
+        self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False
     ) -> Result[SyftObject, str]:
         uid = uid.id  # We only need the UID from LineageID or UID
 
@@ -212,7 +210,10 @@ class KeyValueActionStore(ActionStore):
         if not isinstance(permission.permission, ActionPermission):
             raise Exception(f"ObjectPermission type: {permission.permission} not valid")
 
-        if self.root_verify_key.verify == permission.credentials.verify:
+        if (
+            permission.credentials is not None
+            and self.root_verify_key.verify == permission.credentials.verify
+        ):
             return True
 
         if (
@@ -233,7 +234,7 @@ class KeyValueActionStore(ActionStore):
 
         return False
 
-    def has_permissions(self, permissions: List[ActionObjectPermission]) -> bool:
+    def has_permissions(self, permissions: list[ActionObjectPermission]) -> bool:
         return all(self.has_permission(p) for p in permissions)
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
@@ -241,16 +242,18 @@ class KeyValueActionStore(ActionStore):
         permissions.add(permission.permission_string)
         self.permissions[permission.uid] = permissions
 
-    def remove_permission(self, permission: ActionObjectPermission):
+    def remove_permission(self, permission: ActionObjectPermission) -> None:
         permissions = self.permissions[permission.uid]
         permissions.remove(permission.permission_string)
         self.permissions[permission.uid] = permissions
 
-    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+    def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
         for permission in permissions:
             self.add_permission(permission)
 
-    def migrate_data(self, to_klass: SyftObject, credentials: SyftVerifyKey):
+    def migrate_data(
+        self, to_klass: SyftObject, credentials: SyftVerifyKey
+    ) -> Result[bool, str]:
         has_root_permission = credentials == self.root_verify_key
 
         if has_root_permission:
@@ -290,8 +293,8 @@ class DictActionStore(KeyValueActionStore):
 
     def __init__(
         self,
-        store_config: Optional[StoreConfig] = None,
-        root_verify_key: Optional[SyftVerifyKey] = None,
+        store_config: StoreConfig | None = None,
+        root_verify_key: SyftVerifyKey | None = None,
     ) -> None:
         store_config = store_config if store_config is not None else DictStoreConfig()
         super().__init__(store_config=store_config, root_verify_key=root_verify_key)

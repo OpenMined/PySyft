@@ -1,12 +1,11 @@
 # stdlib
-from typing import List
-from typing import Optional
-from typing import Union
+from typing import cast
 
 # third party
 from result import Result
 
 # relative
+from ...abstract_node import AbstractNode
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
@@ -40,12 +39,15 @@ class DataSubjectStash(BaseUIDStoreStash):
 
     def get_by_name(
         self, credentials: SyftVerifyKey, name: str
-    ) -> Result[Optional[DataSubject], str]:
+    ) -> Result[DataSubject | None, str]:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
         return self.query_one(credentials, qks=qks)
 
     def update(
-        self, credentials: SyftVerifyKey, data_subject: DataSubject
+        self,
+        credentials: SyftVerifyKey,
+        data_subject: DataSubject,
+        has_permission: bool = False,
     ) -> Result[DataSubject, str]:
         res = self.check_type(data_subject, DataSubject)
         # we dont use and_then logic here as it is hard because of the order of the arguments
@@ -67,9 +69,10 @@ class DataSubjectService(AbstractService):
     @service_method(path="data_subject.add", name="add_data_subject")
     def add(
         self, context: AuthedServiceContext, data_subject: DataSubjectCreate
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Register a data subject."""
 
+        context.node = cast(AbstractNode, context.node)
         member_relationship_add = context.node.get_service_method(
             DataSubjectMemberService.add
         )
@@ -94,9 +97,7 @@ class DataSubjectService(AbstractService):
         )
 
     @service_method(path="data_subject.get_all", name="get_all")
-    def get_all(
-        self, context: AuthedServiceContext
-    ) -> Union[List[DataSubject], SyftError]:
+    def get_all(self, context: AuthedServiceContext) -> list[DataSubject] | SyftError:
         """Get all Data subjects"""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
@@ -107,7 +108,8 @@ class DataSubjectService(AbstractService):
     @service_method(path="data_subject.get_members", name="members_for")
     def get_members(
         self, context: AuthedServiceContext, data_subject_name: str
-    ) -> Union[List[DataSubject], SyftError]:
+    ) -> list[DataSubject] | SyftError:
+        context.node = cast(AbstractNode, context.node)
         get_relatives = context.node.get_service_method(
             DataSubjectMemberService.get_relatives
         )
@@ -129,7 +131,7 @@ class DataSubjectService(AbstractService):
     @service_method(path="data_subject.get_by_name", name="get_by_name")
     def get_by_name(
         self, context: AuthedServiceContext, name: str
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Get a Data Subject by its name."""
         result = self.stash.get_by_name(context.credentials, name=name)
         if result.is_ok():

@@ -1,9 +1,6 @@
 # stdlib
 from threading import Lock
 from typing import Any
-from typing import Dict
-from typing import Optional
-from typing import Type
 
 # third party
 from pymongo.collection import Collection as MongoCollection
@@ -98,39 +95,39 @@ class MongoStoreClientConfig(StoreClientConfig):
     """
 
     # Connection
-    hostname: Optional[str] = "127.0.0.1"
-    port: Optional[int] = None
+    hostname: str | None = "127.0.0.1"
+    port: int | None = None
     directConnection: bool = False
     maxPoolSize: int = 200
     minPoolSize: int = 0
-    maxIdleTimeMS: Optional[int] = None
+    maxIdleTimeMS: int | None = None
     maxConnecting: int = 3
     timeoutMS: int = 0
     socketTimeoutMS: int = 0
     connectTimeoutMS: int = 20000
     serverSelectionTimeoutMS: int = 120000
-    waitQueueTimeoutMS: Optional[int] = None
+    waitQueueTimeoutMS: int | None = None
     heartbeatFrequencyMS: int = 10000
     appname: str = "pysyft"
     # Auth
-    username: Optional[str] = None
-    password: Optional[str] = None
+    username: str | None = None
+    password: str | None = None
     authSource: str = "admin"
-    tls: Optional[bool] = False
+    tls: bool | None = False
     # Testing and connection reuse
     client: Any = None
 
     # this allows us to have one connection per `Node` object
     # in the MongoClientCache
-    node_obj_python_id: Optional[int] = None
+    node_obj_python_id: int | None = None
 
 
 class MongoClientCache:
-    __client_cache__: Dict[str, Type["MongoClient"]] = {}
+    __client_cache__: dict[int, type["MongoClient"] | None] = {}
     _lock: Lock = Lock()
 
     @classmethod
-    def from_cache(cls, config: MongoStoreClientConfig) -> Optional[PyMongoClient]:
+    def from_cache(cls, config: MongoStoreClientConfig) -> PyMongoClient | None:
         return cls.__client_cache__.get(hash(str(config)), None)
 
     @classmethod
@@ -184,7 +181,7 @@ class MongoClient:
             self.client = None
             return Err(str(e))
 
-        return Ok()
+        return Ok(True)
 
     def with_db(self, db_name: str) -> Result[MongoDatabase, Err]:
         try:
@@ -196,7 +193,7 @@ class MongoClient:
         self,
         collection_settings: PartitionSettings,
         store_config: StoreConfig,
-        collection_name: Optional[str] = None,
+        collection_name: str | None = None,
     ) -> Result[MongoCollection, Err]:
         res = self.with_db(db_name=store_config.db_name)
         if res.is_err():
@@ -239,6 +236,6 @@ class MongoClient:
 
         return Ok(collection_permissions)
 
-    def close(self):
+    def close(self) -> None:
         self.client.close()
         MongoClientCache.__client_cache__.pop(hash(str(self.config)), None)

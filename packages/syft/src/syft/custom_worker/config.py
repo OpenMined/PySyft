@@ -4,15 +4,11 @@ from hashlib import sha256
 import io
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
 
 # third party
 import docker
 from packaging import version
-from pydantic import validator
+from pydantic import field_validator
 from typing_extensions import Self
 import yaml
 
@@ -23,7 +19,7 @@ from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
 from .utils import iterator_to_string
 
-PYTHON_DEFAULT_VER = "3.11"
+PYTHON_DEFAULT_VER = "3.12"
 PYTHON_MIN_VER = version.parse("3.10")
 PYTHON_MAX_VER = version.parse("3.12")
 
@@ -35,9 +31,9 @@ def _malformed_python_package_error_msg(pkg: str, name: str = "package_name") ->
 class CustomBuildConfig(SyftBaseModel):
     gpu: bool = False
     # python_version: str = PYTHON_DEFAULT_VER
-    python_packages: List[str] = []
-    system_packages: List[str] = []
-    custom_cmds: List[str] = []
+    python_packages: list[str] = []
+    system_packages: list[str] = []
+    custom_cmds: list[str] = []
 
     # @validator("python_version")
     # def validate_python_version(cls, ver: str) -> str:
@@ -54,10 +50,11 @@ class CustomBuildConfig(SyftBaseModel):
     #             f"Python version must be between {PYTHON_MIN_VER} and {PYTHON_MAX_VER}"
     #         )
 
-    @validator("python_packages")
-    def validate_python_packages(cls, pkgs: List[str]) -> List[str]:
+    @field_validator("python_packages")
+    @classmethod
+    def validate_python_packages(cls, pkgs: list[str]) -> list[str]:
         for pkg in pkgs:
-            ver_parts = ()
+            ver_parts: tuple | list = ()
             name_ver = pkg.split("==")
             if len(name_ver) != 2:
                 raise ValueError(_malformed_python_package_error_msg(pkg))
@@ -72,13 +69,13 @@ class CustomBuildConfig(SyftBaseModel):
 
         return pkgs
 
-    def merged_python_pkgs(self, sep=" ") -> str:
+    def merged_python_pkgs(self, sep: str = " ") -> str:
         return sep.join(self.python_packages)
 
-    def merged_system_pkgs(self, sep=" ") -> str:
+    def merged_system_pkgs(self, sep: str = " ") -> str:
         return sep.join(self.system_packages)
 
-    def merged_custom_cmds(self, sep=";") -> str:
+    def merged_custom_cmds(self, sep: str = ";") -> str:
         return sep.join(self.custom_cmds)
 
 
@@ -92,7 +89,7 @@ class CustomWorkerConfig(WorkerConfig):
     version: str = "1"
 
     @classmethod
-    def from_dict(cls, config: Dict[str, Any]) -> Self:
+    def from_dict(cls, config: dict[str, Any]) -> Self:
         return cls(**config)
 
     @classmethod
@@ -101,7 +98,7 @@ class CustomWorkerConfig(WorkerConfig):
         return cls.from_dict(config)
 
     @classmethod
-    def from_path(cls, path: Union[Path, str]) -> Self:
+    def from_path(cls, path: Path | str) -> Self:
         with open(path) as f:
             config = yaml.safe_load(f)
             return cls.from_dict(config)
@@ -114,7 +111,7 @@ class CustomWorkerConfig(WorkerConfig):
 class PrebuiltWorkerConfig(WorkerConfig):
     # tag that is already built and pushed in some registry
     tag: str
-    description: Optional[str]
+    description: str | None = None
 
     def __str__(self) -> str:
         if self.description:
@@ -129,10 +126,11 @@ class PrebuiltWorkerConfig(WorkerConfig):
 @serializable()
 class DockerWorkerConfig(WorkerConfig):
     dockerfile: str
-    file_name: Optional[str]
-    description: Optional[str]
+    file_name: str | None = None
+    description: str | None = None
 
-    @validator("dockerfile")
+    @field_validator("dockerfile")
+    @classmethod
     def validate_dockerfile(cls, dockerfile: str) -> str:
         if not dockerfile:
             raise ValueError("Dockerfile cannot be empty")
@@ -142,8 +140,8 @@ class DockerWorkerConfig(WorkerConfig):
     @classmethod
     def from_path(
         cls,
-        path: Union[Path, str],
-        description: Optional[str] = "",
+        path: Path | str,
+        description: str | None = "",
     ) -> Self:
         with open(path) as f:
             return cls(
@@ -166,7 +164,7 @@ class DockerWorkerConfig(WorkerConfig):
     def set_description(self, description_text: str) -> None:
         self.description = description_text
 
-    def test_image_build(self, tag: str, **kwargs) -> Union[SyftSuccess, SyftError]:
+    def test_image_build(self, tag: str, **kwargs: Any) -> SyftSuccess | SyftError:
         try:
             with contextlib.closing(docker.from_env()) as client:
                 if not client.ping():

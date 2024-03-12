@@ -1,5 +1,6 @@
 # stdlib
 import asyncio
+from collections.abc import Callable
 from enum import Enum
 import logging
 import multiprocessing
@@ -8,10 +9,6 @@ import platform
 import signal
 import subprocess  # nosec
 import time
-from typing import Callable
-from typing import List
-from typing import Optional
-from typing import Tuple
 
 # third party
 from fastapi import APIRouter
@@ -78,19 +75,19 @@ def run_uvicorn(
     node_side_type: str,
     enable_warnings: bool,
     in_memory_workers: bool,
-    queue_port: Optional[int],
+    queue_port: int | None,
     create_producer: bool,
     n_consumers: int,
-):
+) -> None:
     async def _run_uvicorn(
         name: str,
-        node_type: Enum,
+        node_type: NodeType,
         host: str,
         port: int,
         reset: bool,
         dev_mode: bool,
         node_side_type: Enum,
-    ):
+    ) -> None:
         if node_type not in worker_classes:
             raise NotImplementedError(f"node_type: {node_type} is not supported")
         worker_class = worker_classes[node_type]
@@ -182,10 +179,10 @@ def serve_node(
     tail: bool = False,
     enable_warnings: bool = False,
     in_memory_workers: bool = True,
-    queue_port: Optional[int] = None,
+    queue_port: int | None = None,
     create_producer: bool = False,
     n_consumers: int = 0,
-) -> Tuple[Callable, Callable]:
+) -> tuple[Callable, Callable]:
     server_process = multiprocessing.Process(
         target=run_uvicorn,
         args=(
@@ -205,7 +202,7 @@ def serve_node(
         ),
     )
 
-    def stop():
+    def stop() -> None:
         print(f"Stopping {name}")
         server_process.terminate()
         server_process.join(3)
@@ -214,7 +211,7 @@ def serve_node(
             server_process.kill()
             print("killed")
 
-    def start():
+    def start() -> None:
         print(f"Starting {name} server on {host}:{port}")
         server_process.start()
 
@@ -247,7 +244,7 @@ def serve_node(
     return start, stop
 
 
-def find_python_processes_on_port(port: int) -> List[int]:
+def find_python_processes_on_port(port: int) -> list[int]:
     system = platform.system()
 
     if system == "Windows":

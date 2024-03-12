@@ -39,7 +39,7 @@ class CustomWorkerBuilder:
     def build_image(
         self,
         config: WorkerConfig,
-        tag: str = None,
+        tag: str | None = None,
         **kwargs: Any,
     ) -> ImageBuildResult:
         """
@@ -82,7 +82,7 @@ class CustomWorkerBuilder:
         self,
         config: DockerWorkerConfig,
         tag: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> ImageBuildResult:
         return self.builder.build_image(
             dockerfile=config.dockerfile,

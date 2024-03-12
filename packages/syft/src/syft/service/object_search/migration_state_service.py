@@ -1,5 +1,4 @@
 # stdlib
-from typing import Union
 
 # relative
 from ...serde.serializable import serializable
@@ -15,7 +14,7 @@ from .object_migration_state import SyftObjectMigrationState
 @serializable()
 class MigrateStateService(AbstractService):
     store: DocumentStore
-    stash: SyftObjectMigrationState
+    stash: SyftMigrationStateStash
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
@@ -24,7 +23,7 @@ class MigrateStateService(AbstractService):
     @service_method(path="migration", name="get_version")
     def get_version(
         self, context: AuthedServiceContext, canonical_name: str
-    ) -> Union[int, SyftError]:
+    ) -> int | SyftError:
         """Search for the metadata for an object."""
 
         result = self.stash.get_by_name(
@@ -46,7 +45,7 @@ class MigrateStateService(AbstractService):
     @service_method(path="migration", name="get_state")
     def get_state(
         self, context: AuthedServiceContext, canonical_name: str
-    ) -> Union[bool, SyftError]:
+    ) -> bool | SyftError:
         result = self.stash.get_by_name(
             canonical_name=canonical_name, credentials=context.credentials
         )
@@ -62,7 +61,7 @@ class MigrateStateService(AbstractService):
         context: AuthedServiceContext,
         current_version: int,
         canonical_name: str,
-    ) -> Union[SyftObjectMigrationState, SyftError]:
+    ) -> SyftObjectMigrationState | SyftError:
         obj = SyftObjectMigrationState(
             current_version=current_version, canonical_name=canonical_name
         )

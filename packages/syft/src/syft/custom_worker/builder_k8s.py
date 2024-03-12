@@ -1,9 +1,7 @@
 # stdlib
 from hashlib import sha256
 from pathlib import Path
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import Any
 
 # third party
 from kr8s.objects import ConfigMap
@@ -33,16 +31,16 @@ class BuildFailed(Exception):
 class KubernetesBuilder(BuilderBase):
     COMPONENT = "builder"
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = get_kr8s_client()
 
     def build_image(
         self,
         tag: str,
-        dockerfile: str = None,
-        dockerfile_path: Path = None,
-        buildargs: Optional[dict] = None,
-        **kwargs,
+        dockerfile: str | None = None,
+        dockerfile_path: Path | None = None,
+        buildargs: dict | None = None,
+        **kwargs: Any,
     ) -> ImageBuildResult:
         image_digest = None
         logs = None
@@ -102,7 +100,7 @@ class KubernetesBuilder(BuilderBase):
         username: str,
         password: str,
         registry_url: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> ImagePushResult:
         exit_code = 1
         logs = None
@@ -143,12 +141,12 @@ class KubernetesBuilder(BuilderBase):
     def _get_tag_hash(self, tag: str) -> str:
         return sha256(tag.encode()).hexdigest()
 
-    def _get_image_digest(self, job: Job) -> Optional[str]:
+    def _get_image_digest(self, job: Job) -> str | None:
         selector = {"batch.kubernetes.io/job-name": job.metadata.name}
         pods = self.client.get("pods", label_selector=selector)
         return KubeUtils.get_container_exit_message(pods)
 
-    def _get_exit_code(self, job: Job) -> List[int]:
+    def _get_exit_code(self, job: Job) -> list[int]:
         selector = {"batch.kubernetes.io/job-name": job.metadata.name}
         pods = self.client.get("pods", label_selector=selector)
         return KubeUtils.get_container_exit_code(pods)
@@ -181,7 +179,7 @@ class KubernetesBuilder(BuilderBase):
         job_id: str,
         tag: str,
         job_config: ConfigMap,
-        build_args: Optional[Dict] = None,
+        build_args: dict | None = None,
     ) -> Job:
         # for push
         build_args = build_args or {}
@@ -354,7 +352,9 @@ class KubernetesBuilder(BuilderBase):
         )
         return KubeUtils.create_or_get(job)
 
-    def _create_push_secret(self, id: str, url: str, username: str, password: str):
+    def _create_push_secret(
+        self, id: str, url: str, username: str, password: str
+    ) -> Secret:
         return KubeUtils.create_dockerconfig_secret(
             secret_name=f"push-secret-{id}",
             component=KubernetesBuilder.COMPONENT,

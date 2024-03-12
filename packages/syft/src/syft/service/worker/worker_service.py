@@ -1,10 +1,6 @@
 # stdlib
 import contextlib
 from typing import Any
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
 from typing import cast
 
 # third party
@@ -12,7 +8,9 @@ import docker
 from docker.models.containers import Container
 
 # relative
+from ...abstract_node import AbstractNode
 from ...custom_worker.k8s import IN_KUBERNETES
+from ...custom_worker.k8s import PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
@@ -56,10 +54,10 @@ class WorkerService(AbstractService):
     )
     def start_workers(
         self, context: AuthedServiceContext, n: int = 1
-    ) -> Union[List[ContainerSpawnStatus], SyftError]:
+    ) -> list[ContainerSpawnStatus] | SyftError:
         """Add a Container Image."""
+        context.node = cast(AbstractNode, context.node)
         worker_pool_service = context.node.get_service("SyftWorkerPoolService")
-
         return worker_pool_service.add_workers(
             context, number=n, pool_name=DEFAULT_WORKER_POOL_NAME
         )
@@ -67,16 +65,16 @@ class WorkerService(AbstractService):
     @service_method(
         path="worker.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
     )
-    def list(self, context: AuthedServiceContext) -> Union[SyftSuccess, SyftError]:
+    def list(self, context: AuthedServiceContext) -> list[SyftWorker] | SyftError:
         """List all the workers."""
         result = self.stash.get_all(context.credentials)
 
         if result.is_err():
             return SyftError(message=f"Failed to fetch workers. {result.err()}")
 
-        workers: List[SyftWorker] = result.ok()
+        workers: list[SyftWorker] = result.ok()
 
-        if context.node.in_memory_workers:
+        if context.node is not None and context.node.in_memory_workers:
             return workers
         else:
             # If container workers, check their statuses
@@ -91,7 +89,7 @@ class WorkerService(AbstractService):
         self,
         context: AuthedServiceContext,
         uid: UID,
-    ) -> Union[Tuple[WorkerStatus, WorkerHealth], SyftError]:
+    ) -> tuple[WorkerStatus, WorkerHealth] | SyftError:
         result = self.get(context=context, uid=uid)
 
         if isinstance(result, SyftError):
@@ -104,14 +102,12 @@ class WorkerService(AbstractService):
         name="get",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def get(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftWorker, SyftError]:
+    def get(self, context: AuthedServiceContext, uid: UID) -> SyftWorker | SyftError:
         worker = self._get_worker(context=context, uid=uid)
         if isinstance(worker, SyftError):
             return worker
 
-        if context.node.in_memory_workers:
+        if context.node is not None and context.node.in_memory_workers:
             return worker
         else:
             return refresh_worker_status([worker], self.stash, context.credentials)[0]
@@ -126,12 +122,12 @@ class WorkerService(AbstractService):
         context: AuthedServiceContext,
         uid: UID,
         raw: bool = False,
-    ) -> Union[bytes, str, SyftError]:
+    ) -> bytes | str | SyftError:
         worker = self._get_worker(context=context, uid=uid)
         if isinstance(worker, SyftError):
             return worker
 
-        if context.node.in_memory_workers:
+        if context.node is not None and context.node.in_memory_workers:
             logs = b"Logs not implemented for In Memory Workers"
         elif IN_KUBERNETES:
             runner = KubernetesRunner()
@@ -161,18 +157,18 @@ class WorkerService(AbstractService):
         context: AuthedServiceContext,
         uid: UID,
         force: bool = False,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         worker = self._get_worker(context=context, uid=uid)
         if isinstance(worker, SyftError):
             return worker
-
+        context.node = cast(AbstractNode, context.node)
         worker_pool_name = worker.worker_pool_name
 
         # relative
         from .worker_pool_service import SyftWorkerPoolService
 
-        worker_pool_service: SyftWorkerPoolService = context.node.get_service(
-            "SyftWorkerPoolService"
+        worker_pool_service: AbstractService = context.node.get_service(
+            SyftWorkerPoolService
         )
         worker_pool_stash = worker_pool_service.stash
         result = worker_pool_stash.get_by_name(
@@ -239,7 +235,7 @@ class WorkerService(AbstractService):
 
     def _get_worker(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftWorker, SyftError]:
+    ) -> SyftWorker | SyftError:
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
         if result.is_err():
             return SyftError(message=f"Failed to retrieve worker with UID {uid}")
@@ -252,10 +248,10 @@ class WorkerService(AbstractService):
 
 
 def refresh_worker_status(
-    workers: List[SyftWorker],
+    workers: list[SyftWorker],
     worker_stash: WorkerStash,
     credentials: SyftVerifyKey,
-) -> List[SyftWorker]:
+) -> list[SyftWorker]:
     if IN_KUBERNETES:
         result = refresh_status_kubernetes(workers)
     else:
@@ -277,11 +273,11 @@ def refresh_worker_status(
     return result
 
 
-def refresh_status_kubernetes(workers: List[SyftWorker]) -> List[SyftWorker]:
+def refresh_status_kubernetes(workers: list[SyftWorker]) -> list[SyftWorker]:
     updated_workers = []
     runner = KubernetesRunner()
     for worker in workers:
-        status = runner.get_pod_status(pod_name=worker.name)
+        status: PodStatus | WorkerStatus | None = runner.get_pod_status(pod=worker.name)
         if not status:
             return SyftError(message=f"Pod does not exist. name={worker.name}")
         status, health, _ = map_pod_to_worker_status(status)
@@ -292,7 +288,7 @@ def refresh_status_kubernetes(workers: List[SyftWorker]) -> List[SyftWorker]:
     return updated_workers
 
 
-def refresh_status_docker(workers: List[SyftWorker]) -> List[SyftWorker]:
+def refresh_status_docker(workers: list[SyftWorker]) -> list[SyftWorker]:
     updated_workers = []
 
     with contextlib.closing(docker.from_env()) as client:
@@ -311,7 +307,7 @@ def _stop_worker_container(
     worker: SyftWorker,
     container: Container,
     force: bool,
-) -> Optional[SyftError]:
+) -> SyftError | None:
     try:
         # stop the container
         container.stop()

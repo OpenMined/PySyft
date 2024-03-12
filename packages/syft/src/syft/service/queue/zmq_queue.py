@@ -6,15 +6,11 @@ import socketserver
 import threading
 import time
 from time import sleep
-from typing import DefaultDict
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
+from typing import Any
 
 # third party
 from loguru import logger
-from pydantic import validator
+from pydantic import field_validator
 from zmq import Frame
 from zmq import LINGER
 from zmq.error import ContextTerminated
@@ -27,17 +23,13 @@ from ...serde.serialize import _serialize as serialize
 from ...service.action.action_object import ActionObject
 from ...service.context import AuthedServiceContext
 from ...types.base import SyftBaseModel
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.util import get_queue_address
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..service import AbstractService
 from ..worker.worker_pool import ConsumerState
 from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
@@ -47,6 +39,7 @@ from .base_queue import QueueConfig
 from .base_queue import QueueConsumer
 from .base_queue import QueueProducer
 from .queue_stash import ActionQueueItem
+from .queue_stash import QueueStash
 from .queue_stash import Status
 
 # Producer/Consumer heartbeat interval (in seconds)
@@ -83,18 +76,18 @@ MAX_RECURSION_NESTED_ACTIONOBJECTS = 5
 class Timeout:
     def __init__(self, offset_sec: float):
         self.__offset = float(offset_sec)
-        self.__next_ts = 0
+        self.__next_ts: float = 0.0
 
         self.reset()
 
     @property
-    def next_ts(self):
+    def next_ts(self) -> float:
         return self.__next_ts
 
-    def reset(self):
+    def reset(self) -> None:
         self.__next_ts = self.now() + self.__offset
 
-    def has_expired(self):
+    def has_expired(self) -> bool:
         return self.now() >= self.__next_ts
 
     @staticmethod
@@ -102,34 +95,37 @@ class Timeout:
         return time.time()
 
 
+class Service:
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.requests: list[bytes] = []
+        self.waiting: list[Worker] = []  # List of waiting workers
+
+
 class Worker(SyftBaseModel):
     address: bytes
     identity: bytes
-    service: Optional[str] = None
-    syft_worker_id: Optional[UID] = None
+    service: Service | None = None
+    syft_worker_id: UID | None = None
     expiry_t: Timeout = Timeout(WORKER_TIMEOUT_SEC)
 
-    @validator("syft_worker_id", pre=True, always=True)
-    def set_syft_worker_id(cls, v, values):
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
+    @field_validator("syft_worker_id", mode="before")
+    @classmethod
+    def set_syft_worker_id(cls, v: Any) -> Any:
         if isinstance(v, str):
             return UID(v)
         return v
 
-    def has_expired(self):
+    def has_expired(self) -> bool:
         return self.expiry_t.has_expired()
 
-    def get_expiry(self) -> int:
+    def get_expiry(self) -> float:
         return self.expiry_t.next_ts
 
-    def reset_expiry(self):
+    def reset_expiry(self) -> None:
         self.expiry_t.reset()
-
-
-class Service:
-    def __init__(self, name: str) -> None:
-        self.name = name
-        self.requests = []
-        self.waiting = []  # List of waiting workers
 
 
 @serializable()
@@ -139,7 +135,7 @@ class ZMQProducer(QueueProducer):
     def __init__(
         self,
         queue_name: str,
-        queue_stash,
+        queue_stash: QueueStash,
         worker_stash: WorkerStash,
         port: int,
         context: AuthedServiceContext,
@@ -154,15 +150,15 @@ class ZMQProducer(QueueProducer):
         self.post_init()
 
     @property
-    def address(self):
+    def address(self) -> str:
         return get_queue_address(self.port)
 
-    def post_init(self):
+    def post_init(self) -> None:
         """Initialize producer state."""
 
-        self.services = {}
-        self.workers = {}
-        self.waiting: List[Worker] = []
+        self.services: dict[str, Service] = {}
+        self.workers: dict[bytes, Worker] = {}
+        self.waiting: list[Worker] = []
         self.heartbeat_t = Timeout(HEARTBEAT_INTERVAL_SEC)
         self.context = zmq.Context(1)
         self.socket = self.context.socket(zmq.ROUTER)
@@ -171,10 +167,10 @@ class ZMQProducer(QueueProducer):
         self.poll_workers = zmq.Poller()
         self.poll_workers.register(self.socket, zmq.POLLIN)
         self.bind(f"tcp://*:{self.port}")
-        self.thread: threading.Thread = None
-        self.producer_thread: threading.Thread = None
+        self.thread: threading.Thread | None = None
+        self.producer_thread: threading.Thread | None = None
 
-    def close(self):
+    def close(self) -> None:
         self._stop.set()
 
         try:
@@ -196,10 +192,13 @@ class ZMQProducer(QueueProducer):
             self._stop.clear()
 
     @property
-    def action_service(self):
-        return self.auth_context.node.get_service("ActionService")
+    def action_service(self) -> AbstractService:
+        if self.auth_context.node is not None:
+            return self.auth_context.node.get_service("ActionService")
+        else:
+            raise Exception(f"{self.auth_context} does not have a node.")
 
-    def contains_unresolved_action_objects(self, arg, recursion=0):
+    def contains_unresolved_action_objects(self, arg: Any, recursion: int = 0) -> bool:
         """recursively check collections for unresolved action objects"""
         if isinstance(arg, UID):
             arg = self.action_service.get(self.auth_context, arg).ok()
@@ -216,14 +215,14 @@ class ZMQProducer(QueueProducer):
 
         try:
             value = False
-            if isinstance(arg, List):
+            if isinstance(arg, list):
                 for elem in arg:
                     value = self.contains_unresolved_action_objects(
                         elem, recursion=recursion + 1
                     )
                     if value:
                         return True
-            if isinstance(arg, Dict):
+            if isinstance(arg, dict):
                 for elem in arg.values():
                     value = self.contains_unresolved_action_objects(
                         elem, recursion=recursion + 1
@@ -235,12 +234,12 @@ class ZMQProducer(QueueProducer):
             logger.exception("Failed to resolve action objects. {}", e)
             return True
 
-    def unwrap_nested_actionobjects(self, data):
+    def unwrap_nested_actionobjects(self, data: Any) -> Any:
         """recursively unwraps nested action objects"""
 
-        if isinstance(data, List):
+        if isinstance(data, list):
             return [self.unwrap_nested_actionobjects(obj) for obj in data]
-        if isinstance(data, Dict):
+        if isinstance(data, dict):
             return {
                 key: self.unwrap_nested_actionobjects(obj) for key, obj in data.items()
             }
@@ -257,7 +256,7 @@ class ZMQProducer(QueueProducer):
                 return nested_res
         return data
 
-    def preprocess_action_arg(self, arg):
+    def preprocess_action_arg(self, arg: Any) -> None:
         res = self.action_service.get(context=self.auth_context, uid=arg)
         if res.is_err():
             return arg
@@ -269,7 +268,7 @@ class ZMQProducer(QueueProducer):
             context=self.auth_context, action_object=new_action_object
         )
 
-    def read_items(self):
+    def read_items(self) -> None:
         while True:
             if self._stop.is_set():
                 break
@@ -310,7 +309,7 @@ class ZMQProducer(QueueProducer):
                     )
                     worker_pool = worker_pool.ok()
                     service_name = worker_pool.name
-                    service: Service = self.services.get(service_name)
+                    service: Service | None = self.services.get(service_name)
 
                     # Skip adding message if corresponding service/pool
                     # is not registered.
@@ -338,30 +337,30 @@ class ZMQProducer(QueueProducer):
                     # else decrease retry count and mark status as CREATED.
                     pass
 
-    def run(self):
+    def run(self) -> None:
         self.thread = threading.Thread(target=self._run)
         self.thread.start()
 
         self.producer_thread = threading.Thread(target=self.read_items)
         self.producer_thread.start()
 
-    def send(self, worker: bytes, message: Union[bytes, List[bytes]]):
+    def send(self, worker: bytes, message: bytes | list[bytes]) -> None:
         worker_obj = self.require_worker(worker)
         self.send_to_worker(worker=worker_obj, msg=message)
 
-    def bind(self, endpoint):
+    def bind(self, endpoint: str) -> None:
         """Bind producer to endpoint."""
         self.socket.bind(endpoint)
         logger.info("Producer endpoint: {}", endpoint)
 
-    def send_heartbeats(self):
+    def send_heartbeats(self) -> None:
         """Send heartbeats to idle workers if it's time"""
         if self.heartbeat_t.has_expired():
             for worker in self.waiting:
                 self.send_to_worker(worker, QueueMsgProtocol.W_HEARTBEAT, None, None)
             self.heartbeat_t.reset()
 
-    def purge_workers(self):
+    def purge_workers(self) -> None:
         """Look for & kill expired workers.
 
         Workers are oldest to most recent, so we stop at the first alive worker.
@@ -380,9 +379,10 @@ class ZMQProducer(QueueProducer):
 
     def update_consumer_state_for_worker(
         self, syft_worker_id: UID, consumer_state: ConsumerState
-    ):
+    ) -> None:
         if self.worker_stash is None:
-            logger.error(
+            # TODO: fix the mypy issue
+            logger.error(  # type: ignore[unreachable]
                 f"Worker stash is not defined for ZMQProducer : {self.queue_name} - {self.id}"
             )
             return
@@ -404,18 +404,18 @@ class ZMQProducer(QueueProducer):
                 f"Failed to update consumer state for worker id: {syft_worker_id}. Error: {e}"
             )
 
-    def worker_waiting(self, worker: Worker):
+    def worker_waiting(self, worker: Worker) -> None:
         """This worker is now waiting for work."""
         # Queue to broker and service waiting lists
         if worker not in self.waiting:
             self.waiting.append(worker)
-        if worker not in worker.service.waiting:
+        if worker.service is not None and worker not in worker.service.waiting:
             worker.service.waiting.append(worker)
         worker.reset_expiry()
         self.update_consumer_state_for_worker(worker.syft_worker_id, ConsumerState.IDLE)
         self.dispatch(worker.service, None)
 
-    def dispatch(self, service: Service, msg: bytes):
+    def dispatch(self, service: Service, msg: bytes) -> None:
         """Dispatch requests to waiting workers as possible"""
         if msg is not None:  # Queue message if any
             service.requests.append(msg)
@@ -431,10 +431,10 @@ class ZMQProducer(QueueProducer):
     def send_to_worker(
         self,
         worker: Worker,
-        command: QueueMsgProtocol = QueueMsgProtocol.W_REQUEST,
-        option: bytes = None,
-        msg: Optional[Union[bytes, list]] = None,
-    ):
+        command: bytes = QueueMsgProtocol.W_REQUEST,
+        option: bytes | None = None,
+        msg: bytes | list | None = None,
+    ) -> None:
         """Send message to worker.
 
         If message is provided, sends that message.
@@ -455,7 +455,7 @@ class ZMQProducer(QueueProducer):
         with ZMQ_SOCKET_LOCK:
             self.socket.send_multipart(msg)
 
-    def _run(self):
+    def _run(self) -> None:
         while True:
             if self._stop.is_set():
                 return
@@ -487,7 +487,7 @@ class ZMQProducer(QueueProducer):
             self.send_heartbeats()
             self.purge_workers()
 
-    def require_worker(self, address):
+    def require_worker(self, address: bytes) -> Worker:
         """Finds the worker (creates if necessary)."""
         identity = hexlify(address)
         worker = self.workers.get(identity)
@@ -496,7 +496,7 @@ class ZMQProducer(QueueProducer):
             self.workers[identity] = worker
         return worker
 
-    def process_worker(self, address: bytes, msg: List[bytes]):
+    def process_worker(self, address: bytes, msg: list[bytes]) -> None:
         command = msg.pop(0)
 
         worker_ready = hexlify(address) in self.workers
@@ -514,19 +514,26 @@ class ZMQProducer(QueueProducer):
                 self.delete_worker(worker, True)
             else:
                 # Attach worker to service and mark as idle
-                if service_name not in self.services:
+                if service_name in self.services:
+                    service: Service | None = self.services.get(service_name)
+                else:
                     service = Service(service_name)
                     self.services[service_name] = service
+                if service is not None:
+                    worker.service = service
+                    logger.info(
+                        "New Worker service={}, id={}, uid={}",
+                        service.name,
+                        worker.identity,
+                        worker.syft_worker_id,
+                    )
                 else:
-                    service = self.services.get(service_name)
-                worker.service = service
+                    logger.info(
+                        "New Worker service=None, id={}, uid={}",
+                        worker.identity,
+                        worker.syft_worker_id,
+                    )
                 worker.syft_worker_id = UID(syft_worker_id)
-                logger.info(
-                    "New Worker service={} id={} uid={}",
-                    service.name,
-                    worker.identity,
-                    worker.syft_worker_id,
-                )
                 self.worker_waiting(worker)
 
         elif QueueMsgProtocol.W_HEARTBEAT == command:
@@ -545,7 +552,7 @@ class ZMQProducer(QueueProducer):
         else:
             logger.error("Invalid command: {}", command)
 
-    def delete_worker(self, worker: Worker, disconnect: bool):
+    def delete_worker(self, worker: Worker, disconnect: bool) -> None:
         """Deletes worker from all data structures, and deletes worker."""
         if disconnect:
             self.send_to_worker(worker, QueueMsgProtocol.W_DISCONNECT, None, None)
@@ -563,7 +570,7 @@ class ZMQProducer(QueueProducer):
         )
 
     @property
-    def alive(self):
+    def alive(self) -> bool:
         return not self.socket.closed
 
 
@@ -575,8 +582,8 @@ class ZMQConsumer(QueueConsumer):
         address: str,
         queue_name: str,
         service_name: str,
-        syft_worker_id: Optional[UID] = None,
-        worker_stash: Optional[WorkerStash] = None,
+        syft_worker_id: UID | None = None,
+        worker_stash: WorkerStash | None = None,
         verbose: bool = False,
     ) -> None:
         self.address = address
@@ -593,10 +600,10 @@ class ZMQConsumer(QueueConsumer):
         self.worker_stash = worker_stash
         self.post_init()
 
-    def reconnect_to_producer(self):
+    def reconnect_to_producer(self) -> None:
         """Connect or reconnect to producer"""
         if self.socket:
-            self.poller.unregister(self.socket)
+            self.poller.unregister(self.socket)  # type: ignore[unreachable]
             self.socket.close()
         self.socket = self.context.socket(zmq.DEALER)
         self.socket.linger = 0
@@ -613,13 +620,13 @@ class ZMQConsumer(QueueConsumer):
             [str(self.syft_worker_id).encode()],
         )
 
-    def post_init(self):
-        self.thread = None
+    def post_init(self) -> None:
+        self.thread: threading.Thread | None = None
         self.heartbeat_t = Timeout(HEARTBEAT_INTERVAL_SEC)
         self.producer_ping_t = Timeout(PRODUCER_TIMEOUT_SEC)
         self.reconnect_to_producer()
 
-    def close(self):
+    def close(self) -> None:
         self._stop.set()
         try:
             self.poller.unregister(self.socket)
@@ -636,9 +643,9 @@ class ZMQConsumer(QueueConsumer):
     def send_to_producer(
         self,
         command: str,
-        option: Optional[bytes] = None,
-        msg: Optional[Union[bytes, list]] = None,
-    ):
+        option: bytes | None = None,
+        msg: bytes | list | None = None,
+    ) -> None:
         """Send message to producer.
 
         If no msg is provided, creates one internally
@@ -656,7 +663,7 @@ class ZMQConsumer(QueueConsumer):
         with ZMQ_SOCKET_LOCK:
             self.socket.send_multipart(msg)
 
-    def _run(self):
+    def _run(self) -> None:
         """Send reply, if any, to producer and wait for next request."""
         try:
             while True:
@@ -727,33 +734,33 @@ class ZMQConsumer(QueueConsumer):
 
         logger.info("Worker finished")
 
-    def set_producer_alive(self):
+    def set_producer_alive(self) -> None:
         self.producer_ping_t.reset()
 
     def is_producer_alive(self) -> bool:
         # producer timer is within timeout
         return not self.producer_ping_t.has_expired()
 
-    def send_heartbeat(self):
+    def send_heartbeat(self) -> None:
         if self.heartbeat_t.has_expired() and self.is_producer_alive():
             self.send_to_producer(QueueMsgProtocol.W_HEARTBEAT)
             self.heartbeat_t.reset()
 
-    def run(self):
+    def run(self) -> None:
         self.thread = threading.Thread(target=self._run)
         self.thread.start()
 
-    def associate_job(self, message: Frame):
+    def associate_job(self, message: Frame) -> None:
         try:
             queue_item = _deserialize(message, from_bytes=True)
             self._set_worker_job(queue_item.job_id)
         except Exception as e:
             logger.exception("Could not associate job. {}", e)
 
-    def clear_job(self):
+    def clear_job(self) -> None:
         self._set_worker_job(None)
 
-    def _set_worker_job(self, job_id: Optional[UID]):
+    def _set_worker_job(self, job_id: UID | None) -> None:
         if self.worker_stash is not None:
             consumer_state = (
                 ConsumerState.IDLE if job_id is None else ConsumerState.CONSUMING
@@ -769,69 +776,31 @@ class ZMQConsumer(QueueConsumer):
                 )
 
     @property
-    def alive(self):
+    def alive(self) -> bool:
         return not self.socket.closed and self.is_producer_alive()
-
-
-@serializable()
-class ZMQClientConfigV1(SyftObject, QueueClientConfig):
-    __canonical_name__ = "ZMQClientConfig"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: Optional[UID]
-    hostname: str = "127.0.0.1"
-
-
-class ZMQClientConfigV2(SyftObject, QueueClientConfig):
-    __canonical_name__ = "ZMQClientConfig"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    id: Optional[UID]
-    hostname: str = "127.0.0.1"
-    queue_port: Optional[int] = None
-    # TODO: setting this to false until we can fix the ZMQ
-    # port issue causing tests to randomly fail
-    create_producer: bool = False
-    n_consumers: int = 0
 
 
 @serializable()
 class ZMQClientConfig(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
-    id: Optional[UID]
+    id: UID | None = None  # type: ignore[assignment]
     hostname: str = "127.0.0.1"
-    queue_port: Optional[int] = None
+    queue_port: int | None = None
     # TODO: setting this to false until we can fix the ZMQ
     # port issue causing tests to randomly fail
     create_producer: bool = False
     n_consumers: int = 0
-    consumer_service: Optional[str]
-
-
-@migrate(ZMQClientConfig, ZMQClientConfigV1)
-def downgrade_zmqclientconfig_v2_to_v1():
-    return [
-        drop(["queue_port", "create_producer", "n_consumers"]),
-    ]
-
-
-@migrate(ZMQClientConfigV1, ZMQClientConfig)
-def upgrade_zmqclientconfig_v1_to_v2():
-    return [
-        make_set_default("queue_port", None),
-        make_set_default("create_producer", False),
-        make_set_default("n_consumers", 0),
-    ]
+    consumer_service: str | None = None
 
 
 @serializable(attrs=["host"])
 class ZMQClient(QueueClient):
     """ZMQ Client for creating producers and consumers."""
 
-    producers: Dict[str, ZMQProducer]
-    consumers: DefaultDict[str, list[ZMQConsumer]]
+    producers: dict[str, ZMQProducer]
+    consumers: defaultdict[str, list[ZMQConsumer]]
 
     def __init__(self, config: ZMQClientConfig) -> None:
         self.host = config.hostname
@@ -840,7 +809,7 @@ class ZMQClient(QueueClient):
         self.config = config
 
     @staticmethod
-    def _get_free_tcp_port(host: str):
+    def _get_free_tcp_port(host: str) -> int:
         with socketserver.TCPServer((host, 0), None) as s:
             free_port = s.server_address[1]
         return free_port
@@ -848,10 +817,10 @@ class ZMQClient(QueueClient):
     def add_producer(
         self,
         queue_name: str,
-        port: Optional[int] = None,
-        queue_stash=None,
-        worker_stash: Optional[WorkerStash] = None,
-        context=None,
+        port: int | None = None,
+        queue_stash: QueueStash | None = None,
+        worker_stash: WorkerStash | None = None,
+        context: AuthedServiceContext | None = None,
     ) -> ZMQProducer:
         """Add a producer of a queue.
 
@@ -880,9 +849,9 @@ class ZMQClient(QueueClient):
         queue_name: str,
         message_handler: AbstractMessageHandler,
         service_name: str,
-        address: Optional[str] = None,
-        worker_stash: Optional[WorkerStash] = None,
-        syft_worker_id: Optional[UID] = None,
+        address: str | None = None,
+        worker_stash: WorkerStash | None = None,
+        syft_worker_id: UID | None = None,
     ) -> ZMQConsumer:
         """Add a consumer to a queue
 
@@ -909,8 +878,8 @@ class ZMQClient(QueueClient):
         self,
         message: bytes,
         queue_name: str,
-        worker: Optional[bytes] = None,
-    ) -> Union[SyftSuccess, SyftError]:
+        worker: bytes | None = None,
+    ) -> SyftSuccess | SyftError:
         producer = self.producers.get(queue_name)
         if producer is None:
             return SyftError(
@@ -927,7 +896,7 @@ class ZMQClient(QueueClient):
             message=f"Successfully queued message to : {queue_name}",
         )
 
-    def close(self) -> Union[SyftError, SyftSuccess]:
+    def close(self) -> SyftError | SyftSuccess:
         try:
             for _, consumers in self.consumers.items():
                 for consumer in consumers:
@@ -943,7 +912,7 @@ class ZMQClient(QueueClient):
 
         return SyftSuccess(message="All connections closed.")
 
-    def purge_queue(self, queue_name: str) -> Union[SyftError, SyftSuccess]:
+    def purge_queue(self, queue_name: str) -> SyftError | SyftSuccess:
         if queue_name not in self.producers:
             return SyftError(message=f"No producer running for : {queue_name}")
 
@@ -953,11 +922,11 @@ class ZMQClient(QueueClient):
         producer.close()
 
         # add a new connection
-        self.add_producer(queue_name=queue_name, address=producer.address)
+        self.add_producer(queue_name=queue_name, address=producer.address)  # type: ignore
 
         return SyftSuccess(message=f"Queue: {queue_name} successfully purged")
 
-    def purge_all(self) -> Union[SyftError, SyftSuccess]:
+    def purge_all(self) -> SyftError | SyftSuccess:
         for queue_name in self.producers:
             self.purge_queue(queue_name=queue_name)
 
@@ -967,7 +936,10 @@ class ZMQClient(QueueClient):
 @serializable()
 class ZMQQueueConfig(QueueConfig):
     def __init__(
-        self, client_type=None, client_config=None, thread_workers: bool = False
+        self,
+        client_type: type[ZMQClient] | None = None,
+        client_config: ZMQClientConfig | None = None,
+        thread_workers: bool = False,
     ):
         self.client_type = client_type or ZMQClient
         self.client_config: ZMQClientConfig = client_config or ZMQClientConfig()

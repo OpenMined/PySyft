@@ -1,8 +1,9 @@
 # stdlib
-from typing import List
-from typing import Union
+from typing import Any
+from typing import cast
 
 # relative
+from ...abstract_node import AbstractNode
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -10,14 +11,18 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
+from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
+from ..log.log_service import LogService
 from ..queue.queue_stash import ActionQueueItem
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
+from ..user.user_roles import GUEST_ROLE_LEVEL
 from .job_stash import Job
 from .job_stash import JobStash
 from .job_stash import JobStatus
@@ -36,11 +41,9 @@ class JobService(AbstractService):
     @service_method(
         path="job.get",
         name="get",
-        roles=DATA_SCIENTIST_ROLE_LEVEL,
+        roles=GUEST_ROLE_LEVEL,
     )
-    def get(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> Union[List[Job], SyftError]:
+    def get(self, context: AuthedServiceContext, uid: UID) -> list[Job] | SyftError:
         res = self.stash.get_by_uid(context.credentials, uid=uid)
         if res.is_err():
             return SyftError(message=res.err())
@@ -52,7 +55,7 @@ class JobService(AbstractService):
         path="job.get_all",
         name="get_all",
     )
-    def get_all(self, context: AuthedServiceContext) -> Union[List[Job], SyftError]:
+    def get_all(self, context: AuthedServiceContext) -> list[Job] | SyftError:
         res = self.stash.get_all(context.credentials)
         if res.is_err():
             return SyftError(message=res.err())
@@ -67,7 +70,7 @@ class JobService(AbstractService):
     )
     def get_by_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
-    ) -> Union[List[Job], SyftError]:
+    ) -> list[Job] | SyftError:
         res = self.stash.get_by_user_code_id(context.credentials, user_code_id)
         if res.is_err():
             return SyftError(message=res.err())
@@ -76,16 +79,31 @@ class JobService(AbstractService):
         return res
 
     @service_method(
+        path="job.delete",
+        name="delete",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def delete(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> SyftSuccess | SyftError:
+        res = self.stash.delete_by_uid(context.credentials, uid)
+        if res.is_err():
+            return SyftError(message=res.err())
+        return SyftSuccess(message="Great Success!")
+
+    @service_method(
         path="job.restart",
         name="restart",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def restart(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         res = self.stash.get_by_uid(context.credentials, uid=uid)
         if res.is_err():
             return SyftError(message=res.err())
+
+        context.node = cast(AbstractNode, context.node)
 
         job = res.ok()
         job.status = JobStatus.CREATED
@@ -107,9 +125,9 @@ class JobService(AbstractService):
 
         context.node.queue_stash.set_placeholder(context.credentials, queue_item)
         context.node.job_stash.set(context.credentials, job)
+
         log_service = context.node.get_service("logservice")
         result = log_service.restart(context, job.log_id)
-
         if result.is_err():
             return SyftError(message=str(result.err()))
 
@@ -122,7 +140,7 @@ class JobService(AbstractService):
     )
     def update(
         self, context: AuthedServiceContext, job: Job
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         res = self.stash.update(context.credentials, obj=job)
         if res.is_err():
             return SyftError(message=res.err())
@@ -134,9 +152,7 @@ class JobService(AbstractService):
         name="kill",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def kill(
-        self, context: AuthedServiceContext, id: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    def kill(self, context: AuthedServiceContext, id: UID) -> SyftSuccess | SyftError:
         res = self.stash.get_by_uid(context.credentials, uid=id)
         if res.is_err():
             return SyftError(message=res.err())
@@ -161,7 +177,7 @@ class JobService(AbstractService):
     )
     def get_subjobs(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[List[Job], SyftError]:
+    ) -> list[Job] | SyftError:
         res = self.stash.get_by_parent_id(context.credentials, uid=uid)
         if res.is_err():
             return SyftError(message=res.err())
@@ -171,11 +187,41 @@ class JobService(AbstractService):
     @service_method(
         path="job.get_active", name="get_active", roles=DATA_SCIENTIST_ROLE_LEVEL
     )
-    def get_active(self, context: AuthedServiceContext) -> Union[List[Job], SyftError]:
+    def get_active(self, context: AuthedServiceContext) -> list[Job] | SyftError:
         res = self.stash.get_active(context.credentials)
         if res.is_err():
             return SyftError(message=res.err())
         return res.ok()
+
+    @service_method(
+        path="job.add_read_permission_job_for_code_owner",
+        name="add_read_permission_job_for_code_owner",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def add_read_permission_job_for_code_owner(
+        self, context: AuthedServiceContext, job: Job, user_code: UserCode
+    ) -> None:
+        permission = ActionObjectPermission(
+            job.id, ActionPermission.READ, user_code.user_verify_key
+        )
+        return self.stash.add_permission(permission=permission)
+
+    @service_method(
+        path="job.add_read_permission_log_for_code_owner",
+        name="add_read_permission_log_for_code_owner",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def add_read_permission_log_for_code_owner(
+        self, context: AuthedServiceContext, log_id: UID, user_code: UserCode
+    ) -> Any:
+        context.node = cast(AbstractNode, context.node)
+        log_service = context.node.get_service("logservice")
+        log_service = cast(LogService, log_service)
+        return log_service.stash.add_permission(
+            ActionObjectPermission(
+                log_id, ActionPermission.READ, user_code.user_verify_key
+            )
+        )
 
     @service_method(
         path="job.create_job_for_user_code_id",
@@ -184,7 +230,8 @@ class JobService(AbstractService):
     )
     def create_job_for_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
-    ) -> Union[Job, SyftError]:
+    ) -> Job | SyftError:
+        context.node = cast(AbstractNode, context.node)
         job = Job(
             id=UID(),
             node_uid=context.node.id,
@@ -195,27 +242,25 @@ class JobService(AbstractService):
             job_pid=None,
             user_code_id=user_code_id,
         )
-
         user_code_service = context.node.get_service("usercodeservice")
         user_code = user_code_service.get_by_uid(context=context, uid=user_code_id)
         if isinstance(user_code, SyftError):
             return user_code
 
         # The owner of the code should be able to read the job
-        permission = ActionObjectPermission(
-            job.id, ActionPermission.READ, user_code.user_verify_key
-        )
-        self.stash.set(context.credentials, job, add_permissions=[permission])
+        self.stash.set(context.credentials, job)
+        self.add_read_permission_job_for_code_owner(context, job, user_code)
 
         log_service = context.node.get_service("logservice")
         res = log_service.add(context, job.log_id)
         if isinstance(res, SyftError):
             return res
         # The owner of the code should be able to read the job log
-        log_service.stash.add_permission(
-            ActionObjectPermission(
-                job.log_id, ActionPermission.READ, user_code.user_verify_key
-            )
-        )
+        self.add_read_permission_log_for_code_owner(context, job.log_id, user_code)
+        # log_service.stash.add_permission(
+        #     ActionObjectPermission(
+        #         job.log_id, ActionPermission.READ, user_code.user_verify_key
+        #     )
+        # )
 
         return job

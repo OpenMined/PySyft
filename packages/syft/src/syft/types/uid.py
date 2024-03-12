@@ -1,10 +1,8 @@
 # stdlib
+from collections.abc import Callable
+from collections.abc import Sequence
 import hashlib
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import Optional
-from typing import Sequence
 from typing import Union
 import uuid
 from uuid import UUID as uuid_type
@@ -33,14 +31,14 @@ class UID:
 
     """
 
-    __serde_overrides__: Dict[str, Sequence[Callable]] = {
+    __serde_overrides__: dict[str, Sequence[Callable]] = {
         "value": (lambda x: x.bytes, lambda x: uuid.UUID(bytes=bytes(x)))
     }
 
     __slots__ = "value"
     value: uuid_type
 
-    def __init__(self, value: Optional[Union[uuid_type, str, bytes]] = None):
+    def __init__(self, value: Union[uuid_type, str, bytes, "UID"] | None = None):
         """Initializes the internal id using the uuid package.
 
         This initializes the object. Normal use for this object is
@@ -80,6 +78,7 @@ class UID:
         except ValueError as e:
             critical(f"Unable to convert {value} to UUID. {e}")
             traceback_and_raise(e)
+            raise
 
     @staticmethod
     def with_seed(value: str) -> "UID":
@@ -160,7 +159,7 @@ class UID:
         return f"<{type(self).__name__}: {self.no_dash}>"
 
     def char_emoji(self, hex_chars: str) -> str:
-        base = ord("\U0001F642")
+        base = ord("\U0001f642")
         hex_base = ord("0")
         code = 0
         for char in hex_chars:
@@ -215,8 +214,8 @@ class LineageID(UID):
 
     def __init__(
         self,
-        value: Optional[Union[uuid_type, str, bytes]] = None,
-        syft_history_hash: Optional[int] = None,
+        value: Union[uuid_type, str, bytes, "LineageID"] | None = None,
+        syft_history_hash: int | None = None,
     ):
         if isinstance(value, LineageID):
             syft_history_hash = value.syft_history_hash
@@ -232,7 +231,7 @@ class LineageID(UID):
     def id(self) -> UID:
         return UID(self.value)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.syft_history_hash, self.value))
 
     def __eq__(self, other: Any) -> bool:

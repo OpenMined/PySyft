@@ -1,9 +1,9 @@
 # stdlib
-from typing import List
-from typing import Optional
-from typing import Union
+from typing import cast
 
 # relative
+from ...abstract_node import AbstractNode
+from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
@@ -42,23 +42,21 @@ class CodeHistoryService(AbstractService):
     def submit_version(
         self,
         context: AuthedServiceContext,
-        code: Union[SubmitUserCode, UserCode],
-        comment: Optional[str] = None,
-    ) -> Union[SyftSuccess, SyftError]:
+        code: SubmitUserCode | UserCode,
+        comment: str | None = None,
+    ) -> SyftSuccess | SyftError:
+        context.node = cast(AbstractNode, context.node)
         user_code_service = context.node.get_service("usercodeservice")
-
-        final_result = None
         if isinstance(code, SubmitUserCode):
             result = user_code_service._submit(context=context, code=code)
             if result.is_err():
                 return SyftError(message=str(result.err()))
-            code: UserCode = result.ok()
-
-        elif isinstance(code, UserCode):
+            code = result.ok()
+        elif isinstance(code, UserCode):  # type: ignore[unreachable]
             result = user_code_service.get_by_uid(context=context, uid=code.id)
             if isinstance(result, SyftError):
                 return result
-            code: UserCode = result
+            code = result
 
         result = self.stash.get_by_service_func_name_and_verify_key(
             credentials=context.credentials,
@@ -69,7 +67,7 @@ class CodeHistoryService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
 
-        code_history: CodeHistory = result.ok()
+        code_history: CodeHistory | None = result.ok()
 
         if code_history is None:
             code_history = CodeHistory(
@@ -87,17 +85,12 @@ class CodeHistoryService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
 
-        if final_result is None:
-            return SyftSuccess(message="Code version submit success")
-        else:
-            return final_result
+        return SyftSuccess(message="Code version submit success")
 
     @service_method(
         path="code_history.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
     )
-    def get_all(
-        self, context: AuthedServiceContext
-    ) -> Union[List[CodeHistory], SyftError]:
+    def get_all(self, context: AuthedServiceContext) -> list[CodeHistory] | SyftError:
         """Get a Dataset"""
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
@@ -109,7 +102,7 @@ class CodeHistoryService(AbstractService):
     )
     def get_code_by_uid(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Get a User Code Item"""
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
@@ -118,7 +111,9 @@ class CodeHistoryService(AbstractService):
         return SyftError(message=result.err())
 
     @service_method(path="code_history.delete", name="delete")
-    def delete(self, context: AuthedServiceContext, uid: UID):
+    def delete(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> SyftSuccess | SyftError:
         result = self.stash.delete_by_uid(context.credentials, uid)
         if result.is_ok():
             return result.ok()
@@ -126,14 +121,15 @@ class CodeHistoryService(AbstractService):
             return SyftError(message=result.err())
 
     def fetch_histories_for_user(
-        self, context: AuthedServiceContext, user_verify_key
-    ) -> CodeHistoriesDict:
+        self, context: AuthedServiceContext, user_verify_key: SyftVerifyKey
+    ) -> CodeHistoriesDict | SyftError:
         result = self.stash.get_by_verify_key(
             credentials=context.credentials, user_verify_key=user_verify_key
         )
+        context.node = cast(AbstractNode, context.node)
         user_code_service = context.node.get_service("usercodeservice")
 
-        def get_code(uid):
+        def get_code(uid: UID) -> UserCode | SyftError:
             return user_code_service.get_by_uid(context=context, uid=uid)
 
         if result.is_ok():
@@ -159,7 +155,9 @@ class CodeHistoryService(AbstractService):
         name="get_history",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def get_histories_for_current_user(self, context: AuthedServiceContext):
+    def get_histories_for_current_user(
+        self, context: AuthedServiceContext
+    ) -> CodeHistoriesDict | SyftError:
         return self.fetch_histories_for_user(
             context=context, user_verify_key=context.credentials
         )
@@ -169,7 +167,10 @@ class CodeHistoryService(AbstractService):
         name="get_history_for_user",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def get_history_for_user(self, context: AuthedServiceContext, email: str):
+    def get_history_for_user(
+        self, context: AuthedServiceContext, email: str
+    ) -> CodeHistoriesDict | SyftError:
+        context.node = cast(AbstractNode, context.node)
         user_service = context.node.get_service("userservice")
         result = user_service.stash.get_by_email(
             credentials=context.credentials, email=email
@@ -186,12 +187,15 @@ class CodeHistoryService(AbstractService):
         name="get_histories",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def get_histories_group_by_user(self, context: AuthedServiceContext):
+    def get_histories_group_by_user(
+        self, context: AuthedServiceContext
+    ) -> UsersCodeHistoriesDict | SyftError:
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_err():
             return SyftError(message=result.err())
-        code_histories: List[CodeHistory] = result.ok()
+        code_histories: list[CodeHistory] = result.ok()
 
+        context.node = cast(AbstractNode, context.node)
         user_service = context.node.get_service("userservice")
         result = user_service.stash.get_all(context.credentials)
         if result.is_err():
@@ -223,7 +227,8 @@ class CodeHistoryService(AbstractService):
         service_func_name: str,
         user_email: str,
         user_id: UID,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> list[CodeHistory] | SyftError:
+        context.node = cast(AbstractNode, context.node)
         user_service = context.node.get_service("userservice")
         user_verify_key = user_service.user_verify_key(user_email)
 
@@ -240,3 +245,5 @@ class CodeHistoryService(AbstractService):
         result = self.stash.find_all(credentials=context.credentials, **kwargs)
         if result.is_err():  # or len(result) > 1
             return result
+
+        return result.ok()

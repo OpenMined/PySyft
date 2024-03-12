@@ -1,4 +1,6 @@
 # stdlib
+from collections.abc import Callable
+from collections.abc import Iterator
 from datetime import datetime
 from datetime import timedelta
 import mimetypes
@@ -9,10 +11,7 @@ import threading
 from time import sleep
 from typing import Any
 from typing import ClassVar
-from typing import List
-from typing import Optional
-from typing import Type
-from typing import Union
+from typing import TYPE_CHECKING
 
 # third party
 from azure.storage.blob import BlobSasPermissions
@@ -21,84 +20,77 @@ from botocore.client import ClientError as BotoClientError
 from typing_extensions import Self
 
 # relative
+from ..client.api import SyftAPI
+from ..client.client import SyftClient
 from ..node.credentials import SyftVerifyKey
 from ..serde import serialize
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
+from ..service.action.action_object import ActionObjectPointer
 from ..service.action.action_object import BASE_PASSTHROUGH_ATTRS
 from ..service.action.action_types import action_types
 from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.service import from_api_or_context
 from ..types.grid_url import GridURL
-from ..types.transforms import drop
 from ..types.transforms import keep
-from ..types.transforms import make_set_default
 from ..types.transforms import transform
 from .datetime import DateTime
-from .syft_migration import migrate
-from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SYFT_OBJECT_VERSION_2
 from .syft_object import SYFT_OBJECT_VERSION_3
+from .syft_object import SYFT_OBJECT_VERSION_4
 from .syft_object import SyftObject
 from .uid import UID
+
+if TYPE_CHECKING:
+    # relative
+    from ..store.blob_storage import BlobRetrievalByURL
+    from ..store.blob_storage import BlobStorageConnection
+
 
 READ_EXPIRATION_TIME = 1800  # seconds
 DEFAULT_CHUNK_SIZE = 10000 * 1024
 
 
 @serializable()
-class BlobFileV1(SyftObject):
-    __canonical_name__ = "BlobFile"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    file_name: str
-
-    __repr_attrs__ = ["id", "file_name"]
-
-
-class BlobFileV2(SyftObject):
-    __canonical_name__ = "BlobFile"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    file_name: str
-    syft_blob_storage_entry_id: Optional[UID] = None
-    file_size: Optional[int] = None
-
-    __repr_attrs__ = ["id", "file_name"]
-
-
-@serializable()
 class BlobFile(SyftObject):
     __canonical_name__ = "BlobFile"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     file_name: str
-    syft_blob_storage_entry_id: Optional[UID] = None
-    file_size: Optional[int] = None
-    path: Optional[Path]
-    uploaded = False
+    syft_blob_storage_entry_id: UID | None = None
+    file_size: int | None = None
+    path: Path | None = None
+    uploaded: bool = False
 
     __repr_attrs__ = ["id", "file_name"]
 
-    def read(self, stream=False, chunk_size=DEFAULT_CHUNK_SIZE, force=False):
+    def read(
+        self,
+        stream: bool = False,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+        force: bool = False,
+    ) -> Any:
         # get blob retrieval object from api + syft_blob_storage_entry_id
         read_method = from_api_or_context(
             "blob_storage.read", self.syft_node_location, self.syft_client_verify_key
         )
-        blob_retrieval_object = read_method(self.syft_blob_storage_entry_id)
-        return blob_retrieval_object._read_data(
-            stream=stream, chunk_size=chunk_size, _deserialize=False
-        )
+        if read_method is not None:
+            blob_retrieval_object = read_method(self.syft_blob_storage_entry_id)
+            return blob_retrieval_object._read_data(
+                stream=stream, chunk_size=chunk_size, _deserialize=False
+            )
+        else:
+            return None
 
     @classmethod
-    def upload_from_path(self, path, client):
+    def upload_from_path(cls, path: str | Path, client: SyftClient) -> Any:
         # syft absolute
         import syft as sy
 
         return sy.ActionObject.from_path(path=path).send(client).syft_action_data
 
-    def _upload_to_blobstorage_from_api(self, api):
+    def _upload_to_blobstorage_from_api(self, api: SyftAPI) -> SyftError | None:
         if self.path is None:
             raise ValueError("cannot upload BlobFile, no path specified")
         storage_entry = CreateBlobStorageEntry.from_path(self.path)
@@ -117,12 +109,14 @@ class BlobFile(SyftObject):
         self.syft_blob_storage_entry_id = blob_deposit_object.blob_storage_entry_id
         self.uploaded = True
 
-    def upload_to_blobstorage(self, client):
+        return None
+
+    def upload_to_blobstorage(self, client: SyftClient) -> SyftError | None:
         self.syft_node_location = client.id
         self.syft_client_verify_key = client.verify_key
         return self._upload_to_blobstorage_from_api(client.api)
 
-    def _iter_lines(self, chunk_size=DEFAULT_CHUNK_SIZE):
+    def _iter_lines(self, chunk_size: int = DEFAULT_CHUNK_SIZE) -> Iterator[bytes]:
         """Synchronous version of the async iter_lines. This implementation
         is also optimized in terms of splitting chunks, making it faster for
         larger lines"""
@@ -130,7 +124,7 @@ class BlobFile(SyftObject):
         for chunk in self.read(stream=True, chunk_size=chunk_size):
             if b"\n" in chunk:
                 if pending is not None:
-                    chunk = pending + chunk
+                    chunk = pending + chunk  # type: ignore[unreachable]
                 lines = chunk.splitlines()
                 if lines and lines[-1] and chunk and lines[-1][-1] == chunk[-1]:
                     pending = lines.pop()
@@ -146,7 +140,13 @@ class BlobFile(SyftObject):
         if pending is not None:
             yield pending
 
-    def read_queue(self, queue, chunk_size, progress=False, buffer_lines=10000):
+    def read_queue(
+        self,
+        queue: Queue,
+        chunk_size: int,
+        progress: bool = False,
+        buffer_lines: int = 10000,
+    ) -> None:
         total_read = 0
         for _i, line in enumerate(self._iter_lines(chunk_size=chunk_size)):
             line_size = len(line) + 1  # add byte for \n
@@ -165,7 +165,9 @@ class BlobFile(SyftObject):
         # Put anything not a string at the end
         queue.put(0)
 
-    def iter_lines(self, chunk_size=DEFAULT_CHUNK_SIZE, progress=False):
+    def iter_lines(
+        self, chunk_size: int = DEFAULT_CHUNK_SIZE, progress: bool = False
+    ) -> Iterator[str]:
         item_queue: Queue = Queue()
         threading.Thread(
             target=self.read_queue,
@@ -177,47 +179,32 @@ class BlobFile(SyftObject):
             yield item
             item = item_queue.get()
 
-    def _coll_repr_(self):
+    def _coll_repr_(self) -> dict[str, str]:
         return {"file_name": self.file_name}
-
-
-@migrate(BlobFile, BlobFileV1)
-def downgrade_blobfile_v2_to_v1():
-    return [
-        drop(["syft_blob_storage_entry_id", "file_size"]),
-    ]
-
-
-@migrate(BlobFileV1, BlobFile)
-def upgrade_blobfile_v1_to_v2():
-    return [
-        make_set_default("syft_blob_storage_entry_id", None),
-        make_set_default("file_size", None),
-    ]
 
 
 class BlobFileType(type):
     pass
 
 
-class BlobFileObjectPointer:
+class BlobFileObjectPointer(ActionObjectPointer):
     pass
 
 
 @serializable()
 class BlobFileObject(ActionObject):
     __canonical_name__ = "BlobFileOBject"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    syft_internal_type: ClassVar[Type[Any]] = BlobFile
-    syft_pointer_type = BlobFileObjectPointer
-    syft_passthrough_attrs = BASE_PASSTHROUGH_ATTRS
+    syft_internal_type: ClassVar[type[Any]] = BlobFile
+    syft_pointer_type: ClassVar[type[ActionObjectPointer]] = BlobFileObjectPointer
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
 
 
 @serializable()
 class SecureFilePathLocation(SyftObject):
     __canonical_name__ = "SecureFilePathLocation"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     path: str
@@ -225,26 +212,30 @@ class SecureFilePathLocation(SyftObject):
     def __repr__(self) -> str:
         return f"{self.path}"
 
-    def generate_url(self, *args):
+    def generate_url(
+        self,
+        connection: "BlobStorageConnection",
+        type_: type | None,
+        bucket_name: str | None,
+        *args: Any,
+    ) -> "BlobRetrievalByURL":
         raise NotImplementedError
-
-
-@serializable()
-class SeaweedSecureFilePathLocationV1(SecureFilePathLocation):
-    __canonical_name__ = "SeaweedSecureFilePathLocation"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    upload_id: str
 
 
 @serializable()
 class SeaweedSecureFilePathLocation(SecureFilePathLocation):
     __canonical_name__ = "SeaweedSecureFilePathLocation"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
-    upload_id: Optional[str] = None
+    upload_id: str | None = None
 
-    def generate_url(self, connection, type_, bucket_name):
+    def generate_url(
+        self,
+        connection: "BlobStorageConnection",
+        type_: type | None,
+        bucket_name: str | None,
+        *args: Any,
+    ) -> "BlobRetrievalByURL":
         try:
             url = connection.client.generate_presigned_url(
                 ClientMethod="get_object",
@@ -262,28 +253,18 @@ class SeaweedSecureFilePathLocation(SecureFilePathLocation):
             raise SyftException(e)
 
 
-@migrate(SeaweedSecureFilePathLocationV1, SeaweedSecureFilePathLocation)
-def upgrade_seaweedsecurefilepathlocation_v1_to_v2():
-    return [make_set_default("bucket_name", "")]
-
-
-@migrate(SeaweedSecureFilePathLocation, SeaweedSecureFilePathLocationV1)
-def downgrade_seaweedsecurefilepathlocation_v2_to_v1():
-    return [
-        drop(["bucket_name"]),
-    ]
-
-
 @serializable()
 class AzureSecureFilePathLocation(SecureFilePathLocation):
     __canonical_name__ = "AzureSecureFilePathLocation"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     # upload_id: str
     azure_profile_name: str  # Used by Seaweedfs to refer to a remote config
     bucket_name: str
 
-    def generate_url(self, connection, type_, *args):
+    def generate_url(
+        self, connection: "BlobStorageConnection", type_: type | None, *args: Any
+    ) -> "BlobRetrievalByURL":
         # SAS is almost the same thing as the presigned url
         config = connection.config.remote_profiles[self.azure_profile_name]
         account_name = config.account_name
@@ -306,94 +287,44 @@ class AzureSecureFilePathLocation(SecureFilePathLocation):
 
 
 @serializable()
-class BlobStorageEntryV1(SyftObject):
-    __canonical_name__ = "BlobStorageEntry"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: UID
-    location: Union[SecureFilePathLocation, SeaweedSecureFilePathLocation]
-    type_: Optional[Type]
-    mimetype: str = "bytes"
-    file_size: int
-    uploaded_by: SyftVerifyKey
-    created_at: DateTime = DateTime.now()
-
-    __attr_searchable__ = ["bucket_name"]
-
-
-@serializable()
 class BlobStorageEntry(SyftObject):
     __canonical_name__ = "BlobStorageEntry"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     id: UID
-    location: Union[SecureFilePathLocation, SeaweedSecureFilePathLocation]
-    type_: Optional[Type]
+    location: SecureFilePathLocation | SeaweedSecureFilePathLocation
+    type_: type | None = None
     mimetype: str = "bytes"
     file_size: int
-    no_lines: Optional[int] = 0
+    no_lines: int | None = 0
     uploaded_by: SyftVerifyKey
     created_at: DateTime = DateTime.now()
-    bucket_name: Optional[str]
+    bucket_name: str | None = None
 
     __attr_searchable__ = ["bucket_name"]
-
-
-@migrate(BlobStorageEntry, BlobStorageEntryV1)
-def downgrade_blobstorageentry_v2_to_v1():
-    return [
-        drop(["no_lines", "bucket_name"]),
-    ]
-
-
-@migrate(BlobStorageEntryV1, BlobStorageEntry)
-def upgrade_blobstorageentry_v1_to_v2():
-    return [make_set_default("no_lines", 1), make_set_default("bucket_name", None)]
-
-
-@serializable()
-class BlobStorageMetadataV1(SyftObject):
-    __canonical_name__ = "BlobStorageMetadata"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    type_: Optional[Type[SyftObject]]
-    mimetype: str = "bytes"
-    file_size: int
 
 
 @serializable()
 class BlobStorageMetadata(SyftObject):
     __canonical_name__ = "BlobStorageMetadata"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
-    type_: Optional[Type[SyftObject]]
+    type_: type[SyftObject] | None = None
     mimetype: str = "bytes"
     file_size: int
-    no_lines: Optional[int] = 0
-
-
-@migrate(BlobStorageMetadata, BlobStorageMetadataV1)
-def downgrade_blobmeta_v2_to_v1():
-    return [
-        drop(["no_lines"]),
-    ]
-
-
-@migrate(BlobStorageMetadataV1, BlobStorageMetadata)
-def upgrade_blobmeta_v1_to_v2():
-    return [make_set_default("no_lines", 1)]
+    no_lines: int | None = 0
 
 
 @serializable()
 class CreateBlobStorageEntry(SyftObject):
     __canonical_name__ = "CreateBlobStorageEntry"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
-    type_: Optional[Type]
+    type_: type | None = None
     mimetype: str = "bytes"
     file_size: int
-    extensions: List[str] = []
+    extensions: list[str] = []
 
     @classmethod
     def from_obj(cls, obj: SyftObject) -> Self:
@@ -401,14 +332,14 @@ class CreateBlobStorageEntry(SyftObject):
         return cls(file_size=file_size, type_=type(obj))
 
     @classmethod
-    def from_path(cls, fp: Union[str, Path], mimetype: Optional[str] = None) -> Self:
+    def from_path(cls, fp: str | Path, mimetype: str | None = None) -> Self:
         path = Path(fp)
         if not path.exists():
             raise SyftException(f"{fp} does not exist.")
         if not path.is_file():
             raise SyftException(f"{fp} is not a file.")
 
-        if fp.suffix.lower() == ".jsonl":
+        if path.suffix.lower() == ".jsonl":
             mimetype = "application/json-lines"
         if mimetype is None:
             mime_types = mimetypes.guess_type(fp)
@@ -433,7 +364,7 @@ class CreateBlobStorageEntry(SyftObject):
 
 
 @transform(BlobStorageEntry, BlobStorageMetadata)
-def storage_entry_to_metadata():
+def storage_entry_to_metadata() -> list[Callable]:
     return [keep(["id", "type_", "mimetype", "file_size"])]
 
 

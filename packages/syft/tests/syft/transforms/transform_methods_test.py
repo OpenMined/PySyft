@@ -1,12 +1,11 @@
 # stdlib
+from collections.abc import Callable
 from dataclasses import dataclass
 from types import FunctionType
-from typing import Callable
-from typing import Optional
 
 # third party
-from pydantic import EmailError
 from pydantic import EmailStr
+from pydantic_core import PydanticCustomError
 import pytest
 
 # syft absolute
@@ -258,7 +257,7 @@ def test_generate_id(faker, node_context):
 
     @dataclass
     class MockObjectWithId:
-        id: Optional[UID]
+        id: UID | None
         name: str
         age: int
         company: str
@@ -370,7 +369,7 @@ def test_add_node_uid_for_key(faker, node_context):
 def test_validate_url(faker, node_context):
     @dataclass
     class MockObject:
-        url: Optional[str]
+        url: str | None
 
         def __iter__(self):
             yield from self.__dict__.items()
@@ -421,7 +420,7 @@ def test_validate_email(faker, node_context):
     )
     result = validate_email(transform_context)
     assert isinstance(result, TransformContext)
-    assert isinstance(result.output["email"], EmailStr)
+    assert EmailStr._validate(result.output["email"])
     assert result.output["email"] == mock_obj.email
 
     mock_obj = MockObject(email=faker.name())
@@ -429,5 +428,5 @@ def test_validate_email(faker, node_context):
         obj=mock_obj, context=node_context
     )
 
-    with pytest.raises(EmailError):
+    with pytest.raises(PydanticCustomError):
         validate_email(transform_context)

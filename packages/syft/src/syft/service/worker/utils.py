@@ -6,11 +6,6 @@ import socket
 import socketserver
 import sys
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
 
 # third party
 import docker
@@ -53,7 +48,7 @@ def backend_container_name() -> str:
 
 def get_container(
     docker_client: docker.DockerClient, container_name: str
-) -> Optional[Container]:
+) -> Container | None:
     try:
         existing_container = docker_client.containers.get(container_name)
     except docker.errors.NotFound:
@@ -64,14 +59,14 @@ def get_container(
 
 def extract_config_from_backend(
     worker_name: str, docker_client: docker.DockerClient
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     # Existing main backend container
     backend_container = get_container(
         docker_client, container_name=backend_container_name()
     )
 
     # Config with defaults
-    extracted_config: Dict[str, Any] = {
+    extracted_config: dict[str, Any] = {
         "volume_binds": {},
         "network_mode": None,
         "environment": {},
@@ -120,9 +115,9 @@ def run_container_using_docker(
     pool_name: str,
     queue_port: int,
     debug: bool = False,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    registry_url: Optional[str] = None,
+    username: str | None = None,
+    password: str | None = None,
+    registry_url: str | None = None,
 ) -> ContainerSpawnStatus:
     if not worker_image.is_built:
         raise ValueError("Image must be built before running it.")
@@ -169,8 +164,6 @@ def run_container_using_docker(
         environment["CREATE_PRODUCER"] = "false"
         environment["N_CONSUMERS"] = 1
         environment["PORT"] = str(get_free_tcp_port())
-        environment["HTTP_PORT"] = str(88 + worker_count)
-        environment["HTTPS_PORT"] = str(446 + worker_count)
         environment["CONSUMER_SERVICE_NAME"] = pool_name
         environment["SYFT_WORKER_UID"] = syft_worker_uid
         environment["DEV_MODE"] = debug
@@ -233,7 +226,7 @@ def run_workers_in_threads(
     pool_name: str,
     number: int,
     start_idx: int = 0,
-) -> List[ContainerSpawnStatus]:
+) -> list[ContainerSpawnStatus]:
     results = []
 
     for worker_count in range(start_idx + 1, number + 1):
@@ -274,14 +267,14 @@ def run_workers_in_threads(
 
 def prepare_kubernetes_pool_env(
     runner: KubernetesRunner, env_vars: dict
-) -> Tuple[List, Dict]:
+) -> tuple[list, dict]:
     # get current backend pod name
     backend_pod_name = os.getenv("K8S_POD_NAME")
     if not backend_pod_name:
         raise ValueError("Pod name not provided in environment variable")
 
     # get current backend's credentials path
-    creds_path: Optional[Union[str, Path]] = os.getenv("CREDENTIALS_PATH")
+    creds_path: str | Path | None = os.getenv("CREDENTIALS_PATH")
     if not creds_path:
         raise ValueError("Credentials path not provided")
 
@@ -300,7 +293,7 @@ def prepare_kubernetes_pool_env(
 
     # clone and patch backend environment variables
     backend_env = runner.get_pod_env_vars(backend_pod_name) or []
-    env_vars_: List = KubeUtils.patch_env_vars(backend_env, env_vars)
+    env_vars_: list = KubeUtils.patch_env_vars(backend_env, env_vars)
     mount_secrets = {
         node_secret.metadata.name: {
             "mountPath": str(creds_path),
@@ -318,11 +311,11 @@ def create_kubernetes_pool(
     replicas: int,
     queue_port: int,
     debug: bool,
-    reg_username: Optional[str] = None,
-    reg_password: Optional[str] = None,
-    reg_url: Optional[str] = None,
+    reg_username: str | None = None,
+    reg_password: str | None = None,
+    reg_url: str | None = None,
     **kwargs: Any,
-) -> Union[List[Pod], SyftError]:
+) -> list[Pod] | SyftError:
     pool = None
     error = False
 
@@ -372,7 +365,7 @@ def scale_kubernetes_pool(
     runner: KubernetesRunner,
     pool_name: str,
     replicas: int,
-) -> Union[List[Pod], SyftError]:
+) -> list[Pod] | SyftError:
     pool = runner.get_pool(pool_name)
     if not pool:
         return SyftError(message=f"Pool does not exist. name={pool_name}")
@@ -393,11 +386,11 @@ def run_workers_in_kubernetes(
     queue_port: int,
     start_idx: int = 0,
     debug: bool = False,
-    reg_username: Optional[str] = None,
-    reg_password: Optional[str] = None,
-    reg_url: Optional[str] = None,
+    reg_username: str | None = None,
+    reg_password: str | None = None,
+    reg_url: str | None = None,
     **kwargs: Any,
-) -> Union[List[ContainerSpawnStatus], SyftError]:
+) -> list[ContainerSpawnStatus] | SyftError:
     spawn_status = []
     runner = KubernetesRunner()
 
@@ -430,7 +423,7 @@ def run_workers_in_kubernetes(
 
     # create worker object
     for pod in pool_pods:
-        status = runner.get_pod_status(pod)
+        status: PodStatus | WorkerStatus | None = runner.get_pod_status(pod)
         status, healthcheck, error = map_pod_to_worker_status(status)
 
         # this worker id will be the same as the one in the worker
@@ -459,7 +452,7 @@ def run_workers_in_kubernetes(
 
 def map_pod_to_worker_status(
     status: PodStatus,
-) -> Tuple[WorkerStatus, WorkerHealth, Optional[str]]:
+) -> tuple[WorkerStatus, WorkerHealth, str | None]:
     worker_status = None
     worker_healthcheck = None
     worker_error = None
@@ -492,10 +485,10 @@ def run_containers(
     queue_port: int,
     dev_mode: bool = False,
     start_idx: int = 0,
-    reg_username: Optional[str] = None,
-    reg_password: Optional[str] = None,
-    reg_url: Optional[str] = None,
-) -> Union[List[ContainerSpawnStatus], SyftError]:
+    reg_username: str | None = None,
+    reg_password: str | None = None,
+    reg_url: str | None = None,
+) -> list[ContainerSpawnStatus] | SyftError:
     results = []
 
     if not worker_image.is_built:
@@ -541,7 +534,7 @@ def create_default_image(
     image_stash: SyftWorkerImageStash,
     tag: str,
     in_kubernetes: bool = False,
-) -> Union[SyftError, SyftWorkerImage]:
+) -> SyftError | SyftWorkerImage:
     # TODO: Hardcode worker dockerfile since not able to COPY
     # worker_cpu.dockerfile to backend in backend.dockerfile.
 
@@ -551,7 +544,7 @@ def create_default_image(
     if not in_kubernetes:
         default_cpu_dockerfile = f"""ARG SYFT_VERSION_TAG='{tag}' \n"""
         default_cpu_dockerfile += """FROM openmined/grid-backend:${SYFT_VERSION_TAG}
-        ARG PYTHON_VERSION="3.11"
+        ARG PYTHON_VERSION="3.12"
         ARG SYSTEM_PACKAGES=""
         ARG PIP_PACKAGES="pip --dry-run"
         ARG CUSTOM_CMD='echo "No custom commands passed"'
@@ -607,8 +600,8 @@ def _get_healthcheck_based_on_status(status: WorkerStatus) -> WorkerHealth:
 
 
 def image_build(
-    image: SyftWorkerImage, **kwargs: Dict[str, Any]
-) -> Union[ImageBuildResult, SyftError]:
+    image: SyftWorkerImage, **kwargs: dict[str, Any]
+) -> ImageBuildResult | SyftError:
     if image.image_identifier is not None:
         full_tag = image.image_identifier.full_name_with_tag
         try:
@@ -640,9 +633,9 @@ def image_build(
 
 def image_push(
     image: SyftWorkerImage,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-) -> Union[ImagePushResult, SyftError]:
+    username: str | None = None,
+    password: str | None = None,
+) -> ImagePushResult | SyftError:
     if image.image_identifier is not None:
         full_tag = image.image_identifier.full_name_with_tag
         try:

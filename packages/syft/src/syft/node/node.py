@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 import binascii
 from collections import OrderedDict
+from collections.abc import Callable
 import contextlib
 from datetime import datetime
 from functools import partial
@@ -14,13 +15,6 @@ from pathlib import Path
 import subprocess  # nosec
 import traceback
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Type
-from typing import Union
 import uuid
 
 # third party
@@ -39,6 +33,7 @@ from ..client.api import SyftAPI
 from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
+from ..client.client import SyftClient
 from ..exceptions.exception import PySyftException
 from ..external import OBLV
 from ..protocol.data_protocol import PROTOCOL_TYPE
@@ -46,10 +41,12 @@ from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
 from ..service.action.action_object import ActionObject
 from ..service.action.action_service import ActionService
+from ..service.action.action_store import ActionStore
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
 from ..service.blob_storage.service import BlobStorageService
+from ..service.code.status_service import UserCodeStatusService
 from ..service.code.user_code_service import UserCodeService
 from ..service.code.user_code_stash import UserCodeStash
 from ..service.code_history.code_history_service import CodeHistoryService
@@ -63,12 +60,15 @@ from ..service.dataset.dataset_service import DatasetService
 from ..service.enclave.enclave_service import EnclaveService
 from ..service.job.job_service import JobService
 from ..service.job.job_stash import Job
+from ..service.job.job_stash import JobStash
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.network.network_service import NetworkService
 from ..service.notification.notification_service import NotificationService
+from ..service.notifier.notifier_service import NotifierService
 from ..service.object_search.migration_state_service import MigrateStateService
+from ..service.output.output_service import OutputService
 from ..service.policy.policy_service import PolicyService
 from ..service.project.project_service import ProjectService
 from ..service.queue.base_queue import AbstractMessageHandler
@@ -91,20 +91,23 @@ from ..service.service import UserServiceConfigRegistry
 from ..service.settings.settings import NodeSettingsV2
 from ..service.settings.settings_service import SettingsService
 from ..service.settings.settings_stash import SettingsStash
+from ..service.sync.sync_service import SyncService
 from ..service.user.user import User
 from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
-from ..service.veilid.veilid_service import VeilidService
+from ..service.veilid import VEILID_ENABLED
 from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ..service.worker.utils import create_default_image
 from ..service.worker.worker_image_service import SyftWorkerImageService
+from ..service.worker.worker_pool import WorkerPool
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_pool_stash import SyftWorkerPoolStash
 from ..service.worker.worker_service import WorkerService
+from ..service.worker.worker_stash import WorkerStash
 from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
@@ -114,7 +117,7 @@ from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.experimental_flags import flags
@@ -131,7 +134,7 @@ from .worker_settings import WorkerSettings
 
 # if user code needs to be serded and its not available we can call this to refresh
 # the code for a specific node UID and thread
-CODE_RELOADER: Dict[int, Callable] = {}
+CODE_RELOADER: dict[int, Callable] = {}
 
 
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
@@ -145,35 +148,35 @@ DEFAULT_ROOT_USERNAME = "DEFAULT_ROOT_USERNAME"
 DEFAULT_ROOT_PASSWORD = "DEFAULT_ROOT_PASSWORD"  # nosec
 
 
-def get_private_key_env() -> Optional[str]:
+def get_private_key_env() -> str | None:
     return get_env(NODE_PRIVATE_KEY)
 
 
-def get_node_type() -> Optional[str]:
+def get_node_type() -> str | None:
     return get_env(NODE_TYPE, "domain")
 
 
-def get_node_name() -> Optional[str]:
+def get_node_name() -> str | None:
     return get_env(NODE_NAME, None)
 
 
-def get_node_side_type() -> str:
+def get_node_side_type() -> str | None:
     return get_env(NODE_SIDE_TYPE, "high")
 
 
-def get_node_uid_env() -> Optional[str]:
+def get_node_uid_env() -> str | None:
     return get_env(NODE_UID)
 
 
-def get_default_root_email() -> Optional[str]:
+def get_default_root_email() -> str | None:
     return get_env(DEFAULT_ROOT_EMAIL, "info@openmined.org")
 
 
-def get_default_root_username() -> Optional[str]:
+def get_default_root_username() -> str | None:
     return get_env(DEFAULT_ROOT_USERNAME, "Jane Doe")
 
 
-def get_default_root_password() -> Optional[str]:
+def get_default_root_password() -> str | None:
     return get_env(DEFAULT_ROOT_PASSWORD, "changethis")  # nosec
 
 
@@ -185,19 +188,19 @@ def get_enable_warnings() -> bool:
     return str_to_bool(get_env("ENABLE_WARNINGS", "False"))
 
 
-def get_container_host() -> Optional[str]:
+def get_container_host() -> str | None:
     return get_env("CONTAINER_HOST")
 
 
-def get_default_worker_image() -> str:
+def get_default_worker_image() -> str | None:
     return get_env("DEFAULT_WORKER_POOL_IMAGE")
 
 
-def get_default_worker_pool_name() -> str:
+def get_default_worker_pool_name() -> str | None:
     return get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME)
 
 
-def get_default_worker_pool_count(node) -> int:
+def get_default_worker_pool_count(node: Node) -> int:
     return int(
         get_env(
             "DEFAULT_WORKER_POOL_COUNT", node.queue_config.client_config.n_consumers
@@ -205,7 +208,7 @@ def get_default_worker_pool_count(node) -> int:
     )
 
 
-def in_kubernetes() -> Optional[str]:
+def in_kubernetes() -> bool:
     return get_container_host() == "k8s"
 
 
@@ -220,11 +223,11 @@ def get_syft_worker() -> bool:
     return str_to_bool(get_env("SYFT_WORKER", "false"))
 
 
-def get_k8s_pod_name() -> Optional[str]:
+def get_k8s_pod_name() -> str | None:
     return get_env("K8S_POD_NAME")
 
 
-def get_syft_worker_uid() -> Optional[str]:
+def get_syft_worker_uid() -> str | None:
     is_worker = get_syft_worker()
     pod_name = get_k8s_pod_name()
     uid = get_env("SYFT_WORKER_UID")
@@ -243,15 +246,15 @@ default_root_password = get_default_root_password()
 
 
 class AuthNodeContextRegistry:
-    __node_context_registry__: Dict[Tuple, Node] = OrderedDict()
+    __node_context_registry__: dict[str, NodeServiceContext] = OrderedDict()
 
     @classmethod
     def set_node_context(
         cls,
-        node_uid: Union[UID, str],
+        node_uid: UID | str,
         context: NodeServiceContext,
-        user_verify_key: Union[SyftVerifyKey, str],
-    ):
+        user_verify_key: SyftVerifyKey | str,
+    ) -> None:
         if isinstance(node_uid, str):
             node_uid = UID.from_string(node_uid)
 
@@ -271,45 +274,50 @@ class AuthNodeContextRegistry:
         cls,
         node_uid: UID,
         user_verify_key: SyftVerifyKey,
-    ) -> Optional[AuthedServiceContext]:
+    ) -> AuthedServiceContext | None:
         key = cls._get_key(node_uid=node_uid, user_verify_key=user_verify_key)
         return cls.__node_context_registry__.get(key)
 
 
 @instrument
 class Node(AbstractNode):
-    signing_key: Optional[SyftSigningKey]
+    signing_key: SyftSigningKey | None
     required_signed_calls: bool = True
     packages: str
 
     def __init__(
         self,
         *,  # Trasterisk
-        name: Optional[str] = None,
-        id: Optional[UID] = None,
-        services: Optional[List[Type[AbstractService]]] = None,
-        signing_key: Optional[Union[SyftSigningKey, SigningKey]] = None,
-        action_store_config: Optional[StoreConfig] = None,
-        document_store_config: Optional[StoreConfig] = None,
-        root_email: str = default_root_email,
-        root_username: str = default_root_username,
-        root_password: str = default_root_password,
+        name: str | None = None,
+        id: UID | None = None,
+        services: list[type[AbstractService]] | None = None,
+        signing_key: SyftSigningKey | SigningKey | None = None,
+        action_store_config: StoreConfig | None = None,
+        document_store_config: StoreConfig | None = None,
+        root_email: str | None = default_root_email,
+        root_username: str | None = default_root_username,
+        root_password: str | None = default_root_password,
         processes: int = 0,
         is_subprocess: bool = False,
-        node_type: Union[str, NodeType] = NodeType.DOMAIN,
+        node_type: str | NodeType = NodeType.DOMAIN,
         local_db: bool = False,
-        sqlite_path: Optional[str] = None,
-        blob_storage_config: Optional[BlobStorageConfig] = None,
-        queue_config: Optional[QueueConfig] = None,
-        queue_port: Optional[int] = None,
+        sqlite_path: str | None = None,
+        blob_storage_config: BlobStorageConfig | None = None,
+        queue_config: QueueConfig | None = None,
+        queue_port: int | None = None,
         n_consumers: int = 0,
         create_producer: bool = False,
         thread_workers: bool = False,
-        node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
+        node_side_type: str | NodeSideType = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         dev_mode: bool = False,
         migrate: bool = False,
         in_memory_workers: bool = True,
+        smtp_username: str | None = None,
+        smtp_password: str | None = None,
+        email_sender: str | None = None,
+        smtp_port: str | None = None,
+        smtp_host: str | None = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -351,6 +359,7 @@ class Node(AbstractNode):
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
+                NotifierService,
                 NotificationService,
                 DataSubjectMemberService,
                 ProjectService,
@@ -362,7 +371,9 @@ class Node(AbstractNode):
                 SyftWorkerImageService,
                 SyftWorkerPoolService,
                 SyftImageRegistryService,
-                VeilidService,
+                SyncService,
+                OutputService,
+                UserCodeStatusService,
             ]
             if services is None
             else services
@@ -383,6 +394,12 @@ class Node(AbstractNode):
             services += [OblvService]
             create_oblv_key_pair(worker=self)
 
+        if VEILID_ENABLED:
+            # relative
+            from ..service.veilid.veilid_service import VeilidService
+
+            services += [VeilidService]
+
         self.enable_warnings = enable_warnings
         self.in_memory_workers = in_memory_workers
 
@@ -396,7 +413,17 @@ class Node(AbstractNode):
             node=self,
         )
 
-        self.client_cache = {}
+        NotifierService.init_notifier(
+            node=self,
+            email_password=smtp_password,
+            email_username=smtp_username,
+            email_sender=email_sender,
+            smtp_port=smtp_port,
+            smtp_host=smtp_host,
+        )
+
+        self.client_cache: dict = {}
+
         if isinstance(node_type, str):
             node_type = NodeType(node_type)
         self.node_type = node_type
@@ -427,7 +454,7 @@ class Node(AbstractNode):
         NodeRegistry.set_node_for(self.id, self)
 
     @property
-    def runs_in_docker(self):
+    def runs_in_docker(self) -> bool:
         path = "/proc/self/cgroup"
         return (
             os.path.exists("/.dockerenv")
@@ -435,7 +462,7 @@ class Node(AbstractNode):
             and any("docker" in line for line in open(path))
         )
 
-    def init_blob_storage(self, config: Optional[BlobStorageConfig] = None) -> None:
+    def init_blob_storage(self, config: BlobStorageConfig | None = None) -> None:
         if config is None:
             root_directory = get_root_data_path()
             base_directory = root_directory / f"{self.id}"
@@ -449,7 +476,7 @@ class Node(AbstractNode):
         # relative
         from ..store.blob_storage.seaweedfs import SeaweedFSConfig
 
-        if isinstance(config, SeaweedFSConfig):
+        if isinstance(config, SeaweedFSConfig) and self.signing_key:
             blob_storage_service = self.get_service(BlobStorageService)
             remote_profiles = blob_storage_service.remote_profile_stash.get_all(
                 credentials=self.signing_key.verify_key, has_permission=True
@@ -459,14 +486,14 @@ class Node(AbstractNode):
                     remote_profile.profile_name
                 ] = remote_profile
 
-    def stop(self):
+    def stop(self) -> None:
         for consumer_list in self.queue_manager.consumers.values():
             for c in consumer_list:
                 c.close()
         for p in self.queue_manager.producers.values():
             p.close()
 
-    def close(self):
+    def close(self) -> None:
         self.stop()
 
     def create_queue_config(
@@ -474,8 +501,8 @@ class Node(AbstractNode):
         n_consumers: int,
         create_producer: bool,
         thread_workers: bool,
-        queue_port: Optional[int],
-        queue_config: Optional[QueueConfig],
+        queue_port: int | None,
+        queue_config: QueueConfig | None,
     ) -> QueueConfig:
         if queue_config:
             queue_config_ = queue_config
@@ -495,10 +522,10 @@ class Node(AbstractNode):
 
         return queue_config_
 
-    def init_queue_manager(self, queue_config: QueueConfig):
+    def init_queue_manager(self, queue_config: QueueConfig) -> None:
         MessageHandlers = [APICallMessageHandler]
         if self.is_subprocess:
-            return
+            return None
 
         self.queue_manager = QueueManager(config=queue_config)
         for message_handler in MessageHandlers:
@@ -553,8 +580,8 @@ class Node(AbstractNode):
         service_name: str,
         syft_worker_id: UID,
         address: str,
-        message_handler: AbstractMessageHandler = APICallMessageHandler,
-    ):
+        message_handler: type[AbstractMessageHandler] = APICallMessageHandler,
+    ) -> None:
         consumer: QueueConsumer = self.queue_manager.create_consumer(
             message_handler,
             address=address,
@@ -572,14 +599,14 @@ class Node(AbstractNode):
         processes: int = 0,
         reset: bool = False,
         local_db: bool = False,
-        sqlite_path: Optional[str] = None,
-        node_type: Union[str, NodeType] = NodeType.DOMAIN,
-        node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
+        sqlite_path: str | None = None,
+        node_type: str | NodeType = NodeType.DOMAIN,
+        node_side_type: str | NodeSideType = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         n_consumers: int = 0,
         thread_workers: bool = False,
         create_producer: bool = False,
-        queue_port: Optional[int] = None,
+        queue_port: int | None = None,
         dev_mode: bool = False,
         migrate: bool = False,
         in_memory_workers: bool = True,
@@ -666,7 +693,7 @@ class Node(AbstractNode):
         return credentials == self.verify_key
 
     @property
-    def root_client(self):
+    def root_client(self) -> SyftClient:
         # relative
         from ..client.client import PythonConnection
 
@@ -675,12 +702,13 @@ class Node(AbstractNode):
         if isinstance(client_type, SyftError):
             return client_type
         root_client = client_type(connection=connection, credentials=self.signing_key)
-        root_client.api.refresh_api_callback()
+        if root_client.api.refresh_api_callback is not None:
+            root_client.api.refresh_api_callback()
         return root_client
 
     def _find_klasses_pending_for_migration(
-        self, object_types: List[SyftObject]
-    ) -> List[SyftObject]:
+        self, object_types: list[SyftObject]
+    ) -> list[SyftObject]:
         context = AuthedServiceContext(
             node=self,
             credentials=self.verify_key,
@@ -709,7 +737,7 @@ class Node(AbstractNode):
 
         return klasses_to_be_migrated
 
-    def find_and_migrate_data(self):
+    def find_and_migrate_data(self) -> None:
         # Track all object type that need migration for document store
         context = AuthedServiceContext(
             node=self,
@@ -774,24 +802,26 @@ class Node(AbstractNode):
         print("Data Migrated to latest version !!!")
 
     @property
-    def guest_client(self):
+    def guest_client(self) -> SyftClient:
         return self.get_guest_client()
 
     @property
-    def current_protocol(self) -> List:
+    def current_protocol(self) -> str | int:
         data_protocol = get_data_protocol()
         return data_protocol.latest_version
 
-    def get_guest_client(self, verbose: bool = True):
+    def get_guest_client(self, verbose: bool = True) -> SyftClient:
         # relative
         from ..client.client import PythonConnection
 
         connection = PythonConnection(node=self)
-        if verbose:
-            print(
+        if verbose and self.node_side_type:
+            message: str = (
                 f"Logged into <{self.name}: {self.node_side_type.value.capitalize()} "
-                f"side {self.node_type.value.capitalize()} > as GUEST"
             )
+            if self.node_type:
+                message += f"side {self.node_type.value.capitalize()} > as GUEST"
+            print(message)
 
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
@@ -800,7 +830,8 @@ class Node(AbstractNode):
         guest_client = client_type(
             connection=connection, credentials=SyftSigningKey.generate()
         )
-        guest_client.api.refresh_api_callback()
+        if guest_client.api.refresh_api_callback is not None:
+            guest_client.api.refresh_api_callback()
         return guest_client
 
     def __repr__(self) -> str:
@@ -836,13 +867,15 @@ class Node(AbstractNode):
         def reload_user_code() -> None:
             user_code_service.load_user_code(context=context)
 
-        CODE_RELOADER[thread_ident()] = reload_user_code
+        ti = thread_ident()
+        if ti is not None:
+            CODE_RELOADER[ti] = reload_user_code
 
     def init_stores(
         self,
-        document_store_config: Optional[StoreConfig] = None,
-        action_store_config: Optional[StoreConfig] = None,
-    ):
+        document_store_config: StoreConfig | None = None,
+        action_store_config: StoreConfig | None = None,
+    ) -> None:
         if document_store_config is None:
             if self.local_db or (self.processes > 0 and not self.is_subprocess):
                 client_config = SQLiteStoreClientConfig(path=self.sqlite_path)
@@ -886,7 +919,7 @@ class Node(AbstractNode):
             action_store_config.client_config.filename = f"{self.id}.sqlite"
 
         if isinstance(action_store_config, SQLiteStoreConfig):
-            self.action_store = SQLiteActionStore(
+            self.action_store: ActionStore = SQLiteActionStore(
                 store_config=action_store_config,
                 root_verify_key=self.verify_key,
             )
@@ -907,14 +940,14 @@ class Node(AbstractNode):
         self.queue_stash = QueueStash(store=self.document_store)
 
     @property
-    def job_stash(self):
+    def job_stash(self) -> JobStash:
         return self.get_service("jobservice").stash
 
     @property
-    def worker_stash(self):
+    def worker_stash(self) -> WorkerStash:
         return self.get_service("workerservice").stash
 
-    def _construct_services(self):
+    def _construct_services(self) -> None:
         self.service_path_map = {}
 
         for service_klass in self.services:
@@ -934,6 +967,7 @@ class Node(AbstractNode):
                 DataSubjectService,
                 NetworkService,
                 PolicyService,
+                NotifierService,
                 NotificationService,
                 DataSubjectMemberService,
                 ProjectService,
@@ -945,7 +979,9 @@ class Node(AbstractNode):
                 SyftWorkerImageService,
                 SyftWorkerPoolService,
                 SyftImageRegistryService,
-                VeilidService,
+                SyncService,
+                OutputService,
+                UserCodeStatusService,
             ]
 
             if OBLV:
@@ -954,18 +990,24 @@ class Node(AbstractNode):
 
                 store_services += [OblvService]
 
+            if VEILID_ENABLED:
+                # relative
+                from ..service.veilid.veilid_service import VeilidService
+
+                store_services += [VeilidService]
+
             if service_klass in store_services:
-                kwargs["store"] = self.document_store
+                kwargs["store"] = self.document_store  # type: ignore[assignment]
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
                 **kwargs
             )
 
-    def get_service_method(self, path_or_func: Union[str, Callable]) -> Callable:
+    def get_service_method(self, path_or_func: str | Callable) -> Callable:
         if callable(path_or_func):
             path_or_func = path_or_func.__qualname__
         return self._get_service_method_from_path(path_or_func)
 
-    def get_service(self, path_or_func: Union[str, Callable]) -> Callable:
+    def get_service(self, path_or_func: str | Callable) -> AbstractService:
         if callable(path_or_func):
             path_or_func = path_or_func.__qualname__
         return self._get_service_from_path(path_or_func)
@@ -987,6 +1029,8 @@ class Node(AbstractNode):
     @property
     def settings(self) -> NodeSettingsV2:
         settings_stash = SettingsStash(store=self.document_store)
+        if self.signing_key is None:
+            raise ValueError(f"{self} has no signing key")
         settings = settings_stash.get_all(self.signing_key.verify_key)
         if settings.is_ok() and len(settings.ok()) > 0:
             settings_data = settings.ok()[0]
@@ -1003,18 +1047,20 @@ class Node(AbstractNode):
         organization = settings_data.organization
         description = settings_data.description
         show_warnings = settings_data.show_warnings
+        node_type = self.node_type.value if self.node_type else ""
+        node_side_type = self.node_side_type.value if self.node_side_type else ""
 
         return NodeMetadataV3(
             name=name,
             id=self.id,
             verify_key=self.verify_key,
-            highest_version=SYFT_OBJECT_VERSION_1,
-            lowest_version=SYFT_OBJECT_VERSION_1,
+            highest_version=SYFT_OBJECT_VERSION_2,
+            lowest_version=SYFT_OBJECT_VERSION_2,
             syft_version=__version__,
             description=description,
             organization=organization,
-            node_type=self.node_type.value,
-            node_side_type=self.node_side_type.value,
+            node_type=node_type,
+            node_side_type=node_side_type,
             show_warnings=show_warnings,
         )
 
@@ -1024,6 +1070,8 @@ class Node(AbstractNode):
 
     @property
     def verify_key(self) -> SyftVerifyKey:
+        if self.signing_key is None:
+            raise ValueError(f"{self} has no signing key")
         return self.signing_key.verify_key
 
     def __hash__(self) -> int:
@@ -1040,7 +1088,7 @@ class Node(AbstractNode):
 
     def await_future(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Union[Optional[QueueItem], SyftError]:
+    ) -> QueueItem | None | SyftError:
         # stdlib
         from time import sleep
 
@@ -1059,7 +1107,7 @@ class Node(AbstractNode):
 
     def resolve_future(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Union[Optional[QueueItem], SyftError]:
+    ) -> QueueItem | None | SyftError:
         result = self.queue_stash.pop_on_complete(credentials, uid)
 
         if result.is_ok():
@@ -1072,8 +1120,8 @@ class Node(AbstractNode):
         return result.err()
 
     def forward_message(
-        self, api_call: Union[SyftAPICall, SignedSyftAPICall]
-    ) -> Result[Union[QueueItem, SyftObject], Err]:
+        self, api_call: SyftAPICall | SignedSyftAPICall
+    ) -> Result[QueueItem | SyftObject, Err]:
         node_uid = api_call.message.node_uid
         if NetworkService not in self.services:
             return SyftError(
@@ -1136,9 +1184,9 @@ class Node(AbstractNode):
 
     def handle_api_call(
         self,
-        api_call: Union[SyftAPICall, SignedSyftAPICall],
-        job_id: Optional[UID] = None,
-        check_call_location=True,
+        api_call: SyftAPICall | SignedSyftAPICall,
+        job_id: UID | None = None,
+        check_call_location: bool = True,
     ) -> Result[SignedSyftAPICall, Err]:
         # Get the result
         result = self.handle_api_call_with_unsigned_result(
@@ -1151,17 +1199,17 @@ class Node(AbstractNode):
 
     def handle_api_call_with_unsigned_result(
         self,
-        api_call: Union[SyftAPICall, SignedSyftAPICall],
-        job_id: Optional[UID] = None,
-        check_call_location=True,
-    ) -> Result[Union[QueueItem, SyftObject], Err]:
+        api_call: SyftAPICall | SignedSyftAPICall,
+        job_id: UID | None = None,
+        check_call_location: bool = True,
+    ) -> Result | QueueItem | SyftObject | SyftError:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return SyftError(
-                message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
+                message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."
             )
         else:
             if not api_call.is_valid:
-                return SyftError(message="Your message signature is invalid")  # type: ignore
+                return SyftError(message="Your message signature is invalid")
 
         if api_call.message.node_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
@@ -1191,13 +1239,13 @@ class Node(AbstractNode):
             if api_call.path not in user_config_registry:
                 if ServiceConfigRegistry.path_exists(api_call.path):
                     return SyftError(
-                        message=f"As a `{role}`,"
-                        f"you have has no access to: {api_call.path}"
-                    )  # type: ignore
+                        message=f"As a `{role}`, "
+                        f"you have no access to: {api_call.path}"
+                    )
                 else:
                     return SyftError(
                         message=f"API call not in registered services: {api_call.path}"
-                    )  # type: ignore
+                    )
 
             _private_api_path = user_config_registry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
@@ -1215,12 +1263,12 @@ class Node(AbstractNode):
 
     def add_action_to_queue(
         self,
-        action,
-        credentials,
-        parent_job_id=None,
+        action: Action,
+        credentials: SyftVerifyKey,
+        parent_job_id: UID | None = None,
         has_execute_permissions: bool = False,
-        worker_pool_name: Optional[str] = None,
-    ):
+        worker_pool_name: str | None = None,
+    ) -> Job | SyftError:
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(node=self)
@@ -1270,8 +1318,12 @@ class Node(AbstractNode):
         )
 
     def add_queueitem_to_queue(
-        self, queue_item, credentials, action=None, parent_job_id=None
-    ):
+        self,
+        queue_item: QueueItem,
+        credentials: SyftVerifyKey,
+        action: Action | None = None,
+        parent_job_id: UID | None = None,
+    ) -> Job | SyftError:
         log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
         context = AuthedServiceContext(node=self, credentials=credentials, role=role)
@@ -1318,7 +1370,7 @@ class Node(AbstractNode):
 
     def _get_existing_user_code_jobs(
         self, context: AuthedServiceContext, user_code_id: UID
-    ) -> Union[List[Job], SyftError]:
+    ) -> list[Job] | SyftError:
         job_service = self.get_service("jobservice")
         return job_service.get_by_user_code_id(
             context=context, user_code_id=user_code_id
@@ -1332,7 +1384,9 @@ class Node(AbstractNode):
         user_code_service = self.get_service("usercodeservice")
         return user_code_service.is_execution_on_owned_args(api_call.kwargs, context)
 
-    def add_api_call_to_queue(self, api_call, parent_job_id=None):
+    def add_api_call_to_queue(
+        self, api_call: SyftAPICall, parent_job_id: UID | None = None
+    ) -> Job | SyftError:
         unsigned_call = api_call
         if isinstance(api_call, SignedSyftAPICall):
             unsigned_call = api_call.message
@@ -1419,7 +1473,7 @@ class Node(AbstractNode):
     def user_code_stash(self) -> UserCodeStash:
         return self.get_service(UserCodeService).stash
 
-    def get_default_worker_pool(self):
+    def get_default_worker_pool(self) -> WorkerPool | None | SyftError:
         result = self.pool_stash.get_by_name(
             credentials=self.verify_key,
             pool_name=get_default_worker_pool_name(),
@@ -1431,8 +1485,8 @@ class Node(AbstractNode):
 
     def get_api(
         self,
-        for_user: Optional[SyftVerifyKey] = None,
-        communication_protocol: Optional[PROTOCOL_TYPE] = None,
+        for_user: SyftVerifyKey | None = None,
+        communication_protocol: PROTOCOL_TYPE | None = None,
     ) -> SyftAPI:
         return SyftAPI.for_user(
             node=self,
@@ -1451,11 +1505,14 @@ class Node(AbstractNode):
     ) -> NodeServiceContext:
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
-    def create_initial_settings(self, admin_email: str) -> Optional[NodeSettingsV2]:
+    def create_initial_settings(self, admin_email: str) -> NodeSettingsV2 | None:
         if self.name is None:
             self.name = random_name()
         try:
             settings_stash = SettingsStash(store=self.document_store)
+            if self.signing_key is None:
+                print("create_initial_settings failed as there is no signing key")
+                return None
             settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
             if settings_exists:
                 self.name = settings_exists[0].name
@@ -1473,7 +1530,7 @@ class Node(AbstractNode):
                     deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
                     signup_enabled=flags.CAN_REGISTER,
                     admin_email=admin_email,
-                    node_side_type=self.node_side_type.value,
+                    node_side_type=self.node_side_type.value,  # type: ignore
                     show_warnings=self.enable_warnings,
                 )
                 result = settings_stash.set(
@@ -1483,7 +1540,8 @@ class Node(AbstractNode):
                     return result.ok()
                 return None
         except Exception as e:
-            print("create_worker_metadata failed", e)
+            print(f"create_initial_settings failed with error {e}")
+            return None
 
 
 def create_admin_new(
@@ -1491,7 +1549,7 @@ def create_admin_new(
     email: str,
     password: str,
     node: AbstractNode,
-) -> Optional[User]:
+) -> User | None:
     try:
         user_stash = UserStash(store=node.document_store)
         row_exists = user_stash.get_by_email(
@@ -1524,10 +1582,12 @@ def create_admin_new(
     except Exception as e:
         print("Unable to create new admin", e)
 
+    return None
+
 
 def create_oblv_key_pair(
     worker: Node,
-) -> Optional[str]:
+) -> str | None:
     try:
         # relative
         from ..external.oblv.oblv_keys_stash import OblvKeys
@@ -1536,7 +1596,7 @@ def create_oblv_key_pair(
 
         oblv_keys_stash = OblvKeysStash(store=worker.document_store)
 
-        if not len(oblv_keys_stash):
+        if not len(oblv_keys_stash) and worker.signing_key:
             public_key, private_key = generate_oblv_key(oblv_key_name=worker.name)
             oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
             res = oblv_keys_stash.set(worker.signing_key.verify_key, oblv_keys)
@@ -1547,15 +1607,18 @@ def create_oblv_key_pair(
             print(f"Using Existing Public/Private Key pair: {len(oblv_keys_stash)}")
     except Exception as e:
         print("Unable to create Oblv Keys.", e)
+        return None
+
+    return None
 
 
 class NodeRegistry:
-    __node_registry__: Dict[UID, Node] = {}
+    __node_registry__: dict[UID, Node] = {}
 
     @classmethod
     def set_node_for(
         cls,
-        node_uid: Union[UID, str],
+        node_uid: UID | str,
         node: Node,
     ) -> None:
         if isinstance(node_uid, str):
@@ -1568,11 +1631,11 @@ class NodeRegistry:
         return cls.__node_registry__.get(node_uid, None)
 
     @classmethod
-    def get_all_nodes(cls) -> List[Node]:
+    def get_all_nodes(cls) -> list[Node]:
         return list(cls.__node_registry__.values())
 
 
-def get_default_worker_tag_by_env(dev_mode=False):
+def get_default_worker_tag_by_env(dev_mode: bool = False) -> str | None:
     if in_kubernetes():
         return get_default_worker_image()
     elif dev_mode:
@@ -1581,7 +1644,7 @@ def get_default_worker_tag_by_env(dev_mode=False):
         return __version__
 
 
-def create_default_worker_pool(node: Node) -> Optional[SyftError]:
+def create_default_worker_pool(node: Node) -> SyftError | None:
     credentials = node.verify_key
     pull_image = not node.dev_mode
     image_stash = node.get_service(SyftWorkerImageService).stash
@@ -1620,7 +1683,7 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
 
         if isinstance(result, SyftError):
             print("Failed to build default worker image: ", result.message)
-            return
+            return None
 
     # Create worker pool if it doesn't exists
     print(
@@ -1653,7 +1716,7 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
 
     if isinstance(result, SyftError):
         print(f"Default worker pool error. {result.message}")
-        return
+        return None
 
     for n in range(worker_to_add_):
         container_status = result[n]
@@ -1662,6 +1725,7 @@ def create_default_worker_pool(node: Node) -> Optional[SyftError]:
                 f"Failed to create container: Worker: {container_status.worker},"
                 f"Error: {container_status.error}"
             )
-            return
+            return None
 
     print("Created default worker pool.")
+    return None

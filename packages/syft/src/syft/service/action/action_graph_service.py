@@ -1,10 +1,7 @@
 # stdlib
-from typing import List
-from typing import Tuple
-from typing import Union
 
 # third party
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -39,7 +36,7 @@ class ActionGraphService(AbstractService):
     @service_method(path="graph.add_action", name="add_action")
     def add_action(
         self, context: AuthedServiceContext, action: Action
-    ) -> Union[NodeActionData, SyftError]:
+    ) -> tuple[NodeActionData, NodeActionData] | SyftError:
         # Create a node for the action
         input_uids, output_uid = self._extract_input_and_output_from_action(
             action=action
@@ -60,6 +57,8 @@ class ActionGraphService(AbstractService):
         if action_node.is_mutagen:
             # updated non-mutated successor for all nodes between
             # node_id and nm_successor_id
+            if action.remote_self is None:
+                return SyftError(message=f"action {action}'s remote_self is None")
             result = self.store.update_non_mutated_successor(
                 node_id=action.remote_self.id,
                 nm_successor_id=action_node.id,
@@ -89,7 +88,7 @@ class ActionGraphService(AbstractService):
     @service_method(path="graph.add_action_obj", name="add_action_obj")
     def add_action_obj(
         self, context: AuthedServiceContext, action_obj: ActionObject
-    ) -> Union[NodeActionData, SyftError]:
+    ) -> NodeActionData | SyftError:
         node = NodeActionData.from_action_obj(
             action_obj=action_obj, credentials=context.credentials
         )
@@ -102,7 +101,9 @@ class ActionGraphService(AbstractService):
 
         return result.ok()
 
-    def _extract_input_and_output_from_action(self, action: Action) -> Tuple[UID]:
+    def _extract_input_and_output_from_action(
+        self, action: Action
+    ) -> tuple[set[UID], UID | None]:
         input_uids = set()
 
         if action.remote_self is not None:
@@ -114,13 +115,13 @@ class ActionGraphService(AbstractService):
         for _, kwarg in action.kwargs.items():
             input_uids.add(kwarg.id)
 
-        output_uid = action.result_id.id
+        output_uid = action.result_id.id if action.result_id is not None else None
 
         return input_uids, output_uid
 
     def get(
         self, uid: UID, context: AuthedServiceContext
-    ) -> Union[NodeActionData, SyftError]:
+    ) -> NodeActionData | SyftError:
         result = self.store.get(uid=uid, credentials=context.credentials)
         if result.is_err():
             return SyftError(message=result.err())
@@ -128,7 +129,7 @@ class ActionGraphService(AbstractService):
 
     def remove_node(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         result = self.store.delete(
             uid=uid,
             credentials=context.credentials,
@@ -140,14 +141,14 @@ class ActionGraphService(AbstractService):
 
         return SyftError(message=result.err())
 
-    def get_all_nodes(self, context: AuthedServiceContext) -> Union[List, SyftError]:
+    def get_all_nodes(self, context: AuthedServiceContext) -> list | SyftError:
         result = self.store.nodes(context.credentials)
         if result.is_ok():
             return result.ok()
 
         return SyftError(message="Failed to fetch nodes from the graph")
 
-    def get_all_edges(self, context: AuthedServiceContext) -> Union[List, SyftError]:
+    def get_all_edges(self, context: AuthedServiceContext) -> list | SyftError:
         result = self.store.edges(context.credentials)
         if result.is_ok():
             return result.ok()
@@ -158,7 +159,7 @@ class ActionGraphService(AbstractService):
         context: AuthedServiceContext,
         uid: UID,
         node_data: NodeActionDataUpdate,
-    ) -> Union[NodeActionData, SyftError]:
+    ) -> NodeActionData | SyftError:
         result = self.store.update(
             uid=uid, data=node_data, credentials=context.credentials
         )
@@ -171,7 +172,7 @@ class ActionGraphService(AbstractService):
         context: AuthedServiceContext,
         action_id: UID,
         status: ExecutionStatus,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         try:
             node_data = NodeActionDataUpdate(status=status)
         except ValidationError as e:
@@ -185,7 +186,7 @@ class ActionGraphService(AbstractService):
 
     def get_by_action_status(
         self, context: AuthedServiceContext, status: ExecutionStatus
-    ) -> Union[List[NodeActionData], SyftError]:
+    ) -> list[NodeActionData] | SyftError:
         qks = QueryKeys(qks=[ExecutionStatusPartitionKey.with_obj(status)])
 
         result = self.store.query(qks=qks, credentials=context.credentials)
@@ -196,7 +197,7 @@ class ActionGraphService(AbstractService):
 
     def get_by_verify_key(
         self, context: AuthedServiceContext, verify_key: SyftVerifyKey
-    ) -> Union[List[NodeActionData], SyftError]:
+    ) -> list[NodeActionData] | SyftError:
         # TODO: Add a Query for Credentials as well,
         qks = QueryKeys(qks=[UserVerifyKeyPartitionKey.with_obj(verify_key)])
 

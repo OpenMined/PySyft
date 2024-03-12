@@ -1,6 +1,6 @@
 # stdlib
 from enum import Enum
-from typing import Optional
+from typing import Any
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -32,7 +32,7 @@ class ActionObjectPermission:
         self,
         uid: UID,
         permission: ActionPermission,
-        credentials: Optional[SyftVerifyKey] = None,
+        credentials: SyftVerifyKey | None = None,
     ):
         if credentials is None:
             if permission not in COMPOUND_ACTION_PERMISSION:
@@ -46,7 +46,16 @@ class ActionObjectPermission:
         if self.permission in COMPOUND_ACTION_PERMISSION:
             return f"{self.permission.name}"
         else:
-            return f"{self.credentials.verify}_{self.permission.name}"
+            if self.credentials is not None:
+                return f"{self.credentials.verify}_{self.permission.name}"
+            return f"{self.permission.name}"
+
+    def _coll_repr_(self) -> dict[str, Any]:
+        return {
+            "uid": str(self.uid),
+            "credentials": str(self.credentials),
+            "permission": str(self.permission),
+        }
 
     def __repr__(self) -> str:
         if self.credentials is not None:

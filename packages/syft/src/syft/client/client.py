@@ -3,30 +3,24 @@ from __future__ import annotations
 
 # stdlib
 import base64
+from collections.abc import Callable
 from copy import deepcopy
 from enum import Enum
 from getpass import getpass
 import json
 import os
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Tuple
-from typing import Type
-from typing import Union
 from typing import cast
 
 # third party
 from argon2 import PasswordHasher
-import pydantic
+from pydantic import field_validator
 import requests
 from requests import Response
 from requests import Session
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped]
 from typing_extensions import Self
 
 # relative
@@ -58,6 +52,7 @@ from ..service.veilid.veilid_endpoints import VEILID_SERVICE_URL
 from ..service.veilid.veilid_endpoints import VEILID_SYFT_PROXY_URL
 from ..types.grid_url import GridURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.uid import UID
 from ..util.logger import debug
 from ..util.telemetry import instrument
@@ -98,10 +93,10 @@ def forward_message_to_proxy(
     make_call: Callable,
     proxy_target_uid: UID,
     path: str,
-    credentials: Optional[SyftSigningKey] = None,
-    args: Optional[Tuple] = None,
-    kwargs: Optional[Dict] = None,
-):
+    credentials: SyftSigningKey | None = None,
+    args: list | None = None,
+    kwargs: dict | None = None,
+) -> Any | SyftError:
     kwargs = {} if kwargs is None else kwargs
     args = [] if args is None else args
     call = SyftAPICall(
@@ -139,16 +134,21 @@ class Routes(Enum):
 @serializable(attrs=["proxy_target_uid", "url"])
 class HTTPConnection(NodeConnection):
     __canonical_name__ = "HTTPConnection"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    proxy_target_uid: Optional[UID]
     url: GridURL
-    routes: Type[Routes] = Routes
-    session_cache: Optional[Session]
+    proxy_target_uid: UID | None = None
+    routes: type[Routes] = Routes
+    session_cache: Session | None = None
 
-    @pydantic.validator("url", pre=True, always=True)
-    def make_url(cls, v: Union[GridURL, str]) -> GridURL:
-        return GridURL.from_url(v).as_container_host()
+    @field_validator("url", mode="before")
+    @classmethod
+    def make_url(cls, v: Any) -> Any:
+        return (
+            GridURL.from_url(v).as_container_host()
+            if isinstance(v, str | GridURL)
+            else v
+        )
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         return HTTPConnection(url=self.url, proxy_target_uid=proxy_target_uid)
@@ -160,7 +160,7 @@ class HTTPConnection(NodeConnection):
     def api_url(self) -> GridURL:
         return self.url.with_path(self.routes.ROUTE_API_CALL.value)
 
-    def to_blob_route(self, path: str, **kwargs) -> GridURL:
+    def to_blob_route(self, path: str, **kwargs: Any) -> GridURL:
         _path = self.routes.ROUTE_BLOB_STORE.value + path
         return self.url.with_path(_path)
 
@@ -175,7 +175,7 @@ class HTTPConnection(NodeConnection):
             self.session_cache = session
         return self.session_cache
 
-    def _make_get(self, path: str, params: Optional[Dict] = None) -> bytes:
+    def _make_get(self, path: str, params: dict | None = None) -> bytes:
         url = self.url.with_path(path)
         response = self.session.get(
             str(url), verify=verify_tls(), proxies={}, params=params
@@ -193,8 +193,8 @@ class HTTPConnection(NodeConnection):
     def _make_post(
         self,
         path: str,
-        json: Optional[Dict[str, Any]] = None,
-        data: Optional[bytes] = None,
+        json: dict[str, Any] | None = None,
+        data: bytes | None = None,
     ) -> bytes:
         url = self.url.with_path(path)
         response = self.session.post(
@@ -256,7 +256,7 @@ class HTTPConnection(NodeConnection):
         self,
         email: str,
         password: str,
-    ) -> Optional[SyftSigningKey]:
+    ) -> SyftSigningKey | None:
         credentials = {"email": email, "password": password}
         if self.proxy_target_uid:
             obj = forward_message_to_proxy(
@@ -285,7 +285,7 @@ class HTTPConnection(NodeConnection):
             response = _deserialize(response, from_bytes=True)
         return response
 
-    def make_call(self, signed_call: SignedSyftAPICall) -> Union[Any, SyftError]:
+    def make_call(self, signed_call: SignedSyftAPICall) -> Any | SyftError:
         msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
         response = requests.post(  # nosec
             url=str(self.api_url),
@@ -309,7 +309,7 @@ class HTTPConnection(NodeConnection):
     def __hash__(self) -> int:
         return hash(self.proxy_target_uid) + hash(self.url)
 
-    def get_client_type(self) -> Type[SyftClient]:
+    def get_client_type(self) -> type[SyftClient]:
         # TODO: Rasswanth, should remove passing in credentials
         # when metadata are proxy forwarded in the grid routes
         # in the gateway fixes PR
@@ -336,29 +336,27 @@ class VeilidConnection(NodeConnection):
     __canonical_name__ = "VeilidConnection"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    vld_forward_proxy: Optional[GridURL]
-    vld_reverse_proxy: Optional[GridURL]
+    vld_forward_proxy: GridURL = GridURL.from_url(VEILID_SERVICE_URL)
+    vld_reverse_proxy: GridURL = GridURL.from_url(VEILID_SYFT_PROXY_URL)
     dht_key: str
-    proxy_target_uid: Optional[UID]
-    routes: Type[Routes] = Routes
-    session_cache: Optional[Session]
+    proxy_target_uid: UID | None = None
+    routes: type[Routes] = Routes
+    session_cache: Session | None = None
 
-    @pydantic.validator("vld_forward_proxy", pre=True, always=True)
-    def make_forward_proxy_url(cls, v: Union[GridURL, str]) -> GridURL:
-        if v is None:
-            forward_proxy_url = GridURL.from_url(VEILID_SERVICE_URL)
+    @field_validator("vld_forward_proxy", mode="before")
+    def make_forward_proxy_url(cls, v: GridURL | str) -> GridURL:
+        if isinstance(v, str):
+            return GridURL.from_url(v)
         else:
-            forward_proxy_url = GridURL.from_url(v)
-        return forward_proxy_url
+            return v
 
     # TODO: Remove this once when we remove reverse proxy in Veilid Connection
-    @pydantic.validator("vld_reverse_proxy", pre=True, always=True)
-    def make_reverse_proxy_url(cls, v: Union[GridURL, str]) -> GridURL:
-        if v is None:
-            reverse_proxy_url = GridURL.from_url(VEILID_SYFT_PROXY_URL)
+    @field_validator("vld_reverse_proxy", mode="before")
+    def make_reverse_proxy_url(cls, v: GridURL | str) -> GridURL:
+        if isinstance(v, str):
+            return GridURL.from_url(v)
         else:
-            reverse_proxy_url = GridURL.from_url(v)
-        return reverse_proxy_url
+            return v
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         raise NotImplementedError("VeilidConnection does not support with_proxy")
@@ -381,7 +379,7 @@ class VeilidConnection(NodeConnection):
             self.session_cache = session
         return self.session_cache
 
-    def _make_get(self, path: str, params: Optional[Dict] = None) -> bytes:
+    def _make_get(self, path: str, params: dict | None = None) -> bytes:
         rev_proxy_url = self.vld_reverse_proxy.with_path(path)
         forward_proxy_url = self.vld_forward_proxy.with_path(VEILID_PROXY_PATH)
 
@@ -402,8 +400,8 @@ class VeilidConnection(NodeConnection):
     def _make_post(
         self,
         path: str,
-        json: Optional[Dict[str, Any]] = None,
-        data: Optional[bytes] = None,
+        json: dict[str, Any] | None = None,
+        data: bytes | None = None,
     ) -> bytes:
         rev_proxy_url = self.vld_reverse_proxy.with_path(path)
         forward_proxy_url = self.vld_forward_proxy.with_path(VEILID_PROXY_PATH)
@@ -453,7 +451,7 @@ class VeilidConnection(NodeConnection):
         self,
         email: str,
         password: str,
-    ) -> Optional[SyftSigningKey]:
+    ) -> SyftSigningKey | None:
         # TODO: Implement message proxy forwarding for gateway
 
         credentials = {"email": email, "password": password}
@@ -462,7 +460,7 @@ class VeilidConnection(NodeConnection):
 
         return obj
 
-    def register(self, new_user: UserCreate) -> SyftSigningKey:
+    def register(self, new_user: UserCreate) -> Any:
         # TODO: Implement message proxy forwarding for gateway
 
         data = _serialize(new_user, to_bytes=True)
@@ -470,7 +468,7 @@ class VeilidConnection(NodeConnection):
         response = _deserialize(response, from_bytes=True)
         return response
 
-    def make_call(self, signed_call: SignedSyftAPICall) -> Union[Any, SyftError]:
+    def make_call(self, signed_call: SignedSyftAPICall) -> Any:
         msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
         # Since JSON expects strings, we need to encode the bytes to base64
         # as some bytes may not be valid utf-8
@@ -518,7 +516,7 @@ class VeilidConnection(NodeConnection):
             + hash(self.vld_reverse_proxy)
         )
 
-    def get_client_type(self) -> Type[SyftClient]:
+    def get_client_type(self) -> type[SyftClient]:
         # TODO: Rasswanth, should remove passing in credentials
         # when metadata are proxy forwarded in the grid routes
         # in the gateway fixes PR
@@ -541,10 +539,10 @@ class VeilidConnection(NodeConnection):
 @serializable()
 class PythonConnection(NodeConnection):
     __canonical_name__ = "PythonConnection"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     node: AbstractNode
-    proxy_target_uid: Optional[UID]
+    proxy_target_uid: UID | None = None
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         return PythonConnection(node=self.node, proxy_target_uid=proxy_target_uid)
@@ -561,7 +559,7 @@ class PythonConnection(NodeConnection):
         else:
             return self.node.metadata.to(NodeMetadataJSON)
 
-    def to_blob_route(self, path: str, host=None) -> GridURL:
+    def to_blob_route(self, path: str, host: str | None = None) -> GridURL:
         # TODO: FIX!
         if host is not None:
             return GridURL(host_or_ip=host, port=8333).with_path(path)
@@ -598,9 +596,7 @@ class PythonConnection(NodeConnection):
     def get_cache_key(self) -> str:
         return str(self.node.id)
 
-    def exchange_credentials(
-        self, email: str, password: str
-    ) -> Optional[UserPrivateKey]:
+    def exchange_credentials(self, email: str, password: str) -> UserPrivateKey | None:
         context = self.node.get_unauthed_context(
             login_credentials=UserLoginCredentials(email=email, password=password)
         )
@@ -614,7 +610,7 @@ class PythonConnection(NodeConnection):
         self,
         email: str,
         password: str,
-    ) -> Optional[SyftSigningKey]:
+    ) -> SyftSigningKey | None:
         if self.proxy_target_uid:
             obj = forward_message_to_proxy(
                 self.make_call,
@@ -627,7 +623,7 @@ class PythonConnection(NodeConnection):
             obj = self.exchange_credentials(email=email, password=password)
         return obj
 
-    def register(self, new_user: UserCreate) -> Optional[SyftSigningKey]:
+    def register(self, new_user: UserCreate) -> SyftSigningKey | None:
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
                 self.make_call,
@@ -641,7 +637,7 @@ class PythonConnection(NodeConnection):
             response = method(context=service_context, new_user=new_user)
         return response
 
-    def make_call(self, signed_call: SignedSyftAPICall) -> Union[Any, SyftError]:
+    def make_call(self, signed_call: SignedSyftAPICall) -> Any | SyftError:
         return self.node.handle_api_call(signed_call)
 
     def __repr__(self) -> str:
@@ -650,7 +646,7 @@ class PythonConnection(NodeConnection):
     def __str__(self) -> str:
         return f"{type(self).__name__}"
 
-    def get_client_type(self) -> Type[SyftClient]:
+    def get_client_type(self) -> type[SyftClient]:
         # relative
         from .domain_client import DomainClient
         from .enclave_client import EnclaveClient
@@ -671,8 +667,8 @@ class PythonConnection(NodeConnection):
 @serializable()
 class SyftClient:
     connection: NodeConnection
-    metadata: Optional[NodeMetadataJSON]
-    credentials: Optional[SyftSigningKey]
+    metadata: NodeMetadataJSON | None
+    credentials: SyftSigningKey | None
     __logged_in_user: str = ""
     __logged_in_username: str = ""
     __user_role: ServiceRole = ServiceRole.NONE
@@ -680,16 +676,16 @@ class SyftClient:
     def __init__(
         self,
         connection: NodeConnection,
-        metadata: Optional[NodeMetadataJSON] = None,
-        credentials: Optional[SyftSigningKey] = None,
-        api: Optional[SyftAPI] = None,
+        metadata: NodeMetadataJSON | None = None,
+        credentials: SyftSigningKey | None = None,
+        api: SyftAPI | None = None,
     ) -> None:
         self.connection = connection
         self.metadata = metadata
-        self.credentials: Optional[SyftSigningKey] = credentials
+        self.credentials: SyftSigningKey | None = credentials
         self._api = api
-        self.communication_protocol = None
-        self.current_protocol = None
+        self.communication_protocol: int | str | None = None
+        self.current_protocol: int | str | None = None
 
         self.post_init()
 
@@ -699,18 +695,18 @@ class SyftClient:
     def post_init(self) -> None:
         if self.metadata is None:
             self._fetch_node_metadata(self.credentials)
-
+        self.metadata = cast(NodeMetadataJSON, self.metadata)
         self.communication_protocol = self._get_communication_protocol(
             self.metadata.supported_protocols
         )
 
     def _get_communication_protocol(
-        self, protocols_supported_by_server: List
-    ) -> Union[int, str]:
+        self, protocols_supported_by_server: list
+    ) -> int | str:
         data_protocol: DataProtocol = get_data_protocol()
-        protocols_supported_by_client: List[
-            PROTOCOL_TYPE
-        ] = data_protocol.supported_protocols
+        protocols_supported_by_client: list[PROTOCOL_TYPE] = (
+            data_protocol.supported_protocols
+        )
 
         self.current_protocol = data_protocol.latest_version
         common_protocols = set(protocols_supported_by_client).intersection(
@@ -742,12 +738,14 @@ class SyftClient:
         project = project_create.start()
         return project
 
-    def sync_code_from_request(self, request):
+    # TODO: type of request should be REQUEST, but it will give circular import error
+    def sync_code_from_request(self, request: Any) -> SyftSuccess | SyftError:
         # relative
         from ..service.code.user_code import UserCode
+        from ..service.code.user_code import UserCodeStatusCollection
         from ..store.linked_obj import LinkedObject
 
-        code: Union[UserCode, SyftError] = request.code
+        code: UserCode | SyftError = request.code
         if isinstance(code, SyftError):
             return code
 
@@ -755,9 +753,12 @@ class SyftClient:
         code.node_uid = self.id
         code.user_verify_key = self.verify_key
 
-        def get_nested_codes(code: UserCode):
-            result = []
-            for __, (linked_code_obj, _) in code.nested_codes.items():
+        def get_nested_codes(code: UserCode) -> list[UserCode]:
+            result: list[UserCode] = []
+            if code.nested_codes is None:
+                return result
+
+            for _, (linked_code_obj, _) in code.nested_codes.items():
                 nested_code = linked_code_obj.resolve
                 nested_code = deepcopy(nested_code)
                 nested_code.node_uid = code.node_uid
@@ -765,19 +766,29 @@ class SyftClient:
                 result.append(nested_code)
                 result += get_nested_codes(nested_code)
 
-            updated_code_links = {
-                nested_code.service_func_name: (LinkedObject.from_obj(nested_code), {})
-                for nested_code in result
-            }
-            code.nested_codes = updated_code_links
             return result
 
+        def get_code_statusses(codes: list[UserCode]) -> list[UserCodeStatusCollection]:
+            statusses = []
+            for code in codes:
+                status = deepcopy(code.status)
+                statusses.append(status)
+                code.status_link = LinkedObject.from_obj(status, node_uid=code.node_uid)
+            return statusses
+
         nested_codes = get_nested_codes(code)
+        statusses = get_code_statusses(nested_codes + [code])
 
         for c in nested_codes + [code]:
             res = self.code.submit(c)
             if isinstance(res, SyftError):
                 return res
+
+        for status in statusses:
+            res = self.api.services.code_status.create(status)
+            if isinstance(res, SyftError):
+                return res
+
         self._fetch_api(self.credentials)
         return SyftSuccess(message="User Code Submitted")
 
@@ -786,11 +797,11 @@ class SyftClient:
         return bool(self.credentials)
 
     @property
-    def logged_in_user(self) -> Optional[str]:
+    def logged_in_user(self) -> str | None:
         return self.__logged_in_user
 
     @property
-    def logged_in_username(self) -> Optional[str]:
+    def logged_in_username(self) -> str | None:
         return self.__logged_in_username
 
     @property
@@ -804,19 +815,19 @@ class SyftClient:
         return self.credentials.verify_key
 
     @classmethod
-    def from_url(cls, url: Union[str, GridURL]) -> Self:
-        return cls(connection=HTTPConnection(GridURL.from_url(url)))
+    def from_url(cls, url: str | GridURL) -> Self:
+        return cls(connection=HTTPConnection(url=GridURL.from_url(url)))
 
     @classmethod
     def from_node(cls, node: AbstractNode) -> Self:
         return cls(connection=PythonConnection(node=node))
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         return self.metadata.name if self.metadata else None
 
     @property
-    def id(self) -> Optional[UID]:
+    def id(self) -> UID | None:
         return UID.from_string(self.metadata.id) if self.metadata else None
 
     @property
@@ -839,8 +850,7 @@ class SyftClient:
         # invalidate API
         if self._api is None or (self._api.signing_key != self.credentials):
             self._fetch_api(self.credentials)
-
-        return self._api
+        return cast(SyftAPI, self._api)  # we are sure self._api is not None after fetch
 
     def guest(self) -> Self:
         return self.__class__(
@@ -850,20 +860,23 @@ class SyftClient:
         )
 
     def exchange_route(
-        self, client: Self, protocol: SyftProtocol
-    ) -> Union[SyftSuccess, SyftError]:
+        self, client: Self, protocol: SyftProtocol = SyftProtocol.HTTP
+    ) -> SyftSuccess | SyftError:
         if protocol == SyftProtocol.HTTP:
             # relative
             from ..service.network.routes import connection_to_route
 
             self_node_route = connection_to_route(self.connection)
             remote_node_route = connection_to_route(client.connection)
+            if client.metadata is None:
+                return SyftError(f"client {client}'s metadata is None!")
 
             result = self.api.services.network.exchange_credentials_with(
                 self_node_route=self_node_route,
                 remote_node_route=remote_node_route,
                 remote_node_verify_key=client.metadata.to(NodeMetadataV3).verify_key,
             )
+
         elif protocol == SyftProtocol.VEILID:
             # relative
             from ..service.network.routes import connection_to_route
@@ -879,47 +892,49 @@ class SyftClient:
         return result
 
     @property
-    def jobs(self) -> Optional[APIModule]:
+    def jobs(self) -> APIModule | None:
         if self.api.has_service("job"):
             return self.api.services.job
         return None
 
     @property
-    def users(self) -> Optional[APIModule]:
+    def users(self) -> APIModule | None:
         if self.api.has_service("user"):
             return self.api.services.user
         return None
 
     @property
-    def numpy(self) -> Optional[APIModule]:
+    def numpy(self) -> APIModule | None:
         if self.api.has_lib("numpy"):
             return self.api.lib.numpy
         return None
 
     @property
-    def settings(self) -> Optional[APIModule]:
+    def settings(self) -> APIModule | None:
         if self.api.has_service("user"):
             return self.api.services.settings
         return None
 
     @property
-    def notifications(self) -> Optional[APIModule]:
-        print(
-            "WARNING: Notifications is currently is in a beta state, so use carefully!"
-        )
-        print("If possible try using client.requests/client.projects")
+    def notifications(self) -> APIModule | None:
         if self.api.has_service("notifications"):
             return self.api.services.notifications
         return None
 
     @property
-    def peers(self) -> Optional[Union[List[NodePeer], SyftError]]:
+    def notifier(self) -> APIModule | None:
+        if self.api.has_service("notifier"):
+            return self.api.services.notifier
+        return None
+
+    @property
+    def peers(self) -> list[NodePeer] | SyftError | None:
         if self.api.has_service("network"):
             return self.api.services.network.get_all_peers()
         return None
 
     @property
-    def me(self) -> Optional[Union[UserView, SyftError]]:
+    def me(self) -> UserView | SyftError | None:
         if self.api.has_service("user"):
             return self.api.services.user.get_current_user()
         return None
@@ -927,17 +942,18 @@ class SyftClient:
     def login_as_guest(self) -> Self:
         _guest_client = self.guest()
 
-        print(
-            f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()}-side "
-            f"{self.metadata.node_type.capitalize()}> as GUEST"
-        )
+        if self.metadata is not None:
+            print(
+                f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()}-side "
+                f"{self.metadata.node_type.capitalize()}> as GUEST"
+            )
 
         return _guest_client
 
     def login(
         self,
-        email: Optional[str] = None,
-        password: Optional[str] = None,
+        email: str | None = None,
+        password: str | None = None,
         cache: bool = True,
         register: bool = False,
         **kwargs: Any,
@@ -975,11 +991,11 @@ class SyftClient:
 
         client.__logged_in_user = email
 
-        if user_private_key is not None:
+        if user_private_key is not None and client.users is not None:
             client.__user_role = user_private_key.role
             client.__logged_in_username = client.users.get_current_user().name
 
-        if signing_key is not None:
+        if signing_key is not None and client.metadata is not None:
             print(
                 f"Logged into <{client.name}: {client.metadata.node_side_type.capitalize()} side "
                 f"{client.metadata.node_type.capitalize()}> as <{email}>"
@@ -1017,26 +1033,28 @@ class SyftClient:
         # relative
         from ..node.node import CODE_RELOADER
 
-        CODE_RELOADER[thread_ident()] = client._reload_user_code
+        thread_id = thread_ident()
+        if thread_id is not None:
+            CODE_RELOADER[thread_id] = client._reload_user_code
 
         return client
 
-    def _reload_user_code(self):
+    def _reload_user_code(self) -> None:
         # relative
         from ..service.code.user_code import load_approved_policy_code
 
         user_code_items = self.code.get_all_for_user()
-        load_approved_policy_code(user_code_items)
+        load_approved_policy_code(user_code_items=user_code_items, context=None)
 
     def register(
         self,
         name: str,
-        email: Optional[str] = None,
-        password: Optional[str] = None,
-        password_verify: Optional[str] = None,
-        institution: Optional[str] = None,
-        website: Optional[str] = None,
-    ):
+        email: str | None = None,
+        password: str | None = None,
+        password_verify: str | None = None,
+        institution: str | None = None,
+        website: str | None = None,
+    ) -> SyftError | SyftSigningKey | None:
         if not email:
             email = input("Email: ")
         if not password:
@@ -1061,7 +1079,10 @@ class SyftClient:
         except Exception as e:
             return SyftError(message=str(e))
 
-        if self.metadata.node_side_type == NodeSideType.HIGH_SIDE.value:
+        if (
+            self.metadata
+            and self.metadata.node_side_type == NodeSideType.HIGH_SIDE.value
+        ):
             message = (
                 "You're registering a user to a high side "
                 f"{self.metadata.node_type}, which could "
@@ -1070,7 +1091,7 @@ class SyftClient:
             if self.metadata.show_warnings and not prompt_warning_message(
                 message=message
             ):
-                return
+                return None
 
         response = self.connection.register(new_user=new_user)
         if isinstance(response, tuple):
@@ -1107,16 +1128,20 @@ class SyftClient:
             metadata.check_version(__version__)
             self.metadata = metadata
 
-    def _fetch_api(self, credentials: SyftSigningKey):
+    def _fetch_api(self, credentials: SyftSigningKey) -> None:
         _api: SyftAPI = self.connection.get_api(
             credentials=credentials,
             communication_protocol=self.communication_protocol,
         )
 
-        def refresh_callback():
+        def refresh_callback() -> None:
             return self._fetch_api(self.credentials)
 
         _api.refresh_api_callback = refresh_callback
+
+        if self.credentials is None:
+            raise ValueError(f"{self}'s credentials (signing key) is None!")
+
         APIRegistry.set_api_for(
             node_uid=self.id,
             user_verify_key=self.credentials.verify_key,
@@ -1127,12 +1152,12 @@ class SyftClient:
 
 @instrument
 def connect(
-    url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
-    node: Optional[AbstractNode] = None,
-    port: Optional[int] = None,
-    vld_forward_proxy: Optional[Union[str, GridURL]] = None,
-    vld_reverse_proxy: Optional[Union[str, GridURL]] = None,
-    dht_key: Optional[str] = None,
+    url: str | GridURL = DEFAULT_PYGRID_ADDRESS,
+    node: AbstractNode | None = None,
+    port: int | None = None,
+    vld_forward_proxy: str | GridURL | None = None,
+    vld_reverse_proxy: str | GridURL | None = None,
+    dht_key: str | None = None,
 ) -> SyftClient:
     if node:
         connection = PythonConnection(node=node)
@@ -1144,7 +1169,7 @@ def connect(
         )
     else:
         url = GridURL.from_url(url)
-        if isinstance(port, (int, str)):
+        if isinstance(port, int | str):
             url.set_port(int(port))
         connection = HTTPConnection(url=url)
 
@@ -1158,14 +1183,14 @@ def connect(
 
 @instrument
 def register(
-    url: Union[str, GridURL],
+    url: str | GridURL,
     port: int,
     name: str,
     email: str,
     password: str,
-    institution: Optional[str] = None,
-    website: Optional[str] = None,
-):
+    institution: str | None = None,
+    website: str | None = None,
+) -> SyftError | SyftSigningKey | None:
     guest_client = connect(url=url, port=port)
     return guest_client.register(
         name=name,
@@ -1179,16 +1204,16 @@ def register(
 @instrument
 def login_as_guest(
     # HTTPConnection
-    url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
-    port: Optional[int] = None,
+    url: str | GridURL = DEFAULT_PYGRID_ADDRESS,
+    port: int | None = None,
     # PythonConnection
-    node: Optional[AbstractNode] = None,
+    node: AbstractNode | None = None,
     # Veilid Connection
-    vld_forward_proxy: Optional[Union[str, GridURL]] = None,
-    vld_reverse_proxy: Optional[Union[str, GridURL]] = None,
-    dht_key: Optional[str] = None,
+    vld_forward_proxy: str | GridURL | None = None,
+    vld_reverse_proxy: str | GridURL | None = None,
+    dht_key: str | None = None,
     verbose: bool = True,
-):
+) -> SyftClient:
     _client = connect(
         url=url,
         node=node,
@@ -1201,7 +1226,7 @@ def login_as_guest(
     if isinstance(_client, SyftError):
         return _client
 
-    if verbose:
+    if verbose and _client.metadata is not None:
         print(
             f"Logged into <{_client.name}: {_client.metadata.node_side_type.capitalize()}-"
             f"side {_client.metadata.node_type.capitalize()}> as GUEST"
@@ -1214,15 +1239,15 @@ def login_as_guest(
 def login(
     email: str,
     # HTTPConnection
-    url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
-    port: Optional[int] = None,
+    url: str | GridURL = DEFAULT_PYGRID_ADDRESS,
+    port: int | None = None,
     # PythonConnection
-    node: Optional[AbstractNode] = None,
+    node: AbstractNode | None = None,
     # Veilid Connection
-    vld_forward_proxy: Optional[Union[str, GridURL]] = None,
-    vld_reverse_proxy: Optional[Union[str, GridURL]] = None,
-    dht_key: Optional[str] = None,
-    password: Optional[str] = None,
+    vld_forward_proxy: str | GridURL | None = None,
+    vld_reverse_proxy: str | GridURL | None = None,
+    dht_key: str | None = None,
+    password: str | None = None,
     cache: bool = True,
 ) -> SyftClient:
     _client = connect(
@@ -1268,9 +1293,9 @@ def login(
 
 
 class SyftClientSessionCache:
-    __credentials_store__: Dict = {}
+    __credentials_store__: dict = {}
     __cache_key_format__ = "{email}-{password}-{connection}"
-    __client_cache__: Dict = {}
+    __client_cache__: dict = {}
 
     @classmethod
     def _get_key(cls, email: str, password: str, connection: str) -> str:
@@ -1287,7 +1312,7 @@ class SyftClientSessionCache:
         password: str,
         connection: NodeConnection,
         syft_client: SyftClient,
-    ):
+    ) -> None:
         hash_key = cls._get_key(email, password, connection.get_cache_key())
         cls.__credentials_store__[hash_key] = syft_client
         cls.__client_cache__[syft_client.id] = syft_client
@@ -1298,26 +1323,26 @@ class SyftClientSessionCache:
         verify_key: SyftVerifyKey,
         node_uid: UID,
         syft_client: SyftClient,
-    ):
+    ) -> None:
         hash_key = str(node_uid) + str(verify_key)
         cls.__client_cache__[hash_key] = syft_client
 
     @classmethod
     def get_client_by_uid_and_verify_key(
         cls, verify_key: SyftVerifyKey, node_uid: UID
-    ) -> Optional[SyftClient]:
+    ) -> SyftClient | None:
         hash_key = str(node_uid) + str(verify_key)
         return cls.__client_cache__.get(hash_key, None)
 
     @classmethod
     def get_client(
         cls, email: str, password: str, connection: NodeConnection
-    ) -> Optional[SyftClient]:
+    ) -> SyftClient | None:
         # we have some bugs here so lets disable until they are fixed.
         return None
-        hash_key = cls._get_key(email, password, connection.get_cache_key())
-        return cls.__credentials_store__.get(hash_key, None)
+        # hash_key = cls._get_key(email, password, connection.get_cache_key())
+        # return cls.__credentials_store__.get(hash_key, None)
 
     @classmethod
-    def get_client_for_node_uid(cls, node_uid: UID) -> Optional[SyftClient]:
+    def get_client_for_node_uid(cls, node_uid: UID) -> SyftClient | None:
         return cls.__client_cache__.get(node_uid, None)

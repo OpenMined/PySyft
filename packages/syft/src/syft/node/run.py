@@ -1,12 +1,14 @@
 # stdlib
 import argparse
-from typing import Optional
+
+# third party
+from hagrid.orchestra import NodeHandle
 
 # relative
 from ..client.deploy import Orchestra
 
 
-def str_to_bool(bool_str: Optional[str]) -> bool:
+def str_to_bool(bool_str: str | None) -> bool:
     result = False
     bool_str = str(bool_str).lower()
     if bool_str == "true" or bool_str == "1":
@@ -14,7 +16,7 @@ def str_to_bool(bool_str: Optional[str]) -> bool:
     return result
 
 
-def run():
+def run() -> NodeHandle | None:
     parser = argparse.ArgumentParser()
     parser.add_argument("command", help="command: launch", type=str, default="none")
     parser.add_argument(

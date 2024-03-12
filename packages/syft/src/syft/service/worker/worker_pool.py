@@ -1,10 +1,6 @@
 # stdlib
 from enum import Enum
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
 from typing import cast
 
 # third party
@@ -17,7 +13,7 @@ from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
 from ...types.uid import UID
@@ -53,7 +49,7 @@ class WorkerHealth(Enum):
 @serializable()
 class SyftWorker(SyftObject):
     __canonical_name__ = "SyftWorker"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     __attr_unique__ = ["name"]
     __attr_searchable__ = ["name", "container_id"]
@@ -69,25 +65,23 @@ class SyftWorker(SyftObject):
 
     id: UID
     name: str
-    container_id: Optional[str]
+    container_id: str | None = None
     created_at: DateTime = DateTime.now()
-    healthcheck: Optional[WorkerHealth]
+    healthcheck: WorkerHealth | None = None
     status: WorkerStatus
-    image: Optional[SyftWorkerImage]
+    image: SyftWorkerImage | None = None
     worker_pool_name: str
     consumer_state: ConsumerState = ConsumerState.DETACHED
-    job_id: Optional[UID]
+    job_id: UID | None = None
 
     @property
-    def logs(self) -> Union[str, SyftError]:
+    def logs(self) -> str | SyftError:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
-        if api.services is None:
-            return SyftError(message=f"Services for {api} is None")
         return api.services.worker.logs(uid=self.id)
 
     def get_job_repr(self) -> str:
@@ -98,8 +92,6 @@ class SyftWorker(SyftObject):
             )
             if api is None:
                 return SyftError(message=f"You must login to {self.node_uid}")
-            if api.services is None:
-                return f"Services for api {api} is None"
             job = api.services.job.get(self.job_id)
             if job.action.user_code_id is not None:
                 func_name = api.services.code.get_by_id(
@@ -111,25 +103,22 @@ class SyftWorker(SyftObject):
         else:
             return ""
 
-    def refresh_status(self) -> Optional[SyftError]:
+    def refresh_status(self) -> SyftError | None:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
-        if api.services is None:
-            return SyftError(message=f"Services for {api} is None")
 
         res = api.services.worker.status(uid=self.id)
         if isinstance(res, SyftError):
             return res
 
         self.status, self.healthcheck = res
-
         return None
 
-    def _coll_repr_(self) -> Dict[str, Any]:
+    def _coll_repr_(self) -> dict[str, Any]:
         self.refresh_status()
 
         if self.image and self.image.image_identifier:
@@ -154,7 +143,7 @@ class SyftWorker(SyftObject):
 @serializable()
 class WorkerPool(SyftObject):
     __canonical_name__ = "WorkerPool"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     __attr_unique__ = ["name"]
     __attr_searchable__ = ["name", "image_id"]
@@ -167,13 +156,13 @@ class WorkerPool(SyftObject):
     ]
 
     name: str
-    image_id: Optional[UID]
+    image_id: UID | None = None
     max_count: int
-    worker_list: List[LinkedObject]
+    worker_list: list[LinkedObject]
     created_at: DateTime = DateTime.now()
 
     @property
-    def image(self) -> Optional[Union[SyftWorkerImage, SyftError]]:
+    def image(self) -> SyftWorkerImage | SyftError | None:
         """
         Get the pool's image using the worker_image service API. This way we
         get the latest state of the image from the SyftWorkerImageStash
@@ -188,7 +177,7 @@ class WorkerPool(SyftObject):
             return None
 
     @property
-    def running_workers(self) -> Union[List[UID], SyftError]:
+    def running_workers(self) -> list[SyftWorker] | SyftError:
         """Query the running workers using an API call to the server"""
         _running_workers = []
         for worker in self.workers:
@@ -198,7 +187,7 @@ class WorkerPool(SyftObject):
         return _running_workers
 
     @property
-    def healthy_workers(self) -> Union[List[UID], SyftError]:
+    def healthy_workers(self) -> list[SyftWorker] | SyftError:
         """
         Query the healthy workers using an API call to the server
         """
@@ -210,7 +199,7 @@ class WorkerPool(SyftObject):
 
         return _healthy_workers
 
-    def _coll_repr_(self) -> Dict[str, Any]:
+    def _coll_repr_(self) -> dict[str, Any]:
         if self.image and self.image.image_identifier:
             image_name_with_tag = self.image.image_identifier.full_name_with_tag
         else:
@@ -252,11 +241,11 @@ class WorkerPool(SyftObject):
             """
 
     @property
-    def workers(self) -> List[SyftWorker]:
+    def workers(self) -> list[SyftWorker]:
         resolved_workers = []
         for worker in self.worker_list:
             resolved_worker = worker.resolve
-            if resolved_worker is None:
+            if isinstance(resolved_worker, SyftError) or resolved_worker is None:
                 continue
             resolved_worker.refresh_status()
             resolved_workers.append(resolved_worker)
@@ -275,14 +264,14 @@ class ContainerSpawnStatus(SyftBaseModel):
     __repr_attrs__ = ["worker_name", "worker", "error"]
 
     worker_name: str
-    worker: Optional[SyftWorker]
-    error: Optional[str]
+    worker: SyftWorker | None = None
+    error: str | None = None
 
 
 def _get_worker_container(
     client: docker.DockerClient,
     worker: SyftWorker,
-) -> Union[Container, SyftError]:
+) -> Container | SyftError:
     try:
         return cast(Container, client.containers.get(worker.container_id))
     except docker.errors.NotFound as e:
@@ -294,7 +283,7 @@ def _get_worker_container(
         )
 
 
-_CONTAINER_STATUS_TO_WORKER_STATUS: Dict[str, WorkerStatus] = dict(
+_CONTAINER_STATUS_TO_WORKER_STATUS: dict[str, WorkerStatus] = dict(
     [
         ("running", WorkerStatus.RUNNING),
         *(
@@ -310,8 +299,8 @@ _CONTAINER_STATUS_TO_WORKER_STATUS: Dict[str, WorkerStatus] = dict(
 def _get_worker_container_status(
     client: docker.DockerClient,
     worker: SyftWorker,
-    container: Optional[Container] = None,
-) -> Union[Container, SyftError]:
+    container: Container | None = None,
+) -> Container | SyftError:
     if container is None:
         container = _get_worker_container(client, worker)
 

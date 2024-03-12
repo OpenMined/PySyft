@@ -1,6 +1,4 @@
 # stdlib
-from typing import List
-from typing import Optional
 
 # third party
 from result import Result
@@ -19,7 +17,7 @@ from .dataset import Dataset
 from .dataset import DatasetUpdate
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
-ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=List[UID])
+ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 
 
 @instrument
@@ -35,12 +33,15 @@ class DatasetStash(BaseUIDStoreStash):
 
     def get_by_name(
         self, credentials: SyftVerifyKey, name: str
-    ) -> Result[Optional[Dataset], str]:
+    ) -> Result[Dataset | None, str]:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
         return self.query_one(credentials=credentials, qks=qks)
 
     def update(
-        self, credentials: SyftVerifyKey, dataset_update: DatasetUpdate
+        self,
+        credentials: SyftVerifyKey,
+        dataset_update: DatasetUpdate,
+        has_permission: bool = False,
     ) -> Result[Dataset, str]:
         res = self.check_type(dataset_update, DatasetUpdate)
         # we dont use and_then logic here as it is hard because of the order of the arguments
@@ -50,6 +51,6 @@ class DatasetStash(BaseUIDStoreStash):
 
     def search_action_ids(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[List[Dataset], str]:
+    ) -> Result[list[Dataset], str]:
         qks = QueryKeys(qks=[ActionIDsPartitionKey.with_obj(uid)])
         return self.query_all(credentials=credentials, qks=qks)

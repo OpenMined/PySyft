@@ -1,11 +1,6 @@
 # stdlib
+from collections.abc import Callable
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Set
-from typing import Type
-from typing import Union
 
 # third party
 from pymongo import ASCENDING
@@ -28,7 +23,7 @@ from ..service.action.action_permissions import ActionObjectWRITE
 from ..service.action.action_permissions import ActionPermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import StorableObjectType
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
@@ -53,20 +48,20 @@ from .mongo_client import MongoStoreClientConfig
 @serializable()
 class MongoDict(SyftBaseObject):
     __canonical_name__ = "MongoDict"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    keys: List[Any]
-    values: List[Any]
+    keys: list[Any]
+    values: list[Any]
 
     @property
-    def dict(self) -> Dict[Any, Any]:
+    def dict(self) -> dict[Any, Any]:
         return dict(zip(self.keys, self.values))
 
-    @staticmethod
-    def from_dict(input: Dict[Any, Any]) -> Self:
-        return MongoDict(keys=list(input.keys()), values=list(input.values()))
+    @classmethod
+    def from_dict(cls, input: dict) -> Self:
+        return cls(keys=list(input.keys()), values=list(input.values()))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.dict.__repr__()
 
 
@@ -82,36 +77,40 @@ def _repr_debug_(value: Any) -> str:
 
 def to_mongo(context: TransformContext) -> TransformContext:
     output = {}
-    unique_keys_dict = context.obj._syft_unique_keys_dict()
-    search_keys_dict = context.obj._syft_searchable_keys_dict()
-    all_dict = unique_keys_dict
-    all_dict.update(search_keys_dict)
-    for k in all_dict:
-        value = getattr(context.obj, k, "")
-        # if the value is a method, store its value
-        if callable(value):
-            output[k] = value()
-        else:
-            output[k] = value
+    if context.obj:
+        unique_keys_dict = context.obj._syft_unique_keys_dict()
+        search_keys_dict = context.obj._syft_searchable_keys_dict()
+        all_dict = unique_keys_dict
+        all_dict.update(search_keys_dict)
+        for k in all_dict:
+            value = getattr(context.obj, k, "")
+            # if the value is a method, store its value
+            if callable(value):
+                output[k] = value()
+            else:
+                output[k] = value
 
-    if "id" in context.output:
+        output["__canonical_name__"] = context.obj.__canonical_name__
+        output["__version__"] = context.obj.__version__
+        output["__blob__"] = _serialize(context.obj, to_bytes=True)
+        output["__arepr__"] = _repr_debug_(context.obj)  # a comes first in alphabet
+
+    if context.output and "id" in context.output:
         output["_id"] = context.output["id"]
-    output["__canonical_name__"] = context.obj.__canonical_name__
-    output["__version__"] = context.obj.__version__
-    output["__blob__"] = _serialize(context.obj, to_bytes=True)
-    output["__arepr__"] = _repr_debug_(context.obj)  # a comes first in alphabet
+
     context.output = output
+
     return context
 
 
 @transform(SyftObject, MongoBsonObject)
-def syft_obj_to_mongo():
+def syft_obj_to_mongo() -> list[Callable]:
     return [to_mongo]
 
 
 @transform_method(MongoBsonObject, SyftObject)
 def from_mongo(
-    storage_obj: Dict, context: Optional[TransformContext] = None
+    storage_obj: dict, context: TransformContext | None = None
 ) -> SyftObject:
     return _deserialize(storage_obj["__blob__"], from_bytes=True)
 
@@ -127,7 +126,7 @@ class MongoStorePartition(StorePartition):
             Mongo specific configuration
     """
 
-    storage_type: StorableObjectType = MongoBsonObject
+    storage_type: type[StorableObjectType] = MongoBsonObject
 
     def init_store(self) -> Result[Ok, Err]:
         store_status = super().init_store()
@@ -167,7 +166,9 @@ class MongoStorePartition(StorePartition):
             return collection_status
         collection: MongoCollection = collection_status.ok()
 
-        def check_index_keys(current_keys, new_index_keys):
+        def check_index_keys(
+            current_keys: list[tuple[str, int]], new_index_keys: list[tuple[str, int]]
+        ) -> bool:
             current_keys.sort()
             new_index_keys.sort()
             return current_keys == new_index_keys
@@ -190,7 +191,7 @@ class MongoStorePartition(StorePartition):
         if current_index_keys is not None:
             keys_same = check_index_keys(current_index_keys["key"], new_index_keys)
             if keys_same:
-                return Ok()
+                return Ok(True)
 
             # Drop current index, since incompatible with current object
             try:
@@ -202,7 +203,7 @@ class MongoStorePartition(StorePartition):
 
         # If no new indexes, then skip index creation
         if len(new_index_keys) == 0:
-            return Ok()
+            return Ok(True)
 
         try:
             collection.create_index(new_index_keys, unique=True, name=index_name)
@@ -211,7 +212,7 @@ class MongoStorePartition(StorePartition):
                 f"Failed to create index for {object_name} with index keys: {new_index_keys}"
             )
 
-        return Ok()
+        return Ok(True)
 
     @property
     def collection(self) -> Result[MongoCollection, Err]:
@@ -231,20 +232,20 @@ class MongoStorePartition(StorePartition):
 
         return Ok(self._permissions)
 
-    def set(self, *args, **kwargs):
+    def set(self, *args: Any, **kwargs: Any) -> Result[SyftObject, str]:
         return self._set(*args, **kwargs)
 
     def _set(
         self,
         credentials: SyftVerifyKey,
         obj: SyftObject,
-        add_permissions: Optional[List[ActionObjectPermission]] = None,
+        add_permissions: list[ActionObjectPermission] | None = None,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         # TODO: Refactor this function since now it's doing both set and
         # update at the same time
         write_permission = ActionObjectWRITE(uid=obj.id, credentials=credentials)
-        can_write = self.has_permission(write_permission)
+        can_write: bool = self.has_permission(write_permission)
 
         store_query_key: QueryKey = self.settings.store_key.with_obj(obj)
         collection_status = self.collection
@@ -258,7 +259,7 @@ class MongoStorePartition(StorePartition):
         if (not store_key_exists) and (not self.item_keys_exist(obj, collection)):
             # attempt to claim ownership for writing
             ownership_result = self.take_ownership(uid=obj.id, credentials=credentials)
-            can_write: bool = ownership_result.is_ok()
+            can_write = ownership_result.is_ok()
         elif not ignore_duplicates:
             unique_query_keys: QueryKeys = self.settings.unique_keys.with_obj(obj)
             keys = ", ".join(f"`{key.key}`" for key in unique_query_keys.all)
@@ -291,7 +292,7 @@ class MongoStorePartition(StorePartition):
         else:
             return Err(f"No permission to write object with id {obj.id}")
 
-    def item_keys_exist(self, obj, collection):
+    def item_keys_exist(self, obj: SyftObject, collection: MongoCollection) -> bool:
         qks: QueryKeys = self.settings.unique_keys.with_obj(obj)
         query = {"$or": [{k: v} for k, v in qks.as_dict_mongo.items()]}
         res = collection.find_one(query)
@@ -303,6 +304,7 @@ class MongoStorePartition(StorePartition):
         qk: QueryKey,
         obj: SyftObject,
         has_permission: bool = False,
+        overwrite: bool = False,
     ) -> Result[SyftObject, str]:
         collection_status = self.collection
         if collection_status.is_err():
@@ -352,26 +354,26 @@ class MongoStorePartition(StorePartition):
         credentials: SyftVerifyKey,
         index_qks: QueryKeys,
         search_qks: QueryKeys,
-        order_by: Optional[PartitionKey] = None,
-    ) -> Result[List[SyftObject], str]:
+        order_by: PartitionKey | None = None,
+    ) -> Result[list[SyftObject], str]:
         # TODO: pass index as hint to find method
-        qks = QueryKeys(qks=(index_qks.all + search_qks.all))
+        qks = QueryKeys(qks=(list(index_qks.all) + list(search_qks.all)))
         return self._get_all_from_store(
             credentials=credentials, qks=qks, order_by=order_by
         )
 
     @property
-    def data(self):
-        values: List = self._all(credentials=None, has_permission=True).ok()
+    def data(self) -> dict:
+        values: list = self._all(credentials=None, has_permission=True).ok()
         return {v.id: v for v in values}
 
     def _get_all_from_store(
         self,
         credentials: SyftVerifyKey,
         qks: QueryKeys,
-        order_by: Optional[PartitionKey] = None,
-        has_permission: Optional[bool] = False,
-    ) -> Result[List[SyftObject], str]:
+        order_by: PartitionKey | None = None,
+        has_permission: bool | None = False,
+    ) -> Result[list[SyftObject], str]:
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
@@ -439,7 +441,7 @@ class MongoStorePartition(StorePartition):
             return False
         collection_permissions: MongoCollection = collection_permissions_status.ok()
 
-        permissions: Optional[Dict] = collection_permissions.find_one(
+        permissions: dict | None = collection_permissions.find_one(
             {"_id": permission.uid}
         )
 
@@ -447,7 +449,10 @@ class MongoStorePartition(StorePartition):
             return False
 
         # TODO: fix for other admins
-        if self.root_verify_key.verify == permission.credentials.verify:
+        if (
+            permission.credentials
+            and self.root_verify_key.verify == permission.credentials.verify
+        ):
             return True
 
         if permission.permission_string in permissions["permissions"]:
@@ -474,7 +479,7 @@ class MongoStorePartition(StorePartition):
         # find the permissions for the given permission.uid
         # e.g. permissions = {"_id": "7b88fdef6bff42a8991d294c3d66f757",
         #                      "permissions": set(["permission_str_1", "permission_str_2"]}}
-        permissions: Optional[Dict] = collection_permissions.find_one(
+        permissions: dict | None = collection_permissions.find_one(
             {"_id": permission.uid}
         )
         if permissions is None:
@@ -487,13 +492,13 @@ class MongoStorePartition(StorePartition):
             )
         else:
             # update the permissions with the new permission string
-            permission_strings: Set = permissions["permissions"]
+            permission_strings: set = permissions["permissions"]
             permission_strings.add(permission.permission_string)
             collection_permissions.update_one(
                 {"_id": permission.uid}, {"$set": {"permissions": permission_strings}}
             )
 
-    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+    def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
         for permission in permissions:
             self.add_permission(permission)
 
@@ -504,12 +509,12 @@ class MongoStorePartition(StorePartition):
         if collection_permissions_status.is_err():
             return collection_permissions_status
         collection_permissions: MongoCollection = collection_permissions_status.ok()
-        permissions: Optional[Dict] = collection_permissions.find_one(
+        permissions: dict | None = collection_permissions.find_one(
             {"_id": permission.uid}
         )
         if permissions is None:
             return Err(f"permission with UID {permission.uid} not found!")
-        permissions_strings: Set = permissions["permissions"]
+        permissions_strings: set = permissions["permissions"]
         if permission.permission_string in permissions_strings:
             permissions_strings.remove(permission.permission_string)
             if len(permissions_strings) > 0:
@@ -535,8 +540,8 @@ class MongoStorePartition(StorePartition):
             return collection_status
         collection: MongoCollection = collection_status.ok()
 
-        data: List[UID] = collection.find_one({"_id": uid})
-        permissions: List[UID] = collection_permissions.find_one({"_id": uid})
+        data: list[UID] | None = collection.find_one({"_id": uid})
+        permissions: list[UID] | None = collection_permissions.find_one({"_id": uid})
 
         # first person using this UID can claim ownership
         if permissions is None and data is None:
@@ -555,9 +560,9 @@ class MongoStorePartition(StorePartition):
     def _all(
         self,
         credentials: SyftVerifyKey,
-        order_by: Optional[PartitionKey] = None,
-        has_permission: Optional[bool] = False,
-    ):
+        order_by: PartitionKey | None = None,
+        has_permission: bool | None = False,
+    ) -> Result[list[SyftObject], str]:
         qks = QueryKeys(qks=())
         return self._get_all_from_store(
             credentials=credentials,
@@ -566,7 +571,7 @@ class MongoStorePartition(StorePartition):
             has_permission=has_permission,
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         collection_status = self.collection
         if collection_status.is_err():
             return 0
@@ -644,7 +649,7 @@ class MongoBackingStore(KeyValueBackingStore):
         index_name: str,
         settings: PartitionSettings,
         store_config: StoreConfig,
-        ddtype: Optional[type] = None,
+        ddtype: type | None = None,
     ) -> None:
         self.index_name = index_name
         self.settings = settings
@@ -653,7 +658,7 @@ class MongoBackingStore(KeyValueBackingStore):
         self.ddtype = ddtype
         self.init_client()
 
-    def init_client(self) -> Union[None, Err]:
+    def init_client(self) -> Err | None:
         self.client = MongoClient(config=self.store_config.client_config)
 
         collection_status = self.client.with_collection(
@@ -664,12 +669,13 @@ class MongoBackingStore(KeyValueBackingStore):
         if collection_status.is_err():
             return collection_status
         self._collection: MongoCollection = collection_status.ok()
+        return None
 
     @property
     def collection(self) -> Result[MongoCollection, Err]:
         if not hasattr(self, "_collection"):
             res = self.init_client()
-            if res.is_err():
+            if res is not None and res.is_err():
                 return res
 
         return Ok(self._collection)
@@ -680,7 +686,7 @@ class MongoBackingStore(KeyValueBackingStore):
             return collection_status
         collection: MongoCollection = collection_status.ok()
 
-        result: Optional[Dict] = collection.find_one({"_id": key})
+        result: dict | None = collection.find_one({"_id": key})
         if result is not None:
             return True
 
@@ -733,7 +739,7 @@ class MongoBackingStore(KeyValueBackingStore):
             return collection_status
         collection: MongoCollection = collection_status.ok()
 
-        result: Optional[Dict] = collection.find_one({"_id": key})
+        result: dict | None = collection.find_one({"_id": key})
         if result is not None:
             return _deserialize(result[f"{key}"], from_bytes=True)
         else:
@@ -757,7 +763,7 @@ class MongoBackingStore(KeyValueBackingStore):
     def __len__(self) -> int:
         return self._len()
 
-    def _delete(self, key: UID) -> None:
+    def _delete(self, key: UID) -> Result[SyftSuccess, Err]:
         collection_status = self.collection
         if collection_status.is_err():
             return collection_status
@@ -765,8 +771,9 @@ class MongoBackingStore(KeyValueBackingStore):
         result = collection.delete_one({"_id": key})
         if result.deleted_count != 1:
             raise KeyError(f"{key} does not exist")
+        return Ok(SyftSuccess(message="Deleted"))
 
-    def __delitem__(self, key: str):
+    def __delitem__(self, key: str) -> None:
         self._delete(key)
 
     def _delete_all(self) -> None:
@@ -776,7 +783,7 @@ class MongoBackingStore(KeyValueBackingStore):
         collection: MongoCollection = collection_status.ok()
         collection.delete_many({})
 
-    def clear(self) -> Self:
+    def clear(self) -> None:
         self._delete_all()
 
     def _get_all(self) -> Any:
@@ -818,14 +825,14 @@ class MongoBackingStore(KeyValueBackingStore):
         # 🟡 TODO
         raise NotImplementedError
 
-    def update(self, *args: Any, **kwargs: Any) -> Self:
+    def update(self, *args: Any, **kwargs: Any) -> None:
         """
         Inserts the specified items to the dictionary.
         """
         # 🟡 TODO
         raise NotImplementedError
 
-    def __del__(self):
+    def __del__(self) -> None:
         """
         Close the mongo client connection:
             - Cleanup client resources and disconnect from MongoDB
@@ -852,13 +859,12 @@ class MongoStoreConfig(StoreConfig):
                 * NoLockingConfig: no locking, ideal for single-thread stores.
                 * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
                 * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
-                * RedisLockingConfig: Redis-based locking, ideal for multi-device stores.
             Defaults to NoLockingConfig.
     """
 
     client_config: MongoStoreClientConfig
-    store_type: Type[DocumentStore] = MongoDocumentStore
+    store_type: type[DocumentStore] = MongoDocumentStore
     db_name: str = "app"
-    backing_store = MongoBackingStore
+    backing_store: type[KeyValueBackingStore] = MongoBackingStore
     # TODO: should use a distributed lock, with RedisLockingConfig
     locking_config: LockingConfig = NoLockingConfig()

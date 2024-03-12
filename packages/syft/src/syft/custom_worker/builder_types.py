@@ -2,7 +2,7 @@
 from abc import ABC
 from abc import abstractmethod
 from pathlib import Path
-from typing import Optional
+from typing import Any
 
 # third party
 from pydantic import BaseModel
@@ -33,20 +33,22 @@ class ImagePushResult(BaseModel):
 class BuilderBase(ABC):
     @abstractmethod
     def build_image(
+        self,
         tag: str,
-        dockerfile: str = None,
-        dockerfile_path: Path = None,
-        buildargs: Optional[dict] = None,
-        **kwargs,
+        dockerfile: str | None = None,
+        dockerfile_path: Path | None = None,
+        buildargs: dict | None = None,
+        **kwargs: Any,
     ) -> ImageBuildResult:
         pass
 
     @abstractmethod
     def push_image(
+        self,
         tag: str,
         username: str,
         password: str,
         registry_url: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> ImagePushResult:
         pass

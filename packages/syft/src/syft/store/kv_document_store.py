@@ -5,9 +5,6 @@ from __future__ import annotations
 from collections import defaultdict
 from enum import Enum
 from typing import Any
-from typing import List
-from typing import Optional
-from typing import Set
 
 # third party
 from result import Err
@@ -59,16 +56,16 @@ class KeyValueBackingStore:
     def __len__(self) -> int:
         raise NotImplementedError
 
-    def __delitem__(self, key: str):
+    def __delitem__(self, key: str) -> None:
         raise NotImplementedError
 
-    def clear(self) -> Self:
+    def clear(self) -> None:
         raise NotImplementedError
 
     def copy(self) -> Self:
         raise NotImplementedError
 
-    def update(self, *args: Any, **kwargs: Any) -> Self:
+    def update(self, *args: Any, **kwargs: Any) -> None:
         raise NotImplementedError
 
     def keys(self) -> Any:
@@ -102,7 +99,7 @@ class KeyValueStorePartition(StorePartition):
 
     def __init__(
         self,
-        root_verify_key: Optional[SyftVerifyKey],
+        root_verify_key: SyftVerifyKey | None,
         settings: PartitionSettings,
         store_config: StoreConfig,
     ):
@@ -123,7 +120,8 @@ class KeyValueStorePartition(StorePartition):
             self.searchable_keys = self.store_config.backing_store(
                 "searchable_keys", self.settings, self.store_config
             )
-            self.permissions = self.store_config.backing_store(
+            # uid -> set['<uid>_permission']
+            self.permissions: dict[UID, set[str]] = self.store_config.backing_store(
                 "permissions", self.settings, self.store_config, ddtype=set
             )
 
@@ -139,7 +137,7 @@ class KeyValueStorePartition(StorePartition):
         except BaseException as e:
             return Err(str(e))
 
-        return Ok()
+        return Ok(True)
 
     def __len__(self) -> int:
         return len(self.data)
@@ -148,7 +146,7 @@ class KeyValueStorePartition(StorePartition):
         self,
         uid: UID,
         credentials: SyftVerifyKey,
-        has_permission: Optional[bool] = False,
+        has_permission: bool | None = False,
     ) -> Result[SyftObject, str]:
         # relative
         from ..service.action.action_store import ActionObjectREAD
@@ -171,12 +169,12 @@ class KeyValueStorePartition(StorePartition):
         self,
         credentials: SyftVerifyKey,
         obj: SyftObject,
-        add_permissions: Optional[List[ActionObjectPermission]] = None,
+        add_permissions: list[ActionObjectPermission] | None = None,
         ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         try:
-            if obj.id is None:
-                obj.id = UID()
+            # if obj.id is None:
+            # obj.id = UID()
             store_query_key: QueryKey = self.settings.store_key.with_obj(obj)
             uid = store_query_key.value
             write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
@@ -248,12 +246,12 @@ class KeyValueStorePartition(StorePartition):
         permissions.add(permission.permission_string)
         self.permissions[permission.uid] = permissions
 
-    def remove_permission(self, permission: ActionObjectPermission):
+    def remove_permission(self, permission: ActionObjectPermission) -> None:
         permissions = self.permissions[permission.uid]
         permissions.remove(permission.permission_string)
         self.permissions[permission.uid] = permissions
 
-    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
+    def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
         for permission in permissions:
             self.add_permission(permission)
 
@@ -262,7 +260,10 @@ class KeyValueStorePartition(StorePartition):
             raise Exception(f"ObjectPermission type: {permission.permission} not valid")
 
         # TODO: fix for other admins
-        if self.root_verify_key.verify == permission.credentials.verify:
+        if (
+            permission.credentials
+            and self.root_verify_key.verify == permission.credentials.verify
+        ):
             return True
 
         if (
@@ -293,9 +294,9 @@ class KeyValueStorePartition(StorePartition):
     def _all(
         self,
         credentials: SyftVerifyKey,
-        order_by: Optional[PartitionKey] = None,
-        has_permission: Optional[bool] = False,
-    ) -> Result[List[BaseStash.object_type], str]:
+        order_by: PartitionKey | None = None,
+        has_permission: bool | None = False,
+    ) -> Result[list[BaseStash.object_type], str]:
         # this checks permissions
         res = [self._get(uid, credentials, has_permission) for uid in self.data.keys()]
         result = [x.ok() for x in res if x.is_ok()]
@@ -329,9 +330,9 @@ class KeyValueStorePartition(StorePartition):
         credentials: SyftVerifyKey,
         index_qks: QueryKeys,
         search_qks: QueryKeys,
-        order_by: Optional[PartitionKey] = None,
-    ) -> Result[List[SyftObject], str]:
-        ids: Optional[Set] = None
+        order_by: PartitionKey | None = None,
+    ) -> Result[list[SyftObject], str]:
+        ids: set | None = None
         errors = []
         # third party
         if len(index_qks.all) > 0:
@@ -370,8 +371,8 @@ class KeyValueStorePartition(StorePartition):
         credentials: SyftVerifyKey,
         qk: QueryKey,
         obj: SyftObject,
-        has_permission=False,
-        overwrite=False,
+        has_permission: bool = False,
+        overwrite: bool = False,
     ) -> Result[SyftObject, str]:
         try:
             if qk.value not in self.data:
@@ -432,8 +433,8 @@ class KeyValueStorePartition(StorePartition):
         self,
         credentials: SyftVerifyKey,
         qks: QueryKeys,
-        order_by: Optional[PartitionKey] = None,
-    ) -> Result[List[SyftObject], str]:
+        order_by: PartitionKey | None = None,
+    ) -> Result[list[SyftObject], str]:
         matches = []
         for qk in qks.all:
             if qk.value in self.data:
@@ -449,7 +450,7 @@ class KeyValueStorePartition(StorePartition):
         pass
 
     def _delete(
-        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission=False
+        self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
     ) -> Result[SyftSuccess, Err]:
         try:
             if has_permission or self.has_permission(
@@ -483,12 +484,12 @@ class KeyValueStorePartition(StorePartition):
             self.searchable_keys[qk.key] = search_keys
         return Ok(SyftSuccess(message="Deleted"))
 
-    def _get_keys_index(self, qks: QueryKeys) -> Result[Set[Any], str]:
+    def _get_keys_index(self, qks: QueryKeys) -> Result[set[Any], str]:
         try:
             # match AND
-            subsets = []
+            subsets: list = []
             for qk in qks.all:
-                subset = {}
+                subset: set = set()
                 pk_key, pk_value = qk.key, qk.value
                 if pk_key not in self.unique_keys:
                     return Err(f"Failed to query index with {qk}")
@@ -510,12 +511,12 @@ class KeyValueStorePartition(StorePartition):
         except Exception as e:
             return Err(f"Failed to query with {qks}. {e}")
 
-    def _find_keys_search(self, qks: QueryKeys) -> Result[Set[QueryKey], str]:
+    def _find_keys_search(self, qks: QueryKeys) -> Result[set[QueryKey], str]:
         try:
             # match AND
             subsets = []
             for qk in qks.all:
-                subset = {}
+                subset: set = set()
                 pk_key, pk_value = qk.key, qk.value
                 if pk_key not in self.searchable_keys:
                     return Err(f"Failed to search with {qk}")
@@ -596,9 +597,9 @@ class KeyValueStorePartition(StorePartition):
             ck_col[pk_value] = store_query_key.value
             self.unique_keys[pk_key] = ck_col
 
-        self.unique_keys[store_query_key.key][
+        self.unique_keys[store_query_key.key][store_query_key.value] = (
             store_query_key.value
-        ] = store_query_key.value
+        )
 
         sqks = searchable_query_keys.all
         for qk in sqks:

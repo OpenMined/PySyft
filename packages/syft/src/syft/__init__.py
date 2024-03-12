@@ -1,11 +1,11 @@
 __version__ = "0.8.5-beta.1"
 
 # stdlib
+from collections.abc import Callable
 import pathlib
 from pathlib import Path
 import sys
 from typing import Any
-from typing import Callable
 
 # relative
 from . import gevent_patch  # noqa: F401
@@ -93,6 +93,9 @@ sys.path.append(str(Path(__file__)))
 logger.start()
 
 try:
+    # third party
+    from IPython import get_ipython
+
     get_ipython()  # noqa: F821
     # TODO: add back later or auto detect
     # display(

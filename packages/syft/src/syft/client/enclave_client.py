@@ -2,20 +2,21 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Optional
+from typing import Any
 from typing import TYPE_CHECKING
-from typing import Union
+
+# third party
+from hagrid.orchestra import NodeHandle
 
 # relative
 from ..abstract_node import NodeSideType
 from ..client.api import APIRegistry
 from ..img.base64 import base64read
 from ..serde.serializable import serializable
+from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.network.routes import NodeRouteType
-from ..service.network.routes import NodeRouteTypeV1
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -29,14 +30,6 @@ from .protocol import SyftProtocol
 if TYPE_CHECKING:
     # relative
     from ..service.code.user_code import SubmitUserCode
-
-
-@serializable()
-class EnclaveMetadataV1(SyftObject):
-    __canonical_name__ = "EnclaveMetadata"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    route: NodeRouteTypeV1
 
 
 @serializable()
@@ -54,7 +47,7 @@ class EnclaveClient(SyftClient):
     __api_patched = False
 
     @property
-    def code(self) -> Optional[APIModule]:
+    def code(self) -> APIModule | None:
         if self.api.has_service("code"):
             res = self.api.services.code
             # the order is important here
@@ -67,21 +60,21 @@ class EnclaveClient(SyftClient):
         return None
 
     @property
-    def requests(self) -> Optional[APIModule]:
+    def requests(self) -> APIModule | None:
         if self.api.has_service("request"):
             return self.api.services.request
         return None
 
     def connect_to_gateway(
         self,
-        via_client: Optional[SyftClient] = None,
-        url: Optional[str] = None,
-        port: Optional[int] = None,
-        handle: Optional[NodeHandle] = None,  # noqa: F821
-        email: Optional[str] = None,
-        password: Optional[str] = None,
-        protocol: Union[str, SyftProtocol] = SyftProtocol.HTTP,
-    ) -> None:
+        via_client: SyftClient | None = None,
+        url: str | None = None,
+        port: int | None = None,
+        handle: NodeHandle | None = None,  # noqa: F821
+        email: str | None = None,
+        password: str | None = None,
+        protocol: str | SyftProtocol = SyftProtocol.HTTP,
+    ) -> SyftSuccess | SyftError | None:
         if isinstance(protocol, str):
             protocol = SyftProtocol(protocol)
 
@@ -98,17 +91,20 @@ class EnclaveClient(SyftClient):
             if isinstance(client, SyftError):
                 return client
 
+        self.metadata: NodeMetadataJSON = self.metadata
         res = self.exchange_route(client, protocol=protocol)
+
         if isinstance(res, SyftSuccess):
             return SyftSuccess(
                 message=f"Connected {self.metadata.node_type} to {client.name} gateway"
             )
+
         return res
 
     def get_enclave_metadata(self) -> EnclaveMetadata:
         return EnclaveMetadata(route=self.connection.route)
 
-    def request_code_execution(self, code: SubmitUserCode):
+    def request_code_execution(self, code: SubmitUserCode) -> Any | SyftError:
         # relative
         from ..service.code.user_code_service import SubmitUserCode
 
@@ -116,6 +112,8 @@ class EnclaveClient(SyftClient):
             raise Exception(
                 f"The input code should be of type: {SubmitUserCode} got:{type(code)}"
             )
+        if code.input_policy_init_kwargs is None:
+            raise ValueError(f"code {code}'s input_policy_init_kwargs is None")
 
         enclave_metadata = self.get_enclave_metadata()
 
@@ -170,18 +168,17 @@ class EnclaveClient(SyftClient):
 
         url = getattr(self.connection, "url", None)
         node_details = f"<strong>URL:</strong> {url}<br />" if url else ""
-        node_details += (
-            f"<strong>Node Type:</strong> {self.metadata.node_type.capitalize()}<br />"
-        )
-        node_side_type = (
-            "Low Side"
-            if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value
-            else "High Side"
-        )
-        node_details += f"<strong>Node Side Type:</strong> {node_side_type}<br />"
-        node_details += (
-            f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
-        )
+        if self.metadata:
+            node_details += f"<strong>Node Type:</strong> {self.metadata.node_type.capitalize()}<br />"
+            node_side_type = (
+                "Low Side"
+                if self.metadata.node_side_type == NodeSideType.LOW_SIDE.value
+                else "High Side"
+            )
+            node_details += f"<strong>Node Side Type:</strong> {node_side_type}<br />"
+            node_details += (
+                f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
+            )
 
         return f"""
         <style>

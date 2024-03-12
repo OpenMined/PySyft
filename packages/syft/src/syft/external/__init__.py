@@ -1,10 +1,10 @@
 """This module contains all the external libraries that Syft supports.
-    We lazy load the external libraries when they are needed.
+We lazy load the external libraries when they are needed.
 """
+
 # stdlib
 import importlib
 import os
-from typing import Union
 
 # relative
 from ..service.response import SyftError
@@ -16,7 +16,7 @@ from ..util.util import str_to_bool
 # if the external library is not installed, we prompt the user
 # to install it with the pip package name.
 
-OBLV = str_to_bool(os.getenv("ENABLE_OBLV", "false"))
+OBLV = str_to_bool(os.getenv("OBLV_ENABLED", "false"))
 
 EXTERNAL_LIBS = {
     "oblv": {
@@ -34,7 +34,7 @@ def package_exists(package_name: str) -> bool:
         return False
 
 
-def enable_external_lib(lib_name: str) -> Union[SyftSuccess, SyftError]:
+def enable_external_lib(lib_name: str) -> SyftSuccess | SyftError:
     if lib_name in EXTERNAL_LIBS:
         syft_module_name = f"syft.external.{lib_name}"
         pip_package_name = EXTERNAL_LIBS[lib_name]["pip_package_name"]

@@ -8,15 +8,10 @@ from pathlib import Path
 import sqlite3
 import tempfile
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Type
-from typing import Union
 
 # third party
 from pydantic import Field
-from pydantic import validator
+from pydantic import field_validator
 from result import Err
 from result import Ok
 from result import Result
@@ -43,9 +38,9 @@ from .locks import SyftLock
 # by its filename and optionally the thread that its running in
 # we keep track of each SQLiteBackingStore init in REF_COUNTS
 # when it hits 0 we can close the connection and release the file descriptor
-SQLITE_CONNECTION_POOL_DB: Dict[str, sqlite3.Connection] = {}
-SQLITE_CONNECTION_POOL_CUR: Dict[str, sqlite3.Cursor] = {}
-REF_COUNTS: Dict[str, int] = defaultdict(int)
+SQLITE_CONNECTION_POOL_DB: dict[str, sqlite3.Connection] = {}
+SQLITE_CONNECTION_POOL_CUR: dict[str, sqlite3.Cursor] = {}
+REF_COUNTS: dict[str, int] = defaultdict(int)
 
 
 def cache_key(db_name: str) -> str:
@@ -58,7 +53,7 @@ def _repr_debug_(value: Any) -> str:
     return repr(value)
 
 
-def raise_exception(table_name: str, e: Exception):
+def raise_exception(table_name: str, e: Exception) -> None:
     if "disk I/O error" in str(e):
         message = f"Error usually related to concurrent writes. {str(e)}"
         raise Exception(message)
@@ -95,14 +90,16 @@ class SQLiteBackingStore(KeyValueBackingStore):
         index_name: str,
         settings: PartitionSettings,
         store_config: StoreConfig,
-        ddtype: Optional[type] = None,
+        ddtype: type | None = None,
     ) -> None:
         self.index_name = index_name
         self.settings = settings
         self.store_config = store_config
         self._ddtype = ddtype
-        self.file_path = self.store_config.client_config.file_path
-        self.db_filename = store_config.client_config.filename
+        if self.store_config.client_config:
+            self.file_path = self.store_config.client_config.file_path
+        if store_config.client_config:
+            self.db_filename = store_config.client_config.filename
 
         # if tempfile.TemporaryDirectory() varies from process to process
         # could this cause different locks on the same file
@@ -127,16 +124,17 @@ class SQLiteBackingStore(KeyValueBackingStore):
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
 
-        connection = sqlite3.connect(
-            self.file_path,
-            timeout=self.store_config.client_config.timeout,
-            check_same_thread=False,  # do we need this if we use the lock?
-            # check_same_thread=self.store_config.client_config.check_same_thread,
-        )
-        # TODO: Review OSX compatibility.
-        # Set journal mode to WAL.
-        # connection.execute("pragma journal_mode=wal")
-        SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)] = connection
+        if self.store_config.client_config:
+            connection = sqlite3.connect(
+                self.file_path,
+                timeout=self.store_config.client_config.timeout,
+                check_same_thread=False,  # do we need this if we use the lock?
+                # check_same_thread=self.store_config.client_config.check_same_thread,
+            )
+            # TODO: Review OSX compatibility.
+            # Set journal mode to WAL.
+            # connection.execute("pragma journal_mode=wal")
+            SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)] = connection
 
     def create_table(self) -> None:
         try:
@@ -179,11 +177,11 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.db.commit()
 
     def _execute(
-        self, sql: str, *args: Optional[List[Any]]
+        self, sql: str, *args: list[Any] | None
     ) -> Result[Ok[sqlite3.Cursor], Err[str]]:
         with SyftLock(self.lock_config):
-            cursor: Optional[sqlite3.Cursor] = None
-            err = None
+            cursor: sqlite3.Cursor | None = None
+            # err = None
             try:
                 cursor = self.cur.execute(sql, *args)
             except Exception as e:
@@ -196,8 +194,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
             # err = Err(str(e))
             self.db.commit()  # Commit if everything went ok
 
-            if err is not None:
-                return err
+            # if err is not None:
+            #     return err
 
             return Ok(cursor)
 
@@ -323,10 +321,10 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def __len__(self) -> int:
         return self._len()
 
-    def __delitem__(self, key: str):
+    def __delitem__(self, key: str) -> None:
         self._delete(key)
 
-    def clear(self) -> Self:
+    def clear(self) -> None:
         self._delete_all()
 
     def copy(self) -> Self:
@@ -352,7 +350,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def __iter__(self) -> Any:
         return iter(self.keys())
 
-    def __del__(self):
+    def __del__(self) -> None:
         try:
             self._close()
         except BaseException:
@@ -427,21 +425,22 @@ class SQLiteStoreClientConfig(StoreClientConfig):
             database, it will be locked until that transaction is committed. Default five seconds.
     """
 
-    filename: Optional[str] = None
-    path: Union[str, Path] = Field(default_factory=tempfile.gettempdir)
+    filename: str | None = None
+    path: str | Path = Field(default_factory=tempfile.gettempdir)
     check_same_thread: bool = True
     timeout: int = 5
 
     # We need this in addition to Field(default_factory=...)
     # so users can still do SQLiteStoreClientConfig(path=None)
-    @validator("path", pre=True)
-    def __default_path(cls, path: Optional[Union[str, Path]]) -> Union[str, Path]:
+    @field_validator("path", mode="before")
+    @classmethod
+    def __default_path(cls, path: str | Path | None) -> str | Path:
         if path is None:
             return tempfile.gettempdir()
         return path
 
     @property
-    def file_path(self) -> Optional[Path]:
+    def file_path(self) -> Path | None:
         return Path(self.path) / self.filename if self.filename is not None else None
 
 
@@ -462,11 +461,10 @@ class SQLiteStoreConfig(StoreConfig):
                 * NoLockingConfig: no locking, ideal for single-thread stores.
                 * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
                 * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
-                * RedisLockingConfig: Redis-based locking, ideal for multi-device stores.
             Defaults to FileLockingConfig.
     """
 
     client_config: SQLiteStoreClientConfig
-    store_type: Type[DocumentStore] = SQLiteDocumentStore
-    backing_store: Type[KeyValueBackingStore] = SQLiteBackingStore
+    store_type: type[DocumentStore] = SQLiteDocumentStore
+    backing_store: type[KeyValueBackingStore] = SQLiteBackingStore
     locking_config: LockingConfig = FileLockingConfig()

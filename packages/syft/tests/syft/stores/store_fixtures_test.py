@@ -1,9 +1,8 @@
 # stdlib
+from collections.abc import Generator
 from pathlib import Path
 import sys
 import tempfile
-from typing import Generator
-from typing import Tuple
 
 # third party
 from pymongo import MongoClient
@@ -130,7 +129,7 @@ def sqlite_workspace() -> Generator:
 
 def sqlite_store_partition_fn(
     root_verify_key,
-    sqlite_workspace: Tuple[Path, str],
+    sqlite_workspace: tuple[Path, str],
     locking_config_name: str = "nop",
 ):
     workspace, db_name = sqlite_workspace
@@ -155,7 +154,7 @@ def sqlite_store_partition_fn(
 
 @pytest.fixture(scope="function", params=locking_scenarios)
 def sqlite_store_partition(
-    root_verify_key, sqlite_workspace: Tuple[Path, str], request
+    root_verify_key, sqlite_workspace: tuple[Path, str], request
 ):
     locking_config_name = request.param
     return sqlite_store_partition_fn(
@@ -165,7 +164,7 @@ def sqlite_store_partition(
 
 def sqlite_document_store_fn(
     root_verify_key,
-    sqlite_workspace: Tuple[Path, str],
+    sqlite_workspace: tuple[Path, str],
     locking_config_name: str = "nop",
 ):
     workspace, db_name = sqlite_workspace
@@ -180,7 +179,7 @@ def sqlite_document_store_fn(
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
-def sqlite_document_store(root_verify_key, sqlite_workspace: Tuple[Path, str], request):
+def sqlite_document_store(root_verify_key, sqlite_workspace: tuple[Path, str], request):
     locking_config_name = request.param
     return sqlite_document_store_fn(
         root_verify_key, sqlite_workspace, locking_config_name=locking_config_name
@@ -189,7 +188,7 @@ def sqlite_document_store(root_verify_key, sqlite_workspace: Tuple[Path, str], r
 
 def sqlite_queue_stash_fn(
     root_verify_key,
-    sqlite_workspace: Tuple[Path, str],
+    sqlite_workspace: tuple[Path, str],
     locking_config_name: str = "nop",
 ):
     store = sqlite_document_store_fn(
@@ -199,7 +198,7 @@ def sqlite_queue_stash_fn(
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
-def sqlite_queue_stash(root_verify_key, sqlite_workspace: Tuple[Path, str], request):
+def sqlite_queue_stash(root_verify_key, sqlite_workspace: tuple[Path, str], request):
     locking_config_name = request.param
     return sqlite_queue_stash_fn(
         root_verify_key, sqlite_workspace, locking_config_name=locking_config_name
@@ -207,7 +206,7 @@ def sqlite_queue_stash(root_verify_key, sqlite_workspace: Tuple[Path, str], requ
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
-def sqlite_action_store(sqlite_workspace: Tuple[Path, str], request):
+def sqlite_action_store(sqlite_workspace: tuple[Path, str], request):
     workspace, db_name = sqlite_workspace
     locking_config_name = request.param
 

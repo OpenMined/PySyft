@@ -3,13 +3,12 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Union
 
 # third party
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-import pydantic
+from pydantic import field_validator
 
 # relative
 from ..serde.serializable import serializable
@@ -22,7 +21,7 @@ SIGNING_KEY_FOR = "SigningKey for"
 class SyftVerifyKey(SyftBaseModel):
     verify_key: VerifyKey
 
-    def __init__(self, verify_key: Union[str, VerifyKey]):
+    def __init__(self, verify_key: str | VerifyKey):
         if isinstance(verify_key, str):
             verify_key = VerifyKey(bytes.fromhex(verify_key))
         super().__init__(verify_key=verify_key)
@@ -54,8 +53,9 @@ class SyftVerifyKey(SyftBaseModel):
 class SyftSigningKey(SyftBaseModel):
     signing_key: SigningKey
 
-    @pydantic.validator("signing_key", pre=True, always=True)
-    def make_signing_key(cls, v: Union[str, SigningKey]) -> SigningKey:
+    @field_validator("signing_key", mode="before")
+    @classmethod
+    def make_signing_key(cls, v: Any) -> Any:
         return SigningKey(bytes.fromhex(v)) if isinstance(v, str) else v
 
     @property
@@ -89,7 +89,7 @@ class SyftSigningKey(SyftBaseModel):
         return self.signing_key == other.signing_key
 
 
-SyftCredentials = Union[SyftVerifyKey, SyftSigningKey]
+SyftCredentials = SyftVerifyKey | SyftSigningKey
 
 
 @serializable()

@@ -1,15 +1,10 @@
 # stdlib
+from collections.abc import Callable
 from enum import Enum
 from enum import EnumMeta
 import sys
 import types
 from typing import Any
-from typing import Callable
-from typing import List
-from typing import Optional
-from typing import Set
-from typing import Type
-from typing import Union
 
 # third party
 from capnp.lib.capnp import _DynamicStructBuilder
@@ -28,7 +23,7 @@ TYPE_BANK = {}
 recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde
 
 
-def get_types(cls: Type, keys: Optional[List[str]] = None) -> Optional[List[Type]]:
+def get_types(cls: type, keys: list[str] | None = None) -> list[type] | None:
     if keys is None:
         return None
     types = []
@@ -48,7 +43,7 @@ def get_types(cls: Type, keys: Optional[List[str]] = None) -> Optional[List[Type
     return types
 
 
-def check_fqn_alias(cls: Union[object, type]) -> Optional[tuple]:
+def check_fqn_alias(cls: object | type) -> tuple | None:
     """Currently, typing.Any has different metaclasses in different versions of Python 🤦‍♂️.
     For Python <=3.10
     Any is an instance of typing._SpecialForm
@@ -80,17 +75,17 @@ def check_fqn_alias(cls: Union[object, type]) -> Optional[tuple]:
 
 
 def recursive_serde_register(
-    cls: Union[object, type],
-    serialize: Optional[Callable] = None,
-    deserialize: Optional[Callable] = None,
-    serialize_attrs: Optional[List] = None,
-    exclude_attrs: Optional[List] = None,
-    inherit_attrs: Optional[bool] = True,
-    inheritable_attrs: Optional[bool] = True,
+    cls: object | type,
+    serialize: Callable | None = None,
+    deserialize: Callable | None = None,
+    serialize_attrs: list | None = None,
+    exclude_attrs: list | None = None,
+    inherit_attrs: bool | None = True,
+    inheritable_attrs: bool | None = True,
 ) -> None:
     pydantic_fields = None
     base_attrs = None
-    attribute_list: Set[str] = set()
+    attribute_list: set[str] = set()
 
     alias_fqn = check_fqn_alias(cls)
     cls = type(cls) if not isinstance(cls, type) else cls
@@ -111,9 +106,14 @@ def recursive_serde_register(
         # if pydantic object and attrs are provided, the get attrs from __fields__
         # cls.__fields__ auto inherits attrs
         pydantic_fields = [
-            f.name
-            for f in cls.__fields__.values()
-            if f.outer_type_ not in (Callable, types.FunctionType, types.LambdaType)
+            field
+            for field, field_info in cls.model_fields.items()
+            if not (
+                field_info.annotation is not None
+                and hasattr(field_info.annotation, "__origin__")
+                and field_info.annotation.__origin__
+                in (Callable, types.FunctionType, types.LambdaType)
+            )
         ]
         attribute_list.update(pydantic_fields)
 
@@ -125,7 +125,9 @@ def recursive_serde_register(
         attribute_list.update(["value"])
 
     exclude_attrs = [] if exclude_attrs is None else exclude_attrs
-    attribute_list = attribute_list - set(exclude_attrs)
+    attribute_list = (
+        attribute_list - set(exclude_attrs) - {"syft_pre_hooks__", "syft_post_hooks__"}
+    )
 
     if inheritable_attrs and attribute_list and not is_pydantic:
         # only set __syft_serializable__ for non-pydantic classes because
@@ -159,7 +161,7 @@ def recursive_serde_register(
 
 
 def chunk_bytes(
-    data: bytes, field_name: Union[str, int], builder: _DynamicStructBuilder
+    data: bytes, field_name: str | int, builder: _DynamicStructBuilder
 ) -> None:
     CHUNK_SIZE = int(5.12e8)  # capnp max for a List(Data) field
     list_size = len(data) // CHUNK_SIZE + 1
@@ -171,7 +173,7 @@ def chunk_bytes(
         data_lst[idx] = data[START_INDEX:END_INDEX]
 
 
-def combine_bytes(capnp_list: List[bytes]) -> bytes:
+def combine_bytes(capnp_list: list[bytes]) -> bytes:
     # TODO: make sure this doesn't copy, perhaps allocate a fixed size buffer
     # and move the bytes into it as we go
     bytes_value = b""
@@ -269,7 +271,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     # clean this mess, Tudor
     module_parts = proto.fullyQualifiedName.split(".")
     klass = module_parts.pop()
-    class_type: Type = type(None)
+    class_type: type | Any = type(None)
 
     if klass != "NoneType":
         try:

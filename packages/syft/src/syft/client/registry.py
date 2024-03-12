@@ -4,12 +4,6 @@ from __future__ import annotations
 # stdlib
 from concurrent import futures
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import TYPE_CHECKING
-from typing import Tuple
-from typing import Union
 
 # third party
 import pandas as pd
@@ -23,11 +17,7 @@ from ..types.grid_url import GridURL
 from ..util.constants import DEFAULT_TIMEOUT
 from ..util.logger import error
 from ..util.logger import warning
-from .enclave_client import EnclaveClient
-
-if TYPE_CHECKING:
-    # relative
-    from .client import Client
+from .client import SyftClient as Client
 
 NETWORK_REGISTRY_URL = (
     "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/gateways.json"
@@ -37,7 +27,7 @@ NETWORK_REGISTRY_REPO = "https://github.com/OpenMined/NetworkRegistry"
 
 class NetworkRegistry:
     def __init__(self) -> None:
-        self.all_networks: List[Dict] = []
+        self.all_networks: list[dict] = []
         try:
             response = requests.get(NETWORK_REGISTRY_URL)  # nosec
             network_json = response.json()
@@ -48,10 +38,10 @@ class NetworkRegistry:
             )
 
     @property
-    def online_networks(self) -> List[Dict]:
+    def online_networks(self) -> list[dict]:
         networks = self.all_networks
 
-        def check_network(network: Dict) -> Optional[Dict[Any, Any]]:
+        def check_network(network: dict) -> dict[Any, Any] | None:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
                 res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
@@ -112,7 +102,7 @@ class NetworkRegistry:
         return pd.DataFrame(on).to_string()
 
     @staticmethod
-    def create_client(network: Dict[str, Any]) -> Client:  # type: ignore
+    def create_client(network: dict[str, Any]) -> Client:
         # relative
         from ..client.client import connect
 
@@ -127,7 +117,7 @@ class NetworkRegistry:
             error(f"Failed to login with: {network}. {e}")
             raise SyftException(f"Failed to login with: {network}. {e}")
 
-    def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
+    def __getitem__(self, key: str | int) -> Client:
         if isinstance(key, int):
             return self.create_client(network=self.online_networks[key])
         else:
@@ -140,8 +130,8 @@ class NetworkRegistry:
 
 class DomainRegistry:
     def __init__(self) -> None:
-        self.all_networks: List[Dict] = []
-        self.all_domains: List = []
+        self.all_networks: list[dict] = []
+        self.all_domains: list = []
         try:
             response = requests.get(NETWORK_REGISTRY_URL)  # nosec
             network_json = response.json()
@@ -152,10 +142,10 @@ class DomainRegistry:
             )
 
     @property
-    def online_networks(self) -> List[Dict]:
+    def online_networks(self) -> list[dict]:
         networks = self.all_networks
 
-        def check_network(network: Dict) -> Optional[Dict[Any, Any]]:
+        def check_network(network: dict) -> dict[Any, Any] | None:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
                 res = requests.get(url, timeout=DEFAULT_TIMEOUT)
@@ -204,8 +194,10 @@ class DomainRegistry:
         return online_networks
 
     @property
-    def online_domains(self) -> List[Tuple[NodePeer, NodeMetadataJSON]]:
-        def check_domain(peer: NodePeer) -> Optional[Tuple[NodePeer, NodeMetadataJSON]]:
+    def online_domains(self) -> list[tuple[NodePeer, NodeMetadataJSON | None]]:
+        def check_domain(
+            peer: NodePeer,
+        ) -> tuple[NodePeer, NodeMetadataJSON | None] | None:
             try:
                 guest_client = peer.guest_client
                 metadata = guest_client.metadata
@@ -236,14 +228,15 @@ class DomainRegistry:
                 online_domains.append(each)
         return online_domains
 
-    def __make_dict__(self) -> List[Dict[str, str]]:
+    def __make_dict__(self) -> list[dict[str, Any]]:
         on = self.online_domains
         domains = []
-        domain_dict = {}
+        domain_dict: dict[str, Any] = {}
         for domain, metadata in on:
             domain_dict["name"] = domain.name
-            domain_dict["organization"] = metadata.organization
-            domain_dict["version"] = metadata.syft_version
+            if metadata is not None:
+                domain_dict["organization"] = metadata.organization
+                domain_dict["version"] = metadata.syft_version
             route = None
             if len(domain.node_routes) > 0:
                 route = domain.pick_highest_priority_route()
@@ -266,14 +259,14 @@ class DomainRegistry:
             return "(no domains online - try syft.domains.all_domains to see offline domains)"
         return pd.DataFrame(on).to_string()
 
-    def create_client(self, peer: NodePeer) -> Client:  # type: ignore
+    def create_client(self, peer: NodePeer) -> Client:
         try:
             return peer.guest_client
         except Exception as e:
             error(f"Failed to login to: {peer}. {e}")
             raise SyftException(f"Failed to login to: {peer}. {e}")
 
-    def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
+    def __getitem__(self, key: str | int) -> Client:
         if isinstance(key, int):
             return self.create_client(self.online_domains[key][0])
         else:
@@ -294,7 +287,7 @@ ENCLAVE_REGISTRY_REPO = "https://github.com/OpenMined/NetworkRegistry"
 
 class EnclaveRegistry:
     def __init__(self) -> None:
-        self.all_enclaves: List[Dict] = []
+        self.all_enclaves: list[dict] = []
         try:
             response = requests.get(ENCLAVE_REGISTRY_URL)  # nosec
             enclaves_json = response.json()
@@ -305,10 +298,10 @@ class EnclaveRegistry:
             )
 
     @property
-    def online_enclaves(self) -> List[Dict]:
+    def online_enclaves(self) -> list[dict]:
         enclaves = self.all_enclaves
 
-        def check_enclave(enclave: Dict) -> Optional[Dict[Any, Any]]:
+        def check_enclave(enclave: dict) -> dict[Any, Any] | None:
             url = "http://" + enclave["host_or_ip"] + ":" + str(enclave["port"]) + "/"
             try:
                 res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
@@ -360,7 +353,7 @@ class EnclaveRegistry:
         return pd.DataFrame(on).to_string()
 
     @staticmethod
-    def create_client(enclave: Dict[str, Any]) -> Client:  # type: ignore
+    def create_client(enclave: dict[str, Any]) -> Client:
         # relative
         from ..client.client import connect
 
@@ -375,7 +368,7 @@ class EnclaveRegistry:
             error(f"Failed to login with: {enclave}. {e}")
             raise SyftException(f"Failed to login with: {enclave}. {e}")
 
-    def __getitem__(self, key: Union[str, int]) -> EnclaveClient:  # type: ignore
+    def __getitem__(self, key: str | int) -> Client:
         if isinstance(key, int):
             return self.create_client(enclave=self.online_enclaves[key])
         else:

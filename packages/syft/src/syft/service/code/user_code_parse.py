@@ -1,13 +1,13 @@
 # stdlib
 import ast
-from typing import List
+from typing import Any
 
 # relative
 from .unparse import unparse
 
 
 class GlobalsVisitor(ast.NodeVisitor):
-    def generic_visit(self, node):
+    def generic_visit(self, node: Any) -> None:
         if isinstance(node, ast.Global):
             raise Exception("No Globals allows")
         ast.NodeVisitor.generic_visit(self, node)
@@ -24,7 +24,7 @@ def make_return(var_name: str) -> ast.Return:
     return ast.Return(value=name)
 
 
-def make_ast_args(args: List[str]) -> ast.arguments:
+def make_ast_args(args: list[str]) -> ast.arguments:
     arguments = []
     for arg_name in args:
         arg = ast.arg(arg=arg_name)
@@ -33,7 +33,7 @@ def make_ast_args(args: List[str]) -> ast.arguments:
 
 
 def make_ast_func(
-    name: str, input_kwargs: List[str], output_arg: str, body=List[ast.AST]
+    name: str, input_kwargs: list[str], output_arg: str, body: list[ast.AST]
 ) -> ast.FunctionDef:
     args = make_ast_args(input_kwargs)
     r = make_return(output_arg)
@@ -47,7 +47,7 @@ def make_ast_func(
 def parse_and_wrap_code(
     func_name: str,
     raw_code: str,
-    input_kwargs: List[str],
+    input_kwargs: list[str],
     output_arg: str,
 ) -> str:
     # convert to AST

@@ -1,9 +1,7 @@
 # stdlib
+from collections.abc import Callable
 import operator
 from typing import Any
-from typing import Callable
-from typing import Optional
-from typing import Tuple
 
 # third party
 from packaging import version
@@ -17,7 +15,7 @@ operators = {
 }
 
 
-def get_operator(version_string: str) -> Tuple[str, Callable, str]:
+def get_operator(version_string: str) -> tuple[str, Callable, str]:
     op: Any = operator.ge
     op_char: str = ">="
     if len(version_string) > 2:
@@ -33,7 +31,9 @@ def get_operator(version_string: str) -> Tuple[str, Callable, str]:
     return version_string, op, op_char
 
 
-def check_rule(version_string: str, LATEST_STABLE_SYFT: str, __version__: str) -> bool:
+def check_rule(
+    version_string: str, LATEST_STABLE_SYFT: str, __version__: str
+) -> tuple[Any, list[str], list[str]]:
     version_string, op, op_char = get_operator(version_string)
     syft_version = version.parse(__version__)
     stable_version = version.parse(LATEST_STABLE_SYFT)
@@ -61,7 +61,7 @@ def check_rule(version_string: str, LATEST_STABLE_SYFT: str, __version__: str) -
 
 
 def make_requires(LATEST_STABLE_SYFT: str, __version__: str) -> Callable:
-    def requires(version_string: str, silent: bool = False) -> Optional[bool]:
+    def requires(version_string: str, silent: bool = False) -> bool | None:
         syft_version = version.parse(__version__)
         parts = version_string.split(",")
         result = True

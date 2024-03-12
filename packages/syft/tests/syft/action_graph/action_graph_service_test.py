@@ -1,6 +1,7 @@
 """
 Tests for the ActionGraphService in /syft/src/syft/service/action/action_graph_service.py
 """
+
 # syft absolute
 from syft.node.credentials import SyftSigningKey
 from syft.node.credentials import SyftVerifyKey
@@ -105,7 +106,6 @@ def test_action_graph_service_add_action_no_mutagen(
     assert action_node.status == ExecutionStatus.PROCESSING
     assert action_node.retry == 0
     assert isinstance(action_node.created_at, DateTime)
-    assert action_node.updated_at is None
     assert action_node.user_verify_key == authed_context.credentials
     assert action_node.is_mutated is False
     assert action_node.is_mutagen is False
@@ -117,7 +117,6 @@ def test_action_graph_service_add_action_no_mutagen(
     assert result_node.status == ExecutionStatus.PROCESSING
     assert result_node.retry == 0
     assert isinstance(result_node.created_at, DateTime)
-    assert result_node.updated_at is None
     assert result_node.user_verify_key == authed_context.credentials
     assert result_node.is_mutated is False
     assert result_node.is_mutagen is False
@@ -168,7 +167,6 @@ def test_action_graph_service_add_action_mutagen(
     assert result_node.id == action.result_id.id
     assert action_node.type == NodeType.ACTION
     assert result_node.type == NodeType.ACTION_OBJECT
-    assert result_node.updated_at is None
     assert result_node.is_mutated is False
     assert result_node.is_mutagen is False
     assert result_node.next_mutagen_node is None

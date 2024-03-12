@@ -2,23 +2,20 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Callable
-from typing import List
-from typing import Optional
+from collections.abc import Callable
 
 # third party
 from packaging import version
 from pydantic import BaseModel
-from pydantic import root_validator
+from pydantic import model_validator
 
 # relative
 from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
 from ...protocol.data_protocol import get_data_protocol
 from ...serde.serializable import serializable
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import StorableObjectType
 from ...types.syft_object import SyftObject
 from ...types.transforms import convert_types
@@ -49,82 +46,24 @@ def check_version(
 @serializable()
 class NodeMetadataUpdate(SyftObject):
     __canonical_name__ = "NodeMetadataUpdate"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    name: Optional[str]
-    organization: Optional[str]
-    description: Optional[str]
-    on_board: Optional[bool]
-    id: Optional[UID]
-    verify_key: Optional[SyftVerifyKey]
-    highest_object_version: Optional[int]
-    lowest_object_version: Optional[int]
-    syft_version: Optional[str]
-    admin_email: Optional[str]
-
-
-@serializable()
-class NodeMetadata(SyftObject):
-    __canonical_name__ = "NodeMetadata"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    name: str
-    id: UID
-    verify_key: SyftVerifyKey
-    highest_object_version: int
-    lowest_object_version: int
-    syft_version: str
-    node_type: NodeType = NodeType.DOMAIN
-    deployed_on: str = "Date"
-    organization: str = "OpenMined"
-    on_board: bool = False
-    description: str = "Text"
-    signup_enabled: bool
-    admin_email: str
-    node_side_type: str
-    show_warnings: bool
-
-    def check_version(self, client_version: str) -> bool:
-        return check_version(
-            client_version=client_version,
-            server_version=self.syft_version,
-            server_name=self.name,
-        )
-
-
-@serializable()
-class NodeMetadataV2(SyftObject):
-    __canonical_name__ = "NodeMetadata"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    name: str
-    highest_version: int
-    lowest_version: int
-    id: UID
-    verify_key: SyftVerifyKey
-    syft_version: str
-    node_type: NodeType = NodeType.DOMAIN
-    deployed_on: str = "Date"
-    organization: str = "OpenMined"
-    on_board: bool = False
-    description: str = "Text"
-    signup_enabled: bool
-    admin_email: str
-    node_side_type: str
-    show_warnings: bool
-
-    def check_version(self, client_version: str) -> bool:
-        return check_version(
-            client_version=client_version,
-            server_version=self.syft_version,
-            server_name=self.name,
-        )
+    name: str | None = None
+    organization: str | None = None
+    description: str | None = None
+    on_board: bool | None = None
+    id: UID | None = None  # type: ignore[assignment]
+    verify_key: SyftVerifyKey | None = None
+    highest_object_version: int | None = None
+    lowest_object_version: int | None = None
+    syft_version: str | None = None
+    admin_email: str | None = None
 
 
 @serializable()
 class NodeMetadataV3(SyftObject):
     __canonical_name__ = "NodeMetadata"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     name: str
     id: UID
@@ -152,8 +91,8 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     name: str
     id: str
     verify_key: str
-    highest_object_version: Optional[int]
-    lowest_object_version: Optional[int]
+    highest_object_version: int | None = None
+    lowest_object_version: int | None = None
     syft_version: str
     node_type: str = NodeType.DOMAIN.value
     organization: str = "OpenMined"
@@ -162,9 +101,10 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     admin_email: str = ""
     node_side_type: str
     show_warnings: bool
-    supported_protocols: List = []
+    supported_protocols: list = []
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def add_protocol_versions(cls, values: dict) -> dict:
         if "supported_protocols" not in values:
             data_protocol = get_data_protocol()
@@ -180,7 +120,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
 
 
 @transform(NodeMetadataV3, NodeMetadataJSON)
-def metadata_to_json() -> List[Callable]:
+def metadata_to_json() -> list[Callable]:
     return [
         drop(["__canonical_name__"]),
         rename("__version__", "metadata_version"),
@@ -191,7 +131,7 @@ def metadata_to_json() -> List[Callable]:
 
 
 @transform(NodeMetadataJSON, NodeMetadataV3)
-def json_to_metadata() -> List[Callable]:
+def json_to_metadata() -> list[Callable]:
     return [
         drop(["metadata_version", "supported_protocols"]),
         convert_types(["id", "verify_key"], [UID, SyftVerifyKey]),

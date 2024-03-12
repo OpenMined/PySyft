@@ -7,11 +7,9 @@ from datetime import time
 from datetime import timedelta
 from enum import Enum
 from functools import lru_cache
-from typing import Optional
-from typing import Union
 
 # third party
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 
 # LOGURU_LEVEL type for version>3.8
@@ -39,21 +37,16 @@ class LogConfig(BaseSettings):
     )
 
     LOGURU_LEVEL: str = LogLevel.INFO.value
-    LOGURU_SINK: Optional[str] = "/var/log/pygrid/grid.log"
-    LOGURU_COMPRESSION: Optional[str]
-    LOGURU_ROTATION: Union[
-        Optional[str],
-        Optional[int],
-        Optional[time],
-        Optional[timedelta],
-    ]
-    LOGURU_RETENTION: Union[Optional[str], Optional[int], Optional[timedelta]]
-    LOGURU_COLORIZE: Optional[bool] = True
-    LOGURU_SERIALIZE: Optional[bool] = False
-    LOGURU_BACKTRACE: Optional[bool] = True
-    LOGURU_DIAGNOSE: Optional[bool] = False
-    LOGURU_ENQUEUE: Optional[bool] = True
-    LOGURU_AUTOINIT: Optional[bool] = False
+    LOGURU_SINK: str | None = "/var/log/pygrid/grid.log"
+    LOGURU_COMPRESSION: str | None = None
+    LOGURU_ROTATION: str | int | time | timedelta | None = None
+    LOGURU_RETENTION: str | int | timedelta | None = None
+    LOGURU_COLORIZE: bool | None = True
+    LOGURU_SERIALIZE: bool | None = False
+    LOGURU_BACKTRACE: bool | None = True
+    LOGURU_DIAGNOSE: bool | None = False
+    LOGURU_ENQUEUE: bool | None = True
+    LOGURU_AUTOINIT: bool | None = False
 
 
 @lru_cache

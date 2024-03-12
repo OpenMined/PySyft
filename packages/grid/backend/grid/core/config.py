@@ -2,17 +2,16 @@
 import os
 import secrets
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
 
 # third party
 from pydantic import AnyHttpUrl
-from pydantic import BaseSettings
 from pydantic import EmailStr
 from pydantic import HttpUrl
-from pydantic import validator
+from pydantic import field_validator
+from pydantic import model_validator
+from pydantic_settings import BaseSettings
+from pydantic_settings import SettingsConfigDict
+from typing_extensions import Self
 
 _truthy = {"yes", "y", "true", "t", "on", "1"}
 _falsy = {"no", "n", "false", "f", "off", "0"}
@@ -48,39 +47,37 @@ class Settings(BaseSettings):
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
     # e.g: '["http://localhost", "http://localhost:4200", "http://localhost:3000", \
     # "http://localhost:8080", "http://local.dockertoolbox.tiangolo.com"]'
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    BACKEND_CORS_ORIGINS: list[AnyHttpUrl] = []
 
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: str | list[str]) -> list[str] | str:
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
-        elif isinstance(v, (list, str)):
+        elif isinstance(v, list | str):
             return v
         raise ValueError(v)
 
     PROJECT_NAME: str = "grid"
 
-    SENTRY_DSN: Optional[HttpUrl] = None
+    SENTRY_DSN: HttpUrl | None = None
 
-    @validator("SENTRY_DSN", pre=True)
-    def sentry_dsn_can_be_blank(cls, v: str) -> Optional[str]:
+    @field_validator("SENTRY_DSN", mode="before")
+    @classmethod
+    def sentry_dsn_can_be_blank(cls, v: str) -> str | None:
         if v is None or len(v) == 0:
             return None
         return v
 
-    SMTP_TLS: bool = True
-    SMTP_PORT: Optional[int] = None
-    SMTP_HOST: Optional[str] = None
-    SMTP_USER: Optional[str] = None
-    SMTP_PASSWORD: Optional[str] = None
-    EMAILS_FROM_EMAIL: Optional[EmailStr] = None
-    EMAILS_FROM_NAME: Optional[str] = None
+    EMAILS_FROM_EMAIL: EmailStr | None = None
+    EMAILS_FROM_NAME: str | None = None
 
-    @validator("EMAILS_FROM_NAME")
-    def get_project_name(cls, v: Optional[str], values: Dict[str, Any]) -> str:
-        if not v:
-            return values["PROJECT_NAME"]
-        return v
+    @model_validator(mode="after")
+    def get_project_name(self) -> Self:
+        if not self.EMAILS_FROM_NAME:
+            self.EMAILS_FROM_NAME = self.PROJECT_NAME
+
+        return self
 
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
     EMAIL_TEMPLATES_DIR: str = os.path.expandvars(
@@ -88,15 +85,15 @@ class Settings(BaseSettings):
     )
     EMAILS_ENABLED: bool = False
 
-    @validator("EMAILS_ENABLED", pre=True)
-    def get_emails_enabled(cls, v: bool, values: Dict[str, Any]) -> bool:
-        return bool(
-            values.get("SMTP_HOST")
-            and values.get("SMTP_PORT")
-            and values.get("EMAILS_FROM_EMAIL")
+    @model_validator(mode="after")
+    def get_emails_enabled(self) -> Self:
+        self.EMAILS_ENABLED = bool(
+            self.SMTP_HOST and self.SMTP_PORT and self.EMAILS_FROM_EMAIL
         )
 
-    DEFAULT_ROOT_EMAIL: EmailStr = EmailStr("info@openmined.org")
+        return self
+
+    DEFAULT_ROOT_EMAIL: EmailStr = "info@openmined.org"
     DEFAULT_ROOT_PASSWORD: str = "changethis"
     USERS_OPEN_REGISTRATION: bool = False
 
@@ -113,7 +110,7 @@ class Settings(BaseSettings):
     S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "seaweedfs")
     S3_PORT: int = int(os.getenv("S3_PORT", 8333))
     S3_ROOT_USER: str = os.getenv("S3_ROOT_USER", "admin")
-    S3_ROOT_PWD: Optional[str] = os.getenv("S3_ROOT_PWD", "admin")
+    S3_ROOT_PWD: str | None = os.getenv("S3_ROOT_PWD", "admin")
     S3_REGION: str = os.getenv("S3_REGION", "us-east-1")
     S3_PRESIGNED_TIMEOUT_SECS: int = int(
         os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800)
@@ -142,16 +139,20 @@ class Settings(BaseSettings):
     N_CONSUMERS: int = int(os.getenv("N_CONSUMERS", 1))
     SQLITE_PATH: str = os.path.expandvars("$HOME/data/db/")
     SINGLE_CONTAINER_MODE: bool = str_to_bool(os.getenv("SINGLE_CONTAINER_MODE", False))
-    CONSUMER_SERVICE_NAME: Optional[str] = os.getenv("CONSUMER_SERVICE_NAME")
+    CONSUMER_SERVICE_NAME: str | None = os.getenv("CONSUMER_SERVICE_NAME")
     INMEMORY_WORKERS: bool = str_to_bool(os.getenv("INMEMORY_WORKERS", True))
+    SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
+    EMAIL_SENDER: str = os.getenv("EMAIL_SENDER", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_TLS: bool = True
+    SMTP_PORT: str | None = os.getenv("SMTP_PORT", "")
+    SMTP_HOST: str | None = os.getenv("SMTP_HOST", "")
 
     TEST_MODE: bool = (
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False
     )
     ASSOCIATION_TIMEOUT: int = 10
-
-    class Config:
-        case_sensitive = True
+    model_config = SettingsConfigDict(case_sensitive=True)
 
 
 settings = Settings()

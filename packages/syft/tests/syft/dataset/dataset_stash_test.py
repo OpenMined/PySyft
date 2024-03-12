@@ -1,8 +1,8 @@
 # stdlib
-from typing import List
 
 # third party
 import pytest
+from typeguard import TypeCheckError
 
 # syft absolute
 from syft.service.dataset.dataset import Dataset
@@ -33,20 +33,20 @@ def test_dataset_actionidpartitionkey() -> None:
     mock_obj = [UID() for _ in range(3)]
 
     assert ActionIDsPartitionKey.key == "action_ids"
-    assert ActionIDsPartitionKey.type_ == List[UID]
+    assert ActionIDsPartitionKey.type_ == list[UID]
 
     action_ids_partition_key = ActionIDsPartitionKey.with_obj(obj=mock_obj)
 
     assert isinstance(action_ids_partition_key, QueryKey)
     assert action_ids_partition_key.key == "action_ids"
-    assert action_ids_partition_key.type_ == List[UID]
+    assert action_ids_partition_key.type_ == list[UID]
     assert action_ids_partition_key.value == mock_obj
 
     with pytest.raises(AttributeError):
         ActionIDsPartitionKey.with_obj(obj="dummy_str")
 
     # Not sure what Exception should be raised here, Type or Attibute
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeCheckError):
         ActionIDsPartitionKey.with_obj(obj=["first_str", "second_str"])
 
 

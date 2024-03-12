@@ -1,6 +1,5 @@
 # Contains all the database related functions for the Veilid server
 # stdlib
-from typing import Optional
 
 # third party
 from veilid import KeyPair
@@ -13,7 +12,7 @@ from .constants import DHT_KEY_CREDS
 from .constants import TABLE_DB_KEY
 
 
-async def load_key(conn: _JsonVeilidAPI, key: str) -> Optional[str]:
+async def load_key(conn: _JsonVeilidAPI, key: str) -> str | None:
     tdb = await conn.open_table_db(TABLE_DB_KEY, 1)
 
     async with tdb:
@@ -33,14 +32,14 @@ async def store_key(conn: _JsonVeilidAPI, key: str, value: str) -> None:
         await tdb.store(key_bytes, value_bytes)
 
 
-async def load_dht_key(conn: _JsonVeilidAPI) -> Optional[TypedKey]:
+async def load_dht_key(conn: _JsonVeilidAPI) -> TypedKey | None:
     value = await load_key(conn, DHT_KEY)
     if value is None:
         return None
     return TypedKey(value)
 
 
-async def load_dht_key_creds(conn: _JsonVeilidAPI) -> Optional[KeyPair]:
+async def load_dht_key_creds(conn: _JsonVeilidAPI) -> KeyPair | None:
     value = await load_key(conn, DHT_KEY_CREDS)
     if value is None:
         return None

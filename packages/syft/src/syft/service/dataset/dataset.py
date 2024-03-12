@@ -1,33 +1,28 @@
 # stdlib
+from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Set
-from typing import Tuple
-from typing import Union
 
 # third party
 from IPython.display import HTML
 from IPython.display import display
 import itables
 import pandas as pd
-from pydantic import ValidationError
-from pydantic import root_validator
-from pydantic import validator
+from pydantic import ConfigDict
+from pydantic import field_validator
+from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
+from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
@@ -59,13 +54,13 @@ NamePartitionKey = PartitionKey(key="name", type_=str)
 @serializable()
 class Contributor(SyftObject):
     __canonical_name__ = "Contributor"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     name: str
-    role: Optional[str]
+    role: str | None = None
     email: str
-    phone: Optional[str]
-    note: Optional[str]
+    phone: str | None = None
+    note: str | None = None
 
     __repr_attrs__ = ["name", "role", "email"]
 
@@ -97,11 +92,11 @@ class Contributor(SyftObject):
 class MarkdownDescription(SyftObject):
     # version
     __canonical_name__ = "MarkdownDescription"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     text: str
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         style = """
         <style>
             .jp-RenderedHTMLCommon pre {
@@ -122,24 +117,24 @@ class MarkdownDescription(SyftObject):
 class Asset(SyftObject):
     # version
     __canonical_name__ = "Asset"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     action_id: UID
     node_uid: UID
     name: str
-    description: Optional[MarkdownDescription] = None
-    contributors: Set[Contributor] = set()
-    data_subjects: List[DataSubject] = []
+    description: MarkdownDescription | None = None
+    contributors: set[Contributor] = set()
+    data_subjects: list[DataSubject] = []
     mock_is_real: bool = False
-    shape: Optional[Tuple]
+    shape: tuple | None = None
     created_at: DateTime = DateTime.now()
-    uploader: Optional[Contributor]
+    uploader: Contributor | None = None
 
     __repr_attrs__ = ["name", "shape"]
 
     def __init__(
         self,
-        description: Optional[Union[MarkdownDescription, str]] = "",
+        description: MarkdownDescription | str | None = "",
         **data: Any,
     ):
         if isinstance(description, str):
@@ -208,7 +203,7 @@ class Asset(SyftObject):
             {mock_table_line}
             </div>"""
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         _repr_str = f"Asset: {self.name}\n"
         _repr_str += f"Pointer Id: {self.action_id}\n"
         _repr_str += f"Description: {self.description}\n"
@@ -247,7 +242,7 @@ class Asset(SyftObject):
             return api.services.action.get_pointer(self.action_id)
 
     @property
-    def mock(self) -> Union[SyftError, Any]:
+    def mock(self) -> SyftError | Any:
         # relative
         from ...client.api import APIRegistry
 
@@ -257,8 +252,6 @@ class Asset(SyftObject):
         )
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
-        if api.services is None:
-            return SyftError(message=f"Services for {api} is None")
         result = api.services.action.get_mock(self.action_id)
         try:
             if isinstance(result, SyftObject):
@@ -310,54 +303,43 @@ def check_mock(data: Any, mock: Any) -> bool:
     if type(data) == type(mock):
         return True
 
-    return _is_action_data_empty(mock)
+    return _is_action_data_empty(mock) or _is_action_data_empty(data)
 
 
 @serializable()
 class CreateAsset(SyftObject):
     # version
     __canonical_name__ = "CreateAsset"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID] = None
+    id: UID | None = None  # type:ignore[assignment]
     name: str
-    description: Optional[MarkdownDescription] = None
-    contributors: Set[Contributor] = set()
-    data_subjects: List[DataSubjectCreate] = []
-    node_uid: Optional[UID]
-    action_id: Optional[UID]
-    data: Optional[Any]
-    mock: Optional[Any]
-    shape: Optional[Tuple]
+    description: MarkdownDescription | None = None
+    contributors: set[Contributor] = set()
+    data_subjects: list[DataSubjectCreate] = []
+    node_uid: UID | None = None
+    action_id: UID | None = None
+    data: Any | None = None
+    mock: Any | None = None
+    shape: tuple | None = None
     mock_is_real: bool = False
-    created_at: Optional[DateTime]
-    uploader: Optional[Contributor]
+    created_at: DateTime | None = None
+    uploader: Contributor | None = None
 
     __repr_attrs__ = ["name"]
+    model_config = ConfigDict(validate_assignment=True)
 
-    class Config:
-        validate_assignment = True
-
-    def __init__(self, description: Optional[str] = "", **data: Any) -> None:
+    def __init__(self, description: str | None = "", **data: Any) -> None:
         super().__init__(**data, description=MarkdownDescription(text=str(description)))
 
-    @root_validator()
-    def __empty_mock_cannot_be_real(cls, values: dict[str, Any]) -> Dict:
-        """set mock_is_real to False whenever mock is None or empty"""
+    @model_validator(mode="after")
+    def __mock_is_real_for_empty_mock_must_be_false(self) -> Self:
+        if self.mock_is_real and (
+            self.mock is None or _is_action_data_empty(self.mock)
+        ):
+            self.__dict__["mock_is_real"] = False
 
-        if (mock := values.get("mock")) is None or _is_action_data_empty(mock):
-            values["mock_is_real"] = False
-
-        return values
-
-    @validator("mock_is_real")
-    def __mock_is_real_for_empty_mock_must_be_false(
-        cls, v: bool, values: dict[str, Any], **kwargs: Any
-    ) -> bool:
-        if v and ((mock := values.get("mock")) is None or _is_action_data_empty(mock)):
-            raise ValueError("mock_is_real must be False if mock is not provided")
-
-        return v
+        return self
 
     def add_data_subject(self, data_subject: DataSubject) -> None:
         self.data_subjects.append(data_subject)
@@ -366,10 +348,10 @@ class CreateAsset(SyftObject):
         self,
         name: str,
         email: str,
-        role: Optional[Union[Enum, str]] = None,
-        phone: Optional[str] = None,
-        note: Optional[str] = None,
-    ) -> Union[SyftSuccess, SyftError]:
+        role: Enum | str | None = None,
+        phone: str | None = None,
+        note: str | None = None,
+    ) -> SyftSuccess | SyftError:
         try:
             _role_str = role.value if isinstance(role, Enum) else role
             contributor = Contributor(
@@ -399,14 +381,11 @@ class CreateAsset(SyftObject):
         if isinstance(mock_data, SyftError):
             raise SyftException(mock_data)
 
-        current_mock = self.mock
-        self.mock = mock_data
+        if mock_is_real and (mock_data is None or _is_action_data_empty(mock_data)):
+            raise SyftException("`mock_is_real` must be False if mock is empty")
 
-        try:
-            self.mock_is_real = mock_is_real
-        except ValidationError as e:
-            self.mock = current_mock
-            raise e
+        self.mock = mock_data
+        self.mock_is_real = mock_is_real
 
     def no_mock(self) -> None:
         # relative
@@ -414,10 +393,10 @@ class CreateAsset(SyftObject):
 
         self.set_mock(ActionObject.empty(), False)
 
-    def set_shape(self, shape: Tuple) -> None:
+    def set_shape(self, shape: tuple) -> None:
         self.shape = shape
 
-    def check(self) -> Union[SyftSuccess, SyftError]:
+    def check(self) -> SyftSuccess | SyftError:
         if not check_mock(self.data, self.mock):
             return SyftError(
                 message=f"set_obj type {type(self.data)} must match set_mock type {type(self.mock)}"
@@ -440,7 +419,7 @@ class CreateAsset(SyftObject):
         return SyftSuccess(message="Dataset is Valid")
 
 
-def get_shape_or_len(obj: Any) -> Optional[Union[Tuple[int, ...], int]]:
+def get_shape_or_len(obj: Any) -> tuple[int, ...] | int | None:
     if hasattr(obj, "shape"):
         shape = getattr(obj, "shape", None)
         if shape:
@@ -457,20 +436,20 @@ def get_shape_or_len(obj: Any) -> Optional[Union[Tuple[int, ...], int]]:
 @serializable()
 class Dataset(SyftObject):
     # version
-    __canonical_name__ = "Dataset"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __canonical_name__: str = "Dataset"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     name: str
-    node_uid: Optional[UID]
-    asset_list: List[Asset] = []
-    contributors: Set[Contributor] = set()
-    citation: Optional[str]
-    url: Optional[str]
-    description: Optional[MarkdownDescription] = None
-    updated_at: Optional[str]
-    requests: Optional[int] = 0
-    mb_size: Optional[int]
+    node_uid: UID | None = None
+    asset_list: list[Asset] = []
+    contributors: set[Contributor] = set()
+    citation: str | None = None
+    url: str | None = None
+    description: MarkdownDescription | None = None
+    updated_at: str | None = None
+    requests: int | None = 0
+    mb_size: float | None = None
     created_at: DateTime = DateTime.now()
     uploader: Contributor
 
@@ -480,7 +459,7 @@ class Dataset(SyftObject):
 
     def __init__(
         self,
-        description: Optional[Union[str, MarkdownDescription]] = "",
+        description: str | MarkdownDescription | None = "",
         **data: Any,
     ) -> None:
         if isinstance(description, str):
@@ -491,7 +470,7 @@ class Dataset(SyftObject):
     def icon(self) -> str:
         return FOLDER_ICON
 
-    def _coll_repr_(self) -> Dict[str, Any]:
+    def _coll_repr_(self) -> dict[str, Any]:
         return {
             "Name": self.name,
             "Assets": len(self.asset_list),
@@ -531,7 +510,7 @@ class Dataset(SyftObject):
             {self.assets._repr_html_()}
             """
 
-    def action_ids(self) -> List[UID]:
+    def action_ids(self) -> list[UID]:
         data = []
         for asset in self.asset_list:
             if asset.action_id:
@@ -558,7 +537,7 @@ class Dataset(SyftObject):
             _repr_str += f"Description: {self.description.text}\n"
         return as_markdown_python_code(_repr_str)
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         # return self._old_repr_markdown_()
         return self._markdown_()
 
@@ -579,7 +558,7 @@ class Dataset(SyftObject):
         return _repr_str
 
     @property
-    def client(self) -> Optional[Any]:
+    def client(self) -> Any | None:
         # relative
         from ...client.client import SyftClientSessionCache
 
@@ -602,7 +581,7 @@ _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE: str = "".join(
 )
 
 
-def _check_asset_must_contain_mock(asset_list: List[CreateAsset]) -> None:
+def _check_asset_must_contain_mock(asset_list: list[CreateAsset]) -> None:
     assets_without_mock = [asset.name for asset in asset_list if asset.mock is None]
     if assets_without_mock:
         raise ValueError(
@@ -621,7 +600,7 @@ def _check_asset_must_contain_mock(asset_list: List[CreateAsset]) -> None:
 class DatasetPageView(SyftObject):
     # version
     __canonical_name__ = "DatasetPageView"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     datasets: DictTuple
     total: int
@@ -631,25 +610,25 @@ class DatasetPageView(SyftObject):
 class CreateDataset(Dataset):
     # version
     __canonical_name__ = "CreateDataset"
-    __version__ = SYFT_OBJECT_VERSION_1
-    asset_list: List[CreateAsset] = []
+    __version__ = SYFT_OBJECT_VERSION_2
+    asset_list: list[CreateAsset] = []
 
     __repr_attrs__ = ["name", "url"]
 
-    id: Optional[UID] = None
-    created_at: Optional[DateTime]
-    uploader: Optional[Contributor]  # type: ignore[assignment]
+    id: UID | None = None  # type: ignore[assignment]
+    created_at: DateTime | None = None  # type: ignore[assignment]
+    uploader: Contributor | None = None  # type: ignore[assignment]
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True)
 
     def _check_asset_must_contain_mock(self) -> None:
         _check_asset_must_contain_mock(self.asset_list)
 
-    @validator("asset_list")
+    @field_validator("asset_list")
+    @classmethod
     def __assets_must_contain_mock(
-        cls, asset_list: List[CreateAsset]
-    ) -> List[CreateAsset]:
+        cls, asset_list: list[CreateAsset]
+    ) -> list[CreateAsset]:
         _check_asset_must_contain_mock(asset_list)
         return asset_list
 
@@ -666,10 +645,10 @@ class CreateDataset(Dataset):
         self,
         name: str,
         email: str,
-        role: Optional[Union[Enum, str]] = None,
-        phone: Optional[str] = None,
-        note: Optional[str] = None,
-    ) -> Union[SyftSuccess, SyftError]:
+        role: Enum | str | None = None,
+        phone: str | None = None,
+        note: str | None = None,
+    ) -> SyftSuccess | SyftError:
         try:
             _role_str = role.value if isinstance(role, Enum) else role
             contributor = Contributor(
@@ -688,7 +667,7 @@ class CreateDataset(Dataset):
 
     def add_asset(
         self, asset: CreateAsset, force_replace: bool = False
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         if asset.mock is None:
             raise ValueError(_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE)
 
@@ -711,10 +690,10 @@ class CreateDataset(Dataset):
             message=f"Asset '{asset.name}' added to '{self.name}' Dataset."
         )
 
-    def replace_asset(self, asset: CreateAsset) -> Union[SyftSuccess, SyftError]:
+    def replace_asset(self, asset: CreateAsset) -> SyftSuccess | SyftError:
         return self.add_asset(asset=asset, force_replace=True)
 
-    def remove_asset(self, name: str) -> None:
+    def remove_asset(self, name: str) -> SyftSuccess | SyftError:
         asset_to_remove = None
         for asset in self.asset_list:
             if asset.name == name:
@@ -728,7 +707,7 @@ class CreateDataset(Dataset):
             message=f"Asset '{self.name}' removed from '{self.name}' Dataset."
         )
 
-    def check(self) -> Result[SyftSuccess, List[SyftError]]:
+    def check(self) -> Result[SyftSuccess, list[SyftError]]:
         errors = []
         for asset in self.asset_list:
             result = asset.check()
@@ -740,6 +719,9 @@ class CreateDataset(Dataset):
 
 
 def create_and_store_twin(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        raise ValueError("f{context}'s output is None. No trasformation happened")
+
     action_id = context.output["action_id"]
     if action_id is None:
         # relative
@@ -748,37 +730,49 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
         private_obj = context.output.pop("data", None)
         mock_obj = context.output.pop("mock", None)
         if private_obj is None and mock_obj is None:
-            raise Exception("No data and no action_id means this asset has no data")
+            raise ValueError("No data and no action_id means this asset has no data")
 
         twin = TwinObject(
             private_obj=private_obj,
             mock_obj=mock_obj,
         )
+        if context.node is None:
+            raise ValueError(
+                "f{context}'s node is None, please log in. No trasformation happened"
+            )
         action_service = context.node.get_service("actionservice")
         result = action_service.set(
             context=context.to_node_context(), action_object=twin
         )
         if result.is_err():
-            raise Exception(f"Failed to create and store twin. {result}")
+            raise RuntimeError(f"Failed to create and store twin. Error: {result}")
 
         context.output["action_id"] = twin.id
     else:
         private_obj = context.output.pop("data", None)
         mock_obj = context.output.pop("mock", None)
+
     return context
 
 
 def infer_shape(context: TransformContext) -> TransformContext:
-    if context.output["shape"] is None:
-        if not _is_action_data_empty(context.obj.mock):
+    if context.output is not None and context.output["shape"] is None:
+        if context.obj is not None and not _is_action_data_empty(context.obj.mock):
             context.output["shape"] = get_shape_or_len(context.obj.mock)
+    else:
+        print("f{context}'s output is None. No trasformation happened")
     return context
 
 
-def set_data_subjects(context: TransformContext) -> TransformContext:
+def set_data_subjects(context: TransformContext) -> TransformContext | SyftError:
+    if context.output is None:
+        return SyftError("f{context}'s output is None. No trasformation happened")
+    if context.node is None:
+        return SyftError(
+            "f{context}'s node is None, please log in. No trasformation happened"
+        )
     data_subjects = context.output["data_subjects"]
     get_data_subject = context.node.get_service_method(DataSubjectService.get_by_name)
-
     resultant_data_subjects = []
     for data_subject in data_subjects:
         result = get_data_subject(context=context, name=data_subject.name)
@@ -790,18 +784,24 @@ def set_data_subjects(context: TransformContext) -> TransformContext:
 
 
 def add_msg_creation_time(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+
     context.output["created_at"] = DateTime.now()
     return context
 
 
 def add_default_node_uid(context: TransformContext) -> TransformContext:
-    if context.output["node_uid"] is None:
-        context.output["node_uid"] = context.node.id
+    if context.output is not None:
+        if context.output["node_uid"] is None and context.node is not None:
+            context.output["node_uid"] = context.node.id
+    else:
+        print("f{context}'s output is None. No trasformation happened.")
     return context
 
 
 @transform(CreateAsset, Asset)
-def createasset_to_asset() -> List[Callable]:
+def createasset_to_asset() -> list[Callable]:
     return [
         generate_id,
         add_msg_creation_time,
@@ -813,23 +813,31 @@ def createasset_to_asset() -> List[Callable]:
 
 
 def convert_asset(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+
     assets = context.output.pop("asset_list", [])
     for idx, create_asset in enumerate(assets):
         asset_context = TransformContext.from_context(obj=create_asset, context=context)
         assets[idx] = create_asset.to(Asset, context=asset_context)
     context.output["asset_list"] = assets
+
     return context
 
 
 def add_current_date(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+
     current_date = datetime.now()
     formatted_date = current_date.strftime("%b %d, %Y")
     context.output["updated_at"] = formatted_date
+
     return context
 
 
 @transform(CreateDataset, Dataset)
-def createdataset_to_dataset() -> List[Callable]:
+def createdataset_to_dataset() -> list[Callable]:
     return [
         generate_id,
         add_msg_creation_time,
