@@ -441,11 +441,16 @@ class CustomOutputPolicy(metaclass=CustomPolicy):
 
 class UserOutputPolicy(OutputPolicy):
     __canonical_name__ = "UserOutputPolicy"
+
+    # Do not validate private attributes of user-defined policies, User annotations can
+    # contain any type and throw a NameError when resolving.
+    __validate_private_attrs__ = False
     pass
 
 
 class UserInputPolicy(InputPolicy):
     __canonical_name__ = "UserInputPolicy"
+    __validate_private_attrs__ = False
     pass
 
 
