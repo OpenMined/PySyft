@@ -74,12 +74,18 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install --upgrade pip uv
+          uv --version
+
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
         id: pip-cache
         shell: bash
         run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: actions/cache@v4
@@ -90,15 +96,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}
 
-      - name: Upgrade pip
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          python -m pip install --upgrade --user pip
-
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install -U tox
+          pip install --upgrade tox tox-uv
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -265,12 +266,18 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install --upgrade pip uv
+          uv --version
+
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
         id: pip-cache
         shell: bash
         run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: actions/cache@v4
@@ -281,15 +288,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}
 
-      - name: Upgrade pip
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          python -m pip install --upgrade --user pip
-
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install -U tox
+          pip install --upgrade tox tox-uv
 
       - name: Run syft backend base image building test
         if: steps.changes.outputs.stack == 'true'
@@ -347,13 +349,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Get pip cache dir
-        if: steps.changes.outputs.stack == 'true'
-        id: pip-cache
-        shell: bash
-        run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
-
       - name: pip cache
         uses: actions/cache@v4
         if: steps.changes.outputs.stack == 'true'
@@ -366,12 +361,20 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          python -m pip install --upgrade --user pip
+          pip install --upgrade pip uv
+          uv --version
+
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install -U tox
+          pip install --upgrade tox tox-uv
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -557,13 +560,6 @@ jobs:
           docker builder prune --all --force
           docker system prune --all --force
 
-      - name: Get pip cache dir
-        if: steps.changes.outputs.stack == 'true'
-        id: pip-cache
-        shell: bash
-        run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
-
       - name: pip cache
         uses: actions/cache@v4
         if: steps.changes.outputs.stack == 'true'
@@ -576,12 +572,20 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          python -m pip install --upgrade --user pip
+          pip install --upgrade pip uv
+          uv --version
+
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install -U tox
+          pip install --upgrade tox tox-uv
 
       - name: Install kubectl
         if: steps.changes.outputs.stack == 'true'
