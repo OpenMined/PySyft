@@ -69,22 +69,24 @@ def planify(func: Callable) -> ActionObject:
     if client is None:
         raise ValueError("Not able to get client for plan building")
     TraceResultRegistry.set_trace_result_for_current_thread(client=client)
-    print(TraceResultRegistry.__result_registry__)
-    # TraceResult._client = client
-    plan_kwargs = build_plan_inputs(func, client)
-    outputs = func(**plan_kwargs)
-    if not (isinstance(outputs, list) or isinstance(outputs, tuple)):
-        outputs = [outputs]
-    ActionObject.remove_trace_hook()
-    actions = TraceResultRegistry.get_trace_result_for_thread().result  # type: ignore
-    TraceResultRegistry.reset_result_for_thread()
-    code = inspect.getsource(func)
-    for a in actions:
-        if a.create_object is not None:
-            # warmup cache
-            a.create_object.syft_action_data  # noqa: B018
-    plan = Plan(inputs=plan_kwargs, actions=actions, outputs=outputs, code=code)
-    return ActionObject.from_obj(plan)
+    try:
+        # TraceResult._client = client
+        plan_kwargs = build_plan_inputs(func, client)
+        outputs = func(**plan_kwargs)
+        if not (isinstance(outputs, list) or isinstance(outputs, tuple)):
+            outputs = [outputs]
+        ActionObject.remove_trace_hook()
+        actions = TraceResultRegistry.get_trace_result_for_thread().result  # type: ignore
+        TraceResultRegistry.reset_result_for_thread()
+        code = inspect.getsource(func)
+        for a in actions:
+            if a.create_object is not None:
+                # warmup cache
+                a.create_object.syft_action_data  # noqa: B018
+        plan = Plan(inputs=plan_kwargs, actions=actions, outputs=outputs, code=code)
+        return ActionObject.from_obj(plan)
+    finally:
+        TraceResultRegistry.reset_result_for_thread()
 
 
 def build_plan_inputs(
