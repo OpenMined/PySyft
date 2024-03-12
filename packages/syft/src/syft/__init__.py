@@ -15,7 +15,7 @@ from .client.client import connect  # noqa: F401
 from .client.client import login  # noqa: F401
 from .client.client import login_as_guest  # noqa: F401
 from .client.client import register  # noqa: F401
-from .client.deploy import Orchestra  # noqa: F401
+from .client.deploy import Orchestra as orchestra  # noqa: F401
 from .client.domain_client import DomainClient  # noqa: F401
 from .client.gateway_client import GatewayClient  # noqa: F401
 from .client.registry import DomainRegistry  # noqa: F401
@@ -150,11 +150,6 @@ def _domains() -> DomainRegistry:
 @module_property
 def _settings() -> UserSettings:
     return settings
-
-
-@module_property
-def _orchestra() -> Orchestra:
-    return Orchestra
 
 
 def search(name: str) -> SearchResults:
