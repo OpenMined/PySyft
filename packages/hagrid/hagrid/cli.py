@@ -2189,12 +2189,29 @@ def create_launch_docker_cmd(
             **kwargs,
         )
 
+    default_env = f"{template_grid_dir}/default.env"
+    if not os.path.exists(default_env):
+        # old path
+        default_env = f"{template_grid_dir}/.env"
+    default_envs = {}
+    with open(default_env) as f:
+        for line in f.readlines():
+            if "=" in line:
+                parts = line.strip().split("=")
+                key = parts[0]
+                value = ""
+                if len(parts) > 1:
+                    value = parts[1]
+                default_envs[key] = value
+
     single_container_mode = kwargs["deployment_type"] == "single_container"
     in_mem_workers = kwargs.get("in_mem_workers")
     smtp_username = kwargs.get("smtp_username")
     smtp_sender = kwargs.get("smtp_sender")
     smtp_password = kwargs.get("smtp_password")
     smtp_port = kwargs.get("smtp_port")
+    if smtp_port is None or smtp_port == "":
+        smtp_port = int(default_envs["SMTP_PORT"])
     smtp_host = kwargs.get("smtp_host")
 
     enable_oblv = bool(kwargs["oblv"])
@@ -2347,20 +2364,6 @@ def create_launch_docker_cmd(
     # new docker compose regression work around
     # default_env = os.path.expanduser("~/.hagrid/app/.env")
 
-    default_env = f"{template_grid_dir}/default.env"
-    if not os.path.exists(default_env):
-        # old path
-        default_env = f"{template_grid_dir}/.env"
-    default_envs = {}
-    with open(default_env) as f:
-        for line in f.readlines():
-            if "=" in line:
-                parts = line.strip().split("=")
-                key = parts[0]
-                value = ""
-                if len(parts) > 1:
-                    value = parts[1]
-                default_envs[key] = value
     default_envs.update(envs)
 
     # env file path

@@ -315,7 +315,7 @@ class Node(AbstractNode):
         smtp_username: str | None = None,
         smtp_password: str | None = None,
         email_sender: str | None = None,
-        smtp_port: str | None = None,
+        smtp_port: int | None = None,
         smtp_host: str | None = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
