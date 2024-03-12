@@ -337,15 +337,11 @@ class VeilidConnection(NodeConnection):
     __canonical_name__ = "VeilidConnection"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    vld_forward_proxy: GridURL = Field(
-        default_factory=GridURL.from_url(VEILID_SERVICE_URL)
-    )
-    vld_reverse_proxy: GridURL = Field(
-        default_factory=GridURL.from_url(VEILID_SYFT_PROXY_URL)
-    )
+    vld_forward_proxy: GridURL = Field(default=GridURL.from_url(VEILID_SERVICE_URL))
+    vld_reverse_proxy: GridURL = Field(default=GridURL.from_url(VEILID_SYFT_PROXY_URL))
     dht_key: str
     proxy_target_uid: UID | None = None
-    routes: type[Routes] = Field(default_factory=Routes)
+    routes: type[Routes] = Field(default=Routes)
     session_cache: Session | None = None
 
     @field_validator("vld_forward_proxy", mode="before")
