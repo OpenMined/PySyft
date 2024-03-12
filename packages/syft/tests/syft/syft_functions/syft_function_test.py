@@ -23,7 +23,7 @@ def node():
         name=name,
         dev_mode=True,
         reset=True,
-        n_consumers=1,
+        n_consumers=3,
         create_producer=True,
         queue_port=None,
         in_memory_workers=True,
