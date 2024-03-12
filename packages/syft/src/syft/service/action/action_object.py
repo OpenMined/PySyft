@@ -295,6 +295,8 @@ passthrough_attrs = [
     "__sha256__",  # syft
     "__hash_exclude_attrs__",  # syft
     "__private_sync_attr_mocks__",  # syft
+    "__exclude_sync_diff_attrs__",  # syft
+    "__repr_attrs__",  # syft
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -312,6 +314,8 @@ dont_wrap_output_attrs = [
     "syft_action_data_node_id",
     "__sha256__",
     "__hash_exclude_attrs__",
+    "__exclude_sync_diff_attrs__",  # syft
+    "__repr_attrs__",
 ]
 dont_make_side_effects = [
     "_repr_html_",
@@ -327,6 +331,8 @@ dont_make_side_effects = [
     "syft_action_data_node_id",
     "__sha256__",
     "__hash_exclude_attrs__",
+    "__exclude_sync_diff_attrs__",  # syft
+    "__repr_attrs__",
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -605,6 +611,8 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "__hash__",
     "create_shareable_sync_copy",
     "_has_private_sync_attrs",
+    "__exclude_sync_diff_attrs__",
+    "__repr_attrs__",
 ]
 
 
