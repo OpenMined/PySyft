@@ -579,7 +579,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     def _syft_set_validate_private_attrs_(self, **kwargs: Any) -> None:
         # Validate and set private attributes
         # https://github.com/pydantic/pydantic/issues/2105
-        annotations = typing.get_type_hints(self.__class__)
+        annotations = typing.get_type_hints(self.__class__, localns=locals())
         for attr, decl in self.__private_attributes__.items():
             value = kwargs.get(attr, decl.get_default())
             var_annotation = annotations.get(attr)
