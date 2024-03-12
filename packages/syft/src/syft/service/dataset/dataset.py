@@ -756,11 +756,11 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
 
 
 def infer_shape(context: TransformContext) -> TransformContext:
-    if context.output is not None and context.output["shape"] is None:
+    if context.output is None:
+        return SyftError(f"{context}'s output is None. No transformation happened")
+    if context.output["shape"] is None:
         if context.obj is not None and not _is_action_data_empty(context.obj.mock):
             context.output["shape"] = get_shape_or_len(context.obj.mock)
-    else:
-        print(f"{context}'s output is None. No transformation happened")
     return context
 
 
