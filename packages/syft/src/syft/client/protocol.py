@@ -7,3 +7,6 @@ class SyftProtocol(Enum):
 
     HTTP = "http"
     VEILID = "veilid"
+
+    def all(self) -> list:
+        return [p.value for p in SyftProtocol]

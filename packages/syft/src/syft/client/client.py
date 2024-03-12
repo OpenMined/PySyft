@@ -15,6 +15,7 @@ from typing import cast
 
 # third party
 from argon2 import PasswordHasher
+from pydantic import Field
 from pydantic import field_validator
 import requests
 from requests import Response
@@ -336,11 +337,15 @@ class VeilidConnection(NodeConnection):
     __canonical_name__ = "VeilidConnection"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    vld_forward_proxy: GridURL = GridURL.from_url(VEILID_SERVICE_URL)
-    vld_reverse_proxy: GridURL = GridURL.from_url(VEILID_SYFT_PROXY_URL)
+    vld_forward_proxy: GridURL = Field(
+        default_factory=GridURL.from_url(VEILID_SERVICE_URL)
+    )
+    vld_reverse_proxy: GridURL = Field(
+        default_factory=GridURL.from_url(VEILID_SYFT_PROXY_URL)
+    )
     dht_key: str
     proxy_target_uid: UID | None = None
-    routes: type[Routes] = Routes
+    routes: type[Routes] = Field(default_factory=Routes)
     session_cache: Session | None = None
 
     @field_validator("vld_forward_proxy", mode="before")
@@ -503,9 +508,9 @@ class VeilidConnection(NodeConnection):
 
     def __str__(self) -> str:
         res = f"{type(self).__name__}:"
-        res = res + f"\n DHT Key: {self.dht_key}"
-        res = res + f"\n Forward Proxy: {self.vld_forward_proxy}"
-        res = res + f"\n Reverse Proxy: {self.vld_reverse_proxy}"
+        res += f"\n DHT Key: {self.dht_key}"
+        res += f"\n Forward Proxy: {self.vld_forward_proxy}"
+        res += f"\n Reverse Proxy: {self.vld_reverse_proxy}"
         return res
 
     def __hash__(self) -> int:
@@ -862,10 +867,10 @@ class SyftClient:
     def exchange_route(
         self, client: Self, protocol: SyftProtocol = SyftProtocol.HTTP
     ) -> SyftSuccess | SyftError:
-        if protocol == SyftProtocol.HTTP:
-            # relative
-            from ..service.network.routes import connection_to_route
+        # relative
+        from ..service.network.routes import connection_to_route
 
+        if protocol == SyftProtocol.HTTP:
             self_node_route = connection_to_route(self.connection)
             remote_node_route = connection_to_route(client.connection)
             if client.metadata is None:
@@ -878,16 +883,15 @@ class SyftClient:
             )
 
         elif protocol == SyftProtocol.VEILID:
-            # relative
-            from ..service.network.routes import connection_to_route
-
             remote_node_route = connection_to_route(client.connection)
 
             result = self.api.services.network.exchange_veilid_route(
                 remote_node_route=remote_node_route,
             )
         else:
-            raise ValueError(f"Protocol {protocol} not supported")
+            raise ValueError(
+                f"Invalid Route Exchange SyftProtocol: {protocol}.Supported protocols are {SyftProtocol.all()}"
+            )
 
         return result
 
