@@ -42,6 +42,7 @@ from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
@@ -109,7 +110,7 @@ class UserCodeStatus(Enum):
 @serializable()
 class UserCodeStatusCollection(SyftObject):
     __canonical_name__ = "UserCodeStatusCollection"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __repr_attrs__ = ["approved", "status_dict"]
 
@@ -1266,7 +1267,7 @@ class UserCodeExecutionResult(SyftObject):
 class UserCodeExecutionOutput(SyftObject):
     # version
     __canonical_name__ = "UserCodeExecutionOutput"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     user_code_id: UID
