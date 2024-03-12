@@ -10,6 +10,8 @@ import pytest
 import syft as sy
 from syft.service.job.job_stash import Job
 from syft.service.job.job_stash import JobStatus
+
+
 @pytest.fixture(scope="function")
 def node_1():
     name = secrets.token_hex(4)
@@ -25,6 +27,7 @@ def node_1():
     yield node
     node.close()
 
+
 @pytest.fixture(scope="function")
 def node_2():
     name = secrets.token_hex(4)
@@ -39,7 +42,6 @@ def node_2():
     )
     yield node
     node.close()
-
 
 
 @pytest.fixture(scope="function")
@@ -108,6 +110,7 @@ def dataset_2(client_do_2):
 
     client_do_2.upload_dataset(dataset)
     return client_do_2.datasets[0].assets[0]
+
 
 @pytest.mark.flaky(reruns=2, reruns_delay=1)
 def test_transfer_request_blocking(
