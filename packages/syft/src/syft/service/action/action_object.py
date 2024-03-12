@@ -427,7 +427,7 @@ class TraceResultRegistry:
 
 class TraceResult(BaseModel):
     result: list = []
-    _client: SyftClient | None = None
+    _client: SyftClient
     is_tracing: bool = False
 
 
