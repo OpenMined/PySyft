@@ -407,8 +407,8 @@ def generate_remote_lib_function(
         trace_result = TraceResultRegistry.get_trace_result_for_thread()
 
         if trace_result is not None:
-            wrapper_make_call = trace_result._client.api.make_call  # type: ignore
-            wrapper_node_uid = trace_result._client.api.node_uid  # type: ignore
+            wrapper_make_call = trace_result.client.api.make_call  # type: ignore
+            wrapper_node_uid = trace_result.client.api.node_uid  # type: ignore
         else:
             # somehow this is necessary to prevent shadowing problems
             wrapper_make_call = make_call

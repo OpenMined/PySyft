@@ -69,6 +69,7 @@ def planify(func: Callable) -> ActionObject:
     if client is None:
         raise ValueError("Not able to get client for plan building")
     TraceResultRegistry.set_trace_result_for_current_thread(client=client)
+    print(TraceResultRegistry.__result_registry__)
     # TraceResult._client = client
     plan_kwargs = build_plan_inputs(func, client)
     outputs = func(**plan_kwargs)

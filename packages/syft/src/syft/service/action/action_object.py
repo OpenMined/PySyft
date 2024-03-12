@@ -16,7 +16,6 @@ from typing import ClassVar
 from typing import TYPE_CHECKING
 
 # third party
-from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
@@ -36,6 +35,7 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
 from ...service.response import SyftError
 from ...store.linked_obj import LinkedObject
+from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
@@ -404,7 +404,7 @@ class TraceResultRegistry:
         client: SyftClient,
     ) -> None:
         cls.__result_registry__[threading.get_ident()] = TraceResult(
-            _client=client, is_tracing=True
+            client=client, is_tracing=True
         )
 
     @classmethod
@@ -425,9 +425,9 @@ class TraceResultRegistry:
             return trace_result.is_tracing
 
 
-class TraceResult(BaseModel):
+class TraceResult(SyftBaseModel):
     result: list = []
-    _client: SyftClient
+    client: SyftClient
     is_tracing: bool = False
 
 
