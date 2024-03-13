@@ -39,6 +39,7 @@ from .client import SyftClient
 from .client import login
 from .client import login_as_guest
 from .connection import NodeConnection
+from .protocol import SyftProtocol
 
 if TYPE_CHECKING:
     # relative
@@ -290,7 +291,11 @@ class DomainClient(SyftClient):
         handle: NodeHandle | None = None,  # noqa: F821
         email: str | None = None,
         password: str | None = None,
+        protocol: str | SyftProtocol = SyftProtocol.HTTP,
     ) -> SyftSuccess | SyftError | None:
+        if isinstance(protocol, str):
+            protocol = SyftProtocol(protocol)
+
         if via_client is not None:
             client = via_client
         elif handle is not None:
@@ -304,7 +309,7 @@ class DomainClient(SyftClient):
             if isinstance(client, SyftError):
                 return client
 
-        res = self.exchange_route(client)
+        res = self.exchange_route(client, protocol=protocol)
         if isinstance(res, SyftSuccess):
             if self.metadata:
                 return SyftSuccess(

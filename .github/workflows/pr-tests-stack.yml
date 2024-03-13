@@ -29,7 +29,7 @@ jobs:
         # os: [ubuntu-latest, macos-latest, windows-latest, windows]
         # os: [om-ci-16vcpu-ubuntu2204]
         os: [ubuntu-latest]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
         pytest-modules: ["frontend network container_workload"]
       fail-fast: false
 
@@ -243,7 +243,7 @@ jobs:
       max-parallel: 99
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
@@ -303,7 +303,7 @@ jobs:
       matrix:
         # os: [ubuntu-latest, macos-latest, windows-latest, windows]
         os: [ubuntu-latest]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
         notebook-paths: ["api/0.8"]
       fail-fast: false
 
@@ -518,7 +518,7 @@ jobs:
         # os: [ubuntu-latest, macos-latest, windows-latest, windows]
         # os: [om-ci-16vcpu-ubuntu2204]
         os: [ubuntu-latest]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
         pytest-modules: ["frontend network"]
       fail-fast: false
 
@@ -546,6 +546,12 @@ jobs:
       - name: Add K3d Registry
         run: |
           sudo python ./scripts/patch_hosts.py --add-k3d-registry
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          large-packages: false
 
       # free 10GB of space
       - name: Remove unnecessary files
