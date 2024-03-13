@@ -8,10 +8,37 @@ from typing import Any
 # relative
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
+from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ..context import AuthedServiceContext
 from ..response import SyftError
+
+
+@serializable()
+class CustomAPIView(SyftObject):
+    # version
+    __canonical_name__ = "CustomAPIView"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    path: str
+    api_code: str
+    api_mock_code: str
+    signature: Signature
+    func_name: str
+
+
+@serializable
+class UpdateCustomAPIEndpoint(PartialSyftObject):
+    # version
+    __canonical_name__ = "UpdateCustomAPIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    path: str
+    api_code: str
+    api_mock_code: str
+    signature: Signature
+    func_name: str
 
 
 @serializable()
@@ -22,6 +49,7 @@ class CustomAPIEndpoint(SyftObject):
 
     path: str
     api_code: str
+    api_mock_code: str | None = None
     signature: Signature
     func_name: str
 
@@ -37,6 +65,9 @@ class CustomAPIEndpoint(SyftObject):
                 and self.func_name == other.func_name
             )
         return self == other
+
+    def has_mock(self) -> bool:
+        return self.api_mock_code is not None
 
     def exec(self, context: AuthedServiceContext, **kwargs: Any) -> Any:
         try:
