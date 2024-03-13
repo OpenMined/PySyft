@@ -16,21 +16,22 @@ from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
-from .api import CustomAPIEndpoint
-from .api import CustomAPIView
-from .api import UpdateCustomAPIEndpoint
-from .api_stash import CustomAPIEndpointStash
+from .api import CreateTwinAPIEndpoint
+from .api import TwinAPIEndpoint
+from .api import TwinAPIEndpointView
+from .api import UpdateTwinAPIEndpoint
+from .api_stash import TwinAPIEndpointStash
 
 
 @instrument
 @serializable()
 class APIService(AbstractService):
     store: DocumentStore
-    stash: CustomAPIEndpointStash
+    stash: TwinAPIEndpointStash
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.stash = CustomAPIEndpointStash(store=store)
+        self.stash = TwinAPIEndpointStash(store=store)
 
     @service_method(
         path="api.add",
@@ -38,14 +39,24 @@ class APIService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def set(
-        self, context: AuthedServiceContext, endpoint: CustomAPIEndpoint
+        self, context: AuthedServiceContext, endpoint: CreateTwinAPIEndpoint
     ) -> SyftSuccess | SyftError:
         """Register an CustomAPIEndpoint."""
-        result = self.stash.update(context.credentials, endpoint=endpoint)
-        if result.is_ok():
-            return SyftSuccess(message=f"CustomAPIEndpoint added: {endpoint}")
-        return SyftError(
-            message=f"Failed to add CustomAPIEndpoint {endpoint}. {result.err()}"
+        new_endpoint = endpoint.to(TwinAPIEndpoint)
+        existent_endpoint = self.stash.get_by_path(
+            context.credentials, new_endpoint.path
+        )
+        if existent_endpoint.is_ok() and existent_endpoint.ok():
+            return SyftError(
+                message="An API endpoint already exists at the given path."
+            )
+
+        result = self.stash.update(context.credentials, endpoint=new_endpoint)
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        return SyftSuccess(
+            message="Endpoint successfully created. To add it, go to client.api_endpoints.add"
         )
 
     @service_method(
@@ -56,9 +67,20 @@ class APIService(AbstractService):
     def api_endpoints(
         self,
         context: AuthedServiceContext,
-    ) -> list[CustomAPIEndpoint] | SyftError:
+    ) -> list[TwinAPIEndpointView] | SyftError:
         """Retrieves a list of available API endpoints view available to the user."""
-        return SyftError(message="This is not implemented yet.")
+        context.node = cast(AbstractNode, context.node)
+        admin_key = context.node.get_service("userservice").admin_verify_key()
+        result = self.stash.get_all(admin_key)
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        all_api_endpoints = result.ok()
+        api_endpoint_view = []
+        for api_endpoint in all_api_endpoints:
+            api_endpoint_view.append(api_endpoint.to(TwinAPIEndpointView))
+
+        return api_endpoint_view
 
     @service_method(
         path="api.update",
@@ -69,7 +91,7 @@ class APIService(AbstractService):
         self,
         context: AuthedServiceContext,
         uid: UID,
-        updated_api: UpdateCustomAPIEndpoint,
+        updated_api: UpdateTwinAPIEndpoint,
     ) -> SyftSuccess | SyftError:
         """Updates an specific API endpoint."""
         return SyftError(message="This is not implemented yet.")
@@ -90,9 +112,7 @@ class APIService(AbstractService):
         name="schema",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def api_schema(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> CustomAPIView | SyftError:
+    def api_schema(self, context: AuthedServiceContext, uid: UID) -> TwinAPIEndpoint:
         """Show a view of an API endpoint. This must be smart enough to check if
         the user has access to the endpoint."""
         return SyftError(message="This is not implemented yet.")
@@ -115,3 +135,14 @@ class APIService(AbstractService):
         if result:
             context, result = custom_endpoint.exec(context, **kwargs)
         return result
+
+    def get_endpoints(
+        self, context: AuthedServiceContext
+    ) -> list[TwinAPIEndpoint] | SyftError:
+        # TODO: Add ability to specify which roles see which endpoints
+        # for now skip auth
+        context.node = cast(AbstractNode, context.node)
+        results = self.stash.get_all(context.node.verify_key)
+        if results.is_ok():
+            return results.ok()
+        return SyftError(messages="Unable to get CustomAPIEndpoint")

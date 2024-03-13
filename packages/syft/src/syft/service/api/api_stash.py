@@ -10,14 +10,14 @@ from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
-from .api import CustomAPIEndpoint
+from .api import TwinAPIEndpoint
 
 
 @serializable()
-class CustomAPIEndpointStash(BaseUIDStoreStash):
-    object_type = CustomAPIEndpoint
+class TwinAPIEndpointStash(BaseUIDStoreStash):
+    object_type = TwinAPIEndpoint
     settings: PartitionSettings = PartitionSettings(
-        name=CustomAPIEndpoint.__canonical_name__, object_type=CustomAPIEndpoint
+        name=TwinAPIEndpoint.__canonical_name__, object_type=TwinAPIEndpoint
     )
 
     def __init__(self, store: DocumentStore) -> None:
@@ -25,7 +25,7 @@ class CustomAPIEndpointStash(BaseUIDStoreStash):
 
     def get_by_path(
         self, credentials: SyftVerifyKey, path: str
-    ) -> Result[list[CustomAPIEndpoint], str]:
+    ) -> Result[list[TwinAPIEndpoint], str]:
         results = self.get_all(credentials=credentials)
         items = []
         if results.is_ok() and results.ok():
@@ -40,10 +40,10 @@ class CustomAPIEndpointStash(BaseUIDStoreStash):
     def update(
         self,
         credentials: SyftVerifyKey,
-        endpoint: CustomAPIEndpoint,
+        endpoint: TwinAPIEndpoint,
         has_permission: bool = False,
-    ) -> Result[CustomAPIEndpoint, str]:
-        res = self.check_type(endpoint, CustomAPIEndpoint)
+    ) -> Result[TwinAPIEndpoint, str]:
+        res = self.check_type(endpoint, TwinAPIEndpoint)
         if res.is_err():
             return res
         old_endpoint = self.get_by_path(credentials=credentials, path=endpoint.path)

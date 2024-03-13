@@ -5,66 +5,166 @@ import inspect
 from inspect import Signature
 from typing import Any
 
+# third party
+from pydantic import field_validator
+from pydantic import model_validator
+
 # relative
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
 from ...types.syft_object import PartialSyftObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...types.transforms import drop
+from ...types.transforms import generate_id
+from ...types.transforms import transform
 from ..context import AuthedServiceContext
 from ..response import SyftError
 
 
+def get_signature(func: Callable) -> Signature:
+    sig = inspect.signature(func)
+    sig = signature_remove_context(sig)
+    return sig
+
+
 @serializable()
-class CustomAPIView(SyftObject):
+class TwinAPIEndpointView(SyftObject):
     # version
     __canonical_name__ = "CustomAPIView"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     path: str
-    api_code: str
-    api_mock_code: str
     signature: Signature
-    func_name: str
+
+    __repr_attrs__ = [
+        "path",
+        "signature",
+    ]
+
+    def _coll_repr_(self) -> dict[str, Any]:
+        return {
+            "API path": self.path,
+            "Signature": self.path + str(self.signature),
+        }
 
 
-@serializable
-class UpdateCustomAPIEndpoint(PartialSyftObject):
+class Endpoint(SyftObject):
+    """Base class to perform basic Endpoint validation for both public/private endpoints."""
+
     # version
-    __canonical_name__ = "UpdateCustomAPIEndpoint"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __canonical_name__ = "CustomApiEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_1
 
-    path: str
-    api_code: str
-    api_mock_code: str
-    signature: Signature
-    func_name: str
+    @field_validator("api_code", check_fields=False)
+    @classmethod
+    def validate_api_code(cls, api_code: str) -> str:
+        return api_code
+
+    @field_validator("func_name", check_fields=False)
+    @classmethod
+    def validate_func_name(cls, func_name: str) -> str:
+        return func_name
+
+    @field_validator("context_vars", check_fields=False)
+    @classmethod
+    def validate_context_vars(
+        cls, context_vars: dict[str, Any] | None
+    ) -> dict[str, Any] | None:
+        return context_vars
 
 
 @serializable()
-class CustomAPIEndpoint(SyftObject):
+class PrivateAPIEndpoint(Endpoint):
     # version
-    __canonical_name__ = "CustomAPIEndpoint"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __canonical_name__ = "PrivateAPIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    api_code: str
+    func_name: str
+    context_vars: dict[str, Any] | None = None
+
+
+@serializable()
+class PublicAPIEndpoint(Endpoint):
+    # version
+    __canonical_name__ = "PublicAPIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    api_code: str
+    func_name: str
+    context_vars: dict[str, Any] | None = None
+
+
+@serializable()
+class UpdateTwinAPIEndpoint(PartialSyftObject):
+    # version
+    __canonical_name__ = "UpdateTwinAPIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_1
 
     path: str
-    api_code: str
-    api_mock_code: str | None = None
+    private_code: PrivateAPIEndpoint
+    public_code: PublicAPIEndpoint
+
+
+@serializable()
+class CreateTwinAPIEndpoint(SyftObject):
+    # version
+    __canonical_name__ = "CreateTwinAPIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    path: str
+    private_code: PrivateAPIEndpoint
+    public_code: PublicAPIEndpoint | None = None
     signature: Signature
-    func_name: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_signature(cls, data: dict[str, Any]) -> dict[str, Any]:
+        # TODO: Implement a signature check.
+        mismatch_signatures = False
+        if data.get("public_code") is not None and mismatch_signatures:
+            raise ValueError(
+                "Public and Private API Endpoints must have the same signature."
+            )
+
+        return data
+
+    @field_validator("path")
+    @classmethod
+    def validate_path(cls, path: str) -> str:
+        if path == "":
+            raise ValueError("path cannot be empty")
+        return path
+
+    @field_validator("private_code")
+    @classmethod
+    def validate_private_code(
+        cls, private_code: PrivateAPIEndpoint
+    ) -> PrivateAPIEndpoint:
+        return private_code
+
+    @field_validator("public_code")
+    @classmethod
+    def validate_public_code(
+        cls, public_code: PublicAPIEndpoint | None
+    ) -> PublicAPIEndpoint | None:
+        return public_code
+
+
+@serializable()
+class TwinAPIEndpoint(SyftObject):
+    # version
+    __canonical_name__ = "TwinAPIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    path: str
+    private_code: PrivateAPIEndpoint
+    public_code: PublicAPIEndpoint | None = None
+    signature: Signature
 
     __attr_searchable__ = ["path"]
     __attr_unique__ = ["path"]
-
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, CustomAPIEndpoint):
-            return (
-                self.path == other.path
-                and self.api_code == other.api_code
-                and self.signature == other.signature
-                and self.func_name == other.func_name
-            )
-        return self == other
 
     def has_mock(self) -> bool:
         return self.api_mock_code is not None
@@ -87,19 +187,25 @@ class CustomAPIEndpoint(SyftObject):
             return SyftError(message=e)
 
 
-def get_signature(func: Callable) -> Signature:
-    sig = inspect.signature(func)
-    sig = signature_remove_context(sig)
-    return sig
+@transform(CreateTwinAPIEndpoint, TwinAPIEndpoint)
+def endpoint_create_to_twin_endpoint() -> list[Callable]:
+    return [generate_id]
 
 
-def api_endpoint(path: str) -> Callable[..., CustomAPIEndpoint]:
-    def decorator(f: Callable) -> CustomAPIEndpoint:
-        res = CustomAPIEndpoint(
+@transform(TwinAPIEndpoint, TwinAPIEndpointView)
+def twin_endpoint_to_view() -> list[Callable]:
+    return [drop("private_code"), drop("public_code")]
+
+
+def api_endpoint(path: str) -> Callable[..., TwinAPIEndpoint]:
+    def decorator(f: Callable) -> TwinAPIEndpoint:
+        res = CreateTwinAPIEndpoint(
             path=path,
-            api_code=inspect.getsource(f),
+            private_code=PrivateAPIEndpoint(
+                api_code=inspect.getsource(f),
+                func_name=f.__name__,
+            ),
             signature=get_signature(f),
-            func_name=f.__name__,
         )
         return res
 
