@@ -39,6 +39,7 @@ from .context import ChangeContext
 from .response import SyftError
 from .user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .user.user_roles import ServiceRole
+from .veilid import VEILID_ENABLED
 from .warnings import APIEndpointWarning
 
 if TYPE_CHECKING:
@@ -227,14 +228,19 @@ def register_lib_obj(lib_obj: CMPBase) -> None:
             LibConfigRegistry.register(lib_config)
 
 
-# hacky, prevent circular imports
-for lib_obj in action_execute_registry_libs.flatten():
-    # # for functions
-    # func_name = func.__name__
-    # # for classes
-    # func_name = path.split(".")[-1]
-    if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
-        register_lib_obj(lib_obj)
+# NOTE: Currently we disable adding library enpoints like numpy, torch when veilid is enabled
+# This is because the /api endpoint which return SyftAPI along with the lib enpoints exceeds
+# 2 MB . But veilid has a limit of 32 KB for sending and receiving message.
+# This would be fixed, when chunking is implemented at veilid core.
+if not VEILID_ENABLED:
+    # hacky, prevent circular imports
+    for lib_obj in action_execute_registry_libs.flatten():
+        # # for functions
+        # func_name = func.__name__
+        # # for classes
+        # func_name = path.split(".")[-1]
+        if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
+            register_lib_obj(lib_obj)
 
 
 def deconstruct_param(param: inspect.Parameter) -> dict[str, Any]:

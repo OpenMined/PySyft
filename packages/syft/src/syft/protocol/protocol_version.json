@@ -88,7 +88,7 @@
       "SignedSyftAPICall": {
         "2": {
           "version": 2,
-          "hash": "bc4bbe67d75d5214e79ff57077dac5762bba98760e152f9613a4f8975488d960",
+          "hash": "6cd89ed24027ed94b3e2bb7a07e8932060e07e481ceb35eb7ee4d2d0b6e34f43",
           "action": "add"
         }
       },
@@ -222,6 +222,13 @@
         "2": {
           "version": 2,
           "hash": "c05bfaf9ca6b5f47cd20c52fd7961bf9f372196713c2333fc9bfed8e0383acf1",
+          "action": "add"
+        }
+      },
+      "VeilidConnection": {
+        "1": {
+          "version": 1,
+          "hash": "29f803cec69b9ca6118e7c004867e82de6297f138b267ebd3df9ed35d5c944e4",
           "action": "add"
         }
       },
@@ -400,6 +407,13 @@
           "action": "add"
         }
       },
+      "VeilidNodeRoute": {
+        "1": {
+          "version": 1,
+          "hash": "0ecd536def6b99475f4478acefb0226886336934206529647ee3e4667e211514",
+          "action": "add"
+        }
+      },
       "PythonNodeRoute": {
         "2": {
           "version": 2,
@@ -410,7 +424,7 @@
       "EnclaveMetadata": {
         "2": {
           "version": 2,
-          "hash": "b5b03b47cbcdf4c679228932eabe06512da18759ab7358a3c80772502be15f29",
+          "hash": "5103272305abd2bcf23c616bd9014be986a92c40dc37b6238680114036451852",
           "action": "add"
         }
       },
@@ -809,7 +823,7 @@
       "NodePeer": {
         "2": {
           "version": 2,
-          "hash": "92c4d4a2ff206c4729d44beb89af349c093a26a3c36527efcf94227a6a150b8d",
+          "hash": "14cf8b9bb7c95c20caec8606ae5dddb882832f00fba2326352e7a0f2444dbc9f",
           "action": "add"
         }
       },

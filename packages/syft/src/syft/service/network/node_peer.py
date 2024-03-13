@@ -1,8 +1,5 @@
 # stdlib
 
-# third party
-from typing_extensions import Self
-
 # relative
 from ...abstract_node import NodeType
 from ...client.client import SyftClient
@@ -18,6 +15,8 @@ from ..metadata.node_metadata import NodeMetadataV3
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
 from .routes import NodeRouteType
+from .routes import PythonNodeRoute
+from .routes import VeilidNodeRoute
 from .routes import connection_to_route
 from .routes import route_to_connection
 
@@ -84,7 +83,7 @@ class NodePeer(SyftObject):
                 ):
                     return (True, i)
             return (False, None)
-        else:  # PythonNodeRoute
+        elif isinstance(route, PythonNodeRoute):  # PythonNodeRoute
             for i, r in enumerate(self.node_routes):  # something went wrong here
                 if (
                     (route.worker_settings.id == r.worker_settings.id)
@@ -101,9 +100,20 @@ class NodePeer(SyftObject):
                 ):
                     return (True, i)
             return (False, None)
+        elif isinstance(route, VeilidNodeRoute):
+            for i, r in enumerate(self.node_routes):
+                if (
+                    route.dht_key == r.dht_key
+                    and route.proxy_target_uid == r.proxy_target_uid
+                ):
+                    return (True, i)
 
-    @classmethod
-    def from_client(cls, client: SyftClient) -> Self:
+            return (False, None)
+        else:
+            raise ValueError(f"Unsupported route type: {type(route)}")
+
+    @staticmethod
+    def from_client(client: SyftClient) -> "NodePeer":
         if not client.metadata:
             raise Exception("Client has to have metadata first")
 
