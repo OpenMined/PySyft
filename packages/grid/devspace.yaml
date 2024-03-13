@@ -10,8 +10,8 @@ pipelines:
       purge_deployments --all
       run_dependencies --all       # 1. Deploy any projects this project needs (see "dependencies")
       ensure_pull_secrets --all    # 2. Ensure pull secrets
-      create_deployments --all     # 3. Deploy Helm charts and manifests specfied as "deployments"
       build_images --all
+      create_deployments --all     # 3. Deploy Helm charts and manifests specfied as "deployments"
       start_dev --all              # 4. Start dev mode "app" (see "dev" section)
   # You can run this pipeline via `devspace deploy` (or `devspace run-pipeline deploy`)
   deploy:
@@ -25,8 +25,9 @@ vars:
   DEVSPACE_ENV_FILE: "default.env"
   CONTAINER_REGISTRY: "docker.io"
   NODE_NAME: "mynode"
-  VERSION: "0.8.5-beta.1"
+  VERSION: "0.8.5-beta.2"
   PLATFORM: $(uname -m | grep -q 'arm64' && echo "arm64" || echo "amd64")
+
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
@@ -57,6 +58,13 @@ images:
     context: ./seaweedfs
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
+  veilid:
+    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_VEILID}"
+    buildKit: {}
+    dockerfile: ./veilid/veilid.dockerfile
+    context: ./veilid
+    tags:
+      - dev-${DEVSPACE_TIMESTAMP}
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
@@ -77,6 +85,8 @@ deployments:
           rootEmail: info@openmined.org
           defaultWorkerPoolCount: 1
           resourcesPreset: micro
+        veilid:
+          enabled: true
 
 dev:
   mongo:
@@ -111,6 +121,16 @@ dev:
       - path: ./backend/grid:/root/app/grid
       - path: ../syft:/root/app/syft
     ssh: {}
+  veilid:
+    labelSelector:
+      app.kubernetes.io/name: syft
+      app.kubernetes.io/component: veilid
+    env:
+      - name: DEV_MODE
+        value: "True"
+    logs: {}
+    sync:
+      - path: ./veilid/server:/app/server
 
 profiles:
   - name: gateway
@@ -118,3 +138,7 @@ profiles:
       - op: replace
         path: deployments.syft.helm.values.node.type
         value: "gateway"
+      - op: remove
+        path: images.seaweedfs
+      - op: remove
+        path: dev.seaweedfs
