@@ -348,7 +348,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         if self.status == "NEW":
             return self.low_obj if self.low_obj is not None else self.high_obj
         else:
-            raise ValueError("ERROR")
+            raise ValueError("Cannot get object from a diff that is not new")
 
     def _coll_repr_(self) -> dict[str, Any]:
         low_state = f"{self.status}\n{self.diff_side_str('low')}"
@@ -499,7 +499,12 @@ class ObjectDiffBatch(SyftObject):
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return ""  # Turns off the _repr_markdown_ of SyftObject
 
-    def _get_visual_hierarchy(self, node: ObjectDiff) -> dict[ObjectDiff, dict]:
+    def _get_visual_hierarchy(
+        self, node: ObjectDiff, visited: set[UID] | None = None
+    ) -> dict[ObjectDiff, dict]:
+        visited = visited if visited is not None else set()
+        visited.add(node.object_id)
+
         _, child_types_map = self.visual_hierarchy
         child_types = child_types_map.get(node.obj_type, [])
         dep_ids = self.dependencies.get(node.object_id, []) + self.dependents.get(
@@ -509,13 +514,13 @@ class ObjectDiffBatch(SyftObject):
         result = {}
         for child_type in child_types:
             children = [
-                n
-                for n in self.diffs
-                if n.object_id in dep_ids
-                and isinstance(n.low_obj or n.high_obj, child_type)
+                diff
+                for diff in self.diffs
+                if diff.object_id in dep_ids and diff.obj_type is child_type
             ]
             for child in children:
-                result[child] = self._get_visual_hierarchy(child)
+                if child.object_id not in visited:
+                    result[child] = self._get_visual_hierarchy(child, visited=visited)
 
         return result
 

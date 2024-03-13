@@ -610,7 +610,9 @@ class UserCode(SyncableSyftObject):
         dependencies = []
 
         if self.nested_codes is not None:
-            nested_code_ids = [link.object_uid for link in self.nested_codes.values()]
+            nested_code_ids = [
+                link.object_uid for link, _ in self.nested_codes.values()
+            ]
             dependencies.extend(nested_code_ids)
 
         return dependencies

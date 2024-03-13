@@ -293,10 +293,12 @@ passthrough_attrs = [
     "__sha256__",  # syft
     "__hash_exclude_attrs__",  # syft
     "__private_sync_attr_mocks__",  # syft
+    "__repr_attrs__",
 ]
 dont_wrap_output_attrs = [
     "__repr__",
     "__str__",
+    "__repr_attrs__",
     "_repr_html_",
     "_repr_markdown_",
     "_repr_latex_",
@@ -312,6 +314,7 @@ dont_wrap_output_attrs = [
     "__hash_exclude_attrs__",
 ]
 dont_make_side_effects = [
+    "__repr_attrs__",
     "_repr_html_",
     "_repr_markdown_",
     "_repr_latex_",
