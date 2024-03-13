@@ -6,14 +6,19 @@ from typing import cast
 from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .api import CustomAPIEndpoint
+from .api import CustomAPIView
+from .api import UpdateCustomAPIEndpoint
 from .api_stash import CustomAPIEndpointStash
 
 
@@ -27,7 +32,11 @@ class APIService(AbstractService):
         self.store = store
         self.stash = CustomAPIEndpointStash(store=store)
 
-    @service_method(path="api.set", name="set")
+    @service_method(
+        path="api.add",
+        name="add",
+        roles=ADMIN_ROLE_LEVEL,
+    )
     def set(
         self, context: AuthedServiceContext, endpoint: CustomAPIEndpoint
     ) -> SyftSuccess | SyftError:
@@ -39,16 +48,54 @@ class APIService(AbstractService):
             message=f"Failed to add CustomAPIEndpoint {endpoint}. {result.err()}"
         )
 
-    def get_endpoints(
-        self, context: AuthedServiceContext
+    @service_method(
+        path="api.api_endpoints",
+        name="api_endpoints",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def api_endpoints(
+        self,
+        context: AuthedServiceContext,
     ) -> list[CustomAPIEndpoint] | SyftError:
-        # TODO: Add ability to specify which roles see which endpoints
-        # for now skip auth
-        context.node = cast(AbstractNode, context.node)
-        results = self.stash.get_all(context.node.verify_key)
-        if results.is_ok():
-            return results.ok()
-        return SyftError(messages="Unable to get CustomAPIEndpoint")
+        """Retrieves a list of available API endpoints view available to the user."""
+        return SyftError(message="This is not implemented yet.")
+
+    @service_method(
+        path="api.update",
+        name="update",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def update(
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        updated_api: UpdateCustomAPIEndpoint,
+    ) -> SyftSuccess | SyftError:
+        """Updates an specific API endpoint."""
+        return SyftError(message="This is not implemented yet.")
+
+    @service_method(
+        path="api.delete",
+        name="delete",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def delete(
+        self, context: AuthedServiceContext, path: str
+    ) -> SyftSuccess | SyftError:
+        """Deletes an specific API endpoint."""
+        return SyftError(message="This is not implemented yet.")
+
+    @service_method(
+        path="api.schema",
+        name="schema",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def api_schema(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> CustomAPIView | SyftError:
+        """Show a view of an API endpoint. This must be smart enough to check if
+        the user has access to the endpoint."""
+        return SyftError(message="This is not implemented yet.")
 
     @service_method(path="api.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
