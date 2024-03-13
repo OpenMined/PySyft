@@ -21,7 +21,7 @@ ARG UID
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     apk update && \
     apk upgrade && \
-    apk add build-base gcc tzdata python-$PYTHON_VERSION-dev py$PYTHON_VERSION-pip && \
+    apk add build-base gcc tzdata python-$PYTHON_VERSION-dev-default py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # uncomment for creating rootless user
 # && adduser -D -u $UID $USER
@@ -75,7 +75,7 @@ ARG USER_GRP
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     apk update && \
     apk upgrade && \
-    apk add tzdata git bash python-$PYTHON_VERSION py$PYTHON_VERSION-pip && \
+    apk add tzdata git bash python-$PYTHON_VERSION-default py$PYTHON_VERSION-pip && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
     # Uncomment for rootless user
     # adduser -D -u 1000 $USER && \
