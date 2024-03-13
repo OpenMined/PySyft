@@ -23,7 +23,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "18785a4cce6f25f1900b82f30acb2298b4afeab92bd00d0be358cfbf5a93d97e",
+          "hash": "37bb8f0f87b1da2525da8f6873e6257dff4a732f2dba293b62931ad0b85ef9e2",
           "action": "add"
         }
       },
@@ -40,7 +40,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "4fd4c5b29e395b7a1af3b820166e69af7f267b6e3234fb8329bd0d74adc6e828",
+          "hash": "7c55461e3c6ba36ff999c64eb1b97a65b5a1f27193a973b1355ee2675f14c313",
           "action": "add"
         }
       },
@@ -52,7 +52,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "1b04f527fdabaf329786b6bb38209f6ca82d622fe691d33c47ed1addccaaac02",
+          "hash": "1ab941c7669572a41067a17e0e3f2d9c7056f7a4df8f899e87ae2358d9113b02",
           "action": "add"
         }
       },
@@ -148,7 +148,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "5922c1253370861185c53161ad31e488319f46ea5faee2d1802ca94657c428dc",
+          "hash": "709dc84a946267444a3f9968acf4a5e9807d6aa5143626c3fb635c9282108cc1",
           "action": "add"
         }
       },
@@ -165,7 +165,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "dbb72f43add3141d13a76e18a2a0903a6937966632f0def452ca264f3f70d81b",
+          "hash": "5e84c9905a1816d51c0dfb1eedbfb4d831095ca6c89956c6fe200c2a193cbb8f",
           "action": "add"
         }
       },
@@ -182,7 +182,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "cf831130f66f9addf8f68a8c9df0b67775e53322c8a32e8babc7f21631845608",
+          "hash": "bf936c1923ceee4def4cded06d41766998ea472322b0738bade7b85298e469da",
           "action": "add"
         }
       },
@@ -199,7 +199,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "78334b746e5230ac156e47960e91ce449543d1a77a62d9b8be141882e4b549aa",
+          "hash": "daf3629fb7d26f41f96cd7f9200d7327a4b74d800b3e02afa75454d11bd47d78",
           "action": "add"
         }
       },
@@ -216,7 +216,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "0007e86c39ede0f5756ba348083f809c5b6e3bb3a0a9ed6b94570d808467041f",
+          "hash": "4747a220d1587e99e6ac076496a2aa7217e2700205ac80fc24fe4768a313da78",
           "action": "add"
         }
       },
@@ -300,7 +300,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "9eaed0a784525dea0018d95de74d70ed212f20f6ead2b50c66e59467c42bbe68",
+          "hash": "b35897295822f061fbc70522ca8967cd2be53a5c01b19e24c587cd7b0c4aa3e8",
           "action": "add"
         }
       },
@@ -574,7 +574,7 @@
         },
         "4": {
           "version": 4,
-          "hash": "077987cfc94d617f746f27fb468210330c328bad06eee09a89226759e5745a5f",
+          "hash": "c37bc1c6303c467050ce4f8faa088a2f66ef1781437ffe34f15aadf5477ac25b",
           "action": "add"
         }
       },
@@ -608,7 +608,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "8a8e721a4ca8aa9107403368851acbe59f8d7bdc1eeff0ff101a44e325a058ff",
+          "hash": "4159d6ea45bc82577828bc19d668196422ff29bb8cc298b84623e6f4f476aaf3",
           "action": "add"
         }
       },
@@ -630,7 +630,7 @@
         },
         "4": {
           "version": 4,
-          "hash": "9b0dd1a64d64b1e824746e93aae0ca14863d2430aea2e2a758945edbfcb79bc9",
+          "hash": "dae431b87cadacfd30613519b5dd25d2e4ff59d2a971e21a31d56901103b9420",
           "action": "add"
         }
       },
@@ -1157,18 +1157,6 @@
           "action": "add"
         }
       },
-      "EnclaveMetadata": {
-        "1": {
-          "version": 1,
-          "hash": "39f85e475015e6f860ddcc5fea819423eba2db8f4b7d8e004c05a44d6f8444c6",
-          "action": "remove"
-        },
-        "2": {
-          "version": 2,
-          "hash": "b5b03b47cbcdf4c679228932eabe06512da18759ab7358a3c80772502be15f29",
-          "action": "add"
-        }
-      },
       "DataSubject": {
         "1": {
           "version": 1,
@@ -1237,7 +1225,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "747c87b947346fb0fc0466a912e2dc743ee082ef6254079176349d6b63748c32",
+          "hash": "93c75b45b9b74c69243cc2f2ef2d661e11eef5c23ecf71692ffdbd467d11efe6",
           "action": "add"
         }
       },
@@ -1525,7 +1513,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "ac452023b98534eb13cb99a86fa7e379c08316353fc0837d1b788e0050e13ab9",
+          "hash": "24b7c302f9821afe073534d4ed02c377bd4f7cb691f66ca92b94c38c92dc78c2",
           "action": "add"
         }
       },
@@ -1537,7 +1525,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "c9fdefdc622131c3676243aafadc30b7e67ee155793791bf1000bf742c1a251a",
+          "hash": "6d2e2f64c00dcda74a2545c77abbcf1630c56c26014987038feab174d15bd9d7",
           "action": "add"
         }
       },
@@ -1549,7 +1537,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "92c4d4a2ff206c4729d44beb89af349c093a26a3c36527efcf94227a6a150b8d",
+          "hash": "14cf8b9bb7c95c20caec8606ae5dddb882832f00fba2326352e7a0f2444dbc9f",
           "action": "add"
         }
       },
@@ -1658,6 +1646,32 @@
         "2": {
           "version": 2,
           "hash": "0af1abb9ac899c0bc133971f75d17be8260b80a2df9fe191965db431bb6fd910",
+          "action": "add"
+        }
+      },
+      "VeilidConnection": {
+        "2": {
+          "version": 2,
+          "hash": "e758b5c163bc28b5a890162653921d761edd32b43d403be4a29af8d3273f595d",
+          "action": "add"
+        }
+      },
+      "VeilidNodeRoute": {
+        "2": {
+          "version": 2,
+          "hash": "8bbe8444768261512d3f4c6128fc857c57a581af0eebb46afb7e1ee5b5eaeb3e",
+          "action": "add"
+        }
+      },
+      "EnclaveMetadata": {
+        "1": {
+          "version": 1,
+          "hash": "39f85e475015e6f860ddcc5fea819423eba2db8f4b7d8e004c05a44d6f8444c6",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "5103272305abd2bcf23c616bd9014be986a92c40dc37b6238680114036451852",
           "action": "add"
         }
       }
