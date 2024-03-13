@@ -128,7 +128,7 @@ def test_sync_flow():
     print(high_client.code.get_all())
     job_high = high_client.code.compute_mean(data=data_high, blocking=False)
     print("Waiting for job...")
-    job_high.wait()
+    job_high.wait(timeout=60)
     job_high.result.get()
 
     # syft absolute
@@ -320,7 +320,7 @@ def test_sync_flow_no_sharing():
     print(high_client.code.get_all())
     job_high = high_client.code.compute_mean(data=data_high, blocking=False)
     print("Waiting for job...")
-    job_high.wait()
+    job_high.wait(timeout=60)
     job_high.result.get()
 
     # syft absolute

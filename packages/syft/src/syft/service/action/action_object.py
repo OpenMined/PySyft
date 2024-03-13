@@ -1292,7 +1292,7 @@ class ActionObject(SyncableSyftObject):
     def as_empty_data(self) -> ActionDataEmpty:
         return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
 
-    def wait(self) -> ActionObject:
+    def wait(self, timeout: int | None = None) -> ActionObject:
         # relative
         from ...client.api import APIRegistry
 
@@ -1305,8 +1305,13 @@ class ActionObject(SyncableSyftObject):
         else:
             obj_id = self.id
 
+        counter = 0
         while api and not api.services.action.is_resolved(obj_id):
             time.sleep(1)
+            if timeout is not None:
+                counter += 1
+                if counter > timeout:
+                    return SyftError(message="Reached Timeout!")
 
         return self
 

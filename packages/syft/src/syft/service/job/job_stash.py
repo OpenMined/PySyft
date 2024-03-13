@@ -417,7 +417,7 @@ class Job(SyncableSyftObject):
     """
         return as_markdown_code(md)
 
-    def wait(self, job_only: bool = False) -> Any | SyftNotReady:
+    def wait(self, job_only: bool = False, timeout: int | None = None) -> Any | SyftNotReady:
         # stdlib
         from time import sleep
 
@@ -425,7 +425,6 @@ class Job(SyncableSyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-        # todo: timeout
         if self.resolved:
             return self.resolve
 
@@ -437,6 +436,7 @@ class Job(SyncableSyftObject):
                 f"Can't access Syft API. You must login to {self.syft_node_location}"
             )
         print_warning = True
+        counter = 0
         while True:
             self.fetch()
             if print_warning and self.result is not None:
@@ -450,10 +450,14 @@ class Job(SyncableSyftObject):
                         "Use job.wait().get() instead to wait for the linked result."
                     )
                     print_warning = False
-            sleep(2)
-            # TODO: fix the mypy issue
+            sleep(1)
             if self.resolved:
                 break  # type: ignore[unreachable]
+            # TODO: fix the mypy issue
+            if timeout is not None:
+                counter += 1
+                if counter > timeout:
+                    return SyftError(message="Reached Timeout!")
         return self.resolve  # type: ignore[unreachable]
 
     @property
