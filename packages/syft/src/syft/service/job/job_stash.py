@@ -417,7 +417,9 @@ class Job(SyncableSyftObject):
     """
         return as_markdown_code(md)
 
-    def wait(self, job_only: bool = False, timeout: int | None = None) -> Any | SyftNotReady:
+    def wait(
+        self, job_only: bool = False, timeout: int | None = None
+    ) -> Any | SyftNotReady:
         # stdlib
         from time import sleep
 
