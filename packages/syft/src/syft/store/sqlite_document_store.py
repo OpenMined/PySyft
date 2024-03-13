@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-from collections import defaultdict
 from copy import deepcopy
 from pathlib import Path
 import sqlite3
@@ -22,7 +21,6 @@ from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..types.uid import UID
-from ..util.util import thread_ident
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
@@ -31,7 +29,6 @@ from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
 from .locks import FileLockingConfig
 from .locks import LockingConfig
-from .locks import SyftLock
 
 # here we can create a single connection per cache_key
 # since pytest is concurrent processes, we need to isolate each connection
@@ -103,10 +100,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
         # if tempfile.TemporaryDirectory() varies from process to process
         # could this cause different locks on the same file
-        temp_dir = tempfile.TemporaryDirectory().name
         # lock_path = Path(temp_dir) / "sqlite_locks" / self.db_filename
         # self.lock_config = FileLockingConfig(client_path=lock_path)
-        self.connection = None
+        self.connection: sqlite3.Connection | None = None
         self.create_table()
 
     @property
@@ -119,6 +115,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
         # there will be many threads handling incoming requests so we need to ensure
         # that different connections are used in each thread. By using a dict for the
         # _db and _cur we can ensure they are never shared
+
+        if self.connection is not None:
+            return
 
         path = Path(self.file_path)
         if not path.exists():
@@ -150,8 +149,10 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     @property
     def db(self) -> sqlite3.Connection:
-        if not self.connection:
-            self._connect()
+        self._connect()
+        if self.connection is None:
+            raise ValueError("Database connection is not initialized")
+
         return self.connection
 
     @property
@@ -193,23 +194,25 @@ class SQLiteBackingStore(KeyValueBackingStore):
         if self._exists(key):
             self._update(key, value)
         else:
-            insert_sql = f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
+            insert_sql = (
+                f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
+            )
             data = _serialize(value, to_bytes=True)
             res = self._execute(insert_sql, [str(key), _repr_debug_(value), data])
             if res.is_err():
                 raise ValueError(res.err())
 
     def _update(self, key: UID, value: Any) -> None:
-        insert_sql = f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
+        insert_sql = (
+            f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
+        )
         data = _serialize(value, to_bytes=True)
         res = self._execute(insert_sql, [str(key), _repr_debug_(value), data, str(key)])
         if res.is_err():
             raise ValueError(res.err())
 
     def _get(self, key: UID) -> Any:
-        select_sql = (
-            f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec
-        )
+        select_sql = f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec
         res = self._execute(select_sql, [str(key)])
         if res.is_err():
             raise KeyError(f"Query {select_sql} failed")

@@ -4,14 +4,13 @@ from collections.abc import Iterable
 from collections.abc import MutableMapping
 from collections.abc import MutableSequence
 import hashlib
-import orjson
-from operator import itemgetter
 import os
 from pathlib import Path
 import re
 from typing import Any
 
 # third party
+import orjson
 from packaging.version import parse
 from result import OkErr
 from result import Result
@@ -66,7 +65,6 @@ class DataProtocol:
 
     @staticmethod
     def _calculate_object_hash(klass: type[SyftBaseObject]) -> str:
-
         # TODO: this depends on what is marked as serde
         # field_data = {
         #     field: repr(field_info.annotation)
@@ -385,9 +383,9 @@ class DataProtocol:
 
         # Update older file path to newer file path
         latest_protocol_fp.rename(new_protocol_file_path)
-        protocol_history[latest_protocol][
-            "release_name"
-        ] = f"{current_syft_version}.json"
+        protocol_history[latest_protocol]["release_name"] = (
+            f"{current_syft_version}.json"
+        )
 
         # Save history
         self.file_path.write_bytes(

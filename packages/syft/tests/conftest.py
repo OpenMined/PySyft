@@ -1,7 +1,7 @@
 # stdlib
-import json
 import os
 from pathlib import Path
+import shutil
 from unittest import mock
 
 # third party
@@ -32,7 +32,6 @@ from .syft.stores.store_fixtures_test import sqlite_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_queue_stash  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_store_partition  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_workspace  # noqa: F401
-import shutil
 
 
 @pytest.fixture()
