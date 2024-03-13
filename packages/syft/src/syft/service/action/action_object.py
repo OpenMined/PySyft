@@ -7,6 +7,7 @@ from enum import Enum
 import inspect
 from io import BytesIO
 from pathlib import Path
+import threading
 import time
 import traceback
 import types
@@ -34,6 +35,7 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize as serialize
 from ...service.response import SyftError
 from ...store.linked_obj import LinkedObject
+from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
@@ -294,6 +296,8 @@ passthrough_attrs = [
     "__sha256__",  # syft
     "__hash_exclude_attrs__",  # syft
     "__private_sync_attr_mocks__",  # syft
+    "__exclude_sync_diff_attrs__",  # syft
+    "__repr_attrs__",  # syft
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -311,6 +315,8 @@ dont_wrap_output_attrs = [
     "syft_action_data_node_id",
     "__sha256__",
     "__hash_exclude_attrs__",
+    "__exclude_sync_diff_attrs__",  # syft
+    "__repr_attrs__",
 ]
 dont_make_side_effects = [
     "_repr_html_",
@@ -326,6 +332,8 @@ dont_make_side_effects = [
     "syft_action_data_node_id",
     "__sha256__",
     "__hash_exclude_attrs__",
+    "__exclude_sync_diff_attrs__",  # syft
+    "__repr_attrs__",
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -394,23 +402,49 @@ def make_action_side_effect(
     return Ok((context, args, kwargs))
 
 
-class TraceResult:
-    result: list = []
-    _client: SyftClient | None = None
-    is_tracing: bool = False
+class TraceResultRegistry:
+    __result_registry__: dict[int, TraceResult] = {}
 
     @classmethod
-    def reset(cls) -> None:
-        cls.result = []
-        cls._client = None
+    def set_trace_result_for_current_thread(
+        cls,
+        client: SyftClient,
+    ) -> None:
+        cls.__result_registry__[threading.get_ident()] = TraceResult(
+            client=client, is_tracing=True
+        )
+
+    @classmethod
+    def get_trace_result_for_thread(cls) -> TraceResult | None:
+        return cls.__result_registry__.get(threading.get_ident(), None)
+
+    @classmethod
+    def reset_result_for_thread(cls) -> None:
+        if threading.get_ident() in cls.__result_registry__:
+            del cls.__result_registry__[threading.get_ident()]
+
+    @classmethod
+    def current_thread_is_tracing(cls) -> bool:
+        trace_result = cls.get_trace_result_for_thread()
+        if trace_result is None:
+            return False
+        else:
+            return trace_result.is_tracing
+
+
+class TraceResult(SyftBaseModel):
+    result: list = []
+    client: SyftClient
+    is_tracing: bool = False
 
 
 def trace_action_side_effect(
     context: PreHookContext, *args: Any, **kwargs: Any
 ) -> Result[Ok[tuple[PreHookContext, tuple[Any, ...], dict[str, Any]]], Err[str]]:
     action = context.action
-    if action is not None:
-        TraceResult.result += [action]
+    if action is not None and TraceResultRegistry.current_thread_is_tracing():
+        trace_result = TraceResultRegistry.get_trace_result_for_thread()
+        trace_result.result += [action]  # type: ignore
     return Ok((context, args, kwargs))
 
 
@@ -578,6 +612,8 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "__hash__",
     "create_shareable_sync_copy",
     "_has_private_sync_attrs",
+    "__exclude_sync_diff_attrs__",
+    "__repr_attrs__",
 ]
 
 
@@ -649,7 +685,7 @@ class ActionObject(SyncableSyftObject):
         if (
             self.syft_blob_storage_entry_id
             and self.syft_created_at
-            and not TraceResult.is_tracing
+            and not TraceResultRegistry.current_thread_is_tracing()
         ):
             self.reload_cache()
 
@@ -763,7 +799,7 @@ class ActionObject(SyncableSyftObject):
         result = self._save_to_blob_storage_(data)
         if isinstance(result, SyftError):
             return result
-        if not TraceResult.is_tracing:
+        if not TraceResultRegistry.current_thread_is_tracing():
             self.syft_action_data_cache = self.as_empty_data()
         return None
 
@@ -909,8 +945,9 @@ class ActionObject(SyncableSyftObject):
             create_object=obj,
         )
 
-        if TraceResult.is_tracing:
-            TraceResult.result += [action]
+        if TraceResultRegistry.current_thread_is_tracing():
+            trace_result = TraceResultRegistry.get_trace_result_for_thread()
+            trace_result.result += [action]  # type: ignore
 
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
@@ -1256,7 +1293,7 @@ class ActionObject(SyncableSyftObject):
     def as_empty_data(self) -> ActionDataEmpty:
         return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
 
-    def wait(self) -> ActionObject:
+    def wait(self, timeout: int | None = None) -> ActionObject:
         # relative
         from ...client.api import APIRegistry
 
@@ -1269,8 +1306,13 @@ class ActionObject(SyncableSyftObject):
         else:
             obj_id = self.id
 
+        counter = 0
         while api and not api.services.action.is_resolved(obj_id):
             time.sleep(1)
+            if timeout is not None:
+                counter += 1
+                if counter > timeout:
+                    return SyftError(message="Reached Timeout!")
 
         return self
 
