@@ -36,6 +36,7 @@ from pydantic import Field
 from pydantic import model_validator
 from pydantic.fields import PydanticUndefined
 from result import OkErr
+from typeguard import TypeHintWarning
 from typeguard import check_type
 from typing_extensions import Self
 
@@ -585,7 +586,12 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             if value is not PydanticUndefined:
                 if var_annotation is not None:
                     # Otherwise validate value against the variable annotation
-                    check_type(value, var_annotation)
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings("ignore", category=TypeHintWarning)
+                        check_type(
+                            value=value,
+                            expected_type=var_annotation,
+                        )
                 setattr(self, attr, value)
             else:
                 if not _is_optional(var_annotation):
