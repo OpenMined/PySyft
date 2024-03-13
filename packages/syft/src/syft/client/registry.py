@@ -93,7 +93,7 @@ class NetworkRegistry:
         on = self.online_networks
         if len(on) == 0:
             return "(no gateways online - try syft.gateways.all_gateways to see offline gateways)"
-        return pd.DataFrame(on)._repr_html_()
+        return pd.DataFrame(on)._repr_html_()  # type: ignore
 
     def __repr__(self) -> str:
         on = self.online_networks
@@ -251,7 +251,7 @@ class DomainRegistry:
         on = self.__make_dict__()
         if len(on) == 0:
             return "(no domains online - try syft.domains.all_domains to see offline domains)"
-        return pd.DataFrame(on)._repr_html_()
+        return pd.DataFrame(on)._repr_html_()  # type: ignore
 
     def __repr__(self) -> str:
         on = self.__make_dict__()
@@ -344,7 +344,7 @@ class EnclaveRegistry:
         on = self.online_enclaves
         if len(on) == 0:
             return "(no enclaves online - try syft.enclaves.all_enclaves to see offline enclaves)"
-        return pd.DataFrame(on)._repr_html_()
+        return pd.DataFrame(on)._repr_html_()  # type: ignore
 
     def __repr__(self) -> str:
         on = self.online_enclaves

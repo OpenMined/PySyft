@@ -1,4 +1,5 @@
 ARG VEILID_VERSION="0.2.5"
+ARG PYTHON_VERSION="3.12"
 
 # ======== [Stage 1] Build Veilid Server ========== #
 # TODO: Switch from building the packages to using the pre-built packages
@@ -15,7 +16,7 @@ RUN cd veilid-server && cargo build --release -p veilid-server
 
 # ========== [Stage 2] Dependency Install ========== #
 
-FROM python:3.12-bookworm
+FROM python:${PYTHON_VERSION}-bookworm
 ARG VEILID_VERSION
 COPY --from=build /veilid/target/release/veilid-server /veilid/veilid-server
 WORKDIR /app

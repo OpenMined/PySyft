@@ -23,7 +23,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "37bb8f0f87b1da2525da8f6873e6257dff4a732f2dba293b62931ad0b85ef9e2",
+          "hash": "18785a4cce6f25f1900b82f30acb2298b4afeab92bd00d0be358cfbf5a93d97e",
           "action": "add"
         }
       },
@@ -40,7 +40,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "7c55461e3c6ba36ff999c64eb1b97a65b5a1f27193a973b1355ee2675f14c313",
+          "hash": "4fd4c5b29e395b7a1af3b820166e69af7f267b6e3234fb8329bd0d74adc6e828",
           "action": "add"
         }
       },
@@ -52,7 +52,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "1ab941c7669572a41067a17e0e3f2d9c7056f7a4df8f899e87ae2358d9113b02",
+          "hash": "1b04f527fdabaf329786b6bb38209f6ca82d622fe691d33c47ed1addccaaac02",
           "action": "add"
         }
       },
@@ -69,9 +69,9 @@
         }
       },
       "ExecutionOutput": {
-        "2": {
-          "version": 2,
-          "hash": "cea37eb81bf90d9072c7b372f34a4c22bbac148e79b75cab6c0673a7a39338fc",
+        "1": {
+          "version": 1,
+          "hash": "abb4ce9172fbba0ea03fcbea7addb06176c8dba6dbcb7143cde350617528a5b7",
           "action": "add"
         }
       },
@@ -100,9 +100,9 @@
         }
       },
       "UserCodeStatusCollection": {
-        "2": {
-          "version": 2,
-          "hash": "457669ef3034f34702678adb27d08b4351f2d9834a4f7b2772f74498ef9d7306",
+        "1": {
+          "version": 1,
+          "hash": "8d8bae10ee1733464272031e7de6fc783668885206fa448c9f7cd8e8cfc7486a",
           "action": "add"
         }
       },
@@ -129,9 +129,9 @@
         }
       },
       "UserCodeExecutionOutput": {
-        "2": {
-          "version": 2,
-          "hash": "4b269be184a959380872144f2e15b0eab4c702a706cb4f69115c4cf32bc0985e",
+        "1": {
+          "version": 1,
+          "hash": "d20e83362df8a5d2d2e7eb26a2c5723739f9cfbe4c0272d3ae7e37a34bbe5317",
           "action": "add"
         }
       },
@@ -148,7 +148,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "709dc84a946267444a3f9968acf4a5e9807d6aa5143626c3fb635c9282108cc1",
+          "hash": "5922c1253370861185c53161ad31e488319f46ea5faee2d1802ca94657c428dc",
           "action": "add"
         }
       },
@@ -165,7 +165,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "5e84c9905a1816d51c0dfb1eedbfb4d831095ca6c89956c6fe200c2a193cbb8f",
+          "hash": "dbb72f43add3141d13a76e18a2a0903a6937966632f0def452ca264f3f70d81b",
           "action": "add"
         }
       },
@@ -182,7 +182,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "bf936c1923ceee4def4cded06d41766998ea472322b0738bade7b85298e469da",
+          "hash": "cf831130f66f9addf8f68a8c9df0b67775e53322c8a32e8babc7f21631845608",
           "action": "add"
         }
       },
@@ -199,7 +199,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "daf3629fb7d26f41f96cd7f9200d7327a4b74d800b3e02afa75454d11bd47d78",
+          "hash": "78334b746e5230ac156e47960e91ce449543d1a77a62d9b8be141882e4b549aa",
           "action": "add"
         }
       },
@@ -216,7 +216,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "4747a220d1587e99e6ac076496a2aa7217e2700205ac80fc24fe4768a313da78",
+          "hash": "0007e86c39ede0f5756ba348083f809c5b6e3bb3a0a9ed6b94570d808467041f",
           "action": "add"
         }
       },
@@ -238,16 +238,16 @@
         }
       },
       "SyncStateItem": {
-        "2": {
-          "version": 2,
-          "hash": "ec00498874e3dde2977058b4aafbbfa0ed2cb3a52782fe3d5abc91673a592a47",
+        "1": {
+          "version": 1,
+          "hash": "cde09be2cfeca4246d001f3f28c00d8647a4506641104e5dc647f136a64fd06e",
           "action": "add"
         }
       },
       "SyncState": {
-        "2": {
-          "version": 2,
-          "hash": "13f4b371466b47d90ba8f9a534114cc9cdb1d9492a2a9917b795dfbff666d93a",
+        "1": {
+          "version": 1,
+          "hash": "b91ed9a9eb8ac7e2fadafd9376d8adefc83845d2f29939b30e95ebe94dc78cd9",
           "action": "add"
         }
       },
@@ -300,7 +300,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "b35897295822f061fbc70522ca8967cd2be53a5c01b19e24c587cd7b0c4aa3e8",
+          "hash": "9eaed0a784525dea0018d95de74d70ed212f20f6ead2b50c66e59467c42bbe68",
           "action": "add"
         }
       },
@@ -574,7 +574,7 @@
         },
         "4": {
           "version": 4,
-          "hash": "c37bc1c6303c467050ce4f8faa088a2f66ef1781437ffe34f15aadf5477ac25b",
+          "hash": "077987cfc94d617f746f27fb468210330c328bad06eee09a89226759e5745a5f",
           "action": "add"
         }
       },
@@ -608,7 +608,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "4159d6ea45bc82577828bc19d668196422ff29bb8cc298b84623e6f4f476aaf3",
+          "hash": "8a8e721a4ca8aa9107403368851acbe59f8d7bdc1eeff0ff101a44e325a058ff",
           "action": "add"
         }
       },
@@ -630,7 +630,7 @@
         },
         "4": {
           "version": 4,
-          "hash": "dae431b87cadacfd30613519b5dd25d2e4ff59d2a971e21a31d56901103b9420",
+          "hash": "9b0dd1a64d64b1e824746e93aae0ca14863d2430aea2e2a758945edbfcb79bc9",
           "action": "add"
         }
       },
@@ -760,16 +760,16 @@
         }
       },
       "NotificationPreferences": {
-        "2": {
-          "version": 2,
-          "hash": "1fb990dae28ecf74bb468e517bc5364657d7f11ac4456fc9c816ee36fb9f48d8",
+        "1": {
+          "version": 1,
+          "hash": "127206b9c72d353d9f1b73fb10d8ecd57f28f9bfbfdc2f7648894cb0d2ad2522",
           "action": "add"
         }
       },
       "NotifierSettings": {
-        "2": {
-          "version": 2,
-          "hash": "92d39ab02b4942d57773cd2d9c781f0e7e89e459276799e8cd7d56bf7d5ca543",
+        "1": {
+          "version": 1,
+          "hash": "8505ded16432d1741ee16b0eada22da7c6e36ae7b414cfb59168ac846f3e9f54",
           "action": "add"
         }
       },
@@ -1225,7 +1225,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "93c75b45b9b74c69243cc2f2ef2d661e11eef5c23ecf71692ffdbd467d11efe6",
+          "hash": "747c87b947346fb0fc0466a912e2dc743ee082ef6254079176349d6b63748c32",
           "action": "add"
         }
       },
@@ -1513,7 +1513,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "24b7c302f9821afe073534d4ed02c377bd4f7cb691f66ca92b94c38c92dc78c2",
+          "hash": "ac452023b98534eb13cb99a86fa7e379c08316353fc0837d1b788e0050e13ab9",
           "action": "add"
         }
       },
@@ -1525,7 +1525,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "6d2e2f64c00dcda74a2545c77abbcf1630c56c26014987038feab174d15bd9d7",
+          "hash": "c9fdefdc622131c3676243aafadc30b7e67ee155793791bf1000bf742c1a251a",
           "action": "add"
         }
       },
@@ -1650,16 +1650,16 @@
         }
       },
       "VeilidConnection": {
-        "2": {
-          "version": 2,
-          "hash": "e758b5c163bc28b5a890162653921d761edd32b43d403be4a29af8d3273f595d",
+        "1": {
+          "version": 1,
+          "hash": "29f803cec69b9ca6118e7c004867e82de6297f138b267ebd3df9ed35d5c944e4",
           "action": "add"
         }
       },
       "VeilidNodeRoute": {
-        "2": {
-          "version": 2,
-          "hash": "8bbe8444768261512d3f4c6128fc857c57a581af0eebb46afb7e1ee5b5eaeb3e",
+        "1": {
+          "version": 1,
+          "hash": "0ecd536def6b99475f4478acefb0226886336934206529647ee3e4667e211514",
           "action": "add"
         }
       },

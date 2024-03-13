@@ -30,6 +30,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
+from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
@@ -55,7 +56,7 @@ class JobStatus(str, Enum):
 
 
 @serializable()
-class Job(SyftObject):
+class Job(SyncableSyftObject):
     __canonical_name__ = "JobItem"
     __version__ = SYFT_OBJECT_VERSION_4
 
@@ -464,7 +465,7 @@ class Job(SyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
-    def get_sync_dependencies(self, **kwargs: dict) -> list[UID]:
+    def get_sync_dependencies(self, **kwargs: dict) -> list[UID]:  # type: ignore
         dependencies = []
         if self.result is not None:
             dependencies.append(self.result.id.id)
