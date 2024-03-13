@@ -43,6 +43,7 @@ class APIService(AbstractService):
     ) -> SyftSuccess | SyftError:
         """Register an CustomAPIEndpoint."""
         new_endpoint = endpoint.to(TwinAPIEndpoint)
+
         existent_endpoint = self.stash.get_by_path(
             context.credentials, new_endpoint.path
         )
@@ -55,9 +56,7 @@ class APIService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
 
-        return SyftSuccess(
-            message="Endpoint successfully created. To add it, go to client.api_endpoints.add"
-        )
+        return SyftSuccess(message="Endpoint successfully created.")
 
     @service_method(
         path="api.api_endpoints",
@@ -133,7 +132,7 @@ class APIService(AbstractService):
         custom_endpoint = result.ok()
         custom_endpoint = custom_endpoint[-1]
         if result:
-            context, result = custom_endpoint.exec(context, **kwargs)
+            context, result = custom_endpoint.exec(context, *args, **kwargs)
         return result
 
     def get_endpoints(
