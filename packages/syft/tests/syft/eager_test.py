@@ -7,7 +7,7 @@ from syft.service.action.plan import planify
 from syft.types.twin_object import TwinObject
 
 # relative
-from .utils import currently_fail_on_python_3_12
+from ..utils.custom_markers import currently_fail_on_python_3_12
 
 
 def test_eager_permissions(worker, guest_client):
