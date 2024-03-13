@@ -10,6 +10,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.client.client import SyftClientSessionCache
 from syft.client.domain_client import DomainClient
 from syft.node.worker import Worker
 from syft.protocol.data_protocol import get_data_protocol
@@ -31,6 +32,7 @@ from .syft.stores.store_fixtures_test import sqlite_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_queue_stash  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_store_partition  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_workspace  # noqa: F401
+import shutil
 
 
 @pytest.fixture()
@@ -40,8 +42,7 @@ def faker():
 
 def patch_protocol_file(filepath: Path):
     dp = get_data_protocol()
-    original_protocol = dp.read_json(dp.file_path)
-    filepath.write_text(json.dumps(original_protocol))
+    shutil.copyfile(src=dp.file_path, dst=filepath)
 
 
 def remove_file(filepath: Path):
@@ -154,3 +155,7 @@ pytest_plugins = [
     "tests.syft.action_graph.fixtures",
     "tests.syft.serde.fixtures",
 ]
+# skip compute heavy hashing during tests
+SyftClientSessionCache._get_key = (
+    lambda email, password, connection: f"{email}{password}{connection}"
+)
