@@ -1157,18 +1157,6 @@
           "action": "add"
         }
       },
-      "EnclaveMetadata": {
-        "1": {
-          "version": 1,
-          "hash": "39f85e475015e6f860ddcc5fea819423eba2db8f4b7d8e004c05a44d6f8444c6",
-          "action": "remove"
-        },
-        "2": {
-          "version": 2,
-          "hash": "b5b03b47cbcdf4c679228932eabe06512da18759ab7358a3c80772502be15f29",
-          "action": "add"
-        }
-      },
       "DataSubject": {
         "1": {
           "version": 1,
@@ -1549,7 +1537,7 @@
         },
         "2": {
           "version": 2,
-          "hash": "92c4d4a2ff206c4729d44beb89af349c093a26a3c36527efcf94227a6a150b8d",
+          "hash": "14cf8b9bb7c95c20caec8606ae5dddb882832f00fba2326352e7a0f2444dbc9f",
           "action": "add"
         }
       },
@@ -1658,6 +1646,32 @@
         "2": {
           "version": 2,
           "hash": "0af1abb9ac899c0bc133971f75d17be8260b80a2df9fe191965db431bb6fd910",
+          "action": "add"
+        }
+      },
+      "VeilidConnection": {
+        "1": {
+          "version": 1,
+          "hash": "29f803cec69b9ca6118e7c004867e82de6297f138b267ebd3df9ed35d5c944e4",
+          "action": "add"
+        }
+      },
+      "VeilidNodeRoute": {
+        "1": {
+          "version": 1,
+          "hash": "0ecd536def6b99475f4478acefb0226886336934206529647ee3e4667e211514",
+          "action": "add"
+        }
+      },
+      "EnclaveMetadata": {
+        "1": {
+          "version": 1,
+          "hash": "39f85e475015e6f860ddcc5fea819423eba2db8f4b7d8e004c05a44d6f8444c6",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "5103272305abd2bcf23c616bd9014be986a92c40dc37b6238680114036451852",
           "action": "add"
         }
       }
