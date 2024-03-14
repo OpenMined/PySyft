@@ -33,7 +33,7 @@ frontend:
   env: null
 
   # Pod Resource Limits
-  resourcesPreset: nano
+  resourcesPreset: micro
   resources: null
 
 seaweedfs:
