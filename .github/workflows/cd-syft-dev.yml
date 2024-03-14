@@ -64,7 +64,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Set up Docker Buildx
         id: buildx
@@ -120,6 +120,17 @@ jobs:
             ${{ secrets.ACR_SERVER }}/openmined/grid-seaweedfs:dev
             ${{ secrets.ACR_SERVER }}/openmined/grid-seaweedfs:dev-${{ github.sha }}
             ${{ secrets.ACR_SERVER }}/openmined/grid-seaweedfs:${{ steps.grid.outputs.GRID_VERSION }}
+
+      - name: Build and push `grid-veilid` image to registry
+        uses: docker/build-push-action@v5
+        with:
+          context: ./packages/grid/veilid
+          file: ./packages/grid/veilid/veilid.dockerfile
+          push: true
+          tags: |
+            ${{ secrets.ACR_SERVER }}/openmined/grid-veilid:dev
+            ${{ secrets.ACR_SERVER }}/openmined/grid-veilid:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-veilid:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build Helm Chart & Copy to infra
         if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'

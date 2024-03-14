@@ -97,6 +97,7 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
+from ..service.veilid import VEILID_ENABLED
 from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
@@ -315,7 +316,7 @@ class Node(AbstractNode):
         smtp_username: str | None = None,
         smtp_password: str | None = None,
         email_sender: str | None = None,
-        smtp_port: str | None = None,
+        smtp_port: int | None = None,
         smtp_host: str | None = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
@@ -392,6 +393,12 @@ class Node(AbstractNode):
 
             services += [OblvService]
             create_oblv_key_pair(worker=self)
+
+        if VEILID_ENABLED:
+            # relative
+            from ..service.veilid.veilid_service import VeilidService
+
+            services += [VeilidService]
 
         self.enable_warnings = enable_warnings
         self.in_memory_workers = in_memory_workers
@@ -716,6 +723,10 @@ class Node(AbstractNode):
             object_version = object_type.__version__
 
             migration_state = migration_state_service.get_state(context, canonical_name)
+            if isinstance(migration_state, SyftError):
+                raise Exception(
+                    f"Failed to get migration state for {canonical_name}. Error: {migration_state}"
+                )
             if (
                 migration_state is not None
                 and migration_state.current_version != migration_state.latest_version
@@ -989,6 +1000,12 @@ class Node(AbstractNode):
                 from ..external.oblv.oblv_service import OblvService
 
                 store_services += [OblvService]
+
+            if VEILID_ENABLED:
+                # relative
+                from ..service.veilid.veilid_service import VeilidService
+
+                store_services += [VeilidService]
 
             if service_klass in store_services:
                 kwargs["store"] = self.document_store  # type: ignore[assignment]

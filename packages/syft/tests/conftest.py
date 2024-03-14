@@ -6,6 +6,7 @@ from unittest import mock
 
 # third party
 from faker import Faker
+from pymongo import MongoClient
 import pytest
 
 # syft absolute
@@ -25,18 +26,15 @@ from .syft.stores.store_fixtures_test import dict_store_partition  # noqa: F401
 from .syft.stores.store_fixtures_test import mongo_action_store  # noqa: F401
 from .syft.stores.store_fixtures_test import mongo_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import mongo_queue_stash  # noqa: F401
-from .syft.stores.store_fixtures_test import mongo_server_mock  # noqa: F401
 from .syft.stores.store_fixtures_test import mongo_store_partition  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_action_store  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_queue_stash  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_store_partition  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_workspace  # noqa: F401
-
-
-@pytest.fixture()
-def faker():
-    return Faker()
+from .utils.mongodb import start_mongo_server
+from .utils.mongodb import stop_mongo_server
+from .utils.xdist_state import SharedState
 
 
 def patch_protocol_file(filepath: Path):
@@ -54,6 +52,13 @@ def pytest_xdist_auto_num_workers(config):
     if num == "auto" or num == "logical":
         return os.cpu_count()
     return None
+
+
+# def pytest_collection_modifyitems(items):
+#     for item in items:
+#         item_fixtures = getattr(item, "fixturenames", ())
+#         if "test_sqlite_" in item.nodeid:
+#             item.add_marker(pytest.mark.xdist_group(name="sqlite"))
 
 
 @pytest.fixture(autouse=True)
@@ -87,9 +92,16 @@ def stage_protocol(protocol_file: Path):
 
 
 @pytest.fixture()
+def faker():
+    return Faker()
+
+
+@pytest.fixture()
 def worker(faker) -> Worker:
-    # creates a worker with dict stores
-    return sy.Worker.named(name=faker.name())
+    worker = sy.Worker.named(name=faker.name())
+    yield worker
+    worker.stop()
+    del worker
 
 
 @pytest.fixture()
@@ -128,9 +140,47 @@ def action_store(worker):
     return worker.action_store
 
 
+@pytest.fixture(scope="session")
+def mongo_client(testrun_uid):
+    """
+    A race-free fixture that starts a MongoDB server for an entire pytest session.
+    Cleans up the server when the session ends, or when the last client disconnects.
+    """
+
+    state = SharedState(testrun_uid)
+    KEY_CONN_STR = "mongoConnectionString"
+    KEY_CLIENTS = "mongoClients"
+
+    # start the server if it's not already running
+    with state.lock:
+        conn_str = state.get(KEY_CONN_STR, None)
+
+        if not conn_str:
+            conn_str = start_mongo_server(testrun_uid)
+            state.set(KEY_CONN_STR, conn_str)
+
+        # increment the number of clients
+        clients = state.get(KEY_CLIENTS, 0) + 1
+        state.set(KEY_CLIENTS, clients)
+
+    # create a client, and test the connection
+    client = MongoClient(conn_str)
+    assert client.server_info().get("ok") == 1.0
+
+    yield client
+
+    # decrement the number of clients
+    with state.lock:
+        clients = state.get(KEY_CLIENTS, 0) - 1
+        state.set(KEY_CLIENTS, clients)
+
+    # if no clients are connected, destroy the container
+    if clients <= 0:
+        stop_mongo_server(testrun_uid)
+
+
 __all__ = [
     "mongo_store_partition",
-    "mongo_server_mock",
     "mongo_document_store",
     "mongo_queue_stash",
     "mongo_action_store",
