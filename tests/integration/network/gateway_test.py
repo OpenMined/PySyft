@@ -108,12 +108,12 @@ def test_domain_gateway_user_code(domain_1_port, gateway_port):
     asset = proxy_ds.datasets[0].assets[0]
 
     @sy.syft_function_single_use(asset=asset)
-    def test_function(asset):
+    def mock_function(asset):
         return asset + 1
 
-    test_function.code = dedent(test_function.code)
+    mock_function.code = dedent(mock_function.code)
 
-    request_res = proxy_ds.code.request_code_execution(test_function)
+    request_res = proxy_ds.code.request_code_execution(mock_function)
     assert isinstance(request_res, Request)
 
     assert len(domain_client.requests.get_all()) == 1
@@ -121,7 +121,7 @@ def test_domain_gateway_user_code(domain_1_port, gateway_port):
     req_approve_res = domain_client.requests[-1].approve()
     assert isinstance(req_approve_res, SyftSuccess)
 
-    result = proxy_ds.code.test_function(asset=asset)
+    result = proxy_ds.code.mock_function(asset=asset)
 
     final_result = result.get()
 

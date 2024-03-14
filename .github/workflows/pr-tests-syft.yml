@@ -84,9 +84,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Docker on MacOS
-        if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.1.0
+      # - name: Docker on MacOS
+      #   if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
+      #   uses: crazy-max/ghaction-setup-docker@v3.1.0
+      #   with:
+      #     set-host: true
 
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'
@@ -305,7 +307,7 @@ jobs:
       max-parallel: 1
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
 
     runs-on: ${{ matrix.os }}
     steps:
