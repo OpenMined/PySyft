@@ -123,11 +123,15 @@ async def create_private_route(
     return (route_id, route_blob)
 
 
-async def get_node_id(conn: _JsonVeilidAPI) -> str:
-    state = await conn.get_state()
-    config = state.config.config
-    node_id = config.network.routing_table.node_id[0]
-    return node_id
+async def get_node_id() -> str:
+    logger.info("Getting Node ID")
+    async with await get_veilid_conn() as conn:
+        state = await conn.get_state()
+        config = state.config.config
+        node_id = config.network.routing_table.node_id[0]
+        if not node_id:
+            raise Exception("Node ID not found.Veilid might not be ready")
+        return node_id
 
 
 async def generate_dht_key() -> str:
@@ -140,12 +144,8 @@ async def generate_dht_key() -> str:
         async with await get_routing_context(conn) as router:
             dht_record = await router.create_dht_record(veilid.DHTSchema.dflt(1))
 
-            if USE_DIRECT_CONNECTION:
-                node_id = await get_node_id(conn)
-                await router.set_dht_value(dht_record.key, 0, node_id.encode())
-            else:
-                _, route_blob = await create_private_route(conn)
-                await router.set_dht_value(dht_record.key, 0, route_blob)
+            _, route_blob = await create_private_route(conn)
+            await router.set_dht_value(dht_record.key, 0, route_blob)
 
             await router.close_dht_record(dht_record.key)
 
@@ -166,6 +166,22 @@ async def retrieve_dht_key() -> str:
         if dht_key is None:
             raise Exception("DHT Key does not exist. Please generate one.")
         return str(dht_key)
+
+
+async def generate_vld_key() -> str:
+    if USE_DIRECT_CONNECTION:
+        await get_node_id()
+    else:
+        await generate_dht_key()
+
+    return "Veilid Key generated successfully"
+
+
+async def retrieve_vld_key() -> str:
+    if USE_DIRECT_CONNECTION:
+        return await get_node_id()
+    else:
+        return await retrieve_dht_key()
 
 
 async def get_dht_value(

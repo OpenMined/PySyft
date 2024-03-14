@@ -18,9 +18,9 @@ from .models import ResponseModel
 from .veilid_core import VeilidConnectionSingleton
 from .veilid_core import app_call
 from .veilid_core import app_message
-from .veilid_core import generate_dht_key
+from .veilid_core import generate_vld_key
 from .veilid_core import healthcheck
-from .veilid_core import retrieve_dht_key
+from .veilid_core import retrieve_vld_key
 
 # Logging Configuration
 log_level = os.getenv("APP_LOG_LEVEL", "INFO").upper()
@@ -45,19 +45,19 @@ async def healthcheck_endpoint() -> ResponseModel:
         return ResponseModel(message="FAIL")
 
 
-@app.post("/generate_dht_key", response_model=ResponseModel)
-async def generate_dht_key_endpoint() -> ResponseModel:
+@app.post("/generate_vld_key", response_model=ResponseModel)
+async def generate_vld_key_endpoint() -> ResponseModel:
     try:
-        res = await generate_dht_key()
+        res = await generate_vld_key()
         return ResponseModel(message=res)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate DHT key: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate VLD key: {e}")
 
 
-@app.get("/retrieve_dht_key", response_model=ResponseModel)
-async def retrieve_dht_key_endpoint() -> ResponseModel:
+@app.get("/retrieve_vld_key", response_model=ResponseModel)
+async def retrieve_vld_key_endpoint() -> ResponseModel:
     try:
-        res = await retrieve_dht_key()
+        res = await retrieve_vld_key()
         return ResponseModel(message=res)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
