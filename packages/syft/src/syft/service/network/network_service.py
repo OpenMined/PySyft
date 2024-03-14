@@ -523,16 +523,16 @@ def node_route_to_http_connection(
 
 @transform_method(VeilidNodeRoute, VeilidConnection)
 def node_route_to_veilid_connection(
-    obj: Any, context: TransformContext | None = None
+    obj: VeilidNodeRoute, context: TransformContext | None = None
 ) -> list[Callable]:
-    return VeilidConnection(dht_key=obj.dht_key, proxy_target_uid=obj.proxy_target_uid)
+    return VeilidConnection(vld_key=obj.vld_key, proxy_target_uid=obj.proxy_target_uid)
 
 
 @transform_method(VeilidConnection, VeilidNodeRoute)
 def veilid_connection_to_node_route(
-    obj: Any, context: TransformContext | None = None
+    obj: VeilidConnection, context: TransformContext | None = None
 ) -> list[Callable]:
-    return VeilidNodeRoute(dht_key=obj.dht_key, proxy_target_uid=obj.proxy_target_uid)
+    return VeilidNodeRoute(vld_key=obj.vld_key, proxy_target_uid=obj.proxy_target_uid)
 
 
 @transform(NodeMetadataV3, NodePeer)
