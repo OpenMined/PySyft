@@ -118,7 +118,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
     status_dict: dict[NodeIdentity, tuple[UserCodeStatus, str]] = {}
     user_code_link: LinkedObject
 
-    def get_diffs(self, ext_obj: Any) -> list[AttrDiff]:
+    def syft_get_diffs(self, ext_obj: Any) -> list[AttrDiff]:
         # relative
         from ...service.sync.diff_state import AttrDiff
 
@@ -1467,6 +1467,7 @@ def execute_byte_code(
                     f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
                 )
             if context.node is not None:
+                log_id = context.job.log_id
                 log_service = context.node.get_service("LogService")
                 log_service.append(context=context, uid=log_id, new_err=error_msg)
 

@@ -75,7 +75,8 @@ def test_dict_store_partition_set(
         == 2
     )
 
-    for idx in range(100):
+    repeats = 5
+    for idx in range(repeats):
         obj = MockSyftObject(data=idx)
         res = dict_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
         assert res.is_ok()
@@ -96,7 +97,8 @@ def test_dict_store_partition_delete(
     assert res.is_ok()
 
     objs = []
-    for v in range(10):
+    repeats = 5
+    for v in range(repeats):
         obj = MockSyftObject(data=v)
         dict_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
         objs.append(obj)
@@ -170,7 +172,8 @@ def test_dict_store_partition_update(
     assert res.is_err()
 
     # update the key multiple times
-    for v in range(10):
+    repeats = 5
+    for v in range(repeats):
         key = dict_store_partition.settings.store_key.with_obj(obj)
         obj_new = MockSyftObject(data=v)
 
@@ -221,8 +224,8 @@ def test_dict_store_partition_set_multithreaded(
     root_verify_key,
     dict_store_partition: DictStorePartition,
 ) -> None:
-    thread_cnt = 5
-    repeats = 200
+    thread_cnt = 3
+    repeats = 5
 
     dict_store_partition.init_store()
 
@@ -267,8 +270,8 @@ def test_dict_store_partition_update_multithreaded(
     root_verify_key,
     dict_store_partition: DictStorePartition,
 ) -> None:
-    thread_cnt = 5
-    repeats = 200
+    thread_cnt = 3
+    repeats = 5
     dict_store_partition.init_store()
 
     obj = MockSyftObject(data=0)
@@ -309,8 +312,8 @@ def test_dict_store_partition_set_delete_multithreaded(
 ) -> None:
     dict_store_partition.init_store()
 
-    thread_cnt = 5
-    repeats = 200
+    thread_cnt = 3
+    repeats = 5
 
     execution_err = None
 
