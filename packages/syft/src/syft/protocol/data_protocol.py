@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from collections.abc import MutableMapping
 from collections.abc import MutableSequence
 import hashlib
+from operator import itemgetter
 import os
 from pathlib import Path
 import re
@@ -66,23 +67,20 @@ class DataProtocol:
     @staticmethod
     def _calculate_object_hash(klass: type[SyftBaseObject]) -> str:
         # TODO: this depends on what is marked as serde
-        # field_data = {
-        #     field: repr(field_info.annotation)
-        #     for field, field_info in sorted(
-        #         klass.model_fields.items(), key=itemgetter(0)
-        #     )
-        # }
-        # obj_meta_info = {
-        #     "canonical_name": klass.__canonical_name__,
-        #     "version": klass.__version__,
-        #     "unique_keys": getattr(klass, "__attr_unique__", []),
-        #     "field_data": field_data,
-        # }
+        field_data = {
+            field: repr(field_info.annotation)
+            for field, field_info in sorted(
+                klass.model_fields.items(), key=itemgetter(0)
+            )
+        }
+        obj_meta_info = {
+            "canonical_name": klass.__canonical_name__,
+            "version": klass.__version__,
+            "unique_keys": getattr(klass, "__attr_unique__", []),
+            "field_data": field_data,
+        }
 
-        # return hashlib.sha256(orjson.dumps(obj_meta_info)).hexdigest()
-
-        # the tests should have been broken after commenting the above code
-        return hashlib.sha256(str(klass).encode()).hexdigest()
+        return hashlib.sha256(orjson.dumps(obj_meta_info)).hexdigest()
 
     @staticmethod
     def read_json(file_path: Path) -> dict:

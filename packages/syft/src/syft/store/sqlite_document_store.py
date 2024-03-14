@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from collections import defaultdict
 from copy import deepcopy
 from pathlib import Path
 import sqlite3
@@ -21,6 +22,7 @@ from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..types.uid import UID
+from ..util.util import thread_ident
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
@@ -29,19 +31,20 @@ from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
 from .locks import FileLockingConfig
 from .locks import LockingConfig
+from .locks import SyftLock
 
 # here we can create a single connection per cache_key
 # since pytest is concurrent processes, we need to isolate each connection
 # by its filename and optionally the thread that its running in
 # we keep track of each SQLiteBackingStore init in REF_COUNTS
 # when it hits 0 we can close the connection and release the file descriptor
-# SQLITE_CONNECTION_POOL_DB: dict[str, sqlite3.Connection] = {}
-# SQLITE_CONNECTION_POOL_CUR: dict[str, sqlite3.Cursor] = {}
-# REF_COUNTS: dict[str, int] = defaultdict(int)
+SQLITE_CONNECTION_POOL_DB: dict[str, sqlite3.Connection] = {}
+SQLITE_CONNECTION_POOL_CUR: dict[str, sqlite3.Cursor] = {}
+REF_COUNTS: dict[str, int] = defaultdict(int)
 
 
 def cache_key(db_name: str) -> str:
-    return db_name
+    return f"{db_name}_{thread_ident()}"
 
 
 def _repr_debug_(value: Any) -> str:
@@ -100,10 +103,11 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
         # if tempfile.TemporaryDirectory() varies from process to process
         # could this cause different locks on the same file
-        # lock_path = Path(temp_dir) / "sqlite_locks" / self.db_filename
-        # self.lock_config = FileLockingConfig(client_path=lock_path)
-        self.connection: sqlite3.Connection | None = None
+        temp_dir = tempfile.TemporaryDirectory().name
+        lock_path = Path(temp_dir) / "sqlite_locks" / self.db_filename
+        self.lock_config = FileLockingConfig(client_path=lock_path)
         self.create_table()
+        REF_COUNTS[cache_key(self.db_filename)] += 1
 
     @property
     def table_name(self) -> str:
@@ -116,9 +120,6 @@ class SQLiteBackingStore(KeyValueBackingStore):
         # that different connections are used in each thread. By using a dict for the
         # _db and _cur we can ensure they are never shared
 
-        if self.connection is not None:
-            return
-
         path = Path(self.file_path)
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -128,41 +129,49 @@ class SQLiteBackingStore(KeyValueBackingStore):
                 self.file_path,
                 timeout=self.store_config.client_config.timeout,
                 check_same_thread=False,  # do we need this if we use the lock?
-                isolation_level=None,
+                # check_same_thread=self.store_config.client_config.check_same_thread,
             )
             # TODO: Review OSX compatibility.
             # Set journal mode to WAL.
-            connection.execute("pragma journal_mode=wal")
-            self.connection = connection
+            # connection.execute("pragma journal_mode=wal")
+            SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)] = connection
 
     def create_table(self) -> None:
         try:
-            # with SyftLock(self.lock_config):
-            self.cur.execute(
-                f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
-                + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
-                + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
-            )
-            self.db.commit()
+            with SyftLock(self.lock_config):
+                self.cur.execute(
+                    f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
+                    + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
+                    + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
+                )
+                self.db.commit()
         except Exception as e:
             raise_exception(self.table_name, e)
 
     @property
     def db(self) -> sqlite3.Connection:
-        self._connect()
-        if self.connection is None:
-            raise ValueError("Database connection is not initialized")
-
-        return self.connection
+        if cache_key(self.db_filename) not in SQLITE_CONNECTION_POOL_DB:
+            self._connect()
+        return SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
 
     @property
     def cur(self) -> sqlite3.Cursor:
-        return self.db.cursor()
+        if cache_key(self.db_filename) not in SQLITE_CONNECTION_POOL_CUR:
+            SQLITE_CONNECTION_POOL_CUR[cache_key(self.db_filename)] = self.db.cursor()
+
+        return SQLITE_CONNECTION_POOL_CUR[cache_key(self.db_filename)]
 
     def _close(self) -> None:
         self._commit()
-        self.db.close()
-        self.connection = None
+        REF_COUNTS[cache_key(self.db_filename)] -= 1
+        if REF_COUNTS[cache_key(self.db_filename)] <= 0:
+            # once you close it seems like other object references can't re-use the
+            # same connection
+            self.db.close()
+            del SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
+        else:
+            # don't close yet because another SQLiteBackingStore is probably still open
+            pass
 
     def _commit(self) -> None:
         self.db.commit()
@@ -170,25 +179,25 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _execute(
         self, sql: str, *args: list[Any] | None
     ) -> Result[Ok[sqlite3.Cursor], Err[str]]:
-        # with SyftLock(self.lock_config):
-        cursor: sqlite3.Cursor | None = None
-        # err = None
-        try:
-            cursor = self.cur.execute(sql, *args)
-        except Exception as e:
-            raise_exception(self.table_name, e)
+        with SyftLock(self.lock_config):
+            cursor: sqlite3.Cursor | None = None
+            # err = None
+            try:
+                cursor = self.cur.execute(sql, *args)
+            except Exception as e:
+                raise_exception(self.table_name, e)
 
-        # TODO: Which exception is safe to rollback on?
-        # we should map out some more clear exceptions that can be returned
-        # rather than halting the program like disk I/O error etc
-        # self.db.rollback()  # Roll back all changes if an exception occurs.
-        # err = Err(str(e))
-        self.db.commit()  # Commit if everything went ok
+            # TODO: Which exception is safe to rollback on?
+            # we should map out some more clear exceptions that can be returned
+            # rather than halting the program like disk I/O error etc
+            # self.db.rollback()  # Roll back all changes if an exception occurs.
+            # err = Err(str(e))
+            self.db.commit()  # Commit if everything went ok
 
-        # if err is not None:
-        #     return err
+            # if err is not None:
+            #     return err
 
-        return Ok(cursor)
+            return Ok(cursor)
 
     def _set(self, key: UID, value: Any) -> None:
         if self._exists(key):
