@@ -125,6 +125,7 @@ async def create_private_route(
 
 async def get_node_id() -> str:
     logger.info("Getting Node ID")
+    # TODO: Cache NODE ID Retrieval
     async with await get_veilid_conn() as conn:
         state = await conn.get_state()
         config = state.config.config
@@ -209,44 +210,43 @@ async def get_dht_value(
 
 
 # TODO: change verbosity of logs to debug at appropriate places
-async def get_route_from_dht_record(
-    dht_key: str, conn: _JsonVeilidAPI, router: _JsonRoutingContext
+async def get_route_from_vld_key(
+    vld_key: str, conn: _JsonVeilidAPI, router: _JsonRoutingContext
 ) -> str | RouteId:
-    dht_key = veilid.TypedKey(dht_key)
-    logger.info(f"App Call to DHT Key: {dht_key}")
-    dht_value = await get_dht_value(router, dht_key, 0)
-    logger.info(f"DHT Value:{dht_value}")
-
     if USE_DIRECT_CONNECTION:
-        route = dht_value.data.decode()
-        logger.info(f"Node ID: {route}")
+        route = vld_key
+        logger.info(f"Peer Node ID: {route}")
     else:
+        dht_key = veilid.TypedKey(vld_key)
+        dht_value = await get_dht_value(router, dht_key, 0)
+        logger.info(f"DHT Value:{dht_value}")
         route = await conn.import_remote_private_route(dht_value.data)
         logger.info(f"Private Route of  Peer: {route} ")
 
     return route
 
 
-async def app_message(dht_key: str, message: bytes) -> str:
+async def app_message(vld_key: str, message: bytes) -> str:
     async with await get_veilid_conn() as conn:
         async with await get_routing_context(conn) as router:
-            route = await get_route_from_dht_record(dht_key, conn, router)
+            route = await get_route_from_vld_key(vld_key, conn, router)
 
             await router.app_message(route, message)
 
             return "Message sent successfully"
 
 
-async def app_call(dht_key: str, message: bytes) -> bytes:
+async def app_call(vld_key: str, message: bytes) -> bytes:
     async with await get_veilid_conn() as conn:
         async with await get_routing_context(conn) as router:
-            route = await get_route_from_dht_record(dht_key, conn, router)
+            route = await get_route_from_vld_key(vld_key, conn, router)
 
             result = await router.app_call(route, message)
 
             return result
 
 
+# TODO: Modify healthcheck endpoint to check public internet ready
 async def healthcheck() -> bool:
     async with await get_veilid_conn() as conn:
         state = await conn.get_state()

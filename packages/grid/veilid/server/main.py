@@ -65,10 +65,11 @@ async def retrieve_vld_key_endpoint() -> ResponseModel:
 
 @app.post("/app_message", response_model=ResponseModel)
 async def app_message_endpoint(
-    request: Request, dht_key: Annotated[str, Body()], message: Annotated[bytes, Body()]
+    request: Request, vld_key: Annotated[str, Body()], message: Annotated[bytes, Body()]
 ) -> ResponseModel:
     try:
-        res = await app_message(dht_key=dht_key, message=message)
+        logger.info("Received app_message request")
+        res = await app_message(vld_key=vld_key, message=message)
         return ResponseModel(message=res)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -76,10 +77,10 @@ async def app_message_endpoint(
 
 @app.post("/app_call")
 async def app_call_endpoint(
-    request: Request, dht_key: Annotated[str, Body()], message: Annotated[bytes, Body()]
+    request: Request, vld_key: Annotated[str, Body()], message: Annotated[bytes, Body()]
 ) -> Response:
     try:
-        res = await app_call(dht_key=dht_key, message=message)
+        res = await app_call(vld_key=vld_key, message=message)
         return Response(res, media_type="application/octet-stream")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
