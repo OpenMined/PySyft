@@ -77,7 +77,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip uv==${{ vars.UV_VERSION }}
+          pip install --upgrade --user pip uv==${{ vars.UV_VERSION }}
           uv --version
 
       - name: Get pip cache dir
@@ -92,14 +92,14 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade tox tox-uv==${{ vars.TOX_UV_VERSION }}
+          pip install --upgrade --user tox tox-uv==${{ vars.TOX_UV_VERSION }}
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -269,7 +269,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip uv==${{ vars.UV_VERSION }}
+          pip install --upgrade --user pip uv==${{ vars.UV_VERSION }}
           uv --version
 
       - name: Get pip cache dir
@@ -284,14 +284,14 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade tox tox-uv==${{ vars.TOX_UV_VERSION }}
+          pip install --upgrade --user tox tox-uv==${{ vars.TOX_UV_VERSION }}
 
       - name: Run syft backend base image building test
         if: steps.changes.outputs.stack == 'true'
@@ -349,19 +349,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: pip cache
-        uses: actions/cache@v4
-        if: steps.changes.outputs.stack == 'true'
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}
-
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip uv==${{ vars.UV_VERSION }}
+          pip install --upgrade --user pip uv==${{ vars.UV_VERSION }}
           uv --version
 
       - name: Get pip cache dir
@@ -371,10 +362,19 @@ jobs:
         run: |
           echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
+      - name: pip cache
+        uses: actions/cache@v4
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}
+
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade tox tox-uv==${{ vars.TOX_UV_VERSION }}
+          pip install --upgrade --user tox tox-uv==${{ vars.TOX_UV_VERSION }}
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -566,19 +566,10 @@ jobs:
           docker builder prune --all --force
           docker system prune --all --force
 
-      - name: pip cache
-        uses: actions/cache@v4
-        if: steps.changes.outputs.stack == 'true'
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}
-
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip uv==${{ vars.UV_VERSION }}
+          pip install --upgrade --user pip uv==${{ vars.UV_VERSION }}
           uv --version
 
       - name: Get pip cache dir
@@ -588,10 +579,19 @@ jobs:
         run: |
           echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
+      - name: pip cache
+        uses: actions/cache@v4
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}
+
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade tox tox-uv==${{ vars.TOX_UV_VERSION }}
+          pip install --upgrade --user tox tox-uv==${{ vars.TOX_UV_VERSION }}
 
       - name: Install kubectl
         if: steps.changes.outputs.stack == 'true'

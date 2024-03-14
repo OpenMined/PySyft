@@ -46,7 +46,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.frontend == 'true'
         run: |
-          pip install --upgrade pip uv==${{ vars.UV_VERSION }}
+          pip install --upgrade --user pip uv==${{ vars.UV_VERSION }}
           uv --version
 
       - name: Get pip cache dir
@@ -61,9 +61,9 @@ jobs:
         if: steps.changes.outputs.frontend == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('packages/hagrid/setup.cfg') }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('packages/hagrid/setup.cfg') }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}-
 
       - name: Docker on MacOS
         if: steps.changes.outputs.frontend == 'true' && matrix.os == 'macos-latest'
@@ -72,7 +72,7 @@ jobs:
       - name: Install Tox
         if: steps.changes.outputs.frontend == 'true'
         run: |
-          pip install --upgrade tox tox-uv==${{ vars.TOX_UV_VERSION }}
+          pip install --upgrade --user tox tox-uv==${{ vars.TOX_UV_VERSION }}
 
       - name: Remove existing containers
         if: steps.changes.outputs.frontend == 'true'
@@ -128,7 +128,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip uv==${{ vars.UV_VERSION }}
+          pip install --upgrade --user pip uv==${{ vars.UV_VERSION }}
           uv --version
 
       - name: Get pip cache dir
@@ -143,9 +143,9 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('packages/hagrid/setup.cfg') }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('packages/hagrid/setup.cfg') }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}-
 
       - name: Install Docker Compose
         if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
@@ -163,7 +163,7 @@ jobs:
       - name: Install Tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade tox tox-uv==${{ vars.TOX_UV_VERSION }}
+          pip install --upgrade --user tox tox-uv==${{ vars.TOX_UV_VERSION }}
 
       - name: Remove existing containers
         if: steps.changes.outputs.stack == 'true'

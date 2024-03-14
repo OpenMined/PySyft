@@ -29,7 +29,7 @@ jobs:
 
       - name: Install pip packages
         run: |
-          pip install --upgrade pip uv==${{ vars.UV_VERSION }}
+          pip install --upgrade --user pip uv==${{ vars.UV_VERSION }}
           uv --version
 
       - name: Get pip cache dir
@@ -43,13 +43,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}-
 
       - name: Install Tox
         run: |
-          pip install --upgrade tox tox-uv==${{ vars.TOX_UV_VERSION }}
+          pip install --upgrade --user tox tox-uv==${{ vars.TOX_UV_VERSION }}
 
       - uses: pre-commit/action@v3.0.1
 

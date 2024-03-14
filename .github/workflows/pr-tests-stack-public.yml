@@ -50,31 +50,32 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install --upgrade --user pip uv==${{ vars.UV_VERSION }}
+          uv --version
+
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
         id: pip-cache
         shell: bash
         run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: actions/cache@v4
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}
-
-      - name: Upgrade pip
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          python -m pip install --upgrade --user pip
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install -U tox
+          pip install --upgrade --user tox tox-uv==${{ vars.TOX_UV_VERSION }}
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
