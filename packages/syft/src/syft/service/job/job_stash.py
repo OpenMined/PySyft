@@ -17,7 +17,6 @@ from ...client.api import APIRegistry
 from ...client.api import SyftAPICall
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...service.queue.queue_stash import QueueItem
 from ...service.worker.worker_pool import SyftWorker
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore

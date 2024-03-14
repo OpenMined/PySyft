@@ -4,8 +4,6 @@ from typing import Any
 from typing import Optional
 from typing import TYPE_CHECKING
 
-from syft.service.response import SyftError
-
 # relative
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
@@ -15,6 +13,7 @@ from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
+from ..response import SyftError
 
 if TYPE_CHECKING:
     # relative
@@ -121,6 +120,7 @@ class SyncState(SyftObject):
                 try:
                     deps = [d.id for d in deps if d.id in all_ids]  # type: ignore
                 except Exception:
+                    # third party
                     import ipdb
 
                     ipdb.set_trace()

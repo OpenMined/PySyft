@@ -35,7 +35,8 @@ from ...util.fonts import fonts_css
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import StoragePermission
-from ..code.user_code import UserCode, UserCodeStatusCollection
+from ..code.user_code import UserCode
+from ..code.user_code import UserCodeStatusCollection
 from ..job.job_stash import Job
 from ..log.log import SyftLog
 from ..output.output_service import ExecutionOutput
