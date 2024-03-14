@@ -67,8 +67,10 @@ def protocol_file():
     protocol_dir = sy.SYFT_PATH / "protocol"
     file_path = protocol_dir / f"{random_name}.json"
     patch_protocol_file(filepath=file_path)
-    yield file_path
-    remove_file(filepath=file_path)
+    try:
+        yield file_path
+    finally:
+        remove_file(file_path)
 
 
 @pytest.fixture(autouse=True)
