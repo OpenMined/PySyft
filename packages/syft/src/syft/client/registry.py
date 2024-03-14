@@ -38,7 +38,7 @@ class NetworkRegistry:
                             "name": "test-gateway",
                             "host_or_ip": "localhost",
                             "protocol": "http",
-                            "port": 9082,
+                            "port": 9081,
                             "admin_email": "support@openmined.org",
                             "website": "https://www.openmined.org/",
                             "slack": "https://slack.openmined.org/",
@@ -158,7 +158,7 @@ class DomainRegistry:
                             "name": "test-gateway",
                             "host_or_ip": "localhost",
                             "protocol": "http",
-                            "port": 9082,
+                            "port": 9081,
                             "admin_email": "support@openmined.org",
                             "website": "https://www.openmined.org/",
                             "slack": "https://slack.openmined.org/",
@@ -247,8 +247,8 @@ class DomainRegistry:
             _all_online_domains = []
             for network in networks:
                 network_client = NetworkRegistry.create_client(network)
-                domains = network_client.domains
-                self.all_domains += [domains[idx] for idx in range(len(domains))]
+                domains: list[NodePeer] = network_client.domains.retrieve_nodes()
+                self.all_domains += domains
                 _online_domains = list(
                     executor.map(lambda domain: check_domain(domain), domains)
                 )
