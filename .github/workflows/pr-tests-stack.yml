@@ -77,7 +77,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip uv
+          pip install --upgrade pip uv==${{ vars.UV_VERSION }}
           uv --version
 
       - name: Get pip cache dir
@@ -99,7 +99,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade tox tox-uv
+          pip install --upgrade tox tox-uv==${{ vars.TOX_UV_VERSION }}
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -269,7 +269,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip uv
+          pip install --upgrade pip uv==${{ vars.UV_VERSION }}
           uv --version
 
       - name: Get pip cache dir
@@ -291,7 +291,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade tox tox-uv
+          pip install --upgrade tox tox-uv==${{ vars.TOX_UV_VERSION }}
 
       - name: Run syft backend base image building test
         if: steps.changes.outputs.stack == 'true'
@@ -361,7 +361,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip uv
+          pip install --upgrade pip uv==${{ vars.UV_VERSION }}
           uv --version
 
       - name: Get pip cache dir
@@ -374,7 +374,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade tox tox-uv
+          pip install --upgrade tox tox-uv==${{ vars.TOX_UV_VERSION }}
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -578,7 +578,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip uv
+          pip install --upgrade pip uv==${{ vars.UV_VERSION }}
           uv --version
 
       - name: Get pip cache dir
@@ -591,7 +591,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade tox tox-uv
+          pip install --upgrade tox tox-uv==${{ vars.TOX_UV_VERSION }}
 
       - name: Install kubectl
         if: steps.changes.outputs.stack == 'true'
