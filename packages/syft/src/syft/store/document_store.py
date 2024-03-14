@@ -345,7 +345,9 @@ class StorePartition:
         locked = self.lock.acquire(blocking=True)
         if not locked:
             print("FAILED TO LOCK")
-            return Err("Failed to acquire lock for the operation")
+            return Err(
+                f"Failed to acquire lock for the operation {self.lock.lock_name} ({self.lock._lock})"
+            )
 
         try:
             result = cbk(*args, **kwargs)

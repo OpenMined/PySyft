@@ -177,7 +177,7 @@ def run_container_using_docker(
             image=worker_image.image_identifier.full_name_with_tag,
             name=f"{hostname}-{worker_name}",
             detach=True,
-            auto_remove=True,
+            # auto_remove=True,
             network_mode=backend_host_config["network_mode"],
             environment=environment,
             volumes=backend_host_config["volume_binds"],
@@ -609,8 +609,8 @@ def image_build(
             return builder.build_image(
                 config=image.config,
                 tag=full_tag,
-                rm=True,
-                forcerm=True,
+                # rm=True,
+                # forcerm=True,
                 **kwargs,
             )
         except docker.errors.APIError as e:

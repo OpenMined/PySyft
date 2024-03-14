@@ -1,9 +1,3 @@
-# stdlib
-
-# stdlib
-
-# stdlib
-
 # third party
 import pytest
 from pytest import MonkeyPatch
@@ -36,7 +30,6 @@ def test_requeststash_get_all_for_verify_key_no_requests(
     assert len(requests.ok()) == 0
 
 
-# TODO: we don't know why this fails on Windows but it should be fixed
 @pytest.mark.xfail
 def test_requeststash_get_all_for_verify_key_success(
     root_verify_key,
@@ -52,7 +45,10 @@ def test_requeststash_get_all_for_verify_key_success(
     )
 
     verify_key: SyftVerifyKey = guest_domain_client.credentials.verify_key
-    requests = request_stash.get_all_for_verify_key(verify_key)
+    requests = request_stash.get_all_for_verify_key(
+        credentials=root_verify_key,
+        verify_key=verify_key,
+    )
 
     assert requests.is_ok() is True
     assert len(requests.ok()) == 1
@@ -61,10 +57,14 @@ def test_requeststash_get_all_for_verify_key_success(
     # add another request
     submit_request_2: SubmitRequest = SubmitRequest(changes=[])
     stash_set_result_2 = request_stash.set(
-        submit_request_2.to(Request, context=authed_context_guest_domain_client)
+        root_verify_key,
+        submit_request_2.to(Request, context=authed_context_guest_domain_client),
     )
 
-    requests = request_stash.get_all_for_verify_key(verify_key)
+    requests = request_stash.get_all_for_verify_key(
+        credentials=root_verify_key,
+        verify_key=verify_key,
+    )
 
     assert requests.is_ok() is True
     assert len(requests.ok()) == 2

@@ -299,7 +299,8 @@ services:
 
 volumes:
   credentials-data:
-  # app-redis-data:
+    labels:
+      orgs.openmined.syft: "this is a syft credentials volume"
   seaweedfs-data:
     labels:
       orgs.openmined.syft: "this is a syft seaweedfs volume"
