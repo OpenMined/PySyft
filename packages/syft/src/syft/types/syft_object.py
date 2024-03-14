@@ -419,6 +419,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     __attr_custom_repr__: ClassVar[list[str] | None] = (
         None  # show these in html repr of an object
     )
+    __validate_private_attrs__: ClassVar[bool] = True
 
     def __syft_get_funcs__(self) -> list[tuple[str, Signature]]:
         funcs = print_type_cache[type(self)]
@@ -577,11 +578,14 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         pass
 
     def _syft_set_validate_private_attrs_(self, **kwargs: Any) -> None:
+        if not self.__validate_private_attrs__:
+            return
         # Validate and set private attributes
         # https://github.com/pydantic/pydantic/issues/2105
+        annotations = typing.get_type_hints(self.__class__, localns=locals())
         for attr, decl in self.__private_attributes__.items():
             value = kwargs.get(attr, decl.get_default())
-            var_annotation = self.__annotations__.get(attr)
+            var_annotation = annotations.get(attr)
             if value is not PydanticUndefined:
                 if var_annotation is not None:
                     # Otherwise validate value against the variable annotation
