@@ -316,7 +316,7 @@ class StorePartition:
         self.store_config = store_config
         self.init_store()
 
-        store_config.locking_config.lock_name = settings.name
+        store_config.locking_config.lock_name = f"StorePartition-{settings.name}"
         self.lock = SyftLock(store_config.locking_config)
 
     def init_store(self) -> Result[Ok, Err]:

@@ -29,8 +29,8 @@ from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
-from .locks import FileLockingConfig
 from .locks import LockingConfig
+from .locks import NoLockingConfig
 from .locks import SyftLock
 
 # here we can create a single connection per cache_key
@@ -101,11 +101,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         if store_config.client_config:
             self.db_filename = store_config.client_config.filename
 
-        # if tempfile.TemporaryDirectory() varies from process to process
-        # could this cause different locks on the same file
-        temp_dir = tempfile.TemporaryDirectory().name
-        lock_path = Path(temp_dir) / "sqlite_locks" / self.db_filename
-        self.lock_config = FileLockingConfig(client_path=lock_path)
+        self.lock = SyftLock(NoLockingConfig())
         self.create_table()
         REF_COUNTS[cache_key(self.db_filename)] += 1
 
@@ -138,7 +134,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def create_table(self) -> None:
         try:
-            with SyftLock(self.lock_config):
+            with self.lock:
                 self.cur.execute(
                     f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
                     + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
@@ -179,7 +175,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _execute(
         self, sql: str, *args: list[Any] | None
     ) -> Result[Ok[sqlite3.Cursor], Err[str]]:
-        with SyftLock(self.lock_config):
+        with self.lock:
             cursor: sqlite3.Cursor | None = None
             # err = None
             try:
@@ -467,4 +463,4 @@ class SQLiteStoreConfig(StoreConfig):
     client_config: SQLiteStoreClientConfig
     store_type: type[DocumentStore] = SQLiteDocumentStore
     backing_store: type[KeyValueBackingStore] = SQLiteBackingStore
-    locking_config: LockingConfig = FileLockingConfig()
+    locking_config: LockingConfig = Field(default_factory=NoLockingConfig)
