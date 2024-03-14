@@ -605,6 +605,33 @@ class MongoStorePartition(StorePartition):
 
         return storage_permission.node_uid in storage_permissions["node_uids"]
 
+    def remove_storage_permission(
+        self, storage_permission: StoragePermission
+    ) -> Result[None, Err]:
+        storage_permissions_or_err = self.storage_permissions
+        if storage_permissions_or_err.is_err():
+            return storage_permissions_or_err
+        storage_permissions_collection = storage_permissions_or_err.ok()
+
+        storage_permissions: dict | None = storage_permissions_collection.find_one(
+            {"_id": storage_permission.uid}
+        )
+        if storage_permissions is None:
+            return Err(
+                f"storage permission with UID {storage_permission.uid} not found!"
+            )
+        node_uids: set = storage_permissions["node_uids"]
+        if storage_permission.node_uid in node_uids:
+            node_uids.remove(storage_permission.node_uid)
+            storage_permissions_collection.update_one(
+                {"_id": storage_permission.uid},
+                {"$set": {"node_uids": node_uids}},
+            )
+        else:
+            return Err(
+                f"the node_uid {storage_permission.node_uid} does not exist in the storage permission!"
+            )
+
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey
     ) -> Result[SyftSuccess, str]:

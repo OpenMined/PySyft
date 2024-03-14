@@ -711,18 +711,11 @@ def test_mongo_store_partition_add_remove_storage_permission(
         uid=obj.id,
         node_uid=UID(),
     )
+    assert not mongo_store_partition.has_storage_permission(storage_permission)
     mongo_store_partition.add_storage_permission(storage_permission)
     assert mongo_store_partition.has_storage_permission(storage_permission)
-
-    storage_permission2 = StoragePermission(
-        uid=obj.id,
-        node_uid=UID(),
-    )
-    assert not mongo_store_partition.has_storage_permission(storage_permission2)
-
-    mongo_store_partition.add_storage_permission(storage_permission2)
-    assert mongo_store_partition.has_storage_permission(storage_permission2)
-    assert mongo_store_partition.has_storage_permission(storage_permission)
+    mongo_store_partition.remove_storage_permission(storage_permission)
+    assert not mongo_store_partition.has_storage_permission(storage_permission)
 
     obj2 = MockSyftObject(data=1)
     mongo_store_partition.set(root_verify_key, obj2, add_storage_permission=False)
