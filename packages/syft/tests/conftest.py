@@ -2,6 +2,10 @@
 import json
 import os
 from pathlib import Path
+from secrets import token_hex
+import shutil
+import sys
+from tempfile import gettempdir
 from unittest import mock
 
 # third party
@@ -44,6 +48,29 @@ def patch_protocol_file(filepath: Path):
 
 def remove_file(filepath: Path):
     filepath.unlink(missing_ok=True)
+
+
+def pytest_sessionstart(session):
+    # add env var SYFT_TEMP_ROOT to create a unique temp dir for each test run
+    os.environ["SYFT_TEMP_ROOT"] = f"pytest_syft_{token_hex(8)}"
+
+
+def pytest_configure(config):
+    if hasattr(config, "workerinput") or is_vscode_discover():
+        return
+
+    for path in Path(gettempdir()).glob("pytest_*"):
+        shutil.rmtree(path)
+
+    for path in Path(gettempdir()).glob("sherlock"):
+        shutil.rmtree(path)
+
+
+def is_vscode_discover():
+    """Check if the test is being run from VSCode discover test runner."""
+
+    cmd = " ".join(sys.argv)
+    return "ms-python.python" in cmd and "discover" in cmd
 
 
 # Pytest hook to set the number of workers for xdist
@@ -91,16 +118,16 @@ def stage_protocol(protocol_file: Path):
                     _file_path.unlink()
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def faker():
     return Faker()
 
 
 @pytest.fixture()
-def worker(faker) -> Worker:
-    worker = sy.Worker.named(name=faker.name())
+def worker() -> Worker:
+    worker = sy.Worker.named(name=token_hex(8))
     yield worker
-    worker.stop()
+    worker.cleanup()
     del worker
 
 
@@ -146,8 +173,8 @@ def mongo_client(testrun_uid):
     A race-free fixture that starts a MongoDB server for an entire pytest session.
     Cleans up the server when the session ends, or when the last client disconnects.
     """
-
-    state = SharedState(testrun_uid)
+    db_name = f"pytest_mongo_{testrun_uid}"
+    state = SharedState(db_name)
     KEY_CONN_STR = "mongoConnectionString"
     KEY_CLIENTS = "mongoClients"
 
@@ -156,7 +183,7 @@ def mongo_client(testrun_uid):
         conn_str = state.get(KEY_CONN_STR, None)
 
         if not conn_str:
-            conn_str = start_mongo_server(testrun_uid)
+            conn_str = start_mongo_server(db_name)
             state.set(KEY_CONN_STR, conn_str)
 
         # increment the number of clients
@@ -177,6 +204,7 @@ def mongo_client(testrun_uid):
     # if no clients are connected, destroy the container
     if clients <= 0:
         stop_mongo_server(testrun_uid)
+        state.purge()
 
 
 __all__ = [

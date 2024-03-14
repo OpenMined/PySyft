@@ -1,5 +1,5 @@
 # stdlib
-import random
+from secrets import token_hex
 import sys
 from textwrap import dedent
 
@@ -17,20 +17,20 @@ from syft.service.response import SyftSuccess
 
 @pytest.fixture
 def node():
-    random.seed()
-    name = f"nested_job_test_domain-{random.randint(0,1000)}"
     _node = sy.orchestra.launch(
-        name=name,
+        name=token_hex(8),
         dev_mode=True,
         reset=True,
         n_consumers=3,
         create_producer=True,
         queue_port=None,
         in_memory_workers=True,
+        local_db=False,
     )
     # startup code here
     yield _node
     # Cleanup code
+    _node.python_node.cleanup()
     _node.land()
 
 

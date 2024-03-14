@@ -17,7 +17,6 @@ import socket
 import subprocess
 from tarfile import TarFile
 from tempfile import gettempdir
-from tempfile import mkdtemp
 import zipfile
 
 # third party
@@ -64,15 +63,14 @@ def stop_mongo_server(name):
 
 
 def __start_mongo_proc(name, port):
-    prefix = f"mongo_{name}_"
-
     download_dir = Path(gettempdir(), "mongodb")
 
     exec_path = __download_mongo(download_dir)
     if not exec_path:
         raise Exception("Failed to download MongoDB binaries")
 
-    db_path = Path(mkdtemp(prefix=prefix))
+    db_path = Path(gettempdir(), name, "db")
+    db_path.mkdir(parents=True, exist_ok=True)
     proc = subprocess.Popen(
         [
             str(exec_path),
@@ -87,9 +85,7 @@ def __start_mongo_proc(name, port):
 
 
 def __destroy_mongo_proc(name):
-    prefix = f"mongo_{name}_"
-
-    for path in Path(gettempdir()).glob(f"{prefix}*"):
+    for path in Path(gettempdir()).glob(f"{name}*"):
         rmtree(path, ignore_errors=True)
 
 

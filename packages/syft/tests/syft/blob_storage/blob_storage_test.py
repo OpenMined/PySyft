@@ -49,6 +49,8 @@ def test_blob_storage_write():
 
     assert isinstance(written_data, SyftSuccess)
 
+    worker.cleanup()
+
 
 def test_blob_storage_write_syft_object():
     random.seed()
@@ -65,6 +67,7 @@ def test_blob_storage_write_syft_object():
     written_data = blob_deposit.write(file_data)
 
     assert isinstance(written_data, SyftSuccess)
+    worker.cleanup()
 
 
 def test_blob_storage_read():
@@ -86,6 +89,7 @@ def test_blob_storage_read():
 
     assert isinstance(syft_retrieved_data, SyftObjectRetrieval)
     assert syft_retrieved_data.read() == raw_data
+    worker.cleanup()
 
 
 def test_blob_storage_delete(authed_context, blob_storage):

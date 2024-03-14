@@ -26,6 +26,7 @@ def node_1():
         queue_port=None,
     )
     yield node
+    node.python_node.cleanup()
     node.land()
 
 
@@ -43,6 +44,7 @@ def node_2():
         queue_port=None,
     )
     yield node
+    node.python_node.cleanup()
     node.land()
 
 

@@ -203,8 +203,8 @@ def test_sync_flow():
         job_low.result.syft_blob_storage_entry_id
         == job_high.result.syft_blob_storage_entry_id
     )
-    low_worker.close()
-    high_worker.close()
+    low_worker.cleanup()
+    high_worker.cleanup()
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
@@ -379,5 +379,5 @@ def test_sync_flow_no_sharing():
         == f"Permission: [READ: {job_high.result.id.id} as {client_low_ds.verify_key}] denied"
     )
 
-    low_worker.close()
-    high_worker.close()
+    low_worker.cleanup()
+    high_worker.cleanup()
