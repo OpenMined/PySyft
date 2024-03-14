@@ -108,13 +108,13 @@ class NetworkRegistry:
     def _repr_html_(self) -> str:
         on = self.online_networks
         if len(on) == 0:
-            return "(no gateways online - try syft.gateways.all_gateways to see offline gateways)"
+            return "(no gateways online - try syft.gateways.all_networks to see offline gateways)"
         return pd.DataFrame(on)._repr_html_()  # type: ignore
 
     def __repr__(self) -> str:
         on = self.online_networks
         if len(on) == 0:
-            return "(no gateways online - try syft.gateways.all_gateways to see offline gateways)"
+            return "(no gateways online - try syft.gateways.all_networks to see offline gateways)"
         return pd.DataFrame(on).to_string()
 
     @staticmethod
@@ -210,6 +210,7 @@ class DomainRegistry:
                     except Exception:
                         network["version"] = "unknown"
                 return network
+
             return None
 
         # We can use a with statement to ensure threads are cleaned up promptly
@@ -223,6 +224,7 @@ class DomainRegistry:
         for each in _online_networks:
             if each is not None:
                 online_networks.append(each)
+
         return online_networks
 
     @property
@@ -262,9 +264,9 @@ class DomainRegistry:
 
     def __make_dict__(self) -> list[dict[str, Any]]:
         on = self.online_domains
-        domains = []
-        domain_dict: dict[str, Any] = {}
+        domains: list[dict[str, Any]] = []
         for domain, metadata in on:
+            domain_dict: dict[str, Any] = {}
             domain_dict["name"] = domain.name
             if metadata is not None:
                 domain_dict["organization"] = metadata.organization
@@ -277,16 +279,17 @@ class DomainRegistry:
             domain_dict["port"] = route.port if route else "-"
             domain_dict["id"] = domain.id
             domains.append(domain_dict)
+
         return domains
 
     def _repr_html_(self) -> str:
-        on = self.__make_dict__()
+        on: list[dict[str, Any]] = self.__make_dict__()
         if len(on) == 0:
             return "(no domains online - try syft.domains.all_domains to see offline domains)"
         return pd.DataFrame(on)._repr_html_()  # type: ignore
 
     def __repr__(self) -> str:
-        on = self.__make_dict__()
+        on: list[dict[str, Any]] = self.__make_dict__()
         if len(on) == 0:
             return "(no domains online - try syft.domains.all_domains to see offline domains)"
         return pd.DataFrame(on).to_string()
