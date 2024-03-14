@@ -27,6 +27,8 @@ def test_sync_flow():
         n_consumers=1,
         create_producer=True,
         node_side_type=NodeSideType.LOW_SIDE,
+        queue_port=None,
+        in_memory_workers=True,
     )
     high_worker = sy.Worker(
         name="high-test",
@@ -34,6 +36,8 @@ def test_sync_flow():
         n_consumers=1,
         create_producer=True,
         node_side_type=NodeSideType.HIGH_SIDE,
+        queue_port=None,
+        in_memory_workers=True,
     )
 
     low_client = low_worker.root_client
@@ -124,7 +128,7 @@ def test_sync_flow():
     print(high_client.code.get_all())
     job_high = high_client.code.compute_mean(data=data_high, blocking=False)
     print("Waiting for job...")
-    job_high.wait()
+    job_high.wait(timeout=60)
     job_high.result.get()
 
     # syft absolute
@@ -215,6 +219,8 @@ def test_sync_flow_no_sharing():
         n_consumers=1,
         create_producer=True,
         node_side_type=NodeSideType.LOW_SIDE,
+        queue_port=None,
+        in_memory_workers=True,
     )
     high_worker = sy.Worker(
         name="high-test-2",
@@ -222,6 +228,8 @@ def test_sync_flow_no_sharing():
         n_consumers=1,
         create_producer=True,
         node_side_type=NodeSideType.HIGH_SIDE,
+        queue_port=None,
+        in_memory_workers=True,
     )
 
     low_client = low_worker.root_client
@@ -312,7 +320,7 @@ def test_sync_flow_no_sharing():
     print(high_client.code.get_all())
     job_high = high_client.code.compute_mean(data=data_high, blocking=False)
     print("Waiting for job...")
-    job_high.wait()
+    job_high.wait(timeout=60)
     job_high.result.get()
 
     # syft absolute

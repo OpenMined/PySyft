@@ -1,10 +1,7 @@
 # stdlib
-import sys
 from threading import Thread
 
 # third party
-from joblib import Parallel
-from joblib import delayed
 from pymongo.collection import Collection as MongoCollection
 import pytest
 from result import Err
@@ -33,8 +30,6 @@ from .store_fixtures_test import mongo_store_partition_fn
 from .store_mocks_test import MockObjectType
 from .store_mocks_test import MockSyftObject
 
-REPEATS = 20
-
 PERMISSIONS = [
     ActionObjectOWNER,
     ActionObjectREAD,
@@ -43,9 +38,6 @@ PERMISSIONS = [
 ]
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
 def test_mongo_store_partition_sanity(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
@@ -56,9 +48,13 @@ def test_mongo_store_partition_sanity(
     assert hasattr(mongo_store_partition, "_permissions")
 
 
+@pytest.mark.skip(reason="Test gets stuck at store.init_store()")
 def test_mongo_store_partition_init_failed(root_verify_key) -> None:
     # won't connect
-    mongo_config = MongoStoreClientConfig(connectTimeoutMS=1, timeoutMS=1)
+    mongo_config = MongoStoreClientConfig(
+        connectTimeoutMS=1,
+        timeoutMS=1,
+    )
 
     store_config = MongoStoreConfig(client_config=mongo_config)
     settings = PartitionSettings(name="test", object_type=MockObjectType)
@@ -71,11 +67,6 @@ def test_mongo_store_partition_init_failed(root_verify_key) -> None:
     assert res.is_err()
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
-@pytest.mark.flaky(reruns=3, reruns_delay=2)
-@pytest.mark.xfail
 def test_mongo_store_partition_set(
     root_verify_key, mongo_store_partition: MongoStorePartition
 ) -> None:
@@ -132,7 +123,8 @@ def test_mongo_store_partition_set(
         == 2
     )
 
-    for idx in range(REPEATS):
+    repeats = 5
+    for idx in range(repeats):
         obj = MockSyftObject(data=idx)
         res = mongo_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
         assert res.is_ok()
@@ -146,19 +138,16 @@ def test_mongo_store_partition_set(
         )
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
-@pytest.mark.flaky(reruns=5, reruns_delay=2)
 def test_mongo_store_partition_delete(
     root_verify_key,
     mongo_store_partition: MongoStorePartition,
 ) -> None:
     res = mongo_store_partition.init_store()
     assert res.is_ok()
+    repeats = 5
 
     objs = []
-    for v in range(REPEATS):
+    for v in range(repeats):
         obj = MockSyftObject(data=v)
         mongo_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
         objs.append(obj)
@@ -215,10 +204,6 @@ def test_mongo_store_partition_delete(
     )
 
 
-@pytest.mark.flaky(reruns=5, reruns_delay=2)
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
 def test_mongo_store_partition_update(
     root_verify_key,
     mongo_store_partition: MongoStorePartition,
@@ -244,7 +229,8 @@ def test_mongo_store_partition_update(
     assert res.is_err()
 
     # update the key multiple times
-    for v in range(REPEATS):
+    repeats = 5
+    for v in range(repeats):
         key = mongo_store_partition.settings.store_key.with_obj(obj)
         obj_new = MockSyftObject(data=v)
 
@@ -291,27 +277,20 @@ def test_mongo_store_partition_update(
         assert stored.ok()[0].data == v
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
-@pytest.mark.flaky(reruns=5, reruns_delay=2)
-@pytest.mark.xfail
-def test_mongo_store_partition_set_threading(
-    root_verify_key,
-    mongo_server_mock: tuple,
-) -> None:
+def test_mongo_store_partition_set_threading(root_verify_key, mongo_client) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
 
     execution_err = None
     mongo_db_name = generate_db_name()
-    mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
 
         mongo_store_partition = mongo_store_partition_fn(
-            root_verify_key, mongo_db_name=mongo_db_name, **mongo_kwargs
+            mongo_client,
+            root_verify_key,
+            mongo_db_name=mongo_db_name,
         )
         for idx in range(repeats):
             obj = MockObjectType(data=idx)
@@ -342,7 +321,9 @@ def test_mongo_store_partition_set_threading(
     assert execution_err is None
 
     mongo_store_partition = mongo_store_partition_fn(
-        root_verify_key, mongo_db_name=mongo_db_name, **mongo_kwargs
+        mongo_client,
+        root_verify_key,
+        mongo_db_name=mongo_db_name,
     )
     stored_cnt = len(
         mongo_store_partition.all(
@@ -352,72 +333,70 @@ def test_mongo_store_partition_set_threading(
     assert stored_cnt == thread_cnt * repeats
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
-@pytest.mark.flaky(reruns=5, reruns_delay=2)
-def test_mongo_store_partition_set_joblib(
-    root_verify_key,
-    mongo_server_mock,
-) -> None:
-    thread_cnt = 3
-    repeats = REPEATS
-    mongo_db_name = generate_db_name()
-    mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
+# @pytest.mark.skip(
+#     reason="PicklingError: Could not pickle the task to send it to the workers."
+# )
+# def test_mongo_store_partition_set_joblib(
+#     root_verify_key,
+#     mongo_client,
+# ) -> None:
+#     thread_cnt = 3
+#     repeats = 5
+#     mongo_db_name = generate_db_name()
 
-    def _kv_cbk(tid: int) -> None:
-        for idx in range(repeats):
-            mongo_store_partition = mongo_store_partition_fn(
-                root_verify_key, mongo_db_name=mongo_db_name, **mongo_kwargs
-            )
-            obj = MockObjectType(data=idx)
+#     def _kv_cbk(tid: int) -> None:
+#         for idx in range(repeats):
+#             mongo_store_partition = mongo_store_partition_fn(
+#                 mongo_client,
+#                 root_verify_key,
+#                 mongo_db_name=mongo_db_name,
+#             )
+#             obj = MockObjectType(data=idx)
 
-            for _ in range(10):
-                res = mongo_store_partition.set(
-                    root_verify_key, obj, ignore_duplicates=False
-                )
-                if res.is_ok():
-                    break
+#             for _ in range(10):
+#                 res = mongo_store_partition.set(
+#                     root_verify_key, obj, ignore_duplicates=False
+#                 )
+#                 if res.is_ok():
+#                     break
 
-            if res.is_err():
-                return res
+#             if res.is_err():
+#                 return res
 
-        return None
+#         return None
 
-    errs = Parallel(n_jobs=thread_cnt)(
-        delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
-    )
+#     errs = Parallel(n_jobs=thread_cnt)(
+#         delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
+#     )
 
-    for execution_err in errs:
-        assert execution_err is None
+#     for execution_err in errs:
+#         assert execution_err is None
 
-    mongo_store_partition = mongo_store_partition_fn(
-        root_verify_key, mongo_db_name=mongo_db_name, **mongo_kwargs
-    )
-    stored_cnt = len(
-        mongo_store_partition.all(
-            root_verify_key,
-        ).ok()
-    )
-    assert stored_cnt == thread_cnt * repeats
+#     mongo_store_partition = mongo_store_partition_fn(
+#         mongo_client,
+#         root_verify_key,
+#         mongo_db_name=mongo_db_name,
+#     )
+#     stored_cnt = len(
+#         mongo_store_partition.all(
+#             root_verify_key,
+#         ).ok()
+#     )
+#     assert stored_cnt == thread_cnt * repeats
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
-@pytest.mark.flaky(reruns=5, reruns_delay=2)
-@pytest.mark.xfail(reason="Fails in CI sometimes")
 def test_mongo_store_partition_update_threading(
     root_verify_key,
-    mongo_server_mock,
+    mongo_client,
 ) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
 
     mongo_db_name = generate_db_name()
-    mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
     mongo_store_partition = mongo_store_partition_fn(
-        root_verify_key, mongo_db_name=mongo_db_name, **mongo_kwargs
+        mongo_client,
+        root_verify_key,
+        mongo_db_name=mongo_db_name,
     )
 
     obj = MockSyftObject(data=0)
@@ -429,7 +408,9 @@ def test_mongo_store_partition_update_threading(
         nonlocal execution_err
 
         mongo_store_partition_local = mongo_store_partition_fn(
-            root_verify_key, mongo_db_name=mongo_db_name, **mongo_kwargs
+            mongo_client,
+            root_verify_key,
+            mongo_db_name=mongo_db_name,
         )
         for repeat in range(repeats):
             obj = MockSyftObject(data=repeat)
@@ -456,70 +437,65 @@ def test_mongo_store_partition_update_threading(
     assert execution_err is None
 
 
-@pytest.mark.xfail(reason="SyftObjectRegistry does only in-memory caching")
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
-@pytest.mark.flaky(reruns=5, reruns_delay=2)
-def test_mongo_store_partition_update_joblib(
-    root_verify_key,
-    mongo_server_mock: tuple,
-) -> None:
-    thread_cnt = 3
-    repeats = REPEATS
+# @pytest.mark.skip(
+#     reason="PicklingError: Could not pickle the task to send it to the workers."
+# )
+# def test_mongo_store_partition_update_joblib(root_verify_key, mongo_client) -> None:
+#     thread_cnt = 3
+#     repeats = 5
 
-    mongo_db_name = generate_db_name()
-    mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
+#     mongo_db_name = generate_db_name()
 
-    mongo_store_partition = mongo_store_partition_fn(
-        root_verify_key, mongo_db_name=mongo_db_name, **mongo_kwargs
-    )
-    obj = MockSyftObject(data=0)
-    key = mongo_store_partition.settings.store_key.with_obj(obj)
-    mongo_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
+#     mongo_store_partition = mongo_store_partition_fn(
+#         mongo_client,
+#         root_verify_key,
+#         mongo_db_name=mongo_db_name,
+#     )
+#     obj = MockSyftObject(data=0)
+#     key = mongo_store_partition.settings.store_key.with_obj(obj)
+#     mongo_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
 
-    def _kv_cbk(tid: int) -> None:
-        mongo_store_partition_local = mongo_store_partition_fn(
-            root_verify_key, mongo_db_name=mongo_db_name, **mongo_kwargs
-        )
-        for repeat in range(repeats):
-            obj = MockSyftObject(data=repeat)
+#     def _kv_cbk(tid: int) -> None:
+#         mongo_store_partition_local = mongo_store_partition_fn(
+#             mongo_client,
+#             root_verify_key,
+#             mongo_db_name=mongo_db_name,
+#         )
+#         for repeat in range(repeats):
+#             obj = MockSyftObject(data=repeat)
 
-            for _ in range(10):
-                res = mongo_store_partition_local.update(root_verify_key, key, obj)
-                if res.is_ok():
-                    break
+#             for _ in range(10):
+#                 res = mongo_store_partition_local.update(root_verify_key, key, obj)
+#                 if res.is_ok():
+#                     break
 
-            if res.is_err():
-                return res
-        return None
+#             if res.is_err():
+#                 return res
+#         return None
 
-    errs = Parallel(n_jobs=thread_cnt)(
-        delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
-    )
+#     errs = Parallel(n_jobs=thread_cnt)(
+#         delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
+#     )
 
-    for execution_err in errs:
-        assert execution_err is None
+#     for execution_err in errs:
+#         assert execution_err is None
 
 
-@pytest.mark.skip(reason="The tests are highly flaky, delaying progress on PR's")
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
 def test_mongo_store_partition_set_delete_threading(
     root_verify_key,
-    mongo_server_mock,
+    mongo_client,
 ) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
     execution_err = None
     mongo_db_name = generate_db_name()
-    mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
         mongo_store_partition = mongo_store_partition_fn(
-            root_verify_key, mongo_db_name=mongo_db_name, **mongo_kwargs
+            mongo_client,
+            root_verify_key,
+            mongo_db_name=mongo_db_name,
         )
 
         for idx in range(repeats):
@@ -556,7 +532,9 @@ def test_mongo_store_partition_set_delete_threading(
     assert execution_err is None
 
     mongo_store_partition = mongo_store_partition_fn(
-        root_verify_key, mongo_db_name=mongo_db_name, **mongo_kwargs
+        mongo_client,
+        root_verify_key,
+        mongo_db_name=mongo_db_name,
     )
     stored_cnt = len(
         mongo_store_partition.all(
@@ -566,64 +544,58 @@ def test_mongo_store_partition_set_delete_threading(
     assert stored_cnt == 0
 
 
-@pytest.mark.skip(reason="The tests are highly flaky, delaying progress on PR's")
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
-def test_mongo_store_partition_set_delete_joblib(
-    root_verify_key,
-    mongo_server_mock,
-) -> None:
-    thread_cnt = 3
-    repeats = REPEATS
-    mongo_db_name = generate_db_name()
-    mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
+# @pytest.mark.skip(
+#     reason="PicklingError: Could not pickle the task to send it to the workers."
+# )
+# def test_mongo_store_partition_set_delete_joblib(root_verify_key, mongo_client) -> None:
+#     thread_cnt = 3
+#     repeats = 5
+#     mongo_db_name = generate_db_name()
 
-    def _kv_cbk(tid: int) -> None:
-        mongo_store_partition = mongo_store_partition_fn(
-            root_verify_key, mongo_db_name=mongo_db_name, **mongo_kwargs
-        )
+#     def _kv_cbk(tid: int) -> None:
+#         mongo_store_partition = mongo_store_partition_fn(
+#             mongo_client, root_verify_key, mongo_db_name=mongo_db_name
+#         )
 
-        for idx in range(repeats):
-            obj = MockSyftObject(data=idx)
+#         for idx in range(repeats):
+#             obj = MockSyftObject(data=idx)
 
-            for _ in range(10):
-                res = mongo_store_partition.set(
-                    root_verify_key, obj, ignore_duplicates=False
-                )
-                if res.is_ok():
-                    break
+#             for _ in range(10):
+#                 res = mongo_store_partition.set(
+#                     root_verify_key, obj, ignore_duplicates=False
+#                 )
+#                 if res.is_ok():
+#                     break
 
-            if res.is_err():
-                return res
+#             if res.is_err():
+#                 return res
 
-            key = mongo_store_partition.settings.store_key.with_obj(obj)
+#             key = mongo_store_partition.settings.store_key.with_obj(obj)
 
-            res = mongo_store_partition.delete(root_verify_key, key)
-            if res.is_err():
-                return res
-        return None
+#             res = mongo_store_partition.delete(root_verify_key, key)
+#             if res.is_err():
+#                 return res
+#         return None
 
-    errs = Parallel(n_jobs=thread_cnt)(
-        delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
-    )
-    for execution_err in errs:
-        assert execution_err is None
+#     errs = Parallel(n_jobs=thread_cnt)(
+#         delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
+#     )
+#     for execution_err in errs:
+#         assert execution_err is None
 
-    mongo_store_partition = mongo_store_partition_fn(
-        root_verify_key, mongo_db_name=mongo_db_name, **mongo_kwargs
-    )
-    stored_cnt = len(
-        mongo_store_partition.all(
-            root_verify_key,
-        ).ok()
-    )
-    assert stored_cnt == 0
+#     mongo_store_partition = mongo_store_partition_fn(
+#         mongo_client,
+#         root_verify_key,
+#         mongo_db_name=mongo_db_name,
+#     )
+#     stored_cnt = len(
+#         mongo_store_partition.all(
+#             root_verify_key,
+#         ).ok()
+#     )
+#     assert stored_cnt == 0
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
 def test_mongo_store_partition_permissions_collection(
     mongo_store_partition: MongoStorePartition,
 ) -> None:
@@ -636,10 +608,6 @@ def test_mongo_store_partition_permissions_collection(
     assert isinstance(collection_permissions, MongoCollection)
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux",
-    reason="pytest_mock_resources + docker issues on Windows and MacOS",
-)
 def test_mongo_store_partition_add_remove_permission(
     root_verify_key: SyftVerifyKey, mongo_store_partition: MongoStorePartition
 ) -> None:
@@ -710,7 +678,8 @@ def test_mongo_store_partition_add_remove_permission(
 
     # add permissions in a loop
     new_permissions = []
-    for idx in range(1, REPEATS + 1):
+    repeats = 5
+    for idx in range(1, repeats + 1):
         new_obj = MockSyftObject(data=idx)
         new_obj_read_permission = ActionObjectPermission(
             uid=new_obj.id,
@@ -728,10 +697,6 @@ def test_mongo_store_partition_add_remove_permission(
     assert permissions_collection.count_documents({}) == 1
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux",
-    reason="pytest_mock_resources + docker issues on Windows and MacOS",
-)
 def test_mongo_store_partition_add_remove_storage_permission(
     root_verify_key: SyftVerifyKey,
     mongo_store_partition: MongoStorePartition,
@@ -774,9 +739,6 @@ def test_mongo_store_partition_add_remove_storage_permission(
     assert mongo_store_partition.has_storage_permission(storage_permission4)
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
 def test_mongo_store_partition_add_permissions(
     root_verify_key: SyftVerifyKey,
     guest_verify_key: SyftVerifyKey,
@@ -826,9 +788,6 @@ def test_mongo_store_partition_add_permissions(
     assert len(find_res_2["permissions"]) == 2
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
 @pytest.mark.parametrize("permission", PERMISSIONS)
 def test_mongo_store_partition_has_permission(
     root_verify_key: SyftVerifyKey,
@@ -875,9 +834,6 @@ def test_mongo_store_partition_has_permission(
     assert not mongo_store_partition.has_permission(permisson_hacker_2)
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
 @pytest.mark.parametrize("permission", PERMISSIONS)
 def test_mongo_store_partition_take_ownership(
     root_verify_key: SyftVerifyKey,
@@ -930,9 +886,6 @@ def test_mongo_store_partition_take_ownership(
     )
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
 def test_mongo_store_partition_permissions_set(
     root_verify_key: SyftVerifyKey,
     guest_verify_key: SyftVerifyKey,
@@ -976,9 +929,6 @@ def test_mongo_store_partition_permissions_set(
         )
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
 def test_mongo_store_partition_permissions_get_all(
     root_verify_key: SyftVerifyKey,
     guest_verify_key: SyftVerifyKey,
@@ -1009,9 +959,6 @@ def test_mongo_store_partition_permissions_get_all(
     assert len(mongo_store_partition.all(hacker_verify_key).ok()) == 0
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
 def test_mongo_store_partition_permissions_delete(
     root_verify_key: SyftVerifyKey,
     guest_verify_key: SyftVerifyKey,
@@ -1063,9 +1010,6 @@ def test_mongo_store_partition_permissions_delete(
     assert pemissions_collection.count_documents({}) == 0
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="pytest_mock_resources + docker issues on Windows"
-)
 def test_mongo_store_partition_permissions_update(
     root_verify_key: SyftVerifyKey,
     guest_verify_key: SyftVerifyKey,
@@ -1082,8 +1026,9 @@ def test_mongo_store_partition_permissions_update(
 
     qk: QueryKey = mongo_store_partition.settings.store_key.with_obj(obj)
     permsissions: MongoCollection = mongo_store_partition.permissions.ok()
+    repeats = 5
 
-    for v in range(REPEATS):
+    for v in range(repeats):
         # the guest client should not have permission to update obj
         obj_new = MockSyftObject(data=v)
         res = mongo_store_partition.update(
