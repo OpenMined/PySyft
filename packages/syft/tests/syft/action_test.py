@@ -9,7 +9,7 @@ from syft.service.response import SyftError
 from syft.types.uid import LineageID
 
 # relative
-from .utils import currently_fail_on_python_3_12
+from ..utils.custom_markers import currently_fail_on_python_3_12
 
 
 def test_actionobject_method(worker):

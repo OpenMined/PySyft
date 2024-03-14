@@ -23,9 +23,10 @@ def node():
         name=name,
         dev_mode=True,
         reset=True,
-        n_consumers=4,
+        n_consumers=3,
         create_producer=True,
-        queue_port=random.randint(13000, 13300),
+        queue_port=None,
+        in_memory_workers=True,
     )
     # startup code here
     yield _node
@@ -33,7 +34,7 @@ def node():
     _node.land()
 
 
-@pytest.mark.flaky(reruns=5, reruns_delay=1)
+# @pytest.mark.flaky(reruns=5, reruns_delay=1)
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_nested_jobs(node):
     client = node.login(email="info@openmined.org", password="changethis")
@@ -90,13 +91,12 @@ def test_nested_jobs(node):
 
     job = ds_client.code.process_all(x=x_ptr, blocking=False)
 
-    job.wait()
+    job.wait(timeout=0)
 
     assert len(job.subjobs) == 3
-    # stdlib
 
-    assert job.wait().get() == 5
-    sub_results = [j.wait().get() for j in job.subjobs]
+    assert job.wait(timeout=60).get() == 5
+    sub_results = [j.wait(timeout=60).get() for j in job.subjobs]
     assert set(sub_results) == {2, 3, 5}
 
     job = client.jobs[-1]

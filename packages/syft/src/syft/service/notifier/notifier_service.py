@@ -219,7 +219,7 @@ class NotifierService(AbstractService):
         email_username: str | None = None,
         email_password: str | None = None,
         email_sender: str | None = None,
-        smtp_port: str | None = None,
+        smtp_port: int | None = None,
         smtp_host: str | None = None,
     ) -> Result[Ok, Err]:
         """Initialize Notifier settings for a Node.
