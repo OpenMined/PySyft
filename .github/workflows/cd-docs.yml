@@ -27,7 +27,8 @@ jobs:
 
       - name: Install tox
         run: |
-          pip install -U tox
+          pip install --upgrade pip uv==${{ vars.UV_VERSION }} tox tox-uv==${{ vars.TOX_UV_VERSION }}
+          uv --version
 
       - name: Build the docs
         run: |
