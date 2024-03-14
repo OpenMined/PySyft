@@ -151,7 +151,7 @@ def add_msg_creation_time(context: TransformContext) -> TransformContext:
     if context.output is not None:
         context.output["created_at"] = DateTime.now()
     else:
-        print(f"{context}'s output is None. No transformation happened.")
+        raise ValueError(f"{context}'s output is None. No transformation happened")
     return context
 
 
