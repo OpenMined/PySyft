@@ -3,6 +3,6 @@ VEILID_SERVICE_URL = "http://veilid:80"
 # TODO: Remove this once when we remove reverse proxy in Veilid Connection
 VEILID_SYFT_PROXY_URL = "http://proxy:80"
 HEALTHCHECK_ENDPOINT = "/healthcheck"
-GEN_DHT_KEY_ENDPOINT = "/generate_dht_key"
-RET_DHT_KEY_ENDPOINT = "/retrieve_dht_key"
+GEN_VLD_KEY_ENDPOINT = "/generate_vld_key"
+RET_VLD_KEY_ENDPOINT = "/retrieve_vld_key"
 VEILID_PROXY_PATH = "/proxy"

@@ -15,9 +15,9 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
-from .veilid_endpoints import GEN_DHT_KEY_ENDPOINT
+from .veilid_endpoints import GEN_VLD_KEY_ENDPOINT
 from .veilid_endpoints import HEALTHCHECK_ENDPOINT
-from .veilid_endpoints import RET_DHT_KEY_ENDPOINT
+from .veilid_endpoints import RET_VLD_KEY_ENDPOINT
 from .veilid_endpoints import VEILID_SERVICE_URL
 
 
@@ -49,33 +49,33 @@ class VeilidService(AbstractService):
         return res == "OK"
 
     @service_method(
-        path="veilid.generate_dht_key",
-        name="generate_dht_key",
+        path="veilid.generate_vld_key",
+        name="generate_vld_key",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def generate_dht_key(self, context: AuthedServiceContext) -> str | SyftError:
+    def generate_vld_key(self, context: AuthedServiceContext) -> str | SyftError:
         if not self.is_veilid_service_healthy():
             return SyftError(
                 message="Veilid service is not healthy. Please try again later."
             )
         return self.perform_request(
             method=requests.post,
-            endpoint=GEN_DHT_KEY_ENDPOINT,
+            endpoint=GEN_VLD_KEY_ENDPOINT,
         )
 
     @service_method(
-        path="veilid.retrieve_dht_key",
-        name="retrieve_dht_key",
+        path="veilid.retrieve_vld_key",
+        name="retrieve_vld_key",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def retrieve_dht_key(self, context: AuthedServiceContext) -> str | SyftError:
+    def retrieve_vld_key(self, context: AuthedServiceContext) -> str | SyftError:
         if not self.is_veilid_service_healthy():
             return SyftError(
                 message="Veilid service is not healthy. Please try again later."
             )
         return self.perform_request(
             method=requests.get,
-            endpoint=RET_DHT_KEY_ENDPOINT,
+            endpoint=RET_VLD_KEY_ENDPOINT,
             raw=True,
         )
 
@@ -86,7 +86,7 @@ class VeilidService(AbstractService):
     def get_veilid_route(
         self, context: AuthedServiceContext
     ) -> VeilidNodeRoute | SyftError:
-        dht_key = self.retrieve_dht_key(context)
-        if isinstance(dht_key, SyftError):
-            return dht_key
-        return VeilidNodeRoute(dht_key=dht_key)
+        vld_key = self.retrieve_vld_key(context)
+        if isinstance(vld_key, SyftError):
+            return vld_key
+        return VeilidNodeRoute(vld_key=vld_key)
