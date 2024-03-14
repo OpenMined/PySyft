@@ -294,7 +294,7 @@ class Job(SyncableSyftObject):
         self.current_iter = job.current_iter
 
     @property
-    def subjobs(self) -> list[QueueItem] | SyftError:
+    def subjobs(self) -> list["Job"] | SyftError:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -471,13 +471,17 @@ class Job(SyncableSyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
-    def get_sync_dependencies(self, **kwargs: dict) -> list[UID]:  # type: ignore
+    def get_sync_dependencies(self, **kwargs: dict) -> list[UID] | SyftError:  # type: ignore
         dependencies = []
         if self.result is not None:
             dependencies.append(self.result.id.id)
 
         if self.log_id:
             dependencies.append(self.log_id)
+
+        subjobs = self.subjobs
+        if isinstance(subjobs, SyftError):
+            return subjobs
 
         subjob_ids = [subjob.id for subjob in self.subjobs]
         dependencies.extend(subjob_ids)

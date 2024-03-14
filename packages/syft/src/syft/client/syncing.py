@@ -98,11 +98,12 @@ def get_sync_decisions_for_batch_items(
         for diff in batch_diff.diffs
         if isinstance(diff.high_obj, UserCode)
     ]
-    if len(user_codes_high) > 1:
-        raise ValueError("too many user codes")
+
     if len(user_codes_high) == 0:
         user_code_high = None
     else:
+        # NOTE we can always assume the first usercode is
+        # not a nested code, because diffs are sorted in depth-first order
         user_code_high = user_codes_high[0]
 
     if user_code_high is None and len(unpublished_private_high_diffs):

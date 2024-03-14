@@ -4,6 +4,8 @@ from typing import Any
 from typing import Optional
 from typing import TYPE_CHECKING
 
+from syft.service.response import SyftError
+
 # relative
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
@@ -113,7 +115,15 @@ class SyncState(SyftObject):
         for obj in self.objects.values():
             if hasattr(obj, "get_sync_dependencies"):
                 deps = obj.get_sync_dependencies(api=api)
-                deps = [d.id for d in deps if d.id in all_ids]  # type: ignore
+                if isinstance(deps, SyftError):
+                    return deps
+
+                try:
+                    deps = [d.id for d in deps if d.id in all_ids]  # type: ignore
+                except Exception:
+                    import ipdb
+
+                    ipdb.set_trace()
                 if len(deps):
                     self.dependencies[obj.id] = deps
 

@@ -170,6 +170,9 @@ class DomainClient(SyftClient):
 
     def get_sync_state(self) -> SyncState | SyftError:
         state: SyncState = self.api.services.sync._get_state()
+        if isinstance(state, SyftError):
+            return state
+
         for uid, obj in state.objects.items():
             if isinstance(obj, ActionObject):
                 state.objects[uid] = obj.refresh_object()
