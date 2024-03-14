@@ -317,7 +317,7 @@ class Node(AbstractNode):
         smtp_username: str | None = None,
         smtp_password: str | None = None,
         email_sender: str | None = None,
-        smtp_port: str | None = None,
+        smtp_port: int | None = None,
         smtp_host: str | None = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
@@ -725,6 +725,10 @@ class Node(AbstractNode):
             object_version = object_type.__version__
 
             migration_state = migration_state_service.get_state(context, canonical_name)
+            if isinstance(migration_state, SyftError):
+                raise Exception(
+                    f"Failed to get migration state for {canonical_name}. Error: {migration_state}"
+                )
             if (
                 migration_state is not None
                 and migration_state.current_version != migration_state.latest_version
