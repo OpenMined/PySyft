@@ -456,8 +456,8 @@ def test_simple_in_memory_action_graph(
 
 
 def test_multithreaded_graph_store_set_and_add_edge(verify_key: SyftVerifyKey) -> None:
-    thread_cnt = 5
-    repeats = 3
+    thread_cnt = 3
+    repeats = 5
 
     execution_err = None
     store_config = InMemoryGraphConfig()
@@ -507,8 +507,8 @@ def test_multithreaded_graph_store_set_and_add_edge(verify_key: SyftVerifyKey) -
 
 
 def test_multithreaded_graph_store_delete_node(verify_key: SyftVerifyKey) -> None:
-    thread_cnt = 5
-    repeats = 3
+    thread_cnt = 3
+    repeats = 5
 
     execution_err = None
     store_config = InMemoryGraphConfig()

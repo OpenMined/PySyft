@@ -440,6 +440,10 @@ class ZMQProducer(QueueProducer):
         If message is provided, sends that message.
         """
 
+        if self.socket.closed:
+            logger.warning("Socket is closed. Cannot send message.")
+            return
+
         if msg is None:
             msg = []
         elif not isinstance(msg, list):
@@ -453,7 +457,10 @@ class ZMQProducer(QueueProducer):
 
         logger.debug("Send: {}", msg)
         with ZMQ_SOCKET_LOCK:
-            self.socket.send_multipart(msg)
+            try:
+                self.socket.send_multipart(msg)
+            except zmq.ZMQError as e:
+                logger.error("Failed to send message to producer. {}", e)
 
     def _run(self) -> None:
         while True:
@@ -650,6 +657,10 @@ class ZMQConsumer(QueueConsumer):
 
         If no msg is provided, creates one internally
         """
+        if self.socket.closed:
+            logger.warning("Socket is closed. Cannot send message.")
+            return
+
         if msg is None:
             msg = []
         elif not isinstance(msg, list):
@@ -660,8 +671,12 @@ class ZMQConsumer(QueueConsumer):
 
         msg = [b"", QueueMsgProtocol.W_WORKER, command] + msg
         logger.debug("Send: msg={}", msg)
+
         with ZMQ_SOCKET_LOCK:
-            self.socket.send_multipart(msg)
+            try:
+                self.socket.send_multipart(msg)
+            except zmq.ZMQError as e:
+                logger.error("Failed to send message to producer. {}", e)
 
     def _run(self) -> None:
         """Send reply, if any, to producer and wait for next request."""
@@ -812,6 +827,7 @@ class ZMQClient(QueueClient):
     def _get_free_tcp_port(host: str) -> int:
         with socketserver.TCPServer((host, 0), None) as s:
             free_port = s.server_address[1]
+
         return free_port
 
     def add_producer(
