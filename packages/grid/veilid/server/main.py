@@ -93,11 +93,11 @@ async def proxy(request: Request) -> Response:
     request_data = await request.json()
     logger.info(f"Request URL: {request_data}")
 
-    dht_key = request_data.get("dht_key")
-    request_data.pop("dht_key")
+    vld_key = request_data.get("vld_key")
+    request_data.pop("vld_key")
     message = json.dumps(request_data).encode()
 
-    res = await app_call(dht_key=dht_key, message=message)
+    res = await app_call(vld_key=vld_key, message=message)
     decompressed_res = lzma.decompress(res)
     return Response(decompressed_res, media_type="application/octet-stream")
 
