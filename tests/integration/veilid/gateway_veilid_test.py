@@ -35,9 +35,9 @@ def test_domain_connect_to_gateway_veilid(domain_1_port, gateway_port):
     remove_existing_peers(gateway_client)
 
     # Generate DHT Record
-    gateway_dht_res = gateway_client.api.services.veilid.generate_dht_key()
+    gateway_dht_res = gateway_client.api.services.veilid.generate_vld_key()
     assert isinstance(gateway_dht_res, SyftSuccess), gateway_dht_res
-    domain_dht_res = domain_client.api.services.veilid.generate_dht_key()
+    domain_dht_res = domain_client.api.services.veilid.generate_vld_key()
     assert isinstance(domain_dht_res, SyftSuccess), domain_dht_res
 
     # Retrieve DHT Record
@@ -62,14 +62,14 @@ def test_domain_connect_to_gateway_veilid(domain_1_port, gateway_port):
     assert domain_peer.node_type == NodeType.GATEWAY
     assert isinstance(domain_peer, NodePeer)
     assert isinstance(domain_peer.node_routes[0], VeilidNodeRoute)
-    assert domain_peer.node_routes[0].dht_key == gateway_veilid_route.dht_key
+    assert domain_peer.node_routes[0].vld_key == gateway_veilid_route.vld_key
     assert domain_client.name == proxy_domain_client.name
 
     # Gateway Asserts
     assert len(gateway_client.peers) == 1
     assert gateway_peer.node_type == NodeType.DOMAIN
     assert isinstance(gateway_peer.node_routes[0], VeilidNodeRoute)
-    assert gateway_peer.node_routes[0].dht_key == domain_veilid_route.dht_key
+    assert gateway_peer.node_routes[0].vld_key == domain_veilid_route.vld_key
     assert gateway_client.name == domain_peer.name
     assert len(gateway_client.domains) == 1
     assert len(gateway_client.enclaves) == 0

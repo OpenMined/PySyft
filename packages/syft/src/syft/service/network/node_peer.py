@@ -103,7 +103,7 @@ class NodePeer(SyftObject):
         elif isinstance(route, VeilidNodeRoute):
             for i, r in enumerate(self.node_routes):
                 if (
-                    route.dht_key == r.dht_key
+                    route.vld_key == r.vld_key
                     and route.proxy_target_uid == r.proxy_target_uid
                 ):
                     return (True, i)
