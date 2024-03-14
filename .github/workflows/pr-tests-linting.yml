@@ -29,7 +29,7 @@ jobs:
 
       - name: Install pip packages
         run: |
-          pip install --upgrade --user pip uv==${{ vars.UV_VERSION }}
+          pip install --upgrade pip uv==${{ vars.UV_VERSION }}
           uv --version
 
       - name: Get pip cache dir
@@ -49,7 +49,7 @@ jobs:
 
       - name: Install Tox
         run: |
-          pip install --upgrade --user tox tox-uv==${{ vars.TOX_UV_VERSION }}
+          pip install --upgrade tox tox-uv==${{ vars.TOX_UV_VERSION }}
 
       - uses: pre-commit/action@v3.0.1
 

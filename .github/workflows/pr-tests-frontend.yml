@@ -46,7 +46,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.frontend == 'true'
         run: |
-          pip install --upgrade --user pip uv==${{ vars.UV_VERSION }}
+          pip install --upgrade pip uv==${{ vars.UV_VERSION }}
           uv --version
 
       - name: Get pip cache dir
@@ -72,7 +72,7 @@ jobs:
       - name: Install Tox
         if: steps.changes.outputs.frontend == 'true'
         run: |
-          pip install --upgrade --user tox tox-uv==${{ vars.TOX_UV_VERSION }}
+          pip install --upgrade tox tox-uv==${{ vars.TOX_UV_VERSION }}
 
       - name: Remove existing containers
         if: steps.changes.outputs.frontend == 'true'
@@ -128,7 +128,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip uv==${{ vars.UV_VERSION }}
+          pip install --upgrade pip uv==${{ vars.UV_VERSION }}
           uv --version
 
       - name: Get pip cache dir
@@ -163,7 +163,7 @@ jobs:
       - name: Install Tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user tox tox-uv==${{ vars.TOX_UV_VERSION }}
+          pip install --upgrade tox tox-uv==${{ vars.TOX_UV_VERSION }}
 
       - name: Remove existing containers
         if: steps.changes.outputs.stack == 'true'
