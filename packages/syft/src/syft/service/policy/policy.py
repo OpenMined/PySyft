@@ -441,11 +441,16 @@ class CustomOutputPolicy(metaclass=CustomPolicy):
 
 class UserOutputPolicy(OutputPolicy):
     __canonical_name__ = "UserOutputPolicy"
+
+    # Do not validate private attributes of user-defined policies, User annotations can
+    # contain any type and throw a NameError when resolving.
+    __validate_private_attrs__ = False
     pass
 
 
 class UserInputPolicy(InputPolicy):
     __canonical_name__ = "UserInputPolicy"
+    __validate_private_attrs__ = False
     pass
 
 
@@ -572,7 +577,7 @@ def generate_unique_class_name(context: TransformContext) -> TransformContext:
         unique_name = f"{service_class_name}_{context.credentials}_{code_hash}"
         context.output["unique_name"] = unique_name
     else:
-        print(f"{context}'s output is None. No transformation happened.")
+        raise ValueError(f"{context}'s output is None. No transformation happened")
 
     return context
 
@@ -696,7 +701,7 @@ def compile_code(context: TransformContext) -> TransformContext:
                 + context.output["parsed_code"]
             )
     else:
-        print(f"{context}'s output is None. No transformation happened.")
+        raise ValueError(f"{context}'s output is None. No transformation happened")
 
     return context
 
