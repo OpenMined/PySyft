@@ -126,9 +126,8 @@ class SyncService(AbstractService):
     ) -> None:
         if isinstance(item, ActionObject):
             raise ValueError("ActionObject permissions should be added separately")
-
         else:
-            store = get_store(context, item)
+            store = get_store(context, item)  # type: ignore
             for permission in new_permissions:
                 if permission.permission == ActionPermission.READ:
                     store.add_permission(permission)
@@ -178,8 +177,8 @@ class SyncService(AbstractService):
             permissions_dict[permission.uid].append(permission)
 
         storage_permissions_dict = defaultdict(list)
-        for permission in storage_permissions:
-            storage_permissions_dict[permission.uid].append(permission)
+        for storage_permission in storage_permissions:
+            storage_permissions_dict[permission.uid].append(storage_permission)
 
         for item in items:
             new_permissions = permissions_dict[item.id.id]
