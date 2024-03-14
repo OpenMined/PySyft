@@ -15,7 +15,7 @@ from loguru import logger
 
 # relative
 from .models import ResponseModel
-from .veilid_core import VeilidConnectionSingleton
+from .veilid_connection_singleton import VeilidConnectionSingleton
 from .veilid_core import app_call
 from .veilid_core import app_message
 from .veilid_core import generate_vld_key
