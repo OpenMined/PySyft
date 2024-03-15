@@ -195,8 +195,27 @@ class TwinAPIEndpoint(SyftObject):
     def has_mock(self) -> bool:
         return self.api_mock_code is not None
 
-    def select_code(self, context: AuthedServiceContext) -> Result[Ok, Err]:
+    def has_permission(self, context: AuthedServiceContext) -> bool:
+        """Check if the user has permission to access the endpoint.
+
+        Args:
+            context: The context of the user requesting the code.
+        Returns:
+            bool: True if the user has permission to access the endpoint, False otherwise.
+        """
         if context.role.value == 128:
+            return True
+        return False
+
+    def select_code(self, context: AuthedServiceContext) -> Result[Ok, Err]:
+        """Select the code to execute based on the user's permissions and public code availability.
+
+        Args:
+            context: The context of the user requesting the code.
+        Returns:
+            Result[Ok, Err]: The selected code to execute.
+        """
+        if self.has_permission(context):
             return Ok(self.private_code)
 
         if self.public_code:
@@ -205,21 +224,59 @@ class TwinAPIEndpoint(SyftObject):
         return Err("No public code available")
 
     def exec(self, context: AuthedServiceContext, *args: Any, **kwargs: Any) -> Any:
+        """Execute the code based on the user's permissions and public code availability.
+
+        Args:
+            context: The context of the user requesting the code.
+            *args: Any
+            **kwargs: Any
+        Returns:
+            Any: The result of the executed code.
+        """
+        result = self.select_code(context)
+        if result.is_err():
+            return context, SyftError(message=result.err())
+
+        selected_code = result.ok()
+        return self.exec_code(selected_code, context, *args, **kwargs)
+
+    def exec_public_code(
+        self, context: AuthedServiceContext, *args: Any, **kwargs: Any
+    ) -> Any:
+        """Execute the public code if it exists."""
+        if self.public_code:
+            return self.exec_code(self.public_code, context, *args, **kwargs)
+        return context, SyftError(message="No public code available")
+
+    def exec_private_code(
+        self, context: AuthedServiceContext, *args: Any, **kwargs: Any
+    ) -> Any:
+        """Execute the private code if user is has the proper permissions.
+
+        Args:
+            context: The context of the user requesting the code.
+            *args: Any
+            **kwargs: Any
+        Returns:
+            Any: The result of the executed code.
+        """
+        if self.has_permission(context):
+            return self.exec_code(self.private_code, context, *args, **kwargs)
+
+        return context, SyftError(message="You're not allowed to run this code.")
+
+    def exec_code(
+        self, code: str, context: AuthedServiceContext, *args: Any, **kwargs: Any
+    ) -> Any:
         try:
-            executable_code = self.select_code(context)
-            if executable_code.is_err():
-                return context, SyftError(message=executable_code.err())
-
-            executable_code = executable_code.ok()
-
-            inner_function = ast.parse(executable_code.api_code).body[0]
+            inner_function = ast.parse(code.api_code).body[0]
             inner_function.decorator_list = []
             # compile the function
             raw_byte_code = compile(ast.unparse(inner_function), "<string>", "exec")
             # load it
             exec(raw_byte_code)  # nosec
             # execute it
-            evil_string = f"{executable_code.func_name}(context, *args, **kwargs)"
+            evil_string = f"{code.func_name}(context, *args, **kwargs)"
             result = eval(evil_string, None, locals())  # nosec
             # return the results
             return context, result
