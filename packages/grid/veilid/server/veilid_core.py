@@ -29,8 +29,10 @@ vs = VeilidStreamer()
 
 
 async def handle_app_call(message: bytes) -> bytes:
-    msg = f"Received message of length: {len(message)}"
-    logger.debug(msg)
+    logger.debug(f"Received message of length: {len(message)}, generating response...")
+    msg = "pong" * (
+        (len(message) - 16) // 4
+    )  # 16 is length of rest of the json response
     return json.dumps({"response": msg}).encode()
 
 
@@ -39,7 +41,8 @@ async def main_callback(update: VeilidUpdate) -> None:
     # when our private route goes
     if VeilidStreamer.is_stream_update(update):
         async with await get_veilid_conn() as conn:
-            await vs.receive_stream(conn, update, callback=handle_app_call)
+            async with await get_routing_context(conn) as router:
+                await vs.receive_stream(conn, router, update, callback=handle_app_call)
 
     elif update.kind == veilid.VeilidUpdateKind.APP_MESSAGE:
         logger.info(f"Received App Message: {update.detail.message}")
