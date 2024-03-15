@@ -178,7 +178,7 @@ class SyncService(AbstractService):
 
         storage_permissions_dict = defaultdict(list)
         for storage_permission in storage_permissions:
-            storage_permissions_dict[permission.uid].append(storage_permission)
+            storage_permissions_dict[storage_permission.uid].append(storage_permission)
 
         for item in items:
             new_permissions = permissions_dict[item.id.id]
