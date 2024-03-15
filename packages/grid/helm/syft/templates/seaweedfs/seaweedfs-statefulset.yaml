@@ -66,7 +66,7 @@ spec:
   - metadata:
       name: seaweedfs-data
       labels:
-        {{- include "common.labels" . | nindent 8 }}
+        {{- include "common.volumeLabels" . | nindent 8 }}
         app.kubernetes.io/component: seaweedfs
     spec:
       accessModes:
