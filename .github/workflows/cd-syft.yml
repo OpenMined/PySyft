@@ -133,8 +133,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade  bump2version tox
+          pip install --upgrade pip uv==0.1.18 bump2version tox tox-uv==1.5.1
+          uv --version
 
       - name: Get Release tag
         id: get_release_tag
@@ -370,8 +370,8 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade tox setuptools wheel twine bump2version PyYAML
+          pip install --upgrade pip uv==0.1.18 tox tox-uv==1.5.1 setuptools wheel twine bump2version PyYAML
+          uv --version
 
       - name: Bump the Version
         if: needs.merge-docker-images.outputs.release_tag == 'beta'
