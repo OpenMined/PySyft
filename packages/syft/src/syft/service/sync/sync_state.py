@@ -95,7 +95,7 @@ class SyncState(SyftObject):
     def all_ids(self) -> set[UID]:
         return set(self.objects.keys())
 
-    def add_objects(self, objects: list[SyncableSyftObject], api: Any = None) -> None:
+    def add_objects(self, objects: list[SyncableSyftObject]) -> None:
         for obj in objects:
             if isinstance(obj.id, LineageID):
                 self.objects[obj.id.id] = obj
@@ -105,34 +105,30 @@ class SyncState(SyftObject):
         # TODO might get slow with large states,
         # need to build dependencies every time to not have UIDs
         # in dependencies that are not in objects
-        self._build_dependencies(api=api)
+        self._build_dependencies()
 
-    def _build_dependencies(self, api: Any = None) -> None:
+    def _build_dependencies(self) -> None:
         self.dependencies = {}
 
         all_ids = self.all_ids
         for obj in self.objects.values():
             if hasattr(obj, "get_sync_dependencies"):
-                deps = obj.get_sync_dependencies(api=api)
+                deps = obj.get_sync_dependencies()
                 if isinstance(deps, SyftError):
                     return deps
 
-                try:
-                    deps = [d.id for d in deps if d.id in all_ids]  # type: ignore
-                except Exception:
-                    # third party
-                    import ipdb
+                deps = [d.id for d in deps if d.id in all_ids]  # type: ignore
 
-                    ipdb.set_trace()
                 if len(deps):
                     self.dependencies[obj.id] = deps
 
     def get_previous_state_diff(self) -> "NodeDiff":
-        # Re-use DiffState to compare to previous state
-        # Low = previous, high = current
         # relative
         from .diff_state import NodeDiff
 
+        # Re-use NodeDiff to compare to previous state
+        # Low = previous state, high = current state
+        # NOTE No previous sync state means everything is new
         previous_state = self.previous_state or SyncState(node_uid=self.node_uid)
         return NodeDiff.from_sync_state(previous_state, self)
 

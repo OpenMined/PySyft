@@ -255,9 +255,10 @@ class SyncService(AbstractService):
         for service_name in services_to_sync:
             service = node.get_service(service_name)
             items = service.get_all(context)
-            new_state.add_objects(items, api=node.root_client.api)  # type: ignore
+            new_state.add_objects(items)  # type: ignore
 
         # TODO workaround, we only need action objects from outputs for now
+
         action_object_ids = set()
         for obj in new_state.objects.values():
             if isinstance(obj, ExecutionOutput):
@@ -269,13 +270,17 @@ class SyncService(AbstractService):
 
         action_objects = []
         for uid in action_object_ids:
-            action_object = node.get_service("actionservice").get(context, uid)  # type: ignore
+            action_object = node.get_service("actionservice").get(
+                context, uid, resolve_nested=False
+            )  # type: ignore
             if action_object.is_err():
                 return SyftError(message=action_object.err())
             action_objects.append(action_object.ok())
+
+        print(action_objects)
         new_state.add_objects(action_objects)
 
-        new_state._build_dependencies(api=node.root_client.api)  # type: ignore
+        new_state._build_dependencies()  # type: ignore
 
         permissions, storage_permissions = self.get_permissions(
             context, new_state.objects.values()

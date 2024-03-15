@@ -10,6 +10,7 @@ from typing import cast
 # third party
 from hagrid.orchestra import NodeHandle
 from loguru import logger
+from syft.service.action.action_data_empty import ActionDataLink
 from tqdm import tqdm
 
 # relative
@@ -175,7 +176,7 @@ class DomainClient(SyftClient):
 
         for uid, obj in state.objects.items():
             if isinstance(obj, ActionObject):
-                state.objects[uid] = obj.refresh_object()
+                state.objects[uid] = obj.refresh_object(resolve_nested=False)
         return state
 
     def apply_state(self, resolved_state: ResolvedSyncState) -> SyftSuccess | SyftError:
