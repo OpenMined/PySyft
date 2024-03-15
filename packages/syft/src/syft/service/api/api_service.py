@@ -192,7 +192,7 @@ class APIService(AbstractService):
                 message=f"CustomAPIEndpoint: {endpoint_path} does not exist"
             )
         endpoint = result.ok()
-        endpoint = endpoint[-1]
+        endpoint = endpoint
         if result:
             return endpoint
         return SyftError(message=f"Unable to get {endpoint_path} CustomAPIEndpoint")
