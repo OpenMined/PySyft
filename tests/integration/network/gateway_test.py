@@ -33,7 +33,7 @@ def test_domain_connect_to_gateway(domain_1_port, gateway_port):
     assert len(domain_client.peers) == 1
     assert len(gateway_client.peers) == 1
 
-    # assert len(sy.domains.all_domains) == 1
+    assert len(sy.domains.all_domains) == 1
     assert len(sy.domains.online_domains) == 1
 
     proxy_domain_client = gateway_client.peers[0]
