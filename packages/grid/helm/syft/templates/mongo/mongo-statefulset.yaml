@@ -50,7 +50,7 @@ spec:
   - metadata:
       name: mongo-data
       labels:
-        {{- include "common.labels" . | nindent 8 }}
+        {{- include "common.volumeLabels" . | nindent 8 }}
         app.kubernetes.io/component: mongo
     spec:
       accessModes:
