@@ -22,32 +22,41 @@ from .client import SyftClient as Client
 NETWORK_REGISTRY_URL = (
     "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/gateways.json"
 )
+
 NETWORK_REGISTRY_REPO = "https://github.com/OpenMined/NetworkRegistry"
+
+# we are hardcoding the list of all gateways for now.
+# TODO: get it from a database, e.g. NETWORK_REGISTRY_URL
+NETWORK_JSON = {
+    "2.0.0": {
+        "gateways": [
+            {
+                "name": "test-gateway",
+                "host_or_ip": "localhost",
+                "protocol": "http",
+                "port": 9081,
+                "admin_email": "support@openmined.org",
+                "website": "https://www.openmined.org/",
+                "slack": "https://slack.openmined.org/",
+                "slack_channel": "#support",
+            }
+        ]
+    }
+}
+
+
+def _get_all_networks(network_json: dict, version: str) -> list[dict]:
+    return network_json[version]["gateways"]
 
 
 class NetworkRegistry:
     def __init__(self) -> None:
         self.all_networks: list[dict] = []
         try:
-            # response = requests.get(NETWORK_REGISTRY_URL)  # nosec
-            # network_json = response.json()
-            network_json = {
-                "2.0.0": {
-                    "gateways": [
-                        {
-                            "name": "test-gateway",
-                            "host_or_ip": "localhost",
-                            "protocol": "http",
-                            "port": 9081,
-                            "admin_email": "support@openmined.org",
-                            "website": "https://www.openmined.org/",
-                            "slack": "https://slack.openmined.org/",
-                            "slack_channel": "#support",
-                        }
-                    ]
-                }
-            }
-            self.all_networks = network_json["2.0.0"]["gateways"]
+            # network_json = requests.get(NETWORK_REGISTRY_URL).json()  # nosec
+            self.all_networks = _get_all_networks(
+                network_json=NETWORK_JSON, version="2.0.0"
+            )
         except Exception as e:
             warning(
                 f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
@@ -147,27 +156,12 @@ class NetworkRegistry:
 class DomainRegistry:
     def __init__(self) -> None:
         self.all_networks: list[dict] = []
-        self.all_domains: list = []
+        self.all_domains: list[NodePeer] = []
         try:
-            # response = requests.get(NETWORK_REGISTRY_URL)  # nosec
-            # network_json = response.json()
-            network_json = {
-                "2.0.0": {
-                    "gateways": [
-                        {
-                            "name": "test-gateway",
-                            "host_or_ip": "localhost",
-                            "protocol": "http",
-                            "port": 9081,
-                            "admin_email": "support@openmined.org",
-                            "website": "https://www.openmined.org/",
-                            "slack": "https://slack.openmined.org/",
-                            "slack_channel": "#support",
-                        }
-                    ]
-                }
-            }
-            self.all_networks = network_json["2.0.0"]["gateways"]
+            # network_json = requests.get(NETWORK_REGISTRY_URL).json()  # nosec
+            self.all_networks = _get_all_networks(
+                network_json=NETWORK_JSON, version="2.0.0"
+            )
         except Exception as e:
             warning(
                 f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
@@ -260,6 +254,7 @@ class DomainRegistry:
         for each in _all_online_domains:
             if each is not None:
                 online_domains.append(each)
+
         return online_domains
 
     def __make_dict__(self) -> list[dict[str, Any]]:
