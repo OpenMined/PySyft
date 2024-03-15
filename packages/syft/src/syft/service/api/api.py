@@ -29,9 +29,18 @@ from ..context import AuthedServiceContext
 from ..response import SyftError
 
 
+def signature_remove_secrets(signature: Signature) -> Signature:
+    params = dict(signature.parameters)
+    params.pop("secrets", None)
+    return Signature(
+        list(params.values()), return_annotation=signature.return_annotation
+    )
+
+
 def get_signature(func: Callable) -> Signature:
     sig = inspect.signature(func)
     sig = signature_remove_context(sig)
+    sig = signature_remove_secrets(sig)
     return sig
 
 
@@ -89,12 +98,10 @@ class Endpoint(SyftObject):
             raise ValueError("Invalid function name.")
         return func_name
 
-    @field_validator("context_vars", check_fields=False)
+    @field_validator("secrets", check_fields=False)
     @classmethod
-    def validate_context_vars(
-        cls, context_vars: dict[str, Any] | None
-    ) -> dict[str, Any] | None:
-        return context_vars
+    def validate_secrets(cls, secrets: dict[str, Any] | None) -> dict[str, Any] | None:
+        return secrets
 
 
 @serializable()
@@ -105,7 +112,7 @@ class PrivateAPIEndpoint(Endpoint):
 
     api_code: str
     func_name: str
-    context_vars: dict[str, Any] | None = None
+    secrets: dict[str, Any] | None = None
 
 
 @serializable()
@@ -116,7 +123,7 @@ class PublicAPIEndpoint(Endpoint):
 
     api_code: str
     func_name: str
-    context_vars: dict[str, Any] | None = None
+    secrets: dict[str, Any] | None = None
 
 
 @serializable()
@@ -266,7 +273,11 @@ class TwinAPIEndpoint(SyftObject):
         return context, SyftError(message="You're not allowed to run this code.")
 
     def exec_code(
-        self, code: str, context: AuthedServiceContext, *args: Any, **kwargs: Any
+        self,
+        code: PrivateAPIEndpoint | PublicAPIEndpoint,
+        context: AuthedServiceContext,
+        *args: Any,
+        **kwargs: Any,
     ) -> Any:
         try:
             inner_function = ast.parse(code.api_code).body[0]
@@ -276,7 +287,9 @@ class TwinAPIEndpoint(SyftObject):
             # load it
             exec(raw_byte_code)  # nosec
             # execute it
-            evil_string = f"{code.func_name}(context, *args, **kwargs)"
+            if code.secrets is None:
+                code.secrets = {}
+            evil_string = f"{code.func_name}(*args, **kwargs, secrets=code.secrets,context=context)"
             result = eval(evil_string, None, locals())  # nosec
             # return the results
             return context, result
@@ -294,9 +307,26 @@ def set_access_type(context: TransformContext) -> TransformContext:
     return context
 
 
+def check_and_cleanup_signature(context: TransformContext) -> TransformContext:
+    if context.output is not None and context.obj is not None:
+        params = dict(context.obj.signature.parameters)
+        print("My params ", params)
+        if "secrets" not in params or "context" not in params:
+            raise ValueError(
+                "Function Signature must include 'secrets' (Dict[str,str]) and 'context' [AuthedContext] parameters."
+            )
+        params.pop("secrets", None)
+        params.pop("context", None)
+        context.output["signature"] = Signature(
+            list(params.values()),
+            return_annotation=context.obj.signature.return_annotation,
+        )
+    return context
+
+
 @transform(CreateTwinAPIEndpoint, TwinAPIEndpoint)
 def endpoint_create_to_twin_endpoint() -> list[Callable]:
-    return [generate_id]
+    return [generate_id, check_and_cleanup_signature]
 
 
 @transform(TwinAPIEndpoint, TwinAPIEndpointView)
@@ -308,7 +338,9 @@ def twin_endpoint_to_view() -> list[Callable]:
     ]
 
 
-def api_endpoint(path: str) -> Callable[..., TwinAPIEndpoint | SyftError]:
+def api_endpoint(
+    path: str, secrets: dict[str, str] | None = None
+) -> Callable[..., TwinAPIEndpoint | SyftError]:
     def decorator(f: Callable) -> TwinAPIEndpoint | SyftError:
         try:
             res = CreateTwinAPIEndpoint(
@@ -316,8 +348,9 @@ def api_endpoint(path: str) -> Callable[..., TwinAPIEndpoint | SyftError]:
                 private_code=PrivateAPIEndpoint(
                     api_code=inspect.getsource(f),
                     func_name=f.__name__,
+                    secrets=secrets,
                 ),
-                signature=get_signature(f),
+                signature=inspect.signature(f),
             )
         except ValidationError as e:
             for error in e.errors():
@@ -333,8 +366,8 @@ def create_new_api_endpoint(
     private: Callable[..., Any],
     description: str | None = None,
     public: Callable[..., Any] | None = None,
-    private_configs: dict[str, Any] | None = None,
-    public_configs: dict[str, Any] | None = None,
+    private_secrets: dict[str, Any] | None = None,
+    public_secrets: dict[str, Any] | None = None,
 ) -> CreateTwinAPIEndpoint | SyftError:
     try:
         if public is not None:
@@ -343,14 +376,14 @@ def create_new_api_endpoint(
                 private_code=PrivateAPIEndpoint(
                     api_code=inspect.getsource(private),
                     func_name=private.__name__,
-                    context_vars=private_configs,
+                    secrets=private_secrets,
                 ),
                 public_code=PublicAPIEndpoint(
                     api_code=inspect.getsource(public),
                     func_name=public.__name__,
-                    context_vars=public_configs,
+                    secrets=public_secrets,
                 ),
-                signature=get_signature(private),
+                signature=inspect.signature(private),
             )
 
         return CreateTwinAPIEndpoint(
@@ -358,9 +391,9 @@ def create_new_api_endpoint(
             private_code=PrivateAPIEndpoint(
                 api_code=inspect.getsource(private),
                 func_name=private.__name__,
-                context_vars=private_configs,
+                secrets=private_secrets,
             ),
-            signature=get_signature(private),
+            signature=inspect.signature(private),
         )
     except ValidationError as e:
         for error in e.errors():
