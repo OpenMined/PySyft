@@ -11,10 +11,16 @@ from syft.abstract_node import NodeType
 from syft.client.domain_client import DomainClient
 from syft.client.gateway_client import GatewayClient
 from syft.client.registry import NetworkRegistry
+from syft.client.search import SearchResults
+from syft.service.dataset.dataset import Dataset
 from syft.service.network.node_peer import NodePeer
 from syft.service.request.request import Request
 from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
+
+
+def _random_hash() -> str:
+    return uuid.uuid4().hex[:16]
 
 
 def test_domain_connect_to_gateway(domain_1_port, gateway_port):
@@ -69,8 +75,46 @@ def test_domain_connect_to_gateway(domain_1_port, gateway_port):
     )
 
 
-def random_hash() -> str:
-    return uuid.uuid4().hex[:16]
+def test_domain_connect_to_gateway_dataset_search(domain_1_port, gateway_port):
+    """
+    Scenario: Connecting a domain node to a gateway node. The domain
+        client then upload a dataset, which should be searchable by the syft network.
+        People who install syft can see the mock data and metadata of the uploaded datasets
+    """
+    gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
+
+    domain_client: DomainClient = sy.login(
+        port=domain_1_port, email="info@openmined.org", password="changethis"
+    )
+
+    result = domain_client.connect_to_gateway(gateway_client)
+    assert isinstance(result, SyftSuccess)
+
+    assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
+    assert len(sy.domains.all_domains) == len(sy.domains.online_domains) == 1
+
+    input_data = np.array([1, 2, 3])
+    mock_data = np.array([4, 5, 6])
+
+    asset_name = _random_hash()
+    asset = sy.Asset(name=asset_name, data=input_data, mock=mock_data)
+    dataset_name = _random_hash()
+    dataset = sy.Dataset(name=dataset_name, asset_list=[asset])
+
+    dataset_res = domain_client.upload_dataset(dataset)
+    assert isinstance(dataset_res, SyftSuccess)
+
+    right_search = sy.search(dataset_name)
+    assert isinstance(right_search, SearchResults)
+    assert len(right_search) == 1
+    dataset = right_search[0]
+    assert isinstance(dataset, Dataset)
+    assert len(dataset.assets) == 1
+    assert isinstance(dataset.assets[0].mock, np.ndarray)
+    assert dataset.assets[0].data is None
+
+    wrong_search = sy.search(_random_hash())
+    assert len(wrong_search) == 0
 
 
 def test_domain_gateway_user_code(domain_1_port, gateway_port):
@@ -83,9 +127,9 @@ def test_domain_gateway_user_code(domain_1_port, gateway_port):
     input_data = np.array([1, 2, 3])
     mock_data = np.array([4, 5, 6])
 
-    asset_name = random_hash()
+    asset_name = _random_hash()
     asset = sy.Asset(name=asset_name, data=input_data, mock=mock_data)
-    dataset_name = random_hash()
+    dataset_name = _random_hash()
     dataset = sy.Dataset(name=dataset_name, asset_list=[asset])
 
     dataset_res = domain_client.upload_dataset(dataset)

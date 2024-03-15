@@ -108,11 +108,7 @@ class NetworkRegistry:
                 executor.map(lambda network: check_network(network), networks)
             )
 
-        online_networks = []
-        for each in _online_networks:
-            if each is not None:
-                online_networks.append(each)
-        return online_networks
+        return [network for network in _online_networks if network is not None]
 
     def _repr_html_(self) -> str:
         on = self.online_networks

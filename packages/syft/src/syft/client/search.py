@@ -1,3 +1,6 @@
+# stdlib
+from concurrent.futures import ThreadPoolExecutor
+
 # third party
 from IPython.display import display
 
@@ -50,6 +53,9 @@ class SearchResults:
             dataset = self.__getitem__(key)
         return self._dataset_client[dataset.id]
 
+    def __len__(self) -> int:
+        return len(self._datasets)
+
 
 class Search:
     def __init__(self, domains: DomainRegistry) -> None:
@@ -74,9 +80,16 @@ class Search:
             return (None, [])
 
     def __search(self, name: str) -> list[tuple[SyftClient, list[Dataset]]]:
-        results: list[tuple[SyftClient | None, list[Dataset]]] = [
-            self.__search_one_node(peer_tuple, name) for peer_tuple in self.domains
-        ]
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            # results: list[tuple[SyftClient | None, list[Dataset]]] = [
+            #     self.__search_one_node(peer_tuple, name) for peer_tuple in self.domains
+            # ]
+            results: list[tuple[SyftClient | None, list[Dataset]]] = list(
+                executor.map(
+                    lambda peer_tuple: self.__search_one_node(peer_tuple, name),
+                    self.domains,
+                )
+            )
         # filter out SyftError
         filtered = [(client, result) for client, result in results if client and result]
 
