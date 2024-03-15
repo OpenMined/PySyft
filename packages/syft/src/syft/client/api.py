@@ -249,7 +249,7 @@ class RemoteFunction(SyftObject):
 
         return args, kwargs
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    def __function_call(self, path: str, *args: Any, **kwargs: Any) -> Any:
         if "blocking" in self.signature.parameters:
             raise Exception(
                 f"Signature {self.signature} can't have 'blocking' kwarg because it's reserved"
@@ -272,7 +272,7 @@ class RemoteFunction(SyftObject):
 
         api_call = SyftAPICall(
             node_uid=self.node_uid,
-            path=self.path,
+            path=path,
             args=list(_valid_args),
             kwargs=_valid_kwargs,
             blocking=blocking,
@@ -288,6 +288,15 @@ class RemoteFunction(SyftObject):
         )
         result = result[0]
         return result
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return self.__function_call(self.path, *args, **kwargs)
+
+    def public(self, *args: Any, **kwargs: Any) -> Any:
+        return self.__function_call("api.call_public", *args, **kwargs)
+
+    def private(self, *args: Any, **kwargs: Any) -> Any:
+        return self.__function_call("api.call_private", *args, **kwargs)
 
 
 class RemoteUserCodeFunction(RemoteFunction):
