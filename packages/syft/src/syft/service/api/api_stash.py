@@ -25,17 +25,20 @@ class TwinAPIEndpointStash(BaseUIDStoreStash):
 
     def get_by_path(
         self, credentials: SyftVerifyKey, path: str
-    ) -> Result[list[TwinAPIEndpoint], str]:
-        results = self.get_all(credentials=credentials)
-        items = []
-        if results.is_ok() and results.ok():
-            results = results.ok()
-            for result in results:
-                if result.path == path:
-                    items.append(result)
-            return Ok(items)
-        else:
-            return results
+    ) -> Result[TwinAPIEndpoint, str]:
+        endpoint_results = self.get_all(credentials=credentials)
+
+        if endpoint_results.is_err():
+            return endpoint_results
+
+        endpoint_by_path = None
+
+        for endpoint in endpoint_results.ok():
+            if endpoint.path == path:
+                endpoint_by_path = endpoint
+                break
+
+        return Ok(endpoint_by_path)
 
     def update(
         self,
