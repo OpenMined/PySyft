@@ -457,6 +457,9 @@ class Node(AbstractNode):
 
         NodeRegistry.set_node_for(self.id, self)
 
+    def auto_accept_association_request(self) -> bool:
+        return auto_accept_association_request()
+
     @property
     def runs_in_docker(self) -> bool:
         path = "/proc/self/cgroup"

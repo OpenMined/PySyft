@@ -3,11 +3,14 @@ import secrets
 from typing import cast
 
 # third party
+from result import Err
+from result import Ok
 from result import Result
 
 # relative
 from ...abstract_node import AbstractNode
 from ...node.credentials import SyftVerifyKey
+from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ..context import ChangeContext
 from ..request.request import Change
@@ -16,6 +19,7 @@ from ..response import SyftSuccess
 from .routes import NodeRoute
 
 
+@serializable()
 class AssociationRequestChange(Change):
     __canonical_name__ = "AssociationRequestChange"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -29,6 +33,12 @@ class AssociationRequestChange(Change):
     def _run(
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
+        # relative
+        from .network_service import NetworkService
+
+        if not apply:
+            return SyftError(message="Undo not supported for AssociationRequestChange")
+
         service_ctx = context.to_service_ctx()
 
         # Step 1: Validate the Route
@@ -51,7 +61,7 @@ class AssociationRequestChange(Change):
         )
 
         if isinstance(remote_res, SyftError):
-            return remote_res
+            return Err(remote_res)
 
         challenge_signature, remote_node_peer = remote_res
 
@@ -62,18 +72,18 @@ class AssociationRequestChange(Change):
                 random_challenge, challenge_signature
             )
         except Exception as e:
-            return SyftError(message=str(e))
+            return Err(SyftError(message=str(e)))
 
         # save the remote peer for later
         context.node = cast(AbstractNode, context.node)
-        result = self.stash.update_peer(
-            context.node.verify_key,
-            remote_node_peer,
-        )
-        if result.is_err():
-            return SyftError(message=str(result.err()))
 
-        return SyftSuccess(message="Routes Exchanged")
+        network_stash = context.node.get_service(NetworkService).stash
+
+        result = network_stash.update_peer(context.node.verify_key, remote_node_peer)
+        if result.is_err():
+            return Err(SyftError(message=str(result.err())))
+
+        return Ok(SyftSuccess(message="Routes Exchanged"))
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context, apply=True)

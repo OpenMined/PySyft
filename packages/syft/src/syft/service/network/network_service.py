@@ -15,7 +15,6 @@ from ...client.client import PythonConnection
 from ...client.client import SyftClient
 from ...client.client import VeilidConnection
 from ...node.credentials import SyftVerifyKey
-from ...node.node import auto_accept_association_request
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...service.settings.settings import NodeSettingsV2
@@ -36,7 +35,6 @@ from ..data_subject.data_subject import NamePartitionKey
 from ..metadata.node_metadata import NodeMetadataV3
 from ..request.request import Request
 from ..request.request import SubmitRequest
-from ..request.request_service import RequestService
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -147,19 +145,20 @@ class NetworkService(AbstractService):
         """Exchange Route With Another Node"""
 
         association_change = AssociationRequestChange(
-            self_node_route=self_node_route,
-            remote_node_route=remote_node_route,
-            remote_node_verify_key=remote_node_verify_key,
+            self_node_route=remote_node_route,
+            remote_node_route=self_node_route,
+            remote_node_verify_key=context.credentials,
         )
 
         changes = [association_change]
         request = SubmitRequest(changes=changes)
 
         context.node = cast(AbstractNode, context.node)
-        method = context.node.get_service_method(RequestService.submit)
-        result = method(context=context, request=request)
 
-        if auto_accept_association_request():
+        remote_client = remote_node_route.client_with_context(context=context)
+        result = remote_client.api.services.request.submit(request=request)
+
+        if context.node.auto_accept_association_request():
             if isinstance(result, SyftError):
                 return result
             request = cast(Request, result)
