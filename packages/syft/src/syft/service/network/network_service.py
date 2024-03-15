@@ -15,6 +15,7 @@ from ...client.client import PythonConnection
 from ...client.client import SyftClient
 from ...client.client import VeilidConnection
 from ...node.credentials import SyftVerifyKey
+from ...node.node import auto_accept_association_request
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...service.settings.settings import NodeSettingsV2
@@ -33,6 +34,9 @@ from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
 from ..metadata.node_metadata import NodeMetadataV3
+from ..request.request import Request
+from ..request.request import SubmitRequest
+from ..request.request_service import RequestService
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -42,6 +46,7 @@ from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..warnings import CRUDWarning
+from .association_request import AssociationRequestChange
 from .node_peer import NodePeer
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
@@ -138,54 +143,29 @@ class NetworkService(AbstractService):
         self_node_route: NodeRoute,
         remote_node_route: NodeRoute,
         remote_node_verify_key: SyftVerifyKey,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess | SyftError | Request:
         """Exchange Route With Another Node"""
 
-        # Step 1: Validate the Route
-        self_node_peer = self_node_route.validate_with_context(context=context)
-
-        if isinstance(self_node_peer, SyftError):
-            return self_node_peer
-
-        # Step 2: Send the Node Peer to the remote node
-        # Also give them their own to validate that it belongs to them
-        # random challenge prevents replay attacks
-        remote_client: SyftClient = remote_node_route.client_with_context(
-            context=context
-        )
-        random_challenge = secrets.token_bytes(16)
-
-        remote_res = remote_client.api.services.network.add_peer(
-            peer=self_node_peer,
-            challenge=random_challenge,
-            self_node_route=remote_node_route,
-            verify_key=remote_node_verify_key,
+        association_change = AssociationRequestChange(
+            self_node_route=self_node_route,
+            remote_node_route=remote_node_route,
+            remote_node_verify_key=remote_node_verify_key,
         )
 
-        if isinstance(remote_res, SyftError):
-            return remote_res
+        changes = [association_change]
+        request = SubmitRequest(changes=changes)
 
-        challenge_signature, remote_node_peer = remote_res
-
-        # Verifying if the challenge is valid
-
-        try:
-            remote_node_verify_key.verify_key.verify(
-                random_challenge, challenge_signature
-            )
-        except Exception as e:
-            return SyftError(message=str(e))
-
-        # save the remote peer for later
         context.node = cast(AbstractNode, context.node)
-        result = self.stash.update_peer(
-            context.node.verify_key,
-            remote_node_peer,
-        )
-        if result.is_err():
-            return SyftError(message=str(result.err()))
+        method = context.node.get_service_method(RequestService.submit)
+        result = method(context=context, request=request)
 
-        return SyftSuccess(message="Routes Exchanged")
+        if auto_accept_association_request():
+            if isinstance(result, SyftError):
+                return result
+            request = cast(Request, result)
+            return request.approve(context=context, disable_warnings=True)
+
+        return result
 
     @service_method(path="network.add_peer", name="add_peer", roles=GUEST_ROLE_LEVEL)
     def add_peer(
