@@ -55,7 +55,7 @@ jobs:
 
       - name: Upgrade pip
         run: |
-          pip install --upgrade pip uv==${{ vars.UV_VERSION }}
+          pip install --upgrade pip uv==0.1.18
           uv --version
 
       # - name: Get pip cache dir
@@ -74,7 +74,7 @@ jobs:
 
       - name: Install tox
         run: |
-          pip install --upgrade tox tox-uv==${{ vars.TOX_UV_VERSION }}
+          pip install --upgrade tox tox-uv==1.5.1
 
       - name: Install Docker Compose
         if: runner.os == 'Linux'
