@@ -142,7 +142,7 @@ class VeilidStreamer:
            ```
     """
 
-    _instance: "VeilidStreamer" | None = None
+    _instance = None
     buffers: dict[CallId, Buffer]
 
     def __new__(cls) -> "VeilidStreamer":

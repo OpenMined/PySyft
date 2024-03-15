@@ -11,12 +11,14 @@ from veilid.json_api import _JsonVeilidAPI
 from veilid.types import RouteId
 
 # relative
+from .constants import MAX_MESSAGE_SIZE
 from .constants import USE_DIRECT_CONNECTION
 from .veilid_connection import get_routing_context
 from .veilid_connection import get_veilid_conn
 from .veilid_db import load_dht_key
 from .veilid_db import store_dht_key
 from .veilid_db import store_dht_key_creds
+from .veilid_streamer import VeilidStreamer
 
 
 async def create_private_route(
@@ -151,7 +153,11 @@ async def app_call(vld_key: str, message: bytes) -> bytes:
         async with await get_routing_context(conn) as router:
             route = await get_route_from_vld_key(vld_key, conn, router)
 
-            result = await router.app_call(route, message)
+            result = (
+                await router.app_call(route, message)
+                if len(message) <= MAX_MESSAGE_SIZE
+                else await VeilidStreamer().stream(router, route, message)
+            )
 
             return result
 
