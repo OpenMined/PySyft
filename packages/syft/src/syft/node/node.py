@@ -209,7 +209,7 @@ def get_default_worker_pool_count(node: Node) -> int:
 
 
 def auto_accept_association_request() -> bool:
-    return get_env("ASSOCIATION_REQUEST_AUTO_ACCEPT", "False") == "True"
+    return get_env("ASSOCIATION_REQUEST_AUTO_ACCEPT", "True") == "True"
 
 
 def in_kubernetes() -> bool:
