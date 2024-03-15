@@ -23,6 +23,7 @@ from rich.panel import Panel
 from typing_extensions import Self
 
 # relative
+from ...client.client import SyftClient
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
@@ -769,6 +770,15 @@ class ResolvedSyncState(SyftObject):
     new_permissions: list[ActionObjectPermission] = []
     new_storage_permissions: list[StoragePermission] = []
     alias: str
+
+    @classmethod
+    def from_client(cls, client: SyftClient) -> "ResolvedSyncState":
+        alias: str = client.metadata.node_side_type  # type: ignore
+        if alias not in ["low", "high"]:
+            raise ValueError(
+                "can only create resolved sync state for high, low side deployments"
+            )
+        return cls(node_uid=client.id, alias=alias)
 
     def add_sync_decision(self, sync_decision: SyncDecision) -> None:
         diff = sync_decision.diff
