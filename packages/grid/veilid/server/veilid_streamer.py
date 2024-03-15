@@ -15,6 +15,7 @@ import veilid
 
 # relative
 from .constants import MAX_MESSAGE_SIZE
+from .utils import retry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -264,6 +265,7 @@ class VeilidStreamer:
         else:
             logger.error(f"[Bad Message] Message with unknown prefix: {prefix}")
 
+    @retry(veilid.VeilidAPIError, tries=4, delay=1, backoff=2)
     async def _send_request(
         self, router: veilid.RoutingContext, dht_key: str, request_data: bytes
     ) -> None:
