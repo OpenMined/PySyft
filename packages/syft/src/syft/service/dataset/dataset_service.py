@@ -134,9 +134,7 @@ class DatasetService(AbstractService):
             datasets=datasets, page_size=page_size, page_index=page_index
         )
 
-    @service_method(
-        path="dataset.search", name="search", roles=DATA_SCIENTIST_ROLE_LEVEL
-    )
+    @service_method(path="dataset.search", name="search", roles=GUEST_ROLE_LEVEL)
     def search(
         self,
         context: AuthedServiceContext,

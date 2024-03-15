@@ -1,9 +1,11 @@
-# stdlib
+# third party
+from IPython.display import display
 
 # relative
 from ..service.dataset.dataset import Dataset
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.network.network_service import NodePeer
+from ..service.response import SyftWarning
 from ..types.uid import UID
 from .client import SyftClient
 from .registry import DomainRegistry
@@ -50,33 +52,42 @@ class SearchResults:
 
 
 class Search:
-    def __init__(self, domains: DomainRegistry):
-        self.domains = domains.online_domains
+    def __init__(self, domains: DomainRegistry) -> None:
+        self.domains: tuple[NodePeer, NodeMetadataJSON | None] | None = (
+            domains.online_domains
+        )
 
     @staticmethod
     def __search_one_node(
         peer_tuple: tuple[NodePeer, NodeMetadataJSON], name: str
     ) -> tuple[SyftClient | None, list[Dataset]]:
         try:
-            peer, _ = peer_tuple
+            peer, node_metadata = peer_tuple
             client = peer.guest_client
             results = client.api.services.dataset.search(name=name)
             return (client, results)
-        except:  # noqa
+        except Exception as e:  # noqa
+            warning = SyftWarning(
+                message=f"Got exception {e} at node {node_metadata.name}"
+            )
+            display(warning)
             return (None, [])
 
     def __search(self, name: str) -> list[tuple[SyftClient, list[Dataset]]]:
-        results = [
+        if self.domains is None:
+            return []
+
+        results: list[tuple[SyftClient | None, list[Dataset]]] = [
             self.__search_one_node(peer_tuple, name) for peer_tuple in self.domains
         ]
-
         # filter out SyftError
         filtered = [(client, result) for client, result in results if client and result]
+
         return filtered
 
     def search(self, name: str) -> SearchResults:
         """
-        Searches for a specific item by name.
+        Searches for a specific dataset by name.
 
         Args:
             name (str): The name of the dataset to search for.
