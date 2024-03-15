@@ -53,7 +53,7 @@ class SearchResults:
 
 class Search:
     def __init__(self, domains: DomainRegistry) -> None:
-        self.domains: tuple[NodePeer, NodeMetadataJSON | None] | None = (
+        self.domains: list[tuple[NodePeer, NodeMetadataJSON | None]] = (
             domains.online_domains
         )
 
@@ -74,9 +74,6 @@ class Search:
             return (None, [])
 
     def __search(self, name: str) -> list[tuple[SyftClient, list[Dataset]]]:
-        if self.domains is None:
-            return []
-
         results: list[tuple[SyftClient | None, list[Dataset]]] = [
             self.__search_one_node(peer_tuple, name) for peer_tuple in self.domains
         ]
