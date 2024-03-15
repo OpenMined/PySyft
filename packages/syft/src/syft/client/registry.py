@@ -214,12 +214,7 @@ class DomainRegistry:
                 executor.map(lambda network: check_network(network), networks)
             )
 
-        online_networks = []
-        for each in _online_networks:
-            if each is not None:
-                online_networks.append(each)
-
-        return online_networks
+        return [network for network in _online_networks if network is not None]
 
     @property
     def online_domains(self) -> list[tuple[NodePeer, NodeMetadataJSON | None]]:
@@ -250,12 +245,7 @@ class DomainRegistry:
                 )
                 _all_online_domains += _online_domains
 
-        online_domains = []
-        for each in _all_online_domains:
-            if each is not None:
-                online_domains.append(each)
-
-        return online_domains
+        return [domain for domain in _all_online_domains if domain is not None]
 
     def __make_dict__(self) -> list[dict[str, Any]]:
         on = self.online_domains
