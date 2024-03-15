@@ -1,6 +1,5 @@
 # stdlib
 from collections.abc import Callable
-from functools import cache
 from getpass import getpass
 from typing import Any
 
@@ -98,7 +97,6 @@ def generate_key(context: TransformContext) -> TransformContext:
     return context
 
 
-@cache
 def salt_and_hash_password(password: str, rounds: int) -> tuple[str, str]:
     bytes_pass = password.encode("UTF-8")
     salt = gensalt(rounds=rounds)
@@ -108,7 +106,6 @@ def salt_and_hash_password(password: str, rounds: int) -> tuple[str, str]:
     return salt_bytes, hashed_bytes
 
 
-@cache
 def check_pwd(password: str, hashed_password: str) -> bool:
     return checkpw(
         password=password.encode("utf-8"),

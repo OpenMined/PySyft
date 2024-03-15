@@ -1,4 +1,5 @@
 # stdlib
+from functools import cache
 import os
 from pathlib import Path
 import shutil
@@ -17,6 +18,7 @@ from syft.node.worker import Worker
 from syft.protocol.data_protocol import get_data_protocol
 from syft.protocol.data_protocol import protocol_release_dir
 from syft.protocol.data_protocol import stage_protocol_changes
+from syft.service.user import user
 
 # relative
 from .syft.stores.store_fixtures_test import dict_action_store  # noqa: F401
@@ -206,7 +208,9 @@ pytest_plugins = [
     "tests.syft.action_graph.fixtures",
     "tests.syft.serde.fixtures",
 ]
-# skip compute heavy hashing during tests
+# patching compute heavy hashing to speed up tests
 SyftClientSessionCache._get_key = (
     lambda email, password, connection: f"{email}{password}{connection}"
 )
+user.salt_and_hash_password = cache(user.salt_and_hash_password)
+user.check_pwd = cache(user.check_pwd)
