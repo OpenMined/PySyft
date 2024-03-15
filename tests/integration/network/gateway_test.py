@@ -10,6 +10,7 @@ import syft as sy
 from syft.abstract_node import NodeType
 from syft.client.domain_client import DomainClient
 from syft.client.gateway_client import GatewayClient
+from syft.client.registry import NetworkRegistry
 from syft.service.network.node_peer import NodePeer
 from syft.service.request.request import Request
 from syft.service.response import SyftSuccess
@@ -17,6 +18,9 @@ from syft.service.user.user_roles import ServiceRole
 
 
 def test_domain_connect_to_gateway(domain_1_port, gateway_port):
+    assert isinstance(sy.gateways, NetworkRegistry)
+    assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
+
     gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
 
     domain_client: DomainClient = sy.login(
@@ -28,6 +32,9 @@ def test_domain_connect_to_gateway(domain_1_port, gateway_port):
 
     assert len(domain_client.peers) == 1
     assert len(gateway_client.peers) == 1
+
+    # assert len(sy.domains.all_domains) == 1
+    assert len(sy.domains.online_domains) == 1
 
     proxy_domain_client = gateway_client.peers[0]
     domain_peer = domain_client.peers[0]
