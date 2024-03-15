@@ -125,14 +125,50 @@ class APIService(AbstractService):
         **kwargs: Any,
     ) -> SyftSuccess | SyftError:
         """Call a Custom API Method"""
-        context.node = cast(AbstractNode, context.node)
-        result = self.stash.get_by_path(context.node.verify_key, path=path)
-        if not result.is_ok():
-            return SyftError(message=f"CustomAPIEndpoint: {path} does not exist")
-        custom_endpoint = result.ok()
-        custom_endpoint = custom_endpoint[-1]
-        if result:
+        custom_endpoint = self.get_code(
+            context=context,
+            endpoint_path=path,
+        )
+        if not isinstance(custom_endpoint, SyftError):
             context, result = custom_endpoint.exec(context, *args, **kwargs)
+        return result
+
+    @service_method(path="api.call_public", name="call_public", roles=GUEST_ROLE_LEVEL)
+    def call_public(
+        self,
+        context: AuthedServiceContext,
+        path: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> SyftSuccess | SyftError:
+        """Call a Custom API Method in public mode"""
+        custom_endpoint = self.get_code(
+            context=context,
+            endpoint_path=path,
+        )
+        if not isinstance(custom_endpoint, SyftError):
+            context, result = custom_endpoint.exec_public_code(context, *args, **kwargs)
+        return result
+
+    @service_method(
+        path="api.call_private", name="call_private", roles=GUEST_ROLE_LEVEL
+    )
+    def call_private(
+        self,
+        context: AuthedServiceContext,
+        path: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> SyftSuccess | SyftError:
+        """Call a Custom API Method in private mode"""
+        custom_endpoint = self.get_code(
+            context=context,
+            endpoint_path=path,
+        )
+        if not isinstance(custom_endpoint, SyftError):
+            context, result = custom_endpoint.exec_private_code(
+                context, *args, **kwargs
+            )
         return result
 
     def get_endpoints(
@@ -145,3 +181,18 @@ class APIService(AbstractService):
         if results.is_ok():
             return results.ok()
         return SyftError(messages="Unable to get CustomAPIEndpoint")
+
+    def get_code(
+        self, context: AuthedServiceContext, endpoint_path: str
+    ) -> TwinAPIEndpoint | SyftError:
+        context.node = cast(AbstractNode, context.node)
+        result = self.stash.get_by_path(context.node.verify_key, path=endpoint_path)
+        if not result.is_ok():
+            return SyftError(
+                message=f"CustomAPIEndpoint: {endpoint_path} does not exist"
+            )
+        endpoint = result.ok()
+        endpoint = endpoint[-1]
+        if result:
+            return endpoint
+        return SyftError(message=f"Unable to get {endpoint_path} CustomAPIEndpoint")
