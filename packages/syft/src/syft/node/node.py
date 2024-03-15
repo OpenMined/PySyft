@@ -316,7 +316,7 @@ class Node(AbstractNode):
         smtp_username: str | None = None,
         smtp_password: str | None = None,
         email_sender: str | None = None,
-        smtp_port: str | None = None,
+        smtp_port: int | None = None,
         smtp_host: str | None = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
@@ -723,6 +723,10 @@ class Node(AbstractNode):
             object_version = object_type.__version__
 
             migration_state = migration_state_service.get_state(context, canonical_name)
+            if isinstance(migration_state, SyftError):
+                raise Exception(
+                    f"Failed to get migration state for {canonical_name}. Error: {migration_state}"
+                )
             if (
                 migration_state is not None
                 and migration_state.current_version != migration_state.latest_version
@@ -902,6 +906,7 @@ class Node(AbstractNode):
             self.document_store_config.client_config.node_obj_python_id = id(self)
 
         self.document_store = document_store(
+            node_uid=self.id,
             root_verify_key=self.verify_key,
             store_config=document_store_config,
         )
@@ -920,6 +925,7 @@ class Node(AbstractNode):
 
         if isinstance(action_store_config, SQLiteStoreConfig):
             self.action_store: ActionStore = SQLiteActionStore(
+                node_uid=self.id,
                 store_config=action_store_config,
                 root_verify_key=self.verify_key,
             )
@@ -931,10 +937,15 @@ class Node(AbstractNode):
             action_store_config.client_config.node_obj_python_id = id(self)
 
             self.action_store = MongoActionStore(
-                root_verify_key=self.verify_key, store_config=action_store_config
+                node_uid=self.id,
+                root_verify_key=self.verify_key,
+                store_config=action_store_config,
             )
         else:
-            self.action_store = DictActionStore(root_verify_key=self.verify_key)
+            self.action_store = DictActionStore(
+                node_uid=self.id,
+                root_verify_key=self.verify_key,
+            )
 
         self.action_store_config = action_store_config
         self.queue_stash = QueueStash(store=self.document_store)

@@ -15,7 +15,7 @@ jobs:
       max-parallel: 99
       matrix:
         os: [om-ci-rhel-9]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}

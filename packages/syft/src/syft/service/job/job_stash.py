@@ -30,6 +30,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
+from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
@@ -55,7 +56,7 @@ class JobStatus(str, Enum):
 
 
 @serializable()
-class Job(SyftObject):
+class Job(SyncableSyftObject):
     __canonical_name__ = "JobItem"
     __version__ = SYFT_OBJECT_VERSION_4
 
@@ -416,7 +417,9 @@ class Job(SyftObject):
     """
         return as_markdown_code(md)
 
-    def wait(self, job_only: bool = False) -> Any | SyftNotReady:
+    def wait(
+        self, job_only: bool = False, timeout: int | None = None
+    ) -> Any | SyftNotReady:
         # stdlib
         from time import sleep
 
@@ -424,7 +427,6 @@ class Job(SyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-        # todo: timeout
         if self.resolved:
             return self.resolve
 
@@ -436,6 +438,7 @@ class Job(SyftObject):
                 f"Can't access Syft API. You must login to {self.syft_node_location}"
             )
         print_warning = True
+        counter = 0
         while True:
             self.fetch()
             if print_warning and self.result is not None:
@@ -449,10 +452,14 @@ class Job(SyftObject):
                         "Use job.wait().get() instead to wait for the linked result."
                     )
                     print_warning = False
-            sleep(2)
-            # TODO: fix the mypy issue
+            sleep(1)
             if self.resolved:
                 break  # type: ignore[unreachable]
+            # TODO: fix the mypy issue
+            if timeout is not None:
+                counter += 1
+                if counter > timeout:
+                    return SyftError(message="Reached Timeout!")
         return self.resolve  # type: ignore[unreachable]
 
     @property
@@ -464,7 +471,7 @@ class Job(SyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
-    def get_sync_dependencies(self, **kwargs: dict) -> list[UID]:
+    def get_sync_dependencies(self, **kwargs: dict) -> list[UID]:  # type: ignore
         dependencies = []
         if self.result is not None:
             dependencies.append(self.result.id.id)

@@ -16,7 +16,7 @@ jobs:
   cd-docs:
     strategy:
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.12"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +27,8 @@ jobs:
 
       - name: Install tox
         run: |
-          pip install -U tox
+          pip install --upgrade pip uv==0.1.18 tox tox-uv==1.5.1
+          uv --version
 
       - name: Build the docs
         run: |

@@ -65,32 +65,35 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          python -m pip install --upgrade --user pip
+          pip install --upgrade pip uv==0.1.18
+          uv --version
 
       - name: Get pip cache dir
         id: pip-cache
         if: steps.changes.outputs.syft == 'true'
         shell: bash
         run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: actions/cache@v4
         if: steps.changes.outputs.syft == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}-
+
+      # - name: Docker on MacOS
+      #   if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
+      #   uses: crazy-max/ghaction-setup-docker@v3.1.0
+      #   with:
+      #     set-host: true
 
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade tox packaging wheel --default-timeout=60
-
-      - name: Docker on MacOS
-        if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.1.0
+          pip install --upgrade tox tox-uv==1.5.1
 
       - name: Run unit tests
         if: steps.changes.outputs.syft == 'true'
@@ -150,28 +153,29 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
-          python -m pip install --upgrade --user pip
+          pip install --upgrade pip uv==0.1.18
+          uv --version
 
       - name: Get pip cache dir
         id: pip-cache
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         shell: bash
         run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: actions/cache@v4
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}-
 
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade tox packaging wheel --default-timeout=60
+          pip install --upgrade tox tox-uv==1.5.1
 
       - name: Run notebook tests
         uses: nick-fields/retry@v3
@@ -230,28 +234,29 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
-          python -m pip install --upgrade --user pip
+          pip install --upgrade pip uv==0.1.18
+          uv --version
 
       - name: Get pip cache dir
         id: pip-cache
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         shell: bash
         run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: actions/cache@v4
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}-
 
       - name: Install Dependencies
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade tox packaging wheel --default-timeout=60
+          pip install --upgrade tox tox-uv==1.5.1
 
       - name: Docker Compose on Linux
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'ubuntu-latest'
@@ -302,7 +307,7 @@ jobs:
       max-parallel: 1
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -328,28 +333,29 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          python -m pip install --upgrade --user pip
+          pip install --upgrade pip uv==0.1.18
+          uv --version
 
       - name: Get pip cache dir
         if: steps.changes.outputs.syft == 'true'
         id: pip-cache
         shell: bash
         run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
 
       - name: pip cache
         uses: actions/cache@v4
         if: steps.changes.outputs.syft == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}-
 
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade tox packaging wheel --default-timeout=60
+          pip install --upgrade tox tox-uv==1.5.1
 
       - name: Scan for security issues
         if: steps.changes.outputs.syft == 'true'

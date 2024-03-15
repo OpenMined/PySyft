@@ -1,15 +1,10 @@
 # stdlib
 from collections.abc import Generator
 from pathlib import Path
-import sys
 import tempfile
 
 # third party
-from pymongo import MongoClient
 import pytest
-from pytest_mock_resources.container.mongo import MongoConfig
-from pytest_mock_resources.fixture.mongo import _create_clean_database
-from pytest_mock_resources.fixture.mongo import get_container
 
 # syft absolute
 from syft.node.credentials import SyftVerifyKey
@@ -33,6 +28,7 @@ from syft.store.sqlite_document_store import SQLiteDocumentStore
 from syft.store.sqlite_document_store import SQLiteStoreClientConfig
 from syft.store.sqlite_document_store import SQLiteStoreConfig
 from syft.store.sqlite_document_store import SQLiteStorePartition
+from syft.types.uid import UID
 
 # relative
 from .store_constants_test import generate_db_name
@@ -40,46 +36,7 @@ from .store_constants_test import sqlite_workspace_folder
 from .store_constants_test import test_verify_key_string_root
 from .store_mocks_test import MockObjectType
 
-
-@pytest.fixture(scope="session")
-def pmr_mongo_config():
-    """Override this fixture with a :class:`MongoConfig` instance to specify different defaults.
-
-    Examples:
-        >>> @pytest.fixture(scope='session')
-        ... def pmr_mongo_config():
-        ...     return MongoConfig(image="mongo:3.4", root_database="foo")
-    """
-    return MongoConfig()
-
-
-@pytest.fixture(scope="session")
-def pmr_mongo_container(pytestconfig, pmr_mongo_config):
-    yield from get_container(pytestconfig, pmr_mongo_config)
-
-
-def create_mongo_fixture_no_windows(scope="function"):
-    """Produce a mongo fixture.
-
-    Any number of fixture functions can be created. Under the hood they will all share the same
-    database server.
-
-    Arguments:
-        scope: Passthrough pytest's fixture scope.
-    """
-
-    @pytest.fixture(scope=scope)
-    def _no_windows():
-        return pytest.skip("PyResources Issue with Docker + Windows")
-
-    @pytest.fixture(scope=scope)
-    def _(pmr_mongo_container, pmr_mongo_config):
-        return _create_clean_database(pmr_mongo_config)
-
-    return _ if sys.platform != "win32" else _no_windows
-
-
-mongo_server_mock = create_mongo_fixture_no_windows(scope="session")
+MONGO_CLIENT_CACHE = None
 
 locking_scenarios = [
     "nop",
@@ -143,7 +100,7 @@ def sqlite_store_partition_fn(
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
     store = SQLiteStorePartition(
-        root_verify_key, settings=settings, store_config=store_config
+        UID(), root_verify_key, settings=settings, store_config=store_config
     )
 
     res = store.init_store()
@@ -175,7 +132,7 @@ def sqlite_document_store_fn(
         client_config=sqlite_config, locking_config=locking_config
     )
 
-    return SQLiteDocumentStore(root_verify_key, store_config=store_config)
+    return SQLiteDocumentStore(UID(), root_verify_key, store_config=store_config)
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
@@ -218,59 +175,61 @@ def sqlite_action_store(sqlite_workspace: tuple[Path, str], request):
     )
 
     ver_key = SyftVerifyKey.from_string(test_verify_key_string_root)
-    return SQLiteActionStore(store_config=store_config, root_verify_key=ver_key)
+    return SQLiteActionStore(
+        node_uid=UID(),
+        store_config=store_config,
+        root_verify_key=ver_key,
+    )
 
 
 def mongo_store_partition_fn(
+    mongo_client,
     root_verify_key,
     mongo_db_name: str = "mongo_db",
     locking_config_name: str = "nop",
-    **mongo_kwargs,
 ):
-    mongo_client = MongoClient(**mongo_kwargs)
     mongo_config = MongoStoreClientConfig(client=mongo_client)
 
     locking_config = str_to_locking_config(locking_config_name)
 
     store_config = MongoStoreConfig(
-        client_config=mongo_config, db_name=mongo_db_name, locking_config=locking_config
+        client_config=mongo_config,
+        db_name=mongo_db_name,
+        locking_config=locking_config,
     )
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
     return MongoStorePartition(
-        root_verify_key, settings=settings, store_config=store_config
+        UID(), root_verify_key, settings=settings, store_config=store_config
     )
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
-def mongo_store_partition(root_verify_key, mongo_server_mock, request):
+def mongo_store_partition(root_verify_key, mongo_client, request):
     mongo_db_name = generate_db_name()
-    mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
     locking_config_name = request.param
 
     yield mongo_store_partition_fn(
+        mongo_client,
         root_verify_key,
         mongo_db_name=mongo_db_name,
         locking_config_name=locking_config_name,
-        **mongo_kwargs,
     )
 
     # cleanup db
     try:
-        mongo_client = MongoClient(**mongo_kwargs)
         mongo_client.drop_database(mongo_db_name)
     except BaseException as e:
         print("failed to cleanup mongo fixture", e)
 
 
 def mongo_document_store_fn(
+    mongo_client,
     root_verify_key,
     mongo_db_name: str = "mongo_db",
     locking_config_name: str = "nop",
-    **mongo_kwargs,
 ):
     locking_config = str_to_locking_config(locking_config_name)
-    mongo_client = MongoClient(**mongo_kwargs)
     mongo_config = MongoStoreClientConfig(client=mongo_client)
     store_config = MongoStoreConfig(
         client_config=mongo_config, db_name=mongo_db_name, locking_config=locking_config
@@ -278,19 +237,18 @@ def mongo_document_store_fn(
 
     mongo_client.drop_database(mongo_db_name)
 
-    return MongoDocumentStore(root_verify_key, store_config=store_config)
+    return MongoDocumentStore(UID(), root_verify_key, store_config=store_config)
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
-def mongo_document_store(root_verify_key, mongo_server_mock, request):
+def mongo_document_store(root_verify_key, mongo_client, request):
     locking_config_name = request.param
     mongo_db_name = generate_db_name()
-    mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
     return mongo_document_store_fn(
+        mongo_client,
         root_verify_key,
         mongo_db_name=mongo_db_name,
         locking_config_name=locking_config_name,
-        **mongo_kwargs,
     )
 
 
@@ -299,35 +257,34 @@ def mongo_queue_stash_fn(mongo_document_store):
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
-def mongo_queue_stash(root_verify_key, mongo_server_mock, request):
+def mongo_queue_stash(root_verify_key, mongo_client, request):
     mongo_db_name = generate_db_name()
-    mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
     locking_config_name = request.param
 
     store = mongo_document_store_fn(
+        mongo_client,
         root_verify_key,
         mongo_db_name=mongo_db_name,
         locking_config_name=locking_config_name,
-        **mongo_kwargs,
     )
     return mongo_queue_stash_fn(store)
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
-def mongo_action_store(mongo_server_mock, request):
+def mongo_action_store(mongo_client, request):
     mongo_db_name = generate_db_name()
-    mongo_kwargs = mongo_server_mock.pmr_credentials.as_mongo_kwargs()
     locking_config_name = request.param
     locking_config = str_to_locking_config(locking_config_name)
 
-    mongo_client = MongoClient(**mongo_kwargs)
     mongo_config = MongoStoreClientConfig(client=mongo_client)
     store_config = MongoStoreConfig(
         client_config=mongo_config, db_name=mongo_db_name, locking_config=locking_config
     )
     ver_key = SyftVerifyKey.from_string(test_verify_key_string_root)
     mongo_action_store = MongoActionStore(
-        store_config=store_config, root_verify_key=ver_key
+        node_uid=UID(),
+        store_config=store_config,
+        root_verify_key=ver_key,
     )
 
     return mongo_action_store
@@ -342,7 +299,7 @@ def dict_store_partition_fn(
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
     return DictStorePartition(
-        root_verify_key, settings=settings, store_config=store_config
+        UID(), root_verify_key, settings=settings, store_config=store_config
     )
 
 
@@ -361,13 +318,17 @@ def dict_action_store(request):
 
     store_config = DictStoreConfig(locking_config=locking_config)
     ver_key = SyftVerifyKey.from_string(test_verify_key_string_root)
-    return DictActionStore(store_config=store_config, root_verify_key=ver_key)
+    return DictActionStore(
+        node_uid=UID(),
+        store_config=store_config,
+        root_verify_key=ver_key,
+    )
 
 
 def dict_document_store_fn(root_verify_key, locking_config_name: str = "nop"):
     locking_config = str_to_locking_config(locking_config_name)
     store_config = DictStoreConfig(locking_config=locking_config)
-    return DictDocumentStore(root_verify_key, store_config=store_config)
+    return DictDocumentStore(UID(), root_verify_key, store_config=store_config)
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)

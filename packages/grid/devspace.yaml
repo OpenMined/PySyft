@@ -25,7 +25,7 @@ vars:
   DEVSPACE_ENV_FILE: "default.env"
   CONTAINER_REGISTRY: "docker.io"
   NODE_NAME: "mynode"
-  VERSION: "0.8.5-beta.1"
+  VERSION: "0.8.5-beta.6"
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
@@ -37,7 +37,6 @@ images:
     context: ../
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
-      - latest
   frontend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
     buildKit:
@@ -47,7 +46,6 @@ images:
     context: ./frontend
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
-      - latest
   seaweedfs:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
     buildKit: {}
@@ -57,7 +55,6 @@ images:
     context: ./seaweedfs
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
-      - latest
   veilid:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_VEILID}"
     buildKit: {}
@@ -65,7 +62,6 @@ images:
     context: ./veilid
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
-      - latest
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:

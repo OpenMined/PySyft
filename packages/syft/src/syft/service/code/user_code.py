@@ -42,9 +42,11 @@ from ...serde.serialize import _serialize
 from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
+from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
@@ -107,16 +109,16 @@ class UserCodeStatus(Enum):
 
 
 @serializable()
-class UserCodeStatusCollection(SyftObject):
+class UserCodeStatusCollection(SyncableSyftObject):
     __canonical_name__ = "UserCodeStatusCollection"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __repr_attrs__ = ["approved", "status_dict"]
 
     status_dict: dict[NodeIdentity, tuple[UserCodeStatus, str]] = {}
     user_code_link: LinkedObject
 
-    def get_diffs(self, ext_obj: Any) -> list[AttrDiff]:
+    def syft_get_diffs(self, ext_obj: Any) -> list[AttrDiff]:
         # relative
         from ...service.sync.diff_state import AttrDiff
 
@@ -250,7 +252,7 @@ class UserCodeStatusCollection(SyftObject):
 
 
 @serializable()
-class UserCode(SyftObject):
+class UserCode(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
     __version__ = SYFT_OBJECT_VERSION_4
@@ -1266,7 +1268,7 @@ class UserCodeExecutionResult(SyftObject):
 class UserCodeExecutionOutput(SyftObject):
     # version
     __canonical_name__ = "UserCodeExecutionOutput"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     user_code_id: UID
@@ -1463,6 +1465,7 @@ def execute_byte_code(
                     f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
                 )
             if context.node is not None:
+                log_id = context.job.log_id
                 log_service = context.node.get_service("LogService")
                 log_service.append(context=context, uid=log_id, new_err=error_msg)
 

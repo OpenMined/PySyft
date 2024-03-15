@@ -18,6 +18,7 @@ from ..queue.queue_stash import ActionQueueItem
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
+from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
@@ -264,3 +265,6 @@ class JobService(AbstractService):
         # )
 
         return job
+
+
+TYPE_TO_SERVICE[Job] = JobService

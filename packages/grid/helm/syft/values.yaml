@@ -1,7 +1,7 @@
 global:
   # Affects only backend, frontend, and seaweedfs containers
   registry: docker.io
-  version: 0.8.5-beta.1
+  version: 0.8.5-beta.6
 
   # Force default secret values for development. DO NOT USE IN PRODUCTION
   useDefaultSecrets: false
@@ -33,7 +33,7 @@ frontend:
   env: null
 
   # Pod Resource Limits
-  resourcesPreset: nano
+  resourcesPreset: micro
   resources: null
 
 seaweedfs:
@@ -148,11 +148,11 @@ ingress:
 
 # ----------------------------------------
 # For Veilid Core Debug Logs
-# veilidFlags: "--debug"
+# serverFlags: "--debug"
 # ----------------------------------------
 veilid:
   enabled: false
-  veilidFlags: ""
+  serverFlags: ""
   appLogLevel: "info"
   uvicornLogLevel: "info"
 

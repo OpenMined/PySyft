@@ -28,7 +28,7 @@ spec:
 
           env:
             - name: VEILID_FLAGS
-              value: {{ .Values.veilid.veilidFlags | quote }}
+              value: {{ .Values.veilid.serverFlags | quote }}
             - name: UVICORN_LOG_LEVEL
               value: {{ .Values.veilid.uvicornLogLevel }}
             - name: APP_LOG_LEVEL
@@ -38,18 +38,18 @@ spec:
             {{- end }}
 
           ports:
-            - name: port-0
+            - name: veilid-api
               containerPort: 4000
           startupProbe:
             httpGet:
               path: /healthcheck?probe=startupProbe
-              port: port-0
+              port: veilid-api
             failureThreshold: 30
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /healthcheck?probe=livenessProbe
-              port: port-0
+              port: veilid-api
             periodSeconds: 15
             timeoutSeconds: 5
             failureThreshold: 3
