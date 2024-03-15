@@ -156,16 +156,24 @@ class NetworkRegistry:
 class DomainRegistry:
     def __init__(self) -> None:
         self.all_networks: list[dict] = []
-        self.all_domains: list[NodePeer] = []
+        self.all_domains: dict[str, NodePeer] = {}
         try:
             # network_json = requests.get(NETWORK_REGISTRY_URL).json()  # nosec
             self.all_networks = _get_all_networks(
                 network_json=NETWORK_JSON, version="2.0.0"
             )
+            self._get_all_domains()
         except Exception as e:
             warning(
                 f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
             )
+
+    def _get_all_domains(self) -> None:
+        for network in self.all_networks:
+            network_client = NetworkRegistry.create_client(network)
+            domains: list[NodePeer] = network_client.domains.retrieve_nodes()
+            for domain in domains:
+                self.all_domains[str(domain.id)] = domain
 
     @property
     def online_networks(self) -> list[dict]:
@@ -231,7 +239,6 @@ class DomainRegistry:
 
         networks = self.online_networks
 
-        self.all_domains = []
         # We can use a with statement to ensure threads are cleaned up promptly
         with futures.ThreadPoolExecutor(max_workers=20) as executor:
             # map
@@ -239,7 +246,8 @@ class DomainRegistry:
             for network in networks:
                 network_client = NetworkRegistry.create_client(network)
                 domains: list[NodePeer] = network_client.domains.retrieve_nodes()
-                self.all_domains += domains
+                for domain in domains:
+                    self.all_domains[str(domain.id)] = domain
                 _online_domains = list(
                     executor.map(lambda domain: check_domain(domain), domains)
                 )
