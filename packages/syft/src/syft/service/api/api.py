@@ -22,7 +22,6 @@ from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
-from ...types.transforms import drop
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ..context import AuthedServiceContext
@@ -53,6 +52,8 @@ class TwinAPIEndpointView(SyftObject):
     path: str
     signature: Signature
     access: str = "Public"
+    public_code: str | None = None
+    private_code: str | None = None
 
     __repr_attrs__ = [
         "path",
@@ -113,6 +114,7 @@ class PrivateAPIEndpoint(Endpoint):
     api_code: str
     func_name: str
     secrets: dict[str, Any] | None = None
+    view_access: bool = False
 
 
 @serializable()
@@ -124,6 +126,7 @@ class PublicAPIEndpoint(Endpoint):
     api_code: str
     func_name: str
     secrets: dict[str, Any] | None = None
+    view_access: bool = True
 
 
 @serializable()
@@ -310,7 +313,6 @@ def set_access_type(context: TransformContext) -> TransformContext:
 def check_and_cleanup_signature(context: TransformContext) -> TransformContext:
     if context.output is not None and context.obj is not None:
         params = dict(context.obj.signature.parameters)
-        print("My params ", params)
         if "secrets" not in params or "context" not in params:
             raise ValueError(
                 "Function Signature must include 'secrets' (Dict[str,str]) and 'context' [AuthedContext] parameters."
@@ -324,6 +326,33 @@ def check_and_cleanup_signature(context: TransformContext) -> TransformContext:
     return context
 
 
+def decorator_cleanup(code: str) -> str:
+    # Regular expression to remove decorator
+    # It matches from "@" to "def" (non-greedy) across multiple lines
+    decorator_regex = r"@.*?def"
+
+    # Substituting the matched pattern with "def"
+    return re.sub(decorator_regex, "def", code, count=1, flags=re.DOTALL)
+
+
+def extract_code_string(code_field: str) -> Callable:
+    def code_string(context: TransformContext) -> TransformContext:
+        if context.obj is not None and context.output is not None:
+            endpoint_type = (
+                context.obj.private_code
+                if code_field == "private_code"
+                else context.obj.public_code
+            )
+
+            if endpoint_type is not None and endpoint_type.view_access:
+                context.output[code_field] = decorator_cleanup(endpoint_type.api_code)
+            else:
+                context.output[code_field] = "N / A"
+        return context
+
+    return code_string
+
+
 @transform(CreateTwinAPIEndpoint, TwinAPIEndpoint)
 def endpoint_create_to_twin_endpoint() -> list[Callable]:
     return [generate_id, check_and_cleanup_signature]
@@ -333,8 +362,8 @@ def endpoint_create_to_twin_endpoint() -> list[Callable]:
 def twin_endpoint_to_view() -> list[Callable]:
     return [
         set_access_type,
-        drop("private_code"),
-        drop("public_code"),
+        extract_code_string("private_code"),
+        extract_code_string("public_code"),
     ]
 
 

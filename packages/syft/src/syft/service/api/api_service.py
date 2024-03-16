@@ -126,6 +126,23 @@ class APIService(AbstractService):
         return SyftSuccess(message="Endpoint successfully deleted.")
 
     @service_method(
+        path="api.view",
+        name="view",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def view(
+        self, context: AuthedServiceContext, path: str
+    ) -> TwinAPIEndpointView | SyftError:
+        """Retrieves an specific API endpoint."""
+        context.node = cast(AbstractNode, context.node)
+        result = self.stash.get_by_path(context.node.verify_key, path)
+        if result.is_err():
+            return SyftError(message=result.err())
+        api_endpoint = result.ok()
+
+        return api_endpoint.to(TwinAPIEndpointView)
+
+    @service_method(
         path="api.api_endpoints",
         name="api_endpoints",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
