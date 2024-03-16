@@ -47,16 +47,80 @@ class APIService(AbstractService):
         existent_endpoint = self.stash.get_by_path(
             context.credentials, new_endpoint.path
         )
+
+        if existent_endpoint.is_err():
+            return SyftError(message=existent_endpoint.err())
+
         if existent_endpoint.is_ok() and existent_endpoint.ok():
             return SyftError(
                 message="An API endpoint already exists at the given path."
             )
 
-        result = self.stash.update(context.credentials, endpoint=new_endpoint)
+        result = self.stash.upsert(context.credentials, endpoint=new_endpoint)
         if result.is_err():
             return SyftError(message=result.err())
 
         return SyftSuccess(message="Endpoint successfully created.")
+
+    @service_method(
+        path="api.update",
+        name="update",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def update(
+        self,
+        context: AuthedServiceContext,
+        endpoint_path: str,
+        endpoint_update: UpdateTwinAPIEndpoint,
+    ) -> SyftSuccess | SyftError:
+        """Updates an specific API endpoint."""
+
+        endpoint_result = self.stash.get_by_path(context.credentials, endpoint_path)
+
+        if endpoint_result.is_err():
+            return SyftError(message=endpoint_result.err())
+
+        if not endpoint_result.ok():
+            return SyftError(f"Enpoint at path {endpoint_path} doesn't exist")
+
+        endpoint: TwinAPIEndpoint = endpoint_result.ok()
+
+        # TODO: should I use a transform for this?
+        # TODO: check signature match and everything else
+        # TODO: the current UpdateTwinAPIEndpoint is too simplistic. Should perform all necesary checks
+
+        endpoint.public_code = endpoint_update.public_code
+        endpoint.private_code_code = endpoint_update.private_code
+
+        result = self.stash.upsert(context.credentials, endpoint=endpoint)
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        return SyftSuccess(message="Endpoint successfully updated.")
+
+    @service_method(
+        path="api.delete",
+        name="delete",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def delete(
+        self, context: AuthedServiceContext, endpoint_path: str
+    ) -> SyftSuccess | SyftError:
+        """Deletes an specific API endpoint."""
+
+        endpoint = self.stash.get_by_path(context.credentials, endpoint_path)
+
+        if endpoint.is_err():
+            return SyftError(message=endpoint.err())
+        if not endpoint.ok():
+            return SyftError(message=f"Enpoint at path {endpoint_path} doesn't exist")
+
+        result = self.stash.delete_by_uid(context.credentials, endpoint.id)
+
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        return SyftSuccess(message="Endpoint successfully deleted.")
 
     @service_method(
         path="api.api_endpoints",
@@ -80,31 +144,6 @@ class APIService(AbstractService):
             api_endpoint_view.append(api_endpoint.to(TwinAPIEndpointView))
 
         return api_endpoint_view
-
-    @service_method(
-        path="api.update",
-        name="update",
-        roles=ADMIN_ROLE_LEVEL,
-    )
-    def update(
-        self,
-        context: AuthedServiceContext,
-        uid: UID,
-        updated_api: UpdateTwinAPIEndpoint,
-    ) -> SyftSuccess | SyftError:
-        """Updates an specific API endpoint."""
-        return SyftError(message="This is not implemented yet.")
-
-    @service_method(
-        path="api.delete",
-        name="delete",
-        roles=ADMIN_ROLE_LEVEL,
-    )
-    def delete(
-        self, context: AuthedServiceContext, path: str
-    ) -> SyftSuccess | SyftError:
-        """Deletes an specific API endpoint."""
-        return SyftError(message="This is not implemented yet.")
 
     @service_method(
         path="api.schema",

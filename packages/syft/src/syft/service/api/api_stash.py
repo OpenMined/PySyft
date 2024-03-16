@@ -40,26 +40,23 @@ class TwinAPIEndpointStash(BaseUIDStoreStash):
 
         return Ok(endpoint_by_path)
 
-    def update(
+    def upsert(
         self,
         credentials: SyftVerifyKey,
         endpoint: TwinAPIEndpoint,
         has_permission: bool = False,
     ) -> Result[TwinAPIEndpoint, str]:
-        res = self.check_type(endpoint, TwinAPIEndpoint)
-        if res.is_err():
-            return res
-        old_endpoint = self.get_by_path(credentials=credentials, path=endpoint.path)
-        if old_endpoint and old_endpoint.ok():
-            old_endpoint = old_endpoint.ok()
-            old_endpoint = old_endpoint[0]
+        """Upsert an endpoint."""
 
-            if old_endpoint == endpoint:
-                return Ok(endpoint)
-            else:
-                super().delete_by_uid(credentials=credentials, uid=old_endpoint.id)
+        result = self.get_by_path(credentials=credentials, path=endpoint.path)
+
+        if result.is_err():
+            return result
+
+        if result.ok():
+            super().delete_by_uid(credentials=credentials, uid=result.ok().id)
 
         result = super().set(
-            credentials=credentials, obj=res.ok(), ignore_duplicates=True
+            credentials=credentials, obj=endpoint, ignore_duplicates=False
         )
         return result
