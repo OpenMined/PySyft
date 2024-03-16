@@ -42,7 +42,10 @@ class APIService(AbstractService):
         self, context: AuthedServiceContext, endpoint: CreateTwinAPIEndpoint
     ) -> SyftSuccess | SyftError:
         """Register an CustomAPIEndpoint."""
-        new_endpoint = endpoint.to(TwinAPIEndpoint)
+        try:
+            new_endpoint = endpoint.to(TwinAPIEndpoint)
+        except ValueError as e:
+            return SyftError(message=str(e))
 
         existent_endpoint = self.stash.get_by_path(
             context.credentials, new_endpoint.path
