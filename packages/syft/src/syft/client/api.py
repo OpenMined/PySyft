@@ -54,6 +54,7 @@ from ..types.syft_object import SyftObject
 from ..types.uid import LineageID
 from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
+from ..util.markdown import as_markdown_python_code
 from ..util.telemetry import instrument
 from .connection import NodeConnection
 
@@ -229,6 +230,7 @@ class RemoteFunction(SyftObject):
     pre_kwargs: dict[str, Any] | None = None
     communication_protocol: PROTOCOL_TYPE
     warning: APIEndpointWarning | None = None
+    custom_function: bool = False
 
     @property
     def __ipython_inspector_signature_override__(self) -> Signature | None:
@@ -293,10 +295,44 @@ class RemoteFunction(SyftObject):
         return self.__function_call(self.path, *args, **kwargs)
 
     def public(self, *args: Any, **kwargs: Any) -> Any:
-        return self.__function_call("api.call_public", *args, **kwargs)
+        if self.custom_function:
+            return self.__function_call("api.call_public", *args, **kwargs)
+        return SyftError(
+            message="This function doesn't support public/private calls as it's not custom."
+        )
 
     def private(self, *args: Any, **kwargs: Any) -> Any:
-        return self.__function_call("api.call_private", *args, **kwargs)
+        if self.custom_function:
+            return self.__function_call("api.call_private", *args, **kwargs)
+        return SyftError(
+            message="This function doesn't support public/private calls as it's not custom."
+        )
+
+    def _repr_markdown_(self, wrap_as_python: bool = False, indent: int = 0) -> str:
+        if self.custom_function and self.pre_kwargs is not None:
+            custom_path = self.pre_kwargs.get("path", "")
+            api_call = SyftAPICall(
+                node_uid=self.node_uid,
+                path="api.view",
+                args=[custom_path],
+                kwargs={},
+            )
+            endpoint = self.make_call(api_call=api_call)
+            if isinstance(endpoint, SyftError):
+                return endpoint._repr_html_()
+
+            str_repr = "## API: " + custom_path + "\n"
+            str_repr += (
+                "#### Description: "
+                + '<span style="font-weight: normal;">Lorem ipsum dolor sit amet lorem adipiscing elit …</span><br>'
+                + "\n"
+            )
+            str_repr += "##### Private Code:\n"
+            str_repr += as_markdown_python_code(endpoint.private_code) + "\n"
+            str_repr += "##### Public Code:\n"
+            str_repr += as_markdown_python_code(endpoint.public_code) + "\n"
+            return str_repr
+        return super()._repr_markdown_()
 
 
 class RemoteUserCodeFunction(RemoteFunction):
@@ -381,6 +417,7 @@ def generate_remote_function(
             user_code_id=pre_kwargs["uid"],
         )
     else:
+        custom_function = bool(path == "api.call")
         remote_function = RemoteFunction(
             node_uid=node_uid,
             signature=signature,
@@ -389,6 +426,7 @@ def generate_remote_function(
             pre_kwargs=pre_kwargs,
             communication_protocol=communication_protocol,
             warning=warning,
+            custom_function=custom_function,
         )
 
     return remote_function
