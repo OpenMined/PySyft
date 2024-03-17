@@ -1,15 +1,13 @@
 # stdlib
 import asyncio
+from collections.abc import Callable
 from functools import wraps
+import random
 from typing import Any
-from typing import Callable
-from typing import Tuple
-from typing import Type
-from typing import Union
 
 
 def retry(
-    exceptions: Union[Tuple[Type[BaseException], ...], Type[BaseException]],
+    exceptions: tuple[type[BaseException], ...] | type[BaseException],
     tries: int = 3,
     delay: int = 1,
     backoff: int = 2,
@@ -45,3 +43,7 @@ def retry(
         return wrapper
 
     return decorator
+
+
+def generate_random_alphabets(length: int) -> str:
+    return "".join([random.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(length)])

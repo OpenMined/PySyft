@@ -17,8 +17,8 @@ import veilid
 from .constants import MAX_MESSAGE_SIZE
 from .utils import retry
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(level=logging.INFO)
 
 # An asynchronous callable type hint that takes bytes as input and returns bytes
 AsyncReceiveStreamCallback = Callable[[bytes], Coroutine[Any, Any, bytes]]

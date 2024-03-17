@@ -15,6 +15,9 @@ from loguru import logger
 
 # relative
 from .models import ResponseModel
+from .models import TestVeilidStreamerRequest
+from .models import TestVeilidStreamerResponse
+from .utils import generate_random_alphabets
 from .veilid_connection_singleton import VeilidConnectionSingleton
 from .veilid_core import app_call
 from .veilid_core import app_message
@@ -114,3 +117,34 @@ async def startup_event() -> None:
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
     await veilid_conn.release_connection()
+
+
+@app.post("/test_veilid_streamer")
+async def test_veilid_streamer(
+    request_data: TestVeilidStreamerRequest,
+) -> TestVeilidStreamerResponse:
+    """Test endpoint for notebooks/Testing/Veilid/Large-Message-Testing.ipynb.
+
+    This endpoint is used to test the Veilid streamer by receiving a request body of any
+    arbitrary size and sending back a response of a size specified in the request body.
+    The length of the response body is determined by the `expected_response_length` field
+    in the request body. After adding the necessary fields, both the request and response
+    bodies are padded with random alphabets to reach the expected length using a
+    `random_padding` field.
+    """
+    expected_response_length = request_data.expected_response_length
+    if expected_response_length <= 0:
+        raise HTTPException(status_code=400, detail="Length must be greater than zero")
+
+    try:
+        request_body_length = len(json.dumps(request_data.dict()))
+        response = TestVeilidStreamerResponse(
+            received_request_body_length=request_body_length,
+            random_padding="",
+        )
+        padding_length = expected_response_length - request_body_length
+        random_message = generate_random_alphabets(padding_length)
+        response.random_padding = random_message
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

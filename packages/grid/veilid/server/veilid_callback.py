@@ -1,7 +1,6 @@
 # stdlib
 import base64
 import json
-import lzma
 
 # third party
 import httpx
@@ -20,7 +19,7 @@ async def handle_app_message(update: VeilidUpdate) -> None:
 
 
 async def handle_app_call(message: bytes) -> bytes:
-    logger.info(f"Received App Call: {message.decode()}")
+    logger.info(f"Received App Call of {len(message)} bytes.")
     message_dict: dict = json.loads(message)
 
     async with httpx.AsyncClient() as client:
@@ -38,17 +37,15 @@ async def handle_app_call(message: bytes) -> bytes:
             json=message_dict.get("json", None),
         )
 
-    compressed_response = lzma.compress(response)
-    logger.info(f"Compression response size: {len(compressed_response)}")
-    return compressed_response
+    # TODO: Currently in `dev` branch, compression is handled by the veilid internals,
+    # but we are decompressing it on the client side. Should both the compression and
+    # decompression be done either on the client side (for more client control) or by
+    # the veilid internals (for abstraction)?
 
-
-async def handle_app_call_for_testing(message: bytes) -> bytes:
-    logger.debug(f"Received message of length: {len(message)}, generating response...")
-    msg = "pong" * (
-        (len(message) - 16) // 4  # 16 is length of rest of the json response
-    )
-    return json.dumps({"response": msg}).encode()
+    # compressed_response = lzma.compress(response.content)
+    # logger.info(f"Compression response size: {len(compressed_response)}")
+    # return compressed_response
+    return response.content
 
 
 # TODO: Handle other types of network events like
@@ -58,12 +55,12 @@ async def main_callback(update: VeilidUpdate) -> None:
         async with await get_veilid_conn() as conn:
             async with await get_routing_context(conn) as router:
                 await VeilidStreamer().receive_stream(
-                    conn, router, update, handle_app_call_for_testing
+                    conn, router, update, handle_app_call
                 )
     elif update.kind == veilid.VeilidUpdateKind.APP_MESSAGE:
         await handle_app_message(update)
 
     elif update.kind == veilid.VeilidUpdateKind.APP_CALL:
-        response = await handle_app_call_for_testing(update.detail.message)
+        response = await handle_app_call(update.detail.message)
         async with await get_veilid_conn() as conn:
             await conn.app_call_reply(update.detail.call_id, response)
