@@ -1,0 +1,26 @@
+# Helm chart values used development and testing
+# Can directly be used in helm install or devspace valuesFiles
+
+global:
+  randomizedSecrets: false
+
+registry:
+  storageSize: "5Gi"
+
+node:
+  rootEmail: info@openmined.org
+  defaultWorkerPoolCount: 1
+
+  secret:
+    defaultRootPassword: changethis
+
+mongo:
+  secret:
+    rootPassword: example
+
+seaweedfs:
+  secret:
+    s3RootPassword: admin
+
+veilid:
+  enabled: true
