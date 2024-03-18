@@ -6,6 +6,7 @@ from enum import ReprEnum
 from enum import nonmember
 import hashlib
 import logging
+import math
 from struct import Struct
 from typing import Any
 import uuid
@@ -314,7 +315,7 @@ class VeilidStreamer:
 
     def _calculate_chunks_count(self, message_size: int) -> int:
         max_chunk_size = self.chunk_size - self.stream_chunk_header_struct.size
-        total_no_of_chunks = message_size // max_chunk_size + 1
+        total_no_of_chunks = math.ceil(message_size / max_chunk_size)
         return total_no_of_chunks
 
     def _get_chunk(

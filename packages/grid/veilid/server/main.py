@@ -137,12 +137,12 @@ async def test_veilid_streamer(
         raise HTTPException(status_code=400, detail="Length must be greater than zero")
 
     try:
-        request_body_length = len(json.dumps(request_data.dict()))
+        request_body_length = len(request_data.json())
         response = TestVeilidStreamerResponse(
             received_request_body_length=request_body_length,
             random_padding="",
         )
-        response_length_so_far = len(json.dumps(response.dict()))
+        response_length_so_far = len(response.json())
         padding_length = expected_response_length - response_length_so_far
         random_message = generate_random_alphabets(padding_length)
         response.random_padding = random_message
