@@ -324,8 +324,8 @@ class ActionService(AbstractService):
                 usr_input_kwargs=kwargs,
                 code_item_id=code_item.id,
             )
-        if is_approved.is_err():
-            return is_approved
+            if is_approved.is_err():
+                return is_approved
         else:
             filtered_kwargs = retrieve_from_db(code_item.id, kwargs, context).ok()
         # update input policy to track any input state

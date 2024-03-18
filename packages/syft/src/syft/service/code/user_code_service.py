@@ -415,7 +415,7 @@ class UserCodeService(AbstractService):
 
             # Check input policy
             input_policy = code.get_input_policy(context)
-            if input_policy is not None:
+            if not override_execution_permission and input_policy is not None:
                 inputs_allowed = input_policy._is_valid(
                     context,
                     usr_input_kwargs=kwarg2id,
