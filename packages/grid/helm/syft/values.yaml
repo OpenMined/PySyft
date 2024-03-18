@@ -152,7 +152,7 @@ ingress:
 # ----------------------------------------
 veilid:
   enabled: false
-  serverFlags: ""
+  serverFlags: null
   appLogLevel: "info"
   uvicornLogLevel: "info"
 
