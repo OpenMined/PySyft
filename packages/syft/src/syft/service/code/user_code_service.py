@@ -409,6 +409,17 @@ class UserCodeService(AbstractService):
             # We do not read from output policy cache if there are mock arguments
             skip_read_cache = len(self.keep_owned_kwargs(kwargs, context)) > 0
 
+            # Check input policy
+            input_policy = code.get_input_policy(context)
+            if input_policy is not None:
+                inputs_allowed = input_policy._is_valid(
+                    context,
+                    usr_input_kwargs=kwargs,
+                    user_code_id=code.id,
+                )
+                if inputs_allowed.is_err():
+                    return inputs_allowed
+
             # Check output policy
             output_policy = code.get_output_policy(context)
             if not override_execution_permission:
