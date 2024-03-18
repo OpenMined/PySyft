@@ -1,8 +1,6 @@
 # stdlib
-import datetime
 from pathlib import Path
-import random
-import string
+from secrets import token_hex
 import tempfile
 from threading import Thread
 import time
@@ -25,27 +23,22 @@ def_params = {
 }
 
 
-def generate_lock_name(length: int = 10) -> str:
-    random.seed(datetime.datetime.now().timestamp())
-    return "".join(random.choice(string.ascii_lowercase) for i in range(length))
-
-
 @pytest.fixture(scope="function")
 def locks_nop_config(request):
-    def_params["lock_name"] = generate_lock_name()
-    return NoLockingConfig(**def_params)
+    def_params["lock_name"] = token_hex(8)
+    yield NoLockingConfig(**def_params)
 
 
 @pytest.fixture(scope="function")
 def locks_threading_config(request):
-    def_params["lock_name"] = generate_lock_name()
-    return ThreadingLockingConfig(**def_params)
+    def_params["lock_name"] = token_hex(8)
+    yield ThreadingLockingConfig(**def_params)
 
 
 @pytest.fixture(scope="function")
 def locks_file_config():
-    def_params["lock_name"] = generate_lock_name()
-    return FileLockingConfig(**def_params)
+    def_params["lock_name"] = token_hex(8)
+    yield FileLockingConfig(**def_params)
 
 
 @pytest.mark.parametrize(

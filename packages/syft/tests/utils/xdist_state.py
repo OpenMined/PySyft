@@ -5,7 +5,6 @@ from tempfile import gettempdir
 
 # third party
 from filelock import FileLock
-from git import rmtree
 
 
 class SharedState:
@@ -43,5 +42,5 @@ class SharedState:
         self._statefile.write_text(json.dumps(state))
 
     def purge(self):
-        if self._dir.exists():
-            rmtree(str(self._dir))
+        self._statefile.unlink()
+        Path(self._lock.lock_file).unlink()

@@ -60,10 +60,10 @@ def pytest_configure(config):
         return
 
     for path in Path(gettempdir()).glob("pytest_*"):
-        shutil.rmtree(path)
+        shutil.rmtree(path, ignore_errors=True)
 
     for path in Path(gettempdir()).glob("sherlock"):
-        shutil.rmtree(path)
+        shutil.rmtree(path, ignore_errors=True)
 
 
 def is_vscode_discover():
@@ -118,12 +118,12 @@ def stage_protocol(protocol_file: Path):
                     _file_path.unlink()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def faker():
-    return Faker()
+    yield Faker()
 
 
-@pytest.fixture()
+@pytest.fixture(scope="function")
 def worker() -> Worker:
     worker = sy.Worker.named(name=token_hex(8))
     yield worker
@@ -131,40 +131,40 @@ def worker() -> Worker:
     del worker
 
 
-@pytest.fixture()
+@pytest.fixture
 def root_domain_client(worker) -> DomainClient:
-    return worker.root_client
+    yield worker.root_client
 
 
-@pytest.fixture()
+@pytest.fixture
 def root_verify_key(worker):
-    return worker.root_client.credentials.verify_key
+    yield worker.root_client.credentials.verify_key
 
 
-@pytest.fixture()
+@pytest.fixture
 def guest_client(worker) -> DomainClient:
-    return worker.guest_client
+    yield worker.guest_client
 
 
-@pytest.fixture()
+@pytest.fixture
 def guest_verify_key(worker):
-    return worker.guest_client.credentials.verify_key
+    yield worker.guest_client.credentials.verify_key
 
 
-@pytest.fixture()
+@pytest.fixture
 def guest_domain_client(root_domain_client) -> DomainClient:
-    return root_domain_client.guest()
+    yield root_domain_client.guest()
 
 
-@pytest.fixture()
+@pytest.fixture
 def document_store(worker):
     yield worker.document_store
     worker.document_store.reset()
 
 
-@pytest.fixture()
+@pytest.fixture
 def action_store(worker):
-    return worker.action_store
+    yield worker.action_store
 
 
 @pytest.fixture(scope="session")
@@ -174,6 +174,7 @@ def mongo_client(testrun_uid):
     Cleans up the server when the session ends, or when the last client disconnects.
     """
     db_name = f"pytest_mongo_{testrun_uid}"
+    root_dir = Path(gettempdir(), db_name)
     state = SharedState(db_name)
     KEY_CONN_STR = "mongoConnectionString"
     KEY_CLIENTS = "mongoClients"
@@ -201,10 +202,11 @@ def mongo_client(testrun_uid):
         clients = state.get(KEY_CLIENTS, 0) - 1
         state.set(KEY_CLIENTS, clients)
 
-    # if no clients are connected, destroy the container
+    # if no clients are connected, destroy the server
     if clients <= 0:
-        stop_mongo_server(testrun_uid)
+        stop_mongo_server(db_name)
         state.purge()
+        shutil.rmtree(root_dir, ignore_errors=True)
 
 
 __all__ = [

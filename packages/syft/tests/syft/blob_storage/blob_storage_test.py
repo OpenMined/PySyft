@@ -20,12 +20,12 @@ data = sy.serialize(raw_data, to_bytes=True)
 
 @pytest.fixture
 def authed_context(worker):
-    return AuthedServiceContext(node=worker, credentials=worker.signing_key.verify_key)
+    yield AuthedServiceContext(node=worker, credentials=worker.signing_key.verify_key)
 
 
 @pytest.fixture(scope="function")
 def blob_storage(worker):
-    return worker.get_service("BlobStorageService")
+    yield worker.get_service("BlobStorageService")
 
 
 def test_blob_storage_allocate(authed_context, blob_storage):
