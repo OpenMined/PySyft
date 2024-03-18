@@ -12,7 +12,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.client.client import SyftClientSessionCache
 from syft.client.domain_client import DomainClient
 from syft.node.worker import Worker
 from syft.protocol.data_protocol import get_data_protocol
@@ -183,6 +182,34 @@ def mongo_client(testrun_uid):
         stop_mongo_server(testrun_uid)
 
 
+@pytest.fixture(autouse=True)
+def patched_session_cache(monkeypatch):
+    # patching compute heavy hashing to speed up tests
+
+    def _get_key(email, password, connection):
+        return f"{email}{password}{connection}"
+
+    monkeypatch.setattr("syft.client.client.SyftClientSessionCache._get_key", _get_key)
+
+
+cached_salt_and_hash_password = cache(user.salt_and_hash_password)
+cached_check_pwd = cache(user.check_pwd)
+
+
+@pytest.fixture(autouse=True)
+def patched_user(monkeypatch):
+    # patching compute heavy hashing to speed up tests
+
+    monkeypatch.setattr(
+        "syft.service.user.user.salt_and_hash_password",
+        cached_salt_and_hash_password,
+    )
+    monkeypatch.setattr(
+        "syft.service.user.user.check_pwd",
+        cached_check_pwd,
+    )
+
+
 __all__ = [
     "mongo_store_partition",
     "mongo_document_store",
@@ -208,9 +235,3 @@ pytest_plugins = [
     "tests.syft.action_graph.fixtures",
     "tests.syft.serde.fixtures",
 ]
-# patching compute heavy hashing to speed up tests
-SyftClientSessionCache._get_key = (
-    lambda email, password, connection: f"{email}{password}{connection}"
-)
-user.salt_and_hash_password = cache(user.salt_and_hash_password)
-user.check_pwd = cache(user.check_pwd)
