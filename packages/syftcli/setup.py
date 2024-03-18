@@ -2,7 +2,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "0.1.10"
+__version__ = "0.1.11"
 
 packages = [
     "requests==2.31.0",

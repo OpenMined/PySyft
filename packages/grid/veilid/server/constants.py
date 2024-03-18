@@ -10,3 +10,4 @@ DHT_KEY_CREDS = "syft-dht-key-creds"
 
 USE_DIRECT_CONNECTION = True
 MAX_MESSAGE_SIZE = 32768  # 32KB
+TIMEOUT = 10  # in seconds
