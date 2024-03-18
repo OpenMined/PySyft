@@ -10,7 +10,6 @@ from typing import cast
 # third party
 from hagrid.orchestra import NodeHandle
 from loguru import logger
-from syft.service.action.action_data_empty import ActionDataLink
 from tqdm import tqdm
 
 # relative
