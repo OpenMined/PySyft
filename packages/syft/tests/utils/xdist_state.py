@@ -42,5 +42,9 @@ class SharedState:
         self._statefile.write_text(json.dumps(state))
 
     def purge(self):
-        self._statefile.unlink()
-        Path(self._lock.lock_file).unlink()
+        if self._statefile:
+            self._statefile.unlink()
+
+        lock_file = Path(self._lock.lock_file)
+        if lock_file.exists():
+            lock_file.unlink(missing_ok=True)
