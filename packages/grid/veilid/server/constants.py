@@ -9,3 +9,5 @@ DHT_KEY = "syft-dht-key"
 DHT_KEY_CREDS = "syft-dht-key-creds"
 
 USE_DIRECT_CONNECTION = True
+
+TIMEOUT = 10  # in seconds
