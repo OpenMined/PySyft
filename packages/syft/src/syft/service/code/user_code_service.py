@@ -15,6 +15,7 @@ from ...client.enclave_client import EnclaveClient
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
+from ...types.cache_object import CachedSyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -40,7 +41,6 @@ from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
-from .user_code import CachedExecutionResult
 from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
@@ -370,7 +370,7 @@ class UserCodeService(AbstractService):
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
-    ) -> CachedExecutionResult | ActionObject | SyftSuccess | SyftError:
+    ) -> CachedSyftObject | ActionObject | SyftSuccess | SyftError:
         """Call a User Code Function"""
         kwargs.pop("result_id", None)
         result = self._call(context, uid, **kwargs)
@@ -410,13 +410,16 @@ class UserCodeService(AbstractService):
             # We do not read from output policy cache if there are mock arguments
             skip_read_cache = len(self.keep_owned_kwargs(kwargs, context)) > 0
 
+            # Extract ids from kwargs
+            kwarg2id = map_kwargs_to_id(kwargs)
+
             # Check input policy
             input_policy = code.get_input_policy(context)
             if input_policy is not None:
                 inputs_allowed = input_policy._is_valid(
                     context,
-                    usr_input_kwargs=kwargs,
-                    user_code_id=code.id,
+                    usr_input_kwargs=kwarg2id,
+                    code_item_id=code.id,
                 )
                 if inputs_allowed.is_err():
                     return inputs_allowed
@@ -448,7 +451,7 @@ class UserCodeService(AbstractService):
 
                             res = delist_if_single(result.ok())
                             return Ok(
-                                CachedExecutionResult(
+                                CachedSyftObject(
                                     result=res,
                                     error_msg=is_valid.message,
                                 )
@@ -462,7 +465,6 @@ class UserCodeService(AbstractService):
 
             action_service = context.node.get_service("actionservice")
 
-            kwarg2id = map_kwargs_to_id(kwargs)
             result_action_object: Result[ActionObject | TwinObject, str] = (
                 action_service._user_code_execute(
                     context, code, kwarg2id, result_id=result_id

@@ -322,7 +322,7 @@ class ActionService(AbstractService):
             is_approved = input_policy._is_valid(
                 context=context,
                 usr_input_kwargs=kwargs,
-                user_code_id=code_item.id,
+                code_item_id=code_item.id,
             )
         if is_approved.is_err():
             return is_approved

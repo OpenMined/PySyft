@@ -36,7 +36,6 @@ from ..serde.serialize import _serialize
 from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
-from ..service.code.user_code import CachedExecutionResult
 from ..service.context import AuthedServiceContext
 from ..service.context import ChangeContext
 from ..service.response import SyftAttributeError
@@ -47,6 +46,7 @@ from ..service.service import UserServiceConfigRegistry
 from ..service.user.user_roles import ServiceRole
 from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
+from ..types.cache_object import CachedSyftObject
 from ..types.identity import Identity
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
@@ -741,12 +741,13 @@ class SyftAPI(SyftObject):
 
         result = debox_signed_syftapicall_response(signed_result=signed_result)
 
-        if isinstance(result, CachedExecutionResult):
-            result = result.result
+        if isinstance(result, CachedSyftObject):
             if result.error_msg is not None:
                 prompt_warning_message(
                     message=f"{result.error_msg}. Loading results from cache."
                 )
+            result = result.result
+
         if isinstance(result, OkErr):
             if result.is_ok():
                 res = result.ok()

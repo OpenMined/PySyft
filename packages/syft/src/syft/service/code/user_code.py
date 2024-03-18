@@ -1552,13 +1552,3 @@ def load_approved_policy_code(
                     load_policy_code(user_code.output_policy_type)
     except Exception as e:
         raise Exception(f"Failed to load code: {user_code}: {e}")
-
-
-class CachedExecutionResult(SyftObject):
-    """This class is used to represent the cached result of a user code execution."""
-
-    __canonical_name__ = "CachedUserCodeResult"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    result: ActionObject
-    error_msg: str | None = None
