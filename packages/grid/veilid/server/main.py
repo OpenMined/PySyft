@@ -142,7 +142,8 @@ async def test_veilid_streamer(
             received_request_body_length=request_body_length,
             random_padding="",
         )
-        padding_length = expected_response_length - request_body_length
+        response_length_so_far = len(json.dumps(response.dict()))
+        padding_length = expected_response_length - response_length_so_far
         random_message = generate_random_alphabets(padding_length)
         response.random_padding = random_message
         return response

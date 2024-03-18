@@ -37,15 +37,15 @@ async def handle_app_call(message: bytes) -> bytes:
             json=message_dict.get("json", None),
         )
 
-    # TODO: Currently in `dev` branch, compression is handled by the veilid internals,
-    # but we are decompressing it on the client side. Should both the compression and
-    # decompression be done either on the client side (for more client control) or by
-    # the veilid internals (for abstraction)?
+        # TODO: Currently in `dev` branch, compression is handled by the veilid internals,
+        # but we are decompressing it on the client side. Should both the compression and
+        # decompression be done either on the client side (for more client control) or by
+        # the veilid internals (for abstraction)?
 
-    # compressed_response = lzma.compress(response.content)
-    # logger.info(f"Compression response size: {len(compressed_response)}")
-    # return compressed_response
-    return response.content
+        # compressed_response = lzma.compress(response.content)
+        # logger.info(f"Compression response size: {len(compressed_response)}")
+        # return compressed_response
+        return response.content
 
 
 # TODO: Handle other types of network events like

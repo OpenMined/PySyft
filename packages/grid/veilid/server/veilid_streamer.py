@@ -31,6 +31,7 @@ class RequestType(bytes, ReprEnum):
     STREAM_START = b"@VS@SS"
     STREAM_CHUNK = b"@VS@SC"
     STREAM_END = b"@VS@SE"
+    STREAM_SINGLE = b"@VS@S1"  # Special case for handling single chunk messages
 
     def __init__(self, value: bytes) -> None:
         # Members must be a bytes object of length == SIZE. If length is less than
@@ -182,6 +183,8 @@ class VeilidStreamer:
 
         self.stream_end_struct = Struct(BYTE_ORDER + REQUEST_TYPE_PREFIX + CALL_ID)
 
+        self.stream_single_struct = Struct(BYTE_ORDER + REQUEST_TYPE_PREFIX + CALL_ID)
+
     @staticmethod
     def is_stream_update(update: veilid.VeilidUpdate) -> bool:
         """Checks if the update is a stream request."""
@@ -200,6 +203,7 @@ class VeilidStreamer:
         """Streams a message to the given DHT key."""
         # If call_id is not present, this is a fresh request stream.
         is_request_stream = call_id is None
+        message_size = len(message)
 
         if is_request_stream:
             # This is a new request stream, so we need to generate a new call_id
@@ -208,31 +212,40 @@ class VeilidStreamer:
             buffer_for_holding_reply = Buffer(holds_reply=True)
             self.buffers[call_id] = buffer_for_holding_reply
 
-        message_hash = hashlib.sha256(message).digest()
-        message_size = len(message)
-        total_chunks_count = self._calculate_chunks_count(message_size)
+        if message_size <= self.chunk_size - self.stream_single_struct.size:
+            # If the message is small enough to fit in a single chunk, we can send it
+            # as a single STREAM_SINGLE request. This avoids the additional overhead
+            # while still allowing large replies containing multiple chunks.
+            stream_single_request_header = self.stream_single_struct.pack(
+                RequestType.STREAM_SINGLE, call_id
+            )
+            stream_single_request = stream_single_request_header + message
+            await self._send_request(router, dht_key, stream_single_request)
+        else:
+            message_hash = hashlib.sha256(message).digest()
+            total_chunks_count = self._calculate_chunks_count(message_size)
 
-        # Send STREAM_START request
-        stream_start_request = self.stream_start_struct.pack(
-            RequestType.STREAM_START,
-            call_id,
-            message_hash,
-            total_chunks_count,
-        )
-        await self._send_request(router, dht_key, stream_start_request)
+            # Send STREAM_START request
+            stream_start_request = self.stream_start_struct.pack(
+                RequestType.STREAM_START,
+                call_id,
+                message_hash,
+                total_chunks_count,
+            )
+            await self._send_request(router, dht_key, stream_start_request)
 
-        # Send chunks
-        tasks = []
-        for chunk_number in range(total_chunks_count):
-            chunk = self._get_chunk(call_id, chunk_number, message)
-            tasks.append(self._send_request(router, dht_key, chunk))
-        await asyncio.gather(*tasks)
+            # Send chunks
+            tasks = []
+            for chunk_number in range(total_chunks_count):
+                chunk = self._get_chunk(call_id, chunk_number, message)
+                tasks.append(self._send_request(router, dht_key, chunk))
+            await asyncio.gather(*tasks)
 
-        # Send STREAM_END request
-        stream_end_message = self.stream_end_struct.pack(
-            RequestType.STREAM_END, call_id
-        )
-        await self._send_request(router, dht_key, stream_end_message)
+            # Send STREAM_END request
+            stream_end_message = self.stream_end_struct.pack(
+                RequestType.STREAM_END, call_id
+            )
+            await self._send_request(router, dht_key, stream_end_message)
 
         if is_request_stream:
             # This is a new request stream, so we need to wait for
@@ -256,7 +269,11 @@ class VeilidStreamer:
         message = update.detail.message
         prefix = message[:8]
 
-        if prefix == RequestType.STREAM_START:
+        if prefix == RequestType.STREAM_SINGLE:
+            await self._handle_receive_stream_single(
+                connection, router, update, callback
+            )
+        elif prefix == RequestType.STREAM_START:
             await self._handle_receive_stream_start(connection, update)
         elif prefix == RequestType.STREAM_CHUNK:
             await self._handle_receive_stream_chunk(connection, update)
@@ -315,6 +332,35 @@ class VeilidStreamer:
         cursor_start = chunk_number * max_actual_message_size
         chunk = message[cursor_start : cursor_start + max_actual_message_size]
         return chunk_header + chunk
+
+    async def _handle_receive_stream_single(
+        self,
+        connection: veilid.VeilidAPI,
+        router: veilid.RoutingContext,
+        update: veilid.VeilidUpdate,
+        callback: AsyncReceiveStreamCallback,
+    ) -> None:
+        """Handles receiving STREAM_SINGLE request."""
+        message = update.detail.message
+        header_len = self.stream_single_struct.size
+        header, message = message[:header_len], message[header_len:]
+        _, call_id = self.stream_single_struct.unpack(header)
+        logger.debug(f"Received single chunk message of {len(message)} bytes...")
+        await self._send_ok_response(connection, update.detail.call_id)
+        buffer = self.buffers.get(call_id)
+        if buffer and buffer.holds_reply:
+            # This message is being received by the sender and the stream() method is
+            # waiting for the reply. So we need to set the result in the buffer.
+            buffer.message.set_result(message)
+        else:
+            # This message is being received by the receiver and we need to send back
+            # the reply to the sender. So we need to call the callback function and
+            # stream the reply back to the sender.
+            reply = await callback(message)
+            logger.debug(
+                f"Replying to {update.detail.sender} with {len(reply)} bytes of msg..."
+            )
+            await self.stream(router, update.detail.sender, reply, call_id)
 
     async def _handle_receive_stream_start(
         self, connection: veilid.VeilidAPI, update: veilid.VeilidUpdate
@@ -381,13 +427,14 @@ class VeilidStreamer:
 
         is_request_stream = not buffer.holds_reply
         if is_request_stream:
-            # This is a fresh request stream, so we need to send reply to the sender
-            logger.debug("Sending reply...")
+            # This message is being received on the receiver's end and we need to send
+            # back the reply to the sender. So we need to call the callback function
+            # and stream the reply back to the sender.
             reply = await callback(reassembled_message)
-            # Stream the reply as the reply itself could be greater than the max chunk size
             logger.debug(
                 f"Replying to {update.detail.sender} with {len(reply)} bytes of msg..."
             )
+            # Stream as the reply itself could be greater than the max chunk size
             await self.stream(router, update.detail.sender, reply, call_id)
             # Finally delete the buffer
             del self.buffers[call_id]
