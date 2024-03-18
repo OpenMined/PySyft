@@ -1,5 +1,5 @@
-# Helm chart values used development and testing
-# Can directly be used in helm install or devspace valuesFiles
+# Helm chart values used for development and testing
+# Can be used through `helm install -f values.dev.yaml` or devspace `valuesFiles`
 
 global:
   randomizedSecrets: false
