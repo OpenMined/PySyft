@@ -1,5 +1,6 @@
 # stdlib
 from textwrap import dedent
+from unittest import mock
 import uuid
 
 # third party
@@ -23,157 +24,201 @@ def _random_hash() -> str:
     return uuid.uuid4().hex[:16]
 
 
-def test_domain_connect_to_gateway(domain_1_port, gateway_port):
-    assert isinstance(sy.gateways, NetworkRegistry)
-    assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
-
-    gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
-
-    domain_client: DomainClient = sy.login(
-        port=domain_1_port, email="info@openmined.org", password="changethis"
-    )
-
-    result = domain_client.connect_to_gateway(gateway_client)
-    assert isinstance(result, SyftSuccess)
-
-    assert len(domain_client.peers) == 1
-    assert len(gateway_client.peers) == 1
-
-    assert len(sy.domains.all_domains) == 1
-    assert len(sy.domains.online_domains) == 1
-
-    proxy_domain_client = gateway_client.peers[0]
-    domain_peer = domain_client.peers[0]
-
-    assert isinstance(proxy_domain_client, DomainClient)
-    assert isinstance(domain_peer, NodePeer)
-
-    # Domain's peer is a gateway and vice-versa
-    assert domain_peer.node_type == NodeType.GATEWAY
-
-    assert gateway_client.name == domain_peer.name
-    assert domain_client.name == proxy_domain_client.name
-
-    assert len(gateway_client.domains) == 1
-    assert len(gateway_client.enclaves) == 0
-
-    assert proxy_domain_client.metadata == domain_client.metadata
-    assert proxy_domain_client.user_role == ServiceRole.NONE
-
-    domain_client = domain_client.login(
-        email="info@openmined.org", password="changethis"
-    )
-    proxy_domain_client = proxy_domain_client.login(
-        email="info@openmined.org", password="changethis"
-    )
-
-    assert proxy_domain_client.logged_in_user == "info@openmined.org"
-    assert proxy_domain_client.user_role == ServiceRole.ADMIN
-    assert proxy_domain_client.credentials == domain_client.credentials
-    assert (
-        proxy_domain_client.api.endpoints.keys() == domain_client.api.endpoints.keys()
-    )
+def mock_load_network_registry_json(network_host: str, network_port: int) -> dict:
+    return {
+        "2.0.0": {
+            "gateways": [
+                {
+                    "name": "test-gateway",
+                    "host_or_ip": f"{network_host}",
+                    "protocol": "http",
+                    "port": f"{network_port}",
+                    "admin_email": "support@openmined.org",
+                    "website": "https://www.openmined.org/",
+                    "slack": "https://slack.openmined.org/",
+                    "slack_channel": "#support",
+                }
+            ]
+        }
+    }
 
 
-def test_domain_connect_to_gateway_dataset_search(domain_1_port, gateway_port):
+def test_network_registry(gateway_port: int) -> None:
+    with mock.patch(
+        "syft.client.registry.NetworkRegistry.load_network_registry_json",
+        return_value=mock_load_network_registry_json("localhost", gateway_port),
+    ):
+        assert isinstance(sy.gateways, NetworkRegistry)
+        assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
+
+
+def test_domain_connect_to_gateway(domain_1_port: int, gateway_port: int) -> None:
+    with mock.patch(
+        "syft.client.registry.NetworkRegistry.load_network_registry_json",
+        return_value=mock_load_network_registry_json("localhost", gateway_port),
+    ):
+        assert isinstance(sy.gateways, NetworkRegistry)
+        assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
+
+        gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
+
+        domain_client: DomainClient = sy.login(
+            port=domain_1_port, email="info@openmined.org", password="changethis"
+        )
+
+        result = domain_client.connect_to_gateway(gateway_client)
+        assert isinstance(result, SyftSuccess)
+
+        assert len(domain_client.peers) == 1
+        assert len(gateway_client.peers) == 1
+
+        assert len(sy.domains.all_domains) == 1
+        assert len(sy.domains.online_domains) == 1
+
+        proxy_domain_client = gateway_client.peers[0]
+        domain_peer = domain_client.peers[0]
+
+        assert isinstance(proxy_domain_client, DomainClient)
+        assert isinstance(domain_peer, NodePeer)
+
+        # Domain's peer is a gateway and vice-versa
+        assert domain_peer.node_type == NodeType.GATEWAY
+
+        assert gateway_client.name == domain_peer.name
+        assert domain_client.name == proxy_domain_client.name
+
+        assert len(gateway_client.domains) == 1
+        assert len(gateway_client.enclaves) == 0
+
+        assert proxy_domain_client.metadata == domain_client.metadata
+        assert proxy_domain_client.user_role == ServiceRole.NONE
+
+        domain_client = domain_client.login(
+            email="info@openmined.org", password="changethis"
+        )
+        proxy_domain_client = proxy_domain_client.login(
+            email="info@openmined.org", password="changethis"
+        )
+
+        assert proxy_domain_client.logged_in_user == "info@openmined.org"
+        assert proxy_domain_client.user_role == ServiceRole.ADMIN
+        assert proxy_domain_client.credentials == domain_client.credentials
+        assert (
+            proxy_domain_client.api.endpoints.keys()
+            == domain_client.api.endpoints.keys()
+        )
+
+
+def test_dataset_search(domain_1_port, gateway_port):
     """
     Scenario: Connecting a domain node to a gateway node. The domain
         client then upload a dataset, which should be searchable by the syft network.
         People who install syft can see the mock data and metadata of the uploaded datasets
     """
-    gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
+    with mock.patch(
+        "syft.client.registry.NetworkRegistry.load_network_registry_json",
+        return_value=mock_load_network_registry_json("localhost", gateway_port),
+    ):
+        gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
 
-    domain_client: DomainClient = sy.login(
-        port=domain_1_port, email="info@openmined.org", password="changethis"
-    )
+        domain_client: DomainClient = sy.login(
+            port=domain_1_port, email="info@openmined.org", password="changethis"
+        )
 
-    result = domain_client.connect_to_gateway(gateway_client)
-    assert isinstance(result, SyftSuccess)
+        result = domain_client.connect_to_gateway(gateway_client)
+        assert isinstance(result, SyftSuccess)
 
-    assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
-    assert len(sy.domains.all_domains) == len(sy.domains.online_domains) == 1
+        assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
+        assert len(sy.domains.all_domains) == len(sy.domains.online_domains) == 1
 
-    input_data = np.array([1, 2, 3])
-    mock_data = np.array([4, 5, 6])
+        input_data = np.array([1, 2, 3])
+        mock_data = np.array([4, 5, 6])
 
-    asset_name = _random_hash()
-    asset = sy.Asset(name=asset_name, data=input_data, mock=mock_data)
-    dataset_name = _random_hash()
-    dataset = sy.Dataset(name=dataset_name, asset_list=[asset])
+        asset_name = _random_hash()
+        asset = sy.Asset(name=asset_name, data=input_data, mock=mock_data)
+        dataset_name = _random_hash()
+        dataset = sy.Dataset(name=dataset_name, asset_list=[asset])
 
-    dataset_res = domain_client.upload_dataset(dataset)
-    assert isinstance(dataset_res, SyftSuccess)
+        dataset_res = domain_client.upload_dataset(dataset)
+        assert isinstance(dataset_res, SyftSuccess)
 
-    right_search = sy.search(dataset_name)
-    assert isinstance(right_search, SearchResults)
-    assert len(right_search) == 1
-    dataset = right_search[0]
-    assert isinstance(dataset, Dataset)
-    assert len(dataset.assets) == 1
-    assert isinstance(dataset.assets[0].mock, np.ndarray)
-    assert dataset.assets[0].data is None
+        right_search = sy.search(dataset_name)
+        assert isinstance(right_search, SearchResults)
+        assert len(right_search) == 1
+        dataset = right_search[0]
+        assert isinstance(dataset, Dataset)
+        assert len(dataset.assets) == 1
+        assert isinstance(dataset.assets[0].mock, np.ndarray)
+        assert dataset.assets[0].data is None
 
-    wrong_search = sy.search(_random_hash())
-    assert len(wrong_search) == 0
+        wrong_search = sy.search(_random_hash())
+        assert len(wrong_search) == 0
 
 
 def test_domain_gateway_user_code(domain_1_port, gateway_port):
-    gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
+    with mock.patch(
+        "syft.client.registry.NetworkRegistry.load_network_registry_json",
+        return_value=mock_load_network_registry_json("localhost", gateway_port),
+    ):
+        gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
 
-    domain_client: DomainClient = sy.login(
-        port=domain_1_port, email="info@openmined.org", password="changethis"
-    )
+        domain_client: DomainClient = sy.login(
+            port=domain_1_port, email="info@openmined.org", password="changethis"
+        )
 
-    input_data = np.array([1, 2, 3])
-    mock_data = np.array([4, 5, 6])
+        input_data = np.array([1, 2, 3])
+        mock_data = np.array([4, 5, 6])
 
-    asset_name = _random_hash()
-    asset = sy.Asset(name=asset_name, data=input_data, mock=mock_data)
-    dataset_name = _random_hash()
-    dataset = sy.Dataset(name=dataset_name, asset_list=[asset])
+        asset_name = _random_hash()
+        asset = sy.Asset(name=asset_name, data=input_data, mock=mock_data)
+        dataset_name = _random_hash()
+        dataset = sy.Dataset(name=dataset_name, asset_list=[asset])
 
-    dataset_res = domain_client.upload_dataset(dataset)
+        dataset_res = domain_client.upload_dataset(dataset)
 
-    assert isinstance(dataset_res, SyftSuccess)
+        assert isinstance(dataset_res, SyftSuccess)
 
-    user_create_res = domain_client.register(
-        name="Sheldon Cooper",
-        email="sheldon@caltech.edu",
-        password="changethis",
-        password_verify="changethis",
-        institution="Caltech",
-        website="https://www.caltech.edu/",
-    )
+        random_name: str = str(_random_hash())
+        user_create_res = domain_client.register(
+            name=random_name,
+            email=f"{random_name}@caltech.edu",
+            password="changethis",
+            password_verify="changethis",
+            institution="Caltech",
+            website="https://www.caltech.edu/",
+        )
 
-    assert isinstance(user_create_res, SyftSuccess)
+        assert isinstance(user_create_res, SyftSuccess)
 
-    gateway_con_res = domain_client.connect_to_gateway(gateway_client)
-    assert isinstance(gateway_con_res, SyftSuccess)
+        gateway_con_res = domain_client.connect_to_gateway(gateway_client)
+        assert isinstance(gateway_con_res, SyftSuccess)
 
-    proxy_client = gateway_client.domains[0]
+        proxy_client = gateway_client.domains[0]
 
-    proxy_ds = proxy_client.login(
-        email="sheldon@caltech.edu", password="changethis", password_verify="changethis"
-    )
+        proxy_ds = proxy_client.login(
+            email=f"{random_name}@caltech.edu",
+            password="changethis",
+            password_verify="changethis",
+        )
 
-    asset = proxy_ds.datasets[0].assets[0]
+        asset = proxy_ds.datasets[0].assets[0]
 
-    @sy.syft_function_single_use(asset=asset)
-    def mock_function(asset):
-        return asset + 1
+        @sy.syft_function_single_use(asset=asset)
+        def mock_function(asset):
+            return asset + 1
 
-    mock_function.code = dedent(mock_function.code)
+        mock_function.code = dedent(mock_function.code)
 
-    request_res = proxy_ds.code.request_code_execution(mock_function)
-    assert isinstance(request_res, Request)
+        request_res = proxy_ds.code.request_code_execution(mock_function)
+        assert isinstance(request_res, Request)
 
-    assert len(domain_client.requests.get_all()) == 1
+        assert len(domain_client.requests.get_all()) == 1
 
-    req_approve_res = domain_client.requests[-1].approve()
-    assert isinstance(req_approve_res, SyftSuccess)
+        req_approve_res = domain_client.requests[-1].approve()
+        assert isinstance(req_approve_res, SyftSuccess)
 
-    result = proxy_ds.code.mock_function(asset=asset)
+        result = proxy_ds.code.mock_function(asset=asset)
 
-    final_result = result.get()
+        final_result = result.get()
 
-    assert (final_result == input_data + 1).all()
+        assert (final_result == input_data + 1).all()

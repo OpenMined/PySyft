@@ -25,42 +25,36 @@ NETWORK_REGISTRY_URL = (
 
 NETWORK_REGISTRY_REPO = "https://github.com/OpenMined/NetworkRegistry"
 
-# we are hardcoding the list of all gateways for now.
-# TODO: get it from a database, e.g. NETWORK_REGISTRY_URL
-NETWORK_JSON = {
-    "2.0.0": {
-        "gateways": [
-            {
-                "name": "test-gateway",
-                "host_or_ip": "localhost",
-                "protocol": "http",
-                "port": 9081,
-                "admin_email": "support@openmined.org",
-                "website": "https://www.openmined.org/",
-                "slack": "https://slack.openmined.org/",
-                "slack_channel": "#support",
-            }
-        ]
-    }
-}
-
 
 def _get_all_networks(network_json: dict, version: str) -> list[dict]:
-    return network_json[version]["gateways"]
+    return network_json.get(version, {}).get("gateways", [])
 
 
 class NetworkRegistry:
     def __init__(self) -> None:
         self.all_networks: list[dict] = []
+
         try:
-            # network_json = requests.get(NETWORK_REGISTRY_URL).json()  # nosec
+            network_json = self.load_network_registry_json()
             self.all_networks = _get_all_networks(
-                network_json=NETWORK_JSON, version="2.0.0"
+                network_json=network_json, version="2.0.0"
             )
         except Exception as e:
             warning(
                 f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
             )
+
+    @staticmethod
+    def load_network_registry_json() -> dict:
+        try:
+            response = requests.get(NETWORK_REGISTRY_URL)  # nosec
+            network_json: dict = response.json()
+            return network_json
+        except Exception as e:
+            warning(
+                f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
+            )
+            return {}
 
     @property
     def online_networks(self) -> list[dict]:
@@ -154,9 +148,9 @@ class DomainRegistry:
         self.all_networks: list[dict] = []
         self.all_domains: dict[str, NodePeer] = {}
         try:
-            # network_json = requests.get(NETWORK_REGISTRY_URL).json()  # nosec
+            network_json = NetworkRegistry.load_network_registry_json()
             self.all_networks = _get_all_networks(
-                network_json=NETWORK_JSON, version="2.0.0"
+                network_json=network_json, version="2.0.0"
             )
             self._get_all_domains()
         except Exception as e:
