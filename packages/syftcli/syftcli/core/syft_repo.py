@@ -1,9 +1,8 @@
 # stdlib
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 import shutil
 from typing import Any
-from typing import List
 
 # third party
 import requests
@@ -21,8 +20,8 @@ class SyftRepo:
         DOCKER_CONFIG = "docker_config.tar.gz"
 
     @staticmethod
-    @lru_cache(maxsize=None)
-    def releases() -> List[dict]:
+    @cache
+    def releases() -> list[dict]:
         url = REPO_API_URL + "/releases"
         response = requests.get(url)
         response.raise_for_status()
@@ -30,13 +29,13 @@ class SyftRepo:
         return [rel for rel in releases if rel.get("tag_name", "").startswith("v")]
 
     @staticmethod
-    @lru_cache(maxsize=None)
-    def prod_releases() -> List[dict]:
+    @cache
+    def prod_releases() -> list[dict]:
         return [rel for rel in SyftRepo.releases() if not rel.get("prerelease")]
 
     @staticmethod
-    @lru_cache(maxsize=None)
-    def beta_releases() -> List[dict]:
+    @cache
+    def beta_releases() -> list[dict]:
         return [rel for rel in SyftRepo.releases() if rel.get("prerelease")]
 
     @staticmethod
@@ -48,11 +47,11 @@ class SyftRepo:
         return latest_release["tag_name"]
 
     @staticmethod
-    def all_versions() -> List[str]:
+    def all_versions() -> list[str]:
         return [rel["tag_name"] for rel in SyftRepo.releases() if rel.get("tag_name")]
 
     @staticmethod
-    @lru_cache(maxsize=None)
+    @cache
     def get_manifest(rel_ver: str) -> dict:
         """
         Returns the manifest_template.yml for a given release version

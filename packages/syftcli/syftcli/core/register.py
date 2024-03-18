@@ -1,14 +1,13 @@
 # stdlib
+from collections.abc import Callable
 import importlib
 from typing import Any
-from typing import Callable
-from typing import List
 
 # third party
 from typer import Typer
 
 
-def add_subcmd(app: Typer, commands: List[Callable]) -> None:
+def add_subcmd(app: Typer, commands: list[Callable]) -> None:
     for cmd in commands:
         app.command()(cmd)
 

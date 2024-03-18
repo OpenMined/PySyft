@@ -1,17 +1,15 @@
 # stdlib
 from collections import OrderedDict
 from collections import deque
+from collections.abc import Callable
 from collections.abc import Collection
 from collections.abc import Iterable
 from collections.abc import KeysView
 from collections.abc import Mapping
 from types import MappingProxyType
-from typing import Callable
 from typing import Generic
-from typing import Optional
 from typing import SupportsIndex
 from typing import TypeVar
-from typing import Union
 from typing import overload
 
 # third party
@@ -44,31 +42,28 @@ _VT = TypeVar("_VT")
 # within the same function call.
 class _Meta(type):
     @overload
-    def __call__(cls: type[_T]) -> _T:
-        ...
+    def __call__(cls: type[_T]) -> _T: ...
 
     @overload
-    def __call__(cls: type[_T], __value: Iterable[tuple[_KT, _VT]]) -> _T:
-        ...
+    def __call__(cls: type[_T], __value: Iterable[tuple[_KT, _VT]]) -> _T: ...
 
     @overload
-    def __call__(cls: type[_T], __value: Mapping[_KT, _VT]) -> _T:
-        ...
+    def __call__(cls: type[_T], __value: Mapping[_KT, _VT]) -> _T: ...
 
     @overload
-    def __call__(cls: type[_T], __value: Iterable[_VT], __key: Collection[_KT]) -> _T:
-        ...
+    def __call__(
+        cls: type[_T], __value: Iterable[_VT], __key: Collection[_KT]
+    ) -> _T: ...
 
     @overload
     def __call__(
         cls: type[_T], __value: Iterable[_VT], __key: Callable[[_VT], _KT]
-    ) -> _T:
-        ...
+    ) -> _T: ...
 
     def __call__(
         cls: type[_T],
-        __value: Optional[Iterable] = None,
-        __key: Optional[Union[Callable, Collection]] = None,
+        __value: Iterable | None = None,
+        __key: Callable | Collection | None = None,
         /,
     ) -> _T:
         # DictTuple()
@@ -170,24 +165,19 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
 
     # These overloads are copied from _Meta.__call__ just for IDE hints
     @overload
-    def __init__(self) -> None:
-        ...
+    def __init__(self) -> None: ...
 
     @overload
-    def __init__(self, __value: Iterable[tuple[_KT, _VT]]) -> None:
-        ...
+    def __init__(self, __value: Iterable[tuple[_KT, _VT]]) -> None: ...
 
     @overload
-    def __init__(self, __value: Mapping[_KT, _VT]) -> None:
-        ...
+    def __init__(self, __value: Mapping[_KT, _VT]) -> None: ...
 
     @overload
-    def __init__(self, __value: Iterable[_VT], __key: Collection[_KT]) -> None:
-        ...
+    def __init__(self, __value: Iterable[_VT], __key: Collection[_KT]) -> None: ...
 
     @overload
-    def __init__(self, __value: Iterable[_VT], __key: Callable[[_VT], _KT]) -> None:
-        ...
+    def __init__(self, __value: Iterable[_VT], __key: Callable[[_VT], _KT]) -> None: ...
 
     def __init__(self, __value=None, /):
         if isinstance(__value, MappingProxyType):
@@ -215,16 +205,13 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
             )
 
     @overload
-    def __getitem__(self, __key: _KT) -> _VT:
-        ...
+    def __getitem__(self, __key: _KT) -> _VT: ...
 
     @overload
-    def __getitem__(self, __key: slice) -> Self:
-        ...
+    def __getitem__(self, __key: slice) -> Self: ...
 
     @overload
-    def __getitem__(self, __key: SupportsIndex) -> _VT:
-        ...
+    def __getitem__(self, __key: SupportsIndex) -> _VT: ...
 
     def __getitem__(self, __key, /):
         if isinstance(__key, slice):

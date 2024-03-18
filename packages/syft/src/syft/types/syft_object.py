@@ -1,30 +1,27 @@
 # stdlib
 from collections import defaultdict
+from collections.abc import Callable
+from collections.abc import Generator
+from collections.abc import Iterable
+from collections.abc import KeysView
 from collections.abc import Mapping
 from collections.abc import MutableMapping
 from collections.abc import MutableSequence
+from collections.abc import Sequence
 from collections.abc import Set
 from hashlib import sha256
 import inspect
 from inspect import Signature
 import re
-import sys
 import traceback
 import types
+from types import NoneType
+from types import UnionType
 import typing
 from typing import Any
-from typing import Callable
 from typing import ClassVar
-from typing import Dict
-from typing import Generator
-from typing import Iterable
-from typing import KeysView
-from typing import List
 from typing import Optional
-from typing import Sequence
 from typing import TYPE_CHECKING
-from typing import Tuple
-from typing import Type
 from typing import Union
 from typing import get_args
 from typing import get_origin
@@ -57,19 +54,11 @@ from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
 
-if sys.version_info >= (3, 10):
-    # stdlib
-    from types import NoneType
-    from types import UnionType
-else:
-    UnionType = Union
-    NoneType = type(None)
-
 if TYPE_CHECKING:
     # relative
     from ..service.sync.diff_state import AttrDiff
 
-IntStr = Union[int, str]
+IntStr = int | str
 AbstractSetIntStr = Set[IntStr]
 MappingIntStrAny = Mapping[IntStr, Any]
 
@@ -139,8 +128,8 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
     __canonical_name__: str
     __version__: int  # data is always versioned
 
-    syft_node_location: Optional[UID] = Field(default=None, exclude=True)
-    syft_client_verify_key: Optional[SyftVerifyKey] = Field(default=None, exclude=True)
+    syft_node_location: UID | None = Field(default=None, exclude=True)
+    syft_client_verify_key: SyftVerifyKey | None = Field(default=None, exclude=True)
 
     def _set_obj_location_(self, node_uid: UID, credentials: SyftVerifyKey) -> None:
         self.syft_node_location = node_uid
@@ -149,16 +138,16 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
 
 class Context(SyftBaseObject):
     __canonical_name__ = "Context"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     pass
 
 
 class SyftObjectRegistry:
-    __object_version_registry__: Dict[
-        str, Union[Type["SyftObject"], Type["SyftObjectRegistry"]]
+    __object_version_registry__: dict[
+        str, type["SyftObject"] | type["SyftObjectRegistry"]
     ] = {}
-    __object_transform_registry__: Dict[str, Callable] = {}
+    __object_transform_registry__: dict[str, Callable] = {}
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
@@ -190,7 +179,7 @@ class SyftObjectRegistry:
     @classmethod
     def versioned_class(
         cls, name: str, version: int
-    ) -> Optional[Union[Type["SyftObject"], Type["SyftObjectRegistry"]]]:
+    ) -> type["SyftObject"] | type["SyftObjectRegistry"] | None:
         mapping_string = f"{name}_{version}"
         if mapping_string not in cls.__object_version_registry__:
             return None
@@ -210,7 +199,7 @@ class SyftObjectRegistry:
 
     @classmethod
     def get_transform(
-        cls, type_from: Type["SyftObject"], type_to: Type["SyftObject"]
+        cls, type_from: type["SyftObject"], type_to: type["SyftObject"]
     ) -> Callable:
         for type_from_mro in type_from.mro():
             if issubclass(type_from_mro, SyftObject):
@@ -239,8 +228,8 @@ class SyftObjectRegistry:
 
 
 class SyftMigrationRegistry:
-    __migration_version_registry__: Dict[str, Dict[int, str]] = {}
-    __migration_transform_registry__: Dict[str, Dict[str, Callable]] = {}
+    __migration_version_registry__: dict[str, dict[int, str]] = {}
+    __migration_transform_registry__: dict[str, dict[str, Callable]] = {}
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """
@@ -278,8 +267,8 @@ class SyftMigrationRegistry:
                 }
 
     @classmethod
-    def get_versions(cls, canonical_name: str) -> List[int]:
-        available_versions: Dict = cls.__migration_version_registry__.get(
+    def get_versions(cls, canonical_name: str) -> list[int]:
+        available_versions: dict = cls.__migration_version_registry__.get(
             canonical_name,
             {},
         )
@@ -311,9 +300,9 @@ class SyftMigrationRegistry:
             mapping_string = f"{version_from}x{version_to}"
             if klass_type_str not in cls.__migration_transform_registry__:
                 cls.__migration_transform_registry__[klass_type_str] = {}
-            cls.__migration_transform_registry__[klass_type_str][
-                mapping_string
-            ] = method
+            cls.__migration_transform_registry__[klass_type_str][mapping_string] = (
+                method
+            )
         else:
             raise Exception(
                 f"Available versions for {klass_type_str} are: {available_versions}."
@@ -322,7 +311,7 @@ class SyftMigrationRegistry:
 
     @classmethod
     def get_migration(
-        cls, type_from: Type[SyftBaseObject], type_to: Type[SyftBaseObject]
+        cls, type_from: type[SyftBaseObject], type_to: type[SyftBaseObject]
     ) -> Callable:
         for type_from_mro in type_from.mro():
             if (
@@ -356,7 +345,7 @@ class SyftMigrationRegistry:
 
     @classmethod
     def get_migration_for_version(
-        cls, type_from: Type[SyftBaseObject], version_to: int
+        cls, type_from: type[SyftBaseObject], version_to: int
     ) -> Callable:
         canonical_name = type_from.__canonical_name__
         for type_from_mro in type_from.mro():
@@ -396,7 +385,7 @@ base_attrs_sync_ignore = [
 
 class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     __canonical_name__ = "SyftObject"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -417,21 +406,22 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         return values
 
     __attr_searchable__: ClassVar[
-        List[str]
+        list[str]
     ] = []  # keys which can be searched in the ORM
-    __attr_unique__: ClassVar[List[str]] = []
+    __attr_unique__: ClassVar[list[str]] = []
     # the unique keys for the particular Collection the objects will be stored in
-    __serde_overrides__: Dict[
+    __serde_overrides__: dict[
         str, Sequence[Callable]
     ] = {}  # List of attributes names which require a serde override.
     __owner__: str
 
-    __repr_attrs__: ClassVar[List[str]] = []  # show these in html repr collections
-    __attr_custom_repr__: ClassVar[
-        Optional[List[str]]
-    ] = None  # show these in html repr of an object
+    __repr_attrs__: ClassVar[list[str]] = []  # show these in html repr collections
+    __attr_custom_repr__: ClassVar[list[str] | None] = (
+        None  # show these in html repr of an object
+    )
+    __validate_private_attrs__: ClassVar[bool] = True
 
-    def __syft_get_funcs__(self) -> List[Tuple[str, Signature]]:
+    def __syft_get_funcs__(self) -> list[tuple[str, Signature]]:
         funcs = print_type_cache[type(self)]
         if len(funcs) > 0:
             return funcs
@@ -539,7 +529,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         return self.__dict__.keys()
 
     # allows splatting with **
-    def __getitem__(self, key: Union[str, int]) -> Any:
+    def __getitem__(self, key: str | int) -> Any:
         return self.__dict__.__getitem__(key)  # type: ignore
 
     def _upgrade_version(self, latest: bool = True) -> "SyftObject":
@@ -556,14 +546,14 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             return upgraded
 
     # transform from one supported type to another
-    def to(self, projection: type, context: Optional[Context] = None) -> Any:
+    def to(self, projection: type, context: Context | None = None) -> Any:
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
 
     def to_dict(
         self, exclude_none: bool = False, exclude_empty: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         warnings.warn(
             "`SyftObject.to_dict` is deprecated and will be removed in a future version",
             PendingDeprecationWarning,
@@ -588,11 +578,14 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         pass
 
     def _syft_set_validate_private_attrs_(self, **kwargs: Any) -> None:
+        if not self.__validate_private_attrs__:
+            return
         # Validate and set private attributes
         # https://github.com/pydantic/pydantic/issues/2105
+        annotations = typing.get_type_hints(self.__class__, localns=locals())
         for attr, decl in self.__private_attributes__.items():
             value = kwargs.get(attr, decl.get_default())
-            var_annotation = self.__annotations__.get(attr)
+            var_annotation = annotations.get(attr)
             if value is not PydanticUndefined:
                 if var_annotation is not None:
                     # Otherwise validate value against the variable annotation
@@ -614,7 +607,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         return int.from_bytes(self.__sha256__(), byteorder="big")
 
     @classmethod
-    def _syft_keys_types_dict(cls, attr_name: str) -> Dict[str, type]:
+    def _syft_keys_types_dict(cls, attr_name: str) -> dict[str, type]:
         kt_dict = {}
         for key in getattr(cls, attr_name, []):
             if key in cls.model_fields:
@@ -639,14 +632,14 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         return kt_dict
 
     @classmethod
-    def _syft_unique_keys_dict(cls) -> Dict[str, type]:
+    def _syft_unique_keys_dict(cls) -> dict[str, type]:
         return cls._syft_keys_types_dict("__attr_unique__")
 
     @classmethod
-    def _syft_searchable_keys_dict(cls) -> Dict[str, type]:
+    def _syft_searchable_keys_dict(cls) -> dict[str, type]:
         return cls._syft_keys_types_dict("__attr_searchable__")
 
-    def migrate_to(self, version: int, context: Optional[Context] = None) -> Any:
+    def migrate_to(self, version: int, context: Context | None = None) -> Any:
         if self.__version__ != version:
             migration_transform = SyftMigrationRegistry.get_migration_for_version(
                 type_from=type(self), version_to=version
@@ -657,7 +650,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             )
         return self
 
-    def syft_eq(self, ext_obj: Optional[Self]) -> bool:
+    def syft_eq(self, ext_obj: Self | None) -> bool:
         if ext_obj is None:
             return False
         attrs_to_check = self.__dict__.keys()
@@ -674,7 +667,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                     return False
         return True
 
-    def get_diffs(self, ext_obj: Self) -> List["AttrDiff"]:
+    def syft_get_diffs(self, ext_obj: Self) -> list["AttrDiff"]:
         # self is low, ext is high
         # relative
         from ..service.sync.diff_state import AttrDiff
@@ -689,7 +682,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         attrs_to_check = self.__dict__.keys()
 
         obj_exclude_attrs = getattr(self, "__exclude_sync_diff_attrs__", [])
-
         for attr in attrs_to_check:
             if attr not in base_attrs_sync_ignore and attr not in obj_exclude_attrs:
                 obj_attr = getattr(self, attr)
@@ -771,7 +763,7 @@ def short_qual_name(name: str) -> str:
     return name.split(".")[-1]
 
 
-def short_uid(uid: Optional[UID]) -> Optional[str]:
+def short_uid(uid: UID | None) -> str | None:
     if uid is None:
         return uid
     else:
@@ -779,9 +771,9 @@ def short_uid(uid: Optional[UID]) -> Optional[str]:
 
 
 def get_repr_values_table(
-    _self: Union[Mapping, Iterable],
+    _self: Mapping | Iterable,
     is_homogenous: bool,
-    extra_fields: Optional[list] = None,
+    extra_fields: list | None = None,
 ) -> dict:
     if extra_fields is None:
         extra_fields = []
@@ -823,7 +815,7 @@ def get_repr_values_table(
                     attrs = field.split(".")
                     for i, attr in enumerate(attrs):
                         # find indexing like abc[1]
-                        res = re.search("\[[+-]?\d+\]", attr)
+                        res = re.search(r"\[[+-]?\d+\]", attr)
                         has_index = False
                         if res:
                             has_index = True
@@ -867,10 +859,10 @@ def get_repr_values_table(
     if "created_at" in df.columns:
         df.sort_values(by="created_at", ascending=False, inplace=True)
 
-    return df.to_dict("records")
+    return df.to_dict("records")  # type: ignore
 
 
-def list_dict_repr_html(self: Union[Mapping, Set, Iterable]) -> str:
+def list_dict_repr_html(self: Mapping | Set | Iterable) -> str:
     try:
         max_check = 1
         items_checked = 0
@@ -892,7 +884,7 @@ def list_dict_repr_html(self: Union[Mapping, Set, Iterable]) -> str:
                 break
 
             if hasattr(type(item), "mro") and type(item) != type:
-                mro: Union[list, str] = type(item).mro()
+                mro: list | str = type(item).mro()
             elif hasattr(item, "mro") and type(item) != type:
                 mro = item.mro()
             else:
@@ -949,7 +941,7 @@ aggressive_set_attr(tuple, "_repr_html_", list_dict_repr_html)
 
 
 class StorableObjectType:
-    def to(self, projection: type, context: Optional[Context] = None) -> Any:
+    def to(self, projection: type, context: Context | None = None) -> Any:
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
@@ -958,14 +950,14 @@ class StorableObjectType:
         super().__init__(*args, **kwargs)
 
 
-TupleGenerator = Generator[Tuple[str, Any], None, None]
+TupleGenerator = Generator[tuple[str, Any], None, None]
 
 
 class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     """Syft Object to which partial arguments can be provided."""
 
     __canonical_name__ = "PartialSyftObject"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     def __iter__(self) -> TupleGenerator:
         yield from ((k, v) for k, v in super().__iter__() if v is not Empty)
@@ -974,7 +966,7 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
 recursive_serde_register_type(PartialSyftObject)
 
 
-def attach_attribute_to_syft_object(result: Any, attr_dict: Dict[str, Any]) -> Any:
+def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> Any:
     constructor = None
     extra_args = []
 

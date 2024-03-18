@@ -1,8 +1,6 @@
 # stdlib
 from typing import Any
 from typing import ClassVar
-from typing import List
-from typing import Type
 
 # third party
 from pandas import DataFrame
@@ -21,8 +19,8 @@ class PandasDataFrameObject(ActionObject):
     __canonical_name__ = "PandasDataframeObject"
     __version__ = SYFT_OBJECT_VERSION_3
 
-    syft_internal_type: ClassVar[Type] = DataFrame
-    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
+    syft_internal_type: ClassVar[type] = DataFrame
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
     # this is added for instance checks for dataframes
     # syft_dont_wrap_attrs = ["shape"]
 
@@ -48,7 +46,7 @@ class PandasSeriesObject(ActionObject):
     __version__ = SYFT_OBJECT_VERSION_3
 
     syft_internal_type = Series
-    syft_passthrough_attrs: List[str] = BASE_PASSTHROUGH_ATTRS
+    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
 
     # name: Optional[str] = None
     # syft_dont_wrap_attrs = ["shape"]

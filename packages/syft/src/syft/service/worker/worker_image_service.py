@@ -1,8 +1,5 @@
 # stdlib
 import contextlib
-from typing import List
-from typing import Optional
-from typing import Union
 from typing import cast
 
 # third party
@@ -50,7 +47,7 @@ class SyftWorkerImageService(AbstractService):
     )
     def submit_dockerfile(
         self, context: AuthedServiceContext, docker_config: DockerWorkerConfig
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         worker_image = SyftWorkerImage(
             config=docker_config,
             created_by=context.credentials,
@@ -74,10 +71,10 @@ class SyftWorkerImageService(AbstractService):
         context: AuthedServiceContext,
         image_uid: UID,
         tag: str,
-        registry_uid: Optional[UID] = None,
+        registry_uid: UID | None = None,
         pull: bool = True,
-    ) -> Union[SyftSuccess, SyftError]:
-        registry: Optional[SyftImageRegistry] = None
+    ) -> SyftSuccess | SyftError:
+        registry: SyftImageRegistry | None = None
 
         context.node = cast(AbstractNode, context.node)
 
@@ -158,9 +155,9 @@ class SyftWorkerImageService(AbstractService):
         self,
         context: AuthedServiceContext,
         image: UID,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-    ) -> Union[SyftSuccess, SyftError]:
+        username: str | None = None,
+        password: str | None = None,
+    ) -> SyftSuccess | SyftError:
         result = self.stash.get_by_uid(credentials=context.credentials, uid=image)
         if result.is_err():
             return SyftError(
@@ -198,14 +195,14 @@ class SyftWorkerImageService(AbstractService):
     )
     def get_all(
         self, context: AuthedServiceContext
-    ) -> Union[DictTuple[str, SyftWorkerImage], SyftError]:
+    ) -> DictTuple[str, SyftWorkerImage] | SyftError:
         """
         One image one docker file for now
         """
         result = self.stash.get_all(credentials=context.credentials)
         if result.is_err():
             return SyftError(message=f"{result.err()}")
-        images: List[SyftWorkerImage] = result.ok()
+        images: list[SyftWorkerImage] = result.ok()
 
         res = {}
         # if image is built, index it by full_name_with_tag
@@ -226,7 +223,7 @@ class SyftWorkerImageService(AbstractService):
     )
     def remove(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         #  Delete Docker image given image tag
         res = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
         if res.is_err():
@@ -271,7 +268,7 @@ class SyftWorkerImageService(AbstractService):
     )
     def get_by_uid(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftWorkerImage, SyftError]:
+    ) -> SyftWorkerImage | SyftError:
         res = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
         if res.is_err():
             return SyftError(
@@ -287,7 +284,7 @@ class SyftWorkerImageService(AbstractService):
     )
     def get_by_config(
         self, context: AuthedServiceContext, docker_config: DockerWorkerConfig
-    ) -> Union[SyftWorkerImage, SyftError]:
+    ) -> SyftWorkerImage | SyftError:
         res = self.stash.get_by_docker_config(
             credentials=context.credentials, config=docker_config
         )

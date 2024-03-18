@@ -2,7 +2,6 @@
 import os
 import subprocess
 import sys
-from typing import Optional
 
 # third party
 import yaml
@@ -14,7 +13,7 @@ def latest_commit_id() -> str:
     return commit_id.decode("utf-8").strip()
 
 
-def update_manifest(docker_tag: Optional[str]) -> None:
+def update_manifest(docker_tag: str | None) -> None:
     """Update manifest_template file with latest commit hash."""
 
     # Get latest commit id

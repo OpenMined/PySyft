@@ -1,11 +1,8 @@
 # stdlib
+from collections.abc import Callable
+from collections.abc import Container
 import random
 from typing import Any
-from typing import Callable
-from typing import Container
-from typing import Dict
-from typing import List
-from typing import Tuple
 from typing import TypeVar
 
 # third party
@@ -52,7 +49,7 @@ class MockStash(BaseUIDStoreStash):
     )
 
 
-def get_object_values(obj: SyftObject) -> Tuple[Any]:
+def get_object_values(obj: SyftObject) -> tuple[Any]:
     return tuple(obj.dict().values())
 
 
@@ -80,14 +77,14 @@ def create_unique(
 
 @pytest.fixture
 def base_stash(root_verify_key) -> MockStash:
-    return MockStash(store=DictDocumentStore(root_verify_key))
+    return MockStash(store=DictDocumentStore(UID(), root_verify_key))
 
 
 def random_sentence(faker: Faker) -> str:
     return faker.paragraph(nb_sentences=1)
 
 
-def object_kwargs(faker: Faker, **kwargs: Any) -> Dict[str, Any]:
+def object_kwargs(faker: Faker, **kwargs: Any) -> dict[str, Any]:
     return {
         "name": faker.name(),
         "desc": random_sentence(faker),
@@ -99,7 +96,7 @@ def object_kwargs(faker: Faker, **kwargs: Any) -> Dict[str, Any]:
 
 def multiple_object_kwargs(
     faker: Faker, n=10, same=False, **kwargs: Any
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     if same:
         kwargs_ = {"id": UID(), **object_kwargs(faker), **kwargs}
         return [kwargs_ for _ in range(n)]
@@ -112,7 +109,7 @@ def mock_object(faker: Faker) -> MockObject:
 
 
 @pytest.fixture
-def mock_objects(faker: Faker) -> List[MockObject]:
+def mock_objects(faker: Faker) -> list[MockObject]:
     return [MockObject(**kwargs) for kwargs in multiple_object_kwargs(faker)]
 
 
@@ -219,7 +216,7 @@ def test_basestash_cannot_update_non_existent(
 
 
 def test_basestash_set_get_all(
-    root_verify_key, base_stash: MockStash, mock_objects: List[MockObject]
+    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject]
 ) -> None:
     for obj in mock_objects:
         res = base_stash.set(root_verify_key, obj)
@@ -269,7 +266,7 @@ def test_basestash_delete_by_uid(
 
 
 def test_basestash_query_one(
-    root_verify_key, base_stash: MockStash, mock_objects: List[MockObject], faker: Faker
+    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject], faker: Faker
 ) -> None:
     for obj in mock_objects:
         base_stash.set(root_verify_key, obj)
@@ -315,7 +312,7 @@ def test_basestash_query_one(
 
 
 def test_basestash_query_all(
-    root_verify_key, base_stash: MockStash, mock_objects: List[MockObject], faker: Faker
+    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject], faker: Faker
 ) -> None:
     desc = random_sentence(faker)
     n_same = 3
@@ -369,7 +366,7 @@ def test_basestash_query_all(
 
 
 def test_basestash_query_all_kwargs_multiple_params(
-    root_verify_key, base_stash: MockStash, mock_objects: List[MockObject], faker: Faker
+    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject], faker: Faker
 ) -> None:
     desc = random_sentence(faker)
     importance = random.randrange(5)
@@ -422,7 +419,7 @@ def test_basestash_query_all_kwargs_multiple_params(
 
 
 def test_basestash_cannot_query_non_searchable(
-    root_verify_key, base_stash: MockStash, mock_objects: List[MockObject]
+    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject]
 ) -> None:
     for obj in mock_objects:
         base_stash.set(root_verify_key, obj)

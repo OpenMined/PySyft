@@ -4,10 +4,7 @@ from __future__ import annotations
 # stdlib
 from pathlib import Path
 import re
-from typing import List
-from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Union
 from typing import cast
 
 # third party
@@ -28,6 +25,7 @@ from ..service.dataset.dataset import CreateDataset
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.sync.diff_state import ResolvedSyncState
+from ..service.sync.sync_state import SyncState
 from ..service.user.roles import Roles
 from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
@@ -41,6 +39,7 @@ from .client import SyftClient
 from .client import login
 from .client import login_as_guest
 from .connection import NodeConnection
+from .protocol import SyftProtocol
 
 if TYPE_CHECKING:
     # relative
@@ -65,8 +64,8 @@ def _contains_subdir(dir: Path) -> bool:
 
 
 def add_default_uploader(
-    user: UserView, obj: Union[CreateDataset, CreateAsset]
-) -> Union[CreateDataset, CreateAsset]:
+    user: UserView, obj: CreateDataset | CreateAsset
+) -> CreateDataset | CreateAsset:
     uploader = None
     for contributor in obj.contributors:
         if contributor.role == str(Roles.UPLOADER):
@@ -90,7 +89,7 @@ class DomainClient(SyftClient):
     def __repr__(self) -> str:
         return f"<DomainClient: {self.name}>"
 
-    def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
+    def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
         # relative
         from ..types.twin_object import TwinObject
 
@@ -169,15 +168,21 @@ class DomainClient(SyftClient):
     #     else:
     #         return {}
 
-    def apply_state(
-        self, resolved_state: ResolvedSyncState
-    ) -> Union[SyftSuccess, SyftError]:
+    def get_sync_state(self) -> SyncState | SyftError:
+        state: SyncState = self.api.services.sync._get_state()
+        for uid, obj in state.objects.items():
+            if isinstance(obj, ActionObject):
+                state.objects[uid] = obj.refresh_object()
+        return state
+
+    def apply_state(self, resolved_state: ResolvedSyncState) -> SyftSuccess | SyftError:
         if len(resolved_state.delete_objs):
             raise NotImplementedError("TODO implement delete")
         items = resolved_state.create_objs + resolved_state.update_objs
 
         action_objects = [x for x in items if isinstance(x, ActionObject)]
         # permissions = self.get_permissions_for_other_node(items)
+
         permissions: dict[UID, set[str]] = {}
         for p in resolved_state.new_permissions:
             if p.uid in permissions:
@@ -185,16 +190,27 @@ class DomainClient(SyftClient):
             else:
                 permissions[p.uid] = {p.permission_string}
 
-        for action_object in action_objects:
-            action_object = action_object.refresh_object()
-            action_object.send(self)
+        storage_permissions: dict[UID, set[UID]] = {}
+        for sp in resolved_state.new_storage_permissions:
+            if sp.uid in storage_permissions:
+                storage_permissions[sp.uid].add(sp.node_uid)
+            else:
+                storage_permissions[sp.uid] = {sp.node_uid}
 
-        res = self.api.services.sync.sync_items(items, permissions)
+        for action_object in action_objects:
+            # NOTE permissions are added separately server side
+            action_object._send(self, add_storage_permission=False)
+
+        res = self.api.services.sync.sync_items(
+            items,
+            permissions,
+            storage_permissions,
+        )
         if isinstance(res, SyftError):
             return res
 
         # Add updated node state to store to have a previous_state for next sync
-        new_state = self.api.services.sync.get_state(add_to_store=True)
+        new_state = self.api.services.sync._get_state(add_to_store=True)
         if isinstance(new_state, SyftError):
             return new_state
 
@@ -203,10 +219,10 @@ class DomainClient(SyftClient):
 
     def upload_files(
         self,
-        file_list: Union[BlobFile, list[BlobFile], str, list[str], Path, list[Path]],
+        file_list: BlobFile | list[BlobFile] | str | list[str] | Path | list[Path],
         allow_recursive: bool = False,
         show_files: bool = False,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         if not file_list:
             return SyftError(message="No files to upload")
 
@@ -214,7 +230,7 @@ class DomainClient(SyftClient):
             file_list = [file_list]  # type: ignore[assignment]
         file_list = cast(list, file_list)
 
-        expanded_file_list: List[Union[BlobFile, Path]] = []
+        expanded_file_list: list[BlobFile | Path] = []
 
         for file in file_list:
             if isinstance(file, BlobFile):
@@ -269,13 +285,17 @@ class DomainClient(SyftClient):
 
     def connect_to_gateway(
         self,
-        via_client: Optional[SyftClient] = None,
-        url: Optional[str] = None,
-        port: Optional[int] = None,
-        handle: Optional[NodeHandle] = None,  # noqa: F821
-        email: Optional[str] = None,
-        password: Optional[str] = None,
-    ) -> Optional[Union[SyftSuccess, SyftError]]:
+        via_client: SyftClient | None = None,
+        url: str | None = None,
+        port: int | None = None,
+        handle: NodeHandle | None = None,  # noqa: F821
+        email: str | None = None,
+        password: str | None = None,
+        protocol: str | SyftProtocol = SyftProtocol.HTTP,
+    ) -> SyftSuccess | SyftError | None:
+        if isinstance(protocol, str):
+            protocol = SyftProtocol(protocol)
+
         if via_client is not None:
             client = via_client
         elif handle is not None:
@@ -289,7 +309,7 @@ class DomainClient(SyftClient):
             if isinstance(client, SyftError):
                 return client
 
-        res = self.exchange_route(client)
+        res = self.exchange_route(client, protocol=protocol)
         if isinstance(res, SyftSuccess):
             if self.metadata:
                 return SyftSuccess(
@@ -300,13 +320,13 @@ class DomainClient(SyftClient):
         return res
 
     @property
-    def data_subject_registry(self) -> Optional[APIModule]:
+    def data_subject_registry(self) -> APIModule | None:
         if self.api.has_service("data_subject"):
             return self.api.services.data_subject
         return None
 
     @property
-    def code(self) -> Optional[APIModule]:
+    def code(self) -> APIModule | None:
         # if self.api.refresh_api_callback is not None:
         #     self.api.refresh_api_callback()
         if self.api.has_service("code"):
@@ -314,31 +334,31 @@ class DomainClient(SyftClient):
         return None
 
     @property
-    def worker(self) -> Optional[APIModule]:
+    def worker(self) -> APIModule | None:
         if self.api.has_service("worker"):
             return self.api.services.worker
         return None
 
     @property
-    def requests(self) -> Optional[APIModule]:
+    def requests(self) -> APIModule | None:
         if self.api.has_service("request"):
             return self.api.services.request
         return None
 
     @property
-    def datasets(self) -> Optional[APIModule]:
+    def datasets(self) -> APIModule | None:
         if self.api.has_service("dataset"):
             return self.api.services.dataset
         return None
 
     @property
-    def projects(self) -> Optional[APIModule]:
+    def projects(self) -> APIModule | None:
         if self.api.has_service("project"):
             return self.api.services.project
         return None
 
     @property
-    def code_history_service(self) -> Optional[APIModule]:
+    def code_history_service(self) -> APIModule | None:
         if self.api is not None and self.api.has_service("code_history"):
             return self.api.services.code_history
         return None
@@ -352,46 +372,46 @@ class DomainClient(SyftClient):
         return self.api.services.code_history.get_histories()
 
     @property
-    def images(self) -> Optional[APIModule]:
+    def images(self) -> APIModule | None:
         if self.api.has_service("worker_image"):
             return self.api.services.worker_image
         return None
 
     @property
-    def worker_pools(self) -> Optional[APIModule]:
+    def worker_pools(self) -> APIModule | None:
         if self.api.has_service("worker_pool"):
             return self.api.services.worker_pool
         return None
 
     @property
-    def worker_images(self) -> Optional[APIModule]:
+    def worker_images(self) -> APIModule | None:
         if self.api.has_service("worker_image"):
             return self.api.services.worker_image
         return None
 
     @property
-    def sync(self) -> Optional[APIModule]:
+    def sync(self) -> APIModule | None:
         if self.api.has_service("sync"):
             return self.api.services.sync
         return None
 
     @property
-    def code_status(self) -> Optional[APIModule]:
+    def code_status(self) -> APIModule | None:
         if self.api.has_service("code_status"):
             return self.api.services.code_status
         return None
 
     @property
-    def output(self) -> Optional[APIModule]:
+    def output(self) -> APIModule | None:
         if self.api.has_service("output"):
             return self.api.services.output
         return None
 
     def get_project(
         self,
-        name: Optional[str] = None,
-        uid: Optional[UID] = None,
-    ) -> Optional[Project]:
+        name: str | None = None,
+        uid: UID | None = None,
+    ) -> Project | None:
         """Get project by name or UID"""
 
         if not self.api.has_service("project"):

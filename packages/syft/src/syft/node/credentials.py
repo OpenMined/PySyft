@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Union
 
 # third party
 from nacl.encoding import HexEncoder
@@ -22,7 +21,7 @@ SIGNING_KEY_FOR = "SigningKey for"
 class SyftVerifyKey(SyftBaseModel):
     verify_key: VerifyKey
 
-    def __init__(self, verify_key: Union[str, VerifyKey]):
+    def __init__(self, verify_key: str | VerifyKey):
         if isinstance(verify_key, str):
             verify_key = VerifyKey(bytes.fromhex(verify_key))
         super().__init__(verify_key=verify_key)
@@ -90,7 +89,7 @@ class SyftSigningKey(SyftBaseModel):
         return self.signing_key == other.signing_key
 
 
-SyftCredentials = Union[SyftVerifyKey, SyftSigningKey]
+SyftCredentials = SyftVerifyKey | SyftSigningKey
 
 
 @serializable()

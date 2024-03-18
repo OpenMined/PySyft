@@ -3,9 +3,6 @@ import json
 import os
 import subprocess
 from typing import Any
-from typing import Dict
-from typing import Optional
-from typing import Tuple
 
 # third party
 import git
@@ -16,7 +13,7 @@ KEY = None
 JSON_DATA = os.path.dirname(__file__) + "/staging.json"
 
 
-def run_hagrid(node: Dict) -> int:
+def run_hagrid(node: dict) -> int:
     name = node["name"]
     node_type = node["node_type"]
     ip = node["ip"]
@@ -52,13 +49,13 @@ def shell(command: str) -> str:
     return output.decode("utf-8").strip()
 
 
-def metadata_url(node: Dict) -> str:
+def metadata_url(node: dict) -> str:
     ip = node["ip"]
     endpoint = node["metadata_endpoint"]
     return f"http://{ip}{endpoint}"
 
 
-def check_metadata(node: Dict) -> Optional[Dict]:
+def check_metadata(node: dict) -> dict | None:
     try:
         res = requests.get(metadata_url(node))
         if res.status_code != 200:
@@ -72,7 +69,7 @@ def check_metadata(node: Dict) -> Optional[Dict]:
     return None
 
 
-def process_node(node: Dict[str, Any]) -> Tuple[bool, str]:
+def process_node(node: dict[str, Any]) -> tuple[bool, str]:
     repo_hash = get_repo_checkout(node)
     metadata = check_metadata(node)
     hash_string = check_remote_hash(node)
@@ -111,7 +108,7 @@ def process_node(node: Dict[str, Any]) -> Tuple[bool, str]:
     return False, repo_hash
 
 
-def get_repo_checkout(node: Dict) -> str:
+def get_repo_checkout(node: dict) -> str:
     try:
         branch = node["branch"]
         repo_path = f"/tmp/{branch}/PySyft"
@@ -136,7 +133,7 @@ def get_repo_checkout(node: Dict) -> str:
         raise e
 
 
-def run_remote_shell(node: Dict, cmd: str) -> Optional[str]:
+def run_remote_shell(node: dict, cmd: str) -> str | None:
     try:
         ip = node["ip"]
         ssh_cmd = (
@@ -150,7 +147,7 @@ def run_remote_shell(node: Dict, cmd: str) -> Optional[str]:
     return None
 
 
-def check_remote_hash(node: Dict) -> Optional[str]:
+def check_remote_hash(node: dict) -> str | None:
     cmd = "sudo runuser -l om -c 'cd /home/om/PySyft && git rev-parse HEAD'"
     return run_remote_shell(node, cmd)
 
@@ -171,12 +168,12 @@ def check_staging() -> None:
         print(f"{emoji} Node {name}")
 
 
-def load_staging_data(path: str) -> Dict[str, Dict]:
+def load_staging_data(path: str) -> dict[str, dict]:
     with open(path) as f:
         return json.loads(f.read())
 
 
-def save_staging_data(path: str, data: Dict[str, Dict]) -> None:
+def save_staging_data(path: str, data: dict[str, dict]) -> None:
     print("Saving changes to file", path)
     with open(path, "w") as f:
         f.write(f"{json.dumps(data)}")

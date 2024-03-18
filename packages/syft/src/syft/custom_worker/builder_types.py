@@ -3,7 +3,6 @@ from abc import ABC
 from abc import abstractmethod
 from pathlib import Path
 from typing import Any
-from typing import Optional
 
 # third party
 from pydantic import BaseModel
@@ -36,9 +35,9 @@ class BuilderBase(ABC):
     def build_image(
         self,
         tag: str,
-        dockerfile: Optional[str] = None,
-        dockerfile_path: Optional[Path] = None,
-        buildargs: Optional[dict] = None,
+        dockerfile: str | None = None,
+        dockerfile_path: Path | None = None,
+        buildargs: dict | None = None,
         **kwargs: Any,
     ) -> ImageBuildResult:
         pass

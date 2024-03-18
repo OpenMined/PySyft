@@ -1,12 +1,7 @@
 # stdlib
 
 # stdlib
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Type
 from typing import TypeVar
-from typing import Union
 from typing import cast
 
 # third party
@@ -31,7 +26,7 @@ from .smtp_client import SMTPClient
 class BaseNotifier:
     def send(
         self, target: SyftVerifyKey, notification: Notification
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         return SyftError(message="Not implemented")
 
 
@@ -145,22 +140,22 @@ class NotifierSettings(SyftObject):
     # In future, Admin, must be able to have a better
     # control on diff notifications.
 
-    notifiers: Dict[NOTIFIERS, Type[TBaseNotifier]] = {
+    notifiers: dict[NOTIFIERS, type[TBaseNotifier]] = {
         NOTIFIERS.EMAIL: EmailNotifier,
     }
 
-    notifiers_status: Dict[NOTIFIERS, bool] = {
+    notifiers_status: dict[NOTIFIERS, bool] = {
         NOTIFIERS.EMAIL: True,
         NOTIFIERS.SMS: False,
         NOTIFIERS.SLACK: False,
         NOTIFIERS.APP: False,
     }
 
-    email_sender: Optional[str] = ""
-    email_server: Optional[str] = ""
-    email_port: Optional[int] = 587
-    email_username: Optional[str] = ""
-    email_password: Optional[str] = ""
+    email_sender: str | None = ""
+    email_server: str | None = ""
+    email_port: int | None = 587
+    email_username: str | None = ""
+    email_password: str | None = ""
 
     @property
     def email_enabled(self) -> bool:
@@ -197,7 +192,7 @@ class NotifierSettings(SyftObject):
         context: AuthedServiceContext,
         notification: Notification,
     ) -> Result[Ok, Err]:
-        notifier_objs: List = self.select_notifiers(notification)
+        notifier_objs: list = self.select_notifiers(notification)
 
         for notifier in notifier_objs:
             result = notifier.send(context, notification)
@@ -206,7 +201,7 @@ class NotifierSettings(SyftObject):
 
         return Ok("Notification sent successfully!")
 
-    def select_notifiers(self, notification: Notification) -> List[BaseNotifier]:
+    def select_notifiers(self, notification: Notification) -> list[BaseNotifier]:
         """
         Return a list of the notifiers enabled for the given notification"
 

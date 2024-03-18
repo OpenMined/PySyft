@@ -1,6 +1,4 @@
 # stdlib
-from typing import List
-from typing import Optional
 
 # third party
 from result import Result
@@ -18,7 +16,7 @@ from ..action.action_permissions import ActionObjectPermission
 from .settings import NodeSettingsV2
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
-ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=List[UID])
+ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 
 
 @instrument
@@ -36,7 +34,8 @@ class SettingsStash(BaseUIDStoreStash):
         self,
         credentials: SyftVerifyKey,
         settings: NodeSettingsV2,
-        add_permissions: Optional[List[ActionObjectPermission]] = None,
+        add_permission: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[NodeSettingsV2, str]:
         res = self.check_type(settings, self.object_type)

@@ -1,8 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
 
 # third party
 from oblv_ctl import OblvClient
@@ -39,9 +36,9 @@ SUPPORTED_INFRA = [
 
 def create_deployment(
     domain_clients: list,
-    deployment_name: Optional[str] = None,
-    key_name: Optional[str] = None,
-    oblv_client: Optional[OblvClient] = None,
+    deployment_name: str | None = None,
+    key_name: str | None = None,
+    oblv_client: OblvClient | None = None,
     infra: str = INFRA,
     region: str = REGION,
 ) -> DeploymentClient:
@@ -92,7 +89,7 @@ def create_deployment(
         )
     except Exception as e:
         raise Exception(e)
-    build_args: Dict[str, Any] = {
+    build_args: dict[str, Any] = {
         "auth": {},
         "users": {"domain": [], "user": []},
         "additional_args": {},
@@ -100,7 +97,7 @@ def create_deployment(
         "runtime_args": "",
     }
     users = []
-    runtime_args: List[str] = []
+    runtime_args: list[str] = []
     for domain_client in domain_clients:
         try:
             users.append(

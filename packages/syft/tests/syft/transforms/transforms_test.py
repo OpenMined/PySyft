@@ -1,8 +1,6 @@
 # stdlib
+from collections.abc import Callable
 import inspect
-from typing import Callable
-from typing import List
-from typing import Optional
 
 # third party
 import pytest
@@ -19,14 +17,14 @@ class MockObjectFromSyftBaseObj(SyftBaseObject):
     __canonical_name__ = "MockObjectFromSyftBaseObj"
     __version__ = 1
 
-    value: Optional[int] = None
+    value: int | None = None
 
 
 class MockObjectToSyftBaseObj(SyftBaseObject):
     __canonical_name__ = "MockObjectToSyftBaseObj"
     __version__ = 1
 
-    value: Optional[int] = None
+    value: int | None = None
 
 
 @pytest.mark.parametrize(
@@ -165,7 +163,7 @@ def test_transform_method(monkeypatch):
     assert mock_syft_transform_registry[mapping_key]() == mock_method()
 
     def mock_generate_transform_wrapper(
-        klass_from: type, klass_to: type, transforms: List[Callable]
+        klass_from: type, klass_to: type, transforms: list[Callable]
     ):
         return mock_wrapper
 

@@ -2,11 +2,6 @@
 import hashlib
 import os
 import shutil
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
 from urllib.parse import urlparse
 
 # third party
@@ -28,7 +23,7 @@ from .mode import EDITABLE_MODE
 HAGRID_TEMPLATE_PATH = str(manifest_template_path())
 
 
-def read_yml_file(filename: str) -> Tuple[Optional[Dict], str]:
+def read_yml_file(filename: str) -> tuple[dict | None, str]:
     template = None
 
     with open(filename) as fp:
@@ -42,7 +37,7 @@ def read_yml_file(filename: str) -> Tuple[Optional[Dict], str]:
     return template, template_hash
 
 
-def read_yml_url(yml_url: str) -> Tuple[Optional[Dict], str]:
+def read_yml_url(yml_url: str) -> tuple[dict | None, str]:
     template = None
 
     try:
@@ -90,7 +85,7 @@ def manifest_cache_path(template_hash: str) -> str:
     return f"{hagrid_cache_dir()}/manifests/{template_hash}"
 
 
-def url_from_repo(template_location: Optional[str]) -> Optional[str]:
+def url_from_repo(template_location: str | None) -> str | None:
     if template_location is None:
         return None
 
@@ -115,7 +110,7 @@ def url_from_repo(template_location: Optional[str]) -> Optional[str]:
     return None
 
 
-def get_template_yml(template_location: Optional[str]) -> Tuple[Optional[Dict], str]:
+def get_template_yml(template_location: str | None) -> tuple[dict | None, str]:
     if template_location:
         if is_url(template_location):
             template, template_hash = read_yml_url(template_location)
@@ -139,10 +134,10 @@ def get_template_yml(template_location: Optional[str]) -> Tuple[Optional[Dict], 
 def setup_from_manifest_template(
     host_type: str,
     deployment_type: str,
-    template_location: Optional[str] = None,
+    template_location: str | None = None,
     overwrite: bool = False,
     verbose: bool = False,
-) -> Dict:
+) -> dict:
     template, template_hash = get_template_yml(template_location)
 
     kwargs_to_parse = {}
@@ -214,7 +209,7 @@ def deployment_dir(node_name: str) -> str:
 
 
 def download_files(
-    files_to_download: List[str],
+    files_to_download: list[str],
     git_hash: str,
     git_base_url: str,
     target_dir: str,
@@ -237,7 +232,7 @@ def download_files(
 def render_templates(
     node_name: str,
     deployment_type: str,
-    template_location: Optional[str],
+    template_location: str | None,
     env_vars: dict,
     host_type: str,
 ) -> None:
@@ -278,7 +273,7 @@ def render_templates(
 
 
 class JinjaTemplate:
-    def __init__(self, template_dir: Union[str, os.PathLike]) -> None:
+    def __init__(self, template_dir: str | os.PathLike) -> None:
         self.directory = os.path.expanduser(template_dir)
         self.environ = Environment(
             loader=FileSystemLoader(self.directory), autoescape=True

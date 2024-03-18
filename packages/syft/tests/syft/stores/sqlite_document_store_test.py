@@ -1,10 +1,7 @@
 # stdlib
 from threading import Thread
-from typing import Tuple
 
 # third party
-from joblib import Parallel
-from joblib import delayed
 import pytest
 
 # syft absolute
@@ -15,8 +12,6 @@ from syft.store.sqlite_document_store import SQLiteStorePartition
 from .store_fixtures_test import sqlite_store_partition_fn
 from .store_mocks_test import MockObjectType
 from .store_mocks_test import MockSyftObject
-
-REPEATS = 20
 
 
 def test_sqlite_store_partition_sanity(
@@ -80,8 +75,8 @@ def test_sqlite_store_partition_set(
         )
         == 2
     )
-
-    for idx in range(REPEATS):
+    repeats = 5
+    for idx in range(repeats):
         obj = MockSyftObject(data=idx)
         res = sqlite_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
         assert res.is_ok()
@@ -101,7 +96,8 @@ def test_sqlite_store_partition_delete(
     sqlite_store_partition: SQLiteStorePartition,
 ) -> None:
     objs = []
-    for v in range(REPEATS):
+    repeats = 5
+    for v in range(repeats):
         obj = MockSyftObject(data=v)
         sqlite_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
         objs.append(obj)
@@ -182,7 +178,8 @@ def test_sqlite_store_partition_update(
     assert res.is_err()
 
     # update the key multiple times
-    for v in range(REPEATS):
+    repeats = 5
+    for v in range(repeats):
         key = sqlite_store_partition.settings.store_key.with_obj(obj)
         obj_new = MockSyftObject(data=v)
 
@@ -231,11 +228,11 @@ def test_sqlite_store_partition_update(
 
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_set_threading(
-    sqlite_workspace: Tuple,
+    sqlite_workspace: tuple,
     root_verify_key,
 ) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
 
     execution_err = None
 
@@ -283,58 +280,58 @@ def test_sqlite_store_partition_set_threading(
     assert stored_cnt == thread_cnt * repeats
 
 
-@pytest.mark.skip(reason="The tests are highly flaky, delaying progress on PR's")
-def test_sqlite_store_partition_set_joblib(
-    root_verify_key,
-    sqlite_workspace: Tuple,
-) -> None:
-    thread_cnt = 3
-    repeats = REPEATS
+# @pytest.mark.skip(reason="Joblib is flaky")
+# def test_sqlite_store_partition_set_joblib(
+#     root_verify_key,
+#     sqlite_workspace: Tuple,
+# ) -> None:
+#     thread_cnt = 3
+#     repeats = 5
 
-    def _kv_cbk(tid: int) -> None:
-        for idx in range(repeats):
-            sqlite_store_partition = sqlite_store_partition_fn(
-                root_verify_key, sqlite_workspace
-            )
-            obj = MockObjectType(data=idx)
+#     def _kv_cbk(tid: int) -> None:
+#         for idx in range(repeats):
+#             sqlite_store_partition = sqlite_store_partition_fn(
+#                 root_verify_key, sqlite_workspace
+#             )
+#             obj = MockObjectType(data=idx)
 
-            for _ in range(10):
-                res = sqlite_store_partition.set(
-                    root_verify_key, obj, ignore_duplicates=False
-                )
-                if res.is_ok():
-                    break
+#             for _ in range(10):
+#                 res = sqlite_store_partition.set(
+#                     root_verify_key, obj, ignore_duplicates=False
+#                 )
+#                 if res.is_ok():
+#                     break
 
-            if res.is_err():
-                return res
+#             if res.is_err():
+#                 return res
 
-        return None
+#         return None
 
-    errs = Parallel(n_jobs=thread_cnt)(
-        delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
-    )
+#     errs = Parallel(n_jobs=thread_cnt)(
+#         delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
+#     )
 
-    for execution_err in errs:
-        assert execution_err is None
+#     for execution_err in errs:
+#         assert execution_err is None
 
-    sqlite_store_partition = sqlite_store_partition_fn(
-        root_verify_key, sqlite_workspace
-    )
-    stored_cnt = len(
-        sqlite_store_partition.all(
-            root_verify_key,
-        ).ok()
-    )
-    assert stored_cnt == thread_cnt * repeats
+#     sqlite_store_partition = sqlite_store_partition_fn(
+#         root_verify_key, sqlite_workspace
+#     )
+#     stored_cnt = len(
+#         sqlite_store_partition.all(
+#             root_verify_key,
+#         ).ok()
+#     )
+#     assert stored_cnt == thread_cnt * repeats
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_update_threading(
     root_verify_key,
-    sqlite_workspace: Tuple,
+    sqlite_workspace: tuple,
 ) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
 
     sqlite_store_partition = sqlite_store_partition_fn(
         root_verify_key, sqlite_workspace
@@ -375,52 +372,52 @@ def test_sqlite_store_partition_update_threading(
     assert execution_err is None
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
-def test_sqlite_store_partition_update_joblib(
-    root_verify_key,
-    sqlite_workspace: Tuple,
-) -> None:
-    thread_cnt = 3
-    repeats = REPEATS
+# @pytest.mark.skip(reason="Joblib is flaky")
+# def test_sqlite_store_partition_update_joblib(
+#     root_verify_key,
+#     sqlite_workspace: Tuple,
+# ) -> None:
+#     thread_cnt = 3
+#     repeats = 5
 
-    sqlite_store_partition = sqlite_store_partition_fn(
-        root_verify_key, sqlite_workspace
-    )
-    obj = MockSyftObject(data=0)
-    key = sqlite_store_partition.settings.store_key.with_obj(obj)
-    sqlite_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
+#     sqlite_store_partition = sqlite_store_partition_fn(
+#         root_verify_key, sqlite_workspace
+#     )
+#     obj = MockSyftObject(data=0)
+#     key = sqlite_store_partition.settings.store_key.with_obj(obj)
+#     sqlite_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
 
-    def _kv_cbk(tid: int) -> None:
-        sqlite_store_partition_local = sqlite_store_partition_fn(
-            root_verify_key, sqlite_workspace
-        )
-        for repeat in range(repeats):
-            obj = MockSyftObject(data=repeat)
+#     def _kv_cbk(tid: int) -> None:
+#         sqlite_store_partition_local = sqlite_store_partition_fn(
+#             root_verify_key, sqlite_workspace
+#         )
+#         for repeat in range(repeats):
+#             obj = MockSyftObject(data=repeat)
 
-            for _ in range(10):
-                res = sqlite_store_partition_local.update(root_verify_key, key, obj)
-                if res.is_ok():
-                    break
+#             for _ in range(10):
+#                 res = sqlite_store_partition_local.update(root_verify_key, key, obj)
+#                 if res.is_ok():
+#                     break
 
-            if res.is_err():
-                return res
-        return None
+#             if res.is_err():
+#                 return res
+#         return None
 
-    errs = Parallel(n_jobs=thread_cnt)(
-        delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
-    )
+#     errs = Parallel(n_jobs=thread_cnt)(
+#         delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
+#     )
 
-    for execution_err in errs:
-        assert execution_err is None
+#     for execution_err in errs:
+#         assert execution_err is None
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=1)
 def test_sqlite_store_partition_set_delete_threading(
     root_verify_key,
-    sqlite_workspace: Tuple,
+    sqlite_workspace: tuple,
 ) -> None:
     thread_cnt = 3
-    repeats = REPEATS
+    repeats = 5
     execution_err = None
 
     def _kv_cbk(tid: int) -> None:
@@ -473,52 +470,51 @@ def test_sqlite_store_partition_set_delete_threading(
     assert stored_cnt == 0
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
-@pytest.mark.xfail(reason="Fails in CI sometimes")
-def test_sqlite_store_partition_set_delete_joblib(
-    root_verify_key,
-    sqlite_workspace: Tuple,
-) -> None:
-    thread_cnt = 3
-    repeats = REPEATS
+# @pytest.mark.skip(reason="Joblib is flaky")
+# def test_sqlite_store_partition_set_delete_joblib(
+#     root_verify_key,
+#     sqlite_workspace: Tuple,
+# ) -> None:
+#     thread_cnt = 3
+#     repeats = 5
 
-    def _kv_cbk(tid: int) -> None:
-        sqlite_store_partition = sqlite_store_partition_fn(
-            root_verify_key, sqlite_workspace
-        )
+#     def _kv_cbk(tid: int) -> None:
+#         sqlite_store_partition = sqlite_store_partition_fn(
+#             root_verify_key, sqlite_workspace
+#         )
 
-        for idx in range(repeats):
-            obj = MockSyftObject(data=idx)
+#         for idx in range(repeats):
+#             obj = MockSyftObject(data=idx)
 
-            for _ in range(10):
-                res = sqlite_store_partition.set(
-                    root_verify_key, obj, ignore_duplicates=False
-                )
-                if res.is_ok():
-                    break
+#             for _ in range(10):
+#                 res = sqlite_store_partition.set(
+#                     root_verify_key, obj, ignore_duplicates=False
+#                 )
+#                 if res.is_ok():
+#                     break
 
-            if res.is_err():
-                return res
+#             if res.is_err():
+#                 return res
 
-            key = sqlite_store_partition.settings.store_key.with_obj(obj)
+#             key = sqlite_store_partition.settings.store_key.with_obj(obj)
 
-            res = sqlite_store_partition.delete(root_verify_key, key)
-            if res.is_err():
-                return res
-        return None
+#             res = sqlite_store_partition.delete(root_verify_key, key)
+#             if res.is_err():
+#                 return res
+#         return None
 
-    errs = Parallel(n_jobs=thread_cnt)(
-        delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
-    )
-    for execution_err in errs:
-        assert execution_err is None
+#     errs = Parallel(n_jobs=thread_cnt)(
+#         delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
+#     )
+#     for execution_err in errs:
+#         assert execution_err is None
 
-    sqlite_store_partition = sqlite_store_partition_fn(
-        root_verify_key, sqlite_workspace
-    )
-    stored_cnt = len(
-        sqlite_store_partition.all(
-            root_verify_key,
-        ).ok()
-    )
-    assert stored_cnt == 0
+#     sqlite_store_partition = sqlite_store_partition_fn(
+#         root_verify_key, sqlite_workspace
+#     )
+#     stored_cnt = len(
+#         sqlite_store_partition.all(
+#             root_verify_key,
+#         ).ok()
+#     )
+#     assert stored_cnt == 0

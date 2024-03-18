@@ -1,6 +1,4 @@
 # stdlib
-from typing import List
-from typing import Union
 from typing import cast
 
 # relative
@@ -42,7 +40,7 @@ class NotificationService(AbstractService):
     @service_method(path="notifications.send", name="send")
     def send(
         self, context: AuthedServiceContext, notification: CreateNotification
-    ) -> Union[Notification, SyftError]:
+    ) -> Notification | SyftError:
         """Send a new notification"""
         new_notification = notification.to(Notification, context=context)
 
@@ -72,7 +70,7 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
         reply: ReplyNotification,
-    ) -> Union[ReplyNotification, SyftError]:
+    ) -> ReplyNotification | SyftError:
         msg = self.stash.get_by_uid(
             credentials=context.credentials, uid=reply.target_msg
         )
@@ -99,7 +97,7 @@ class NotificationService(AbstractService):
     def user_settings(
         self,
         context: AuthedServiceContext,
-    ) -> Union[NotifierSettings, SyftError]:
+    ) -> NotifierSettings | SyftError:
         context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         return notifier_service.user_settings(context)
@@ -112,7 +110,7 @@ class NotificationService(AbstractService):
     def settings(
         self,
         context: AuthedServiceContext,
-    ) -> Union[NotifierSettings, SyftError]:
+    ) -> NotifierSettings | SyftError:
         context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         result = notifier_service.settings(context)
@@ -126,7 +124,7 @@ class NotificationService(AbstractService):
     def activate(
         self,
         context: AuthedServiceContext,
-    ) -> Union[Notification, SyftError]:
+    ) -> Notification | SyftError:
         context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         result = notifier_service.activate(context)
@@ -140,7 +138,7 @@ class NotificationService(AbstractService):
     def deactivate(
         self,
         context: AuthedServiceContext,
-    ) -> Union[Notification, SyftError]:
+    ) -> Notification | SyftError:
         context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         result = notifier_service.deactivate(context)
@@ -154,7 +152,7 @@ class NotificationService(AbstractService):
     def get_all(
         self,
         context: AuthedServiceContext,
-    ) -> Union[List[Notification], SyftError]:
+    ) -> list[Notification] | SyftError:
         result = self.stash.get_all_inbox_for_verify_key(
             context.credentials,
             verify_key=context.credentials,
@@ -171,7 +169,7 @@ class NotificationService(AbstractService):
     )
     def get_all_sent(
         self, context: AuthedServiceContext
-    ) -> Union[List[Notification], SyftError]:
+    ) -> list[Notification] | SyftError:
         result = self.stash.get_all_sent_for_verify_key(
             context.credentials, context.credentials
         )
@@ -187,7 +185,7 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
         status: NotificationStatus,
-    ) -> Union[List[Notification], SyftError]:
+    ) -> list[Notification] | SyftError:
         result = self.stash.get_all_by_verify_key_for_status(
             context.credentials, verify_key=context.credentials, status=status
         )
@@ -204,7 +202,7 @@ class NotificationService(AbstractService):
     def get_all_read(
         self,
         context: AuthedServiceContext,
-    ) -> Union[List[Notification], SyftError]:
+    ) -> list[Notification] | SyftError:
         return self.get_all_for_status(
             context=context,
             status=NotificationStatus.READ,
@@ -218,7 +216,7 @@ class NotificationService(AbstractService):
     def get_all_unread(
         self,
         context: AuthedServiceContext,
-    ) -> Union[List[Notification], SyftError]:
+    ) -> list[Notification] | SyftError:
         return self.get_all_for_status(
             context=context,
             status=NotificationStatus.UNREAD,
@@ -227,7 +225,7 @@ class NotificationService(AbstractService):
     @service_method(path="notifications.mark_as_read", name="mark_as_read")
     def mark_as_read(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[Notification, SyftError]:
+    ) -> Notification | SyftError:
         result = self.stash.update_notification_status(
             context.credentials, uid=uid, status=NotificationStatus.READ
         )
@@ -238,7 +236,7 @@ class NotificationService(AbstractService):
     @service_method(path="notifications.mark_as_unread", name="mark_as_unread")
     def mark_as_unread(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[Notification, SyftError]:
+    ) -> Notification | SyftError:
         result = self.stash.update_notification_status(
             context.credentials, uid=uid, status=NotificationStatus.UNREAD
         )
@@ -253,7 +251,7 @@ class NotificationService(AbstractService):
     )
     def resolve_object(
         self, context: AuthedServiceContext, linked_obj: LinkedObject
-    ) -> Union[Notification, SyftError]:
+    ) -> Notification | SyftError:
         context.node = cast(AbstractNode, context.node)
         service = context.node.get_service(linked_obj.service_type)
         result = service.resolve_link(context=context, linked_obj=linked_obj)
@@ -262,7 +260,7 @@ class NotificationService(AbstractService):
         return result.ok()
 
     @service_method(path="notifications.clear", name="clear")
-    def clear(self, context: AuthedServiceContext) -> Union[SyftError, SyftSuccess]:
+    def clear(self, context: AuthedServiceContext) -> SyftError | SyftSuccess:
         result = self.stash.delete_all_for_verify_key(
             credentials=context.credentials, verify_key=context.credentials
         )
@@ -272,7 +270,7 @@ class NotificationService(AbstractService):
 
     def filter_by_obj(
         self, context: AuthedServiceContext, obj_uid: UID
-    ) -> Union[Notification, SyftError]:
+    ) -> Notification | SyftError:
         notifications = self.stash.get_all(context.credentials)
         if notifications.is_err():
             return SyftError(message="Could not get notifications!!")

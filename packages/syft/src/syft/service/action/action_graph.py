@@ -1,16 +1,12 @@
 # stdlib
+from collections.abc import Callable
+from collections.abc import Iterable
 from enum import Enum
 from functools import partial
 import os
 from pathlib import Path
 import tempfile
 from typing import Any
-from typing import Callable
-from typing import Iterable
-from typing import List
-from typing import Optional
-from typing import Type
-from typing import Union
 
 # third party
 import matplotlib.pyplot as plt
@@ -36,7 +32,6 @@ from ...store.locks import SyftLock
 from ...store.locks import ThreadingLockingConfig
 from ...types.datetime import DateTime
 from ...types.syft_object import PartialSyftObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
@@ -60,9 +55,9 @@ class NodeType(Enum):
 @serializable()
 class NodeActionData(SyftObject):
     __canonical_name__ = "NodeActionData"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID] = None  # type: ignore[assignment]
+    id: UID | None = None  # type: ignore[assignment]
     type: NodeType
     status: ExecutionStatus = ExecutionStatus.PROCESSING
     retry: int = 0
@@ -71,8 +66,8 @@ class NodeActionData(SyftObject):
     user_verify_key: SyftVerifyKey
     is_mutated: bool = False  # denotes that this node has been mutated
     is_mutagen: bool = False  # denotes that this node is causing a mutation
-    next_mutagen_node: Optional[UID] = None  # next neighboring mutagen node
-    last_nm_mutagen_node: Optional[UID] = None  # last non mutated mutagen node
+    next_mutagen_node: UID | None = None  # next neighboring mutagen node
+    last_nm_mutagen_node: UID | None = None  # last non mutated mutagen node
 
     @classmethod
     def from_action(cls, action: Action, credentials: SyftVerifyKey) -> Self:
@@ -131,7 +126,7 @@ class NodeActionDataUpdate(PartialSyftObject):
 @serializable()
 class BaseGraphStore:
     graph_type: Any
-    client_config: Optional[StoreClientConfig]
+    client_config: StoreClientConfig | None
 
     def set(self, uid: Any, data: Any) -> None:
         raise NotImplementedError
@@ -142,7 +137,7 @@ class BaseGraphStore:
     def delete(self, uid: Any) -> None:
         raise NotImplementedError
 
-    def find_neighbors(self, uid: Any) -> Optional[List]:
+    def find_neighbors(self, uid: Any) -> list | None:
         raise NotImplementedError
 
     def update(self, uid: Any, data: Any) -> None:
@@ -166,10 +161,10 @@ class BaseGraphStore:
     def save(self) -> None:
         raise NotImplementedError
 
-    def get_predecessors(self, uid: UID) -> List:
+    def get_predecessors(self, uid: UID) -> list:
         raise NotImplementedError
 
-    def get_successors(self, uid: UID) -> List:
+    def get_successors(self, uid: UID) -> list:
         raise NotImplementedError
 
     def exists(self, uid: Any) -> bool:
@@ -185,13 +180,13 @@ class BaseGraphStore:
 @serializable()
 class InMemoryStoreClientConfig(StoreClientConfig):
     filename: str = "action_graph.bytes"
-    path: Union[str, Path] = Field(default_factory=tempfile.gettempdir)
+    path: str | Path = Field(default_factory=tempfile.gettempdir)
 
     # We need this in addition to Field(default_factory=...)
     # so users can still do InMemoryStoreClientConfig(path=None)
     @field_validator("path", mode="before")
     @classmethod
-    def __default_path(cls, path: Optional[Union[str, Path]]) -> Union[str, Path]:
+    def __default_path(cls, path: str | Path | None) -> str | Path:
         if path is None:
             return tempfile.gettempdir()
         return path
@@ -214,7 +209,7 @@ class NetworkXBackingStore(BaseGraphStore):
             self._db = nx.DiGraph()
 
         self.locking_config = store_config.locking_config
-        self._lock: Optional[SyftLock] = None
+        self._lock: SyftLock | None = None
 
     @property
     def lock(self) -> SyftLock:
@@ -232,7 +227,9 @@ class NetworkXBackingStore(BaseGraphStore):
         # TODO copied method from document_store, have it in one place and reuse?
         locked = self.lock.acquire(blocking=True)
         if not locked:
-            return Err("Failed to acquire lock for the operation")
+            return Err(
+                f"Failed to acquire lock for the operation {self.lock.lock_name} ({self.lock._lock})"
+            )
         try:
             result = cbk(*args, **kwargs)
         except BaseException as e:
@@ -266,7 +263,7 @@ class NetworkXBackingStore(BaseGraphStore):
             self.db.remove_node(uid)
         self.save()
 
-    def find_neighbors(self, uid: UID) -> Optional[List]:
+    def find_neighbors(self, uid: UID) -> list | None:
         if self.exists(uid=uid):
             neighbors = self.db.neighbors(uid)
             return neighbors
@@ -305,10 +302,10 @@ class NetworkXBackingStore(BaseGraphStore):
     def edges(self) -> Iterable:
         return self.db.edges()
 
-    def get_predecessors(self, uid: UID) -> List:
+    def get_predecessors(self, uid: UID) -> list:
         return self.db.predecessors(uid)
 
-    def get_successors(self, uid: UID) -> List:
+    def get_successors(self, uid: UID) -> list:
         return self.db.successors(uid)
 
     def is_parent(self, parent: Any, child: Any) -> bool:
@@ -346,7 +343,7 @@ class NetworkXBackingStore(BaseGraphStore):
 class InMemoryGraphConfig(StoreConfig):
     __canonical_name__ = "InMemoryGraphConfig"
 
-    store_type: Type[BaseGraphStore] = NetworkXBackingStore
+    store_type: type[BaseGraphStore] = NetworkXBackingStore
     client_config: StoreClientConfig = InMemoryStoreClientConfig()
     locking_config: LockingConfig = ThreadingLockingConfig()
 
@@ -370,7 +367,7 @@ class InMemoryActionGraphStore(ActionGraphStore):
         self,
         node: NodeActionData,
         credentials: SyftVerifyKey,
-        parent_uids: Optional[List[UID]] = None,
+        parent_uids: list[UID] | None = None,
     ) -> Result[NodeActionData, str]:
         if self.graph.exists(uid=node.id):
             return Err(f"Node already exists in the graph: {node}")
@@ -524,16 +521,16 @@ class InMemoryActionGraphStore(ActionGraphStore):
 
     def query(
         self,
-        qks: Union[QueryKey, QueryKeys],
+        qks: QueryKey | QueryKeys,
         credentials: SyftVerifyKey,
-    ) -> Result[List[NodeActionData], str]:
+    ) -> Result[list[NodeActionData], str]:
         if isinstance(qks, QueryKey):
             qks = QueryKeys(qks=[qks])
         subgraph = self.graph.subgraph(qks=qks)
         return Ok(self.graph.topological_sort(subgraph=subgraph))
 
-    def nodes(self, credentials: SyftVerifyKey) -> Result[List, str]:
+    def nodes(self, credentials: SyftVerifyKey) -> Result[list, str]:
         return Ok(self.graph.nodes())
 
-    def edges(self, credentials: SyftVerifyKey) -> Result[List, str]:
+    def edges(self, credentials: SyftVerifyKey) -> Result[list, str]:
         return Ok(self.graph.edges())

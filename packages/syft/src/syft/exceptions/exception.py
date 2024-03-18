@@ -1,6 +1,4 @@
 # stdlib
-from typing import List
-from typing import Optional
 
 # third party
 from typing_extensions import Self
@@ -14,7 +12,7 @@ from ..service.user.user_roles import ServiceRole
 class PySyftException(Exception):
     """Base class for all PySyft exceptions."""
 
-    def __init__(self, message: str, roles: Optional[List[ServiceRole]] = None):
+    def __init__(self, message: str, roles: list[ServiceRole] | None = None):
         super().__init__(message)
         self.message = message
         self.roles = roles if roles else [ServiceRole.ADMIN]

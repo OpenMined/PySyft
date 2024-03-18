@@ -1,12 +1,11 @@
 # stdlib
+from collections.abc import Callable
 import logging
 import os
 import sys
 from typing import Any
-from typing import Callable
 from typing import NoReturn
 from typing import TextIO
-from typing import Union
 
 # third party
 from loguru import logger
@@ -22,7 +21,7 @@ def remove() -> None:
 
 
 def add(
-    sink: Union[None, str, os.PathLike, TextIO, logging.Handler] = None,
+    sink: None | str | os.PathLike | TextIO | logging.Handler = None,
     level: str = "ERROR",
 ) -> None:
     sink = DEFAULT_SINK if sink is None else sink

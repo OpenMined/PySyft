@@ -1,10 +1,7 @@
 # stdlib
+from collections.abc import Callable
 import secrets
 from typing import Any
-from typing import Callable
-from typing import List
-from typing import Optional
-from typing import Union
 from typing import cast
 
 # third party
@@ -16,6 +13,7 @@ from ...abstract_node import NodeType
 from ...client.client import HTTPConnection
 from ...client.client import PythonConnection
 from ...client.client import SyftClient
+from ...client.client import VeilidConnection
 from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
@@ -30,6 +28,7 @@ from ...types.transforms import TransformContext
 from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.transforms import transform_method
+from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
@@ -40,12 +39,14 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..warnings import CRUDWarning
 from .node_peer import NodePeer
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
 from .routes import PythonNodeRoute
+from .routes import VeilidNodeRoute
 
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 NodeTypePartitionKey = PartitionKey(key="node_type", type_=NodeType)
@@ -65,7 +66,7 @@ class NetworkStash(BaseUIDStoreStash):
 
     def get_by_name(
         self, credentials: SyftVerifyKey, name: str
-    ) -> Result[Optional[NodePeer], str]:
+    ) -> Result[NodePeer | None, str]:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
         return self.query_one(credentials=credentials, qks=qks)
 
@@ -86,12 +87,12 @@ class NetworkStash(BaseUIDStoreStash):
         valid = self.check_type(peer, NodePeer)
         if valid.is_err():
             return SyftError(message=valid.err())
-        existing: Union[Result, NodePeer] = self.get_by_uid(
+        existing: Result | NodePeer = self.get_by_uid(
             credentials=credentials, uid=peer.id
         )
         if existing.is_ok() and existing.ok():
             existing = existing.ok()
-            existing.update_routes(new_routes=peer.node_routes)
+            existing.update_routes(peer.node_routes)
             result = self.update(credentials, existing)
             return result
         else:
@@ -106,7 +107,7 @@ class NetworkStash(BaseUIDStoreStash):
 
     def get_by_node_type(
         self, credentials: SyftVerifyKey, node_type: NodeType
-    ) -> Result[List[NodePeer], SyftError]:
+    ) -> Result[list[NodePeer], SyftError]:
         qks = QueryKeys(qks=[NodeTypePartitionKey.with_obj(node_type)])
         return self.query_all(
             credentials=credentials, qks=qks, order_by=OrderByNamePartitionKey
@@ -137,7 +138,7 @@ class NetworkService(AbstractService):
         self_node_route: NodeRoute,
         remote_node_route: NodeRoute,
         remote_node_verify_key: SyftVerifyKey,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Exchange Route With Another Node"""
 
         # Step 1: Validate the Route
@@ -194,7 +195,7 @@ class NetworkService(AbstractService):
         challenge: bytes,
         self_node_route: NodeRoute,
         verify_key: SyftVerifyKey,
-    ) -> Union[list, SyftError]:
+    ) -> list | SyftError:
         """Add a Network Node Peer"""
         # Using the verify_key of the peer to verify the signature
         # It is also our single source of truth for the peer
@@ -254,7 +255,7 @@ class NetworkService(AbstractService):
     @service_method(path="network.ping", name="ping", roles=GUEST_ROLE_LEVEL)
     def ping(
         self, context: AuthedServiceContext, challenge: bytes
-    ) -> Union[bytes, SyftError]:
+    ) -> bytes | SyftError:
         """To check alivesness/authenticity of a peer"""
 
         # # Only the root user can ping the node to check its state
@@ -276,7 +277,7 @@ class NetworkService(AbstractService):
         context: AuthedServiceContext,
         route: NodeRoute,
         peer: NodePeer,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Add Route for this Node to another Node"""
         # check root user is asking for the exchange
         client = peer.client_with_context(context=context)
@@ -291,7 +292,7 @@ class NetworkService(AbstractService):
     )
     def verify_route(
         self, context: AuthedServiceContext, route: NodeRoute
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Add a Network Node Route"""
         # get the peer asking for route verification from its verify_key
         context.node = cast(AbstractNode, context.node)
@@ -321,7 +322,7 @@ class NetworkService(AbstractService):
     )
     def get_all_peers(
         self, context: AuthedServiceContext
-    ) -> Union[List[NodePeer], SyftError]:
+    ) -> list[NodePeer] | SyftError:
         """Get all Peers"""
         context.node = cast(AbstractNode, context.node)
         result = self.stash.get_all(
@@ -338,7 +339,7 @@ class NetworkService(AbstractService):
     )
     def get_peer_by_name(
         self, context: AuthedServiceContext, name: str
-    ) -> Union[Optional[NodePeer], SyftError]:
+    ) -> NodePeer | None | SyftError:
         """Get Peer by Name"""
         context.node = cast(AbstractNode, context.node)
         result = self.stash.get_by_name(
@@ -357,7 +358,7 @@ class NetworkService(AbstractService):
     )
     def get_peers_by_type(
         self, context: AuthedServiceContext, node_type: NodeType
-    ) -> Union[List[NodePeer], SyftError]:
+    ) -> list[NodePeer] | SyftError:
         context.node = cast(AbstractNode, context.node)
         result = self.stash.get_by_node_type(
             credentials=context.node.verify_key,
@@ -369,6 +370,103 @@ class NetworkService(AbstractService):
 
         # Return peers or an empty list when result is None
         return result.ok() or []
+
+    @service_method(
+        path="network.delete_peer_by_id",
+        name="delete_peer_by_id",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def delete_peer_by_id(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> SyftSuccess | SyftError:
+        """Delete Node Peer"""
+        result = self.stash.delete_by_uid(context.credentials, uid)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return SyftSuccess(message="Node Peer Deleted")
+
+    @service_method(
+        path="network.exchange_veilid_route",
+        name="exchange_veilid_route",
+        roles=DATA_OWNER_ROLE_LEVEL,
+    )
+    def exchange_veilid_route(
+        self,
+        context: AuthedServiceContext,
+        remote_node_route: NodeRoute,
+    ) -> SyftSuccess | SyftError:
+        """Exchange Route With Another Node"""
+        context.node = cast(AbstractNode, context.node)
+        # Step 1: Get our own Veilid Node Peer to send to the remote node
+        self_node_peer: NodePeer = context.node.settings.to(NodePeer)
+
+        veilid_service = context.node.get_service("veilidservice")
+        veilid_route = veilid_service.get_veilid_route(context=context)
+
+        if isinstance(veilid_route, SyftError):
+            return veilid_route
+
+        self_node_peer.node_routes = [veilid_route]
+
+        # Step 2: Create a Remote Client
+        remote_client: SyftClient = remote_node_route.client_with_context(
+            context=context
+        )
+
+        # Step 3: Send the Node Peer to the remote node
+        remote_node_peer: NodePeer | SyftError = (
+            remote_client.api.services.network.add_veilid_peer(
+                peer=self_node_peer,
+            )
+        )
+
+        if not isinstance(remote_node_peer, NodePeer):
+            return remote_node_peer
+
+        # Step 4: Add the remote Node Peer to our stash
+        result = self.stash.update_peer(context.node.verify_key, remote_node_peer)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        return SyftSuccess(message="Routes Exchanged")
+
+    @service_method(
+        path="network.add_veilid_peer", name="add_veilid_peer", roles=GUEST_ROLE_LEVEL
+    )
+    def add_veilid_peer(
+        self,
+        context: AuthedServiceContext,
+        peer: NodePeer,
+    ) -> NodePeer | SyftError:
+        """Add a Veilid Node Peer"""
+        context.node = cast(AbstractNode, context.node)
+        # Step 1: Using the verify_key of the peer to verify the signature
+        # It is also our single source of truth for the peer
+        if peer.verify_key != context.credentials:
+            return SyftError(
+                message=(
+                    f"The {type(peer)}.verify_key: "
+                    f"{peer.verify_key} does not match the signature of the message"
+                )
+            )
+
+        # Step 2: Save the remote peer to our stash
+        result = self.stash.update_peer(context.node.verify_key, peer)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        # Step 3: Get our own Veilid Node Peer to send to the remote node
+        self_node_peer: NodePeer = context.node.settings.to(NodePeer)
+
+        veilid_service = context.node.get_service("veilidservice")
+        veilid_route = veilid_service.get_veilid_route(context=context)
+
+        if isinstance(veilid_route, SyftError):
+            return veilid_route
+
+        self_node_peer.node_routes = [veilid_route]
+
+        return self_node_peer
 
 
 TYPE_TO_SERVICE[NodePeer] = NetworkService
@@ -389,7 +487,7 @@ def from_grid_url(context: TransformContext) -> TransformContext:
 
 
 @transform(HTTPConnection, HTTPNodeRoute)
-def http_connection_to_node_route() -> List[Callable]:
+def http_connection_to_node_route() -> list[Callable]:
     return [from_grid_url]
 
 
@@ -402,36 +500,50 @@ def get_python_node_route(context: TransformContext) -> TransformContext:
 
 
 @transform(PythonConnection, PythonNodeRoute)
-def python_connection_to_node_route() -> List[Callable]:
+def python_connection_to_node_route() -> list[Callable]:
     return [get_python_node_route]
 
 
 @transform_method(PythonNodeRoute, PythonConnection)
 def node_route_to_python_connection(
-    obj: Any, context: Optional[TransformContext] = None
-) -> List[Callable]:
+    obj: Any, context: TransformContext | None = None
+) -> list[Callable]:
     return PythonConnection(node=obj.node, proxy_target_uid=obj.proxy_target_uid)
 
 
 @transform_method(HTTPNodeRoute, HTTPConnection)
 def node_route_to_http_connection(
-    obj: Any, context: Optional[TransformContext] = None
-) -> List[Callable]:
+    obj: Any, context: TransformContext | None = None
+) -> list[Callable]:
     url = GridURL(
         protocol=obj.protocol, host_or_ip=obj.host_or_ip, port=obj.port
     ).as_container_host()
     return HTTPConnection(url=url, proxy_target_uid=obj.proxy_target_uid)
 
 
+@transform_method(VeilidNodeRoute, VeilidConnection)
+def node_route_to_veilid_connection(
+    obj: VeilidNodeRoute, context: TransformContext | None = None
+) -> list[Callable]:
+    return VeilidConnection(vld_key=obj.vld_key, proxy_target_uid=obj.proxy_target_uid)
+
+
+@transform_method(VeilidConnection, VeilidNodeRoute)
+def veilid_connection_to_node_route(
+    obj: VeilidConnection, context: TransformContext | None = None
+) -> list[Callable]:
+    return VeilidNodeRoute(vld_key=obj.vld_key, proxy_target_uid=obj.proxy_target_uid)
+
+
 @transform(NodeMetadataV3, NodePeer)
-def metadata_to_peer() -> List[Callable]:
+def metadata_to_peer() -> list[Callable]:
     return [
         keep(["id", "name", "verify_key", "node_type", "admin_email"]),
     ]
 
 
 @transform(NodeSettingsV2, NodePeer)
-def settings_to_peer() -> List[Callable]:
+def settings_to_peer() -> list[Callable]:
     return [
         keep(["id", "name", "verify_key", "node_type", "admin_email"]),
     ]

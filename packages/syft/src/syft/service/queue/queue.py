@@ -2,9 +2,6 @@
 import threading
 import time
 from typing import Any
-from typing import Optional
-from typing import Type
-from typing import Union
 from typing import cast
 
 # third party
@@ -85,16 +82,16 @@ class QueueManager(BaseQueueManager):
         self.client_config = self.config.client_config
         self._client = self.config.client_type(self.client_config)
 
-    def close(self) -> Union[SyftError, SyftSuccess]:
+    def close(self) -> SyftError | SyftSuccess:
         return self._client.close()
 
     def create_consumer(
         self,
-        message_handler: Type[AbstractMessageHandler],
+        message_handler: type[AbstractMessageHandler],
         service_name: str,
-        worker_stash: Optional[WorkerStash] = None,
-        address: Optional[str] = None,
-        syft_worker_id: Optional[UID] = None,
+        worker_stash: WorkerStash | None = None,
+        address: str | None = None,
+        syft_worker_id: UID | None = None,
     ) -> QueueConsumer:
         consumer = self._client.add_consumer(
             message_handler=message_handler,
@@ -109,7 +106,7 @@ class QueueManager(BaseQueueManager):
     def create_producer(
         self,
         queue_name: str,
-        queue_stash: Type[BaseStash],
+        queue_stash: type[BaseStash],
         context: AuthedServiceContext,
         worker_stash: WorkerStash,
     ) -> QueueProducer:
@@ -124,7 +121,7 @@ class QueueManager(BaseQueueManager):
         self,
         message: bytes,
         queue_name: str,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         return self._client.send_message(
             message=message,
             queue_name=queue_name,

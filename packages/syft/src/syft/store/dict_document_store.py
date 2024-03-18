@@ -3,12 +3,11 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Optional
-from typing import Type
 
 # relative
 from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
+from ..types import uid
 from .document_store import DocumentStore
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
@@ -65,12 +64,17 @@ class DictDocumentStore(DocumentStore):
 
     def __init__(
         self,
-        root_verify_key: Optional[SyftVerifyKey],
-        store_config: Optional[DictStoreConfig] = None,
+        node_uid: uid,
+        root_verify_key: SyftVerifyKey | None,
+        store_config: DictStoreConfig | None = None,
     ) -> None:
         if store_config is None:
             store_config = DictStoreConfig()
-        super().__init__(root_verify_key=root_verify_key, store_config=store_config)
+        super().__init__(
+            node_uid=node_uid,
+            root_verify_key=root_verify_key,
+            store_config=store_config,
+        )
 
     def reset(self) -> None:
         for _, partition in self.partitions.items():
@@ -95,6 +99,6 @@ class DictStoreConfig(StoreConfig):
             Defaults to ThreadingLockingConfig.
     """
 
-    store_type: Type[DocumentStore] = DictDocumentStore
-    backing_store: Type[KeyValueBackingStore] = DictBackingStore
+    store_type: type[DocumentStore] = DictDocumentStore
+    backing_store: type[KeyValueBackingStore] = DictBackingStore
     locking_config: LockingConfig = ThreadingLockingConfig()

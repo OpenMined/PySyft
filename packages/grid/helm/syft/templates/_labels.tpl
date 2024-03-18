@@ -20,6 +20,12 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ include "common.chartname" . }}
 {{- end -}}
 
+{{- define "common.volumeLabels" -}}
+app.kubernetes.io/name: {{ .Chart.Name }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end -}}
+
 {{/*
 Common labels for all resources
 Usage:

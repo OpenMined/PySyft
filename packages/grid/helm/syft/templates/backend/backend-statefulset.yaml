@@ -121,6 +121,11 @@ spec:
             - name: OBLV_ENABLED
               value: {{ .Values.node.oblv.enabled | quote }}
             {{- end }}
+            # Veilid
+            {{- if .Values.veilid.enabled }}
+            - name: VEILID_ENABLED
+              value: {{ .Values.veilid.enabled | quote }}
+            {{- end }}
             {{- if .Values.node.env }}
             {{- toYaml .Values.node.env | nindent 12 }}
             {{- end }}
@@ -152,7 +157,7 @@ spec:
   - metadata:
       name: credentials-data
       labels:
-        {{- include "common.labels" . | nindent 8 }}
+        {{- include "common.volumeLabels" . | nindent 8 }}
         app.kubernetes.io/component: backend
     spec:
       accessModes:

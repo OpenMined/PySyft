@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Optional
 
 # third party
 from result import Err
@@ -51,7 +50,7 @@ class OblvKeysStash(BaseStash):
 
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Optional[OblvKeys], str]:
+    ) -> Result[OblvKeys | None, str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return Ok(self.query_one(credentials=credentials, qks=qks))
 

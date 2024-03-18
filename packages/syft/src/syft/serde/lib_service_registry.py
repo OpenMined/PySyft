@@ -1,16 +1,12 @@
 # stdlib
+from collections.abc import Callable
+from collections.abc import Sequence
 import importlib
 import inspect
 from inspect import Signature
 from inspect import _signature_fromstr
 from types import BuiltinFunctionType
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Sequence
-from typing import Union
 
 # third party
 import numpy
@@ -51,19 +47,19 @@ class CMPBase:
     def __init__(
         self,
         path: str,
-        children: Optional[Union[List, Dict]] = None,
-        permissions: Optional[CMPPermission] = None,
-        obj: Optional[Any] = None,
-        absolute_path: Optional[str] = None,
-        text_signature: Optional[str] = None,
+        children: list | dict | None = None,
+        permissions: CMPPermission | None = None,
+        obj: Any | None = None,
+        absolute_path: str | None = None,
+        text_signature: str | None = None,
     ):
-        self.permissions: Optional[CMPPermission] = permissions
+        self.permissions: CMPPermission | None = permissions
         self.path: str = path
-        self.obj: Optional[Any] = obj if obj is not None else None
+        self.obj: Any | None = obj if obj is not None else None
         self.absolute_path = absolute_path
-        self.signature: Optional[Signature] = None
+        self.signature: Signature | None = None
 
-        self.children: Dict[str, CMPBase] = {}
+        self.children: dict[str, CMPBase] = {}
         if isinstance(children, list):
             self.children = {f"{c.path}": c for c in children}
         elif isinstance(children, dict):
@@ -119,11 +115,11 @@ class CMPBase:
 
     def init_child(
         self,
-        parent_obj: Union[type, object],
+        parent_obj: type | object,
         child_path: str,
-        child_obj: Union[type, object],
+        child_obj: type | object,
         absolute_path: str,
-    ) -> Optional[Self]:
+    ) -> Self | None:
         """Get the child of parent as a CMPBase object
 
         Args:
@@ -182,7 +178,7 @@ class CMPBase:
         return False
 
     @staticmethod
-    def parent_is_parent_module(parent_obj: Any, child_obj: Any) -> Optional[str]:
+    def parent_is_parent_module(parent_obj: Any, child_obj: Any) -> str | None:
         try:
             if hasattr(child_obj, "__module__"):
                 return child_obj.__module__ == parent_obj.__name__
@@ -193,7 +189,7 @@ class CMPBase:
             pass
         return None
 
-    def flatten(self) -> List[Self]:
+    def flatten(self) -> list[Self]:
         res = [self]
         for c in self.children.values():
             res += c.flatten()
@@ -309,7 +305,7 @@ class CMPProperty(CMPBase):
 class CMPTree:
     """root node of the Tree(s), with one child per library"""
 
-    def __init__(self, children: List[CMPModule]):
+    def __init__(self, children: list[CMPModule]):
         self.children = {c.path: c for c in children}
 
     def build(self) -> Self:

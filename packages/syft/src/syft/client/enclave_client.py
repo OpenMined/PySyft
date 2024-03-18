@@ -3,9 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Union
 
 # third party
 from hagrid.orchestra import NodeHandle
@@ -19,7 +17,7 @@ from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.network.routes import NodeRouteType
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.fonts import fonts_css
@@ -27,6 +25,7 @@ from .api import APIModule
 from .client import SyftClient
 from .client import login
 from .client import login_as_guest
+from .protocol import SyftProtocol
 
 if TYPE_CHECKING:
     # relative
@@ -36,7 +35,7 @@ if TYPE_CHECKING:
 @serializable()
 class EnclaveMetadata(SyftObject):
     __canonical_name__ = "EnclaveMetadata"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     route: NodeRouteType
 
@@ -48,7 +47,7 @@ class EnclaveClient(SyftClient):
     __api_patched = False
 
     @property
-    def code(self) -> Optional[APIModule]:
+    def code(self) -> APIModule | None:
         if self.api.has_service("code"):
             res = self.api.services.code
             # the order is important here
@@ -61,20 +60,24 @@ class EnclaveClient(SyftClient):
         return None
 
     @property
-    def requests(self) -> Optional[APIModule]:
+    def requests(self) -> APIModule | None:
         if self.api.has_service("request"):
             return self.api.services.request
         return None
 
     def connect_to_gateway(
         self,
-        via_client: Optional[SyftClient] = None,
-        url: Optional[str] = None,
-        port: Optional[int] = None,
-        handle: Optional[NodeHandle] = None,  # noqa: F821
-        email: Optional[str] = None,
-        password: Optional[str] = None,
-    ) -> Optional[Union[SyftSuccess, SyftError]]:
+        via_client: SyftClient | None = None,
+        url: str | None = None,
+        port: int | None = None,
+        handle: NodeHandle | None = None,  # noqa: F821
+        email: str | None = None,
+        password: str | None = None,
+        protocol: str | SyftProtocol = SyftProtocol.HTTP,
+    ) -> SyftSuccess | SyftError | None:
+        if isinstance(protocol, str):
+            protocol = SyftProtocol(protocol)
+
         if via_client is not None:
             client = via_client
         elif handle is not None:
@@ -89,7 +92,7 @@ class EnclaveClient(SyftClient):
                 return client
 
         self.metadata: NodeMetadataJSON = self.metadata
-        res = self.exchange_route(client)
+        res = self.exchange_route(client, protocol=protocol)
 
         if isinstance(res, SyftSuccess):
             return SyftSuccess(
@@ -101,7 +104,7 @@ class EnclaveClient(SyftClient):
     def get_enclave_metadata(self) -> EnclaveMetadata:
         return EnclaveMetadata(route=self.connection.route)
 
-    def request_code_execution(self, code: SubmitUserCode) -> Union[Any, SyftError]:
+    def request_code_execution(self, code: SubmitUserCode) -> Any | SyftError:
         # relative
         from ..service.code.user_code_service import SubmitUserCode
 
