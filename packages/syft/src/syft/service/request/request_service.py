@@ -28,7 +28,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user import UserView
-from ..user.user_roles import GUEST_ROLE_LEVEL
+from ..user.user_roles import GUEST_ROLE_LEVEL, DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_service import UserService
 from .request import Change
 from .request import Request
@@ -105,7 +105,7 @@ class RequestService(AbstractService):
             print("Failed to submit Request", e)
             raise e
 
-    @service_method(path="request.get_all", name="get_all")
+    @service_method(path="request.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def get_all(self, context: AuthedServiceContext) -> list[Request] | SyftError:
         result = self.stash.get_all(context.credentials)
         if result.is_err():
