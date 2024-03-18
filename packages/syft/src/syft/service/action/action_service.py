@@ -320,6 +320,7 @@ class ActionService(AbstractService):
 
             # validate input policy
             is_approved = input_policy._is_valid(
+                context=context,
                 usr_input_kwargs=kwargs,
                 user_code_id=code_item.id,
             )
