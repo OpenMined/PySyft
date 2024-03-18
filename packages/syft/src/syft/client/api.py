@@ -36,6 +36,7 @@ from ..serde.serialize import _serialize
 from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
+from ..service.code.user_code import CachedExecutionResult
 from ..service.context import AuthedServiceContext
 from ..service.context import ChangeContext
 from ..service.response import SyftAttributeError
@@ -55,6 +56,7 @@ from ..types.uid import LineageID
 from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
 from ..util.telemetry import instrument
+from ..util.util import prompt_warning_message
 from .connection import NodeConnection
 
 if TYPE_CHECKING:
@@ -739,6 +741,12 @@ class SyftAPI(SyftObject):
 
         result = debox_signed_syftapicall_response(signed_result=signed_result)
 
+        if isinstance(result, CachedExecutionResult):
+            result = result.result
+            if result.error_msg is not None:
+                prompt_warning_message(
+                    message=f"{result.error_msg}. Loading results from cache."
+                )
         if isinstance(result, OkErr):
             if result.is_ok():
                 res = result.ok()

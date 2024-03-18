@@ -40,6 +40,7 @@ from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
+from .user_code import CachedExecutionResult
 from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
@@ -369,7 +370,7 @@ class UserCodeService(AbstractService):
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
-    ) -> SyftSuccess | SyftError:
+    ) -> CachedExecutionResult | ActionObject | SyftSuccess | SyftError:
         """Call a User Code Function"""
         kwargs.pop("result_id", None)
         result = self._call(context, uid, **kwargs)
@@ -446,9 +447,14 @@ class UserCodeService(AbstractService):
                                 return result
 
                             res = delist_if_single(result.ok())
-                            return Ok(res)
+                            return Ok(
+                                CachedExecutionResult(
+                                    result=res,
+                                    error_msg=is_valid.message,
+                                )
+                            )
                         else:
-                            return is_valid.to_result()
+                            return cast(Err, is_valid.to_result())
                     return can_execute.to_result()  # type: ignore
 
             # Execute the code item
