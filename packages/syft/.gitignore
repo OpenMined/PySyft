@@ -27,3 +27,4 @@ fake_samples_local.png
 duet_mnist.pt
 12084.jpg
 .tox/*
+dist/
