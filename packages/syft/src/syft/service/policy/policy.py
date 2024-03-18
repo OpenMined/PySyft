@@ -301,7 +301,7 @@ def allowed_ids_only(
 
             if uid != allowed_inputs[key]:
                 raise Exception(
-                    f"Input {type(value)} for {key} not in allowed {allowed_inputs}"
+                    f"Input with uid: {uid} for `{key}` not in allowed inputs: {allowed_inputs}"
                 )
             filtered_kwargs[key] = value
     return filtered_kwargs
@@ -319,11 +319,11 @@ class ExactMatch(InputPolicy):
         context: AuthedServiceContext,
         code_item_id: UID,
     ) -> Result[dict[Any, Any], str]:
-        allowed_inputs = allowed_ids_only(
-            allowed_inputs=self.inputs, kwargs=kwargs, context=context
-        )
-
         try:
+            allowed_inputs = allowed_ids_only(
+                allowed_inputs=self.inputs, kwargs=kwargs, context=context
+            )
+
             results = retrieve_from_db(
                 code_item_id=code_item_id,
                 allowed_inputs=allowed_inputs,
