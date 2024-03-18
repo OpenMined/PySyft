@@ -277,7 +277,6 @@ class SyncService(AbstractService):
                 return SyftError(message=action_object.err())
             action_objects.append(action_object.ok())
 
-        print(action_objects)
         new_state.add_objects(action_objects)
 
         new_state._build_dependencies()  # type: ignore

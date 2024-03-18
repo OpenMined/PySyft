@@ -484,9 +484,9 @@ class ObjectDiffBatch(SyftObject):
             }
         if isinstance(root_obj, ExecutionOutput):
             return UserCode, {
-                UserCode: [Job, UserCode],
-                Job: [ExecutionOutput, SyftLog, Job],
-                ExecutionOutput: [ActionObject],
+                UserCode: [ExecutionOutput, UserCode],
+                Job: [ActionObject, SyftLog, Job],
+                ExecutionOutput: [Job],
             }
         raise ValueError(f"Unknown root type: {self.root.obj_type}")
 
@@ -720,7 +720,7 @@ class NodeDiff(SyftObject):
             visited.add(uid)
             if uid in self.dependencies:
                 for dep_uid in self.dependencies[uid]:
-                    if dep_uid not in visited:
+                    if dep_uid not in visited:  # type: ignore
                         new_result, visited = _build_hierarchy_helper(
                             uid=dep_uid,
                             level=level + 1,
