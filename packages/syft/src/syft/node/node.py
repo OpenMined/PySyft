@@ -1012,7 +1012,7 @@ class Node(AbstractNode):
         """
         rootdir = self.get_temp_dir()
         if rootdir.exists():
-            shutil.rmtree(rootdir)
+            shutil.rmtree(rootdir, ignore_errors=True)
 
     @property
     def settings(self) -> NodeSettingsV2:
