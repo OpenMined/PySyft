@@ -20,6 +20,7 @@ from .veilid_core import app_call
 from .veilid_core import app_message
 from .veilid_core import generate_vld_key
 from .veilid_core import healthcheck
+from .veilid_core import ping
 from .veilid_core import retrieve_vld_key
 
 # Logging Configuration
@@ -58,6 +59,16 @@ async def generate_vld_key_endpoint() -> ResponseModel:
 async def retrieve_vld_key_endpoint() -> ResponseModel:
     try:
         res = await retrieve_vld_key()
+        return ResponseModel(message=res)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/ping/{vld_key}", response_model=ResponseModel)
+async def ping_endpoint(request: Request, vld_key: str) -> ResponseModel:
+    try:
+        logger.info(f"Received ping request:{vld_key}")
+        res = await ping(vld_key)
         return ResponseModel(message=res)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
