@@ -178,7 +178,6 @@ class DomainClient(SyftClient):
                 obj = obj.refresh_object(resolve_nested=False)
                 obj.reload_cache()
                 state.objects[uid] = obj
-                print("REFRESHING", uid)
         return state
 
     def apply_state(self, resolved_state: ResolvedSyncState) -> SyftSuccess | SyftError:

@@ -484,9 +484,9 @@ class ObjectDiffBatch(SyftObject):
             }
         if isinstance(root_obj, ExecutionOutput):
             return UserCode, {
-                UserCode: [Job, UserCode],
-                Job: [ExecutionOutput, ActionObject, SyftLog],
-                # ExecutionOutput: [Job],
+                UserCode: [ExecutionOutput, UserCode],
+                Job: [ActionObject, SyftLog, Job],
+                ExecutionOutput: [Job],
             }
         raise ValueError(f"Unknown root type: {self.root.obj_type}")
 

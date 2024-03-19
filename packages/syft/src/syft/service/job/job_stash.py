@@ -76,7 +76,14 @@ class Job(SyncableSyftObject):
     user_code_id: UID | None = None
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
-    __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
+    __repr_attrs__ = [
+        "id",
+        "result",
+        "resolved",
+        "progress",
+        "creation_time",
+        "user_code_name",
+    ]
     __exclude_sync_diff_attrs__ = ["action"]
 
     @field_validator("creation_time")
@@ -106,6 +113,19 @@ class Job(SyncableSyftObject):
             self.action.syft_node_location = self.syft_node_location
             self.action.syft_client_verify_key = self.syft_client_verify_key
             return self.action.job_display_name
+
+    @property
+    def user_code_name(self) -> str | None:
+        if self.user_code_id is not None:
+            api = APIRegistry.api_for(
+                node_uid=self.syft_node_location,
+                user_verify_key=self.syft_client_verify_key,
+            )
+            if api is None:
+                return None
+            user_code = api.services.code.get_by_id(self.user_code_id)
+            return user_code.service_func_name
+        return None
 
     @property
     def time_remaining_string(self) -> str | None:
