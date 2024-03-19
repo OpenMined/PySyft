@@ -228,7 +228,7 @@
       "VeilidConnection": {
         "1": {
           "version": 1,
-          "hash": "29f803cec69b9ca6118e7c004867e82de6297f138b267ebd3df9ed35d5c944e4",
+          "hash": "c5ed1cfa9b7b146dbce7f1057f6e81e89715b5addfd4d4c4d53c415e450373a5",
           "action": "add"
         }
       },
@@ -410,7 +410,7 @@
       "VeilidNodeRoute": {
         "1": {
           "version": 1,
-          "hash": "0ecd536def6b99475f4478acefb0226886336934206529647ee3e4667e211514",
+          "hash": "4797413e3144fce7bccc290db64f1750e8c09f75d5e1aba6e19d29f921a21074",
           "action": "add"
         }
       },

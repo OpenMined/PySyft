@@ -331,7 +331,7 @@ class HTTPConnection(NodeConnection):
 
 
 @serializable(
-    attrs=["proxy_target_uid", "dht_key", "vld_forward_proxy", "vld_reverse_proxy"]
+    attrs=["proxy_target_uid", "vld_key", "vld_forward_proxy", "vld_reverse_proxy"]
 )
 class VeilidConnection(NodeConnection):
     __canonical_name__ = "VeilidConnection"
@@ -339,7 +339,7 @@ class VeilidConnection(NodeConnection):
 
     vld_forward_proxy: GridURL = Field(default=GridURL.from_url(VEILID_SERVICE_URL))
     vld_reverse_proxy: GridURL = Field(default=GridURL.from_url(VEILID_SYFT_PROXY_URL))
-    dht_key: str
+    vld_key: str
     proxy_target_uid: UID | None = None
     routes: type[Routes] = Field(default=Routes)
     session_cache: Session | None = None
@@ -363,7 +363,7 @@ class VeilidConnection(NodeConnection):
         raise NotImplementedError("VeilidConnection does not support with_proxy")
 
     def get_cache_key(self) -> str:
-        return str(self.dht_key)
+        return str(self.vld_key)
 
     # def to_blob_route(self, path: str, **kwargs) -> GridURL:
     #     _path = self.routes.ROUTE_BLOB_STORE.value + path
@@ -387,7 +387,7 @@ class VeilidConnection(NodeConnection):
         json_data = {
             "url": str(rev_proxy_url),
             "method": "GET",
-            "dht_key": self.dht_key,
+            "vld_key": self.vld_key,
             "params": params,
         }
         response = self.session.get(str(forward_proxy_url), json=json_data)
@@ -407,12 +407,17 @@ class VeilidConnection(NodeConnection):
         rev_proxy_url = self.vld_reverse_proxy.with_path(path)
         forward_proxy_url = self.vld_forward_proxy.with_path(VEILID_PROXY_PATH)
 
+        # Since JSON expects strings, we need to encode the bytes to base64
+        # as some bytes may not be valid utf-8
+        # TODO: Can we optimize this?
+        data_base64 = base64.b64encode(data).decode() if data else None
+
         json_data = {
             "url": str(rev_proxy_url),
             "method": "POST",
-            "dht_key": self.dht_key,
+            "vld_key": self.vld_key,
             "json": json,
-            "data": data,
+            "data": data_base64,
         }
 
         response = self.session.post(str(forward_proxy_url), json=json_data)
@@ -483,7 +488,7 @@ class VeilidConnection(NodeConnection):
         json_data = {
             "url": str(rev_proxy_url),
             "method": "POST",
-            "dht_key": self.dht_key,
+            "vld_key": self.vld_key,
             "data": msg_base64,
         }
         response = requests.post(  # nosec
@@ -504,7 +509,7 @@ class VeilidConnection(NodeConnection):
 
     def __str__(self) -> str:
         res = f"{type(self).__name__}:"
-        res += f"\n DHT Key: {self.dht_key}"
+        res += f"\n DHT Key: {self.vld_key}"
         res += f"\n Forward Proxy: {self.vld_forward_proxy}"
         res += f"\n Reverse Proxy: {self.vld_reverse_proxy}"
         return res
@@ -512,7 +517,7 @@ class VeilidConnection(NodeConnection):
     def __hash__(self) -> int:
         return (
             hash(self.proxy_target_uid)
-            + hash(self.dht_key)
+            + hash(self.vld_key)
             + hash(self.vld_forward_proxy)
             + hash(self.vld_reverse_proxy)
         )
@@ -1157,15 +1162,15 @@ def connect(
     port: int | None = None,
     vld_forward_proxy: str | GridURL | None = None,
     vld_reverse_proxy: str | GridURL | None = None,
-    dht_key: str | None = None,
+    vld_key: str | None = None,
 ) -> SyftClient:
     if node:
         connection = PythonConnection(node=node)
-    elif dht_key and vld_forward_proxy and vld_reverse_proxy:
+    elif vld_key and vld_forward_proxy and vld_reverse_proxy:
         connection = VeilidConnection(
             vld_forward_proxy=vld_forward_proxy,
             vld_reverse_proxy=vld_reverse_proxy,
-            dht_key=dht_key,
+            vld_key=vld_key,
         )
     else:
         url = GridURL.from_url(url)
@@ -1211,7 +1216,7 @@ def login_as_guest(
     # Veilid Connection
     vld_forward_proxy: str | GridURL | None = None,
     vld_reverse_proxy: str | GridURL | None = None,
-    dht_key: str | None = None,
+    vld_key: str | None = None,
     verbose: bool = True,
 ) -> SyftClient:
     _client = connect(
@@ -1220,7 +1225,7 @@ def login_as_guest(
         port=port,
         vld_forward_proxy=vld_forward_proxy,
         vld_reverse_proxy=vld_reverse_proxy,
-        dht_key=dht_key,
+        vld_key=vld_key,
     )
 
     if isinstance(_client, SyftError):
@@ -1246,7 +1251,7 @@ def login(
     # Veilid Connection
     vld_forward_proxy: str | GridURL | None = None,
     vld_reverse_proxy: str | GridURL | None = None,
-    dht_key: str | None = None,
+    vld_key: str | None = None,
     password: str | None = None,
     cache: bool = True,
 ) -> SyftClient:
@@ -1256,7 +1261,7 @@ def login(
         port=port,
         vld_forward_proxy=vld_forward_proxy,
         vld_reverse_proxy=vld_reverse_proxy,
-        dht_key=dht_key,
+        vld_key=vld_key,
     )
 
     if isinstance(_client, SyftError):

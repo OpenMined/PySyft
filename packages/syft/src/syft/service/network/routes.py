@@ -97,7 +97,7 @@ class VeilidNodeRoute(SyftObject, NodeRoute):
     __canonical_name__ = "VeilidNodeRoute"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    dht_key: str
+    vld_key: str
     proxy_target_uid: UID | None = None
     priority: int = 1
 
