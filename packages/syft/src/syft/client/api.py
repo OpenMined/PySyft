@@ -586,14 +586,15 @@ def result_needs_api_update(api_call_result: Any) -> bool:
     # relative
     from ..service.request.request import Request
     from ..service.request.request import UserCodeStatusChange
-    from ..service.request.request import CreateCustomImageChange
-    # if isinstance(api_call_result, Request) and any(
-    #     isinstance(x, UserCodeStatusChange) or isinstance(x, CreateCustomImageChange)
-    #     for x in api_call_result.changes
-    # ):
-    #     return True
-    # return False
-    return True
+
+    if isinstance(api_call_result, Request) and any(
+        isinstance(x, UserCodeStatusChange) for x in api_call_result.changes
+    ):
+        return True
+    if isinstance(api_call_result, SyftSuccess):
+        return True
+    return False
+
 
 @instrument
 @serializable(
@@ -753,13 +754,8 @@ class SyftAPI(SyftObject):
         result = debox_signed_syftapicall_response(signed_result=signed_result)
 
         if isinstance(result, OkErr):
-            if result.is_ok():
-                res = result.ok()
-                # we update the api when we create objects that change it
-                self.update_api(res)
-                return res
-            else:
-                return result.err()
+            result = result.unwrap()
+        # we update the api when we create objects that change it
         self.update_api(result)
         return result
 
