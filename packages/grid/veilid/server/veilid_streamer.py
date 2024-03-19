@@ -16,6 +16,7 @@ import veilid
 
 # relative
 from .constants import MAX_MESSAGE_SIZE
+from .constants import MAX_STREAMER_CONCURRENCY
 from .utils import retry
 
 logger = logging.getLogger(__name__)
@@ -60,10 +61,16 @@ class Buffer:
         self.chunks: list[bytes | None]
         self.message: asyncio.Future[bytes] = asyncio.Future()
         self.holds_reply: bool = holds_reply
+        # TODO add mechanism to delete/timeout old buffers
+        # self.last_updated: float = asyncio.get_event_loop().time()
 
     def set_metadata(self, message_hash: bytes, chunks_count: int) -> None:
         self.message_hash = message_hash
         self.chunks = [None] * chunks_count
+
+    def receive_chunk(self, chunk_number: int, chunk: bytes) -> None:
+        self.chunks[chunk_number] = chunk
+        # self.last_updated = asyncio.get_event_loop().time()
 
 
 class VeilidStreamer:
@@ -143,6 +150,37 @@ class VeilidStreamer:
            ```
            response = await vs.stream(router, dht_key, message)
            ```
+
+    Special case:
+        If the message is small enough to fit in a single chunk, we can send it as a
+        single STREAM_SINGLE request. This avoids the additional overhead while still
+        allowing large replies containing multiple chunks.
+
+        stream_single_struct = Struct("!8s16s")  # 24 bytes
+            [RequestType.STREAM_SINGLE (8 bytes string)] +
+            [Call ID (16 bytes random UUID string)] +
+
+        Therefore, the maximum size of the message that can be sent in a STREAM_SINGLE
+        request is 32768 - 24 = 32744 bytes.
+            [stream_single_struct (24 bytes)] +
+            [Actual Message (32744 bytes)]
+            = 32768 bytes
+
+        Data flow for single chunk message:
+            Sender side:
+                1. Send STREAM_SINGLE request -> Get OK
+                2. Await reply from the receiver
+                3. Return the reply once received
+            Receiver side:
+                1. Get STREAM_SINGLE request -> Send OK
+                2. Pass the message to the callback function and get the reply
+                3. Stream the reply back to the sender
+
+        Usage:
+            This is automatically handled by the VeilidStreamer class. You don't need to
+            do anything special for this. Just use the `stream` method as usual. If the
+            message is small enough to fit in a single chunk, it will be sent as a
+            STREAM_SINGLE request automatically.
     """
 
     _instance = None
@@ -156,10 +194,8 @@ class VeilidStreamer:
 
     def __init__(self) -> None:
         self.chunk_size = MAX_MESSAGE_SIZE
-
-        MAX_CONCURRENT_REQUESTS = 200
-        self._send_request_semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
-        self._send_response_semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
+        self._send_request_semaphore = asyncio.Semaphore(MAX_STREAMER_CONCURRENCY)
+        self._send_response_semaphore = asyncio.Semaphore(MAX_STREAMER_CONCURRENCY)
 
         # Structs for serializing and deserializing metadata as bytes of fixed length
         # https://docs.python.org/3/library/struct.html#format-characters
@@ -350,8 +386,8 @@ class VeilidStreamer:
         await self._send_ok_response(connection, update.detail.call_id)
         buffer = self.buffers.get(call_id)
         if buffer and buffer.holds_reply:
-            # This message is being received by the sender and the stream() method is
-            # waiting for the reply. So we need to set the result in the buffer.
+            # This message is being received by the sender and the stream() method must
+            # be waiting for the reply. So we need to set the result in the buffer.
             buffer.message.set_result(message)
         else:
             # This message is being received by the receiver and we need to send back
@@ -393,7 +429,7 @@ class VeilidStreamer:
         chunk_header, chunk = message[:chunk_header_len], message[chunk_header_len:]
         _, call_id, chunk_number = self.stream_chunk_header_struct.unpack(chunk_header)
         buffer = self.buffers[call_id]
-        buffer.chunks[chunk_number] = chunk
+        buffer.receive_chunk(chunk_number, chunk)
         stream_type = "reply" if buffer.holds_reply else "request"
         logger.debug(
             f"Received {stream_type} chunk {chunk_number + 1}/{len(buffer.chunks)}"
