@@ -754,7 +754,10 @@ class SyftAPI(SyftObject):
         result = debox_signed_syftapicall_response(signed_result=signed_result)
 
         if isinstance(result, OkErr):
-            result = result.unwrap()
+            if result.is_ok():
+                result = result.ok()
+            else:
+                result = result.err()
         # we update the api when we create objects that change it
         self.update_api(result)
         return result
