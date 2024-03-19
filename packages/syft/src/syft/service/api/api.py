@@ -129,27 +129,9 @@ class PublicAPIEndpoint(Endpoint):
     view_access: bool = True
 
 
-@serializable()
-class UpdateTwinAPIEndpoint(PartialSyftObject):
-    # version
-    __canonical_name__ = "UpdateTwinAPIEndpoint"
+class BaseTwinAPIEndpoint(SyftObject):
+    __canonical_name__ = "BaseTwinAPIEndpoint"
     __version__ = SYFT_OBJECT_VERSION_1
-
-    path: str
-    private_code: PrivateAPIEndpoint
-    public_code: PublicAPIEndpoint
-
-
-@serializable()
-class CreateTwinAPIEndpoint(SyftObject):
-    # version
-    __canonical_name__ = "CreateTwinAPIEndpoint"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    path: str
-    private_code: PrivateAPIEndpoint
-    public_code: PublicAPIEndpoint | None = None
-    signature: Signature
 
     @model_validator(mode="before")
     @classmethod
@@ -163,26 +145,49 @@ class CreateTwinAPIEndpoint(SyftObject):
 
         return data
 
-    @field_validator("path")
+    @field_validator("path", check_fields=False)
     @classmethod
     def validate_path(cls, path: str) -> str:
         if not re.match(r"^[a-z]+(\.[a-z]+)*$", path):
             raise ValueError('String must be a path-like string (e.g., "new.endpoint")')
         return path
 
-    @field_validator("private_code")
+    @field_validator("private_code", check_fields=False)
     @classmethod
     def validate_private_code(
         cls, private_code: PrivateAPIEndpoint
     ) -> PrivateAPIEndpoint:
         return private_code
 
-    @field_validator("public_code")
+    @field_validator("public_code", check_fields=False)
     @classmethod
     def validate_public_code(
         cls, public_code: PublicAPIEndpoint | None
     ) -> PublicAPIEndpoint | None:
         return public_code
+
+
+@serializable()
+class UpdateTwinAPIEndpoint(PartialSyftObject, BaseTwinAPIEndpoint):
+    # version
+    __canonical_name__ = "UpdateTwinAPIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    path: str
+    private_code: PrivateAPIEndpoint
+    public_code: PublicAPIEndpoint
+
+
+@serializable()
+class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
+    # version
+    __canonical_name__ = "CreateTwinAPIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    path: str
+    private_code: PrivateAPIEndpoint
+    public_code: PublicAPIEndpoint | None = None
+    signature: Signature
 
 
 @serializable()
