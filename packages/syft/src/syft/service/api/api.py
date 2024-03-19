@@ -113,8 +113,8 @@ class PrivateAPIEndpoint(Endpoint):
 
     api_code: str
     func_name: str
-    secrets: dict[str, Any] | None = None
-    view_access: bool = False
+    settings: dict[str, Any] | None = None
+    view_access: bool = True
 
 
 @serializable()
