@@ -156,7 +156,7 @@ def test_dataset_search(domain_1_port, gateway_port):
         assert len(wrong_search) == 0
 
         # the domain client delete the dataset
-        domain_client.api.services.dataset.delete_dataset(uid=dataset.id)
+        domain_client.api.services.dataset.delete_by_uid(uid=dataset.id)
 
 
 def test_domain_gateway_user_code(domain_1_port, gateway_port):

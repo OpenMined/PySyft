@@ -205,8 +205,9 @@ class DatasetService(AbstractService):
         return []
 
     @service_method(
-        path="dataset.delete_by_id",
-        name="dataset_delete_by_id",
+        path="dataset.delete_by_uid",
+        name="delete_by_uid",
+        roles=DATA_OWNER_ROLE_LEVEL,
         warning=HighSideCRUDWarning(confirmation=True),
     )
     def delete_dataset(
