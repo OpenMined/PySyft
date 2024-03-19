@@ -2,7 +2,6 @@
 import asyncio
 from collections.abc import Callable
 from collections.abc import Coroutine
-from enum import ReprEnum
 from enum import nonmember
 import hashlib
 import logging
@@ -17,6 +16,7 @@ import veilid
 # relative
 from .constants import MAX_MESSAGE_SIZE
 from .constants import MAX_STREAMER_CONCURRENCY
+from .utils import BytesEnum
 from .utils import retry
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ AsyncReceiveStreamCallback = Callable[[bytes], Coroutine[Any, Any, bytes]]
 CallId = bytes
 
 
-class RequestType(bytes, ReprEnum):
+class RequestType(BytesEnum):
     SIZE = nonmember(8)
 
     STREAM_START = b"@VS@SS"
@@ -50,7 +50,7 @@ class RequestType(bytes, ReprEnum):
         return self._value_ == __other
 
 
-class ResponseType(bytes, ReprEnum):
+class ResponseType(BytesEnum):
     OK = b"@VS@OK"
     ERROR = b"@VS@ER"
 
