@@ -4,23 +4,20 @@ from collections.abc import Callable
 from collections.abc import Coroutine
 from enum import nonmember
 import hashlib
-import logging
 import math
 from struct import Struct
 from typing import Any
 import uuid
 
 # third party
+from loguru import logger
 import veilid
 
 # relative
-from .constants import MAX_MESSAGE_SIZE
+from .constants import MAX_SINGLE_VEILID_MESSAGE_SIZE
 from .constants import MAX_STREAMER_CONCURRENCY
 from .utils import BytesEnum
 from .utils import retry
-
-logger = logging.getLogger(__name__)
-logger.setLevel(level=logging.INFO)
 
 # An asynchronous callable type hint that takes bytes as input and returns bytes
 AsyncReceiveStreamCallback = Callable[[bytes], Coroutine[Any, Any, bytes]]
@@ -148,7 +145,7 @@ class VeilidStreamer:
 
         4. Use the `stream` method to send an app_call with a message of any size.
            ```
-           response = await vs.stream(router, dht_key, message)
+           response = await vs.stream(router, vld_key, message)
            ```
 
     Special case:
@@ -193,10 +190,6 @@ class VeilidStreamer:
         return cls._instance
 
     def __init__(self) -> None:
-        self.chunk_size = MAX_MESSAGE_SIZE
-        self._send_request_semaphore = asyncio.Semaphore(MAX_STREAMER_CONCURRENCY)
-        self._send_response_semaphore = asyncio.Semaphore(MAX_STREAMER_CONCURRENCY)
-
         # Structs for serializing and deserializing metadata as bytes of fixed length
         # https://docs.python.org/3/library/struct.html#format-characters
         BYTE_ORDER = "!"  # big-endian is recommended for networks as per IETF RFC 1700
@@ -213,14 +206,21 @@ class VeilidStreamer:
             + MESSAGE_HASH
             + TOTAL_CHUNKS_COUNT
         )
-
         self.stream_chunk_header_struct = Struct(
             BYTE_ORDER + REQUEST_TYPE_PREFIX + CALL_ID + CURRENT_CHUNK_NUMBER
         )
-
         self.stream_end_struct = Struct(BYTE_ORDER + REQUEST_TYPE_PREFIX + CALL_ID)
-
         self.stream_single_struct = Struct(BYTE_ORDER + REQUEST_TYPE_PREFIX + CALL_ID)
+
+        self.max_single_veilid_message_size = MAX_SINGLE_VEILID_MESSAGE_SIZE
+        self.max_data_in_each_stream_chunk_request = (
+            self.max_single_veilid_message_size - self.stream_chunk_header_struct.size
+        )
+        self.max_data_in_each_stream_single_request = (
+            self.max_single_veilid_message_size - self.stream_single_struct.size
+        )
+        self._send_request_semaphore = asyncio.Semaphore(MAX_STREAMER_CONCURRENCY)
+        self._send_response_semaphore = asyncio.Semaphore(MAX_STREAMER_CONCURRENCY)
 
     @staticmethod
     def is_stream_update(update: veilid.VeilidUpdate) -> bool:
@@ -233,7 +233,7 @@ class VeilidStreamer:
     async def stream(
         self,
         router: veilid.RoutingContext,
-        dht_key: str,
+        vld_key: str,
         message: bytes,
         call_id: bytes | None = None,
     ) -> bytes:
@@ -249,7 +249,7 @@ class VeilidStreamer:
             buffer_for_holding_reply = Buffer(holds_reply=True)
             self.buffers[call_id] = buffer_for_holding_reply
 
-        if message_size <= self.chunk_size - self.stream_single_struct.size:
+        if message_size <= self.max_data_in_each_stream_single_request:
             # If the message is small enough to fit in a single chunk, we can send it
             # as a single STREAM_SINGLE request. This avoids the additional overhead
             # while still allowing large replies containing multiple chunks.
@@ -257,7 +257,7 @@ class VeilidStreamer:
                 RequestType.STREAM_SINGLE, call_id
             )
             stream_single_request = stream_single_request_header + message
-            await self._send_request(router, dht_key, stream_single_request)
+            await self._send_request(router, vld_key, stream_single_request)
         else:
             message_hash = hashlib.sha256(message).digest()
             total_chunks_count = self._calculate_chunks_count(message_size)
@@ -269,20 +269,20 @@ class VeilidStreamer:
                 message_hash,
                 total_chunks_count,
             )
-            await self._send_request(router, dht_key, stream_start_request)
+            await self._send_request(router, vld_key, stream_start_request)
 
             # Send chunks
             tasks = []
             for chunk_number in range(total_chunks_count):
                 chunk = self._get_chunk(call_id, chunk_number, message)
-                tasks.append(self._send_request(router, dht_key, chunk))
+                tasks.append(self._send_request(router, vld_key, chunk))
             await asyncio.gather(*tasks)
 
             # Send STREAM_END request
             stream_end_message = self.stream_end_struct.pack(
                 RequestType.STREAM_END, call_id
             )
-            await self._send_request(router, dht_key, stream_end_message)
+            await self._send_request(router, vld_key, stream_end_message)
 
         if is_request_stream:
             # This is a new request stream, so we need to wait for
@@ -321,11 +321,11 @@ class VeilidStreamer:
 
     @retry(veilid.VeilidAPIError, tries=4, delay=1, backoff=2)
     async def _send_request(
-        self, router: veilid.RoutingContext, dht_key: str, request_data: bytes
+        self, router: veilid.RoutingContext, vld_key: str, request_data: bytes
     ) -> None:
         """Send an app call to the Veilid server and return the response."""
         async with self._send_request_semaphore:
-            response = await router.app_call(dht_key, request_data)
+            response = await router.app_call(vld_key, request_data)
             if response != ResponseType.OK:
                 raise Exception("Unexpected response from server")
 
@@ -350,8 +350,9 @@ class VeilidStreamer:
         await self._send_response(connection, call_id, ResponseType.ERROR)
 
     def _calculate_chunks_count(self, message_size: int) -> int:
-        max_chunk_size = self.chunk_size - self.stream_chunk_header_struct.size
-        total_no_of_chunks = math.ceil(message_size / max_chunk_size)
+        total_no_of_chunks = math.ceil(
+            message_size / self.max_data_in_each_stream_chunk_request
+        )
         return total_no_of_chunks
 
     def _get_chunk(
@@ -365,9 +366,9 @@ class VeilidStreamer:
             call_id,
             chunk_number,
         )
-        max_actual_message_size = self.chunk_size - self.stream_chunk_header_struct.size
-        cursor_start = chunk_number * max_actual_message_size
-        chunk = message[cursor_start : cursor_start + max_actual_message_size]
+        cursor_start = chunk_number * self.max_data_in_each_stream_chunk_request
+        cursor_end = cursor_start + self.max_data_in_each_stream_chunk_request
+        chunk = message[cursor_start:cursor_end]
         return chunk_header + chunk
 
     async def _handle_receive_stream_single(
@@ -382,17 +383,19 @@ class VeilidStreamer:
         header_len = self.stream_single_struct.size
         header, message = message[:header_len], message[header_len:]
         _, call_id = self.stream_single_struct.unpack(header)
-        logger.debug(f"Received single chunk message of {len(message)} bytes...")
         await self._send_ok_response(connection, update.detail.call_id)
+
         buffer = self.buffers.get(call_id)
         if buffer and buffer.holds_reply:
             # This message is being received by the sender and the stream() method must
             # be waiting for the reply. So we need to set the result in the buffer.
+            logger.debug(f"Received single chunk reply of {len(message)} bytes...")
             buffer.message.set_result(message)
         else:
             # This message is being received by the receiver and we need to send back
             # the reply to the sender. So we need to call the callback function and
             # stream the reply back to the sender.
+            logger.debug(f"Received single chunk request of {len(message)} bytes...")
             reply = await callback(message)
             logger.debug(
                 f"Replying to {update.detail.sender} with {len(reply)} bytes of msg..."
