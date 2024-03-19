@@ -591,7 +591,7 @@ def result_needs_api_update(api_call_result: Any) -> bool:
         isinstance(x, UserCodeStatusChange) for x in api_call_result.changes
     ):
         return True
-    if isinstance(api_call_result, SyftSuccess):
+    if isinstance(api_call_result, SyftSuccess) and api_call_result.require_api_update:
         return True
     return False
 
