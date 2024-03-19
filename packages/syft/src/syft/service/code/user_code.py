@@ -247,7 +247,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
                 message="Cannot Modify Status as the Domain's data is not included in the request"
             )
 
-    def get_sync_dependencies(self, api: Any = None) -> list[UID]:
+    def get_sync_dependencies(self) -> list[UID]:
         return [self.user_code_link.object_uid]
 
 
@@ -606,11 +606,13 @@ class UserCode(SyncableSyftObject):
                 all_assets += assets
         return all_assets
 
-    def get_sync_dependencies(self, api: Any = None) -> list[UID] | SyftError:
+    def get_sync_dependencies(self) -> list[UID] | SyftError:
         dependencies = []
 
         if self.nested_codes is not None:
-            nested_code_ids = [link.object_uid for link in self.nested_codes.values()]
+            nested_code_ids = [
+                link.object_uid for link, _ in self.nested_codes.values()
+            ]
             dependencies.extend(nested_code_ids)
 
         return dependencies
@@ -958,9 +960,9 @@ def syft_function(
         )
 
         if share_results_with_owners and res.output_policy_init_kwargs is not None:
-            res.output_policy_init_kwargs["output_readers"] = (
-                res.input_owner_verify_keys
-            )
+            res.output_policy_init_kwargs[
+                "output_readers"
+            ] = res.input_owner_verify_keys
 
         success_message = SyftSuccess(
             message=f"Syft function '{f.__name__}' successfully created. "

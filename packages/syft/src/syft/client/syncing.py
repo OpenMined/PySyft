@@ -98,11 +98,12 @@ def get_sync_decisions_for_batch_items(
         for diff in batch_diff.diffs
         if isinstance(diff.high_obj, UserCode)
     ]
-    if len(user_codes_high) > 1:
-        raise ValueError("too many user codes")
+
     if len(user_codes_high) == 0:
         user_code_high = None
     else:
+        # NOTE we can always assume the first usercode is
+        # not a nested code, because diffs are sorted in depth-first order
         user_code_high = user_codes_high[0]
 
     if user_code_high is None and len(unpublished_private_high_diffs):
@@ -188,7 +189,8 @@ QUESTION_SHARE_PRIVATE_OBJS = """You currently have the following private object
 {objects_str}
 
 Do you want to share some of these private objects? If so type the first 3 characters of the id e.g. 'abc'.
-If you dont want to share any more private objects, type "no"
+If you want to share all private objects, type "all".
+If you dont want to share any more private objects, type "no".
 """
 
 CONFIRMATION_SHARE_PRIVATE_OBJ = """Setting permissions for {object_type} #{object_id} to share with {user_verify_key},
@@ -223,6 +225,10 @@ def ask_user_input_permission(
         res = input()
         if res == "no":
             break
+
+        if res == "all":
+            private_high_diffs_to_share.extend(remaining_private_high_diffs)
+            remaining_private_high_diffs = []
         elif len(res) >= 3:
             matches = [
                 diff

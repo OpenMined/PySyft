@@ -17,7 +17,6 @@ from ...client.api import APIRegistry
 from ...client.api import SyftAPICall
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...service.queue.queue_stash import QueueItem
 from ...service.worker.worker_pool import SyftWorker
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
@@ -77,7 +76,14 @@ class Job(SyncableSyftObject):
     user_code_id: UID | None = None
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
-    __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
+    __repr_attrs__ = [
+        "id",
+        "result",
+        "resolved",
+        "progress",
+        "creation_time",
+        "user_code_name",
+    ]
     __exclude_sync_diff_attrs__ = ["action"]
 
     @field_validator("creation_time")
@@ -107,6 +113,19 @@ class Job(SyncableSyftObject):
             self.action.syft_node_location = self.syft_node_location
             self.action.syft_client_verify_key = self.syft_client_verify_key
             return self.action.job_display_name
+
+    @property
+    def user_code_name(self) -> str | None:
+        if self.user_code_id is not None:
+            api = APIRegistry.api_for(
+                node_uid=self.syft_node_location,
+                user_verify_key=self.syft_client_verify_key,
+            )
+            if api is None:
+                return None
+            user_code = api.services.code.get_by_id(self.user_code_id)
+            return user_code.service_func_name
+        return None
 
     @property
     def time_remaining_string(self) -> str | None:
@@ -294,7 +313,7 @@ class Job(SyncableSyftObject):
         self.current_iter = job.current_iter
 
     @property
-    def subjobs(self) -> list[QueueItem] | SyftError:
+    def subjobs(self) -> list["Job"] | SyftError:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -471,13 +490,17 @@ class Job(SyncableSyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
-    def get_sync_dependencies(self, **kwargs: dict) -> list[UID]:  # type: ignore
+    def get_sync_dependencies(self, **kwargs: dict) -> list[UID] | SyftError:  # type: ignore
         dependencies = []
         if self.result is not None:
             dependencies.append(self.result.id.id)
 
         if self.log_id:
             dependencies.append(self.log_id)
+
+        subjobs = self.subjobs
+        if isinstance(subjobs, SyftError):
+            return subjobs
 
         subjob_ids = [subjob.id for subjob in self.subjobs]
         dependencies.extend(subjob_ids)

@@ -348,7 +348,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         if self.status == "NEW":
             return self.low_obj if self.low_obj is not None else self.high_obj
         else:
-            raise ValueError("ERROR")
+            raise ValueError("Cannot get object from a diff that is not new")
 
     def _coll_repr_(self) -> dict[str, Any]:
         low_state = f"{self.status}\n{self.diff_side_str('low')}"
@@ -417,6 +417,9 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         attr_text = f"<h3>{self.object_type} ObjectDiff:</h3>\n{obj_repr}"
         return base_str + attr_text
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}[{self.obj_type.__name__}](#{str(self.object_id)})"
+
 
 def _wrap_text(text: str, width: int, indent: int = 4) -> str:
     """Wrap text, preserving existing line breaks"""
@@ -437,6 +440,19 @@ def _wrap_text(text: str, width: int, indent: int = 4) -> str:
     )
 
 
+def _get_hierarchy_root(
+    diffs: list[ObjectDiff], dependencies: dict[UID, list[UID]]
+) -> list[ObjectDiff]:
+    all_ids = {diff.object_id for diff in diffs}
+    child_ids = set()
+    for uid in all_ids:
+        child_ids.update(dependencies.get(uid, []))
+    # Root ids are object ids with no parent
+    root_ids = list(all_ids - child_ids)
+    roots = [diff for diff in diffs if diff.object_id in root_ids]
+    return roots
+
+
 class ObjectDiffBatch(SyftObject):
     __canonical_name__ = "DiffHierarchy"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -454,7 +470,7 @@ class ObjectDiffBatch(SyftObject):
     @property
     def visual_hierarchy(self) -> tuple[type, dict]:
         # Returns
-        root_obj: Request | UserCodeStatusCollection | ExecutionOutput | Any = (
+        root_obj = (
             self.root.low_obj if self.root.low_obj is not None else self.root.high_obj
         )
         if isinstance(root_obj, Request):
@@ -464,13 +480,13 @@ class ObjectDiffBatch(SyftObject):
             }
         if isinstance(root_obj, UserCodeStatusCollection):
             return UserCode, {
-                UserCode: [UserCodeStatusCollection],
+                UserCode: [UserCodeStatusCollection, UserCode],
             }
         if isinstance(root_obj, ExecutionOutput):
             return UserCode, {
-                UserCode: [Job],
-                Job: [ExecutionOutput, SyftLog, Job],
-                ExecutionOutput: [ActionObject],
+                UserCode: [ExecutionOutput, UserCode],
+                Job: [ActionObject, SyftLog, Job],
+                ExecutionOutput: [Job],
             }
         raise ValueError(f"Unknown root type: {self.root.obj_type}")
 
@@ -499,7 +515,12 @@ class ObjectDiffBatch(SyftObject):
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return ""  # Turns off the _repr_markdown_ of SyftObject
 
-    def _get_visual_hierarchy(self, node: ObjectDiff) -> dict[ObjectDiff, dict]:
+    def _get_visual_hierarchy(
+        self, node: ObjectDiff, visited: set[UID] | None = None
+    ) -> dict[ObjectDiff, dict]:
+        visited = visited if visited is not None else set()
+        visited.add(node.object_id)
+
         _, child_types_map = self.visual_hierarchy
         child_types = child_types_map.get(node.obj_type, [])
         dep_ids = self.dependencies.get(node.object_id, []) + self.dependents.get(
@@ -509,25 +530,32 @@ class ObjectDiffBatch(SyftObject):
         result = {}
         for child_type in child_types:
             children = [
-                n
-                for n in self.diffs
-                if n.object_id in dep_ids
-                and isinstance(n.low_obj or n.high_obj, child_type)
+                diff
+                for diff in self.diffs
+                if diff.object_id in dep_ids
+                and isinstance(diff.low_obj or diff.high_obj, child_type)
             ]
             for child in children:
-                result[child] = self._get_visual_hierarchy(child)
+                if child.object_id not in visited:
+                    result[child] = self._get_visual_hierarchy(child, visited=visited)
 
         return result
 
     def get_visual_hierarchy(self) -> "ObjectDiffBatch":
         visual_root_type = self.visual_hierarchy[0]
-        # First diff with a visual root type is the visual root
-        # because diffs are in depth-first order
-        visual_root = [
+        visual_roots = [
             diff
             for diff in self.diffs
             if isinstance(diff.low_obj or diff.high_obj, visual_root_type)
-        ][0]
+        ]
+        if visual_roots[0].obj_type is UserCode and len(visual_roots) > 1:
+            # The root is the root usercode
+            _roots = _get_hierarchy_root(visual_roots, self.dependencies)
+            if len(_roots) != 1:
+                raise ValueError("Multiple root UserCodes found.")
+            visual_root = _roots[0]
+        else:
+            visual_root = visual_roots[0]
         return {visual_root: self._get_visual_hierarchy(visual_root)}  # type: ignore
 
     def _get_obj_str(self, diff_obj: ObjectDiff, level: int, side: str) -> str:
@@ -682,34 +710,24 @@ class NodeDiff(SyftObject):
 
         def _build_hierarchy_helper(
             uid: UID, level: int = 0, visited: set | None = None
-        ) -> list:
+        ) -> tuple:
             visited = visited if visited is not None else set()
 
             if uid in visited:
-                return []
+                return [], visited
 
             result = [(uid, level)]
             visited.add(uid)
             if uid in self.dependencies:
-                deps = self.dependencies[uid]
                 for dep_uid in self.dependencies[uid]:
-                    if dep_uid not in visited:
-                        # NOTE we pass visited + deps to recursive calls, to have
-                        # all objects at the highest level in the hierarchy
-                        # Example:
-                        # ExecutionOutput
-                        # -- Job
-                        # ---- Result
-                        # -- Result
-                        # We want to omit Job.Result, because it's already in ExecutionOutput.Result
-                        result.extend(
-                            _build_hierarchy_helper(
-                                uid=dep_uid,
-                                level=level + 1,
-                                visited=visited | set(deps) - {dep_uid},
-                            )
+                    if dep_uid not in visited:  # type: ignore
+                        new_result, visited = _build_hierarchy_helper(
+                            uid=dep_uid,
+                            level=level + 1,
+                            visited=visited,
                         )
-            return result
+                        result.extend(new_result)
+            return result, visited
 
         hierarchies = []
         all_ids = set(self.obj_uid_to_diff.keys())
@@ -718,7 +736,7 @@ class NodeDiff(SyftObject):
         root_ids = list(all_ids - child_ids)
 
         for root_uid in root_ids:
-            uid_hierarchy = _build_hierarchy_helper(root_uid)
+            uid_hierarchy, _ = _build_hierarchy_helper(root_uid)
             diffs = [self.obj_uid_to_diff[uid] for uid, _ in uid_hierarchy]
             levels = [level for _, level in uid_hierarchy]
 

@@ -302,6 +302,7 @@ passthrough_attrs = [
 dont_wrap_output_attrs = [
     "__repr__",
     "__str__",
+    "__repr_attrs__",
     "_repr_html_",
     "_repr_markdown_",
     "_repr_latex_",
@@ -319,6 +320,7 @@ dont_wrap_output_attrs = [
     "__repr_attrs__",
 ]
 dont_make_side_effects = [
+    "__repr_attrs__",
     "_repr_html_",
     "_repr_markdown_",
     "_repr_latex_",
@@ -1133,7 +1135,7 @@ class ActionObject(SyncableSyftObject):
         else:
             return res.syft_action_data
 
-    def refresh_object(self) -> ActionObject:
+    def refresh_object(self, resolve_nested: bool = True) -> ActionObject:
         # relative
         from ...client.api import APIRegistry
 
@@ -1146,7 +1148,7 @@ class ActionObject(SyncableSyftObject):
                 message=f"api is None. You must login to {self.syft_node_location}"
             )
 
-        res = api.services.action.get(self.id)
+        res = api.services.action.get(self.id, resolve_nested=resolve_nested)
         return res
 
     def get(self, block: bool = False) -> Any:

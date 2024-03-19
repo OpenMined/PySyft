@@ -146,7 +146,7 @@ class ExecutionOutput(SyncableSyftObject):
     def job_id(self) -> UID | None:
         return self.job_link.object_uid if self.job_link else None
 
-    def get_sync_dependencies(self, api: Any = None) -> list[UID]:
+    def get_sync_dependencies(self) -> list[UID]:
         # Output ids, user code id, job id
         res = []
 
