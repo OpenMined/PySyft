@@ -354,9 +354,7 @@ class ExactMatch(InputPolicy):
         for _inp_kwargs in self.inputs.values():
             for k in _inp_kwargs.keys():
                 if k not in usr_input_kwargs:
-                    return Err(
-                        message=f"Function missing required keyword argument: '{k}'"
-                    )
+                    return Err(f"Function missing required keyword argument: '{k}'")
             expected_input_kwargs.update(_inp_kwargs.keys())
 
         permitted_input_kwargs = list(filtered_input_kwargs.keys())
