@@ -294,7 +294,7 @@ class RemoteFunction(SyftObject):
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.__function_call(self.path, *args, **kwargs)
 
-    def public(self, *args: Any, **kwargs: Any) -> Any:
+    def mock(self, *args: Any, **kwargs: Any) -> Any:
         if self.custom_function:
             return self.__function_call("api.call_public", *args, **kwargs)
         return SyftError(
