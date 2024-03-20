@@ -36,7 +36,7 @@ def client():
     client.close()
 
 
-@pytest.mark.flaky(reruns=5, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_zmq_client(client):
     hostname = "127.0.0.1"
@@ -152,7 +152,7 @@ def consumer(producer):
     del consumer
 
 
-@pytest.mark.flaky(reruns=5, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_zmq_pub_sub(faker: Faker, producer, consumer):
     received_messages = []
@@ -215,7 +215,7 @@ def queue_manager():
     queue_manager.close()
 
 
-@pytest.mark.flaky(reruns=5, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_zmq_queue_manager(queue_manager) -> None:
     config = queue_manager.config

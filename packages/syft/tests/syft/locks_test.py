@@ -83,7 +83,7 @@ def test_acquire_nop(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_release(config: LockingConfig):
     lock = SyftLock(config)
 
@@ -110,7 +110,7 @@ def test_acquire_release(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_release_with(config: LockingConfig):
     was_locked = True
     with SyftLock(config) as lock:
@@ -153,7 +153,7 @@ def test_acquire_expire(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
     config.timeout = 1
     config.expire = 5
@@ -176,7 +176,7 @@ def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
     config.timeout = 2
     config.expire = 1
@@ -201,7 +201,7 @@ def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
     config.timeout = 2
     config.expire = 1
@@ -226,7 +226,7 @@ def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
     config.timeout = 2
     config.expire = 1
@@ -252,7 +252,7 @@ def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_double_release(config: LockingConfig):
     lock = SyftLock(config)
 
@@ -269,7 +269,7 @@ def test_acquire_double_release(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_same_name_diff_namespace(config: LockingConfig):
     config.namespace = "ns1"
     lock1 = SyftLock(config)

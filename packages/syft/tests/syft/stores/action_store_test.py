@@ -53,7 +53,7 @@ def test_action_store_sanity(store: Any):
     ],
 )
 @pytest.mark.parametrize("permission", permissions)
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.skipif(sys.platform == "darwin", reason="skip on mac")
 def test_action_store_test_permissions(store: Any, permission: Any):
     client_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_CLIENT)
@@ -112,7 +112,7 @@ def test_action_store_test_permissions(store: Any, permission: Any):
         pytest.lazy_fixture("mongo_action_store"),
     ],
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_action_store_test_data_set_get(store: Any):
     client_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_CLIENT)
     root_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
