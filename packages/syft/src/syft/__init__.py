@@ -49,6 +49,8 @@ from .service.action.plan import Plan  # noqa: F401
 from .service.action.plan import planify  # noqa: F401
 from .service.api.api import api_endpoint  # noqa: F401
 from .service.api.api import create_new_api_endpoint as TwinAPIEndpoint  # noqa: F401
+from .service.api.api import private_api_endpoint  # noqa: F401
+from .service.api.api import public_api_endpoint  # noqa: F401
 from .service.code.user_code import UserCodeStatus  # noqa: F401; noqa: F401
 from .service.code.user_code import syft_function  # noqa: F401; noqa: F401
 from .service.code.user_code import syft_function_single_use  # noqa: F401; noqa: F401

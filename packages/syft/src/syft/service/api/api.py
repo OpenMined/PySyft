@@ -28,18 +28,16 @@ from ..context import AuthedServiceContext
 from ..response import SyftError
 
 
-def signature_remove_secrets(signature: Signature) -> Signature:
-    params = dict(signature.parameters)
-    params.pop("secrets", None)
-    return Signature(
-        list(params.values()), return_annotation=signature.return_annotation
-    )
+class TwinAPIAuthedContext(AuthedServiceContext):
+    __canonical_name__ = "AuthedServiceContext"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    settings: dict[str, Any] | None = None
 
 
 def get_signature(func: Callable) -> Signature:
     sig = inspect.signature(func)
     sig = signature_remove_context(sig)
-    sig = signature_remove_secrets(sig)
     return sig
 
 
@@ -99,10 +97,12 @@ class Endpoint(SyftObject):
             raise ValueError("Invalid function name.")
         return func_name
 
-    @field_validator("secrets", check_fields=False)
+    @field_validator("settings", check_fields=False)
     @classmethod
-    def validate_secrets(cls, secrets: dict[str, Any] | None) -> dict[str, Any] | None:
-        return secrets
+    def validate_settings(
+        cls, settings: dict[str, Any] | None
+    ) -> dict[str, Any] | None:
+        return settings
 
 
 @serializable()
@@ -125,7 +125,7 @@ class PublicAPIEndpoint(Endpoint):
 
     api_code: str
     func_name: str
-    secrets: dict[str, Any] | None = None
+    settings: dict[str, Any] | None = None
     view_access: bool = True
 
 
@@ -138,7 +138,7 @@ class BaseTwinAPIEndpoint(SyftObject):
     def validate_signature(cls, data: dict[str, Any]) -> dict[str, Any]:
         # TODO: Implement a signature check.
         mismatch_signatures = False
-        if data.get("public_code") is not None and mismatch_signatures:
+        if data.get("private_code") is not None and mismatch_signatures:
             raise ValueError(
                 "Public and Private API Endpoints must have the same signature."
             )
@@ -155,15 +155,13 @@ class BaseTwinAPIEndpoint(SyftObject):
     @field_validator("private_code", check_fields=False)
     @classmethod
     def validate_private_code(
-        cls, private_code: PrivateAPIEndpoint
-    ) -> PrivateAPIEndpoint:
+        cls, private_code: PrivateAPIEndpoint | None
+    ) -> PrivateAPIEndpoint | None:
         return private_code
 
     @field_validator("public_code", check_fields=False)
     @classmethod
-    def validate_public_code(
-        cls, public_code: PublicAPIEndpoint | None
-    ) -> PublicAPIEndpoint | None:
+    def validate_public_code(cls, public_code: PublicAPIEndpoint) -> PublicAPIEndpoint:
         return public_code
 
 
@@ -185,8 +183,8 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
     __version__ = SYFT_OBJECT_VERSION_1
 
     path: str
-    private_code: PrivateAPIEndpoint
-    public_code: PublicAPIEndpoint | None = None
+    private_code: PrivateAPIEndpoint | None = None
+    public_code: PublicAPIEndpoint
     signature: Signature
 
 
@@ -200,8 +198,8 @@ class TwinAPIEndpoint(SyftObject):
         super().__init__(**kwargs)
 
     path: str
-    private_code: PrivateAPIEndpoint
-    public_code: PublicAPIEndpoint | None = None
+    private_code: PrivateAPIEndpoint | None = None
+    public_code: PublicAPIEndpoint
     signature: Signature
 
     __attr_searchable__ = ["path"]
@@ -230,13 +228,9 @@ class TwinAPIEndpoint(SyftObject):
         Returns:
             Result[Ok, Err]: The selected code to execute.
         """
-        if self.has_permission(context):
+        if self.has_permission(context) and self.private_code:
             return Ok(self.private_code)
-
-        if self.public_code:
-            return Ok(self.public_code)
-
-        return Err("No public code available")
+        return Ok(self.public_code)
 
     def exec(self, context: AuthedServiceContext, *args: Any, **kwargs: Any) -> Any:
         """Execute the code based on the user's permissions and public code availability.
@@ -294,10 +288,19 @@ class TwinAPIEndpoint(SyftObject):
             raw_byte_code = compile(ast.unparse(inner_function), "<string>", "exec")
             # load it
             exec(raw_byte_code)  # nosec
+
+            internal_context = TwinAPIAuthedContext(
+                credentials=context.credentials,
+                role=context.role,
+                job_id=context.job_id,
+                extra_kwargs=context.extra_kwargs,
+                has_execute_permissions=context.has_execute_permissions,
+                node=context.node,
+                id=context.id,
+                settings=code.settings or {},
+            )
             # execute it
-            if code.secrets is None:
-                code.secrets = {}
-            evil_string = f"{code.func_name}(*args, **kwargs, secrets=code.secrets,context=context)"
+            evil_string = f"{code.func_name}(*args, **kwargs,context=internal_context)"
             result = eval(evil_string, None, locals())  # nosec
             # return the results
             return context, result
@@ -308,21 +311,20 @@ class TwinAPIEndpoint(SyftObject):
 
 def set_access_type(context: TransformContext) -> TransformContext:
     if context.output is not None and context.obj is not None:
-        if context.obj.public_code is not None:
-            context.output["access"] = "Public"
+        if context.obj.private_code is not None:
+            context.output["access"] = "Private / Mock"
         else:
-            context.output["access"] = "Private"
+            context.output["access"] = "Public"
     return context
 
 
 def check_and_cleanup_signature(context: TransformContext) -> TransformContext:
     if context.output is not None and context.obj is not None:
         params = dict(context.obj.signature.parameters)
-        if "secrets" not in params or "context" not in params:
+        if "context" not in params:
             raise ValueError(
-                "Function Signature must include 'secrets' (Dict[str,str]) and 'context' [AuthedContext] parameters."
+                "Function Signature must include 'context' [AuthedContext] parameters."
             )
-        params.pop("secrets", None)
         params.pop("context", None)
         context.output["signature"] = Signature(
             list(params.values()),
@@ -373,16 +375,16 @@ def twin_endpoint_to_view() -> list[Callable]:
 
 
 def api_endpoint(
-    path: str, secrets: dict[str, str] | None = None
+    path: str, settings: dict[str, str] | None = None
 ) -> Callable[..., TwinAPIEndpoint | SyftError]:
     def decorator(f: Callable) -> TwinAPIEndpoint | SyftError:
         try:
             res = CreateTwinAPIEndpoint(
                 path=path,
-                private_code=PrivateAPIEndpoint(
+                public_code=PublicAPIEndpoint(
                     api_code=inspect.getsource(f),
                     func_name=f.__name__,
-                    secrets=secrets,
+                    settings=settings,
                 ),
                 signature=inspect.signature(f),
             )
@@ -395,39 +397,80 @@ def api_endpoint(
     return decorator
 
 
+def private_api_endpoint(
+    settings: dict[str, str] | None = None,
+) -> Callable[..., PrivateAPIEndpoint | SyftError]:
+    def decorator(f: Callable) -> PrivateAPIEndpoint | SyftError:
+        try:
+            return PrivateAPIEndpoint(
+                api_code=inspect.getsource(f),
+                func_name=f.__name__,
+                settings=settings,
+            )
+        except ValidationError as e:
+            for error in e.errors():
+                error_msg = error["msg"]
+            res = SyftError(message=error_msg)
+        return res
+
+    return decorator
+
+
+def public_api_endpoint(
+    settings: dict[str, str] | None = None,
+) -> Callable[..., PublicAPIEndpoint | SyftError]:
+    def decorator(f: Callable) -> PublicAPIEndpoint | SyftError:
+        try:
+            return PublicAPIEndpoint(
+                api_code=inspect.getsource(f),
+                func_name=f.__name__,
+                settings=settings,
+            )
+        except ValidationError as e:
+            for error in e.errors():
+                error_msg = error["msg"]
+            res = SyftError(message=error_msg)
+        return res
+
+    return decorator
+
+
 def create_new_api_endpoint(
     path: str,
-    private: Callable[..., Any],
+    public: PublicAPIEndpoint,
+    private: PrivateAPIEndpoint | None = None,
     description: str | None = None,
-    public: Callable[..., Any] | None = None,
-    private_secrets: dict[str, Any] | None = None,
-    public_secrets: dict[str, Any] | None = None,
 ) -> CreateTwinAPIEndpoint | SyftError:
     try:
-        if public is not None:
+        # Parse the string to extract the function name
+        code_string = decorator_cleanup(public.api_code)
+        parsed_code = ast.parse(code_string)
+        function_name = [
+            node.name
+            for node in ast.walk(parsed_code)
+            if isinstance(node, ast.FunctionDef)
+        ][0]
+
+        # Safe dynamic function definition
+        namespace: dict[str, Any] = {}
+        exec(code_string, namespace)
+        function = namespace[function_name]
+
+        # Get the signature using inspect
+        endpoint_signature = inspect.signature(function)
+
+        if private is not None:
             return CreateTwinAPIEndpoint(
                 path=path,
-                private_code=PrivateAPIEndpoint(
-                    api_code=inspect.getsource(private),
-                    func_name=private.__name__,
-                    secrets=private_secrets,
-                ),
-                public_code=PublicAPIEndpoint(
-                    api_code=inspect.getsource(public),
-                    func_name=public.__name__,
-                    secrets=public_secrets,
-                ),
-                signature=inspect.signature(private),
+                private_code=private,
+                public_code=public,
+                signature=endpoint_signature,
             )
 
         return CreateTwinAPIEndpoint(
             path=path,
-            private_code=PrivateAPIEndpoint(
-                api_code=inspect.getsource(private),
-                func_name=private.__name__,
-                secrets=private_secrets,
-            ),
-            signature=inspect.signature(private),
+            prublic_code=public,
+            signature=endpoint_signature,
         )
     except ValidationError as e:
         for error in e.errors():
