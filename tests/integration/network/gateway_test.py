@@ -9,6 +9,7 @@ import numpy as np
 # syft absolute
 import syft as sy
 from syft.abstract_node import NodeType
+from syft.client.client import SyftClient
 from syft.client.domain_client import DomainClient
 from syft.client.gateway_client import GatewayClient
 from syft.client.registry import NetworkRegistry
@@ -16,12 +17,24 @@ from syft.client.search import SearchResults
 from syft.service.dataset.dataset import Dataset
 from syft.service.network.node_peer import NodePeer
 from syft.service.request.request import Request
+from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
 
 
 def _random_hash() -> str:
     return uuid.uuid4().hex[:16]
+
+
+def _remove_existing_peers(client: SyftClient) -> SyftSuccess | SyftError:
+    peers: list[NodePeer] | SyftError = client.api.services.network.get_all_peers()
+    if isinstance(peers, SyftError):
+        return peers
+    for peer in peers:
+        res = client.api.services.network.delete_peer_by_id(peer.id)
+        if isinstance(res, SyftError):
+            return res
+    return SyftSuccess(message="All peers removed.")
 
 
 def mock_load_network_registry_json(network_host: str, network_port: int) -> dict:
@@ -57,21 +70,25 @@ def test_domain_connect_to_gateway(domain_1_port: int, gateway_port: int) -> Non
         "syft.client.registry.NetworkRegistry.load_network_registry_json",
         return_value=mock_load_network_registry_json("localhost", gateway_port),
     ):
+        # check if we can see the online gateways
         assert isinstance(sy.gateways, NetworkRegistry)
         assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
 
-        gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
-
+        # login to the domain and gateway
+        gateway_client: GatewayClient = sy.login(
+            port=gateway_port, email="info@openmined.org", password="changethis"
+        )
         domain_client: DomainClient = sy.login(
             port=domain_1_port, email="info@openmined.org", password="changethis"
         )
 
+        # connecting the domain to the gateway
         result = domain_client.connect_to_gateway(gateway_client)
         assert isinstance(result, SyftSuccess)
-
         assert len(domain_client.peers) == 1
         assert len(gateway_client.peers) == 1
 
+        # check that the domain is online on the network
         assert len(sy.domains.all_domains) == 1
         assert len(sy.domains.online_domains) == 1
 
@@ -108,8 +125,12 @@ def test_domain_connect_to_gateway(domain_1_port: int, gateway_port: int) -> Non
             == domain_client.api.endpoints.keys()
         )
 
+        # Remove existing peers
+        assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+        assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
-def test_dataset_search(domain_1_port, gateway_port):
+
+def test_dataset_search(domain_1_port: int, gateway_port: int) -> None:
     """
     Scenario: Connecting a domain node to a gateway node. The domain
         client then upload a dataset, which should be searchable by the syft network.
@@ -120,7 +141,9 @@ def test_dataset_search(domain_1_port, gateway_port):
         return_value=mock_load_network_registry_json("localhost", gateway_port),
     ):
         # login to the domain and gateway
-        gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
+        gateway_client: GatewayClient = sy.login(
+            port=gateway_port, email="info@openmined.org", password="changethis"
+        )
         domain_client: DomainClient = sy.login(
             port=domain_1_port, email="info@openmined.org", password="changethis"
         )
@@ -158,14 +181,23 @@ def test_dataset_search(domain_1_port, gateway_port):
         # the domain client delete the dataset
         domain_client.api.services.dataset.delete_by_uid(uid=dataset.id)
 
+        # Remove existing peers
+        assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+        assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
 
 def test_domain_gateway_user_code(domain_1_port, gateway_port):
+    """
+    Note: this test is skipped in `stack.test.integration.k8s`
+    """
     with mock.patch(
         "syft.client.registry.NetworkRegistry.load_network_registry_json",
         return_value=mock_load_network_registry_json("localhost", gateway_port),
     ):
         # login to the domain and gateway
-        gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
+        gateway_client: GatewayClient = sy.login(
+            port=gateway_port, email="info@openmined.org", password="changethis"
+        )
         domain_client: DomainClient = sy.login(
             port=domain_1_port, email="info@openmined.org", password="changethis"
         )
@@ -224,3 +256,63 @@ def test_domain_gateway_user_code(domain_1_port, gateway_port):
         result = proxy_ds.code.mock_function(asset=asset)
         final_result = result.get()
         assert (final_result == input_data + 1).all()
+
+        # the domain client delete the dataset
+        domain_client.api.services.dataset.delete_by_uid(uid=dataset.id)
+
+        # Remove existing peers
+        assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+        assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+
+def test_deleting_peers(domain_1_port: int, gateway_port: int) -> None:
+    with mock.patch(
+        "syft.client.registry.NetworkRegistry.load_network_registry_json",
+        return_value=mock_load_network_registry_json("localhost", gateway_port),
+    ):
+        # login to the domain and gateway
+        gateway_client: GatewayClient = sy.login(
+            port=gateway_port, email="info@openmined.org", password="changethis"
+        )
+        domain_client: DomainClient = sy.login(
+            port=domain_1_port, email="info@openmined.org", password="changethis"
+        )
+
+        # connecting the domain to the gateway
+        result = domain_client.connect_to_gateway(gateway_client)
+        assert isinstance(result, SyftSuccess)
+        assert len(domain_client.peers) == 1
+        assert len(gateway_client.peers) == 1
+        # check that the domain is online on the network
+        assert len(sy.domains.all_domains) == 1
+        assert len(sy.domains.online_domains) == 1
+
+        # Remove existing peers
+        assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+        assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+        # check that removing peers work as expected
+        assert len(sy.gateways.all_networks) == 1
+        assert len(sy.domains.all_domains) == 0
+        assert len(sy.domains.all_domains) == 0
+        assert len(sy.domains.online_domains) == 0
+        assert len(domain_client.peers) == 0
+        assert len(gateway_client.peers) == 0
+
+        # reconnect the domain to the gateway
+        result = domain_client.connect_to_gateway(gateway_client)
+        assert isinstance(result, SyftSuccess)
+        assert len(domain_client.peers) == 1
+        assert len(gateway_client.peers) == 1
+        # check that the domain
+        assert len(sy.domains.all_domains) == 1
+        assert len(sy.domains.online_domains) == 1
+
+        # Remove existing peers
+        assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+        assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+        # check that removing peers work as expected
+        assert len(sy.domains.all_domains) == 0
+        assert len(sy.domains.all_domains) == 0
+        assert len(sy.domains.online_domains) == 0
+        assert len(domain_client.peers) == 0
+        assert len(gateway_client.peers) == 0
