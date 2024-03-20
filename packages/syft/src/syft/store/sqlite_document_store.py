@@ -421,7 +421,7 @@ class SQLiteStoreClientConfig(StoreClientConfig):
             database, it will be locked until that transaction is committed. Default five seconds.
     """
 
-    filename: str | None = None
+    filename: str = "syftdb.sqlite"
     path: str | Path = Field(default_factory=tempfile.gettempdir)
     check_same_thread: bool = True
     timeout: int = 5
@@ -437,7 +437,7 @@ class SQLiteStoreClientConfig(StoreClientConfig):
 
     @property
     def file_path(self) -> Path | None:
-        return Path(self.path) / self.filename if self.filename is not None else None
+        return Path(self.path) / self.filename
 
 
 @serializable()

@@ -301,7 +301,6 @@ class Node(AbstractNode):
         node_type: str | NodeType = NodeType.DOMAIN,
         local_db: bool = False,
         reset: bool = False,
-        sqlite_path: str | None = None,
         blob_storage_config: BlobStorageConfig | None = None,
         queue_config: QueueConfig | None = None,
         queue_port: int | None = None,
@@ -384,11 +383,17 @@ class Node(AbstractNode):
         )
 
         self.service_config = ServiceConfigRegistry.get_registered_configs()
-        self.local_db = local_db
+
+        use_sqlite = local_db or (processes > 0 and not is_subprocess)
+        document_store_config = document_store_config or self.get_default_store(
+            use_sqlite=use_sqlite
+        )
+        action_store_config = action_store_config or self.get_default_store(
+            use_sqlite=use_sqlite
+        )
         self.init_stores(
             action_store_config=action_store_config,
             document_store_config=document_store_config,
-            sqlite_path=sqlite_path,
         )
 
         if OBLV:
@@ -465,6 +470,16 @@ class Node(AbstractNode):
             or os.path.isfile(path)
             and any("docker" in line for line in open(path))
         )
+
+    def get_default_store(self, use_sqlite: bool) -> StoreConfig:
+        if use_sqlite:
+            return SQLiteStoreConfig(
+                client_config=SQLiteStoreClientConfig(
+                    filename=f"{self.id}.sqlite",
+                    path=self.get_temp_dir("db"),
+                )
+            )
+        return DictStoreConfig()
 
     def init_blob_storage(self, config: BlobStorageConfig | None = None) -> None:
         if config is None:
@@ -609,7 +624,6 @@ class Node(AbstractNode):
         processes: int = 0,
         reset: bool = False,
         local_db: bool = False,
-        sqlite_path: str | None = None,
         node_type: str | NodeType = NodeType.DOMAIN,
         node_side_type: str | NodeSideType = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
@@ -635,7 +649,6 @@ class Node(AbstractNode):
             signing_key=key,
             processes=processes,
             local_db=local_db,
-            sqlite_path=sqlite_path,
             node_type=node_type,
             node_side_type=node_side_type,
             enable_warnings=enable_warnings,
@@ -838,49 +851,22 @@ class Node(AbstractNode):
 
     def init_stores(
         self,
-        document_store_config: StoreConfig | None = None,
-        action_store_config: StoreConfig | None = None,
-        sqlite_path: Path | str | None = None,
+        document_store_config: StoreConfig,
+        action_store_config: StoreConfig,
     ) -> None:
-        # if there's no sqlite path, we'll use the tmp dir
-        if not sqlite_path:
-            sqlite_path = self.get_temp_dir("db")
-
-        sqlite_path = Path(sqlite_path)
-        sqlite_db_name = f"{self.id}.sqlite" if sqlite_path.is_dir() else None
-
-        if document_store_config is None:
-            if self.local_db or (self.processes > 0 and not self.is_subprocess):
-                client_config = SQLiteStoreClientConfig(
-                    filename=sqlite_db_name, path=sqlite_path
-                )
-                document_store_config = SQLiteStoreConfig(client_config=client_config)
-            else:
-                document_store_config = DictStoreConfig()
-
-        document_store = document_store_config.store_type
-        self.document_store_config = document_store_config
-
         # We add the python id of the current node in order
         # to create one connection per Node object in MongoClientCache
         # so that we avoid closing the connection from a
         # different thread through the garbage collection
-        if isinstance(self.document_store_config, MongoStoreConfig):
-            self.document_store_config.client_config.node_obj_python_id = id(self)
+        if isinstance(document_store_config, MongoStoreConfig):
+            document_store_config.client_config.node_obj_python_id = id(self)
 
-        self.document_store = document_store(
+        self.document_store_config = document_store_config
+        self.document_store = document_store_config.store_type(
             node_uid=self.id,
             root_verify_key=self.verify_key,
             store_config=document_store_config,
         )
-        if action_store_config is None:
-            if self.local_db or (self.processes > 0 and not self.is_subprocess):
-                client_config = SQLiteStoreClientConfig(
-                    filename=sqlite_db_name, path=sqlite_path
-                )
-                action_store_config = SQLiteStoreConfig(client_config=client_config)
-            else:
-                action_store_config = DictStoreConfig()
 
         if isinstance(action_store_config, SQLiteStoreConfig):
             self.action_store: ActionStore = SQLiteActionStore(

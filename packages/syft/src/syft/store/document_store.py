@@ -9,6 +9,7 @@ from typing import Any
 
 # third party
 from pydantic import BaseModel
+from pydantic import Field
 from result import Err
 from result import Ok
 from result import Result
@@ -783,4 +784,4 @@ class StoreConfig(SyftBaseObject):
 
     store_type: type[DocumentStore]
     client_config: StoreClientConfig | None = None
-    locking_config: LockingConfig = NoLockingConfig()
+    locking_config: LockingConfig = Field(default_factory=NoLockingConfig)

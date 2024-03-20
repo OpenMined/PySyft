@@ -17,6 +17,7 @@ from syft.store.mongo_client import MongoStoreClientConfig
 from syft.store.mongo_document_store import MongoStoreConfig
 from syft.store.sqlite_document_store import SQLiteStoreClientConfig
 from syft.store.sqlite_document_store import SQLiteStoreConfig
+from syft.types.uid import UID
 
 # grid absolute
 from grid.core.config import settings
@@ -46,7 +47,10 @@ def mongo_store_config() -> MongoStoreConfig:
 
 
 def sql_store_config() -> SQLiteStoreConfig:
-    client_config = SQLiteStoreClientConfig(path=settings.SQLITE_PATH)
+    client_config = SQLiteStoreClientConfig(
+        filename=str(UID.from_string(get_node_uid_env())),
+        path=settings.SQLITE_PATH,
+    )
     return SQLiteStoreConfig(client_config=client_config)
 
 
