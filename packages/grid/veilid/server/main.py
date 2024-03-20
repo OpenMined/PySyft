@@ -1,6 +1,5 @@
 # stdlib
 import json
-import lzma
 import os
 import sys
 from typing import Annotated
@@ -112,8 +111,8 @@ async def proxy(request: Request) -> Response:
     message = json.dumps(request_data).encode()
 
     res = await app_call(vld_key=vld_key, message=message)
-    decompressed_res = lzma.decompress(res)
-    return Response(decompressed_res, media_type="application/octet-stream")
+
+    return Response(res, media_type="application/octet-stream")
 
 
 @app.on_event("startup")
