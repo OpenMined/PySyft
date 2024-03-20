@@ -773,7 +773,7 @@ class Node(AbstractNode):
             node_uid=self.id, user_verify_key=self.verify_key, context=context
         )
 
-        if UserCodeService in self.services:
+        if "usercodeservice" in self.service_path_map:
             user_code_service = self.get_service(UserCodeService)
             user_code_service.load_user_code(context=context)
 
@@ -804,8 +804,6 @@ class Node(AbstractNode):
         )
 
         if isinstance(action_store_config, SQLiteStoreConfig):
-            # override the filename to node id
-            action_store_config.client_config.filename = f"{self.id}.sqlite"
             self.action_store: ActionStore = SQLiteActionStore(
                 node_uid=self.id,
                 store_config=action_store_config,
@@ -1039,7 +1037,7 @@ class Node(AbstractNode):
         self, api_call: SyftAPICall | SignedSyftAPICall
     ) -> Result[QueueItem | SyftObject, Err]:
         node_uid = api_call.message.node_uid
-        if NetworkService not in self.services:
+        if "networkservice" not in self.service_path_map:
             return SyftError(
                 message=(
                     "Node has no network service so we can't "
