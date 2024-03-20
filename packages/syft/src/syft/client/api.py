@@ -582,6 +582,20 @@ def unwrap_and_migrate_annotation(annotation: Any, object_versions: dict) -> Any
         return migrated_annotation[0]
 
 
+def result_needs_api_update(api_call_result: Any) -> bool:
+    # relative
+    from ..service.request.request import Request
+    from ..service.request.request import UserCodeStatusChange
+
+    if isinstance(api_call_result, Request) and any(
+        isinstance(x, UserCodeStatusChange) for x in api_call_result.changes
+    ):
+        return True
+    if isinstance(api_call_result, SyftSuccess) and api_call_result.require_api_update:
+        return True
+    return False
+
+
 @instrument
 @serializable(
     attrs=[
@@ -741,23 +755,16 @@ class SyftAPI(SyftObject):
 
         if isinstance(result, OkErr):
             if result.is_ok():
-                res = result.ok()
-                # we update the api when we create objects that change it
-                self.update_api(res)
-                return res
+                result = result.ok()
             else:
-                return result.err()
+                result = result.err()
+        # we update the api when we create objects that change it
+        self.update_api(result)
         return result
 
     def update_api(self, api_call_result: Any) -> None:
         # TODO: hacky stuff with typing and imports to prevent circular imports
-        # relative
-        from ..service.request.request import Request
-        from ..service.request.request import UserCodeStatusChange
-
-        if isinstance(api_call_result, Request) and any(
-            isinstance(x, UserCodeStatusChange) for x in api_call_result.changes
-        ):
+        if result_needs_api_update(api_call_result):
             if self.refresh_api_callback is not None:
                 self.refresh_api_callback()
 

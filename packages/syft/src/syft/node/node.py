@@ -422,7 +422,7 @@ class Node(AbstractNode):
             smtp_host=smtp_host,
         )
 
-        self.client_cache: dict = {}
+        self.peer_client_cache: dict = {}
 
         if isinstance(node_type, str):
             node_type = NodeType(node_type)
@@ -1143,19 +1143,26 @@ class Node(AbstractNode):
             )
 
         client = None
-        if node_uid in self.client_cache:
-            client = self.client_cache[node_uid]
-        else:
-            network_service = self.get_service(NetworkService)
-            peer = network_service.stash.get_by_uid(self.verify_key, node_uid)
 
-            if peer.is_ok() and peer.ok():
-                peer = peer.ok()
+        network_service = self.get_service(NetworkService)
+        peer = network_service.stash.get_by_uid(self.verify_key, node_uid)
+
+        if peer.is_ok() and peer.ok():
+            peer = peer.ok()
+
+            # Since we have several routes to a peer
+            # we need to cache the client for a given node_uid along with the route
+            peer_cache_key = hash(node_uid) + hash(peer.pick_highest_priority_route())
+
+            if peer_cache_key in self.peer_client_cache:
+                client = self.peer_client_cache[peer_cache_key]
+            else:
                 context = AuthedServiceContext(
                     node=self, credentials=api_call.credentials
                 )
                 client = peer.client_with_context(context=context)
-                self.client_cache[node_uid] = client
+                self.peer_client_cache[peer_cache_key] = client
+
         if client:
             message: SyftAPICall = api_call.message
             if message.path == "metadata":
