@@ -18,6 +18,7 @@ import traceback
 from typing import Any
 
 # third party
+from google.cloud.storage import Client
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
@@ -109,6 +110,8 @@ from ..service.worker.worker_pool_stash import SyftWorkerPoolStash
 from ..service.worker.worker_service import WorkerService
 from ..service.worker.worker_stash import WorkerStash
 from ..store.blob_storage import BlobStorageConfig
+from ..store.blob_storage.anydisk import AnyBlobStorageClientConfig
+from ..store.blob_storage.anydisk import AnyBlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.dict_document_store import DictStoreConfig
@@ -482,7 +485,21 @@ class Node(AbstractNode):
         return DictStoreConfig()
 
     def init_blob_storage(self, config: BlobStorageConfig | None = None) -> None:
-        if config is None:
+        if os.getenv("SYFT_SMARTOPEN") == "True":
+            bucket = os.getenv("GCS_BUCKET", "gs://rdt_test_bucket")
+            gcs_creds = Path(os.getenv("GCS_CREDS_PATH", "/root/data/gcs/creds.json"))
+            gcs_client = Client.from_service_account_json(gcs_creds)
+
+            config_ = AnyBlobStorageConfig(
+                client_config=AnyBlobStorageClientConfig(
+                    bucket=bucket,
+                    workspace=str(self.id),
+                    smart_open_kwargs={
+                        "transport_params": {"client": gcs_client},
+                    },
+                )
+            )
+        elif config is None:
             client_config = OnDiskBlobStorageClientConfig(
                 base_directory=self.get_temp_dir("blob")
             )

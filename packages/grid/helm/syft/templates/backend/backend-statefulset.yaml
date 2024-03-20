@@ -126,6 +126,10 @@ spec:
             - name: VEILID_ENABLED
               value: {{ .Values.veilid.enabled | quote }}
             {{- end }}
+            - name: SYFT_SMARTOPEN
+              value: "True"
+            - name: GCS_BUCKET
+              value: "gs://rdt_test_bucket"
             {{- if .Values.node.env }}
             {{- toYaml .Values.node.env | nindent 12 }}
             {{- end }}
@@ -137,6 +141,9 @@ spec:
               name: credentials-data
               readOnly: false
               subPath: credentials-data
+            - name: gcs-secret
+              mountPath: /root/data/gcs/
+              readOnly: true
           startupProbe:
             httpGet:
               path: /api/v2/metadata?probe=startupProbe
@@ -151,6 +158,10 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe: null
+      volumes:
+        - name: gcs-secret
+          secret:
+            secretName: gcs-secret
       serviceAccountName: backend-service-account
       terminationGracePeriodSeconds: 5
   volumeClaimTemplates:
