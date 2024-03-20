@@ -292,9 +292,15 @@ class SyncService(AbstractService):
         new_state.storage_permissions = storage_permissions
 
         previous_state = self.stash.get_latest(context=context)
+        if previous_state.is_err():
+            return previous_state
+        else:
+            previous_state = previous_state.ok()
+        
+        previous_ignored_batches = previous_state.ignored_batches if previous_state is not None else {}
 
         new_state.ignored_batches = {
-            **previous_state.ignored_batches,
+            **previous_ignored_batches,
             **new_ignored_batches,
         }
         if previous_state is not None:
@@ -303,7 +309,7 @@ class SyncService(AbstractService):
                 service_type=SyncService,
                 node_uid=context.node.id,  # type: ignore
             )
-        return new_state
+        return Ok(new_state)
 
     @service_method(
         path="sync._get_state",
@@ -311,7 +317,6 @@ class SyncService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def _get_state(
-        self, context: AuthedServiceContext, add_to_store: bool = False
+        self, context: AuthedServiceContext
     ) -> SyncState | SyftError:
-        return self.
-        return self.stash.get_latest(context=context)
+        return self.build_state_object_from_current_state(context, {})

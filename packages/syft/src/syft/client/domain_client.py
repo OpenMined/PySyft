@@ -201,18 +201,17 @@ class DomainClient(SyftClient):
             # NOTE permissions are added separately server side
             action_object._send(self, add_storage_permission=False)
 
+        ignored_batches = resolved_state.ignored_batches
+
         res = self.api.services.sync.sync_items(
             items,
             permissions,
             storage_permissions,
+            ignored_batches
+            
         )
         if isinstance(res, SyftError):
             return res
-
-        # Add updated node state to store to have a previous_state for next sync
-        new_state = self.api.services.sync._get_state(add_to_store=True)
-        if isinstance(new_state, SyftError):
-            return new_state
 
         self._fetch_api(self.credentials)
         return res

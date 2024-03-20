@@ -37,9 +37,9 @@ class SyncStash(BaseUIDStoreStash):
         )
 
         if all_states.is_err():
-            return SyftError(message=all_states.err())
+            return all_states
 
         all_states = all_states.ok()
         if len(all_states) > 0:
-            return all_states[-1]
-        return None
+            return Ok(all_states[-1])
+        return Ok(None)

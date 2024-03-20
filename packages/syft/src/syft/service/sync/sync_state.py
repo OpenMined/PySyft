@@ -81,7 +81,7 @@ class SyncState(SyftObject):
     previous_state_link: LinkedObject | None = None
     permissions: dict[UID, set[str]] = {}
     storage_permissions: dict[UID, set[UID]] = {}
-    ignored_batches: dict[UID, hash]
+    ignored_batches: dict[UID, hash] = {}
 
     __attr_searchable__ = ["created_at"]
 
