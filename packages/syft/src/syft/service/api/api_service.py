@@ -230,6 +230,20 @@ class APIService(AbstractService):
             )
         return result
 
+    @service_method(
+        path="api.exists",
+        name="exists",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def exists(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> SyftSuccess | SyftError:
+        """Check if an endpoint exists"""
+        result = self.stash.get_by_uid(context.credentials, uid)
+        if result.is_err():
+            return SyftError(message=result.err())
+        return SyftSuccess(message="Endpoint exists")
+
     def get_endpoints(
         self, context: AuthedServiceContext
     ) -> list[TwinAPIEndpoint] | SyftError:
