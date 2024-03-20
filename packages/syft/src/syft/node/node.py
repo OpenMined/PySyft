@@ -844,10 +844,12 @@ class Node(AbstractNode):
         service_path_map: dict[str, AbstractService] = {}
         initialized_services: list[AbstractService] = []
 
-        # a tuple of service and kwargs to initialize it with
-        # by default all services get default document store
-        # pass a dict with "store" key to override this
-        # pass a dict with "enabled" key to disable the service
+        # A dict of service and init kwargs.
+        # - "svc" expects a callable (class or function)
+        #     - The callable must return AbstractService or None
+        # - "store" expects a store type
+        #     - By default all services get the document store
+        #     - Pass a custom "store" to override this
         default_services: list[dict] = [
             {"svc": ActionService, "store": self.action_store},
             {"svc": UserService},
@@ -877,18 +879,21 @@ class Node(AbstractNode):
             {"svc": SyncService},
             {"svc": OutputService},
             {"svc": UserCodeStatusService},
-            {"svc": VeilidServiceProvider},
-            {"svc": OblvServiceProvider},
+            {"svc": VeilidServiceProvider},  # this is lazy
+            {"svc": OblvServiceProvider},  # this is lazy
         ]
 
         for svc_kwargs in default_services:
             ServiceCls = svc_kwargs.pop("svc")
             svc_kwargs.setdefault("store", self.document_store)
 
-            # instantiate service
             svc_instance = ServiceCls(**svc_kwargs)
             if not svc_instance:
                 continue
+            elif not isinstance(svc_instance, AbstractService):
+                raise ValueError(
+                    f"Service {ServiceCls.__name__} must be an instance of AbstractService"
+                )
 
             service_path_map[ServiceCls.__name__.lower()] = svc_instance
             initialized_services.append(ServiceCls)
