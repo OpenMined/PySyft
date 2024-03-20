@@ -1,6 +1,7 @@
 # stdlib
 import asyncio
 from collections.abc import Callable
+from enum import ReprEnum
 from functools import wraps
 import random
 from typing import Any
@@ -47,3 +48,11 @@ def retry(
 
 def generate_random_alphabets(length: int) -> str:
     return "".join([random.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(length)])
+
+
+class BytesEnum(bytes, ReprEnum):
+    """
+    Enum where members are also (and must be) bytes
+    """
+
+    pass
