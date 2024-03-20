@@ -65,7 +65,7 @@ class UserCodeService(AbstractService):
         result = self._submit(context=context, code=code)
         if result.is_err():
             return SyftError(message=str(result.err()))
-        return SyftSuccess(message="User Code Submitted")
+        return SyftSuccess(message="User Code Submitted", require_api_update=True)
 
     def _submit(
         self, context: AuthedServiceContext, code: UserCode | SubmitUserCode
