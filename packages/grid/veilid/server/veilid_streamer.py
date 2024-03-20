@@ -427,8 +427,6 @@ class VeilidStreamer:
                 f"Replying to {update.detail.sender} with {len(reply)} bytes of msg..."
             )
             await self.stream(router, update.detail.sender, reply, stream_id)
-            # Finally delete the buffer
-            self._cleanup_buffer(stream_id)
 
     async def _handle_receive_stream_start(
         self, connection: veilid.VeilidAPI, update: veilid.VeilidUpdate
@@ -479,6 +477,11 @@ class VeilidStreamer:
         """Handles receiving STREAM_END request."""
         _, stream_id = self.stream_end_struct.unpack(update.detail.message)
         buffer = self.buffers[stream_id]
+
+        if None in buffer.chunks:
+            # TODO add retry mechanism to request the missing chunks
+            raise Exception("Did not receive all the chunks")
+
         reassembled_message = b"".join(buffer.chunks)
         hash_matches = (
             hashlib.sha256(reassembled_message).digest() == buffer.message_hash
