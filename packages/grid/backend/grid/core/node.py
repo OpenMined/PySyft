@@ -48,7 +48,7 @@ def mongo_store_config() -> MongoStoreConfig:
 
 def sql_store_config() -> SQLiteStoreConfig:
     client_config = SQLiteStoreClientConfig(
-        filename=str(UID.from_string(get_node_uid_env())),
+        filename=f"{UID.from_string(get_node_uid_env())}.sqlite",
         path=settings.SQLITE_PATH,
     )
     return SQLiteStoreConfig(client_config=client_config)
