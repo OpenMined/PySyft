@@ -75,7 +75,9 @@ def cleanup_locks(locking_config: LockingConfig):
 def sqlite_workspace() -> Generator:
     sqlite_db_name = token_hex(8) + ".sqlite"
     root = os.getenv("SYFT_TEMP_ROOT", "syft")
-    sqlite_workspace_folder = Path(tempfile.gettempdir(), root, "test_db")
+    sqlite_workspace_folder = Path(
+        tempfile.gettempdir(), root, "fixture_sqlite_workspace"
+    )
     sqlite_workspace_folder.mkdir(parents=True, exist_ok=True)
 
     db_path = sqlite_workspace_folder / sqlite_db_name

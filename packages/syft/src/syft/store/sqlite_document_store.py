@@ -127,9 +127,10 @@ class SQLiteBackingStore(KeyValueBackingStore):
                 check_same_thread=False,  # do we need this if we use the lock?
                 # check_same_thread=self.store_config.client_config.check_same_thread,
             )
-            # TODO: Review OSX compatibility.
             # Set journal mode to WAL.
-            # connection.execute("pragma journal_mode=wal")
+            connection.execute("PRAGMA journal_mode = WAL")
+            connection.execute("PRAGMA temp_store = 2")
+            connection.execute("PRAGMA synchronous = 1")
             SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)] = connection
 
     def create_table(self) -> None:
