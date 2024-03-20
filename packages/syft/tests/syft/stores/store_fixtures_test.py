@@ -161,7 +161,7 @@ def sqlite_document_store(root_verify_key, sqlite_workspace: tuple[Path, str], r
 def sqlite_queue_stash_fn(
     root_verify_key,
     sqlite_workspace: tuple[Path, str],
-    locking_config_name: str = "nop",
+    locking_config_name: str = "threading",
 ):
     store = sqlite_document_store_fn(
         root_verify_key,
