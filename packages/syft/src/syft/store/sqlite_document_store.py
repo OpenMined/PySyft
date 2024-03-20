@@ -129,6 +129,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             )
             # Set journal mode to WAL.
             connection.execute("PRAGMA journal_mode = WAL")
+            connection.execute("PRAGMA busy_timeout = 5000")
             connection.execute("PRAGMA temp_store = 2")
             connection.execute("PRAGMA synchronous = 1")
             SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)] = connection
