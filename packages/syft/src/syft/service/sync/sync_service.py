@@ -4,7 +4,7 @@ from typing import Any
 from typing import cast
 
 # third party
-from result import Result
+from result import Ok, Result
 
 # relative
 from ...abstract_node import AbstractNode
@@ -186,6 +186,7 @@ class SyncService(AbstractService):
         items: list[ActionObject | SyftObject],
         permissions: dict[UID, set[str]],
         storage_permissions: dict[UID, set[UID]],
+        ignored_batches: dict[UID, int],
     ) -> SyftSuccess | SyftError:
         permissions = defaultdict(set, permissions)
         storage_permissions = defaultdict(set, storage_permissions)
@@ -208,7 +209,17 @@ class SyncService(AbstractService):
                     )
                 else:
                     return SyftError(message=f"Failed to sync {res.err()}")
-        return SyftSuccess(message=f"Synced {len(items)} items")
+
+        res: Result[str, None] = self.build_state_object_from_current_state(context, ignored_batches)
+        if res.is_err():
+            return SyftError(message=res.message)
+        else:
+            new_state = res.ok()
+            res = self.stash.set(context.credentials, new_state)
+            if res.is_err():
+                return SyftError(message=res.message)
+            else:
+                return SyftSuccess(message=f"Synced {len(items)} items")
 
     @service_method(
         path="sync.get_permissions",
@@ -231,14 +242,11 @@ class SyncService(AbstractService):
                 storage_permissions[_id] = store.storage_permissions[_id]
         return permissions, storage_permissions
 
-    @service_method(
-        path="sync._get_state",
-        name="_get_state",
-        roles=ADMIN_ROLE_LEVEL,
-    )
-    def _get_state(
-        self, context: AuthedServiceContext, add_to_store: bool = False
-    ) -> SyncState | SyftError:
+    def build_state_object_from_current_state(
+        self,
+        context: AuthedServiceContext,
+        new_ignored_batches: dict[UID, int],
+    ) -> Result[str, None]:
         node = cast(AbstractNode, context.node)
 
         new_state = SyncState(node_uid=node.id)
@@ -271,7 +279,7 @@ class SyncService(AbstractService):
         for uid in action_object_ids:
             action_object = node.get_service("actionservice").get(context, uid)  # type: ignore
             if action_object.is_err():
-                return SyftError(message=action_object.err())
+                return action_object
             action_objects.append(action_object.ok())
         new_state.add_objects(action_objects)
 
@@ -284,14 +292,26 @@ class SyncService(AbstractService):
         new_state.storage_permissions = storage_permissions
 
         previous_state = self.stash.get_latest(context=context)
+
+        new_state.ignored_batches = {
+            **previous_state.ignored_batches,
+            **new_ignored_batches,
+        }
         if previous_state is not None:
             new_state.previous_state_link = LinkedObject.from_obj(
                 obj=previous_state,
                 service_type=SyncService,
                 node_uid=context.node.id,  # type: ignore
             )
-
-        if add_to_store:
-            self.stash.set(context.credentials, new_state)
-
         return new_state
+
+    @service_method(
+        path="sync._get_state",
+        name="_get_state",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def _get_state(
+        self, context: AuthedServiceContext, add_to_store: bool = False
+    ) -> SyncState | SyftError:
+        return self.
+        return self.stash.get_latest(context=context)

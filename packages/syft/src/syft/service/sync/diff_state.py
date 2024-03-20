@@ -9,7 +9,7 @@ How to check differences between two objects:
 # stdlib
 import html
 import textwrap
-from typing import Any
+from typing import Any, Optional
 from typing import ClassVar
 
 # third party
@@ -22,8 +22,10 @@ from rich.padding import Padding
 from rich.panel import Panel
 from typing_extensions import Self
 
+from syft.client.sync_decision import SyncDecision
+
 # relative
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_2, short_uid
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
@@ -128,11 +130,14 @@ def recursive_attr_repr(value_attr: list | dict | bytes, num_tabs: int = 0) -> s
     new_num_tabs = num_tabs + 1
 
     if isinstance(value_attr, list):
-        list_repr = "[\n"
-        for elem in value_attr:
-            list_repr += recursive_attr_repr(elem, num_tabs=num_tabs + 1) + "\n"
-        list_repr += "]"
-        return list_repr
+        if len(value_attr) == 1:
+            value_attr = value_attr[0]
+        else:
+            list_repr = "[\n"
+            for elem in value_attr:
+                list_repr += recursive_attr_repr(elem, num_tabs=num_tabs + 1) + "\n"
+            list_repr += "]"
+            return list_repr
 
     elif isinstance(value_attr, dict):
         dict_repr = "{\n"
@@ -145,6 +150,10 @@ def recursive_attr_repr(value_attr: list | dict | bytes, num_tabs: int = 0) -> s
         value_attr = repr(value_attr)  # type: ignore
         if len(value_attr) > 50:
             value_attr = value_attr[:50] + "..."  # type: ignore
+
+    if isinstance(value_attr, UID):
+        value_attr = short_uid(value_attr)
+
     return f"{sketchy_tab*num_tabs}{str(value_attr)}"
 
 
@@ -303,7 +312,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         obj = self.low_obj if side == "low" else self.high_obj
         if obj is None:
             return ""
-        res = f"{self.obj_type.__name__.upper()} #{obj.id}:\n"
+        res = f"{self.obj_type.__name__.upper()} #{short_uid(obj.id)}\n"
         res += self.diff_attributes_str(side)
         return res
 
@@ -450,6 +459,98 @@ class ObjectDiffBatch(SyftObject):
     hierarchy_levels: list[int]
     dependencies: dict[UID, list[UID]] = {}
     dependents: dict[UID, list[UID]] = {}
+    decision: Optional[SyncDecision] = None
+    root_diff: ObjectDiff
+
+
+    def __hash__(self) -> int:
+        return sum(hash(x) for x in self.diffs)
+
+    @property
+    def root_id(self) -> UID:
+        return self.root_diff.object_id
+
+    @property
+    def root_type(self):
+        return self.root_diff.obj_type
+
+    @property
+    def is_ignored(self):
+        return self.decision == SyncDecision.ignore
+    
+    @property
+    def is_skipped(self):
+        return self.decision == SyncDecision.skip
+
+    @classmethod
+    def from_dependencies(cls, root_uid, obj_dependencies, obj_uid_to_diff):
+        def _build_hierarchy_helper(
+            uid: UID, level: int = 0, visited: set | None = None
+        ) -> list:
+            visited = visited if visited is not None else set()
+
+            if uid in visited:
+                return []
+
+            result = [(uid, level)]
+            visited.add(uid)
+            if uid in obj_dependencies:
+                deps = obj_dependencies[uid]
+                for dep_uid in obj_dependencies[uid]:
+                    if dep_uid not in visited:
+                        # NOTE we pass visited + deps to recursive calls, to have
+                        # all objects at the highest level in the hierarchy
+                        # Example:
+                        # ExecutionOutput
+                        # -- Job
+                        # ---- Result
+                        # -- Result
+                        # We want to omit Job.Result, because it's already in ExecutionOutput.Result
+                        result.extend(
+                            _build_hierarchy_helper(
+                                uid=dep_uid,
+                                level=level + 1,
+                                visited=visited | set(deps) - {dep_uid},
+                            )
+                        )
+            return result
+
+        batch_uids = _build_hierarchy_helper(root_uid)
+        diffs = [obj_uid_to_diff[uid] for uid, _ in batch_uids]
+        # levels in the tree that we create
+        levels = [level for _, level in batch_uids]
+
+        batch_uids = {uid for uid, _ in batch_uids}
+        batch_dependencies = {
+            uid: [d for d in obj_dependencies.get(uid, []) if d in batch_uids]
+            for uid in batch_uids
+        }
+        return cls(
+            diffs=diffs,
+            hierarchy_levels=levels,
+            dependencies=batch_dependencies,
+            root_diff=obj_uid_to_diff[root_uid]
+        )
+
+    def _repr_html_(self) -> str:
+        return f"""
+<h2> ObjectBatchDiff </h2>
+{self.diffs._repr_html_()}
+"""
+        
+
+    def _coll_repr_(self) -> dict[str, Any]:
+        # low_state = f"{self.status}\n{self.diff_side_str('low')}"
+        # high_state = f"{self.status}\n{self.diff_side_str('high')}"
+
+        low_batch_str = "\n".join(d.diff_side_str("low") for d in self.diffs)
+        high_batch_str = "\n".join(d.diff_side_str("high") for d in self.diffs)
+        return {
+            "Low side state": html.escape(low_batch_str),
+            "High side state": html.escape(high_batch_str),
+            "Ignored": "Yes" if self.is_ignored else "No"
+        }
+
 
     @property
     def visual_hierarchy(self) -> tuple[type, dict]:
@@ -570,7 +671,10 @@ class NodeDiff(SyftObject):
     low_node_uid: UID
     high_node_uid: UID
     obj_uid_to_diff: dict[UID, ObjectDiff] = {}
-    dependencies: dict[UID, list[UID]] = {}
+    obj_dependencies: dict[UID, list[UID]] = {}
+    batches: list[ObjectDiffBatch] = []
+    low_state: SyncState
+    high_state: SyncState
 
     @classmethod
     def from_sync_state(
@@ -579,11 +683,14 @@ class NodeDiff(SyftObject):
         obj_uid_to_diff = {}
         for obj_id in set(low_state.objects.keys()) | set(high_state.objects.keys()):
             low_obj = low_state.objects.get(obj_id, None)
-            low_permissions = low_state.permissions.get(obj_id, set())
-            low_storage_permissions = low_state.storage_permissions.get(obj_id, set())
             high_obj = high_state.objects.get(obj_id, None)
+
+            low_permissions = low_state.permissions.get(obj_id, set())
             high_permissions = high_state.permissions.get(obj_id, set())
+
+            low_storage_permissions = low_state.storage_permissions.get(obj_id, set())
             high_storage_permissions = high_state.storage_permissions.get(obj_id, set())
+
             diff = ObjectDiff.from_objects(
                 low_obj=low_obj,
                 high_obj=high_obj,
@@ -596,28 +703,35 @@ class NodeDiff(SyftObject):
             )
             obj_uid_to_diff[diff.object_id] = diff
 
-        node_diff = cls(
+        obj_dependencies = NodeDiff.dependencies_from_states(low_state, high_state)
+        batches = NodeDiff.hierarchies(obj_dependencies, obj_uid_to_diff)
+
+        return cls(
             low_node_uid=low_state.node_uid,
             high_node_uid=high_state.node_uid,
             obj_uid_to_diff=obj_uid_to_diff,
+            obj_dependencies=obj_dependencies,
+            batches=batches,
+            low_state=low_state,
+            high_state=high_state
         )
 
-        node_diff._init_dependencies(low_state, high_state)
-        return node_diff
-
-    def _init_dependencies(self, low_state: SyncState, high_state: SyncState) -> None:
+    @staticmethod
+    def dependencies_from_states(low_state: SyncState, high_state: SyncState) -> dict[UID, list[UID]]:
+        dependencies = {}
         all_parents = set(low_state.dependencies.keys()) | set(
             high_state.dependencies.keys()
         )
         for parent in all_parents:
             low_deps = low_state.dependencies.get(parent, [])
             high_deps = high_state.dependencies.get(parent, [])
-            self.dependencies[parent] = list(set(low_deps) | set(high_deps))
+            dependencies[parent] = list(set(low_deps) | set(high_deps))
+        return dependencies
 
     @property
     def diffs(self) -> list[ObjectDiff]:
         diffs_depthfirst = [
-            diff for hierarchy in self.hierarchies for diff in hierarchy.diffs
+            diff for hierarchy in self.batches for diff in hierarchy.diffs
         ]
         # deduplicate
         diffs = []
@@ -629,11 +743,11 @@ class NodeDiff(SyftObject):
         return diffs
 
     def _repr_html_(self) -> Any:
-        return self.diffs._repr_html_()
+        return self.batches._repr_html_()
 
-    def _sort_hierarchies(
-        self, hierarchies: list[ObjectDiffBatch]
-    ) -> list[ObjectDiffBatch]:
+
+    @staticmethod
+    def _sort_batches(hierarchies: list[ObjectDiffBatch]) -> list[ObjectDiffBatch]:
         without_usercode = []
         grouped_by_usercode: dict[UID, list[ObjectDiffBatch]] = {}
         for hierarchy in hierarchies:
@@ -668,8 +782,8 @@ class NodeDiff(SyftObject):
         sorted_hierarchies.extend(without_usercode)
         return sorted_hierarchies
 
-    @property
-    def hierarchies(self) -> list[ObjectDiffBatch]:
+    @staticmethod
+    def hierarchies(obj_dependencies: dict[UID, list[UID]], obj_uid_to_diff: dict[UID, ObjectDiff]) -> list[ObjectDiffBatch]:
         # Returns a list of hierarchies, where each hierarchy is a list of tuples (ObjectDiff, level),
         # in depth-first order.
 
@@ -680,62 +794,22 @@ class NodeDiff(SyftObject):
         # ---- Diff3
         # -- Diff4
 
-        def _build_hierarchy_helper(
-            uid: UID, level: int = 0, visited: set | None = None
-        ) -> list:
-            visited = visited if visited is not None else set()
-
-            if uid in visited:
-                return []
-
-            result = [(uid, level)]
-            visited.add(uid)
-            if uid in self.dependencies:
-                deps = self.dependencies[uid]
-                for dep_uid in self.dependencies[uid]:
-                    if dep_uid not in visited:
-                        # NOTE we pass visited + deps to recursive calls, to have
-                        # all objects at the highest level in the hierarchy
-                        # Example:
-                        # ExecutionOutput
-                        # -- Job
-                        # ---- Result
-                        # -- Result
-                        # We want to omit Job.Result, because it's already in ExecutionOutput.Result
-                        result.extend(
-                            _build_hierarchy_helper(
-                                uid=dep_uid,
-                                level=level + 1,
-                                visited=visited | set(deps) - {dep_uid},
-                            )
-                        )
-            return result
-
-        hierarchies = []
-        all_ids = set(self.obj_uid_to_diff.keys())
-        child_ids = {child for deps in self.dependencies.values() for child in deps}
+        batches = []
+        all_ids = set(obj_uid_to_diff.keys())
+        ids_with_parent = {child for deps in obj_dependencies.values() for child in deps}
         # Root ids are object ids with no parents
-        root_ids = list(all_ids - child_ids)
+
+        # TODO: all requests/status/ jobs or execution output
+        root_ids = list(all_ids - ids_with_parent)
 
         for root_uid in root_ids:
-            uid_hierarchy = _build_hierarchy_helper(root_uid)
-            diffs = [self.obj_uid_to_diff[uid] for uid, _ in uid_hierarchy]
-            levels = [level for _, level in uid_hierarchy]
 
-            batch_uids = {uid for uid, _ in uid_hierarchy}
-            dependencies = {
-                uid: [d for d in self.dependencies.get(uid, []) if d in batch_uids]
-                for uid in batch_uids
-            }
-
-            batch = ObjectDiffBatch(
-                diffs=diffs,
-                hierarchy_levels=levels,
-                dependencies=dependencies,
+            batch = ObjectDiffBatch.from_dependencies(
+                root_uid, obj_dependencies, obj_uid_to_diff
             )
-            hierarchies.append(batch)
+            batches.append(batch)
 
-        hierarchies_sorted = self._sort_hierarchies(hierarchies)
+        hierarchies_sorted = NodeDiff._sort_batches(batches)
         return hierarchies_sorted
 
     def objs_to_sync(self) -> list[SyftObject]:
@@ -746,12 +820,12 @@ class NodeDiff(SyftObject):
         return objs
 
 
-class SyncDecision(SyftObject):
+class SyncInstruction(SyftObject):
     __canonical_name__ = "SyncDecision"
     __version__ = SYFT_OBJECT_VERSION_2
 
     diff: ObjectDiff
-    decision: str | None
+    decision: SyncDecision | None
     new_permissions_lowside: list[ActionObjectPermission]
     new_storage_permissions_lowside: list[StoragePermission]
     new_storage_permissions_highside: list[StoragePermission]
@@ -768,10 +842,16 @@ class ResolvedSyncState(SyftObject):
     delete_objs: list[SyftObject] = []
     new_permissions: list[ActionObjectPermission] = []
     new_storage_permissions: list[StoragePermission] = []
+    ignored_batches: dict[UID, int] = {} # batch root uid -> hash of the batch
     alias: str
 
-    def add_sync_decision(self, sync_decision: SyncDecision) -> None:
-        diff = sync_decision.diff
+    def add_skipped_ignored(self, batch: ObjectDiffBatch) -> None:
+        self.ignored_batches[batch.root_id] = hash(batch)
+
+    def add_sync_instruction(self, sync_instruction: SyncInstruction) -> None:
+        if sync_instruction.decision == SyncDecision.ignore or sync_instruction.decision == SyncDecision.skip:
+            return
+        diff = sync_instruction.diff
 
         if diff.status == "SAME":
             return
@@ -779,10 +859,10 @@ class ResolvedSyncState(SyftObject):
         my_obj = diff.low_obj if self.alias == "low" else diff.high_obj
         other_obj = diff.low_obj if self.alias == "high" else diff.high_obj
 
-        if other_obj is not None and sync_decision.mockify:
+        if other_obj is not None and sync_instruction.mockify:
             other_obj = other_obj.create_shareable_sync_copy(mock=True)
 
-        if sync_decision.decision != self.alias:  # chose for the other
+        if sync_instruction.decision.value != self.alias:  # chose for the other
             if diff.status == "DIFF":
                 # keep IDs comparison here, otherwise it will break with actionobjects
                 if other_obj.id not in [x.id for x in self.update_objs]:  # type: ignore
@@ -800,13 +880,13 @@ class ResolvedSyncState(SyftObject):
                         self.delete_objs.append(my_obj)
 
         if self.alias == "low":
-            self.new_permissions.extend(sync_decision.new_permissions_lowside)
+            self.new_permissions.extend(sync_instruction.new_permissions_lowside)
             self.new_storage_permissions.extend(
-                sync_decision.new_storage_permissions_lowside
+                sync_instruction.new_storage_permissions_lowside
             )
         elif self.alias == "high":
             self.new_storage_permissions.extend(
-                sync_decision.new_storage_permissions_highside
+                sync_instruction.new_storage_permissions_highside
             )
         else:
             raise ValueError("Invalid alias")
@@ -818,6 +898,7 @@ class ResolvedSyncState(SyftObject):
             f"  update_objs={self.update_objs},\n"
             f"  delete_objs={self.delete_objs}\n"
             f"  new_permissions={self.new_permissions}\n"
+            f"  ignored_batches={list(self.ignored_batches.keys())}\n"
             f")"
         )
 

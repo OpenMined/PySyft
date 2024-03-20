@@ -81,6 +81,7 @@ class SyncState(SyftObject):
     previous_state_link: LinkedObject | None = None
     permissions: dict[UID, set[str]] = {}
     storage_permissions: dict[UID, set[UID]] = {}
+    ignored_batches: dict[UID, hash]
 
     __attr_searchable__ = ["created_at"]
 
@@ -132,7 +133,7 @@ class SyncState(SyftObject):
         ids = set()
 
         previous_diff = self.get_previous_state_diff()
-        for hierarchy in previous_diff.hierarchies:
+        for hierarchy in previous_diff.batches:
             for diff, level in zip(hierarchy.diffs, hierarchy.hierarchy_levels):
                 if diff.object_id in ids:
                     continue

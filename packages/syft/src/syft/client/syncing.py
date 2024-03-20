@@ -1,6 +1,8 @@
 # stdlib
 from time import sleep
 
+from syft.client.sync_decision import SyncDecision
+
 # relative
 from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionPermission
@@ -11,28 +13,45 @@ from ..service.sync.diff_state import NodeDiff
 from ..service.sync.diff_state import ObjectDiff
 from ..service.sync.diff_state import ObjectDiffBatch
 from ..service.sync.diff_state import ResolvedSyncState
-from ..service.sync.diff_state import SyncDecision
+from ..service.sync.diff_state import SyncInstruction
 from ..service.sync.sync_state import SyncState
 
 
 def compare_states(low_state: SyncState, high_state: SyncState) -> NodeDiff:
+    # NodeDiff
     return NodeDiff.from_sync_state(low_state=low_state, high_state=high_state)
 
 
+
+
+
 def get_user_input_for_resolve() -> str | None:
+    options = [x.value for x in SyncDecision]
+    options_str = ", ".join(options[:-1]) + f" or {options[-1]}"
     print(
-        "Do you want to keep the low state or the high state for these objects? choose 'low' or 'high'"
+        f"How do you want to sync these objects? choose between {options_str}"
     )
 
     while True:
         decision = input()
         decision = decision.lower()
 
-        if decision in ["low", "high"]:
-            return decision
-        else:
-            print("Please choose between `low` or `high`")
+        try:
+            return SyncDecision(decision)
+        except ValueError:
+            print(f"Please choose between {options_str}")
 
+def handle_ignore_skip(batch: ObjectDiffBatch, decision: SyncDecision, other_batches: list[ObjectDiffBatch]):
+    if decision == SyncDecision.skip or decision == SyncDecision.ignore:
+        skipped_or_ignored_ids = set([x.object_id for x in batch.diffs])
+        for other_batch in other_batches:
+            if other_batch.decision != decision:
+                other_batch_ids = set([d.object_id for d in other_batch.diffs])
+                if len(other_batch_ids & skipped_or_ignored_ids) != 0:
+                    other_batch.decision=decision
+                    skipped_or_ignored_ids.update(other_batch_ids)
+                    action = "Skipping" if decision == SyncDecision.skip else "Ignoring"
+                    print(f"{action} other batch with root {other_batch.root_type.__name__}")
 
 def resolve(
     state: NodeDiff,
@@ -45,29 +64,38 @@ def resolve(
     resolved_state_low = ResolvedSyncState(node_uid=state.low_node_uid, alias="low")
     resolved_state_high = ResolvedSyncState(node_uid=state.high_node_uid, alias="high")
 
-    for batch_diff in state.hierarchies:
-        batch_decision = decision
+    for batch_diff in state.batches:
+        batch_decision = decision or batch_diff.decision
         if all(diff.status == "SAME" for diff in batch_diff.diffs):
             # Hierarchy has no diffs
             continue
 
-        print(batch_diff.__repr__())
+        if batch_diff.decision is None:
+            print(batch_diff.__repr__())
 
         if batch_decision is None:
-            batch_decision = get_user_input_for_resolve()
+            batch_decision: SyncDecision = get_user_input_for_resolve()
+            batch_diff.decision = batch_decision
+            other_batches = [b for b in state.batches if b is not batch_diff]
+            handle_ignore_skip(batch_diff, batch_decision, other_batches)
+        else:
+            batch_decision: SyncDecision = SyncDecision(batch_decision)
+        
+        if batch_decision not in [SyncDecision.skip, SyncDecision.ignore]:
+            sync_instructions: list[SyncInstruction] = get_sync_instructions_for_batch_items(
+                batch_diff,
+                batch_decision,
+                share_private_objects=share_private_objects,
+                ask_for_input=ask_for_input,
+            )
+        else:
+            sync_instructions: list[SyncInstruction] = []
 
-        sync_decisions: list[SyncDecision] = get_sync_decisions_for_batch_items(
-            batch_diff,
-            batch_decision,
-            share_private_objects=share_private_objects,
-            ask_for_input=ask_for_input,
-        )
+        print(f"Decision: Syncing {len(batch_diff)} objects")
 
-        print(f"Decision: Syncing {len(batch_diff)} objects from {batch_decision} side")
-
-        for sync_decision in sync_decisions:
-            resolved_state_low.add_sync_decision(sync_decision)
-            resolved_state_high.add_sync_decision(sync_decision)
+        for sync_instruction in sync_instructions:
+            resolved_state_low.add_sync_instruction(sync_instruction)
+            resolved_state_high.add_sync_instruction(sync_instruction)
 
         print()
         print("=" * 100)
@@ -76,13 +104,13 @@ def resolve(
     return resolved_state_low, resolved_state_high
 
 
-def get_sync_decisions_for_batch_items(
+def get_sync_instructions_for_batch_items(
     batch_diff: ObjectDiffBatch,
-    decision: str,
+    decision: SyncDecision,
     share_private_objects: bool = False,
     ask_for_input: bool = True,
-) -> list[SyncDecision]:
-    sync_decisions: list[SyncDecision] = []
+) -> list[SyncInstruction]:
+    sync_decisions: list[SyncInstruction] = []
 
     unpublished_private_high_diffs: list[ObjectDiff] = []
     for diff in batch_diff.diffs:
@@ -170,7 +198,7 @@ def get_sync_decisions_for_batch_items(
             new_storage_permissions_highside = []
 
         sync_decisions.append(
-            SyncDecision(
+            SyncInstruction(
                 diff=diff,
                 decision=decision,
                 new_permissions_lowside=new_permissions_low_side,
