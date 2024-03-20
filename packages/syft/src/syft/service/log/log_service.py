@@ -64,6 +64,7 @@ class LogService(AbstractService):
     @service_method(path="log.get", name="get", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def get(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid)
+
         if result.is_err():
             return SyftError(message=str(result.err()))
 
@@ -124,6 +125,19 @@ class LogService(AbstractService):
             return result.ok()
         else:
             return SyftError(message=result.err())
+
+    @service_method(
+        path="log.has_storage_permission",
+        name="has_storage_permission",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def has_storage_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
+        result = self.stash.has_storage_permission(
+            context.credentials,
+            uid,
+        )
+
+        return result
 
 
 TYPE_TO_SERVICE[SyftLog] = LogService
