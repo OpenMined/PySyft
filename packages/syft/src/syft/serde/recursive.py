@@ -176,10 +176,7 @@ def chunk_bytes(
 def combine_bytes(capnp_list: list[bytes]) -> bytes:
     # TODO: make sure this doesn't copy, perhaps allocate a fixed size buffer
     # and move the bytes into it as we go
-    bytes_value = b""
-    for value in capnp_list:
-        bytes_value += value
-    return bytes_value
+    return b"".join(capnp_list)
 
 
 def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuilder:

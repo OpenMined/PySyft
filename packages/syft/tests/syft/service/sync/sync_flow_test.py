@@ -8,7 +8,9 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft import Orchestra
 from syft.abstract_node import NodeSideType
+from syft.client.domain_client import DomainClient
 from syft.client.syncing import compare_states
 from syft.client.syncing import resolve
 from syft.service.action.action_object import ActionObject
@@ -381,3 +383,24 @@ def test_sync_flow_no_sharing():
 
     low_worker.close()
     high_worker.close()
+
+
+@pytest.mark.skip(reason="This test is just for performance testing")
+def test_large_save_to_blob_storage():
+    node_high = Orchestra.launch(
+        name="test_h",
+        node_side_type="high",
+        dev_mode=True,
+        reset=True,
+        local_db=True,
+        n_consumers=1,
+        create_producer=True,
+    )
+    client_high: DomainClient = node_high.login(
+        email="info@openmined.org", password="changethis"
+    )
+    # from 0.1B to 0.5B of elements, it starts to be slow
+    # serialized data is from 0.8GB to 4GB
+    mock_high = np.random.random(100_000_000)
+    ao = ActionObject.from_obj(mock_high)
+    ao.send(client_high)
