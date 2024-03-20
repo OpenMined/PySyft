@@ -34,7 +34,20 @@ if TYPE_CHECKING:
 
 
 class NodeRoute:
-    def client_with_context(self, context: NodeServiceContext) -> SyftClient:
+    def client_with_context(
+        self, context: NodeServiceContext
+    ) -> SyftClient | SyftError:
+        """
+        Convert the current route (self) to a connection (either HTTP, Veilid or Python)
+        and create a SyftClient from the connection.
+
+        Args:
+            context (NodeServiceContext): The NodeServiceContext containing the node information.
+
+        Returns:
+            SyftClient | SyftError: Returns the created SyftClient, or SyftError
+                if the client type is not valid or if the context's node is None.
+        """
         connection = route_to_connection(route=self, context=context)
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
@@ -43,7 +56,20 @@ class NodeRoute:
             return SyftError(message=f"context {context}'s node is None")
         return client_type(connection=connection, credentials=context.node.signing_key)
 
-    def validate_with_context(self, context: AuthedServiceContext) -> NodePeer:
+    def validate_with_context(
+        self, context: AuthedServiceContext
+    ) -> NodePeer | SyftError:
+        """
+        Check if the current route (self) is able to reach the node in the `context`
+            and create a NodePeer with the current route.
+
+        Args:
+            context (AuthedServiceContext): The context containing the authentication information.
+
+        Returns:
+            NodePeer | SyftError: A NodePeer object if the validation is successful,
+            otherwise a SyftError object.
+        """
         # relative
         from .node_peer import NodePeer
 
@@ -68,7 +94,7 @@ class NodeRoute:
             return SyftError(message="Signature Verification Failed in ping")
 
         # Step 2: Create a Node Peer with the given route
-        self_node_peer = context.node.settings.to(NodePeer)
+        self_node_peer: NodePeer = context.node.settings.to(NodePeer)
         self_node_peer.node_routes.append(self)
 
         return self_node_peer
