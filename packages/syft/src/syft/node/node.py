@@ -2,20 +2,20 @@
 from __future__ import annotations
 
 # stdlib
-import binascii
 from collections import OrderedDict
 from collections.abc import Callable
-import contextlib
 from datetime import datetime
 from functools import partial
 import hashlib
 from multiprocessing import current_process
 import os
 from pathlib import Path
+import shutil
 import subprocess  # nosec
+import tempfile
+from time import sleep
 import traceback
 from typing import Any
-import uuid
 
 # third party
 from nacl.signing import SigningKey
@@ -125,7 +125,6 @@ from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
 from ..util.util import get_env
 from ..util.util import get_queue_address
-from ..util.util import get_root_data_path
 from ..util.util import random_name
 from ..util.util import str_to_bool
 from ..util.util import thread_ident
@@ -302,7 +301,7 @@ class Node(AbstractNode):
         is_subprocess: bool = False,
         node_type: str | NodeType = NodeType.DOMAIN,
         local_db: bool = False,
-        sqlite_path: str | None = None,
+        reset: bool = False,
         blob_storage_config: BlobStorageConfig | None = None,
         queue_config: QueueConfig | None = None,
         queue_port: int | None = None,
@@ -329,6 +328,7 @@ class Node(AbstractNode):
             if id is None:
                 id = UID()
             self.id = id
+
         self.packages = ""
 
         self.signing_key = None
@@ -341,6 +341,9 @@ class Node(AbstractNode):
 
         if self.signing_key is None:
             self.signing_key = SyftSigningKey.generate()
+
+        if reset:
+            self.remove_temp_dir()
 
         self.processes = processes
         self.is_subprocess = is_subprocess
@@ -382,8 +385,14 @@ class Node(AbstractNode):
         )
 
         self.service_config = ServiceConfigRegistry.get_registered_configs()
-        self.local_db = local_db
-        self.sqlite_path = sqlite_path
+
+        use_sqlite = local_db or (processes > 0 and not is_subprocess)
+        document_store_config = document_store_config or self.get_default_store(
+            use_sqlite=use_sqlite
+        )
+        action_store_config = action_store_config or self.get_default_store(
+            use_sqlite=use_sqlite
+        )
         self.init_stores(
             action_store_config=action_store_config,
             document_store_config=document_store_config,
@@ -464,11 +473,21 @@ class Node(AbstractNode):
             and any("docker" in line for line in open(path))
         )
 
+    def get_default_store(self, use_sqlite: bool) -> StoreConfig:
+        if use_sqlite:
+            return SQLiteStoreConfig(
+                client_config=SQLiteStoreClientConfig(
+                    filename=f"{self.id}.sqlite",
+                    path=self.get_temp_dir("db"),
+                )
+            )
+        return DictStoreConfig()
+
     def init_blob_storage(self, config: BlobStorageConfig | None = None) -> None:
         if config is None:
-            root_directory = get_root_data_path()
-            base_directory = root_directory / f"{self.id}"
-            client_config = OnDiskBlobStorageClientConfig(base_directory=base_directory)
+            client_config = OnDiskBlobStorageClientConfig(
+                base_directory=self.get_temp_dir("blob")
+            )
             config_ = OnDiskBlobStorageConfig(client_config=client_config)
         else:
             config_ = config
@@ -495,8 +514,14 @@ class Node(AbstractNode):
         for p in self.queue_manager.producers.values():
             p.close()
 
+        NodeRegistry.remove_node(self.id)
+
     def close(self) -> None:
         self.stop()
+
+    def cleanup(self) -> None:
+        self.stop()
+        self.remove_temp_dir()
 
     def create_queue_config(
         self,
@@ -601,7 +626,6 @@ class Node(AbstractNode):
         processes: int = 0,
         reset: bool = False,
         local_db: bool = False,
-        sqlite_path: str | None = None,
         node_type: str | NodeType = NodeType.DOMAIN,
         node_side_type: str | NodeSideType = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
@@ -613,60 +637,10 @@ class Node(AbstractNode):
         migrate: bool = False,
         in_memory_workers: bool = True,
     ) -> Self:
+        uid = UID.with_seed(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
-        name_hash_uuid = name_hash[0:16]
-        name_hash_uuid = bytearray(name_hash_uuid)
-        name_hash_uuid[6] = (
-            name_hash_uuid[6] & 0x0F
-        ) | 0x40  # Set version to 4 (uuid4)
-        name_hash_uuid[8] = (name_hash_uuid[8] & 0x3F) | 0x80  # Set variant to RFC 4122
-        name_hash_string = binascii.hexlify(bytearray(name_hash_uuid)).decode("utf-8")
-        if uuid.UUID(name_hash_string).version != 4:
-            raise Exception(f"Invalid UID: {name_hash_string} for name: {name}")
-        uid = UID(name_hash_string)
         key = SyftSigningKey(signing_key=SigningKey(name_hash))
         blob_storage_config = None
-        if reset:
-            store_config = SQLiteStoreClientConfig()
-            store_config.filename = f"{uid}.sqlite"
-
-            # stdlib
-            import sqlite3
-
-            with contextlib.closing(sqlite3.connect(store_config.file_path)) as db:
-                cursor = db.cursor()
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-                tables = cursor.fetchall()
-
-                for table_name in tables:
-                    drop_table_sql = f"DROP TABLE IF EXISTS {table_name[0]};"
-                    cursor.execute(drop_table_sql)
-
-                db.commit()
-                db.close()
-
-            # remove lock files for reading
-            # we should update this to partition locks per node
-            for f in Path("/tmp/sherlock").glob("*.json"):  # nosec
-                if f.is_file():
-                    f.unlink()
-
-            with contextlib.suppress(FileNotFoundError, PermissionError):
-                if os.path.exists(store_config.file_path):
-                    os.unlink(store_config.file_path)
-
-            # Reset blob storage
-            root_directory = get_root_data_path()
-            base_directory = root_directory / f"{uid}"
-            if base_directory.exists():
-                for file in base_directory.iterdir():
-                    file.unlink()
-            blob_client_config = OnDiskBlobStorageClientConfig(
-                base_directory=base_directory
-            )
-            blob_storage_config = OnDiskBlobStorageConfig(
-                client_config=blob_client_config
-            )
 
         node_type = NodeType(node_type)
         node_side_type = NodeSideType(node_side_type)
@@ -677,7 +651,6 @@ class Node(AbstractNode):
             signing_key=key,
             processes=processes,
             local_db=local_db,
-            sqlite_path=sqlite_path,
             node_type=node_type,
             node_side_type=node_side_type,
             enable_warnings=enable_warnings,
@@ -689,6 +662,7 @@ class Node(AbstractNode):
             dev_mode=dev_mode,
             migrate=migrate,
             in_memory_workers=in_memory_workers,
+            reset=reset,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -879,51 +853,22 @@ class Node(AbstractNode):
 
     def init_stores(
         self,
-        document_store_config: StoreConfig | None = None,
-        action_store_config: StoreConfig | None = None,
+        document_store_config: StoreConfig,
+        action_store_config: StoreConfig,
     ) -> None:
-        if document_store_config is None:
-            if self.local_db or (self.processes > 0 and not self.is_subprocess):
-                client_config = SQLiteStoreClientConfig(path=self.sqlite_path)
-                document_store_config = SQLiteStoreConfig(client_config=client_config)
-            else:
-                document_store_config = DictStoreConfig()
-        if (
-            isinstance(document_store_config, SQLiteStoreConfig)
-            and document_store_config.client_config.filename is None
-        ):
-            document_store_config.client_config.filename = f"{self.id}.sqlite"
-            if self.dev_mode:
-                print(
-                    f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
-                )
-        document_store = document_store_config.store_type
-        self.document_store_config = document_store_config
-
         # We add the python id of the current node in order
         # to create one connection per Node object in MongoClientCache
         # so that we avoid closing the connection from a
         # different thread through the garbage collection
-        if isinstance(self.document_store_config, MongoStoreConfig):
-            self.document_store_config.client_config.node_obj_python_id = id(self)
+        if isinstance(document_store_config, MongoStoreConfig):
+            document_store_config.client_config.node_obj_python_id = id(self)
 
-        self.document_store = document_store(
+        self.document_store_config = document_store_config
+        self.document_store = document_store_config.store_type(
             node_uid=self.id,
             root_verify_key=self.verify_key,
             store_config=document_store_config,
         )
-        if action_store_config is None:
-            if self.local_db or (self.processes > 0 and not self.is_subprocess):
-                client_config = SQLiteStoreClientConfig(path=self.sqlite_path)
-                action_store_config = SQLiteStoreConfig(client_config=client_config)
-            else:
-                action_store_config = DictStoreConfig()
-
-        if (
-            isinstance(action_store_config, SQLiteStoreConfig)
-            and action_store_config.client_config.filename is None
-        ):
-            action_store_config.client_config.filename = f"{self.id}.sqlite"
 
         if isinstance(action_store_config, SQLiteStoreConfig):
             self.action_store: ActionStore = SQLiteActionStore(
@@ -1040,6 +985,24 @@ class Node(AbstractNode):
 
         return getattr(service_obj, method_name)
 
+    def get_temp_dir(self, dir_name: str = "") -> Path:
+        """
+        Get a temporary directory unique to the node.
+        Provide all dbs, blob dirs, and locks using this directory.
+        """
+        root = os.getenv("SYFT_TEMP_ROOT", "syft")
+        p = Path(tempfile.gettempdir(), root, str(self.id), dir_name)
+        p.mkdir(parents=True, exist_ok=True)
+        return p
+
+    def remove_temp_dir(self) -> None:
+        """
+        Remove the temporary directory for this node.
+        """
+        rootdir = self.get_temp_dir()
+        if rootdir.exists():
+            shutil.rmtree(rootdir, ignore_errors=True)
+
     @property
     def settings(self) -> NodeSettingsV2:
         settings_stash = SettingsStash(store=self.document_store)
@@ -1104,7 +1067,6 @@ class Node(AbstractNode):
         self, credentials: SyftVerifyKey, uid: UID
     ) -> QueueItem | None | SyftError:
         # stdlib
-        from time import sleep
 
         # relative
         from ..service.queue.queue import Status
@@ -1654,6 +1616,11 @@ class NodeRegistry:
     @classmethod
     def get_all_nodes(cls) -> list[Node]:
         return list(cls.__node_registry__.values())
+
+    @classmethod
+    def remove_node(cls, node_uid: UID) -> None:
+        if node_uid in cls.__node_registry__:
+            del cls.__node_registry__[node_uid]
 
 
 def get_default_worker_tag_by_env(dev_mode: bool = False) -> str | None:

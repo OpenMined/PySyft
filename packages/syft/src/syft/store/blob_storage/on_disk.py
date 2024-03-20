@@ -1,7 +1,6 @@
 # stdlib
 from io import BytesIO
 from pathlib import Path
-from tempfile import gettempdir
 from typing import Any
 
 # third party
@@ -88,7 +87,7 @@ class OnDiskBlobStorageConnection(BlobStorageConnection):
 
 @serializable()
 class OnDiskBlobStorageClientConfig(BlobStorageClientConfig):
-    base_directory: Path = Path(gettempdir())
+    base_directory: Path
 
 
 @serializable()
@@ -106,4 +105,4 @@ class OnDiskBlobStorageClient(BlobStorageClient):
 @serializable()
 class OnDiskBlobStorageConfig(BlobStorageConfig):
     client_type: type[BlobStorageClient] = OnDiskBlobStorageClient
-    client_config: OnDiskBlobStorageClientConfig = OnDiskBlobStorageClientConfig()
+    client_config: OnDiskBlobStorageClientConfig

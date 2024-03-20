@@ -63,7 +63,7 @@ def test_queue_stash_sanity(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.mark.flaky(reruns=5, reruns_delay=2)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_stash_set_get(root_verify_key, queue: Any) -> None:
     objs = []
     repeats = 5
@@ -105,7 +105,7 @@ def test_queue_stash_set_get(root_verify_key, queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.mark.flaky(reruns=5, reruns_delay=2)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_stash_update(root_verify_key, queue: Any) -> None:
     obj = mock_queue_object()
     res = queue.set(root_verify_key, obj, ignore_duplicates=False)
@@ -136,7 +136,7 @@ def test_queue_stash_update(root_verify_key, queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.mark.flaky(reruns=5, reruns_delay=2)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_set_existing_queue_threading(root_verify_key, queue: Any) -> None:
     thread_cnt = 3
     repeats = 5
@@ -179,7 +179,7 @@ def test_queue_set_existing_queue_threading(root_verify_key, queue: Any) -> None
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.mark.flaky(reruns=5, reruns_delay=2)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_update_existing_queue_threading(root_verify_key, queue: Any) -> None:
     thread_cnt = 3
     repeats = 5
@@ -223,7 +223,7 @@ def test_queue_update_existing_queue_threading(root_verify_key, queue: Any) -> N
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.mark.flaky(reruns=10, reruns_delay=2)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_set_delete_existing_queue_threading(
     root_verify_key,
     queue: Any,
@@ -355,7 +355,7 @@ def helper_queue_set_threading(root_verify_key, create_queue_cbk) -> None:
 
 
 @pytest.mark.parametrize("backend", [helper_queue_set_threading])
-@pytest.mark.flaky(reruns=5, reruns_delay=3)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_set_sqlite(root_verify_key, sqlite_workspace, backend):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(root_verify_key, sqlite_workspace)
@@ -364,7 +364,7 @@ def test_queue_set_sqlite(root_verify_key, sqlite_workspace, backend):
 
 
 @pytest.mark.parametrize("backend", [helper_queue_set_threading])
-@pytest.mark.flaky(reruns=5, reruns_delay=2)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_set_threading_mongo(root_verify_key, mongo_document_store, backend):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
@@ -443,7 +443,7 @@ def helper_queue_update_threading(root_verify_key, create_queue_cbk) -> None:
 
 
 @pytest.mark.parametrize("backend", [helper_queue_update_threading])
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_update_threading_sqlite(root_verify_key, sqlite_workspace, backend):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(root_verify_key, sqlite_workspace)
@@ -452,7 +452,7 @@ def test_queue_update_threading_sqlite(root_verify_key, sqlite_workspace, backen
 
 
 @pytest.mark.parametrize("backend", [helper_queue_update_threading])
-@pytest.mark.flaky(reruns=5, reruns_delay=2)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_update_threading_mongo(root_verify_key, mongo_document_store, backend):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
@@ -551,7 +551,7 @@ def helper_queue_set_delete_threading(
 
 
 @pytest.mark.parametrize("backend", [helper_queue_set_delete_threading])
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_delete_threading_sqlite(root_verify_key, sqlite_workspace, backend):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(root_verify_key, sqlite_workspace)
@@ -560,7 +560,7 @@ def test_queue_delete_threading_sqlite(root_verify_key, sqlite_workspace, backen
 
 
 @pytest.mark.parametrize("backend", [helper_queue_set_delete_threading])
-@pytest.mark.flaky(reruns=5, reruns_delay=2)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_delete_threading_mongo(root_verify_key, mongo_document_store, backend):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
