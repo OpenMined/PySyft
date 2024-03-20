@@ -222,17 +222,11 @@ class SyncService(AbstractService):
                 storage_permissions[_id] = store.storage_permissions[_id]
         return permissions, storage_permissions
 
-    @service_method(
-        path="sync._get_state",
-        name="_get_state",
-        roles=ADMIN_ROLE_LEVEL,
-    )
-    def _get_state(
-        self, context: AuthedServiceContext, add_to_store: bool = False
-    ) -> SyncState | SyftError:
+    def get_all_items(
+        self, context: AuthedServiceContext
+    ) -> list[SyncableSyftObject] | SyftError:
         node = cast(AbstractNode, context.node)
-
-        new_state = SyncState(node_uid=node.id)
+        all_items = []
 
         services_to_sync = [
             "requestservice",
@@ -246,12 +240,13 @@ class SyncService(AbstractService):
         for service_name in services_to_sync:
             service = node.get_service(service_name)
             items = service.get_all(context)
-            new_state.add_objects(items)  # type: ignore
+            if isinstance(items, SyftError):
+                return items
+            all_items.extend(items)
 
-        # TODO workaround, we only need action objects from outputs for now
-
+        # NOTE we only need action objects from outputs for now
         action_object_ids = set()
-        for obj in new_state.objects.values():
+        for obj in all_items:
             if isinstance(obj, ExecutionOutput):
                 action_object_ids |= set(obj.output_id_list)
             elif isinstance(obj, Job) and obj.result is not None:
@@ -259,32 +254,42 @@ class SyncService(AbstractService):
                     obj.result = obj.result.as_empty()
                 action_object_ids.add(obj.result.id)
 
-        action_objects = []
         for uid in action_object_ids:
             action_object = node.get_service("actionservice").get(
                 context, uid, resolve_nested=False
             )  # type: ignore
             if action_object.is_err():
                 return SyftError(message=action_object.err())
-            action_objects.append(action_object.ok())
+            all_items.append(action_object.ok())
 
-        new_state.add_objects(action_objects)
+        return all_items
 
-        new_state._build_dependencies()  # type: ignore
-
-        permissions, storage_permissions = self.get_permissions(
-            context, new_state.objects.values()
-        )
-        new_state.permissions = permissions
-        new_state.storage_permissions = storage_permissions
+    @service_method(
+        path="sync._get_state",
+        name="_get_state",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def _get_state(
+        self, context: AuthedServiceContext, add_to_store: bool = False
+    ) -> SyncState | SyftError:
+        objects = self.get_all_items(context)
+        permissions, storage_permissions = self.get_permissions(context, objects)
 
         previous_state = self.stash.get_latest(context=context)
         if previous_state is not None:
-            new_state.previous_state_link = LinkedObject.from_obj(
+            previous_state_link = LinkedObject.from_obj(
                 obj=previous_state,
                 service_type=SyncService,
                 node_uid=context.node.id,  # type: ignore
             )
+
+        new_state = SyncState.from_objects(
+            node_uid=context.node.id,  # type: ignore
+            objects=objects,
+            permissions=permissions,
+            storage_permissions=storage_permissions,
+            previous_state_link=previous_state_link,
+        )
 
         if add_to_store:
             self.stash.set(context.credentials, new_state)
