@@ -81,11 +81,11 @@ def pytest_xdist_auto_num_workers(config):
     return None
 
 
-# def pytest_collection_modifyitems(items):
-#     for item in items:
-#         item_fixtures = getattr(item, "fixturenames", ())
-#         if "test_sqlite_" in item.nodeid:
-#             item.add_marker(pytest.mark.xdist_group(name="sqlite"))
+def pytest_collection_modifyitems(items):
+    for item in items:
+        item_fixtures = getattr(item, "fixturenames", ())
+        if "sqlite_workspace" in item_fixtures:
+            item.add_marker(pytest.mark.xdist_group(name="sqlite"))
 
 
 @pytest.fixture(autouse=True)
