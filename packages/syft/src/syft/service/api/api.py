@@ -27,6 +27,8 @@ from ...types.transforms import transform
 from ..context import AuthedServiceContext
 from ..response import SyftError
 
+NOT_ACCESSIBLE_STRING = "N / A"
+
 
 class TwinAPIAuthedContext(AuthedServiceContext):
     __canonical_name__ = "AuthedServiceContext"
@@ -59,10 +61,26 @@ class TwinAPIEndpointView(SyftObject):
     ]
 
     def _coll_repr_(self) -> dict[str, Any]:
+        public_parsed_code = ast.parse(self.public_code)
+        public_function_name = [
+            node.name
+            for node in ast.walk(public_parsed_code)
+            if isinstance(node, ast.FunctionDef)
+        ][0]
+        private_function_name = NOT_ACCESSIBLE_STRING
+        if self.private_code != NOT_ACCESSIBLE_STRING:
+            private_parsed_code = ast.parse(self.private_code)
+            private_function_name = [
+                node.name
+                for node in ast.walk(private_parsed_code)
+                if isinstance(node, ast.FunctionDef)
+            ][0]
         return {
             "API path": self.path,
             "Signature": self.path + str(self.signature),
             "Access": self.access,
+            "Public Function": public_function_name,
+            "Private Function": private_function_name,
         }
 
 
@@ -354,7 +372,7 @@ def extract_code_string(code_field: str) -> Callable:
             if endpoint_type is not None and endpoint_type.view_access:
                 context.output[code_field] = decorator_cleanup(endpoint_type.api_code)
             else:
-                context.output[code_field] = "N / A"
+                context.output[code_field] = NOT_ACCESSIBLE_STRING
         return context
 
     return code_string
