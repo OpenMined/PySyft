@@ -7,7 +7,6 @@ from collections.abc import Callable
 from datetime import datetime
 from functools import partial
 import hashlib
-from multiprocessing import current_process
 import os
 from pathlib import Path
 import shutil
@@ -35,7 +34,7 @@ from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
 from ..client.client import SyftClient
 from ..exceptions.exception import PySyftException
-from ..external import OBLV
+from ..external import OblvServiceProvider
 from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
@@ -97,7 +96,7 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
-from ..service.veilid import VEILID_ENABLED
+from ..service.veilid import VeilidServiceProvider
 from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
@@ -289,7 +288,6 @@ class Node(AbstractNode):
         *,  # Trasterisk
         name: str | None = None,
         id: UID | None = None,
-        services: list[type[AbstractService]] | None = None,
         signing_key: SyftSigningKey | SigningKey | None = None,
         action_store_config: StoreConfig | None = None,
         document_store_config: StoreConfig | None = None,
@@ -321,68 +319,46 @@ class Node(AbstractNode):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
         self.dev_mode = dev_mode or get_dev_mode()
-        if node_uid_env is not None:
-            self.id = UID.from_string(node_uid_env)
-        else:
-            if id is None:
-                id = UID()
-            self.id = id
-
+        self.id = UID.from_string(node_uid_env) if node_uid_env else (id or UID())
         self.packages = ""
-
-        self.signing_key = None
-        if signing_key_env is not None:
-            self.signing_key = SyftSigningKey.from_string(signing_key_env)
-        else:
-            if isinstance(signing_key, SigningKey):
-                signing_key = SyftSigningKey(signing_key=signing_key)
-            self.signing_key = signing_key
-
-        if self.signing_key is None:
-            self.signing_key = SyftSigningKey.generate()
-
-        if reset:
-            self.remove_temp_dir()
-
         self.processes = processes
         self.is_subprocess = is_subprocess
-        self.name = random_name() if name is None else name
-        services = (
-            [
-                UserService,
-                WorkerService,
-                SettingsService,
-                ActionService,
-                LogService,
-                DatasetService,
-                UserCodeService,
-                QueueService,
-                JobService,
-                RequestService,
-                DataSubjectService,
-                NetworkService,
-                PolicyService,
-                NotifierService,
-                NotificationService,
-                DataSubjectMemberService,
-                ProjectService,
-                EnclaveService,
-                CodeHistoryService,
-                MetadataService,
-                BlobStorageService,
-                MigrateStateService,
-                SyftWorkerImageService,
-                SyftWorkerPoolService,
-                SyftImageRegistryService,
-                SyncService,
-                OutputService,
-                UserCodeStatusService,
-            ]
-            if services is None
-            else services
+        self.name = name or random_name()
+        self.enable_warnings = enable_warnings
+        self.in_memory_workers = in_memory_workers
+        self.node_type = NodeType(node_type)
+        self.node_side_type = NodeSideType(node_side_type)
+        self.client_cache: dict = {}
+        self.peer_client_cache: dict = {}
+
+        if isinstance(node_type, str):
+            node_type = NodeType(node_type)
+        self.node_type = node_type
+
+        if isinstance(node_side_type, str):
+            node_side_type = NodeSideType(node_side_type)
+        self.node_side_type = node_side_type
+
+        skey = None
+        if signing_key_env:
+            skey = SyftSigningKey.from_string(signing_key_env)
+        elif isinstance(signing_key, SigningKey):
+            skey = SyftSigningKey(signing_key=signing_key)
+        else:
+            skey = signing_key
+        self.signing_key = skey or SyftSigningKey.generate()
+
+        self.queue_config = self.create_queue_config(
+            n_consumers=n_consumers,
+            create_producer=create_producer,
+            thread_workers=thread_workers,
+            queue_port=queue_port,
+            queue_config=queue_config,
         )
 
-        self.service_config = ServiceConfigRegistry.get_registered_configs()
+        # must call before initializing stores
+        if reset:
+            self.remove_temp_dir()
 
         use_sqlite = local_db or (processes > 0 and not is_subprocess)
         document_store_config = document_store_config or self.get_default_store(
@@ -396,23 +372,7 @@ class Node(AbstractNode):
             document_store_config=document_store_config,
         )
 
-        if OBLV:
-            # relative
-            from ..external.oblv.oblv_service import OblvService
-
-            services += [OblvService]
-            create_oblv_key_pair(worker=self)
-
-        if VEILID_ENABLED:
-            # relative
-            from ..service.veilid.veilid_service import VeilidService
-
-            services += [VeilidService]
-
-        self.enable_warnings = enable_warnings
-        self.in_memory_workers = in_memory_workers
-
-        self.services = services
+        # construct services only after init stores
         self._construct_services()
 
         create_admin_new(  # nosec B106
@@ -431,26 +391,9 @@ class Node(AbstractNode):
             smtp_host=smtp_host,
         )
 
-        self.peer_client_cache: dict = {}
-
-        if isinstance(node_type, str):
-            node_type = NodeType(node_type)
-        self.node_type = node_type
-
-        if isinstance(node_side_type, str):
-            node_side_type = NodeSideType(node_side_type)
-        self.node_side_type = node_side_type
-
         self.post_init()
-        self.create_initial_settings(admin_email=root_email)
 
-        self.queue_config = self.create_queue_config(
-            n_consumers=n_consumers,
-            create_producer=create_producer,
-            thread_workers=thread_workers,
-            queue_port=queue_port,
-            queue_config=queue_config,
-        )
+        self.create_initial_settings(admin_email=root_email)
 
         self.init_queue_manager(queue_config=self.queue_config)
 
@@ -834,14 +777,6 @@ class Node(AbstractNode):
             user_code_service = self.get_service(UserCodeService)
             user_code_service.load_user_code(context=context)
 
-        if self.is_subprocess or current_process().name != "MainProcess":
-            # print(f"> Starting Subprocess {self}")
-            pass
-        else:
-            pass
-            # why would we do this?
-            # print(f"> {self}")
-
         def reload_user_code() -> None:
             user_code_service.load_user_code(context=context)
 
@@ -869,6 +804,8 @@ class Node(AbstractNode):
         )
 
         if isinstance(action_store_config, SQLiteStoreConfig):
+            # override the filename to node id
+            action_store_config.client_config.filename = f"{self.id}.sqlite"
             self.action_store: ActionStore = SQLiteActionStore(
                 node_uid=self.id,
                 store_config=action_store_config,
@@ -904,59 +841,60 @@ class Node(AbstractNode):
         return self.get_service("workerservice").stash
 
     def _construct_services(self) -> None:
-        self.service_path_map = {}
+        service_path_map: dict[str, AbstractService] = {}
+        initialized_services: list[AbstractService] = []
 
-        for service_klass in self.services:
-            kwargs = {}
-            if service_klass == ActionService:
-                kwargs["store"] = self.action_store
-            store_services = [
-                UserService,
-                WorkerService,
-                SettingsService,
-                DatasetService,
-                UserCodeService,
-                LogService,
-                RequestService,
-                QueueService,
-                JobService,
-                DataSubjectService,
-                NetworkService,
-                PolicyService,
-                NotifierService,
-                NotificationService,
-                DataSubjectMemberService,
-                ProjectService,
-                EnclaveService,
-                CodeHistoryService,
-                MetadataService,
-                BlobStorageService,
-                MigrateStateService,
-                SyftWorkerImageService,
-                SyftWorkerPoolService,
-                SyftImageRegistryService,
-                SyncService,
-                OutputService,
-                UserCodeStatusService,
-            ]
+        # a tuple of service and kwargs to initialize it with
+        # by default all services get default document store
+        # pass a dict with "store" key to override this
+        # pass a dict with "enabled" key to disable the service
+        default_services: list[dict] = [
+            {"svc": ActionService, "store": self.action_store},
+            {"svc": UserService},
+            {"svc": WorkerService},
+            {"svc": SettingsService},
+            {"svc": DatasetService},
+            {"svc": UserCodeService},
+            {"svc": LogService},
+            {"svc": RequestService},
+            {"svc": QueueService},
+            {"svc": JobService},
+            {"svc": DataSubjectService},
+            {"svc": NetworkService},
+            {"svc": PolicyService},
+            {"svc": NotifierService},
+            {"svc": NotificationService},
+            {"svc": DataSubjectMemberService},
+            {"svc": ProjectService},
+            {"svc": EnclaveService},
+            {"svc": CodeHistoryService},
+            {"svc": MetadataService},
+            {"svc": BlobStorageService},
+            {"svc": MigrateStateService},
+            {"svc": SyftWorkerImageService},
+            {"svc": SyftWorkerPoolService},
+            {"svc": SyftImageRegistryService},
+            {"svc": SyncService},
+            {"svc": OutputService},
+            {"svc": UserCodeStatusService},
+            {"svc": VeilidServiceProvider},
+            {"svc": OblvServiceProvider},
+        ]
 
-            if OBLV:
-                # relative
-                from ..external.oblv.oblv_service import OblvService
+        for svc_kwargs in default_services:
+            ServiceCls = svc_kwargs.pop("svc")
+            svc_kwargs.setdefault("store", self.document_store)
 
-                store_services += [OblvService]
+            # instantiate service
+            svc_instance = ServiceCls(**svc_kwargs)
+            if not svc_instance:
+                continue
 
-            if VEILID_ENABLED:
-                # relative
-                from ..service.veilid.veilid_service import VeilidService
+            service_path_map[ServiceCls.__name__.lower()] = svc_instance
+            initialized_services.append(ServiceCls)
 
-                store_services += [VeilidService]
-
-            if service_klass in store_services:
-                kwargs["store"] = self.document_store  # type: ignore[assignment]
-            self.service_path_map[service_klass.__name__.lower()] = service_klass(
-                **kwargs
-            )
+        self.services = initialized_services
+        self.service_path_map = service_path_map
 
     def get_service_method(self, path_or_func: str | Callable) -> Callable:
         if callable(path_or_func):
@@ -1565,31 +1503,31 @@ def create_admin_new(
     return None
 
 
-def create_oblv_key_pair(
-    worker: Node,
-) -> str | None:
-    try:
-        # relative
-        from ..external.oblv.oblv_keys_stash import OblvKeys
-        from ..external.oblv.oblv_keys_stash import OblvKeysStash
-        from ..external.oblv.oblv_service import generate_oblv_key
+# def create_oblv_key_pair(
+#     worker: Node,
+# ) -> str | None:
+#     try:
+#         # relative
+#         from ..external.oblv.oblv_keys_stash import OblvKeys
+#         from ..external.oblv.oblv_keys_stash import OblvKeysStash
+#         from ..external.oblv.oblv_service import generate_oblv_key
 
-        oblv_keys_stash = OblvKeysStash(store=worker.document_store)
+#         oblv_keys_stash = OblvKeysStash(store=worker.document_store)
 
-        if not len(oblv_keys_stash) and worker.signing_key:
-            public_key, private_key = generate_oblv_key(oblv_key_name=worker.name)
-            oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
-            res = oblv_keys_stash.set(worker.signing_key.verify_key, oblv_keys)
-            if res.is_ok():
-                print("Successfully generated Oblv Key pair at startup")
-            return res.err()
-        else:
-            print(f"Using Existing Public/Private Key pair: {len(oblv_keys_stash)}")
-    except Exception as e:
-        print("Unable to create Oblv Keys.", e)
-        return None
+#         if not len(oblv_keys_stash) and worker.signing_key:
+#             public_key, private_key = generate_oblv_key(oblv_key_name=worker.name)
+#             oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
+#             res = oblv_keys_stash.set(worker.signing_key.verify_key, oblv_keys)
+#             if res.is_ok():
+#                 print("Successfully generated Oblv Key pair at startup")
+#             return res.err()
+#         else:
+#             print(f"Using Existing Public/Private Key pair: {len(oblv_keys_stash)}")
+#     except Exception as e:
+#         print("Unable to create Oblv Keys.", e)
+#         return None
 
-    return None
+#     return None
 
 
 class NodeRegistry:
