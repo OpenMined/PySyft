@@ -1,9 +1,11 @@
+**/.pytest_cache
+**/.mypy_cache
 **/*.pyc
+**/__pycache__
+**/tests/
+**/README.md
 
 grid/data
 grid/packer
 grid/.devspace
 syftcli
-
-syft/tests
-syft/README.md
