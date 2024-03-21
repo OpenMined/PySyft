@@ -111,7 +111,7 @@ def get_full_build_config(build_config: dict[str, Any]) -> dict[str, Any]:
 def worker_config(
     build_config: dict[str, Any], worker_config_version: str | None
 ) -> dict[str, Any]:
-    return get_worker_config(build_config, worker_config_version)
+    yield get_worker_config(build_config, worker_config_version)
 
 
 @pytest.fixture

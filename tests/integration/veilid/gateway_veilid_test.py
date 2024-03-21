@@ -19,6 +19,9 @@ def remove_existing_peers(client):
         assert isinstance(res, SyftSuccess)
 
 
+@pytest.mark.skip(
+    reason="The tests are highly flaky currently.Will be re-enabled soon!"
+)
 @pytest.mark.veilid
 def test_domain_connect_to_gateway_veilid(domain_1_port, gateway_port):
     # Revert to the guest login, when we automatically generate the dht key

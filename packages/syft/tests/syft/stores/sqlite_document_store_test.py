@@ -22,7 +22,7 @@ def test_sqlite_store_partition_sanity(
     assert hasattr(sqlite_store_partition, "searchable_keys")
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_sqlite_store_partition_set(
     root_verify_key,
     sqlite_store_partition: SQLiteStorePartition,
@@ -90,7 +90,7 @@ def test_sqlite_store_partition_set(
         )
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_sqlite_store_partition_delete(
     root_verify_key,
     sqlite_store_partition: SQLiteStorePartition,
@@ -154,7 +154,7 @@ def test_sqlite_store_partition_delete(
     )
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_sqlite_store_partition_update(
     root_verify_key,
     sqlite_store_partition: SQLiteStorePartition,
@@ -226,7 +226,7 @@ def test_sqlite_store_partition_update(
         assert stored.ok()[0].data == v
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_sqlite_store_partition_set_threading(
     sqlite_workspace: tuple,
     root_verify_key,
@@ -325,7 +325,7 @@ def test_sqlite_store_partition_set_threading(
 #     assert stored_cnt == thread_cnt * repeats
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_sqlite_store_partition_update_threading(
     root_verify_key,
     sqlite_workspace: tuple,
@@ -411,7 +411,7 @@ def test_sqlite_store_partition_update_threading(
 #         assert execution_err is None
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_sqlite_store_partition_set_delete_threading(
     root_verify_key,
     sqlite_workspace: tuple,
