@@ -233,9 +233,7 @@ class APIService(AbstractService):
             endpoint_path=path,
         )
         if not isinstance(custom_endpoint, SyftError):
-            context, result = custom_endpoint.exec_private_code(
-                context, *args, **kwargs
-            )
+            result = custom_endpoint.exec_private_code(context, *args, **kwargs)
         return result
 
     @service_method(
@@ -254,7 +252,9 @@ class APIService(AbstractService):
             else endpoint
         )
 
-    def execute_endpoint_by_id(
+    # ==== The methods below aren't meant to be called directly by the user, but rather by the node server context. ===
+    # Therefore, they are not decorated with @service_method
+    def execute_server_side_endpoint_by_id(
         self,
         context: AuthedServiceContext,
         endpoint_uid: UID,
@@ -264,10 +264,13 @@ class APIService(AbstractService):
         endpoint = self.get_endpoint_by_uid(context, endpoint_uid)
         if isinstance(endpoint, SyftError):
             return endpoint
-        result = endpoint.exec(context, *args, **kwargs)
-        return result
+        selected_code = endpoint.private_code
+        if not selected_code:
+            selected_code = endpoint.public_code
 
-    def execute_endpoint_private_by_id(
+        return endpoint.exec_code(selected_code, context, *args, **kwargs)
+
+    def execute_service_side_endpoint_private_by_id(
         self,
         context: AuthedServiceContext,
         endpoint_uid: UID,
@@ -279,10 +282,9 @@ class APIService(AbstractService):
             return endpoint
         if not endpoint.private_code:
             return SyftError(message="This endpoint does not have a private code")
-        result = endpoint.exec_private_code(context, *args, **kwargs)
-        return result
+        return endpoint.exec_code(endpoint.private_code, context, *args, **kwargs)
 
-    def execute_endpoint_mock_by_id(
+    def execute_server_side_endpoint_mock_by_id(
         self,
         context: AuthedServiceContext,
         endpoint_uid: UID,
@@ -292,8 +294,7 @@ class APIService(AbstractService):
         endpoint = self.get_endpoint_by_uid(context, endpoint_uid)
         if isinstance(endpoint, SyftError):
             return endpoint
-        result = endpoint.exec_public_code(context, *args, **kwargs)
-        return result
+        return endpoint.exec_code(endpoint.public_code, context, *args, **kwargs)
 
     def get_endpoint_by_uid(
         self, context: AuthedServiceContext, uid: UID
