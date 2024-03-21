@@ -270,34 +270,34 @@ class NetworkService(AbstractService):
 
         return challenge_signature
 
-    @service_method(path="network.add_route", name="add_route")
-    def add_route(
+    @service_method(path="network.add_route_for", name="add_route_for")
+    def add_route_for(
         self,
         context: AuthedServiceContext,
         peer: NodePeer,
         route: NodeRoute,
     ) -> SyftSuccess | SyftError:
-        """Add Route for this node to another node peer.
+        """Add route for the node peer
 
         Args:
             context (AuthedServiceContext): The authentication context.
-            peer (NodePeer): The peer node to add the route to.
+            peer (NodePeer): The peer node to add the route for.
             route (NodeRoute): The route to be added.
         Returns:
             SyftSuccess | SyftError: A success message if the route is verified,
                 otherwise an error message.
         """
         context.node = cast(AbstractNode, context.node)
-        # verify the new route for the given peer
+        # the peer verifies the new route to the current node
         peer_client: SyftClient = peer.client_with_context(context=context)
-        node_peer: NodePeer | SyftError = peer_client.api.services.network.verify_route(
-            route
+        node_peer: NodePeer | SyftError = (
+            peer_client.api.services.network.verify_route_for(route)
         )
         if isinstance(node_peer, SyftError):
             return node_peer
-        # update the routes for both peers
-        node_peer.update_routes([route])
-        result = self.stash.update_peer(context.node.verify_key, node_peer)
+        # update the route for the peer
+        peer.update_routes([route])
+        result = self.stash.update_peer(context.node.verify_key, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(
@@ -305,12 +305,11 @@ class NetworkService(AbstractService):
         )
 
     @service_method(
-        path="network.verify_route", name="verify_route", roles=GUEST_ROLE_LEVEL
+        path="network.verify_route_for", name="verify_route_for", roles=GUEST_ROLE_LEVEL
     )
-    def verify_route(
+    def verify_route_for(
         self, context: AuthedServiceContext, route: NodeRoute
     ) -> NodePeer | SyftError:
-        """Add a Network Node Route"""
         # get the peer asking for route verification from its verify_key
         context.node = cast(AbstractNode, context.node)
         peer: Result[NodePeer, SyftError] = self.stash.get_for_verify_key(
@@ -328,6 +327,7 @@ class NetworkService(AbstractService):
                     f"does not match listed peer: {peer}"
                 )
             )
+        print(f"inside verify_route_for with peer: {peer.name} and route: {route}")
         return peer
 
     @service_method(
