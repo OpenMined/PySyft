@@ -287,6 +287,7 @@ class NetworkService(AbstractService):
             SyftSuccess | SyftError: A success message if the route is verified,
                 otherwise an error message.
         """
+        context.node = cast(AbstractNode, context.node)
         # verify the new route for the given peer
         peer_client: SyftClient = peer.client_with_context(context=context)
         node_peer: NodePeer | SyftError = peer_client.api.services.network.verify_route(
@@ -500,7 +501,7 @@ class NetworkService(AbstractService):
         Returns:
             SyftSuccess | SyftError: Successful / Error response
         """
-        pass
+        return SyftError(message="Not implemented")
 
     @service_method(path="network.delete_route", name="delete_route")
     def delete_route(
@@ -520,7 +521,7 @@ class NetworkService(AbstractService):
         Returns:
             SyftSuccess | SyftError: Successful / Error response
         """
-        pass
+        return SyftError(message="Not implemented")
 
 
 TYPE_TO_SERVICE[NodePeer] = NetworkService
