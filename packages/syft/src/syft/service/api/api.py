@@ -322,9 +322,10 @@ class TwinAPIEndpoint(SyftObject):
             result = eval(evil_string, None, locals())  # nosec
             # return the results
             return result
-        except Exception as e:
-            print(f"Failed to run CustomAPIEndpoint Code. {e}")
-            return SyftError(message=e)
+        except Exception:
+            return SyftError(
+                message="Ops something went wrong during this endpoint execution, please contact your admin."
+            )
 
 
 def set_access_type(context: TransformContext) -> TransformContext:
