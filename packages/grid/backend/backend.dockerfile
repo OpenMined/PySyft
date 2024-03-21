@@ -1,17 +1,28 @@
-FROM cgr.dev/chainguard/wolfi-base as backend
-
 ARG PYTHON_VERSION="3.12"
+ARG UV_VERSION="0.1.22-r0"
+ARG TORCH_VERSION="2.2.1"
 
+# ==================== [BUILD STEP] Python Dev Base ==================== #
+FROM cgr.dev/chainguard/wolfi-base as syft_deps
+
+ARG PYTHON_VERSION
+ARG UV_VERSION
+ARG TORCH_VERSION
+
+# Setup Python DEV
 RUN apk update && apk upgrade && \
-    apk add git bash python-$PYTHON_VERSION-default uv=0.1.22-r0
+    apk add build-base gcc python-$PYTHON_VERSION-dev-default uv=$UV_VERSION
 
 WORKDIR /root/app
 
 # keep static deps separate to have each layer cached independently
-
+# if amd64 then we need to append +cpu to the torch version
+# limitation of uv - https://github.com/astral-sh/uv/issues/2541
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     uv venv && \
-    uv pip install torch==2.2.1+cpu --index-url https://download.pytorch.org/whl/cpu
+    ARCH=$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/) && \
+    if [[ "$ARCH" = "amd64" ]]; then TORCH_VERSION="$TORCH_VERSION+cpu"; fi && \
+    uv pip install torch==$TORCH_VERSION --index-url https://download.pytorch.org/whl/cpu
 
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     uv pip install jupyterlab==4.1.5
@@ -26,17 +37,31 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     uv pip install  -e ./syft[data_science,telemetry] && \
     uv pip freeze | grep ansible | xargs uv pip uninstall
 
-# Copy syft source (in rootless mode)
 
-COPY --chown=nonroot:nonroot \
-    grid/backend/grid grid/backend/worker_cpu.dockerfile ./grid/
+# ==================== [Final] Setup Syft Server ==================== #
+
+FROM cgr.dev/chainguard/wolfi-base as backend
+
+ARG PYTHON_VERSION
+ARG UV_VERSION
+
+RUN apk update && apk upgrade && \
+    apk add git bash python-$PYTHON_VERSION-default uv=$UV_VERSION
+
+WORKDIR /root/app/
+
+# Copy pre-built jupyterlab, syft dependencies
+COPY --from=syft_deps /root/app/.venv .venv
+
+# copy grid
+COPY grid/backend/grid grid/backend/worker_cpu.dockerfile ./grid/
 
 # copy syft
-COPY --chown=nonroot:nonroot \
-    syft ./syft/
+COPY syft ./syft/
 
 # Update environment variables
 ENV \
+    PATH="/root/app/.venv/bin:$PATH" \
     APPDIR="/root/app" \
     NODE_NAME="default_node_name" \
     NODE_TYPE="domain" \
