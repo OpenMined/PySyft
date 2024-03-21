@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Callable
 import json
 import os
 import sys
@@ -10,9 +11,12 @@ from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import Request
 from fastapi import Response
+from fastapi.responses import JSONResponse
 from loguru import logger
+from pyinstrument import Profiler
 
 # relative
+from .constants import PYINSTRUMENT_ENABLED
 from .models import ResponseModel
 from .models import TestVeilidStreamerRequest
 from .models import TestVeilidStreamerResponse
@@ -32,6 +36,26 @@ logger.add(sys.stderr, colorize=True, level=log_level)
 
 app = FastAPI(title="Veilid")
 veilid_conn = VeilidConnectionSingleton()
+
+if PYINSTRUMENT_ENABLED:
+
+    @app.middleware("http")
+    async def profile_request(
+        request: Request, call_next: Callable[[Request], Response]
+    ) -> JSONResponse:
+        profiling = request.query_params.get("profile", False)
+        if profiling:
+            profiler = Profiler(interval=0.001, async_mode="enabled")
+            profiler.start()
+            response = await call_next(request)
+            profiler.stop()
+            content = b"".join([part async for part in response.body_iterator])
+            content_dict = {"response": content.decode()}
+            profiler_output_html = profiler.output_html()
+            content_dict["profiler_output"] = profiler_output_html
+            return JSONResponse(content=content_dict)
+        else:
+            return await call_next(request)
 
 
 @app.get("/", response_model=ResponseModel)
