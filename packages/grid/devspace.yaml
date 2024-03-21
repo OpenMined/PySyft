@@ -74,16 +74,11 @@ deployments:
         global:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
-          useDefaultSecrets: true
-        registry:
-          storageSize: "5Gi"
         node:
           name: ${NODE_NAME}
-          rootEmail: info@openmined.org
-          defaultWorkerPoolCount: 1
-          resourcesPreset: micro
-        veilid:
-          enabled: true
+      # anything that does not need devspace $env vars should go in values.dev.yaml
+      valuesFiles:
+        - ./helm/values.dev.yaml
 
 dev:
   mongo:
