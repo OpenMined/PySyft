@@ -315,7 +315,10 @@ class ActionService(AbstractService):
                 return filtered_kwargs
             filtered_kwargs = filtered_kwargs.ok()
         else:
-            filtered_kwargs = retrieve_from_db(code_item.id, kwargs, context).ok()
+            result = retrieve_from_db(code_item.id, kwargs, context)
+            if isinstance(result, SyftError):
+                return Err(result.message)
+            filtered_kwargs = result.ok()
         # update input policy to track any input state
 
         if (

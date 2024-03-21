@@ -5,6 +5,8 @@ from typing import cast
 # relative
 from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
+from ...service.action.action_endpoint import CustomEndpointActionObject
+from ...service.action.action_object import ActionObject
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -62,6 +64,18 @@ class APIService(AbstractService):
         result = self.stash.upsert(context.credentials, endpoint=new_endpoint)
         if result.is_err():
             return SyftError(message=result.err())
+
+        result = result.ok()
+        action_obj = ActionObject.from_obj(
+            id=result.id,
+            syft_action_data=CustomEndpointActionObject(endpoint_id=result.id),
+            syft_node_location=context.node.id,
+            syft_client_verify_key=context.credentials,
+        )
+        action_service = context.node.get_service("actionservice")
+        res = action_service.set(context=context, action_object=action_obj)
+        if res.is_err():
+            return SyftError(message=res.err())
 
         return SyftSuccess(message="Endpoint successfully created.")
 
@@ -243,6 +257,20 @@ class APIService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
         return SyftSuccess(message="Endpoint exists")
+
+    def execute_endpoint_by_id(
+        self,
+        context: AuthedServiceContext,
+        endpoint_uid: UID,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        result = self.stash.get_by_uid(context.credentials, endpoint_uid)
+        if result.is_err():
+            return SyftError(message=result.err())
+        endpoint = result.ok()
+        context, result = endpoint.exec(context, *args, **kwargs)
+        return result
 
     def get_endpoints(
         self, context: AuthedServiceContext
