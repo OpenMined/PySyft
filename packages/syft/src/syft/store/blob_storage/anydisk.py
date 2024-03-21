@@ -32,7 +32,7 @@ def smart_write(path: str, data: BytesIO, **kwargs: Any) -> None:
         fp.write(data.read())
 
 
-@serializable(without="smart_open_kwargs")
+@serializable(without=["smart_open_kwargs"])
 class AnyBlobStorageClientConfig(BlobStorageClientConfig):
     workspace: str
     bucket: str
@@ -44,7 +44,7 @@ class AnyBlobStorageClientConfig(BlobStorageClientConfig):
         return _path
 
 
-@serializable(without="config")
+@serializable(without=["config"])
 class AnyBlobDeposit(BlobDeposit):
     __canonical_name__ = "AnyBlobDeposit"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -105,7 +105,7 @@ class AnyBlobStorageConnection(BlobStorageConnection):
             return SyftError(message=f"Failed to delete file: {e}")
 
 
-@serializable(without="config")
+@serializable(without=["config"])
 class AnyBlobStorageClient(BlobStorageClient):
     config: AnyBlobStorageClientConfig
 
