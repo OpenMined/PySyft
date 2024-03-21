@@ -1,94 +1,43 @@
-ARG PYTHON_VERSION="3.12"
-ARG TZ="Etc/UTC"
-
-# change to USER="syftuser", UID=1000 and HOME="/home/$USER" for rootless
-ARG USER="root"
-ARG UID=0
-ARG USER_GRP=$USER:$USER
-ARG HOME="/root"
-ARG APPDIR="$HOME/app"
-
-# ==================== [BUILD STEP] Python Dev Base ==================== #
-
-FROM cgr.dev/chainguard/wolfi-base as python_dev
-
-ARG PYTHON_VERSION
-ARG TZ
-ARG USER
-ARG UID
-
-# Setup Python DEV
-RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
-    apk update && \
-    apk upgrade && \
-    apk add build-base gcc tzdata python-$PYTHON_VERSION-dev-default py$PYTHON_VERSION-pip && \
-    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-# uncomment for creating rootless user
-# && adduser -D -u $UID $USER
-
-# ==================== [BUILD STEP] Install Syft Dependency ==================== #
-
-FROM python_dev as syft_deps
-
-ARG APPDIR
-ARG HOME
-ARG UID
-ARG USER
-ARG USER_GRP
-
-USER $USER
-WORKDIR $APPDIR
-ENV PATH=$PATH:$HOME/.local/bin
-
-# copy skeleton to do package install
-COPY --chown=$USER_GRP \
-    syft/setup.py \
-    syft/setup.cfg \
-    syft/pyproject.toml \
-    syft/MANIFEST.in \
-    syft/
-
-COPY --chown=$USER_GRP \
-    syft/src/syft/VERSION \
-    syft/src/syft/capnp \
-    syft/src/syft/
-
-# Install all dependencies together here to avoid any version conflicts across pkgs
-RUN --mount=type=cache,id=pip-$UID,target=$HOME/.cache/pip,uid=$UID,gid=$UID,sharing=locked \
-    pip install --user --default-timeout=300 torch==2.2.1 -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
-    pip install --user pip-autoremove jupyterlab -e ./syft[data_science] && \
-    pip-autoremove ansible ansible-core -y
-
-# ==================== [Final] Setup Syft Server ==================== #
-
 FROM cgr.dev/chainguard/wolfi-base as backend
 
-# inherit from global
-ARG APPDIR
-ARG HOME
-ARG PYTHON_VERSION
-ARG TZ
-ARG USER
-ARG USER_GRP
+ARG PYTHON_VERSION="3.12"
 
-# Setup Python
-RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
-    apk update && \
-    apk upgrade && \
-    apk add tzdata git bash python-$PYTHON_VERSION-default py$PYTHON_VERSION-pip && \
-    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
-    # Uncomment for rootless user
-    # adduser -D -u 1000 $USER && \
-    mkdir -p /var/log/pygrid $HOME/data/creds $HOME/data/db $HOME/.cache $HOME/.local
-# chown -R $USER_GRP /var/log/pygrid $HOME/
+RUN apk update && apk upgrade && \
+    apk add git bash python-$PYTHON_VERSION-default uv=0.1.22-r0
 
-USER $USER
-WORKDIR $APPDIR
+WORKDIR /root/app
+
+# keep static deps separate to have each layer cached independently
+
+RUN --mount=type=cache,target=/root/.cache,sharing=locked \
+    uv venv && \
+    uv pip install torch==2.2.1+cpu --index-url https://download.pytorch.org/whl/cpu
+
+RUN --mount=type=cache,target=/root/.cache,sharing=locked \
+    uv pip install jupyterlab==4.1.5
+
+COPY --chown=nonroot:nonroot \
+    syft/setup.py syft/setup.cfg syft/pyproject.toml ./syft/
+
+COPY --chown=nonroot:nonroot \
+    syft/src/syft/VERSION ./syft/src/syft/
+
+RUN --mount=type=cache,target=/root/.cache,sharing=locked \
+    uv pip install  -e ./syft[data_science,telemetry] && \
+    uv pip freeze | grep ansible | xargs uv pip uninstall
+
+# Copy syft source (in rootless mode)
+
+COPY --chown=nonroot:nonroot \
+    grid/backend/grid grid/backend/worker_cpu.dockerfile ./grid/
+
+# copy syft
+COPY --chown=nonroot:nonroot \
+    syft ./syft/
 
 # Update environment variables
-ENV PATH=$PATH:$HOME/.local/bin \
-    PYTHONPATH=$APPDIR \
-    APPDIR=$APPDIR \
+ENV \
+    APPDIR="/root/app" \
     NODE_NAME="default_node_name" \
     NODE_TYPE="domain" \
     SERVICE_NAME="backend" \
@@ -104,16 +53,6 @@ ENV PATH=$PATH:$HOME/.local/bin \
     MONGO_HOST="localhost" \
     MONGO_PORT="27017" \
     MONGO_USERNAME="root" \
-    MONGO_PASSWORD="example" \
-    CREDENTIALS_PATH="$HOME/data/creds/credentials.json"
-
-# Copy pre-built jupyterlab, syft dependencies
-COPY --chown=$USER_GRP --from=syft_deps $HOME/.local $HOME/.local
-
-# copy grid
-COPY --chown=$USER_GRP grid/backend/grid grid/backend/worker_cpu.dockerfile ./grid/
-
-# copy syft
-COPY --chown=$USER_GRP syft/ ./syft/
+    MONGO_PASSWORD="example"
 
 CMD ["bash", "./grid/start.sh"]

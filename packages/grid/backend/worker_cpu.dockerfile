@@ -12,7 +12,6 @@
 ARG SYFT_VERSION_TAG="0.8.5-beta.9"
 FROM openmined/grid-backend:${SYFT_VERSION_TAG}
 
-ARG PYTHON_VERSION="3.12"
 ARG SYSTEM_PACKAGES=""
 ARG PIP_PACKAGES="pip --dry-run"
 ARG CUSTOM_CMD='echo "No custom commands passed"'
@@ -21,10 +20,7 @@ ARG CUSTOM_CMD='echo "No custom commands passed"'
 ENV SYFT_WORKER="true"
 ENV SYFT_VERSION_TAG=${SYFT_VERSION_TAG}
 
-# Commenting this until we support built using python docker sdk or find any other alternative.
-# RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
-#     --mount=type=cache,target=$HOME/.cache/pip,sharing=locked \
-RUN apk update && \
+RUN apk update && apk upgrade && \
     apk add ${SYSTEM_PACKAGES} && \
-    pip install --user ${PIP_PACKAGES} && \
-    bash -c "$CUSTOM_CMD"
+    uv pip install ${PIP_PACKAGES} && \
+    bash -c ". .venv/bin/activate && $CUSTOM_CMD"
