@@ -127,11 +127,13 @@ class APIService(AbstractService):
     ) -> SyftSuccess | SyftError:
         """Deletes an specific API endpoint."""
 
-        endpoint = self.stash.get_by_path(context.credentials, endpoint_path)
+        result = self.stash.get_by_path(context.credentials, endpoint_path)
 
-        if endpoint.is_err():
-            return SyftError(message=endpoint.err())
-        if not endpoint.ok():
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        endpoint = result.ok()
+        if not endpoint:
             return SyftError(message=f"Enpoint at path {endpoint_path} doesn't exist")
 
         result = self.stash.delete_by_uid(context.credentials, endpoint.id)
