@@ -65,6 +65,8 @@ class APIService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
 
+        context.node = cast(AbstractNode, context.node)
+
         result = result.ok()
         action_obj = ActionObject.from_obj(
             id=result.id,
@@ -179,16 +181,6 @@ class APIService(AbstractService):
 
         return api_endpoint_view
 
-    @service_method(
-        path="api.schema",
-        name="schema",
-        roles=DATA_SCIENTIST_ROLE_LEVEL,
-    )
-    def api_schema(self, context: AuthedServiceContext, uid: UID) -> TwinAPIEndpoint:
-        """Show a view of an API endpoint. This must be smart enough to check if
-        the user has access to the endpoint."""
-        return SyftError(message="This is not implemented yet.")
-
     @service_method(path="api.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self,
@@ -202,9 +194,9 @@ class APIService(AbstractService):
             context=context,
             endpoint_path=path,
         )
-        if not isinstance(custom_endpoint, SyftError):
-            context, result = custom_endpoint.exec(context, *args, **kwargs)
-        return result
+        if isinstance(custom_endpoint, SyftError):
+            return custom_endpoint
+        return custom_endpoint.exec(context, *args, **kwargs)
 
     @service_method(path="api.call_public", name="call_public", roles=GUEST_ROLE_LEVEL)
     def call_public(
@@ -219,9 +211,9 @@ class APIService(AbstractService):
             context=context,
             endpoint_path=path,
         )
-        if not isinstance(custom_endpoint, SyftError):
-            context, result = custom_endpoint.exec_public_code(context, *args, **kwargs)
-        return result
+        if isinstance(custom_endpoint, SyftError):
+            return custom_endpoint
+        return custom_endpoint.exec_public_code(context, *args, **kwargs)
 
     @service_method(
         path="api.call_private", name="call_private", roles=GUEST_ROLE_LEVEL
@@ -253,10 +245,12 @@ class APIService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> SyftSuccess | SyftError:
         """Check if an endpoint exists"""
-        result = self.stash.get_by_uid(context.credentials, uid)
-        if result.is_err():
-            return SyftError(message=result.err())
-        return SyftSuccess(message="Endpoint exists")
+        endpoint = self.get_endpoint_by_uid(context, uid)
+        return (
+            SyftSuccess(message="Endpoint exists")
+            if not isinstance(endpoint, SyftError)
+            else endpoint
+        )
 
     def execute_endpoint_by_id(
         self,
@@ -265,12 +259,49 @@ class APIService(AbstractService):
         *args: Any,
         **kwargs: Any,
     ) -> Any:
-        result = self.stash.get_by_uid(context.credentials, endpoint_uid)
+        endpoint = self.get_endpoint_by_uid(context, endpoint_uid)
+        if isinstance(endpoint, SyftError):
+            return endpoint
+        result = endpoint.exec(context, *args, **kwargs)
+        return result
+
+    def execute_endpoint_private_by_id(
+        self,
+        context: AuthedServiceContext,
+        endpoint_uid: UID,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        endpoint = self.get_endpoint_by_uid(context, endpoint_uid)
+        if isinstance(endpoint, SyftError):
+            return endpoint
+        if not endpoint.private_code:
+            return SyftError(message="This endpoint does not have a private code")
+        result = endpoint.exec_private_code(context, *args, **kwargs)
+        return result
+
+    def execute_endpoint_mock_by_id(
+        self,
+        context: AuthedServiceContext,
+        endpoint_uid: UID,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        endpoint = self.get_endpoint_by_uid(context, endpoint_uid)
+        if isinstance(endpoint, SyftError):
+            return endpoint
+        result = endpoint.exec_public_code(context, *args, **kwargs)
+        return result
+
+    def get_endpoint_by_uid(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> TwinAPIEndpoint | SyftError:
+        context.node = cast(AbstractNode, context.node)
+        admin_key = context.node.get_service("userservice").admin_verify_key()
+        result = self.stash.get_by_uid(admin_key, uid)
         if result.is_err():
             return SyftError(message=result.err())
-        endpoint = result.ok()
-        context, result = endpoint.exec(context, *args, **kwargs)
-        return result
+        return result.ok()
 
     def get_endpoints(
         self, context: AuthedServiceContext
