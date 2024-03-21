@@ -108,14 +108,25 @@ class UserCodeService(AbstractService):
         reason: str | None = "",
     ) -> Request | SyftError:
         user_code: UserCode = code.to(UserCode, context=context)
-        return self._request_code_execution_inner(context, user_code, reason)
+        result = self._validate_request_code_execution(context, user_code)
+        if isinstance(result, SyftError):
+            # if the validation fails, we should remove the user code status from the stash
+            # to prevent dangling status
+            root_context = AuthedServiceContext(
+                credentials=context.node.verify_key, node=context.node
+            )
+            _ = context.node.get_service("usercodestatusservice").remove(
+                root_context, user_code.status_link.object_uid
+            )
+            return result
+        result = self._request_code_execution_inner(context, user_code, reason)
+        return result
 
-    def _request_code_execution_inner(
+    def _validate_request_code_execution(
         self,
         context: AuthedServiceContext,
         user_code: UserCode,
-        reason: str | None = "",
-    ) -> Request | SyftError:
+    ) -> SyftSuccess | SyftError:
         if user_code.output_readers is None:
             return SyftError(
                 message=f"there is no verified output readers for {user_code}"
@@ -164,6 +175,14 @@ class UserCodeService(AbstractService):
         if isinstance(result, SyftError):
             return result
 
+        return SyftSuccess(message="")
+
+    def _request_code_execution_inner(
+        self,
+        context: AuthedServiceContext,
+        user_code: UserCode,
+        reason: str | None = "",
+    ) -> Request | SyftError:
         # Users that have access to the output also have access to the code item
         if user_code.output_readers is not None:
             self.stash.add_permissions(
