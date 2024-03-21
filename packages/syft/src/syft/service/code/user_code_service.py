@@ -413,16 +413,7 @@ class UserCodeService(AbstractService):
             # Extract ids from kwargs
             kwarg2id = map_kwargs_to_id(kwargs)
 
-            # Check input policy
             input_policy = code.get_input_policy(context)
-            if not override_execution_permission and input_policy is not None:
-                inputs_allowed = input_policy._is_valid(
-                    context,
-                    usr_input_kwargs=kwarg2id,
-                    code_item_id=code.id,
-                )
-                if inputs_allowed.is_err():
-                    return inputs_allowed
 
             # Check output policy
             output_policy = code.get_output_policy(context)
@@ -442,9 +433,23 @@ class UserCodeService(AbstractService):
                         )
                     if not (is_valid := output_policy._is_valid(context)):  # type: ignore
                         if len(output_history) > 0 and not skip_read_cache:
+                            last_executed_output = output_history[-1]
+                            # Check if the inputs of the last executed output match
+                            # against the current input
+                            if not last_executed_output.check_input_ids(
+                                kwargs=kwarg2id
+                            ):
+                                inp_policy_validation = input_policy._is_valid(
+                                    context,
+                                    usr_input_kwargs=kwarg2id,
+                                    code_item_id=code.id,
+                                )
+                                if inp_policy_validation.is_err():
+                                    return inp_policy_validation
+
                             result: Result[ActionObject, str] = resolve_outputs(
                                 context=context,
-                                output_ids=output_history[-1].output_ids,
+                                output_ids=last_executed_output.output_ids,
                             )
                             if result.is_err():
                                 return result

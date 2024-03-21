@@ -146,6 +146,30 @@ class ExecutionOutput(SyncableSyftObject):
         return []
 
     @property
+    def input_id_list(self) -> list[UID]:
+        ids = self.input_ids
+        if isinstance(ids, dict):
+            return list(ids.values())
+        return []
+
+    def check_input_ids(self, kwargs: dict[str, UID]) -> bool:
+        """
+        Checks the input IDs against the stored input IDs.
+
+        Args:
+            kwargs (dict[str, UID]): A dictionary containing the input IDs to be checked.
+
+        Returns:
+            bool: True if the input IDs are valid, False otherwise.
+        """
+        if not self.input_ids:
+            return True
+        for key, value in kwargs.items():  # Iterate over items of kwargs dictionary
+            if key not in self.input_ids or self.input_ids[key] != value:
+                return False
+        return True
+
+    @property
     def job_id(self) -> UID | None:
         return self.job_link.object_uid if self.job_link else None
 
