@@ -436,8 +436,11 @@ class UserCodeService(AbstractService):
                             last_executed_output = output_history[-1]
                             # Check if the inputs of the last executed output match
                             # against the current input
-                            if not last_executed_output.check_input_ids(
-                                kwargs=kwarg2id
+                            if (
+                                input_policy is not None
+                                and not last_executed_output.check_input_ids(
+                                    kwargs=kwarg2id
+                                )
                             ):
                                 inp_policy_validation = input_policy._is_valid(
                                     context,

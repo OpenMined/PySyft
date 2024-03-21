@@ -184,7 +184,7 @@ class InputPolicy(Policy):
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
         code_item_id: UID,
-    ) -> bool:
+    ) -> Result[bool, str]:
         raise NotImplementedError
 
     def filter_kwargs(
