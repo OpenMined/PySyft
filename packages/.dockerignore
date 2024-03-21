@@ -1,9 +1,11 @@
 **/*.pyc
 
-grid/data
-grid/packer
-grid/.devspace
+grid/*
+!grid/backend
+
 syftcli
 
 syft/tests
 syft/README.md
+
+hagrid
