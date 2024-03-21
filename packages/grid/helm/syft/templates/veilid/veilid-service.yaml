@@ -13,7 +13,7 @@ spec:
     app.kubernetes.io/component: veilid
   ports:
     - name: python-server
-      port: 80
       protocol: TCP
+      port: 80
       targetPort: 4000
 {{ end }}
