@@ -349,7 +349,6 @@ class Node(AbstractNode):
             skey = signing_key
         self.signing_key = skey or SyftSigningKey.generate()
 
-
         self.queue_config = self.create_queue_config(
             n_consumers=n_consumers,
             create_producer=create_producer,
@@ -841,7 +840,6 @@ class Node(AbstractNode):
         return self.get_service("workerservice").stash
 
     def _construct_services(self) -> None:
-
         service_path_map: dict[str, AbstractService] = {}
         initialized_services: list[AbstractService] = []
 
