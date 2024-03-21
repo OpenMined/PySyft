@@ -26,7 +26,7 @@ def create_asset() -> CreateAsset:
 
 @pytest.fixture
 def mock_dataset_stash(document_store) -> DatasetStash:
-    return DatasetStash(store=document_store)
+    yield DatasetStash(store=document_store)
 
 
 @pytest.fixture
@@ -54,7 +54,7 @@ def mock_asset(worker, root_domain_client) -> Asset:
         obj=create_asset,
     )
     mock_asset = create_asset.to(Asset, context=node_transform_context)
-    return mock_asset
+    yield mock_asset
 
 
 @pytest.fixture
@@ -70,9 +70,9 @@ def mock_dataset(root_verify_key, mock_dataset_stash, mock_asset) -> Dataset:
     mock_dataset.asset_list.append(mock_asset)
     result = mock_dataset_stash.partition.set(root_verify_key, mock_dataset)
     mock_dataset = result.ok()
-    return mock_dataset
+    yield mock_dataset
 
 
 @pytest.fixture
 def mock_dataset_update(mock_dataset):
-    return DatasetUpdate()
+    yield DatasetUpdate()

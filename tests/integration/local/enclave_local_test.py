@@ -1,3 +1,6 @@
+# stdlib
+from secrets import token_hex
+
 # third party
 import pytest
 
@@ -9,7 +12,7 @@ from syft.service.response import SyftError
 @pytest.mark.local_node
 def test_enclave_root_client_exception():
     enclave_node = sy.orchestra.launch(
-        name="enclave_node",
+        name=token_hex(8),
         node_type=sy.NodeType.ENCLAVE,
         dev_mode=True,
         reset=True,
@@ -17,3 +20,5 @@ def test_enclave_root_client_exception():
     )
     res = enclave_node.login(email="info@openmined.org", password="changethis")
     assert isinstance(res, SyftError)
+    enclave_node.python_node.cleanup()
+    enclave_node.land()
