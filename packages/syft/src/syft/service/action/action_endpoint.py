@@ -2,15 +2,24 @@
 from __future__ import annotations
 
 # stdlib
-from types import NoneType
+from enum import Enum
+from enum import auto
 from typing import Any
+from typing import cast
 
 # relative
+from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..context import AuthedServiceContext
+
+
+class EXECUTION_MODE(Enum):
+    CALL = auto()
+    MOCK = auto()
+    PRIVATE = auto()
 
 
 @serializable()
@@ -25,10 +34,46 @@ class CustomEndpointActionObject(SyftObject):
         self.context = context
         return self
 
-    def __call__(self, *args, **kwargs) -> Any:
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return self.__call_function(  #  type: ignore[misc]
+            *args,
+            **kwargs,
+            call_mode=EXECUTION_MODE.CALL,
+        )
+
+    def mock(self, *args: Any, **kwargs: Any) -> Any:
+        return self.__call_function(  #  type: ignore[misc]
+            *args,
+            **kwargs,
+            call_mode=EXECUTION_MODE.MOCK,
+        )
+
+    def private(self, *args: Any, **kwargs: Any) -> Any:
+        return self.__call_function(  #  type: ignore[misc]
+            *args,
+            **kwargs,
+            call_mode=EXECUTION_MODE.PRIVATE,
+        )
+
+    def __call_function(
+        self, call_mode: EXECUTION_MODE, *args: Any, **kwargs: Any
+    ) -> Any:
+        self.context = self.__check_context()
+        self.context.node = cast(AbstractNode, self.context.node)
+        endpoint_service = self.context.node.get_service("apiservice")
+
+        if call_mode == EXECUTION_MODE.MOCK:
+            __endpoint_mode = endpoint_service.execute_endpoint_mock_by_id
+        elif call_mode == EXECUTION_MODE.PRIVATE:
+            __endpoint_mode = endpoint_service.execute_endpoint_private_by_id
+        else:
+            __endpoint_mode = endpoint_service.execute_endpoint_by_id
+
+        return __endpoint_mode(
+            *args, context=self.context, endpoint_uid=self.endpoint_id, **kwargs
+        )
+
+    def __check_context(self) -> AuthedServiceContext:
         if self.context is None:
             raise Exception("No context provided to CustomEndpointActionObject")
-        endpoint_service = self.context.node.get_service("apiservice")
-        return endpoint_service.execute_endpoint_by_id(
-            context=self.context, endpoint_uid=self.endpoint_id, *args, **kwargs
-        )
+        return self.context
