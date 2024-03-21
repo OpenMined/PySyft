@@ -489,7 +489,10 @@ class UserCodeService(AbstractService):
             # and admins executing on high side (TODO, decide if we want to increment counter)
             if not skip_fill_cache and output_policy is not None:
                 res = code.apply_output(
-                    context=context, outputs=result, job_id=context.job_id
+                    context=context,
+                    outputs=result,
+                    job_id=context.job_id,
+                    input_ids=kwarg2id,
                 )
                 if isinstance(res, SyftError):
                     return Err(res.message)
@@ -537,6 +540,7 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         user_code_id: UID,
         outputs: Any,
+        input_ids: dict[str, UID] | None = None,
         job_id: UID | None = None,
     ) -> ExecutionOutput | SyftError:
         code_result = self.stash.get_by_uid(context.credentials, user_code_id)
@@ -547,7 +551,12 @@ class UserCodeService(AbstractService):
         if not code.get_status(context).approved:
             return SyftError(message="Code is not approved")
 
-        res = code.apply_output(context=context, outputs=outputs, job_id=job_id)
+        res = code.apply_output(
+            context=context,
+            outputs=outputs,
+            job_id=job_id,
+            input_ids=input_ids,
+        )
         return res
 
 
