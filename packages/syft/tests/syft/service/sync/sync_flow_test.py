@@ -16,7 +16,7 @@ from syft.service.response import SyftError
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-# @pytest.mark.flaky(reruns=5, reruns_delay=1)
+# @pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_sync_flow():
     # somehow skipif does not work
     if sys.platform == "win32":
@@ -203,12 +203,12 @@ def test_sync_flow():
         job_low.result.syft_blob_storage_entry_id
         == job_high.result.syft_blob_storage_entry_id
     )
-    low_worker.close()
-    high_worker.close()
+    low_worker.cleanup()
+    high_worker.cleanup()
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
-@pytest.mark.flaky(reruns=5, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_sync_flow_no_sharing():
     # somehow skipif does not work
     if sys.platform == "win32":
@@ -379,5 +379,5 @@ def test_sync_flow_no_sharing():
         == f"Permission: [READ: {job_high.result.id.id} as {client_low_ds.verify_key}] denied"
     )
 
-    low_worker.close()
-    high_worker.close()
+    low_worker.cleanup()
+    high_worker.cleanup()

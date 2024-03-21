@@ -27,12 +27,14 @@ spec:
           resources: {{ include "common.resources.set" (dict "resources" .Values.veilid.resources "preset" .Values.veilid.resourcesPreset) | nindent 12 }}
 
           env:
-            - name: VEILID_FLAGS
-              value: {{ .Values.veilid.serverFlags | quote }}
             - name: UVICORN_LOG_LEVEL
               value: {{ .Values.veilid.uvicornLogLevel }}
             - name: APP_LOG_LEVEL
               value: {{ .Values.veilid.appLogLevel }}
+            {{- if .Values.veilid.serverFlags }}
+            - name: VEILID_FLAGS
+              value: {{ .Values.veilid.serverFlags | quote }}
+            {{- end }}
             {{- if .Values.veilid.env }}
             {{- toYaml .Values.veilid.env | nindent 12 }}
             {{- end }}

@@ -53,17 +53,17 @@ def create_action_node(verify_key: SyftVerifyKey) -> NodeActionData:
 def verify_key() -> SyftVerifyKey:
     signing_key = SyftSigningKey.generate()
     verify_key: SyftVerifyKey = signing_key.verify_key
-    return verify_key
+    yield verify_key
 
 
 @pytest.fixture
 def in_mem_graph_config() -> InMemoryGraphConfig:
-    return InMemoryGraphConfig()
+    yield InMemoryGraphConfig()
 
 
 @pytest.fixture
 def networkx_store(in_mem_graph_config: InMemoryGraphConfig) -> NetworkXBackingStore:
-    return NetworkXBackingStore(store_config=in_mem_graph_config, reset=True)
+    yield NetworkXBackingStore(store_config=in_mem_graph_config, reset=True)
 
 
 @pytest.fixture
@@ -77,7 +77,7 @@ def networkx_store_with_nodes(
     networkx_store.set(uid=action_node.id, data=action_node)
     networkx_store.set(uid=action_node_2.id, data=action_node_2)
 
-    return networkx_store
+    yield networkx_store
 
 
 @pytest.fixture
@@ -85,7 +85,7 @@ def in_mem_graph_store(
     in_mem_graph_config: InMemoryGraphConfig,
 ) -> InMemoryActionGraphStore:
     graph_store = InMemoryActionGraphStore(store_config=in_mem_graph_config, reset=True)
-    return graph_store
+    yield graph_store
 
 
 @pytest.fixture
@@ -123,11 +123,11 @@ def simple_in_memory_action_graph(
         parent_uids=[action_obj_node_a.id, action_obj_node_b.id],
     )
 
-    return in_mem_graph_store
+    yield in_mem_graph_store
 
 
 @pytest.fixture
 def in_mem_action_graph_service(
     in_mem_graph_store: InMemoryActionGraphStore,
 ) -> ActionGraphService:
-    return ActionGraphService(store=in_mem_graph_store)
+    yield ActionGraphService(store=in_mem_graph_store)

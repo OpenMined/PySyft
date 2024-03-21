@@ -14,7 +14,7 @@ def guest_mock_user(root_verify_key, user_stash, guest_user):
     user = result.ok()
     assert user is not None
 
-    return user
+    yield user
 
 
 def test_call_service_syftapi_with_permission(worker, guest_mock_user, update_user):
