@@ -76,14 +76,14 @@ repos:
         always_run: true
 
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.8.3
+    rev: 1.8.4
     hooks:
       - id: nbqa-isort
       - id: nbqa-black
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: "v0.3.0"
+    rev: "v0.3.3"
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --show-fixes]
@@ -92,7 +92,7 @@ repos:
         types_or: [python, pyi, jupyter]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.9.0
     hooks:
       - id: mypy
         name: "mypy: hagrid"
@@ -117,7 +117,7 @@ repos:
           ]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.9.0
     hooks:
       - id: mypy
         name: "mypy: syft-cli"
@@ -142,7 +142,7 @@ repos:
           ]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.9.0
     hooks:
       - id: mypy
         name: "mypy: grid"
@@ -167,7 +167,7 @@ repos:
           ]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.9.0
     hooks:
       - id: mypy
         name: "mypy: syft"
@@ -199,7 +199,7 @@ repos:
         files: "^notebooks/api|^notebooks/tutorials"
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: "v3.0.0-alpha.9-for-vscode"
+    rev: "v4.0.0-alpha.8"
     hooks:
       - id: prettier
         exclude: ^(packages/grid/helm|packages/grid/frontend/pnpm-lock.yaml|packages/hagrid/hagrid/manifest_template.yml)
