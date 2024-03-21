@@ -168,7 +168,6 @@ class NetworkService(AbstractService):
         challenge_signature, remote_node_peer = remote_res
 
         # Verifying if the challenge is valid
-
         try:
             remote_node_verify_key.verify_key.verify(
                 random_challenge, challenge_signature
@@ -271,32 +270,49 @@ class NetworkService(AbstractService):
 
         return challenge_signature
 
-    @service_method(path="network.add_route_for", name="add_route_for")
-    def add_route_for(
+    @service_method(path="network.add_route", name="add_route")
+    def add_route(
         self,
         context: AuthedServiceContext,
-        route: NodeRoute,
         peer: NodePeer,
+        route: NodeRoute,
     ) -> SyftSuccess | SyftError:
-        """Add Route for this Node to another Node"""
-        # check root user is asking for the exchange
-        client = peer.client_with_context(context=context)
-        result = client.api.services.network.verify_route(route)
+        """Add Route for this node to another node peer.
 
-        if not isinstance(result, SyftSuccess):
-            return result
-        return SyftSuccess(message="Route Verified")
+        Args:
+            context (AuthedServiceContext): The authentication context.
+            peer (NodePeer): The peer node to add the route to.
+            route (NodeRoute): The route to be added.
+        Returns:
+            SyftSuccess | SyftError: A success message if the route is verified,
+                otherwise an error message.
+        """
+        # verify the new route for the given peer
+        peer_client: SyftClient = peer.client_with_context(context=context)
+        node_peer: NodePeer | SyftError = peer_client.api.services.network.verify_route(
+            route
+        )
+        if isinstance(node_peer, SyftError):
+            return node_peer
+        # update the routes for both peers
+        node_peer.update_routes([route])
+        result = self.stash.update_peer(context.node.verify_key, node_peer)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return SyftSuccess(
+            message=f"New network route with id '{route.id}' added for {context.node.name} and {peer.name}"
+        )
 
     @service_method(
         path="network.verify_route", name="verify_route", roles=GUEST_ROLE_LEVEL
     )
     def verify_route(
         self, context: AuthedServiceContext, route: NodeRoute
-    ) -> SyftSuccess | SyftError:
+    ) -> NodePeer | SyftError:
         """Add a Network Node Route"""
         # get the peer asking for route verification from its verify_key
         context.node = cast(AbstractNode, context.node)
-        peer = self.stash.get_for_verify_key(
+        peer: Result[NodePeer, SyftError] = self.stash.get_for_verify_key(
             context.node.verify_key,
             context.credentials,
         )
@@ -311,11 +327,7 @@ class NetworkService(AbstractService):
                     f"does not match listed peer: {peer}"
                 )
             )
-        peer.update_routes([route])
-        result = self.stash.update_peer(context.node.verify_key, peer)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-        return SyftSuccess(message="Network Route Verified")
+        return peer
 
     @service_method(
         path="network.get_all_peers", name="get_all_peers", roles=GUEST_ROLE_LEVEL
@@ -467,6 +479,48 @@ class NetworkService(AbstractService):
         self_node_peer.node_routes = [veilid_route]
 
         return self_node_peer
+
+    @service_method(path="network.update_route_priority", name="update_route_priority")
+    def update_route_priority(
+        self,
+        context: AuthedServiceContext,
+        peer: NodePeer,
+        route: NodeRoute,
+        priority: int,
+    ) -> SyftSuccess | SyftError:
+        """
+        Updates the priority of a route to connect to a given peer in the network.
+
+        Args:
+            context (AuthedServiceContext): The authentication context for the service.
+            peer (NodePeer): The peer for which the route priority needs to be updated.
+            route (NodeRoute): The route for which the priority needs to be updated.
+            priority (int): The new priority value for the route.
+
+        Returns:
+            SyftSuccess | SyftError: Successful / Error response
+        """
+        pass
+
+    @service_method(path="network.delete_route", name="delete_route")
+    def delete_route(
+        self,
+        context: AuthedServiceContext,
+        peer: NodePeer,
+        route: NodeRoute,
+    ) -> SyftSuccess | SyftError:
+        """
+        Delete a route for a given peer in the network.
+
+        Args:
+            context (AuthedServiceContext): The authentication context for the service.
+            peer (NodePeer): The peer for which the route will be deleted.
+            route (NodeRoute): The route to be deleted.
+
+        Returns:
+            SyftSuccess | SyftError: Successful / Error response
+        """
+        pass
 
 
 TYPE_TO_SERVICE[NodePeer] = NetworkService
