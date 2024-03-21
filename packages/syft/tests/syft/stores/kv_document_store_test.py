@@ -31,7 +31,7 @@ def kv_store_partition(worker):
     res = store.init_store()
     assert res.is_ok()
 
-    return store
+    yield store
 
 
 def test_kv_store_partition_sanity(kv_store_partition: KeyValueStorePartition) -> None:

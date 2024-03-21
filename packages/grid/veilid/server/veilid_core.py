@@ -22,6 +22,7 @@ from .veilid_connection import get_veilid_conn
 from .veilid_db import load_dht_key
 from .veilid_db import store_dht_key
 from .veilid_db import store_dht_key_creds
+from .veilid_streamer import VeilidStreamer
 
 
 class PingResponse(Enum):
@@ -160,9 +161,7 @@ async def app_call(vld_key: str, message: bytes) -> bytes:
     async with await get_veilid_conn() as conn:
         async with await get_routing_context(conn) as router:
             route = await get_route_from_vld_key(vld_key, conn, router)
-
-            result = await router.app_call(route, message)
-
+            result = await VeilidStreamer().stream(router, route, message)
             return result
 
 

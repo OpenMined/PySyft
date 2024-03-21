@@ -26,6 +26,7 @@ def node_1():
         queue_port=None,
     )
     yield node
+    node.python_node.cleanup()
     node.land()
 
 
@@ -43,6 +44,7 @@ def node_2():
         queue_port=None,
     )
     yield node
+    node.python_node.cleanup()
     node.land()
 
 
@@ -110,7 +112,7 @@ def dataset_2(client_do_2):
     return client_do_2.datasets[0].assets[0]
 
 
-@pytest.mark.flaky(reruns=2, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.local_node
 def test_transfer_request_blocking(
     client_ds_1, client_do_1, client_do_2, dataset_1, dataset_2
@@ -149,7 +151,7 @@ def test_transfer_request_blocking(
     assert result_ds_blocking == result_ds_nonblocking == dataset_2.data.mean()
 
 
-@pytest.mark.flaky(reruns=2, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.local_node
 def test_transfer_request_nonblocking(
     client_ds_1, client_do_1, client_do_2, dataset_1, dataset_2

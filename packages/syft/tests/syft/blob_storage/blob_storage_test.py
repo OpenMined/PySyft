@@ -20,12 +20,12 @@ data = sy.serialize(raw_data, to_bytes=True)
 
 @pytest.fixture
 def authed_context(worker):
-    return AuthedServiceContext(node=worker, credentials=worker.signing_key.verify_key)
+    yield AuthedServiceContext(node=worker, credentials=worker.signing_key.verify_key)
 
 
 @pytest.fixture(scope="function")
 def blob_storage(worker):
-    return worker.get_service("BlobStorageService")
+    yield worker.get_service("BlobStorageService")
 
 
 def test_blob_storage_allocate(authed_context, blob_storage):
@@ -49,6 +49,8 @@ def test_blob_storage_write():
 
     assert isinstance(written_data, SyftSuccess)
 
+    worker.cleanup()
+
 
 def test_blob_storage_write_syft_object():
     random.seed()
@@ -65,6 +67,7 @@ def test_blob_storage_write_syft_object():
     written_data = blob_deposit.write(file_data)
 
     assert isinstance(written_data, SyftSuccess)
+    worker.cleanup()
 
 
 def test_blob_storage_read():
@@ -86,6 +89,7 @@ def test_blob_storage_read():
 
     assert isinstance(syft_retrieved_data, SyftObjectRetrieval)
     assert syft_retrieved_data.read() == raw_data
+    worker.cleanup()
 
 
 def test_blob_storage_delete(authed_context, blob_storage):
