@@ -262,7 +262,7 @@ class TwinAPIEndpoint(SyftObject):
         """
         result = self.select_code(context)
         if result.is_err():
-            return context, SyftError(message=result.err())
+            return SyftError(message=result.err())
 
         selected_code = result.ok()
         return self.exec_code(selected_code, context, *args, **kwargs)
@@ -273,7 +273,7 @@ class TwinAPIEndpoint(SyftObject):
         """Execute the public code if it exists."""
         if self.public_code:
             return self.exec_code(self.public_code, context, *args, **kwargs)
-        return context, SyftError(message="No public code available")
+        return SyftError(message="No public code available")
 
     def exec_private_code(
         self, context: AuthedServiceContext, *args: Any, **kwargs: Any
@@ -290,7 +290,7 @@ class TwinAPIEndpoint(SyftObject):
         if self.has_permission(context):
             return self.exec_code(self.private_code, context, *args, **kwargs)
 
-        return context, SyftError(message="You're not allowed to run this code.")
+        return SyftError(message="You're not allowed to run this code.")
 
     def exec_code(
         self,
@@ -321,7 +321,7 @@ class TwinAPIEndpoint(SyftObject):
             evil_string = f"{code.func_name}(*args, **kwargs,context=internal_context)"
             result = eval(evil_string, None, locals())  # nosec
             # return the results
-            return context, result
+            return result
         except Exception as e:
             print(f"Failed to run CustomAPIEndpoint Code. {e}")
             return SyftError(message=e)
