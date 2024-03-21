@@ -15,6 +15,7 @@ from ...client.enclave_client import EnclaveClient
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
+from ...types.cache_object import CachedSyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -369,7 +370,7 @@ class UserCodeService(AbstractService):
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
-    ) -> SyftSuccess | SyftError:
+    ) -> CachedSyftObject | ActionObject | SyftSuccess | SyftError:
         """Call a User Code Function"""
         kwargs.pop("result_id", None)
         result = self._call(context, uid, **kwargs)
@@ -409,6 +410,11 @@ class UserCodeService(AbstractService):
             # We do not read from output policy cache if there are mock arguments
             skip_read_cache = len(self.keep_owned_kwargs(kwargs, context)) > 0
 
+            # Extract ids from kwargs
+            kwarg2id = map_kwargs_to_id(kwargs)
+
+            input_policy = code.get_input_policy(context)
+
             # Check output policy
             output_policy = code.get_output_policy(context)
             if not override_execution_permission:
@@ -427,17 +433,39 @@ class UserCodeService(AbstractService):
                         )
                     if not (is_valid := output_policy._is_valid(context)):  # type: ignore
                         if len(output_history) > 0 and not skip_read_cache:
+                            last_executed_output = output_history[-1]
+                            # Check if the inputs of the last executed output match
+                            # against the current input
+                            if (
+                                input_policy is not None
+                                and not last_executed_output.check_input_ids(
+                                    kwargs=kwarg2id
+                                )
+                            ):
+                                inp_policy_validation = input_policy._is_valid(
+                                    context,
+                                    usr_input_kwargs=kwarg2id,
+                                    code_item_id=code.id,
+                                )
+                                if inp_policy_validation.is_err():
+                                    return inp_policy_validation
+
                             result: Result[ActionObject, str] = resolve_outputs(
                                 context=context,
-                                output_ids=output_history[-1].output_ids,
+                                output_ids=last_executed_output.output_ids,
                             )
                             if result.is_err():
                                 return result
 
                             res = delist_if_single(result.ok())
-                            return Ok(res)
+                            return Ok(
+                                CachedSyftObject(
+                                    result=res,
+                                    error_msg=is_valid.message,
+                                )
+                            )
                         else:
-                            return is_valid.to_result()
+                            return cast(Err, is_valid.to_result())
                     return can_execute.to_result()  # type: ignore
 
             # Execute the code item
@@ -445,7 +473,6 @@ class UserCodeService(AbstractService):
 
             action_service = context.node.get_service("actionservice")
 
-            kwarg2id = map_kwargs_to_id(kwargs)
             result_action_object: Result[ActionObject | TwinObject, str] = (
                 action_service._user_code_execute(
                     context, code, kwarg2id, result_id=result_id
@@ -470,7 +497,10 @@ class UserCodeService(AbstractService):
             # and admins executing on high side (TODO, decide if we want to increment counter)
             if not skip_fill_cache and output_policy is not None:
                 res = code.apply_output(
-                    context=context, outputs=result, job_id=context.job_id
+                    context=context,
+                    outputs=result,
+                    job_id=context.job_id,
+                    input_ids=kwarg2id,
                 )
                 if isinstance(res, SyftError):
                     return Err(res.message)
@@ -518,6 +548,7 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         user_code_id: UID,
         outputs: Any,
+        input_ids: dict[str, UID] | None = None,
         job_id: UID | None = None,
     ) -> ExecutionOutput | SyftError:
         code_result = self.stash.get_by_uid(context.credentials, user_code_id)
@@ -528,7 +559,12 @@ class UserCodeService(AbstractService):
         if not code.get_status(context).approved:
             return SyftError(message="Code is not approved")
 
-        res = code.apply_output(context=context, outputs=outputs, job_id=job_id)
+        res = code.apply_output(
+            context=context,
+            outputs=outputs,
+            job_id=job_id,
+            input_ids=input_ids,
+        )
         return res
 
 
