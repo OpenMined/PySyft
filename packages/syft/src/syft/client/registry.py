@@ -48,11 +48,12 @@ class NetworkRegistry:
     def load_network_registry_json() -> dict:
         try:
             response = requests.get(NETWORK_REGISTRY_URL)  # nosec
+            response.raise_for_status()  # raise an exception if the HTTP request returns an error
             network_json: dict = response.json()
             return network_json
         except Exception as e:
             warning(
-                f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
+                f"Failed to get Network Registry from {NETWORK_REGISTRY_REPO}. Exception: {e}"
             )
             return {}
 

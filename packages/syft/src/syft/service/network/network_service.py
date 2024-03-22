@@ -301,7 +301,7 @@ class NetworkService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(
-            message=f"New network route with id '{route.id}' added for {context.node.name} and {peer.name}"
+            message=f"Route with id '{route.id}' to to {context.node.name} added for {peer.name}"
         )
 
     @service_method(
@@ -327,7 +327,6 @@ class NetworkService(AbstractService):
                     f"does not match listed peer: {peer}"
                 )
             )
-        print(f"inside verify_route_for with peer: {peer.name} and route: {route}")
         return peer
 
     @service_method(
@@ -503,12 +502,13 @@ class NetworkService(AbstractService):
         """
         return SyftError(message="Not implemented")
 
-    @service_method(path="network.delete_route", name="delete_route")
-    def delete_route(
+    @service_method(path="network.delete_route_for", name="delete_route_for")
+    def delete_route_for(
         self,
         context: AuthedServiceContext,
         peer: NodePeer,
-        route: NodeRoute,
+        route: NodeRoute | None = None,
+        route_id: UID | None = None,
     ) -> SyftSuccess | SyftError:
         """
         Delete a route for a given peer in the network.
@@ -521,7 +521,30 @@ class NetworkService(AbstractService):
         Returns:
             SyftSuccess | SyftError: Successful / Error response
         """
-        return SyftError(message="Not implemented")
+        if route is None and route_id is None:
+            return SyftError(
+                message="Either `route` or `route_id` arg must be provided"
+            )
+        if route and route_id and route.id != route_id:
+            return SyftError(
+                message="The provided route's id and route_id do not match"
+            )
+
+        if route:
+            result = peer.delete_route(route=route)
+            return_message = f"Route {route.id} deleted for peer {peer.name}!"
+        if route_id:
+            result = peer.delete_route(route_id=route_id)
+            return_message = f"Route {route_id} deleted for peer {peer.name}!"
+        if isinstance(result, SyftError):
+            return result
+
+        context.node = cast(AbstractNode, context.node)
+        result = self.stash.update_peer(context.node.verify_key, peer)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        return SyftSuccess(message=return_message)
 
 
 TYPE_TO_SERVICE[NodePeer] = NetworkService

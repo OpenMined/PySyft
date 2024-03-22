@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Callable
 
 # relative
 from ...abstract_node import NodeType
@@ -51,8 +52,6 @@ class NodePeer(SyftObject):
                 add_routes.append(new_route)
 
         self.node_routes += add_routes
-        for route in self.node_routes:
-            print(f"Route: {route.id}. NodePeer: {self.name}")
 
     def update_route_priorities(self, new_routes: list[NodeRoute]) -> list[NodeRoute]:
         """
@@ -66,9 +65,7 @@ class NodePeer(SyftObject):
             current_max_priority += 1
         return new_routes
 
-    def existed_route(
-        self, route: HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute
-    ) -> tuple[bool, int | None]:
+    def existed_route(self, route: NodeRouteType) -> tuple[bool, int | None]:
         """Check if a route exists in self.node_routes
 
         Args:
@@ -80,57 +77,12 @@ class NodePeer(SyftObject):
         if not isinstance(route, HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute):
             raise ValueError(f"Unsupported route type: {type(route)}")
 
+        same_route: Callable = _route_type_to_same_route_check(route)
         for i, r in enumerate(self.node_routes):
-            if isinstance(route, HTTPNodeRoute) and self._same_http_route(route, r):
-                return (True, i)
-            elif isinstance(route, PythonNodeRoute) and self._same_python_route(
-                route, r
-            ):
-                return (True, i)
-            elif isinstance(route, VeilidNodeRoute) and self._same_veilid_route(
-                route, r
-            ):
+            if same_route(route, r):
                 return (True, i)
 
         return (False, None)
-
-    def _same_http_route(self, route: HTTPNodeRoute, other: HTTPNodeRoute) -> bool:
-        """
-        Check if two HTTPNodeRoute are the same based on protocol, host_or_ip (url) and port
-        """
-        return (
-            (route.host_or_ip == other.host_or_ip)
-            and (route.port == other.port)
-            and (route.protocol == other.protocol)
-        )
-
-    def _same_python_route(
-        self, route: PythonNodeRoute, other: PythonNodeRoute
-    ) -> bool:
-        """
-        Check if two PythonNodeRoute are the same based on the metatdata of their worker settings (name, id...)
-        """
-        return (
-            (route.worker_settings.id == other.worker_settings.id)
-            and (route.worker_settings.name == other.worker_settings.name)
-            and (route.worker_settings.node_type == other.worker_settings.node_type)
-            and (
-                route.worker_settings.node_side_type
-                == other.worker_settings.node_side_type
-            )
-            and (route.worker_settings.signing_key == other.worker_settings.signing_key)
-        )
-
-    def _same_veilid_route(
-        self, route: VeilidNodeRoute, other: VeilidNodeRoute
-    ) -> bool:
-        """
-        Check if two VeilidNodeRoute are the same based on their veilid keys and proxy_target_uid
-        """
-        return (
-            route.vld_key == other.vld_key
-            and route.proxy_target_uid == other.proxy_target_uid
-        )
 
     @staticmethod
     def from_client(client: SyftClient) -> "NodePeer":
@@ -142,7 +94,9 @@ class NodePeer(SyftObject):
         peer.node_routes.append(route)
         return peer
 
-    def client_with_context(self, context: NodeServiceContext) -> SyftClient:
+    def client_with_context(
+        self, context: NodeServiceContext
+    ) -> SyftClient | SyftError:
         if len(self.node_routes) < 1:
             raise Exception(f"No routes to peer: {self}")
         # select the latest added route
@@ -156,7 +110,7 @@ class NodePeer(SyftObject):
             return SyftError(message=f"context {context}'s node is None")
         return client_type(connection=connection, credentials=context.node.signing_key)
 
-    def client_with_key(self, credentials: SyftSigningKey) -> SyftClient:
+    def client_with_key(self, credentials: SyftSigningKey) -> SyftClient | SyftError:
         if len(self.node_routes) < 1:
             raise Exception(f"No routes to peer: {self}")
         # select the latest added route
@@ -182,3 +136,83 @@ class NodePeer(SyftObject):
             if route.priority > final_route.priority:
                 final_route = route
         return final_route
+
+    def delete_route(
+        self, route: NodeRouteType | None = None, route_id: UID | None = None
+    ) -> SyftError | None:
+        """
+        Deletes a route from the peer's route list.
+        Takes O(n) where is n is the number of routes in self.node_routes.
+
+        Args:
+            route (NodeRouteType): The route to be deleted;
+            route_id (UID): The id of the route to be deleted;
+
+        Returns:
+            SyftError: If deleting failed
+        """
+        if route_id:
+            try:
+                self.node_routes = [r for r in self.node_routes if r.id != route_id]
+            except Exception as e:
+                return SyftError(
+                    message=f"Error deleting route with id {route_id}. Exception: {e}"
+                )
+
+        if route:
+            try:
+                same_route: Callable = _route_type_to_same_route_check(route)
+                self.node_routes = [
+                    r for r in self.node_routes if not same_route(r, route)[0]
+                ]
+            except Exception as e:
+                return SyftError(
+                    message=f"Error deleting route {route} with id {route.id}. Exception: {e}"
+                )
+
+        return None
+
+
+def _route_type_to_same_route_check(route: NodeRouteType) -> Callable:
+    route_type_to_comparison_method: dict[NodeRouteType, Callable] = {
+        HTTPNodeRoute: _same_http_route,
+        PythonNodeRoute: _same_python_route,
+        VeilidNodeRoute: _same_veilid_route,
+    }
+    return route_type_to_comparison_method[type(route)]
+
+
+def _same_http_route(route: HTTPNodeRoute, other: HTTPNodeRoute) -> bool:
+    """
+    Check if two HTTPNodeRoute are the same based on protocol, host_or_ip (url) and port
+    """
+    return (
+        (route.host_or_ip == other.host_or_ip)
+        and (route.port == other.port)
+        and (route.protocol == other.protocol)
+    )
+
+
+def _same_python_route(route: PythonNodeRoute, other: PythonNodeRoute) -> bool:
+    """
+    Check if two PythonNodeRoute are the same based on the metatdata of their worker settings (name, id...)
+    """
+    return (
+        (route.worker_settings.id == other.worker_settings.id)
+        and (route.worker_settings.name == other.worker_settings.name)
+        and (route.worker_settings.node_type == other.worker_settings.node_type)
+        and (
+            route.worker_settings.node_side_type == other.worker_settings.node_side_type
+        )
+        and (route.worker_settings.signing_key == other.worker_settings.signing_key)
+    )
+
+
+def _same_veilid_route(route: VeilidNodeRoute, other: VeilidNodeRoute) -> bool:
+    """
+    Check if two VeilidNodeRoute are the same based on their veilid keys and proxy_target_uid
+    """
+    return (
+        route.vld_key == other.vld_key
+        and route.proxy_target_uid == other.proxy_target_uid
+    )
