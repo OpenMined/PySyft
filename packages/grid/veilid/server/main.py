@@ -1,6 +1,5 @@
 # stdlib
 import json
-import lzma
 import os
 import sys
 from typing import Annotated
@@ -15,12 +14,16 @@ from loguru import logger
 
 # relative
 from .models import ResponseModel
-from .veilid_core import VeilidConnectionSingleton
+from .models import TestVeilidStreamerRequest
+from .models import TestVeilidStreamerResponse
+from .utils import generate_random_alphabets
+from .veilid_connection_singleton import VeilidConnectionSingleton
 from .veilid_core import app_call
 from .veilid_core import app_message
-from .veilid_core import generate_dht_key
+from .veilid_core import generate_vld_key
 from .veilid_core import healthcheck
-from .veilid_core import retrieve_dht_key
+from .veilid_core import ping
+from .veilid_core import retrieve_vld_key
 
 # Logging Configuration
 log_level = os.getenv("APP_LOG_LEVEL", "INFO").upper()
@@ -45,19 +48,29 @@ async def healthcheck_endpoint() -> ResponseModel:
         return ResponseModel(message="FAIL")
 
 
-@app.post("/generate_dht_key", response_model=ResponseModel)
-async def generate_dht_key_endpoint() -> ResponseModel:
+@app.post("/generate_vld_key", response_model=ResponseModel)
+async def generate_vld_key_endpoint() -> ResponseModel:
     try:
-        res = await generate_dht_key()
+        res = await generate_vld_key()
         return ResponseModel(message=res)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate DHT key: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate VLD key: {e}")
 
 
-@app.get("/retrieve_dht_key", response_model=ResponseModel)
-async def retrieve_dht_key_endpoint() -> ResponseModel:
+@app.get("/retrieve_vld_key", response_model=ResponseModel)
+async def retrieve_vld_key_endpoint() -> ResponseModel:
     try:
-        res = await retrieve_dht_key()
+        res = await retrieve_vld_key()
+        return ResponseModel(message=res)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/ping/{vld_key}", response_model=ResponseModel)
+async def ping_endpoint(request: Request, vld_key: str) -> ResponseModel:
+    try:
+        logger.info(f"Received ping request:{vld_key}")
+        res = await ping(vld_key)
         return ResponseModel(message=res)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -65,10 +78,11 @@ async def retrieve_dht_key_endpoint() -> ResponseModel:
 
 @app.post("/app_message", response_model=ResponseModel)
 async def app_message_endpoint(
-    request: Request, dht_key: Annotated[str, Body()], message: Annotated[bytes, Body()]
+    request: Request, vld_key: Annotated[str, Body()], message: Annotated[bytes, Body()]
 ) -> ResponseModel:
     try:
-        res = await app_message(dht_key=dht_key, message=message)
+        logger.info("Received app_message request")
+        res = await app_message(vld_key=vld_key, message=message)
         return ResponseModel(message=res)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -76,10 +90,10 @@ async def app_message_endpoint(
 
 @app.post("/app_call")
 async def app_call_endpoint(
-    request: Request, dht_key: Annotated[str, Body()], message: Annotated[bytes, Body()]
+    request: Request, vld_key: Annotated[str, Body()], message: Annotated[bytes, Body()]
 ) -> Response:
     try:
-        res = await app_call(dht_key=dht_key, message=message)
+        res = await app_call(vld_key=vld_key, message=message)
         return Response(res, media_type="application/octet-stream")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -92,13 +106,13 @@ async def proxy(request: Request) -> Response:
     request_data = await request.json()
     logger.info(f"Request URL: {request_data}")
 
-    dht_key = request_data.get("dht_key")
-    request_data.pop("dht_key")
+    vld_key = request_data.get("vld_key")
+    request_data.pop("vld_key")
     message = json.dumps(request_data).encode()
 
-    res = await app_call(dht_key=dht_key, message=message)
-    decompressed_res = lzma.decompress(res)
-    return Response(decompressed_res, media_type="application/octet-stream")
+    res = await app_call(vld_key=vld_key, message=message)
+
+    return Response(res, media_type="application/octet-stream")
 
 
 @app.on_event("startup")
@@ -113,3 +127,35 @@ async def startup_event() -> None:
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
     await veilid_conn.release_connection()
+
+
+@app.post("/test_veilid_streamer")
+async def test_veilid_streamer(
+    request_data: TestVeilidStreamerRequest,
+) -> TestVeilidStreamerResponse:
+    """Test endpoint for notebooks/Testing/Veilid/Large-Message-Testing.ipynb.
+
+    This endpoint is used to test the Veilid streamer by receiving a request body of any
+    arbitrary size and sending back a response of a size specified in the request body.
+    The length of the response body is determined by the `expected_response_length` field
+    in the request body. After adding the necessary fields, both the request and response
+    bodies are padded with random alphabets to reach the expected length using a
+    `random_padding` field.
+    """
+    expected_response_length = request_data.expected_response_length
+    if expected_response_length <= 0:
+        raise HTTPException(status_code=400, detail="Length must be greater than zero")
+
+    try:
+        request_body_length = len(request_data.json())
+        response = TestVeilidStreamerResponse(
+            received_request_body_length=request_body_length,
+            random_padding="",
+        )
+        response_length_so_far = len(response.json())
+        padding_length = expected_response_length - response_length_so_far
+        random_message = generate_random_alphabets(padding_length)
+        response.random_padding = random_message
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,4 +1,5 @@
 # stdlib
+from secrets import token_hex
 from threading import Thread
 
 # third party
@@ -24,8 +25,7 @@ from syft.store.mongo_document_store import MongoStorePartition
 from syft.types.uid import UID
 
 # relative
-from .store_constants_test import generate_db_name
-from .store_constants_test import test_verify_key_string_hacker
+from .store_constants_test import TEST_VERIFY_KEY_STRING_HACKER
 from .store_fixtures_test import mongo_store_partition_fn
 from .store_mocks_test import MockObjectType
 from .store_mocks_test import MockSyftObject
@@ -282,7 +282,7 @@ def test_mongo_store_partition_set_threading(root_verify_key, mongo_client) -> N
     repeats = 5
 
     execution_err = None
-    mongo_db_name = generate_db_name()
+    mongo_db_name = token_hex(8)
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
@@ -342,7 +342,7 @@ def test_mongo_store_partition_set_threading(root_verify_key, mongo_client) -> N
 # ) -> None:
 #     thread_cnt = 3
 #     repeats = 5
-#     mongo_db_name = generate_db_name()
+#     mongo_db_name = token_hex(8)
 
 #     def _kv_cbk(tid: int) -> None:
 #         for idx in range(repeats):
@@ -392,7 +392,7 @@ def test_mongo_store_partition_update_threading(
     thread_cnt = 3
     repeats = 5
 
-    mongo_db_name = generate_db_name()
+    mongo_db_name = token_hex(8)
     mongo_store_partition = mongo_store_partition_fn(
         mongo_client,
         root_verify_key,
@@ -444,7 +444,7 @@ def test_mongo_store_partition_update_threading(
 #     thread_cnt = 3
 #     repeats = 5
 
-#     mongo_db_name = generate_db_name()
+#     mongo_db_name = token_hex(8)
 
 #     mongo_store_partition = mongo_store_partition_fn(
 #         mongo_client,
@@ -488,7 +488,7 @@ def test_mongo_store_partition_set_delete_threading(
     thread_cnt = 3
     repeats = 5
     execution_err = None
-    mongo_db_name = generate_db_name()
+    mongo_db_name = token_hex(8)
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
@@ -550,7 +550,7 @@ def test_mongo_store_partition_set_delete_threading(
 # def test_mongo_store_partition_set_delete_joblib(root_verify_key, mongo_client) -> None:
 #     thread_cnt = 3
 #     repeats = 5
-#     mongo_db_name = generate_db_name()
+#     mongo_db_name = token_hex(8)
 
 #     def _kv_cbk(tid: int) -> None:
 #         mongo_store_partition = mongo_store_partition_fn(
@@ -788,7 +788,7 @@ def test_mongo_store_partition_has_permission(
     mongo_store_partition: MongoStorePartition,
     permission: ActionObjectPermission,
 ) -> None:
-    hacker_verify_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
+    hacker_verify_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_HACKER)
 
     res = mongo_store_partition.init_store()
     assert res.is_ok()
@@ -837,7 +837,7 @@ def test_mongo_store_partition_take_ownership(
     res = mongo_store_partition.init_store()
     assert res.is_ok()
 
-    hacker_verify_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
+    hacker_verify_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_HACKER)
     obj = MockSyftObject(data=1)
 
     # the guest client takes ownership of obj
@@ -887,7 +887,7 @@ def test_mongo_store_partition_permissions_set(
     """
     Test the permissions functionalities when using MongoStorePartition._set function
     """
-    hacker_verify_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
+    hacker_verify_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_HACKER)
     res = mongo_store_partition.init_store()
     assert res.is_ok()
 
@@ -929,7 +929,7 @@ def test_mongo_store_partition_permissions_get_all(
 ) -> None:
     res = mongo_store_partition.init_store()
     assert res.is_ok()
-    hacker_verify_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
+    hacker_verify_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_HACKER)
     # set several objects for the root and guest client
     num_root_objects: int = 5
     num_guest_objects: int = 3
@@ -961,7 +961,7 @@ def test_mongo_store_partition_permissions_delete(
     assert res.is_ok()
     collection: MongoCollection = mongo_store_partition.collection.ok()
     pemissions_collection: MongoCollection = mongo_store_partition.permissions.ok()
-    hacker_verify_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
+    hacker_verify_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_HACKER)
 
     # the root client set an object
     obj = MockSyftObject(data=1)

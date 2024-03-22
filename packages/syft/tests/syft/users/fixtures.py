@@ -19,7 +19,7 @@ from syft.service.user.user_stash import UserStash
 from syft.store.document_store import DocumentStore
 
 
-@pytest.fixture()
+@pytest.fixture
 def admin_create_user(faker) -> UserCreate:
     password = faker.password()
     user_create = UserCreate(
@@ -31,10 +31,10 @@ def admin_create_user(faker) -> UserCreate:
         institution=faker.company(),
         website=faker.url(),
     )
-    return user_create
+    yield user_create
 
 
-@pytest.fixture()
+@pytest.fixture
 def guest_create_user(faker) -> UserCreate:
     password = faker.password()
     user_create = UserCreate(
@@ -46,35 +46,36 @@ def guest_create_user(faker) -> UserCreate:
         institution=faker.company(),
         website=faker.url(),
     )
-    return user_create
+    yield user_create
 
 
-@pytest.fixture()
+@pytest.fixture
 def admin_user(admin_create_user) -> User:
     user = admin_create_user.to(User)
-    return user
+    yield user
 
 
-@pytest.fixture()
+@pytest.fixture
 def guest_user(guest_create_user) -> User:
     user = guest_create_user.to(User)
-    return user
+    yield user
 
 
-@pytest.fixture()
+@pytest.fixture
 def admin_view_user(admin_user) -> UserView:
     user_view = admin_user.to(UserView)
-    return user_view
+    yield user_view
 
 
-@pytest.fixture()
+@pytest.fixture
 def guest_view_user(guest_user) -> UserView:
     user_view = guest_user.to(UserView)
-    return user_view
+    yield user_view
 
 
+@pytest.fixture
 def admin_user_private_key(admin_user) -> UserPrivateKey:
-    return UserPrivateKey(
+    yield UserPrivateKey(
         email=admin_user.email,
         signing_key=admin_user.signing_key,
         role=ServiceRole.DATA_OWNER,
@@ -83,46 +84,46 @@ def admin_user_private_key(admin_user) -> UserPrivateKey:
 
 @pytest.fixture
 def guest_user_private_key(guest_user) -> UserPrivateKey:
-    return UserPrivateKey(
+    yield UserPrivateKey(
         email=guest_user.email,
         signing_key=guest_user.signing_key,
         role=ServiceRole.GUEST,
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def update_user(faker) -> UserSearch:
-    return UserUpdate(
+    yield UserUpdate(
         name=faker.name(),
         email=faker.email(),
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def guest_user_search(guest_user) -> UserSearch:
-    return UserSearch(
+    yield UserSearch(
         name=guest_user.name, email=guest_user.email, verify_key=guest_user.verify_key
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def user_stash(document_store: DocumentStore) -> UserStash:
-    return UserStash(store=document_store)
+    yield UserStash(store=document_store)
 
 
 @pytest.fixture
 def user_service(document_store: DocumentStore):
-    return UserService(store=document_store)
+    yield UserService(store=document_store)
 
 
 @pytest.fixture
 def authed_context(admin_user: User, worker: Worker) -> AuthedServiceContext:
-    return AuthedServiceContext(credentials=admin_user.verify_key, node=worker)
+    yield AuthedServiceContext(credentials=admin_user.verify_key, node=worker)
 
 
 @pytest.fixture
 def node_context(worker: Worker) -> NodeServiceContext:
-    return NodeServiceContext(node=worker)
+    yield NodeServiceContext(node=worker)
 
 
 @pytest.fixture
@@ -132,4 +133,4 @@ def unauthed_context(
     login_credentials = UserLoginCredentials(
         email=guest_create_user.email, password=guest_create_user.password
     )
-    return UnauthedServiceContext(login_credentials=login_credentials, node=worker)
+    yield UnauthedServiceContext(login_credentials=login_credentials, node=worker)

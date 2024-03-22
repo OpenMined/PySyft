@@ -3,6 +3,7 @@ from collections.abc import Callable
 from typing import Any
 
 # third party
+from pydantic import Field
 from pymongo import ASCENDING
 from pymongo.collection import Collection as MongoCollection
 from result import Err
@@ -972,4 +973,4 @@ class MongoStoreConfig(StoreConfig):
     db_name: str = "app"
     backing_store: type[KeyValueBackingStore] = MongoBackingStore
     # TODO: should use a distributed lock, with RedisLockingConfig
-    locking_config: LockingConfig = NoLockingConfig()
+    locking_config: LockingConfig = Field(default_factory=NoLockingConfig)
