@@ -24,17 +24,24 @@ Params:
 {{- end -}}
 
 {{/*
-Re-use or set a new randomly generated secret value from an existing secret.
-If global.useDefaultSecrets is set to true, the default value will be used if the secret does not exist.
+Set a value for a Secret.
+- If the secret exists, the existing value will be re-used.
+- If "randomDefault"=true, a random value will be generated.
+- If "randomDefault"=false, the "default" value will be used.
 
 Usage:
-  {{- include "common.secrets.set " (dict "secret" "some-secret-name" "default" "default-value" "context" $ ) }}
+  Generate random secret of length 64
+  {{- include "common.secrets.set " (dict "secret" "some-secret-name" "randomDefault" true "randomLength" 64 "context" $ ) }}
+
+  Use a static default value (with random disabled)
+  {{- include "common.secrets.set " (dict "secret" "some-secret-name" "default" "default-value" "randomDefault" false "context" $ ) }}
 
 Params:
   secret - String (Required) - Name of the 'Secret' resource where the key is stored.
   key - String - (Required) - Name of the key in the secret.
-  default - String - (Optional) - Default value to use if the secret does not exist.
-  length - Int - (Optional) - The length of the generated secret. Default is 32.
+  randomDefault - Bool - (Optional) - If true, a random value will be generated if secret does note exit.
+  randomLength - Int - (Optional) - The length of the generated secret. Default is 32.
+  default - String - (Optional) - Default value to use if the secret does not exist if "randomDefault" is set to false.
   context - Context (Required) - Parent context.
 */}}
 {{- define "common.secrets.set" -}}
@@ -43,11 +50,11 @@ Params:
 
   {{- if $existingSecret -}}
     {{- $secretVal = $existingSecret -}}
-  {{- else if .context.Values.global.useDefaultSecrets -}}
-    {{- $secretVal = .default | b64enc -}}
-  {{- else -}}
-    {{- $length := .length | default 32 -}}
+  {{- else if .randomDefault -}}
+    {{- $length := .randomLength | default 32 -}}
     {{- $secretVal = randAlphaNum $length | b64enc -}}
+  {{- else -}}
+    {{- $secretVal = .default | required (printf "default value required for secret=%s key=%s" .secret .key) |b64enc -}}
   {{- end -}}
 
   {{- printf "%s" $secretVal -}}
