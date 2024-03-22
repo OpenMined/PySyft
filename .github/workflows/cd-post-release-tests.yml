@@ -61,10 +61,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Install Hagrid and tox
+      - name: Install Hagrid, tox and uv
         run: |
           pip install -U hagrid
-          pip install tox
+          pip install --upgrade pip uv==0.1.18 tox tox-uv==1.5.1
 
       - name: Hagrid Version
         run: |
@@ -209,7 +209,7 @@ jobs:
 
       - name: Install tox
         run: |
-          pip install tox
+          pip install --upgrade pip uv==0.1.18 tox tox-uv==1.5.1
 
       - name: Run K8s tests
         env:
