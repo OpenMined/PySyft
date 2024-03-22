@@ -133,7 +133,6 @@ class LogService(AbstractService):
     )
     def has_storage_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
         result = self.stash.has_storage_permission(
-            context.credentials,
             uid,
         )
 

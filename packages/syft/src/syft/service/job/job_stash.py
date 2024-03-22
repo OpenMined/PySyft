@@ -385,9 +385,13 @@ class Job(SyncableSyftObject):
                 results.append(self.result.value)
 
         if has_permissions:
-            prompt_warning_message(
-                message="This is a placeholder object, please ask the admin for access."
+            has_storage_permission = api.services.log.has_storage_permission(
+                self.log_id
             )
+            if not has_storage_permission:
+                prompt_warning_message(
+                    message="This is a placeholder object, please ask the admin for access."
+                )
 
         results_str = "\n".join(results)
         if not _print:

@@ -296,7 +296,7 @@ class ActionService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def has_storage_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
-        return self.store.has_storage_permission(context.credentials, uid)
+        return self.store.has_storage_permission(uid)
 
     # not a public service endpoint
     def _user_code_execute(
