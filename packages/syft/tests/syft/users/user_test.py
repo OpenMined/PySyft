@@ -1,3 +1,6 @@
+# stdlib
+from secrets import token_hex
+
 # third party
 from faker import Faker
 import pytest
@@ -387,8 +390,8 @@ def test_user_view_set_role(worker: Worker, guest_client: DomainClient) -> None:
     assert isinstance(ds_client.me.update(role="admin"), SyftError)
 
 
-def test_user_view_set_role_admin() -> None:
-    node = sy.orchestra.launch(name="test-domain-1", reset=True)
+def test_user_view_set_role_admin(faker: Faker) -> None:
+    node = sy.orchestra.launch(name=token_hex(8), reset=True)
     domain_client = node.login(email="info@openmined.org", password="changethis")
     domain_client.register(
         name="Sheldon Cooper",
@@ -417,3 +420,6 @@ def test_user_view_set_role_admin() -> None:
     ds_client_2 = node.login(email="sheldon2@caltech.edu", password="changethis")
     assert ds_client_2.me.role == ServiceRole.ADMIN
     assert len(ds_client_2.users.get_all()) == len(domain_client.users.get_all())
+
+    node.python_node.cleanup()
+    node.land()

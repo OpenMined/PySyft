@@ -1,10 +1,10 @@
 global:
   # Affects only backend, frontend, and seaweedfs containers
   registry: docker.io
-  version: 0.8.5-beta.5
+  version: 0.8.5-beta.10
 
-  # Force default secret values for development. DO NOT USE IN PRODUCTION
-  useDefaultSecrets: false
+  # Force default secret values for development. DO NOT SET THIS TO FALSE IN PRODUCTION
+  randomizedSecrets: true
 
 mongo:
   # MongoDB config
@@ -24,9 +24,9 @@ mongo:
   # Mongo secret name. Override this if you want to use a self-managed secret.
   secretKeyName: mongo-secret
 
-  # Dev mode default passwords
-  defaultSecret:
-    rootPassword: example
+  # custom secret values
+  secret:
+    rootPassword: null
 
 frontend:
   # Extra environment vars
@@ -62,9 +62,9 @@ seaweedfs:
   resourcesPreset: nano
   resources: null
 
-  # Dev mode default passwords
-  defaultSecret:
-    s3RootPassword: admin
+  # custom secret values
+  secret:
+    s3RootPassword: null
 
 proxy:
   # Extra environment vars
@@ -122,9 +122,9 @@ node:
   # - defaultRootPassword
   secretKeyName: backend-secret
 
-  # Dev mode default passwords
-  defaultSecret:
-    defaultRootPassword: changethis
+  # custom secret values
+  secret:
+    defaultRootPassword: null
 
 ingress:
   hostname: null # do not make this localhost
@@ -152,7 +152,7 @@ ingress:
 # ----------------------------------------
 veilid:
   enabled: false
-  serverFlags: ""
+  serverFlags: null
   appLogLevel: "info"
   uvicornLogLevel: "info"
 

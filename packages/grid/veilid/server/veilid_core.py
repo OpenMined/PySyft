@@ -1,3 +1,7 @@
+# stdlib
+import asyncio
+from enum import Enum
+
 # third party
 from loguru import logger
 import veilid
@@ -11,12 +15,19 @@ from veilid.json_api import _JsonVeilidAPI
 from veilid.types import RouteId
 
 # relative
+from .constants import TIMEOUT
 from .constants import USE_DIRECT_CONNECTION
 from .veilid_connection import get_routing_context
 from .veilid_connection import get_veilid_conn
 from .veilid_db import load_dht_key
 from .veilid_db import store_dht_key
 from .veilid_db import store_dht_key_creds
+from .veilid_streamer import VeilidStreamer
+
+
+class PingResponse(Enum):
+    SUCCESS = "SUCCESS"
+    FAIL = "FAIL"
 
 
 async def create_private_route(
@@ -150,10 +161,18 @@ async def app_call(vld_key: str, message: bytes) -> bytes:
     async with await get_veilid_conn() as conn:
         async with await get_routing_context(conn) as router:
             route = await get_route_from_vld_key(vld_key, conn, router)
-
-            result = await router.app_call(route, message)
-
+            result = await VeilidStreamer().stream(router, route, message)
             return result
+
+
+async def ping(vld_key: str) -> str:
+    async with await get_veilid_conn() as conn:
+        try:
+            _ = await asyncio.wait_for(conn.debug(f"ping {vld_key}"), timeout=TIMEOUT)
+            return PingResponse.SUCCESS.value
+        except Exception as e:
+            logger.error(f"Failed to ping {vld_key} : {e}")
+            return PingResponse.FAIL.value
 
 
 # TODO: Modify healthcheck endpoint to check public internet ready

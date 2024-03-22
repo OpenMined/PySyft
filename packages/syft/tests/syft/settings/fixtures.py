@@ -21,12 +21,12 @@ from syft.types.uid import UID
 
 @pytest.fixture
 def settings_stash(document_store) -> SettingsStash:
-    return SettingsStash(store=document_store)
+    yield SettingsStash(store=document_store)
 
 
 @pytest.fixture
 def settings(worker, faker) -> NodeSettingsV2:
-    return NodeSettingsV2(
+    yield NodeSettingsV2(
         id=UID(),
         name=worker.name,
         organization=faker.text(),
@@ -44,7 +44,7 @@ def settings(worker, faker) -> NodeSettingsV2:
 
 @pytest.fixture
 def update_settings(faker) -> NodeSettingsUpdate:
-    return NodeSettingsUpdate(
+    yield NodeSettingsUpdate(
         name=faker.name(),
         description=faker.text(),
         on_board=faker.boolean(),
@@ -53,7 +53,7 @@ def update_settings(faker) -> NodeSettingsUpdate:
 
 @pytest.fixture
 def metadata_json(faker) -> NodeMetadataJSON:
-    return NodeMetadataJSON(
+    yield NodeMetadataJSON(
         metadata_version=faker.random_int(),
         name=faker.name(),
         id=faker.text(),
@@ -69,4 +69,4 @@ def metadata_json(faker) -> NodeMetadataJSON:
 
 @pytest.fixture
 def settings_service(document_store) -> SettingsService:
-    return SettingsService(store=document_store)
+    yield SettingsService(store=document_store)
