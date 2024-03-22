@@ -25,7 +25,6 @@ from result import Ok
 from result import Result
 from typing_extensions import Self
 
-from syft.service.job.job_stash import Job
 
 # relative
 from ...client.api import APIRegistry
@@ -1085,8 +1084,9 @@ class ActionObject(SyncableSyftObject):
         )
     
     def get_sync_dependencies(self, context: AuthedServiceContext, **kwargs: dict) -> list[UID]:  # type: ignore
-        job_service = context.get_service("jobservice")
-        job: Job | None | SyftError = job_service.get_by_result_id(self.id.id)
+        from syft.service.job.job_stash import Job
+        job_service = context.node.get_service("jobservice")
+        job: Job | None | SyftError = job_service.get_by_result_id(context, self.id.id)
         if isinstance(job, SyftError):
             return job
         elif job is not None:

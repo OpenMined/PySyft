@@ -461,7 +461,6 @@ class ObjectDiffBatch(SyftObject):
     global_diffs: dict[UID, ObjectDiff]
     global_roots: list[UID]
 
-    diffs: list[ObjectDiff]
     hierarchy_levels: list[int]
     dependencies: dict[UID, list[UID]] = {}
     dependents: dict[UID, list[UID]] = {}
@@ -491,7 +490,7 @@ class ObjectDiffBatch(SyftObject):
         if include_roots:
             result += roots
 
-        return [self.global_diffs[r] for r in result]
+        return [self.global_diffs[r] for r in set(result)]
 
     def get_dependencies(self, include_roots=False) -> list[ObjectDiff]:
         return self.walk_graph(deps=self.dependencies, include_roots=include_roots)
@@ -520,7 +519,7 @@ class ObjectDiffBatch(SyftObject):
         return self.decision == SyncDecision.skip
 
     @classmethod
-    def from_dependencies(cls, root_uid, obj_dependencies, obj_uid_to_diff):
+    def from_dependencies(cls, root_uid, obj_dependencies, obj_uid_to_diff, root_ids):
         def _build_hierarchy_helper(
             uid: UID, level: int = 0, visited: set | None = None
         ) -> list:
@@ -553,7 +552,6 @@ class ObjectDiffBatch(SyftObject):
             return result
 
         batch_uids = _build_hierarchy_helper(root_uid)
-        diffs = [obj_uid_to_diff[uid] for uid, _ in batch_uids]
         # levels in the tree that we create
         levels = [level for _, level in batch_uids]
 
@@ -563,7 +561,8 @@ class ObjectDiffBatch(SyftObject):
             for uid in batch_uids
         }
         return cls(
-            diffs=diffs,
+            global_diffs=obj_uid_to_diff,
+            global_roots=root_ids,
             hierarchy_levels=levels,
             dependencies=batch_dependencies,
             root_diff=obj_uid_to_diff[root_uid],
@@ -577,7 +576,7 @@ class ObjectDiffBatch(SyftObject):
                 result = []
                 for diff, child in d.items():
                     result.append(diff)
-                    results += flatten_dict(child)
+                    result += flatten_dict(child)
                 return result
 
         return flatten_dict(self.get_visual_hierarchy())
@@ -594,7 +593,7 @@ class ObjectDiffBatch(SyftObject):
         # low_state = f"{self.status}\n{self.diff_side_str('low')}"
         # high_state = f"{self.status}\n{self.diff_side_str('high')}"
 
-        diffs = self.flatten_visual_hierarchy()
+        diffs: list[ObjectDiff] = self.flatten_visual_hierarchy()
         low_batch_str = "\n".join(d.diff_side_str("low") for d in diffs)
         high_batch_str = "\n".join(d.diff_side_str("high") for d in diffs)
         return {
@@ -658,7 +657,7 @@ class ObjectDiffBatch(SyftObject):
         for child_type in child_types:
             children = [
                 n
-                for n in self.global_diffs
+                for n in self.global_diffs.values()
                 if n.object_id in dep_ids
                 and isinstance(n.low_obj or n.high_obj, child_type)
             ]
@@ -830,6 +829,9 @@ class NodeDiff(SyftObject):
                 diffs.append(diff)
                 ids.add(diff.object_id)
         return diffs
+    
+    def _repr_markdown_(self):
+        return None
 
     def _repr_html_(self) -> Any:
         return self.batches._repr_html_()
@@ -853,7 +855,7 @@ class NodeDiff(SyftObject):
                 without_usercode.append(hierarchy)
 
         # Order of hierarchies, by root object type
-        hierarchy_order = [UserCodeStatusCollection, Request, ExecutionOutput]
+        hierarchy_order = [UserCode, Request, Job]
         # Sort group by hierarchy_order, then by root object id
         for hierarchy_group in grouped_by_usercode.values():
             hierarchy_group.sort(
@@ -885,18 +887,23 @@ class NodeDiff(SyftObject):
         # -- Diff4
 
         batches = []
-        all_ids = set(obj_uid_to_diff.keys())
-        ids_with_parent = {
-            child for deps in obj_dependencies.values() for child in deps
-        }
-        # Root ids are object ids with no parents
+        root_ids = []
 
-        # TODO: all requests/status/ jobs or execution output
-        root_ids = list(all_ids - ids_with_parent)
+        for diff in obj_uid_to_diff.values():
+            diff_obj: SyncableSyftObject = (
+                diff.low_obj if diff.low_obj is not None else diff.high_obj
+            )
+            if isinstance(diff_obj, Request):
+                root_ids.append(diff.object_id)
+            elif isinstance(diff_obj, Job) and diff_obj.parent_job_id is None:
+                root_ids.append(diff.object_id)
+            elif isinstance(diff_obj, UserCode):
+                # TODO: Figure out nested user codes, do we even need that?
+                root_ids.append(diff.object_id)
 
         for root_uid in root_ids:
             batch = ObjectDiffBatch.from_dependencies(
-                root_uid, obj_dependencies, obj_uid_to_diff
+                root_uid, obj_dependencies, obj_uid_to_diff, root_ids
             )
             batches.append(batch)
 

@@ -126,7 +126,7 @@ def get_sync_instructions_for_batch_items_for_add(
 
     user_codes_high: list[UserCode] = [
         diff.high_obj
-        for diff in batch_diff.get_dependents(include_roots=False)
+        for diff in batch_diff.get_dependencies(include_roots=True)
         if isinstance(diff.high_obj, UserCode)
     ]
     if len(user_codes_high) > 1:

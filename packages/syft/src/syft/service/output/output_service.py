@@ -201,7 +201,8 @@ class OutputStash(BaseUIDStoreStash):
         if res.is_err():
             return res
         else:
-            if len(res.ok()) == 0:
+            res = res.ok()
+            if len(res) == 0:
                 return Ok(None)
             elif len(res) >1:
                 return Err(message="Too many outputs found")

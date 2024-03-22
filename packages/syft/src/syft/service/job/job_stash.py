@@ -12,6 +12,8 @@ from result import Ok
 from result import Result
 from typing_extensions import Self
 
+from ...service.context import AuthedServiceContext
+
 # relative
 from ...client.api import APIRegistry
 from ...client.api import SyftAPICall
@@ -485,7 +487,7 @@ class Job(SyncableSyftObject):
         if self.user_code_id is not None:
             dependencies.append(self.user_code_id)
 
-        output = context.get_service("outputservice").get_by_job_id(self.id)
+        output = context.node.get_service("outputservice").get_by_job_id(context, self.id)
         if isinstance(output, SyftError):
             return output
         elif output is not None:

@@ -4,6 +4,8 @@ from typing import Any
 from typing import Optional
 from typing import TYPE_CHECKING
 
+from syft.service.context import AuthedServiceContext
+
 # relative
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
@@ -95,7 +97,7 @@ class SyncState(SyftObject):
     def all_ids(self) -> set[UID]:
         return set(self.objects.keys())
 
-    def add_objects(self, objects: list[SyncableSyftObject], api: Any = None) -> None:
+    def add_objects(self, objects: list[SyncableSyftObject], context: Any = None) -> None:
         for obj in objects:
             if isinstance(obj.id, LineageID):
                 self.objects[obj.id.id] = obj
@@ -105,9 +107,9 @@ class SyncState(SyftObject):
         # TODO might get slow with large states,
         # need to build dependencies every time to not have UIDs
         # in dependencies that are not in objects
-        self._build_dependencies(api=api)
+        self._build_dependencies(context=context)
 
-    def _build_dependencies(self, api: Any = None) -> None:
+    def _build_dependencies(self, context: AuthedServiceContext, api: Any = None) -> None:
         self.dependencies = {}
 
         all_ids = self.all_ids

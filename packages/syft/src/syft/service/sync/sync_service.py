@@ -263,7 +263,7 @@ class SyncService(AbstractService):
         for service_name in services_to_sync:
             service = node.get_service(service_name)
             items = service.get_all(context)
-            new_state.add_objects(items, api=node.root_client.api)  # type: ignore
+            new_state.add_objects(items, context=context)  # type: ignore
 
         # TODO workaround, we only need action objects from outputs for now
         action_object_ids = set()
@@ -281,9 +281,9 @@ class SyncService(AbstractService):
             if action_object.is_err():
                 return action_object
             action_objects.append(action_object.ok())
-        new_state.add_objects(action_objects)
+        new_state.add_objects(action_objects, context=context)
 
-        new_state._build_dependencies(api=node.root_client.api)  # type: ignore
+        new_state._build_dependencies(context=context)  # type: ignore
 
         permissions, storage_permissions = self.get_permissions(
             context, new_state.objects.values()

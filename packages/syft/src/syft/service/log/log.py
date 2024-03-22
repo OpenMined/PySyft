@@ -8,6 +8,7 @@ from syft.types.uid import UID
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syncable_object import SyncableSyftObject
+from ...service.context import AuthedServiceContext
 
 
 @serializable()
