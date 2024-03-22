@@ -407,12 +407,17 @@ class VeilidConnection(NodeConnection):
         rev_proxy_url = self.vld_reverse_proxy.with_path(path)
         forward_proxy_url = self.vld_forward_proxy.with_path(VEILID_PROXY_PATH)
 
+        # Since JSON expects strings, we need to encode the bytes to base64
+        # as some bytes may not be valid utf-8
+        # TODO: Can we optimize this?
+        data_base64 = base64.b64encode(data).decode() if data else None
+
         json_data = {
             "url": str(rev_proxy_url),
             "method": "POST",
             "vld_key": self.vld_key,
             "json": json,
-            "data": data,
+            "data": data_base64,
         }
 
         response = self.session.post(str(forward_proxy_url), json=json_data)

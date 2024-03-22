@@ -837,8 +837,16 @@ class Request(SyncableSyftObject):
             if isinstance(approved, SyftError):
                 return approved
 
+            input_ids = {}
+            if code.input_policy is not None:
+                for inps in code.input_policy.inputs.values():
+                    input_ids.update(inps)
+
             res = api.services.code.apply_output(
-                user_code_id=code.id, outputs=result, job_id=job.id
+                user_code_id=code.id,
+                outputs=result,
+                job_id=job.id,
+                input_ids=input_ids,
             )
             if isinstance(res, SyftError):
                 return res

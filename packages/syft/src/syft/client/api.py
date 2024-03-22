@@ -46,6 +46,7 @@ from ..service.service import UserServiceConfigRegistry
 from ..service.user.user_roles import ServiceRole
 from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
+from ..types.cache_object import CachedSyftObject
 from ..types.identity import Identity
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
@@ -55,6 +56,7 @@ from ..types.uid import LineageID
 from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
 from ..util.telemetry import instrument
+from ..util.util import prompt_warning_message
 from .connection import NodeConnection
 
 if TYPE_CHECKING:
@@ -582,6 +584,20 @@ def unwrap_and_migrate_annotation(annotation: Any, object_versions: dict) -> Any
         return migrated_annotation[0]
 
 
+def result_needs_api_update(api_call_result: Any) -> bool:
+    # relative
+    from ..service.request.request import Request
+    from ..service.request.request import UserCodeStatusChange
+
+    if isinstance(api_call_result, Request) and any(
+        isinstance(x, UserCodeStatusChange) for x in api_call_result.changes
+    ):
+        return True
+    if isinstance(api_call_result, SyftSuccess) and api_call_result.require_api_update:
+        return True
+    return False
+
+
 @instrument
 @serializable(
     attrs=[
@@ -739,25 +755,25 @@ class SyftAPI(SyftObject):
 
         result = debox_signed_syftapicall_response(signed_result=signed_result)
 
+        if isinstance(result, CachedSyftObject):
+            if result.error_msg is not None:
+                prompt_warning_message(
+                    message=f"{result.error_msg}. Loading results from cache."
+                )
+            result = result.result
+
         if isinstance(result, OkErr):
             if result.is_ok():
-                res = result.ok()
-                # we update the api when we create objects that change it
-                self.update_api(res)
-                return res
+                result = result.ok()
             else:
-                return result.err()
+                result = result.err()
+        # we update the api when we create objects that change it
+        self.update_api(result)
         return result
 
     def update_api(self, api_call_result: Any) -> None:
         # TODO: hacky stuff with typing and imports to prevent circular imports
-        # relative
-        from ..service.request.request import Request
-        from ..service.request.request import UserCodeStatusChange
-
-        if isinstance(api_call_result, Request) and any(
-            isinstance(x, UserCodeStatusChange) for x in api_call_result.changes
-        ):
+        if result_needs_api_update(api_call_result):
             if self.refresh_api_callback is not None:
                 self.refresh_api_callback()
 
