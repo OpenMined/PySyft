@@ -51,7 +51,10 @@ if PYINSTRUMENT_ENABLED:
             profiler.stop()
             content = b"".join([part async for part in response.body_iterator])
             content_dict = {"response": content.decode()}
-            profiler_output_html = profiler.output_html()
+            # profiler_output_html = profiler.output_text(
+            #     unicode=True, color=True, show_all=True
+            # )
+            profiler_output_html = profiler.output_html(show_all=True)
             content_dict["profiler_output"] = profiler_output_html
             return JSONResponse(content=content_dict)
         else:
