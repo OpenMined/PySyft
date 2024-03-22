@@ -27,8 +27,8 @@ def test_image_build(domain_1_port) -> None:
     syft_base_tag = "0.8.5-beta.10"  # {sy.__version__}
 
     # Submit Docker Worker Config
-    docker_config_rl = """
-        FROM openmined/grid-backend:0.8.5-beta.10
+    docker_config_rl = f"""
+        FROM openmined/grid-backend:{syft_base_tag}
         RUN pip install recordlinkage
     """
     docker_config = DockerWorkerConfig(dockerfile=docker_config_rl)
@@ -185,8 +185,8 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
 
     # the DS makes a request to create an image and a pool based on the image
 
-    docker_config_np = """
-        FROM openmined/grid-backend:0.8.5-beta.10
+    docker_config_np = f"""
+        FROM openmined/grid-backend:{syft_base_tag}
         RUN pip install numpy
     """
     docker_config = DockerWorkerConfig(dockerfile=docker_config_np)
