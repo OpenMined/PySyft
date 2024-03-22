@@ -60,6 +60,12 @@ def test_user_code(worker) -> None:
     real_result = result.get()
     assert isinstance(real_result, int)
 
+    # Validate that the result is cached
+    for _ in range(10):
+        multi_call_res = guest_client.api.services.code.mock_syft_func()
+        assert isinstance(result, ActionObject)
+        assert multi_call_res.get() == result.get()
+
 
 def test_duplicated_user_code(worker, guest_client: User) -> None:
     # mock_syft_func()

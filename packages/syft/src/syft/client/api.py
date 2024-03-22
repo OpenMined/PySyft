@@ -46,6 +46,7 @@ from ..service.service import UserServiceConfigRegistry
 from ..service.user.user_roles import ServiceRole
 from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
+from ..types.cache_object import CachedSyftObject
 from ..types.identity import Identity
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
@@ -55,6 +56,7 @@ from ..types.uid import LineageID
 from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
 from ..util.telemetry import instrument
+from ..util.util import prompt_warning_message
 from .connection import NodeConnection
 
 if TYPE_CHECKING:
@@ -752,6 +754,13 @@ class SyftAPI(SyftObject):
             return SyftError(message="API connection is None")
 
         result = debox_signed_syftapicall_response(signed_result=signed_result)
+
+        if isinstance(result, CachedSyftObject):
+            if result.error_msg is not None:
+                prompt_warning_message(
+                    message=f"{result.error_msg}. Loading results from cache."
+                )
+            result = result.result
 
         if isinstance(result, OkErr):
             if result.is_ok():
