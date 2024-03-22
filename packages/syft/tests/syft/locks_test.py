@@ -9,7 +9,6 @@ import time
 import pytest
 
 # syft absolute
-from syft.store.locks import FileLockingConfig
 from syft.store.locks import LockingConfig
 from syft.store.locks import NoLockingConfig
 from syft.store.locks import SyftLock
@@ -33,12 +32,6 @@ def locks_nop_config(request):
 def locks_threading_config(request):
     def_params["lock_name"] = token_hex(8)
     yield ThreadingLockingConfig(**def_params)
-
-
-@pytest.fixture(scope="function")
-def locks_file_config():
-    def_params["lock_name"] = token_hex(8)
-    yield FileLockingConfig(**def_params)
 
 
 @pytest.mark.parametrize(
