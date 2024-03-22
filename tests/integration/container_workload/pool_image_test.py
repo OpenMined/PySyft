@@ -82,8 +82,8 @@ def test_pool_launch(domain_1_port) -> None:
     syft_base_tag = "0.8.5-beta.10"  # {sy.__version__}
 
     # Submit Docker Worker Config
-    docker_config_opendp = """
-        FROM openmined/grid-backend:0.8.5-beta.10
+    docker_config_opendp = f"""
+        FROM openmined/grid-backend:{syft_base_tag}
         RUN pip install opendp
     """
     docker_config = DockerWorkerConfig(dockerfile=docker_config_opendp)
