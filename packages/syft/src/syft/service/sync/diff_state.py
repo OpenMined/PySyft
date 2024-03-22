@@ -9,8 +9,9 @@ How to check differences between two objects:
 # stdlib
 import html
 import textwrap
-from typing import Any, Optional
+from typing import Any
 from typing import ClassVar
+from typing import Optional
 
 # third party
 from pydantic import model_validator
@@ -22,11 +23,13 @@ from rich.padding import Padding
 from rich.panel import Panel
 from typing_extensions import Self
 
+# syft absolute
 from syft.client.sync_decision import SyncDecision
 
 # relative
-from ...types.syft_object import SYFT_OBJECT_VERSION_2, short_uid
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
+from ...types.syft_object import short_uid
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
@@ -465,9 +468,7 @@ class ObjectDiffBatch(SyftObject):
     decision: Optional[SyncDecision] = None
     root_diff: ObjectDiff
 
-
-
-    def walk_graph(self, deps: dict[UID, list[UID]],  include_roots=False):
+    def walk_graph(self, deps: dict[UID, list[UID]], include_roots=False):
         root_id = self.root_diff.object_id
         result = [root_id]
         unvisited = [root_id]
@@ -482,7 +483,7 @@ class ObjectDiffBatch(SyftObject):
                     roots.append(node)
                 else:
                     new_nodes += deps.get(node, [])
-            
+
             new_nodes = [n for n in new_nodes if n not in result]
             unvisited = new_nodes
             result += unvisited
@@ -492,13 +493,11 @@ class ObjectDiffBatch(SyftObject):
 
         return [self.global_diffs[r] for r in result]
 
-
     def get_dependencies(self, include_roots=False) -> list[ObjectDiff]:
         return self.walk_graph(deps=self.dependencies, include_roots=include_roots)
 
     def get_dependents(self, include_roots=False) -> list[ObjectDiff]:
         return self.walk_graph(deps=self.dependents, include_roots=include_roots)
-
 
     def __hash__(self) -> int:
         diffs = self.get_dependents(include_roots=False)
@@ -569,12 +568,10 @@ class ObjectDiffBatch(SyftObject):
             dependencies=batch_dependencies,
             root_diff=obj_uid_to_diff[root_uid],
         )
-    
 
     def flatten_visual_hierarchy(self) -> list[ObjectDiff]:
-
         def flatten_dict(d):
-            if len(d) ==0:
+            if len(d) == 0:
                 return []
             else:
                 result = []
@@ -582,6 +579,7 @@ class ObjectDiffBatch(SyftObject):
                     result.append(diff)
                     results += flatten_dict(child)
                 return result
+
         return flatten_dict(self.get_visual_hierarchy())
 
     def _repr_html_(self) -> str:
@@ -608,7 +606,7 @@ class ObjectDiffBatch(SyftObject):
     @property
     def visual_hierarchy(self) -> tuple[type, dict]:
         # Returns
-        root_obj: Request | UserCodeStatusCollection | ExecutionOutput | Any = (
+        root_obj: SyncableSyftObject = (
             self.root.low_obj if self.root.low_obj is not None else self.root.high_obj
         )
         if isinstance(root_obj, Request):
@@ -617,13 +615,13 @@ class ObjectDiffBatch(SyftObject):
             }
         if isinstance(root_obj, UserCode):
             return UserCode, {
-                UserCode: [UserCode, UserCodeStatusCollection],
+                UserCode: [UserCodeStatusCollection, UserCode],
             }
         if isinstance(root_obj, Job):
             return UserCode, {
-                UserCode: [Job],
-                Job: [ExecutionOutput, SyftLog, Job],
-                ExecutionOutput: [ActionObject],
+                UserCode: [ExecutionOutput, UserCode],
+                ExecutionOutput: [Job],
+                Job: [ActionObject, SyftLog, Job],
             }
         raise ValueError(f"Unknown root type: {self.root.obj_type}")
 
@@ -669,7 +667,6 @@ class ObjectDiffBatch(SyftObject):
 
         return result
 
-
     @property
     def visual_root(self) -> ObjectDiff:
         dependecies: list[ObjectDiff] = self.get_dependencies(include_roots=True)
@@ -682,12 +679,8 @@ class ObjectDiffBatch(SyftObject):
         ][0]
         return visual_root
 
-
     def get_visual_hierarchy(self) -> dict[ObjectDiff, dict[ObjectDiff]]:
-        # visual_root_type = self.visual_hierarchy[0]
-        # First diff with a visual root type is the visual root
-        # because diffs are in depth-first order
-
+        visual_root = self.visual_root
         return {visual_root: self._get_visual_hierarchy(self.visual_root)}  # type: ignore
 
     def _get_obj_str(self, diff_obj: ObjectDiff, level: int, side: str) -> str:
@@ -790,7 +783,6 @@ class NodeDiff(SyftObject):
         for root_id, batch_hash in previously_ignored_batches:
             for batch in batches:
                 if batch.root_id == root_id:
-
                     if hash(batch) == batch_hash:
                         batch.decision = SyncDecision.ignore
                     else:
@@ -798,9 +790,10 @@ class NodeDiff(SyftObject):
                         batch.decision = None
                         # then we also set the dependent batches to unignore
                         # currently we dont do this recusively
-                        required_dependencies = set(
-                            [d for deps in batch.dependencies.values() for d in deps]
-                        )
+                        required_dependencies = {
+                            d for deps in batch.dependencies.values() for d in deps
+                        }
+
                         for other_batch in batches:
                             if other_batch is not batch:
                                 other_batch_root_id = {other_batch.root_id}
@@ -825,7 +818,9 @@ class NodeDiff(SyftObject):
     @property
     def diffs(self) -> list[ObjectDiff]:
         diffs_depthfirst = [
-            diff for hierarchy in self.batches for diff in hierarchy.get_dependents(include_roots=False)
+            diff
+            for hierarchy in self.batches
+            for diff in hierarchy.get_dependents(include_roots=False)
         ]
         # deduplicate
         diffs = []
@@ -900,7 +895,6 @@ class NodeDiff(SyftObject):
         root_ids = list(all_ids - ids_with_parent)
 
         for root_uid in root_ids:
-
             batch = ObjectDiffBatch.from_dependencies(
                 root_uid, obj_dependencies, obj_uid_to_diff
             )
