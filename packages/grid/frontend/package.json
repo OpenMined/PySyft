@@ -1,6 +1,6 @@
 {
   "name": "pygrid-ui",
-  "version": "0.8.6-beta.0",
+  "version": "0.8.6-beta.1",
   "private": true,
   "scripts": {
     "dev": "pnpm i && vite dev --host --port 80",
