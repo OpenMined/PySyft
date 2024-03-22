@@ -25,7 +25,7 @@ vars:
   DEVSPACE_ENV_FILE: "default.env"
   CONTAINER_REGISTRY: "docker.io"
   NODE_NAME: "mynode"
-  VERSION: "0.8.5-beta.6"
+  VERSION: "0.8.5-beta.10"
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
@@ -74,16 +74,11 @@ deployments:
         global:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
-          useDefaultSecrets: true
-        registry:
-          storageSize: "5Gi"
         node:
           name: ${NODE_NAME}
-          rootEmail: info@openmined.org
-          defaultWorkerPoolCount: 1
-          resourcesPreset: micro
-        veilid:
-          enabled: true
+      # anything that does not need devspace $env vars should go in values.dev.yaml
+      valuesFiles:
+        - ./helm/values.dev.yaml
 
 dev:
   mongo:

@@ -108,3 +108,6 @@ def test_manual_code_submission_enclave() -> None:
     )
     print(res, type(res))
     assert isinstance(res, NumpyArrayObject)
+
+    canada_root.cleanup()
+    italy_root.cleanup()
