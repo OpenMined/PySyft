@@ -12,18 +12,20 @@ There's no guarantee that interpolated download URL will work with latest versio
 from pathlib import Path
 import platform
 from shutil import copyfileobj
-from shutil import rmtree
-import socket
 import subprocess
 from tarfile import TarFile
 from tempfile import gettempdir
-from tempfile import mkdtemp
+from time import sleep
 import zipfile
 
 # third party
 import distro
 import docker
+import psutil
 import requests
+
+# relative
+from .random_port import get_random_port
 
 MONGO_CONTAINER_PREFIX = "pytest_mongo"
 MONGO_VERSION = "7.0"
@@ -32,17 +34,13 @@ PLATFORM_ARCH = platform.machine()
 PLATFORM_SYS = platform.system()
 DISTRO_MONIKER = distro.id() + distro.major_version() + distro.minor_version()
 
+MONGOD_PIDFILE = "mongod.pid"
+
 MONGO_BINARIES = {
     "Darwin": f"https://fastdl.mongodb.org/osx/mongodb-macos-{PLATFORM_ARCH}-{MONGO_FULL_VERSION}.tgz",
     "Linux": f"https://fastdl.mongodb.org/linux/mongodb-linux-{PLATFORM_ARCH}-{DISTRO_MONIKER}-{MONGO_FULL_VERSION}.tgz",
     "Windows": f"https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-{MONGO_FULL_VERSION}.zip",
 }
-
-
-def get_random_port():
-    soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    soc.bind(("", 0))
-    return soc.getsockname()[1]
 
 
 def start_mongo_server(name, dbname="syft"):
@@ -58,21 +56,22 @@ def start_mongo_server(name, dbname="syft"):
 
 def stop_mongo_server(name):
     if PLATFORM_SYS in MONGO_BINARIES.keys():
-        __destroy_mongo_proc(name)
+        __kill_mongo_proc(name)
     else:
-        __destroy_mongo_container(name)
+        __kill_mongo_container(name)
 
 
 def __start_mongo_proc(name, port):
-    prefix = f"mongo_{name}_"
-
     download_dir = Path(gettempdir(), "mongodb")
-
     exec_path = __download_mongo(download_dir)
     if not exec_path:
         raise Exception("Failed to download MongoDB binaries")
 
-    db_path = Path(mkdtemp(prefix=prefix))
+    root_dir = Path(gettempdir(), name)
+
+    db_path = Path(root_dir, "db")
+    db_path.mkdir(parents=True, exist_ok=True)
+
     proc = subprocess.Popen(
         [
             str(exec_path),
@@ -81,16 +80,24 @@ def __start_mongo_proc(name, port):
             "--dbpath",
             str(db_path),
         ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT,
     )
+
+    pid_path = root_dir / MONGOD_PIDFILE
+    pid_path.write_text(str(proc.pid))
 
     return proc.pid
 
 
-def __destroy_mongo_proc(name):
-    prefix = f"mongo_{name}_"
+def __kill_mongo_proc(name):
+    root_dir = Path(gettempdir(), name)
+    pid_path = root_dir / MONGOD_PIDFILE
+    pid = int(pid_path.read_text())
 
-    for path in Path(gettempdir()).glob(f"{prefix}*"):
-        rmtree(path, ignore_errors=True)
+    mongod_proc = psutil.Process(pid)
+    mongod_proc.terminate()
+    sleep(1)
 
 
 def __download_mongo(download_dir):
@@ -141,7 +148,7 @@ def __start_mongo_container(name, port=27017):
         )
 
 
-def __destroy_mongo_container(name):
+def __kill_mongo_container(name):
     client = docker.from_env()
     container_name = f"{MONGO_CONTAINER_PREFIX}_{name}"
 

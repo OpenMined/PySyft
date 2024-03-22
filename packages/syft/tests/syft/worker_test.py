@@ -1,4 +1,5 @@
 # stdlib
+from secrets import token_hex
 from typing import Any
 
 # third party
@@ -128,9 +129,8 @@ def test_user_transform() -> None:
     assert not hasattr(edit_user, "signing_key")
 
 
-def test_user_service() -> None:
+def test_user_service(worker) -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-    worker = Worker()
     user_service = worker.get_service(UserService)
 
     # create a user
@@ -172,18 +172,16 @@ def test_syft_object_serde() -> None:
         password="letmein",
         password_verify="letmein",
     )
-    # syft absolute
-    import syft as sy
-
     ser = sy.serialize(new_user, to_bytes=True)
     de = sy.deserialize(ser, from_bytes=True)
 
     assert new_user == de
 
 
-def test_worker() -> None:
-    worker = Worker()
+def test_worker(worker) -> None:
     assert worker
+    assert worker.name
+    assert worker.id
 
 
 def test_action_object_add() -> None:
@@ -222,8 +220,7 @@ def test_action_object_hooks() -> None:
     action_object.syft_post_hooks__["__add__"] = []
 
 
-def test_worker_serde() -> None:
-    worker = Worker()
+def test_worker_serde(worker) -> None:
     ser = sy.serialize(worker, to_bytes=True)
     de = sy.deserialize(ser, from_bytes=True)
 
@@ -231,6 +228,17 @@ def test_worker_serde() -> None:
     assert de.id == worker.id
 
 
+@pytest.fixture(params=[0])
+def worker_with_proc(request):
+    worker = Worker(
+        name=token_hex(8),
+        processes=request.param,
+        signing_key=SyftSigningKey.from_string(test_signing_key_string),
+    )
+    yield worker
+    worker.cleanup()
+
+
 @pytest.mark.parametrize(
     "path, kwargs",
     [
@@ -242,50 +250,44 @@ def test_worker_serde() -> None:
     ],
 )
 @pytest.mark.parametrize("blocking", [False, True])
-@pytest.mark.parametrize("n_processes", [0])
 def test_worker_handle_api_request(
-    path: str, kwargs: dict, blocking: bool, n_processes: int
+    worker_with_proc,
+    path: str,
+    kwargs: dict,
+    blocking: bool,
 ) -> None:
-    node_uid = UID()
-    test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-
-    worker = Worker(
-        name="test-domain-1",
-        processes=n_processes,
-        id=node_uid,
-        signing_key=test_signing_key,
-    )
-    root_client = worker.root_client
+    node_uid = worker_with_proc.id
+    root_client = worker_with_proc.root_client
     assert root_client.api is not None
 
     root_client.guest()
 
     # TODO: 🟡 Fix: root_client.guest is overriding root_client.
-    root_client = worker.root_client
+    root_client = worker_with_proc.root_client
 
     api_call = SyftAPICall(
         node_uid=node_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
     )
     # should fail on unsigned requests
-    result = worker.handle_api_call(api_call).message.data
+    result = worker_with_proc.handle_api_call(api_call).message.data
     assert isinstance(result, SyftError)
 
     signed_api_call = api_call.sign(root_client.api.signing_key)
 
     # should work on signed api calls
-    result = worker.handle_api_call(signed_api_call).message.data
+    result = worker_with_proc.handle_api_call(signed_api_call).message.data
     assert not isinstance(result, SyftError)
 
     # Guest client should not have access to the APIs
     guest_signed_api_call = api_call.sign(root_client.api.signing_key)
-    result = worker.handle_api_call(guest_signed_api_call).message
+    result = worker_with_proc.handle_api_call(guest_signed_api_call).message
     assert not isinstance(result, SyftAttributeError)
 
     # should fail on altered requests
     bogus_api_call = signed_api_call
     bogus_api_call.serialized_message += b"hacked"
 
-    result = worker.handle_api_call(bogus_api_call).message.data
+    result = worker_with_proc.handle_api_call(bogus_api_call).message.data
     assert isinstance(result, SyftError)
 
 
@@ -300,21 +302,15 @@ def test_worker_handle_api_request(
     ],
 )
 @pytest.mark.parametrize("blocking", [False, True])
-# @pytest.mark.parametrize("n_processes", [0, 1])
-@pytest.mark.parametrize("n_processes", [0])
 def test_worker_handle_api_response(
-    path: str, kwargs: dict, blocking: bool, n_processes: int
+    worker_with_proc: Worker,
+    path: str,
+    kwargs: dict,
+    blocking: bool,
 ) -> None:
-    test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-
-    node_uid = UID()
-    worker = Worker(
-        name="test-domain-1",
-        processes=n_processes,
-        id=node_uid,
-        signing_key=test_signing_key,
-    )
-    root_client = worker.root_client
+    node_uid = worker_with_proc.id
+    n_processes = worker_with_proc.processes
+    root_client = worker_with_proc.root_client
     assert root_client.api is not None
 
     guest_client = root_client.guest()
@@ -327,7 +323,7 @@ def test_worker_handle_api_response(
     )
 
     # TODO: 🟡 Fix: root_client.guest is overriding root_client.
-    root_client = worker.root_client
+    root_client = worker_with_proc.root_client
 
     call = SyftAPICall(
         node_uid=node_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
@@ -335,11 +331,11 @@ def test_worker_handle_api_response(
     signed_api_call = call.sign(root_client.credentials)
 
     # handle_api_call_with_unsigned_result should returned an unsigned result
-    us_result = worker.handle_api_call_with_unsigned_result(signed_api_call)
+    us_result = worker_with_proc.handle_api_call_with_unsigned_result(signed_api_call)
     assert not isinstance(us_result, SignedSyftAPICall)
 
     # handle_api_call should return a signed result
-    signed_result = worker.handle_api_call(signed_api_call)
+    signed_result = worker_with_proc.handle_api_call(signed_api_call)
     assert isinstance(signed_result, SignedSyftAPICall)
 
     # validation should work with the worker key
