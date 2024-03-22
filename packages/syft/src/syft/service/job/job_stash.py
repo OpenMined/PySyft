@@ -471,7 +471,7 @@ class Job(SyncableSyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
-    def get_sync_dependencies(self, **kwargs: dict) -> list[UID]:  # type: ignore
+    def get_sync_dependencies(self, context: AuthedServiceContext, **kwargs: dict) -> list[UID]:  # type: ignore
         dependencies = []
         if self.result is not None:
             dependencies.append(self.result.id.id)
@@ -484,6 +484,12 @@ class Job(SyncableSyftObject):
 
         if self.user_code_id is not None:
             dependencies.append(self.user_code_id)
+
+        output = context.get_service("outputservice").get_by_job_id(self.id)
+        if isinstance(output, SyftError):
+            return output
+        elif output is not None:
+            dependencies.append(output.id)
 
         return dependencies
 
@@ -594,6 +600,25 @@ class JobStash(BaseStash):
         if valid.is_err():
             return SyftError(message=valid.err())
         return super().update(credentials, item, add_permissions)
+
+    def get_by_result_id(
+        self,
+        credentials: SyftVerifyKey,
+        res_id: UID,
+    ) -> Result[Job | None, str]:
+        res = self.get_all(credentials)
+        if res.is_err():
+            return res
+        else:
+            res = res.ok()
+            # beautiful query
+            res = [x for x in res if x.result is not None and x.id.id == res_id]
+            if len(res) == 0:
+                return Ok(None)
+            elif len(res)>1:
+                return Err(message="multiple Jobs found")
+            else:
+                return Ok(res)
 
     def set_placeholder(
         self,

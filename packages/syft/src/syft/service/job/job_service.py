@@ -1,5 +1,5 @@
 # stdlib
-from typing import Any
+from typing import Any, Optional
 from typing import cast
 
 # relative
@@ -91,6 +91,19 @@ class JobService(AbstractService):
         if res.is_err():
             return SyftError(message=res.err())
         return SyftSuccess(message="Great Success!")
+
+    @service_method(
+        path="job.get_by_result_id",
+        name="get_by_result_id",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def get_by_result_id(
+        self, context: AuthedServiceContext, result_id: UID
+    ) -> Optional[Job] | SyftError:
+        res = self.stash.get_by_result_id(context.credentials, result_id)
+        if res.is_err():
+            return SyftError(message=res.err())
+        return res.ok()
 
     @service_method(
         path="job.restart",
@@ -253,7 +266,7 @@ class JobService(AbstractService):
         self.add_read_permission_job_for_code_owner(context, job, user_code)
 
         log_service = context.node.get_service("logservice")
-        res = log_service.add(context, job.log_id)
+        res = log_service.add(context, job.log_id, job.id)
         if isinstance(res, SyftError):
             return res
         # The owner of the code should be able to read the job log

@@ -25,6 +25,8 @@ from result import Ok
 from result import Result
 from typing_extensions import Self
 
+from syft.service.job.job_stash import Job
+
 # relative
 from ...client.api import APIRegistry
 from ...client.api import SyftAPI
@@ -298,6 +300,7 @@ passthrough_attrs = [
     "__private_sync_attr_mocks__",  # syft
     "__exclude_sync_diff_attrs__",  # syft
     "__repr_attrs__",  # syft
+    "get_sync_dependencies"
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -317,6 +320,7 @@ dont_wrap_output_attrs = [
     "__hash_exclude_attrs__",
     "__exclude_sync_diff_attrs__",  # syft
     "__repr_attrs__",
+    "get_sync_dependencies"
 ]
 dont_make_side_effects = [
     "_repr_html_",
@@ -334,6 +338,7 @@ dont_make_side_effects = [
     "__hash_exclude_attrs__",
     "__exclude_sync_diff_attrs__",  # syft
     "__repr_attrs__",
+    "get_sync_dependencies"
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -614,6 +619,7 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "_has_private_sync_attrs",
     "__exclude_sync_diff_attrs__",
     "__repr_attrs__",
+    "get_sync_dependencies"
 ]
 
 
@@ -1077,6 +1083,16 @@ class ActionObject(SyncableSyftObject):
             kwargs=kwargs,
             action_type=action_type,
         )
+    
+    def get_sync_dependencies(self, context: AuthedServiceContext, **kwargs: dict) -> list[UID]:  # type: ignore
+        job_service = context.get_service("jobservice")
+        job: Job | None | SyftError = job_service.get_by_result_id(self.id.id)
+        if isinstance(job, SyftError):
+            return job
+        elif job is not None:
+            return [job.id]
+        else:
+            return []
 
     def syft_get_path(self) -> str:
         """Get the type path of the underlying object"""

@@ -877,7 +877,7 @@ class Request(SyncableSyftObject):
         job.apply_info(job_info)
         return job_service.update(job)
 
-    def get_sync_dependencies(self, api: Any = None) -> list[UID] | SyftError:
+    def get_sync_dependencies(self, **kwargs) -> list[UID] | SyftError:
         dependencies = []
 
         code_id = self.code_id

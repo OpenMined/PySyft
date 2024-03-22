@@ -247,7 +247,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
                 message="Cannot Modify Status as the Domain's data is not included in the request"
             )
 
-    def get_sync_dependencies(self, api: Any = None) -> list[UID]:
+    def get_sync_dependencies(self, **kwargs) -> list[UID]:
         return [self.user_code_link.object_uid]
 
 
@@ -606,12 +606,14 @@ class UserCode(SyncableSyftObject):
                 all_assets += assets
         return all_assets
 
-    def get_sync_dependencies(self, api: Any = None) -> list[UID] | SyftError:
+    def get_sync_dependencies(self, **kwargs) -> list[UID] | SyftError:
         dependencies = []
 
         if self.nested_codes is not None:
             nested_code_ids = [link.object_uid for link in self.nested_codes.values()]
             dependencies.extend(nested_code_ids)
+
+        dependencies.append(self.status_link.object_uid)
 
         return dependencies
 

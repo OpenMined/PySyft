@@ -43,10 +43,11 @@ def get_user_input_for_resolve() -> str | None:
 
 def handle_ignore_skip(batch: ObjectDiffBatch, decision: SyncDecision, other_batches: list[ObjectDiffBatch]):
     if decision == SyncDecision.skip or decision == SyncDecision.ignore:
-        skipped_or_ignored_ids = set([x.object_id for x in batch.diffs])
+        skipped_or_ignored_ids = set([x.object_id for x in batch.get_dependents(include_roots=True)])
         for other_batch in other_batches:
             if other_batch.decision != decision:
-                other_batch_ids = set([d.object_id for d in other_batch.diffs])
+                # Currently, this is not recursive, in the future it might be
+                other_batch_ids = set([d.object_id for d in other_batch.get_dependents(include_roots=False)])
                 if len(other_batch_ids & skipped_or_ignored_ids) != 0:
                     other_batch.decision=decision
                     skipped_or_ignored_ids.update(other_batch_ids)
@@ -66,7 +67,7 @@ def resolve(
 
     for batch_diff in state.batches:
         batch_decision = decision or batch_diff.decision
-        if all(diff.status == "SAME" for diff in batch_diff.diffs):
+        if all(diff.status == "SAME" for diff in batch_diff.get_dependents(include_roots=False)):
             # Hierarchy has no diffs
             continue
 
@@ -82,7 +83,7 @@ def resolve(
             batch_decision: SyncDecision = SyncDecision(batch_decision)
         
         if batch_decision not in [SyncDecision.skip, SyncDecision.ignore]:
-            sync_instructions: list[SyncInstruction] = get_sync_instructions_for_batch_items(
+            sync_instructions: list[SyncInstruction] = get_sync_instructions_for_batch_items_for_add(
                 batch_diff,
                 batch_decision,
                 share_private_objects=share_private_objects,
@@ -90,8 +91,10 @@ def resolve(
             )
         else:
             sync_instructions: list[SyncInstruction] = []
+            if batch_decision == SyncDecision.ignore:
+                resolved_state_high.add_skipped_ignored(batch_diff)
 
-        print(f"Decision: Syncing {len(batch_diff)} objects")
+        print(f"Decision: Syncing {len(sync_instructions)} objects")
 
         for sync_instruction in sync_instructions:
             resolved_state_low.add_sync_instruction(sync_instruction)
@@ -104,7 +107,7 @@ def resolve(
     return resolved_state_low, resolved_state_high
 
 
-def get_sync_instructions_for_batch_items(
+def get_sync_instructions_for_batch_items_for_add(
     batch_diff: ObjectDiffBatch,
     decision: SyncDecision,
     share_private_objects: bool = False,
@@ -113,7 +116,7 @@ def get_sync_instructions_for_batch_items(
     sync_decisions: list[SyncInstruction] = []
 
     unpublished_private_high_diffs: list[ObjectDiff] = []
-    for diff in batch_diff.diffs:
+    for diff in batch_diff.get_dependents(include_roots=False):
         is_high_private_object = (
             diff.high_obj is not None and diff.high_obj._has_private_sync_attrs()
         )
@@ -123,7 +126,7 @@ def get_sync_instructions_for_batch_items(
 
     user_codes_high: list[UserCode] = [
         diff.high_obj
-        for diff in batch_diff.diffs
+        for diff in batch_diff.get_dependents(include_roots=False)
         if isinstance(diff.high_obj, UserCode)
     ]
     if len(user_codes_high) > 1:
@@ -145,7 +148,7 @@ def get_sync_instructions_for_batch_items(
     else:
         private_high_diffs_to_share = []
 
-    for diff in batch_diff.diffs:
+    for diff in batch_diff.get_dependencies(include_roots=False):
         is_unpublished_private_diff = diff in unpublished_private_high_diffs
         has_share_decision = diff in private_high_diffs_to_share
 

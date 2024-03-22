@@ -81,7 +81,7 @@ class SyncState(SyftObject):
     previous_state_link: LinkedObject | None = None
     permissions: dict[UID, set[str]] = {}
     storage_permissions: dict[UID, set[UID]] = {}
-    ignored_batches: dict[UID, hash] = {}
+    ignored_batches: dict[UID, int] = {}
 
     __attr_searchable__ = ["created_at"]
 
@@ -113,7 +113,7 @@ class SyncState(SyftObject):
         all_ids = self.all_ids
         for obj in self.objects.values():
             if hasattr(obj, "get_sync_dependencies"):
-                deps = obj.get_sync_dependencies(api=api)
+                deps = obj.get_sync_dependencies(context=context)
                 deps = [d.id for d in deps if d.id in all_ids]  # type: ignore
                 if len(deps):
                     self.dependencies[obj.id] = deps
@@ -133,8 +133,12 @@ class SyncState(SyftObject):
         ids = set()
 
         previous_diff = self.get_previous_state_diff()
-        for hierarchy in previous_diff.batches:
-            for diff, level in zip(hierarchy.diffs, hierarchy.hierarchy_levels):
+        for batch in previous_diff.batches:
+            # TODO: replace with something that creates the visual hierarchy 
+            # as individual elements without context
+            # we could do that by gathering all the elements in the normal direction
+            # but stop (not add) if its another batch, every hop would be a level
+            for diff in batch.get_dependencies(include_roots=False):
                 if diff.object_id in ids:
                     continue
                 ids.add(diff.object_id)
@@ -143,7 +147,7 @@ class SyncState(SyftObject):
                     previous_object=diff.low_obj,
                     current_state=diff.diff_side_str("high"),
                     previous_state=diff.diff_side_str("low"),
-                    level=level,
+                    level=0,
                 )
                 result.append(row)
         return result
