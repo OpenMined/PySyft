@@ -9,7 +9,7 @@ import urllib.request
 # third party
 import numpy as np
 
-_DATA = "/tmp/jax_example_data/"
+_DATA = "/tmp/jax_example_data/"  # nosec
 
 # BEGIN SOURCE FROM
 # Source: https://github.com/google/jax/blob/main/examples/datasets.py
