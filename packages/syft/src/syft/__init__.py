@@ -2,8 +2,10 @@ __version__ = "0.8.5"
 
 # stdlib
 from collections.abc import Callable
+from getpass import getpass
 import pathlib
 from pathlib import Path
+import random
 import sys
 from typing import Any
 
@@ -159,3 +161,94 @@ def _orchestra() -> Orchestra:
 
 def search(name: str) -> SearchResults:
     return Search(_domains()).search(name=name)
+
+
+def launch(
+    # node information and deployment
+    name: str | None = None,
+    node_type: str | NodeType | None = None,
+    deploy_to: str | None = None,
+    node_side_type: str | None = None,
+    # worker related inputs
+    port: int | str | None = "auto",
+    processes: int = 1,  # temporary work around for jax in subprocess
+    local_db: bool = False,
+    dev_mode: bool = False,
+    cmd: bool = False,
+    reset: bool = False,
+    tail: bool = False,
+    host: str | None = "0.0.0.0",  # nosec
+    tag: str | None = "latest",
+    verbose: bool = False,
+    render: bool = False,
+    enable_warnings: bool = False,
+    n_consumers: int = 0,
+    thread_workers: bool = False,
+    create_producer: bool = False,
+    queue_port: int | None = None,
+    in_memory_workers: bool = True,
+    skip_signup: bool = False,
+) -> DomainClient:
+    node = Orchestra.launch(
+        name=name,
+        node_type=node_type,
+        deploy_to=deploy_to,
+        node_side_type=node_side_type,
+        port=port,
+        processes=processes,
+        local_db=local_db,
+        dev_mode=dev_mode,
+        cmd=cmd,
+        reset=reset,
+        tail=tail,
+        host=host,
+        tag=tag,
+        # verbose=verbose,
+        render=render,
+        enable_warnings=enable_warnings,
+        n_consumers=n_consumers,
+        thread_workers=thread_workers,
+        create_producer=create_producer,
+        queue_port=queue_port,
+        in_memory_workers=in_memory_workers,
+    )
+
+    client = node.login(
+        email="info@openmined.org",
+        password="changethis",  # nosec
+        # verbose=False,
+        suppress_warnings=True,
+    )
+
+    # so that the user doesn't need to keep up with a node_handlne and client
+    client.land = node.land
+
+    if not skip_signup:
+        name = input("Name:")
+        email = input("Email:")
+        password = getpass("Password:")
+
+        # client.me.set_name(name)
+        client.me.set_email(email)
+        client.me.set_password(password)
+
+        # set default email notifier (note: each email account can only send 300 emails a day,
+        # and it might go to people's junk folders.)
+        emails_and_passwords = list()  # noqa: C408
+        emails_and_passwords.append(
+            ("syftforwarder@outlook.com", "Wh8fHys!Nrw7VyXLMj7r")
+        )
+        emails_and_passwords.append(
+            ("andrewtrask1@outlook.com", "notasecurepassword123")
+        )
+
+        sender, sender_pwd = random.choice(emails_and_passwords)  # nosec
+        client.settings.enable_notifications(
+            email_username=sender,
+            email_password=sender_pwd,
+            email_sender=sender,
+            email_server="smtp-mail.outlook.com",
+            email_port="587",
+        )
+
+    return client
