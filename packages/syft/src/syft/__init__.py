@@ -210,7 +210,7 @@ def launch(
 
     client = node.login(
         email="info@openmined.org",
-        password="changethis",
+        password="changethis",  # nosec
         verbose=False,
         suppress_warnings=True,
     )
@@ -237,7 +237,7 @@ def launch(
             ("andrewtrask1@outlook.com", "notasecurepassword123")
         )
 
-        sender, sender_pwd = random.choice(emails_and_passwords)
+        sender, sender_pwd = random.choice(emails_and_passwords)  # nosec
         client.settings.enable_notifications(
             email_username=sender,
             email_password=sender_pwd,
