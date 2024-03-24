@@ -224,11 +224,11 @@ def launch(
     client.land = node.land
 
     if not skip_signup:
-        name = input("Name:")
-        email = input("Email:")
-        password = getpass("Password:")
+        name = input("Admin Name:")
+        email = input("Admin Email:")
+        password = getpass("Admin Password:")
 
-        # client.me.set_name(name)
+        client.me.set_name(name)
         client.me.set_email(email)
         client.me.set_password(password)
 
