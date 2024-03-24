@@ -253,8 +253,8 @@ def launch(
             email_server="smtp-mail.outlook.com",
             email_port="587",
         )
-
-        print("Launched and configured!")
+        if not default_admin:
+            print("Launched and configured!\n")
         return client
 
     return client

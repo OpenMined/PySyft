@@ -32,6 +32,7 @@ from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..types.blob_storage import BlobFile
 from ..types.uid import UID
+from ..util._std_stream_capture import std_stream_capture
 from ..util.fonts import fonts_css
 from ..util.util import get_mb_size
 from ..util.util import prompt_warning_message
@@ -93,27 +94,35 @@ class DomainClient(SyftClient):
     def demo(self) -> DomainClient:
         """Setup a domain with some demo datasets."""
 
-        print("\nUploading Demo Datasets: MNIST")
+        print("BEGIN Uploading Demo Datasets:")
+        print("\tMNIST...", end="")
 
-        # relative
-        from .demo import mnist
+        with std_stream_capture():
+            # relative
+            from .demo import mnist
 
-        train_images, train_labels, test_images, test_labels = mnist()
+            train_images, train_labels, test_images, test_labels = mnist()
 
-        self.upload_dataset_via_lists(
-            name="MNIST Dataset",
-            asset_names=["Train Images", "Train Labels", "Test Images", "Test Labels"],
-            assets=[train_images, train_labels, test_images, test_labels],
-            mocks=[
-                train_images * 0,
-                train_labels * 0,
-                test_images * 0,
-                test_labels * 0,
-            ],
-            mocks_are_real=False,
-        )
+            self.upload_dataset_via_lists(
+                name="MNIST Dataset",
+                asset_names=[
+                    "Train Images",
+                    "Train Labels",
+                    "Test Images",
+                    "Test Labels",
+                ],
+                assets=[train_images, train_labels, test_images, test_labels],
+                mocks=[
+                    train_images * 0,
+                    train_labels * 0,
+                    test_images * 0,
+                    test_labels * 0,
+                ],
+                mocks_are_real=False,
+            )
+        print("Done!")
 
-        print("\nDone uploading demo datasets!\n")
+        print("DONE Uploading Demo Datasets!\n")
 
         return self
 
