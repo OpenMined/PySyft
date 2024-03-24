@@ -179,14 +179,21 @@ class DomainClient(SyftClient):
     ) -> SyftSuccess | SyftError:
         if len(asset_names) == len(assets) == len(mocks):
             dataset = CreateDataset(name=name)
-            dataset.add_contributor(
-                name=self.me.name, email=self.me.email, role="Creator"
-            )
+
+            if hasattr(self.me, "name"):
+                my_name = self.me.name
+            else:
+                my_name = "<Name not available>"
+
+            if hasattr(self.me, "email"):
+                my_email = self.me.email
+            else:
+                my_email = "<Email not available>"
+
+            dataset.add_contributor(name=my_name, email=my_email, role="Creator")
             for i in range(len(asset_names)):
                 asset = CreateAsset(name=asset_names[i])
-                asset.add_contributor(
-                    name=self.me.name, email=self.me.email, role="Creator"
-                )
+                asset.add_contributor(name=my_name, email=my_email, role="Creator")
                 asset.set_obj(data=assets[i])
                 asset.set_mock(mock_data=mocks[i], mock_is_real=mocks_are_real)
                 dataset.add_asset(asset)
