@@ -181,12 +181,12 @@ class DomainClient(SyftClient):
             dataset = CreateDataset(name=name)
 
             if hasattr(self.me, "name"):
-                my_name = self.me.name
+                my_name = self.me.name  # noqa
             else:
                 my_name = "<Name not available>"
 
             if hasattr(self.me, "email"):
-                my_email = self.me.email
+                my_email = self.me.email  # noqa
             else:
                 my_email = "<Email not available>"
 
