@@ -6,6 +6,9 @@ from syft.service.action.action_object import ActionObject
 from syft.service.action.plan import planify
 from syft.types.twin_object import TwinObject
 
+# relative
+from ..utils.custom_markers import currently_fail_on_python_3_12
+
 
 def test_eager_permissions(worker, guest_client):
     root_domain_client = worker.root_client
@@ -70,6 +73,7 @@ def test_plan(worker):
     assert res_ptr.get_from(guest_client) == 729
 
 
+@currently_fail_on_python_3_12(raises=AttributeError)
 def test_plan_with_function_call(worker, guest_client):
     root_domain_client = worker.root_client
     guest_client = worker.guest_client

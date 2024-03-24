@@ -1,9 +1,7 @@
 # stdlib
+from collections.abc import Callable
 from enum import Enum
-from typing import Callable
-from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Union
 
 # relative
 from .serde.serializable import serializable
@@ -36,11 +34,11 @@ class NodeSideType(str, Enum):
 
 
 class AbstractNode:
-    id: Optional[UID]
-    name: Optional[str]
-    node_type: Optional[NodeType]
-    node_side_type: Optional[NodeSideType]
+    id: UID | None
+    name: str | None
+    node_type: NodeType | None
+    node_side_type: NodeSideType | None
     in_memory_workers: bool
 
-    def get_service(self, path_or_func: Union[str, Callable]) -> "AbstractService":
+    def get_service(self, path_or_func: str | Callable) -> "AbstractService":
         raise NotImplementedError

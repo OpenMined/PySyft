@@ -1,11 +1,6 @@
 # stdlib
 from typing import Any
 from typing import ClassVar
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Type
-from typing import Union
 
 # third party
 from pydantic import model_validator
@@ -23,13 +18,14 @@ from ...store.document_store import QueryKeys
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SyftObject
+from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..service import AbstractService
+from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
 
@@ -39,28 +35,29 @@ OutputPolicyIdPartitionKey = PartitionKey(key="output_policy_id", type_=UID)
 
 
 @serializable()
-class ExecutionOutput(SyftObject):
+class ExecutionOutput(SyncableSyftObject):
     __canonical_name__ = "ExecutionOutput"
     __version__ = SYFT_OBJECT_VERSION_1
 
     executing_user_verify_key: SyftVerifyKey
     user_code_link: LinkedObject
-    output_ids: Optional[Union[List[UID], Dict[str, UID]]] = None
-    job_link: Optional[LinkedObject] = None
+    output_ids: list[UID] | dict[str, UID] | None = None
+    job_link: LinkedObject | None = None
     created_at: DateTime = DateTime.now()
+    input_ids: dict[str, UID] | None = None
 
     # Required for __attr_searchable__, set by model_validator
     user_code_id: UID
 
     # Output policy is not a linked object because its saved on the usercode
-    output_policy_id: Optional[UID] = None
+    output_policy_id: UID | None = None
 
-    __attr_searchable__: ClassVar[List[str]] = [
+    __attr_searchable__: ClassVar[list[str]] = [
         "user_code_id",
         "created_at",
         "output_policy_id",
     ]
-    __repr_attrs__: ClassVar[List[str]] = [
+    __repr_attrs__: ClassVar[list[str]] = [
         "created_at",
         "user_code_id",
         "job_id",
@@ -76,13 +73,14 @@ class ExecutionOutput(SyftObject):
 
     @classmethod
     def from_ids(
-        cls: Type["ExecutionOutput"],
-        output_ids: Union[UID, List[UID], Dict[str, UID]],
+        cls: type["ExecutionOutput"],
+        output_ids: UID | list[UID] | dict[str, UID],
         user_code_id: UID,
         executing_user_verify_key: SyftVerifyKey,
         node_uid: UID,
-        job_id: Optional[UID] = None,
-        output_policy_id: Optional[UID] = None,
+        job_id: UID | None = None,
+        output_policy_id: UID | None = None,
+        input_ids: dict[str, UID] | None = None,
     ) -> "ExecutionOutput":
         # relative
         from ..code.user_code_service import UserCode
@@ -115,10 +113,11 @@ class ExecutionOutput(SyftObject):
             job_link=job_link,
             executing_user_verify_key=executing_user_verify_key,
             output_policy_id=output_policy_id,
+            input_ids=input_ids,
         )
 
     @property
-    def outputs(self) -> Optional[Union[List[ActionObject], Dict[str, ActionObject]]]:
+    def outputs(self) -> list[ActionObject] | dict[str, ActionObject] | None:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -138,7 +137,7 @@ class ExecutionOutput(SyftObject):
             return None
 
     @property
-    def output_id_list(self) -> List[UID]:
+    def output_id_list(self) -> list[UID]:
         ids = self.output_ids
         if isinstance(ids, dict):
             return list(ids.values())
@@ -147,10 +146,34 @@ class ExecutionOutput(SyftObject):
         return []
 
     @property
-    def job_id(self) -> Optional[UID]:
+    def input_id_list(self) -> list[UID]:
+        ids = self.input_ids
+        if isinstance(ids, dict):
+            return list(ids.values())
+        return []
+
+    def check_input_ids(self, kwargs: dict[str, UID]) -> bool:
+        """
+        Checks the input IDs against the stored input IDs.
+
+        Args:
+            kwargs (dict[str, UID]): A dictionary containing the input IDs to be checked.
+
+        Returns:
+            bool: True if the input IDs are valid, False otherwise.
+        """
+        if not self.input_ids:
+            return True
+        for key, value in kwargs.items():  # Iterate over items of kwargs dictionary
+            if key not in self.input_ids or self.input_ids[key] != value:
+                return False
+        return True
+
+    @property
+    def job_id(self) -> UID | None:
         return self.job_link.object_uid if self.job_link else None
 
-    def get_sync_dependencies(self, api: Any = None) -> List[UID]:
+    def get_sync_dependencies(self, api: Any = None) -> list[UID]:
         # Output ids, user code id, job id
         res = []
 
@@ -178,7 +201,7 @@ class OutputStash(BaseUIDStoreStash):
 
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
-    ) -> Result[List[ExecutionOutput], str]:
+    ) -> Result[list[ExecutionOutput], str]:
         qks = QueryKeys(
             qks=[UserCodeIdPartitionKey.with_obj(user_code_id)],
         )
@@ -188,7 +211,7 @@ class OutputStash(BaseUIDStoreStash):
 
     def get_by_output_policy_id(
         self, credentials: SyftVerifyKey, output_policy_id: UID
-    ) -> Result[List[ExecutionOutput], str]:
+    ) -> Result[list[ExecutionOutput], str]:
         qks = QueryKeys(
             qks=[OutputPolicyIdPartitionKey.with_obj(output_policy_id)],
         )
@@ -216,11 +239,12 @@ class OutputService(AbstractService):
         self,
         context: AuthedServiceContext,
         user_code_id: UID,
-        output_ids: Union[UID, List[UID], Dict[str, UID]],
+        output_ids: UID | list[UID] | dict[str, UID],
         executing_user_verify_key: SyftVerifyKey,
-        job_id: Optional[UID] = None,
-        output_policy_id: Optional[UID] = None,
-    ) -> Union[ExecutionOutput, SyftError]:
+        job_id: UID | None = None,
+        output_policy_id: UID | None = None,
+        input_ids: dict[str, UID] | None = None,
+    ) -> ExecutionOutput | SyftError:
         output = ExecutionOutput.from_ids(
             output_ids=output_ids,
             user_code_id=user_code_id,
@@ -228,6 +252,7 @@ class OutputService(AbstractService):
             node_uid=context.node.id,  # type: ignore
             job_id=job_id,
             output_policy_id=output_policy_id,
+            input_ids=input_ids,
         )
 
         res = self.stash.set(context.credentials, output)
@@ -240,7 +265,7 @@ class OutputService(AbstractService):
     )
     def get_by_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
-    ) -> Union[List[ExecutionOutput], SyftError]:
+    ) -> list[ExecutionOutput] | SyftError:
         result = self.stash.get_by_user_code_id(
             credentials=context.node.verify_key,  # type: ignore
             user_code_id=user_code_id,
@@ -256,7 +281,7 @@ class OutputService(AbstractService):
     )
     def get_by_output_policy_id(
         self, context: AuthedServiceContext, output_policy_id: UID
-    ) -> Union[List[ExecutionOutput], SyftError]:
+    ) -> list[ExecutionOutput] | SyftError:
         result = self.stash.get_by_output_policy_id(
             credentials=context.node.verify_key,  # type: ignore
             output_policy_id=output_policy_id,  # type: ignore
@@ -268,8 +293,11 @@ class OutputService(AbstractService):
     @service_method(path="output.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(
         self, context: AuthedServiceContext
-    ) -> Union[List[ExecutionOutput], SyftError]:
+    ) -> list[ExecutionOutput] | SyftError:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
+
+
+TYPE_TO_SERVICE[ExecutionOutput] = OutputService

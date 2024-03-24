@@ -4,9 +4,6 @@ from itertools import combinations
 import json
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
 from uuid import uuid4
 
 # third party
@@ -22,7 +19,7 @@ from syft.custom_worker.config import DockerWorkerConfig
 
 
 # in Pydantic v2 this would just be model.model_dump(mode='json')
-def to_json_like_dict(model: BaseModel) -> Dict[str, Any]:
+def to_json_like_dict(model: BaseModel) -> dict[str, Any]:
     return json.loads(model.json())
 
 
@@ -53,8 +50,8 @@ CUSTOM_BUILD_CONFIG = {
 
 
 def generate_partial_custom_build_configs(
-    full_config: Dict[str, Any],
-) -> List[Dict[str, Any]]:
+    full_config: dict[str, Any],
+) -> list[dict[str, Any]]:
     """
     generate_partial_custom_build_configs({
         "gpu": True,
@@ -96,8 +93,8 @@ CUSTOM_BUILD_CONFIG_TEST_CASES = generate_partial_custom_build_configs(
 
 
 def get_worker_config(
-    build_config: Dict[str, Any], worker_config_version: Optional[str] = None
-) -> Dict[str, Any]:
+    build_config: dict[str, Any], worker_config_version: str | None = None
+) -> dict[str, Any]:
     worker_config = {"build": build_config}
 
     if worker_config_version is not None:
@@ -106,19 +103,19 @@ def get_worker_config(
     return worker_config
 
 
-def get_full_build_config(build_config: Dict[str, Any]) -> Dict[str, Any]:
+def get_full_build_config(build_config: dict[str, Any]) -> dict[str, Any]:
     return {**DEFAULT_BUILD_CONFIG, **build_config}
 
 
 @pytest.fixture
 def worker_config(
-    build_config: Dict[str, Any], worker_config_version: Optional[str]
-) -> Dict[str, Any]:
-    return get_worker_config(build_config, worker_config_version)
+    build_config: dict[str, Any], worker_config_version: str | None
+) -> dict[str, Any]:
+    yield get_worker_config(build_config, worker_config_version)
 
 
 @pytest.fixture
-def worker_config_yaml(tmp_path: Path, worker_config: Dict[str, Any]) -> Path:
+def worker_config_yaml(tmp_path: Path, worker_config: dict[str, Any]) -> Path:
     file_name = f"{uuid4().hex}.yaml"
     file_path = tmp_path / file_name
     with open(file_path, "w") as f:
@@ -135,8 +132,8 @@ METHODS = ["from_dict", "from_str", "from_path"]
 @pytest.mark.parametrize("worker_config_version", ["2", None])
 @pytest.mark.parametrize("method", METHODS)
 def test_load_custom_worker_config(
-    build_config: Dict[str, Any],
-    worker_config_version: Optional[str],
+    build_config: dict[str, Any],
+    worker_config_version: str | None,
     worker_config_yaml: Path,
     method: str,
 ) -> None:

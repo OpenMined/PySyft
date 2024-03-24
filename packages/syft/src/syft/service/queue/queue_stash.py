@@ -1,10 +1,6 @@
 # stdlib
 from enum import Enum
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
 
 # third party
 from result import Ok
@@ -21,8 +17,8 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...store.linked_obj import LinkedObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -46,22 +42,22 @@ StatusPartitionKey = PartitionKey(key="status", type_=Status)
 @serializable()
 class QueueItem(SyftObject):
     __canonical_name__ = "QueueItem"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     __attr_searchable__ = ["status"]
 
     id: UID
     node_uid: UID
-    result: Optional[Any] = None
+    result: Any | None = None
     resolved: bool = False
     status: Status = Status.CREATED
 
     method: str
     service: str
-    args: List
-    kwargs: Dict[str, Any]
-    job_id: Optional[UID] = None
-    worker_settings: Optional[WorkerSettings] = None
+    args: list
+    kwargs: dict[str, Any]
+    job_id: UID | None = None
+    worker_settings: WorkerSettings | None = None
     has_execute_permissions: bool = False
     worker_pool: LinkedObject
 
@@ -76,7 +72,7 @@ class QueueItem(SyftObject):
         return self.service_path == "Action" and self.method_name == "execute"
 
     @property
-    def action(self) -> Union[Any, SyftError]:
+    def action(self) -> Any | SyftError:
         if self.is_action:
             return self.kwargs["action"]
         return SyftError(message="QueueItem not an Action")
@@ -85,7 +81,7 @@ class QueueItem(SyftObject):
 @serializable()
 class ActionQueueItem(QueueItem):
     __canonical_name__ = "ActionQueueItem"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     method: str = "execute"
     service: str = "actionservice"
@@ -106,8 +102,8 @@ class QueueStash(BaseStash):
         self,
         credentials: SyftVerifyKey,
         item: QueueItem,
-        add_permissions: Optional[List[ActionObjectPermission]] = None,
-    ) -> Result[Optional[QueueItem], str]:
+        add_permissions: list[ActionObjectPermission] | None = None,
+    ) -> Result[QueueItem | None, str]:
         if item.resolved:
             valid = self.check_type(item, self.object_type)
             if valid.is_err():
@@ -119,7 +115,7 @@ class QueueStash(BaseStash):
         self,
         credentials: SyftVerifyKey,
         item: QueueItem,
-        add_permissions: Optional[List[ActionObjectPermission]] = None,
+        add_permissions: list[ActionObjectPermission] | None = None,
     ) -> Result[QueueItem, str]:
         # 🟡 TODO 36: Needs distributed lock
         if not item.resolved:
@@ -133,21 +129,21 @@ class QueueStash(BaseStash):
 
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Optional[QueueItem], str]:
+    ) -> Result[QueueItem | None, str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         item = self.query_one(credentials=credentials, qks=qks)
         return item
 
     def pop(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Optional[QueueItem], str]:
+    ) -> Result[QueueItem | None, str]:
         item = self.get_by_uid(credentials=credentials, uid=uid)
         self.delete_by_uid(credentials=credentials, uid=uid)
         return item
 
     def pop_on_complete(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Optional[QueueItem], str]:
+    ) -> Result[QueueItem | None, str]:
         item = self.get_by_uid(credentials=credentials, uid=uid)
         if item.is_ok():
             queue_item = item.ok()
@@ -166,7 +162,7 @@ class QueueStash(BaseStash):
 
     def get_by_status(
         self, credentials: SyftVerifyKey, status: Status
-    ) -> Result[List[QueueItem], str]:
+    ) -> Result[list[QueueItem], str]:
         qks = QueryKeys(qks=StatusPartitionKey.with_obj(status))
 
         return self.query_all(credentials=credentials, qks=qks)

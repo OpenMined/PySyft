@@ -2,25 +2,19 @@
 from __future__ import annotations
 
 # stdlib
-import binascii
 from collections import OrderedDict
-import contextlib
+from collections.abc import Callable
 from datetime import datetime
 from functools import partial
 import hashlib
-from multiprocessing import current_process
 import os
 from pathlib import Path
+import shutil
 import subprocess  # nosec
+import tempfile
+from time import sleep
 import traceback
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Type
-from typing import Union
-import uuid
 
 # third party
 from nacl.signing import SigningKey
@@ -40,7 +34,7 @@ from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
 from ..client.client import SyftClient
 from ..exceptions.exception import PySyftException
-from ..external import OBLV
+from ..external import OblvServiceProvider
 from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
@@ -102,6 +96,7 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
+from ..service.veilid import VeilidServiceProvider
 from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
@@ -121,14 +116,13 @@ from ..store.linked_obj import LinkedObject
 from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
 from ..util.util import get_env
 from ..util.util import get_queue_address
-from ..util.util import get_root_data_path
 from ..util.util import random_name
 from ..util.util import str_to_bool
 from ..util.util import thread_ident
@@ -138,7 +132,7 @@ from .worker_settings import WorkerSettings
 
 # if user code needs to be serded and its not available we can call this to refresh
 # the code for a specific node UID and thread
-CODE_RELOADER: Dict[int, Callable] = {}
+CODE_RELOADER: dict[int, Callable] = {}
 
 
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
@@ -152,35 +146,35 @@ DEFAULT_ROOT_USERNAME = "DEFAULT_ROOT_USERNAME"
 DEFAULT_ROOT_PASSWORD = "DEFAULT_ROOT_PASSWORD"  # nosec
 
 
-def get_private_key_env() -> Optional[str]:
+def get_private_key_env() -> str | None:
     return get_env(NODE_PRIVATE_KEY)
 
 
-def get_node_type() -> Optional[str]:
+def get_node_type() -> str | None:
     return get_env(NODE_TYPE, "domain")
 
 
-def get_node_name() -> Optional[str]:
+def get_node_name() -> str | None:
     return get_env(NODE_NAME, None)
 
 
-def get_node_side_type() -> Optional[str]:
+def get_node_side_type() -> str | None:
     return get_env(NODE_SIDE_TYPE, "high")
 
 
-def get_node_uid_env() -> Optional[str]:
+def get_node_uid_env() -> str | None:
     return get_env(NODE_UID)
 
 
-def get_default_root_email() -> Optional[str]:
+def get_default_root_email() -> str | None:
     return get_env(DEFAULT_ROOT_EMAIL, "info@openmined.org")
 
 
-def get_default_root_username() -> Optional[str]:
+def get_default_root_username() -> str | None:
     return get_env(DEFAULT_ROOT_USERNAME, "Jane Doe")
 
 
-def get_default_root_password() -> Optional[str]:
+def get_default_root_password() -> str | None:
     return get_env(DEFAULT_ROOT_PASSWORD, "changethis")  # nosec
 
 
@@ -192,15 +186,15 @@ def get_enable_warnings() -> bool:
     return str_to_bool(get_env("ENABLE_WARNINGS", "False"))
 
 
-def get_container_host() -> Optional[str]:
+def get_container_host() -> str | None:
     return get_env("CONTAINER_HOST")
 
 
-def get_default_worker_image() -> Optional[str]:
+def get_default_worker_image() -> str | None:
     return get_env("DEFAULT_WORKER_POOL_IMAGE")
 
 
-def get_default_worker_pool_name() -> Optional[str]:
+def get_default_worker_pool_name() -> str | None:
     return get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME)
 
 
@@ -227,11 +221,11 @@ def get_syft_worker() -> bool:
     return str_to_bool(get_env("SYFT_WORKER", "false"))
 
 
-def get_k8s_pod_name() -> Optional[str]:
+def get_k8s_pod_name() -> str | None:
     return get_env("K8S_POD_NAME")
 
 
-def get_syft_worker_uid() -> Optional[str]:
+def get_syft_worker_uid() -> str | None:
     is_worker = get_syft_worker()
     pod_name = get_k8s_pod_name()
     uid = get_env("SYFT_WORKER_UID")
@@ -250,14 +244,14 @@ default_root_password = get_default_root_password()
 
 
 class AuthNodeContextRegistry:
-    __node_context_registry__: Dict[str, NodeServiceContext] = OrderedDict()
+    __node_context_registry__: dict[str, NodeServiceContext] = OrderedDict()
 
     @classmethod
     def set_node_context(
         cls,
-        node_uid: Union[UID, str],
+        node_uid: UID | str,
         context: NodeServiceContext,
-        user_verify_key: Union[SyftVerifyKey, str],
+        user_verify_key: SyftVerifyKey | str,
     ) -> None:
         if isinstance(node_uid, str):
             node_uid = UID.from_string(node_uid)
@@ -278,130 +272,107 @@ class AuthNodeContextRegistry:
         cls,
         node_uid: UID,
         user_verify_key: SyftVerifyKey,
-    ) -> Optional[AuthedServiceContext]:
+    ) -> AuthedServiceContext | None:
         key = cls._get_key(node_uid=node_uid, user_verify_key=user_verify_key)
         return cls.__node_context_registry__.get(key)
 
 
 @instrument
 class Node(AbstractNode):
-    signing_key: Optional[SyftSigningKey]
+    signing_key: SyftSigningKey | None
     required_signed_calls: bool = True
     packages: str
 
     def __init__(
         self,
         *,  # Trasterisk
-        name: Optional[str] = None,
-        id: Optional[UID] = None,
-        services: Optional[List[Type[AbstractService]]] = None,
-        signing_key: Optional[Union[SyftSigningKey, SigningKey]] = None,
-        action_store_config: Optional[StoreConfig] = None,
-        document_store_config: Optional[StoreConfig] = None,
-        root_email: Optional[str] = default_root_email,
-        root_username: Optional[str] = default_root_username,
-        root_password: Optional[str] = default_root_password,
+        name: str | None = None,
+        id: UID | None = None,
+        signing_key: SyftSigningKey | SigningKey | None = None,
+        action_store_config: StoreConfig | None = None,
+        document_store_config: StoreConfig | None = None,
+        root_email: str | None = default_root_email,
+        root_username: str | None = default_root_username,
+        root_password: str | None = default_root_password,
         processes: int = 0,
         is_subprocess: bool = False,
-        node_type: Union[str, NodeType] = NodeType.DOMAIN,
+        node_type: str | NodeType = NodeType.DOMAIN,
         local_db: bool = False,
-        sqlite_path: Optional[str] = None,
-        blob_storage_config: Optional[BlobStorageConfig] = None,
-        queue_config: Optional[QueueConfig] = None,
-        queue_port: Optional[int] = None,
+        reset: bool = False,
+        blob_storage_config: BlobStorageConfig | None = None,
+        queue_config: QueueConfig | None = None,
+        queue_port: int | None = None,
         n_consumers: int = 0,
         create_producer: bool = False,
         thread_workers: bool = False,
-        node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
+        node_side_type: str | NodeSideType = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         dev_mode: bool = False,
         migrate: bool = False,
         in_memory_workers: bool = True,
-        smtp_username: Optional[str] = None,
-        smtp_password: Optional[str] = None,
-        email_sender: Optional[str] = None,
-        smtp_port: Optional[str] = None,
-        smtp_host: Optional[str] = None,
+        smtp_username: str | None = None,
+        smtp_password: str | None = None,
+        email_sender: str | None = None,
+        smtp_port: int | None = None,
+        smtp_host: str | None = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
         self.dev_mode = dev_mode or get_dev_mode()
-        if node_uid_env is not None:
-            self.id = UID.from_string(node_uid_env)
-        else:
-            if id is None:
-                id = UID()
-            self.id = id
+        self.id = UID.from_string(node_uid_env) if node_uid_env else (id or UID())
         self.packages = ""
-
-        self.signing_key = None
-        if signing_key_env is not None:
-            self.signing_key = SyftSigningKey.from_string(signing_key_env)
-        else:
-            if isinstance(signing_key, SigningKey):
-                signing_key = SyftSigningKey(signing_key=signing_key)
-            self.signing_key = signing_key
-
-        if self.signing_key is None:
-            self.signing_key = SyftSigningKey.generate()
-
         self.processes = processes
         self.is_subprocess = is_subprocess
-        self.name = random_name() if name is None else name
-        services = (
-            [
-                UserService,
-                WorkerService,
-                SettingsService,
-                ActionService,
-                LogService,
-                DatasetService,
-                UserCodeService,
-                QueueService,
-                JobService,
-                RequestService,
-                DataSubjectService,
-                NetworkService,
-                PolicyService,
-                NotifierService,
-                NotificationService,
-                DataSubjectMemberService,
-                ProjectService,
-                EnclaveService,
-                CodeHistoryService,
-                MetadataService,
-                BlobStorageService,
-                MigrateStateService,
-                SyftWorkerImageService,
-                SyftWorkerPoolService,
-                SyftImageRegistryService,
-                SyncService,
-                OutputService,
-                UserCodeStatusService,
-            ]
-            if services is None
-            else services
+        self.name = name or random_name()
+        self.enable_warnings = enable_warnings
+        self.in_memory_workers = in_memory_workers
+        self.node_type = NodeType(node_type)
+        self.node_side_type = NodeSideType(node_side_type)
+        self.client_cache: dict = {}
+        self.peer_client_cache: dict = {}
+
+        if isinstance(node_type, str):
+            node_type = NodeType(node_type)
+        self.node_type = node_type
+
+        if isinstance(node_side_type, str):
+            node_side_type = NodeSideType(node_side_type)
+        self.node_side_type = node_side_type
+
+        skey = None
+        if signing_key_env:
+            skey = SyftSigningKey.from_string(signing_key_env)
+        elif isinstance(signing_key, SigningKey):
+            skey = SyftSigningKey(signing_key=signing_key)
+        else:
+            skey = signing_key
+        self.signing_key = skey or SyftSigningKey.generate()
+
+        self.queue_config = self.create_queue_config(
+            n_consumers=n_consumers,
+            create_producer=create_producer,
+            thread_workers=thread_workers,
+            queue_port=queue_port,
+            queue_config=queue_config,
         )
 
-        self.service_config = ServiceConfigRegistry.get_registered_configs()
-        self.local_db = local_db
-        self.sqlite_path = sqlite_path
+        # must call before initializing stores
+        if reset:
+            self.remove_temp_dir()
+
+        use_sqlite = local_db or (processes > 0 and not is_subprocess)
+        document_store_config = document_store_config or self.get_default_store(
+            use_sqlite=use_sqlite
+        )
+        action_store_config = action_store_config or self.get_default_store(
+            use_sqlite=use_sqlite
+        )
         self.init_stores(
             action_store_config=action_store_config,
             document_store_config=document_store_config,
         )
 
-        if OBLV:
-            # relative
-            from ..external.oblv.oblv_service import OblvService
-
-            services += [OblvService]
-            create_oblv_key_pair(worker=self)
-
-        self.enable_warnings = enable_warnings
-        self.in_memory_workers = in_memory_workers
-
-        self.services = services
+        # construct services only after init stores
         self._construct_services()
 
         create_admin_new(  # nosec B106
@@ -420,26 +391,9 @@ class Node(AbstractNode):
             smtp_host=smtp_host,
         )
 
-        self.client_cache: dict = {}
-
-        if isinstance(node_type, str):
-            node_type = NodeType(node_type)
-        self.node_type = node_type
-
-        if isinstance(node_side_type, str):
-            node_side_type = NodeSideType(node_side_type)
-        self.node_side_type = node_side_type
-
         self.post_init()
-        self.create_initial_settings(admin_email=root_email)
 
-        self.queue_config = self.create_queue_config(
-            n_consumers=n_consumers,
-            create_producer=create_producer,
-            thread_workers=thread_workers,
-            queue_port=queue_port,
-            queue_config=queue_config,
-        )
+        self.create_initial_settings(admin_email=root_email)
 
         self.init_queue_manager(queue_config=self.queue_config)
 
@@ -460,11 +414,21 @@ class Node(AbstractNode):
             and any("docker" in line for line in open(path))
         )
 
-    def init_blob_storage(self, config: Optional[BlobStorageConfig] = None) -> None:
+    def get_default_store(self, use_sqlite: bool) -> StoreConfig:
+        if use_sqlite:
+            return SQLiteStoreConfig(
+                client_config=SQLiteStoreClientConfig(
+                    filename=f"{self.id}.sqlite",
+                    path=self.get_temp_dir("db"),
+                )
+            )
+        return DictStoreConfig()
+
+    def init_blob_storage(self, config: BlobStorageConfig | None = None) -> None:
         if config is None:
-            root_directory = get_root_data_path()
-            base_directory = root_directory / f"{self.id}"
-            client_config = OnDiskBlobStorageClientConfig(base_directory=base_directory)
+            client_config = OnDiskBlobStorageClientConfig(
+                base_directory=self.get_temp_dir("blob")
+            )
             config_ = OnDiskBlobStorageConfig(client_config=client_config)
         else:
             config_ = config
@@ -491,16 +455,22 @@ class Node(AbstractNode):
         for p in self.queue_manager.producers.values():
             p.close()
 
+        NodeRegistry.remove_node(self.id)
+
     def close(self) -> None:
         self.stop()
+
+    def cleanup(self) -> None:
+        self.stop()
+        self.remove_temp_dir()
 
     def create_queue_config(
         self,
         n_consumers: int,
         create_producer: bool,
         thread_workers: bool,
-        queue_port: Optional[int],
-        queue_config: Optional[QueueConfig],
+        queue_port: int | None,
+        queue_config: QueueConfig | None,
     ) -> QueueConfig:
         if queue_config:
             queue_config_ = queue_config
@@ -578,7 +548,7 @@ class Node(AbstractNode):
         service_name: str,
         syft_worker_id: UID,
         address: str,
-        message_handler: Type[AbstractMessageHandler] = APICallMessageHandler,
+        message_handler: type[AbstractMessageHandler] = APICallMessageHandler,
     ) -> None:
         consumer: QueueConsumer = self.queue_manager.create_consumer(
             message_handler,
@@ -597,72 +567,21 @@ class Node(AbstractNode):
         processes: int = 0,
         reset: bool = False,
         local_db: bool = False,
-        sqlite_path: Optional[str] = None,
-        node_type: Union[str, NodeType] = NodeType.DOMAIN,
-        node_side_type: Union[str, NodeSideType] = NodeSideType.HIGH_SIDE,
+        node_type: str | NodeType = NodeType.DOMAIN,
+        node_side_type: str | NodeSideType = NodeSideType.HIGH_SIDE,
         enable_warnings: bool = False,
         n_consumers: int = 0,
         thread_workers: bool = False,
         create_producer: bool = False,
-        queue_port: Optional[int] = None,
+        queue_port: int | None = None,
         dev_mode: bool = False,
         migrate: bool = False,
         in_memory_workers: bool = True,
     ) -> Self:
+        uid = UID.with_seed(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
-        name_hash_uuid = name_hash[0:16]
-        name_hash_uuid = bytearray(name_hash_uuid)
-        name_hash_uuid[6] = (
-            name_hash_uuid[6] & 0x0F
-        ) | 0x40  # Set version to 4 (uuid4)
-        name_hash_uuid[8] = (name_hash_uuid[8] & 0x3F) | 0x80  # Set variant to RFC 4122
-        name_hash_string = binascii.hexlify(bytearray(name_hash_uuid)).decode("utf-8")
-        if uuid.UUID(name_hash_string).version != 4:
-            raise Exception(f"Invalid UID: {name_hash_string} for name: {name}")
-        uid = UID(name_hash_string)
         key = SyftSigningKey(signing_key=SigningKey(name_hash))
         blob_storage_config = None
-        if reset:
-            store_config = SQLiteStoreClientConfig()
-            store_config.filename = f"{uid}.sqlite"
-
-            # stdlib
-            import sqlite3
-
-            with contextlib.closing(sqlite3.connect(store_config.file_path)) as db:
-                cursor = db.cursor()
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-                tables = cursor.fetchall()
-
-                for table_name in tables:
-                    drop_table_sql = f"DROP TABLE IF EXISTS {table_name[0]};"
-                    cursor.execute(drop_table_sql)
-
-                db.commit()
-                db.close()
-
-            # remove lock files for reading
-            # we should update this to partition locks per node
-            for f in Path("/tmp/sherlock").glob("*.json"):  # nosec
-                if f.is_file():
-                    f.unlink()
-
-            with contextlib.suppress(FileNotFoundError, PermissionError):
-                if os.path.exists(store_config.file_path):
-                    os.unlink(store_config.file_path)
-
-            # Reset blob storage
-            root_directory = get_root_data_path()
-            base_directory = root_directory / f"{uid}"
-            if base_directory.exists():
-                for file in base_directory.iterdir():
-                    file.unlink()
-            blob_client_config = OnDiskBlobStorageClientConfig(
-                base_directory=base_directory
-            )
-            blob_storage_config = OnDiskBlobStorageConfig(
-                client_config=blob_client_config
-            )
 
         node_type = NodeType(node_type)
         node_side_type = NodeSideType(node_side_type)
@@ -673,7 +592,6 @@ class Node(AbstractNode):
             signing_key=key,
             processes=processes,
             local_db=local_db,
-            sqlite_path=sqlite_path,
             node_type=node_type,
             node_side_type=node_side_type,
             enable_warnings=enable_warnings,
@@ -685,6 +603,7 @@ class Node(AbstractNode):
             dev_mode=dev_mode,
             migrate=migrate,
             in_memory_workers=in_memory_workers,
+            reset=reset,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -705,8 +624,8 @@ class Node(AbstractNode):
         return root_client
 
     def _find_klasses_pending_for_migration(
-        self, object_types: List[SyftObject]
-    ) -> List[SyftObject]:
+        self, object_types: list[SyftObject]
+    ) -> list[SyftObject]:
         context = AuthedServiceContext(
             node=self,
             credentials=self.verify_key,
@@ -721,6 +640,10 @@ class Node(AbstractNode):
             object_version = object_type.__version__
 
             migration_state = migration_state_service.get_state(context, canonical_name)
+            if isinstance(migration_state, SyftError):
+                raise Exception(
+                    f"Failed to get migration state for {canonical_name}. Error: {migration_state}"
+                )
             if (
                 migration_state is not None
                 and migration_state.current_version != migration_state.latest_version
@@ -804,7 +727,7 @@ class Node(AbstractNode):
         return self.get_guest_client()
 
     @property
-    def current_protocol(self) -> Union[str, int]:
+    def current_protocol(self) -> str | int:
         data_protocol = get_data_protocol()
         return data_protocol.latest_version
 
@@ -850,17 +773,9 @@ class Node(AbstractNode):
             node_uid=self.id, user_verify_key=self.verify_key, context=context
         )
 
-        if UserCodeService in self.services:
+        if "usercodeservice" in self.service_path_map:
             user_code_service = self.get_service(UserCodeService)
             user_code_service.load_user_code(context=context)
-
-        if self.is_subprocess or current_process().name != "MainProcess":
-            # print(f"> Starting Subprocess {self}")
-            pass
-        else:
-            pass
-            # why would we do this?
-            # print(f"> {self}")
 
         def reload_user_code() -> None:
             user_code_service.load_user_code(context=context)
@@ -871,53 +786,26 @@ class Node(AbstractNode):
 
     def init_stores(
         self,
-        document_store_config: Optional[StoreConfig] = None,
-        action_store_config: Optional[StoreConfig] = None,
+        document_store_config: StoreConfig,
+        action_store_config: StoreConfig,
     ) -> None:
-        if document_store_config is None:
-            if self.local_db or (self.processes > 0 and not self.is_subprocess):
-                client_config = SQLiteStoreClientConfig(path=self.sqlite_path)
-                document_store_config = SQLiteStoreConfig(client_config=client_config)
-            else:
-                document_store_config = DictStoreConfig()
-        if (
-            isinstance(document_store_config, SQLiteStoreConfig)
-            and document_store_config.client_config.filename is None
-        ):
-            document_store_config.client_config.filename = f"{self.id}.sqlite"
-            if self.dev_mode:
-                print(
-                    f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
-                )
-        document_store = document_store_config.store_type
-        self.document_store_config = document_store_config
-
         # We add the python id of the current node in order
         # to create one connection per Node object in MongoClientCache
         # so that we avoid closing the connection from a
         # different thread through the garbage collection
-        if isinstance(self.document_store_config, MongoStoreConfig):
-            self.document_store_config.client_config.node_obj_python_id = id(self)
+        if isinstance(document_store_config, MongoStoreConfig):
+            document_store_config.client_config.node_obj_python_id = id(self)
 
-        self.document_store = document_store(
+        self.document_store_config = document_store_config
+        self.document_store = document_store_config.store_type(
+            node_uid=self.id,
             root_verify_key=self.verify_key,
             store_config=document_store_config,
         )
-        if action_store_config is None:
-            if self.local_db or (self.processes > 0 and not self.is_subprocess):
-                client_config = SQLiteStoreClientConfig(path=self.sqlite_path)
-                action_store_config = SQLiteStoreConfig(client_config=client_config)
-            else:
-                action_store_config = DictStoreConfig()
-
-        if (
-            isinstance(action_store_config, SQLiteStoreConfig)
-            and action_store_config.client_config.filename is None
-        ):
-            action_store_config.client_config.filename = f"{self.id}.sqlite"
 
         if isinstance(action_store_config, SQLiteStoreConfig):
             self.action_store: ActionStore = SQLiteActionStore(
+                node_uid=self.id,
                 store_config=action_store_config,
                 root_verify_key=self.verify_key,
             )
@@ -929,10 +817,15 @@ class Node(AbstractNode):
             action_store_config.client_config.node_obj_python_id = id(self)
 
             self.action_store = MongoActionStore(
-                root_verify_key=self.verify_key, store_config=action_store_config
+                node_uid=self.id,
+                root_verify_key=self.verify_key,
+                store_config=action_store_config,
             )
         else:
-            self.action_store = DictActionStore(root_verify_key=self.verify_key)
+            self.action_store = DictActionStore(
+                node_uid=self.id,
+                root_verify_key=self.verify_key,
+            )
 
         self.action_store_config = action_store_config
         self.queue_stash = QueueStash(store=self.document_store)
@@ -946,60 +839,72 @@ class Node(AbstractNode):
         return self.get_service("workerservice").stash
 
     def _construct_services(self) -> None:
-        self.service_path_map = {}
+        service_path_map: dict[str, AbstractService] = {}
+        initialized_services: list[AbstractService] = []
 
-        for service_klass in self.services:
-            kwargs = {}
-            if service_klass == ActionService:
-                kwargs["store"] = self.action_store
-            store_services = [
-                UserService,
-                WorkerService,
-                SettingsService,
-                DatasetService,
-                UserCodeService,
-                LogService,
-                RequestService,
-                QueueService,
-                JobService,
-                DataSubjectService,
-                NetworkService,
-                PolicyService,
-                NotifierService,
-                NotificationService,
-                DataSubjectMemberService,
-                ProjectService,
-                EnclaveService,
-                CodeHistoryService,
-                MetadataService,
-                BlobStorageService,
-                MigrateStateService,
-                SyftWorkerImageService,
-                SyftWorkerPoolService,
-                SyftImageRegistryService,
-                SyncService,
-                OutputService,
-                UserCodeStatusService,
-            ]
+        # A dict of service and init kwargs.
+        # - "svc" expects a callable (class or function)
+        #     - The callable must return AbstractService or None
+        # - "store" expects a store type
+        #     - By default all services get the document store
+        #     - Pass a custom "store" to override this
+        default_services: list[dict] = [
+            {"svc": ActionService, "store": self.action_store},
+            {"svc": UserService},
+            {"svc": WorkerService},
+            {"svc": SettingsService},
+            {"svc": DatasetService},
+            {"svc": UserCodeService},
+            {"svc": LogService},
+            {"svc": RequestService},
+            {"svc": QueueService},
+            {"svc": JobService},
+            {"svc": DataSubjectService},
+            {"svc": NetworkService},
+            {"svc": PolicyService},
+            {"svc": NotifierService},
+            {"svc": NotificationService},
+            {"svc": DataSubjectMemberService},
+            {"svc": ProjectService},
+            {"svc": EnclaveService},
+            {"svc": CodeHistoryService},
+            {"svc": MetadataService},
+            {"svc": BlobStorageService},
+            {"svc": MigrateStateService},
+            {"svc": SyftWorkerImageService},
+            {"svc": SyftWorkerPoolService},
+            {"svc": SyftImageRegistryService},
+            {"svc": SyncService},
+            {"svc": OutputService},
+            {"svc": UserCodeStatusService},
+            {"svc": VeilidServiceProvider},  # this is lazy
+            {"svc": OblvServiceProvider},  # this is lazy
+        ]
 
-            if OBLV:
-                # relative
-                from ..external.oblv.oblv_service import OblvService
+        for svc_kwargs in default_services:
+            ServiceCls = svc_kwargs.pop("svc")
+            svc_kwargs.setdefault("store", self.document_store)
 
-                store_services += [OblvService]
+            svc_instance = ServiceCls(**svc_kwargs)
+            if not svc_instance:
+                continue
+            elif not isinstance(svc_instance, AbstractService):
+                raise ValueError(
+                    f"Service {ServiceCls.__name__} must be an instance of AbstractService"
+                )
 
-            if service_klass in store_services:
-                kwargs["store"] = self.document_store  # type: ignore[assignment]
-            self.service_path_map[service_klass.__name__.lower()] = service_klass(
-                **kwargs
-            )
+            service_path_map[ServiceCls.__name__.lower()] = svc_instance
+            initialized_services.append(ServiceCls)
 
-    def get_service_method(self, path_or_func: Union[str, Callable]) -> Callable:
+        self.services = initialized_services
+        self.service_path_map = service_path_map
+
+    def get_service_method(self, path_or_func: str | Callable) -> Callable:
         if callable(path_or_func):
             path_or_func = path_or_func.__qualname__
         return self._get_service_method_from_path(path_or_func)
 
-    def get_service(self, path_or_func: Union[str, Callable]) -> AbstractService:
+    def get_service(self, path_or_func: str | Callable) -> AbstractService:
         if callable(path_or_func):
             path_or_func = path_or_func.__qualname__
         return self._get_service_from_path(path_or_func)
@@ -1017,6 +922,24 @@ class Node(AbstractNode):
         service_obj = self._get_service_from_path(path=path)
 
         return getattr(service_obj, method_name)
+
+    def get_temp_dir(self, dir_name: str = "") -> Path:
+        """
+        Get a temporary directory unique to the node.
+        Provide all dbs, blob dirs, and locks using this directory.
+        """
+        root = os.getenv("SYFT_TEMP_ROOT", "syft")
+        p = Path(tempfile.gettempdir(), root, str(self.id), dir_name)
+        p.mkdir(parents=True, exist_ok=True)
+        return p
+
+    def remove_temp_dir(self) -> None:
+        """
+        Remove the temporary directory for this node.
+        """
+        rootdir = self.get_temp_dir()
+        if rootdir.exists():
+            shutil.rmtree(rootdir, ignore_errors=True)
 
     @property
     def settings(self) -> NodeSettingsV2:
@@ -1046,8 +969,8 @@ class Node(AbstractNode):
             name=name,
             id=self.id,
             verify_key=self.verify_key,
-            highest_version=SYFT_OBJECT_VERSION_1,
-            lowest_version=SYFT_OBJECT_VERSION_1,
+            highest_version=SYFT_OBJECT_VERSION_2,
+            lowest_version=SYFT_OBJECT_VERSION_2,
             syft_version=__version__,
             description=description,
             organization=organization,
@@ -1080,9 +1003,8 @@ class Node(AbstractNode):
 
     def await_future(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Union[Optional[QueueItem], SyftError]:
+    ) -> QueueItem | None | SyftError:
         # stdlib
-        from time import sleep
 
         # relative
         from ..service.queue.queue import Status
@@ -1099,7 +1021,7 @@ class Node(AbstractNode):
 
     def resolve_future(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Union[Optional[QueueItem], SyftError]:
+    ) -> QueueItem | None | SyftError:
         result = self.queue_stash.pop_on_complete(credentials, uid)
 
         if result.is_ok():
@@ -1112,10 +1034,10 @@ class Node(AbstractNode):
         return result.err()
 
     def forward_message(
-        self, api_call: Union[SyftAPICall, SignedSyftAPICall]
-    ) -> Result[Union[QueueItem, SyftObject], Err]:
+        self, api_call: SyftAPICall | SignedSyftAPICall
+    ) -> Result[QueueItem | SyftObject, Err]:
         node_uid = api_call.message.node_uid
-        if NetworkService not in self.services:
+        if "networkservice" not in self.service_path_map:
             return SyftError(
                 message=(
                     "Node has no network service so we can't "
@@ -1124,19 +1046,26 @@ class Node(AbstractNode):
             )
 
         client = None
-        if node_uid in self.client_cache:
-            client = self.client_cache[node_uid]
-        else:
-            network_service = self.get_service(NetworkService)
-            peer = network_service.stash.get_by_uid(self.verify_key, node_uid)
 
-            if peer.is_ok() and peer.ok():
-                peer = peer.ok()
+        network_service = self.get_service(NetworkService)
+        peer = network_service.stash.get_by_uid(self.verify_key, node_uid)
+
+        if peer.is_ok() and peer.ok():
+            peer = peer.ok()
+
+            # Since we have several routes to a peer
+            # we need to cache the client for a given node_uid along with the route
+            peer_cache_key = hash(node_uid) + hash(peer.pick_highest_priority_route())
+
+            if peer_cache_key in self.peer_client_cache:
+                client = self.peer_client_cache[peer_cache_key]
+            else:
                 context = AuthedServiceContext(
                     node=self, credentials=api_call.credentials
                 )
                 client = peer.client_with_context(context=context)
-                self.client_cache[node_uid] = client
+                self.peer_client_cache[peer_cache_key] = client
+
         if client:
             message: SyftAPICall = api_call.message
             if message.path == "metadata":
@@ -1176,8 +1105,8 @@ class Node(AbstractNode):
 
     def handle_api_call(
         self,
-        api_call: Union[SyftAPICall, SignedSyftAPICall],
-        job_id: Optional[UID] = None,
+        api_call: SyftAPICall | SignedSyftAPICall,
+        job_id: UID | None = None,
         check_call_location: bool = True,
     ) -> Result[SignedSyftAPICall, Err]:
         # Get the result
@@ -1191,10 +1120,10 @@ class Node(AbstractNode):
 
     def handle_api_call_with_unsigned_result(
         self,
-        api_call: Union[SyftAPICall, SignedSyftAPICall],
-        job_id: Optional[UID] = None,
+        api_call: SyftAPICall | SignedSyftAPICall,
+        job_id: UID | None = None,
         check_call_location: bool = True,
-    ) -> Union[Result, QueueItem, SyftObject, SyftError]:
+    ) -> Result | QueueItem | SyftObject | SyftError:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return SyftError(
                 message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."
@@ -1257,10 +1186,10 @@ class Node(AbstractNode):
         self,
         action: Action,
         credentials: SyftVerifyKey,
-        parent_job_id: Optional[UID] = None,
+        parent_job_id: UID | None = None,
         has_execute_permissions: bool = False,
-        worker_pool_name: Optional[str] = None,
-    ) -> Union[Job, SyftError]:
+        worker_pool_name: str | None = None,
+    ) -> Job | SyftError:
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(node=self)
@@ -1313,9 +1242,9 @@ class Node(AbstractNode):
         self,
         queue_item: QueueItem,
         credentials: SyftVerifyKey,
-        action: Optional[Action] = None,
-        parent_job_id: Optional[UID] = None,
-    ) -> Union[Job, SyftError]:
+        action: Action | None = None,
+        parent_job_id: UID | None = None,
+    ) -> Job | SyftError:
         log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
         context = AuthedServiceContext(node=self, credentials=credentials, role=role)
@@ -1362,7 +1291,7 @@ class Node(AbstractNode):
 
     def _get_existing_user_code_jobs(
         self, context: AuthedServiceContext, user_code_id: UID
-    ) -> Union[List[Job], SyftError]:
+    ) -> list[Job] | SyftError:
         job_service = self.get_service("jobservice")
         return job_service.get_by_user_code_id(
             context=context, user_code_id=user_code_id
@@ -1377,8 +1306,8 @@ class Node(AbstractNode):
         return user_code_service.is_execution_on_owned_args(api_call.kwargs, context)
 
     def add_api_call_to_queue(
-        self, api_call: SyftAPICall, parent_job_id: Optional[UID] = None
-    ) -> Union[Job, SyftError]:
+        self, api_call: SyftAPICall, parent_job_id: UID | None = None
+    ) -> Job | SyftError:
         unsigned_call = api_call
         if isinstance(api_call, SignedSyftAPICall):
             unsigned_call = api_call.message
@@ -1465,7 +1394,7 @@ class Node(AbstractNode):
     def user_code_stash(self) -> UserCodeStash:
         return self.get_service(UserCodeService).stash
 
-    def get_default_worker_pool(self) -> Union[Optional[WorkerPool], SyftError]:
+    def get_default_worker_pool(self) -> WorkerPool | None | SyftError:
         result = self.pool_stash.get_by_name(
             credentials=self.verify_key,
             pool_name=get_default_worker_pool_name(),
@@ -1477,8 +1406,8 @@ class Node(AbstractNode):
 
     def get_api(
         self,
-        for_user: Optional[SyftVerifyKey] = None,
-        communication_protocol: Optional[PROTOCOL_TYPE] = None,
+        for_user: SyftVerifyKey | None = None,
+        communication_protocol: PROTOCOL_TYPE | None = None,
     ) -> SyftAPI:
         return SyftAPI.for_user(
             node=self,
@@ -1497,7 +1426,7 @@ class Node(AbstractNode):
     ) -> NodeServiceContext:
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
-    def create_initial_settings(self, admin_email: str) -> Optional[NodeSettingsV2]:
+    def create_initial_settings(self, admin_email: str) -> NodeSettingsV2 | None:
         if self.name is None:
             self.name = random_name()
         try:
@@ -1541,7 +1470,7 @@ def create_admin_new(
     email: str,
     password: str,
     node: AbstractNode,
-) -> Optional[User]:
+) -> User | None:
     try:
         user_stash = UserStash(store=node.document_store)
         row_exists = user_stash.get_by_email(
@@ -1577,40 +1506,40 @@ def create_admin_new(
     return None
 
 
-def create_oblv_key_pair(
-    worker: Node,
-) -> Optional[str]:
-    try:
-        # relative
-        from ..external.oblv.oblv_keys_stash import OblvKeys
-        from ..external.oblv.oblv_keys_stash import OblvKeysStash
-        from ..external.oblv.oblv_service import generate_oblv_key
+# def create_oblv_key_pair(
+#     worker: Node,
+# ) -> str | None:
+#     try:
+#         # relative
+#         from ..external.oblv.oblv_keys_stash import OblvKeys
+#         from ..external.oblv.oblv_keys_stash import OblvKeysStash
+#         from ..external.oblv.oblv_service import generate_oblv_key
 
-        oblv_keys_stash = OblvKeysStash(store=worker.document_store)
+#         oblv_keys_stash = OblvKeysStash(store=worker.document_store)
 
-        if not len(oblv_keys_stash) and worker.signing_key:
-            public_key, private_key = generate_oblv_key(oblv_key_name=worker.name)
-            oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
-            res = oblv_keys_stash.set(worker.signing_key.verify_key, oblv_keys)
-            if res.is_ok():
-                print("Successfully generated Oblv Key pair at startup")
-            return res.err()
-        else:
-            print(f"Using Existing Public/Private Key pair: {len(oblv_keys_stash)}")
-    except Exception as e:
-        print("Unable to create Oblv Keys.", e)
-        return None
+#         if not len(oblv_keys_stash) and worker.signing_key:
+#             public_key, private_key = generate_oblv_key(oblv_key_name=worker.name)
+#             oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
+#             res = oblv_keys_stash.set(worker.signing_key.verify_key, oblv_keys)
+#             if res.is_ok():
+#                 print("Successfully generated Oblv Key pair at startup")
+#             return res.err()
+#         else:
+#             print(f"Using Existing Public/Private Key pair: {len(oblv_keys_stash)}")
+#     except Exception as e:
+#         print("Unable to create Oblv Keys.", e)
+#         return None
 
-    return None
+#     return None
 
 
 class NodeRegistry:
-    __node_registry__: Dict[UID, Node] = {}
+    __node_registry__: dict[UID, Node] = {}
 
     @classmethod
     def set_node_for(
         cls,
-        node_uid: Union[UID, str],
+        node_uid: UID | str,
         node: Node,
     ) -> None:
         if isinstance(node_uid, str):
@@ -1623,11 +1552,16 @@ class NodeRegistry:
         return cls.__node_registry__.get(node_uid, None)
 
     @classmethod
-    def get_all_nodes(cls) -> List[Node]:
+    def get_all_nodes(cls) -> list[Node]:
         return list(cls.__node_registry__.values())
 
+    @classmethod
+    def remove_node(cls, node_uid: UID) -> None:
+        if node_uid in cls.__node_registry__:
+            del cls.__node_registry__[node_uid]
 
-def get_default_worker_tag_by_env(dev_mode: bool = False) -> Optional[str]:
+
+def get_default_worker_tag_by_env(dev_mode: bool = False) -> str | None:
     if in_kubernetes():
         return get_default_worker_image()
     elif dev_mode:
@@ -1636,7 +1570,7 @@ def get_default_worker_tag_by_env(dev_mode: bool = False) -> Optional[str]:
         return __version__
 
 
-def create_default_worker_pool(node: Node) -> Optional[SyftError]:
+def create_default_worker_pool(node: Node) -> SyftError | None:
     credentials = node.verify_key
     pull_image = not node.dev_mode
     image_stash = node.get_service(SyftWorkerImageService).stash

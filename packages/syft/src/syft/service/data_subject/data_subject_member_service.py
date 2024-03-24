@@ -1,7 +1,4 @@
 # stdlib
-from typing import List
-from typing import Optional
-from typing import Union
 
 # third party
 from result import Result
@@ -39,13 +36,13 @@ class DataSubjectMemberStash(BaseUIDStoreStash):
 
     def get_all_for_parent(
         self, credentials: SyftVerifyKey, name: str
-    ) -> Result[Optional[DataSubjectMemberRelationship], str]:
+    ) -> Result[DataSubjectMemberRelationship | None, str]:
         qks = QueryKeys(qks=[ParentPartitionKey.with_obj(name)])
         return self.query_all(credentials=credentials, qks=qks)
 
     def get_all_for_child(
         self, credentials: SyftVerifyKey, name: str
-    ) -> Result[Optional[DataSubjectMemberRelationship], str]:
+    ) -> Result[DataSubjectMemberRelationship | None, str]:
         qks = QueryKeys(qks=[ChildPartitionKey.with_obj(name)])
         return self.query_all(credentials=credentials, qks=qks)
 
@@ -62,7 +59,7 @@ class DataSubjectMemberService(AbstractService):
 
     def add(
         self, context: AuthedServiceContext, parent: str, child: str
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """Register relationship between data subject and it's member."""
         relation = DataSubjectMemberRelationship(parent=parent, child=child)
         result = self.stash.set(context.credentials, relation, ignore_duplicates=True)
@@ -72,7 +69,7 @@ class DataSubjectMemberService(AbstractService):
 
     def get_relatives(
         self, context: AuthedServiceContext, data_subject_name: str
-    ) -> Union[List[str], SyftError]:
+    ) -> list[str] | SyftError:
         """Get all Members for given data subject"""
         result = self.stash.get_all_for_parent(
             context.credentials, name=data_subject_name

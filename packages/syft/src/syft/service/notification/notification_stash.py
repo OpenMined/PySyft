@@ -1,5 +1,4 @@
 # stdlib
-from typing import List
 
 # third party
 from result import Err
@@ -44,7 +43,7 @@ class NotificationStash(BaseUIDStoreStash):
 
     def get_all_inbox_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
-    ) -> Result[List[Notification], str]:
+    ) -> Result[list[Notification], str]:
         qks = QueryKeys(
             qks=[
                 ToUserVerifyKeyPartitionKey.with_obj(verify_key),
@@ -56,7 +55,7 @@ class NotificationStash(BaseUIDStoreStash):
 
     def get_all_sent_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
-    ) -> Result[List[Notification], str]:
+    ) -> Result[list[Notification], str]:
         qks = QueryKeys(
             qks=[
                 FromUserVerifyKeyPartitionKey.with_obj(verify_key),
@@ -66,7 +65,7 @@ class NotificationStash(BaseUIDStoreStash):
 
     def get_all_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey, qks: QueryKeys
-    ) -> Result[List[Notification], str]:
+    ) -> Result[list[Notification], str]:
         if isinstance(verify_key, str):
             verify_key = SyftVerifyKey.from_string(verify_key)
         return self.query_all(
@@ -80,7 +79,7 @@ class NotificationStash(BaseUIDStoreStash):
         credentials: SyftVerifyKey,
         verify_key: SyftVerifyKey,
         status: NotificationStatus,
-    ) -> Result[List[Notification], str]:
+    ) -> Result[list[Notification], str]:
         qks = QueryKeys(
             qks=[
                 ToUserVerifyKeyPartitionKey.with_obj(verify_key),

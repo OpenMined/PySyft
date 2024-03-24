@@ -1,5 +1,6 @@
 # stdlib
 import asyncio
+from collections.abc import Callable
 from enum import Enum
 import logging
 import multiprocessing
@@ -9,10 +10,6 @@ import signal
 import subprocess  # nosec
 import sys
 import time
-from typing import Callable
-from typing import List
-from typing import Optional
-from typing import Tuple
 
 # third party
 from fastapi import APIRouter
@@ -79,7 +76,7 @@ def run_uvicorn(
     node_side_type: str,
     enable_warnings: bool,
     in_memory_workers: bool,
-    queue_port: Optional[int],
+    queue_port: int | None,
     create_producer: bool,
     n_consumers: int,
 ) -> None:
@@ -183,10 +180,10 @@ def serve_node(
     tail: bool = False,
     enable_warnings: bool = False,
     in_memory_workers: bool = True,
-    queue_port: Optional[int] = None,
+    queue_port: int | None = None,
     create_producer: bool = False,
     n_consumers: int = 0,
-) -> Tuple[Callable, Callable]:
+) -> tuple[Callable, Callable]:
     server_process = multiprocessing.Process(
         target=run_uvicorn,
         args=(
@@ -245,7 +242,7 @@ def serve_node(
     return start, stop
 
 
-def find_python_processes_on_port(port: int) -> List[int]:
+def find_python_processes_on_port(port: int) -> list[int]:
     system = platform.system()
 
     if system == "Windows":

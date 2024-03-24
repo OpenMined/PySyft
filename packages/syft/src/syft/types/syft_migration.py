@@ -1,7 +1,5 @@
 # stdlib
-from typing import Callable
-from typing import Optional
-from typing import Union
+from collections.abc import Callable
 
 # relative
 from .syft_object import SyftMigrationRegistry
@@ -10,10 +8,10 @@ from .transforms import validate_klass_and_version
 
 
 def migrate(
-    klass_from: Union[type, str],
-    klass_to: Union[type, str],
-    version_from: Optional[int] = None,
-    version_to: Optional[int] = None,
+    klass_from: type | str,
+    klass_to: type | str,
+    version_from: int | None = None,
+    version_to: int | None = None,
 ) -> Callable:
     (
         klass_from_str,

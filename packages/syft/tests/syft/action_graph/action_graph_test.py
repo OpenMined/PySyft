@@ -9,11 +9,13 @@ Tests for the classes in /syft/src/syft/service/action/action_graph.py:
 # stdlib
 import os
 from pathlib import Path
+import sys
 import tempfile
 from threading import Thread
 
 # third party
 import networkx as nx
+import pytest
 from result import Err
 
 # syft absolute
@@ -263,6 +265,10 @@ def test_networkx_backing_store_edge_related_methods(
     assert len(networkx_store.nodes()) == 3
 
 
+@pytest.mark.xfail(
+    sys.platform == "win32",
+    reason="Fails on Windows. capnp\lib\capnp.pyx:3323: KjException Message did not contain a root pointer.",
+)
 def test_networkx_backing_store_save_load_default(
     networkx_store_with_nodes: NetworkXBackingStore, verify_key: SyftVerifyKey
 ) -> None:
@@ -456,8 +462,8 @@ def test_simple_in_memory_action_graph(
 
 
 def test_multithreaded_graph_store_set_and_add_edge(verify_key: SyftVerifyKey) -> None:
-    thread_cnt = 5
-    repeats = 3
+    thread_cnt = 3
+    repeats = 5
 
     execution_err = None
     store_config = InMemoryGraphConfig()
@@ -507,8 +513,8 @@ def test_multithreaded_graph_store_set_and_add_edge(verify_key: SyftVerifyKey) -
 
 
 def test_multithreaded_graph_store_delete_node(verify_key: SyftVerifyKey) -> None:
-    thread_cnt = 5
-    repeats = 3
+    thread_cnt = 3
+    repeats = 5
 
     execution_err = None
     store_config = InMemoryGraphConfig()

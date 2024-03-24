@@ -1,8 +1,6 @@
 # stdlib
 from enum import Enum
 from typing import Any
-from typing import Dict
-from typing import Optional
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -34,7 +32,7 @@ class ActionObjectPermission:
         self,
         uid: UID,
         permission: ActionPermission,
-        credentials: Optional[SyftVerifyKey] = None,
+        credentials: SyftVerifyKey | None = None,
     ):
         if credentials is None:
             if permission not in COMPOUND_ACTION_PERMISSION:
@@ -52,7 +50,7 @@ class ActionObjectPermission:
                 return f"{self.credentials.verify}_{self.permission.name}"
             return f"{self.permission.name}"
 
-    def _coll_repr_(self) -> Dict[str, Any]:
+    def _coll_repr_(self) -> dict[str, Any]:
         return {
             "uid": str(self.uid),
             "credentials": str(self.credentials),
@@ -94,3 +92,18 @@ class ActionObjectEXECUTE(ActionObjectPermission):
         self.uid = uid
         self.credentials = credentials
         self.permission = ActionPermission.EXECUTE
+
+
+class StoragePermission:
+    def __init__(self, uid: UID, node_uid: UID):
+        self.uid = uid
+        self.node_uid = node_uid
+
+    def __repr__(self) -> str:
+        return f"StoragePermission: {self.uid} on {self.node_uid}"
+
+    def _coll_repr_(self) -> dict[str, Any]:
+        return {
+            "uid": str(self.uid),
+            "node_uid": str(self.node_uid),
+        }

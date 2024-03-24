@@ -2,9 +2,6 @@
 from hashlib import sha256
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
 
 # third party
 from kr8s.objects import ConfigMap
@@ -40,9 +37,9 @@ class KubernetesBuilder(BuilderBase):
     def build_image(
         self,
         tag: str,
-        dockerfile: Optional[str] = None,
-        dockerfile_path: Optional[Path] = None,
-        buildargs: Optional[dict] = None,
+        dockerfile: str | None = None,
+        dockerfile_path: Path | None = None,
+        buildargs: dict | None = None,
         **kwargs: Any,
     ) -> ImageBuildResult:
         image_digest = None
@@ -144,12 +141,12 @@ class KubernetesBuilder(BuilderBase):
     def _get_tag_hash(self, tag: str) -> str:
         return sha256(tag.encode()).hexdigest()
 
-    def _get_image_digest(self, job: Job) -> Optional[str]:
+    def _get_image_digest(self, job: Job) -> str | None:
         selector = {"batch.kubernetes.io/job-name": job.metadata.name}
         pods = self.client.get("pods", label_selector=selector)
         return KubeUtils.get_container_exit_message(pods)
 
-    def _get_exit_code(self, job: Job) -> List[int]:
+    def _get_exit_code(self, job: Job) -> list[int]:
         selector = {"batch.kubernetes.io/job-name": job.metadata.name}
         pods = self.client.get("pods", label_selector=selector)
         return KubeUtils.get_container_exit_code(pods)
@@ -182,7 +179,7 @@ class KubernetesBuilder(BuilderBase):
         job_id: str,
         tag: str,
         job_config: ConfigMap,
-        build_args: Optional[Dict] = None,
+        build_args: dict | None = None,
     ) -> Job:
         # for push
         build_args = build_args or {}

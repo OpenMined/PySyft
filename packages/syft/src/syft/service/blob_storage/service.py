@@ -1,8 +1,5 @@
 # stdlib
 from pathlib import Path
-from typing import List
-from typing import Optional
-from typing import Union
 from typing import cast
 
 # third party
@@ -35,7 +32,7 @@ from .remote_profile import AzureRemoteProfile
 from .remote_profile import RemoteProfileStash
 from .stash import BlobStorageStash
 
-BlobDepositType = Union[OnDiskBlobDeposit, SeaweedFSBlobDeposit]
+BlobDepositType = OnDiskBlobDeposit | SeaweedFSBlobDeposit
 
 
 @serializable()
@@ -52,7 +49,7 @@ class BlobStorageService(AbstractService):
     @service_method(path="blob_storage.get_all", name="get_all")
     def get_all_blob_storage_entries(
         self, context: AuthedServiceContext
-    ) -> Union[List[BlobStorageEntry], SyftError]:
+    ) -> list[BlobStorageEntry] | SyftError:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             return result.ok()
@@ -67,7 +64,7 @@ class BlobStorageService(AbstractService):
         container_name: str,
         bucket_name: str,
         use_direct_connections: bool = True,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         # TODO: fix arguments
 
         remote_name = f"{account_name}{container_name}"
@@ -144,7 +141,7 @@ class BlobStorageService(AbstractService):
     )
     def get_files_from_bucket(
         self, context: AuthedServiceContext, bucket_name: str
-    ) -> Union[list, SyftError]:
+    ) -> list | SyftError:
         result = self.stash.find_all(context.credentials, bucket_name=bucket_name)
         if result.is_err():
             return result
@@ -174,7 +171,7 @@ class BlobStorageService(AbstractService):
     @service_method(path="blob_storage.get_by_uid", name="get_by_uid")
     def get_blob_storage_entry_by_uid(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[BlobStorageEntry, SyftError]:
+    ) -> BlobStorageEntry | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             return result.ok()
@@ -183,7 +180,7 @@ class BlobStorageService(AbstractService):
     @service_method(path="blob_storage.get_metadata", name="get_metadata")
     def get_blob_storage_metadata_by_uid(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[BlobStorageEntry, SyftError]:
+    ) -> BlobStorageEntry | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             blob_storage_entry = result.ok()
@@ -198,10 +195,10 @@ class BlobStorageService(AbstractService):
     )
     def read(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[BlobRetrieval, SyftError]:
+    ) -> BlobRetrieval | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
-            obj: Optional[BlobStorageEntry] = result.ok()
+            obj: BlobStorageEntry | None = result.ok()
             if obj is None:
                 return SyftError(
                     message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
@@ -224,7 +221,7 @@ class BlobStorageService(AbstractService):
     )
     def allocate(
         self, context: AuthedServiceContext, obj: CreateBlobStorageEntry
-    ) -> Union[BlobDepositType, SyftError]:
+    ) -> BlobDepositType | SyftError:
         context.node = cast(AbstractNode, context.node)
         with context.node.blob_storage_client.connect() as conn:
             secure_location = conn.allocate(obj)
@@ -254,7 +251,7 @@ class BlobStorageService(AbstractService):
     )
     def write_to_disk(
         self, context: AuthedServiceContext, uid: UID, data: bytes
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         result = self.stash.get_by_uid(
             credentials=context.credentials,
             uid=uid,
@@ -262,7 +259,7 @@ class BlobStorageService(AbstractService):
         if result.is_err():
             return SyftError(message=f"{result.err()}")
 
-        obj: Optional[BlobStorageEntry] = result.ok()
+        obj: BlobStorageEntry | None = result.ok()
 
         if obj is None:
             return SyftError(
@@ -284,9 +281,9 @@ class BlobStorageService(AbstractService):
         self,
         context: AuthedServiceContext,
         uid: UID,
-        etags: List,
-        no_lines: Optional[int] = 0,
-    ) -> Union[SyftError, SyftSuccess]:
+        etags: list,
+        no_lines: int | None = 0,
+    ) -> SyftError | SyftSuccess:
         result = self.stash.get_by_uid(
             credentials=context.credentials,
             uid=uid,
@@ -294,7 +291,7 @@ class BlobStorageService(AbstractService):
         if result.is_err():
             return SyftError(message=f"{result.err()}")
 
-        obj: Optional[BlobStorageEntry] = result.ok()
+        obj: BlobStorageEntry | None = result.ok()
 
         if obj is None:
             return SyftError(
@@ -317,7 +314,7 @@ class BlobStorageService(AbstractService):
     @service_method(path="blob_storage.delete", name="delete")
     def delete(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         result = self.stash.get_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             obj = result.ok()

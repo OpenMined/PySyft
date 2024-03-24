@@ -1,5 +1,5 @@
 # stdlib
-import secrets
+from secrets import token_hex
 from textwrap import dedent
 
 # third party
@@ -14,35 +14,37 @@ from syft.service.job.job_stash import JobStatus
 
 @pytest.fixture(scope="function")
 def node_1():
-    name = secrets.token_hex(4)
-    print(name)
     node = sy.orchestra.launch(
-        name=name,
-        dev_mode=True,
+        name=token_hex(8),
         node_side_type="low",
-        local_db=True,
-        n_consumers=1,
-        create_producer=True,
+        dev_mode=False,
         reset=True,
+        local_db=True,
+        create_producer=True,
+        n_consumers=1,
+        in_memory_workers=True,
+        queue_port=None,
     )
     yield node
+    node.python_node.cleanup()
     node.land()
 
 
 @pytest.fixture(scope="function")
 def node_2():
-    name = secrets.token_hex(4)
-    print(name)
     node = sy.orchestra.launch(
-        name=name,
-        dev_mode=True,
+        name=token_hex(8),
         node_side_type="high",
-        local_db=True,
-        n_consumers=1,
-        create_producer=True,
+        dev_mode=False,
         reset=True,
+        local_db=True,
+        create_producer=True,
+        n_consumers=1,
+        in_memory_workers=True,
+        queue_port=None,
     )
     yield node
+    node.python_node.cleanup()
     node.land()
 
 
@@ -110,7 +112,8 @@ def dataset_2(client_do_2):
     return client_do_2.datasets[0].assets[0]
 
 
-@pytest.mark.flaky(reruns=2, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
+@pytest.mark.local_node
 def test_transfer_request_blocking(
     client_ds_1, client_do_1, client_do_2, dataset_1, dataset_2
 ):
@@ -148,7 +151,8 @@ def test_transfer_request_blocking(
     assert result_ds_blocking == result_ds_nonblocking == dataset_2.data.mean()
 
 
-@pytest.mark.flaky(reruns=2, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
+@pytest.mark.local_node
 def test_transfer_request_nonblocking(
     client_ds_1, client_do_1, client_do_2, dataset_1, dataset_2
 ):

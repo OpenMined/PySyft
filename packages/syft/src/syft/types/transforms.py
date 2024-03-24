@@ -1,11 +1,6 @@
 # stdlib
+from collections.abc import Callable
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Type
-from typing import Union
 
 # third party
 from pydantic import EmailStr
@@ -28,13 +23,13 @@ class NotNone:
 
 
 class TransformContext(Context):
-    output: Optional[Dict[str, Any]] = None
-    node: Optional[AbstractNode] = None
-    credentials: Optional[SyftVerifyKey] = None
-    obj: Optional[Any] = None
+    output: dict[str, Any] | None = None
+    node: AbstractNode | None = None
+    credentials: SyftVerifyKey | None = None
+    obj: Any | None = None
 
     @classmethod
-    def from_context(cls, obj: Any, context: Optional[Context] = None) -> Self:
+    def from_context(cls, obj: Any, context: Context | None = None) -> Self:
         t_context = cls()
         t_context.obj = obj
         try:
@@ -58,8 +53,8 @@ class TransformContext(Context):
 
 
 def geteitherattr(
-    _self: Any, output: Dict, key: str, default: Any = NotNone
-) -> Optional[Any]:
+    _self: Any, output: dict, key: str, default: Any = NotNone
+) -> Any | None:
     if key in output:
         return output[key]
     if default == NotNone:
@@ -76,7 +71,7 @@ def make_set_default(key: str, value: Any) -> Callable:
     return set_default
 
 
-def drop(list_keys: List[str]) -> Callable:
+def drop(list_keys: list[str]) -> Callable:
     def drop_keys(context: TransformContext) -> TransformContext:
         if context.output:
             for key in list_keys:
@@ -100,7 +95,7 @@ def rename(old_key: str, new_key: str) -> Callable:
     return drop_keys
 
 
-def keep(list_keys: List[str]) -> Callable:
+def keep(list_keys: list[str]) -> Callable:
     def drop_keys(context: TransformContext) -> TransformContext:
         if context.output is None:
             return context
@@ -121,7 +116,7 @@ def keep(list_keys: List[str]) -> Callable:
 
 
 def convert_types(
-    list_keys: List[str], types: Union[type, List[type]]
+    list_keys: list[str], types: type | list[type]
 ) -> Callable[[TransformContext], TransformContext]:
     if not isinstance(types, list):
         types = [types] * len(list_keys)
@@ -187,11 +182,11 @@ def add_node_uid_for_key(key: str) -> Callable:
 
 
 def generate_transform_wrapper(
-    klass_from: type, klass_to: type, transforms: List[Callable]
+    klass_from: type, klass_to: type, transforms: list[Callable]
 ) -> Callable:
     def wrapper(
         self: klass_from,
-        context: Optional[Union[TransformContext, NodeServiceContext]] = None,
+        context: TransformContext | NodeServiceContext | None = None,
     ) -> klass_to:
         t_context = TransformContext.from_context(obj=self, context=context)
         for transform in transforms:
@@ -202,12 +197,12 @@ def generate_transform_wrapper(
 
 
 def validate_klass_and_version(
-    klass_from: Union[Type, str],
-    klass_to: Union[Type, str],
-    version_from: Optional[int] = None,
-    version_to: Optional[int] = None,
-) -> tuple[str, Optional[int], str, Optional[int]]:
-    if not isinstance(klass_from, (type, str)):
+    klass_from: type | str,
+    klass_to: type | str,
+    version_from: int | None = None,
+    version_to: int | None = None,
+) -> tuple[str, int | None, str, int | None]:
+    if not isinstance(klass_from, type | str):
         raise NotImplementedError(
             "Arguments to `klass_from` should be either of `Type` or `str` type."
         )
@@ -221,7 +216,7 @@ def validate_klass_and_version(
         klass_from_str = klass_from.__name__
         version_from = None
 
-    if not isinstance(klass_to, (type, str)):
+    if not isinstance(klass_to, type | str):
         raise NotImplementedError(
             "Arguments to `klass_to` should be either of `Type` or `str` type."
         )
@@ -239,10 +234,10 @@ def validate_klass_and_version(
 
 
 def transform_method(
-    klass_from: Union[Type, str],
-    klass_to: Union[Type, str],
-    version_from: Optional[int] = None,
-    version_to: Optional[int] = None,
+    klass_from: type | str,
+    klass_to: type | str,
+    version_from: int | None = None,
+    version_to: int | None = None,
 ) -> Callable:
     (
         klass_from_str,
@@ -271,10 +266,10 @@ def transform_method(
 
 
 def transform(
-    klass_from: Union[type, str],
-    klass_to: Union[type, str],
-    version_from: Optional[int] = None,
-    version_to: Optional[int] = None,
+    klass_from: type | str,
+    klass_to: type | str,
+    version_from: int | None = None,
+    version_to: int | None = None,
 ) -> Callable:
     (
         klass_from_str,

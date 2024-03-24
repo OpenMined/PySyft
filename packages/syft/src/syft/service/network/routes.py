@@ -4,9 +4,7 @@ from __future__ import annotations
 # stdlib
 import secrets
 from typing import Any
-from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Union
 from typing import cast
 
 # third party
@@ -18,9 +16,11 @@ from ...client.client import HTTPConnection
 from ...client.client import NodeConnection
 from ...client.client import PythonConnection
 from ...client.client import SyftClient
+from ...client.client import VeilidConnection
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.uid import UID
@@ -77,13 +77,13 @@ class NodeRoute:
 @serializable()
 class HTTPNodeRoute(SyftObject, NodeRoute):
     __canonical_name__ = "HTTPNodeRoute"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     host_or_ip: str
     private: bool = False
     protocol: str = "http"
     port: int = 80
-    proxy_target_uid: Optional[UID] = None
+    proxy_target_uid: UID | None = None
     priority: int = 1
 
     def __eq__(self, other: Any) -> bool:
@@ -91,18 +91,39 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
             return hash(self) == hash(other)
         return self == other
 
+    def __hash__(self) -> int:
+        return hash(self.host_or_ip) + hash(self.port) + hash(self.protocol)
+
+
+@serializable()
+class VeilidNodeRoute(SyftObject, NodeRoute):
+    __canonical_name__ = "VeilidNodeRoute"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    vld_key: str
+    proxy_target_uid: UID | None = None
+    priority: int = 1
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, VeilidNodeRoute):
+            return hash(self) == hash(other)
+        return self == other
+
+    def __hash__(self) -> int:
+        return hash(self.vld_key)
+
 
 @serializable()
 class PythonNodeRoute(SyftObject, NodeRoute):
     __canonical_name__ = "PythonNodeRoute"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     worker_settings: WorkerSettings
-    proxy_target_uid: Optional[UID] = None
+    proxy_target_uid: UID | None = None
     priority: int = 1
 
     @property
-    def node(self) -> Optional[AbstractNode]:
+    def node(self) -> AbstractNode | None:
         # relative
         from ...node.worker import Worker
 
@@ -128,21 +149,32 @@ class PythonNodeRoute(SyftObject, NodeRoute):
             return hash(self) == hash(other)
         return self == other
 
+    def __hash__(self) -> int:
+        return hash(self.worker_settings.id)
 
-NodeRouteType = Union[HTTPNodeRoute, PythonNodeRoute]
+
+NodeRouteType = HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute
 
 
 def route_to_connection(
-    route: NodeRoute, context: Optional[TransformContext] = None
+    route: NodeRoute, context: TransformContext | None = None
 ) -> NodeConnection:
     if isinstance(route, HTTPNodeRoute):
         return route.to(HTTPConnection, context=context)
-    else:
+    elif isinstance(route, PythonNodeRoute):
         return route.to(PythonConnection, context=context)
+    elif isinstance(route, VeilidNodeRoute):
+        return route.to(VeilidConnection, context=context)
+    else:
+        raise ValueError(f"Route {route} is not supported.")
 
 
 def connection_to_route(connection: NodeConnection) -> NodeRoute:
     if isinstance(connection, HTTPConnection):
         return connection.to(HTTPNodeRoute)
+    elif isinstance(connection, PythonConnection):  # type: ignore[unreachable]
+        return connection.to(PythonNodeRoute)
+    elif isinstance(connection, VeilidConnection):
+        return connection.to(VeilidNodeRoute)
     else:
-        return connection.to(PythonNodeRoute)  # type: ignore[unreachable]
+        raise ValueError(f"Connection {connection} is not supported.")

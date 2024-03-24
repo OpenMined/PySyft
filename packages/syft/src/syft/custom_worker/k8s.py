@@ -1,15 +1,10 @@
 # stdlib
 import base64
+from collections.abc import Iterable
 from enum import Enum
 from functools import cache
 import json
 import os
-from typing import Dict
-from typing import Iterable
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
 
 # third party
 import kr8s
@@ -63,9 +58,9 @@ class ContainerStatus(BaseModel):
     ready: bool
     running: bool
     waiting: bool
-    reason: Optional[str] = None  # when waiting=True
-    message: Optional[str] = None  # when waiting=True
-    startedAt: Optional[str] = None  # when running=True
+    reason: str | None = None  # when waiting=True
+    message: str | None = None  # when waiting=True
+    startedAt: str | None = None  # when running=True
 
     @classmethod
     def from_status(cls, cstatus: dict) -> Self:
@@ -113,7 +108,7 @@ class KubeUtils:
     """
 
     @staticmethod
-    def resolve_pod(client: kr8s.Api, pod: Union[str, Pod]) -> Optional[Pod]:
+    def resolve_pod(client: kr8s.Api, pod: str | Pod) -> Pod | None:
         """Return the first pod that matches the given name"""
         if isinstance(pod, Pod):
             return pod
@@ -124,7 +119,7 @@ class KubeUtils:
         return None
 
     @staticmethod
-    def get_logs(pods: List[Pod]) -> str:
+    def get_logs(pods: list[Pod]) -> str:
         """Combine and return logs for all the pods as string"""
         logs = []
         for pod in pods:
@@ -135,14 +130,14 @@ class KubeUtils:
         return "\n".join(logs)
 
     @staticmethod
-    def get_pod_status(pod: Pod) -> Optional[PodStatus]:
+    def get_pod_status(pod: Pod) -> PodStatus | None:
         """Map the status of the given pod to PodStatuss."""
         if not pod:
             return None
         return PodStatus.from_status_dict(pod.status)
 
     @staticmethod
-    def get_pod_env(pod: Pod) -> Optional[List[Dict]]:
+    def get_pod_env(pod: Pod) -> list[dict] | None:
         """Return the environment variables of the first container in the pod."""
         if not pod:
             return None
@@ -153,7 +148,7 @@ class KubeUtils:
         return None
 
     @staticmethod
-    def get_container_exit_code(pods: List[Pod]) -> List[int]:
+    def get_container_exit_code(pods: list[Pod]) -> list[int]:
         """Return the exit codes of all the containers in the given pods."""
         exit_codes = []
         for pod in pods:
@@ -162,7 +157,7 @@ class KubeUtils:
         return exit_codes
 
     @staticmethod
-    def get_container_exit_message(pods: List[Pod]) -> Optional[str]:
+    def get_container_exit_message(pods: list[Pod]) -> str | None:
         """Return the exit message of the first container that exited with non-zero code."""
         for pod in pods:
             for container_status in pod.status.containerStatuses:
@@ -180,7 +175,7 @@ class KubeUtils:
     def create_dockerconfig_secret(
         secret_name: str,
         component: str,
-        registries: Iterable[Tuple[str, str, str]],
+        registries: Iterable[tuple[str, str, str]],
     ) -> Secret:
         auths = {}
 
@@ -239,7 +234,7 @@ class KubeUtils:
         return obj
 
     @staticmethod
-    def patch_env_vars(env_list: List[Dict], env_dict: Dict) -> List[Dict]:
+    def patch_env_vars(env_list: list[dict], env_dict: dict) -> list[dict]:
         """Patch kubernetes pod environment variables in the list with the provided dictionary."""
 
         # update existing
@@ -257,9 +252,9 @@ class KubeUtils:
 
     @staticmethod
     def list_dict_unpack(
-        input_list: List[Dict],
+        input_list: list[dict],
         key: str = "key",
         value: str = "value",
-    ) -> Dict:
+    ) -> dict:
         # Snapshot from kr8s._data_utils
         return {i[key]: i[value] for i in input_list}

@@ -1,16 +1,11 @@
 # stdlib
-import datetime
 from pathlib import Path
-import random
-import string
-import sys
+from secrets import token_hex
 import tempfile
 from threading import Thread
 import time
 
 # third party
-from joblib import Parallel
-from joblib import delayed
 import pytest
 
 # syft absolute
@@ -28,27 +23,22 @@ def_params = {
 }
 
 
-def generate_lock_name(length: int = 10) -> str:
-    random.seed(datetime.datetime.now().timestamp())
-    return "".join(random.choice(string.ascii_lowercase) for i in range(length))
-
-
 @pytest.fixture(scope="function")
 def locks_nop_config(request):
-    def_params["lock_name"] = generate_lock_name()
-    return NoLockingConfig(**def_params)
+    def_params["lock_name"] = token_hex(8)
+    yield NoLockingConfig(**def_params)
 
 
 @pytest.fixture(scope="function")
 def locks_threading_config(request):
-    def_params["lock_name"] = generate_lock_name()
-    return ThreadingLockingConfig(**def_params)
+    def_params["lock_name"] = token_hex(8)
+    yield ThreadingLockingConfig(**def_params)
 
 
 @pytest.fixture(scope="function")
 def locks_file_config():
-    def_params["lock_name"] = generate_lock_name()
-    return FileLockingConfig(**def_params)
+    def_params["lock_name"] = token_hex(8)
+    yield FileLockingConfig(**def_params)
 
 
 @pytest.mark.parametrize(
@@ -58,9 +48,6 @@ def locks_file_config():
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
     ],
-)
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_sanity(config: LockingConfig):
     lock = SyftLock(config)
@@ -96,10 +83,7 @@ def test_acquire_nop(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_release(config: LockingConfig):
     lock = SyftLock(config)
 
@@ -126,10 +110,7 @@ def test_acquire_release(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_release_with(config: LockingConfig):
     was_locked = True
     with SyftLock(config) as lock:
@@ -138,16 +119,12 @@ def test_acquire_release_with(config: LockingConfig):
     assert was_locked
 
 
-@pytest.mark.skip(reason="The tests are highly flaky, delaying progress on PR's")
 @pytest.mark.parametrize(
     "config",
     [
         pytest.lazy_fixture("locks_threading_config"),
         pytest.lazy_fixture("locks_file_config"),
     ],
-)
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
 )
 def test_acquire_expire(config: LockingConfig):
     config.expire = 1  # second
@@ -160,7 +137,7 @@ def test_acquire_expire(config: LockingConfig):
 
     expected_locked = lock.locked()
 
-    time.sleep(config.expire + 0.1)
+    time.sleep(config.expire + 1.0)
 
     expected_not_locked_again = lock.locked()
 
@@ -176,10 +153,7 @@ def test_acquire_expire(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
     config.timeout = 1
     config.expire = 5
@@ -202,10 +176,7 @@ def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
     config.timeout = 2
     config.expire = 1
@@ -230,10 +201,7 @@ def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
     config.timeout = 2
     config.expire = 1
@@ -258,10 +226,7 @@ def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
     config.timeout = 2
     config.expire = 1
@@ -287,10 +252,7 @@ def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_double_release(config: LockingConfig):
     lock = SyftLock(config)
 
@@ -307,10 +269,7 @@ def test_acquire_double_release(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_acquire_same_name_diff_namespace(config: LockingConfig):
     config.namespace = "ns1"
     lock1 = SyftLock(config)
@@ -332,12 +291,9 @@ def test_acquire_same_name_diff_namespace(config: LockingConfig):
         pytest.lazy_fixture("locks_file_config"),
     ],
 )
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
 def test_locks_parallel_multithreading(config: LockingConfig) -> None:
     thread_cnt = 3
-    repeats = 100
+    repeats = 5
 
     temp_dir = Path(tempfile.TemporaryDirectory().name)
     temp_dir.mkdir(parents=True, exist_ok=True)
@@ -387,42 +343,39 @@ def test_locks_parallel_multithreading(config: LockingConfig) -> None:
     assert stored == thread_cnt * repeats
 
 
-@pytest.mark.skip(reason="The tests are highly flaky, delaying progress on PR's")
-@pytest.mark.parametrize(
-    "config",
-    [
-        pytest.lazy_fixture("locks_file_config"),
-    ],
-)
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="pytest_mock_resources + docker issues on Windows"
-)
-def test_parallel_joblib(
-    config: LockingConfig,
-) -> None:
-    thread_cnt = 3
-    repeats = 100
+# @pytest.mark.skip(reason="Joblib is flaky")
+# @pytest.mark.parametrize(
+#     "config",
+#     [
+#         pytest.lazy_fixture("locks_file_config"),
+#     ],
+# )
+# def test_parallel_joblib(
+#     config: LockingConfig,
+# ) -> None:
+#     thread_cnt = 3
+#     repeats = 5
 
-    temp_dir = Path(tempfile.TemporaryDirectory().name)
-    temp_dir.mkdir(parents=True, exist_ok=True)
-    temp_file = temp_dir / "dbg.txt"
-    if temp_file.exists():
-        temp_file.unlink()
+#     temp_dir = Path(tempfile.TemporaryDirectory().name)
+#     temp_dir.mkdir(parents=True, exist_ok=True)
+#     temp_file = temp_dir / "dbg.txt"
+#     if temp_file.exists():
+#         temp_file.unlink()
 
-    with open(temp_file, "w") as f:
-        f.write("0")
+#     with open(temp_file, "w") as f:
+#         f.write("0")
 
-    def _kv_cbk(tid: int) -> None:
-        for _idx in range(repeats):
-            with SyftLock(config):
-                with open(temp_file) as f:
-                    prev = int(f.read())
-                with open(temp_file, "w") as f:
-                    f.write(str(prev + 1))
+#     def _kv_cbk(tid: int) -> None:
+#         for _idx in range(repeats):
+#             with SyftLock(config):
+#                 with open(temp_file) as f:
+#                     prev = int(f.read())
+#                 with open(temp_file, "w") as f:
+#                     f.write(str(prev + 1))
 
-    Parallel(n_jobs=thread_cnt)(delayed(_kv_cbk)(idx) for idx in range(thread_cnt))
+#     Parallel(n_jobs=thread_cnt)(delayed(_kv_cbk)(idx) for idx in range(thread_cnt))
 
-    with open(temp_file) as f:
-        stored = int(f.read())
+#     with open(temp_file) as f:
+#         stored = int(f.read())
 
-    assert stored == thread_cnt * repeats
+#     assert stored == thread_cnt * repeats

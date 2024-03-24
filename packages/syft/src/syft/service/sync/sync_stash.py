@@ -1,6 +1,4 @@
 # stdlib
-from typing import Optional
-from typing import Union
 
 # relative
 from ...serde.serializable import serializable
@@ -22,7 +20,8 @@ OrderByDatePartitionKey = PartitionKey(key="created_at", type_=DateTime)
 class SyncStash(BaseUIDStoreStash):
     object_type = SyncState
     settings: PartitionSettings = PartitionSettings(
-        name=SyncState.__canonical_name__, object_type=SyncState
+        name=SyncState.__canonical_name__,
+        object_type=SyncState,
     )
 
     def __init__(self, store: DocumentStore):
@@ -31,9 +30,7 @@ class SyncStash(BaseUIDStoreStash):
         self.settings = self.settings
         self._object_type = self.object_type
 
-    def get_latest(
-        self, context: AuthedServiceContext
-    ) -> Union[Optional[SyncState], SyftError]:
+    def get_latest(self, context: AuthedServiceContext) -> SyncState | None | SyftError:
         all_states = self.get_all(
             credentials=context.node.verify_key,  # type: ignore
             order_by=OrderByDatePartitionKey,

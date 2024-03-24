@@ -1,7 +1,4 @@
 # stdlib
-from typing import List
-from typing import Optional
-from typing import Union
 
 # third party
 from result import Err
@@ -41,7 +38,8 @@ class WorkerStash(BaseUIDStoreStash):
         self,
         credentials: SyftVerifyKey,
         obj: SyftWorker,
-        add_permissions: Union[List[ActionObjectPermission], None] = None,
+        add_permissions: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[SyftWorker, str]:
         # By default all worker pools have all read permission
@@ -49,11 +47,17 @@ class WorkerStash(BaseUIDStoreStash):
         add_permissions.append(
             ActionObjectPermission(uid=obj.id, permission=ActionPermission.ALL_READ)
         )
-        return super().set(credentials, obj, add_permissions, ignore_duplicates)
+        return super().set(
+            credentials,
+            obj,
+            add_permissions=add_permissions,
+            ignore_duplicates=ignore_duplicates,
+            add_storage_permission=add_storage_permission,
+        )
 
     def get_worker_by_name(
         self, credentials: SyftVerifyKey, worker_name: str
-    ) -> Result[Optional[SyftWorker], str]:
+    ) -> Result[SyftWorker | None, str]:
         qks = QueryKeys(qks=[WorkerContainerNamePartitionKey.with_obj(worker_name)])
         return self.query_one(credentials=credentials, qks=qks)
 
@@ -65,7 +69,7 @@ class WorkerStash(BaseUIDStoreStash):
             return Err(
                 f"Failed to retrieve Worker with id: {worker_uid}. Error: {res.err()}"
             )
-        worker: Optional[SyftWorker] = res.ok()
+        worker: SyftWorker | None = res.ok()
         if worker is None:
             return Err(f"Worker with id: {worker_uid} not found")
         worker.consumer_state = consumer_state

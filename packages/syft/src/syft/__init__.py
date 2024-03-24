@@ -1,15 +1,13 @@
-__version__ = "0.8.5-beta.1"
+__version__ = "0.8.6-beta.1"
 
 # stdlib
+from collections.abc import Callable
 from getpass import getpass
 import pathlib
 from pathlib import Path
 import random
 import sys
 from typing import Any
-from typing import Callable
-from typing import Optional
-from typing import Union
 
 # relative
 from . import gevent_patch  # noqa: F401
@@ -30,7 +28,7 @@ from .client.search import SearchResults  # noqa: F401
 from .client.user_settings import UserSettings  # noqa: F401
 from .client.user_settings import settings  # noqa: F401
 from .custom_worker.config import DockerWorkerConfig  # noqa: F401
-from .external import OBLV  # noqa: F401
+from .external import OBLV_ENABLED  # noqa: F401
 from .external import enable_external_lib  # noqa: F401
 from .node.credentials import SyftSigningKey  # noqa: F401
 from .node.domain import Domain  # noqa: F401
@@ -112,7 +110,7 @@ except:  # noqa: E722
     pass  # nosec
 
 # For server-side, to enable by environment variable
-if OBLV:
+if OBLV_ENABLED:
     enable_external_lib("oblv")
 
 
@@ -162,27 +160,27 @@ def search(name: str) -> SearchResults:
 
 def launch(
     # node information and deployment
-    name: Optional[str] = None,
-    node_type: Optional[Union[str, NodeType]] = None,
-    deploy_to: Optional[str] = None,
-    node_side_type: Optional[str] = None,
+    name: str | None = None,
+    node_type: str | NodeType | None = None,
+    deploy_to: str | None = None,
+    node_side_type: str | None = None,
     # worker related inputs
-    port: Optional[Union[int, str]] = "auto",
+    port: int | str | None = "auto",
     processes: int = 1,  # temporary work around for jax in subprocess
     local_db: bool = False,
     dev_mode: bool = False,
     cmd: bool = False,
     reset: bool = False,
     tail: bool = False,
-    host: Optional[str] = "0.0.0.0",  # nosec
-    tag: Optional[str] = "latest",
+    host: str | None = "0.0.0.0",  # nosec
+    tag: str | None = "latest",
     verbose: bool = False,
     render: bool = False,
     enable_warnings: bool = False,
     n_consumers: int = 0,
     thread_workers: bool = False,
     create_producer: bool = False,
-    queue_port: Optional[int] = None,
+    queue_port: int | None = None,
     in_memory_workers: bool = True,
     skip_signup: bool = False,
 ) -> DomainClient:

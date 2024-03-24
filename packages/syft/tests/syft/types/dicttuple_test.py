@@ -1,17 +1,15 @@
 # stdlib
+from collections.abc import Callable
 from collections.abc import Collection
+from collections.abc import Generator
 from collections.abc import Iterable
 from collections.abc import Mapping
 from functools import cached_property
 from itertools import chain
 from itertools import combinations
 from typing import Any
-from typing import Callable
-from typing import Generator
 from typing import Generic
-from typing import Optional
 from typing import TypeVar
-from typing import Union
 import uuid
 
 # third party
@@ -98,14 +96,14 @@ _VT = TypeVar("_VT")
 class Case(Generic[_KT, _VT]):
     values: Collection[_VT]
     keys: Collection[_KT]
-    key_fn: Optional[Callable[[_VT], _KT]]
+    key_fn: Callable[[_VT], _KT] | None
     value_generator: Callable[[], Generator[_VT, Any, None]]
     key_generator: Callable[[], Generator[_KT, Any, None]]
 
     def __init__(
         self,
         values: Collection[_VT],
-        keys: Union[Callable[[_VT], _KT], Collection[_KT]],
+        keys: Callable[[_VT], _KT] | Collection[_KT],
     ) -> None:
         self.values = values
 

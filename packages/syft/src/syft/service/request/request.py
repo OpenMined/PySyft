@@ -1,14 +1,9 @@
 # stdlib
+from collections.abc import Callable
 from enum import Enum
 import hashlib
 import inspect
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Type
-from typing import Union
 from typing import cast
 
 # third party
@@ -29,9 +24,10 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
+from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_node_uid_for_key
 from ...types.transforms import generate_id
@@ -73,9 +69,9 @@ class RequestStatus(Enum):
 @serializable()
 class Change(SyftObject):
     __canonical_name__ = "Change"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    linked_obj: Optional[LinkedObject] = None
+    linked_obj: LinkedObject | None = None
 
     def change_object_is_type(self, type_: type) -> bool:
         return self.linked_obj is not None and type_ == self.linked_obj.object_type
@@ -84,9 +80,9 @@ class Change(SyftObject):
 @serializable()
 class ChangeStatus(SyftObject):
     __canonical_name__ = "ChangeStatus"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    id: Optional[UID] = None  # type: ignore[assignment]
+    id: UID | None = None  # type: ignore[assignment]
     change_id: UID
     applied: bool = False
 
@@ -98,7 +94,7 @@ class ChangeStatus(SyftObject):
 @serializable()
 class ActionStoreChange(Change):
     __canonical_name__ = "ActionStoreChange"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     linked_obj: LinkedObject
     apply_permission_type: ActionPermission
@@ -196,11 +192,12 @@ class ActionStoreChange(Change):
 @serializable()
 class CreateCustomImageChange(Change):
     __canonical_name__ = "CreateCustomImageChange"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     config: WorkerConfig
     tag: str
-    registry_uid: Optional[UID] = None
+    registry_uid: UID | None = None
+    pull_image: bool = True
 
     __repr_attrs__ = ["config", "tag"]
 
@@ -235,6 +232,7 @@ class CreateCustomImageChange(Change):
                 image_uid=worker_image.id,
                 tag=self.tag,
                 registry_uid=self.registry_uid,
+                pull=self.pull_image,
             )
 
             if isinstance(build_result, SyftError):
@@ -275,12 +273,12 @@ class CreateCustomImageChange(Change):
 @serializable()
 class CreateCustomWorkerPoolChange(Change):
     __canonical_name__ = "CreateCustomWorkerPoolChange"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     pool_name: str
     num_workers: int
-    image_uid: Optional[UID] = None
-    config: Optional[WorkerConfig] = None
+    image_uid: UID | None = None
+    config: WorkerConfig | None = None
 
     __repr_attrs__ = ["pool_name", "num_workers", "image_uid"]
 
@@ -341,21 +339,21 @@ class CreateCustomWorkerPoolChange(Change):
 
 
 @serializable()
-class Request(SyftObject):
+class Request(SyncableSyftObject):
     __canonical_name__ = "Request"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     requesting_user_verify_key: SyftVerifyKey
     requesting_user_name: str = ""
-    requesting_user_email: Optional[str] = ""
-    requesting_user_institution: Optional[str] = ""
-    approving_user_verify_key: Optional[SyftVerifyKey] = None
+    requesting_user_email: str | None = ""
+    requesting_user_institution: str | None = ""
+    approving_user_verify_key: SyftVerifyKey | None = None
     request_time: DateTime
-    updated_at: Optional[DateTime] = None
+    updated_at: DateTime | None = None
     node_uid: UID
     request_hash: str
-    changes: List[Change]
-    history: List[ChangeStatus] = []
+    changes: list[Change]
+    history: list[ChangeStatus] = []
 
     __attr_searchable__ = [
         "requesting_user_verify_key",
@@ -435,7 +433,7 @@ class Request(SyftObject):
 
             """
 
-    def _coll_repr_(self) -> Dict[str, Union[str, Dict[str, str]]]:
+    def _coll_repr_(self) -> dict[str, str | dict[str, str]]:
         if self.status == RequestStatus.APPROVED:
             badge_color = "badge-green"
         elif self.status == RequestStatus.PENDING:
@@ -488,7 +486,7 @@ class Request(SyftObject):
         return self.code.get_results()
 
     @property
-    def current_change_state(self) -> Dict[UID, bool]:
+    def current_change_state(self) -> dict[UID, bool]:
         change_applied_map = {}
         for change_status in self.history:
             # only store the last change
@@ -561,7 +559,7 @@ class Request(SyftObject):
 
         return res
 
-    def deny(self, reason: str) -> Union[SyftSuccess, SyftError]:
+    def deny(self, reason: str) -> SyftSuccess | SyftError:
         """Denies the particular request.
 
         Args:
@@ -643,7 +641,7 @@ class Request(SyftObject):
         save_method = context.node.get_service_method(RequestService.save)
         return save_method(context=context, request=self)
 
-    def _get_latest_or_create_job(self) -> Union[Job, SyftError]:
+    def _get_latest_or_create_job(self) -> Job | SyftError:
         """Get the latest job for this requests user_code, or creates one if no jobs exist"""
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         if api is None:
@@ -670,7 +668,7 @@ class Request(SyftObject):
 
         return job
 
-    def _is_action_object_from_job(self, action_object: ActionObject) -> Optional[Job]:  # type: ignore
+    def _is_action_object_from_job(self, action_object: ActionObject) -> Job | None:  # type: ignore
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         if api is None:
             raise ValueError(f"Can't access the api. You must login to {self.node_uid}")
@@ -682,7 +680,7 @@ class Request(SyftObject):
 
     def accept_by_depositing_result(
         self, result: Any, force: bool = False
-    ) -> Union[SyftError, SyftSuccess]:
+    ) -> SyftError | SyftSuccess:
         # this code is extremely brittle because its a work around that relies on
         # the type of request being very specifically tied to code which needs approving
 
@@ -839,8 +837,16 @@ class Request(SyftObject):
             if isinstance(approved, SyftError):
                 return approved
 
+            input_ids = {}
+            if code.input_policy is not None:
+                for inps in code.input_policy.inputs.values():
+                    input_ids.update(inps)
+
             res = api.services.code.apply_output(
-                user_code_id=code.id, outputs=result, job_id=job.id
+                user_code_id=code.id,
+                outputs=result,
+                job_id=job.id,
+                input_ids=input_ids,
             )
             if isinstance(res, SyftError):
                 return res
@@ -879,7 +885,7 @@ class Request(SyftObject):
         job.apply_info(job_info)
         return job_service.update(job)
 
-    def get_sync_dependencies(self, api: Any = None) -> Union[List[UID], SyftError]:
+    def get_sync_dependencies(self, api: Any = None) -> list[UID] | SyftError:
         dependencies = []
 
         code_id = self.code_id
@@ -895,7 +901,7 @@ class Request(SyftObject):
 class RequestInfo(SyftObject):
     # version
     __canonical_name__ = "RequestInfo"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     user: UserView
     request: Request
@@ -906,18 +912,18 @@ class RequestInfo(SyftObject):
 class RequestInfoFilter(SyftObject):
     # version
     __canonical_name__ = "RequestInfoFilter"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    name: Optional[str] = None
+    name: str | None = None
 
 
 @serializable()
 class SubmitRequest(SyftObject):
     __canonical_name__ = "SubmitRequest"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    changes: List[Change]
-    requesting_user_verify_key: Optional[SyftVerifyKey] = None
+    changes: list[Change]
+    requesting_user_verify_key: SyftVerifyKey | None = None
 
 
 def hash_changes(context: TransformContext) -> TransformContext:
@@ -951,9 +957,9 @@ def check_requesting_user_verify_key(context: TransformContext) -> TransformCont
         if context.obj.requesting_user_verify_key and context.node.is_root(
             context.credentials
         ):
-            context.output[
-                "requesting_user_verify_key"
-            ] = context.obj.requesting_user_verify_key
+            context.output["requesting_user_verify_key"] = (
+                context.obj.requesting_user_verify_key
+            )
         else:
             context.output["requesting_user_verify_key"] = context.credentials
 
@@ -978,7 +984,7 @@ def add_requesting_user_info(context: TransformContext) -> TransformContext:
 
 
 @transform(SubmitRequest, Request)
-def submit_request_to_request() -> List[Callable]:
+def submit_request_to_request() -> list[Callable]:
     return [
         generate_id,
         add_node_uid_for_key("node_uid"),
@@ -992,17 +998,17 @@ def submit_request_to_request() -> List[Callable]:
 @serializable()
 class ObjectMutation(Change):
     __canonical_name__ = "ObjectMutation"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    linked_obj: Optional[LinkedObject] = None
+    linked_obj: LinkedObject | None = None
     attr_name: str
-    value: Optional[Any] = None
+    value: Any | None = None
     match_type: bool
-    previous_value: Optional[Any] = None
+    previous_value: Any | None = None
 
     __repr_attrs__ = ["linked_obj", "attr_name"]
 
-    def mutate(self, obj: Any, value: Optional[Any] = None) -> Any:
+    def mutate(self, obj: Any, value: Any | None = None) -> Any:
         # check if attribute is a property setter first
         # this seems necessary for pydantic types
         attr = getattr(type(obj), self.attr_name, None)
@@ -1048,7 +1054,7 @@ class ObjectMutation(Change):
         return self._run(context=context, apply=False)
 
 
-def type_for_field(object_type: type, attr_name: str) -> Optional[type]:
+def type_for_field(object_type: type, attr_name: str) -> type | None:
     field_type = None
     try:
         field_type = object_type.__dict__["__annotations__"][attr_name]
@@ -1063,16 +1069,16 @@ def type_for_field(object_type: type, attr_name: str) -> Optional[type]:
 @serializable()
 class EnumMutation(ObjectMutation):
     __canonical_name__ = "EnumMutation"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
-    enum_type: Type[Enum]
-    value: Optional[Enum] = None
+    enum_type: type[Enum]
+    value: Enum | None = None
     match_type: bool = True
 
     __repr_attrs__ = ["linked_obj", "attr_name", "value"]
 
     @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
+    def valid(self) -> SyftSuccess | SyftError:
         if self.match_type and not isinstance(self.value, self.enum_type):
             return SyftError(
                 message=f"{type(self.value)} must be of type: {self.enum_type}"
@@ -1081,7 +1087,7 @@ class EnumMutation(ObjectMutation):
 
     @staticmethod
     def from_obj(
-        linked_obj: LinkedObject, attr_name: str, value: Optional[Enum] = None
+        linked_obj: LinkedObject, attr_name: str, value: Enum | None = None
     ) -> "EnumMutation":
         enum_type = type_for_field(linked_obj.object_type, attr_name)
         return EnumMutation(
@@ -1126,7 +1132,7 @@ class EnumMutation(ObjectMutation):
         return f"Mutate <b>{self.enum_type}</b> to <b>{self.value}</b>"
 
     @property
-    def link(self) -> Optional[SyftObject]:
+    def link(self) -> SyftObject | None:
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
@@ -1155,8 +1161,8 @@ class UserCodeStatusChange(Change):
         return self.linked_user_code.resolve
 
     @property
-    def codes(self) -> List[UserCode]:
-        def recursive_code(node: Any) -> List:
+    def codes(self) -> list[UserCode]:
+        def recursive_code(node: Any) -> list:
             codes = []
             for _, (obj, new_node) in node.items():
                 codes.append(obj.resolve)
@@ -1167,7 +1173,7 @@ class UserCodeStatusChange(Change):
         codes.extend(recursive_code(self.code.nested_codes))
         return codes
 
-    def nested_repr(self, node: Optional[Any] = None, level: int = 0) -> str:
+    def nested_repr(self, node: Any | None = None, level: int = 0) -> str:
         msg = ""
         if node is None:
             node = self.code.nested_codes
@@ -1218,7 +1224,7 @@ class UserCodeStatusChange(Change):
         return self.linked_obj.resolve.approved
 
     @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
+    def valid(self) -> SyftSuccess | SyftError:
         if self.match_type and not isinstance(self.value, UserCodeStatus):
             # TODO: fix the mypy issue
             return SyftError(  # type: ignore[unreachable]
@@ -1245,7 +1251,7 @@ class UserCodeStatusChange(Change):
         status: UserCodeStatusCollection,
         context: ChangeContext,
         undo: bool,
-    ) -> Union[UserCodeStatusCollection, SyftError]:
+    ) -> UserCodeStatusCollection | SyftError:
         if context.node is None:
             return SyftError(message=f"context {context}'s node is None")
         reason: str = context.extra_kwargs.get("reason", "")
@@ -1326,7 +1332,7 @@ class UserCodeStatusChange(Change):
         return self._run(context=context, apply=False)
 
     @property
-    def link(self) -> Optional[SyftObject]:
+    def link(self) -> SyftObject | None:
         if self.linked_obj:
             return self.linked_obj.resolve
         return None

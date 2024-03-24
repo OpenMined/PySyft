@@ -1,7 +1,4 @@
 # stdlib
-from typing import List
-from typing import Optional
-from typing import Union
 from typing import cast
 
 # third party
@@ -31,6 +28,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user import UserView
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
 from .request import Change
@@ -58,8 +56,8 @@ class RequestService(AbstractService):
         context: AuthedServiceContext,
         request: SubmitRequest,
         send_message: bool = True,
-        reason: Optional[str] = "",
-    ) -> Union[Request, SyftError]:
+        reason: str | None = "",
+    ) -> Request | SyftError:
         """Submit a Request"""
         try:
             req = request.to(Request, context=context)
@@ -108,8 +106,10 @@ class RequestService(AbstractService):
             print("Failed to submit Request", e)
             raise e
 
-    @service_method(path="request.get_all", name="get_all")
-    def get_all(self, context: AuthedServiceContext) -> Union[List[Request], SyftError]:
+    @service_method(
+        path="request.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
+    def get_all(self, context: AuthedServiceContext) -> list[Request] | SyftError:
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -121,9 +121,9 @@ class RequestService(AbstractService):
     def get_all_info(
         self,
         context: AuthedServiceContext,
-        page_index: Optional[int] = 0,
-        page_size: Optional[int] = 0,
-    ) -> Union[List[List[RequestInfo]], List[RequestInfo], SyftError]:
+        page_index: int | None = 0,
+        page_size: int | None = 0,
+    ) -> list[list[RequestInfo]] | list[RequestInfo] | SyftError:
         """Get the information of all requests"""
         context.node = cast(AbstractNode, context.node)
         result = self.stash.get_all(context.credentials)
@@ -133,7 +133,7 @@ class RequestService(AbstractService):
         method = context.node.get_service_method(UserService.get_by_verify_key)
         get_message = context.node.get_service_method(NotificationService.filter_by_obj)
 
-        requests: List[RequestInfo] = []
+        requests: list[RequestInfo] = []
         for req in result.ok():
             user = method(req.requesting_user_verify_key).to(UserView)
             message = get_message(context=context, obj_uid=req.id)
@@ -142,7 +142,7 @@ class RequestService(AbstractService):
             return requests
 
         # If chunk size is defined, then split list into evenly sized chunks
-        chunked_requests: List[List[RequestInfo]] = [
+        chunked_requests: list[list[RequestInfo]] = [
             requests[i : i + page_size] for i in range(0, len(requests), page_size)
         ]
         if page_index:
@@ -152,8 +152,8 @@ class RequestService(AbstractService):
 
     @service_method(path="request.add_changes", name="add_changes")
     def add_changes(
-        self, context: AuthedServiceContext, uid: UID, changes: List[Change]
-    ) -> Union[Request, SyftError]:
+        self, context: AuthedServiceContext, uid: UID, changes: list[Change]
+    ) -> Request | SyftError:
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
 
         if result.is_err():
@@ -170,9 +170,9 @@ class RequestService(AbstractService):
         self,
         context: AuthedServiceContext,
         request_filter: RequestInfoFilter,
-        page_index: Optional[int] = 0,
-        page_size: Optional[int] = 0,
-    ) -> Union[List[RequestInfo], SyftError]:
+        page_index: int | None = 0,
+        page_size: int | None = 0,
+    ) -> list[RequestInfo] | SyftError:
         """Get a Dataset"""
         result = self.get_all_info(context)
         requests = list(
@@ -199,7 +199,7 @@ class RequestService(AbstractService):
         context: AuthedServiceContext,
         uid: UID,
         **kwargs: dict,
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         context.node = cast(AbstractNode, context.node)
         request = self.stash.get_by_uid(context.credentials, uid)
         if request.is_ok():
@@ -245,7 +245,7 @@ class RequestService(AbstractService):
     @service_method(path="request.undo", name="undo")
     def undo(
         self, context: AuthedServiceContext, uid: UID, reason: str
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         result = self.stash.get_by_uid(credentials=context.credentials, uid=uid)
         if result.is_err():
             return SyftError(
@@ -283,7 +283,7 @@ class RequestService(AbstractService):
 
     def save(
         self, context: AuthedServiceContext, request: Request
-    ) -> Union[Request, SyftError]:
+    ) -> Request | SyftError:
         result = self.stash.update(context.credentials, request)
         if result.is_ok():
             return result.ok()

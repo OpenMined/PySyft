@@ -1,13 +1,11 @@
 # stdlib
+from collections.abc import Callable
 import os
 from typing import Any
-from typing import Callable
-from typing import Optional
 from typing import TypeVar
-from typing import Union
 
 
-def str_to_bool(bool_str: Optional[str]) -> bool:
+def str_to_bool(bool_str: str | None) -> bool:
     result = False
     bool_str = str(bool_str).lower()
     if bool_str == "true" or bool_str == "1":
@@ -18,7 +16,7 @@ def str_to_bool(bool_str: Optional[str]) -> bool:
 TRACE_MODE = str_to_bool(os.environ.get("TRACE", "False"))
 
 
-T = TypeVar("T", bound=Union[Callable, type])
+T = TypeVar("T", bound=Callable | type)
 
 
 def noop(__func_or_class: T, /, *args: Any, **kwargs: Any) -> T:
