@@ -131,16 +131,16 @@ class DomainClient(SyftClient):
         self.register(
             name="Sheldon Copper",
             email="sheldon@caltech.edu",
-            password="bazinga",
-            password_verify="bazinga",
+            password="bazinga",  # nosec
+            password_verify="bazinga",  # nosec
         )
         print("Done!")
         print("\tBob Burnquest — email:bob@yahoo.com password:secretroom ...", end="")
         self.register(
             name="Bob Burnquest",
             email="bob@yahoo.com",
-            password="secretroom",
-            password_verify="secretroom",
+            password="secretroom",  # nosec
+            password_verify="secretroom",  # nosec
         )
         print("Done!")
         print(
@@ -149,18 +149,22 @@ class DomainClient(SyftClient):
         self.register(
             name="Alice Roosevelt",
             email="alice@yahoo.com",
-            password="whitehouse",
-            password_verify="whitehouse",
+            password="whitehouse",  # nosec
+            password_verify="whitehouse",  # nosec
         )
         print("Done!")
         print("DONE Registering Demo Users!")
 
         sheldon = self.login(
-            email="sheldon@caltech.edu", password="bazinga", verbose=False
+            email="sheldon@caltech.edu",
+            password="bazinga",
+            verbose=False,  # nosec
         )
-        bob = self.login(email="bob@yahoo.com", password="secretroom", verbose=False)
+        bob = self.login(email="bob@yahoo.com", password="secretroom", verbose=False)  # nosec
         alice = self.login(
-            email="alice@yahoo.com", password="whitehouse", verbose=False
+            email="alice@yahoo.com",
+            password="whitehouse",
+            verbose=False,  # nosec
         )
 
         return sheldon, bob, alice
