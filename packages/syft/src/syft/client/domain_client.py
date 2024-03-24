@@ -190,7 +190,7 @@ class DomainClient(SyftClient):
         else:
             raise Exception(
                 f"asset_names (len {len(asset_names)}), assets (len {len(assets)}),"
-                + f" and mocks (len {len(mocks)}) must be lists of the same lengths."
+                + f" and mocks (len {len(mocks)}) must be lists of the same lengths!"
             )
 
     def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
