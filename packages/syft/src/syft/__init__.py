@@ -226,9 +226,10 @@ def launch(
 
     if not skip_signup:
         if not default_admin:
-            name = input("Admin Name:")
-            email = input("Admin Email:")
-            password = getpass("Admin Password:")
+            print("\nConfiguring admin account...")
+            name = input("\tAdmin Name:")
+            email = input("\tAdmin Email:")
+            password = getpass("\tAdmin Password:")
 
             client.me.set_name(name)
             client.me.set_email(email)

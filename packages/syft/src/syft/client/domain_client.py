@@ -90,6 +90,33 @@ class DomainClient(SyftClient):
     def __repr__(self) -> str:
         return f"<DomainClient: {self.name}>"
 
+    def demo(self) -> DomainClient:
+        """Setup a domain with some demo datasets."""
+
+        print("\nUploading Demo Datasets: MNIST")
+
+        # relative
+        from .demo import mnist
+
+        train_images, train_labels, test_images, test_labels = mnist()
+
+        self.upload_dataset_via_lists(
+            name="MNIST Dataset",
+            asset_names=["Train Images", "Train Labels", "Test Images", "Test Labels"],
+            assets=[train_images, train_labels, test_images, test_labels],
+            mocks=[
+                train_images * 0,
+                train_labels * 0,
+                test_images * 0,
+                test_labels * 0,
+            ],
+            mocks_are_real=False,
+        )
+
+        print("\nDone uploading demo datasets!\n")
+
+        return self
+
     def upload_dataset_via_lists(
         self,
         name: str,
