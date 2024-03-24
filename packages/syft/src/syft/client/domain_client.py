@@ -157,14 +157,14 @@ class DomainClient(SyftClient):
 
         sheldon = self.login(
             email="sheldon@caltech.edu",
-            password="bazinga",
-            verbose=False,  # nosec
+            password="bazinga",  # nosec
+            verbose=False,
         )
         bob = self.login(email="bob@yahoo.com", password="secretroom", verbose=False)  # nosec
         alice = self.login(
             email="alice@yahoo.com",
-            password="whitehouse",
-            verbose=False,  # nosec
+            password="whitehouse",  # nosec
+            verbose=False,
         )
 
         return sheldon, bob, alice
