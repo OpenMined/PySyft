@@ -212,7 +212,7 @@ def serve_node(
             print("killed")
 
     def start() -> None:
-        print(f"Starting {name} server on {host}:{port}")
+        print(f"Starting {name} server on {host}:{port}.", end="")
         server_process.start()
 
         if tail:
@@ -225,7 +225,7 @@ def serve_node(
                 except SystemExit:
                     os._exit(130)
         else:
-            for i in range(WAIT_TIME_SECONDS):
+            for _ in range(WAIT_TIME_SECONDS):
                 try:
                     req = requests.get(
                         f"http://{host}:{port}{API_PATH}/metadata",
@@ -236,10 +236,7 @@ def serve_node(
                         break
                 except Exception:
                     time.sleep(1)
-                    if i == 0:
-                        print("Waiting for server to start", end="")
-                    else:
-                        print(".", end="")
+                    print(".", end="")
 
     return start, stop
 
