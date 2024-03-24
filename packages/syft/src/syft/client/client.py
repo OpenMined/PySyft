@@ -944,10 +944,10 @@ class SyftClient:
             return self.api.services.user.get_current_user()
         return None
 
-    def login_as_guest(self) -> Self:
+    def login_as_guest(self, verbose: bool = True) -> Self:
         _guest_client = self.guest()
 
-        if self.metadata is not None:
+        if self.metadata is not None and verbose:
             print(
                 f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()}-side "
                 f"{self.metadata.node_type.capitalize()}> as GUEST"
@@ -961,6 +961,8 @@ class SyftClient:
         password: str | None = None,
         cache: bool = True,
         register: bool = False,
+        verbose: bool = True,
+        suppress_warnings: bool = False,
         **kwargs: Any,
     ) -> Self:
         # TODO: Remove this Hack (Note to Rasswanth)
@@ -1001,19 +1003,21 @@ class SyftClient:
             client.__logged_in_username = client.users.get_current_user().name
 
         if signing_key is not None and client.metadata is not None:
-            print(
-                f"Logged into <{client.name}: {client.metadata.node_side_type.capitalize()} side "
-                f"{client.metadata.node_type.capitalize()}> as <{email}>"
-            )
+            if verbose:
+                print(
+                    f"Logged into <{client.name}: {client.metadata.node_side_type.capitalize()} side "
+                    f"{client.metadata.node_type.capitalize()}> as <{email}>"
+                )
             # relative
             from ..node.node import get_default_root_password
 
             if password == get_default_root_password():
-                message = (
-                    "You are using a default password. Please change the password "
-                    "using `[your_client].me.set_password([new_password])`."
-                )
-                prompt_warning_message(message)
+                if not suppress_warnings:
+                    message = (
+                        "You are using a default password. Please change the password "
+                        "using `[your_client].me.set_password([new_password])`."
+                    )
+                    prompt_warning_message(message)
 
             if cache:
                 SyftClientSessionCache.add_client(

@@ -203,7 +203,7 @@ def launch(
         tail=tail,
         host=host,
         tag=tag,
-        # verbose=verbose,
+        verbose=verbose,
         render=render,
         enable_warnings=enable_warnings,
         n_consumers=n_consumers,
@@ -216,7 +216,7 @@ def launch(
     client = node.login(
         email="info@openmined.org",
         password="changethis",  # nosec
-        # verbose=False,
+        verbose=False,
         suppress_warnings=True,
     )
 
