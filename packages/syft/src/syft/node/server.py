@@ -232,7 +232,7 @@ def serve_node(
                         timeout=DEFAULT_TIMEOUT,
                     )
                     if req.status_code == 200:
-                        print(" Done.")
+                        print(" Done!")
                         break
                 except Exception:
                     time.sleep(1)
