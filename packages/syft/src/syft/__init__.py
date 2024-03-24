@@ -188,6 +188,7 @@ def launch(
     queue_port: int | None = None,
     in_memory_workers: bool = True,
     skip_signup: bool = False,
+    default_admin: bool = False,
 ) -> DomainClient:
     node = Orchestra.launch(
         name=name,
@@ -217,20 +218,21 @@ def launch(
         email="info@openmined.org",
         password="changethis",  # nosec
         verbose=False,
-        suppress_warnings=True,
+        suppress_warnings=not default_admin,
     )
 
     # so that the user doesn't need to keep up with a node_handlne and client
     client.land = node.land
 
     if not skip_signup:
-        name = input("Admin Name:")
-        email = input("Admin Email:")
-        password = getpass("Admin Password:")
+        if not default_admin:
+            name = input("Admin Name:")
+            email = input("Admin Email:")
+            password = getpass("Admin Password:")
 
-        client.me.set_name(name)
-        client.me.set_email(email)
-        client.me.set_password(password)
+            client.me.set_name(name)
+            client.me.set_email(email)
+            client.me.set_password(password)
 
         # set default email notifier (note: each email account can only send 300 emails a day,
         # and it might go to people's junk folders.)
