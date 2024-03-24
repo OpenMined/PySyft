@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from pathlib import Path
 import re
+from typing import Any
 from typing import TYPE_CHECKING
 from typing import cast
 
@@ -88,6 +89,34 @@ def add_default_uploader(
 class DomainClient(SyftClient):
     def __repr__(self) -> str:
         return f"<DomainClient: {self.name}>"
+
+    def upload_dataset_via_lists(
+        self,
+        name: str,
+        asset_names: list[str],
+        assets: list[Any],
+        mocks: list[Any],
+        mocks_are_real: bool = False,
+    ) -> SyftSuccess | SyftError:
+        if len(asset_names) == len(assets) == len(mocks):
+            dataset = CreateDataset(name=name)
+            dataset.add_contributor(
+                name=self.me.name, email=self.me.email, role="Creator"
+            )
+            for i in range(len(asset_names)):
+                asset = CreateAsset(name=asset_names[i])
+                asset.add_contributor(
+                    name=self.me.name, email=self.me.email, role="Creator"
+                )
+                asset.set_obj(data=assets[i])
+                asset.set_mock(mock_data=mocks[i], mock_is_real=mocks_are_real)
+                dataset.add_asset(asset)
+            return self.upload_dataset(dataset)
+        else:
+            raise Exception(
+                f"asset_names (len {len(asset_names)}), assets (len{len(assets)}),"
+                + "and mocks (len({len(mocks)})) must be lists of the same lengths."
+            )
 
     def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
         # relative
