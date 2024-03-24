@@ -11,6 +11,10 @@ import numpy as np
 
 _DATA = "/tmp/jax_example_data/"
 
+# BEGIN SOURCE FROM
+# Source: https://github.com/google/jax/blob/main/examples/datasets.py
+# Code for the MNIST dataset
+
 
 def _download(url: str, filename: str) -> None:
     """Download a url to a file in the JAX data temp directory."""
@@ -82,3 +86,8 @@ def mnist(
         train_labels = train_labels[perm]
 
     return train_images, train_labels, test_images, test_labels
+
+
+# END SOURCE FROM
+# Source: https://github.com/google/jax/blob/main/examples/datasets.py
+# Code for the MNIST dataset
