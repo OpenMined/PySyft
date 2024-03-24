@@ -91,7 +91,7 @@ class DomainClient(SyftClient):
     def __repr__(self) -> str:
         return f"<DomainClient: {self.name}>"
 
-    def demo(self) -> DomainClient:
+    def demo(self) -> tuple[DomainClient, DomainClient, DomainClient]:
         """Setup a domain with some demo datasets."""
 
         print("BEGIN Uploading Demo Datasets:")
@@ -124,7 +124,46 @@ class DomainClient(SyftClient):
 
         print("DONE Uploading Demo Datasets!\n")
 
-        return self
+        print("BEGIN Registering Demo Users:")
+        print(
+            "\tSheldon Copper — email:sheldon@caltech.edu password:bazinga ...", end=""
+        )
+        self.register(
+            name="Sheldon Copper",
+            email="sheldon@caltech.edu",
+            password="bazinga",
+            password_verify="bazinga",
+        )
+        print("Done!")
+        print("\tBob Burnquest — email:bob@yahoo.com password:secretroom ...", end="")
+        self.register(
+            name="Bob Burnquest",
+            email="bob@yahoo.com",
+            password="secretroom",
+            password_verify="secretroom",
+        )
+        print("Done!")
+        print(
+            "\tAlice Roosevelt — email:alice@yahoo.com password:whitehouse ...", end=""
+        )
+        self.register(
+            name="Alice Roosevelt",
+            email="alice@yahoo.com",
+            password="whitehouse",
+            password_verify="whitehouse",
+        )
+        print("Done!")
+        print("DONE Registering Demo Users!")
+
+        sheldon = self.login(
+            email="sheldon@caltech.edu", password="bazinga", verbose=False
+        )
+        bob = self.login(email="bob@yahoo.com", password="secretroom", verbose=False)
+        alice = self.login(
+            email="alice@yahoo.com", password="whitehouse", verbose=False
+        )
+
+        return sheldon, bob, alice
 
     def upload_dataset_via_lists(
         self,
