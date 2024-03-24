@@ -253,4 +253,7 @@ def launch(
             email_port="587",
         )
 
+        print("Launched and configured!")
+        return client
+
     return client
