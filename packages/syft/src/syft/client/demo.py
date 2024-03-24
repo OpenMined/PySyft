@@ -22,7 +22,7 @@ def _download(url: str, filename: str) -> None:
         os.makedirs(_DATA)
     out_file = path.join(_DATA, filename)
     if not path.isfile(out_file):
-        urllib.request.urlretrieve(url, out_file)
+        urllib.request.urlretrieve(url, out_file)  # nosec
         print(f"downloaded {url} to {_DATA}")
 
 
