@@ -272,7 +272,7 @@ class NotifierService(AbstractService):
                     notifier.email_username = email_username
                     notifier.email_sender = email_sender
                     notifier.email_server = smtp_host
-                    notifier.email_port = int(smtp_port)
+                    notifier.email_port = smtp_port
                     notifier.active = True
 
             notifier_stash.set(node.signing_key.verify_key, notifier)
