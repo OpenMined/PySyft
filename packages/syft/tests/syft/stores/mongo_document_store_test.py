@@ -11,6 +11,7 @@ from result import Err
 from syft.node.credentials import SyftVerifyKey
 from syft.service.action.action_permissions import ActionObjectPermission
 from syft.service.action.action_permissions import ActionPermission
+from syft.service.action.action_permissions import StoragePermission
 from syft.service.action.action_store import ActionObjectEXECUTE
 from syft.service.action.action_store import ActionObjectOWNER
 from syft.service.action.action_store import ActionObjectREAD
@@ -694,6 +695,41 @@ def test_mongo_store_partition_add_remove_permission(
         mongo_store_partition.remove_permission(permission)
 
     assert permissions_collection.count_documents({}) == 1
+
+
+def test_mongo_store_partition_add_remove_storage_permission(
+    root_verify_key: SyftVerifyKey,
+    mongo_store_partition: MongoStorePartition,
+) -> None:
+    """
+    Test the add_storage_permission and remove_storage_permission functions of MongoStorePartition
+    """
+
+    obj = MockSyftObject(data=1)
+
+    storage_permission = StoragePermission(
+        uid=obj.id,
+        node_uid=UID(),
+    )
+    assert not mongo_store_partition.has_storage_permission(storage_permission)
+    mongo_store_partition.add_storage_permission(storage_permission)
+    assert mongo_store_partition.has_storage_permission(storage_permission)
+    mongo_store_partition.remove_storage_permission(storage_permission)
+    assert not mongo_store_partition.has_storage_permission(storage_permission)
+
+    obj2 = MockSyftObject(data=1)
+    mongo_store_partition.set(root_verify_key, obj2, add_storage_permission=False)
+    storage_permission3 = StoragePermission(
+        uid=obj2.id, node_uid=mongo_store_partition.node_uid
+    )
+    assert not mongo_store_partition.has_storage_permission(storage_permission3)
+
+    obj3 = MockSyftObject(data=1)
+    mongo_store_partition.set(root_verify_key, obj3, add_storage_permission=True)
+    storage_permission4 = StoragePermission(
+        uid=obj3.id, node_uid=mongo_store_partition.node_uid
+    )
+    assert mongo_store_partition.has_storage_permission(storage_permission4)
 
 
 def test_mongo_store_partition_add_permissions(
