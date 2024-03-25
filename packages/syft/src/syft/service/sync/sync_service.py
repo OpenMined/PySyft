@@ -187,7 +187,7 @@ class SyncService(AbstractService):
         permissions: dict[UID, set[str]],
         storage_permissions: dict[UID, set[UID]],
         ignored_batches: dict[UID, int],
-        unignored_batches: list[UID]
+        unignored_batches: set[UID]
     ) -> SyftSuccess | SyftError:
         permissions = defaultdict(set, permissions)
         storage_permissions = defaultdict(set, storage_permissions)
@@ -211,7 +211,7 @@ class SyncService(AbstractService):
                 else:
                     return SyftError(message=f"Failed to sync {res.err()}")
 
-        res: Result[str, None] = self.build_state_object_from_current_state(context, ignored_batches)
+        res: Result[str, None] = self.build_state_object_from_current_state(context, ignored_batches, unignored_batches)
         if res.is_err():
             return SyftError(message=res.message)
         else:
@@ -247,7 +247,10 @@ class SyncService(AbstractService):
         self,
         context: AuthedServiceContext,
         new_ignored_batches: dict[UID, int],
+        new_unignored_batches: set[UID] | None,
     ) -> Result[str, None]:
+        if new_unignored_batches is None:
+            new_unignored_batches = {}
         node = cast(AbstractNode, context.node)
 
         new_state = SyncState(node_uid=node.id)
@@ -300,10 +303,13 @@ class SyncService(AbstractService):
         
         previous_ignored_batches = previous_state.ignored_batches if previous_state is not None else {}
 
-        new_state.ignored_batches = {
+        new_ignored_batches = {
             **previous_ignored_batches,
             **new_ignored_batches,
         }
+        new_ignored_batches = {k:v for k, v in new_ignored_batches if k not in new_unignored_batches}
+        new_state.ignored_batches =  new_ignored_batches
+
         if previous_state is not None:
             new_state.previous_state_link = LinkedObject.from_obj(
                 obj=previous_state,
@@ -320,4 +326,4 @@ class SyncService(AbstractService):
     def _get_state(
         self, context: AuthedServiceContext
     ) -> SyncState | SyftError:
-        return self.build_state_object_from_current_state(context, {})
+        return self.build_state_object_from_current_state(context, {}, {})

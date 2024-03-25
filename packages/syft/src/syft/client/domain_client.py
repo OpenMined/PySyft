@@ -207,7 +207,8 @@ class DomainClient(SyftClient):
             items,
             permissions,
             storage_permissions,
-            ignored_batches
+            ignored_batches,
+            unignored_batches=resolved_state.unignored_batches
             
         )
         if isinstance(res, SyftError):

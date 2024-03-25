@@ -60,6 +60,8 @@ def resolve(
     share_private_objects: bool = False,
     ask_for_input: bool = True,
 ) -> tuple[ResolvedSyncState, ResolvedSyncState]:
+    # TODO: fix this
+    previously_ignored_batches = state.low_state.ignored_batches
     # TODO: only add permissions for objects where we manually give permission
     # Maybe default read permission for some objects (high -> low)
     resolved_state_low = ResolvedSyncState(node_uid=state.low_node_uid, alias="low")
@@ -93,6 +95,9 @@ def resolve(
             sync_instructions: list[SyncInstruction] = []
             if batch_decision == SyncDecision.ignore:
                 resolved_state_high.add_skipped_ignored(batch_diff)
+        
+        if batch_diff.root_id in previously_ignored_batches and batch_diff.decision != SyncDecision.ignore:
+            sync_instruction.unignore = True
 
         print(f"Decision: Syncing {len(sync_instructions)} objects")
 

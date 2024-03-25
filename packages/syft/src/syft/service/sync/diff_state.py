@@ -720,6 +720,7 @@ class IgnoredBatchView(SyftObject):
     __canonical_name__ = "IgnoredBatchView"
     __version__ = SYFT_OBJECT_VERSION_1
     batch: ObjectDiffBatch
+    other_batches: list[ObjectDiffBatch]
 
     def _coll_repr_(self) -> str:
         return self.batch._coll_repr_()
@@ -729,6 +730,14 @@ class IgnoredBatchView(SyftObject):
 
     def stage_change(self) -> None:
         self.batch.decision = None
+        required_dependencies = {
+            d.object_id for d in self.batch.get_dependencies(include_roots=True) 
+        }
+
+        for other_batch in self.other_batches:
+            if other_batch.decision==SyncDecision.ignore and other_batch.root_id in required_dependencies:
+                print(f"ignoring other batch ({other_batch.root_type.__name__})")
+                other_batch.decision=None
 
 
 
@@ -746,9 +755,12 @@ class NodeDiff(SyftObject):
 
     @property
     def ignored_changes(self):
-        batch_ids = [batch_id for batch_id, _ in self.low_state.ignored_batches]
-        ignored_batches = [b for b in self.batches if b.root_id in batch_ids]
-        return [IgnoredBatchView(batch) for batch in ignored_batches]
+        ignored_batches = [b for b in self.batches if b.decision == SyncDecision.ignore]
+        result = []
+        for ignored_batch in ignored_batches:
+            other_batches = [b for b in self.batches if b is not ignored_batch]
+            result.append(IgnoredBatchView(batch=ignored_batch, other_batches=other_batches))
+        return result
 
     @classmethod
     def from_sync_state(
@@ -813,7 +825,7 @@ class NodeDiff(SyftObject):
                         # then we also set the dependent batches to unignore
                         # currently we dont do this recusively
                         required_dependencies = {
-                            d for deps in batch.dependencies.values() for d in deps
+                            d.object_id for d in batch.get_dependencies(include_roots=True)
                         }
 
                         for other_batch in batches:
@@ -950,6 +962,7 @@ class SyncInstruction(SyftObject):
     new_permissions_lowside: list[ActionObjectPermission]
     new_storage_permissions_lowside: list[StoragePermission]
     new_storage_permissions_highside: list[StoragePermission]
+    unignore: bool = False
     mockify: bool
 
 
@@ -964,6 +977,7 @@ class ResolvedSyncState(SyftObject):
     new_permissions: list[ActionObjectPermission] = []
     new_storage_permissions: list[StoragePermission] = []
     ignored_batches: dict[UID, int] = {}  # batch root uid -> hash of the batch
+    unignored_batches: set[UID] = set() # NOTE: using '{}' as default value does not work here
     alias: str
 
     def add_skipped_ignored(self, batch: ObjectDiffBatch) -> None:
@@ -976,6 +990,9 @@ class ResolvedSyncState(SyftObject):
         ):
             return
         diff = sync_instruction.diff
+
+        if sync_instruction.unignore:
+            self.unignored_batches.add(sync_instruction.diff.object_id)
 
         if diff.status == "SAME":
             return
