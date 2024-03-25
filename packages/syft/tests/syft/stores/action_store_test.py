@@ -14,9 +14,9 @@ from syft.service.action.action_store import ActionObjectWRITE
 from syft.types.uid import UID
 
 # relative
-from .store_constants_test import test_verify_key_string_client
-from .store_constants_test import test_verify_key_string_hacker
-from .store_constants_test import test_verify_key_string_root
+from .store_constants_test import TEST_VERIFY_KEY_STRING_CLIENT
+from .store_constants_test import TEST_VERIFY_KEY_STRING_HACKER
+from .store_constants_test import TEST_VERIFY_KEY_STRING_ROOT
 from .store_mocks_test import MockSyftObject
 
 permissions = [
@@ -41,7 +41,7 @@ def test_action_store_sanity(store: Any):
     assert hasattr(store, "data")
     assert hasattr(store, "permissions")
     assert hasattr(store, "root_verify_key")
-    assert store.root_verify_key.verify == test_verify_key_string_root
+    assert store.root_verify_key.verify == TEST_VERIFY_KEY_STRING_ROOT
 
 
 @pytest.mark.parametrize(
@@ -53,12 +53,12 @@ def test_action_store_sanity(store: Any):
     ],
 )
 @pytest.mark.parametrize("permission", permissions)
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.skipif(sys.platform == "darwin", reason="skip on mac")
 def test_action_store_test_permissions(store: Any, permission: Any):
-    client_key = SyftVerifyKey.from_string(test_verify_key_string_client)
-    root_key = SyftVerifyKey.from_string(test_verify_key_string_root)
-    hacker_key = SyftVerifyKey.from_string(test_verify_key_string_hacker)
+    client_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_CLIENT)
+    root_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
+    hacker_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_HACKER)
 
     access = permission(uid=UID(), credentials=client_key)
     access_root = permission(uid=UID(), credentials=root_key)
@@ -112,11 +112,11 @@ def test_action_store_test_permissions(store: Any, permission: Any):
         pytest.lazy_fixture("mongo_action_store"),
     ],
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_action_store_test_data_set_get(store: Any):
-    client_key = SyftVerifyKey.from_string(test_verify_key_string_client)
-    root_key = SyftVerifyKey.from_string(test_verify_key_string_root)
-    SyftVerifyKey.from_string(test_verify_key_string_hacker)
+    client_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_CLIENT)
+    root_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
+    SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_HACKER)
 
     access = ActionObjectWRITE(uid=UID(), credentials=client_key)
     access_root = ActionObjectWRITE(uid=UID(), credentials=root_key)

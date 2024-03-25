@@ -4,6 +4,9 @@ from __future__ import annotations
 # stdlib
 from typing import Any
 
+# third party
+from pydantic import Field
+
 # relative
 from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
@@ -101,4 +104,4 @@ class DictStoreConfig(StoreConfig):
 
     store_type: type[DocumentStore] = DictDocumentStore
     backing_store: type[KeyValueBackingStore] = DictBackingStore
-    locking_config: LockingConfig = ThreadingLockingConfig()
+    locking_config: LockingConfig = Field(default_factory=ThreadingLockingConfig)

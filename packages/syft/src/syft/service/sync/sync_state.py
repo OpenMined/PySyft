@@ -82,7 +82,7 @@ class SyncState(SyftObject):
     previous_state_link: LinkedObject | None = None
     permissions: dict[UID, set[str]] = {}
     storage_permissions: dict[UID, set[UID]] = {}
-    previous_state_diff: "NodeDiff" | None = None  # type: ignore
+    previous_state_diff: Optional["NodeDiff"] = None  # type: ignore
 
     __attr_searchable__ = ["created_at"]
 

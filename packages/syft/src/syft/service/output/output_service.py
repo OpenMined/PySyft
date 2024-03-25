@@ -43,6 +43,7 @@ class ExecutionOutput(SyncableSyftObject):
     output_ids: list[UID] | dict[str, UID] | None = None
     job_link: LinkedObject | None = None
     created_at: DateTime = DateTime.now()
+    input_ids: dict[str, UID] | None = None
 
     # Required for __attr_searchable__, set by model_validator
     user_code_id: UID
@@ -78,6 +79,7 @@ class ExecutionOutput(SyncableSyftObject):
         node_uid: UID,
         job_id: UID | None = None,
         output_policy_id: UID | None = None,
+        input_ids: dict[str, UID] | None = None,
     ) -> "ExecutionOutput":
         # relative
         from ..code.user_code_service import UserCode
@@ -110,6 +112,7 @@ class ExecutionOutput(SyncableSyftObject):
             job_link=job_link,
             executing_user_verify_key=executing_user_verify_key,
             output_policy_id=output_policy_id,
+            input_ids=input_ids,
         )
 
     @property
@@ -140,6 +143,30 @@ class ExecutionOutput(SyncableSyftObject):
         elif isinstance(ids, list):
             return ids
         return []
+
+    @property
+    def input_id_list(self) -> list[UID]:
+        ids = self.input_ids
+        if isinstance(ids, dict):
+            return list(ids.values())
+        return []
+
+    def check_input_ids(self, kwargs: dict[str, UID]) -> bool:
+        """
+        Checks the input IDs against the stored input IDs.
+
+        Args:
+            kwargs (dict[str, UID]): A dictionary containing the input IDs to be checked.
+
+        Returns:
+            bool: True if the input IDs are valid, False otherwise.
+        """
+        if not self.input_ids:
+            return True
+        for key, value in kwargs.items():  # Iterate over items of kwargs dictionary
+            if key not in self.input_ids or self.input_ids[key] != value:
+                return False
+        return True
 
     @property
     def job_id(self) -> UID | None:
@@ -215,6 +242,7 @@ class OutputService(AbstractService):
         executing_user_verify_key: SyftVerifyKey,
         job_id: UID | None = None,
         output_policy_id: UID | None = None,
+        input_ids: dict[str, UID] | None = None,
     ) -> ExecutionOutput | SyftError:
         output = ExecutionOutput.from_ids(
             output_ids=output_ids,
@@ -223,6 +251,7 @@ class OutputService(AbstractService):
             node_uid=context.node.id,  # type: ignore
             job_id=job_id,
             output_policy_id=output_policy_id,
+            input_ids=input_ids,
         )
 
         res = self.stash.set(context.credentials, output)
