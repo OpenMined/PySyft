@@ -35,6 +35,7 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import as_markdown_code
 from ...util.telemetry import instrument
+from ...util.util import prompt_warning_message
 from ..action.action_data_empty import ActionDataLink
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
@@ -354,18 +355,26 @@ class Job(SyncableSyftObject):
         )
         if api is None:
             return f"Can't access Syft API. You must login to {self.syft_node_location}"
+
+        has_permissions = True
+
         results = []
         if stdout:
             stdout_log = api.services.log.get_stdout(self.log_id)
             if isinstance(stdout_log, SyftError):
                 results.append(f"Log {self.log_id} not available")
+                has_permissions = False
             else:
                 results.append(stdout_log)
 
         if stderr:
             try:
                 std_err_log = api.services.log.get_error(self.log_id)
-                results.append(std_err_log)
+                if isinstance(std_err_log, SyftError):
+                    results.append(f"Error log {self.log_id} not available")
+                    has_permissions = False
+                else:
+                    results.append(std_err_log)
             except Exception:
                 # no access
                 if isinstance(self.result, Err):
@@ -374,6 +383,15 @@ class Job(SyncableSyftObject):
             # add short error
             if isinstance(self.result, Err):
                 results.append(self.result.value)
+
+        if has_permissions:
+            has_storage_permission = api.services.log.has_storage_permission(
+                self.log_id
+            )
+            if not has_storage_permission:
+                prompt_warning_message(
+                    message="This is a placeholder object, please ask the admin for access."
+                )
 
         results_str = "\n".join(results)
         if not _print:
