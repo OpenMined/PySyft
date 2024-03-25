@@ -84,6 +84,18 @@
           "hash": "7c55461e3c6ba36ff999c64eb1b97a65b5a1f27193a973b1355ee2675f14c313",
           "action": "remove"
         }
+      },
+      "BlobFileOBject": {
+        "1": {
+          "version": 1,
+          "hash": "db72bee3ca9659ab579caa41cf44ad0e0f2c23f85820d8aecc5089f4a5cd4f3b",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "1ab941c7669572a41067a17e0e3f2d9c7056f7a4df8f899e87ae2358d9113b02",
+          "action": "remove"
+        }
       }
     }
   }

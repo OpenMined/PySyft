@@ -36,6 +36,7 @@ from ..types.grid_url import GridURL
 from ..types.transforms import keep
 from ..types.transforms import transform
 from .datetime import DateTime
+from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SYFT_OBJECT_VERSION_2
 from .syft_object import SYFT_OBJECT_VERSION_3
 from .syft_object import SYFT_OBJECT_VERSION_4
@@ -194,7 +195,7 @@ class BlobFileObjectPointer(ActionObjectPointer):
 @serializable()
 class BlobFileObject(ActionObject):
     __canonical_name__ = "BlobFileOBject"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[type[Any]] = BlobFile
     syft_pointer_type: ClassVar[type[ActionObjectPointer]] = BlobFileObjectPointer
