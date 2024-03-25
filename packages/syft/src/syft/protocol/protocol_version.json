@@ -86,14 +86,28 @@
         }
       },
       "BlobFileOBject": {
+        "2": {
+          "version": 2,
+          "hash": "1ab941c7669572a41067a17e0e3f2d9c7056f7a4df8f899e87ae2358d9113b02",
+          "action": "remove"
+        }
+      },
+      "BlobFileObject": {
         "1": {
           "version": 1,
-          "hash": "db72bee3ca9659ab579caa41cf44ad0e0f2c23f85820d8aecc5089f4a5cd4f3b",
+          "hash": "4914ef5af638cccf9ca54f313e4f1969b4573dfdafb6364926e8f395bb3a2014",
+          "action": "add"
+        }
+      },
+      "DataSubjectCreate": {
+        "1": {
+          "version": 1,
+          "hash": "1c6fdad246a73b1ef4ebb8c71fba0dc6c254f2ef28605f14b85c92ba0dfc0c6e",
           "action": "add"
         },
         "2": {
           "version": 2,
-          "hash": "1ab941c7669572a41067a17e0e3f2d9c7056f7a4df8f899e87ae2358d9113b02",
+          "hash": "b35897295822f061fbc70522ca8967cd2be53a5c01b19e24c587cd7b0c4aa3e8",
           "action": "remove"
         }
       }
