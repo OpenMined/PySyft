@@ -13,7 +13,7 @@ from syft.store.document_store import DocumentStore
 
 @pytest.fixture
 def request_stash(document_store: DocumentStore) -> RequestStash:
-    return RequestStash(store=document_store)
+    yield RequestStash(store=document_store)
 
 
 @pytest.fixture
@@ -21,4 +21,4 @@ def authed_context_guest_domain_client(
     guest_domain_client: SyftClient, worker: Worker
 ) -> AuthedServiceContext:
     verify_key: SyftVerifyKey = guest_domain_client.credentials.verify_key
-    return AuthedServiceContext(credentials=verify_key, node=worker)
+    yield AuthedServiceContext(credentials=verify_key, node=worker)

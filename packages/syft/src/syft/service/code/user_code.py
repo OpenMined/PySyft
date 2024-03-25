@@ -540,6 +540,7 @@ class UserCode(SyncableSyftObject):
         context: AuthedServiceContext,
         outputs: Any,
         job_id: UID | None = None,
+        input_ids: dict[str, UID] | None = None,
     ) -> ExecutionOutput | SyftError:
         output_policy = self.get_output_policy(context)
         if output_policy is None:
@@ -558,6 +559,7 @@ class UserCode(SyncableSyftObject):
             executing_user_verify_key=self.user_verify_key,
             job_id=job_id,
             output_policy_id=output_policy.id,
+            input_ids=input_ids,
         )
         if isinstance(execution_result, SyftError):
             return execution_result
@@ -960,9 +962,9 @@ def syft_function(
         )
 
         if share_results_with_owners and res.output_policy_init_kwargs is not None:
-            res.output_policy_init_kwargs[
-                "output_readers"
-            ] = res.input_owner_verify_keys
+            res.output_policy_init_kwargs["output_readers"] = (
+                res.input_owner_verify_keys
+            )
 
         success_message = SyftSuccess(
             message=f"Syft function '{f.__name__}' successfully created. "

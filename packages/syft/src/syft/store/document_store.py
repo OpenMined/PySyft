@@ -9,6 +9,7 @@ from typing import Any
 
 # third party
 from pydantic import BaseModel
+from pydantic import Field
 from result import Err
 from result import Ok
 from result import Result
@@ -317,7 +318,7 @@ class StorePartition:
         self.store_config = store_config
         self.init_store()
 
-        store_config.locking_config.lock_name = settings.name
+        store_config.locking_config.lock_name = f"StorePartition-{settings.name}"
         self.lock = SyftLock(store_config.locking_config)
 
     def init_store(self) -> Result[Ok, Err]:
@@ -799,4 +800,4 @@ class StoreConfig(SyftBaseObject):
 
     store_type: type[DocumentStore]
     client_config: StoreClientConfig | None = None
-    locking_config: LockingConfig = NoLockingConfig()
+    locking_config: LockingConfig = Field(default_factory=NoLockingConfig)

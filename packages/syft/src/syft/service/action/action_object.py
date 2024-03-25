@@ -999,10 +999,12 @@ class ActionObject(SyncableSyftObject):
         path: str,
         op: str,
         remote_self: UID | LineageID | None = None,
-        args: list[UID | LineageID | ActionObjectPointer | ActionObject | Any]
-        | None = None,
-        kwargs: dict[str, UID | LineageID | ActionObjectPointer | ActionObject | Any]
-        | None = None,
+        args: (
+            list[UID | LineageID | ActionObjectPointer | ActionObject | Any] | None
+        ) = None,
+        kwargs: (
+            dict[str, UID | LineageID | ActionObjectPointer | ActionObject | Any] | None
+        ) = None,
         action_type: ActionType | None = None,
     ) -> Action:
         """Generate new action from the information

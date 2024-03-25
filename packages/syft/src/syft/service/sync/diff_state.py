@@ -1,11 +1,3 @@
-"""
-How to check differences between two objects:
-    * by default merge every attr
-    * check if there is a custom implementation of the check function
-    * check if there are exceptions we do not want to merge
-    * check if there are some restrictions on the attr set
-"""
-
 # stdlib
 import html
 import textwrap
@@ -160,6 +152,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     high_permissions: list[str] = []
     low_storage_permissions: set[UID] = set()
     high_storage_permissions: set[UID] = set()
+    low_status: str | None = None
+    high_status: str | None = None
 
     obj_type: type
     diff_list: list[AttrDiff] = []
@@ -198,6 +192,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         cls,
         low_obj: SyncableSyftObject | None,
         high_obj: SyncableSyftObject | None,
+        low_status: str | None,
+        high_status: str | None,
         low_permissions: set[str],
         high_permissions: set[str],
         low_storage_permissions: set[UID],
@@ -212,6 +208,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         res = cls(
             low_obj=low_obj,
             high_obj=high_obj,
+            low_status=low_status,
+            high_status=high_status,
             obj_type=obj_type,
             low_node_uid=low_node_uid,
             high_node_uid=high_node_uid,
@@ -224,8 +222,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         if (
             low_obj is None
             or high_obj is None
-            or res.is_mock("low")
-            or res.is_mock("high")
+            or (res.is_mock("low") and high_status == "SAME")
+            or (res.is_mock("high") and low_status == "SAME")
         ):
             diff_list = []
         else:
@@ -612,9 +610,12 @@ class NodeDiff(SyftObject):
             high_obj = high_state.objects.get(obj_id, None)
             high_permissions = high_state.permissions.get(obj_id, set())
             high_storage_permissions = high_state.storage_permissions.get(obj_id, set())
+
             diff = ObjectDiff.from_objects(
                 low_obj=low_obj,
                 high_obj=high_obj,
+                low_status=low_state.get_status(obj_id),
+                high_status=high_state.get_status(obj_id),
                 low_permissions=low_permissions,
                 high_permissions=high_permissions,
                 low_storage_permissions=low_storage_permissions,
