@@ -1998,7 +1998,7 @@ class ActionObject(SyncableSyftObject):
 @serializable()
 class AnyActionObject(ActionObject):
     __canonical_name__ = "AnyActionObject"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[type[Any]] = NoneType  # type: ignore
     # syft_passthrough_attrs: List[str] = []

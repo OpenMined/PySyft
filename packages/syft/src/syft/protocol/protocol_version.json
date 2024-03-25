@@ -72,6 +72,18 @@
           "hash": "37bb8f0f87b1da2525da8f6873e6257dff4a732f2dba293b62931ad0b85ef9e2",
           "action": "remove"
         }
+      },
+      "AnyActionObject": {
+        "1": {
+          "version": 1,
+          "hash": "cf728efdcd9484799e8db5de220c284bad1f7624f3f089ab4c6ef783675ceb12",
+          "action": "add"
+        },
+        "3": {
+          "version": 3,
+          "hash": "7c55461e3c6ba36ff999c64eb1b97a65b5a1f27193a973b1355ee2675f14c313",
+          "action": "remove"
+        }
       }
     }
   }
