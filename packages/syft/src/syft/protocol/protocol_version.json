@@ -60,6 +60,18 @@
           "hash": "3f66c4c8a21d63b6dba2ad27c452a01aae6b827ca5c161580312dfb850a0d821",
           "action": "remove"
         }
+      },
+      "ActionObject": {
+        "1": {
+          "version": 1,
+          "hash": "6b99b87d4d0fdaae5ac424596e0e2e0f0cd43116db0d9cb9f03a01aeba322245",
+          "action": "add"
+        },
+        "3": {
+          "version": 3,
+          "hash": "37bb8f0f87b1da2525da8f6873e6257dff4a732f2dba293b62931ad0b85ef9e2",
+          "action": "remove"
+        }
       }
     }
   }
