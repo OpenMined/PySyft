@@ -16,10 +16,6 @@ from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 
-if TYPE_CHECKING:
-    # relative
-    from .diff_state import NodeDiff
-
 
 def get_hierarchy_level_prefix(level: int) -> str:
     if level == 0:
@@ -85,7 +81,31 @@ class SyncState(SyftObject):
     storage_permissions: dict[UID, set[UID]] = {}
     ignored_batches: dict[UID, int] = {}
 
+    # NOTE importing NodeDiff annotation with TYPE_CHECKING does not work here,
+    # since typing.get_type_hints does not check for TYPE_CHECKING-imported types
+    _previous_state_diff: Any = None
+
     __attr_searchable__ = ["created_at"]
+
+    def _set_previous_state_diff(self) -> None:
+        # relative
+        from .diff_state import NodeDiff
+
+        # Re-use NodeDiff to compare to previous state
+        # Low = previous state, high = current state
+        # NOTE No previous sync state means everything is new
+        previous_state = self.previous_state or SyncState(node_uid=self.node_uid)
+        self._previous_state_diff = NodeDiff.from_sync_state(
+            previous_state,
+            self,
+            _include_node_status=False,
+        )
+
+    def get_previous_state_diff(self) -> Any:
+        if self._previous_state_diff is None:
+            self._set_previous_state_diff()
+
+        return self._previous_state_diff
 
     @property
     def previous_state(self) -> Optional["SyncState"]:
@@ -97,7 +117,19 @@ class SyncState(SyftObject):
     def all_ids(self) -> set[UID]:
         return set(self.objects.keys())
 
-    def add_objects(self, objects: list[SyncableSyftObject], context: Any = None) -> None:
+    def get_status(self, uid: UID) -> str | None:
+        previous_state_diff = self.get_previous_state_diff()
+        if previous_state_diff is None:
+            return None
+        diff = previous_state_diff.obj_uid_to_diff.get(uid)
+
+        if diff is None:
+            return None
+        return diff.status
+
+    def add_objects(
+        self, objects: list[SyncableSyftObject], context: AuthedServiceContext
+    ) -> None:
         for obj in objects:
             if isinstance(obj.id, LineageID):
                 self.objects[obj.id.id] = obj
@@ -109,7 +141,7 @@ class SyncState(SyftObject):
         # in dependencies that are not in objects
         self._build_dependencies(context=context)
 
-    def _build_dependencies(self, context: AuthedServiceContext, api: Any = None) -> None:
+    def _build_dependencies(self, context: AuthedServiceContext) -> None:
         self.dependencies = {}
 
         all_ids = self.all_ids
@@ -121,23 +153,16 @@ class SyncState(SyftObject):
                 if len(deps):
                     self.dependencies[obj.id.id] = deps
 
-    def get_previous_state_diff(self) -> "NodeDiff":
-        # Re-use DiffState to compare to previous state
-        # Low = previous, high = current
-        # relative
-        from .diff_state import NodeDiff
-
-        previous_state = self.previous_state or SyncState(node_uid=self.node_uid)
-        return NodeDiff.from_sync_state(previous_state, self)
-
     @property
     def rows(self) -> list[SyncStateRow]:
         result = []
         ids = set()
 
         previous_diff = self.get_previous_state_diff()
+        if previous_diff is None:
+            raise ValueError("No previous state to compare to")
         for batch in previous_diff.batches:
-            # TODO: replace with something that creates the visual hierarchy 
+            # TODO: replace with something that creates the visual hierarchy
             # as individual elements without context
             # we could do that by gathering all the elements in the normal direction
             # but stop (not add) if its another batch, every hop would be a level
@@ -150,7 +175,7 @@ class SyncState(SyftObject):
                     previous_object=diff.low_obj,
                     current_state=diff.diff_side_str("high"),
                     previous_state=diff.diff_side_str("low"),
-                    level=0,
+                    level=0,  # TODO add levels to table
                 )
                 result.append(row)
         return result

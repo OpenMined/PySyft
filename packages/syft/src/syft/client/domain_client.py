@@ -170,9 +170,14 @@ class DomainClient(SyftClient):
 
     def get_sync_state(self) -> SyncState | SyftError:
         state: SyncState = self.api.services.sync._get_state()
+        if isinstance(state, SyftError):
+            return state
+
         for uid, obj in state.objects.items():
             if isinstance(obj, ActionObject):
-                state.objects[uid] = obj.refresh_object()
+                obj = obj.refresh_object(resolve_nested=False)
+                obj.reload_cache()
+                state.objects[uid] = obj
         return state
 
     def apply_state(self, resolved_state: ResolvedSyncState) -> SyftSuccess | SyftError:
@@ -181,21 +186,6 @@ class DomainClient(SyftClient):
         items = resolved_state.create_objs + resolved_state.update_objs
 
         action_objects = [x for x in items if isinstance(x, ActionObject)]
-        # permissions = self.get_permissions_for_other_node(items)
-
-        permissions: dict[UID, set[str]] = {}
-        for p in resolved_state.new_permissions:
-            if p.uid in permissions:
-                permissions[p.uid].add(p.permission_string)
-            else:
-                permissions[p.uid] = {p.permission_string}
-
-        storage_permissions: dict[UID, set[UID]] = {}
-        for sp in resolved_state.new_storage_permissions:
-            if sp.uid in storage_permissions:
-                storage_permissions[sp.uid].add(sp.node_uid)
-            else:
-                storage_permissions[sp.uid] = {sp.node_uid}
 
         for action_object in action_objects:
             # NOTE permissions are added separately server side
@@ -205,10 +195,9 @@ class DomainClient(SyftClient):
 
         res = self.api.services.sync.sync_items(
             items,
-            permissions,
-            storage_permissions,
-            ignored_batches
-            
+            resolved_state.new_permissions,
+            resolved_state.new_storage_permissions,
+            ignored_batches,
         )
         if isinstance(res, SyftError):
             return res

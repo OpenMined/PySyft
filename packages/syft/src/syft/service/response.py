@@ -14,13 +14,18 @@ from ..types.base import SyftBaseModel
 class SyftResponseMessage(SyftBaseModel):
     message: str
     _bool: bool = True
+    require_api_update: bool = False
 
     def __bool__(self) -> bool:
         return self._bool
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, SyftResponseMessage):
-            return self.message == other.message and self._bool == other._bool
+            return (
+                self.message == other.message
+                and self._bool == other._bool
+                and self.require_api_update == other.require_api_update
+            )
         return self._bool == other
 
     def __repr__(self) -> str:

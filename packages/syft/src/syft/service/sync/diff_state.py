@@ -1,11 +1,3 @@
-"""
-How to check differences between two objects:
-    * by default merge every attr
-    * check if there is a custom implementation of the check function
-    * check if there are exceptions we do not want to merge
-    * check if there are some restrictions on the attr set
-"""
-
 # stdlib
 import html
 import textwrap
@@ -172,6 +164,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     high_permissions: list[str] = []
     low_storage_permissions: set[UID] = set()
     high_storage_permissions: set[UID] = set()
+    low_status: str | None = None
+    high_status: str | None = None
 
     obj_type: type
     diff_list: list[AttrDiff] = []
@@ -210,6 +204,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         cls,
         low_obj: SyncableSyftObject | None,
         high_obj: SyncableSyftObject | None,
+        low_status: str | None,
+        high_status: str | None,
         low_permissions: set[str],
         high_permissions: set[str],
         low_storage_permissions: set[UID],
@@ -224,6 +220,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         res = cls(
             low_obj=low_obj,
             high_obj=high_obj,
+            low_status=low_status,
+            high_status=high_status,
             obj_type=obj_type,
             low_node_uid=low_node_uid,
             high_node_uid=high_node_uid,
@@ -236,8 +234,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         if (
             low_obj is None
             or high_obj is None
-            or res.is_mock("low")
-            or res.is_mock("high")
+            or (res.is_mock("low") and high_status == "SAME")
+            or (res.is_mock("high") and low_status == "SAME")
         ):
             diff_list = []
         else:
@@ -360,7 +358,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         if self.status == "NEW":
             return self.low_obj if self.low_obj is not None else self.high_obj
         else:
-            raise ValueError("ERROR")
+            raise ValueError("Cannot get object from a diff that is not new")
 
     def _coll_repr_(self) -> dict[str, Any]:
         low_state = f"{self.status}\n{self.diff_side_str('low')}"
@@ -429,6 +427,9 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         attr_text = f"<h3>{self.object_type} ObjectDiff:</h3>\n{obj_repr}"
         return base_str + attr_text
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}[{self.obj_type.__name__}](#{str(self.object_id)})"
+
 
 def _wrap_text(text: str, width: int, indent: int = 4) -> str:
     """Wrap text, preserving existing line breaks"""
@@ -449,6 +450,19 @@ def _wrap_text(text: str, width: int, indent: int = 4) -> str:
     )
 
 
+def _get_hierarchy_root(
+    diffs: list[ObjectDiff], dependencies: dict[UID, list[UID]]
+) -> list[ObjectDiff]:
+    all_ids = {diff.object_id for diff in diffs}
+    child_ids = set()
+    for uid in all_ids:
+        child_ids.update(dependencies.get(uid, []))
+    # Root ids are object ids with no parent
+    root_ids = list(all_ids - child_ids)
+    roots = [diff for diff in diffs if diff.object_id in root_ids]
+    return roots
+
+
 class ObjectDiffBatch(SyftObject):
     __canonical_name__ = "DiffHierarchy"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -464,7 +478,7 @@ class ObjectDiffBatch(SyftObject):
     hierarchy_levels: list[int]
     dependencies: dict[UID, list[UID]] = {}
     dependents: dict[UID, list[UID]] = {}
-    decision: Optional[SyncDecision] = None
+    decision: SyncDecision | None = None
     root_diff: ObjectDiff
 
     def walk_graph(self, deps: dict[UID, list[UID]], include_roots=False):
@@ -646,7 +660,12 @@ class ObjectDiffBatch(SyftObject):
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return ""  # Turns off the _repr_markdown_ of SyftObject
 
-    def _get_visual_hierarchy(self, node: ObjectDiff) -> dict[ObjectDiff, dict]:
+    def _get_visual_hierarchy(
+        self, node: ObjectDiff, visited: set[UID] | None = None
+    ) -> dict[ObjectDiff, dict]:
+        visited = visited if visited is not None else set()
+        visited.add(node.object_id)
+
         _, child_types_map = self.visual_hierarchy
         child_types = child_types_map.get(node.obj_type, [])
         dep_ids = self.dependencies.get(node.object_id, []) + self.dependents.get(
@@ -662,7 +681,8 @@ class ObjectDiffBatch(SyftObject):
                 and isinstance(n.low_obj or n.high_obj, child_type)
             ]
             for child in children:
-                result[child] = self._get_visual_hierarchy(child)
+                if child.object_id not in visited:
+                    result[child] = self._get_visual_hierarchy(child, visited=visited)
 
         return result
 
@@ -671,12 +691,15 @@ class ObjectDiffBatch(SyftObject):
         dependecies: list[ObjectDiff] = self.get_dependencies(include_roots=True)
         visual_root_type = self.visual_hierarchy[0]
 
-        visual_root = [
+        visual_roots = [
             diff
             for diff in dependecies
             if isinstance(diff.low_obj or diff.high_obj, visual_root_type)
-        ][0]
-        return visual_root
+        ]
+        if not len(visual_roots):
+            raise ValueError("No visual root found")
+
+        return visual_roots[0]
 
     def get_visual_hierarchy(self) -> dict[ObjectDiff, dict[ObjectDiff]]:
         visual_root = self.visual_root
@@ -729,7 +752,10 @@ class NodeDiff(SyftObject):
 
     @classmethod
     def from_sync_state(
-        cls: type["NodeDiff"], low_state: SyncState, high_state: SyncState
+        cls: type["NodeDiff"],
+        low_state: SyncState,
+        high_state: SyncState,
+        _include_node_status: bool = False,
     ) -> "NodeDiff":
         obj_uid_to_diff = {}
         for obj_id in set(low_state.objects.keys()) | set(high_state.objects.keys()):
@@ -742,9 +768,18 @@ class NodeDiff(SyftObject):
             low_storage_permissions = low_state.storage_permissions.get(obj_id, set())
             high_storage_permissions = high_state.storage_permissions.get(obj_id, set())
 
+            if _include_node_status:
+                low_status = low_state.get_status(obj_id)
+                high_status = high_state.get_status(obj_id)
+            else:
+                low_status = "NEW"
+                high_status = "NEW"
+
             diff = ObjectDiff.from_objects(
                 low_obj=low_obj,
                 high_obj=high_obj,
+                low_status=low_status,
+                high_status=high_status,
                 low_permissions=low_permissions,
                 high_permissions=high_permissions,
                 low_storage_permissions=low_storage_permissions,
@@ -829,7 +864,7 @@ class NodeDiff(SyftObject):
                 diffs.append(diff)
                 ids.add(diff.object_id)
         return diffs
-    
+
     def _repr_markdown_(self):
         return None
 
@@ -876,16 +911,6 @@ class NodeDiff(SyftObject):
     def hierarchies(
         obj_dependencies: dict[UID, list[UID]], obj_uid_to_diff: dict[UID, ObjectDiff]
     ) -> list[ObjectDiffBatch]:
-        # Returns a list of hierarchies, where each hierarchy is a list of tuples (ObjectDiff, level),
-        # in depth-first order.
-
-        # Each hierarchy only contains one root, at the first position
-        # Example: [(Diff1, 0), (Diff2, 1), (Diff3, 2), (Diff4, 1)]
-        # Diff1
-        # -- Diff2
-        # ---- Diff3
-        # -- Diff4
-
         batches = []
         root_ids = []
 
@@ -909,13 +934,6 @@ class NodeDiff(SyftObject):
 
         hierarchies_sorted = NodeDiff._sort_batches(batches)
         return hierarchies_sorted
-
-    # def objs_to_sync(self) -> list[SyftObject]:
-    #     objs: list[SyftObject] = []
-    #     for diff in self.diffs:
-    #         if diff.status == "NEW":
-    #             objs.append(diff.get_obj())
-    #     return objs
 
 
 class SyncInstruction(SyftObject):
