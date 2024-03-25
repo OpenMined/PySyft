@@ -206,6 +206,10 @@ def get_default_worker_pool_count(node: Node) -> int:
     )
 
 
+def auto_accept_association_request() -> bool:
+    return get_env("ASSOCIATION_REQUEST_AUTO_ACCEPT", "True") == "True"
+
+
 def in_kubernetes() -> bool:
     return get_container_host() == "k8s"
 
@@ -404,6 +408,9 @@ class Node(AbstractNode):
             self.find_and_migrate_data()
 
         NodeRegistry.set_node_for(self.id, self)
+
+    def auto_accept_association_request(self) -> bool:
+        return auto_accept_association_request()
 
     @property
     def runs_in_docker(self) -> bool:
