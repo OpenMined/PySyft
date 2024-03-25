@@ -614,13 +614,13 @@ class JobStash(BaseStash):
         else:
             res = res.ok()
             # beautiful query
-            res = [x for x in res if x.result is not None and x.id.id == res_id]
+            res = [x for x in res if x.result is not None and x.result.id.id == res_id]
             if len(res) == 0:
                 return Ok(None)
             elif len(res)>1:
                 return Err(message="multiple Jobs found")
             else:
-                return Ok(res)
+                return Ok(res[0])
 
     def set_placeholder(
         self,

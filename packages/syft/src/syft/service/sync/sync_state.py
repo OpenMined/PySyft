@@ -117,8 +117,9 @@ class SyncState(SyftObject):
             if hasattr(obj, "get_sync_dependencies"):
                 deps = obj.get_sync_dependencies(context=context)
                 deps = [d.id for d in deps if d.id in all_ids]  # type: ignore
+                # TODO: Why is this en check here? here?
                 if len(deps):
-                    self.dependencies[obj.id] = deps
+                    self.dependencies[obj.id.id] = deps
 
     def get_previous_state_diff(self) -> "NodeDiff":
         # Re-use DiffState to compare to previous state
