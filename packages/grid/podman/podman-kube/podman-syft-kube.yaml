@@ -41,7 +41,7 @@ spec:
         - configMapRef:
             name: podman-syft-config
 
-      image: docker.io/openmined/grid-backend:0.8.6-beta.0
+      image: docker.io/openmined/grid-backend:0.8.6-beta.1
       imagePullPolicy: IfNotPresent
       resources: {}
       tty: true
@@ -57,7 +57,7 @@ spec:
       envFrom:
         - configMapRef:
             name: podman-syft-config
-      image: docker.io/openmined/grid-frontend:0.8.6-beta.0
+      image: docker.io/openmined/grid-frontend:0.8.6-beta.1
       imagePullPolicy: IfNotPresent
       resources: {}
       tty: true
