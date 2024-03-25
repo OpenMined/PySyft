@@ -55,7 +55,7 @@ def protocol_release_dir() -> Path:
     return data_protocol_dir() / "releases"
 
 
-def solve_forward_ref(type_annotation):
+def solve_forward_ref(type_annotation: type) -> type:
     if isinstance(type_annotation, ForwardRef):
         SYFT_OBJECTS = {k.split(".")[-1]: TYPE_BANK[k][7] for k in TYPE_BANK}
         return _eval_type(type_annotation, {**globals(), **SYFT_OBJECTS}, {})
