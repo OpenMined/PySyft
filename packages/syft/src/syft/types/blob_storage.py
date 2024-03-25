@@ -194,7 +194,7 @@ class BlobFileObjectPointer(ActionObjectPointer):
 
 @serializable()
 class BlobFileObject(ActionObject):
-    __canonical_name__ = "BlobFileOBject"
+    __canonical_name__ = "BlobFileObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[type[Any]] = BlobFile
