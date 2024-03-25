@@ -6,7 +6,7 @@ from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.syft_object import PartialSyftObject
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
@@ -15,7 +15,7 @@ from ...types.uid import UID
 @serializable()
 class NodeSettingsUpdate(PartialSyftObject):
     __canonical_name__ = "NodeSettingsUpdate"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     name: str

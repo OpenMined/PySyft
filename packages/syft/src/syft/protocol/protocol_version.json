@@ -10,5 +10,57 @@
   },
   "4": {
     "release_name": "0.8.5.json"
+  },
+  "dev": {
+    "object_versions": {
+      "SignedSyftAPICall": {
+        "1": {
+          "version": 1,
+          "hash": "4778c196766762a409fa32e78be7bd9d9a2814ab70d07e7e3e3c46bef93eebb8",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "6cd89ed24027ed94b3e2bb7a07e8932060e07e481ceb35eb7ee4d2d0b6e34f43",
+          "action": "remove"
+        }
+      },
+      "UserUpdate": {
+        "1": {
+          "version": 1,
+          "hash": "b2f5b471c4b0d9ac18f8e099b91b2368eb8e18f5b4a9939a48a8f9da1ad0968a",
+          "action": "add"
+        },
+        "3": {
+          "version": 3,
+          "hash": "fd73429a86cc4fe4db51198ae380a18b9a7e42885701efad42bc2ef1b28c04de",
+          "action": "remove"
+        }
+      },
+      "UserSearch": {
+        "1": {
+          "version": 1,
+          "hash": "16dd4837a5086c456a00cc7eba9e32bdcf3b2135361c9aad110575520430b4af",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "6fd7bc05cfad5724d81b1122ddf70c6ea09e6fa77fa374c0b68e0d42e0781088",
+          "action": "remove"
+        }
+      },
+      "NodeSettingsUpdate": {
+        "1": {
+          "version": 1,
+          "hash": "12c5fc83364dfb867a204dee2cc82d33f83951216371678a15703bd3f05e2a81",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "3f66c4c8a21d63b6dba2ad27c452a01aae6b827ca5c161580312dfb850a0d821",
+          "action": "remove"
+        }
+      }
+    }
   }
 }
