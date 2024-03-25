@@ -1,6 +1,8 @@
 # stdlib
 
 # relative
+from typing import Optional
+from result import Ok, Result
 from ...serde.serializable import serializable
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
@@ -30,16 +32,16 @@ class SyncStash(BaseUIDStoreStash):
         self.settings = self.settings
         self._object_type = self.object_type
 
-    def get_latest(self, context: AuthedServiceContext) -> SyncState | None | SyftError:
+    def get_latest(self, context: AuthedServiceContext) -> Result[Optional[SyncState], str]:
         all_states = self.get_all(
             credentials=context.node.verify_key,  # type: ignore
             order_by=OrderByDatePartitionKey,
         )
 
         if all_states.is_err():
-            return SyftError(message=all_states.err())
+            return all_states
 
         all_states = all_states.ok()
         if len(all_states) > 0:
-            return all_states[-1]
-        return None
+            return Ok(all_states[-1])
+        return Ok(None)

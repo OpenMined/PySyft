@@ -4,6 +4,8 @@ from typing import Any
 from typing import Optional
 from typing import TYPE_CHECKING
 
+from syft.service.context import AuthedServiceContext
+
 # relative
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
@@ -13,11 +15,6 @@ from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ..response import SyftError
-
-if TYPE_CHECKING:
-    # relative
-    from .diff_state import NodeDiff
 
 
 def get_hierarchy_level_prefix(level: int) -> str:
@@ -82,26 +79,13 @@ class SyncState(SyftObject):
     previous_state_link: LinkedObject | None = None
     permissions: dict[UID, set[str]] = {}
     storage_permissions: dict[UID, set[UID]] = {}
-    previous_state_diff: Optional["NodeDiff"] = None  # type: ignore
+    ignored_batches: dict[UID, int] = {}
+
+    # NOTE importing NodeDiff annotation with TYPE_CHECKING does not work here,
+    # since typing.get_type_hints does not check for TYPE_CHECKING-imported types
+    _previous_state_diff: Any = None
 
     __attr_searchable__ = ["created_at"]
-
-    @classmethod
-    def from_objects(
-        cls,
-        node_uid: UID,
-        objects: list[SyncableSyftObject],
-        permissions: dict[UID, set[str]],
-        storage_permissions: dict[UID, set[UID]],
-        previous_state_link: LinkedObject | None = None,
-    ) -> "SyncState":
-        state = cls(
-            node_uid=node_uid,
-            previous_state_link=previous_state_link,
-        )
-
-        state._add_objects(objects)
-        return state
 
     def _set_previous_state_diff(self) -> None:
         # relative
@@ -111,7 +95,17 @@ class SyncState(SyftObject):
         # Low = previous state, high = current state
         # NOTE No previous sync state means everything is new
         previous_state = self.previous_state or SyncState(node_uid=self.node_uid)
-        self.previous_state_diff = NodeDiff.from_sync_state(previous_state, self)
+        self._previous_state_diff = NodeDiff.from_sync_state(
+            previous_state,
+            self,
+            _include_node_status=False,
+        )
+
+    def get_previous_state_diff(self) -> Any:
+        if self._previous_state_diff is None:
+            self._set_previous_state_diff()
+
+        return self._previous_state_diff
 
     @property
     def previous_state(self) -> Optional["SyncState"]:
@@ -124,15 +118,18 @@ class SyncState(SyftObject):
         return set(self.objects.keys())
 
     def get_status(self, uid: UID) -> str | None:
-        if self.previous_state_diff is None:
+        previous_state_diff = self.get_previous_state_diff()
+        if previous_state_diff is None:
             return None
-        diff = self.previous_state_diff.obj_uid_to_diff.get(uid)
+        diff = previous_state_diff.obj_uid_to_diff.get(uid)
 
         if diff is None:
             return None
         return diff.status
 
-    def _add_objects(self, objects: list[SyncableSyftObject]) -> None:
+    def add_objects(
+        self, objects: list[SyncableSyftObject], context: AuthedServiceContext
+    ) -> None:
         for obj in objects:
             if isinstance(obj.id, LineageID):
                 self.objects[obj.id.id] = obj
@@ -142,34 +139,34 @@ class SyncState(SyftObject):
         # TODO might get slow with large states,
         # need to build dependencies every time to not have UIDs
         # in dependencies that are not in objects
-        self._build_dependencies()
-        self._set_previous_state_diff()
+        self._build_dependencies(context=context)
 
-    def _build_dependencies(self) -> None:
+    def _build_dependencies(self, context: AuthedServiceContext) -> None:
         self.dependencies = {}
 
         all_ids = self.all_ids
         for obj in self.objects.values():
             if hasattr(obj, "get_sync_dependencies"):
-                deps = obj.get_sync_dependencies()
-                if isinstance(deps, SyftError):
-                    return deps
-
+                deps = obj.get_sync_dependencies(context=context)
                 deps = [d.id for d in deps if d.id in all_ids]  # type: ignore
-
+                # TODO: Why is this en check here? here?
                 if len(deps):
-                    self.dependencies[obj.id] = deps
+                    self.dependencies[obj.id.id] = deps
 
     @property
     def rows(self) -> list[SyncStateRow]:
         result = []
         ids = set()
 
-        previous_diff = self.previous_state_diff
+        previous_diff = self.get_previous_state_diff()
         if previous_diff is None:
             raise ValueError("No previous state to compare to")
-        for hierarchy in previous_diff.hierarchies:
-            for diff, level in zip(hierarchy.diffs, hierarchy.hierarchy_levels):
+        for batch in previous_diff.batches:
+            # TODO: replace with something that creates the visual hierarchy
+            # as individual elements without context
+            # we could do that by gathering all the elements in the normal direction
+            # but stop (not add) if its another batch, every hop would be a level
+            for diff in batch.get_dependencies(include_roots=False):
                 if diff.object_id in ids:
                     continue
                 ids.add(diff.object_id)
@@ -178,7 +175,7 @@ class SyncState(SyftObject):
                     previous_object=diff.low_obj,
                     current_state=diff.diff_side_str("high"),
                     previous_state=diff.diff_side_str("low"),
-                    level=level,
+                    level=0,  # TODO add levels to table
                 )
                 result.append(row)
         return result

@@ -2,10 +2,13 @@
 from typing import Any
 from typing import ClassVar
 
+from syft.types.uid import UID
+
 # relative
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syncable_object import SyncableSyftObject
+from ...service.context import AuthedServiceContext
 
 
 @serializable()
@@ -22,6 +25,7 @@ class SyftLog(SyncableSyftObject):
 
     stdout: str = ""
     stderr: str = ""
+    job_id: UID
 
     def append(self, new_str: str) -> None:
         self.stdout += new_str
@@ -32,3 +36,8 @@ class SyftLog(SyncableSyftObject):
     def restart(self) -> None:
         self.stderr = ""
         self.stdout = ""
+    
+    def get_sync_dependencies(self, context: AuthedServiceContext, **kwargs: dict) -> list[UID]:  # type: ignore
+        return [self.job_id]
+
+    

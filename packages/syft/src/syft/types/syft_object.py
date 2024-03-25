@@ -300,9 +300,9 @@ class SyftMigrationRegistry:
             mapping_string = f"{version_from}x{version_to}"
             if klass_type_str not in cls.__migration_transform_registry__:
                 cls.__migration_transform_registry__[klass_type_str] = {}
-            cls.__migration_transform_registry__[klass_type_str][mapping_string] = (
-                method
-            )
+            cls.__migration_transform_registry__[klass_type_str][
+                mapping_string
+            ] = method
         else:
             raise Exception(
                 f"Available versions for {klass_type_str} are: {available_versions}."
@@ -416,9 +416,9 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     __owner__: str
 
     __repr_attrs__: ClassVar[list[str]] = []  # show these in html repr collections
-    __attr_custom_repr__: ClassVar[list[str] | None] = (
-        None  # show these in html repr of an object
-    )
+    __attr_custom_repr__: ClassVar[
+        list[str] | None
+    ] = None  # show these in html repr of an object
     __validate_private_attrs__: ClassVar[bool] = True
 
     def __syft_get_funcs__(self) -> list[tuple[str, Signature]]:
@@ -582,7 +582,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             return
         # Validate and set private attributes
         # https://github.com/pydantic/pydantic/issues/2105
-        annotations = typing.get_type_hints(self.__class__, localns=locals())
+        annotations = typing.get_type_hints(self.__class__)
         for attr, decl in self.__private_attributes__.items():
             value = kwargs.get(attr, decl.get_default())
             var_annotation = annotations.get(attr)

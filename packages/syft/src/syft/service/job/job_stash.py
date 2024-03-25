@@ -12,6 +12,8 @@ from result import Ok
 from result import Result
 from typing_extensions import Self
 
+from ...service.context import AuthedServiceContext
+
 # relative
 from ...client.api import APIRegistry
 from ...client.api import SyftAPICall
@@ -390,7 +392,7 @@ class Job(SyncableSyftObject):
             )
             if not has_storage_permission:
                 prompt_warning_message(
-                    message="This is a placeholder object, please ask the admin for access."
+                    message="This is a placeholder object, the real data lives on a different node and is not synced."
                 )
 
         results_str = "\n".join(results)
@@ -508,7 +510,7 @@ class Job(SyncableSyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
-    def get_sync_dependencies(self, **kwargs: dict) -> list[UID] | SyftError:  # type: ignore
+    def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:  # type: ignore
         dependencies = []
         if self.result is not None:
             dependencies.append(self.result.id.id)
@@ -525,6 +527,14 @@ class Job(SyncableSyftObject):
 
         if self.user_code_id is not None:
             dependencies.append(self.user_code_id)
+
+        output = context.node.get_service("outputservice").get_by_job_id(
+            context, self.id
+        )
+        if isinstance(output, SyftError):
+            return output
+        elif output is not None:
+            dependencies.append(output.id)
 
         return dependencies
 
@@ -635,6 +645,25 @@ class JobStash(BaseStash):
         if valid.is_err():
             return SyftError(message=valid.err())
         return super().update(credentials, item, add_permissions)
+
+    def get_by_result_id(
+        self,
+        credentials: SyftVerifyKey,
+        res_id: UID,
+    ) -> Result[Job | None, str]:
+        res = self.get_all(credentials)
+        if res.is_err():
+            return res
+        else:
+            res = res.ok()
+            # beautiful query
+            res = [x for x in res if x.result is not None and x.result.id.id == res_id]
+            if len(res) == 0:
+                return Ok(None)
+            elif len(res) > 1:
+                return Err(message="multiple Jobs found")
+            else:
+                return Ok(res[0])
 
     def set_placeholder(
         self,
