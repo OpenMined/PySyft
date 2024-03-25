@@ -187,6 +187,7 @@ class SyncService(AbstractService):
         permissions: dict[UID, set[str]],
         storage_permissions: dict[UID, set[UID]],
         ignored_batches: dict[UID, int],
+        unignored_batches: list[UID]
     ) -> SyftSuccess | SyftError:
         permissions = defaultdict(set, permissions)
         storage_permissions = defaultdict(set, storage_permissions)

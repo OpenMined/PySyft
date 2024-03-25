@@ -43,20 +43,20 @@ def get_user_input_for_resolve() -> str | None:
 
 def handle_ignore_skip(batch: ObjectDiffBatch, decision: SyncDecision, other_batches: list[ObjectDiffBatch]):
     if decision == SyncDecision.skip or decision == SyncDecision.ignore:
-        skipped_or_ignored_ids = set([x.object_id for x in batch.get_dependents(include_roots=True)])
+        skipped_or_ignored_ids = set([x.object_id for x in batch.get_dependents(include_roots=False)])
         for other_batch in other_batches:
             if other_batch.decision != decision:
                 # Currently, this is not recursive, in the future it might be
-                other_batch_ids = set([d.object_id for d in other_batch.get_dependents(include_roots=False)])
+                other_batch_ids = set([d.object_id for d in other_batch.get_dependencies(include_roots=True)])
                 if len(other_batch_ids & skipped_or_ignored_ids) != 0:
                     other_batch.decision=decision
                     skipped_or_ignored_ids.update(other_batch_ids)
                     action = "Skipping" if decision == SyncDecision.skip else "Ignoring"
-                    print(f"{action} other batch with root {other_batch.root_type.__name__}")
+                    print(f"\n{action} other batch with root {other_batch.root_type.__name__}\n")
 
 def resolve(
     state: NodeDiff,
-    decision: str | None = None,
+    decision: list[str] | str | None = None,
     share_private_objects: bool = False,
     ask_for_input: bool = True,
 ) -> tuple[ResolvedSyncState, ResolvedSyncState]:

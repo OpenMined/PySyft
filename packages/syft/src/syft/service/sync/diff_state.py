@@ -27,7 +27,7 @@ from typing_extensions import Self
 from syft.client.sync_decision import SyncDecision
 
 # relative
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
 from ...types.syncable_object import SyncableSyftObject
@@ -715,6 +715,23 @@ class ObjectDiffBatch(SyftObject):
 {res}"""
 
 
+
+class IgnoredBatchView(SyftObject):
+    __canonical_name__ = "IgnoredBatchView"
+    __version__ = SYFT_OBJECT_VERSION_1
+    batch: ObjectDiffBatch
+
+    def _coll_repr_(self) -> str:
+        return self.batch._coll_repr_()
+
+    def _repr_html_(self) -> str:
+        return self.batch._repr_html_()
+
+    def stage_change(self) -> None:
+        self.batch.decision = None
+
+
+
 class NodeDiff(SyftObject):
     __canonical_name__ = "NodeDiff"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -726,6 +743,12 @@ class NodeDiff(SyftObject):
     batches: list[ObjectDiffBatch] = []
     low_state: SyncState
     high_state: SyncState
+
+    @property
+    def ignored_changes(self):
+        batch_ids = [batch_id for batch_id, _ in self.low_state.ignored_batches]
+        ignored_batches = [b for b in self.batches if b.root_id in batch_ids]
+        return [IgnoredBatchView(batch) for batch in ignored_batches]
 
     @classmethod
     def from_sync_state(
