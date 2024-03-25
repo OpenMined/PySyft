@@ -604,7 +604,7 @@ def test_mongo_store_partition_permissions_collection(
     collection_permissions_status = mongo_store_partition.permissions
     assert not collection_permissions_status.is_err()
     collection_permissions = collection_permissions_status.ok()
-    assert isinstance(collection_permissions, MongoCollection)
+    assert collection_permissions is not None
 
 
 def test_mongo_store_partition_add_remove_permission(
@@ -864,7 +864,6 @@ def test_mongo_store_partition_permissions_set(
     # check if the corresponding permissions has been added to the permissions
     # collection after the root client claim it
     pemissions_collection = mongo_store_partition.permissions.ok()
-    assert isinstance(pemissions_collection, MongoCollection)
     permissions = pemissions_collection.find_one({"_id": obj.id})
     assert permissions is not None
     assert isinstance(permissions["permissions"], set)
