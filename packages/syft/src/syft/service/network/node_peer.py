@@ -189,7 +189,7 @@ class NodePeer(SyftObject):
 
 
 def _route_type_to_same_route_check(route: NodeRouteType) -> Callable:
-    route_type_to_comparison_method: dict[NodeRouteType, Callable] = {
+    route_type_to_comparison_method: dict[type[NodeRouteType], Callable] = {
         HTTPNodeRoute: _same_http_route,
         PythonNodeRoute: _same_python_route,
         VeilidNodeRoute: _same_veilid_route,
