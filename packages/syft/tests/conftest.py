@@ -131,6 +131,14 @@ def worker() -> Worker:
     del worker
 
 
+@pytest.fixture(scope="function")
+def second_worker() -> Worker:
+    worker = sy.Worker.named(name=token_hex(8))
+    yield worker
+    worker.cleanup()
+    del worker
+
+
 @pytest.fixture
 def root_domain_client(worker) -> DomainClient:
     yield worker.root_client

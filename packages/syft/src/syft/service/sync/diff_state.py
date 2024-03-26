@@ -939,6 +939,10 @@ class NodeDiff(SyftObject):
         hierarchies_sorted = NodeDiff._sort_batches(batches)
         return hierarchies_sorted
 
+    @property
+    def is_same(self) -> bool:
+        return all(object_diff.status == "SAME" for object_diff in self.diffs)
+
 
 class SyncInstruction(SyftObject):
     __canonical_name__ = "SyncDecision"
@@ -1015,6 +1019,16 @@ class ResolvedSyncState(SyftObject):
             )
         else:
             raise ValueError("Invalid alias")
+
+    @property
+    def is_empty(self) -> bool:
+        return (
+            len(self.create_objs) == 0
+            and len(self.update_objs) == 0
+            and len(self.delete_objs) == 0
+            and len(self.new_permissions) == 0
+            and len(self.new_storage_permissions) == 0
+        )
 
     def __repr__(self) -> str:
         return (
