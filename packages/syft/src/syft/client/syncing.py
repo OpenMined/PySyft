@@ -38,7 +38,7 @@ def get_user_input_for_resolve() -> str | None:
 
 def handle_ignore_skip(
     batch: ObjectDiffBatch, decision: SyncDecision, other_batches: list[ObjectDiffBatch]
-):
+) -> None:
     if decision == SyncDecision.skip or decision == SyncDecision.ignore:
         skipped_or_ignored_ids = {
             x.object_id for x in batch.get_dependents(include_roots=True)

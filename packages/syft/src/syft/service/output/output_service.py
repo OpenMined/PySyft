@@ -176,10 +176,6 @@ class ExecutionOutput(SyncableSyftObject):
                 return False
         return True
 
-    @property
-    def job_id(self) -> UID | None:
-        return self.job_link.object_uid if self.job_link else None
-
     def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
         # Output ids, user code id, job id
         res = []
