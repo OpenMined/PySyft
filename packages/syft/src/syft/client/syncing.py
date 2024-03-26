@@ -40,18 +40,16 @@ def handle_ignore_skip(
     batch: ObjectDiffBatch, decision: SyncDecision, other_batches: list[ObjectDiffBatch]
 ) -> None:
     if decision == SyncDecision.skip or decision == SyncDecision.ignore:
-        skipped_or_ignored_ids = set(
-            [x.object_id for x in batch.get_dependents(include_roots=False)]
-        )
+        skipped_or_ignored_ids = {
+            x.object_id for x in batch.get_dependents(include_roots=False)
+        }
         for other_batch in other_batches:
             if other_batch.decision != decision:
                 # Currently, this is not recursive, in the future it might be
-                other_batch_ids = set(
-                    [
-                        d.object_id
-                        for d in other_batch.get_dependencies(include_roots=True)
-                    ]
-                )
+                other_batch_ids = {
+                    d.object_id
+                    for d in other_batch.get_dependencies(include_roots=True)
+                }
                 if len(other_batch_ids & skipped_or_ignored_ids) != 0:
                     other_batch.decision = decision
                     skipped_or_ignored_ids.update(other_batch_ids)
@@ -106,14 +104,15 @@ def resolve(
         else:
             sync_instructions = []
             if batch_decision == SyncDecision.ignore:
-                resolved_state_high.add_skipped_ignored(batch_diff)
-                resolved_state_low.add_skipped_ignored(batch_diff)
+                resolved_state_high.add_ignored(batch_diff)
+                resolved_state_low.add_ignored(batch_diff)
 
         if (
             batch_diff.root_id in previously_ignored_batches
             and batch_diff.decision != SyncDecision.ignore
         ):
-            sync_instruction.unignore = True
+            resolved_state_high.add_unignored(batch_diff.root_id)
+            resolved_state_low.add_unignored(batch_diff.root_id)
 
         print(f"Decision: Syncing {len(sync_instructions)} objects")
 
