@@ -52,8 +52,8 @@ class TwinAPIEndpointView(SyftObject):
     path: str
     signature: Signature
     access: str = "Public"
-    public_code: str | None = None
-    private_code: str | None = None
+    mock_function: str | None = None
+    private_function: str | None = None
 
     __repr_attrs__ = [
         "path",
@@ -61,15 +61,15 @@ class TwinAPIEndpointView(SyftObject):
     ]
 
     def _coll_repr_(self) -> dict[str, Any]:
-        public_parsed_code = ast.parse(self.public_code)
-        public_function_name = [
+        mock_parsed_code = ast.parse(self.mock_function)
+        mock_function_name = [
             node.name
-            for node in ast.walk(public_parsed_code)
+            for node in ast.walk(mock_parsed_code)
             if isinstance(node, ast.FunctionDef)
         ][0]
         private_function_name = NOT_ACCESSIBLE_STRING
-        if self.private_code != NOT_ACCESSIBLE_STRING:
-            private_parsed_code = ast.parse(self.private_code)
+        if self.private_function != NOT_ACCESSIBLE_STRING:
+            private_parsed_code = ast.parse(self.private_function)
             private_function_name = [
                 node.name
                 for node in ast.walk(private_parsed_code)
@@ -79,7 +79,7 @@ class TwinAPIEndpointView(SyftObject):
             "API path": self.path,
             "Signature": self.path + str(self.signature),
             "Access": self.access,
-            "Public Function": public_function_name,
+            "Mock Function": mock_function_name,
             "Private Function": private_function_name,
         }
 
@@ -155,13 +155,13 @@ class BaseTwinAPIEndpoint(SyftObject):
     @model_validator(mode="before")
     @classmethod
     def validate_signature(cls, data: dict[str, Any]) -> dict[str, Any]:
-        public_code = data["public_code"]  # public_code can't be None
-        private_code = data.get("private_code")
+        mock_function = data["mock_function"]  # mock_function can't be None
+        private_function = data.get("private_function")
 
         # Add none check
-        if private_code and private_code.signature != public_code.signature:
+        if private_function and private_function.signature != mock_function.signature:
             raise ValueError(
-                "Public and Private API Endpoints must have the same signature."
+                "Mock and Private API Endpoints must have the same signature."
             )
 
         return data
@@ -176,20 +176,22 @@ class BaseTwinAPIEndpoint(SyftObject):
 
         return path
 
-    @field_validator("private_code", check_fields=False)
+    @field_validator("private_function", check_fields=False)
     @classmethod
-    def validate_private_code(
-        cls, private_code: PrivateAPIEndpoint | None
+    def validate_private_function(
+        cls, private_function: PrivateAPIEndpoint | None
     ) -> PrivateAPIEndpoint | None:
         # TODO: what kind of validation should we do here?
 
-        return private_code
+        return private_function
 
-    @field_validator("public_code", check_fields=False)
+    @field_validator("mock_function", check_fields=False)
     @classmethod
-    def validate_public_code(cls, public_code: PublicAPIEndpoint) -> PublicAPIEndpoint:
+    def validate_mock_function(
+        cls, mock_function: PublicAPIEndpoint
+    ) -> PublicAPIEndpoint:
         # TODO: what kind of validation should we do here?
-        return public_code
+        return mock_function
 
 
 @serializable()
@@ -199,8 +201,8 @@ class UpdateTwinAPIEndpoint(PartialSyftObject, BaseTwinAPIEndpoint):
     __version__ = SYFT_OBJECT_VERSION_1
 
     path: str
-    private_code: PrivateAPIEndpoint | None = None
-    public_code: PublicAPIEndpoint
+    private_function: PrivateAPIEndpoint | None = None
+    mock_function: PublicAPIEndpoint
 
 
 @serializable()
@@ -210,8 +212,8 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
     __version__ = SYFT_OBJECT_VERSION_1
 
     path: str
-    private_code: PrivateAPIEndpoint | None = None
-    public_code: PublicAPIEndpoint
+    private_function: PrivateAPIEndpoint | None = None
+    mock_function: PublicAPIEndpoint
     signature: Signature
 
 
@@ -225,8 +227,8 @@ class TwinAPIEndpoint(SyftObject):
         super().__init__(**kwargs)
 
     path: str
-    private_code: PrivateAPIEndpoint | None = None
-    public_code: PublicAPIEndpoint
+    private_function: PrivateAPIEndpoint | None = None
+    mock_function: PublicAPIEndpoint
     signature: Signature
 
     __attr_searchable__ = ["path"]
@@ -255,9 +257,9 @@ class TwinAPIEndpoint(SyftObject):
         Returns:
             Result[Ok, Err]: The selected code to execute.
         """
-        if self.has_permission(context) and self.private_code:
-            return Ok(self.private_code)
-        return Ok(self.public_code)
+        if self.has_permission(context) and self.private_function:
+            return Ok(self.private_function)
+        return Ok(self.mock_function)
 
     def exec(self, context: AuthedServiceContext, *args: Any, **kwargs: Any) -> Any:
         """Execute the code based on the user's permissions and public code availability.
@@ -276,15 +278,15 @@ class TwinAPIEndpoint(SyftObject):
         selected_code = result.ok()
         return self.exec_code(selected_code, context, *args, **kwargs)
 
-    def exec_public_code(
+    def exec_mock_function(
         self, context: AuthedServiceContext, *args: Any, **kwargs: Any
     ) -> Any:
         """Execute the public code if it exists."""
-        if self.public_code:
-            return self.exec_code(self.public_code, context, *args, **kwargs)
+        if self.mock_function:
+            return self.exec_code(self.mock_function, context, *args, **kwargs)
         return SyftError(message="No public code available")
 
-    def exec_private_code(
+    def exec_private_function(
         self, context: AuthedServiceContext, *args: Any, **kwargs: Any
     ) -> Any:
         """Execute the private code if user is has the proper permissions.
@@ -297,7 +299,7 @@ class TwinAPIEndpoint(SyftObject):
             Any: The result of the executed code.
         """
         if self.has_permission(context):
-            return self.exec_code(self.private_code, context, *args, **kwargs)
+            return self.exec_code(self.private_function, context, *args, **kwargs)
 
         return SyftError(message="You're not allowed to run this code.")
 
@@ -339,7 +341,7 @@ class TwinAPIEndpoint(SyftObject):
 
 def set_access_type(context: TransformContext) -> TransformContext:
     if context.output is not None and context.obj is not None:
-        if context.obj.private_code is not None:
+        if context.obj.private_function is not None:
             context.output["access"] = "Private / Mock"
         else:
             context.output["access"] = "Public"
@@ -374,9 +376,9 @@ def extract_code_string(code_field: str) -> Callable:
     def code_string(context: TransformContext) -> TransformContext:
         if context.obj is not None and context.output is not None:
             endpoint_type = (
-                context.obj.private_code
-                if code_field == "private_code"
-                else context.obj.public_code
+                context.obj.private_function
+                if code_field == "private_function"
+                else context.obj.mock_function
             )
 
             if endpoint_type is not None and endpoint_type.view_access:
@@ -397,8 +399,8 @@ def endpoint_create_to_twin_endpoint() -> list[Callable]:
 def twin_endpoint_to_view() -> list[Callable]:
     return [
         set_access_type,
-        extract_code_string("private_code"),
-        extract_code_string("public_code"),
+        extract_code_string("private_function"),
+        extract_code_string("mock_function"),
     ]
 
 
@@ -409,13 +411,13 @@ def api_endpoint(
         try:
             res = CreateTwinAPIEndpoint(
                 path=path,
-                public_code=PublicAPIEndpoint(
+                mock_function=PublicAPIEndpoint(
                     api_code=inspect.getsource(f),
                     func_name=f.__name__,
                     settings=settings,
-                    signature=inspect.signature(f),  # get_signature(f),
+                    signature=inspect.signature(f),
                 ),
-                signature=inspect.signature(f),  # get_signature(f),
+                signature=inspect.signature(f),
             )
         except ValidationError as e:
             for error in e.errors():
@@ -446,7 +448,7 @@ def private_api_endpoint(
     return decorator
 
 
-def public_api_endpoint(
+def mock_api_endpoint(
     settings: dict[str, str] | None = None,
 ) -> Callable[..., PublicAPIEndpoint | SyftError]:
     def decorator(f: Callable) -> PublicAPIEndpoint | SyftError:
@@ -468,29 +470,29 @@ def public_api_endpoint(
 
 def create_new_api_endpoint(
     path: str,
-    public: PublicAPIEndpoint,
-    private: PrivateAPIEndpoint | None = None,
+    mock_function: PublicAPIEndpoint,
+    private_function: PrivateAPIEndpoint | None = None,
     description: str | None = None,
 ) -> CreateTwinAPIEndpoint | SyftError:
     try:
         # Parse the string to extract the function name
 
-        endpoint_signature = public.signature
-        if private is not None:
-            if private.signature != public.signature:
+        endpoint_signature = mock_function.signature
+        if private_function is not None:
+            if private_function.signature != mock_function.signature:
                 return SyftError(message="Signatures don't match")
-            endpoint_signature = public.signature
+            endpoint_signature = mock_function.signature
 
             return CreateTwinAPIEndpoint(
                 path=path,
-                private_code=private,
-                public_code=public,
+                private_function=private_function,
+                mock_function=mock_function,
                 signature=endpoint_signature,
             )
 
         return CreateTwinAPIEndpoint(
             path=path,
-            prublic_code=public,
+            prublic_code=mock_function,
             signature=endpoint_signature,
         )
     except ValidationError as e:

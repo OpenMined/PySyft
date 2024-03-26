@@ -116,23 +116,25 @@ class APIService(AbstractService):
             )
 
         updated_mock = (
-            mock_function if mock_function is not None else endpoint.public_code
+            mock_function if mock_function is not None else endpoint.mock_function
         )
         updated_private = (
-            private_function if private_function is not None else endpoint.private_code
+            private_function
+            if private_function is not None
+            else endpoint.private_function
         )
 
         try:
             endpoint_update = UpdateTwinAPIEndpoint(
                 path=endpoint_path,
-                public_code=updated_mock,
-                private_code=updated_private,
+                mock_function=updated_mock,
+                private_function=updated_private,
             )
         except ValidationError as e:
             return SyftError(message=str(e))
 
-        endpoint.public_code = endpoint_update.public_code
-        endpoint.private_code = endpoint_update.private_code
+        endpoint.mock_function = endpoint_update.mock_function
+        endpoint.private_function = endpoint_update.private_function
         endpoint.signature = updated_mock.signature
 
         result = self.stash.upsert(context.credentials, endpoint=endpoint)
@@ -239,7 +241,7 @@ class APIService(AbstractService):
         )
         if isinstance(custom_endpoint, SyftError):
             return custom_endpoint
-        return custom_endpoint.exec_public_code(context, *args, **kwargs)
+        return custom_endpoint.exec_mock_function(context, *args, **kwargs)
 
     @service_method(
         path="api.call_private", name="call_private", roles=GUEST_ROLE_LEVEL
@@ -257,7 +259,7 @@ class APIService(AbstractService):
             endpoint_path=path,
         )
         if not isinstance(custom_endpoint, SyftError):
-            result = custom_endpoint.exec_private_code(context, *args, **kwargs)
+            result = custom_endpoint.exec_private_function(context, *args, **kwargs)
         return result
 
     @service_method(
@@ -288,9 +290,9 @@ class APIService(AbstractService):
         endpoint = self.get_endpoint_by_uid(context, endpoint_uid)
         if isinstance(endpoint, SyftError):
             return endpoint
-        selected_code = endpoint.private_code
+        selected_code = endpoint.private_function
         if not selected_code:
-            selected_code = endpoint.public_code
+            selected_code = endpoint.mock_function
 
         return endpoint.exec_code(selected_code, context, *args, **kwargs)
 
@@ -304,9 +306,9 @@ class APIService(AbstractService):
         endpoint = self.get_endpoint_by_uid(context, endpoint_uid)
         if isinstance(endpoint, SyftError):
             return endpoint
-        if not endpoint.private_code:
+        if not endpoint.private_function:
             return SyftError(message="This endpoint does not have a private code")
-        return endpoint.exec_code(endpoint.private_code, context, *args, **kwargs)
+        return endpoint.exec_code(endpoint.private_function, context, *args, **kwargs)
 
     def execute_server_side_endpoint_mock_by_id(
         self,
@@ -318,7 +320,7 @@ class APIService(AbstractService):
         endpoint = self.get_endpoint_by_uid(context, endpoint_uid)
         if isinstance(endpoint, SyftError):
             return endpoint
-        return endpoint.exec_code(endpoint.public_code, context, *args, **kwargs)
+        return endpoint.exec_code(endpoint.mock_function, context, *args, **kwargs)
 
     def get_endpoint_by_uid(
         self, context: AuthedServiceContext, uid: UID

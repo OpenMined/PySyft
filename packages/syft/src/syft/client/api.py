@@ -345,9 +345,9 @@ class RemoteFunction(SyftObject):
                 + "\n"
             )
             str_repr += "##### Private Code:\n"
-            str_repr += as_markdown_python_code(endpoint.private_code) + "\n"
+            str_repr += as_markdown_python_code(endpoint.private_function) + "\n"
             str_repr += "##### Public Code:\n"
-            str_repr += as_markdown_python_code(endpoint.public_code) + "\n"
+            str_repr += as_markdown_python_code(endpoint.mock_function) + "\n"
             return str_repr
         return super()._repr_markdown_()
 
