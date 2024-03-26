@@ -966,9 +966,9 @@ def syft_function(
         )
 
         if share_results_with_owners and res.output_policy_init_kwargs is not None:
-            res.output_policy_init_kwargs[
-                "output_readers"
-            ] = res.input_owner_verify_keys
+            res.output_policy_init_kwargs["output_readers"] = (
+                res.input_owner_verify_keys
+            )
 
         success_message = SyftSuccess(
             message=f"Syft function '{f.__name__}' successfully created. "

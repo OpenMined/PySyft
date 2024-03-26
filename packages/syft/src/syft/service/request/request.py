@@ -959,9 +959,9 @@ def check_requesting_user_verify_key(context: TransformContext) -> TransformCont
         if context.obj.requesting_user_verify_key and context.node.is_root(
             context.credentials
         ):
-            context.output[
-                "requesting_user_verify_key"
-            ] = context.obj.requesting_user_verify_key
+            context.output["requesting_user_verify_key"] = (
+                context.obj.requesting_user_verify_key
+            )
         else:
             context.output["requesting_user_verify_key"] = context.credentials
 

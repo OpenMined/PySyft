@@ -12,13 +12,12 @@ from result import Ok
 from result import Result
 from typing_extensions import Self
 
-from ...service.context import AuthedServiceContext
-
 # relative
 from ...client.api import APIRegistry
 from ...client.api import SyftAPICall
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...service.context import AuthedServiceContext
 from ...service.worker.worker_pool import SyftWorker
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore

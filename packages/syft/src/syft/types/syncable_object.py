@@ -6,9 +6,8 @@ from typing import ClassVar
 # third party
 from typing_extensions import Self
 
-from syft.service.context import AuthedServiceContext
-
 # relative
+from ..service.context import AuthedServiceContext
 from ..service.response import SyftError
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject

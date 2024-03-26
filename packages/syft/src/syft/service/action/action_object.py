@@ -25,7 +25,6 @@ from result import Ok
 from result import Result
 from typing_extensions import Self
 
-
 # relative
 from ...client.api import APIRegistry
 from ...client.api import SyftAPI
@@ -47,6 +46,7 @@ from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.logger import debug
 from ...util.util import prompt_warning_message
+from ..context import AuthedServiceContext
 from ..response import SyftException
 from ..service import from_api_or_context
 from .action_data_empty import ActionDataEmpty
@@ -1092,7 +1092,8 @@ class ActionObject(SyncableSyftObject):
     def get_sync_dependencies(
         self, context: AuthedServiceContext, **kwargs: dict
     ) -> list[UID]:  # type: ignore
-        from syft.service.job.job_stash import Job
+        # relative
+        from ..job.job_stash import Job
 
         job_service = context.node.get_service("jobservice")
         job: Job | None | SyftError = job_service.get_by_result_id(context, self.id.id)

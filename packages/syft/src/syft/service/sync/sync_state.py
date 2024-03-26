@@ -2,9 +2,6 @@
 import html
 from typing import Any
 from typing import Optional
-from typing import TYPE_CHECKING
-
-from syft.service.context import AuthedServiceContext
 
 # relative
 from ...serde.serializable import serializable
@@ -15,6 +12,7 @@ from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
+from ..context import AuthedServiceContext
 
 
 def get_hierarchy_level_prefix(level: int) -> str:

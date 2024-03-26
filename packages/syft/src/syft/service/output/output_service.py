@@ -1,10 +1,11 @@
 # stdlib
-from typing import Optional
 from typing import ClassVar
 
 # third party
 from pydantic import model_validator
-from result import Err, Ok, Result
+from result import Err
+from result import Ok
+from result import Result
 
 # relative
 from ...client.api import APIRegistry
@@ -27,7 +28,8 @@ from ..response import SyftError
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from ..user.user_roles import GUEST_ROLE_LEVEL, ADMIN_ROLE_LEVEL
+from ..user.user_roles import ADMIN_ROLE_LEVEL
+from ..user.user_roles import GUEST_ROLE_LEVEL
 
 CreatedAtPartitionKey = PartitionKey(key="created_at", type_=DateTime)
 UserCodeIdPartitionKey = PartitionKey(key="user_code_id", type_=UID)
@@ -218,7 +220,7 @@ class OutputStash(BaseUIDStoreStash):
 
     def get_by_job_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
-    ) -> Result[Optional[ExecutionOutput], str]:
+    ) -> Result[ExecutionOutput | None, str]:
         qks = QueryKeys(
             qks=[JobIdPartitionKey.with_obj(user_code_id)],
         )
@@ -308,7 +310,7 @@ class OutputService(AbstractService):
     )
     def get_by_job_id(
         self, context: AuthedServiceContext, user_code_id: UID
-    ) -> Optional[ExecutionOutput] | SyftError:
+    ) -> ExecutionOutput | None | SyftError:
         result = self.stash.get_by_job_id(
             credentials=context.node.verify_key,  # type: ignore
             user_code_id=user_code_id,

@@ -3,7 +3,6 @@ import html
 import textwrap
 from typing import Any
 from typing import ClassVar
-from typing import Optional
 
 # third party
 from pydantic import model_validator
@@ -15,10 +14,8 @@ from rich.padding import Padding
 from rich.panel import Panel
 from typing_extensions import Self
 
-# syft absolute
-from syft.client.sync_decision import SyncDecision
-
 # relative
+from ...client.sync_decision import SyncDecision
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
@@ -147,7 +144,7 @@ def recursive_attr_repr(value_attr: list | dict | bytes, num_tabs: int = 0) -> s
             value_attr = value_attr[:50] + "..."  # type: ignore
 
     if isinstance(value_attr, UID):
-        value_attr = short_uid(value_attr)
+        value_attr = short_uid(value_attr)  # type: ignore
 
     return f"{sketchy_tab*num_tabs}{str(value_attr)}"
 
@@ -481,7 +478,9 @@ class ObjectDiffBatch(SyftObject):
     decision: SyncDecision | None = None
     root_diff: ObjectDiff
 
-    def walk_graph(self, deps: dict[UID, list[UID]], include_roots=False):
+    def walk_graph(
+        self, deps: dict[UID, list[UID]], include_roots: bool = False
+    ) -> list[ObjectDiff]:
         root_id = self.root_diff.object_id
         result = [root_id]
         unvisited = [root_id]
@@ -506,10 +505,10 @@ class ObjectDiffBatch(SyftObject):
 
         return [self.global_diffs[r] for r in set(result)]
 
-    def get_dependencies(self, include_roots=False) -> list[ObjectDiff]:
+    def get_dependencies(self, include_roots: bool = False) -> list[ObjectDiff]:
         return self.walk_graph(deps=self.dependencies, include_roots=include_roots)
 
-    def get_dependents(self, include_roots=False) -> list[ObjectDiff]:
+    def get_dependents(self, include_roots: bool = False) -> list[ObjectDiff]:
         return self.walk_graph(deps=self.dependents, include_roots=include_roots)
 
     def __hash__(self) -> int:
@@ -521,19 +520,25 @@ class ObjectDiffBatch(SyftObject):
         return self.root_diff.object_id
 
     @property
-    def root_type(self):
+    def root_type(self) -> type:
         return self.root_diff.obj_type
 
     @property
-    def is_ignored(self):
+    def is_ignored(self) -> bool:
         return self.decision == SyncDecision.ignore
 
     @property
-    def is_skipped(self):
+    def is_skipped(self) -> bool:
         return self.decision == SyncDecision.skip
 
     @classmethod
-    def from_dependencies(cls, root_uid, obj_dependencies, obj_uid_to_diff, root_ids):
+    def from_dependencies(
+        cls,
+        root_uid: UID,
+        obj_dependencies: dict[UID, list[UID]],
+        obj_uid_to_diff: dict[UID, ObjectDiff],
+        root_ids: list[UID],
+    ) -> "ObjectDiffBatch":
         def _build_hierarchy_helper(
             uid: UID, level: int = 0, visited: set | None = None
         ) -> list:
