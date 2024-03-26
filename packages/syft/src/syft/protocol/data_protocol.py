@@ -10,6 +10,8 @@ import os
 from pathlib import Path
 import re
 from typing import Any
+from typing import ForwardRef
+from typing import _eval_type
 
 # third party
 from packaging.version import parse
@@ -53,6 +55,13 @@ def protocol_release_dir() -> Path:
     return data_protocol_dir() / "releases"
 
 
+def solve_forward_ref(type_annotation: type) -> type:
+    if isinstance(type_annotation, ForwardRef):
+        SYFT_OBJECTS = {k.split(".")[-1]: TYPE_BANK[k][7] for k in TYPE_BANK}
+        return _eval_type(type_annotation, {**globals(), **SYFT_OBJECTS}, {})
+    return type_annotation
+
+
 class DataProtocol:
     def __init__(self, filename: str) -> None:
         self.file_path = data_protocol_dir() / filename
@@ -68,7 +77,7 @@ class DataProtocol:
     def _calculate_object_hash(klass: type[SyftBaseObject]) -> str:
         # TODO: this depends on what is marked as serde
         field_data = {
-            field: repr(field_info.annotation)
+            field: repr(solve_forward_ref(field_info.annotation))
             for field, field_info in sorted(
                 klass.model_fields.items(), key=itemgetter(0)
             )
