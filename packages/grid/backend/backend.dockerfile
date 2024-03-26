@@ -1,5 +1,5 @@
 ARG PYTHON_VERSION="3.12"
-ARG UV_VERSION="0.1.22-r0"
+ARG UV_VERSION="0.1.24-r0"
 ARG TORCH_VERSION="2.2.1"
 
 # ==================== [BUILD STEP] Python Dev Base ==================== #
@@ -46,7 +46,7 @@ ARG PYTHON_VERSION
 ARG UV_VERSION
 
 RUN apk update && apk upgrade && \
-    apk add git bash python-$PYTHON_VERSION-default uv=$UV_VERSION
+    apk add git bash python-$PYTHON_VERSION-default py$PYTHON_VERSION-pip uv=$UV_VERSION
 
 WORKDIR /root/app/
 
@@ -61,7 +61,8 @@ COPY syft ./syft/
 
 # Update environment variables
 ENV \
-    PATH="/root/app/.venv/bin:$PATH" \
+    # "activates" venv
+    PATH="/root/app/.venv/bin/:$PATH" \
     APPDIR="/root/app" \
     NODE_NAME="default_node_name" \
     NODE_TYPE="domain" \
@@ -70,6 +71,7 @@ ENV \
     DEV_MODE="False" \
     DEBUGGER_ENABLED="False" \
     CONTAINER_HOST="docker" \
+    SINGLE_CONTAINER_MODE="True" \
     OBLV_ENABLED="False" \
     OBLV_LOCALHOST_PORT=3030 \
     DEFAULT_ROOT_EMAIL="info@openmined.org" \
