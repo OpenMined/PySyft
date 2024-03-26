@@ -509,6 +509,12 @@ class ObjectDiffBatch(SyftObject):
     def get_dependencies(self, include_roots: bool = False) -> list[ObjectDiff]:
         return self.walk_graph(deps=self.dependencies, include_roots=include_roots)
 
+    @property
+    def is_unchanged(self) -> bool:
+        return all(
+            diff.status == "SAME" for diff in self.get_dependents(include_roots=False)
+        )
+
     def get_dependents(self, include_roots: bool = False) -> list[ObjectDiff]:
         return self.walk_graph(deps=self.dependents, include_roots=include_roots)
 

@@ -21,7 +21,7 @@ def compare_states(low_state: SyncState, high_state: SyncState) -> NodeDiff:
     return NodeDiff.from_sync_state(low_state=low_state, high_state=high_state)
 
 
-def get_user_input_for_resolve() -> str | None:
+def get_user_input_for_resolve() -> SyncDecision:
     options = [x.value for x in SyncDecision]
     options_str = ", ".join(options[:-1]) + f" or {options[-1]}"
     print(f"How do you want to sync these objects? choose between {options_str}")
@@ -61,7 +61,7 @@ def handle_ignore_skip(
 
 def resolve(
     state: NodeDiff,
-    decision: list[str] | str | None = None,
+    decision: str | None = None,
     share_private_objects: bool = False,
     ask_for_input: bool = True,
 ) -> tuple[ResolvedSyncState, ResolvedSyncState]:
@@ -73,21 +73,19 @@ def resolve(
     resolved_state_high = ResolvedSyncState(node_uid=state.high_node_uid, alias="high")
 
     for batch_diff in state.batches:
-        batch_decision = decision or batch_diff.decision
-        if all(
-            diff.status == "SAME"
-            for diff in batch_diff.get_dependents(include_roots=False)
-        ):
+        if batch_diff.is_unchanged:
             # Hierarchy has no diffs
             continue
 
-        if batch_diff.decision is None:
+        if batch_diff.decision is not None:
+            # handles ignores
+            batch_decision = batch_diff.decision
+        elif decision is not None:
             print(batch_diff.__repr__())
-
-        if batch_decision is None:
-            batch_decision = get_user_input_for_resolve()
+            batch_decision = SyncDecision(decision)
         else:
-            batch_decision = SyncDecision(batch_decision)
+            print(batch_diff.__repr__())
+            batch_decision = get_user_input_for_resolve()
 
         batch_diff.decision = batch_decision
 
