@@ -56,3 +56,23 @@ class BytesEnum(bytes, ReprEnum):
     """
 
     pass
+
+
+def line_profile(func: Callable) -> Callable:
+    """
+    Decorator to profile a function using line_profiler.
+    """
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        # third party
+        from line_profiler import LineProfiler
+
+        profiler: LineProfiler = LineProfiler()
+        profiler.add_function(func)
+        profiler.enable_by_count()
+        result = func(*args, **kwargs)
+        profiler.print_stats()
+        return result
+
+    return wrapper
