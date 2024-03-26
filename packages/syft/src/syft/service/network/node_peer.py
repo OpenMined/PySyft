@@ -40,6 +40,21 @@ class NodePeer(SyftObject):
     admin_email: str
 
     def update_routes(self, new_routes: list[NodeRoute]) -> None:
+        """
+        Update the routes in the node peer with new routes.
+
+        This method takes a list of new routes as input.
+        It first updates the priorities of the new routes.
+        Then, for each new route, it checks if the route already exists for the node peer.
+        If it does, it updates the priority of the existing route.
+        If it doesn't, it adds the new route to the node.
+
+        Args:
+            new_routes (list[NodeRoute]): The new routes to be added to the node.
+
+        Returns:
+            None
+        """
         add_routes = []
         new_routes = self.update_route_priorities(new_routes)
         for new_route in new_routes:

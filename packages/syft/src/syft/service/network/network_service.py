@@ -295,8 +295,8 @@ class NetworkService(AbstractService):
         )
         if isinstance(node_peer, SyftError):
             return node_peer
-        # update the route for the peer
-        peer.update_routes([route])
+        peer.node_routes.append(route)
+        # checks for route duplication and updates the peer's route priorities
         result = self.stash.update_peer(context.node.verify_key, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -540,7 +540,7 @@ class NetworkService(AbstractService):
             return result
 
         context.node = cast(AbstractNode, context.node)
-        result = self.stash.update_peer(context.node.verify_key, peer)
+        result = self.stash.update(context.node.verify_key, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
 
