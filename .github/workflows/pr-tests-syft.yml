@@ -116,11 +116,15 @@ jobs:
             os: "ubuntu-latest"
             deployment-type: "python"
             notebook-paths: "tutorials"
-            bump-version: ["False", "True"]
           - python-version: "3.10"
             os: "ubuntu-latest"
             deployment-type: "python"
             notebook-paths: "tutorials"
+          - python-version: "3.12"
+            os: "ubuntu-latest"
+            deployment-type: "python"
+            notebook-paths: "tutorials"
+            bump-version: "True"
 
     runs-on: ${{ matrix.os }}
     steps:
