@@ -96,9 +96,9 @@ class EnclaveService(AbstractService):
 
 def get_oblv_service() -> type[AbstractService] | SyftError:
     # relative
-    from ...external import OBLV
+    from ...external import OBLV_ENABLED
 
-    if OBLV:
+    if OBLV_ENABLED:
         # relative
         from ...external.oblv.oblv_service import OblvService
 
