@@ -206,6 +206,28 @@ class UserView(SyftObject):
             ),
         }
 
+    def _set_name(self, new_name: str) -> SyftError | SyftSuccess:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+
+        api.services.user.update(uid=self.id, user_update=UserUpdate(name=new_name))
+        return SyftSuccess(
+            message=f"Successfully updated name for "
+            f"user '{self.name}' with name '{new_name}'."
+        )
+
+    def set_name(self, new_name: type[Empty] | str = Empty) -> SyftError | SyftSuccess:
+        """Set a new name interactively with confirmed name from user input"""
+        # TODO: Add password validation for special characters
+        if not new_name:
+            new_name = getpass("New Name: ")
+
+        return self._set_name(new_name)
+
     def _set_password(self, new_password: str) -> SyftError | SyftSuccess:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,

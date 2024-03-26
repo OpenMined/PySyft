@@ -9,6 +9,8 @@ from operator import itemgetter
 import os
 from pathlib import Path
 import re
+from types import UnionType
+import typing
 from typing import Any
 
 # third party
@@ -53,6 +55,30 @@ def protocol_release_dir() -> Path:
     return data_protocol_dir() / "releases"
 
 
+def handle_union_type_klass_name(type_klass_name: str) -> str:
+    if type_klass_name == typing.Union.__name__:
+        return UnionType.__name__
+    return type_klass_name
+
+
+def handle_annotation_repr_(annotation: type) -> str:
+    """Handle typing representation."""
+    origin = typing.get_origin(annotation)
+    args = typing.get_args(annotation)
+    if origin and args:
+        args_repr = ", ".join(getattr(arg, "__name__", str(arg)) for arg in args)
+        origin_repr = getattr(origin, "__name__", str(origin))
+
+        # Handle typing.Union and types.UnionType
+        origin_repr = handle_union_type_klass_name(origin_repr)
+        return f"{origin_repr}: [{args_repr}]"
+    elif args:
+        args_repr = ", ".join(getattr(arg, "__name__", str(arg)) for arg in args)
+        return args_repr
+    else:
+        return repr(annotation)
+
+
 class DataProtocol:
     def __init__(self, filename: str) -> None:
         self.file_path = data_protocol_dir() / filename
@@ -67,8 +93,12 @@ class DataProtocol:
     @staticmethod
     def _calculate_object_hash(klass: type[SyftBaseObject]) -> str:
         # TODO: this depends on what is marked as serde
+
+        # Rebuild the model to ensure that the fields are up to date
+        # and any ForwardRef are resolved
+        klass.model_rebuild(force=True)
         field_data = {
-            field: repr(field_info.annotation)
+            field: handle_annotation_repr_(field_info.rebuild_annotation())
             for field, field_info in sorted(
                 klass.model_fields.items(), key=itemgetter(0)
             )

@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from pathlib import Path
 import re
+from typing import Any
 from typing import TYPE_CHECKING
 from typing import cast
 
@@ -31,6 +32,7 @@ from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..types.blob_storage import BlobFile
 from ..types.uid import UID
+from ..util._std_stream_capture import std_stream_capture
 from ..util.fonts import fonts_css
 from ..util.util import get_mb_size
 from ..util.util import prompt_warning_message
@@ -88,6 +90,119 @@ def add_default_uploader(
 class DomainClient(SyftClient):
     def __repr__(self) -> str:
         return f"<DomainClient: {self.name}>"
+
+    def demo(self) -> tuple[DomainClient, DomainClient, DomainClient]:
+        """Setup a domain with some demo datasets."""
+
+        print("BEGIN Uploading Demo Datasets:")
+        print("\tMNIST...", end="")
+
+        with std_stream_capture():
+            # relative
+            from .demo import mnist
+
+            train_images, train_labels, test_images, test_labels = mnist()
+
+            self.upload_dataset_via_lists(
+                name="MNIST Dataset",
+                asset_names=[
+                    "Train Images",
+                    "Train Labels",
+                    "Test Images",
+                    "Test Labels",
+                ],
+                assets=[train_images, train_labels, test_images, test_labels],
+                mocks=[
+                    train_images * 0,
+                    train_labels * 0,
+                    test_images * 0,
+                    test_labels * 0,
+                ],
+                mocks_are_real=False,
+            )
+        print("Done!")
+
+        print("DONE Uploading Demo Datasets!\n")
+
+        print("BEGIN Registering Demo Users:")
+        print(
+            "\tSheldon Copper — email:sheldon@caltech.edu password:bazinga ...", end=""
+        )
+        self.register(
+            name="Sheldon Copper",
+            email="sheldon@caltech.edu",
+            password="bazinga",  # nosec
+            password_verify="bazinga",  # nosec
+        )
+        print("Done!")
+        print("\tBob Burnquest — email:bob@yahoo.com password:secretroom ...", end="")
+        self.register(
+            name="Bob Burnquest",
+            email="bob@yahoo.com",
+            password="secretroom",  # nosec
+            password_verify="secretroom",  # nosec
+        )
+        print("Done!")
+        print(
+            "\tAlice Roosevelt — email:alice@yahoo.com password:whitehouse ...", end=""
+        )
+        self.register(
+            name="Alice Roosevelt",
+            email="alice@yahoo.com",
+            password="whitehouse",  # nosec
+            password_verify="whitehouse",  # nosec
+        )
+        print("Done!")
+        print("DONE Registering Demo Users!")
+
+        sheldon = self.login(
+            email="sheldon@caltech.edu",
+            password="bazinga",  # nosec
+            verbose=False,
+        )
+        bob = self.login(email="bob@yahoo.com", password="secretroom", verbose=False)  # nosec
+        alice = self.login(
+            email="alice@yahoo.com",
+            password="whitehouse",  # nosec
+            verbose=False,
+        )
+
+        return sheldon, bob, alice
+
+    def upload_dataset_via_lists(
+        self,
+        name: str,
+        asset_names: list[str],
+        assets: list[Any],
+        mocks: list[Any],
+        mocks_are_real: bool = False,
+    ) -> SyftSuccess | SyftError:
+        if len(asset_names) == len(assets) == len(mocks):
+            dataset = CreateDataset(name=name)
+
+            if hasattr(self.me, "name"):
+                my_name = self.me.name  # type: ignore
+            else:
+                my_name = "<Name not available>"
+
+            if hasattr(self.me, "email"):
+                my_email = self.me.email  # type: ignore
+            else:
+                my_email = "<Email not available>"
+
+            dataset.add_contributor(name=my_name, email=my_email, role="Creator")
+            for i in range(len(asset_names)):
+                asset = CreateAsset(name=asset_names[i])
+                asset.add_contributor(name=my_name, email=my_email, role="Creator")
+                asset.set_obj(data=assets[i])
+                asset.set_mock(mock_data=mocks[i], mock_is_real=mocks_are_real)
+                dataset.add_asset(asset)
+            return self.upload_dataset(dataset)
+        else:
+            raise Exception(
+                f"asset_names (len {len(asset_names)}), assets (len {len(assets)}),"
+                + f" and mocks (len {len(mocks)}) must be lists of the same lengths!"
+            )
 
     def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
         # relative
