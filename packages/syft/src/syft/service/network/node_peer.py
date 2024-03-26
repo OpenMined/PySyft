@@ -39,52 +39,13 @@ class NodePeer(SyftObject):
     node_type: NodeType
     admin_email: str
 
-    def update_routes(self, new_routes: list[NodeRoute]) -> None:
-        """
-        Update the routes in the node peer with new routes.
-
-        This method takes a list of new routes as input.
-        It first updates the priorities of the new routes.
-        Then, for each new route, it checks if the route already exists for the node peer.
-        If it does, it updates the priority of the existing route.
-        If it doesn't, it adds the new route to the node.
-
-        Args:
-            new_routes (list[NodeRoute]): The new routes to be added to the node.
-
-        Returns:
-            None
-        """
-        add_routes = []
-        new_routes = self.update_route_priorities(new_routes)
-        for new_route in new_routes:
-            existed, index = self.existed_route(new_route)
-            if existed and index is not None:
-                # if the route already exists, we do not append it to
-                # self.new_route, but update its priority
-                self.node_routes[index].priority = new_route.priority
-            else:
-                add_routes.append(new_route)
-
-        self.node_routes += add_routes
-
-    def update_route_priorities(self, new_routes: list[NodeRoute]) -> list[NodeRoute]:
-        """
-        Since we pick the newest route has the highest priority, we
-        update the priority of the newly added routes here to be increments of
-        current routes' highest priority.
-        """
-        current_max_priority = max(route.priority for route in self.node_routes)
-        for route in new_routes:
-            route.priority = current_max_priority + 1
-            current_max_priority += 1
-        return new_routes
-
     def existed_route(self, route: NodeRouteType) -> tuple[bool, int | None]:
         """Check if a route exists in self.node_routes
 
         Args:
-            route: the route to be checked
+            route: the route to be checked. For now it can be either
+                HTTPNodeRoute or PythonNodeRoute or VeilidNodeRoute
+
         Returns:
             if the route exists, returns (True, index of the existed route in self.node_routes)
             if the route does not exist returns (False, None)
@@ -98,6 +59,62 @@ class NodePeer(SyftObject):
                 return (True, i)
 
         return (False, None)
+
+    def update_route_priority(self, new_route: NodeRoute) -> NodeRoute:
+        """
+        Update the new_route's priority to be the highest
+
+        Args:
+            new_route (NodeRoute): The new route whose priority is to be updated.
+
+        Returns:
+            NodeRoute: The new route with updated priority
+        """
+        current_max_priority: int = max(route.priority for route in self.node_routes)
+        new_route.priority = current_max_priority + 1
+        return new_route
+
+    def update_route(self, new_route: NodeRoute) -> NodeRoute | None:
+        """
+        Update the route for the node.
+
+        This method takes a new route as input.
+        If the route already exists, updates the priority of the existing route.
+        If it doesn't, it append the new route to the peer's list of node routes.
+
+        Args:
+            new_route (NodeRoute): The new route to be added to the node.
+
+        Returns:
+            NodeRoute | None: if the route already exists, return it, else returns None
+        """
+        new_route = self.update_route_priority(new_route)
+        existed, index = self.existed_route(new_route)
+        if existed and index is not None:
+            self.node_routes[index].priority = new_route.priority
+            return self.node_routes[index]
+        else:
+            self.node_routes.append(new_route)
+            return None
+
+    def update_routes(self, new_routes: list[NodeRoute]) -> None:
+        """
+        Update multiple routes of the node peer.
+
+        This method takes a list of new routes as input.
+        It first updates the priorities of the new routes.
+        Then, for each new route, it checks if the route already exists for the node peer.
+        If it does, it updates the priority of the existing route.
+        If it doesn't, it adds the new route to the node.
+
+        Args:
+            new_routes (list[NodeRoute]): The new routes to be added to the node.
+
+        Returns:
+            None
+        """
+        for new_route in new_routes:
+            self.update_route(new_route)
 
     @staticmethod
     def from_client(client: SyftClient) -> "NodePeer":
@@ -178,18 +195,33 @@ class NodePeer(SyftObject):
             try:
                 same_route: Callable = _route_type_to_same_route_check(route)
                 self.node_routes = [
-                    r for r in self.node_routes if not same_route(r, route)[0]
+                    r for r in self.node_routes if not same_route(r, route)
                 ]
             except Exception as e:
                 return SyftError(
-                    message=f"Error deleting route {route} with id {route.id}. Exception: {e}"
+                    message=f"Error deleting route with id {route.id}. Exception: {e}"
                 )
 
         return None
 
 
-def _route_type_to_same_route_check(route: NodeRouteType) -> Callable:
-    route_type_to_comparison_method: dict[type[NodeRouteType], Callable] = {
+def _route_type_to_same_route_check(
+    route: NodeRouteType,
+) -> Callable[[NodeRouteType, NodeRouteType], bool]:
+    """
+    Takes a route as input and returns a function that can be
+    used to compare if the two routes are the same.
+
+    Args:
+        route (NodeRouteType): The route for which to get a comparison function.
+
+    Returns:
+        Callable[[NodeRouteType, NodeRouteType], bool]: A function that takes two routes as input and returns a boolean
+        indicating whether the routes are the same.
+    """
+    route_type_to_comparison_method: dict[
+        type[NodeRouteType], Callable[[NodeRouteType, NodeRouteType], bool]
+    ] = {
         HTTPNodeRoute: _same_http_route,
         PythonNodeRoute: _same_python_route,
         VeilidNodeRoute: _same_veilid_route,
@@ -201,6 +233,8 @@ def _same_http_route(route: HTTPNodeRoute, other: HTTPNodeRoute) -> bool:
     """
     Check if two HTTPNodeRoute are the same based on protocol, host_or_ip (url) and port
     """
+    if type(route) != type(other):
+        return False
     return (
         (route.host_or_ip == other.host_or_ip)
         and (route.port == other.port)
@@ -212,6 +246,8 @@ def _same_python_route(route: PythonNodeRoute, other: PythonNodeRoute) -> bool:
     """
     Check if two PythonNodeRoute are the same based on the metatdata of their worker settings (name, id...)
     """
+    if type(route) != type(other):
+        return False
     return (
         (route.worker_settings.id == other.worker_settings.id)
         and (route.worker_settings.name == other.worker_settings.name)
@@ -227,6 +263,8 @@ def _same_veilid_route(route: VeilidNodeRoute, other: VeilidNodeRoute) -> bool:
     """
     Check if two VeilidNodeRoute are the same based on their veilid keys and proxy_target_uid
     """
+    if type(route) != type(other):
+        return False
     return (
         route.vld_key == other.vld_key
         and route.proxy_target_uid == other.proxy_target_uid

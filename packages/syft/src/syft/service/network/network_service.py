@@ -84,6 +84,18 @@ class NetworkStash(BaseUIDStoreStash):
     def update_peer(
         self, credentials: SyftVerifyKey, peer: NodePeer
     ) -> Result[NodePeer, str]:
+        """
+        Update the selected peer and its route priorities if the peer already exists
+        If the peer does not exist, simply adds it to the database.
+
+        Args:
+            credentials (SyftVerifyKey): The credentials used to authenticate the request.
+            peer (NodePeer): The peer to be updated or added.
+
+        Returns:
+            Result[NodePeer, str]: The updated or added peer if the operation
+            was successful, or an error message if the operation failed.
+        """
         valid = self.check_type(peer, NodePeer)
         if valid.is_err():
             return SyftError(message=valid.err())
@@ -295,13 +307,18 @@ class NetworkService(AbstractService):
         )
         if isinstance(node_peer, SyftError):
             return node_peer
-        peer.node_routes.append(route)
-        # checks for route duplication and updates the peer's route priorities
-        result = self.stash.update_peer(context.node.verify_key, peer)
+
+        existed_route: NodeRoute | None = peer.update_route(route)
+        # update the peer in the store
+        result = self.stash.update(context.node.verify_key, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
+        if existed_route is None:
+            return SyftSuccess(
+                message=f"New route with id '{route.id}' added for {peer.name}"
+            )
         return SyftSuccess(
-            message=f"Route with id '{route.id}' to to {context.node.name} added for {peer.name}"
+            message=f"The route already exists with id {existed_route.id}, so its priority was updated"
         )
 
     @service_method(
@@ -480,26 +497,31 @@ class NetworkService(AbstractService):
 
         return self_node_peer
 
-    @service_method(path="network.update_route_priority", name="update_route_priority")
-    def update_route_priority(
+    @service_method(
+        path="network.update_route_priority_for", name="update_route_priority_for"
+    )
+    def update_route_priority_for(
         self,
         context: AuthedServiceContext,
         peer: NodePeer,
         route: NodeRoute,
-        priority: int,
+        priority: int | None = None,
     ) -> SyftSuccess | SyftError:
         """
-        Updates the priority of a route to connect to a given peer in the network.
+        Updates a route's priority for the given peer
 
         Args:
             context (AuthedServiceContext): The authentication context for the service.
             peer (NodePeer): The peer for which the route priority needs to be updated.
             route (NodeRoute): The route for which the priority needs to be updated.
-            priority (int): The new priority value for the route.
+            priority (int | None): The new priority value for the route. If not
+                provided, it will be assigned the highest priority among all peers
 
         Returns:
             SyftSuccess | SyftError: Successful / Error response
         """
+        # if priority <= 0:
+        # if priority is not None:
         return SyftError(message="Not implemented")
 
     @service_method(path="network.delete_route_for", name="delete_route_for")
