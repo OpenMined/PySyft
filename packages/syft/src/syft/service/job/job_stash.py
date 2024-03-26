@@ -527,7 +527,7 @@ class Job(SyncableSyftObject):
         if self.user_code_id is not None:
             dependencies.append(self.user_code_id)
 
-        output = context.node.get_service("outputservice").get_by_job_id(
+        output = context.node.get_service("outputservice").get_by_job_id(  # type: ignore
             context, self.id
         )
         if isinstance(output, SyftError):

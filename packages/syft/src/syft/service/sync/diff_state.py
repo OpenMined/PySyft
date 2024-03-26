@@ -574,7 +574,7 @@ class ObjectDiffBatch(SyftObject):
         # levels in the tree that we create
         levels = [level for _, level in batch_uids]
 
-        batch_uids = {uid for uid, _ in batch_uids}
+        batch_uids = {uid for uid, _ in batch_uids}  # type: ignore
         batch_dependencies = {
             uid: [d for d in obj_dependencies.get(uid, []) if d in batch_uids]
             for uid in batch_uids
@@ -588,7 +588,7 @@ class ObjectDiffBatch(SyftObject):
         )
 
     def flatten_visual_hierarchy(self) -> list[ObjectDiff]:
-        def flatten_dict(d):
+        def flatten_dict(d: dict) -> list:
             if len(d) == 0:
                 return []
             else:
@@ -624,24 +624,25 @@ class ObjectDiffBatch(SyftObject):
     @property
     def visual_hierarchy(self) -> tuple[type, dict]:
         # Returns
-        root_obj: SyncableSyftObject = (
+        root_obj = (
             self.root.low_obj if self.root.low_obj is not None else self.root.high_obj
         )
         if isinstance(root_obj, Request):
             return Request, {
                 Request: [UserCode],
             }
-        if isinstance(root_obj, UserCode):
-            return UserCode, {
+        elif isinstance(root_obj, UserCode):
+            return UserCode, {  # type: ignore
                 UserCode: [UserCodeStatusCollection, UserCode],
             }
-        if isinstance(root_obj, Job):
-            return UserCode, {
+        elif isinstance(root_obj, Job):
+            return UserCode, {  # type: ignore
                 UserCode: [ExecutionOutput, UserCode],
                 ExecutionOutput: [Job],
                 Job: [ActionObject, SyftLog, Job],
             }
-        raise ValueError(f"Unknown root type: {self.root.obj_type}")
+        else:
+            raise ValueError(f"Unknown root type: {self.root.obj_type}")
 
     @model_validator(mode="after")
     def make_dependents(self) -> Self:
@@ -706,7 +707,7 @@ class ObjectDiffBatch(SyftObject):
 
         return visual_roots[0]
 
-    def get_visual_hierarchy(self) -> dict[ObjectDiff, dict[ObjectDiff]]:
+    def get_visual_hierarchy(self) -> dict[ObjectDiff, dict]:
         visual_root = self.visual_root
         return {visual_root: self._get_visual_hierarchy(self.visual_root)}  # type: ignore
 
@@ -814,12 +815,12 @@ class NodeDiff(SyftObject):
     @staticmethod
     def apply_previous_ignore_state(
         batches: list[ObjectDiffBatch], previously_ignored_batches: dict[UID, int]
-    ):
+    ) -> None:
         """Loop through all ignored batches in syncstate. If batch did not change, set to ignored
         If another batch needs to exist in order to accept that changed batch: also unignore
         e.g. if a job changed, also unignore the usercode"""
 
-        for root_id, batch_hash in previously_ignored_batches:
+        for root_id, batch_hash in previously_ignored_batches.items():
             for batch in batches:
                 if batch.root_id == root_id:
                     if hash(batch) == batch_hash:
@@ -870,7 +871,7 @@ class NodeDiff(SyftObject):
                 ids.add(diff.object_id)
         return diffs
 
-    def _repr_markdown_(self):
+    def _repr_markdown_(self) -> None:  # type: ignore
         return None
 
     def _repr_html_(self) -> Any:
@@ -920,16 +921,14 @@ class NodeDiff(SyftObject):
         root_ids = []
 
         for diff in obj_uid_to_diff.values():
-            diff_obj: SyncableSyftObject = (
-                diff.low_obj if diff.low_obj is not None else diff.high_obj
-            )
+            diff_obj = diff.low_obj if diff.low_obj is not None else diff.high_obj
             if isinstance(diff_obj, Request):
                 root_ids.append(diff.object_id)
-            elif isinstance(diff_obj, Job) and diff_obj.parent_job_id is None:
-                root_ids.append(diff.object_id)
+            elif isinstance(diff_obj, Job) and diff_obj.parent_job_id is None:  # type: ignore
+                root_ids.append(diff.object_id)  # type: ignore
             elif isinstance(diff_obj, UserCode):
                 # TODO: Figure out nested user codes, do we even need that?
-                root_ids.append(diff.object_id)
+                root_ids.append(diff.object_id)  # type: ignore
 
         for root_uid in root_ids:
             batch = ObjectDiffBatch.from_dependencies(
@@ -986,7 +985,9 @@ class ResolvedSyncState(SyftObject):
         if other_obj is not None and sync_instruction.mockify:
             other_obj = other_obj.create_shareable_sync_copy(mock=True)
 
-        if sync_instruction.decision.value != self.alias:  # chose for the other
+        if (
+            sync_instruction.decision and sync_instruction.decision.value != self.alias
+        ):  # chose for the other
             if diff.status == "DIFF":
                 # keep IDs comparison here, otherwise it will break with actionobjects
                 if other_obj.id not in [x.id for x in self.update_objs]:  # type: ignore

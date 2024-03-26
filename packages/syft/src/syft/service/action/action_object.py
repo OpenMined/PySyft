@@ -1095,8 +1095,8 @@ class ActionObject(SyncableSyftObject):
         # relative
         from ..job.job_stash import Job
 
-        job_service = context.node.get_service("jobservice")
-        job: Job | None | SyftError = job_service.get_by_result_id(context, self.id.id)
+        job_service = context.node.get_service("jobservice")  # type: ignore
+        job: Job | None | SyftError = job_service.get_by_result_id(context, self.id.id)  # type: ignore
         if isinstance(job, SyftError):
             return job
         elif job is not None:

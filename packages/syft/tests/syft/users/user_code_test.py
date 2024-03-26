@@ -277,6 +277,7 @@ def test_mock_multiple_arguments(worker) -> None:
 
     # Real execution succeeds
     result = ds_client.api.services.code.compute_sum(data1=data, data2=data)
+    print(result)
     assert np.equal(result.get(), np.array([0, 2, 4, 6, 8])).all()
 
     # Mixed execution fails, no result from cache

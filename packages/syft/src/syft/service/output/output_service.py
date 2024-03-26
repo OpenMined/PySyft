@@ -51,7 +51,7 @@ class ExecutionOutput(SyncableSyftObject):
 
     # Required for __attr_searchable__, set by model_validator
     user_code_id: UID
-    job_id: UID
+    job_id: UID | None = None
 
     # Output policy is not a linked object because its saved on the usercode
     output_policy_id: UID | None = None
@@ -175,10 +175,6 @@ class ExecutionOutput(SyncableSyftObject):
             if key not in self.input_ids or self.input_ids[key] != value:
                 return False
         return True
-
-    @property
-    def job_id(self) -> UID | None:
-        return self.job_link.object_uid if self.job_link else None
 
     def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
         # Output ids, user code id, job id
