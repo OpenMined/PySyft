@@ -4,6 +4,7 @@ from typing import Any
 from typing import cast
 
 # third party
+from result import Ok
 from result import Result
 
 # relative
@@ -172,6 +173,7 @@ class SyncService(AbstractService):
         permissions: list[ActionObjectPermission],
         storage_permissions: list[StoragePermission],
         ignored_batches: dict[UID, int],
+        unignored_batches: set[UID],
     ) -> SyftSuccess | SyftError:
         permissions_dict = defaultdict(list)
         for permission in permissions:
@@ -201,10 +203,11 @@ class SyncService(AbstractService):
                 else:
                     return SyftError(message=f"Failed to sync {res.err()}")
 
-        new_state = self.build_current_state(context, ignored_batches)
-        if isinstance(new_state, SyftError):
-            return new_state
+        res = self.build_current_state(context, ignored_batches, unignored_batches)
+        if res.is_err():
+            return SyftError(message=res.message)
         else:
+            new_state = res.ok()
             res = self.stash.set(context.credentials, new_state)
             if res.is_err():
                 return SyftError(message=res.message)
@@ -234,7 +237,7 @@ class SyncService(AbstractService):
 
     def get_all_syncable_items(
         self, context: AuthedServiceContext
-    ) -> list[SyncableSyftObject] | SyftError:
+    ) -> Result[list[SyncableSyftObject], str]:
         node = cast(AbstractNode, context.node)
         all_items = []
 
@@ -269,25 +272,33 @@ class SyncService(AbstractService):
                 context, uid, resolve_nested=False
             )  # type: ignore
             if action_object.is_err():
-                return SyftError(message=action_object.err())
+                return action_object
             all_items.append(action_object.ok())
 
-        return all_items
+        return Ok(all_items)
 
     def build_current_state(
         self,
         context: AuthedServiceContext,
         new_ignored_batches: dict[UID, int] | None = None,
-    ) -> SyncState | SyftError:
+        new_unignored_batches: set[UID] | None = None,
+    ) -> Result[SyncState, str]:
         new_ignored_batches = (
             new_ignored_batches if new_ignored_batches is not None else {}
         )
-        objects = self.get_all_syncable_items(context)
+        unignored_batches: set[UID] = (
+            new_unignored_batches if new_unignored_batches is not None else set()
+        )
+        objects_res = self.get_all_syncable_items(context)
+        if objects_res.is_err():
+            return objects_res
+        else:
+            objects = objects_res.ok()
         permissions, storage_permissions = self.get_permissions(context, objects)
 
         previous_state = self.stash.get_latest(context=context)
         if previous_state.is_err():
-            return SyftError(message=previous_state.err())
+            return previous_state
         previous_state = previous_state.ok()
 
         if previous_state is not None:
@@ -301,9 +312,13 @@ class SyncService(AbstractService):
             previous_state_link = None
             previous_ignored_batches = {}
 
-        ignore_batches = {
+        ignored_batches = {
             **previous_ignored_batches,
             **new_ignored_batches,
+        }
+
+        ignored_batches = {
+            k: v for k, v in ignored_batches.items() if k not in unignored_batches
         }
 
         new_state = SyncState(
@@ -311,12 +326,12 @@ class SyncService(AbstractService):
             previous_state_link=previous_state_link,
             permissions=permissions,
             storage_permissions=storage_permissions,
-            ignored_batches=ignore_batches,
+            ignored_batches=ignored_batches,
         )
 
         new_state.add_objects(objects, context)
 
-        return new_state
+        return Ok(new_state)
 
     @service_method(
         path="sync._get_state",
@@ -324,4 +339,8 @@ class SyncService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def _get_state(self, context: AuthedServiceContext) -> SyncState | SyftError:
-        return self.build_current_state(context)
+        res = self.build_current_state(context)
+        if res.is_err():
+            return SyftError(message=res.value)
+        else:
+            return res.ok()

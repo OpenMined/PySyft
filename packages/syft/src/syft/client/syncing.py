@@ -21,7 +21,7 @@ def compare_states(low_state: SyncState, high_state: SyncState) -> NodeDiff:
     return NodeDiff.from_sync_state(low_state=low_state, high_state=high_state)
 
 
-def get_user_input_for_resolve() -> str | None:
+def get_user_input_for_resolve() -> SyncDecision:
     options = [x.value for x in SyncDecision]
     options_str = ", ".join(options[:-1]) + f" or {options[-1]}"
     print(f"How do you want to sync these objects? choose between {options_str}")
@@ -41,20 +41,21 @@ def handle_ignore_skip(
 ) -> None:
     if decision == SyncDecision.skip or decision == SyncDecision.ignore:
         skipped_or_ignored_ids = {
-            x.object_id for x in batch.get_dependents(include_roots=True)
+            x.object_id for x in batch.get_dependents(include_roots=False)
         }
         for other_batch in other_batches:
             if other_batch.decision != decision:
                 # Currently, this is not recursive, in the future it might be
                 other_batch_ids = {
-                    d.object_id for d in other_batch.get_dependents(include_roots=False)
+                    d.object_id
+                    for d in other_batch.get_dependencies(include_roots=True)
                 }
                 if len(other_batch_ids & skipped_or_ignored_ids) != 0:
                     other_batch.decision = decision
                     skipped_or_ignored_ids.update(other_batch_ids)
                     action = "Skipping" if decision == SyncDecision.skip else "Ignoring"
                     print(
-                        f"{action} other batch with root {other_batch.root_type.__name__}"
+                        f"\n{action} other batch with root {other_batch.root_type.__name__}\n"
                     )
 
 
@@ -64,30 +65,32 @@ def resolve(
     share_private_objects: bool = False,
     ask_for_input: bool = True,
 ) -> tuple[ResolvedSyncState, ResolvedSyncState]:
+    # TODO: fix this
+    previously_ignored_batches = state.low_state.ignored_batches
     # TODO: only add permissions for objects where we manually give permission
     # Maybe default read permission for some objects (high -> low)
     resolved_state_low = ResolvedSyncState(node_uid=state.low_node_uid, alias="low")
     resolved_state_high = ResolvedSyncState(node_uid=state.high_node_uid, alias="high")
 
     for batch_diff in state.batches:
-        batch_decision = decision or batch_diff.decision
-        if all(
-            diff.status == "SAME"
-            for diff in batch_diff.get_dependents(include_roots=False)
-        ):
+        if batch_diff.is_unchanged:
             # Hierarchy has no diffs
             continue
 
-        if batch_diff.decision is None:
+        if batch_diff.decision is not None:
+            # handles ignores
+            batch_decision = batch_diff.decision
+        elif decision is not None:
             print(batch_diff.__repr__())
-
-        if batch_decision is None:
-            batch_decision = get_user_input_for_resolve()
-            batch_diff.decision = batch_decision
-            other_batches = [b for b in state.batches if b is not batch_diff]
-            handle_ignore_skip(batch_diff, batch_decision, other_batches)
+            batch_decision = SyncDecision(decision)
         else:
-            batch_decision = SyncDecision(batch_decision)
+            print(batch_diff.__repr__())
+            batch_decision = get_user_input_for_resolve()
+
+        batch_diff.decision = batch_decision
+
+        other_batches = [b for b in state.batches if b is not batch_diff]
+        handle_ignore_skip(batch_diff, batch_decision, other_batches)
 
         if batch_decision not in [SyncDecision.skip, SyncDecision.ignore]:
             sync_instructions = get_sync_instructions_for_batch_items_for_add(
@@ -99,7 +102,15 @@ def resolve(
         else:
             sync_instructions = []
             if batch_decision == SyncDecision.ignore:
-                resolved_state_high.add_skipped_ignored(batch_diff)
+                resolved_state_high.add_ignored(batch_diff)
+                resolved_state_low.add_ignored(batch_diff)
+
+        if (
+            batch_diff.root_id in previously_ignored_batches
+            and batch_diff.decision != SyncDecision.ignore
+        ):
+            resolved_state_high.add_unignored(batch_diff.root_id)
+            resolved_state_low.add_unignored(batch_diff.root_id)
 
         print(f"Decision: Syncing {len(sync_instructions)} objects")
 
