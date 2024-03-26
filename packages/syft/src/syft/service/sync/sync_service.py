@@ -286,8 +286,8 @@ class SyncService(AbstractService):
         new_ignored_batches = (
             new_ignored_batches if new_ignored_batches is not None else {}
         )
-        new_unignored_batches = (
-            new_unignored_batches if new_unignored_batches is not None else {}
+        unignored_batches: set[UID] = (
+            new_unignored_batches if new_unignored_batches is not None else set()
         )
         objects_res = self.get_all_syncable_items(context)
         if objects_res.is_err():
@@ -301,18 +301,6 @@ class SyncService(AbstractService):
             return previous_state
         previous_state = previous_state.ok()
 
-        new_ignored_batches = {
-            **previous_ignored_batches,
-            **new_ignored_batches,
-        }
-        new_ignored_batches = {
-            k: v
-            for k, v in new_ignored_batches.items()
-            if k not in new_unignored_batches
-        }
-        new_state.ignored_batches = new_ignored_batches
-        print("ignored batches new", new_state.ignored_batches)
-
         if previous_state is not None:
             previous_state_link = LinkedObject.from_obj(
                 obj=previous_state,
@@ -324,9 +312,13 @@ class SyncService(AbstractService):
             previous_state_link = None
             previous_ignored_batches = {}
 
-        ignore_batches = {
+        ignored_batches = {
             **previous_ignored_batches,
             **new_ignored_batches,
+        }
+
+        ignored_batches = {
+            k: v for k, v in ignored_batches.items() if k not in unignored_batches
         }
 
         new_state = SyncState(
@@ -334,7 +326,7 @@ class SyncService(AbstractService):
             previous_state_link=previous_state_link,
             permissions=permissions,
             storage_permissions=storage_permissions,
-            ignored_batches=ignore_batches,
+            ignored_batches=ignored_batches,
         )
 
         new_state.add_objects(objects, context)

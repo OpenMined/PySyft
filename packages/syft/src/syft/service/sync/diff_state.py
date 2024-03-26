@@ -243,7 +243,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         return res
 
     def __hash__(self) -> int:
-        return hash(self.id) + hash(self.low_obj) + hash(self.high_obj)
+        return hash(self.object_id) + hash(self.low_obj) + hash(self.high_obj)
 
     @property
     def status(self) -> str:
@@ -751,7 +751,7 @@ class IgnoredBatchView(SyftObject):
     batch: ObjectDiffBatch
     other_batches: list[ObjectDiffBatch]
 
-    def _coll_repr_(self) -> str:
+    def _coll_repr_(self) -> dict[str, Any]:
         return self.batch._coll_repr_()
 
     def _repr_html_(self) -> str:
@@ -785,7 +785,7 @@ class NodeDiff(SyftObject):
     high_state: SyncState
 
     @property
-    def ignored_changes(self):
+    def ignored_changes(self) -> list[IgnoredBatchView]:
         ignored_batches = [b for b in self.batches if b.decision == SyncDecision.ignore]
         result = []
         for ignored_batch in ignored_batches:
@@ -1011,8 +1011,11 @@ class ResolvedSyncState(SyftObject):
     )  # NOTE: using '{}' as default value does not work here
     alias: str
 
-    def add_skipped_ignored(self, batch: ObjectDiffBatch) -> None:
+    def add_ignored(self, batch: ObjectDiffBatch) -> None:
         self.ignored_batches[batch.root_id] = hash(batch)
+
+    def add_unignored(self, root_id: UID) -> None:
+        self.unignored_batches.add(root_id)
 
     def add_sync_instruction(self, sync_instruction: SyncInstruction) -> None:
         if (
@@ -1023,7 +1026,7 @@ class ResolvedSyncState(SyftObject):
         diff = sync_instruction.diff
 
         if sync_instruction.unignore:
-            self.unignored_batches.add(sync_instruction.diff.object_id)
+            self.unignored_batches.add(sync_instruction.batch_diff.root_id)
 
         if diff.status == "SAME":
             return
