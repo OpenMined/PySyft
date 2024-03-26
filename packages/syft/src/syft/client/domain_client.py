@@ -198,6 +198,7 @@ class DomainClient(SyftClient):
             resolved_state.new_permissions,
             resolved_state.new_storage_permissions,
             ignored_batches,
+            unignored_batches=resolved_state.unignored_batches,
         )
         if isinstance(res, SyftError):
             return res
