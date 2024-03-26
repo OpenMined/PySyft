@@ -51,7 +51,7 @@ class ExecutionOutput(SyncableSyftObject):
 
     # Required for __attr_searchable__, set by model_validator
     user_code_id: UID
-    job_id: UID
+    job_id: UID | None = None
 
     # Output policy is not a linked object because its saved on the usercode
     output_policy_id: UID | None = None
