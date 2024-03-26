@@ -51,8 +51,6 @@ class ExecutionOutput(SyncableSyftObject):
 
     # Required for __attr_searchable__, set by model_validator
     user_code_id: UID
-
-    # Required for __attr_searchable__, set by model_validator
     job_id: UID
 
     # Output policy is not a linked object because its saved on the usercode
@@ -76,7 +74,7 @@ class ExecutionOutput(SyncableSyftObject):
     def add_searchable_link_ids(cls, values: dict) -> dict:
         if "user_code_link" in values:
             values["user_code_id"] = values["user_code_link"].object_uid
-        if "job_link" in values:
+        if values.get("job_link"):
             values["job_id"] = values["job_link"].object_uid
         return values
 
