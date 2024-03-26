@@ -90,6 +90,7 @@ class Endpoint(SyftObject):
     # version
     __canonical_name__ = "CustomApiEndpoint"
     __version__ = SYFT_OBJECT_VERSION_1
+    signature: Signature
 
     @field_validator("api_code", check_fields=False)
     @classmethod
@@ -154,9 +155,11 @@ class BaseTwinAPIEndpoint(SyftObject):
     @model_validator(mode="before")
     @classmethod
     def validate_signature(cls, data: dict[str, Any]) -> dict[str, Any]:
-        # TODO: Implement a signature check.
-        mismatch_signatures = False
-        if data.get("private_code") is not None and mismatch_signatures:
+        public_code = data["public_code"]  # public_code can't be None
+        private_code = data.get("private_code")
+
+        # Add none check
+        if private_code and private_code.signature != public_code.signature:
             raise ValueError(
                 "Public and Private API Endpoints must have the same signature."
             )
@@ -166,8 +169,11 @@ class BaseTwinAPIEndpoint(SyftObject):
     @field_validator("path", check_fields=False)
     @classmethod
     def validate_path(cls, path: str) -> str:
+        # TODO: Check path doesn't collide with system endpoints
+
         if not re.match(r"^[a-z]+(\.[a-z]+)*$", path):
             raise ValueError('String must be a path-like string (e.g., "new.endpoint")')
+
         return path
 
     @field_validator("private_code", check_fields=False)
@@ -175,11 +181,14 @@ class BaseTwinAPIEndpoint(SyftObject):
     def validate_private_code(
         cls, private_code: PrivateAPIEndpoint | None
     ) -> PrivateAPIEndpoint | None:
+        # TODO: what kind of validation should we do here?
+
         return private_code
 
     @field_validator("public_code", check_fields=False)
     @classmethod
     def validate_public_code(cls, public_code: PublicAPIEndpoint) -> PublicAPIEndpoint:
+        # TODO: what kind of validation should we do here?
         return public_code
 
 
@@ -190,7 +199,7 @@ class UpdateTwinAPIEndpoint(PartialSyftObject, BaseTwinAPIEndpoint):
     __version__ = SYFT_OBJECT_VERSION_1
 
     path: str
-    private_code: PrivateAPIEndpoint
+    private_code: PrivateAPIEndpoint | None = None
     public_code: PublicAPIEndpoint
 
 
@@ -404,8 +413,9 @@ def api_endpoint(
                     api_code=inspect.getsource(f),
                     func_name=f.__name__,
                     settings=settings,
+                    signature=inspect.signature(f),  # get_signature(f),
                 ),
-                signature=inspect.signature(f),
+                signature=inspect.signature(f),  # get_signature(f),
             )
         except ValidationError as e:
             for error in e.errors():
@@ -425,6 +435,7 @@ def private_api_endpoint(
                 api_code=inspect.getsource(f),
                 func_name=f.__name__,
                 settings=settings,
+                signature=inspect.signature(f),
             )
         except ValidationError as e:
             for error in e.errors():
@@ -444,6 +455,7 @@ def public_api_endpoint(
                 api_code=inspect.getsource(f),
                 func_name=f.__name__,
                 settings=settings,
+                signature=inspect.signature(f),
             )
         except ValidationError as e:
             for error in e.errors():
@@ -462,23 +474,13 @@ def create_new_api_endpoint(
 ) -> CreateTwinAPIEndpoint | SyftError:
     try:
         # Parse the string to extract the function name
-        code_string = decorator_cleanup(public.api_code)
-        parsed_code = ast.parse(code_string)
-        function_name = [
-            node.name
-            for node in ast.walk(parsed_code)
-            if isinstance(node, ast.FunctionDef)
-        ][0]
 
-        # Safe dynamic function definition
-        namespace: dict[str, Any] = {}
-        exec(code_string, namespace)
-        function = namespace[function_name]
-
-        # Get the signature using inspect
-        endpoint_signature = inspect.signature(function)
-
+        endpoint_signature = public.signature
         if private is not None:
+            if private.signature != public.signature:
+                return SyftError(message="Signatures don't match")
+            endpoint_signature = public.signature
+
             return CreateTwinAPIEndpoint(
                 path=path,
                 private_code=private,

@@ -2,6 +2,9 @@
 from typing import Any
 from typing import cast
 
+# third party
+from pydantic import ValidationError
+
 # relative
 from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
@@ -19,6 +22,8 @@ from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .api import CreateTwinAPIEndpoint
+from .api import PrivateAPIEndpoint
+from .api import PublicAPIEndpoint
 from .api import TwinAPIEndpoint
 from .api import TwinAPIEndpointView
 from .api import UpdateTwinAPIEndpoint
@@ -90,7 +95,8 @@ class APIService(AbstractService):
         self,
         context: AuthedServiceContext,
         endpoint_path: str,
-        endpoint_update: UpdateTwinAPIEndpoint,
+        mock_function: PublicAPIEndpoint | None = None,
+        private_function: PrivateAPIEndpoint | None = None,
     ) -> SyftSuccess | SyftError:
         """Updates an specific API endpoint."""
 
@@ -100,16 +106,34 @@ class APIService(AbstractService):
             return SyftError(message=endpoint_result.err())
 
         if not endpoint_result.ok():
-            return SyftError(f"Enpoint at path {endpoint_path} doesn't exist")
+            return SyftError(message=f"Enpoint at path {endpoint_path} doesn't exist")
 
         endpoint: TwinAPIEndpoint = endpoint_result.ok()
 
-        # TODO: should I use a transform for this?
-        # TODO: check signature match and everything else
-        # TODO: the current UpdateTwinAPIEndpoint is too simplistic. Should perform all necesary checks
+        if not (mock_function or private_function):
+            return SyftError(
+                message='Either "mock_function" or "private_function" are required.'
+            )
+
+        updated_mock = (
+            mock_function if mock_function is not None else endpoint.public_code
+        )
+        updated_private = (
+            private_function if private_function is not None else endpoint.private_code
+        )
+
+        try:
+            endpoint_update = UpdateTwinAPIEndpoint(
+                path=endpoint_path,
+                public_code=updated_mock,
+                private_code=updated_private,
+            )
+        except ValidationError as e:
+            return SyftError(message=str(e))
 
         endpoint.public_code = endpoint_update.public_code
-        endpoint.private_code_code = endpoint_update.private_code
+        endpoint.private_code = endpoint_update.private_code
+        endpoint.signature = updated_mock.signature
 
         result = self.stash.upsert(context.credentials, endpoint=endpoint)
         if result.is_err():

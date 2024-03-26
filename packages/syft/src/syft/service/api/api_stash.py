@@ -31,12 +31,10 @@ class TwinAPIEndpointStash(BaseUIDStoreStash):
         if endpoint_results.is_err():
             return endpoint_results
 
-        endpoint_by_path = None
-
-        for endpoint in endpoint_results.ok():
-            if endpoint.path == path:
-                endpoint_by_path = endpoint
-                break
+        endpoint_by_path = next(
+            (endpoint for endpoint in endpoint_results.ok() if endpoint.path == path),
+            None,
+        )
 
         return Ok(endpoint_by_path)
 
