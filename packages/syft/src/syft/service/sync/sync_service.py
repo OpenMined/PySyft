@@ -307,8 +307,9 @@ class SyncService(AbstractService):
             **previous_ignored_batches,
             **new_ignored_batches,
         }
-        new_ignored_batches = {k:v for k, v in new_ignored_batches if k not in new_unignored_batches}
+        new_ignored_batches = {k:v for k, v in new_ignored_batches.items() if k not in new_unignored_batches}
         new_state.ignored_batches =  new_ignored_batches
+        print("ignored batches new", new_state.ignored_batches)
 
         if previous_state is not None:
             new_state.previous_state_link = LinkedObject.from_obj(

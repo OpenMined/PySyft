@@ -814,12 +814,14 @@ class NodeDiff(SyftObject):
         If another batch needs to exist in order to accept that changed batch: also unignore
         e.g. if a job changed, also unignore the usercode"""
 
-        for root_id, batch_hash in previously_ignored_batches:
+        for root_id, batch_hash in previously_ignored_batches.items():
             for batch in batches:
                 if batch.root_id == root_id:
                     if hash(batch) == batch_hash:
                         batch.decision = SyncDecision.ignore
                     else:
+                        print(f"""A batch with type {batch.root_type.__name__} was previously ignored but has changed
+It will be available for review again.""")
                         # batch has changed, so unignore
                         batch.decision = None
                         # then we also set the dependent batches to unignore

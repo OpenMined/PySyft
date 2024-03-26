@@ -78,11 +78,13 @@ def resolve(
 
         if batch_decision is None:
             batch_decision: SyncDecision = get_user_input_for_resolve()
-            batch_diff.decision = batch_decision
-            other_batches = [b for b in state.batches if b is not batch_diff]
-            handle_ignore_skip(batch_diff, batch_decision, other_batches)
         else:
             batch_decision: SyncDecision = SyncDecision(batch_decision)
+
+        batch_diff.decision = batch_decision
+
+        other_batches = [b for b in state.batches if b is not batch_diff]
+        handle_ignore_skip(batch_diff, batch_decision, other_batches)
         
         if batch_decision not in [SyncDecision.skip, SyncDecision.ignore]:
             sync_instructions: list[SyncInstruction] = get_sync_instructions_for_batch_items_for_add(
@@ -95,6 +97,7 @@ def resolve(
             sync_instructions: list[SyncInstruction] = []
             if batch_decision == SyncDecision.ignore:
                 resolved_state_high.add_skipped_ignored(batch_diff)
+                resolved_state_low.add_skipped_ignored(batch_diff)
         
         if batch_diff.root_id in previously_ignored_batches and batch_diff.decision != SyncDecision.ignore:
             sync_instruction.unignore = True
