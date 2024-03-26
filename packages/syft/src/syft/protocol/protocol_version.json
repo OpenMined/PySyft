@@ -657,9 +657,9 @@
           "hash": "e66a116de2fa44ebdd0d4c2d7d5a047dedb555fd201a0f431cd8017d9d33a61d",
           "action": "remove"
         },
-        "3": {
-          "version": 3,
-          "hash": "36d525a751410a1edb128cbe161f7621bf22aa6850134ec6d4ab76773479850e",
+        "2": {
+          "version": 2,
+          "hash": "bc4bbe67d75d5214e79ff57077dac5762bba98760e152f9613a4f8975488d960",
           "action": "add"
         }
       },
