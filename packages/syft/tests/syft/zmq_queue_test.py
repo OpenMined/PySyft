@@ -1,6 +1,6 @@
 # stdlib
 from collections import defaultdict
-import random
+from secrets import token_hex
 import sys
 from time import sleep
 
@@ -22,6 +22,9 @@ from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.util.util import get_queue_address
 
+# relative
+from ..utils.random_port import get_random_port
+
 
 @pytest.fixture
 def client():
@@ -33,7 +36,7 @@ def client():
     client.close()
 
 
-@pytest.mark.flaky(reruns=5, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_zmq_client(client):
     hostname = "127.0.0.1"
@@ -113,15 +116,10 @@ def test_zmq_client(client):
     assert client.consumers[QueueName][0].alive is False
 
 
-@pytest.fixture()
-def service_name(faker):
-    return faker.name()
-
-
 @pytest.fixture
 def producer():
-    pub_port = random.randint(11000, 12000)
-    QueueName = "ABC"
+    pub_port = get_random_port()
+    QueueName = token_hex(8)
 
     # Create a producer
     producer = ZMQProducer(
@@ -135,24 +133,26 @@ def producer():
     # Cleanup code
     if producer.alive:
         producer.close()
+    del producer
 
 
 @pytest.fixture
-def consumer(producer, service_name):
+def consumer(producer):
     # Create a consumer
     consumer = ZMQConsumer(
         message_handler=None,
         address=producer.address,
         queue_name=producer.queue_name,
-        service_name=service_name,
+        service_name=token_hex(8),
     )
     yield consumer
     # Cleanup code
     if consumer.alive:
         consumer.close()
+    del consumer
 
 
-@pytest.mark.flaky(reruns=5, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_zmq_pub_sub(faker: Faker, producer, consumer):
     received_messages = []
@@ -215,7 +215,7 @@ def queue_manager():
     queue_manager.close()
 
 
-@pytest.mark.flaky(reruns=5, reruns_delay=1)
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_zmq_queue_manager(queue_manager) -> None:
     config = queue_manager.config

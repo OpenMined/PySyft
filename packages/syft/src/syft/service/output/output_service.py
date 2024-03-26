@@ -1,10 +1,11 @@
 # stdlib
-from typing import Any, Optional
 from typing import ClassVar
 
 # third party
 from pydantic import model_validator
-from result import Err, Ok, Result
+from result import Err
+from result import Ok
+from result import Result
 
 # relative
 from ...client.api import APIRegistry
@@ -27,7 +28,8 @@ from ..response import SyftError
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from ..user.user_roles import GUEST_ROLE_LEVEL, ADMIN_ROLE_LEVEL
+from ..user.user_roles import ADMIN_ROLE_LEVEL
+from ..user.user_roles import GUEST_ROLE_LEVEL
 
 CreatedAtPartitionKey = PartitionKey(key="created_at", type_=DateTime)
 UserCodeIdPartitionKey = PartitionKey(key="user_code_id", type_=UID)
@@ -45,11 +47,10 @@ class ExecutionOutput(SyncableSyftObject):
     output_ids: list[UID] | dict[str, UID] | None = None
     job_link: LinkedObject | None = None
     created_at: DateTime = DateTime.now()
+    input_ids: dict[str, UID] | None = None
 
     # Required for __attr_searchable__, set by model_validator
     user_code_id: UID
-
-    # Required for __attr_searchable__, set by model_validator
     job_id: UID
 
     # Output policy is not a linked object because its saved on the usercode
@@ -73,7 +74,7 @@ class ExecutionOutput(SyncableSyftObject):
     def add_searchable_link_ids(cls, values: dict) -> dict:
         if "user_code_link" in values:
             values["user_code_id"] = values["user_code_link"].object_uid
-        if "job_link" in values:
+        if values.get("job_link"):
             values["job_id"] = values["job_link"].object_uid
         return values
 
@@ -86,6 +87,7 @@ class ExecutionOutput(SyncableSyftObject):
         node_uid: UID,
         job_id: UID | None = None,
         output_policy_id: UID | None = None,
+        input_ids: dict[str, UID] | None = None,
     ) -> "ExecutionOutput":
         # relative
         from ..code.user_code_service import UserCode
@@ -118,6 +120,7 @@ class ExecutionOutput(SyncableSyftObject):
             job_link=job_link,
             executing_user_verify_key=executing_user_verify_key,
             output_policy_id=output_policy_id,
+            input_ids=input_ids,
         )
 
     @property
@@ -150,10 +153,30 @@ class ExecutionOutput(SyncableSyftObject):
         return []
 
     @property
-    def job_id(self) -> UID | None:
-        return self.job_link.object_uid if self.job_link else None
+    def input_id_list(self) -> list[UID]:
+        ids = self.input_ids
+        if isinstance(ids, dict):
+            return list(ids.values())
+        return []
 
-    def get_sync_dependencies(self, **kwargs) -> list[UID]:
+    def check_input_ids(self, kwargs: dict[str, UID]) -> bool:
+        """
+        Checks the input IDs against the stored input IDs.
+
+        Args:
+            kwargs (dict[str, UID]): A dictionary containing the input IDs to be checked.
+
+        Returns:
+            bool: True if the input IDs are valid, False otherwise.
+        """
+        if not self.input_ids:
+            return True
+        for key, value in kwargs.items():  # Iterate over items of kwargs dictionary
+            if key not in self.input_ids or self.input_ids[key] != value:
+                return False
+        return True
+
+    def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
         # Output ids, user code id, job id
         res = []
 
@@ -191,7 +214,7 @@ class OutputStash(BaseUIDStoreStash):
 
     def get_by_job_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
-    ) -> Result[Optional[ExecutionOutput], str]:
+    ) -> Result[ExecutionOutput | None, str]:
         qks = QueryKeys(
             qks=[JobIdPartitionKey.with_obj(user_code_id)],
         )
@@ -204,7 +227,7 @@ class OutputStash(BaseUIDStoreStash):
             res = res.ok()
             if len(res) == 0:
                 return Ok(None)
-            elif len(res) >1:
+            elif len(res) > 1:
                 return Err(message="Too many outputs found")
             else:
                 return Ok(res[0])
@@ -243,6 +266,7 @@ class OutputService(AbstractService):
         executing_user_verify_key: SyftVerifyKey,
         job_id: UID | None = None,
         output_policy_id: UID | None = None,
+        input_ids: dict[str, UID] | None = None,
     ) -> ExecutionOutput | SyftError:
         output = ExecutionOutput.from_ids(
             output_ids=output_ids,
@@ -251,6 +275,7 @@ class OutputService(AbstractService):
             node_uid=context.node.id,  # type: ignore
             job_id=job_id,
             output_policy_id=output_policy_id,
+            input_ids=input_ids,
         )
 
         res = self.stash.set(context.credentials, output)
@@ -279,7 +304,7 @@ class OutputService(AbstractService):
     )
     def get_by_job_id(
         self, context: AuthedServiceContext, user_code_id: UID
-    ) -> Optional[ExecutionOutput] | SyftError:
+    ) -> ExecutionOutput | None | SyftError:
         result = self.stash.get_by_job_id(
             credentials=context.node.verify_key,  # type: ignore
             user_code_id=user_code_id,

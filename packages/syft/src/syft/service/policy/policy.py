@@ -18,7 +18,9 @@ from typing import cast
 
 # third party
 from RestrictedPython import compile_restricted
+from result import Err
 from result import Ok
+from result import Result
 
 # relative
 from ...abstract_node import AbstractNode
@@ -177,8 +179,19 @@ class InputPolicy(Policy):
             init_kwargs = partition_by_node(kwargs)
         super().__init__(*args, init_kwargs=init_kwargs, **kwargs)
 
+    def _is_valid(
+        self,
+        context: AuthedServiceContext,
+        usr_input_kwargs: dict,
+        code_item_id: UID,
+    ) -> Result[bool, str]:
+        raise NotImplementedError
+
     def filter_kwargs(
-        self, kwargs: dict[Any, Any], context: AuthedServiceContext, code_item_id: UID
+        self,
+        kwargs: dict[Any, Any],
+        context: AuthedServiceContext,
+        code_item_id: UID,
     ) -> dict[Any, Any]:
         raise NotImplementedError
 
@@ -213,7 +226,7 @@ class InputPolicy(Policy):
 
 def retrieve_from_db(
     code_item_id: UID, allowed_inputs: dict[str, UID], context: AuthedServiceContext
-) -> dict:
+) -> Result[dict[str, Any], str]:
     # relative
     from ...service.action.action_object import TwinMode
 
@@ -239,13 +252,13 @@ def retrieve_from_db(
                 has_permission=True,
             )
             if kwarg_value.is_err():
-                return SyftError(message=kwarg_value.err())
+                return Err(kwarg_value.err())
             code_inputs[var_name] = kwarg_value.ok()
 
     elif context.node.node_type == NodeType.ENCLAVE:
         dict_object = action_service.get(context=root_context, uid=code_item_id)
         if dict_object.is_err():
-            return SyftError(message=dict_object.err())
+            return Err(dict_object.err())
         for value in dict_object.ok().syft_action_data.values():
             code_inputs.update(value)
 
@@ -288,7 +301,7 @@ def allowed_ids_only(
 
             if uid != allowed_inputs[key]:
                 raise Exception(
-                    f"Input {type(value)} for {key} not in allowed {allowed_inputs}"
+                    f"Input with uid: {uid} for `{key}` not in allowed inputs: {allowed_inputs}"
                 )
             filtered_kwargs[key] = value
     return filtered_kwargs
@@ -301,15 +314,56 @@ class ExactMatch(InputPolicy):
     __version__ = SYFT_OBJECT_VERSION_2
 
     def filter_kwargs(
-        self, kwargs: dict[Any, Any], context: AuthedServiceContext, code_item_id: UID
-    ) -> dict[Any, Any]:
-        allowed_inputs = allowed_ids_only(
-            allowed_inputs=self.inputs, kwargs=kwargs, context=context
-        )
-        results = retrieve_from_db(
-            code_item_id=code_item_id, allowed_inputs=allowed_inputs, context=context
-        )
+        self,
+        kwargs: dict[Any, Any],
+        context: AuthedServiceContext,
+        code_item_id: UID,
+    ) -> Result[dict[Any, Any], str]:
+        try:
+            allowed_inputs = allowed_ids_only(
+                allowed_inputs=self.inputs, kwargs=kwargs, context=context
+            )
+
+            results = retrieve_from_db(
+                code_item_id=code_item_id,
+                allowed_inputs=allowed_inputs,
+                context=context,
+            )
+        except Exception as e:
+            return Err(str(e))
         return results
+
+    def _is_valid(
+        self,
+        context: AuthedServiceContext,
+        usr_input_kwargs: dict,
+        code_item_id: UID,
+    ) -> Result[bool, str]:
+        filtered_input_kwargs = self.filter_kwargs(
+            kwargs=usr_input_kwargs,
+            context=context,
+            code_item_id=code_item_id,
+        )
+
+        if filtered_input_kwargs.is_err():
+            return filtered_input_kwargs
+
+        filtered_input_kwargs = filtered_input_kwargs.ok()
+
+        expected_input_kwargs = set()
+        for _inp_kwargs in self.inputs.values():
+            for k in _inp_kwargs.keys():
+                if k not in usr_input_kwargs:
+                    return Err(f"Function missing required keyword argument: '{k}'")
+            expected_input_kwargs.update(_inp_kwargs.keys())
+
+        permitted_input_kwargs = list(filtered_input_kwargs.keys())
+        not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
+        if len(not_approved_kwargs) > 0:
+            return Err(
+                f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
+            )
+        return Ok(True)
 
 
 @serializable()

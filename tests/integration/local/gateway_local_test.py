@@ -1,6 +1,8 @@
+# stdlib
+from secrets import token_hex
+
 # third party
 from faker import Faker
-from hagrid.orchestra import NodeHandle
 import pytest
 
 # syft absolute
@@ -14,45 +16,67 @@ from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
 
 
-def get_node_handle(node_type: str) -> NodeHandle:
-    node_handle = sy.orchestra.launch(
-        name=sy.UID().to_string(),
+def launch(node_type):
+    return sy.orchestra.launch(
+        name=token_hex(8),
         node_type=node_type,
         dev_mode=True,
         reset=True,
         local_db=True,
     )
-    return node_handle
 
 
-def get_admin_client(node_type: str):
-    node = sy.orchestra.launch(
-        name=sy.UID().to_string(),
-        node_type=node_type,
-        dev_mode=True,
-        reset=True,
-        local_db=True,
-    )
-    return node.login(email="info@openmined.org", password="changethis")
+@pytest.fixture
+def gateway():
+    node = launch(NodeType.GATEWAY)
+    yield node
+    node.python_node.cleanup()
+    node.land()
+
+
+@pytest.fixture
+def domain():
+    node = launch(NodeType.DOMAIN)
+    yield node
+    node.python_node.cleanup()
+    node.land()
+
+
+@pytest.fixture
+def domain_2():
+    node = launch(NodeType.DOMAIN)
+    yield node
+    node.python_node.cleanup()
+    node.land()
+
+
+@pytest.fixture
+def enclave():
+    node = launch(NodeType.ENCLAVE)
+    yield node
+    node.python_node.cleanup()
+    node.land()
 
 
 @pytest.mark.local_node
-def test_create_gateway_client():
-    node_handle = get_node_handle(NodeType.GATEWAY.value)
-    client = node_handle.client
+def test_create_gateway_client(gateway):
+    client = gateway.client
     assert isinstance(client, GatewayClient)
     assert client.metadata.node_type == NodeType.GATEWAY.value
 
 
 @pytest.mark.local_node
-def test_domain_connect_to_gateway():
-    gateway_node_handle = get_node_handle(NodeType.GATEWAY.value)
-    gateway_client: GatewayClient = gateway_node_handle.login(
-        email="info@openmined.org", password="changethis"
+def test_domain_connect_to_gateway(gateway, domain):
+    gateway_client: GatewayClient = gateway.login(
+        email="info@openmined.org",
+        password="changethis",
     )
-    domain_client: DomainClient = get_admin_client(NodeType.DOMAIN.value)
+    domain_client: DomainClient = domain.login(
+        email="info@openmined.org",
+        password="changethis",
+    )
 
-    result = domain_client.connect_to_gateway(handle=gateway_node_handle)
+    result = domain_client.connect_to_gateway(handle=gateway)
     assert isinstance(result, SyftSuccess)
 
     # check priority
@@ -60,7 +84,7 @@ def test_domain_connect_to_gateway():
     assert all_peers[0].node_routes[0].priority == 1
 
     # Try via client approach
-    result_2 = domain_client.connect_to_gateway(via_client=gateway_node_handle.client)
+    result_2 = domain_client.connect_to_gateway(via_client=gateway_client)
     assert isinstance(result_2, SyftSuccess)
 
     assert len(domain_client.peers) == 1
@@ -104,18 +128,21 @@ def test_domain_connect_to_gateway():
 
 
 @pytest.mark.local_node
-def test_domain_connect_to_gateway_routes_priority() -> None:
+def test_domain_connect_to_gateway_routes_priority(gateway, domain, domain_2) -> None:
     """
     A test for routes' priority (PythonNodeRoute)
     TODO: Add a similar test for HTTPNodeRoute
     """
-    gateway_node_handle: NodeHandle = get_node_handle(NodeType.GATEWAY.value)
-    gateway_client: GatewayClient = gateway_node_handle.login(
-        email="info@openmined.org", password="changethis"
+    gateway_client: GatewayClient = gateway.login(
+        email="info@openmined.org",
+        password="changethis",
     )
-    domain_client: DomainClient = get_admin_client(NodeType.DOMAIN.value)
+    domain_client: DomainClient = domain.login(
+        email="info@openmined.org",
+        password="changethis",
+    )
 
-    result = domain_client.connect_to_gateway(handle=gateway_node_handle)
+    result = domain_client.connect_to_gateway(handle=gateway)
     assert isinstance(result, SyftSuccess)
 
     all_peers = gateway_client.api.services.network.get_all_peers()
@@ -124,7 +151,7 @@ def test_domain_connect_to_gateway_routes_priority() -> None:
     assert domain_1_routes[0].priority == 1
 
     # reconnect to the gateway. The route's priority should be increased by 1
-    result = domain_client.connect_to_gateway(via_client=gateway_node_handle.client)
+    result = domain_client.connect_to_gateway(via_client=gateway_client)
     assert isinstance(result, SyftSuccess)
     all_peers = gateway_client.api.services.network.get_all_peers()
     assert len(all_peers) == 1
@@ -132,8 +159,11 @@ def test_domain_connect_to_gateway_routes_priority() -> None:
     assert domain_1_routes[0].priority == 2
 
     # another domain client connects to the gateway
-    domain_client_2: DomainClient = get_admin_client(NodeType.DOMAIN.value)
-    result = domain_client_2.connect_to_gateway(handle=gateway_node_handle)
+    domain_client_2: DomainClient = domain_2.login(
+        email="info@openmined.org",
+        password="changethis",
+    )
+    result = domain_client_2.connect_to_gateway(handle=gateway)
     assert isinstance(result, SyftSuccess)
 
     all_peers = gateway_client.api.services.network.get_all_peers()
@@ -146,16 +176,15 @@ def test_domain_connect_to_gateway_routes_priority() -> None:
 
 
 @pytest.mark.local_node
-def test_enclave_connect_to_gateway(faker: Faker):
-    gateway_node_handle = get_node_handle(NodeType.GATEWAY.value)
-    gateway_client = gateway_node_handle.client
-    enclave_client: EnclaveClient = get_node_handle(NodeType.ENCLAVE.value).client
+def test_enclave_connect_to_gateway(faker: Faker, gateway, enclave):
+    gateway_client = gateway.client
+    enclave_client: EnclaveClient = enclave.client
 
-    result = enclave_client.connect_to_gateway(handle=gateway_node_handle)
+    result = enclave_client.connect_to_gateway(handle=gateway)
     assert isinstance(result, SyftSuccess)
 
     # Try via client approach
-    result_2 = enclave_client.connect_to_gateway(via_client=gateway_node_handle.client)
+    result_2 = enclave_client.connect_to_gateway(via_client=gateway_client)
     assert isinstance(result_2, SyftSuccess)
 
     assert len(enclave_client.peers) == 1

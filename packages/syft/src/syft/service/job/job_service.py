@@ -1,5 +1,5 @@
 # stdlib
-from typing import Any, Optional
+from typing import Any
 from typing import cast
 
 # relative
@@ -99,7 +99,7 @@ class JobService(AbstractService):
     )
     def get_by_result_id(
         self, context: AuthedServiceContext, result_id: UID
-    ) -> Optional[Job] | SyftError:
+    ) -> Job | None | SyftError:
         res = self.stash.get_by_result_id(context.credentials, result_id)
         if res.is_err():
             return SyftError(message=res.err())
