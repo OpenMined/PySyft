@@ -56,8 +56,8 @@ def protocol_release_dir() -> Path:
 
 
 def solve_forward_ref(type_annotation: type) -> type:
-    if isinstance(type_annotation, ForwardRef):
-        SYFT_OBJECTS = {k.split(".")[-1]: TYPE_BANK[k][7] for k in TYPE_BANK}
+    if isinstance(type_annotation, ForwardRef):  # type: ignore[unreachable]
+        SYFT_OBJECTS = {k.split(".")[-1]: TYPE_BANK[k][7] for k in TYPE_BANK}  # type: ignore[unreachable]
         return _eval_type(type_annotation, {**globals(), **SYFT_OBJECTS}, {})
     return type_annotation
 
