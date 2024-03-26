@@ -81,6 +81,16 @@ class NetworkStash(BaseUIDStoreStash):
             return SyftError(message=valid.err())
         return super().update(credentials, peer)
 
+    def delete(
+        self,
+        credentials: SyftVerifyKey,
+        peer: NodePeer,
+    ) -> Result[NodePeer, str]:
+        valid = self.check_type(peer, NodePeer)
+        if valid.is_err():
+            return SyftError(message=valid.err())
+        return super().delete_by_uid(credentials, peer.id)
+
     def update_peer(
         self, credentials: SyftVerifyKey, peer: NodePeer
     ) -> Result[NodePeer, str]:
@@ -533,7 +543,8 @@ class NetworkService(AbstractService):
         route_id: UID | None = None,
     ) -> SyftSuccess | SyftError:
         """
-        Delete a route for a given peer in the network.
+        Delete a route for a given peer in the network. If a peer has no
+        routes left, it will be removed from the stash and will no longer be a peer.
 
         Args:
             context (AuthedServiceContext): The authentication context for the service.
@@ -543,6 +554,8 @@ class NetworkService(AbstractService):
         Returns:
             SyftSuccess | SyftError: Successful / Error response
         """
+        context.node = cast(AbstractNode, context.node)
+
         if route is None and route_id is None:
             return SyftError(
                 message="Either `route` or `route_id` arg must be provided"
@@ -561,10 +574,22 @@ class NetworkService(AbstractService):
         if isinstance(result, SyftError):
             return result
 
-        context.node = cast(AbstractNode, context.node)
-        result = self.stash.update(context.node.verify_key, peer)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
+        if len(peer.node_routes) == 0:
+            # remove the peer
+            result = self.stash.delete_by_uid(
+                credentials=context.credentials, uid=peer.id
+            )
+            if result.is_ok():
+                return_message += (
+                    f" No routes left for peer {peer.name}, so it is deleted!"
+                )
+            else:
+                return SyftError(message=result.err())
+        else:
+            # update the peer with less routes
+            result = self.stash.update(context.node.verify_key, peer)
+            if result.is_err():
+                return SyftError(message=str(result.err()))
 
         return SyftSuccess(message=return_message)
 
