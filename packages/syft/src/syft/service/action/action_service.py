@@ -290,6 +290,14 @@ class ActionService(AbstractService):
             return result.ok()
         return SyftError(message=result.err())
 
+    @service_method(
+        path="action.has_storage_permission",
+        name="has_storage_permission",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def has_storage_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
+        return self.store.has_storage_permission(uid)
+
     # not a public service endpoint
     def _user_code_execute(
         self,

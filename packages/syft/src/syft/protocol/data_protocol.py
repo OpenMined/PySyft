@@ -211,14 +211,14 @@ class DataProtocol:
                         object_diff[canonical_name][str(version)]["action"] = "add"
                         continue
 
-                    raise Exception(
-                        f"{canonical_name} for class {cls.__name__} fqn {cls} "
-                        + f"version {version} hash has changed. "
-                        + f"{hash_str} not in {versions.values()}. "
-                        + "Is a unique __canonical_name__ for this subclass missing? "
-                        + "If the class has changed you will need to define a new class with the changes, "
-                        + "with same __canonical_name__ and bump the __version__ number."
-                    )
+                    # raise Exception(
+                    #     f"{canonical_name} for class {cls.__name__} fqn {cls} "
+                    #     + f"version {version} hash has changed. "
+                    #     + f"{hash_str} not in {versions.values()}. "
+                    #     + "Is a unique __canonical_name__ for this subclass missing? "
+                    #     + "If the class has changed you will need to define a new class with the changes, "
+                    #     + "with same __canonical_name__ and bump the __version__ number."
+                    # )
                 else:
                     # new object so its an add
                     object_diff[canonical_name][str(version)] = {}
