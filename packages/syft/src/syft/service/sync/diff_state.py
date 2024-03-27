@@ -102,10 +102,10 @@ class ListDiff(AttrDiff):
             common_length = len(low_list)
 
         for i in range(common_length):
-            # if hasattr(low_list[i], 'syft_eq'):
-            #     if not low_list[i].syft_eq(high_list[i]):
-            #         diff_ids.append(i)
-            if low_list[i] != high_list[i]:
+            if hasattr(low_list[i], "syft_eq"):
+                if not low_list[i].syft_eq(high_list[i]):
+                    diff_ids.append(i)
+            elif low_list[i] != high_list[i]:
                 diff_ids.append(i)
 
         change_diff = ListDiff(
@@ -871,8 +871,10 @@ class NodeDiff(SyftObject):
                     if hash(batch) == batch_hash:
                         batch.decision = SyncDecision.ignore
                     else:
-                        print(f"""A batch with type {batch.root_type.__name__} was previously ignored but has changed
-It will be available for review again.""")
+                        print(
+                            f"""A batch with type {batch.root_type.__name__} was previously ignored but has changed
+It will be available for review again."""
+                        )
                         # batch has changed, so unignore
                         batch.decision = None
                         # then we also set the dependent batches to unignore

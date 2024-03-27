@@ -367,6 +367,7 @@ class Request(SyncableSyftObject):
         "changes",
         "requesting_user_verify_key",
     ]
+    __exclude_sync_diff_attrs__ = ["node_uid"]
 
     def _repr_html_(self) -> Any:
         # add changes
