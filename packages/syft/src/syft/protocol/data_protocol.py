@@ -57,7 +57,6 @@ def protocol_release_dir() -> Path:
     return data_protocol_dir() / "releases"
 
 
-
 def handle_union_type_klass_name(type_klass_name: str) -> str:
     if type_klass_name == typing.Union.__name__:
         return UnionType.__name__
