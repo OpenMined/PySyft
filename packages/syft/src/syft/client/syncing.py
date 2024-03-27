@@ -216,8 +216,11 @@ def get_sync_instructions_for_batch_items_for_add(
                 StoragePermission(uid=diff.object_id, node_uid=diff.low_node_uid)
             ]
 
-        # Always share to high_side
-        if diff.status == "NEW" and diff.high_obj is None:
+        if (
+            diff.status == "NEW"
+            and diff.high_obj is None
+            and decision == SyncDecision.low
+        ):
             new_storage_permissions_highside = [
                 StoragePermission(uid=diff.object_id, node_uid=diff.high_node_uid)
             ]
