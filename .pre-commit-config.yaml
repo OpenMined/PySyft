@@ -88,10 +88,8 @@ repos:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --show-fixes]
         types_or: [python, pyi, jupyter]
-        exclude: ^notebooks/Experimental/.*\.ipynb$
       - id: ruff-format
         types_or: [python, pyi, jupyter]
-        exclude: ^notebooks/Experimental/.*\.ipynb$
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
