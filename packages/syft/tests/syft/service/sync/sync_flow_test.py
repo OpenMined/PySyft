@@ -9,6 +9,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.abstract_node import NodeSideType
+from syft.client.syncing import compare_clients
 from syft.client.syncing import compare_states
 from syft.client.syncing import resolve
 from syft.service.action.action_object import ActionObject
@@ -208,44 +209,19 @@ def test_sync_flow():
 
 
 def test_diff_state(worker, second_worker):
-    low_worker = worker
     low_client = worker.root_client
     client_low_ds = worker.guest_client
-
-    low_client = low_worker.root_client
     high_client = second_worker.root_client
 
-    mock_low = np.array([0, 1, 2, 3, 4])  # do_high.mock
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        return 42
 
-    dataset_low = sy.Dataset(
-        name="my-dataset",
-        asset_list=[
-            sy.Asset(
-                name="numpy-data",
-                mock=mock_low,
-                data=ActionObject.empty(data_node_id=high_client.id),
-                shape=mock_low.shape,
-                mock_is_real=True,
-            )
-        ],
-    )
+    compute.code = dedent(compute.code)
 
-    _ = low_client.upload_dataset(dataset_low)
+    _ = client_low_ds.code.request_code_execution(compute)
 
-    data_low = client_low_ds.datasets[0].assets[0]
-
-    @sy.syft_function_single_use(data=data_low)
-    def compute_mean(data) -> float:
-        return data.mean()
-
-    compute_mean.code = dedent(compute_mean.code)
-
-    _ = client_low_ds.code.request_code_execution(compute_mean)
-
-    low_state = low_client.get_sync_state()
-    high_state = high_client.get_sync_state()
-
-    diff_state = compare_states(low_state, high_state)
+    diff_state = compare_clients(low_client, high_client)
     low_items_to_sync, high_items_to_sync = resolve(
         diff_state, decision="low", share_private_objects=True
     )
@@ -257,10 +233,7 @@ def test_diff_state(worker, second_worker):
     low_client.apply_state(low_items_to_sync)
     high_client.apply_state(high_items_to_sync)
 
-    low_state = low_client.get_sync_state()
-    high_state = high_client.get_sync_state()
-
-    diff_state = compare_states(low_state, high_state)
+    diff_state = compare_clients(low_client, high_client)
     low_items_to_sync, high_items_to_sync = resolve(
         diff_state, decision="low", share_private_objects=True
     )
