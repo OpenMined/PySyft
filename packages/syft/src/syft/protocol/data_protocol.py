@@ -24,8 +24,10 @@ from ..serde.recursive import TYPE_BANK
 from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.response import SyftSuccess
+from ..service.response import SyftWarning
 from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftBaseObject
+from ..util.util import get_dev_mode
 
 PROTOCOL_STATE_FILENAME = "protocol_version.json"
 PROTOCOL_TYPE = str | int
@@ -241,7 +243,7 @@ class DataProtocol:
                         object_diff[canonical_name][str(version)]["action"] = "add"
                         continue
 
-                    raise Exception(
+                    error_msg = (
                         f"{canonical_name} for class {cls.__name__} fqn {cls} "
                         + f"version {version} hash has changed. "
                         + f"{hash_str} not in {versions.values()}. "
@@ -249,6 +251,11 @@ class DataProtocol:
                         + "If the class has changed you will need to define a new class with the changes, "
                         + "with same __canonical_name__ and bump the __version__ number."
                     )
+
+                    if get_dev_mode():
+                        raise Exception(error_msg)
+                    else:
+                        print(SyftWarning(message=error_msg))
                 else:
                     # new object so its an add
                     object_diff[canonical_name][str(version)] = {}
