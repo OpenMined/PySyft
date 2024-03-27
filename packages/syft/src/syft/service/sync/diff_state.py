@@ -3,6 +3,7 @@ import html
 import textwrap
 from typing import Any
 from typing import ClassVar
+from typing import Literal
 
 # third party
 from pydantic import model_validator
@@ -246,7 +247,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         return hash(self.object_id) + hash(self.low_obj) + hash(self.high_obj)
 
     @property
-    def status(self) -> str:
+    def status(self) -> Literal["NEW", "SAME", "DIFF"]:
         if self.low_obj is None or self.high_obj is None:
             return "NEW"
         if len(self.diff_list) == 0:
@@ -446,19 +447,6 @@ def _wrap_text(text: str, width: int, indent: int = 4) -> str:
             if line.strip() != ""
         ]
     )
-
-
-def _get_hierarchy_root(
-    diffs: list[ObjectDiff], dependencies: dict[UID, list[UID]]
-) -> list[ObjectDiff]:
-    all_ids = {diff.object_id for diff in diffs}
-    child_ids = set()
-    for uid in all_ids:
-        child_ids.update(dependencies.get(uid, []))
-    # Root ids are object ids with no parent
-    root_ids = list(all_ids - child_ids)
-    roots = [diff for diff in diffs if diff.object_id in root_ids]
-    return roots
 
 
 class ObjectDiffBatch(SyftObject):

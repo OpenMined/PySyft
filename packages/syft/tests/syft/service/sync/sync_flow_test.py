@@ -243,6 +243,129 @@ def test_diff_state(worker, second_worker):
     assert high_items_to_sync.is_empty
 
 
+def test_request_code_execution_multiple(worker, second_worker):
+    low_client = worker.root_client
+    client_low_ds = worker.guest_client
+    high_client = second_worker.root_client
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        return 42
+
+    compute.code = dedent(compute.code)
+
+    @sy.syft_function_single_use()
+    def compute_twice() -> int:
+        return 42 * 2
+
+    compute_twice.code = dedent(compute_twice.code)
+
+    @sy.syft_function_single_use()
+    def compute_thrice() -> int:
+        return 42 * 3
+
+    compute_thrice.code = dedent(compute_thrice.code)
+
+    _ = client_low_ds.code.request_code_execution(compute)
+    _ = client_low_ds.code.request_code_execution(compute_twice)
+
+    diff_state = compare_clients(low_client, high_client)
+    low_items_to_sync, high_items_to_sync = resolve(
+        diff_state, decision="low", share_private_objects=True
+    )
+
+    assert not diff_state.is_same
+    assert len(diff_state.diffs) % 2 == 0
+    assert not low_items_to_sync.is_empty
+    assert not high_items_to_sync.is_empty
+
+    low_client.apply_state(low_items_to_sync)
+    high_client.apply_state(high_items_to_sync)
+
+    _ = client_low_ds.code.request_code_execution(compute_thrice)
+
+    diff_state = compare_clients(low_client, high_client)
+    low_items_to_sync, high_items_to_sync = resolve(
+        diff_state, decision="low", share_private_objects=True
+    )
+
+    assert not diff_state.is_same
+    assert len(diff_state.diffs) % 3 == 0
+    assert not low_items_to_sync.is_empty
+    assert not high_items_to_sync.is_empty
+
+
+def test_sync_high(worker, second_worker):
+    low_client = worker.root_client
+    client_low_ds = worker.guest_client
+    high_client = second_worker.root_client
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        return 42
+
+    compute.code = dedent(compute.code)
+
+    _ = client_low_ds.code.request_code_execution(compute)
+
+    diff_state = compare_clients(low_client, high_client)
+    low_items_to_sync, high_items_to_sync = resolve(
+        diff_state,
+        decision="high",
+    )
+
+    assert not diff_state.is_same
+    assert not low_items_to_sync.is_empty
+    assert high_items_to_sync.is_empty
+
+
+@pytest.mark.parametrize(
+    "decision",
+    ["skip", "ignore"],
+)
+def test_sync_skip_ignore(worker, second_worker, decision):
+    low_client = worker.root_client
+    client_low_ds = worker.guest_client
+    high_client = second_worker.root_client
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        return 42
+
+    compute.code = dedent(compute.code)
+
+    _ = client_low_ds.code.request_code_execution(compute)
+
+    diff_state = compare_clients(low_client, high_client)
+    low_items_to_sync, high_items_to_sync = resolve(
+        diff_state,
+        decision=decision,
+    )
+
+    assert not diff_state.is_same
+    assert low_items_to_sync.is_empty
+    assert high_items_to_sync.is_empty
+
+
+@pytest.mark.parametrize(
+    "decision",
+    ["skip", "ignore", "low", "high"],
+)
+def test_sync_empty(worker, second_worker, decision):
+    low_client = worker.root_client
+    high_client = second_worker.root_client
+
+    diff_state = compare_clients(low_client, high_client)
+    low_items_to_sync, high_items_to_sync = resolve(
+        diff_state,
+        decision=decision,
+    )
+
+    assert diff_state.is_same
+    assert low_items_to_sync.is_empty
+    assert high_items_to_sync.is_empty
+
+
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_sync_flow_no_sharing():
