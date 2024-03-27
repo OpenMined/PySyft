@@ -39,46 +39,56 @@ class NodePeer(SyftObject):
     node_type: NodeType
     admin_email: str
 
-    def existed_route(self, route: NodeRouteType) -> tuple[bool, int | None]:
+    def existed_route(
+        self, route: NodeRouteType | None = None, route_id: UID | None = None
+    ) -> tuple[bool, int | None]:
         """Check if a route exists in self.node_routes
 
         Args:
             route: the route to be checked. For now it can be either
                 HTTPNodeRoute or PythonNodeRoute or VeilidNodeRoute
+            route_id: the id of the route to be checked
 
         Returns:
             if the route exists, returns (True, index of the existed route in self.node_routes)
             if the route does not exist returns (False, None)
         """
+        if route_id is None and route is None:
+            raise ValueError("Either route or route_id should be provided")
+
         if not isinstance(route, HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute):
             raise ValueError(f"Unsupported route type: {type(route)}")
 
-        same_route: Callable = _route_type_to_same_route_check(route)
-        for i, r in enumerate(self.node_routes):
-            if same_route(route, r):
-                return (True, i)
+        if route:
+            same_route: Callable = _route_type_to_same_route_check(route)
+            for i, r in enumerate(self.node_routes):
+                if same_route(route, r):
+                    return (True, i)
+
+        elif route_id:
+            for i, r in enumerate(self.node_routes):
+                if r.id == route_id:
+                    return (True, i)
 
         return (False, None)
 
-    def update_route_priority(self, new_route: NodeRoute) -> NodeRoute:
+    def update_route_priority(self, route: NodeRoute) -> NodeRoute:
         """
         Update the new_route's priority to be the highest
 
         Args:
-            new_route (NodeRoute): The new route whose priority is to be updated.
+            route (NodeRoute): The new route whose priority is to be updated.
 
         Returns:
             NodeRoute: The new route with updated priority
         """
         current_max_priority: int = max(route.priority for route in self.node_routes)
-        new_route.priority = current_max_priority + 1
-        return new_route
+        route.priority = current_max_priority + 1
+        return route
 
     def update_route(self, new_route: NodeRoute) -> NodeRoute | None:
         """
         Update the route for the node.
-
-        This method takes a new route as input.
         If the route already exists, updates the priority of the existing route.
         If it doesn't, it append the new route to the peer's list of node routes.
 
@@ -115,6 +125,28 @@ class NodePeer(SyftObject):
         """
         for new_route in new_routes:
             self.update_route(new_route)
+
+    def update_existed_route_priority(
+        self, route: NodeRoute, priority: int | None = None
+    ) -> NodeRoute | None:
+        """
+        Update the priority of the existed route.
+
+        Args:
+            route (NodeRoute): The route whose priority is to be updated.
+            priority (int): The new priority of the route.
+
+        Returns:
+            NodeRoute | None: The route with updated priority if the route exists, else None.
+        """
+        existed, index = self.existed_route(route)
+        if existed and index is not None:
+            if priority is not None:
+                self.node_routes[index].priority = priority
+            else:
+                self.node_routes[index] = self.update_route_priority(route)
+            return self.node_routes[index]
+        return None
 
     @staticmethod
     def from_client(client: SyftClient) -> "NodePeer":

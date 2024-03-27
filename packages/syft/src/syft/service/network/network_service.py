@@ -530,8 +530,18 @@ class NetworkService(AbstractService):
         Returns:
             SyftSuccess | SyftError: Successful / Error response
         """
-        # if priority <= 0:
-        # if priority is not None:
+        if priority <= 0:
+            return SyftError(
+                message="Priority must be greater than 0. Now it is {priority}."
+            )
+        if not peer.existed_route(route_id=route.id)[0]:
+            return SyftError(
+                message=f"The provided route with id {route.id} does not exist for peer {peer.name}."
+            )
+
+        peer.update_existed_route_priority(route_id=route.id, priority=priority)
+
+        result = self.stash.update(peer)
         return SyftError(message="Not implemented")
 
     @service_method(path="network.delete_route_for", name="delete_route_for")
@@ -567,10 +577,10 @@ class NetworkService(AbstractService):
 
         if route:
             result = peer.delete_route(route=route)
-            return_message = f"Route {route.id} deleted for peer {peer.name}!"
+            return_message = f"Route {route.id} deleted for peer {peer.name}."
         if route_id:
             result = peer.delete_route(route_id=route_id)
-            return_message = f"Route {route_id} deleted for peer {peer.name}!"
+            return_message = f"Route {route_id} deleted for peer {peer.name}."
         if isinstance(result, SyftError):
             return result
 
@@ -581,12 +591,12 @@ class NetworkService(AbstractService):
             )
             if result.is_ok():
                 return_message += (
-                    f" No routes left for peer {peer.name}, so it is deleted!"
+                    f" No routes left for peer {peer.name}, so it is deleted."
                 )
             else:
                 return SyftError(message=result.err())
         else:
-            # update the peer with less routes
+            # update the peer with the route removed
             result = self.stash.update(context.node.verify_key, peer)
             if result.is_err():
                 return SyftError(message=str(result.err()))
