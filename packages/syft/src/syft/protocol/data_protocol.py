@@ -82,8 +82,9 @@ def handle_annotation_repr_(annotation: type) -> str:
 
 
 class DataProtocol:
-    def __init__(self, filename: str) -> None:
+    def __init__(self, filename: str, raise_exception: bool = False) -> None:
         self.file_path = data_protocol_dir() / filename
+        self.raise_exception = raise_exception
         self.load_state()
 
     def load_state(self) -> None:
@@ -252,10 +253,10 @@ class DataProtocol:
                         + "with same __canonical_name__ and bump the __version__ number."
                     )
 
-                    if get_dev_mode():
+                    if get_dev_mode() or self.raise_exception:
                         raise Exception(error_msg)
                     else:
-                        warnings.warn(error_msg, stacklevel=3, category=UserWarning)
+                        warnings.warn(error_msg, stacklevel=1, category=UserWarning)
                         break
                 else:
                     # new object so its an add
@@ -501,17 +502,20 @@ class DataProtocol:
         return False
 
 
-def get_data_protocol() -> DataProtocol:
-    return DataProtocol(filename=data_protocol_file_name())
+def get_data_protocol(raise_exception: bool = False) -> DataProtocol:
+    return DataProtocol(
+        filename=data_protocol_file_name(),
+        raise_exception=raise_exception,
+    )
 
 
 def stage_protocol_changes() -> Result[SyftSuccess, SyftError]:
-    data_protocol = get_data_protocol()
+    data_protocol = get_data_protocol(raise_exception=True)
     return data_protocol.stage_protocol_changes()
 
 
 def bump_protocol_version() -> Result[SyftSuccess, SyftError]:
-    data_protocol = get_data_protocol()
+    data_protocol = get_data_protocol(raise_exception=True)
     return data_protocol.bump_protocol_version()
 
 
