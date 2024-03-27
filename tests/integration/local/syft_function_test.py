@@ -1,7 +1,6 @@
 # stdlib
 from secrets import token_hex
 import sys
-from textwrap import dedent
 
 # third party
 import pytest
@@ -52,7 +51,6 @@ def test_nested_jobs(node):
     def aggregate_job(job_results):
         return sum(job_results)
 
-    aggregate_job.code = dedent(aggregate_job.code)
     res = ds_client.code.submit(aggregate_job)
 
     ## Batch function
@@ -60,8 +58,6 @@ def test_nested_jobs(node):
     def process_batch(batch):
         print(f"starting batch {batch}")
         return batch + 1
-
-    process_batch.code = dedent(process_batch.code)
 
     res = ds_client.code.submit(process_batch)
     print(res)
@@ -78,7 +74,6 @@ def test_nested_jobs(node):
         job = domain.launch_job(aggregate_job, job_results=job_results)
         return job.result
 
-    process_all.code = dedent(process_all.code)
     assert process_all.worker_pool_name is None
 
     # Approve & run

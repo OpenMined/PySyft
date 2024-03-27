@@ -1,6 +1,5 @@
 # stdlib
 from collections import OrderedDict
-from textwrap import dedent
 
 # third party
 import numpy as np
@@ -39,8 +38,6 @@ def test_local_execution(worker):
     )
     def my_func(x):
         return x + 1
-
-    my_func.code = dedent(my_func.code)
 
     # time.sleep(10)
     local_res = my_func(x=asset, time_alive=1)

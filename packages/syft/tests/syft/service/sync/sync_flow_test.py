@@ -1,6 +1,5 @@
 # stdlib
 import sys
-from textwrap import dedent
 
 # third party
 import numpy as np
@@ -93,8 +92,6 @@ def test_sync_flow():
     @sy.syft_function_single_use(data=data_low)
     def compute_mean(data) -> float:
         return data.mean()
-
-    compute_mean.code = dedent(compute_mean.code)
 
     res = client_low_ds.code.request_code_execution(compute_mean)
     print(res)
@@ -285,8 +282,6 @@ def test_sync_flow_no_sharing():
     @sy.syft_function_single_use(data=data_low)
     def compute_mean(data) -> float:
         return data.mean()
-
-    compute_mean.code = dedent(compute_mean.code)
 
     res = client_low_ds.code.request_code_execution(compute_mean)
     print(res)
