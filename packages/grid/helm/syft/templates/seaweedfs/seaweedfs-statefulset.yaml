@@ -45,23 +45,20 @@ spec:
             {{- toYaml .Values.seaweedfs.env | nindent 12 }}
             {{- end }}
           volumeMounts:
-            - mountPath: /etc/seaweedfs/filer.toml
-              name: seaweedfs-config
-              readOnly: false
+            # filer conf
+            - mountPath: /root/swfs/filer.toml
               subPath: filer.toml
-            - mountPath: /etc/seaweedfs/start.sh
               name: seaweedfs-config
               readOnly: false
-              subPath: start.sh
-            - mountPath: /data/blob
+            # volume server data
+            - mountPath: /data/vol0/
               name: seaweedfs-data
               readOnly: false
-              subPath: ''
       terminationGracePeriodSeconds: 5
       volumes:
-        - configMap:
+        - name: seaweedfs-config
+          configMap:
             name: seaweedfs-config
-          name: seaweedfs-config
   volumeClaimTemplates:
   - metadata:
       name: seaweedfs-data
