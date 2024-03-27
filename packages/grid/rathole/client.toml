@@ -1,0 +1,6 @@
+[client]
+remote_addr = "host.docker.internal:2333" # public IP and port of gateway
+
+[client.services.domain]
+token = "domain-specific-rathole-secret"
+local_addr = "localhost:8000" # nginx proxy
