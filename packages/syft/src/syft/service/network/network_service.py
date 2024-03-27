@@ -5,6 +5,7 @@ from typing import Any
 from typing import cast
 
 # third party
+from result import Err
 from result import Result
 
 # relative
@@ -78,18 +79,8 @@ class NetworkStash(BaseUIDStoreStash):
     ) -> Result[NodePeer, str]:
         valid = self.check_type(peer, NodePeer)
         if valid.is_err():
-            return SyftError(message=valid.err())
+            return Err(message=valid.err())
         return super().update(credentials, peer)
-
-    def delete(
-        self,
-        credentials: SyftVerifyKey,
-        peer: NodePeer,
-    ) -> Result[NodePeer, str]:
-        valid = self.check_type(peer, NodePeer)
-        if valid.is_err():
-            return SyftError(message=valid.err())
-        return super().delete_by_uid(credentials, peer.id)
 
     def update_peer(
         self, credentials: SyftVerifyKey, peer: NodePeer
@@ -530,19 +521,22 @@ class NetworkService(AbstractService):
         Returns:
             SyftSuccess | SyftError: Successful / Error response
         """
-        if priority <= 0:
-            return SyftError(
-                message="Priority must be greater than 0. Now it is {priority}."
-            )
-        if not peer.existed_route(route_id=route.id)[0]:
-            return SyftError(
-                message=f"The provided route with id {route.id} does not exist for peer {peer.name}."
-            )
+        context.node = cast(AbstractNode, context.node)
+        # update the route's priority for the peer
+        updated_node_route: NodeRoute | SyftError = peer.update_existed_route_priority(
+            route=route, priority=priority
+        )
+        if isinstance(updated_node_route, SyftError):
+            return updated_node_route
+        new_priority: int = updated_node_route.priority
+        # update the peer in the store
+        result = self.stash.update(context.node.verify_key, peer)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
 
-        peer.update_existed_route_priority(route_id=route.id, priority=priority)
-
-        result = self.stash.update(peer)
-        return SyftError(message="Not implemented")
+        return SyftSuccess(
+            message=f"Route {route.id}'s priority updated to {new_priority} for peer {peer.name}"
+        )
 
     @service_method(path="network.delete_route_for", name="delete_route_for")
     def delete_route_for(

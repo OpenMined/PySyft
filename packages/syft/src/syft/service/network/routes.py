@@ -34,6 +34,8 @@ if TYPE_CHECKING:
 
 
 class NodeRoute:
+    priority: int = 1
+
     def client_with_context(
         self, context: NodeServiceContext
     ) -> SyftClient | SyftError:

@@ -35,7 +35,9 @@ class NodePeer(SyftObject):
     id: UID | None = None  # type: ignore[assignment]
     name: str
     verify_key: SyftVerifyKey
-    node_routes: list[NodeRouteType] = []
+    node_routes: list[
+        NodeRouteType
+    ] = []  # one peer will probably have only several routes, so using a list instead of a dict will save memory
     node_type: NodeType
     admin_email: str
 
@@ -54,12 +56,12 @@ class NodePeer(SyftObject):
             if the route does not exist returns (False, None)
         """
         if route_id is None and route is None:
-            raise ValueError("Either route or route_id should be provided")
-
-        if not isinstance(route, HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute):
-            raise ValueError(f"Unsupported route type: {type(route)}")
+            raise ValueError("Either route or route_id should be provided in args")
 
         if route:
+            if not isinstance(route, HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute):
+                raise ValueError(f"Unsupported route type: {type(route)}")
+
             same_route: Callable = _route_type_to_same_route_check(route)
             for i, r in enumerate(self.node_routes):
                 if same_route(route, r):
@@ -72,15 +74,15 @@ class NodePeer(SyftObject):
 
         return (False, None)
 
-    def update_route_priority(self, route: NodeRoute) -> NodeRoute:
+    def assign_highest_priority(self, route: NodeRoute) -> NodeRoute:
         """
-        Update the new_route's priority to be the highest
+        Assign the new_route's to have the highest priority
 
         Args:
             route (NodeRoute): The new route whose priority is to be updated.
 
         Returns:
-            NodeRoute: The new route with updated priority
+            NodeRoute: The new route with the updated priority
         """
         current_max_priority: int = max(route.priority for route in self.node_routes)
         route.priority = current_max_priority + 1
@@ -98,7 +100,7 @@ class NodePeer(SyftObject):
         Returns:
             NodeRoute | None: if the route already exists, return it, else returns None
         """
-        new_route = self.update_route_priority(new_route)
+        new_route = self.assign_highest_priority(new_route)
         existed, index = self.existed_route(new_route)
         if existed and index is not None:
             self.node_routes[index].priority = new_route.priority
@@ -128,30 +130,40 @@ class NodePeer(SyftObject):
 
     def update_existed_route_priority(
         self, route: NodeRoute, priority: int | None = None
-    ) -> NodeRoute | None:
+    ) -> NodeRoute | SyftError:
         """
-        Update the priority of the existed route.
+        Update the priority of an existed route.
 
         Args:
             route (NodeRoute): The route whose priority is to be updated.
             priority (int): The new priority of the route.
 
         Returns:
-            NodeRoute | None: The route with updated priority if the route exists, else None.
+            NodeRoute: The route with updated priority if the route exists
+            SyftError: If the route does not exist or the priority is invalid
         """
-        existed, index = self.existed_route(route)
-        if existed and index is not None:
-            if priority is not None:
-                self.node_routes[index].priority = priority
-            else:
-                self.node_routes[index] = self.update_route_priority(route)
-            return self.node_routes[index]
-        return None
+        if priority is not None and priority <= 0:
+            return SyftError(
+                message="Priority must be greater than 0. Now it is {priority}."
+            )
+
+        existed, index = self.existed_route(route_id=route.id)
+        if not existed or index is None:
+            return SyftError(message=f"Route with id {route.id} does not exist.")
+
+        if priority is not None:
+            self.node_routes[index].priority = priority
+        else:
+            self.node_routes[index].priority = self.assign_highest_priority(
+                route
+            ).priority
+
+        return self.node_routes[index]
 
     @staticmethod
     def from_client(client: SyftClient) -> "NodePeer":
         if not client.metadata:
-            raise Exception("Client has to have metadata first")
+            raise ValueError("Client has to have metadata first")
 
         peer = client.metadata.to(NodeMetadataV3).to(NodePeer)
         route = connection_to_route(client.connection)
@@ -162,7 +174,7 @@ class NodePeer(SyftObject):
         self, context: NodeServiceContext
     ) -> SyftClient | SyftError:
         if len(self.node_routes) < 1:
-            raise Exception(f"No routes to peer: {self}")
+            raise ValueError(f"No routes to peer: {self}")
         # select the latest added route
         final_route = self.pick_highest_priority_route()
         connection = route_to_connection(route=final_route)
@@ -176,7 +188,7 @@ class NodePeer(SyftObject):
 
     def client_with_key(self, credentials: SyftSigningKey) -> SyftClient | SyftError:
         if len(self.node_routes) < 1:
-            raise Exception(f"No routes to peer: {self}")
+            raise ValueError(f"No routes to peer: {self}")
         # select the latest added route
         final_route = self.pick_highest_priority_route()
         connection = route_to_connection(route=final_route)
@@ -195,11 +207,11 @@ class NodePeer(SyftObject):
         return client.proxy_to(self)
 
     def pick_highest_priority_route(self) -> NodeRoute:
-        final_route: NodeRoute = self.node_routes[-1]
+        highest_priority_route: NodeRoute = self.node_routes[-1]
         for route in self.node_routes:
-            if route.priority > final_route.priority:
-                final_route = route
-        return final_route
+            if route.priority > highest_priority_route.priority:
+                highest_priority_route = route
+        return highest_priority_route
 
     def delete_route(
         self, route: NodeRouteType | None = None, route_id: UID | None = None
