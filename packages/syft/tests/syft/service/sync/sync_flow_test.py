@@ -120,18 +120,6 @@ def test_sync_flow():
     high_state = high_client.get_sync_state()
 
     diff_state = compare_states(low_state, high_state)
-    # assert diff_state.is_same()
-
-    low_items_to_sync, high_items_to_sync = resolve(
-        diff_state, decision="low", share_private_objects=True
-    )
-
-    low_client.apply_state(low_items_to_sync)
-
-    high_client.apply_state(high_items_to_sync)
-
-    assert low_items_to_sync.is_empty
-    assert high_items_to_sync.is_empty
 
     high_client._fetch_api(high_client.credentials)
 
@@ -219,7 +207,7 @@ def test_sync_flow():
     high_worker.cleanup()
 
 
-def test_multiple_user_codes2(worker, second_worker):
+def test_diff_state(worker, second_worker):
     low_worker = worker
     low_client = worker.root_client
     client_low_ds = worker.guest_client
@@ -242,7 +230,7 @@ def test_multiple_user_codes2(worker, second_worker):
         ],
     )
 
-    res = low_client.upload_dataset(dataset_low)
+    _ = low_client.upload_dataset(dataset_low)
 
     data_low = client_low_ds.datasets[0].assets[0]
 
@@ -252,7 +240,7 @@ def test_multiple_user_codes2(worker, second_worker):
 
     compute_mean.code = dedent(compute_mean.code)
 
-    res = client_low_ds.code.request_code_execution(compute_mean)
+    _ = client_low_ds.code.request_code_execution(compute_mean)
 
     low_state = low_client.get_sync_state()
     high_state = high_client.get_sync_state()

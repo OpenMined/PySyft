@@ -133,6 +133,7 @@ def worker() -> Worker:
 
 @pytest.fixture(scope="function")
 def second_worker() -> Worker:
+    # Used in node syncing tests
     worker = sy.Worker.named(name=token_hex(8))
     yield worker
     worker.cleanup()
