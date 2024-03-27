@@ -122,6 +122,7 @@ from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
+from ..util.util import get_dev_mode
 from ..util.util import get_env
 from ..util.util import get_queue_address
 from ..util.util import random_name
@@ -177,10 +178,6 @@ def get_default_root_username() -> str | None:
 
 def get_default_root_password() -> str | None:
     return get_env(DEFAULT_ROOT_PASSWORD, "changethis")  # nosec
-
-
-def get_dev_mode() -> bool:
-    return str_to_bool(get_env("DEV_MODE", "False"))
 
 
 def get_enable_warnings() -> bool:
@@ -1429,8 +1426,6 @@ class Node(AbstractNode):
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
     def create_initial_settings(self, admin_email: str) -> NodeSettingsV2 | None:
-        if self.name is None:
-            self.name = random_name()
         try:
             settings_stash = SettingsStash(store=self.document_store)
             if self.signing_key is None:
