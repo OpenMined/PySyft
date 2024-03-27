@@ -64,6 +64,10 @@ spec:
               value: "{{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}"
             - name: DEFAULT_WORKER_POOL_COUNT
               value: {{ .Values.node.defaultWorkerPoolCount | quote }}
+            {{- if .Values.node.defaultBucketName }}
+            - name: DEFAULT_BUCKET_NAME
+              value: {{ .Values.node.defaultBucketName | quote }}
+            {{- end }}
             {{- if .Values.node.debuggerEnabled }}
             - name: DEBUGGER_ENABLED
               value: "true"
