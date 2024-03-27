@@ -1,5 +1,4 @@
 # stdlib
-from textwrap import dedent
 import uuid
 
 # third party
@@ -110,8 +109,6 @@ def test_domain_gateway_user_code(domain_1_port, gateway_port):
     @sy.syft_function_single_use(asset=asset)
     def mock_function(asset):
         return asset + 1
-
-    mock_function.code = dedent(mock_function.code)
 
     request_res = proxy_ds.code.request_code_execution(mock_function)
     assert isinstance(request_res, Request)
