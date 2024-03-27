@@ -12,6 +12,7 @@ import re
 from types import UnionType
 import typing
 from typing import Any
+import warnings
 
 # third party
 from packaging.version import parse
@@ -24,7 +25,6 @@ from ..serde.recursive import TYPE_BANK
 from ..service.response import SyftError
 from ..service.response import SyftException
 from ..service.response import SyftSuccess
-from ..service.response import SyftWarning
 from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftBaseObject
 from ..util.util import get_dev_mode
@@ -255,7 +255,8 @@ class DataProtocol:
                     if get_dev_mode():
                         raise Exception(error_msg)
                     else:
-                        print(SyftWarning(message=error_msg))
+                        warnings.warn(error_msg, stacklevel=3, category=UserWarning)
+                        break
                 else:
                     # new object so its an add
                     object_diff[canonical_name][str(version)] = {}
