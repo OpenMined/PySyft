@@ -114,13 +114,6 @@ spec:
               value: "localhost"
             - name: JAEGER_PORT
               value: "14268"
-            # Oblivious
-            {{- if .Values.node.oblv.enabled }}
-            - name: OBLV_LOCALHOST_PORT
-              value: {{ .Values.node.oblv.port | quote }}
-            - name: OBLV_ENABLED
-              value: {{ .Values.node.oblv.enabled | quote }}
-            {{- end }}
             # Veilid
             {{- if .Values.veilid.enabled }}
             - name: VEILID_ENABLED
