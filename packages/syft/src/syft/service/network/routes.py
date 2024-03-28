@@ -5,6 +5,7 @@ from __future__ import annotations
 import secrets
 from typing import Any
 from typing import TYPE_CHECKING
+from typing import TypeAlias
 from typing import cast
 
 # third party
@@ -34,7 +35,20 @@ if TYPE_CHECKING:
 
 
 class NodeRoute:
-    def client_with_context(self, context: NodeServiceContext) -> SyftClient:
+    def client_with_context(
+        self, context: NodeServiceContext
+    ) -> SyftClient | SyftError:
+        """
+        Convert the current route (self) to a connection (either HTTP, Veilid or Python)
+        and create a SyftClient from the connection.
+
+        Args:
+            context (NodeServiceContext): The NodeServiceContext containing the node information.
+
+        Returns:
+            SyftClient | SyftError: Returns the created SyftClient, or SyftError
+                if the client type is not valid or if the context's node is None.
+        """
         connection = route_to_connection(route=self, context=context)
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
@@ -43,7 +57,9 @@ class NodeRoute:
             return SyftError(message=f"context {context}'s node is None")
         return client_type(connection=connection, credentials=context.node.signing_key)
 
-    def validate_with_context(self, context: AuthedServiceContext) -> NodePeer:
+    def validate_with_context(
+        self, context: AuthedServiceContext
+    ) -> NodePeer | SyftError:
         # relative
         from .node_peer import NodePeer
 
@@ -68,7 +84,7 @@ class NodeRoute:
             return SyftError(message="Signature Verification Failed in ping")
 
         # Step 2: Create a Node Peer with the given route
-        self_node_peer = context.node.settings.to(NodePeer)
+        self_node_peer: NodePeer = context.node.settings.to(NodePeer)
         self_node_peer.node_routes.append(self)
 
         return self_node_peer
@@ -153,7 +169,7 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         return hash(self.worker_settings.id)
 
 
-NodeRouteType = HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute
+NodeRouteType: TypeAlias = HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute
 
 
 def route_to_connection(

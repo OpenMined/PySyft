@@ -96,7 +96,7 @@ class EnclaveClient(SyftClient):
 
         if isinstance(res, SyftSuccess):
             return SyftSuccess(
-                message=f"Connected {self.metadata.node_type} to {client.name} gateway"
+                message=f"Connected {self.metadata.node_type} {self.metadata.name} to {client.name} gateway"
             )
 
         return res
