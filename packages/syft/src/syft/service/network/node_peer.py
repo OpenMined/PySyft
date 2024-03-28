@@ -3,6 +3,7 @@ from collections.abc import Callable
 
 # relative
 from ...abstract_node import NodeType
+from ...client.client import NodeConnection
 from ...client.client import SyftClient
 from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
@@ -130,13 +131,14 @@ class NodePeer(SyftObject):
 
     def update_existed_route_priority(
         self, route: NodeRoute, priority: int | None = None
-    ) -> NodeRoute | SyftError:
+    ) -> NodeRouteType | SyftError:
         """
         Update the priority of an existed route.
 
         Args:
             route (NodeRoute): The route whose priority is to be updated.
-            priority (int): The new priority of the route.
+            priority (int | None): The new priority of the route. If not given,
+                the route will be assigned with the highest priority.
 
         Returns:
             NodeRoute: The route with updated priority if the route exists
@@ -172,14 +174,13 @@ class NodePeer(SyftObject):
 
     def client_with_context(
         self, context: NodeServiceContext
-    ) -> SyftClient | SyftError:
+    ) -> type[SyftClient] | SyftError:
         if len(self.node_routes) < 1:
             raise ValueError(f"No routes to peer: {self}")
-        # select the latest added route
-        final_route = self.pick_highest_priority_route()
-        connection = route_to_connection(route=final_route)
-
-        client_type = connection.get_client_type()
+        # select the highest priority route (i.e. added or updated the latest)
+        final_route: NodeRoute = self.pick_highest_priority_route()
+        connection: NodeConnection = route_to_connection(route=final_route)
+        client_type: type[SyftClient] | SyftError = connection.get_client_type()
         if isinstance(client_type, SyftError):
             return client_type
         if context.node is None:

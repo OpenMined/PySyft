@@ -46,6 +46,7 @@ from ..warnings import CRUDWarning
 from .node_peer import NodePeer
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
+from .routes import NodeRouteType
 from .routes import PythonNodeRoute
 from .routes import VeilidNodeRoute
 
@@ -114,7 +115,7 @@ class NetworkStash(BaseUIDStoreStash):
 
     def get_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
-    ) -> Result[NodePeer, SyftError]:
+    ) -> Result[NodePeer | None, SyftError]:
         qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
         return self.query_one(credentials, qks)
 
@@ -226,7 +227,7 @@ class NetworkService(AbstractService):
             )
 
         try:
-            remote_client: SyftClient = peer.client_with_context(context=context)
+            remote_client: type[SyftClient] = peer.client_with_context(context=context)
             random_challenge = secrets.token_bytes(16)
             remote_res = remote_client.api.services.network.ping(
                 challenge=random_challenge
@@ -302,12 +303,12 @@ class NetworkService(AbstractService):
         """
         context.node = cast(AbstractNode, context.node)
         # the peer verifies the new route to the current node
-        peer_client: SyftClient = peer.client_with_context(context=context)
-        node_peer: NodePeer | SyftError = (
-            peer_client.api.services.network.verify_route_for(route)
-        )
-        if isinstance(node_peer, SyftError):
-            return node_peer
+        # peer_client: SyftClient = peer.client_with_context(context=context)
+        # node_peer: NodePeer | SyftError = peer_client.api.services.network.verify_route(
+        #     route
+        # )
+        # if isinstance(node_peer, SyftError):
+        #     return node_peer
 
         existed_route: NodeRoute | None = peer.update_route(route)
         # update the peer in the store
@@ -316,28 +317,32 @@ class NetworkService(AbstractService):
             return SyftError(message=str(result.err()))
         if existed_route is None:
             return SyftSuccess(
-                message=f"New route with id '{route.id}' added for {peer.name}"
+                message=f"New route with id '{route.id}' added for '{peer.name}'"
             )
         return SyftSuccess(
-            message=f"The route already exists with id {existed_route.id}, so its priority was updated"
+            message=f"The route already exists between '{context.node.name}' and peer '{peer.name}'"
+            f" with id '{existed_route.id}', so its priority was updated"
         )
 
     @service_method(
-        path="network.verify_route_for", name="verify_route_for", roles=GUEST_ROLE_LEVEL
+        path="network.verify_route", name="verify_route", roles=GUEST_ROLE_LEVEL
     )
-    def verify_route_for(
+    def verify_route(
         self, context: AuthedServiceContext, route: NodeRoute
     ) -> NodePeer | SyftError:
         # get the peer asking for route verification from its verify_key
         context.node = cast(AbstractNode, context.node)
-        peer: Result[NodePeer, SyftError] = self.stash.get_for_verify_key(
+        peer: Result[NodePeer | None, SyftError] = self.stash.get_for_verify_key(
             context.node.verify_key,
             context.credentials,
         )
         if peer.is_err():
             return SyftError(message=peer.err())
         peer = peer.ok()
-
+        if peer is None:
+            return SyftError(
+                message=f"Current node is not a peer (peer is None) for {context.node.name}"
+            )
         if peer.verify_key != context.credentials:
             return SyftError(
                 message=(
@@ -523,8 +528,8 @@ class NetworkService(AbstractService):
         """
         context.node = cast(AbstractNode, context.node)
         # update the route's priority for the peer
-        updated_node_route: NodeRoute | SyftError = peer.update_existed_route_priority(
-            route=route, priority=priority
+        updated_node_route: NodeRouteType | SyftError = (
+            peer.update_existed_route_priority(route=route, priority=priority)
         )
         if isinstance(updated_node_route, SyftError):
             return updated_node_route

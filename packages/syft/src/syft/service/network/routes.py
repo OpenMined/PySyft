@@ -5,6 +5,7 @@ from __future__ import annotations
 import secrets
 from typing import Any
 from typing import TYPE_CHECKING
+from typing import TypeAlias
 from typing import cast
 
 # third party
@@ -34,8 +35,6 @@ if TYPE_CHECKING:
 
 
 class NodeRoute:
-    priority: int = 1
-
     def client_with_context(
         self, context: NodeServiceContext
     ) -> SyftClient | SyftError:
@@ -61,17 +60,6 @@ class NodeRoute:
     def validate_with_context(
         self, context: AuthedServiceContext
     ) -> NodePeer | SyftError:
-        """
-        Check if the current route (self) is able to reach the node in the `context`
-            and create a NodePeer with the current route.
-
-        Args:
-            context (AuthedServiceContext): The context containing the authentication information.
-
-        Returns:
-            NodePeer | SyftError: A NodePeer object if the validation is successful,
-            otherwise a SyftError object.
-        """
         # relative
         from .node_peer import NodePeer
 
@@ -181,7 +169,7 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         return hash(self.worker_settings.id)
 
 
-NodeRouteType = HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute
+NodeRouteType: TypeAlias = HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute
 
 
 def route_to_connection(

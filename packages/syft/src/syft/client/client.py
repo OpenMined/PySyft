@@ -310,7 +310,7 @@ class HTTPConnection(NodeConnection):
     def __hash__(self) -> int:
         return hash(self.proxy_target_uid) + hash(self.url)
 
-    def get_client_type(self) -> type[SyftClient]:
+    def get_client_type(self) -> type[SyftClient] | SyftError:
         # TODO: Rasswanth, should remove passing in credentials
         # when metadata are proxy forwarded in the grid routes
         # in the gateway fixes PR
@@ -522,7 +522,7 @@ class VeilidConnection(NodeConnection):
             + hash(self.vld_reverse_proxy)
         )
 
-    def get_client_type(self) -> type[SyftClient]:
+    def get_client_type(self) -> type[SyftClient] | SyftError:
         # TODO: Rasswanth, should remove passing in credentials
         # when metadata are proxy forwarded in the grid routes
         # in the gateway fixes PR
@@ -652,7 +652,7 @@ class PythonConnection(NodeConnection):
     def __str__(self) -> str:
         return f"{type(self).__name__}"
 
-    def get_client_type(self) -> type[SyftClient]:
+    def get_client_type(self) -> type[SyftClient] | SyftError:
         # relative
         from .domain_client import DomainClient
         from .enclave_client import EnclaveClient
