@@ -258,9 +258,57 @@ CSS_CODE = """
         color: var(--tertiary-color);
     }
 
+
+    .syncstate-col-footer {
+        font-family: 'DejaVu Sans Mono', 'Open Sans';
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 16.8px;
+        text-align: left;
+    }
+
+    .syncstate-description {
+        font-family: Open Sans;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 19.6px;
+        text-align: left;
+    }
+
     .badge {
         code-text;
         border-radius: 30px;
+    }
+
+    .label {
+        code-text;
+        border-radius: 4px;
+    }
+
+    .label-light-purple {
+        label;
+        background-color: #C9CFE8;
+        color: #373B7B;
+
+    }
+
+    .label-light-blue {
+        label;
+        background-color: #C2DEF0;
+        color: #1F567A;
+
+    }
+
+    .label-orange {
+        badge;
+        background-color: #FEE9CD;
+        color: #B8520A;
+    }
+
+    .label-green {
+        badge;
+        background-color: #D5F1D5;
+        color: #256B24;
     }
 
     .badge-blue {
@@ -610,6 +658,12 @@ custom_code = """
                                                     badge_div.innerText = String(item[attr].value).toUpperCase();
                                                     div.appendChild(badge_div);
                                                     div.classList.add('grid-row','grid-std-cells');
+                                                } else if (item[attr].type.includes('label')){
+                                                    let label_div = document.createElement("div");
+                                                    label_div.classList.add('label',item[attr].type)
+                                                    label_div.innerText = String(item[attr].value).toUpperCase();
+                                                    div.appendChild(label_div);
+                                                    div.classList.add('grid-row','grid-std-cells');
                                                 } else if (item[attr].type === "clipboard") {
                                                     div.classList.add('grid-row','grid-std-cells');
 
@@ -685,6 +739,12 @@ custom_code = """
                         resetById${uid}('table${uid}')
                         buildGrid${uid}(paginatedElements${uid}, pageIndex)
                     }
+                    (async function() {
+                        const myFont = new FontFace('DejaVu Sans', 'url(https://cdn.jsdelivr.net/npm/dejavu-sans@1.0.0/css/dejavu-sans.min.css)');
+                        await myFont.load();
+                        document.fonts.add(myFont);
+                        document.getElementsByTagName('h1')[0].style.fontFamily = "DejaVu Sans";
+                    })();
 
                     buildPaginationContainer${uid}(paginatedElements${uid})
                 </script>

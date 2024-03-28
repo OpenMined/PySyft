@@ -26,7 +26,7 @@ from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.fonts import ITABLES_CSS
-from ...util.fonts import fonts_css
+from ...util.fonts import FONT_CSS
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import StoragePermission
@@ -372,7 +372,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
         base_str = f"""
         <style>
-        {fonts_css}
+        {FONT_CSS}
         .syft-dataset {{color: {SURFACE[options.color_theme]};}}
         .syft-dataset h3,
         .syft-dataset p

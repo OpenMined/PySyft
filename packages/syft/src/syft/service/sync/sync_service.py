@@ -323,6 +323,7 @@ class SyncService(AbstractService):
 
         new_state = SyncState(
             node_uid=context.node.id,  # type: ignore
+            node_name=context.node.name,
             previous_state_link=previous_state_link,
             permissions=permissions,
             storage_permissions=storage_permissions,

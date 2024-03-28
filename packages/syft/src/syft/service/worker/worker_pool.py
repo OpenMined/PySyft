@@ -20,7 +20,7 @@ from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.fonts import ITABLES_CSS
-from ...util.fonts import fonts_css
+from ...util.fonts import FONT_CSS
 from ..response import SyftError
 from .worker_image import SyftWorkerImage
 
@@ -216,7 +216,7 @@ class WorkerPool(SyftObject):
     def _repr_html_(self) -> Any:
         return f"""
             <style>
-            {fonts_css}
+            {FONT_CSS}
             .syft-dataset {{color: {SURFACE[options.color_theme]};}}
             .syft-dataset h3,
             .syft-dataset p

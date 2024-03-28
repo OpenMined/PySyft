@@ -31,7 +31,7 @@ from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..types.blob_storage import BlobFile
 from ..types.uid import UID
-from ..util.fonts import fonts_css
+from ..util.fonts import FONT_CSS
 from ..util.util import get_mb_size
 from ..util.util import prompt_warning_message
 from .api import APIModule
@@ -480,7 +480,7 @@ class DomainClient(SyftClient):
 
         return f"""
         <style>
-            {fonts_css}
+            {FONT_CSS}
 
             .syft-container {{
                 padding: 5px;

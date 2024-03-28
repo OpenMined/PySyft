@@ -33,6 +33,11 @@ class DateTime(SyftObject):
     def __hash__(self) -> int:
         return hash(self.utc_timestamp)
 
+    def __sub__(self, other: "DateTime") -> "DateTime":
+        return self.utc_timestamp - other.utc_timestamp
+
+
+
     def __eq__(self, other: Any) -> bool:
         if other is None:
             return False
