@@ -910,3 +910,7 @@ def get_queue_address(port: int) -> str:
     elif container_host == "docker":
         return f"tcp://{socket.gethostname()}:{port}"
     return f"tcp://localhost:{port}"
+
+
+def get_dev_mode() -> bool:
+    return str_to_bool(os.getenv("DEV_MODE", "False"))

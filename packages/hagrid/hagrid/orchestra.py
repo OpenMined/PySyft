@@ -487,8 +487,8 @@ class Orchestra:
         in_memory_workers: bool = True,
     ) -> NodeHandle | None:
         NodeType = ImportFromSyft.import_node_type()
+        os.environ["DEV_MODE"] = str(dev_mode)
         if dev_mode is True:
-            os.environ["DEV_MODE"] = "True"
             thread_workers = True
 
         # syft 0.8.1

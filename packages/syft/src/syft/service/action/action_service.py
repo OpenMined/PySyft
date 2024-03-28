@@ -327,7 +327,10 @@ class ActionService(AbstractService):
             if is_approved.is_err():
                 return is_approved
         else:
-            filtered_kwargs = retrieve_from_db(code_item.id, kwargs, context).ok()
+            result = retrieve_from_db(code_item.id, kwargs, context)
+            if isinstance(result, SyftError):
+                return Err(result.message)
+            filtered_kwargs = result.ok()
         # update input policy to track any input state
 
         has_twin_inputs = False
