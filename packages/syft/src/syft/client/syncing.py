@@ -3,6 +3,9 @@ from enum import Enum
 from time import sleep
 
 from syft.abstract_node import NodeSideType
+from syft.client.api import APIRegistry
+from syft.service.sync.resolve_widget import ResolveWidget
+from syft.types.uid import UID
 
 # relative
 from ..service.action.action_permissions import ActionObjectPermission
@@ -69,6 +72,94 @@ def handle_ignore_skip(
                     print(
                         f"\n{action} other batch with root {other_batch.root_type.__name__}\n"
                     )
+
+def resolve_single(obj_diff_batch: ObjectDiffBatch):
+    def button_callback(*args, **kwargs):
+        # TODO: make dynamic
+        decision="low"
+
+        # previously_ignored_batches = state.low_state.ignored_batches
+        previously_ignored_batches = {}
+        share_private_objects=True
+        # TODO: only add permissions for objects where we manually give permission
+        # Maybe default read permission for some objects (high -> low)
+
+
+        #TODO: UID
+        resolved_state_low = ResolvedSyncState(node_uid=UID(), alias="low")
+        resolved_state_high = ResolvedSyncState(node_uid=UID(), alias="high")
+
+        batch_diff = obj_diff_batch
+        if batch_diff.is_unchanged:
+            # Hierarchy has no diffs
+            print("BATCH UNCHANGED, NO SYNC")
+            return
+
+        if batch_diff.decision is not None:
+            # handles ignores
+            batch_decision = batch_diff.decision
+        elif decision is not None:
+            batch_decision = SyncDecision(decision)
+        else:
+            batch_decision = get_user_input_for_resolve()
+
+        batch_diff.decision = batch_decision
+
+        # TODO: FIX
+        other_batches = []
+        # other_batches = [b for b in state.batches if b is not batch_diff]
+
+        handle_ignore_skip(batch_diff, batch_decision, other_batches)
+
+        if batch_decision not in [SyncDecision.skip, SyncDecision.ignore]:
+            sync_instructions=[ ]
+            for diff in batch_diff.get_dependents(include_roots=True):
+
+                instruction = SyncInstruction(
+                    diff=diff,
+                    decision=decision,
+                    new_permissions_lowside=[],
+                    new_storage_permissions_lowside=[],
+                    new_storage_permissions_highside=[],
+                    mockify=False,
+                )
+                sync_instructions.append(instruction)
+            # sync_instructions = get_sync_instructions_for_batch_items_for_add(
+            #     batch_diff,
+            #     batch_decision,
+            #     share_private_objects=share_private_objects,
+            #     ask_for_input=ask_for_input,
+            # )
+        else:
+            sync_instructions = []
+            if batch_decision == SyncDecision.ignore:
+                resolved_state_high.add_ignored(batch_diff)
+                resolved_state_low.add_ignored(batch_diff)
+
+        if (
+            batch_diff.root_id in previously_ignored_batches
+            and batch_diff.decision != SyncDecision.ignore
+        ):
+            resolved_state_high.add_unignored(batch_diff.root_id)
+            resolved_state_low.add_unignored(batch_diff.root_id)
+
+        print(f"Decision: Syncing {len(sync_instructions)} objects")
+
+        for sync_instruction in sync_instructions:
+            resolved_state_low.add_sync_instruction(sync_instruction)
+            resolved_state_high.add_sync_instruction(sync_instruction)
+
+        # TODO: ONLY WORKS FOR LOW TO HIGH
+        from syft.client.domain_client import DomainClient
+        api = APIRegistry.api_for(obj_diff_batch.high_node_uid, obj_diff_batch.user_verify_key_high)
+        client = DomainClient(api=api, connection=api.connection, credentials=api.signing_key)
+
+        return client.apply_state(resolved_state_high)
+        # return resolved_state_low, resolved_state_high
+    from IPython.display import display
+    widget = ResolveWidget(obj_diff_batch, button_callback).widget
+    display(widget)
+
 
 
 def resolve(

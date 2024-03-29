@@ -125,7 +125,7 @@ class SyncStateRow(SyftObject):
         elif status == "SAME":
             badge_color = "label-gray"
         else:
-            badge_color = "label-red"
+            badge_color = "label-orange"
         return {"value": status.upper(), "type": badge_color}
 
     def _coll_repr_(self) -> dict[str, Any]:
@@ -202,7 +202,8 @@ class SyncState(SyftObject):
         # Re-use NodeDiff to compare to previous state
         # Low = previous state, high = current state
         # NOTE No previous sync state means everything is new
-        previous_state = self.previous_state or SyncState(node_uid=self.node_uid, node_name=self.node_name, node_side_type=self.node_side_type)
+        previous_state = self.previous_state or SyncState(node_uid=self.node_uid, node_name=self.node_name, node_side_type=self.node_side_type,
+                                                           syft_client_verify_key=self.syft_client_verify_key)
         self._previous_state_diff = NodeDiff.from_sync_state(
             previous_state,
             self,
