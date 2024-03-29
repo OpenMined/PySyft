@@ -220,7 +220,7 @@ class NetworkService(AbstractService):
         if peer.verify_key != context.credentials:
             return SyftError(
                 message=(
-                    f"The {type(peer)}.verify_key: "
+                    f"The {type(peer).__name__}.verify_key: "
                     f"{peer.verify_key} does not match the signature of the message"
                 )
             )
@@ -424,7 +424,7 @@ class NetworkService(AbstractService):
         if peer.verify_key != context.credentials:
             return SyftError(
                 message=(
-                    f"The {type(peer)}.verify_key: "
+                    f"The {type(peer).__name__}.verify_key: "
                     f"{peer.verify_key} does not match the signature of the message"
                 )
             )
@@ -479,16 +479,20 @@ class NetworkService(AbstractService):
         result = remote_client.api.services.network.add_route(
             peer=self_node_peer,
             route=route,
+            called_by_peer=True,
         )
         return result
 
     @service_method(path="network.add_route", name="add_route", roles=GUEST_ROLE_LEVEL)
     def add_route(
-        self, context: AuthedServiceContext, peer: NodePeer, route: NodeRoute
+        self,
+        context: AuthedServiceContext,
+        peer: NodePeer,
+        route: NodeRoute,
+        called_by_peer: bool = False,
     ) -> SyftSuccess | SyftError:
         """
-        Add a route to the peer. Called from a remote node (represented by 'peer')
-        to add a route to contact with it for the current node
+        Add a route to the peer. If the route already exists, update its priority.
 
         Args:
             context (AuthedServiceContext): The authentication context of the remote node.
@@ -499,17 +503,17 @@ class NetworkService(AbstractService):
             NodePeer | SyftError: The added peer if successful, otherwise a SyftError.
         """
         # verify if the peer is truly the one sending the request to add the route to itself
-        if peer.verify_key != context.credentials:
+        if called_by_peer and peer.verify_key != context.credentials:
             return SyftError(
                 message=(
-                    f"The {type(peer)}.verify_key: "
+                    f"The {type(peer).__name__}.verify_key: "
                     f"{peer.verify_key} does not match the signature of the message"
                 )
             )
         context.node = cast(AbstractNode, context.node)
         # get the full peer object from the store to update its routes
         remote_node_peer: NodePeer | SyftError = (
-            self._get_remote_node_peer_by_verify_key(context, peer)
+            self._get_remote_node_peer_by_verify_key(context, peer.verify_key)
         )
         if isinstance(remote_node_peer, SyftError):
             return remote_node_peer
@@ -525,11 +529,11 @@ class NetworkService(AbstractService):
         if existed_route:
             return SyftSuccess(
                 message=f"The route already exists between '{context.node.name}' and "
-                f"peer '{peer.name}' with id '{existed_route.id}', so its priority was updated"
+                f"peer '{remote_node_peer.name}' with id '{existed_route.id}', so its priority was updated"
             )
         return SyftSuccess(
             message=f"New route ({str(route)}) with id '{route.id}' "
-            f"to peer '{peer.name}' was added for '{context.node.name}'"
+            f"to peer '{remote_node_peer.name}' was added for '{context.node.name}'"
         )
 
     @service_method(path="network.delete_route_for", name="delete_route_for")
@@ -578,6 +582,7 @@ class NetworkService(AbstractService):
             peer=self_node_peer,
             route=route,
             route_id=route_id,
+            called_by_peer=True,
         )
         return result
 
@@ -588,11 +593,12 @@ class NetworkService(AbstractService):
         peer: NodePeer,
         route: NodeRoute | None = None,
         route_id: UID | None = None,
+        called_by_peer: bool = False,
     ) -> SyftSuccess | SyftError | SyftInfo:
         """
-        Delete a route for a given peer in the network. If a peer has no
-        routes left, there will be a prompt asking if the user want to remove it.
-        If yes, it will be removed from the stash and will no longer be a peer.
+        Delete a route for a given peer.
+        If a peer has no routes left, there will be a prompt asking if the user want to remove it.
+        If the answer is yes, it will be removed from the stash and will no longer be a peer.
 
         Args:
             context (AuthedServiceContext): The authentication context for the service.
@@ -606,11 +612,11 @@ class NetworkService(AbstractService):
             SyftInfo: If there is only one route left for the peer and
                 the admin chose not to remove it
         """
-        # verify if the peer is truly the one sending the request to delete the route to itself
-        if peer.verify_key != context.credentials:
+        if called_by_peer and peer.verify_key != context.credentials:
+            # verify if the peer is truly the one sending the request to delete the route to itself
             return SyftError(
                 message=(
-                    f"The {type(peer)}.verify_key: "
+                    f"The {type(peer).__name__}.verify_key: "
                     f"{peer.verify_key} does not match the signature of the message"
                 )
             )
@@ -618,7 +624,9 @@ class NetworkService(AbstractService):
         context.node = cast(AbstractNode, context.node)
 
         remote_node_peer: NodePeer | SyftError = (
-            self._get_remote_node_peer_by_verify_key(context, peer)
+            self._get_remote_node_peer_by_verify_key(
+                context=context, peer_verify_key=peer.verify_key
+            )
         )
         if len(remote_node_peer.node_routes) == 1:
             response: bool = prompt_warning_message(
@@ -649,6 +657,7 @@ class NetworkService(AbstractService):
 
         if len(remote_node_peer.node_routes) == 0:
             # remove the peer
+            # TODO: should we do this as we are deleting the peer with a guest role level?
             result = self.stash.delete_by_uid(
                 credentials=context.node.verify_key, uid=remote_node_peer.id
             )
@@ -679,7 +688,46 @@ class NetworkService(AbstractService):
         priority: int | None = None,
     ) -> SyftSuccess | SyftError:
         """
-        Updates a route's priority for the given peer
+        Ask the peer (the "remote node") to update the priority of the given route
+        it uses to connect to the current node ("self node").
+
+        Args:
+            context (AuthedServiceContext): The authentication context.
+            peer (NodePeer): The peer representing the remote node.
+            route (NodeRoute): The route to be added.
+            priority (int | None): The new priority value for the route. If not
+                provided, it will be assigned the highest priority among all peers
+
+        Returns:
+            SyftSuccess | SyftError: A success message if the route is verified,
+                otherwise an error message.
+        """
+        context.node = cast(AbstractNode, context.node)
+        # creates a client on the remote node based on the credentials
+        # of the current node's client
+        remote_client: SyftClient = peer.client_with_context(context=context)
+        # ask the remote node to add the route to the self node
+        # note that the `.to` transform gives a NodePeer object without its routes
+        self_node_peer: NodePeer = context.node.settings.to(NodePeer)
+        result = remote_client.api.services.network.update_route_priority(
+            peer=self_node_peer,
+            route=route,
+        )
+        return result
+
+    @service_method(
+        path="network.update_route_priority_for", name="update_route_priority_for"
+    )
+    def update_route_priority(
+        self,
+        context: AuthedServiceContext,
+        peer: NodePeer,
+        route: NodeRoute,
+        priority: int | None = None,
+    ) -> SyftSuccess | SyftError:
+        """
+        Updates a route's priority for the given peer. Called from a remote node
+        (represented by 'peer')
 
         Args:
             context (AuthedServiceContext): The authentication context for the service.
@@ -709,7 +757,7 @@ class NetworkService(AbstractService):
         )
 
     def _get_remote_node_peer_by_verify_key(
-        self, context: AuthedServiceContext, peer: NodePeer
+        self, context: AuthedServiceContext, peer_verify_key: SyftVerifyKey
     ) -> NodePeer | SyftError:
         """
         Helper function to get the full node peer object from t
@@ -718,15 +766,15 @@ class NetworkService(AbstractService):
         remote_node_peer: Result[NodePeer | None, SyftError] = (
             self.stash.get_by_verify_key(
                 credentials=context.node.verify_key,
-                verify_key=peer.verify_key,
+                verify_key=peer_verify_key,
             )
         )
         if remote_node_peer.is_err():
-            return SyftError(message=str(peer.err()))
+            return SyftError(message=str(remote_node_peer.err()))
         remote_node_peer = remote_node_peer.ok()
         if remote_node_peer is None:
             return SyftError(
-                message=f"Can't retrive {peer.name} from the store of peers (None)."
+                message=f"Can't retrive {remote_node_peer.name} from the store of peers (None)."
             )
         return remote_node_peer
 
