@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Callable
 from time import sleep
 
 # relative
@@ -44,6 +45,9 @@ def get_user_input_for_resolve() -> SyncDecision:
 def handle_ignore_skip(
     batch: ObjectDiffBatch, decision: SyncDecision, other_batches: list[ObjectDiffBatch]
 ) -> None:
+    # make sure type is SyncDecision at runtime
+    decision = SyncDecision(decision)
+
     if decision == SyncDecision.skip or decision == SyncDecision.ignore:
         skipped_or_ignored_ids = {
             x.object_id for x in batch.get_dependents(include_roots=False)
@@ -67,6 +71,7 @@ def handle_ignore_skip(
 def resolve(
     state: NodeDiff,
     decision: str | None = None,
+    decision_callback: Callable[[ObjectDiffBatch], SyncDecision] | None = None,
     share_private_objects: bool = False,
     ask_for_input: bool = True,
 ) -> tuple[ResolvedSyncState, ResolvedSyncState]:
@@ -88,6 +93,8 @@ def resolve(
         elif decision is not None:
             print(batch_diff.__repr__())
             batch_decision = SyncDecision(decision)
+        elif decision_callback is not None:
+            batch_decision = decision_callback(batch_diff)
         else:
             print(batch_diff.__repr__())
             batch_decision = get_user_input_for_resolve()
