@@ -228,7 +228,11 @@ class UserCodeService(AbstractService):
             return user_code
         return SyftError(message=result.err())
 
-    @service_method(path="code.get_all_for_user", name="get_all_for_user")
+    @service_method(
+        path="code.get_all_for_user",
+        name="get_all_for_user",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
     def get_all_for_user(
         self, context: AuthedServiceContext
     ) -> SyftSuccess | SyftError:
@@ -242,6 +246,7 @@ class UserCodeService(AbstractService):
     def update_code_state(
         self, context: AuthedServiceContext, code_item: UserCode
     ) -> SyftSuccess | SyftError:
+        context = context.as_root_context()
         result = self.stash.update(context.credentials, code_item)
         if result.is_ok():
             return SyftSuccess(message="Code State Updated")
@@ -483,6 +488,18 @@ class UserCodeService(AbstractService):
             else:
                 result_action_object = result_action_object.ok()
 
+            # stdlib
+
+            # print(output_policy, output_policy.__mro__)
+
+            if hasattr(output_policy, "apply_output"):
+                print(type(result_action_object))
+                new_outputs = output_policy.apply_output(context, result_action_object)
+                result_action_object.syft_action_data_cache = new_outputs
+                code.output_policy = output_policy
+                # self.stash.update(context.credentials, code, has_permission=True)
+                self.update_code_state(context, code)
+
             output_result = action_service.set_result_to_store(
                 result_action_object, context, code.get_output_policy(context)
             )
@@ -504,6 +521,12 @@ class UserCodeService(AbstractService):
                 )
                 if isinstance(res, SyftError):
                     return Err(res.message)
+
+            # output_policy.update_policy(context, result)
+            # code.output_policy = output_policy
+            # res = self.update_code_state(context, code)
+            # print(res)
+
             has_result_read_permission = context.extra_kwargs.get(
                 "has_result_read_permission", False
             )
