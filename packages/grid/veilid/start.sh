@@ -16,6 +16,6 @@ then
     RELOAD="--reload"
 fi
 
-/veilid/veilid-server -c /veilid/veilid-server.conf  $VEILID_FLAGS &
+/veilid/veilid-server -c /veilid/veilid-server.conf $VEILID_FLAGS &
 
 exec uvicorn $RELOAD --host $HOST --port $PORT --log-level $UVICORN_LOG_LEVEL "$APP_MODULE"

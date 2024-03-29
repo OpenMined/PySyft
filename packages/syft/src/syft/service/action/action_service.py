@@ -302,44 +302,33 @@ class ActionService(AbstractService):
             context.has_execute_permissions or context.role == ServiceRole.ADMIN
         )
 
+        input_policy = code_item.get_input_policy(context)
+
         if not override_execution_permission:
-            input_policy = code_item.get_input_policy(context)
             if input_policy is None:
                 if not code_item.output_policy_approved:
                     return Err("Execution denied: Your code is waiting for approval")
-                return Err(f"No input poliicy defined for user code: {code_item.id}")
+                return Err(f"No input policy defined for user code: {code_item.id}")
+
+            # Filter input kwargs based on policy
             filtered_kwargs = input_policy.filter_kwargs(
                 kwargs=kwargs, context=context, code_item_id=code_item.id
             )
-            if isinstance(filtered_kwargs, SyftError) or filtered_kwargs.is_err():
+            if filtered_kwargs.is_err():
                 return filtered_kwargs
             filtered_kwargs = filtered_kwargs.ok()
+
+            # validate input policy
+            is_approved = input_policy._is_valid(
+                context=context,
+                usr_input_kwargs=kwargs,
+                code_item_id=code_item.id,
+            )
+            if is_approved.is_err():
+                return is_approved
         else:
             filtered_kwargs = retrieve_from_db(code_item.id, kwargs, context).ok()
         # update input policy to track any input state
-
-        if (
-            not override_execution_permission
-            and code_item.get_input_policy(context) is not None
-        ):
-            expected_input_kwargs = set()
-            for _inp_kwarg in code_item.get_input_policy(context).inputs.values():  # type: ignore
-                keys = _inp_kwarg.keys()
-                for k in keys:
-                    if k not in kwargs:
-                        return Err(
-                            f"{code_item.service_func_name}() missing required keyword argument: '{k}'"
-                        )
-                expected_input_kwargs.update(keys)
-
-            permitted_input_kwargs = list(filtered_kwargs.keys())
-            not_approved_kwargs = set(expected_input_kwargs) - set(
-                permitted_input_kwargs
-            )
-            if len(not_approved_kwargs) > 0:
-                return Err(
-                    f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
-                )
 
         has_twin_inputs = False
 
