@@ -301,7 +301,8 @@ class ActionService(AbstractService):
         override_execution_permission = (
             context.has_execute_permissions or context.role == ServiceRole.ADMIN
         )
-        user_code_service = context.node.get_service("UserCodeService")
+        if context.node:
+            user_code_service = context.node.get_service("usercodeservice")
 
         input_policy = code_item.get_input_policy(context)
         output_policy = code_item.get_output_policy(context)
@@ -350,9 +351,10 @@ class ActionService(AbstractService):
                 )
                 exec_result = execute_byte_code(code_item, filtered_kwargs, context)
                 print("BEFORE OUTPUT POLICY:", exec_result.result)
-                exec_result.result = output_policy.apply_output(
-                    context, exec_result.result
-                )
+                if output_policy:
+                    exec_result.result = output_policy.apply_output(
+                        context, exec_result.result
+                    )
                 print("AFTER OUTPUT POLICY:", exec_result.result)
                 code_item.output_policy = output_policy
                 user_code_service.update_code_state(context, code_item)
@@ -370,9 +372,10 @@ class ActionService(AbstractService):
                 private_exec_result = execute_byte_code(
                     code_item, private_kwargs, context
                 )
-                private_exec_result.result = output_policy.apply_output(
-                    context, private_exec_result.result
-                )
+                if output_policy:
+                    private_exec_result.result = output_policy.apply_output(
+                        context, private_exec_result.result
+                    )
                 code_item.output_policy = output_policy
                 user_code_service.update_code_state(context, code_item)
                 result_action_object_private = wrap_result(
@@ -389,9 +392,10 @@ class ActionService(AbstractService):
                     mock_exec_result = execute_byte_code(
                         code_item, mock_kwargs, context
                     )
-                    mock_exec_result.result = output_policy.apply_output(
-                        context, mock_exec_result.result, update_policy=False
-                    )
+                    if output_policy:
+                        mock_exec_result.result = output_policy.apply_output(
+                            context, mock_exec_result.result, update_policy=False
+                        )
                     mock_exec_result_obj = mock_exec_result.result
 
                 result_action_object_mock = wrap_result(result_id, mock_exec_result_obj)
