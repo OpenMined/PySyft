@@ -492,7 +492,7 @@ class UserCodeService(AbstractService):
 
             # print(output_policy, output_policy.__mro__)
 
-            if hasattr(output_policy, "apply_output"):
+            if output_policy is not None:
                 print(type(result_action_object))
                 new_outputs = output_policy.apply_output(context, result_action_object)
                 result_action_object.syft_action_data_cache = new_outputs
