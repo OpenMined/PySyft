@@ -1,0 +1,10 @@
+# Frontend
+*.md
+
+# Dependency directories
+node_modules
+.svelte-kit
+.pnpm-store
+
+# macOS
+.DS_Store

@@ -14,6 +14,7 @@ DEBUG_CMD=""
 
 if [[ ${DEV_MODE} == "True" ]];
 then
+    echo "DEV_MODE Enabled"
     RELOAD="--reload"
 fi
 

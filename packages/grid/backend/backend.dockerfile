@@ -1,5 +1,5 @@
 ARG PYTHON_VERSION="3.12"
-ARG UV_VERSION="0.1.24-r0"
+ARG UV_VERSION="0.1.26-r0"
 ARG TORCH_VERSION="2.2.1"
 
 # ==================== [BUILD STEP] Python Dev Base ==================== #
@@ -24,17 +24,15 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     if [[ "$ARCH" = "amd64" ]]; then TORCH_VERSION="$TORCH_VERSION+cpu"; fi && \
     uv pip install torch==$TORCH_VERSION --index-url https://download.pytorch.org/whl/cpu
 
-RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    uv pip install jupyterlab==4.1.5
+# RUN --mount=type=cache,target=/root/.cache,sharing=locked \
+#     uv pip install jupyterlab==4.1.5
 
-COPY --chown=nonroot:nonroot \
-    syft/setup.py syft/setup.cfg syft/pyproject.toml ./syft/
+COPY syft/setup.py syft/setup.cfg syft/pyproject.toml ./syft/
 
-COPY --chown=nonroot:nonroot \
-    syft/src/syft/VERSION ./syft/src/syft/
+COPY syft/src/syft/VERSION ./syft/src/syft/
 
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    uv pip install  -e ./syft[data_science,telemetry] && \
+    uv pip install -e ./syft[data_science,telemetry] && \
     uv pip freeze | grep ansible | xargs uv pip uninstall
 
 
@@ -46,7 +44,7 @@ ARG PYTHON_VERSION
 ARG UV_VERSION
 
 RUN apk update && apk upgrade && \
-    apk add git bash python-$PYTHON_VERSION-default py$PYTHON_VERSION-pip uv=$UV_VERSION
+    apk add --no-cache git bash python-$PYTHON_VERSION-default py$PYTHON_VERSION-pip uv=$UV_VERSION
 
 WORKDIR /root/app/
 
@@ -61,8 +59,10 @@ COPY syft ./syft/
 
 # Update environment variables
 ENV \
-    # "activates" venv
+    # "activate" venv
     PATH="/root/app/.venv/bin/:$PATH" \
+    VIRTUAL_ENV="/root/app/.venv" \
+    # Syft
     APPDIR="/root/app" \
     NODE_NAME="default_node_name" \
     NODE_TYPE="domain" \
