@@ -265,6 +265,7 @@ CSS_CODE = """
         font-weight: 400;
         line-height: 16.8px;
         text-align: left;
+        color: #5E5A72;
     }
 
     .syncstate-description {
@@ -273,6 +274,47 @@ CSS_CODE = """
         font-weight: 600;
         line-height: 19.6px;
         text-align: left;
+    }
+
+    .diff-state-orange-text{
+        color: #B8520A;
+    }
+
+    .diff-state-no-obj{
+        font-family: 'DejaVu Sans Mono', 'Open Sans';
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 16.8px;
+        text-align: left;
+        color: #5E5A72;
+    }
+
+    .diff-state-intro{
+        font-family: Open Sans;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 19.6px;
+        text-align: left;
+        color: #B4B0BF;
+    }
+
+    .diff-state-header{
+        font-family: Open Sans;
+        font-size: 22px;
+        font-weight: 600;
+        line-height: 30.8px;
+        text-align: left;
+        color: #353243;
+        display: flex; gap: 8px;
+    }
+
+    .diff-state-sub-header{
+        font-family: Open Sans;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 19.6px;
+        text-align: left;
+        color: #5E5A72;
     }
 
     .badge {
@@ -499,6 +541,13 @@ REQUEST_ICON = (
     " 9.70687C4.09252 9.80014 4.20266 9.87408 4.32401 9.9244C4.44536 9.97472 4.5755"
     " 10.0004 4.70687 10H7.29313C7.4245 10.0004 7.55464 9.97472 7.67599 9.9244C7.79734"
     ' 9.87408 7.90748 9.80014 8 9.70687L9.20687 8.5H11V11Z" fill="#343330"/></svg>'
+)
+
+ARROW_ICON = (
+    '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<rect x="0.5" y="0.5" width="23" height="23" rx="1.5" fill="#ECEBEF"/>'
+    '<rect x="0.5" y="0.5" width="23" height="23" rx="1.5" stroke="#B4B0BF"/>'
+    '<path d="M17.8538 12.3538L13.3538 16.8538C13.2599 16.9476 13.1327 17.0003 13 17.0003C12.8673 17.0003 12.7401 16.9476 12.6462 16.8538C12.5524 16.76 12.4997 16.6327 12.4997 16.5C12.4997 16.3674 12.5524 16.2401 12.6462 16.1463L16.2931 12.5H6.5C6.36739 12.5 6.24021 12.4474 6.14645 12.3536C6.05268 12.2598 6 12.1326 6 12C6 11.8674 6.05268 11.7402 6.14645 11.6465C6.24021 11.5527 6.36739 11.5 6.5 11.5H16.2931L12.6462 7.85378C12.5524 7.75996 12.4997 7.63272 12.4997 7.50003C12.4997 7.36735 12.5524 7.2401 12.6462 7.14628C12.7401 7.05246 12.8673 6.99976 13 6.99976C13.1327 6.99976 13.2599 7.05246 13.3538 7.14628L17.8538 11.6463C17.9002 11.6927 17.9371 11.7479 17.9623 11.8086C17.9874 11.8693 18.0004 11.9343 18.0004 12C18.0004 12.0657 17.9874 12.1308 17.9623 12.1915C17.9371 12.2522 17.9002 12.3073 17.8538 12.3538Z" fill="#5E5A72"/></svg>'
 )
 
 

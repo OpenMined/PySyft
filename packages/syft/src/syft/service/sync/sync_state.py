@@ -4,6 +4,7 @@ import html
 from typing import Any
 from typing import Optional
 
+from syft.abstract_node import NodeSideType
 from syft.service.code.user_code import UserCode
 from syft.service.job.job_stash import Job
 from syft.service.request.request import Request
@@ -29,28 +30,12 @@ def get_hierarchy_level_prefix(level: int) -> str:
     else:
         return "--" * level + " "
 
-
 @serializable()
-class SyncStateRow(SyftObject):
-    """A row in the SyncState table"""
-
-    __canonical_name__ = "SyncStateItem"
+class SyncView(SyftObject):
+    __canonical_name__ = "SyncView"
     __version__ = SYFT_OBJECT_VERSION_1
 
     object: SyftObject
-    previous_object: SyftObject | None = None
-    current_state: str
-    previous_state: str
-    level: int = 0
-
-    __syft_include_id_coll_repr__ = False
-
-    # TODO table formatting
-    __repr_attrs__ = [
-        "previous_state",
-        "current_state",
-    ]
-
     def main_object_description_str(self) -> str:
         if isinstance(self.object, UserCode):
             return self.object.service_func_name
@@ -73,8 +58,67 @@ class SyncStateRow(SyftObject):
         else:
             return ""
 
-    def status_badge(self) -> dict[str, str]:
+    def get_status_str(self) -> str:
+        if isinstance(self.object, UserCode):
+            return ""
+        elif isinstance(self.object, Job):
+            return f"Status: {self.object.status.value}"
+        elif isinstance(self.object, Request):
+            code = self.object.code
+            statusses = list(code.status.status_dict.values())
+            assert len(statusses) == 1
+            status_tuple = statusses[0]
+            status, _ = status_tuple
+            return status.value
+        else:
+            return ""
 
+    def summary_html(self):
+        try:
+            type_html = f'<div class="label {self.type_badge_class()}">{self.object.__class__.__name__.upper()}</div>'
+            description_html = f"<span class='syncstate-description'>{self.main_object_description_str()}</span>"
+            updated_delta_str = "29m ago"
+            updated_by = "john@doe.org"
+            status_str = self.get_status_str()
+            status_seperator = " • " if len(status_str) else ""
+            summary_html = f"""
+    <div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;">
+    <div>
+    {type_html} {description_html}
+    </div>
+    </div>
+    <div style="display: table-row">
+    <span class='syncstate-col-footer'>{status_str}{status_seperator}Updated by {updated_by} {updated_delta_str}</span>
+    </div>
+    """
+            summary_html = summary_html.replace("\n", "")
+        except Exception as e:
+            print("Failed to build table", e)
+            raise
+        return summary_html
+
+@serializable()
+class SyncStateRow(SyftObject):
+    """A row in the SyncState table"""
+
+    __canonical_name__ = "SyncStateItem"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    object: SyftObject
+    previous_object: SyftObject | None = None
+    current_state: str
+    previous_state: str
+    level: int = 0
+
+    __syft_include_id_coll_repr__ = False
+
+    # TODO table formatting
+    __repr_attrs__ = [
+        "previous_state",
+        "current_state",
+    ]
+
+    def status_badge(self) -> dict[str, str]:
         status = self.status
         if status == "NEW":
             badge_color = "label-green"
@@ -85,39 +129,12 @@ class SyncStateRow(SyftObject):
         return {"value": status.upper(), "type": badge_color}
 
     def _coll_repr_(self) -> dict[str, Any]:
-        # current_state = f"{self.status}\n{self.current_state}"
-        # previous_state = f"{self.status}\n{self.previous_state}"
-            # "previous_state": html.escape(previous_state),
-            # "current_state": html.escape(current_state),
-
-        type_html = f'<div class="label {self.type_badge_class()}">{self.object.__class__.__name__.upper()}</div>'
-        
-        object_description_str = "   " + self.main_object_description_str()
-        description_html = f"<span class='syncstate-description'>{object_description_str}</span>"
-        updated_delta_str = "29m ago"
-        updated_by = "john@doe.org"
-        lower_status_str = "Status: approved • "
-        id_div = str(self.id)[:5]
-        summary_str = f"""
-<div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;">
-<div>
-{type_html} {description_html}
-</div>
-<div>
- {id_div}
-</div>
-</div>
-<div style="display: table-row">
-<span class='syncstate-col-footer'>{lower_status_str} Updated by {updated_by} {updated_delta_str}</span>
-</div>
-"""
-
-        # otherwise newlines are replaced with <br>
-        summary_str = summary_str.replace("\n", "")
+        obj_view = SyncView(object=self.object)
+        no_last_sync_html = "<p class='diff-state-no-obj'>n/a</p>"
         return {
             "Status": self.status_badge(),
-            "Summary": summary_str,
-            "Last Sync": "n/a",
+            "Summary": obj_view.summary_html(),
+            "Last Sync": no_last_sync_html,
         }
 
     @property
@@ -163,6 +180,7 @@ class SyncState(SyftObject):
 
     node_uid: UID
     node_name: str
+    node_side_type: NodeSideType
     objects: dict[UID, SyncableSyftObject] = {}
     dependencies: dict[UID, list[UID]] = {}
     created_at: DateTime = DateTime.now()
@@ -184,11 +202,12 @@ class SyncState(SyftObject):
         # Re-use NodeDiff to compare to previous state
         # Low = previous state, high = current state
         # NOTE No previous sync state means everything is new
-        previous_state = self.previous_state or SyncState(node_uid=self.node_uid, node_name=self.node_name)
+        previous_state = self.previous_state or SyncState(node_uid=self.node_uid, node_name=self.node_name, node_side_type=self.node_side_type)
         self._previous_state_diff = NodeDiff.from_sync_state(
             previous_state,
             self,
             _include_node_status=False,
+            direction=None
         )
 
     def get_previous_state_diff(self) -> Any:
@@ -267,7 +286,7 @@ class SyncState(SyftObject):
         return result
 
     def _repr_html_(self) -> str:
-        prop_template = "<p class='paragraph-sm'><strong><span class='pr-8'>{}: </span></strong>{}</p>"
+        prop_template = "<p class='paragraph'><strong><span class='pr-8'>{}: </span></strong>{}</p>"
         name_html = prop_template.format('name', self.node_name)
         if self.previous_state_link is not None:
             previous_state = self.previous_state_link.resolve
@@ -289,7 +308,7 @@ class SyncState(SyftObject):
               {ITABLES_CSS}
             </style>
         <div class='syft-syncstate'>
-            <h2> SyncState </h2>
+            <p style="margin-bottom:16px;"></p>
             {name_html}
             {date_html}
         </div>

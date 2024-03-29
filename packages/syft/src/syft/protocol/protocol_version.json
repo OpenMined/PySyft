@@ -10,5 +10,16 @@
   },
   "4": {
     "release_name": "0.8.5.json"
+  },
+  "dev": {
+    "object_versions": {
+      "SyncView": {
+        "1": {
+          "version": 1,
+          "hash": "9c8ca45be1c58e1da88fbb2eaad19e71db1102418012b1cf029c766ce857980f",
+          "action": "add"
+        }
+      }
+    }
   }
 }

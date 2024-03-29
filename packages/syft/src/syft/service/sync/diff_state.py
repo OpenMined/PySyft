@@ -14,8 +14,10 @@ from rich.padding import Padding
 from rich.panel import Panel
 from typing_extensions import Self
 
+from syft.util.notebook_ui.notebook_addons import ARROW_ICON
+
 # relative
-from ...client.sync_decision import SyncDecision
+from ...client.sync_decision import SyncDecision, SyncDirection
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
@@ -37,7 +39,7 @@ from ..log.log import SyftLog
 from ..output.output_service import ExecutionOutput
 from ..request.request import Request
 from ..response import SyftError
-from .sync_state import SyncState
+from .sync_state import SyncState, SyncView
 
 sketchy_tab = "‎ " * 4
 
@@ -468,6 +470,8 @@ class ObjectDiffBatch(SyftObject):
     INDENT: ClassVar[int] = 4
     ORDER: ClassVar[dict] = {"low": 0, "high": 1}
 
+    __syft_include_id_coll_repr__ = False
+
     # Diffs are ordered in depth-first order,
     # the first diff is the root of the hierarchy
     global_diffs: dict[UID, ObjectDiff]
@@ -615,17 +619,32 @@ class ObjectDiffBatch(SyftObject):
 {diffs._repr_html_()}
 """
 
-    def _coll_repr_(self) -> dict[str, Any]:
-        # low_state = f"{self.status}\n{self.diff_side_str('low')}"
-        # high_state = f"{self.status}\n{self.diff_side_str('high')}"
+    def status_badge(self) -> dict[str, str]:
+        status = self.root_diff.status
+        if status == "NEW":
+            badge_color = "label-green"
+        elif status == "SAME":
+            badge_color = "label-gray"
+        else:
+            badge_color = "label-red"
+        return {"value": status.upper(), "type": badge_color}
 
-        diffs: list[ObjectDiff] = self.flatten_visual_hierarchy()
-        low_batch_str = "\n".join(d.diff_side_str("low") for d in diffs)
-        high_batch_str = "\n".join(d.diff_side_str("high") for d in diffs)
+    def _coll_repr_(self) -> dict[str, Any]:
+        no_obj_html = "<p class='diff-state-no-obj'>No object detected</p>"
+        if self.root_diff.low_obj is None:
+            low_html = no_obj_html
+        else:
+            low_html = SyncView(object=self.root_diff.low_obj).summary_html()
+
+        if self.root_diff.high_obj is None:
+            high_html = no_obj_html
+        else:
+            high_html = SyncView(object=self.root_diff.high_obj).summary_html()
+
         return {
-            "Low side state": html.escape(low_batch_str),
-            "High side state": html.escape(high_batch_str),
-            "Ignored": "Yes" if self.is_ignored else "No",
+            "Merge status": self.status_badge(),
+            "Public Sync State": low_html,
+            "Private sync state": high_html,
         }
 
     @property
@@ -789,6 +808,7 @@ class NodeDiff(SyftObject):
     batches: list[ObjectDiffBatch] = []
     low_state: SyncState
     high_state: SyncState
+    direction: SyncDirection | None
 
     @property
     def ignored_changes(self) -> list[IgnoredBatchView]:
@@ -806,6 +826,7 @@ class NodeDiff(SyftObject):
         cls: type["NodeDiff"],
         low_state: SyncState,
         high_state: SyncState,
+        direction: SyncDirection,
         _include_node_status: bool = False,
     ) -> "NodeDiff":
         obj_uid_to_diff = {}
@@ -855,6 +876,7 @@ class NodeDiff(SyftObject):
             batches=batches,
             low_state=low_state,
             high_state=high_state,
+            direction=direction
         )
 
     @staticmethod
@@ -923,7 +945,24 @@ It will be available for review again.""")
         return None
 
     def _repr_html_(self) -> Any:
-        return self.batches._repr_html_()
+        n=len(self.batches)
+        if self.direction == SyncDirection.LOW_TO_HIGH:
+            name1="Public Node"
+            name2="Private Node"
+        else:
+            name1="Private Node"
+            name2="Public Node"
+        repr_html = f"""
+        <p style="margin-bottom:16px;"></p>
+        <div class="diff-state-intro">Comparing sync states</div>
+        <p style="margin-bottom:16px;"></p>
+        <div class="diff-state-header"><span>{name1}</span> {ARROW_ICON} <span>{name2}</span></div>
+        <p style="margin-bottom:16px;"></p>
+        <div class="diff-state-sub-header"> This would sync <span class="diff-state-orange-text">{n} batches</span> from <i>{name1}</i> to <i>{name2}</i></div>
+        """
+        repr_html = repr_html.replace("\n", "")
+
+        return repr_html + self.batches._repr_html_()
 
     @staticmethod
     def _sort_batches(hierarchies: list[ObjectDiffBatch]) -> list[ObjectDiffBatch]:

@@ -1,5 +1,8 @@
 # stdlib
+from enum import Enum
 from time import sleep
+
+from syft.abstract_node import NodeSideType
 
 # relative
 from ..service.action.action_permissions import ActionObjectPermission
@@ -13,12 +16,21 @@ from ..service.sync.diff_state import ObjectDiffBatch
 from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.diff_state import SyncInstruction
 from ..service.sync.sync_state import SyncState
-from .sync_decision import SyncDecision
+from .sync_decision import SyncDecision, SyncDirection
 
-
-def compare_states(low_state: SyncState, high_state: SyncState) -> NodeDiff:
+def compare_states(state1: SyncState, state2: SyncState) -> NodeDiff:
     # NodeDiff
-    return NodeDiff.from_sync_state(low_state=low_state, high_state=high_state)
+    if state1.node_side_type == NodeSideType.LOW_SIDE and state2.node_side_type == NodeSideType.HIGH_SIDE:
+        low_state = state1
+        high_state = state2
+        direction = SyncDirection.LOW_TO_HIGH
+    elif state1.node_side_type == NodeSideType.HIGH_SIDE and state2.node_side_type == NodeSideType.LOW_SIDE:
+        low_state = state2
+        high_state = state1
+        direction = SyncDirection.HIGH_TO_LOW
+    else:
+        raise ValueError("Invalid SyncStates")
+    return NodeDiff.from_sync_state(low_state=low_state, high_state=high_state, direction=direction)
 
 
 def get_user_input_for_resolve() -> SyncDecision:
