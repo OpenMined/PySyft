@@ -75,7 +75,9 @@ def handle_annotation_repr_(annotation: type) -> str:
         origin_repr = handle_union_type_klass_name(origin_repr)
         return f"{origin_repr}: [{args_repr}]"
     elif args:
-        args_repr = ", ".join(getattr(arg, "__name__", str(arg)) for arg in args)
+        args_repr = ", ".join(
+            getattr(arg, "__name__", str(arg)) for arg in sorted(args)
+        )
         return args_repr
     else:
         return repr(annotation)
@@ -99,7 +101,7 @@ class DataProtocol:
 
         # Rebuild the model to ensure that the fields are up to date
         # and any ForwardRef are resolved
-        klass.model_rebuild(force=True)
+        klass.model_rebuild()
         field_data = {
             field: handle_annotation_repr_(field_info.rebuild_annotation())
             for field, field_info in sorted(
