@@ -96,7 +96,7 @@ class ProjectService(AbstractService):
             # For followers the leader node route is retrieved from its peer
             if leader_node.verify_key != context.node.verify_key:
                 network_service = context.node.get_service("networkservice")
-                peer = network_service.stash.get_for_verify_key(
+                peer = network_service.stash.get_by_verify_key(
                     credentials=context.node.verify_key,
                     verify_key=leader_node.verify_key,
                 )
@@ -233,7 +233,7 @@ class ProjectService(AbstractService):
         for member in project.members:
             if member.verify_key != context.node.verify_key:
                 # Retrieving the NodePeer Object to communicate with the node
-                peer = network_service.stash.get_for_verify_key(
+                peer = network_service.stash.get_by_verify_key(
                     credentials=context.node.verify_key,
                     verify_key=member.verify_key,
                 )
