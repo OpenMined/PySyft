@@ -390,6 +390,7 @@ class OutputPolicy(Policy):
         self,
         context: NodeServiceContext,
         outputs: Any,
+        update_policy: bool = True,
     ) -> Any:
         # output_uids: Union[Dict[str, Any], list] = filter_only_uids(outputs)
         # if isinstance(output_uids, UID):
@@ -489,6 +490,7 @@ class CustomOutputPolicy(metaclass=CustomPolicy):
         self,
         context: NodeServiceContext,
         outputs: Any,
+        update_policy: bool = True,
     ) -> Any | None:
         return outputs
 
@@ -546,6 +548,7 @@ class UserPolicy(Policy):
         self,
         context: NodeServiceContext,
         outputs: Any,
+        update_policy: bool = True,
     ) -> Any | None:
         return outputs
 
