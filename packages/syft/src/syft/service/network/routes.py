@@ -110,6 +110,9 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
     def __hash__(self) -> int:
         return hash(self.host_or_ip) + hash(self.port) + hash(self.protocol)
 
+    def __str__(self) -> str:
+        return f"{self.protocol}://{self.host_or_ip}:{self.port}"
+
 
 @serializable()
 class VeilidNodeRoute(SyftObject, NodeRoute):
@@ -167,6 +170,9 @@ class PythonNodeRoute(SyftObject, NodeRoute):
 
     def __hash__(self) -> int:
         return hash(self.worker_settings.id)
+
+    def __str__(self) -> str:
+        return "PythonNodeRoute"
 
 
 NodeRouteType: TypeAlias = HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute
