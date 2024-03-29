@@ -9,7 +9,10 @@ from operator import itemgetter
 import os
 from pathlib import Path
 import re
+from types import UnionType
+import typing
 from typing import Any
+import warnings
 
 # third party
 from packaging.version import parse
@@ -24,6 +27,7 @@ from ..service.response import SyftException
 from ..service.response import SyftSuccess
 from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftBaseObject
+from ..util.util import get_dev_mode
 
 PROTOCOL_STATE_FILENAME = "protocol_version.json"
 PROTOCOL_TYPE = str | int
@@ -53,9 +57,36 @@ def protocol_release_dir() -> Path:
     return data_protocol_dir() / "releases"
 
 
+def handle_union_type_klass_name(type_klass_name: str) -> str:
+    if type_klass_name == typing.Union.__name__:
+        return UnionType.__name__
+    return type_klass_name
+
+
+def handle_annotation_repr_(annotation: type) -> str:
+    """Handle typing representation."""
+    origin = typing.get_origin(annotation)
+    args = typing.get_args(annotation)
+    if origin and args:
+        args_repr = ", ".join(getattr(arg, "__name__", str(arg)) for arg in args)
+        origin_repr = getattr(origin, "__name__", str(origin))
+
+        # Handle typing.Union and types.UnionType
+        origin_repr = handle_union_type_klass_name(origin_repr)
+        return f"{origin_repr}: [{args_repr}]"
+    elif args:
+        args_repr = ", ".join(
+            getattr(arg, "__name__", str(arg)) for arg in sorted(args)
+        )
+        return args_repr
+    else:
+        return repr(annotation)
+
+
 class DataProtocol:
-    def __init__(self, filename: str) -> None:
+    def __init__(self, filename: str, raise_exception: bool = False) -> None:
         self.file_path = data_protocol_dir() / filename
+        self.raise_exception = raise_exception
         self.load_state()
 
     def load_state(self) -> None:
@@ -67,8 +98,12 @@ class DataProtocol:
     @staticmethod
     def _calculate_object_hash(klass: type[SyftBaseObject]) -> str:
         # TODO: this depends on what is marked as serde
+
+        # Rebuild the model to ensure that the fields are up to date
+        # and any ForwardRef are resolved
+        klass.model_rebuild()
         field_data = {
-            field: repr(field_info.annotation)
+            field: handle_annotation_repr_(field_info.rebuild_annotation())
             for field, field_info in sorted(
                 klass.model_fields.items(), key=itemgetter(0)
             )
@@ -211,14 +246,20 @@ class DataProtocol:
                         object_diff[canonical_name][str(version)]["action"] = "add"
                         continue
 
-                    # raise Exception(
-                    #     f"{canonical_name} for class {cls.__name__} fqn {cls} "
-                    #     + f"version {version} hash has changed. "
-                    #     + f"{hash_str} not in {versions.values()}. "
-                    #     + "Is a unique __canonical_name__ for this subclass missing? "
-                    #     + "If the class has changed you will need to define a new class with the changes, "
-                    #     + "with same __canonical_name__ and bump the __version__ number."
-                    # )
+                    error_msg = (
+                        f"{canonical_name} for class {cls.__name__} fqn {cls} "
+                        + f"version {version} hash has changed. "
+                        + f"{hash_str} not in {versions.values()}. "
+                        + "Is a unique __canonical_name__ for this subclass missing? "
+                        + "If the class has changed you will need to define a new class with the changes, "
+                        + "with same __canonical_name__ and bump the __version__ number."
+                    )
+
+                    if get_dev_mode() or self.raise_exception:
+                        raise Exception(error_msg)
+                    else:
+                        warnings.warn(error_msg, stacklevel=1, category=UserWarning)
+                        break
                 else:
                     # new object so its an add
                     object_diff[canonical_name][str(version)] = {}
@@ -463,17 +504,20 @@ class DataProtocol:
         return False
 
 
-def get_data_protocol() -> DataProtocol:
-    return DataProtocol(filename=data_protocol_file_name())
+def get_data_protocol(raise_exception: bool = False) -> DataProtocol:
+    return DataProtocol(
+        filename=data_protocol_file_name(),
+        raise_exception=raise_exception,
+    )
 
 
 def stage_protocol_changes() -> Result[SyftSuccess, SyftError]:
-    data_protocol = get_data_protocol()
+    data_protocol = get_data_protocol(raise_exception=True)
     return data_protocol.stage_protocol_changes()
 
 
 def bump_protocol_version() -> Result[SyftSuccess, SyftError]:
-    data_protocol = get_data_protocol()
+    data_protocol = get_data_protocol(raise_exception=True)
     return data_protocol.bump_protocol_version()
 
 
