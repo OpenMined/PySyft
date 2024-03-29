@@ -1,3 +1,6 @@
+# stdlib
+from textwrap import dedent
+
 # third party
 from faker import Faker
 import pytest
@@ -131,6 +134,7 @@ def test_user_code_status_change(faker: Faker, worker: Worker):
     def simple_function(data):
         return sum(data)
 
+    simple_function.code = dedent(simple_function.code)
     result = ds_client.code.submit(simple_function)
     assert isinstance(result, SyftSuccess)
 
@@ -178,6 +182,8 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
     )
     def simple_function(data):
         return sum(data)
+
+    simple_function.code = dedent(simple_function.code)
 
     result = ds_client.code.request_code_execution(simple_function)
     assert not isinstance(result, SyftError)

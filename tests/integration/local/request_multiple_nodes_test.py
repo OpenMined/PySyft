@@ -1,5 +1,6 @@
 # stdlib
 from secrets import token_hex
+from textwrap import dedent
 
 # third party
 import numpy as np
@@ -120,6 +121,8 @@ def test_transfer_request_blocking(
     def compute_sum(data) -> float:
         return data.mean()
 
+    compute_sum.code = dedent(compute_sum.code)
+
     client_ds_1.code.request_code_execution(compute_sum)
 
     # Submit + execute on second node
@@ -156,6 +159,8 @@ def test_transfer_request_nonblocking(
     @sy.syft_function_single_use(data=dataset_1)
     def compute_mean(data) -> float:
         return data.mean()
+
+    compute_mean.code = dedent(compute_mean.code)
 
     client_ds_1.code.request_code_execution(compute_mean)
 

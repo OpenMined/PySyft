@@ -1,5 +1,6 @@
 # stdlib
 import os
+from textwrap import dedent
 
 # third party
 import numpy as np
@@ -86,6 +87,7 @@ def test_manual_code_submission_enclave() -> None:
     def simple_function(canada_data, italy_data):
         return canada_data + italy_data
 
+    simple_function.code = dedent(simple_function.code)
     assert isinstance(simple_function, SubmitUserCode)
 
     # Step 5 :Code Submission Phase

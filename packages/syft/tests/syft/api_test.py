@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import Callable
+from textwrap import dedent
 
 # third party
 import numpy as np
@@ -34,6 +35,8 @@ def test_api_cache_invalidation(worker):
     )
     def my_func(x):
         return x + 1
+
+    my_func.code = dedent(my_func.code)
 
     assert root_domain_client.code.request_code_execution(my_func)
     # check that function is added to api without refreshing the api manually

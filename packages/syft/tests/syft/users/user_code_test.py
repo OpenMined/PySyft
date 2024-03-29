@@ -1,4 +1,5 @@
 # stdlib
+from textwrap import dedent
 import uuid
 
 # third party
@@ -120,6 +121,8 @@ def test_scientist_can_list_code_assets(worker: sy.Worker, faker: Faker) -> None
     def func(asset):
         return 0
 
+    func.code = dedent(func.code)
+
     request = guest_client.code.request_code_execution(func)
     assert not isinstance(request, sy.SyftError)
 
@@ -202,6 +205,7 @@ def test_user_code_mock_execution(worker) -> None:
     def compute_mean(data):
         return data.mean()
 
+    compute_mean.code = dedent(compute_mean.code)
     ds_client.api.services.code.request_code_execution(compute_mean)
 
     # Guest attempts to set own permissions
@@ -259,6 +263,7 @@ def test_mock_multiple_arguments(worker) -> None:
     def compute_sum(data1, data2):
         return data1 + data2
 
+    compute_sum.code = dedent(compute_sum.code)
     ds_client.api.services.code.request_code_execution(compute_sum)
     root_domain_client.requests[-1].approve()
 
