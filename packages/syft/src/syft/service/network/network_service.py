@@ -632,7 +632,7 @@ class NetworkService(AbstractService):
             response: bool = prompt_warning_message(
                 message=f"There is only one route left to peer '{remote_node_peer.name}'. "
                 f"Removing this route will remove the peer for '{context.node.name}'.",
-                confirm=True,
+                confirm=False,
             )
             if not response:
                 return SyftInfo(
