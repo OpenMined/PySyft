@@ -561,7 +561,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         )
         # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
         if not exclude_none and not exclude_empty:
-            return self.dict()
+            return dict(self)
         else:
             new_dict = {}
             for k, v in dict(self).items():

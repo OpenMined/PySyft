@@ -503,6 +503,11 @@ class DataProtocol:
             return True
         return False
 
+    def reset_dev_protocol(self) -> None:
+        if self.has_dev:
+            del self.protocol_history["dev"]
+            self.save_history(self.protocol_history)
+
 
 def get_data_protocol(raise_exception: bool = False) -> DataProtocol:
     return DataProtocol(
