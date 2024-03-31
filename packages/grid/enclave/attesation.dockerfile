@@ -29,6 +29,7 @@ RUN wget https://packages.microsoft.com/repos/azurecore/pool/main/a/azguestattes
 RUN git clone https://github.com/Azure/confidential-computing-cvm-guest-attestation.git && \
     cd confidential-computing-cvm-guest-attestation && \
     git checkout ${AZ_CLIENT_COMMIT} && \
+    cd cvm-attestation-sample-app && \
     cmake . && make && cp ./AttestationClient /
 
 
