@@ -31,3 +31,8 @@ WORKDIR /confidential-computing-cvm-guest-attestation
 RUN git checkout ${AZ_CLIENT_COMMIT}
 RUN cd cvm-attestation-sample-app && cmake . && make && cp ./AttestationClient /
 
+
+FROM ubuntu:22.04 as main
+ENV DEBIAN_FRONTEND=noninteractive
+
+COPY --from=builder /AttestationClient /
