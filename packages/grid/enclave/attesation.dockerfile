@@ -32,7 +32,13 @@ RUN git checkout ${AZ_CLIENT_COMMIT}
 RUN cd cvm-attestation-sample-app && cmake . && make && cp ./AttestationClient /
 
 
+# ======== [Final] Build Final Image ========== #
 FROM ubuntu:22.04 as main
+ARG AZ_GUEST_LIB_VERSION
 ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+RUN wget https://packages.microsoft.com/repos/azurecore/pool/main/a/azguestattestation1/azguestattestation1_${AZ_GUEST_LIB_VERSION}_amd64.deb
+RUN dpkg -i azguestattestation1_${AZ_GUEST_LIB_VERSION}_amd64.deb
 
 COPY --from=builder /AttestationClient /
