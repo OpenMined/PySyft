@@ -253,6 +253,7 @@ class DataProtocol:
                         + "Is a unique __canonical_name__ for this subclass missing? "
                         + "If the class has changed you will need to define a new class with the changes, "
                         + "with same __canonical_name__ and bump the __version__ number."
+                        + f"{cls.model_fields}"
                     )
 
                     if get_dev_mode() or self.raise_exception:
