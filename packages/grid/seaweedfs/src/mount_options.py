@@ -1,30 +1,46 @@
 # stdlib
-from typing import Literal
+
+# stdlib
+from enum import StrEnum
+from pathlib import Path
 
 # third party
 from pydantic import BaseModel
 from pydantic import Field
 
 
-class AzureBucket(BaseModel):
-    type: Literal["azure"] = "azure"
+class BucketType(StrEnum):
+    """Weed shell supported values"""
+
+    S3 = "s3"
+    AZURE = "azure"
+    GCS = "gcs"
+
+
+class BaseBucket(BaseModel):
+    type: BucketType
+    # credentials
+    creds: Path | dict
+
+
+class AzureBucket(BaseBucket):
+    type: BucketType = BucketType.AZURE
     bucket_name: str = Field(alias="container_name")
-    # credentials
-    azure_account_name: str
-    azure_account_key: str
 
 
-class S3Bucket(BaseModel):
-    type: Literal["s3"] = "s3"
+class S3Bucket(BaseBucket):
+    type: BucketType = BucketType.S3
     bucket_name: str
+    region: str
     storage_class: str = "STANDARD"
-    # credentials
-    aws_access_key: str
-    aws_secret_key_id: str
 
 
-class GCSBucket(BaseModel):
-    type: Literal["gcs"] = "gcs"
+class GCSBucket(BaseBucket):
+    type: BucketType = BucketType.GCS
     bucket_name: str
-    # credentials
-    gcs_credentials: dict
+    project_id: str | None = None
+
+
+class MountOptions(BaseModel):
+    local_bucket: str  # bucket to mount to
+    remote_bucket: S3Bucket | GCSBucket | AzureBucket

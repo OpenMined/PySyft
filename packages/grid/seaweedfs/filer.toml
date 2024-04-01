@@ -1,5 +1,0 @@
-[leveldb2]
-# local on disk, mostly for simple single-machine setup, fairly scalable
-# faster than previous leveldb, recommended.
-enabled = true
-dir = "/data/filerldb2"

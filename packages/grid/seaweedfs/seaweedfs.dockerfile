@@ -7,24 +7,29 @@ WORKDIR /root/swfs
 RUN apk update && \
     apk add --no-cache python3 py3-pip ca-certificates bash supervisor nano
 
-ENV \
-    S3_PORT="8333" \
-    S3_VOLUME_SIZE_MB="1024" \
-    S3_CONFIG_PATH="/root/swfs/s3_config.json" \
-    S3_MOUNT_DIRS="/data/vol0/" \
-    S3_MOUNT_DIRS_MAX="0" \
-    SEAWEED_MOUNT_PORT="4001" \
-    UVICORN_LOG_LEVEL="info"
-
 COPY ./requirements.txt .
 
-RUN pip install --no-cache-dir --break-system-packages -r requirements.txt && \
-    mkdir -p /data/master/ /data/vol0/
+RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
 
-COPY ./scripts ./scripts
+RUN mkdir -p /data/master/ /data/vol/ /data/vol_idx/ /data/mount/ /data/mount/creds/ && \
+    ulimit -n 10240
+
+COPY start.sh .
+COPY ./config/ .
 COPY ./src ./src
-COPY supervisord.conf filer.toml .
+
+ENV \
+    SWFS_MASTER_DIR="/data/master/" \
+    SWFS_VOLUME_SIZE_LIMIT_MB="1000" \
+    SWFS_VOLUME_DIR="/data/vol/" \
+    SWFS_VOLUME_IDX_DIR="/data/vol_idx/" \
+    SWFS_VOLUME_MAX="0" \
+    S3_CONFIG_PATH="/root/swfs/s3_config.json" \
+    S3_ROOT_USER="admin" \
+    S3_ROOT_PASSWORD="admin" \
+    MOUNT_API_PORT="4001" \
+    UVICORN_LOG_LEVEL="info"
 
 # overrides base image entrypoint
 ENTRYPOINT ["bash"]
-CMD ["./scripts/start.sh"]
+CMD ["./start.sh"]
