@@ -8,6 +8,14 @@ on:
         required: true
         type: string
 
+      release_platform:
+        description: "Release Platform"
+        required: true
+        type: choice
+        options:
+          - "REAL_PYPI"
+          - "TEST_PYPI"
+
   workflow_call:
     inputs:
       syft_version:
