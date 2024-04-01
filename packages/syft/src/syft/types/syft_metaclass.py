@@ -28,12 +28,20 @@ class Empty(metaclass=EmptyType):
 
 
 class PartialModelMetaclass(ModelMetaclass):
-    def __call__(cls: type[_T], *args: Any, **kwargs: Any) -> _T:
+    def __new__(
+        mcs,
+        cls_name: str,
+        bases: tuple[type[Any], ...],
+        namespace: dict[str, Any],
+        *args: Any,
+        **kwargs: Any,
+    ) -> type:
+        cls = super().__new__(mcs, cls_name, bases, namespace, *args, **kwargs)
+
         for field_info in cls.model_fields.values():
             if field_info.annotation is not None and field_info.is_required():
                 field_info.annotation = field_info.annotation | EmptyType
                 field_info.default = Empty
 
         cls.model_rebuild(force=True)
-
-        return super().__call__(*args, **kwargs)  # type: ignore[misc]
+        return cls

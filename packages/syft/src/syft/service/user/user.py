@@ -20,6 +20,7 @@ from ...types.syft_metaclass import Empty
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import drop
@@ -116,7 +117,7 @@ def check_pwd(password: str, hashed_password: str) -> bool:
 @serializable()
 class UserUpdate(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_4
 
     @field_validator("role", mode="before")
     @classmethod
@@ -158,7 +159,7 @@ class UserCreate(SyftObject):
 @serializable()
 class UserSearch(PartialSyftObject):
     __canonical_name__ = "UserSearch"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     id: UID
     email: EmailStr
