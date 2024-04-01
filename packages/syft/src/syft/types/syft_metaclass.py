@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import TypeVar
 from typing import final
 
 # third party
@@ -9,8 +8,6 @@ from pydantic._internal._model_construction import ModelMetaclass
 
 # relative
 from ..serde.serializable import serializable
-
-_T = TypeVar("_T", bound=BaseModel)
 
 
 class EmptyType(type):
