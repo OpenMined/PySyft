@@ -61,9 +61,17 @@ def create_mount_conf(config_name: str, opts: MountOptions) -> str:
     sw_config_cmd: str = remote_configure_cmd(config_name, sw_remote_type, creds_path)
     sw_mount_cmd: str = remote_mount_cmd(sw_filer_dir, sw_remote_path)
     sw_sync_cmd: str = filer_sync_cmd(sw_filer_dir)
+    sw_wait_cmd: str = "sh ./scripts/wait_for_swfs.sh"
 
     # mount is a combination of configure, mount and sync
-    mount_cmd: str = create_mount_cmd(sw_config_cmd, sw_mount_cmd, sw_sync_cmd)
+    mount_cmd: str = run_cmd(
+        [
+            sw_wait_cmd,
+            sw_config_cmd,
+            sw_mount_cmd,
+            sw_sync_cmd,
+        ]
+    )
 
     # create the supervisord configuration
     supervisord_conf_name = f"remote_mount_{config_name}"
@@ -132,11 +140,11 @@ def filer_sync_cmd(filer_dir: str) -> str:
     return f"weed filer.remote.sync -dir={filer_dir}"
 
 
-def create_mount_cmd(*cmds: str) -> str:
+def run_cmd(cmds: list[str]) -> str:
     """Generate the command to mount the remote bucket"""
 
     chained_args = " && ".join(cmds)
-    return f'bash -ec "{chained_args}"'
+    return f'sh -ec "{chained_args}"'
 
 
 def create_supervisord_conf(

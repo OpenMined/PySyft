@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # generate s3 configu
 python -m src.cli.s3_config
