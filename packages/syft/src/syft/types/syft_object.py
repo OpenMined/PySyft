@@ -25,7 +25,6 @@ from typing import TYPE_CHECKING
 from typing import Union
 from typing import get_args
 from typing import get_origin
-import warnings
 
 # third party
 import pandas as pd
@@ -554,25 +553,17 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     def to_dict(
         self, exclude_none: bool = False, exclude_empty: bool = False
     ) -> dict[str, Any]:
-        warnings.warn(
-            "`SyftObject.to_dict` is deprecated and will be removed in a future version",
-            PendingDeprecationWarning,
-            stacklevel=2,
-        )
-        # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
-        if not exclude_none and not exclude_empty:
-            return self.dict()
-        else:
-            new_dict = {}
-            for k, v in dict(self).items():
-                # exclude dynamically added syft attributes
-                if k in DYNAMIC_SYFT_ATTRIBUTES:
-                    continue
-                if exclude_empty and v is not Empty:
-                    new_dict[k] = v
-                if exclude_none and v is not None:
-                    new_dict[k] = v
-            return new_dict
+        new_dict = {}
+        for k, v in dict(self).items():
+            # exclude dynamically added syft attributes
+            if k in DYNAMIC_SYFT_ATTRIBUTES:
+                continue
+            if exclude_empty and v is Empty:
+                continue
+            if exclude_none and v is None:
+                continue
+            new_dict[k] = v
+        return new_dict
 
     def __post_init__(self) -> None:
         pass
@@ -957,7 +948,7 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     """Syft Object to which partial arguments can be provided."""
 
     __canonical_name__ = "PartialSyftObject"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     def __iter__(self) -> TupleGenerator:
         yield from ((k, v) for k, v in super().__iter__() if v is not Empty)
