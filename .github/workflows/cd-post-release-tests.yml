@@ -170,10 +170,10 @@ jobs:
 
       - name: Install Syft
         run: |
-          if (${{ inputs.release_platform }} == "REAL_PYPI"); then
+          if ("${{ inputs.release_platform }}" == "REAL_PYPI"); then
             pip install syft==${{ inputs.syft_version }}
           fi
-          if (${{ inputs.release_platform }}" == "TEST_PYPI"); then
+          if ("${{ inputs.release_platform }}" == "TEST_PYPI"); then
             pip install -i https://test.pypi.org/simple/ syft==${{ inputs.syft_version }}
           fi
 
@@ -282,10 +282,10 @@ jobs:
         env:
           SYFT_VERSION: ${{ inputs.syft_version }}
         run: |
-          if [[ "${{ inputs.release_platform }}" == "TEST_PYPI" ]]; then
+          if ("${{ inputs.release_platform }}" == "TEST_PYPI"); then
             pip install -i https://test.pypi.org/simple/ syft==${{ inputs.syft_version }}[data_science];
           fi
-          if [[ "${{ inputs.release_platform }}" == "REAL_PYPI" ]]; then
+          if ("${{ inputs.release_platform }}" == "REAL_PYPI"); then
             pip install syft==${{ inputs.syft_version }}[data_science];
           fi
 
