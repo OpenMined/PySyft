@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import TypeVar
 from typing import final
 
 # third party
@@ -9,8 +8,6 @@ from pydantic._internal._model_construction import ModelMetaclass
 
 # relative
 from ..serde.serializable import serializable
-
-_T = TypeVar("_T", bound=BaseModel)
 
 
 class EmptyType(type):
@@ -38,10 +35,12 @@ class PartialModelMetaclass(ModelMetaclass):
     ) -> type:
         cls = super().__new__(mcs, cls_name, bases, namespace, *args, **kwargs)
 
-        for field_info in cls.model_fields.values():
-            if field_info.annotation is not None and field_info.is_required():
-                field_info.annotation = field_info.annotation | EmptyType
-                field_info.default = Empty
+        if issubclass(cls, BaseModel):
+            for field_info in cls.model_fields.values():
+                if field_info.annotation is not None and field_info.is_required():
+                    field_info.annotation = field_info.annotation | EmptyType
+                    field_info.default = Empty
 
-        cls.model_rebuild(force=True)
+            cls.model_rebuild(force=True)
+
         return cls
