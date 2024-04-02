@@ -1,5 +1,5 @@
 # ruff: noqa
-fonts_css = """
+FONT_CSS = """
 /* cyrillic-ext */
 @font-face {
   font-family: 'Open Sans';

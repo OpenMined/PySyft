@@ -20,7 +20,7 @@ from ..service.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
-from ..util.fonts import fonts_css
+from ..util.fonts import FONT_CSS
 from .api import APIModule
 from .client import SyftClient
 from .client import login
@@ -182,7 +182,7 @@ class EnclaveClient(SyftClient):
 
         return f"""
         <style>
-            {fonts_css}
+            {FONT_CSS}
 
             .syft-container {{
                 padding: 5px;

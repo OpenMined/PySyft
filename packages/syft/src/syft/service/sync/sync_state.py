@@ -1,9 +1,10 @@
 # stdlib
-import html
+from datetime import timedelta
 from typing import Any
 from typing import Optional
 
 # relative
+from ...abstract_node import NodeSideType
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
@@ -13,7 +14,14 @@ from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
+from ...util.fonts import FONT_CSS
+from ...util.fonts import ITABLES_CSS
+from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
+from ..job.job_stash import Job
+from ..request.request import Request
 
 
 def get_hierarchy_level_prefix(level: int) -> str:
@@ -21,6 +29,75 @@ def get_hierarchy_level_prefix(level: int) -> str:
         return ""
     else:
         return "--" * level + " "
+
+
+@serializable()
+class SyncView(SyftObject):
+    __canonical_name__ = "SyncView"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    object: SyftObject
+
+    def main_object_description_str(self) -> str:
+        if isinstance(self.object, UserCode):
+            return self.object.service_func_name
+        elif isinstance(self.object, Job):
+            return self.object.user_code_name
+        elif isinstance(self.object, Request):
+            # TODO: handle other requests
+            return f"Execute {self.object.code.service_func_name}"
+        else:
+            return ""
+
+    def type_badge_class(self) -> str:
+        if isinstance(self.object, UserCode):
+            return "label-light-blue"
+        elif isinstance(self.object, Job):
+            return "label-light-blue"
+        elif isinstance(self.object, Request):
+            # TODO: handle other requests
+            return "label-light-purple"
+        else:
+            return ""
+
+    def get_status_str(self) -> str:
+        if isinstance(self.object, UserCode):
+            return ""
+        elif isinstance(self.object, Job):
+            return f"Status: {self.object.status.value}"
+        elif isinstance(self.object, Request):
+            code = self.object.code
+            statusses = list(code.status.status_dict.values())
+            assert len(statusses) == 1
+            status_tuple = statusses[0]
+            status, _ = status_tuple
+            return status.value
+        else:
+            return ""
+
+    def summary_html(self):
+        try:
+            type_html = f'<div class="label {self.type_badge_class()}">{self.object.__class__.__name__.upper()}</div>'
+            description_html = f"<span class='syncstate-description'>{self.main_object_description_str()}</span>"
+            updated_delta_str = "29m ago"
+            updated_by = "john@doe.org"
+            status_str = self.get_status_str()
+            status_seperator = " • " if len(status_str) else ""
+            summary_html = f"""
+    <div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;">
+    <div>
+    {type_html} {description_html}
+    </div>
+    </div>
+    <div style="display: table-row">
+    <span class='syncstate-col-footer'>{status_str}{status_seperator}Updated by {updated_by} {updated_delta_str}</span>
+    </div>
+    """
+            summary_html = summary_html.replace("\n", "")
+        except Exception as e:
+            print("Failed to build table", e)
+            raise
+        return summary_html
 
 
 @serializable()
@@ -36,18 +113,31 @@ class SyncStateRow(SyftObject):
     previous_state: str
     level: int = 0
 
+    __syft_include_id_coll_repr__ = False
+
     # TODO table formatting
     __repr_attrs__ = [
         "previous_state",
         "current_state",
     ]
 
+    def status_badge(self) -> dict[str, str]:
+        status = self.status
+        if status == "NEW":
+            badge_color = "label-green"
+        elif status == "SAME":
+            badge_color = "label-gray"
+        else:
+            badge_color = "label-orange"
+        return {"value": status.upper(), "type": badge_color}
+
     def _coll_repr_(self) -> dict[str, Any]:
-        current_state = f"{self.status}\n{self.current_state}"
-        previous_state = f"{self.status}\n{self.previous_state}"
+        obj_view = SyncView(object=self.object)
+        no_last_sync_html = "<p class='diff-state-no-obj'>n/a</p>"
         return {
-            "previous_state": html.escape(previous_state),
-            "current_state": html.escape(current_state),
+            "Status": self.status_badge(),
+            "Summary": obj_view.summary_html(),
+            "Last Sync": no_last_sync_html,
         }
 
     @property
@@ -63,7 +153,28 @@ class SyncStateRow(SyftObject):
         elif self.previous_object.syft_eq(ext_obj=self.object):
             return "SAME"
         else:
-            return "UPDATED"
+            return "MODIFIED"
+
+
+def td_format(td_object):
+    seconds = int(td_object.total_seconds())
+    periods = [
+        ("year", 60 * 60 * 24 * 365),
+        ("month", 60 * 60 * 24 * 30),
+        ("day", 60 * 60 * 24),
+        ("hour", 60 * 60),
+        ("minute", 60),
+        ("second", 1),
+    ]
+
+    strings = []
+    for period_name, period_seconds in periods:
+        if seconds >= period_seconds:
+            period_value, seconds = divmod(seconds, period_seconds)
+            has_s = "s" if period_value > 1 else ""
+            strings.append("%s %s%s" % (period_value, period_name, has_s))
+
+    return ", ".join(strings)
 
 
 @serializable()
@@ -72,6 +183,8 @@ class SyncState(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     node_uid: UID
+    node_name: str
+    node_side_type: NodeSideType
     objects: dict[UID, SyncableSyftObject] = {}
     dependencies: dict[UID, list[UID]] = {}
     created_at: DateTime = DateTime.now()
@@ -93,11 +206,14 @@ class SyncState(SyftObject):
         # Re-use NodeDiff to compare to previous state
         # Low = previous state, high = current state
         # NOTE No previous sync state means everything is new
-        previous_state = self.previous_state or SyncState(node_uid=self.node_uid)
+        previous_state = self.previous_state or SyncState(
+            node_uid=self.node_uid,
+            node_name=self.node_name,
+            node_side_type=self.node_side_type,
+            syft_client_verify_key=self.syft_client_verify_key,
+        )
         self._previous_state_diff = NodeDiff.from_sync_state(
-            previous_state,
-            self,
-            _include_node_status=False,
+            previous_state, self, _include_node_status=False, direction=None
         )
 
     def get_previous_state_diff(self) -> Any:
@@ -161,23 +277,51 @@ class SyncState(SyftObject):
         if previous_diff is None:
             raise ValueError("No previous state to compare to")
         for batch in previous_diff.batches:
-            # TODO: replace with something that creates the visual hierarchy
-            # as individual elements without context
-            # we could do that by gathering all the elements in the normal direction
-            # but stop (not add) if its another batch, every hop would be a level
-            for diff in batch.get_dependencies(include_roots=False):
-                if diff.object_id in ids:
-                    continue
-                ids.add(diff.object_id)
-                row = SyncStateRow(
-                    object=diff.high_obj,
-                    previous_object=diff.low_obj,
-                    current_state=diff.diff_side_str("high"),
-                    previous_state=diff.diff_side_str("low"),
-                    level=0,  # TODO add levels to table
-                )
-                result.append(row)
+            diff = batch.root_diff
+            if diff.object_id in ids:
+                continue
+            ids.add(diff.object_id)
+            row = SyncStateRow(
+                object=diff.high_obj,
+                previous_object=diff.low_obj,
+                current_state=diff.diff_side_str("high"),
+                previous_state=diff.diff_side_str("low"),
+                level=0,  # TODO add levels to table
+            )
+            result.append(row)
         return result
 
     def _repr_html_(self) -> str:
-        return self.rows._repr_html_()
+        prop_template = (
+            "<p class='paragraph'><strong><span class='pr-8'>{}: </span></strong>{}</p>"
+        )
+        name_html = prop_template.format("name", self.node_name)
+        if self.previous_state_link is not None:
+            previous_state = self.previous_state_link.resolve
+            delta = timedelta(
+                seconds=self.created_at.utc_timestamp
+                - previous_state.created_at.utc_timestamp
+            )
+            val = f"{td_format(delta)} ago"
+            date_html = prop_template.format("last sync", val)
+        else:
+            date_html = prop_template.format("last sync", "not synced yet")
+
+        repr = f"""
+        <style>
+            {FONT_CSS}
+            .syft-syncstate {{color: {SURFACE[options.color_theme]};}}
+            .syft-syncstate h3,
+            .syft-syncstate p
+              {{font-family: 'Open Sans';}}
+              {ITABLES_CSS}
+              {{font-family: 'Open Sans';}}
+              {ITABLES_CSS}
+            </style>
+        <div class='syft-syncstate'>
+            <p style="margin-bottom:16px;"></p>
+            {name_html}
+            {date_html}
+        </div>
+"""
+        return repr + self.rows._repr_html_()

@@ -3,6 +3,7 @@ from collections.abc import Callable
 from time import sleep
 
 # relative
+from ..abstract_node import NodeSideType
 from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionPermission
 from ..service.action.action_permissions import StoragePermission
@@ -13,14 +14,34 @@ from ..service.sync.diff_state import ObjectDiff
 from ..service.sync.diff_state import ObjectDiffBatch
 from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.diff_state import SyncInstruction
+from ..service.sync.resolve_widget import ResolveWidget
 from ..service.sync.sync_state import SyncState
 from .client import SyftClient
 from .sync_decision import SyncDecision
+from .sync_decision import SyncDirection
 
 
-def compare_states(low_state: SyncState, high_state: SyncState) -> NodeDiff:
+def compare_states(state1: SyncState, state2: SyncState) -> NodeDiff:
     # NodeDiff
-    return NodeDiff.from_sync_state(low_state=low_state, high_state=high_state)
+    if (
+        state1.node_side_type == NodeSideType.LOW_SIDE
+        and state2.node_side_type == NodeSideType.HIGH_SIDE
+    ):
+        low_state = state1
+        high_state = state2
+        direction = SyncDirection.LOW_TO_HIGH
+    elif (
+        state1.node_side_type == NodeSideType.HIGH_SIDE
+        and state2.node_side_type == NodeSideType.LOW_SIDE
+    ):
+        low_state = state2
+        high_state = state1
+        direction = SyncDirection.HIGH_TO_LOW
+    else:
+        raise ValueError("Invalid SyncStates")
+    return NodeDiff.from_sync_state(
+        low_state=low_state, high_state=high_state, direction=direction
+    )
 
 
 def compare_clients(low_client: SyftClient, high_client: SyftClient) -> NodeDiff:
@@ -66,6 +87,11 @@ def handle_ignore_skip(
                     print(
                         f"\n{action} other batch with root {other_batch.root_type.__name__}\n"
                     )
+
+
+def resolve_single(obj_diff_batch: ObjectDiffBatch):
+    widget = ResolveWidget(obj_diff_batch)
+    return widget
 
 
 def resolve(
