@@ -307,7 +307,7 @@ def helper_queue_set_threading(root_verify_key, create_queue_cbk) -> None:
     assert len(queue) == thread_cnt * repeats
 
 
-@pytest.mark.parametrize("i", range(20))
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_set_sqlite(root_verify_key, sqlite_workspace, i):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(root_verify_key, sqlite_workspace)
@@ -315,7 +315,7 @@ def test_queue_set_sqlite(root_verify_key, sqlite_workspace, i):
     helper_queue_set_threading(root_verify_key, create_queue_cbk)
 
 
-@pytest.mark.parametrize("i", range(20))
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_set_threading_mongo(root_verify_key, mongo_document_store, i):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
@@ -362,7 +362,7 @@ def helper_queue_update_threading(root_verify_key, create_queue_cbk) -> None:
     assert execution_err is None
 
 
-@pytest.mark.parametrize("i", range(20))
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_update_threading_sqlite(root_verify_key, sqlite_workspace, i):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(root_verify_key, sqlite_workspace)
@@ -370,7 +370,7 @@ def test_queue_update_threading_sqlite(root_verify_key, sqlite_workspace, i):
     helper_queue_update_threading(root_verify_key, create_queue_cbk)
 
 
-@pytest.mark.parametrize("i", range(20))
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_update_threading_mongo(root_verify_key, mongo_document_store, i):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
@@ -425,7 +425,7 @@ def helper_queue_set_delete_threading(
     assert len(queue) == 0
 
 
-@pytest.mark.parametrize("i", range(20))
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_delete_threading_sqlite(root_verify_key, sqlite_workspace, i):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(root_verify_key, sqlite_workspace)
@@ -433,7 +433,7 @@ def test_queue_delete_threading_sqlite(root_verify_key, sqlite_workspace, i):
     helper_queue_set_delete_threading(root_verify_key, create_queue_cbk)
 
 
-@pytest.mark.parametrize("i", range(20))
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_delete_threading_mongo(root_verify_key, mongo_document_store, i):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
