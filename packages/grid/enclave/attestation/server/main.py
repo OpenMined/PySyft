@@ -7,8 +7,8 @@ from fastapi import FastAPI
 from loguru import logger
 
 # relative
-from .cpu_attest import cpu_attest
-from .gpu_attest import gpu_attest
+from .cpu_attestation import attest_cpu
+from .gpu_attestation import attest_gpu
 from .models import CPUAttestationResponseModel
 from .models import GPUAttestationResponseModel
 from .models import ResponseModel
@@ -28,11 +28,11 @@ async def read_root() -> ResponseModel:
 
 @app.get("/attest/cpu", response_model=CPUAttestationResponseModel)
 async def attest_cpu_endpoint() -> CPUAttestationResponseModel:
-    cpu_attest_res = cpu_attest()
+    cpu_attest_res = attest_cpu()
     return CPUAttestationResponseModel(result=cpu_attest_res)
 
 
 @app.get("/attest/gpu", response_model=GPUAttestationResponseModel)
 async def attest_gpu_endpoint() -> GPUAttestationResponseModel:
-    gpu_attest_res = gpu_attest()
+    gpu_attest_res = attest_gpu()
     return GPUAttestationResponseModel(result=gpu_attest_res)
