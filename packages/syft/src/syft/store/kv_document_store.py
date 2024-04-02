@@ -4,6 +4,8 @@ from __future__ import annotations
 # stdlib
 from collections import defaultdict
 from enum import Enum
+from functools import cached_property
+import traceback
 from typing import Any
 
 # third party
@@ -96,45 +98,47 @@ class KeyValueStorePartition(StorePartition):
             Backend specific configuration
     """
 
+    @cached_property
+    def data(self) -> KeyValueBackingStore:
+        return self.store_config.backing_store("data", self.settings, self.store_config)
+
+    @cached_property
+    def unique_keys(self) -> KeyValueBackingStore:
+        return self.store_config.backing_store(
+            "unique_keys", self.settings, self.store_config
+        )
+
+    @cached_property
+    def searchable_keys(self) -> KeyValueBackingStore:
+        return self.store_config.backing_store(
+            "searchable_keys", self.settings, self.store_config
+        )
+
+    @cached_property
+    def permissions(self) -> dict[UID, set[str]]:
+        return self.store_config.backing_store(
+            "permissions", self.settings, self.store_config, ddtype=set
+        )
+
+    @cached_property
+    def storage_permissions(self) -> dict[UID, set[UID]]:
+        return self.store_config.backing_store(
+            "storage_permissions", self.settings, self.store_config, ddtype=set
+        )
+
     def init_store(self) -> Result[Ok, Err]:
         store_status = super().init_store()
         if store_status.is_err():
             return store_status
 
         try:
-            self.data = self.store_config.backing_store(
-                "data", self.settings, self.store_config
-            )
-            self.unique_keys = self.store_config.backing_store(
-                "unique_keys", self.settings, self.store_config
-            )
-            self.searchable_keys = self.store_config.backing_store(
-                "searchable_keys", self.settings, self.store_config
-            )
-            # uid -> set['<uid>_permission']
-            self.permissions: dict[UID, set[str]] = self.store_config.backing_store(
-                "permissions", self.settings, self.store_config, ddtype=set
-            )
-
-            # uid -> set['<node_uid>']
-            self.storage_permissions: dict[UID, set[UID]] = (
-                self.store_config.backing_store(
-                    "storage_permissions",
-                    self.settings,
-                    self.store_config,
-                    ddtype=set,
-                )
-            )
-
             for partition_key in self.unique_cks:
                 pk_key = partition_key.key
-                if pk_key not in self.unique_keys:
-                    self.unique_keys[pk_key] = {}
+                self.unique_keys[pk_key] = {}
 
             for partition_key in self.searchable_cks:
                 pk_key = partition_key.key
-                if pk_key not in self.searchable_keys:
-                    self.searchable_keys[pk_key] = defaultdict(list)
+                self.searchable_keys[pk_key] = defaultdict(list)
         except BaseException as e:
             return Err(str(e))
 
@@ -234,7 +238,8 @@ class KeyValueStorePartition(StorePartition):
             else:
                 return Err(f"Permission: {write_permission} denied")
         except Exception as e:
-            return Err(f"Failed to write obj {obj}. {e}")
+            trace = traceback.format_exc()
+            return Err(f"Failed to write obj {obj}. {e}. trace: {trace}")
 
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey
