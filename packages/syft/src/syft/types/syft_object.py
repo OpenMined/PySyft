@@ -803,7 +803,7 @@ def get_repr_values_table(
             cols["type"].append(t)
 
         # if has _coll_repr_
-            
+
         if hasattr(item, "_coll_repr_"):
             ret_val = item._coll_repr_()
             if "id" in ret_val:

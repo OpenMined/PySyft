@@ -36,8 +36,6 @@ class DateTime(SyftObject):
     def __sub__(self, other: "DateTime") -> "DateTime":
         return self.utc_timestamp - other.utc_timestamp
 
-
-
     def __eq__(self, other: Any) -> bool:
         if other is None:
             return False

@@ -1,18 +1,10 @@
 # stdlib
 from datetime import timedelta
-import html
 from typing import Any
 from typing import Optional
 
-from syft.abstract_node import NodeSideType
-from syft.service.code.user_code import UserCode
-from syft.service.job.job_stash import Job
-from syft.service.request.request import Request
-from syft.util.colors import SURFACE
-from syft.util.fonts import ITABLES_CSS, FONT_CSS
-from ...util import options
-
 # relative
+from ...abstract_node import NodeSideType
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
@@ -21,7 +13,14 @@ from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
+from ...util.fonts import FONT_CSS
+from ...util.fonts import ITABLES_CSS
+from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
+from ..job.job_stash import Job
+from ..request.request import Request
 
 
 def get_hierarchy_level_prefix(level: int) -> str:
@@ -30,12 +29,14 @@ def get_hierarchy_level_prefix(level: int) -> str:
     else:
         return "--" * level + " "
 
+
 @serializable()
 class SyncView(SyftObject):
     __canonical_name__ = "SyncView"
     __version__ = SYFT_OBJECT_VERSION_1
 
     object: SyftObject
+
     def main_object_description_str(self) -> str:
         if isinstance(self.object, UserCode):
             return self.object.service_func_name
@@ -97,6 +98,7 @@ class SyncView(SyftObject):
             raise
         return summary_html
 
+
 @serializable()
 class SyncStateRow(SyftObject):
     """A row in the SyncState table"""
@@ -152,22 +154,23 @@ class SyncStateRow(SyftObject):
         else:
             return "MODIFIED"
 
+
 def td_format(td_object):
     seconds = int(td_object.total_seconds())
     periods = [
-        ('year',        60*60*24*365),
-        ('month',       60*60*24*30),
-        ('day',         60*60*24),
-        ('hour',        60*60),
-        ('minute',      60),
-        ('second',      1)
+        ("year", 60 * 60 * 24 * 365),
+        ("month", 60 * 60 * 24 * 30),
+        ("day", 60 * 60 * 24),
+        ("hour", 60 * 60),
+        ("minute", 60),
+        ("second", 1),
     ]
 
-    strings=[]
+    strings = []
     for period_name, period_seconds in periods:
         if seconds >= period_seconds:
-            period_value , seconds = divmod(seconds, period_seconds)
-            has_s = 's' if period_value > 1 else ''
+            period_value, seconds = divmod(seconds, period_seconds)
+            has_s = "s" if period_value > 1 else ""
             strings.append("%s %s%s" % (period_value, period_name, has_s))
 
     return ", ".join(strings)
@@ -202,13 +205,14 @@ class SyncState(SyftObject):
         # Re-use NodeDiff to compare to previous state
         # Low = previous state, high = current state
         # NOTE No previous sync state means everything is new
-        previous_state = self.previous_state or SyncState(node_uid=self.node_uid, node_name=self.node_name, node_side_type=self.node_side_type,
-                                                           syft_client_verify_key=self.syft_client_verify_key)
+        previous_state = self.previous_state or SyncState(
+            node_uid=self.node_uid,
+            node_name=self.node_name,
+            node_side_type=self.node_side_type,
+            syft_client_verify_key=self.syft_client_verify_key,
+        )
         self._previous_state_diff = NodeDiff.from_sync_state(
-            previous_state,
-            self,
-            _include_node_status=False,
-            direction=None
+            previous_state, self, _include_node_status=False, direction=None
         )
 
     def get_previous_state_diff(self) -> Any:
@@ -287,15 +291,20 @@ class SyncState(SyftObject):
         return result
 
     def _repr_html_(self) -> str:
-        prop_template = "<p class='paragraph'><strong><span class='pr-8'>{}: </span></strong>{}</p>"
-        name_html = prop_template.format('name', self.node_name)
+        prop_template = (
+            "<p class='paragraph'><strong><span class='pr-8'>{}: </span></strong>{}</p>"
+        )
+        name_html = prop_template.format("name", self.node_name)
         if self.previous_state_link is not None:
             previous_state = self.previous_state_link.resolve
-            delta = timedelta(seconds= self.created_at.utc_timestamp - previous_state.created_at.utc_timestamp)
+            delta = timedelta(
+                seconds=self.created_at.utc_timestamp
+                - previous_state.created_at.utc_timestamp
+            )
             val = f"{td_format(delta)} ago"
-            date_html = prop_template.format('last sync', val)
+            date_html = prop_template.format("last sync", val)
         else:
-            date_html = prop_template.format('last sync', 'not synced yet')
+            date_html = prop_template.format("last sync", "not synced yet")
 
         repr = f"""
         <style>

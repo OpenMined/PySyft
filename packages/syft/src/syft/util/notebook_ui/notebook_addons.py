@@ -347,6 +347,12 @@ CSS_CODE = """
         color: #B8520A;
     }
 
+    .label-gray {
+        badge;
+        background-color: #ECEBEF;
+        color: #353243;
+    }
+
     .label-green {
         badge;
         background-color: #D5F1D5;

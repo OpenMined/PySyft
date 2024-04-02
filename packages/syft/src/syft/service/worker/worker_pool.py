@@ -19,8 +19,8 @@ from ...types.syft_object import short_uid
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
-from ...util.fonts import ITABLES_CSS
 from ...util.fonts import FONT_CSS
+from ...util.fonts import ITABLES_CSS
 from ..response import SyftError
 from .worker_image import SyftWorkerImage
 
