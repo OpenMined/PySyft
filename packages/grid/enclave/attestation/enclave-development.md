@@ -21,6 +21,8 @@ docker run -it --rm -e DEV_MODE=True -p 4455:4455 -v $(pwd)/server:/app/server a
 
 ## For fetching attestation report by FastAPI
 
+### CPU Attestation
+
 ```sh
 docker run -it --rm --privileged \
   -p 4455:4455 \
@@ -28,13 +30,23 @@ docker run -it --rm --privileged \
   -v /dev/tpmrm0:/dev/tpmrm0 attestation:0.1
 ```
 
-### CPU Attestation
-
 ```sh
 curl localhost:4455/attest/cpu
 ```
 
 ### GPU Attestation
+
+#### Nvidia GPU Requirements
+
+We would need to install Nvidia Container Toolkit on host system and ensure we have CUDA Drivers installed.
+Link: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html
+
+```sh
+docker run -it --rm --privileged --gpus all --runtime=nvidia \
+  -p 4455:4455 \
+  -v /sys/kernel/security:/sys/kernel/security \
+  -v /dev/tpmrm0:/dev/tpmrm0 attestation:0.1
+```
 
 ```sh
 curl localhost:4455/attest/gpu
@@ -68,17 +80,13 @@ To retrieve JWT from Microsoft Azure Attestation (MAA)
 
 ### For GPU Attestation
 
-We would need to install Nvidia Container Toolkit on host system and ensure we have CUDA Drivers installed.
-Link: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html
-
-We could need to modify the docker run command as
-
 ```sh
 docker run -it --rm --privileged --gpus all --runtime=nvidia \
   -v /sys/kernel/security:/sys/kernel/security \
-  -v /dev/tpmrm0:/dev/tpmrm0 attestation:0.1
+  -v /dev/tpmrm0:/dev/tpmrm0 attestation:0.1 /bin/bash
 ```
 
+Invoke python shell
 In the python shell run
 
 ```python3
