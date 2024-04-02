@@ -169,6 +169,7 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Syft
+        shell: bash
         run: |
           if [[ ${{inputs.release_platform}} == "REAL_PYPI" ]]; then
             pip install syft==${{inputs.syft_version}}
