@@ -458,6 +458,7 @@ class DataProtocol:
 
         # Save history
         self.save_history(protocol_history)
+        self.load_state()
 
     def check_protocol(self) -> Result[SyftSuccess, SyftError]:
         if len(self.diff) != 0:
