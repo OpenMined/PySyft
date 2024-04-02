@@ -161,15 +161,6 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _close(self) -> None:
         self._commit()
-        REF_COUNTS[cache_key(self.db_filename)] -= 1
-        if REF_COUNTS[cache_key(self.db_filename)] <= 0:
-            # once you close it seems like other object references can't re-use the
-            # same connection
-            self.db.close()
-            del SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
-        else:
-            # don't close yet because another SQLiteBackingStore is probably still open
-            pass
 
     def _commit(self) -> None:
         self.db.commit()
