@@ -137,7 +137,7 @@ helm install ... --set ingress.class="gce"
 
 `0.9.0` - Coming soon...  
 `0.8.6` (Beta) - `dev` branch 👈🏽 <a href="https://github.com/OpenMined/PySyft/tree/dev/notebooks/api/0.8">API</a> - Coming soon...  
-`0.8.5-post.1` (Stable) - <a href="https://github.com/OpenMined/PySyft/tree/0.8.5-post.1/notebooks/api/0.8">API</a>
+`0.8.5-post.2` (Stable) - <a href="https://github.com/OpenMined/PySyft/tree/0.8.5-post.2/notebooks/api/0.8">API</a>
 
 Deprecated:
 

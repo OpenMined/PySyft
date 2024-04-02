@@ -33,7 +33,6 @@ from ...store.locks import ThreadingLockingConfig
 from ...types.datetime import DateTime
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from .action_object import Action
@@ -109,7 +108,7 @@ class NodeActionData(SyftObject):
 @serializable()
 class NodeActionDataUpdate(PartialSyftObject):
     __canonical_name__ = "NodeActionDataUpdate"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     type: NodeType
