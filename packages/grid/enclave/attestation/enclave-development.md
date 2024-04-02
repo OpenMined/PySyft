@@ -5,7 +5,7 @@ Note: Attestation currently works only in Linux x64
 ## Building Attestion
 
 ```sh
-cd packages/grid/enclave && \
+cd packages/grid/enclave/attestation && \
 docker build -f attesation.dockerfile  . -t attestation:0.1
 ```
 

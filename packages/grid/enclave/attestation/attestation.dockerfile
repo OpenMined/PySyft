@@ -35,7 +35,7 @@ RUN git clone https://github.com/Azure/confidential-computing-cvm-guest-attestat
     cmake . && make && cp ./AttestationClient /
 
 
-# ======== [Final] Build Final Image ========== #
+# ======== [Step 3] Build Final Image ========== #
 FROM python:${PYTHON_VERSION}-slim
 ARG AZ_GUEST_LIB_VERSION
 ARG NVTRUST_VERSION
@@ -45,23 +45,41 @@ RUN apt-get update && apt-get install -y \
     wget \
     git
 
+WORKDIR /app
+
 RUN wget https://packages.microsoft.com/repos/azurecore/pool/main/a/azguestattestation1/azguestattestation1_${AZ_GUEST_LIB_VERSION}_amd64.deb && \
     dpkg -i azguestattestation1_${AZ_GUEST_LIB_VERSION}_amd64.deb
 
-COPY --from=builder /AttestationClient /
+COPY --from=builder /AttestationClient /app
 
 # Clone Nvidia nvtrust Repo
 RUN git clone -b v${NVTRUST_VERSION} https://github.com/NVIDIA/nvtrust.git
 
 
 # Install Nvidia Local Verifier
-RUN cd nvtrust/guest_tools/gpu_verifiers/local_gpu_verifier && \
+RUN --mount=type=cache,target=/root/.cache \
+    cd nvtrust/guest_tools/gpu_verifiers/local_gpu_verifier && \
     pip install .
 
 # Install Nvidia Attestation SDK
-RUN cd nvtrust/guest_tools/attestation_sdk/dist && \
+RUN --mount=type=cache,target=/root/.cache \
+    cd nvtrust/guest_tools/attestation_sdk/dist && \
     pip install ./nv_attestation_sdk-${NVTRUST_VERSION}-py3-none-any.whl
+
+
+COPY ./requirements.txt /app/requirements.txt
+RUN --mount=type=cache,target=/root/.cache \
+    pip install --user -r requirements.txt
+
+COPY ./start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+COPY ./server /app/server
+
+# ========== [Step 4] Start  Python Web Server ========== #
+
+CMD ["sh", "-c", "/app/start.sh"]
+EXPOSE 4455
 
 # Cleanup
 RUN rm -rf /var/lib/apt/lists/* && \
-    rm -rf /nvtrust
+    rm -rf /app/nvtrust
