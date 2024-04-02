@@ -14,7 +14,7 @@ docker build -f attesation.dockerfile  . -t attestation:0.1
 ```sh
 docker run -it --rm --privileged \
   -v /sys/kernel/security:/sys/kernel/security \
-  -v /dev/tpmrm0:/dev/tpmrm0 attest:0.1 /bin/bash
+  -v /dev/tpmrm0:/dev/tpmrm0 attestation:0.1 /bin/bash
 ```
 
 In the shell run
@@ -43,7 +43,7 @@ We could need to modify the docker run command as
 ```sh
 docker run -it --rm --privileged --gpus all --runtime=nvidia \
   -v /sys/kernel/security:/sys/kernel/security \
-  -v /dev/tpmrm0:/dev/tpmrm0 attest:0.1
+  -v /dev/tpmrm0:/dev/tpmrm0 attestation:0.1
 ```
 
 In the python shell run
