@@ -379,10 +379,13 @@ class TwinAPIEndpoint(SyftObject):
             # return the results
             return result
         except Exception as e:
-            print("Error in exec_code", str(e))
-            return SyftError(
-                message="Ops something went wrong during this endpoint execution, please contact your admin."
-            )
+            # If it's admin, return the error message.
+            if context.role.value == 128:
+                return SyftError(message=f"{str(e)}")
+            else:
+                return SyftError(
+                    message="Ops something went wrong during this endpoint execution, please contact your admin."
+                )
 
 
 def set_access_type(context: TransformContext) -> TransformContext:
