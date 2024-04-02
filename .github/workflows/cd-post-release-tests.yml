@@ -171,10 +171,10 @@ jobs:
       - name: Install Syft
         run: |
           if [[ ${{inputs.release_platform}} == "REAL_PYPI" ]]; then
-            pip install syft==${{ inputs.syft_version }}
+            pip install syft==${{inputs.syft_version}}
           fi
           if [[ ${{ inputs.release_platform }} == "TEST_PYPI" ]]; then
-            pip install -i https://test.pypi.org/simple/ syft==${{ inputs.syft_version }}
+            pip install -i https://test.pypi.org/simple/ syft==${{inputs.syft_version}}
           fi
 
       - name: Check Syft version
@@ -283,10 +283,10 @@ jobs:
           SYFT_VERSION: ${{ inputs.syft_version }}
         run: |
           if [[ ${{ inputs.release_platform }} == "TEST_PYPI" ]]; then
-            pip install -i https://test.pypi.org/simple/ syft==${{ inputs.syft_version }}[data_science];
+            pip install -i https://test.pypi.org/simple/ syft==${{ inputs.syft_version }}[data_science]
           fi
           if [[ ${{ inputs.release_platform }} == "REAL_PYPI" ]]; then
-            pip install syft==${{ inputs.syft_version }}[data_science];
+            pip install syft==${{ inputs.syft_version }}[data_science]
           fi
 
       - name: Install Hagrid, tox and uv
