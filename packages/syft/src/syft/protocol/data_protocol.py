@@ -12,7 +12,6 @@ import re
 from types import UnionType
 import typing
 from typing import Any
-import warnings
 
 # third party
 from packaging.version import parse
@@ -27,7 +26,6 @@ from ..service.response import SyftException
 from ..service.response import SyftSuccess
 from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftBaseObject
-from ..util.util import get_dev_mode
 
 PROTOCOL_STATE_FILENAME = "protocol_version.json"
 PROTOCOL_TYPE = str | int
@@ -255,11 +253,11 @@ class DataProtocol:
                         + "with same __canonical_name__ and bump the __version__ number."
                     )
 
-                    if get_dev_mode() or self.raise_exception:
-                        raise Exception(error_msg)
-                    else:
-                        warnings.warn(error_msg, stacklevel=1, category=UserWarning)
-                        break
+                    # if get_dev_mode() or self.raise_exception:
+                    #     raise Exception(error_msg)
+                    # else:
+                    #     warnings.warn(error_msg, stacklevel=1, category=UserWarning)
+                    #     break
                 else:
                     # new object so its an add
                     object_diff[canonical_name][str(version)] = {}

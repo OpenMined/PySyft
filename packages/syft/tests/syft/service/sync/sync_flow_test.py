@@ -15,6 +15,7 @@ from syft.client.syncing import compare_states
 from syft.client.syncing import resolve
 from syft.service.action.action_object import ActionObject
 from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
@@ -99,6 +100,8 @@ def test_sync_flow():
     compute_mean.code = dedent(compute_mean.code)
 
     res = client_low_ds.code.request_code_execution(compute_mean)
+
+    res_low = client_low_ds.code.compute(compute_mean).get()
     print(res)
     print("LOW CODE:", low_client.code.get_all())
 
@@ -267,17 +270,10 @@ def test_forget_usercode(worker, second_worker):
 
     high_client.code.get_all()
     job_high = high_client.code.compute().get()
-    # job_info = job_high.info(public_metadata=True, result=True)
 
-    request = high_client.requests[0]
-    request.accept_by_depositing_result(job_high)
+    high_client.requests[0].accept_by_depositing_result(job_high)
 
-    # job_high._get_log_objs()
-
-    low_state = low_client.get_sync_state()
-    high_state = high_client.get_sync_state()
-
-    diff_state_2 = compare_states(low_state, high_state)
+    diff_state_2 = compare_clients(low_client, high_client)
 
     def skip_if_user_code(diff):
         if diff.root.object_type == "UserCode":
@@ -289,6 +285,218 @@ def test_forget_usercode(worker, second_worker):
         share_private_objects=True,
         decision_callback=skip_if_user_code,
     )
+
+
+def test_forget_usercode_with_log_change():
+    low_worker = sy.Worker(
+        name="low-test",
+        local_db=True,
+        n_consumers=1,
+        create_producer=True,
+        # node_side_type=NodeSideType.LOW_SIDE,
+        queue_port=None,
+        in_memory_workers=True,
+    )
+
+    low_client = low_worker.root_client
+
+    low_client.register(
+        email="newuser@openmined.org",
+        name="John Doe",
+        password="pw",
+        password_verify="pw",
+    )
+    client_low_ds = low_worker.guest_client
+
+    # low_client = worker.root_client
+    # client_low_ds = worker.guest_client
+    # high_client = second_worker.root_client
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        print("computing...")
+        return 42
+
+    compute.code = dedent(compute.code)
+
+    result = client_low_ds.code.request_code_execution(compute)
+
+    res_low = client_low_ds.code.compute().get()
+
+    # @sy.syft_function_single_use()
+    # def compute() -> int:
+    #     print("log changed...")
+    #     return 42
+
+    # compute.code = dedent(compute.code)
+
+    # _ = client_low_ds.code.request_code_execution(compute)
+
+    # diff_state = compare_clients(low_client, high_client)
+    # low_items_to_sync, high_items_to_sync = resolve(
+    #     diff_state, decision="low", share_private_objects=True
+    # )
+    # # high_items_to_sync.delete_objs = []
+    # low_client.apply_state(low_items_to_sync)
+    # high_client.apply_state(high_items_to_sync)
+
+    # high_client.code.get_all()
+    # job_high = high_client.code.compute().get()
+
+    # high_client.requests[0].accept_by_depositing_result(job_high)
+
+    # diff_state_2 = compare_clients(low_client, high_client)
+
+    # low_items_to_sync, high_items_to_sync = resolve(
+    #     diff_state_2,
+    #     share_private_objects=True,
+    #     decision="high",
+    # )
+
+    # low_client.apply_state(low_items_to_sync)
+
+    # res_low = client_low_ds.code.compute().get()
+    # print("Res Low", res_low)
+
+    # assert res_low == job_high
+
+
+def test_multiple_jobs(worker, second_worker):
+    low_client = worker.root_client
+    client_low_ds = worker.guest_client
+    high_client = second_worker.root_client
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        print("computing...")
+        return 42
+
+    compute.code = dedent(compute.code)
+    _ = client_low_ds.code.request_code_execution(compute)
+
+    diff_state = compare_clients(low_client, high_client)
+    low_items_to_sync, high_items_to_sync = resolve(
+        diff_state, decision="low", share_private_objects=True
+    )
+    low_client.apply_state(low_items_to_sync)
+    high_client.apply_state(high_items_to_sync)
+
+    high_client.code.get_all()
+    job_high = high_client.code.compute().get()
+
+    high_client.requests[0].accept_by_depositing_result(job_high)
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        print("log changed...")
+        return 42
+
+    compute.code = dedent(compute.code)
+
+    _ = client_low_ds.code.request_code_execution(compute)
+
+    diff_state = compare_clients(low_client, high_client)
+    low_items_to_sync, high_items_to_sync = resolve(
+        diff_state, decision="low", share_private_objects=True
+    )
+    high_items_to_sync.delete_objs = []
+    low_client.apply_state(low_items_to_sync)
+    high_client.apply_state(high_items_to_sync)
+
+    high_client.code.get_all()
+    job_high = high_client.code.compute().get()
+
+    high_client.requests[0].accept_by_depositing_result(job_high)
+
+    diff_state_2 = compare_clients(low_client, high_client)
+
+    low_items_to_sync, high_items_to_sync = resolve(
+        diff_state_2,
+        share_private_objects=True,
+        decision="high",
+    )
+
+    low_client.apply_state(low_items_to_sync)
+
+    res_low = client_low_ds.code.compute().get()
+    print("Res Low", res_low)
+
+    assert res_low == job_high
+
+
+def test_multiple_jobs_single_worker(worker):
+    low_client = worker.root_client
+    low_client.register(
+        name="John Doe",
+        email="a@a.com",
+        password="password",
+        password_verify="password",
+    )
+    client_low_ds = worker.guest_client.login(email="a@a.com", password="password")
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        print("computing...")
+        return 42
+
+    compute.code = dedent(compute.code)
+    _ = client_low_ds.code.request_code_execution(compute)
+
+    low_client.code.get_all()
+
+    request = low_client.requests.get_all()[0]
+    result = request.code.unsafe_function()
+    request.accept_by_depositing_result(result)
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        print("log changed...")
+        return 42
+
+    compute.code = dedent(compute.code)
+
+    _ = client_low_ds.code.request_code_execution(compute)
+
+    low_client.code.get_all()
+    job_high = low_client.code.compute().get()
+
+    low_client.requests[0].accept_by_depositing_result(job_high)
+
+    res_low = client_low_ds.code.compute().get()
+    print("Res Low", res_low)
+
+    assert res_low == job_high
+
+
+def test_code_accept_deny2(worker):
+    root_client = worker.root_client
+    dummy_data = [1, 2, 3]
+    data = ActionObject.from_obj(dummy_data)
+    action_obj = root_client.api.services.action.set(data)
+
+    ds_client = root_client.register(
+        name="John Doe",
+        email="a@a.com",
+        password="password",
+        password_verify="password",
+    )
+    ds_client = worker.guest_client.login(email="a@a.com", password="password")
+
+    @sy.syft_function(
+        input_policy=sy.ExactMatch(data=action_obj),
+        output_policy=sy.SingleExecutionExactOutput(),
+    )
+    def simple_function(data):
+        return sum(data)
+
+    simple_function.code = dedent(simple_function.code)
+
+    result = ds_client.code.request_code_execution(simple_function)
+    assert not isinstance(result, SyftError)
+
+    request = root_client.requests.get_all()[0]
+    result = request.accept_by_depositing_result(result=10)
+    assert isinstance(result, SyftSuccess)
 
 
 def test_skip_user_code(worker, second_worker):
