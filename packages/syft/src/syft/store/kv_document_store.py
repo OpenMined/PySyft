@@ -134,11 +134,13 @@ class KeyValueStorePartition(StorePartition):
         try:
             for partition_key in self.unique_cks:
                 pk_key = partition_key.key
-                self.unique_keys[pk_key] = {}
+                if pk_key not in self.unique_keys:
+                    self.unique_keys[pk_key] = {}
 
             for partition_key in self.searchable_cks:
                 pk_key = partition_key.key
-                self.searchable_keys[pk_key] = defaultdict(list)
+                if pk_key not in self.searchable_keys:
+                    self.searchable_keys[pk_key] = defaultdict(list)
         except BaseException as e:
             return Err(str(e))
 
@@ -502,7 +504,8 @@ class KeyValueStorePartition(StorePartition):
                     f"Failed to delete with query key {qk}, you have no permission"
                 )
         except Exception as e:
-            return Err(f"Failed to delete with query key {qk} with error: {e}")
+            trace = traceback.format_exc()
+            return Err(f"Failed to delete with query key {qk} with error: {e}. {trace}")
 
     def _delete_unique_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
         for _unique_ck in self.unique_cks:

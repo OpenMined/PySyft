@@ -402,9 +402,10 @@ def helper_queue_set_delete_threading(
         for idx in range(repeats):
             item_idx = tid * repeats + idx
 
-            res = queue.find_and_delete(root_verify_key, id=objs[item_idx].id)
-            if res.is_ok():
-                break
+            for _ in range(10):
+                res = queue.find_and_delete(root_verify_key, id=objs[item_idx].id)
+                if res.is_ok():
+                    break
 
             if res.is_err():
                 execution_err = res
