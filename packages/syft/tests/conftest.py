@@ -108,7 +108,7 @@ def stage_protocol(protocol_file: Path):
         stage_protocol_changes()
         # bump_protocol_version()
         yield dp.protocol_history
-        dp.revert_latest_protocol()
+        dp.reset_dev_protocol()
         dp.save_history(dp.protocol_history)
 
         # Cleanup release dir, remove unused released files

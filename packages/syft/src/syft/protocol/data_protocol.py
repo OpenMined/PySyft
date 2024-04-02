@@ -244,13 +244,14 @@ class DataProtocol:
                         object_diff[canonical_name][str(version)]["action"] = "add"
                         continue
 
-                    error_msg = (
+                    _ = (
                         f"{canonical_name} for class {cls.__name__} fqn {cls} "
                         + f"version {version} hash has changed. "
                         + f"{hash_str} not in {versions.values()}. "
                         + "Is a unique __canonical_name__ for this subclass missing? "
                         + "If the class has changed you will need to define a new class with the changes, "
                         + "with same __canonical_name__ and bump the __version__ number."
+                        + f"{cls.model_fields}"
                     )
 
                     # if get_dev_mode() or self.raise_exception:
@@ -455,6 +456,7 @@ class DataProtocol:
 
         # Save history
         self.save_history(protocol_history)
+        self.load_state()
 
     def check_protocol(self) -> Result[SyftSuccess, SyftError]:
         if len(self.diff) != 0:
@@ -500,6 +502,11 @@ class DataProtocol:
         if "dev" in self.protocol_history.keys():
             return True
         return False
+
+    def reset_dev_protocol(self) -> None:
+        if self.has_dev:
+            del self.protocol_history["dev"]
+            self.save_history(self.protocol_history)
 
 
 def get_data_protocol(raise_exception: bool = False) -> DataProtocol:
