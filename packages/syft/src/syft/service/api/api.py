@@ -45,7 +45,7 @@ class TwinAPIAuthedContext(AuthedServiceContext):
 
     settings: dict[str, Any] | None = None
     code: HelperFunctionSet | None = None
-    state: dict[str, Any] | None = None
+    state: dict[Any, Any] | None = None
 
 
 def get_signature(func: Callable) -> Signature:
@@ -110,7 +110,7 @@ class Endpoint(SyftObject):
     settings: dict[str, Any] | None = None
     view_access: bool = True
     helper_functions: dict[str, str] | None = None
-    state: dict[str, Any] | None = None
+    state: dict[Any, Any] | None = None
     signature: Signature
 
     @field_validator("api_code", check_fields=False)
@@ -144,7 +144,7 @@ class Endpoint(SyftObject):
     ) -> dict[str, Any] | None:
         return settings
 
-    def update_state(self, state: dict[str, Any]) -> None:
+    def update_state(self, state: dict[Any, Any]) -> None:
         self.state = state
 
 

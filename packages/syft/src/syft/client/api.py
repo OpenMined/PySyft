@@ -253,7 +253,9 @@ class RemoteFunction(SyftObject):
 
         return args, kwargs
 
-    def __function_call(self, path: str, *args: Any, **kwargs: Any) -> Any:
+    def __function_call(
+        self, path: str, *args: Any, cache_result: bool = True, **kwargs: Any
+    ) -> Any:
         if "blocking" in self.signature.parameters:
             raise Exception(
                 f"Signature {self.signature} can't have 'blocking' kwarg because it's reserved"
@@ -285,7 +287,7 @@ class RemoteFunction(SyftObject):
         allowed = self.warning.show() if self.warning else True
         if not allowed:
             return
-        result = self.make_call(api_call=api_call)
+        result = self.make_call(api_call=api_call, cache_result=cache_result)
 
         result, _ = migrate_args_and_kwargs(
             [result], kwargs={}, to_latest_protocol=True
@@ -848,7 +850,7 @@ class SyftAPI(SyftObject):
     def user_role(self) -> ServiceRole:
         return self.__user_role
 
-    def make_call(self, api_call: SyftAPICall) -> Result:
+    def make_call(self, api_call: SyftAPICall, cache_result: bool = True) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
         if self.connection is not None:
             signed_result = self.connection.make_call(signed_call)
@@ -859,10 +861,14 @@ class SyftAPI(SyftObject):
 
         if isinstance(result, CachedSyftObject):
             if result.error_msg is not None:
-                prompt_warning_message(
-                    message=f"{result.error_msg}. Loading results from cache."
-                )
-            result = result.result
+                if cache_result:
+                    prompt_warning_message(
+                        message=f"{result.error_msg}. Loading results from cache."
+                    )
+                else:
+                    result = SyftError(message=result.error_msg)
+            if cache_result:
+                result = result.result
 
         if isinstance(result, OkErr):
             if result.is_ok():
