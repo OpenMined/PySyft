@@ -12,6 +12,7 @@ from ipywidgets import HBox
 from ipywidgets import HTML
 from ipywidgets import Layout
 from ipywidgets import VBox
+from syft.service.response import SyftError, SyftSuccess
 
 # relative
 from ...client.api import APIRegistry
@@ -25,6 +26,19 @@ from .diff_state import ObjectDiff
 from .diff_state import ObjectDiffBatch
 from .diff_state import ResolvedSyncState
 from .diff_state import SyncInstruction
+
+# Standard div Jupyter Lab uses for notebook outputs
+# This is needed to use alert styles from SyftSuccess and SyftError
+NOTEBOOK_OUTPUT_DIV = """
+<div class="lm-Widget
+            jp-RenderedHTMLCommon
+            jp-RenderedHTML
+            jp-mod-trusted
+            jp-OutputArea-output"
+     data-mime-type="text/html">
+    {content}<br>
+</div>
+"""
 
 
 class DiffStatus(Enum):
@@ -276,7 +290,10 @@ class ResolveWidget:
     def __init__(self, obj_diff_batch):
         self.obj_diff_batch: ObjectDiffBatch = obj_diff_batch
         self.id2widget: dict[UID, ObjectDiffWidget] = {}
-        self.widget = self.build()
+        self.main_widget = self.build()
+        self.result_widget = VBox()  # Placeholder for SyftSuccess / SyftError
+        self.widget = VBox([self.main_widget, self.result_widget])
+        self.hide_result_widget()
 
     def _repr_mimebundle_(self, **kwargs):
         # from IPython.display import display
@@ -387,9 +404,14 @@ class ResolveWidget:
         if self.obj_diff_batch.sync_direction is None:
             raise ValueError("no direction specified")
         if self.obj_diff_batch.sync_direction == SyncDirection.LOW_TO_HIGH:
-            return client.apply_state(resolved_state_high)
+            res = client.apply_state(resolved_state_high)
         else:
-            return client.apply_state(resolved_state_low)
+            res = client.apply_state(resolved_state_low)
+
+        self.set_result_state(res)
+        self.hide_main_widget()
+        self.show_result_widget()
+        return res
 
     @property
     def batch_diff_widgets(self) -> list[ObjectDiffWidget]:
@@ -422,6 +444,24 @@ class ResolveWidget:
             self.obj_diff_batch.root_diff, is_main_widget=True
         )
         return obj_diff_widget
+
+    def set_result_state(self, result: SyftSuccess | SyftError):
+        result_html = result._repr_html_()
+        # Wrap in div to match Jupyter Lab output styling
+        result_html = NOTEBOOK_OUTPUT_DIV.format(content=result_html)
+        self.result_widget.children = [widgets.HTML(value=result_html)]
+
+    def hide_main_widget(self):
+        self.main_widget.layout.display = "none"
+
+    def show_main_widget(self):
+        self.main_widget.layout.display = "block"
+
+    def hide_result_widget(self):
+        self.result_widget.layout.display = "none"
+
+    def show_result_widget(self):
+        self.result_widget.layout.display = "block"
 
     def build(self):
         self.id2widget = {}
