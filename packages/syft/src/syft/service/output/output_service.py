@@ -1,9 +1,10 @@
 # stdlib
-from typing import Any
 from typing import ClassVar
 
 # third party
 from pydantic import model_validator
+from result import Err
+from result import Ok
 from result import Result
 
 # relative
@@ -17,7 +18,7 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -27,17 +28,19 @@ from ..response import SyftError
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
+from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 
 CreatedAtPartitionKey = PartitionKey(key="created_at", type_=DateTime)
 UserCodeIdPartitionKey = PartitionKey(key="user_code_id", type_=UID)
+JobIdPartitionKey = PartitionKey(key="job_id", type_=UID)
 OutputPolicyIdPartitionKey = PartitionKey(key="output_policy_id", type_=UID)
 
 
 @serializable()
 class ExecutionOutput(SyncableSyftObject):
     __canonical_name__ = "ExecutionOutput"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     executing_user_verify_key: SyftVerifyKey
     user_code_link: LinkedObject
@@ -48,6 +51,7 @@ class ExecutionOutput(SyncableSyftObject):
 
     # Required for __attr_searchable__, set by model_validator
     user_code_id: UID
+    job_id: UID | None = None
 
     # Output policy is not a linked object because its saved on the usercode
     output_policy_id: UID | None = None
@@ -56,6 +60,7 @@ class ExecutionOutput(SyncableSyftObject):
         "user_code_id",
         "created_at",
         "output_policy_id",
+        "job_id",
     ]
     __repr_attrs__: ClassVar[list[str]] = [
         "created_at",
@@ -66,9 +71,11 @@ class ExecutionOutput(SyncableSyftObject):
 
     @model_validator(mode="before")
     @classmethod
-    def add_user_code_id(cls, values: dict) -> dict:
+    def add_searchable_link_ids(cls, values: dict) -> dict:
         if "user_code_link" in values:
             values["user_code_id"] = values["user_code_link"].object_uid
+        if values.get("job_link"):
+            values["job_id"] = values["job_link"].object_uid
         return values
 
     @classmethod
@@ -169,11 +176,7 @@ class ExecutionOutput(SyncableSyftObject):
                 return False
         return True
 
-    @property
-    def job_id(self) -> UID | None:
-        return self.job_link.object_uid if self.job_link else None
-
-    def get_sync_dependencies(self, api: Any = None) -> list[UID]:
+    def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
         # Output ids, user code id, job id
         res = []
 
@@ -208,6 +211,26 @@ class OutputStash(BaseUIDStoreStash):
         return self.query_all(
             credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
         )
+
+    def get_by_job_id(
+        self, credentials: SyftVerifyKey, user_code_id: UID
+    ) -> Result[ExecutionOutput | None, str]:
+        qks = QueryKeys(
+            qks=[JobIdPartitionKey.with_obj(user_code_id)],
+        )
+        res = self.query_all(
+            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
+        )
+        if res.is_err():
+            return res
+        else:
+            res = res.ok()
+            if len(res) == 0:
+                return Ok(None)
+            elif len(res) > 1:
+                return Err(message="Too many outputs found")
+            else:
+                return Ok(res[0])
 
     def get_by_output_policy_id(
         self, credentials: SyftVerifyKey, output_policy_id: UID
@@ -267,6 +290,22 @@ class OutputService(AbstractService):
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> list[ExecutionOutput] | SyftError:
         result = self.stash.get_by_user_code_id(
+            credentials=context.node.verify_key,  # type: ignore
+            user_code_id=user_code_id,
+        )
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message=result.err())
+
+    @service_method(
+        path="output.get_by_job_id",
+        name="get_by_job_id",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def get_by_job_id(
+        self, context: AuthedServiceContext, user_code_id: UID
+    ) -> ExecutionOutput | None | SyftError:
+        result = self.stash.get_by_job_id(
             credentials=context.node.verify_key,  # type: ignore
             user_code_id=user_code_id,
         )
