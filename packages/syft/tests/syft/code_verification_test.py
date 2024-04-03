@@ -11,25 +11,25 @@ from syft.service.action.numpy import NumpyArrayObject
 @pytest.fixture
 def data1() -> ActionObject:
     """Returns an Action Object with a NumPy dataset with values between -1 and 1"""
-    return NumpyArrayObject.from_obj(2 * np.random.rand(10, 10) - 1)
+    yield NumpyArrayObject.from_obj(2 * np.random.rand(10, 10) - 1)
 
 
 @pytest.fixture
 def data2() -> ActionObject:
     """Returns an Action Object with a NumPy dataset with values between -1 and 1"""
-    return NumpyArrayObject.from_obj(2 * np.random.rand(10, 10) - 1)
+    yield NumpyArrayObject.from_obj(2 * np.random.rand(10, 10) - 1)
 
 
 @pytest.fixture
 def empty1(data1) -> ActionObject:
     """Returns an Empty Action Object corresponding to data1"""
-    return ActionObject.empty(syft_internal_type=np.ndarray, id=data1.id)
+    yield ActionObject.empty(syft_internal_type=np.ndarray, id=data1.id)
 
 
 @pytest.fixture
 def empty2(data1) -> ActionObject:
     """Returns an Empty Action Object corresponding to data2"""
-    return NumpyArrayObject.from_obj(ActionDataEmpty(), id=data2.id)
+    yield NumpyArrayObject.from_obj(ActionDataEmpty(), id=data2.id)
 
 
 def test_add_private(data1: ActionObject, data2: ActionObject) -> None:

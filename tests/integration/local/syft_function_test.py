@@ -1,5 +1,5 @@
 # stdlib
-import random
+from secrets import token_hex
 import sys
 from textwrap import dedent
 
@@ -17,24 +17,24 @@ from syft.service.response import SyftSuccess
 
 @pytest.fixture
 def node():
-    random.seed()
-    name = f"nested_job_test_domain-{random.randint(0,1000)}"
     _node = sy.orchestra.launch(
-        name=name,
+        name=token_hex(8),
         dev_mode=True,
         reset=True,
         n_consumers=3,
         create_producer=True,
         queue_port=None,
         in_memory_workers=True,
+        local_db=False,
     )
     # startup code here
     yield _node
     # Cleanup code
+    _node.python_node.cleanup()
     _node.land()
 
 
-# @pytest.mark.flaky(reruns=5, reruns_delay=1)
+# @pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_nested_jobs(node):
     client = node.login(email="info@openmined.org", password="changethis")
