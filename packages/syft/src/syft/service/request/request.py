@@ -669,14 +669,14 @@ class Request(SyncableSyftObject):
 
         return job
 
-    def _is_action_object_from_job(self, action_object: ActionObject) -> Job | None:  # type: ignore
+    def get_job_for_action_object(self, action_object: ActionObject) -> Job | None:  # type: ignore
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         if api is None:
             raise ValueError(f"Can't access the api. You must login to {self.node_uid}")
         job_service = api.services.job
         existing_jobs = job_service.get_by_user_code_id(self.code.id)
         for job in existing_jobs:
-            if job.result and job.result.id == action_object.id:
+            if job.result is not None and job.result.id == action_object.id:
                 return job
 
     def accept_by_depositing_result(
@@ -696,13 +696,19 @@ class Request(SyncableSyftObject):
         elif isinstance(result, ActionObject):
             # Do not allow accepting a result produced by a Job,
             # This can cause an inconsistent Job state
-            if self._is_action_object_from_job(result):
-                action_object_job = self._is_action_object_from_job(result)
-                if action_object_job is not None:
-                    return SyftError(
-                        message=f"This ActionObject is the result of Job {action_object_job.id}, "
-                        f"please use the `Job.info` instead."
-                    )
+            related_job = self.get_job_for_action_object(result)
+            if related_job:
+                return SyftError(
+                    message=f"This ActionObject is the result of Job {related_job.id}, "
+                    f"please use the `Job.info` instead."
+                )
+            else:
+                job_info = JobInfo(
+                    includes_metadata=True,
+                    includes_result=True,
+                    status=JobStatus.COMPLETED,
+                    resolved=True,
+                )
         else:
             # NOTE result is added at the end of function (once ActionObject is created)
             job_info = JobInfo(
