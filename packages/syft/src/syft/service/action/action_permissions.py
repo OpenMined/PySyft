@@ -94,6 +94,7 @@ class ActionObjectEXECUTE(ActionObjectPermission):
         self.permission = ActionPermission.EXECUTE
 
 
+@serializable()
 class StoragePermission:
     def __init__(self, uid: UID, node_uid: UID):
         self.uid = uid

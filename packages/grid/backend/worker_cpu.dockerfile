@@ -9,7 +9,7 @@
 # Later we'd want to uninstall old python, and then install a new python runtime...
 # ... but pre-built syft deps may break!
 
-ARG SYFT_VERSION_TAG="0.8.5-post.1"
+ARG SYFT_VERSION_TAG="0.8.7-beta.0"
 FROM openmined/grid-backend:${SYFT_VERSION_TAG}
 
 ARG SYSTEM_PACKAGES=""
