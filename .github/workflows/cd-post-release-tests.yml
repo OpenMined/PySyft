@@ -169,12 +169,13 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Syft
+        shell: bash
         run: |
-          if (${{ inputs.release_platform }} == "REAL_PYPI"); then
-            pip install syft==${{ inputs.syft_version }}
+          if [[ ${{inputs.release_platform}} == "REAL_PYPI" ]]; then
+            pip install syft==${{inputs.syft_version}}
           fi
-          if (${{ inputs.release_platform }}" == "TEST_PYPI"); then
-            pip install -i https://test.pypi.org/simple/ syft==${{ inputs.syft_version }}
+          if [[ ${{ inputs.release_platform }} == "TEST_PYPI" ]]; then
+            pip install --extra-index-url https://test.pypi.org/simple/ syft==${{inputs.syft_version}}
           fi
 
       - name: Check Syft version
@@ -282,11 +283,11 @@ jobs:
         env:
           SYFT_VERSION: ${{ inputs.syft_version }}
         run: |
-          if [[ "${{ inputs.release_platform }}" == "TEST_PYPI" ]]; then
-            pip install -i https://test.pypi.org/simple/ syft==${{ inputs.syft_version }}[data_science];
+          if [[ ${{ inputs.release_platform }} == "TEST_PYPI" ]]; then
+            pip install --extra-index-url https://test.pypi.org/simple/ syft[data_science,dev]==${{ inputs.syft_version }}
           fi
-          if [[ "${{ inputs.release_platform }}" == "REAL_PYPI" ]]; then
-            pip install syft==${{ inputs.syft_version }}[data_science];
+          if [[ ${{ inputs.release_platform }} == "REAL_PYPI" ]]; then
+            pip install syft[data_science,dev]==${{ inputs.syft_version }}
           fi
 
       - name: Install Hagrid, tox and uv

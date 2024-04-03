@@ -3,6 +3,8 @@ from __future__ import annotations
 
 # stdlib
 from concurrent import futures
+import json
+import os
 from typing import Any
 
 # third party
@@ -41,16 +43,25 @@ class NetworkRegistry:
             )
         except Exception as e:
             warning(
-                f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
+                f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. Exception: {e}"
             )
 
     @staticmethod
     def load_network_registry_json() -> dict:
         try:
-            response = requests.get(NETWORK_REGISTRY_URL)  # nosec
-            response.raise_for_status()  # raise an exception if the HTTP request returns an error
-            network_json: dict = response.json()
+            # Get the environment variable
+            network_registry_json = os.getenv("NETWORK_REGISTRY_JSON")
+            # If the environment variable exists, use it
+            if network_registry_json is not None:
+                network_json: dict = json.loads(network_registry_json)
+            else:
+                # Load the network registry from the NETWORK_REGISTRY_URL
+                response = requests.get(NETWORK_REGISTRY_URL, timeout=30)  # nosec
+                response.raise_for_status()  # raise an exception if the HTTP request returns an error
+                network_json = response.json()
+
             return network_json
+
         except Exception as e:
             warning(
                 f"Failed to get Network Registry from {NETWORK_REGISTRY_REPO}. Exception: {e}"
