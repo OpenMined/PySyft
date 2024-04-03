@@ -65,6 +65,9 @@ class TwinAPIEndpointView(SyftObject):
     access: str = "Public"
     mock_function: str | None = None
     private_function: str | None = None
+    description: str | None = None
+    mock_helper_functions: list[str] | None = None
+    private_helper_functions: list[str] | None = None
 
     __repr_attrs__ = [
         "path",
@@ -214,6 +217,7 @@ class UpdateTwinAPIEndpoint(PartialSyftObject, BaseTwinAPIEndpoint):
     path: str
     private_function: PrivateAPIEndpoint | None = None
     mock_function: PublicAPIEndpoint
+    description: str | None = None
 
 
 @serializable()
@@ -226,6 +230,7 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
     private_function: PrivateAPIEndpoint | None = None
     mock_function: PublicAPIEndpoint
     signature: Signature
+    description: str | None = None
 
 
 @serializable()
@@ -241,6 +246,7 @@ class TwinAPIEndpoint(SyftObject):
     private_function: PrivateAPIEndpoint | None = None
     mock_function: PublicAPIEndpoint
     signature: Signature
+    description: str | None = None
 
     __attr_searchable__ = ["path"]
     __attr_unique__ = ["path"]
@@ -429,11 +435,26 @@ def extract_code_string(code_field: str) -> Callable:
                 if code_field == "private_function"
                 else context.obj.mock_function
             )
+            helper_function_field = (
+                "mock_helper_functions"
+                if code_field == "mock_function"
+                else "private_helper_functions"
+            )
 
-            if endpoint_type is not None and endpoint_type.view_access:
+            context.node = cast(AbstractNode, context.node)
+            admin_key = context.node.get_service("userservice").admin_verify_key()
+
+            # If endpoint exists **AND** (has visible access **OR** the user is admin)
+            if endpoint_type is not None and (
+                endpoint_type.view_access or context.credentials == admin_key
+            ):
                 context.output[code_field] = decorator_cleanup(endpoint_type.api_code)
+                context.output[helper_function_field] = (
+                    endpoint_type.helper_functions.values() or []
+                )
             else:
                 context.output[code_field] = NOT_ACCESSIBLE_STRING
+                context.output[helper_function_field] = []
         return context
 
     return code_string
@@ -457,6 +478,7 @@ def api_endpoint(
     path: str,
     settings: dict[str, str] | None = None,
     helper_functions: list[Callable] | None = None,
+    description: str | None = None,
 ) -> Callable[..., TwinAPIEndpoint | SyftError]:
     def decorator(f: Callable) -> TwinAPIEndpoint | SyftError:
         try:
@@ -473,9 +495,9 @@ def api_endpoint(
                     helper_functions=helper_functions_dict,
                 ),
                 signature=inspect.signature(f),
+                description=description,
             )
         except ValidationError as e:
-            print("Here: ", e)
             for error in e.errors():
                 error_msg = error["msg"]
             res = SyftError(message=error_msg)
@@ -554,6 +576,7 @@ def create_new_api_endpoint(
                 private_function=private_function,
                 mock_function=mock_function,
                 signature=endpoint_signature,
+                description=description,
             )
 
         return CreateTwinAPIEndpoint(

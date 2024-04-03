@@ -97,6 +97,7 @@ class APIService(AbstractService):
         endpoint_path: str,
         mock_function: PublicAPIEndpoint | None = None,
         private_function: PrivateAPIEndpoint | None = None,
+        hide_definition: bool | None = None,
     ) -> SyftSuccess | SyftError:
         """Updates an specific API endpoint."""
 
@@ -110,9 +111,9 @@ class APIService(AbstractService):
 
         endpoint: TwinAPIEndpoint = endpoint_result.ok()
 
-        if not (mock_function or private_function):
+        if not (mock_function or private_function or (hide_definition is not None)):
             return SyftError(
-                message='Either "mock_function" or "private_function" are required.'
+                message='Either "mock_function","private_function" or "hide_definition" are required.'
             )
 
         updated_mock = (
@@ -136,6 +137,15 @@ class APIService(AbstractService):
         endpoint.mock_function = endpoint_update.mock_function
         endpoint.private_function = endpoint_update.private_function
         endpoint.signature = updated_mock.signature
+        view_access = (
+            not hide_definition
+            if hide_definition is not None
+            else endpoint.mock_function.view_access
+        )
+        endpoint.mock_function.view_access = view_access
+        # Check if the endpoint has a private function
+        if endpoint.private_function:
+            endpoint.private_function.view_access = view_access
 
         result = self.stash.upsert(context.credentials, endpoint=endpoint)
         if result.is_err():
@@ -184,7 +194,7 @@ class APIService(AbstractService):
             return SyftError(message=result.err())
         api_endpoint = result.ok()
 
-        return api_endpoint.to(TwinAPIEndpointView)
+        return api_endpoint.to(TwinAPIEndpointView, context=context)
 
     @service_method(
         path="api.api_endpoints",
@@ -205,7 +215,9 @@ class APIService(AbstractService):
         all_api_endpoints = result.ok()
         api_endpoint_view = []
         for api_endpoint in all_api_endpoints:
-            api_endpoint_view.append(api_endpoint.to(TwinAPIEndpointView))
+            api_endpoint_view.append(
+                api_endpoint.to(TwinAPIEndpointView, context=context)
+            )
 
         return api_endpoint_view
 
