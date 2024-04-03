@@ -89,10 +89,8 @@ class SyncView(SyftObject):
             status_str = self.get_status_str()
             status_seperator = " • " if len(status_str) else ""
             summary_html = f"""
-    <div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;">
-    <div>
+    <div style="display: flex; gap: 8px; justify-content: start; width: 100%;">
     {type_html} {description_html}
-    </div>
     </div>
     <div style="display: table-row">
     <span class='syncstate-col-footer'>{status_str}{status_seperator}Updated by {updated_by} {updated_delta_str}</span>

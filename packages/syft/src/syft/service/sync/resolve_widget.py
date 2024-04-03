@@ -14,6 +14,7 @@ from ipywidgets import HTML
 from ipywidgets import Layout
 from ipywidgets import VBox
 from syft.service.sync.sync_state import SyncView
+from syft.util.notebook_ui.notebook_addons import CSS_CODE
 
 # relative
 from ...client.api import APIRegistry
@@ -250,6 +251,10 @@ class ObjectDiffWidget:
         if self.show_sync_button:
             self._sync_checkbox.disabled = False
 
+    def set_share_private_data(self):
+        if self.show_share_button:
+            self._share_private_checkbox.value = True
+
     def create_diff_html(self, title, properties, statuses, line_length=80):
         html_str = f"<div style='width: 100%;'>{title}<br>"
         html_str += "<div style='font-family: monospace; border-left: 1px solid #B4B0BF; padding-left: 10px;'>"
@@ -340,9 +345,14 @@ class ResolveWidget:
         self.id2widget: dict[UID, ObjectDiffWidget] = {}
         self.main_widget = self.build()
         self.result_widget = VBox()  # Placeholder for SyftSuccess / SyftError
-        self.widget = VBox([self.main_widget, self.result_widget])
+        self.widget = VBox(
+            [self.build_css_widget(), self.main_widget, self.result_widget]
+        )
         self.is_synced = False
         self.hide_result_widget()
+
+    def build_css_widget(self):
+        return widgets.HTML(value=CSS_CODE)
 
     def _repr_mimebundle_(self, **kwargs):
         # from IPython.display import display
@@ -353,7 +363,16 @@ class ResolveWidget:
 
     def click_share_all_private_data(self):
         for widget in self.id2widget.values():
-            widget.share_private_data = True
+            widget.set_share_private_data()
+
+    def click_share_private_data(self, uid: UID | str):
+        if isinstance(uid, str):
+            uid = UID(uid)
+        if uid not in self.id2widget:
+            return SyftError(message="Object not found in this widget")
+
+        widget = self.id2widget[uid]
+        widget.set_share_private_data()
 
     def button_callback(self, *args, **kwargs):
         if self.is_synced:
