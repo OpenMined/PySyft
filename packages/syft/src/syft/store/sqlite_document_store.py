@@ -121,7 +121,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
         connection = sqlite3.connect(
             self.file_path,
-            timeout=self.store_config.client_config.timeout,
+            timeout=getattr(self.store_config.client_config, "timeout", 35),
             check_same_thread=False,  # do we need this if we use the lock?
             # check_same_thread=self.store_config.client_config.check_same_thread,
         )
