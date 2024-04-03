@@ -162,7 +162,7 @@ class DataProtocol:
         sorted_dict = sort_dict_naturally(self.protocol_history)
         state_dict: dict = defaultdict(dict)
         for protocol_number in sorted_dict:
-            object_versions = sorted_dict[protocol_number]["object_versions"]
+            object_versions = sorted_dict[protocol_number].get("object_versions", {})
             for canonical_name, versions in object_versions.items():
                 for version, object_metadata in versions.items():
                     action = object_metadata["action"]
@@ -294,7 +294,7 @@ class DataProtocol:
         if "dev" not in current_history:
             current_history["dev"] = {}
             current_history["dev"]["object_versions"] = {}
-        object_versions = current_history["dev"]["object_versions"]
+        object_versions = current_history["dev"].get("object_versions", {})
         for canonical_name, versions in self.diff.items():
             for version, version_metadata in versions.items():
                 if canonical_name not in object_versions:
@@ -488,7 +488,7 @@ class DataProtocol:
             # we assume its supported until we prove otherwise
             protocol_supported[v] = True
             # iterate through each object
-            for canonical_name, _ in version_data["object_versions"].items():
+            for canonical_name, _ in version_data.get("object_versions", {}).items():
                 if canonical_name not in self.state:
                     protocol_supported[v] = False
                     break

@@ -9,14 +9,99 @@
     "release_name": "0.8.4.json"
   },
   "4": {
-    "release_name": "0.8.5.json"
+    "release_name": "0.8.5.post1.json"
   },
   "dev": {
     "object_versions": {
+      "CustomEndpointActionObject": {
+        "1": {
+          "version": 1,
+          "hash": "642facc6cafbaad4de030a33cd619bd68ac31a32b0db07ddc1c1d5d7f914503e",
+          "action": "add"
+        }
+      },
+      "ExecutionOutput": {
+        "1": {
+          "version": 1,
+          "hash": "c2337099eba14767ead75fcc1b1fa265c1898461ede0b5e7758a0e8d11d1757d",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "854fe9df5bcbb5c7e5b7c467bac423cd98c32f93d6876fea7b8eb6c08f6596da",
+          "action": "add"
+        }
+      },
+      "SyftLog": {
+        "3": {
+          "version": 3,
+          "hash": "8964d48238672e0e5d5db6b932cda4ee8eb77581949ab3f7a38a05b1efec13b7",
+          "action": "remove"
+        },
+        "4": {
+          "version": 4,
+          "hash": "ad6ef18ccd87fced669f3824d27ab423aaf52574b0cd4f720687aeaba77524e5",
+          "action": "add"
+        }
+      },
       "SyncView": {
         "1": {
           "version": 1,
-          "hash": "9c8ca45be1c58e1da88fbb2eaad19e71db1102418012b1cf029c766ce857980f",
+          "hash": "4e87744e86cd7781e3d5cf4618e63516f3d26309a4da919033dacc5ed338d76d",
+          "action": "add"
+        }
+      },
+      "SyncState": {
+        "1": {
+          "version": 1,
+          "hash": "a0616775ec8ef0629e2d91e0df9cc4237ea3674727eda1ce367f1897ee35767d",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "ba3f9ce949732f772114050b38f021cbc3bfc9b2fe3ae662449db0ba1ed39c95",
+          "action": "add"
+        }
+      },
+      "CustomAPIView": {
+        "1": {
+          "version": 1,
+          "hash": "0d58fd34f2e192ac7459f04d2b435f2802f865db9f8d2ab270778a224e371d2b",
+          "action": "add"
+        }
+      },
+      "PrivateAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "609d621e01700c2ecaf5506b8c6541649428b1fbea24d69525d0798635a3e41d",
+          "action": "add"
+        }
+      },
+      "PublicAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "68cd32621c722cde18cc94a2cda7809d2b28683548ca6cfbff2c72ca89e4f856",
+          "action": "add"
+        }
+      },
+      "UpdateTwinAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "14ecf9f72de435ec3a47c4faea1f01d4eab4f9d94ff2f12c2e8c31c79c85199e",
+          "action": "add"
+        }
+      },
+      "CreateTwinAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "03788de07d1aebe444fca8e821291ed64dafb992214aff643f80f1a5e07f27b1",
+          "action": "add"
+        }
+      },
+      "TwinAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "9a46ac6f25a8418c08052bdcec7699fa41254e933545e8c24cb3753ced32756d",
           "action": "add"
         }
       }
