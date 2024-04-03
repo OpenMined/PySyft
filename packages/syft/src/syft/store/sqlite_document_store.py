@@ -161,6 +161,15 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _close(self) -> None:
         self._commit()
+        REF_COUNTS[cache_key(self.db_filename)] -= 1
+        if REF_COUNTS[cache_key(self.db_filename)] <= 0:
+            # once you close it seems like other object references can't re-use the
+            # same connection
+            self.db.close()
+            del SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
+        else:
+            # don't close yet because another SQLiteBackingStore is probably still open
+            pass
 
     def _commit(self) -> None:
         self.db.commit()
@@ -359,16 +368,7 @@ class SQLiteStorePartition(KeyValueStorePartition):
     """
 
     def close(self) -> None:
-        self.lock.acquire()
-        try:
-            # I think we don't want these now, because of the REF_COUNT?
-            # self.data._close()
-            # self.unique_keys._close()
-            # self.searchable_keys._close()
-            pass
-        except BaseException:
-            pass
-        self.lock.release()
+        pass
 
     def commit(self) -> None:
         self.lock.acquire()
