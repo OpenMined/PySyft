@@ -1283,7 +1283,7 @@ class Node(AbstractNode):
 
         log_service = self.get_service("logservice")
 
-        result = log_service.add(context, log_id)
+        result = log_service.add(context, log_id, queue_item.job_id)
         if isinstance(result, SyftError):
             return result
         return job
