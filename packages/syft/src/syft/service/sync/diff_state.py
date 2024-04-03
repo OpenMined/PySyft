@@ -14,6 +14,8 @@ from rich.padding import Padding
 from rich.panel import Panel
 from typing_extensions import Self
 
+from syft.types.datetime import DateTime
+
 # relative
 from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
@@ -249,6 +251,22 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
     def __hash__(self) -> int:
         return hash(self.object_id) + hash(self.low_obj) + hash(self.high_obj)
+
+    @property
+    def last_sync_date(self) -> DateTime | None:
+        last_sync_low = (
+            self.low_obj.last_sync_date if self.low_obj is not None else None
+        )
+        last_sync_high = (
+            self.high_obj.last_sync_date if self.high_obj is not None else None
+        )
+
+        if last_sync_low is None:
+            return last_sync_high
+        elif last_sync_high is None:
+            return last_sync_low
+        else:
+            return max(last_sync_low, last_sync_high)
 
     @property
     def status(self) -> str:

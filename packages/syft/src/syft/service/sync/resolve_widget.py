@@ -149,7 +149,7 @@ class HeaderWidget:
             "color: #373B7B;"
         )
         return HTML(
-            value=f"<span style='{style}'>{item_type}</span>",
+            value=f"<span style='{style}'>{item_type.upper()}</span>",
             layout=Layout(margin="0 5px 0 0"),
         )
 
@@ -357,7 +357,9 @@ class ResolveWidget:
 
     def button_callback(self, *args, **kwargs):
         if self.is_synced:
-            return SyftError("The changes in this widget have already been synced.")
+            return SyftError(
+                message="The changes in this widget have already been synced."
+            )
 
         if self.obj_diff_batch.sync_direction == SyncDirection.LOW_TO_HIGH:
             # TODO: make dynamic

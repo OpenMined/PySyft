@@ -3,6 +3,8 @@ from datetime import timedelta
 from typing import Any
 from typing import Optional
 
+from pydantic import Field
+
 # relative
 from ...abstract_node import NodeSideType
 from ...serde.serializable import serializable
@@ -116,6 +118,7 @@ class SyncStateRow(SyftObject):
     previous_state: str
     status: str
     level: int = 0
+    last_sync_date: DateTime | None = None
 
     __syft_include_id_coll_repr__ = False
 
@@ -137,11 +140,22 @@ class SyncStateRow(SyftObject):
 
     def _coll_repr_(self) -> dict[str, Any]:
         obj_view = SyncView(object=self.object)
-        no_last_sync_html = "<p class='diff-state-no-obj'>n/a</p>"
+
+        if self.last_sync_date is not None:
+            last_sync_date = self.last_sync_date
+            last_sync_delta = timedelta(
+                seconds=DateTime.now().utc_timestamp - last_sync_date.utc_timestamp
+            )
+            last_sync_delta_str = td_format(last_sync_delta)
+            last_sync_html = (
+                f"<p class='diff-state-no-obj'>{last_sync_delta_str} ago</p>"
+            )
+        else:
+            last_sync_html = "<p class='diff-state-no-obj'>n/a</p>"
         return {
             "Status": self.status_badge(),
             "Summary": obj_view.summary_html(),
-            "Last Sync": no_last_sync_html,
+            "Last Sync": last_sync_html,
         }
 
     @property
@@ -152,6 +166,9 @@ class SyncStateRow(SyftObject):
 
 def td_format(td_object):
     seconds = int(td_object.total_seconds())
+    if seconds == 0:
+        return "0 seconds"
+
     periods = [
         ("year", 60 * 60 * 24 * 365),
         ("month", 60 * 60 * 24 * 30),
@@ -181,7 +198,7 @@ class SyncState(SyftObject):
     node_side_type: NodeSideType
     objects: dict[UID, SyncableSyftObject] = {}
     dependencies: dict[UID, list[UID]] = {}
-    created_at: DateTime = DateTime.now()
+    created_at: DateTime = Field(default_factory=DateTime.now)
     previous_state_link: LinkedObject | None = None
     permissions: dict[UID, set[str]] = {}
     storage_permissions: dict[UID, set[UID]] = {}
@@ -282,6 +299,7 @@ class SyncState(SyftObject):
                 previous_state=diff.diff_side_str("low"),
                 level=0,  # TODO add levels to table
                 status=batch.status,
+                last_sync_date=diff.last_sync_date,
             )
             result.append(row)
         return result
