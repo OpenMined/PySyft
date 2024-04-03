@@ -9,6 +9,46 @@
     "release_name": "0.8.4.json"
   },
   "4": {
-    "release_name": "0.8.5.json"
+    "release_name": "0.8.6.json"
+  },
+  "dev": {
+    "object_versions": {
+      "ExecutionOutput": {
+        "1": {
+          "version": 1,
+          "hash": "c2337099eba14767ead75fcc1b1fa265c1898461ede0b5e7758a0e8d11d1757d",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "854fe9df5bcbb5c7e5b7c467bac423cd98c32f93d6876fea7b8eb6c08f6596da",
+          "action": "add"
+        }
+      },
+      "SyftLog": {
+        "3": {
+          "version": 3,
+          "hash": "8964d48238672e0e5d5db6b932cda4ee8eb77581949ab3f7a38a05b1efec13b7",
+          "action": "remove"
+        },
+        "4": {
+          "version": 4,
+          "hash": "ad6ef18ccd87fced669f3824d27ab423aaf52574b0cd4f720687aeaba77524e5",
+          "action": "add"
+        }
+      },
+      "SyncState": {
+        "1": {
+          "version": 1,
+          "hash": "a0616775ec8ef0629e2d91e0df9cc4237ea3674727eda1ce367f1897ee35767d",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "f66e4e292442ead63521344e4cab7c8e3b3a381ac455b3c99fbe12f669c955fd",
+          "action": "add"
+        }
+      }
+    }
   }
 }

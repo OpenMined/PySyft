@@ -50,7 +50,7 @@ class MockStash(BaseUIDStoreStash):
 
 
 def get_object_values(obj: SyftObject) -> tuple[Any]:
-    return tuple(obj.dict().values())
+    return tuple(obj.to_dict().values())
 
 
 def add_mock_object(root_verify_key, stash: MockStash, obj: MockObject) -> MockObject:
