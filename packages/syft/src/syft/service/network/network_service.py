@@ -232,7 +232,9 @@ class NetworkService(AbstractService):
             )
 
         try:
-            remote_client: type[SyftClient] = peer.client_with_context(context=context)
+            remote_client = peer.client_with_context(context=context)
+            if isinstance(remote_client, SyftError):
+                return remote_client
             random_challenge = secrets.token_bytes(16)
             remote_res = remote_client.api.services.network.ping(
                 challenge=random_challenge
@@ -472,7 +474,9 @@ class NetworkService(AbstractService):
         context.node = cast(AbstractNode, context.node)
         # creates a client on the remote node based on the credentials
         # of the current node's client
-        remote_client: SyftClient = peer.client_with_context(context=context)
+        remote_client = peer.client_with_context(context=context)
+        if isinstance(remote_client, SyftError):
+            return remote_client
         # ask the remote node to add the route to the self node
         # note that the `.to` transform gives a NodePeer object without its routes
         self_node_peer: NodePeer = context.node.settings.to(NodePeer)
@@ -574,7 +578,9 @@ class NetworkService(AbstractService):
         context.node = cast(AbstractNode, context.node)
         # creates a client on the remote node based on the credentials
         # of the current node's client
-        remote_client: SyftClient = peer.client_with_context(context=context)
+        remote_client = peer.client_with_context(context=context)
+        if isinstance(remote_client, SyftError):
+            return remote_client
         # ask the remote node to delete the route to the self node,
         # note that the `.to` transform gives a NodePeer object without its routes
         self_node_peer: NodePeer = context.node.settings.to(NodePeer)
@@ -705,7 +711,9 @@ class NetworkService(AbstractService):
         context.node = cast(AbstractNode, context.node)
         # creates a client on the remote node based on the credentials
         # of the current node's client
-        remote_client: SyftClient = peer.client_with_context(context=context)
+        remote_client = peer.client_with_context(context=context)
+        if isinstance(remote_client, SyftError):
+            return remote_client
         # ask the remote node to add the route to the self node
         # note that the `.to` transform gives a NodePeer object without its routes
         self_node_peer: NodePeer = context.node.settings.to(NodePeer)
@@ -763,6 +771,7 @@ class NetworkService(AbstractService):
         Helper function to get the full node peer object from t
         he stash using its verify key
         """
+        context.node = cast(AbstractNode, context.node)
         remote_node_peer: Result[NodePeer | None, SyftError] = (
             self.stash.get_by_verify_key(
                 credentials=context.node.verify_key,

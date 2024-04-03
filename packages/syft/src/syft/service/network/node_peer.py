@@ -180,7 +180,7 @@ class NodePeer(SyftObject):
         # select the highest priority route (i.e. added or updated the latest)
         final_route: NodeRoute = self.pick_highest_priority_route()
         connection: NodeConnection = route_to_connection(route=final_route)
-        client_type: type[SyftClient] | SyftError = connection.get_client_type()
+        client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
             return client_type
         if context.node is None:

@@ -92,7 +92,9 @@ def test_domain_connect_to_gateway(
     assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
 
     # login to the domain and gateway
-    gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
@@ -144,14 +146,16 @@ def test_domain_connect_to_gateway(
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-def test_dataset_search(set_env_var, domain_1_port: int, gateway_port: int) -> None:
+def test_dataset_search(set_env_var, gateway_port: int, domain_1_port: int) -> None:
     """
     Scenario: Connecting a domain node to a gateway node. The domain
         client then upload a dataset, which should be searchable by the syft network.
         People who install syft can see the mock data and metadata of the uploaded datasets
     """
     # login to the domain and gateway
-    gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
@@ -198,7 +202,9 @@ def test_domain_gateway_user_code(
     set_env_var, domain_1_port: int, gateway_port: int
 ) -> None:
     # login to the domain and gateway
-    gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )

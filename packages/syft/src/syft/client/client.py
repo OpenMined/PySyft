@@ -73,6 +73,7 @@ if TYPE_CHECKING:
     # relative
     from ..service.network.node_peer import NodePeer
 
+
 # use to enable mitm proxy
 # from syft.grid.connections.http_connection import HTTPConnection
 # HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}
