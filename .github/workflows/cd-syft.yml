@@ -345,6 +345,7 @@ jobs:
 
     outputs:
       syft_version: ${{ steps.release_checks.outputs.syft_version }}
+      release_platform: ${{ github.event.inputs.release_platform }}
 
     steps:
       - name: Permission to home directory
@@ -563,3 +564,4 @@ jobs:
     uses: OpenMined/PySyft/.github/workflows/cd-post-release-tests.yml@dev
     with:
       syft_version: ${{ needs.deploy-syft.outputs.syft_version }}
+      release_platform: ${{ github.event.inputs.release_platform}}
