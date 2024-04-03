@@ -1,3 +1,6 @@
+# stdlib
+from secrets import token_hex
+
 # third party
 from faker import Faker
 import pytest
@@ -164,25 +167,25 @@ def test_user_delete(do_client, guest_client, ds_client, worker, root_client):
 def test_user_update_roles(do_client, guest_client, ds_client, root_client, worker):
     # admins can update the roles of lower roles
     clients = [get_mock_client(root_client, role) for role in DO_ROLES]
-    for c in clients:
+    for _c in clients:
         assert worker.root_client.api.services.user.update(
-            c.user_id, UserUpdate(role=ServiceRole.ADMIN)
+            _c.user_id, UserUpdate(role=ServiceRole.ADMIN)
         )
 
     # DOs can update the roles of lower roles
     clients = [get_mock_client(root_client, role) for role in DS_ROLES]
-    for c in clients:
+    for _c in clients:
         assert do_client.api.services.user.update(
-            c.user_id, UserUpdate(role=ServiceRole.DATA_SCIENTIST)
+            _c.user_id, UserUpdate(role=ServiceRole.DATA_SCIENTIST)
         )
 
     clients = [get_mock_client(root_client, role) for role in ADMIN_ROLES]
 
     # DOs cannot update roles to greater than / equal to own role
-    for c in clients:
+    for _c in clients:
         for target_role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
             assert not do_client.api.services.user.update(
-                c.user_id, UserUpdate(role=target_role)
+                _c.user_id, UserUpdate(role=target_role)
             )
 
     # DOs cannot downgrade higher roles to lower levels
@@ -190,27 +193,27 @@ def test_user_update_roles(do_client, guest_client, ds_client, root_client, work
         get_mock_client(root_client, role)
         for role in [ServiceRole.ADMIN, ServiceRole.DATA_OWNER]
     ]
-    for c in clients:
+    for _c in clients:
         for target_role in DO_ROLES:
-            if target_role < c.role:
+            if target_role < _c.role:
                 assert not do_client.api.services.user.update(
-                    c.user_id, UserUpdate(role=target_role)
+                    _c.user_id, UserUpdate(role=target_role)
                 )
 
     # DSs cannot update any roles
     clients = [get_mock_client(root_client, role) for role in ADMIN_ROLES]
-    for c in clients:
+    for _c in clients:
         for target_role in ADMIN_ROLES:
             assert not ds_client.api.services.user.update(
-                c.user_id, UserUpdate(role=target_role)
+                _c.user_id, UserUpdate(role=target_role)
             )
 
     # Guests cannot update any roles
     clients = [get_mock_client(root_client, role) for role in ADMIN_ROLES]
-    for c in clients:
+    for _c in clients:
         for target_role in ADMIN_ROLES:
             assert not guest_client.api.services.user.update(
-                c.user_id, UserUpdate(role=target_role)
+                _c.user_id, UserUpdate(role=target_role)
             )
 
 
@@ -387,8 +390,8 @@ def test_user_view_set_role(worker: Worker, guest_client: DomainClient) -> None:
     assert isinstance(ds_client.me.update(role="admin"), SyftError)
 
 
-def test_user_view_set_role_admin() -> None:
-    node = sy.orchestra.launch(name="test-domain-1", reset=True)
+def test_user_view_set_role_admin(faker: Faker) -> None:
+    node = sy.orchestra.launch(name=token_hex(8), reset=True)
     domain_client = node.login(email="info@openmined.org", password="changethis")
     domain_client.register(
         name="Sheldon Cooper",
@@ -417,3 +420,6 @@ def test_user_view_set_role_admin() -> None:
     ds_client_2 = node.login(email="sheldon2@caltech.edu", password="changethis")
     assert ds_client_2.me.role == ServiceRole.ADMIN
     assert len(ds_client_2.users.get_all()) == len(domain_client.users.get_all())
+
+    node.python_node.cleanup()
+    node.land()

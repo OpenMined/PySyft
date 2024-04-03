@@ -344,8 +344,8 @@ class InMemoryGraphConfig(StoreConfig):
     __canonical_name__ = "InMemoryGraphConfig"
 
     store_type: type[BaseGraphStore] = NetworkXBackingStore
-    client_config: StoreClientConfig = InMemoryStoreClientConfig()
-    locking_config: LockingConfig = ThreadingLockingConfig()
+    client_config: StoreClientConfig = Field(default_factory=InMemoryStoreClientConfig)
+    locking_config: LockingConfig = Field(default_factory=ThreadingLockingConfig)
 
 
 @serializable()

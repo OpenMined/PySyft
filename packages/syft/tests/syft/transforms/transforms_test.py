@@ -56,13 +56,17 @@ def test_validate_klass_and_version(
     else:
         expected_result = (
             MockObjectFromSyftBaseObj.__canonical_name__,
-            version_from
-            if isinstance(klass_from, str)
-            else MockObjectFromSyftBaseObj.__version__,
+            (
+                version_from
+                if isinstance(klass_from, str)
+                else MockObjectFromSyftBaseObj.__version__
+            ),
             MockObjectToSyftBaseObj.__canonical_name__,
-            version_to
-            if isinstance(klass_to, str)
-            else MockObjectToSyftBaseObj.__version__,
+            (
+                version_to
+                if isinstance(klass_to, str)
+                else MockObjectToSyftBaseObj.__version__
+            ),
         )
         result = validate_klass_and_version(
             klass_from, klass_to, version_from, version_to

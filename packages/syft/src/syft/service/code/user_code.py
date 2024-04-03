@@ -247,7 +247,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
                 message="Cannot Modify Status as the Domain's data is not included in the request"
             )
 
-    def get_sync_dependencies(self, api: Any = None) -> list[UID]:
+    def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
         return [self.user_code_link.object_uid]
 
 
@@ -540,6 +540,7 @@ class UserCode(SyncableSyftObject):
         context: AuthedServiceContext,
         outputs: Any,
         job_id: UID | None = None,
+        input_ids: dict[str, UID] | None = None,
     ) -> ExecutionOutput | SyftError:
         output_policy = self.get_output_policy(context)
         if output_policy is None:
@@ -558,6 +559,7 @@ class UserCode(SyncableSyftObject):
             executing_user_verify_key=self.user_verify_key,
             job_id=job_id,
             output_policy_id=output_policy.id,
+            input_ids=input_ids,
         )
         if isinstance(execution_result, SyftError):
             return execution_result
@@ -606,12 +608,18 @@ class UserCode(SyncableSyftObject):
                 all_assets += assets
         return all_assets
 
-    def get_sync_dependencies(self, api: Any = None) -> list[UID] | SyftError:
+    def get_sync_dependencies(
+        self, context: AuthedServiceContext
+    ) -> list[UID] | SyftError:
         dependencies = []
 
         if self.nested_codes is not None:
-            nested_code_ids = [link.object_uid for link in self.nested_codes.values()]
+            nested_code_ids = [
+                link.object_uid for link, _ in self.nested_codes.values()
+            ]
             dependencies.extend(nested_code_ids)
+
+        dependencies.append(self.status_link.object_uid)
 
         return dependencies
 
