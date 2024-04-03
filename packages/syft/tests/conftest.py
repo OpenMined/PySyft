@@ -2,6 +2,10 @@
 import json
 import os
 from pathlib import Path
+from secrets import token_hex
+import shutil
+import sys
+from tempfile import gettempdir
 from unittest import mock
 
 # third party
@@ -46,6 +50,29 @@ def remove_file(filepath: Path):
     filepath.unlink(missing_ok=True)
 
 
+def pytest_sessionstart(session):
+    # add env var SYFT_TEMP_ROOT to create a unique temp dir for each test run
+    os.environ["SYFT_TEMP_ROOT"] = f"pytest_syft_{token_hex(8)}"
+
+
+def pytest_configure(config):
+    if hasattr(config, "workerinput") or is_vscode_discover():
+        return
+
+    for path in Path(gettempdir()).glob("pytest_*"):
+        shutil.rmtree(path, ignore_errors=True)
+
+    for path in Path(gettempdir()).glob("sherlock"):
+        shutil.rmtree(path, ignore_errors=True)
+
+
+def is_vscode_discover():
+    """Check if the test is being run from VSCode discover test runner."""
+
+    cmd = " ".join(sys.argv)
+    return "ms-python.python" in cmd and "discover" in cmd
+
+
 # Pytest hook to set the number of workers for xdist
 def pytest_xdist_auto_num_workers(config):
     num = config.option.numprocesses
@@ -54,11 +81,11 @@ def pytest_xdist_auto_num_workers(config):
     return None
 
 
-# def pytest_collection_modifyitems(items):
-#     for item in items:
-#         item_fixtures = getattr(item, "fixturenames", ())
-#         if "test_sqlite_" in item.nodeid:
-#             item.add_marker(pytest.mark.xdist_group(name="sqlite"))
+def pytest_collection_modifyitems(items):
+    for item in items:
+        item_fixtures = getattr(item, "fixturenames", ())
+        if "sqlite_workspace" in item_fixtures:
+            item.add_marker(pytest.mark.xdist_group(name="sqlite"))
 
 
 @pytest.fixture(autouse=True)
@@ -81,7 +108,7 @@ def stage_protocol(protocol_file: Path):
         stage_protocol_changes()
         # bump_protocol_version()
         yield dp.protocol_history
-        dp.revert_latest_protocol()
+        dp.reset_dev_protocol()
         dp.save_history(dp.protocol_history)
 
         # Cleanup release dir, remove unused released files
@@ -91,53 +118,62 @@ def stage_protocol(protocol_file: Path):
                     _file_path.unlink()
 
 
-@pytest.fixture()
+@pytest.fixture
 def faker():
-    return Faker()
+    yield Faker()
 
 
-@pytest.fixture()
-def worker(faker) -> Worker:
-    worker = sy.Worker.named(name=faker.name())
+@pytest.fixture(scope="function")
+def worker() -> Worker:
+    worker = sy.Worker.named(name=token_hex(8))
     yield worker
-    worker.stop()
+    worker.cleanup()
     del worker
 
 
-@pytest.fixture()
+@pytest.fixture(scope="function")
+def second_worker() -> Worker:
+    # Used in node syncing tests
+    worker = sy.Worker.named(name=token_hex(8))
+    yield worker
+    worker.cleanup()
+    del worker
+
+
+@pytest.fixture
 def root_domain_client(worker) -> DomainClient:
-    return worker.root_client
+    yield worker.root_client
 
 
-@pytest.fixture()
+@pytest.fixture
 def root_verify_key(worker):
-    return worker.root_client.credentials.verify_key
+    yield worker.root_client.credentials.verify_key
 
 
-@pytest.fixture()
+@pytest.fixture
 def guest_client(worker) -> DomainClient:
-    return worker.guest_client
+    yield worker.guest_client
 
 
-@pytest.fixture()
+@pytest.fixture
 def guest_verify_key(worker):
-    return worker.guest_client.credentials.verify_key
+    yield worker.guest_client.credentials.verify_key
 
 
-@pytest.fixture()
+@pytest.fixture
 def guest_domain_client(root_domain_client) -> DomainClient:
-    return root_domain_client.guest()
+    yield root_domain_client.guest()
 
 
-@pytest.fixture()
+@pytest.fixture
 def document_store(worker):
     yield worker.document_store
     worker.document_store.reset()
 
 
-@pytest.fixture()
+@pytest.fixture
 def action_store(worker):
-    return worker.action_store
+    yield worker.action_store
 
 
 @pytest.fixture(scope="session")
@@ -146,8 +182,9 @@ def mongo_client(testrun_uid):
     A race-free fixture that starts a MongoDB server for an entire pytest session.
     Cleans up the server when the session ends, or when the last client disconnects.
     """
-
-    state = SharedState(testrun_uid)
+    db_name = f"pytest_mongo_{testrun_uid}"
+    root_dir = Path(gettempdir(), db_name)
+    state = SharedState(db_name)
     KEY_CONN_STR = "mongoConnectionString"
     KEY_CLIENTS = "mongoClients"
 
@@ -156,7 +193,7 @@ def mongo_client(testrun_uid):
         conn_str = state.get(KEY_CONN_STR, None)
 
         if not conn_str:
-            conn_str = start_mongo_server(testrun_uid)
+            conn_str = start_mongo_server(db_name)
             state.set(KEY_CONN_STR, conn_str)
 
         # increment the number of clients
@@ -174,9 +211,11 @@ def mongo_client(testrun_uid):
         clients = state.get(KEY_CLIENTS, 0) - 1
         state.set(KEY_CLIENTS, clients)
 
-    # if no clients are connected, destroy the container
+    # if no clients are connected, destroy the server
     if clients <= 0:
-        stop_mongo_server(testrun_uid)
+        stop_mongo_server(db_name)
+        state.purge()
+        shutil.rmtree(root_dir, ignore_errors=True)
 
 
 __all__ = [

@@ -28,6 +28,6 @@ def domain_2_port() -> int:
     return 9083
 
 
-@pytest.fixture()
+@pytest.fixture
 def faker():
     return Faker()

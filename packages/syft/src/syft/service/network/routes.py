@@ -91,6 +91,9 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
             return hash(self) == hash(other)
         return self == other
 
+    def __hash__(self) -> int:
+        return hash(self.host_or_ip) + hash(self.port) + hash(self.protocol)
+
 
 @serializable()
 class VeilidNodeRoute(SyftObject, NodeRoute):
@@ -105,6 +108,9 @@ class VeilidNodeRoute(SyftObject, NodeRoute):
         if isinstance(other, VeilidNodeRoute):
             return hash(self) == hash(other)
         return self == other
+
+    def __hash__(self) -> int:
+        return hash(self.vld_key)
 
 
 @serializable()
@@ -142,6 +148,9 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         if isinstance(other, PythonNodeRoute):
             return hash(self) == hash(other)
         return self == other
+
+    def __hash__(self) -> int:
+        return hash(self.worker_settings.id)
 
 
 NodeRouteType = HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute

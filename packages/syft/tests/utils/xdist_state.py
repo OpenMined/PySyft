@@ -41,8 +41,10 @@ class SharedState:
     def write_state(self, state):
         self._statefile.write_text(json.dumps(state))
 
+    def purge(self):
+        if self._statefile:
+            self._statefile.unlink()
 
-if __name__ == "__main__":
-    state = SharedState(name="reep")
-    state.set("foo", "bar")
-    state.set("baz", "qux")
+        lock_file = Path(self._lock.lock_file)
+        if lock_file.exists():
+            lock_file.unlink(missing_ok=True)

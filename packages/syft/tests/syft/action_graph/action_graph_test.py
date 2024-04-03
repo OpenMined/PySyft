@@ -9,11 +9,13 @@ Tests for the classes in /syft/src/syft/service/action/action_graph.py:
 # stdlib
 import os
 from pathlib import Path
+import sys
 import tempfile
 from threading import Thread
 
 # third party
 import networkx as nx
+import pytest
 from result import Err
 
 # syft absolute
@@ -140,7 +142,7 @@ def test_node_action_data_update() -> None:
     assert len(node_action_data_update.to_dict(exclude_empty=True)) == 1
     assert (
         node_action_data_update.to_dict(exclude_empty=False)
-        == node_action_data_update.dict()
+        == node_action_data_update.to_dict()
     )
 
 
@@ -263,6 +265,10 @@ def test_networkx_backing_store_edge_related_methods(
     assert len(networkx_store.nodes()) == 3
 
 
+@pytest.mark.xfail(
+    sys.platform == "win32",
+    reason="Fails on Windows. capnp\lib\capnp.pyx:3323: KjException Message did not contain a root pointer.",
+)
 def test_networkx_backing_store_save_load_default(
     networkx_store_with_nodes: NetworkXBackingStore, verify_key: SyftVerifyKey
 ) -> None:

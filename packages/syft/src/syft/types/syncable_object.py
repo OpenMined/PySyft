@@ -7,6 +7,7 @@ from typing import ClassVar
 from typing_extensions import Self
 
 # relative
+from ..service.context import AuthedServiceContext
 from ..service.response import SyftError
 from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
@@ -29,5 +30,7 @@ class SyncableSyftObject(SyftObject):
             update |= copy.deepcopy(self.__private_sync_attr_mocks__)
         return self.model_copy(update=update, deep=True)
 
-    def get_sync_dependencies(self) -> list[UID] | SyftError:
+    def get_sync_dependencies(
+        self, context: AuthedServiceContext
+    ) -> list[UID] | SyftError:
         return []
