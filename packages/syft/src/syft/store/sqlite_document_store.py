@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 # stdlib
-from collections import defaultdict
 from copy import deepcopy
+from functools import cached_property
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -38,9 +38,9 @@ from .locks import SyftLock
 # by its filename and optionally the thread that its running in
 # we keep track of each SQLiteBackingStore init in REF_COUNTS
 # when it hits 0 we can close the connection and release the file descriptor
-SQLITE_CONNECTION_POOL_DB: dict[str, sqlite3.Connection] = {}
-SQLITE_CONNECTION_POOL_CUR: dict[str, sqlite3.Cursor] = {}
-REF_COUNTS: dict[str, int] = defaultdict(int)
+# SQLITE_CONNECTION_POOL_DB: dict[str, sqlite3.Connection] = {}
+# SQLITE_CONNECTION_POOL_CUR: dict[str, sqlite3.Cursor] = {}
+# REF_COUNTS: dict[str, int] = defaultdict(int)
 
 
 def cache_key(db_name: str) -> str:
@@ -103,13 +103,12 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
         self.lock = SyftLock(NoLockingConfig())
         self.create_table()
-        REF_COUNTS[cache_key(self.db_filename)] += 1
 
     @property
     def table_name(self) -> str:
         return f"{self.settings.name}_{self.index_name}"
 
-    def _connect(self) -> None:
+    def _connect(self) -> sqlite3.Connection:
         # SQLite is not thread safe by default so we ensure that each connection
         # comes from a different thread. In cases of Uvicorn and other AWSGI servers
         # there will be many threads handling incoming requests so we need to ensure
@@ -120,56 +119,42 @@ class SQLiteBackingStore(KeyValueBackingStore):
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
 
-        if self.store_config.client_config:
-            connection = sqlite3.connect(
-                self.file_path,
-                timeout=self.store_config.client_config.timeout,
-                check_same_thread=False,  # do we need this if we use the lock?
-                # check_same_thread=self.store_config.client_config.check_same_thread,
-            )
-            # Set journal mode to WAL.
-            connection.execute("PRAGMA journal_mode = WAL")
-            connection.execute("PRAGMA busy_timeout = 5000")
-            connection.execute("PRAGMA temp_store = 2")
-            connection.execute("PRAGMA synchronous = 1")
-            SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)] = connection
+        connection = sqlite3.connect(
+            self.file_path,
+            timeout=self.store_config.client_config.timeout,
+            check_same_thread=False,  # do we need this if we use the lock?
+            # check_same_thread=self.store_config.client_config.check_same_thread,
+        )
+        connection.autocommit = True
+        # Set journal mode to WAL.
+        connection.execute("PRAGMA journal_mode = WAL")
+        connection.execute("PRAGMA busy_timeout = 5000")
+        connection.execute("PRAGMA temp_store = 2")
+        connection.execute("PRAGMA synchronous = 1")
+        # SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)] = connection
+        return connection
 
     def create_table(self) -> None:
         try:
-            with self.lock:
-                self.cur.execute(
-                    f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
-                    + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
-                    + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
-                )
-                self.db.commit()
+            self.cur.execute(
+                f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
+                + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
+                + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
+            )
+            self.db.commit()
         except Exception as e:
             raise_exception(self.table_name, e)
 
-    @property
+    @cached_property
     def db(self) -> sqlite3.Connection:
-        if cache_key(self.db_filename) not in SQLITE_CONNECTION_POOL_DB:
-            self._connect()
-        return SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
+        return self._connect()
 
     @property
     def cur(self) -> sqlite3.Cursor:
-        if cache_key(self.db_filename) not in SQLITE_CONNECTION_POOL_CUR:
-            SQLITE_CONNECTION_POOL_CUR[cache_key(self.db_filename)] = self.db.cursor()
-
-        return SQLITE_CONNECTION_POOL_CUR[cache_key(self.db_filename)]
+        return self.db.cursor()
 
     def _close(self) -> None:
         self._commit()
-        REF_COUNTS[cache_key(self.db_filename)] -= 1
-        if REF_COUNTS[cache_key(self.db_filename)] <= 0:
-            # once you close it seems like other object references can't re-use the
-            # same connection
-            self.db.close()
-            del SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
-        else:
-            # don't close yet because another SQLiteBackingStore is probably still open
-            pass
 
     def _commit(self) -> None:
         self.db.commit()
@@ -177,25 +162,23 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _execute(
         self, sql: str, *args: list[Any] | None
     ) -> Result[Ok[sqlite3.Cursor], Err[str]]:
-        with self.lock:
-            cursor: sqlite3.Cursor | None = None
-            # err = None
-            try:
-                cursor = self.cur.execute(sql, *args)
-            except Exception as e:
-                raise_exception(self.table_name, e)
+        cursor: sqlite3.Cursor | None = None
+        # err = None
+        try:
+            cursor = self.cur.execute(sql, *args)
+        except Exception as e:
+            raise_exception(self.table_name, e)
 
-            # TODO: Which exception is safe to rollback on?
-            # we should map out some more clear exceptions that can be returned
-            # rather than halting the program like disk I/O error etc
-            # self.db.rollback()  # Roll back all changes if an exception occurs.
-            # err = Err(str(e))
-            self.db.commit()  # Commit if everything went ok
+        # TODO: Which exception is safe to rollback on?
+        # we should map out some more clear exceptions that can be returned
+        # rather than halting the program like disk I/O error etc
+        # self.db.rollback()  # Roll back all changes if an exception occurs.
+        # err = Err(str(e))
 
-            # if err is not None:
-            #     return err
+        # if err is not None:
+        #     return err
 
-            return Ok(cursor)
+        return Ok(cursor)
 
     def _set(self, key: UID, value: Any) -> None:
         if self._exists(key):
@@ -371,14 +354,12 @@ class SQLiteStorePartition(KeyValueStorePartition):
         pass
 
     def commit(self) -> None:
-        self.lock.acquire()
         try:
             self.data._commit()
             self.unique_keys._commit()
             self.searchable_keys._commit()
         except BaseException:
             pass
-        self.lock.release()
 
 
 # the base document store is already a dict but we can change it later
