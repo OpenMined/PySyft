@@ -589,7 +589,7 @@ class MongoStorePartition(StorePartition):
         for permission in permissions:
             self.add_storage_permission(permission)
 
-    def has_storage_permission(self, permission: StoragePermission) -> bool:
+    def has_storage_permission(self, permission: StoragePermission) -> bool:  # type: ignore
         """Check if the storage_permission is inside the storage_permission collection"""
         storage_permissions_or_err = self.storage_permissions
         if storage_permissions_or_err.is_err():
