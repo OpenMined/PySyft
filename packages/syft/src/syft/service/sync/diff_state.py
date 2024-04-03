@@ -623,10 +623,6 @@ class ObjectDiffBatch(SyftObject):
         return self.root_diff.obj_type
 
     @property
-    def root_type_name(self) -> type:
-        return self.root_type.__name__
-
-    @property
     def is_ignored(self) -> bool:
         return self.decision == SyncDecision.ignore
 

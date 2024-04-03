@@ -13,6 +13,7 @@ from ipywidgets import HBox
 from ipywidgets import HTML
 from ipywidgets import Layout
 from ipywidgets import VBox
+from syft.service.sync.sync_state import SyncView
 
 # relative
 from ...client.api import APIRegistry
@@ -85,14 +86,38 @@ class HeaderWidget:
         self.widget = self.create_widget()
 
     @classmethod
-    def from_object_diff_batch(cls, obj_diff_batch):
+    def from_object_diff_batch(cls, obj_diff_batch: ObjectDiffBatch):
+        """
+        (
+            diff=self.obj_diff_batch.root_diff,
+            item_type=self.obj_diff_batch.root_type_name,
+            item_name="compute_mean",
+            item_id=self.obj_diff_batch.root_id,
+            num_diffs=2,
+            source_side="Low",
+            target_side="High",
+        )
+
+        """
+        if obj_diff_batch.sync_direction == SyncDirection.LOW_TO_HIGH:
+            source_side = "Low side"
+            target_side = "High side"
+        else:
+            source_side = "High side"
+            target_side = "Low side"
+
+        root_diff = obj_diff_batch.root_diff
+        root_obj = (
+            root_diff.low_obj if root_diff.low_obj is not None else root_diff.high_obj
+        )
+        obj_view = SyncView(object=root_obj)
         return cls(
-            item_type=obj_diff_batch.root_type,
-            item_name="TODO: object description",
-            item_id=str(obj_diff_batch.root_id),
+            item_type=obj_view.object_type_name,
+            item_name=obj_view.main_object_description_str(),
+            item_id=str(root_obj.id.id),
             num_diffs=len(obj_diff_batch.get_dependencies(include_roots=True)),
-            source_side="Low side",
-            target_side="High side",
+            source_side=source_side,
+            target_side=target_side,
         )
 
     def copy_text_button(self, text: str) -> widgets.Widget:
@@ -164,11 +189,13 @@ class ObjectDiffWidget:
         low_properties: list[str],
         high_properties: list[str],
         statuses: list[DiffStatus],
+        direction: SyncDirection,
         is_main_widget: bool = False,
     ):
         self.low_properties = low_properties
         self.high_properties = high_properties
         self.statuses = statuses
+        self.direction = direction
         self.share_private_data = False
         self.diff: ObjectDiff = diff
 
@@ -186,18 +213,21 @@ class ObjectDiffWidget:
             return False
 
     @classmethod
-    def from_diff(cls, diff, is_main_widget):
+    def from_diff(
+        cls, diff: ObjectDiff, direction: SyncDirection, is_main_widget: bool
+    ):
         return cls(
             low_properties=diff.repr_attr_dict("low"),
             high_properties=diff.repr_attr_dict("high"),
             statuses=diff.repr_attr_diffstatus_dict(),
             is_main_widget=is_main_widget,
             diff=diff,
+            direction=direction,
         )
 
     @property
     def show_share_button(self):
-        return isinstance(self.diff.non_empty_object, (SyftLog, ActionObject))
+        return isinstance(self.diff.non_empty_object, SyftLog | ActionObject)
 
     @property
     def show_sync_button(self):
@@ -221,8 +251,8 @@ class ObjectDiffWidget:
             self._sync_checkbox.disabled = False
 
     def create_diff_html(self, title, properties, statuses, line_length=80):
-        html_str = f"<div style='font-family: monospace; width: 100%;'>{title}<br>"
-        html_str += "<div style='border-left: 1px solid #B4B0BF; padding-left: 10px;'>"
+        html_str = f"<div style='width: 100%;'>{title}<br>"
+        html_str += "<div style='font-family: monospace; border-left: 1px solid #B4B0BF; padding-left: 10px;'>"
 
         for attr, val in properties.items():
             status = statuses[attr]
@@ -243,16 +273,31 @@ class ObjectDiffWidget:
             low_properties[k] = self.low_properties.get(k, None)
             high_properties[k] = self.high_properties.get(k, None)
 
-        html_low = self.create_diff_html("From", low_properties, self.statuses)
-        html_high = self.create_diff_html("To", high_properties, self.statuses)
+        if self.direction == SyncDirection.LOW_TO_HIGH:
+            from_properties = low_properties
+            to_properties = high_properties
+            source_side = "Low side"
+            target_side = "High side"
+        else:
+            from_properties = high_properties
+            to_properties = low_properties
+            source_side = "High side"
+            target_side = "Low side"
 
-        diff_display_widget_old = widgets.HTML(
-            value=html_low, layout=widgets.Layout(width="50%", overflow="auto")
+        html_from = self.create_diff_html(
+            f"From <i>{source_side}</i> (new values)", from_properties, self.statuses
         )
-        diff_display_widget_new = widgets.HTML(
-            value=html_high, layout=widgets.Layout(width="50%", overflow="auto")
+        html_to = self.create_diff_html(
+            f"To <i>{target_side}</i> (old values)", to_properties, self.statuses
         )
-        content = widgets.HBox([diff_display_widget_old, diff_display_widget_new])
+
+        widget_from = widgets.HTML(
+            value=html_from, layout=widgets.Layout(width="50%", overflow="auto")
+        )
+        widget_to = widgets.HTML(
+            value=html_to, layout=widgets.Layout(width="50%", overflow="auto")
+        )
+        content = widgets.HBox([widget_from, widget_to])
 
         checkboxes = []
 
@@ -296,6 +341,7 @@ class ResolveWidget:
         self.main_widget = self.build()
         self.result_widget = VBox()  # Placeholder for SyftSuccess / SyftError
         self.widget = VBox([self.main_widget, self.result_widget])
+        self.is_synced = False
         self.hide_result_widget()
 
     def _repr_mimebundle_(self, **kwargs):
@@ -310,6 +356,9 @@ class ResolveWidget:
             widget.share_private_data = True
 
     def button_callback(self, *args, **kwargs):
+        if self.is_synced:
+            return SyftError("The changes in this widget have already been synced.")
+
         if self.obj_diff_batch.sync_direction == SyncDirection.LOW_TO_HIGH:
             # TODO: make dynamic
             decision = "low"
@@ -411,6 +460,7 @@ class ResolveWidget:
         else:
             res = client.apply_state(resolved_state_low)
 
+        self.is_synced = True
         self.set_result_state(res)
         self.hide_main_widget()
         self.show_result_widget()
@@ -422,7 +472,11 @@ class ResolveWidget:
             include_roots=False, include_batch_root=False
         )
         dependent_diff_widgets = [
-            ObjectDiffWidget.from_diff(diff, is_main_widget=False)
+            ObjectDiffWidget.from_diff(
+                diff,
+                is_main_widget=False,
+                direction=self.obj_diff_batch.sync_direction,
+            )
             for diff in dependents
         ]
         return dependent_diff_widgets
@@ -436,7 +490,9 @@ class ResolveWidget:
             d for d in dependencies if d.object_id in self.obj_diff_batch.global_roots
         ]
         dependent_root_diff_widgets = [
-            ObjectDiffWidget.from_diff(diff, is_main_widget=False)
+            ObjectDiffWidget.from_diff(
+                diff, is_main_widget=False, direction=self.obj_diff_batch.sync_direction
+            )
             for diff in other_roots
         ]
         return dependent_root_diff_widgets
@@ -444,7 +500,9 @@ class ResolveWidget:
     @property
     def main_object_diff_widget(self):
         obj_diff_widget = ObjectDiffWidget.from_diff(
-            self.obj_diff_batch.root_diff, is_main_widget=True
+            self.obj_diff_batch.root_diff,
+            is_main_widget=True,
+            direction=self.obj_diff_batch.sync_direction,
         )
         return obj_diff_widget
 
@@ -527,11 +585,4 @@ class ResolveWidget:
         )
 
     def build_header(self):
-        return HeaderWidget(
-            item_type=self.obj_diff_batch.root_type_name,
-            item_name="compute_mean",
-            item_id="12345678",
-            num_diffs=2,
-            source_side="Low",
-            target_side="High",
-        )
+        return HeaderWidget.from_object_diff_batch(self.obj_diff_batch)

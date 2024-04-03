@@ -48,6 +48,10 @@ class SyncView(SyftObject):
         else:
             return ""
 
+    @property
+    def object_type_name(self) -> type:
+        return type(self.object).__name__
+
     def type_badge_class(self) -> str:
         if isinstance(self.object, UserCode):
             return "label-light-blue"
@@ -76,7 +80,7 @@ class SyncView(SyftObject):
 
     def summary_html(self):
         try:
-            type_html = f'<div class="label {self.type_badge_class()}">{self.object.__class__.__name__.upper()}</div>'
+            type_html = f'<div class="label {self.type_badge_class()}">{self.object_type_name.upper()}</div>'
             description_html = f"<span class='syncstate-description'>{self.main_object_description_str()}</span>"
             updated_delta_str = "29m ago"
             updated_by = "john@doe.org"
