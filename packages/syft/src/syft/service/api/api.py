@@ -4,6 +4,7 @@ from collections.abc import Callable
 import inspect
 from inspect import Signature
 import keyword
+from plistlib import UID
 import re
 from typing import Any
 from typing import cast
@@ -15,6 +16,7 @@ from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
+from syft.service.code.user_code import check_input_policy, check_output_policy
 
 # relative
 from ...abstract_node import AbstractNode
@@ -28,6 +30,11 @@ from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ..context import AuthedServiceContext
 from ..response import SyftError
+from ...client.api import NodeIdentity
+from ...serde.deserialize import _deserialize
+from ...serde.serialize import _serialize
+from ...service.policy.policy import InputPolicy, OutputPolicy, SubmitUserPolicy, UserPolicy, init_policy
+
 
 NOT_ACCESSIBLE_STRING = "N / A"
 
@@ -231,7 +238,10 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
     mock_function: PublicAPIEndpoint
     signature: Signature
     description: str | None = None
-
+    input_policy_type: SubmitUserPolicy | UID | type[InputPolicy]
+    input_policy_init_kwargs: dict[Any, Any] | None = {}
+    output_policy_type: SubmitUserPolicy | UID | type[OutputPolicy]
+    output_policy_init_kwargs: dict[Any, Any] | None = {}
 
 @serializable()
 class TwinAPIEndpoint(SyftObject):
@@ -247,10 +257,136 @@ class TwinAPIEndpoint(SyftObject):
     mock_function: PublicAPIEndpoint
     signature: Signature
     description: str | None = None
+    input_policy_type: type[InputPolicy] | UserPolicy
+    input_policy_init_kwargs: dict[Any, Any] | None = None
+    input_policy_state: bytes = b""
+    output_policy_type: type[OutputPolicy] | UserPolicy
+    output_policy_init_kwargs: dict[Any, Any] | None = None
+    output_policy_state: bytes = b""
 
     __attr_searchable__ = ["path"]
     __attr_unique__ = ["path"]
 
+    @property
+    def input_policy(self) -> InputPolicy | None:
+        if not self.status.approved:
+            return None
+        return self._get_input_policy()
+
+    def get_input_policy(self, context: AuthedServiceContext) -> InputPolicy | None:
+        status = self.get_status(context)
+        if not status.approved:
+            return None
+        return self._get_input_policy()
+
+    def _get_input_policy(self) -> InputPolicy | None:
+        if len(self.input_policy_state) == 0:
+            input_policy = None
+            if (
+                isinstance(self.input_policy_type, type)
+                and issubclass(self.input_policy_type, InputPolicy)
+                and self.input_policy_init_kwargs is not None
+            ):
+                # TODO: Tech Debt here
+                node_view_workaround = False
+                for k, _ in self.input_policy_init_kwargs.items():
+                    if isinstance(k, NodeIdentity):
+                        node_view_workaround = True
+
+                if node_view_workaround:
+                    input_policy = self.input_policy_type(
+                        init_kwargs=self.input_policy_init_kwargs
+                    )
+                else:
+                    input_policy = self.input_policy_type(
+                        **self.input_policy_init_kwargs
+                    )
+            elif isinstance(self.input_policy_type, UserPolicy):
+                input_policy = init_policy(
+                    self.input_policy_type, self.input_policy_init_kwargs
+                )
+            else:
+                raise Exception(f"Invalid output_policy_type: {self.input_policy_type}")
+
+            if input_policy is not None:
+                input_blob = _serialize(input_policy, to_bytes=True)
+                self.input_policy_state = input_blob
+                return input_policy
+            else:
+                raise Exception("input_policy is None during init")
+        try:
+            return _deserialize(self.input_policy_state, from_bytes=True)
+        except Exception as e:
+            print(f"Failed to deserialize custom input policy state. {e}")
+            return None
+
+    @input_policy.setter  # type: ignore
+    def input_policy(self, value: Any) -> None:  # type: ignore
+        if isinstance(value, InputPolicy):
+            self.input_policy_state = _serialize(value, to_bytes=True)
+        elif (isinstance(value, bytes) and len(value) == 0) or value is None:
+            self.input_policy_state = b""
+        else:
+            raise Exception(f"You can't set {type(value)} as input_policy_state")
+
+    @property
+    def output_policy(self) -> OutputPolicy | None:  # type: ignore
+        return self._get_output_policy()
+
+    def get_output_policy(self, context: AuthedServiceContext) -> OutputPolicy | None:
+        return self._get_output_policy()
+
+    def _get_output_policy(self) -> OutputPolicy | None:
+        # if not self.status.approved:
+        #     return None
+        if len(self.output_policy_state) == 0:
+            output_policy = None
+            if isinstance(self.output_policy_type, type) and issubclass(
+                self.output_policy_type, OutputPolicy
+            ):
+                output_policy = self.output_policy_type(
+                    **self.output_policy_init_kwargs
+                )
+            elif isinstance(self.output_policy_type, UserPolicy):
+                output_policy = init_policy(
+                    self.output_policy_type, self.output_policy_init_kwargs
+                )
+            else:
+                raise Exception(
+                    f"Invalid output_policy_type: {self.output_policy_type}"
+                )
+
+            if output_policy is not None:
+                # output_policy.syft_node_location = self.syft_node_location
+                # output_policy.syft_client_verify_key = self.syft_client_verify_key
+                output_blob = _serialize(output_policy, to_bytes=True)
+                self.output_policy_state = output_blob
+                return output_policy
+            else:
+                raise Exception("output_policy is None during init")
+
+        try:
+            return _deserialize(self.output_policy_state, from_bytes=True)
+        except Exception as e:
+            print(f"Failed to deserialize custom output policy state. {e}")
+            return None
+
+    @output_policy.setter  # type: ignore
+    def output_policy(self, value: Any) -> None:  # type: ignore
+        if isinstance(value, OutputPolicy):
+            self.output_policy_state = _serialize(value, to_bytes=True)
+        elif (isinstance(value, bytes) and len(value) == 0) or value is None:
+            self.output_policy_state = b""
+        else:
+            raise Exception(f"You can't set {type(value)} as output_policy_state")
+
+
+    def check_policies(self, context: AuthedServiceContext) -> bool:
+        return self.output_policy._is_valid(context)
+
+    # def apply_output_policy(self):
+        
+        
     def has_mock(self) -> bool:
         return self.api_mock_code is not None
 
@@ -328,6 +464,10 @@ class TwinAPIEndpoint(SyftObject):
         *args: Any,
         **kwargs: Any,
     ) -> Any:
+        print("POLICY CHECK:", self.check_policies(context=context))
+        if not self.check_policies(context=context):
+            return SyftError(message="Policies not valid!")
+        
         try:
             inner_function = ast.parse(code.api_code).body[0]
             inner_function.decorator_list = []
@@ -460,9 +600,45 @@ def extract_code_string(code_field: str) -> Callable:
     return code_string
 
 
+# def check_policy(policy: Any, context: TransformContext) -> TransformContext:
+#     print(context.node)
+#     if context.node is not None:
+#         policy_service = context.node.get_service(PolicyService)
+#         if isinstance(policy, SubmitUserPolicy):
+#             policy = policy.to(UserPolicy, context=context)
+#         elif isinstance(policy, UID):
+#             policy = policy_service.get_policy_by_uid(context, policy)
+#             if policy.is_ok():
+#                 policy = policy.ok()
+#     return policy
+
+
+# def check_input_policy(context: TransformContext) -> TransformContext:
+#     if context.output is None:
+#         return context
+
+#     ip = context.output["input_policy_type"]
+#     ip = check_policy(policy=ip, context=context)
+#     context.output["input_policy_type"] = ip
+
+#     return context
+
+
+# def check_output_policy(context: TransformContext) -> TransformContext:
+#     if context.output is not None:
+#         op = context.output["output_policy_type"]
+#         op = check_policy(policy=op, context=context)
+#         context.output["output_policy_type"] = op
+#     return context
+
 @transform(CreateTwinAPIEndpoint, TwinAPIEndpoint)
 def endpoint_create_to_twin_endpoint() -> list[Callable]:
-    return [generate_id, check_and_cleanup_signature]
+    return [
+        generate_id, 
+        check_input_policy,
+        check_output_policy,
+        check_and_cleanup_signature
+    ]
 
 
 @transform(TwinAPIEndpoint, TwinAPIEndpointView)
@@ -561,6 +737,10 @@ def create_new_api_endpoint(
     mock_function: PublicAPIEndpoint,
     private_function: PrivateAPIEndpoint | None = None,
     description: str | None = None,
+    input_policy_type: SubmitUserPolicy | UID | type[InputPolicy] = None,
+    input_policy_init_kwargs: dict[Any, Any] | None = {},
+    output_policy_type: SubmitUserPolicy | UID | type[OutputPolicy] = None,
+    output_policy_init_kwargs: dict[Any, Any] | None = {},
 ) -> CreateTwinAPIEndpoint | SyftError:
     try:
         # Parse the string to extract the function name
@@ -577,12 +757,21 @@ def create_new_api_endpoint(
                 mock_function=mock_function,
                 signature=endpoint_signature,
                 description=description,
+                input_policy_type=input_policy_type,
+                input_policy_init_kwargs=input_policy_init_kwargs,
+                output_policy_type=output_policy_type,
+                output_policy_init_kwargs=output_policy_init_kwargs,
             )
 
         return CreateTwinAPIEndpoint(
             path=path,
             prublic_code=mock_function,
             signature=endpoint_signature,
+            description=description,
+            input_policy_type=input_policy_type,
+            input_policy_init_kwargs=input_policy_init_kwargs,
+            output_policy_type=output_policy_type,
+            output_policy_init_kwargs=output_policy_init_kwargs,
         )
     except ValidationError as e:
         for error in e.errors():

@@ -50,7 +50,7 @@ class APIService(AbstractService):
     ) -> SyftSuccess | SyftError:
         """Register an CustomAPIEndpoint."""
         try:
-            new_endpoint = endpoint.to(TwinAPIEndpoint)
+            new_endpoint = endpoint.to(TwinAPIEndpoint, context=context)
         except ValueError as e:
             return SyftError(message=str(e))
 
@@ -221,6 +221,13 @@ class APIService(AbstractService):
 
         return api_endpoint_view
 
+    def update_state(self, context, endpoint):
+        result = self.stash.upsert(context.credentials, endpoint=endpoint)
+        if result.is_err():
+            return SyftError(message=result.err())
+        return SyftSuccess(message="Endpoint STATE successfully updated.")
+
+
     @service_method(path="api.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self,
@@ -236,7 +243,16 @@ class APIService(AbstractService):
         )
         if isinstance(custom_endpoint, SyftError):
             return custom_endpoint
-        return custom_endpoint.exec(context, *args, **kwargs)
+        result = custom_endpoint.exec(context, *args, **kwargs)
+        if isinstance(result, SyftError):
+            return result
+        output_policy = custom_endpoint.output_policy
+        result = output_policy.apply_output(context=context, outputs=result)
+        custom_endpoint.output_policy = output_policy
+        res = self.update_state(context, custom_endpoint)
+        print(res, custom_endpoint.output_policy._is_valid(context))
+        return result
+
 
     @service_method(path="api.call_public", name="call_public", roles=GUEST_ROLE_LEVEL)
     def call_public(

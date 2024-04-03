@@ -1141,6 +1141,7 @@ def add_credentials_for_key(key: str) -> Callable:
 
 
 def check_policy(policy: Any, context: TransformContext) -> TransformContext:
+    print(context.node)
     if context.node is not None:
         policy_service = context.node.get_service(PolicyService)
         if isinstance(policy, SubmitUserPolicy):

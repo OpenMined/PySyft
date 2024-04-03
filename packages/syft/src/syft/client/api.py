@@ -1139,6 +1139,7 @@ def validate_callable_args_and_kwargs(
                         if not success:
                             raise TypeError()
                     else:
+                        print(value)
                         check_type(value, t)  # raises Exception
             except TypeError:
                 _type_str = getattr(t, "__name__", str(t))
