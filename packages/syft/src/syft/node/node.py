@@ -195,6 +195,11 @@ def get_default_worker_pool_name() -> str | None:
     return get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME)
 
 
+def get_default_bucket_name() -> str:
+    default_bucket_name = get_node_uid_env() or "syft-bucket"
+    return get_env("DEFAULT_BUCKET_NAME", default_bucket_name)
+
+
 def get_default_worker_pool_count(node: Node) -> int:
     return int(
         get_env(
