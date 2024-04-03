@@ -246,11 +246,10 @@ services:
       - .env
     image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}:${VERSION-latest}"
     environment:
-      - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:-1024}
+      - SWFS_VOLUME_SIZE_LIMIT_MB=${SWFS_VOLUME_SIZE_LIMIT_MB:-1000}
       - S3_ROOT_USER=${S3_ROOT_USER:-admin}
       - S3_ROOT_PWD=${S3_ROOT_PWD:-admin}
-      - S3_PORT=${S3_PORT:-8888}
-      - SEAWEED_MOUNT_PORT=${SEAWEED_MOUNT_PORT:-4001}
+      - MOUNT_API_PORT=${MOUNT_API_PORT:-4001}
     volumes:
       - seaweedfs-data:/data
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
