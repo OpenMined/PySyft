@@ -367,6 +367,7 @@ class Request(SyncableSyftObject):
         "changes",
         "requesting_user_verify_key",
     ]
+    __exclude_sync_diff_attrs__ = ["node_uid"]
 
     def _repr_html_(self) -> Any:
         # add changes
@@ -885,7 +886,9 @@ class Request(SyncableSyftObject):
         job.apply_info(job_info)
         return job_service.update(job)
 
-    def get_sync_dependencies(self, api: Any = None) -> list[UID] | SyftError:
+    def get_sync_dependencies(
+        self, context: AuthedServiceContext
+    ) -> list[UID] | SyftError:
         dependencies = []
 
         code_id = self.code_id
