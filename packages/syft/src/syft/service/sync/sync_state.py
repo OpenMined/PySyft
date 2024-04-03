@@ -110,6 +110,7 @@ class SyncStateRow(SyftObject):
     previous_object: SyftObject | None = None
     current_state: str
     previous_state: str
+    status: str
     level: int = 0
 
     __syft_include_id_coll_repr__ = False
@@ -144,16 +145,6 @@ class SyncStateRow(SyftObject):
         prefix = get_hierarchy_level_prefix(self.level)
         return f"{prefix}{type(self.object).__name__}"
 
-    @property
-    def status(self) -> str:
-        # TODO use Diffs to determine status
-        if self.previous_object is None:
-            return "NEW"
-        elif self.previous_object.syft_eq(ext_obj=self.object):
-            return "SAME"
-        else:
-            return "MODIFIED"
-
 
 def td_format(td_object):
     seconds = int(td_object.total_seconds())
@@ -171,7 +162,7 @@ def td_format(td_object):
         if seconds >= period_seconds:
             period_value, seconds = divmod(seconds, period_seconds)
             has_s = "s" if period_value > 1 else ""
-            strings.append("%s %s%s" % (period_value, period_name, has_s))
+            strings.append(f"{period_value} {period_name}{has_s}")
 
     return ", ".join(strings)
 
@@ -286,6 +277,7 @@ class SyncState(SyftObject):
                 current_state=diff.diff_side_str("high"),
                 previous_state=diff.diff_side_str("low"),
                 level=0,  # TODO add levels to table
+                status=batch.status,
             )
             result.append(row)
         return result

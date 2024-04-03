@@ -1,6 +1,7 @@
 # stdlib
 from enum import Enum
 from enum import auto
+import html
 import json
 
 # third party
@@ -12,7 +13,6 @@ from ipywidgets import HBox
 from ipywidgets import HTML
 from ipywidgets import Layout
 from ipywidgets import VBox
-from syft.service.response import SyftError, SyftSuccess
 
 # relative
 from ...client.api import APIRegistry
@@ -22,6 +22,8 @@ from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
 from ..action.action_object import ActionObject
 from ..log.log import SyftLog
+from ..response import SyftError
+from ..response import SyftSuccess
 from .diff_state import ObjectDiff
 from .diff_state import ObjectDiffBatch
 from .diff_state import ResolvedSyncState
@@ -226,7 +228,8 @@ class ObjectDiffWidget:
             status = statuses[attr]
             val = val if val is not None else ""
             style = f"background-color: {background_colors[status]}; color: {colors[status]}; display: block; white-space: pre-wrap; margin-bottom: 5px;"
-            html_str += f"<div style='{style}'>{attr}: {val}</div>"
+            content = html.escape(f"{attr}: {val}")
+            html_str += f"<div style='{style}'>{content}</div>"
 
         html_str += "</div></div>"
 

@@ -585,10 +585,21 @@ class ObjectDiffBatch(SyftObject):
         )
 
     @property
+    def status(self) -> str:
+        if self.root_diff.status == "NEW":
+            return "NEW"
+
+        batch_statuses = [
+            diff.status for diff in self.get_dependents(include_roots=False)
+        ]
+        if all(status == "SAME" for status in batch_statuses):
+            return "SAME"
+
+        return "MODIFIED"
+
+    @property
     def is_unchanged(self) -> bool:
-        return all(
-            diff.status == "SAME" for diff in self.get_dependents(include_roots=False)
-        )
+        return self.status == "SAME"
 
     def get_dependents(
         self, include_roots: bool = False, include_batch_root=True
@@ -711,7 +722,7 @@ class ObjectDiffBatch(SyftObject):
 """
 
     def status_badge(self) -> dict[str, str]:
-        status = self.root_diff.status
+        status = self.status
         if status == "NEW":
             badge_color = "label-green"
         elif status == "SAME":
