@@ -228,7 +228,11 @@ class UserCodeService(AbstractService):
             return user_code
         return SyftError(message=result.err())
 
-    @service_method(path="code.get_all_for_user", name="get_all_for_user")
+    @service_method(
+        path="code.get_all_for_user",
+        name="get_all_for_user",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
     def get_all_for_user(
         self, context: AuthedServiceContext
     ) -> SyftSuccess | SyftError:
@@ -242,6 +246,7 @@ class UserCodeService(AbstractService):
     def update_code_state(
         self, context: AuthedServiceContext, code_item: UserCode
     ) -> SyftSuccess | SyftError:
+        context = context.as_root_context()
         result = self.stash.update(context.credentials, code_item)
         if result.is_ok():
             return SyftSuccess(message="Code State Updated")
@@ -496,7 +501,7 @@ class UserCodeService(AbstractService):
             # this currently only works for nested syft_functions
             # and admins executing on high side (TODO, decide if we want to increment counter)
             if not skip_fill_cache and output_policy is not None:
-                res = code.apply_output(
+                res = code.store_as_history(
                     context=context,
                     outputs=result,
                     job_id=context.job_id,
@@ -504,6 +509,12 @@ class UserCodeService(AbstractService):
                 )
                 if isinstance(res, SyftError):
                     return Err(res.message)
+
+            # output_policy.update_policy(context, result)
+            # code.output_policy = output_policy
+            # res = self.update_code_state(context, code)
+            # print(res)
+
             has_result_read_permission = context.extra_kwargs.get(
                 "has_result_read_permission", False
             )
@@ -541,9 +552,9 @@ class UserCodeService(AbstractService):
         return SyftSuccess(message="you have permission")
 
     @service_method(
-        path="code.apply_output", name="apply_output", roles=GUEST_ROLE_LEVEL
+        path="code.store_as_history", name="store_as_history", roles=GUEST_ROLE_LEVEL
     )
-    def apply_output(
+    def store_as_history(
         self,
         context: AuthedServiceContext,
         user_code_id: UID,
@@ -559,7 +570,7 @@ class UserCodeService(AbstractService):
         if not code.get_status(context).approved:
             return SyftError(message="Code is not approved")
 
-        res = code.apply_output(
+        res = code.store_as_history(
             context=context,
             outputs=outputs,
             job_id=job_id,
