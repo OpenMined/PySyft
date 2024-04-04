@@ -145,20 +145,3 @@ ingress:
   # ----------------------------------------
   class: null
   className: null
-
-# ----------------------------------------
-# For Veilid Core Debug Logs
-# serverFlags: "--debug"
-# ----------------------------------------
-veilid:
-  enabled: false
-  serverFlags: null
-  appLogLevel: "info"
-  uvicornLogLevel: "info"
-
-  # Extra environment vars
-  env: null
-
-  # Pod Resource Limits
-  resourcesPreset: nano
-  resources: null
