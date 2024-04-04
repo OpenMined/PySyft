@@ -54,14 +54,12 @@ class APIService(AbstractService):
         except ValueError as e:
             return SyftError(message=str(e))
 
-        existent_endpoint = self.stash.get_by_path(
-            context.credentials, new_endpoint.path
-        )
+        endpoint_exists = self.stash.path_exists(context.credentials, new_endpoint.path)
 
-        if existent_endpoint.is_err():
-            return SyftError(message=existent_endpoint.err())
+        if endpoint_exists.is_err():
+            return SyftError(message=endpoint_exists.err())
 
-        if existent_endpoint.is_ok() and existent_endpoint.ok():
+        if endpoint_exists.is_ok() and endpoint_exists.ok():
             return SyftError(
                 message="An API endpoint already exists at the given path."
             )
@@ -359,12 +357,12 @@ class APIService(AbstractService):
     ) -> TwinAPIEndpoint | SyftError:
         context.node = cast(AbstractNode, context.node)
         result = self.stash.get_by_path(context.node.verify_key, path=endpoint_path)
-        if not result.is_ok():
+        if result.is_err():
             return SyftError(
                 message=f"CustomAPIEndpoint: {endpoint_path} does not exist"
             )
-        endpoint = result.ok()
-        endpoint = endpoint
-        if result:
-            return endpoint
+
+        if result.is_ok():
+            return result.ok()
+
         return SyftError(message=f"Unable to get {endpoint_path} CustomAPIEndpoint")
