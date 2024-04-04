@@ -1,5 +1,5 @@
 # stdlib
-import json
+from functools import cache
 import os
 from pathlib import Path
 from secrets import token_hex
@@ -15,11 +15,13 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.abstract_node import NodeSideType
 from syft.client.domain_client import DomainClient
 from syft.node.worker import Worker
 from syft.protocol.data_protocol import get_data_protocol
 from syft.protocol.data_protocol import protocol_release_dir
 from syft.protocol.data_protocol import stage_protocol_changes
+from syft.service.user import user
 
 # relative
 from .syft.stores.store_fixtures_test import dict_action_store  # noqa: F401
@@ -42,8 +44,7 @@ from .utils.xdist_state import SharedState
 
 def patch_protocol_file(filepath: Path):
     dp = get_data_protocol()
-    original_protocol = dp.read_json(dp.file_path)
-    filepath.write_text(json.dumps(original_protocol))
+    shutil.copyfile(src=dp.file_path, dst=filepath)
 
 
 def remove_file(filepath: Path):
@@ -94,8 +95,10 @@ def protocol_file():
     protocol_dir = sy.SYFT_PATH / "protocol"
     file_path = protocol_dir / f"{random_name}.json"
     patch_protocol_file(filepath=file_path)
-    yield file_path
-    remove_file(filepath=file_path)
+    try:
+        yield file_path
+    finally:
+        remove_file(file_path)
 
 
 @pytest.fixture(autouse=True)
@@ -126,6 +129,31 @@ def faker():
 @pytest.fixture(scope="function")
 def worker() -> Worker:
     worker = sy.Worker.named(name=token_hex(8))
+    yield worker
+    worker.cleanup()
+    del worker
+
+
+@pytest.fixture(scope="function")
+def second_worker() -> Worker:
+    # Used in node syncing tests
+    worker = sy.Worker.named(name=token_hex(8))
+    yield worker
+    worker.cleanup()
+    del worker
+
+
+@pytest.fixture(scope="function")
+def low_worker() -> Worker:
+    worker = sy.Worker.named(name=token_hex(8), node_side_type=NodeSideType.LOW_SIDE)
+    yield worker
+    worker.cleanup()
+    del worker
+
+
+@pytest.fixture(scope="function")
+def high_worker() -> Worker:
+    worker = sy.Worker.named(name=token_hex(8), node_side_type=NodeSideType.HIGH_SIDE)
     yield worker
     worker.cleanup()
     del worker
@@ -207,6 +235,34 @@ def mongo_client(testrun_uid):
         stop_mongo_server(db_name)
         state.purge()
         shutil.rmtree(root_dir, ignore_errors=True)
+
+
+@pytest.fixture(autouse=True)
+def patched_session_cache(monkeypatch):
+    # patching compute heavy hashing to speed up tests
+
+    def _get_key(email, password, connection):
+        return f"{email}{password}{connection}"
+
+    monkeypatch.setattr("syft.client.client.SyftClientSessionCache._get_key", _get_key)
+
+
+cached_salt_and_hash_password = cache(user.salt_and_hash_password)
+cached_check_pwd = cache(user.check_pwd)
+
+
+@pytest.fixture(autouse=True)
+def patched_user(monkeypatch):
+    # patching compute heavy hashing to speed up tests
+
+    monkeypatch.setattr(
+        "syft.service.user.user.salt_and_hash_password",
+        cached_salt_and_hash_password,
+    )
+    monkeypatch.setattr(
+        "syft.service.user.user.check_pwd",
+        cached_check_pwd,
+    )
 
 
 __all__ = [

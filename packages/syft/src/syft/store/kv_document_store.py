@@ -323,7 +323,10 @@ class KeyValueStorePartition(StorePartition):
         permissions.remove(permission.node_uid)
         self.storage_permissions[permission.uid] = permissions
 
-    def has_storage_permission(self, permission: StoragePermission) -> bool:
+    def has_storage_permission(self, permission: StoragePermission | UID) -> bool:
+        if isinstance(permission, UID):
+            permission = StoragePermission(uid=permission, node_uid=self.node_uid)
+
         if permission.uid in self.storage_permissions:
             return permission.node_uid in self.storage_permissions[permission.uid]
         return False

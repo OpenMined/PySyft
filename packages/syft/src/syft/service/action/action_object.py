@@ -45,6 +45,8 @@ from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util.logger import debug
+from ...util.util import prompt_warning_message
+from ..context import AuthedServiceContext
 from ..response import SyftException
 from ..service import from_api_or_context
 from .action_data_empty import ActionDataEmpty
@@ -255,6 +257,7 @@ passthrough_attrs = [
     "migrate_to",  # syft
     "to_dict",  # syft
     "dict",  # syft
+    "has_storage_permission",  # syft
     "_iter",  # pydantic
     "__exclude_fields__",  # pydantic
     "__include_fields__",  # pydantic
@@ -298,10 +301,12 @@ passthrough_attrs = [
     "__private_sync_attr_mocks__",  # syft
     "__exclude_sync_diff_attrs__",  # syft
     "__repr_attrs__",  # syft
+    "get_sync_dependencies",
 ]
 dont_wrap_output_attrs = [
     "__repr__",
     "__str__",
+    "__repr_attrs__",
     "_repr_html_",
     "_repr_markdown_",
     "_repr_latex_",
@@ -316,9 +321,11 @@ dont_wrap_output_attrs = [
     "__sha256__",
     "__hash_exclude_attrs__",
     "__exclude_sync_diff_attrs__",  # syft
-    "__repr_attrs__",
+    "__repr_attrs__",  # syft
+    "get_sync_dependencies",  # syft
 ]
 dont_make_side_effects = [
+    "__repr_attrs__",
     "_repr_html_",
     "_repr_markdown_",
     "_repr_latex_",
@@ -334,6 +341,7 @@ dont_make_side_effects = [
     "__hash_exclude_attrs__",
     "__exclude_sync_diff_attrs__",  # syft
     "__repr_attrs__",
+    "get_sync_dependencies",
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -614,6 +622,7 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "_has_private_sync_attrs",
     "__exclude_sync_diff_attrs__",
     "__repr_attrs__",
+    "get_sync_dependencies",
 ]
 
 
@@ -1080,6 +1089,21 @@ class ActionObject(SyncableSyftObject):
             action_type=action_type,
         )
 
+    def get_sync_dependencies(
+        self, context: AuthedServiceContext, **kwargs: dict
+    ) -> list[UID]:  # type: ignore
+        # relative
+        from ..job.job_stash import Job
+
+        job_service = context.node.get_service("jobservice")  # type: ignore
+        job: Job | None | SyftError = job_service.get_by_result_id(context, self.id.id)  # type: ignore
+        if isinstance(job, SyftError):
+            return job
+        elif job is not None:
+            return [job.id]
+        else:
+            return []
+
     def syft_get_path(self) -> str:
         """Get the type path of the underlying object"""
         if (
@@ -1135,7 +1159,7 @@ class ActionObject(SyncableSyftObject):
         else:
             return res.syft_action_data
 
-    def refresh_object(self) -> ActionObject:
+    def refresh_object(self, resolve_nested: bool = True) -> ActionObject:
         # relative
         from ...client.api import APIRegistry
 
@@ -1148,8 +1172,19 @@ class ActionObject(SyncableSyftObject):
                 message=f"api is None. You must login to {self.syft_node_location}"
             )
 
-        res = api.services.action.get(self.id)
+        res = api.services.action.get(self.id, resolve_nested=resolve_nested)
         return res
+
+    def has_storage_permission(self) -> bool:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+
+        if api is None:
+            return False
+
+        return api.services.action.has_storage_permission(self.id)
 
     def get(self, block: bool = False) -> Any:
         """Get the object from a Syft Client"""
@@ -1163,6 +1198,10 @@ class ActionObject(SyncableSyftObject):
         if not isinstance(res, ActionObject):
             return SyftError(message=f"{res}")  # type: ignore
         else:
+            if not self.has_storage_permission():
+                prompt_warning_message(
+                    message="This is a placeholder object, the real data lives on a different node and is not synced."
+                )
             nested_res = res.syft_action_data
             if isinstance(nested_res, ActionObject):
                 nested_res.syft_node_location = res.syft_node_location

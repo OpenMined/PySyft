@@ -56,6 +56,7 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
+from ..action.action_endpoint import CustomEndpointActionObject
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
@@ -247,7 +248,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
                 message="Cannot Modify Status as the Domain's data is not included in the request"
             )
 
-    def get_sync_dependencies(self, api: Any = None) -> list[UID]:
+    def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
         return [self.user_code_link.object_uid]
 
 
@@ -460,12 +461,6 @@ class UserCode(SyncableSyftObject):
         else:
             raise Exception(f"You can't set {type(value)} as input_policy_state")
 
-    @property
-    def output_policy(self) -> OutputPolicy | None:  # type: ignore
-        if not self.status.approved:
-            return None
-        return self._get_output_policy()
-
     def get_output_policy(self, context: AuthedServiceContext) -> OutputPolicy | None:
         if not self.get_status(context).approved:
             return None
@@ -506,6 +501,12 @@ class UserCode(SyncableSyftObject):
             print(f"Failed to deserialize custom output policy state. {e}")
             return None
 
+    @property
+    def output_policy(self) -> OutputPolicy | None:  # type: ignore
+        if not self.status.approved:
+            return None
+        return self._get_output_policy()
+
     @output_policy.setter  # type: ignore
     def output_policy(self, value: Any) -> None:  # type: ignore
         if isinstance(value, OutputPolicy):
@@ -535,7 +536,7 @@ class UserCode(SyncableSyftObject):
         output_service = cast(OutputService, node.get_service("outputservice"))
         return output_service.get_by_user_code_id(context, self.id)
 
-    def apply_output(
+    def store_as_history(
         self,
         context: AuthedServiceContext,
         outputs: Any,
@@ -608,12 +609,18 @@ class UserCode(SyncableSyftObject):
                 all_assets += assets
         return all_assets
 
-    def get_sync_dependencies(self, api: Any = None) -> list[UID] | SyftError:
+    def get_sync_dependencies(
+        self, context: AuthedServiceContext
+    ) -> list[UID] | SyftError:
         dependencies = []
 
         if self.nested_codes is not None:
-            nested_code_ids = [link.object_uid for link in self.nested_codes.values()]
+            nested_code_ids = [
+                link.object_uid for link, _ in self.nested_codes.values()
+            ]
             dependencies.extend(nested_code_ids)
+
+        dependencies.append(self.status_link.object_uid)
 
         return dependencies
 
@@ -1437,6 +1444,10 @@ def execute_byte_code(
 
         if code_item.uses_domain:
             kwargs["domain"] = LocalDomainClient()
+
+        for k, v in kwargs.items():
+            if isinstance(v, CustomEndpointActionObject):
+                kwargs[k] = v.add_context(context=context)
 
         stdout = StringIO()
         stderr = StringIO()

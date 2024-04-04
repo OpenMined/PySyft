@@ -290,6 +290,14 @@ class ActionService(AbstractService):
             return result.ok()
         return SyftError(message=result.err())
 
+    @service_method(
+        path="action.has_storage_permission",
+        name="has_storage_permission",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def has_storage_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
+        return self.store.has_storage_permission(uid)
+
     # not a public service endpoint
     def _user_code_execute(
         self,
@@ -301,8 +309,11 @@ class ActionService(AbstractService):
         override_execution_permission = (
             context.has_execute_permissions or context.role == ServiceRole.ADMIN
         )
+        if context.node:
+            user_code_service = context.node.get_service("usercodeservice")
 
         input_policy = code_item.get_input_policy(context)
+        output_policy = code_item.get_output_policy(context)
 
         if not override_execution_permission:
             if input_policy is None:
@@ -327,7 +338,10 @@ class ActionService(AbstractService):
             if is_approved.is_err():
                 return is_approved
         else:
-            filtered_kwargs = retrieve_from_db(code_item.id, kwargs, context).ok()
+            result = retrieve_from_db(code_item.id, kwargs, context)
+            if isinstance(result, SyftError):
+                return Err(result.message)
+            filtered_kwargs = result.ok()
         # update input policy to track any input state
 
         has_twin_inputs = False
@@ -347,6 +361,14 @@ class ActionService(AbstractService):
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
                 exec_result = execute_byte_code(code_item, filtered_kwargs, context)
+                if output_policy:
+                    exec_result.result = output_policy.apply_to_output(
+                        context,
+                        exec_result.result,
+                        update_policy=not override_execution_permission,
+                    )
+                code_item.output_policy = output_policy
+                user_code_service.update_code_state(context, code_item)
                 if isinstance(exec_result.result, ActionObject):
                     result_action_object = ActionObject.link(
                         result_id=result_id, pointer_id=exec_result.result.id
@@ -361,6 +383,14 @@ class ActionService(AbstractService):
                 private_exec_result = execute_byte_code(
                     code_item, private_kwargs, context
                 )
+                if output_policy:
+                    private_exec_result.result = output_policy.apply_to_output(
+                        context,
+                        private_exec_result.result,
+                        update_policy=not override_execution_permission,
+                    )
+                code_item.output_policy = output_policy
+                user_code_service.update_code_state(context, code_item)
                 result_action_object_private = wrap_result(
                     result_id, private_exec_result.result
                 )
@@ -375,6 +405,10 @@ class ActionService(AbstractService):
                     mock_exec_result = execute_byte_code(
                         code_item, mock_kwargs, context
                     )
+                    if output_policy:
+                        mock_exec_result.result = output_policy.apply_to_output(
+                            context, mock_exec_result.result, update_policy=False
+                        )
                     mock_exec_result_obj = mock_exec_result.result
 
                 result_action_object_mock = wrap_result(result_id, mock_exec_result_obj)
@@ -395,7 +429,7 @@ class ActionService(AbstractService):
         result_action_object: ActionObject | TwinObject,
         context: AuthedServiceContext,
         output_policy: OutputPolicy | None = None,
-    ) -> Result[ActionObject, str] | SyftError:
+    ) -> Result[ActionObject, str]:
         result_id = result_action_object.id
         # result_blob_id = result_action_object.syft_blob_storage_entry_id
 
@@ -416,7 +450,7 @@ class ActionService(AbstractService):
         )
         blob_store_result = result_action_object._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
-            return blob_store_result
+            return Err(blob_store_result.message)
 
         # IMPORTANT: DO THIS ONLY AFTER ._save_to_blob_storage
         if isinstance(result_action_object, TwinObject):
