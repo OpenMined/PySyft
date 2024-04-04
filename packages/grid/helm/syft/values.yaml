@@ -105,11 +105,6 @@ node:
     username: apikey
     password: password
 
-  # Oblivious settings
-  oblv:
-    enabled: false
-    port: 3030
-
   # Extra environment vars
   env: null
 

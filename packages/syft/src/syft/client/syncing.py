@@ -89,7 +89,7 @@ def handle_ignore_skip(
                     )
 
 
-def resolve_single(obj_diff_batch: ObjectDiffBatch):
+def resolve_single(obj_diff_batch: ObjectDiffBatch) -> ResolveWidget:
     widget = ResolveWidget(obj_diff_batch)
     return widget
 

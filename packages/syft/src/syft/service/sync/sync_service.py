@@ -6,7 +6,6 @@ from typing import cast
 # third party
 from result import Ok
 from result import Result
-from syft.types.datetime import DateTime
 
 # relative
 from ...abstract_node import AbstractNode
@@ -15,6 +14,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
+from ...types.datetime import DateTime
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
@@ -98,8 +98,6 @@ class SyncService(AbstractService):
         context: AuthedServiceContext,
         item: SyncableSyftObject,
     ) -> SyftObject:
-        item.last_sync_date = DateTime.now()
-
         if isinstance(item, UserCodeStatusCollection):
             identity = NodeIdentity.from_node(context.node)
             res = {}
@@ -208,7 +206,13 @@ class SyncService(AbstractService):
                 else:
                     return SyftError(message=f"Failed to sync {res.err()}")
 
-        res = self.build_current_state(context, ignored_batches, unignored_batches)
+        res = self.build_current_state(
+            context,
+            new_items=items,
+            new_ignored_batches=ignored_batches,
+            new_unignored_batches=unignored_batches,
+        )
+
         if res.is_err():
             return SyftError(message=res.message)
         else:
@@ -285,9 +289,11 @@ class SyncService(AbstractService):
     def build_current_state(
         self,
         context: AuthedServiceContext,
+        new_items: list[SyncableSyftObject] | None = None,
         new_ignored_batches: dict[UID, int] | None = None,
         new_unignored_batches: set[UID] | None = None,
     ) -> Result[SyncState, str]:
+        new_items = new_items if new_items is not None else []
         new_ignored_batches = (
             new_ignored_batches if new_ignored_batches is not None else {}
         )
@@ -326,14 +332,21 @@ class SyncService(AbstractService):
             k: v for k, v in ignored_batches.items() if k not in unignored_batches
         }
 
+        object_sync_dates = (
+            previous_state.object_sync_dates.copy() if previous_state else {}
+        )
+        for obj in new_items:
+            object_sync_dates[obj.id.id] = DateTime.now()
+
         new_state = SyncState(
             node_uid=context.node.id,  # type: ignore
-            node_name=context.node.name,
-            node_side_type=context.node.node_side_type,
+            node_name=context.node.name,  # type: ignore
+            node_side_type=context.node.node_side_type,  # type: ignore
             previous_state_link=previous_state_link,
             permissions=permissions,
             storage_permissions=storage_permissions,
             ignored_batches=ignored_batches,
+            object_sync_dates=object_sync_dates,
         )
 
         new_state.add_objects(objects, context)

@@ -15,13 +15,12 @@ from rich.padding import Padding
 from rich.panel import Panel
 from typing_extensions import Self
 
-from syft.types.datetime import DateTime
-
 # relative
 from ...client.client import SyftClient
 from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
 from ...node.credentials import SyftVerifyKey
+from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
@@ -173,6 +172,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     high_storage_permissions: set[UID] = set()
     low_status: str | None = None
     high_status: str | None = None
+    last_sync_date_low: DateTime | None = None
+    last_sync_dat_high: DateTime | None = None
 
     obj_type: type
     diff_list: list[AttrDiff] = []
@@ -219,6 +220,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         high_storage_permissions: set[UID],
         low_node_uid: UID,
         high_node_uid: UID,
+        last_sync_date_low: DateTime | None = None,
+        last_sync_date_high: DateTime | None = None,
     ) -> "ObjectDiff":
         if low_obj is None and high_obj is None:
             raise ValueError("Both low and high objects are None")
@@ -236,6 +239,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
             high_permissions=high_permissions,
             low_storage_permissions=low_storage_permissions,
             high_storage_permissions=high_storage_permissions,
+            last_sync_date_low=last_sync_date_low,
+            last_sync_date_high=last_sync_date_high,
         )
 
         if (
@@ -256,12 +261,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
     @property
     def last_sync_date(self) -> DateTime | None:
-        last_sync_low = (
-            self.low_obj.last_sync_date if self.low_obj is not None else None
-        )
-        last_sync_high = (
-            self.high_obj.last_sync_date if self.high_obj is not None else None
-        )
+        last_sync_low = self.last_sync_date_low if self.low_obj is not None else None
+        last_sync_high = self.last_sync_dat_high if self.high_obj is not None else None
 
         if last_sync_low is None:
             return last_sync_high
@@ -271,7 +272,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
             return max(last_sync_low, last_sync_high)
 
     @property
-    def status(self) -> str:
+    def status(self) -> Literal["NEW", "SAME", "MODIFIED"]:
         if self.low_obj is None or self.high_obj is None:
             return "NEW"
         if len(self.diff_list) == 0:
@@ -307,7 +308,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     def object_uid(self) -> UID:
         return self.low_obj.id if self.low_obj is not None else self.high_obj.id  # type: ignore
 
-    def repr_attr_diffstatus_dict(self):
+    def repr_attr_diffstatus_dict(self) -> dict:
         # relative
         from .resolve_widget import DiffStatus
 
@@ -535,7 +536,7 @@ class ObjectDiffBatch(SyftObject):
         self,
         deps: dict[UID, list[UID]],
         include_roots: bool = False,
-        include_batch_root=True,
+        include_batch_root: bool = True,
     ) -> list[ObjectDiff]:
         root_id = self.root_diff.object_id
         result = [root_id]
@@ -565,7 +566,7 @@ class ObjectDiffBatch(SyftObject):
         return [self.global_diffs[r] for r in set(result)]
 
     @property
-    def target_node_uid(self):
+    def target_node_uid(self) -> UID:
         if self.sync_direction is None:
             raise ValueError("no direction specified")
         if self.sync_direction == SyncDirection.LOW_TO_HIGH:
@@ -574,7 +575,7 @@ class ObjectDiffBatch(SyftObject):
             return self.low_node_uid
 
     @property
-    def target_verify_key(self):
+    def target_verify_key(self) -> SyftVerifyKey:
         if self.sync_direction is None:
             raise ValueError("no direction specified")
         if self.sync_direction == SyncDirection.LOW_TO_HIGH:
@@ -583,7 +584,9 @@ class ObjectDiffBatch(SyftObject):
             return self.user_verify_key_low
 
     def get_dependencies(
-        self, include_roots: bool = False, include_batch_root=True
+        self,
+        include_roots: bool = False,
+        include_batch_root: bool = True,
     ) -> list[ObjectDiff]:
         return self.walk_graph(
             deps=self.dependencies,
@@ -609,7 +612,7 @@ class ObjectDiffBatch(SyftObject):
         return self.status == "SAME"
 
     def get_dependents(
-        self, include_roots: bool = False, include_batch_root=True
+        self, include_roots: bool = False, include_batch_root: bool = True
     ) -> list[ObjectDiff]:
         return self.walk_graph(
             deps=self.dependents,
@@ -934,7 +937,7 @@ class NodeDiff(SyftObject):
     high_state: SyncState
     direction: SyncDirection | None
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: Any) -> ObjectDiffBatch:
         return self.batches[idx]
 
     @property
@@ -967,6 +970,9 @@ class NodeDiff(SyftObject):
             low_storage_permissions = low_state.storage_permissions.get(obj_id, set())
             high_storage_permissions = high_state.storage_permissions.get(obj_id, set())
 
+            last_sync_date_low = low_state.object_sync_dates.get(obj_id, None)
+            last_sync_date_high = high_state.object_sync_dates.get(obj_id, None)
+
             if _include_node_status:
                 low_status = low_state.get_status(obj_id)
                 high_status = high_state.get_status(obj_id)
@@ -985,6 +991,8 @@ class NodeDiff(SyftObject):
                 high_storage_permissions=high_storage_permissions,
                 low_node_uid=low_state.node_uid,
                 high_node_uid=high_state.node_uid,
+                last_sync_date_low=last_sync_date_low,
+                last_sync_date_high=last_sync_date_high,
             )
             obj_uid_to_diff[diff.object_id] = diff
 
@@ -1110,7 +1118,7 @@ It will be available for review again."""
         <div class="diff-state-header"><span>{name1}</span> {ARROW_ICON} <span>{name2}</span></div>
         <p style="margin-bottom:16px;"></p>
         <div class="diff-state-sub-header"> This would sync <span class="diff-state-orange-text">{n} batches</span> from <i>{name1}</i> to <i>{name2}</i></div>
-        """
+        """  # noqa: E501
         repr_html = repr_html.replace("\n", "")
 
         return repr_html + self.batches._repr_html_()
@@ -1208,8 +1216,12 @@ class SyncInstruction(SyftObject):
 
     @classmethod
     def from_widget_state(
-        cls, sync_direction, widget, decision, share_to_user: SyftVerifyKey | None
-    ):
+        cls,
+        sync_direction: SyncDirection,
+        widget: Any,
+        decision: SyncDecision,
+        share_to_user: SyftVerifyKey | None,
+    ) -> Self:
         # read widget state
         diff = widget.diff
         new_permissions_low_side = []

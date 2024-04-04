@@ -3,6 +3,7 @@ from enum import Enum
 from enum import auto
 import html
 import json
+from typing import Any
 
 # third party
 from IPython.display import Javascript
@@ -13,8 +14,7 @@ from ipywidgets import HBox
 from ipywidgets import HTML
 from ipywidgets import Layout
 from ipywidgets import VBox
-from syft.service.sync.sync_state import SyncView
-from syft.util.notebook_ui.notebook_addons import CSS_CODE
+from typing_extensions import Self
 
 # relative
 from ...client.api import APIRegistry
@@ -22,6 +22,7 @@ from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
 from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
+from ...util.notebook_ui.notebook_addons import CSS_CODE
 from ..action.action_object import ActionObject
 from ..log.log import SyftLog
 from ..response import SyftError
@@ -30,6 +31,7 @@ from .diff_state import ObjectDiff
 from .diff_state import ObjectDiffBatch
 from .diff_state import ResolvedSyncState
 from .diff_state import SyncInstruction
+from .sync_state import SyncView
 
 # Standard div Jupyter Lab uses for notebook outputs
 # This is needed to use alert styles from SyftSuccess and SyftError
@@ -87,7 +89,7 @@ class HeaderWidget:
         self.widget = self.create_widget()
 
     @classmethod
-    def from_object_diff_batch(cls, obj_diff_batch: ObjectDiffBatch):
+    def from_object_diff_batch(cls, obj_diff_batch: ObjectDiffBatch) -> Self:
         """
         (
             diff=self.obj_diff_batch.root_diff,
@@ -115,7 +117,7 @@ class HeaderWidget:
         return cls(
             item_type=obj_view.object_type_name,
             item_name=obj_view.main_object_description_str(),
-            item_id=str(root_obj.id.id),
+            item_id=str(root_obj.id.id),  # type: ignore
             num_diffs=len(obj_diff_batch.get_dependencies(include_roots=True)),
             source_side=source_side,
             target_side=target_side,
@@ -141,7 +143,7 @@ class HeaderWidget:
             layout=widgets.Layout(display="flex", align_items="center"),
         )
 
-    def create_item_type_box(self, item_type):
+    def create_item_type_label(self, item_type: str) -> HTML:
         # TODO different bg for different types (levels?)
         style = (
             "background-color: #C2DEF0; "
@@ -154,7 +156,7 @@ class HeaderWidget:
             layout=Layout(margin="0 5px 0 0"),
         )
 
-    def create_name_id_label(self, item_name, item_id):
+    def create_name_id_label(self, item_name: str, item_id: str) -> HTML:
         item_id_short = item_id[:4] + "..." if len(item_id) > 4 else item_id
         return HTML(
             value=(
@@ -163,8 +165,8 @@ class HeaderWidget:
             )
         )
 
-    def create_widget(self):
-        type_box = self.create_item_type_box(self.item_type)
+    def create_widget(self) -> VBox:
+        type_box = self.create_item_type_label(self.item_type)
         name_id_label = self.create_name_id_label(self.item_name, self.item_id)
         copy_button = self.copy_text_button(self.item_id)
 
@@ -175,7 +177,7 @@ class HeaderWidget:
             [type_box, name_id_label, copy_button], layout=Layout(align_items="center")
         )
         third_line = HTML(
-            value=f"<span style='color: #5E5A72;'>This would sync <span style='color: #B8520A'>{self.num_diffs} changes </span> from <i>{self.source_side} Node</i> to <i>{self.target_side} Node</i></span>"
+            value=f"<span style='color: #5E5A72;'>This would sync <span style='color: #B8520A'>{self.num_diffs} changes </span> from <i>{self.source_side} Node</i> to <i>{self.target_side} Node</i></span>"  # noqa: E501
         )
         fourth_line = HTML(value="<div style='height: 16px;'></div>")
         header = VBox([first_line, second_line, third_line, fourth_line])
@@ -207,7 +209,7 @@ class ObjectDiffWidget:
         self.set_and_disable_sync()
 
     @property
-    def mockify(self):
+    def mockify(self) -> bool:
         if self.show_share_button and not self.share_private_data:
             return True
         else:
@@ -216,7 +218,7 @@ class ObjectDiffWidget:
     @classmethod
     def from_diff(
         cls, diff: ObjectDiff, direction: SyncDirection, is_main_widget: bool
-    ):
+    ) -> Self:
         return cls(
             low_properties=diff.repr_attr_dict("low"),
             high_properties=diff.repr_attr_dict("high"),
@@ -227,42 +229,47 @@ class ObjectDiffWidget:
         )
 
     @property
-    def show_share_button(self):
+    def show_share_button(self) -> bool:
         return isinstance(self.diff.non_empty_object, SyftLog | ActionObject)
 
     @property
-    def show_sync_button(self):
+    def show_sync_button(self) -> bool:
         return not self.is_main_widget
 
     @property
-    def num_changes(self):
+    def num_changes(self) -> int:
         return len([x for x in self.statuses.values() if x != DiffStatus.SAME])
 
     @property
-    def title(self):
+    def title(self) -> str:
         return f"{self.diff.object_type} ({self.num_changes} changes)"
 
-    def set_and_disable_sync(self):
+    def set_and_disable_sync(self) -> None:
         if self.show_sync_button:
             self._sync_checkbox.disabled = True
             self._sync_checkbox.value = True
 
-    def enable_sync(self):
+    def enable_sync(self) -> None:
         if self.show_sync_button:
             self._sync_checkbox.disabled = False
 
-    def set_share_private_data(self):
+    def set_share_private_data(self) -> None:
         if self.show_share_button:
             self._share_private_checkbox.value = True
 
-    def create_diff_html(self, title, properties, statuses, line_length=80):
+    def create_diff_html(
+        self,
+        title: str,
+        properties: dict[str, str],
+        statuses: dict[str, DiffStatus],
+    ) -> str:
         html_str = f"<div style='width: 100%;'>{title}<br>"
         html_str += "<div style='font-family: monospace; border-left: 1px solid #B4B0BF; padding-left: 10px;'>"
 
         for attr, val in properties.items():
             status = statuses[attr]
             val = val if val is not None else ""
-            style = f"background-color: {background_colors[status]}; color: {colors[status]}; display: block; white-space: pre-wrap; margin-bottom: 5px;"
+            style = f"background-color: {background_colors[status]}; color: {colors[status]}; display: block; white-space: pre-wrap; margin-bottom: 5px;"  # noqa: E501
             content = html.escape(f"{attr}: {val}")
             html_str += f"<div style='{style}'>{content}</div>"
 
@@ -270,7 +277,7 @@ class ObjectDiffWidget:
 
         return html_str
 
-    def build(self):
+    def build(self) -> widgets.VBox:
         all_keys = list(self.low_properties.keys()) + list(self.high_properties.keys())
         low_properties = {}
         high_properties = {}
@@ -332,15 +339,15 @@ class ObjectDiffWidget:
         widget = widgets.VBox([checkboxes_widget, content], **kwargs)
         return widget
 
-    def _on_sync_change(self, change):
+    def _on_sync_change(self, change: Any) -> None:
         self.sync = change["new"]
 
-    def _on_share_private_data_change(self, change):
+    def _on_share_private_data_change(self, change: Any) -> None:
         self.share_private_data = change["new"]
 
 
 class ResolveWidget:
-    def __init__(self, obj_diff_batch):
+    def __init__(self, obj_diff_batch: ObjectDiffBatch):
         self.obj_diff_batch: ObjectDiffBatch = obj_diff_batch
         self.id2widget: dict[UID, ObjectDiffWidget] = {}
         self.main_widget = self.build()
@@ -351,21 +358,21 @@ class ResolveWidget:
         self.is_synced = False
         self.hide_result_widget()
 
-    def build_css_widget(self):
+    def build_css_widget(self) -> HTML:
         return widgets.HTML(value=CSS_CODE)
 
-    def _repr_mimebundle_(self, **kwargs):
+    def _repr_mimebundle_(self, **kwargs: dict) -> dict[str, str] | None:
         # from IPython.display import display
         return self.widget._repr_mimebundle_(**kwargs)
 
-    def click_sync(self):
+    def click_sync(self) -> SyftSuccess | SyftError:
         return self.button_callback()
 
-    def click_share_all_private_data(self):
+    def click_share_all_private_data(self) -> None:
         for widget in self.id2widget.values():
             widget.set_share_private_data()
 
-    def click_share_private_data(self, uid: UID | str):
+    def click_share_private_data(self, uid: UID | str) -> SyftError | SyftSuccess:
         if isinstance(uid, str):
             uid = UID(uid)
         if uid not in self.id2widget:
@@ -373,8 +380,9 @@ class ResolveWidget:
 
         widget = self.id2widget[uid]
         widget.set_share_private_data()
+        return SyftSuccess(message="Private data shared")
 
-    def button_callback(self, *args, **kwargs):
+    def button_callback(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
         if self.is_synced:
             return SyftError(
                 message="The changes in this widget have already been synced."
@@ -387,8 +395,7 @@ class ResolveWidget:
             decision = "high"
 
         # previously_ignored_batches = state.low_state.ignored_batches
-        previously_ignored_batches = {}
-        share_private_objects = True
+        previously_ignored_batches: dict = {}
         # TODO: only add permissions for objects where we manually give permission
         # Maybe default read permission for some objects (high -> low)
 
@@ -399,8 +406,7 @@ class ResolveWidget:
         batch_diff = self.obj_diff_batch
         if batch_diff.is_unchanged:
             # Hierarchy has no diffs
-            print("BATCH UNCHANGED, NO SYNC")
-            return
+            return SyftSuccess(message="No changes to sync")
 
         if batch_diff.decision is not None:
             # handles ignores
@@ -414,7 +420,7 @@ class ResolveWidget:
         batch_diff.decision = batch_decision
 
         # TODO: FIX
-        other_batches = []
+        other_batches: list = []
         # other_batches = [b for b in state.batches if b is not batch_diff]
         # relative
         from ...client.syncing import handle_ignore_skip
@@ -471,7 +477,9 @@ class ResolveWidget:
             self.obj_diff_batch.target_node_uid, self.obj_diff_batch.target_verify_key
         )
         client = DomainClient(
-            api=api, connection=api.connection, credentials=api.signing_key
+            api=api,
+            connection=api.connection,  # type: ignore
+            credentials=api.signing_key,  # type: ignore
         )
 
         if self.obj_diff_batch.sync_direction is None:
@@ -503,7 +511,7 @@ class ResolveWidget:
         return dependent_diff_widgets
 
     @property
-    def dependent_batch_diff_widgets(self):
+    def dependent_batch_diff_widgets(self) -> list[ObjectDiffWidget]:
         dependencies = self.obj_diff_batch.get_dependencies(
             include_roots=True, include_batch_root=False
         )
@@ -519,7 +527,7 @@ class ResolveWidget:
         return dependent_root_diff_widgets
 
     @property
-    def main_object_diff_widget(self):
+    def main_object_diff_widget(self) -> ObjectDiffWidget:
         obj_diff_widget = ObjectDiffWidget.from_diff(
             self.obj_diff_batch.root_diff,
             is_main_widget=True,
@@ -527,25 +535,25 @@ class ResolveWidget:
         )
         return obj_diff_widget
 
-    def set_result_state(self, result: SyftSuccess | SyftError):
+    def set_result_state(self, result: SyftSuccess | SyftError) -> None:
         result_html = result._repr_html_()
         # Wrap in div to match Jupyter Lab output styling
         result_html = NOTEBOOK_OUTPUT_DIV.format(content=result_html)
         self.result_widget.children = [widgets.HTML(value=result_html)]
 
-    def hide_main_widget(self):
+    def hide_main_widget(self) -> None:
         self.main_widget.layout.display = "none"
 
-    def show_main_widget(self):
+    def show_main_widget(self) -> None:
         self.main_widget.layout.display = "block"
 
-    def hide_result_widget(self):
+    def hide_result_widget(self) -> None:
         self.result_widget.layout.display = "none"
 
-    def show_result_widget(self):
+    def show_result_widget(self) -> None:
         self.result_widget.layout.display = "block"
 
-    def build(self):
+    def build(self) -> VBox:
         self.id2widget = {}
 
         batch_diff_widgets = self.batch_diff_widgets
@@ -583,7 +591,7 @@ class ResolveWidget:
         )
         return full_widget
 
-    def sync_button(self):
+    def sync_button(self) -> Button:
         sync_button = Button(
             description="Sync Selected Changes",
             style={
@@ -596,14 +604,14 @@ class ResolveWidget:
         sync_button.on_click(self.button_callback)
         return sync_button
 
-    def spacer(self, height):
+    def spacer(self, height: int) -> widgets.HTML:
         return widgets.HTML(f"<div style='height: {height}px'></div>")
 
-    def separator(self):
+    def separator(self) -> widgets.HTML:
         return widgets.HTML(
             value='<div style="text-align: center; margin: 10px 0; border: 1px dashed #B4B0BF;"></div>',
             layout=Layout(width="100%"),
         )
 
-    def build_header(self):
+    def build_header(self) -> HeaderWidget:
         return HeaderWidget.from_object_diff_batch(self.obj_diff_batch)

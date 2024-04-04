@@ -3,6 +3,7 @@ from datetime import timedelta
 from typing import Any
 from typing import Optional
 
+# third party
 from pydantic import Field
 
 # relative
@@ -43,24 +44,24 @@ class SyncView(SyftObject):
     def main_object_description_str(self) -> str:
         if isinstance(self.object, UserCode):
             return self.object.service_func_name
-        elif isinstance(self.object, Job):
+        elif isinstance(self.object, Job):  # type: ignore
             return self.object.user_code_name
-        elif isinstance(self.object, Request):
+        elif isinstance(self.object, Request):  # type: ignore
             # TODO: handle other requests
             return f"Execute {self.object.code.service_func_name}"
         else:
             return ""
 
     @property
-    def object_type_name(self) -> type:
+    def object_type_name(self) -> str:
         return type(self.object).__name__
 
     def type_badge_class(self) -> str:
         if isinstance(self.object, UserCode):
             return "label-light-blue"
-        elif isinstance(self.object, Job):
+        elif isinstance(self.object, Job):  # type: ignore
             return "label-light-blue"
-        elif isinstance(self.object, Request):
+        elif isinstance(self.object, Request):  # type: ignore
             # TODO: handle other requests
             return "label-light-purple"
         else:
@@ -69,7 +70,7 @@ class SyncView(SyftObject):
     def get_status_str(self) -> str:
         if isinstance(self.object, UserCode):
             return ""
-        elif isinstance(self.object, Job):
+        elif isinstance(self.object, Job):  # type: ignore
             return f"Status: {self.object.status.value}"
         elif isinstance(self.object, Request):
             code = self.object.code
@@ -81,7 +82,7 @@ class SyncView(SyftObject):
         else:
             return ""
 
-    def summary_html(self):
+    def summary_html(self) -> str:
         try:
             type_html = f'<div class="label {self.type_badge_class()}">{self.object_type_name.upper()}</div>'
             description_html = f"<span class='syncstate-description'>{self.main_object_description_str()}</span>"
@@ -104,7 +105,6 @@ class SyncView(SyftObject):
         return summary_html
 
 
-@serializable()
 class SyncStateRow(SyftObject):
     """A row in the SyncState table"""
 
@@ -163,7 +163,7 @@ class SyncStateRow(SyftObject):
         return f"{prefix}{type(self.object).__name__}"
 
 
-def td_format(td_object):
+def td_format(td_object: timedelta) -> str:
     seconds = int(td_object.total_seconds())
     if seconds == 0:
         return "0 seconds"
@@ -202,6 +202,7 @@ class SyncState(SyftObject):
     permissions: dict[UID, set[str]] = {}
     storage_permissions: dict[UID, set[UID]] = {}
     ignored_batches: dict[UID, int] = {}
+    object_sync_dates: dict[UID, DateTime] = {}
 
     # NOTE importing NodeDiff annotation with TYPE_CHECKING does not work here,
     # since typing.get_type_hints does not check for TYPE_CHECKING-imported types

@@ -104,6 +104,20 @@
           "hash": "9a46ac6f25a8418c08052bdcec7699fa41254e933545e8c24cb3753ced32756d",
           "action": "add"
         }
+      },
+      "SyncView": {
+        "1": {
+          "version": 1,
+          "hash": "4e87744e86cd7781e3d5cf4618e63516f3d26309a4da919033dacc5ed338d76d",
+          "action": "add"
+        }
+      },
+      "SyncStateItem": {
+        "1": {
+          "version": 1,
+          "hash": "4dbfa0813f5a3f7be0b36249ff2d67e395ad7c9e138c5a122fc7342b8dcc4b92",
+          "action": "remove"
+        }
       }
     }
   }

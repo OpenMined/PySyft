@@ -323,7 +323,6 @@ dont_wrap_output_attrs = [
     "__exclude_sync_diff_attrs__",  # syft
     "__repr_attrs__",  # syft
     "get_sync_dependencies",  # syft
-    "last_sync_date",  # syft
 ]
 dont_make_side_effects = [
     "__repr_attrs__",
@@ -624,7 +623,6 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "__exclude_sync_diff_attrs__",
     "__repr_attrs__",
     "get_sync_dependencies",
-    "last_sync_date",
 ]
 
 
