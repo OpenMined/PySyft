@@ -277,7 +277,6 @@ class APIService(AbstractService):
     @service_method(
         path="api.exists",
         name="exists",
-        roles=GUEST_ROLE_LEVEL,
     )
     def exists(
         self, context: AuthedServiceContext, uid: UID

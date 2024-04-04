@@ -153,7 +153,7 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
 
         _obj_exists = False
         for api in api_list:
-            if api.services.action.exists(uid) or api.services.api.exists(uid):
+            if api.services.action.exists(uid):
                 node_identity = NodeIdentity.from_api(api)
                 if node_identity not in output_kwargs:
                     output_kwargs[node_identity] = {k: uid}
