@@ -117,7 +117,7 @@ class HeaderWidget:
         return cls(
             item_type=obj_view.object_type_name,
             item_name=obj_view.main_object_description_str(),
-            item_id=str(root_obj.id.id),
+            item_id=str(root_obj.id.id),  # type: ignore
             num_diffs=len(obj_diff_batch.get_dependencies(include_roots=True)),
             source_side=source_side,
             target_side=target_side,
@@ -372,7 +372,7 @@ class ResolveWidget:
         for widget in self.id2widget.values():
             widget.set_share_private_data()
 
-    def click_share_private_data(self, uid: UID | str) -> None:
+    def click_share_private_data(self, uid: UID | str) -> SyftError | SyftSuccess:
         if isinstance(uid, str):
             uid = UID(uid)
         if uid not in self.id2widget:
@@ -380,6 +380,7 @@ class ResolveWidget:
 
         widget = self.id2widget[uid]
         widget.set_share_private_data()
+        return SyftSuccess(message="Private data shared")
 
     def button_callback(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
         if self.is_synced:
@@ -476,7 +477,9 @@ class ResolveWidget:
             self.obj_diff_batch.target_node_uid, self.obj_diff_batch.target_verify_key
         )
         client = DomainClient(
-            api=api, connection=api.connection, credentials=api.signing_key
+            api=api,
+            connection=api.connection,  # type: ignore
+            credentials=api.signing_key,  # type: ignore
         )
 
         if self.obj_diff_batch.sync_direction is None:

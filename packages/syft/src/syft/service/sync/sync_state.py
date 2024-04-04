@@ -44,9 +44,9 @@ class SyncView(SyftObject):
     def main_object_description_str(self) -> str:
         if isinstance(self.object, UserCode):
             return self.object.service_func_name
-        elif isinstance(self.object, Job):
+        elif isinstance(self.object, Job):  # type: ignore
             return self.object.user_code_name
-        elif isinstance(self.object, Request):
+        elif isinstance(self.object, Request):  # type: ignore
             # TODO: handle other requests
             return f"Execute {self.object.code.service_func_name}"
         else:
@@ -59,9 +59,9 @@ class SyncView(SyftObject):
     def type_badge_class(self) -> str:
         if isinstance(self.object, UserCode):
             return "label-light-blue"
-        elif isinstance(self.object, Job):
+        elif isinstance(self.object, Job):  # type: ignore
             return "label-light-blue"
-        elif isinstance(self.object, Request):
+        elif isinstance(self.object, Request):  # type: ignore
             # TODO: handle other requests
             return "label-light-purple"
         else:
@@ -70,7 +70,7 @@ class SyncView(SyftObject):
     def get_status_str(self) -> str:
         if isinstance(self.object, UserCode):
             return ""
-        elif isinstance(self.object, Job):
+        elif isinstance(self.object, Job):  # type: ignore
             return f"Status: {self.object.status.value}"
         elif isinstance(self.object, Request):
             code = self.object.code
