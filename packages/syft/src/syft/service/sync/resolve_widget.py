@@ -4,7 +4,6 @@ from enum import auto
 import html
 import json
 from typing import Any
-from typing import Self
 
 # third party
 from IPython.display import Javascript
@@ -15,6 +14,7 @@ from ipywidgets import HBox
 from ipywidgets import HTML
 from ipywidgets import Layout
 from ipywidgets import VBox
+from typing_extensions import Self
 
 # relative
 from ...client.api import APIRegistry

@@ -105,7 +105,6 @@ class SyncView(SyftObject):
         return summary_html
 
 
-@serializable()
 class SyncStateRow(SyftObject):
     """A row in the SyncState table"""
 
