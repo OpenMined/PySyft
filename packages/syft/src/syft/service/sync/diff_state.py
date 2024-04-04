@@ -18,6 +18,7 @@ from typing_extensions import Self
 from syft.types.datetime import DateTime
 
 # relative
+from ...client.client import SyftClient
 from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
 from ...node.credentials import SyftVerifyKey
@@ -1268,6 +1269,15 @@ class ResolvedSyncState(SyftObject):
         set()
     )  # NOTE: using '{}' as default value does not work here
     alias: str
+
+    @classmethod
+    def from_client(cls, client: SyftClient) -> "ResolvedSyncState":
+        alias: str = client.metadata.node_side_type  # type: ignore
+        if alias not in ["low", "high"]:
+            raise ValueError(
+                "can only create resolved sync state for high, low side deployments"
+            )
+        return cls(node_uid=client.id, alias=alias)
 
     def add_ignored(self, batch: ObjectDiffBatch) -> None:
         self.ignored_batches[batch.root_id] = hash(batch)

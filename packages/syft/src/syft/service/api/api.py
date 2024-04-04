@@ -6,6 +6,7 @@ from inspect import Signature
 import keyword
 import re
 from typing import Any
+from typing import cast
 
 # third party
 from pydantic import ValidationError
@@ -16,6 +17,7 @@ from result import Ok
 from result import Result
 
 # relative
+from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
 from ...types.syft_object import PartialSyftObject
@@ -30,11 +32,20 @@ from ..response import SyftError
 NOT_ACCESSIBLE_STRING = "N / A"
 
 
+class HelperFunctionSet:
+    def __init__(self, helper_functions: dict[str, Callable]) -> None:
+        self.helper_functions = helper_functions
+        for name, func in helper_functions.items():
+            setattr(self, name, func)
+
+
 class TwinAPIAuthedContext(AuthedServiceContext):
     __canonical_name__ = "AuthedServiceContext"
     __version__ = SYFT_OBJECT_VERSION_1
 
     settings: dict[str, Any] | None = None
+    code: HelperFunctionSet | None = None
+    state: dict[Any, Any] | None = None
 
 
 def get_signature(func: Callable) -> Signature:
@@ -54,6 +65,9 @@ class TwinAPIEndpointView(SyftObject):
     access: str = "Public"
     mock_function: str | None = None
     private_function: str | None = None
+    description: str | None = None
+    mock_helper_functions: list[str] | None = None
+    private_helper_functions: list[str] | None = None
 
     __repr_attrs__ = [
         "path",
@@ -90,6 +104,13 @@ class Endpoint(SyftObject):
     # version
     __canonical_name__ = "CustomApiEndpoint"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    api_code: str
+    func_name: str
+    settings: dict[str, Any] | None = None
+    view_access: bool = True
+    helper_functions: dict[str, str] | None = None
+    state: dict[Any, Any] | None = None
     signature: Signature
 
     @field_validator("api_code", check_fields=False)
@@ -123,6 +144,9 @@ class Endpoint(SyftObject):
     ) -> dict[str, Any] | None:
         return settings
 
+    def update_state(self, state: dict[Any, Any]) -> None:
+        self.state = state
+
 
 @serializable()
 class PrivateAPIEndpoint(Endpoint):
@@ -130,22 +154,12 @@ class PrivateAPIEndpoint(Endpoint):
     __canonical_name__ = "PrivateAPIEndpoint"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    api_code: str
-    func_name: str
-    settings: dict[str, Any] | None = None
-    view_access: bool = True
-
 
 @serializable()
 class PublicAPIEndpoint(Endpoint):
     # version
     __canonical_name__ = "PublicAPIEndpoint"
     __version__ = SYFT_OBJECT_VERSION_1
-
-    api_code: str
-    func_name: str
-    settings: dict[str, Any] | None = None
-    view_access: bool = True
 
 
 class BaseTwinAPIEndpoint(SyftObject):
@@ -203,6 +217,7 @@ class UpdateTwinAPIEndpoint(PartialSyftObject, BaseTwinAPIEndpoint):
     path: str
     private_function: PrivateAPIEndpoint | None = None
     mock_function: PublicAPIEndpoint
+    description: str | None = None
 
 
 @serializable()
@@ -215,6 +230,7 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
     private_function: PrivateAPIEndpoint | None = None
     mock_function: PublicAPIEndpoint
     signature: Signature
+    description: str | None = None
 
 
 @serializable()
@@ -230,6 +246,7 @@ class TwinAPIEndpoint(SyftObject):
     private_function: PrivateAPIEndpoint | None = None
     mock_function: PublicAPIEndpoint
     signature: Signature
+    description: str | None = None
 
     __attr_searchable__ = ["path"]
     __attr_unique__ = ["path"]
@@ -284,6 +301,7 @@ class TwinAPIEndpoint(SyftObject):
         """Execute the public code if it exists."""
         if self.mock_function:
             return self.exec_code(self.mock_function, context, *args, **kwargs)
+
         return SyftError(message="No public code available")
 
     def exec_private_function(
@@ -315,6 +333,19 @@ class TwinAPIEndpoint(SyftObject):
             inner_function.decorator_list = []
             # compile the function
             raw_byte_code = compile(ast.unparse(inner_function), "<string>", "exec")
+
+            helper_function_dict: dict[str, Callable] = {}
+            code.helper_functions = code.helper_functions or {}
+            for helper_name, helper_code in code.helper_functions.items():
+                # Create a dictionary to serve as local scope
+                local_scope: dict[str, Callable] = {}
+
+                # Execute the function string within the local scope
+                exec(helper_code, local_scope)  # nosec
+                helper_function_dict[helper_name] = local_scope[helper_name]
+
+            helper_function_set = HelperFunctionSet(helper_function_dict)
+
             # load it
             exec(raw_byte_code)  # nosec
 
@@ -327,17 +358,40 @@ class TwinAPIEndpoint(SyftObject):
                 node=context.node,
                 id=context.id,
                 settings=code.settings or {},
+                code=helper_function_set,
+                state=code.state or {},
             )
             # execute it
             evil_string = f"{code.func_name}(*args, **kwargs,context=internal_context)"
             result = eval(evil_string, None, locals())  # nosec
+
+            # Update code context state
+            code.update_state(internal_context.state)
+            context.node = cast(AbstractNode, context.node)
+
+            if isinstance(code, PublicAPIEndpoint):
+                self.mock_function = code
+            else:
+                self.private_function = code  # type: ignore
+
+            api_service = context.node.get_service("apiservice")
+            upsert_result = api_service.stash.upsert(
+                context.node.get_service("userservice").admin_verify_key(), self
+            )
+
+            if upsert_result.is_err():
+                raise Exception(upsert_result.err())
+
             # return the results
             return result
         except Exception as e:
-            print(e)
-            return SyftError(
-                message="Ops something went wrong during this endpoint execution, please contact your admin."
-            )
+            # If it's admin, return the error message.
+            if context.role.value == 128:
+                return SyftError(message=f"{str(e)}")
+            else:
+                return SyftError(
+                    message="Ops something went wrong during this endpoint execution, please contact your admin."
+                )
 
 
 def set_access_type(context: TransformContext) -> TransformContext:
@@ -381,11 +435,26 @@ def extract_code_string(code_field: str) -> Callable:
                 if code_field == "private_function"
                 else context.obj.mock_function
             )
+            helper_function_field = (
+                "mock_helper_functions"
+                if code_field == "mock_function"
+                else "private_helper_functions"
+            )
 
-            if endpoint_type is not None and endpoint_type.view_access:
+            context.node = cast(AbstractNode, context.node)
+            admin_key = context.node.get_service("userservice").admin_verify_key()
+
+            # If endpoint exists **AND** (has visible access **OR** the user is admin)
+            if endpoint_type is not None and (
+                endpoint_type.view_access or context.credentials == admin_key
+            ):
                 context.output[code_field] = decorator_cleanup(endpoint_type.api_code)
+                context.output[helper_function_field] = (
+                    endpoint_type.helper_functions.values() or []
+                )
             else:
                 context.output[code_field] = NOT_ACCESSIBLE_STRING
+                context.output[helper_function_field] = []
         return context
 
     return code_string
@@ -406,10 +475,16 @@ def twin_endpoint_to_view() -> list[Callable]:
 
 
 def api_endpoint(
-    path: str, settings: dict[str, str] | None = None
+    path: str,
+    settings: dict[str, str] | None = None,
+    helper_functions: list[Callable] | None = None,
+    description: str | None = None,
 ) -> Callable[..., TwinAPIEndpoint | SyftError]:
     def decorator(f: Callable) -> TwinAPIEndpoint | SyftError:
         try:
+            helper_functions_dict = {
+                f.__name__: inspect.getsource(f) for f in (helper_functions or [])
+            }
             res = CreateTwinAPIEndpoint(
                 path=path,
                 mock_function=PublicAPIEndpoint(
@@ -417,8 +492,10 @@ def api_endpoint(
                     func_name=f.__name__,
                     settings=settings,
                     signature=inspect.signature(f),
+                    helper_functions=helper_functions_dict,
                 ),
                 signature=inspect.signature(f),
+                description=description,
             )
         except ValidationError as e:
             for error in e.errors():
@@ -431,14 +508,19 @@ def api_endpoint(
 
 def private_api_endpoint(
     settings: dict[str, str] | None = None,
+    helper_functions: list[Callable] | None = None,
 ) -> Callable[..., PrivateAPIEndpoint | SyftError]:
     def decorator(f: Callable) -> PrivateAPIEndpoint | SyftError:
         try:
+            helper_functions_dict = {
+                f.__name__: inspect.getsource(f) for f in (helper_functions or [])
+            }
             return PrivateAPIEndpoint(
                 api_code=inspect.getsource(f),
                 func_name=f.__name__,
                 settings=settings,
                 signature=inspect.signature(f),
+                helper_functions=helper_functions_dict,
             )
         except ValidationError as e:
             for error in e.errors():
@@ -451,14 +533,19 @@ def private_api_endpoint(
 
 def mock_api_endpoint(
     settings: dict[str, str] | None = None,
+    helper_functions: list[Callable] | None = None,
 ) -> Callable[..., PublicAPIEndpoint | SyftError]:
     def decorator(f: Callable) -> PublicAPIEndpoint | SyftError:
         try:
+            helper_functions_dict = {
+                f.__name__: inspect.getsource(f) for f in (helper_functions or [])
+            }
             return PublicAPIEndpoint(
                 api_code=inspect.getsource(f),
                 func_name=f.__name__,
                 settings=settings,
                 signature=inspect.signature(f),
+                helper_functions=helper_functions_dict,
             )
         except ValidationError as e:
             for error in e.errors():
@@ -489,6 +576,7 @@ def create_new_api_endpoint(
                 private_function=private_function,
                 mock_function=mock_function,
                 signature=endpoint_signature,
+                description=description,
             )
 
         return CreateTwinAPIEndpoint(

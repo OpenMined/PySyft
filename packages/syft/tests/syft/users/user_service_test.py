@@ -76,7 +76,9 @@ def test_userservice_create_success(
         return Ok(None)
 
     expected_user = guest_create_user.to(User)
-    expected_output = expected_user.to(UserView)
+    expected_output: UserView = expected_user.to(UserView)
+    expected_output.syft_client_verify_key = authed_context.credentials
+    expected_output.syft_node_location = authed_context.node.id
 
     def mock_set(
         credentials: SyftVerifyKey,
@@ -168,7 +170,7 @@ def test_userservice_view_user_success(
     monkeypatch.setattr(user_service.stash, "get_by_uid", mock_get_by_uid)
     response = user_service.view(authed_context, uid_to_view)
     assert isinstance(response, UserView)
-    assert response.model_dump() == expected_output.model_dump()
+    assert response.to_dict() == expected_output.to_dict()
 
 
 def test_userservice_get_all_success(
@@ -189,7 +191,7 @@ def test_userservice_get_all_success(
     assert isinstance(response, list)
     assert len(response) == len(expected_output)
     assert all(
-        r.model_dump() == expected.model_dump()
+        r.to_dict() == expected.to_dict()
         for r, expected in zip(response, expected_output)
     )
 
@@ -230,16 +232,16 @@ def test_userservice_search(
     response = user_service.search(authed_context, id=guest_user.id)
     assert isinstance(response, list)
     assert all(
-        r.model_dump() == expected.model_dump()
+        r.to_dict() == expected.to_dict()
         for r, expected in zip(response, expected_output)
     )
-    # assert response.model_dump() == expected_output.model_dump()
+    # assert response.to_dict() == expected_output.to_dict()
 
     # Search via email
     response = user_service.search(authed_context, email=guest_user.email)
     assert isinstance(response, list)
     assert all(
-        r.model_dump() == expected.model_dump()
+        r.to_dict() == expected.to_dict()
         for r, expected in zip(response, expected_output)
     )
 
@@ -247,7 +249,7 @@ def test_userservice_search(
     response = user_service.search(authed_context, name=guest_user.name)
     assert isinstance(response, list)
     assert all(
-        r.model_dump() == expected.model_dump()
+        r.to_dict() == expected.to_dict()
         for r, expected in zip(response, expected_output)
     )
 
@@ -258,7 +260,7 @@ def test_userservice_search(
     )
     assert isinstance(response, list)
     assert all(
-        r.model_dump() == expected.model_dump()
+        r.to_dict() == expected.to_dict()
         for r, expected in zip(response, expected_output)
     )
 
@@ -268,7 +270,7 @@ def test_userservice_search(
     )
     assert isinstance(response, list)
     assert all(
-        r.model_dump() == expected.model_dump()
+        r.to_dict() == expected.to_dict()
         for r, expected in zip(response, expected_output)
     )
 

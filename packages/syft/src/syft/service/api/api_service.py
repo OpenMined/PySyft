@@ -54,14 +54,12 @@ class APIService(AbstractService):
         except ValueError as e:
             return SyftError(message=str(e))
 
-        existent_endpoint = self.stash.get_by_path(
-            context.credentials, new_endpoint.path
-        )
+        endpoint_exists = self.stash.path_exists(context.credentials, new_endpoint.path)
 
-        if existent_endpoint.is_err():
-            return SyftError(message=existent_endpoint.err())
+        if endpoint_exists.is_err():
+            return SyftError(message=endpoint_exists.err())
 
-        if existent_endpoint.is_ok() and existent_endpoint.ok():
+        if endpoint_exists.is_ok() and endpoint_exists.ok():
             return SyftError(
                 message="An API endpoint already exists at the given path."
             )
@@ -97,6 +95,7 @@ class APIService(AbstractService):
         endpoint_path: str,
         mock_function: PublicAPIEndpoint | None = None,
         private_function: PrivateAPIEndpoint | None = None,
+        hide_definition: bool | None = None,
     ) -> SyftSuccess | SyftError:
         """Updates an specific API endpoint."""
 
@@ -110,9 +109,9 @@ class APIService(AbstractService):
 
         endpoint: TwinAPIEndpoint = endpoint_result.ok()
 
-        if not (mock_function or private_function):
+        if not (mock_function or private_function or (hide_definition is not None)):
             return SyftError(
-                message='Either "mock_function" or "private_function" are required.'
+                message='Either "mock_function","private_function" or "hide_definition" are required.'
             )
 
         updated_mock = (
@@ -136,6 +135,15 @@ class APIService(AbstractService):
         endpoint.mock_function = endpoint_update.mock_function
         endpoint.private_function = endpoint_update.private_function
         endpoint.signature = updated_mock.signature
+        view_access = (
+            not hide_definition
+            if hide_definition is not None
+            else endpoint.mock_function.view_access
+        )
+        endpoint.mock_function.view_access = view_access
+        # Check if the endpoint has a private function
+        if endpoint.private_function:
+            endpoint.private_function.view_access = view_access
 
         result = self.stash.upsert(context.credentials, endpoint=endpoint)
         if result.is_err():
@@ -184,7 +192,7 @@ class APIService(AbstractService):
             return SyftError(message=result.err())
         api_endpoint = result.ok()
 
-        return api_endpoint.to(TwinAPIEndpointView)
+        return api_endpoint.to(TwinAPIEndpointView, context=context)
 
     @service_method(
         path="api.api_endpoints",
@@ -205,7 +213,9 @@ class APIService(AbstractService):
         all_api_endpoints = result.ok()
         api_endpoint_view = []
         for api_endpoint in all_api_endpoints:
-            api_endpoint_view.append(api_endpoint.to(TwinAPIEndpointView))
+            api_endpoint_view.append(
+                api_endpoint.to(TwinAPIEndpointView, context=context)
+            )
 
         return api_endpoint_view
 
@@ -265,7 +275,6 @@ class APIService(AbstractService):
     @service_method(
         path="api.exists",
         name="exists",
-        roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def exists(
         self, context: AuthedServiceContext, uid: UID
@@ -348,12 +357,12 @@ class APIService(AbstractService):
     ) -> TwinAPIEndpoint | SyftError:
         context.node = cast(AbstractNode, context.node)
         result = self.stash.get_by_path(context.node.verify_key, path=endpoint_path)
-        if not result.is_ok():
+        if result.is_err():
             return SyftError(
                 message=f"CustomAPIEndpoint: {endpoint_path} does not exist"
             )
-        endpoint = result.ok()
-        endpoint = endpoint
-        if result:
-            return endpoint
+
+        if result.is_ok():
+            return result.ok()
+
         return SyftError(message=f"Unable to get {endpoint_path} CustomAPIEndpoint")
