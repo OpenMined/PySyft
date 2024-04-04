@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import cast
 
 # third party
 from typing_extensions import Self
