@@ -360,7 +360,9 @@ class ActionService(AbstractService):
                 exec_result = execute_byte_code(code_item, filtered_kwargs, context)
                 if output_policy:
                     exec_result.result = output_policy.apply_to_output(
-                        context, exec_result.result
+                        context,
+                        exec_result.result,
+                        update_policy=not override_execution_permission,
                     )
                 code_item.output_policy = output_policy
                 user_code_service.update_code_state(context, code_item)
@@ -380,7 +382,9 @@ class ActionService(AbstractService):
                 )
                 if output_policy:
                     private_exec_result.result = output_policy.apply_to_output(
-                        context, private_exec_result.result
+                        context,
+                        private_exec_result.result,
+                        update_policy=not override_execution_permission,
                     )
                 code_item.output_policy = output_policy
                 user_code_service.update_code_state(context, code_item)
