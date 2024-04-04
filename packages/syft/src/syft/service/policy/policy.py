@@ -131,6 +131,7 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
     # relative
     from ...client.api import APIRegistry
     from ...client.api import NodeIdentity
+    from ...client.api import RemoteFunction
     from ...types.twin_object import TwinObject
     from ..action.action_object import ActionObject
 
@@ -143,6 +144,8 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
             uid = v.id
         if isinstance(v, TwinObject):
             uid = v.id
+        if isinstance(v, RemoteFunction):
+            uid = v.custom_function_id()
         if isinstance(v, Asset):
             uid = v.action_id
         if not isinstance(uid, UID):
