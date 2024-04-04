@@ -108,7 +108,7 @@ def stage_protocol(protocol_file: Path):
         stage_protocol_changes()
         # bump_protocol_version()
         yield dp.protocol_history
-        dp.revert_latest_protocol()
+        dp.reset_dev_protocol()
         dp.save_history(dp.protocol_history)
 
         # Cleanup release dir, remove unused released files
@@ -125,6 +125,15 @@ def faker():
 
 @pytest.fixture(scope="function")
 def worker() -> Worker:
+    worker = sy.Worker.named(name=token_hex(8))
+    yield worker
+    worker.cleanup()
+    del worker
+
+
+@pytest.fixture(scope="function")
+def second_worker() -> Worker:
+    # Used in node syncing tests
     worker = sy.Worker.named(name=token_hex(8))
     yield worker
     worker.cleanup()

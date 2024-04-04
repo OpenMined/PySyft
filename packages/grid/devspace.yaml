@@ -25,21 +25,7 @@ vars:
   DEVSPACE_ENV_FILE: "default.env"
   CONTAINER_REGISTRY: "docker.io"
   NODE_NAME: "mynode"
-  VERSION: "0.8.5-beta.9"
-
-  #Host Port Mapping
-
-  # MongoDB
-  MONGO_HOST_PORT: $(python utils/find_available_port.py)
-
-  # Backend
-  BACKEND_DEBUGPY_HOST_PORT: $(python utils/find_available_port.py)
-
-  # SeaweedFS
-  SEAWEEDFS_ADMIN_HOST_PORT: $(python utils/find_available_port.py)
-  SEAWEEDFS_FILER_HOST_PORT: $(python utils/find_available_port.py)
-  SEAWEEDFS_S3_HOST_PORT: $(python utils/find_available_port.py)
-  SEAWEEDFS_MOUNT_API_HOST_PORT: $(python utils/find_available_port.py)
+  VERSION: "0.8.7-beta.0"
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
@@ -63,17 +49,8 @@ images:
   seaweedfs:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
     buildKit: {}
-    buildArgs:
-      SEAWEEDFS_VERSION: ${SEAWEEDFS_VERSION}
     dockerfile: ./seaweedfs/seaweedfs.dockerfile
     context: ./seaweedfs
-    tags:
-      - dev-${DEVSPACE_TIMESTAMP}
-  veilid:
-    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_VEILID}"
-    buildKit: {}
-    dockerfile: ./veilid/veilid.dockerfile
-    context: ./veilid
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
 
@@ -100,16 +77,16 @@ dev:
       app.kubernetes.io/name: syft
       app.kubernetes.io/component: mongo
     ports:
-      - port: ${MONGO_HOST_PORT}:27017
+      - port: "27017"
   seaweedfs:
     labelSelector:
       app.kubernetes.io/name: syft
       app.kubernetes.io/component: seaweedfs
     ports:
-      - port: ${SEAWEEDFS_ADMIN_HOST_PORT}:9333 # admin
-      - port: ${SEAWEEDFS_FILER_HOST_PORT}:8888 # filer
-      - port: ${SEAWEEDFS_S3_HOST_PORT}:8333 # S3
-      - port: ${SEAWEEDFS_MOUNT_API_HOST_PORT}:4001 # mount azure
+      - port: "9333" # admin
+      - port: "8888" # filer
+      - port: "8333" # S3
+      - port: "4001" # mount azure
   backend:
     labelSelector:
       app.kubernetes.io/name: syft
@@ -122,20 +99,11 @@ dev:
       - name: DEBUGGER_ENABLED
         value: "True"
     ports:
-      - port: ${BACKEND_DEBUGPY_HOST_PORT}:5678 # debugpy
+      - port: "5678" # debugpy
     sync:
       - path: ./backend/grid:/root/app/grid
       - path: ../syft:/root/app/syft
-  veilid:
-    labelSelector:
-      app.kubernetes.io/name: syft
-      app.kubernetes.io/component: veilid
-    env:
-      - name: DEV_MODE
-        value: "True"
-    logs: {}
-    sync:
-      - path: ./veilid/server:/app/server
+    ssh: {}
 
 profiles:
   - name: gateway

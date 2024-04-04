@@ -110,6 +110,7 @@ jobs:
         python-version: ["3.12"]
         deployment-type: ["python"]
         notebook-paths: ["tutorials"]
+        bump-version: ["False"]
         include:
           - python-version: "3.11"
             os: "ubuntu-latest"
@@ -119,6 +120,11 @@ jobs:
             os: "ubuntu-latest"
             deployment-type: "python"
             notebook-paths: "tutorials"
+          - python-version: "3.12"
+            os: "ubuntu-latest"
+            deployment-type: "python"
+            notebook-paths: "tutorials"
+            bump-version: "True"
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -183,6 +189,7 @@ jobs:
         env:
           ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
           TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
+          BUMP_VERSION: "${{ matrix.bump-version }}"
         with:
           timeout_seconds: 2400
           max_attempts: 3
