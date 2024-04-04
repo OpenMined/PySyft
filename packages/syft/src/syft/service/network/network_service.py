@@ -500,11 +500,12 @@ class NetworkService(AbstractService):
 
         Args:
             context (AuthedServiceContext): The authentication context of the remote node.
-            # peer (NodePeer): The peer representing the remote node.
+            peer (NodePeer): The peer representing the remote node.
             route (NodeRoute): The route to be added.
+            called_by_peer (bool): The flag to indicate that it's called by a remote peer.
 
         Returns:
-            NodePeer | SyftError: The added peer if successful, otherwise a SyftError.
+            SyftSuccess | SyftError
         """
         # verify if the peer is truly the one sending the request to add the route to itself
         if called_by_peer and peer.verify_key != context.credentials:

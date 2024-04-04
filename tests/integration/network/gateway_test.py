@@ -323,11 +323,23 @@ def test_deleting_peers(set_env_var, domain_1_port: int, gateway_port: int) -> N
     assert len(gateway_client.peers) == 0
 
 
-def test_add_route_for(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
     """
-    Connect a domain to a gateway. The gateway adds 2 new routes for the domain
+    Connect a domain to a gateway. The gateway adds 2 new routes to the domain
     and check their priorities.
     Then add an existed route and check if its priority gets updated.
+    Also check if the proxy client to connect to the domain
+    """
+    pass
+
+
+def test_add_route_for(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+    """
+    Test the `add_route_for` of network service.
+    Connect a domain to a gateway.
+    The gateway adds 2 new routes for the domain and check their priorities.
+    Then add an existed route and check if its priority gets updated.
+    Then the domain adds a route to itself for the gateway.
     """
     # login to the domain and gateway
     gateway_client: GatewayClient = sy.login(
@@ -355,6 +367,7 @@ def test_add_route_for(set_env_var, gateway_port: int, domain_1_port: int) -> No
     assert isinstance(res, SyftSuccess)
     gateway_peer = domain_client.peers[0]
     assert len(gateway_peer.node_routes) == 2
+    assert gateway_peer.node_routes[-1].port == new_route.port
     assert gateway_peer.node_routes[-1].priority == 2
 
     # adding another route for the domain
@@ -365,6 +378,7 @@ def test_add_route_for(set_env_var, gateway_port: int, domain_1_port: int) -> No
     assert isinstance(res, SyftSuccess)
     gateway_peer = domain_client.peers[0]
     assert len(gateway_peer.node_routes) == 3
+    assert gateway_peer.node_routes[-1].port == new_route2.port
     assert gateway_peer.node_routes[-1].priority == 3
 
     # add an existed route for the domain and check its priority gets updated
@@ -378,9 +392,23 @@ def test_add_route_for(set_env_var, gateway_port: int, domain_1_port: int) -> No
     assert len(gateway_peer.node_routes) == 3
     assert gateway_peer.node_routes[0].priority == 4
 
+    # the domain calls `add_route_for` to to add a route to itself for the gateway
+    assert len(domain_peer.node_routes) == 1
+    res = domain_client.api.services.network.add_route_for(
+        peer=gateway_peer, route=new_route
+    )
+    assert isinstance(res, SyftSuccess)
+    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert domain_peer.node_routes[-1].port == new_route.port
+    assert len(domain_peer.node_routes) == 2
+
     # Remove existing peers
     assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+
+def test_delete_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+    pass
 
 
 def test_delete_route_for(set_env_var, gateway_port: int, domain_1_port: int) -> None:
@@ -442,3 +470,11 @@ def test_delete_route_for(set_env_var, gateway_port: int, domain_1_port: int) ->
 
     # The gateway client also removes the domain as a peer
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+
+def test_update_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+    pass
+
+
+def test_update_route_for(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+    pass

@@ -50,7 +50,7 @@ class NetworkRegistry:
     def load_network_registry_json() -> dict:
         try:
             # Get the environment variable
-            network_registry_json = os.getenv("NETWORK_REGISTRY_JSON")
+            network_registry_json: str | None = os.getenv("NETWORK_REGISTRY_JSON")
             # If the environment variable exists, use it
             if network_registry_json is not None:
                 network_json: dict = json.loads(network_registry_json)
