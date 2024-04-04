@@ -4,7 +4,6 @@ from enum import Enum
 import hashlib
 import inspect
 from typing import Any
-from typing import cast
 
 # third party
 from result import Err
@@ -13,7 +12,6 @@ from result import Result
 from typing_extensions import Self
 
 # relative
-from ...abstract_node import AbstractNode
 from ...abstract_node import NodeSideType
 from ...client.api import APIRegistry
 from ...client.client import SyftClient
@@ -105,8 +103,6 @@ class ActionStoreChange(Change):
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
         try:
-            if context.node is None:
-                return Err(SyftError(message=f"context {context}'s node is None"))
             action_service: ActionService = context.node.get_service(ActionService)  # type: ignore[assignment]
             blob_storage_service = context.node.get_service(BlobStorageService)
             action_store = action_service.store
@@ -205,9 +201,6 @@ class CreateCustomImageChange(Change):
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
         try:
-            if context.node is None:
-                return Err(SyftError(message=f"context {context}'s node is None"))
-
             worker_image_service = context.node.get_service("SyftWorkerImageService")
 
             service_context = context.to_service_ctx()
@@ -293,8 +286,6 @@ class CreateCustomWorkerPoolChange(Change):
         # SyftError or SyftSuccess
         if apply:
             # get the worker pool service and try to launch a pool
-            if context.node is None:
-                return Err(SyftError(message=f"context {context}'s node is None"))
             worker_pool_service = context.node.get_service("SyftWorkerPoolService")
             service_context: AuthedServiceContext = context.to_service_ctx()
 
@@ -638,7 +629,6 @@ class Request(SyncableSyftObject):
         # relative
         from .request_service import RequestService
 
-        context.node = cast(AbstractNode, context.node)
         save_method = context.node.get_service_method(RequestService.save)
         return save_method(context=context, request=self)
 
@@ -1255,8 +1245,6 @@ class UserCodeStatusChange(Change):
         context: ChangeContext,
         undo: bool,
     ) -> UserCodeStatusCollection | SyftError:
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
         reason: str = context.extra_kwargs.get("reason", "")
 
         if not undo:

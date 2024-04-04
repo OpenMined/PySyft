@@ -14,7 +14,6 @@ from io import StringIO
 import sys
 import types
 from typing import Any
-from typing import cast
 
 # third party
 from RestrictedPython import compile_restricted
@@ -23,7 +22,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
@@ -202,8 +200,6 @@ class InputPolicy(Policy):
     def _inputs_for_context(self, context: ChangeContext) -> dict | SyftError:
         user_node_view = NodeIdentity.from_change_context(context)
         inputs = self.inputs[user_node_view]
-        if context.node is None:
-            return SyftError(f"context {context}'s node is None")
         root_context = AuthedServiceContext(
             node=context.node, credentials=context.approving_user_credentials
         ).as_root_context()
@@ -229,8 +225,6 @@ def retrieve_from_db(
 ) -> Result[dict[str, Any], str]:
     # relative
     from ...service.action.action_object import TwinMode
-
-    context.node = cast(AbstractNode, context.node)
 
     action_service = context.node.get_service("actionservice")
     code_inputs = {}
@@ -274,7 +268,6 @@ def allowed_ids_only(
     kwargs: dict[str, Any],
     context: AuthedServiceContext,
 ) -> dict[str, UID]:
-    context.node = cast(AbstractNode, context.node)
     if context.node.node_type == NodeType.DOMAIN:
         node_identity = NodeIdentity(
             node_name=context.node.name,
@@ -440,7 +433,6 @@ class OutputPolicyExecuteCount(OutputPolicy):
         )
 
     def _is_valid(self, context: AuthedServiceContext) -> SyftSuccess | SyftError:
-        context.node = cast(AbstractNode, context.node)
         output_service = context.node.get_service("outputservice")
         output_history = output_service.get_by_output_policy_id(context, self.id)
         if isinstance(output_history, SyftError):

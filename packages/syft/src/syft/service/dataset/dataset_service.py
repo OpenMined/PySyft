@@ -96,16 +96,10 @@ class DatasetService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
-        if context.node is not None:
-            return SyftSuccess(
-                message=f"Dataset uploaded to '{context.node.name}'. "
-                f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
-            )
-        else:
-            return SyftSuccess(
-                message="Dataset uploaded not to a node."
-                "To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
-            )
+        return SyftSuccess(
+            message=f"Dataset uploaded to '{context.node.name}'. "
+            f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
+        )
 
     @service_method(
         path="dataset.get_all",

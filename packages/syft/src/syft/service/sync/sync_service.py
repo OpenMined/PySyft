@@ -1,14 +1,12 @@
 # stdlib
 from collections import defaultdict
 from typing import Any
-from typing import cast
 
 # third party
 from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...client.api import NodeIdentity
 from ...serde.serializable import serializable
 from ...store.document_store import BaseStash
@@ -238,7 +236,6 @@ class SyncService(AbstractService):
     def get_all_syncable_items(
         self, context: AuthedServiceContext
     ) -> Result[list[SyncableSyftObject], str]:
-        node = cast(AbstractNode, context.node)
         all_items = []
 
         services_to_sync = [
@@ -251,7 +248,7 @@ class SyncService(AbstractService):
         ]
 
         for service_name in services_to_sync:
-            service = node.get_service(service_name)
+            service = context.node.get_service(service_name)
             items = service.get_all(context)
             if isinstance(items, SyftError):
                 return items
@@ -268,7 +265,7 @@ class SyncService(AbstractService):
                 action_object_ids.add(obj.result.id)
 
         for uid in action_object_ids:
-            action_object = node.get_service("actionservice").get(
+            action_object = context.node.get_service("actionservice").get(
                 context, uid, resolve_nested=False
             )  # type: ignore
             if action_object.is_err():
