@@ -3,6 +3,8 @@ from datetime import timedelta
 from typing import Any
 from typing import Optional
 
+from pydantic import Field
+
 # relative
 from ...abstract_node import NodeSideType
 from ...serde.serializable import serializable
@@ -49,6 +51,10 @@ class SyncView(SyftObject):
         else:
             return ""
 
+    @property
+    def object_type_name(self) -> type:
+        return type(self.object).__name__
+
     def type_badge_class(self) -> str:
         if isinstance(self.object, UserCode):
             return "label-light-blue"
@@ -77,17 +83,15 @@ class SyncView(SyftObject):
 
     def summary_html(self):
         try:
-            type_html = f'<div class="label {self.type_badge_class()}">{self.object.__class__.__name__.upper()}</div>'
+            type_html = f'<div class="label {self.type_badge_class()}">{self.object_type_name.upper()}</div>'
             description_html = f"<span class='syncstate-description'>{self.main_object_description_str()}</span>"
             updated_delta_str = "29m ago"
             updated_by = "john@doe.org"
             status_str = self.get_status_str()
             status_seperator = " • " if len(status_str) else ""
             summary_html = f"""
-    <div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;">
-    <div>
+    <div style="display: flex; gap: 8px; justify-content: start; width: 100%;">
     {type_html} {description_html}
-    </div>
     </div>
     <div style="display: table-row">
     <span class='syncstate-col-footer'>{status_str}{status_seperator}Updated by {updated_by} {updated_delta_str}</span>
@@ -111,7 +115,9 @@ class SyncStateRow(SyftObject):
     previous_object: SyftObject | None = None
     current_state: str
     previous_state: str
+    status: str
     level: int = 0
+    last_sync_date: DateTime | None = None
 
     __syft_include_id_coll_repr__ = False
 
@@ -133,11 +139,22 @@ class SyncStateRow(SyftObject):
 
     def _coll_repr_(self) -> dict[str, Any]:
         obj_view = SyncView(object=self.object)
-        no_last_sync_html = "<p class='diff-state-no-obj'>n/a</p>"
+
+        if self.last_sync_date is not None:
+            last_sync_date = self.last_sync_date
+            last_sync_delta = timedelta(
+                seconds=DateTime.now().utc_timestamp - last_sync_date.utc_timestamp
+            )
+            last_sync_delta_str = td_format(last_sync_delta)
+            last_sync_html = (
+                f"<p class='diff-state-no-obj'>{last_sync_delta_str} ago</p>"
+            )
+        else:
+            last_sync_html = "<p class='diff-state-no-obj'>n/a</p>"
         return {
             "Status": self.status_badge(),
             "Summary": obj_view.summary_html(),
-            "Last Sync": no_last_sync_html,
+            "Last Sync": last_sync_html,
         }
 
     @property
@@ -145,19 +162,12 @@ class SyncStateRow(SyftObject):
         prefix = get_hierarchy_level_prefix(self.level)
         return f"{prefix}{type(self.object).__name__}"
 
-    @property
-    def status(self) -> str:
-        # TODO use Diffs to determine status
-        if self.previous_object is None:
-            return "NEW"
-        elif self.previous_object.syft_eq(ext_obj=self.object):
-            return "SAME"
-        else:
-            return "MODIFIED"
-
 
 def td_format(td_object):
     seconds = int(td_object.total_seconds())
+    if seconds == 0:
+        return "0 seconds"
+
     periods = [
         ("year", 60 * 60 * 24 * 365),
         ("month", 60 * 60 * 24 * 30),
@@ -172,7 +182,7 @@ def td_format(td_object):
         if seconds >= period_seconds:
             period_value, seconds = divmod(seconds, period_seconds)
             has_s = "s" if period_value > 1 else ""
-            strings.append("%s %s%s" % (period_value, period_name, has_s))
+            strings.append(f"{period_value} {period_name}{has_s}")
 
     return ", ".join(strings)
 
@@ -187,7 +197,7 @@ class SyncState(SyftObject):
     node_side_type: NodeSideType
     objects: dict[UID, SyncableSyftObject] = {}
     dependencies: dict[UID, list[UID]] = {}
-    created_at: DateTime = DateTime.now()
+    created_at: DateTime = Field(default_factory=DateTime.now)
     previous_state_link: LinkedObject | None = None
     permissions: dict[UID, set[str]] = {}
     storage_permissions: dict[UID, set[UID]] = {}
@@ -287,6 +297,8 @@ class SyncState(SyftObject):
                 current_state=diff.diff_side_str("high"),
                 previous_state=diff.diff_side_str("low"),
                 level=0,  # TODO add levels to table
+                status=batch.status,
+                last_sync_date=diff.last_sync_date,
             )
             result.append(row)
         return result

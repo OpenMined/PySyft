@@ -6,6 +6,7 @@ from typing import cast
 # third party
 from result import Ok
 from result import Result
+from syft.types.datetime import DateTime
 
 # relative
 from ...abstract_node import AbstractNode
@@ -93,8 +94,12 @@ class SyncService(AbstractService):
                 x.node_uid = context.node.id  # type: ignore
 
     def transform_item(
-        self, context: AuthedServiceContext, item: SyftObject
+        self,
+        context: AuthedServiceContext,
+        item: SyncableSyftObject,
     ) -> SyftObject:
+        item.last_sync_date = DateTime.now()
+
         if isinstance(item, UserCodeStatusCollection):
             identity = NodeIdentity.from_node(context.node)
             res = {}
@@ -169,7 +174,7 @@ class SyncService(AbstractService):
     def sync_items(
         self,
         context: AuthedServiceContext,
-        items: list[ActionObject | SyftObject],
+        items: list[SyncableSyftObject],
         permissions: list[ActionObjectPermission],
         storage_permissions: list[StoragePermission],
         ignored_batches: dict[UID, int],

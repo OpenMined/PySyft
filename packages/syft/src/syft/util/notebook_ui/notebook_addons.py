@@ -325,13 +325,14 @@ CSS_CODE = """
     .label {
         code-text;
         border-radius: 4px;
+        padding: 0px 4px;
+
     }
 
     .label-light-purple {
         label;
         background-color: #C9CFE8;
         color: #373B7B;
-
     }
 
     .label-light-blue {
