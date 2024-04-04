@@ -103,7 +103,6 @@ dev:
     sync:
       - path: ./backend/grid:/root/app/grid
       - path: ../syft:/root/app/syft
-    ssh: {}
 
 profiles:
   - name: gateway
@@ -115,3 +114,14 @@ profiles:
         path: images.seaweedfs
       - op: remove
         path: dev.seaweedfs
+
+      # Port Re-Mapping
+      # Mongo
+      - op: replace
+        path: dev.mongo.ports[0].port
+        value: 27018:27017
+
+      # Backend
+      - op: replace
+        path: dev.backend.ports[0].port
+        value: 5679:5678
