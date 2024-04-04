@@ -22,5 +22,3 @@ seaweedfs:
   secret:
     s3RootPassword: admin
 
-veilid:
-  enabled: true
