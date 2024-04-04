@@ -209,10 +209,10 @@ def test_sync_flow():
     high_worker.cleanup()
 
 
-def test_diff_state(worker, second_worker):
-    low_client = worker.root_client
-    client_low_ds = worker.guest_client
-    high_client = second_worker.root_client
+def test_diff_state(low_worker, high_worker):
+    low_client = low_worker.root_client
+    client_low_ds = low_worker.guest_client
+    high_client = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:
@@ -244,10 +244,10 @@ def test_diff_state(worker, second_worker):
     assert high_items_to_sync.is_empty
 
 
-def test_forget_usercode(worker, second_worker):
-    low_client = worker.root_client
-    client_low_ds = worker.guest_client
-    high_client = second_worker.root_client
+def test_forget_usercode(low_worker, high_worker):
+    low_client = low_worker.root_client
+    client_low_ds = low_worker.guest_client
+    high_client = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:
@@ -291,10 +291,10 @@ def test_forget_usercode(worker, second_worker):
     )
 
 
-def test_skip_user_code(worker, second_worker):
-    low_client = worker.root_client
-    client_low_ds = worker.guest_client
-    high_client = second_worker.root_client
+def test_skip_user_code(low_worker, high_worker):
+    low_client = low_worker.root_client
+    client_low_ds = low_worker.guest_client
+    high_client = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:
@@ -322,10 +322,10 @@ def test_skip_user_code(worker, second_worker):
     assert high_items_to_sync.is_empty
 
 
-def test_unignore(worker, second_worker):
-    low_client = worker.root_client
-    client_low_ds = worker.guest_client
-    high_client = second_worker.root_client
+def test_unignore(low_worker, high_worker):
+    low_client = low_worker.root_client
+    client_low_ds = low_worker.guest_client
+    high_client = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:
@@ -374,10 +374,10 @@ def test_unignore(worker, second_worker):
     assert diff_state.is_same
 
 
-def test_request_code_execution_multiple(worker, second_worker):
-    low_client = worker.root_client
-    client_low_ds = worker.guest_client
-    high_client = second_worker.root_client
+def test_request_code_execution_multiple(low_worker, high_worker):
+    low_client = low_worker.root_client
+    client_low_ds = low_worker.guest_client
+    high_client = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:
@@ -426,10 +426,10 @@ def test_request_code_execution_multiple(worker, second_worker):
     assert not high_items_to_sync.is_empty
 
 
-def test_sync_high(worker, second_worker):
-    low_client = worker.root_client
-    client_low_ds = worker.guest_client
-    high_client = second_worker.root_client
+def test_sync_high(low_worker, high_worker):
+    low_client = low_worker.root_client
+    client_low_ds = low_worker.guest_client
+    high_client = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:
@@ -454,10 +454,10 @@ def test_sync_high(worker, second_worker):
     "decision",
     ["skip", "ignore"],
 )
-def test_sync_skip_ignore(worker, second_worker, decision):
-    low_client = worker.root_client
-    client_low_ds = worker.guest_client
-    high_client = second_worker.root_client
+def test_sync_skip_ignore(low_worker, high_worker, decision):
+    low_client = low_worker.root_client
+    client_low_ds = low_worker.guest_client
+    high_client = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:
@@ -493,10 +493,10 @@ def test_sync_skip_ignore(worker, second_worker, decision):
     )
 
 
-def test_update_after_ignore(worker, second_worker):
-    low_client = worker.root_client
-    client_low_ds = worker.guest_client
-    high_client = second_worker.root_client
+def test_update_after_ignore(low_worker, high_worker):
+    low_client = low_worker.root_client
+    client_low_ds = low_worker.guest_client
+    high_client = high_worker.root_client
 
     @sy.syft_function_single_use()
     def compute() -> int:
@@ -541,9 +541,9 @@ def test_update_after_ignore(worker, second_worker):
     "decision",
     ["skip", "ignore", "low", "high"],
 )
-def test_sync_empty(worker, second_worker, decision):
-    low_client = worker.root_client
-    high_client = second_worker.root_client
+def test_sync_empty(low_worker, high_worker, decision):
+    low_client = low_worker.root_client
+    high_client = high_worker.root_client
 
     diff_state = compare_clients(low_client, high_client)
     low_items_to_sync, high_items_to_sync = resolve(
