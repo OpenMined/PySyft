@@ -537,7 +537,8 @@ class NetworkService(AbstractService):
             )
         return SyftSuccess(
             message=f"New route ({str(route)}) with id '{route.id}' "
-            f"to peer '{remote_node_peer.name}' was added for '{context.node.name}'"
+            f"to peer {remote_node_peer.node_type.value} '{remote_node_peer.name}' "
+            f"was added for {context.node.node_type.value} '{context.node.name}'"
         )
 
     @service_method(path="network.delete_route_for", name="delete_route_for")
@@ -655,8 +656,9 @@ class NetworkService(AbstractService):
         if route_id:
             result = remote_node_peer.delete_route(route_id=route_id)
             return_message = (
-                f"Route with id '{route_id}' to peer '{remote_node_peer.name}' "
-                f"was deleted for '{context.node.name}'."
+                f"Route with id '{route_id}' to peer "
+                f"{remote_node_peer.node_type.value} '{remote_node_peer.name}' "
+                f"was deleted for {context.node.node_type.value} '{context.node.name}'."
             )
         if isinstance(result, SyftError):
             return result
