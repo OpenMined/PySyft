@@ -34,7 +34,6 @@ from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
 from ..client.client import SyftClient
 from ..exceptions.exception import PySyftException
-from ..external import OblvServiceProvider
 from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
@@ -877,7 +876,6 @@ class Node(AbstractNode):
             {"svc": OutputService},
             {"svc": UserCodeStatusService},
             {"svc": VeilidServiceProvider},  # this is lazy
-            {"svc": OblvServiceProvider},  # this is lazy
         ]
 
         for svc_kwargs in default_services:
@@ -1501,33 +1499,6 @@ def create_admin_new(
         print("Unable to create new admin", e)
 
     return None
-
-
-# def create_oblv_key_pair(
-#     worker: Node,
-# ) -> str | None:
-#     try:
-#         # relative
-#         from ..external.oblv.oblv_keys_stash import OblvKeys
-#         from ..external.oblv.oblv_keys_stash import OblvKeysStash
-#         from ..external.oblv.oblv_service import generate_oblv_key
-
-#         oblv_keys_stash = OblvKeysStash(store=worker.document_store)
-
-#         if not len(oblv_keys_stash) and worker.signing_key:
-#             public_key, private_key = generate_oblv_key(oblv_key_name=worker.name)
-#             oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
-#             res = oblv_keys_stash.set(worker.signing_key.verify_key, oblv_keys)
-#             if res.is_ok():
-#                 print("Successfully generated Oblv Key pair at startup")
-#             return res.err()
-#         else:
-#             print(f"Using Existing Public/Private Key pair: {len(oblv_keys_stash)}")
-#     except Exception as e:
-#         print("Unable to create Oblv Keys.", e)
-#         return None
-
-#     return None
 
 
 class NodeRegistry:

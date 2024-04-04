@@ -26,8 +26,6 @@ from .client.search import SearchResults  # noqa: F401
 from .client.user_settings import UserSettings  # noqa: F401
 from .client.user_settings import settings  # noqa: F401
 from .custom_worker.config import DockerWorkerConfig  # noqa: F401
-from .external import OBLV_ENABLED  # noqa: F401
-from .external import enable_external_lib  # noqa: F401
 from .node.credentials import SyftSigningKey  # noqa: F401
 from .node.domain import Domain  # noqa: F401
 from .node.enclave import Enclave  # noqa: F401
@@ -110,10 +108,6 @@ try:
     # )
 except:  # noqa: E722
     pass  # nosec
-
-# For server-side, to enable by environment variable
-if OBLV_ENABLED:
-    enable_external_lib("oblv")
 
 
 def module_property(func: Any) -> Callable:
