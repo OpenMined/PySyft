@@ -778,7 +778,8 @@ def get_repr_values_table(
 
         # get id
         id_ = getattr(item, "id", None)
-        if id_ is not None:
+        include_id = getattr(item, "__syft_include_id_coll_repr__", True)
+        if id_ is not None and include_id:
             cols["id"].append({"value": str(id_), "type": "clipboard"})
 
         if type(item) == type:
@@ -793,6 +794,7 @@ def get_repr_values_table(
             cols["type"].append(t)
 
         # if has _coll_repr_
+
         if hasattr(item, "_coll_repr_"):
             ret_val = item._coll_repr_()
             if "id" in ret_val:
