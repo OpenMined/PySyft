@@ -15,6 +15,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.abstract_node import NodeSideType
 from syft.client.domain_client import DomainClient
 from syft.node.worker import Worker
 from syft.protocol.data_protocol import get_data_protocol
@@ -137,6 +138,22 @@ def worker() -> Worker:
 def second_worker() -> Worker:
     # Used in node syncing tests
     worker = sy.Worker.named(name=token_hex(8))
+    yield worker
+    worker.cleanup()
+    del worker
+
+
+@pytest.fixture(scope="function")
+def low_worker() -> Worker:
+    worker = sy.Worker.named(name=token_hex(8), node_side_type=NodeSideType.LOW_SIDE)
+    yield worker
+    worker.cleanup()
+    del worker
+
+
+@pytest.fixture(scope="function")
+def high_worker() -> Worker:
+    worker = sy.Worker.named(name=token_hex(8), node_side_type=NodeSideType.HIGH_SIDE)
     yield worker
     worker.cleanup()
     del worker

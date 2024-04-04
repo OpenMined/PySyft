@@ -461,12 +461,6 @@ class UserCode(SyncableSyftObject):
         else:
             raise Exception(f"You can't set {type(value)} as input_policy_state")
 
-    @property
-    def output_policy(self) -> OutputPolicy | None:  # type: ignore
-        if not self.status.approved:
-            return None
-        return self._get_output_policy()
-
     def get_output_policy(self, context: AuthedServiceContext) -> OutputPolicy | None:
         if not self.get_status(context).approved:
             return None
@@ -507,6 +501,12 @@ class UserCode(SyncableSyftObject):
             print(f"Failed to deserialize custom output policy state. {e}")
             return None
 
+    @property
+    def output_policy(self) -> OutputPolicy | None:  # type: ignore
+        if not self.status.approved:
+            return None
+        return self._get_output_policy()
+
     @output_policy.setter  # type: ignore
     def output_policy(self, value: Any) -> None:  # type: ignore
         if isinstance(value, OutputPolicy):
@@ -536,7 +536,7 @@ class UserCode(SyncableSyftObject):
         output_service = cast(OutputService, node.get_service("outputservice"))
         return output_service.get_by_user_code_id(context, self.id)
 
-    def apply_output(
+    def store_as_history(
         self,
         context: AuthedServiceContext,
         outputs: Any,
