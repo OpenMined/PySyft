@@ -101,10 +101,5 @@ data:
   # Worker
   USE_BLOB_STORAGE: False
 
-  #Oblivious
-  OBLV_ENABLED: false
-  OBLV_KEY_PATH: "~/.oblv"
-  OBLV_LOCALHOST_PORT: 3030
-
   # Registation
   ENABLE_SIGNUP: False
