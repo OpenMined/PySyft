@@ -1,6 +1,6 @@
 {
   "name": "pygrid-ui",
-  "version": "0.8.6-beta.1",
+  "version": "0.8.7-beta.0",
   "private": true,
   "scripts": {
     "dev": "pnpm i && vite dev --host --port 80",
@@ -36,7 +36,7 @@
     "tailwindcss": "3.3.1",
     "typescript": "^4.9.5",
     "typescript-svelte-plugin": "^0.3.34",
-    "vite": "^4.5.2",
+    "vite": "^4.5.3",
     "vitest": "^0.33.0"
   },
   "type": "module",

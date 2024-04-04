@@ -3,6 +3,7 @@ from datetime import timedelta
 from typing import Any
 from typing import Optional
 
+# third party
 from pydantic import Field
 
 # relative
@@ -11,6 +12,7 @@ from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
@@ -51,7 +53,7 @@ class SyncView(SyftObject):
             return ""
 
     @property
-    def object_type_name(self) -> type:
+    def object_type_name(self) -> str:
         return type(self.object).__name__
 
     def type_badge_class(self) -> str:
@@ -80,7 +82,7 @@ class SyncView(SyftObject):
         else:
             return ""
 
-    def summary_html(self):
+    def summary_html(self) -> str:
         try:
             type_html = f'<div class="label {self.type_badge_class()}">{self.object_type_name.upper()}</div>'
             description_html = f"<span class='syncstate-description'>{self.main_object_description_str()}</span>"
@@ -162,7 +164,7 @@ class SyncStateRow(SyftObject):
         return f"{prefix}{type(self.object).__name__}"
 
 
-def td_format(td_object):
+def td_format(td_object: timedelta) -> str:
     seconds = int(td_object.total_seconds())
     if seconds == 0:
         return "0 seconds"
@@ -189,7 +191,7 @@ def td_format(td_object):
 @serializable()
 class SyncState(SyftObject):
     __canonical_name__ = "SyncState"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     node_uid: UID
     node_name: str
@@ -201,6 +203,7 @@ class SyncState(SyftObject):
     permissions: dict[UID, set[str]] = {}
     storage_permissions: dict[UID, set[UID]] = {}
     ignored_batches: dict[UID, int] = {}
+    object_sync_dates: dict[UID, DateTime] = {}
 
     # NOTE importing NodeDiff annotation with TYPE_CHECKING does not work here,
     # since typing.get_type_hints does not check for TYPE_CHECKING-imported types

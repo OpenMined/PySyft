@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Callable
 from time import sleep
 
 # relative
@@ -15,6 +16,7 @@ from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.diff_state import SyncInstruction
 from ..service.sync.resolve_widget import ResolveWidget
 from ..service.sync.sync_state import SyncState
+from .client import SyftClient
 from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
 
@@ -42,6 +44,10 @@ def compare_states(state1: SyncState, state2: SyncState) -> NodeDiff:
     )
 
 
+def compare_clients(low_client: SyftClient, high_client: SyftClient) -> NodeDiff:
+    return compare_states(low_client.get_sync_state(), high_client.get_sync_state())
+
+
 def get_user_input_for_resolve() -> SyncDecision:
     options = [x.value for x in SyncDecision]
     options_str = ", ".join(options[:-1]) + f" or {options[-1]}"
@@ -60,6 +66,9 @@ def get_user_input_for_resolve() -> SyncDecision:
 def handle_ignore_skip(
     batch: ObjectDiffBatch, decision: SyncDecision, other_batches: list[ObjectDiffBatch]
 ) -> None:
+    # make sure type is SyncDecision at runtime
+    decision = SyncDecision(decision)
+
     if decision == SyncDecision.skip or decision == SyncDecision.ignore:
         skipped_or_ignored_ids = {
             x.object_id for x in batch.get_dependents(include_roots=False)
@@ -80,7 +89,7 @@ def handle_ignore_skip(
                     )
 
 
-def resolve_single(obj_diff_batch: ObjectDiffBatch):
+def resolve_single(obj_diff_batch: ObjectDiffBatch) -> ResolveWidget:
     widget = ResolveWidget(obj_diff_batch)
     return widget
 
@@ -88,6 +97,7 @@ def resolve_single(obj_diff_batch: ObjectDiffBatch):
 def resolve(
     state: NodeDiff,
     decision: str | None = None,
+    decision_callback: Callable[[ObjectDiffBatch], SyncDecision] | None = None,
     share_private_objects: bool = False,
     ask_for_input: bool = True,
 ) -> tuple[ResolvedSyncState, ResolvedSyncState]:
@@ -109,6 +119,8 @@ def resolve(
         elif decision is not None:
             print(batch_diff.__repr__())
             batch_decision = SyncDecision(decision)
+        elif decision_callback is not None:
+            batch_decision = decision_callback(batch_diff)
         else:
             print(batch_diff.__repr__())
             batch_decision = get_user_input_for_resolve()
@@ -237,8 +249,11 @@ def get_sync_instructions_for_batch_items_for_add(
                 StoragePermission(uid=diff.object_id, node_uid=diff.low_node_uid)
             ]
 
-        # Always share to high_side
-        if diff.status == "NEW" and diff.high_obj is None:
+        if (
+            diff.status == "NEW"
+            and diff.high_obj is None
+            and decision == SyncDecision.low
+        ):
             new_storage_permissions_highside = [
                 StoragePermission(uid=diff.object_id, node_uid=diff.high_node_uid)
             ]

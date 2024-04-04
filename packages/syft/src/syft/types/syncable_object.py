@@ -6,8 +6,6 @@ from typing import ClassVar
 # third party
 from typing_extensions import Self
 
-from syft.types.datetime import DateTime
-
 # relative
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftError
@@ -21,7 +19,6 @@ class SyncableSyftObject(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
     # mapping of private attributes and their mock values
     __private_sync_attr_mocks__: ClassVar[dict[str, any]] = {}
-    last_sync_date: DateTime | None = None
 
     @classmethod
     def _has_private_sync_attrs(cls: type[Self]) -> bool:

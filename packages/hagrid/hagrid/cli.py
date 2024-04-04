@@ -393,11 +393,6 @@ def clean(location: str) -> None:
     help="Turn off auto health checks post node launch",
 )
 @click.option(
-    "--oblv",
-    is_flag=True,
-    help="Installs Oblivious CLI tool",
-)
-@click.option(
     "--set-root-email",
     default=None,
     required=False,
@@ -1309,8 +1304,6 @@ def create_launch_cmd(
     headless = bool(kwargs["headless"])
     parsed_kwargs["headless"] = headless
 
-    parsed_kwargs["oblv"] = bool(kwargs["oblv"])
-
     parsed_kwargs["tls"] = bool(kwargs["tls"])
     parsed_kwargs["test"] = bool(kwargs["test"])
     parsed_kwargs["dev"] = bool(kwargs["dev"])
@@ -2197,7 +2190,6 @@ def create_launch_docker_cmd(
     smtp_port = kwargs.get("smtp_port")
     smtp_host = kwargs.get("smtp_host")
 
-    enable_oblv = bool(kwargs["oblv"])
     print("  - NAME: " + str(snake_name))
     print("  - TEMPLATE DIR: " + template_grid_dir)
     if compose_src_path:
@@ -2215,9 +2207,6 @@ def create_launch_docker_cmd(
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
     print("  - IN-MEMORY WORKERS: " + str(in_mem_workers))
-    if enable_oblv:
-        print("  - OBLV: ", enable_oblv)
-
     print("\n")
 
     use_blob_storage = (
@@ -2255,7 +2244,6 @@ def create_launch_docker_cmd(
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
-        "OBLV_ENABLED": str(enable_oblv).lower(),
         "CREDENTIALS_VOLUME": host_path,
         "NODE_SIDE_TYPE": kwargs["node_side_type"],
         "SINGLE_CONTAINER_MODE": single_container_mode,
