@@ -48,6 +48,34 @@
           "hash": "f66e4e292442ead63521344e4cab7c8e3b3a381ac455b3c99fbe12f669c955fd",
           "action": "add"
         }
+      },
+      "BeachPolicy": {
+        "1": {
+          "version": 1,
+          "hash": "676c7bc600754635dece65de5f0a27bfd12310928ed331f0da2f934e4be10c07",
+          "action": "add"
+        }
+      },
+      "PolicyRule": {
+        "1": {
+          "version": 1,
+          "hash": "f85221837eb2b73c818618e02064dfac0762563e3a10611af7968e2e927be677",
+          "action": "add"
+        }
+      },
+      "Matches": {
+        "1": {
+          "version": 1,
+          "hash": "10c995552f33a05b3ba5ececabca351c22b6f4df23c969a61432af1abc1e3f34",
+          "action": "add"
+        }
+      },
+      "UserOwned": {
+        "1": {
+          "version": 1,
+          "hash": "720e5d94fdc678d990bc3db34493608cdccd64c3dd936c8c357c90087515c55c",
+          "action": "add"
+        }
       }
     }
   }

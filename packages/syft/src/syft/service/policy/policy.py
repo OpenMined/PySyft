@@ -13,7 +13,7 @@ from inspect import Signature
 from io import StringIO
 import sys
 import types
-from typing import Any
+from typing import Any, Optional
 from typing import cast
 
 # third party
@@ -21,6 +21,10 @@ from RestrictedPython import compile_restricted
 from result import Err
 from result import Ok
 from result import Result
+from typing import Type
+
+from syft.service.action.action_permissions import ActionObjectPermission, ActionPermission
+
 
 # relative
 from ...abstract_node import AbstractNode
@@ -32,7 +36,7 @@ from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
@@ -222,6 +226,26 @@ class InputPolicy(Policy):
                 action_object_value.syft_action_data  # noqa: B018
             inputs[var_name] = action_object_value
         return inputs
+    
+
+
+
+def retrieve_item_from_db(id: UID, context: AuthedServiceContext) -> ActionObject:
+    from ...service.action.action_object import TwinMode
+    action_service = context.node.get_service("actionservice")
+    root_context = AuthedServiceContext(
+        node=context.node, credentials=context.node.verify_key
+    )
+    value = action_service._get(
+        context=root_context,
+        uid=id,
+        twin_mode=TwinMode.NONE,
+        has_permission=True,
+    )
+    if value.is_err():
+        return value
+    else:
+        return value.ok()
 
 
 def retrieve_from_db(
@@ -281,11 +305,13 @@ def allowed_ids_only(
             node_id=context.node.id,
             verify_key=context.node.signing_key.verify_key,
         )
+        # this is a dict with all the kwargs for this node
         allowed_inputs = allowed_inputs.get(node_identity, {})
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {}
-        for key in allowed_inputs.values():
-            base_dict.update(key)
+        for node_kwargs in allowed_inputs.values():
+            base_dict.update(node_kwargs)
+        # this is a dict with all the kwargs for this node
         allowed_inputs = base_dict
     else:
         raise Exception(
@@ -332,6 +358,132 @@ class ExactMatch(InputPolicy):
         except Exception as e:
             return Err(str(e))
         return results
+
+    def _is_valid(
+        self,
+        context: AuthedServiceContext,
+        usr_input_kwargs: dict,
+        code_item_id: UID,
+    ) -> Result[bool, str]:
+        filtered_input_kwargs = self.filter_kwargs(
+            kwargs=usr_input_kwargs,
+            context=context,
+            code_item_id=code_item_id,
+        )
+
+        if filtered_input_kwargs.is_err():
+            return filtered_input_kwargs
+
+        filtered_input_kwargs = filtered_input_kwargs.ok()
+
+        expected_input_kwargs = set()
+        for _inp_kwargs in self.inputs.values():
+            for k in _inp_kwargs.keys():
+                if k not in usr_input_kwargs:
+                    return Err(f"Function missing required keyword argument: '{k}'")
+            expected_input_kwargs.update(_inp_kwargs.keys())
+
+        permitted_input_kwargs = list(filtered_input_kwargs.keys())
+        not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
+        if len(not_approved_kwargs) > 0:
+            return Err(
+                f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
+            )
+        return Ok(True)
+
+
+@serializable()
+class PolicyRule(SyftObject):
+    __canonical_name__ = "PolicyRule"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    kw: str
+
+    def is_met(self, context: AuthedServiceContext, action_object: ActionObject) -> bool:
+        return False
+
+
+@serializable()
+class Matches(PolicyRule):
+    __canonical_name__ = "Matches"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    val: UID
+
+    def is_met(self, context: AuthedServiceContext, action_object: ActionObject) -> bool:
+        return action_object.id == self.val
+
+
+
+@serializable()
+class UserOwned(PolicyRule):
+    __canonical_name__ = "UserOwned"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    type: Optional[Type[str] | Type[float] | Type[int]]
+
+    def is_owned(self, context: AuthedServiceContext, action_object: ActionObject) -> bool:
+        action_store = context.node.get_service("actionservice").store
+        return action_store.has_permission(
+            ActionObjectPermission(action_object.id, ActionPermission.OWNER, context.credentials)
+        )
+
+    def is_met(self, context: AuthedServiceContext, action_object: ActionObject) -> bool:
+        print("Checking rule")
+        return type(action_object.syft_action_data) == self.val and self.is_owned(context, action_object)
+        
+
+
+
+def user_code_arg2id(arg):
+    if isinstance(arg, ActionObject):
+        uid = arg.id
+    elif isinstance(arg, TwinObject):
+        uid = arg.id
+    elif isinstance(arg, Asset):
+        uid = arg.action_id
+    else:
+        uid = arg
+    return uid
+
+@serializable()
+class BeachPolicy(InputPolicy):
+    # version
+    __canonical_name__ = "BeachPolicy"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    kwarg_rules: dict[str, PolicyRule]
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        kwarg_rules = {}
+        for kw, arg in kwargs.items():
+            if isinstance(arg, (UID, Asset, ActionObject, TwinObject)):
+                kwarg_rules[kw] = Matches(kw=kw, val=user_code_arg2id(arg))
+            elif arg in [str,float, int]:
+                kwarg_rules[kw] = UserOwned(kw=kw, type=arg)
+            else:
+                raise ValueError("Incorrect argument")
+
+        super().__init__(*args, kwarg_rules=kwarg_rules, init_kwargs={}, **kwargs)
+
+    def filter_kwargs(
+        self,
+        kwargs: dict[str, UID],
+        context: AuthedServiceContext,
+        code_item_id: UID,
+    ) -> Result[dict[Any, Any], str]:
+        try:
+            res = {}
+            for kw, rule in self.kwarg_rules.items():
+                passed_id = kwargs[kw]
+                actionobject: ActionObject = retrieve_item_from_db(passed_id, context)
+                if not rule.is_met(context, actionobject):
+                    raise ValueError(f"{rule} is not met")
+                else:
+                    res[kw] = actionobject.id
+        except Exception as e:
+            return Err(str(e))
+        return Ok(res)
 
     def _is_valid(
         self,
