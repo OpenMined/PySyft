@@ -55,7 +55,7 @@ COPY --chown=$USER_GRP \
 
 # Install all dependencies together here to avoid any version conflicts across pkgs
 RUN --mount=type=cache,id=pip-$UID,target=$HOME/.cache/pip,uid=$UID,gid=$UID,sharing=locked \
-    # pip install --user --default-timeout=300 torch==2.2.2 -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
+    pip install --user --default-timeout=300 torch==2.2.2 && \
     pip install --user pip-autoremove jupyterlab -e ./syft[data_science] && \
     pip-autoremove ansible ansible-core -y
 
