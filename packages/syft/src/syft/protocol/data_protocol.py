@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from collections.abc import MutableMapping
 from collections.abc import MutableSequence
 import hashlib
+import json
 from operator import itemgetter
 import os
 from pathlib import Path
@@ -14,7 +15,6 @@ from typing import Any
 import warnings
 
 # third party
-import orjson
 from packaging.version import parse
 from result import OkErr
 from result import Result
@@ -115,12 +115,12 @@ class DataProtocol:
             "field_data": field_data,
         }
 
-        return hashlib.sha256(orjson.dumps(obj_meta_info)).hexdigest()
+        return hashlib.sha256(json.dumps(obj_meta_info).encode()).hexdigest()
 
     @staticmethod
     def read_json(file_path: Path) -> dict:
         try:
-            return orjson.loads(file_path.read_bytes())
+            return json.loads(file_path.read_text())
         except Exception:
             return {}
 
@@ -145,11 +145,7 @@ class DataProtocol:
                 if version not in history.keys():
                     continue
                 history[version] = {"release_name": file_path.name}
-        self.file_path.write_bytes(
-            orjson.dumps(
-                history, option=orjson.OPT_INDENT_2 | orjson.OPT_APPEND_NEWLINE
-            )
-        )
+        self.file_path.write_text(json.dumps(history, indent=2) + "\n")
 
     @property
     def latest_version(self) -> PROTOCOL_TYPE:
@@ -160,7 +156,7 @@ class DataProtocol:
 
     @staticmethod
     def _hash_to_sha256(obj_dict: dict) -> str:
-        return hashlib.sha256(orjson.dumps(obj_dict)).hexdigest()
+        return hashlib.sha256(json.dumps(obj_dict).encode()).hexdigest()
 
     def build_state(self, stop_key: str | None = None) -> dict:
         sorted_dict = sort_dict_naturally(self.protocol_history)
@@ -378,8 +374,8 @@ class DataProtocol:
         release_file = protocol_release_dir() / release_file_name
 
         # Save the new released version
-        release_file.write_bytes(
-            orjson.dumps({latest_protocol: release_history}, option=orjson.OPT_INDENT_2)
+        release_file.write_text(
+            json.dumps({latest_protocol: release_history}, indent=2)
         )
 
     def validate_release(self) -> None:
@@ -428,11 +424,7 @@ class DataProtocol:
         )
 
         # Save history
-        self.file_path.write_bytes(
-            orjson.dumps(
-                protocol_history, option=orjson.OPT_APPEND_NEWLINE | orjson.OPT_INDENT_2
-            )
-        )
+        self.file_path.write_text(json.dumps(protocol_history, indent=2) + "\n")
 
         # Reload protocol
         self.read_history()
