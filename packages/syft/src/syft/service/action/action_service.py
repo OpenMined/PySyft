@@ -358,12 +358,10 @@ class ActionService(AbstractService):
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
                 exec_result = execute_byte_code(code_item, filtered_kwargs, context)
-                print("BEFORE OUTPUT POLICY:", exec_result.result)
                 if output_policy:
-                    exec_result.result = output_policy.apply_output(
+                    exec_result.result = output_policy.apply_to_output(
                         context, exec_result.result
                     )
-                print("AFTER OUTPUT POLICY:", exec_result.result)
                 code_item.output_policy = output_policy
                 user_code_service.update_code_state(context, code_item)
                 if isinstance(exec_result.result, ActionObject):
@@ -381,7 +379,7 @@ class ActionService(AbstractService):
                     code_item, private_kwargs, context
                 )
                 if output_policy:
-                    private_exec_result.result = output_policy.apply_output(
+                    private_exec_result.result = output_policy.apply_to_output(
                         context, private_exec_result.result
                     )
                 code_item.output_policy = output_policy
@@ -401,7 +399,7 @@ class ActionService(AbstractService):
                         code_item, mock_kwargs, context
                     )
                     if output_policy:
-                        mock_exec_result.result = output_policy.apply_output(
+                        mock_exec_result.result = output_policy.apply_to_output(
                             context, mock_exec_result.result, update_policy=False
                         )
                     mock_exec_result_obj = mock_exec_result.result

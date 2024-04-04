@@ -386,7 +386,7 @@ class OutputPolicy(Policy):
     node_uid: UID | None = None
     output_readers: list[SyftVerifyKey] = []
 
-    def apply_output(
+    def apply_to_output(
         self,
         context: NodeServiceContext,
         outputs: Any,
@@ -486,7 +486,7 @@ recursive_serde_register_type(CustomPolicy)
 
 @serializable()
 class CustomOutputPolicy(metaclass=CustomPolicy):
-    def apply_output(
+    def apply_to_output(
         self,
         context: NodeServiceContext,
         outputs: Any,
@@ -544,7 +544,7 @@ class UserPolicy(Policy):
     def policy_code(self) -> str:
         return self.raw_code
 
-    def apply_output(
+    def apply_to_output(
         self,
         context: NodeServiceContext,
         outputs: Any,
@@ -731,7 +731,7 @@ def process_class_code(raw_code: str, class_name: str) -> str:
 def check_class_code(context: TransformContext) -> TransformContext:
     # TODO: define the proper checking for this case based on the ideas from UserCode
     # check for no globals
-    # check for Policy template -> __init__, apply_output, public_state
+    # check for Policy template -> __init__, apply_to_output, public_state
     # parse init signature
     # check dangerous libraries, maybe compile_restricted already does that
     if context.output is None:

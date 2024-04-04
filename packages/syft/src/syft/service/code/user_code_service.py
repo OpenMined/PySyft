@@ -488,18 +488,6 @@ class UserCodeService(AbstractService):
             else:
                 result_action_object = result_action_object.ok()
 
-            # stdlib
-
-            # print(output_policy, output_policy.__mro__)
-
-            # if output_policy is not None:
-            #     print(type(result_action_object))
-            #     new_outputs = output_policy.apply_output(context, result_action_object)
-            #     result_action_object.syft_action_data_cache = new_outputs
-            #     code.output_policy = output_policy
-            #     # self.stash.update(context.credentials, code, has_permission=True)
-            #     self.update_code_state(context, code)
-
             output_result = action_service.set_result_to_store(
                 result_action_object, context, code.get_output_policy(context)
             )
@@ -513,7 +501,7 @@ class UserCodeService(AbstractService):
             # this currently only works for nested syft_functions
             # and admins executing on high side (TODO, decide if we want to increment counter)
             if not skip_fill_cache and output_policy is not None:
-                res = code.apply_output(
+                res = code.store_as_history(
                     context=context,
                     outputs=result,
                     job_id=context.job_id,
@@ -564,9 +552,9 @@ class UserCodeService(AbstractService):
         return SyftSuccess(message="you have permission")
 
     @service_method(
-        path="code.apply_output", name="apply_output", roles=GUEST_ROLE_LEVEL
+        path="code.store_as_history", name="store_as_history", roles=GUEST_ROLE_LEVEL
     )
-    def apply_output(
+    def store_as_history(
         self,
         context: AuthedServiceContext,
         user_code_id: UID,
@@ -582,7 +570,7 @@ class UserCodeService(AbstractService):
         if not code.get_status(context).approved:
             return SyftError(message="Code is not approved")
 
-        res = code.apply_output(
+        res = code.store_as_history(
             context=context,
             outputs=outputs,
             job_id=job_id,

@@ -843,7 +843,7 @@ class Request(SyncableSyftObject):
                 for inps in code.input_policy.inputs.values():
                     input_ids.update(inps)
 
-            res = api.services.code.apply_output(
+            res = api.services.code.store_as_history(
                 user_code_id=code.id,
                 outputs=result,
                 job_id=job.id,

@@ -535,7 +535,7 @@ class UserCode(SyncableSyftObject):
         output_service = cast(OutputService, node.get_service("outputservice"))
         return output_service.get_by_user_code_id(context, self.id)
 
-    def apply_output(
+    def store_as_history(
         self,
         context: AuthedServiceContext,
         outputs: Any,
