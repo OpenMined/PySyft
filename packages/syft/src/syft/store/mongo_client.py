@@ -236,6 +236,31 @@ class MongoClient:
 
         return Ok(collection_permissions)
 
+    def with_collection_storage_permissions(
+        self, collection_settings: PartitionSettings, store_config: StoreConfig
+    ) -> Result[MongoCollection, Err]:
+        """
+        For each collection, create a corresponding collection
+        that store the permissions to the data in that collection
+        """
+        res = self.with_db(db_name=store_config.db_name)
+        if res.is_err():
+            return res
+        db = res.ok()
+
+        try:
+            collection_storage_permissions_name: str = (
+                collection_settings.name + "_storage_permissions"
+            )
+            storage_permissons_collection = db.get_collection(
+                name=collection_storage_permissions_name,
+                codec_options=SYFT_CODEC_OPTIONS,
+            )
+        except BaseException as e:
+            return Err(str(e))
+
+        return Ok(storage_permissons_collection)
+
     def close(self) -> None:
         self.client.close()
         MongoClientCache.__client_cache__.pop(hash(str(self.config)), None)
