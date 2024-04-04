@@ -111,13 +111,16 @@ class UserCodeService(AbstractService):
         user_code: UserCode = code.to(UserCode, context=context)
         result = self._validate_request_code_execution(context, user_code)
         if isinstance(result, SyftError):
-            # if the validation fails, we should remove the user code status from the stash
-            # to prevent dangling status
+            # if the validation fails, we should remove the user code status
+            # and code version to prevent dangling status
             root_context = AuthedServiceContext(
                 credentials=context.node.verify_key, node=context.node
             )
             _ = context.node.get_service("usercodestatusservice").remove(
                 root_context, user_code.status_link.object_uid
+            )
+            _ = context.node.get_service("codehistoryservice").delete(
+                root_context, user_code.version_link.object_uid
             )
             return result
         result = self._request_code_execution_inner(context, user_code, reason)
