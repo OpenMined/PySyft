@@ -24,7 +24,7 @@ class NodeServiceContext(Context, SyftObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID | None = None  # type: ignore[assignment]
-    node: AbstractNode | None = None
+    node: AbstractNode
 
 
 class AuthedServiceContext(NodeServiceContext):
@@ -48,7 +48,6 @@ class AuthedServiceContext(NodeServiceContext):
         return AuthedServiceContext(credentials=credentials, role=role, node=self.node)
 
     def as_root_context(self) -> Self:
-        self.node = cast(AbstractNode, self.node)
         return AuthedServiceContext(
             credentials=self.node.verify_key, role=ServiceRole.ADMIN, node=self.node
         )
@@ -71,7 +70,7 @@ class UnauthedServiceContext(NodeServiceContext):
     __version__ = SYFT_OBJECT_VERSION_2
 
     login_credentials: UserLoginCredentials
-    node: AbstractNode | None = None
+    node: AbstractNode
     role: ServiceRole = ServiceRole.NONE
 
 
@@ -79,7 +78,7 @@ class ChangeContext(SyftBaseObject):
     __canonical_name__ = "ChangeContext"
     __version__ = SYFT_OBJECT_VERSION_2
 
-    node: AbstractNode | None = None
+    node: AbstractNode
     approving_user_credentials: SyftVerifyKey | None = None
     requesting_user_credentials: SyftVerifyKey | None = None
     extra_kwargs: dict = {}
