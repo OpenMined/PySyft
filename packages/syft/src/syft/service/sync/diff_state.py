@@ -1049,26 +1049,12 @@ It will be available for review again."""
                             for d in batch.get_dependencies(include_roots=True)
                         }
 
-                print(
-                    f"A batch with type {batch.root_type.__name__} "
-                    "was previously ignored but has changed.\n"
-                    "It will be available for review again."
-                )
-                # batch has changed, so unignore
-                batch.decision = None
-                # then we also set the dependent batches to unignore
-                # currently we dont do this recusively
-                required_dependencies = {
-                    d.object_id for d in batch.get_dependencies(include_roots=True)
-                }
-
-                other_batches = [b for b in batches if b is not batch]
-
-                for other_batch in other_batches:
-                    other_batch_root_id = {other_batch.root_id}
-                    # if there is overlap
-                    if len(required_dependencies & other_batch_root_id):
-                        other_batch.decision = None
+                        for other_batch in batches:
+                            if other_batch is not batch:
+                                other_batch_root_id = {other_batch.root_id}
+                                # if there is overlap
+                                if len(required_dependencies & other_batch_root_id):
+                                    other_batch.decision = None
 
     @staticmethod
     def dependencies_from_states(
