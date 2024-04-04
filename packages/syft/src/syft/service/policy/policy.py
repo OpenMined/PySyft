@@ -13,7 +13,7 @@ from inspect import Signature
 from io import StringIO
 import sys
 import types
-from typing import Any, Optional
+from typing import Any
 from typing import cast
 
 # third party
@@ -21,10 +21,6 @@ from RestrictedPython import compile_restricted
 from result import Err
 from result import Ok
 from result import Result
-from typing import Type
-
-from syft.service.action.action_permissions import ActionObjectPermission, ActionPermission
-
 
 # relative
 from ...abstract_node import AbstractNode
@@ -36,7 +32,8 @@ from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
@@ -45,6 +42,8 @@ from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ...util.util import is_interpreter_jupyter
 from ..action.action_object import ActionObject
+from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import ActionPermission
 from ..code.code_parse import GlobalsVisitor
 from ..code.unparse import unparse
 from ..context import AuthedServiceContext
@@ -135,6 +134,7 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
     # relative
     from ...client.api import APIRegistry
     from ...client.api import NodeIdentity
+    from ...client.api import RemoteFunction
     from ...types.twin_object import TwinObject
     from ..action.action_object import ActionObject
 
@@ -147,6 +147,8 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
             uid = v.id
         if isinstance(v, TwinObject):
             uid = v.id
+        if isinstance(v, RemoteFunction):
+            uid = v.custom_function_id()
         if isinstance(v, Asset):
             uid = v.action_id
         if not isinstance(uid, UID):
@@ -168,6 +170,7 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
             raise Exception(f"Input data {k}:{uid} does not belong to any Domain")
 
     return output_kwargs
+
 
 class InputPolicy(Policy):
     __canonical_name__ = "InputPolicy"
@@ -225,12 +228,12 @@ class InputPolicy(Policy):
                 action_object_value.syft_action_data  # noqa: B018
             inputs[var_name] = action_object_value
         return inputs
-    
-
 
 
 def retrieve_item_from_db(id: UID, context: AuthedServiceContext) -> ActionObject:
+    # relative
     from ...service.action.action_object import TwinMode
+
     action_service = context.node.get_service("actionservice")
     root_context = AuthedServiceContext(
         node=context.node, credentials=context.node.verify_key
@@ -398,7 +401,9 @@ class PolicyRule(SyftObject):
 
     kw: str
 
-    def is_met(self, context: AuthedServiceContext, action_object: ActionObject) -> bool:
+    def is_met(
+        self, context: AuthedServiceContext, action_object: ActionObject
+    ) -> bool:
         return False
 
 
@@ -409,9 +414,10 @@ class Matches(PolicyRule):
 
     val: UID
 
-    def is_met(self, context: AuthedServiceContext, action_object: ActionObject) -> bool:
+    def is_met(
+        self, context: AuthedServiceContext, action_object: ActionObject
+    ) -> bool:
         return action_object.id == self.val
-
 
 
 @serializable()
@@ -419,18 +425,24 @@ class UserOwned(PolicyRule):
     __canonical_name__ = "UserOwned"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    type: Optional[Type[str] | Type[float] | Type[int]]
+    type: type[str] | type[float] | type[int] | None
 
-    def is_owned(self, context: AuthedServiceContext, action_object: ActionObject) -> bool:
+    def is_owned(
+        self, context: AuthedServiceContext, action_object: ActionObject
+    ) -> bool:
         action_store = context.node.get_service("actionservice").store
         return action_store.has_permission(
-            ActionObjectPermission(action_object.id, ActionPermission.OWNER, context.credentials)
+            ActionObjectPermission(
+                action_object.id, ActionPermission.OWNER, context.credentials
+            )
         )
 
-    def is_met(self, context: AuthedServiceContext, action_object: ActionObject) -> bool:
-        return type(action_object.syft_action_data) == self.type and self.is_owned(context, action_object)
-        
-
+    def is_met(
+        self, context: AuthedServiceContext, action_object: ActionObject
+    ) -> bool:
+        return type(action_object.syft_action_data) == self.type and self.is_owned(
+            context, action_object
+        )
 
 
 def user_code_arg2id(arg):
@@ -444,6 +456,7 @@ def user_code_arg2id(arg):
         uid = arg
     return uid
 
+
 @serializable()
 class BeachPolicy(InputPolicy):
     # version
@@ -451,7 +464,6 @@ class BeachPolicy(InputPolicy):
     __version__ = SYFT_OBJECT_VERSION_1
 
     kwarg_rules: dict[NodeIdentity, dict[str, PolicyRule]]
-
 
     def __init__(self, init_kwargs=None, *args: Any, **kwargs: Any) -> None:
         if init_kwargs is not None:
@@ -462,15 +474,18 @@ class BeachPolicy(InputPolicy):
             kwarg_rules_current_node = {}
             for kw, arg in kwargs.items():
                 if isinstance(arg, (UID, Asset, ActionObject, TwinObject)):
-                    kwarg_rules_current_node[kw] = Matches(kw=kw, val=user_code_arg2id(arg))
-                elif arg in [str,float, int]:
+                    kwarg_rules_current_node[kw] = Matches(
+                        kw=kw, val=user_code_arg2id(arg)
+                    )
+                elif arg in [str, float, int]:
                     kwarg_rules_current_node[kw] = UserOwned(kw=kw, type=arg)
                 else:
                     raise ValueError("Incorrect argument")
             kwarg_rules = {node_identity: kwarg_rules_current_node}
 
-        super().__init__(*args, kwarg_rules=kwarg_rules, init_kwargs=kwarg_rules, **kwargs)
-
+        super().__init__(
+            *args, kwarg_rules=kwarg_rules, init_kwargs=kwarg_rules, **kwargs
+        )
 
     def find_node_identity(self, kwargs):
         apis = APIRegistry.get_all_api()
@@ -487,7 +502,6 @@ class BeachPolicy(InputPolicy):
             raise ValueError("Problem with policy inputs")
         return matches.pop()
 
-
     def filter_kwargs(
         self,
         kwargs: dict[str, UID],
@@ -499,7 +513,9 @@ class BeachPolicy(InputPolicy):
             for _, rules in self.kwarg_rules.items():
                 for kw, rule in rules.items():
                     passed_id = kwargs[kw]
-                    actionobject: ActionObject = retrieve_item_from_db(passed_id, context)
+                    actionobject: ActionObject = retrieve_item_from_db(
+                        passed_id, context
+                    )
                     if not rule.is_met(context, actionobject):
                         raise ValueError(f"{rule} is not met")
                     else:
@@ -561,10 +577,11 @@ class OutputPolicy(Policy):
     node_uid: UID | None = None
     output_readers: list[SyftVerifyKey] = []
 
-    def apply_output(
+    def apply_to_output(
         self,
         context: NodeServiceContext,
         outputs: Any,
+        update_policy: bool = True,
     ) -> Any:
         # output_uids: Union[Dict[str, Any], list] = filter_only_uids(outputs)
         # if isinstance(output_uids, UID):
@@ -660,10 +677,11 @@ recursive_serde_register_type(CustomPolicy)
 
 @serializable()
 class CustomOutputPolicy(metaclass=CustomPolicy):
-    def apply_output(
+    def apply_to_output(
         self,
         context: NodeServiceContext,
         outputs: Any,
+        update_policy: bool = True,
     ) -> Any | None:
         return outputs
 
@@ -717,10 +735,11 @@ class UserPolicy(Policy):
     def policy_code(self) -> str:
         return self.raw_code
 
-    def apply_output(
+    def apply_to_output(
         self,
         context: NodeServiceContext,
         outputs: Any,
+        update_policy: bool = True,
     ) -> Any | None:
         return outputs
 
@@ -903,7 +922,7 @@ def process_class_code(raw_code: str, class_name: str) -> str:
 def check_class_code(context: TransformContext) -> TransformContext:
     # TODO: define the proper checking for this case based on the ideas from UserCode
     # check for no globals
-    # check for Policy template -> __init__, apply_output, public_state
+    # check for Policy template -> __init__, apply_to_output, public_state
     # parse init signature
     # check dangerous libraries, maybe compile_restricted already does that
     if context.output is None:

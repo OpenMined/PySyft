@@ -25,14 +25,3 @@
    
    
    
-
-
-
-.. rubric:: Modules
-
-.. autosummary::
-   :toctree:
-   :recursive:
-
-   syft.external.oblv
-

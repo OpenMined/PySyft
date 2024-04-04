@@ -54,6 +54,7 @@ from ..job.job_stash import Job
 from ..job.job_stash import JobInfo
 from ..job.job_stash import JobStatus
 from ..notification.notifications import Notification
+from ..policy.policy import UserPolicy
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
@@ -713,6 +714,18 @@ class Request(SyncableSyftObject):
             )
 
         user_code_status_change: UserCodeStatusChange = self.changes[0]
+        code = user_code_status_change.code
+        output_history = code.output_history
+        if isinstance(output_history, SyftError):
+            return output_history
+        output_policy = code.output_policy
+        if isinstance(output_policy, SyftError):
+            return output_policy
+        if isinstance(user_code_status_change.code.output_policy_type, UserPolicy):
+            return SyftError(
+                message="UserCode uses an user-submitted custom policy. Please use .approve()"
+            )
+
         if not user_code_status_change.change_object_is_type(UserCodeStatusCollection):
             raise TypeError(
                 f"accept_by_depositing_result can only be run on {UserCodeStatusCollection} not "
@@ -737,13 +750,6 @@ class Request(SyncableSyftObject):
         if isinstance(permission_request, SyftError):
             return permission_request
 
-        code = user_code_status_change.code
-        output_history = code.output_history
-        if isinstance(output_history, SyftError):
-            return output_history
-        output_policy = code.output_policy
-        if isinstance(output_policy, SyftError):
-            return output_policy
         job = self._get_latest_or_create_job()
         if isinstance(job, SyftError):
             return job
@@ -843,7 +849,7 @@ class Request(SyncableSyftObject):
                 for inps in code.input_policy.inputs.values():
                     input_ids.update(inps)
 
-            res = api.services.code.apply_output(
+            res = api.services.code.store_as_history(
                 user_code_id=code.id,
                 outputs=result,
                 job_id=job.id,

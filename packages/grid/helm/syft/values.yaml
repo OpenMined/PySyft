@@ -105,11 +105,6 @@ node:
     username: apikey
     password: password
 
-  # Oblivious settings
-  oblv:
-    enabled: false
-    port: 3030
-
   # Extra environment vars
   env: null
 
@@ -145,20 +140,3 @@ ingress:
   # ----------------------------------------
   class: null
   className: null
-
-# ----------------------------------------
-# For Veilid Core Debug Logs
-# serverFlags: "--debug"
-# ----------------------------------------
-veilid:
-  enabled: false
-  serverFlags: null
-  appLogLevel: "info"
-  uvicornLogLevel: "info"
-
-  # Extra environment vars
-  env: null
-
-  # Pod Resource Limits
-  resourcesPreset: nano
-  resources: null
