@@ -49,13 +49,6 @@
           "action": "add"
         }
       },
-      "BeachPolicy": {
-        "1": {
-          "version": 1,
-          "hash": "676c7bc600754635dece65de5f0a27bfd12310928ed331f0da2f934e4be10c07",
-          "action": "add"
-        }
-      },
       "PolicyRule": {
         "1": {
           "version": 1,
@@ -74,6 +67,13 @@
         "1": {
           "version": 1,
           "hash": "720e5d94fdc678d990bc3db34493608cdccd64c3dd936c8c357c90087515c55c",
+          "action": "add"
+        }
+      },
+      "BeachPolicy": {
+        "1": {
+          "version": 1,
+          "hash": "4acc084860218c548fb015bb98d28106a56d1e94c34b3a1794a9198596504c36",
           "action": "add"
         }
       }

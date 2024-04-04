@@ -169,7 +169,6 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
 
     return output_kwargs
 
-
 class InputPolicy(Policy):
     __canonical_name__ = "InputPolicy"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -430,7 +429,7 @@ class UserOwned(PolicyRule):
 
     def is_met(self, context: AuthedServiceContext, action_object: ActionObject) -> bool:
         print("Checking rule")
-        return type(action_object.syft_action_data) == self.val and self.is_owned(context, action_object)
+        return type(action_object.syft_action_data) == self.type and self.is_owned(context, action_object)
         
 
 
@@ -452,19 +451,43 @@ class BeachPolicy(InputPolicy):
     __canonical_name__ = "BeachPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    kwarg_rules: dict[str, PolicyRule]
+    kwarg_rules: dict[NodeIdentity, dict[str, PolicyRule]]
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        kwarg_rules = {}
-        for kw, arg in kwargs.items():
-            if isinstance(arg, (UID, Asset, ActionObject, TwinObject)):
-                kwarg_rules[kw] = Matches(kw=kw, val=user_code_arg2id(arg))
-            elif arg in [str,float, int]:
-                kwarg_rules[kw] = UserOwned(kw=kw, type=arg)
-            else:
-                raise ValueError("Incorrect argument")
 
-        super().__init__(*args, kwarg_rules=kwarg_rules, init_kwargs={}, **kwargs)
+    def __init__(self, init_kwargs=None, *args: Any, **kwargs: Any) -> None:
+        if init_kwargs is not None:
+            kwarg_rules = init_kwargs
+            kwargs = {}
+        else:
+            node_identity = self.find_node_identity(kwargs)
+            kwarg_rules_current_node = {}
+            for kw, arg in kwargs.items():
+                if isinstance(arg, (UID, Asset, ActionObject, TwinObject)):
+                    kwarg_rules_current_node[kw] = Matches(kw=kw, val=user_code_arg2id(arg))
+                elif arg in [str,float, int]:
+                    kwarg_rules_current_node[kw] = UserOwned(kw=kw, type=arg)
+                else:
+                    raise ValueError("Incorrect argument")
+            kwarg_rules = {node_identity: kwarg_rules_current_node}
+
+        super().__init__(*args, kwarg_rules=kwarg_rules, init_kwargs=kwarg_rules, **kwargs)
+
+
+    def find_node_identity(self, kwargs):
+        apis = APIRegistry.get_all_api()
+        matches = set()
+        for val in kwargs.values():
+            if isinstance(val, (UID, Asset, ActionObject, TwinObject)):
+                id = user_code_arg2id(val)
+                for api in apis:
+                    if api.services.action.exists(id):
+                        matches.add(NodeIdentity.from_api(api))
+        if len(matches) == 0:
+            raise ValueError("Problem with policy inputs")
+        if len(matches) > 1:
+            raise ValueError("Problem with policy inputs")
+        return matches.pop()
+
 
     def filter_kwargs(
         self,
@@ -474,13 +497,14 @@ class BeachPolicy(InputPolicy):
     ) -> Result[dict[Any, Any], str]:
         try:
             res = {}
-            for kw, rule in self.kwarg_rules.items():
-                passed_id = kwargs[kw]
-                actionobject: ActionObject = retrieve_item_from_db(passed_id, context)
-                if not rule.is_met(context, actionobject):
-                    raise ValueError(f"{rule} is not met")
-                else:
-                    res[kw] = actionobject.id
+            for _, rules in self.kwarg_rules.items():
+                for kw, rule in rules.items():
+                    passed_id = kwargs[kw]
+                    actionobject: ActionObject = retrieve_item_from_db(passed_id, context)
+                    if not rule.is_met(context, actionobject):
+                        raise ValueError(f"{rule} is not met")
+                    else:
+                        res[kw] = actionobject
         except Exception as e:
             return Err(str(e))
         return Ok(res)
