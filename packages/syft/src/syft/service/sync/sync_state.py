@@ -75,7 +75,8 @@ class SyncView(SyftObject):
         elif isinstance(self.object, Request):
             code = self.object.code
             statusses = list(code.status.status_dict.values())
-            assert len(statusses) == 1
+            if len(statusses) != 1:
+                raise ValueError("Request code should have exactly one status")
             status_tuple = statusses[0]
             status, _ = status_tuple
             return status.value
