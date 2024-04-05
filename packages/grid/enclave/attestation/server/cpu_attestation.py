@@ -18,3 +18,15 @@ def attest_cpu() -> str:
         return "True"
 
     return "False"
+
+
+def get_cpu_token() -> str:
+    # Fetch token from Micrsoft Attestation library
+    cpu_token = subprocess.run(
+        ["/app/AttestationClient", "-o token"], capture_output=True, text=True
+    )
+    logger.debug(f"Stdout: {cpu_token.stdout}")
+    logger.debug(f"Stderr: {cpu_token.stderr}")
+
+    logger.info("Attestation Token Return Code: {}", cpu_token.returncode)
+    return cpu_token.stdout

@@ -1,10 +1,21 @@
+# stdlib
+from collections.abc import Callable
+
+# third party
+import requests
+
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ..context import AuthedServiceContext
+from ..response import SyftError
+from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from .attestation_endpoints import ATTESTATION_SERVICE_URL
+from .attestation_endpoints import ATTEST_CPU_ENDPOINT
+from .attestation_endpoints import ATTEST_GPU_ENDPOINT
 
 
 @serializable()
@@ -14,10 +25,36 @@ class AttestationService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
 
+    def perform_request(
+        self, method: Callable, endpoint: str, raw: bool = False
+    ) -> SyftSuccess | SyftError | str:
+        try:
+            response = method(f"{ATTESTATION_SERVICE_URL}{endpoint}")
+            response.raise_for_status()
+            message = response.json().get("result")
+            raw_token = response.json().get("token")
+            return raw_token if raw else SyftSuccess(message=message)
+        except requests.HTTPError:
+            return SyftError(message=f"{response.json()['detail']}")
+        except requests.RequestException as e:
+            return SyftError(message=f"Failed to perform request. {e}")
+
     @service_method(
-        path="attestation.get_attestation",
-        name="get_attestation",
+        path="attestation.get_cpu_attestation",
+        name="get_cpu_attestation",
         roles=GUEST_ROLE_LEVEL,
     )
-    def get_attestation(self, context: AuthedServiceContext) -> str:
-        return "Checking attestation end point"
+    def get_cpu_attestation(
+        self, context: AuthedServiceContext, raw_token: bool = False
+    ) -> str | SyftError | SyftSuccess:
+        return self.perform_request(requests.get, ATTEST_CPU_ENDPOINT, raw_token)
+
+    @service_method(
+        path="attestation.get_gpu_attestation",
+        name="get_gpu_attestation",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def get_gpu_attestation(
+        self, context: AuthedServiceContext, raw_token: bool = False
+    ) -> str | SyftError | SyftSuccess:
+        return self.perform_request(requests.get, ATTEST_GPU_ENDPOINT, raw_token)
