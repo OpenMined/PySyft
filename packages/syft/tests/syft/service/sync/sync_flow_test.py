@@ -104,7 +104,7 @@ def test_sync_flow():
     compute_mean.code = dedent(compute_mean.code)
 
     res = client_low_ds.code.request_code_execution(compute_mean)
-
+    res = client_low_ds.code.request_code_execution(compute_mean)
     print(res)
     print("LOW CODE:", low_client.code.get_all())
 
@@ -701,7 +701,6 @@ def test_sync_flow_no_sharing():
         return data.mean()
 
     compute_mean.code = dedent(compute_mean.code)
-
     res = client_low_ds.code.request_code_execution(compute_mean)
     print(res)
     print("LOW CODE:", low_client.code.get_all())
