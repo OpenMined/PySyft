@@ -910,6 +910,12 @@ class SyftClient:
         return None
 
     @property
+    def custom_api(self) -> APIModule | None:
+        if self.api.has_service("api"):
+            return self.api.services.api
+        return None
+
+    @property
     def numpy(self) -> APIModule | None:
         if self.api.has_lib("numpy"):
             return self.api.lib.numpy
