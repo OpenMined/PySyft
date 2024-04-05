@@ -1,0 +1,19 @@
+{{- if .Values.attestation.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: attestation
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: attestation
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "common.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: attestation
+  ports:
+    - name: python-server
+      protocol: TCP
+      port: 4455
+      targetPort: 4455
+{{ end }}

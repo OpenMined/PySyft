@@ -1,0 +1,61 @@
+{{- if .Values.attestation.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: attestation
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: attestation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: attestation
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+        app.kubernetes.io/component: attestation
+    spec:
+      containers:
+        - name: attestation-container
+          image: {{ .Values.global.registry }}/openmined/grid-attestation:{{ .Values.global.version }}
+          imagePullPolicy: Always
+          resources: {{ include "common.resources.set" (dict "resources" .Values.attestation.resources "preset" .Values.attestation.resourcesPreset) | nindent 12 }}
+
+          env:
+            - name: UVICORN_LOG_LEVEL
+              value: {{ .Values.attestation.uvicornLogLevel }}
+            - name: APP_LOG_LEVEL
+              value: {{ .Values.attestation.appLogLevel }}
+            {{- if .Values.attestation.serverFlags }}
+            - name: ATTESTATION_FLAGS
+              value: {{ .Values.attestation.serverFlags | quote }}
+            {{- end }}
+            {{- if .Values.attestation.env }}
+            {{- toYaml .Values.attestation.env | nindent 12 }}
+            {{- end }}
+
+          ports:
+            - name: attestation-api
+              containerPort: 4455
+          startupProbe:
+            httpGet:
+              path: /?probe=startupProbe
+              port: attestation-api
+            failureThreshold: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /?probe=livenessProbe
+              port: attestation-api
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe: null
+      terminationGracePeriodSeconds: 5
+
+{{ end }}
