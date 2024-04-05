@@ -705,6 +705,7 @@ class NetworkService(AbstractService):
         peer: NodePeer,
         route: NodeRoute,
         priority: int | None = None,
+        called_by_peer: bool = False,
     ) -> SyftSuccess | SyftError:
         """
         Ask the peer (the "remote node") to update the priority of the given route
@@ -733,11 +734,15 @@ class NetworkService(AbstractService):
         result = remote_client.api.services.network.update_route_priority(
             peer=self_node_peer,
             route=route,
+            priority=priority,
+            called_by_peer=True,
         )
         return result
 
     @service_method(
-        path="network.update_route_priority_for", name="update_route_priority_for"
+        path="network.update_route_priority",
+        name="update_route_priority",
+        roles=GUEST_ROLE_LEVEL,
     )
     def update_route_priority(
         self,
@@ -745,10 +750,10 @@ class NetworkService(AbstractService):
         peer: NodePeer,
         route: NodeRoute,
         priority: int | None = None,
+        called_by_peer: bool = False,
     ) -> SyftSuccess | SyftError:
         """
-        Updates a route's priority for the given peer. Called from a remote node
-        (represented by 'peer')
+        Updates a route's priority for the given peer
 
         Args:
             context (AuthedServiceContext): The authentication context for the service.
@@ -760,6 +765,13 @@ class NetworkService(AbstractService):
         Returns:
             SyftSuccess | SyftError: Successful / Error response
         """
+        if called_by_peer and peer.verify_key != context.credentials:
+            return SyftError(
+                message=(
+                    f"The {type(peer).__name__}.verify_key: "
+                    f"{peer.verify_key} does not match the signature of the message"
+                )
+            )
         context.node = cast(AbstractNode, context.node)
         # update the route's priority for the peer
         updated_node_route: NodeRouteType | SyftError = (
