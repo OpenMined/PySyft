@@ -2,10 +2,8 @@
 from __future__ import annotations
 
 # stdlib
-from collections.abc import (
-    Iterable,  # import directly from collections for Python < 3.3
-)
 from collections.abc import Callable
+from collections.abc import Iterable
 from enum import Enum
 import inspect
 from io import BytesIO
