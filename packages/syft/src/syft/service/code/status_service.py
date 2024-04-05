@@ -15,7 +15,6 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftError
-from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
@@ -88,16 +87,6 @@ class UserCodeStatusService(AbstractService):
     ) -> list[UserCodeStatusCollection] | SyftError:
         """Get all user code item statuses"""
         result = self.stash.get_all(context.credentials)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
-
-    @service_method(path="code_status.remove", name="remove", roles=ADMIN_ROLE_LEVEL)
-    def remove(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
-        """Remove a user code item status"""
-        result = self.stash.delete_by_uid(context.credentials, uid=uid)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
