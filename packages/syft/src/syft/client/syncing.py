@@ -16,7 +16,6 @@ from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.diff_state import SyncInstruction
 from ..service.sync.resolve_widget import ResolveWidget
 from ..service.sync.sync_state import SyncState
-from .client import SyftClient
 from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
 
@@ -42,10 +41,6 @@ def compare_states(state1: SyncState, state2: SyncState) -> NodeDiff:
     return NodeDiff.from_sync_state(
         low_state=low_state, high_state=high_state, direction=direction
     )
-
-
-def compare_clients(low_client: SyftClient, high_client: SyftClient) -> NodeDiff:
-    return compare_states(low_client.get_sync_state(), high_client.get_sync_state())
 
 
 def get_user_input_for_resolve() -> SyncDecision:
