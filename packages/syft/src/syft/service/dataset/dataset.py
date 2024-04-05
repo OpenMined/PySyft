@@ -33,8 +33,8 @@ from ...util import options
 from ...util.colors import ON_SURFACE_HIGHEST
 from ...util.colors import SURFACE
 from ...util.colors import SURFACE_SURFACE
+from ...util.fonts import FONT_CSS
 from ...util.fonts import ITABLES_CSS
-from ...util.fonts import fonts_css
 from ...util.markdown import as_markdown_python_code
 from ...util.notebook_ui.notebook_addons import FOLDER_ICON
 from ...util.util import get_mb_size
@@ -182,7 +182,7 @@ class Asset(SyftObject):
 
         return f"""
             <style>
-            {fonts_css}
+            {FONT_CSS}
             .syft-asset {{color: {SURFACE[options.color_theme]};}}
             .syft-asset h3,
             .syft-asset p
@@ -491,7 +491,7 @@ class Dataset(SyftObject):
         description_text: str = self.description.text if self.description else ""
         return f"""
             <style>
-            {fonts_css}
+            {FONT_CSS}
             .syft-dataset {{color: {SURFACE[options.color_theme]};}}
             .syft-dataset h3,
             .syft-dataset p

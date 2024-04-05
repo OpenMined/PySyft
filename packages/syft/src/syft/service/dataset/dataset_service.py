@@ -128,9 +128,7 @@ class DatasetService(AbstractService):
             datasets=datasets, page_size=page_size, page_index=page_index
         )
 
-    @service_method(
-        path="dataset.search", name="search", roles=DATA_SCIENTIST_ROLE_LEVEL
-    )
+    @service_method(path="dataset.search", name="search", roles=GUEST_ROLE_LEVEL)
     def search(
         self,
         context: AuthedServiceContext,
@@ -201,8 +199,9 @@ class DatasetService(AbstractService):
         return []
 
     @service_method(
-        path="dataset.delete_by_id",
-        name="dataset_delete_by_id",
+        path="dataset.delete_by_uid",
+        name="delete_by_uid",
+        roles=DATA_OWNER_ROLE_LEVEL,
         warning=HighSideCRUDWarning(confirmation=True),
     )
     def delete_dataset(
