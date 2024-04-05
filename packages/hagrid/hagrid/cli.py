@@ -393,11 +393,6 @@ def clean(location: str) -> None:
     help="Turn off auto health checks post node launch",
 )
 @click.option(
-    "--oblv",
-    is_flag=True,
-    help="Installs Oblivious CLI tool",
-)
-@click.option(
     "--set-root-email",
     default=None,
     required=False,
@@ -1309,8 +1304,6 @@ def create_launch_cmd(
     headless = bool(kwargs["headless"])
     parsed_kwargs["headless"] = headless
 
-    parsed_kwargs["oblv"] = bool(kwargs["oblv"])
-
     parsed_kwargs["tls"] = bool(kwargs["tls"])
     parsed_kwargs["test"] = bool(kwargs["test"])
     parsed_kwargs["dev"] = bool(kwargs["dev"])
@@ -2189,15 +2182,31 @@ def create_launch_docker_cmd(
             **kwargs,
         )
 
+    default_env = f"{template_grid_dir}/default.env"
+    if not os.path.exists(default_env):
+        # old path
+        default_env = f"{template_grid_dir}/.env"
+    default_envs = {}
+    with open(default_env) as f:
+        for line in f.readlines():
+            if "=" in line:
+                parts = line.strip().split("=")
+                key = parts[0]
+                value = ""
+                if len(parts) > 1:
+                    value = parts[1]
+                default_envs[key] = value
+
     single_container_mode = kwargs["deployment_type"] == "single_container"
     in_mem_workers = kwargs.get("in_mem_workers")
     smtp_username = kwargs.get("smtp_username")
     smtp_sender = kwargs.get("smtp_sender")
     smtp_password = kwargs.get("smtp_password")
     smtp_port = kwargs.get("smtp_port")
+    if smtp_port is None or smtp_port == "":
+        smtp_port = int(default_envs["SMTP_PORT"])
     smtp_host = kwargs.get("smtp_host")
 
-    enable_oblv = bool(kwargs["oblv"])
     print("  - NAME: " + str(snake_name))
     print("  - TEMPLATE DIR: " + template_grid_dir)
     if compose_src_path:
@@ -2215,9 +2224,6 @@ def create_launch_docker_cmd(
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
     print("  - IN-MEMORY WORKERS: " + str(in_mem_workers))
-    if enable_oblv:
-        print("  - OBLV: ", enable_oblv)
-
     print("\n")
 
     use_blob_storage = (
@@ -2255,7 +2261,6 @@ def create_launch_docker_cmd(
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
-        "OBLV_ENABLED": str(enable_oblv).lower(),
         "CREDENTIALS_VOLUME": host_path,
         "NODE_SIDE_TYPE": kwargs["node_side_type"],
         "SINGLE_CONTAINER_MODE": single_container_mode,
@@ -2349,20 +2354,6 @@ def create_launch_docker_cmd(
     # new docker compose regression work around
     # default_env = os.path.expanduser("~/.hagrid/app/.env")
 
-    default_env = f"{template_grid_dir}/default.env"
-    if not os.path.exists(default_env):
-        # old path
-        default_env = f"{template_grid_dir}/.env"
-    default_envs = {}
-    with open(default_env) as f:
-        for line in f.readlines():
-            if "=" in line:
-                parts = line.strip().split("=")
-                key = parts[0]
-                value = ""
-                if len(parts) > 1:
-                    value = parts[1]
-                default_envs[key] = value
     default_envs.update(envs)
 
     # env file path

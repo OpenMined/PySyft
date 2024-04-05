@@ -9,7 +9,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...client.enclave_client import EnclaveClient
 from ...serde.serializable import serializable
@@ -144,8 +143,6 @@ class UserCodeService(AbstractService):
                 message="The code to be submitted (name and content) already exists"
             )
 
-        context.node = cast(AbstractNode, context.node)
-
         worker_pool_service = context.node.get_service("SyftWorkerPoolService")
         pool_result = worker_pool_service._get_worker_pool(
             context,
@@ -228,7 +225,11 @@ class UserCodeService(AbstractService):
             return user_code
         return SyftError(message=result.err())
 
-    @service_method(path="code.get_all_for_user", name="get_all_for_user")
+    @service_method(
+        path="code.get_all_for_user",
+        name="get_all_for_user",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
     def get_all_for_user(
         self, context: AuthedServiceContext
     ) -> SyftSuccess | SyftError:
@@ -242,6 +243,7 @@ class UserCodeService(AbstractService):
     def update_code_state(
         self, context: AuthedServiceContext, code_item: UserCode
     ) -> SyftSuccess | SyftError:
+        context = context.as_root_context()
         result = self.stash.update(context.credentials, code_item)
         if result.is_ok():
             return SyftSuccess(message="Code State Updated")
@@ -257,7 +259,6 @@ class UserCodeService(AbstractService):
     def get_results(
         self, context: AuthedServiceContext, inp: UID | UserCode
     ) -> list[UserCode] | SyftError:
-        context.node = cast(AbstractNode, context.node)
         uid = inp.id if isinstance(inp, UserCode) else inp
         code_result = self.stash.get_by_uid(context.credentials, uid=uid)
 
@@ -335,7 +336,7 @@ class UserCodeService(AbstractService):
     ) -> bool | SyftError:
         if context.role == ServiceRole.ADMIN:
             return True
-        context.node = cast(AbstractNode, context.node)
+
         user_service = context.node.get_service("userservice")
         current_user = user_service.get_current_user(context=context)
         return current_user.mock_execution_permission
@@ -344,7 +345,6 @@ class UserCodeService(AbstractService):
         self, kwargs: dict[str, Any], context: AuthedServiceContext
     ) -> dict[str, Any] | SyftError:
         """Return only the kwargs that are owned by the user"""
-        context.node = cast(AbstractNode, context.node)
 
         action_service = context.node.get_service("actionservice")
 
@@ -469,7 +469,6 @@ class UserCodeService(AbstractService):
                     return can_execute.to_result()  # type: ignore
 
             # Execute the code item
-            context.node = cast(AbstractNode, context.node)
 
             action_service = context.node.get_service("actionservice")
 
@@ -496,7 +495,7 @@ class UserCodeService(AbstractService):
             # this currently only works for nested syft_functions
             # and admins executing on high side (TODO, decide if we want to increment counter)
             if not skip_fill_cache and output_policy is not None:
-                res = code.apply_output(
+                res = code.store_as_history(
                     context=context,
                     outputs=result,
                     job_id=context.job_id,
@@ -504,6 +503,12 @@ class UserCodeService(AbstractService):
                 )
                 if isinstance(res, SyftError):
                     return Err(res.message)
+
+            # output_policy.update_policy(context, result)
+            # code.output_policy = output_policy
+            # res = self.update_code_state(context, code)
+            # print(res)
+
             has_result_read_permission = context.extra_kwargs.get(
                 "has_result_read_permission", False
             )
@@ -530,7 +535,6 @@ class UserCodeService(AbstractService):
     def has_code_permission(
         self, code_item: UserCode, context: AuthedServiceContext
     ) -> SyftSuccess | SyftError:
-        context.node = cast(AbstractNode, context.node)
         if not (
             context.credentials == context.node.verify_key
             or context.credentials == code_item.user_verify_key
@@ -541,9 +545,9 @@ class UserCodeService(AbstractService):
         return SyftSuccess(message="you have permission")
 
     @service_method(
-        path="code.apply_output", name="apply_output", roles=GUEST_ROLE_LEVEL
+        path="code.store_as_history", name="store_as_history", roles=GUEST_ROLE_LEVEL
     )
-    def apply_output(
+    def store_as_history(
         self,
         context: AuthedServiceContext,
         user_code_id: UID,
@@ -559,7 +563,7 @@ class UserCodeService(AbstractService):
         if not code.get_status(context).approved:
             return SyftError(message="Code is not approved")
 
-        res = code.apply_output(
+        res = code.store_as_history(
             context=context,
             outputs=outputs,
             job_id=job_id,

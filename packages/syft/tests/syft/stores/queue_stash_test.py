@@ -1,5 +1,6 @@
 # stdlib
 from threading import Thread
+import time
 from typing import Any
 
 # third party
@@ -328,6 +329,7 @@ def helper_queue_update_threading(root_verify_key, create_queue_cbk) -> None:
     repeats = 5
 
     queue = create_queue_cbk()
+    time.sleep(1)
 
     obj = mock_queue_object()
     queue.set(root_verify_key, obj, ignore_duplicates=False)
