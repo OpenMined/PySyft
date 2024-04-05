@@ -52,6 +52,7 @@ from .service.api.api import private_api_endpoint  # noqa: F401
 from .service.code.user_code import UserCodeStatus  # noqa: F401; noqa: F401
 from .service.code.user_code import syft_function  # noqa: F401; noqa: F401
 from .service.code.user_code import syft_function_single_use  # noqa: F401; noqa: F401
+from .service.code.user_code import syft_function_string  # noqa: F401; noqa: F401
 from .service.data_subject import DataSubjectCreate as DataSubject  # noqa: F401
 from .service.dataset.dataset import Contributor  # noqa: F401
 from .service.dataset.dataset import CreateAsset as Asset  # noqa: F401
@@ -61,6 +62,7 @@ from .service.policy.policy import CustomInputPolicy  # noqa: F401
 from .service.policy.policy import CustomOutputPolicy  # noqa: F401
 from .service.policy.policy import ExactMatch  # noqa: F401
 from .service.policy.policy import MixedInputPolicy  # noqa: F401
+from .service.policy.policy import OutputPolicyExecuteCount  # noqa: F401
 from .service.policy.policy import SingleExecutionExactOutput  # noqa: F401
 from .service.policy.policy import UserInputPolicy  # noqa: F401
 from .service.policy.policy import UserOutputPolicy  # noqa: F401

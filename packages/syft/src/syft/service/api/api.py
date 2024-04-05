@@ -6,6 +6,7 @@ from inspect import Signature
 import keyword
 import re
 from typing import Any
+from typing import Self
 from typing import cast
 
 # third party
@@ -18,8 +19,12 @@ from result import Result
 
 # relative
 from ...abstract_node import AbstractNode
+from ...client.api import APIRegistry
+from ...client.api import NodeIdentity
+from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
+from ...service.user.user_service import UserService
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -46,6 +51,7 @@ class TwinAPIAuthedContext(AuthedServiceContext):
     settings: dict[str, Any] | None = None
     code: HelperFunctionSet | None = None
     state: dict[Any, Any] | None = None
+    client: SyftClient | None = None
 
 
 def get_signature(func: Callable) -> Signature:
@@ -146,6 +152,28 @@ class Endpoint(SyftObject):
 
     def update_state(self, state: dict[Any, Any]) -> None:
         self.state = state
+
+    def private(self) -> Self:
+        return PrivateAPIEndpoint(
+            api_code=self.api_code,
+            func_name=self.func_name,
+            settings=self.settings,
+            view_access=self.view_access,
+            helper_functions=self.helper_functions,
+            state=self.state,
+            signature=self.signature,
+        )
+
+    def public(self) -> Self:
+        return PublicAPIEndpoint(
+            api_code=self.api_code,
+            func_name=self.func_name,
+            settings=self.settings,
+            view_access=self.view_access,
+            helper_functions=self.helper_functions,
+            state=self.state,
+            signature=self.signature,
+        )
 
 
 @serializable()
@@ -350,6 +378,18 @@ class TwinAPIEndpoint(SyftObject):
             # load it
             exec(raw_byte_code)  # nosec
 
+            # get a user client
+            guest_client = context.node.get_guest_client()
+            user_client = guest_client
+            signing_key_for_verify_key = context.node.get_service_method(
+                UserService.signing_key_for_verify_key
+            )
+            private_key = signing_key_for_verify_key(
+                context=context, verify_key=context.credentials
+            )
+            signing_key = private_key.signing_key
+            user_client.credentials = signing_key
+
             internal_context = TwinAPIAuthedContext(
                 credentials=context.credentials,
                 role=context.role,
@@ -361,10 +401,31 @@ class TwinAPIEndpoint(SyftObject):
                 settings=code.settings or {},
                 code=helper_function_set,
                 state=code.state or {},
+                client=user_client,
             )
             # execute it
+
+            # TODO: Beach Fix
+            # this means admin code doesn't need to manually set NodeIdenity for
+            # client calls, hopefully we can remove NodeIdentity soon
+            node_identity = NodeIdentity.from_node(context.node)
+
+            # TODO: Beach Fix
+            # we shouldnt need this when NodeIdentity is gone
+            APIRegistry.set_api_for(
+                node_uid=node_identity.node_id,
+                user_verify_key=context.credentials,
+                api=user_client.api,
+            )
+
             evil_string = f"{code.func_name}(*args, **kwargs,context=internal_context)"
             result = eval(evil_string, None, locals())  # nosec
+
+            # TODO: Beach Fix
+            # clean up APIRegistry
+            APIRegistry.remove_api_for(
+                node_uid=node_identity.node_id, user_verify_key=context.credentials
+            )
 
             # Update code context state
             code.update_state(internal_context.state)
@@ -377,7 +438,7 @@ class TwinAPIEndpoint(SyftObject):
 
             api_service = context.node.get_service("apiservice")
             upsert_result = api_service.stash.upsert(
-                context.node.get_service("userservice").admin_verify_key(), self
+                context.node.get_service(UserService).admin_verify_key(), self
             )
 
             if upsert_result.is_err():

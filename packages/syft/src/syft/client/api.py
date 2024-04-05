@@ -87,6 +87,21 @@ class APIRegistry:
         cls.__api_registry__[key] = api
 
     @classmethod
+    def remove_api_for(
+        cls,
+        node_uid: UID | str,
+        user_verify_key: SyftVerifyKey | str,
+    ) -> None:
+        if isinstance(node_uid, str):
+            node_uid = UID.from_string(node_uid)
+
+        if isinstance(user_verify_key, str):
+            user_verify_key = SyftVerifyKey.from_string(user_verify_key)
+
+        key = (node_uid, user_verify_key)
+        cls.__api_registry__.pop(key, None)
+
+    @classmethod
     def api_for(cls, node_uid: UID, user_verify_key: SyftVerifyKey) -> SyftAPI | None:
         key = (node_uid, user_verify_key)
         return cls.__api_registry__.get(key, None)
@@ -1109,6 +1124,24 @@ class NodeIdentity(Identity):
         return f"NodeIdentity <name={self.node_name}, id={self.node_id.short()}, 🔑={str(self.verify_key)[0:8]}>"
 
 
+def type_for_string(type_str: str) -> type:
+    if type_str == "str":
+        return str
+    elif type_str == "int":
+        return int
+    elif type_str == "float":
+        return float
+    elif type_str == "bool":
+        return bool
+    elif type_str == "list":
+        return list
+    elif type_str == "tuple":
+        return tuple
+    elif type_str == "dict":
+        return dict
+    raise
+
+
 def validate_callable_args_and_kwargs(
     args: list, kwargs: dict, signature: Signature
 ) -> tuple[list, dict] | SyftError:
@@ -1123,9 +1156,23 @@ def validate_callable_args_and_kwargs(
                 )
             param = signature.parameters[key]
             if isinstance(param.annotation, str):
-                # 🟡 TODO 21: make this work for weird string type situations
-                # happens when from __future__ import annotations in a class file
-                t = index_syft_by_module_name(param.annotation)
+                # TODO: Beach Fix
+                # the string evaluation of the signature in syft_function_string for
+                # custom API Endpoints means we get these kinds of types as strings
+                # we should probably fix it in both areas
+                # also this code should handle weird generic types like list[str], or Any
+                if param.annotation in [
+                    "str",
+                    "int",
+                    "float",
+                    "bool",
+                    "list",
+                    "tuple",
+                    "dict",
+                ]:
+                    t = type_for_string(param.annotation)
+                else:
+                    t = index_syft_by_module_name(param.annotation)
             else:
                 t = param.annotation
             msg = None

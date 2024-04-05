@@ -13,6 +13,7 @@ import inspect
 from io import StringIO
 import itertools
 import random
+import re
 import sys
 from threading import Thread
 import time
@@ -927,6 +928,48 @@ def syft_function_single_use(
         output_policy=SingleExecutionExactOutput(),
         share_results_with_owners=share_results_with_owners,
         worker_pool_name=worker_pool_name,
+    )
+
+
+# works inside other functions where the @syft_function decorator inspect.getsource
+# will fail with source code not available
+def syft_function_string(
+    input_policy: InputPolicy | UID | None = None,
+    output_policy: OutputPolicy | UID | None = None,
+    raw_code: str = "",
+) -> SubmitUserCode:
+    function_name_search = re.search(r"def (\w+)\(", raw_code)
+    func_name = function_name_search.group(1) if function_name_search else None
+    exec(raw_code)
+    f = eval(func_name)
+
+    if input_policy is None:
+        input_policy = EmpyInputPolicy()
+
+    if isinstance(input_policy, CustomInputPolicy):
+        input_policy_type = SubmitUserPolicy.from_obj(input_policy)
+    else:
+        input_policy_type = type(input_policy)
+
+    if output_policy is None:
+        output_policy = SingleExecutionExactOutput()
+
+    if isinstance(output_policy, CustomOutputPolicy):
+        output_policy_type = SubmitUserPolicy.from_obj(output_policy)
+    else:
+        output_policy_type = type(output_policy)
+
+    return SubmitUserCode(
+        code=raw_code,
+        func_name=func_name,
+        signature=inspect.signature(f),
+        input_policy_type=input_policy_type,
+        input_policy_init_kwargs=getattr(input_policy, "init_kwargs", {}),
+        output_policy_type=output_policy_type,
+        output_policy_init_kwargs=getattr(output_policy, "init_kwargs", {}),
+        local_function=f,
+        input_kwargs=f.__code__.co_varnames[: f.__code__.co_argcount],
+        worker_pool_name=None,
     )
 
 
