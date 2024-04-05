@@ -185,7 +185,8 @@ class BaseTwinAPIEndpoint(SyftObject):
     def validate_path(cls, path: str) -> str:
         # TODO: Check path doesn't collide with system endpoints
 
-        if not re.match(r"^[a-z]+(\.[a-z]+)*$", path):
+        if not re.match(r"^[a-z_]+(\.[a-z_]+)*$", path):
+            print("got path?", path)
             raise ValueError('String must be a path-like string (e.g., "new.endpoint")')
 
         return path

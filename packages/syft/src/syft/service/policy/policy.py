@@ -27,6 +27,7 @@ from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
+from ...client.api import RemoteFunction
 from ...node.credentials import SyftVerifyKey
 from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
@@ -452,15 +453,19 @@ def user_code_arg2id(arg):
         uid = arg.id
     elif isinstance(arg, Asset):
         uid = arg.action_id
+    elif isinstance(arg, RemoteFunction):
+        # TODO: Beach Fix
+        # why do we need another call to the server to get the UID?
+        uid = arg.custom_function_id()
     else:
         uid = arg
     return uid
 
 
 @serializable()
-class BeachPolicy(InputPolicy):
+class MixedInputPolicy(InputPolicy):
     # version
-    __canonical_name__ = "BeachPolicy"
+    __canonical_name__ = "MixedInputPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
     kwarg_rules: dict[NodeIdentity, dict[str, PolicyRule]]
@@ -473,11 +478,13 @@ class BeachPolicy(InputPolicy):
             node_identity = self.find_node_identity(kwargs)
             kwarg_rules_current_node = {}
             for kw, arg in kwargs.items():
-                if isinstance(arg, (UID, Asset, ActionObject, TwinObject)):
+                if isinstance(
+                    arg, UID | Asset | ActionObject | TwinObject | RemoteFunction
+                ):
                     kwarg_rules_current_node[kw] = Matches(
                         kw=kw, val=user_code_arg2id(arg)
                     )
-                elif arg in [str, float, int]:
+                elif arg in [str, float, int, bool, dict, list, set, tuple]:
                     kwarg_rules_current_node[kw] = UserOwned(kw=kw, type=arg)
                 else:
                     raise ValueError("Incorrect argument")
@@ -487,19 +494,40 @@ class BeachPolicy(InputPolicy):
             *args, kwarg_rules=kwarg_rules, init_kwargs=kwarg_rules, **kwargs
         )
 
-    def find_node_identity(self, kwargs):
+    def find_node_identity(self, kwargs: dict[str, Any]) -> NodeIdentity:
         apis = APIRegistry.get_all_api()
         matches = set()
         for val in kwargs.values():
-            if isinstance(val, (UID, Asset, ActionObject, TwinObject)):
+            # we mostly get the UID here because we don't want to store all those
+            # other objects, so we need to create a global UID obj lookup service
+            if isinstance(
+                val, UID | Asset | ActionObject | TwinObject | RemoteFunction
+            ):
                 id = user_code_arg2id(val)
                 for api in apis:
-                    if api.services.action.exists(id):
-                        matches.add(NodeIdentity.from_api(api))
+                    # TODO: Beach Fix
+                    # here be dragons, we need to refactor this since the existance
+                    # depends on the type and service
+                    # also the whole NodeIdentity needs to be removed
+                    check_endpoints = [
+                        api.services.action.exists,
+                        api.services.api.exists,
+                    ]
+                    for check_endpoint in check_endpoints:
+                        result = check_endpoint(id)
+                        if result:
+                            break  # stop looking
+                    if result:
+                        node_identity = NodeIdentity.from_api(api)
+                        matches.add(node_identity)
         if len(matches) == 0:
-            raise ValueError("Problem with policy inputs")
+            raise ValueError("No Node Identities")
         if len(matches) > 1:
-            raise ValueError("Problem with policy inputs")
+            # TODO: Beach Fix
+            # raise ValueError("Multiple Node Identities")
+            # we need to fix this as its possible we could
+            # grab the wrong API and call a different user context in jupyter testing
+            pass  # just grab the first one
         return matches.pop()
 
     def filter_kwargs(

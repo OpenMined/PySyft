@@ -272,10 +272,7 @@ class APIService(AbstractService):
             result = custom_endpoint.exec_private_function(context, *args, **kwargs)
         return result
 
-    @service_method(
-        path="api.exists",
-        name="exists",
-    )
+    @service_method(path="api.exists", name="exists", roles=GUEST_ROLE_LEVEL)
     def exists(
         self, context: AuthedServiceContext, uid: UID
     ) -> SyftSuccess | SyftError:

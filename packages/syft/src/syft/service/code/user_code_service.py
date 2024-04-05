@@ -6,6 +6,7 @@ from typing import cast
 # third party
 from result import Err
 from result import Ok
+from result import OkErr
 from result import Result
 
 # relative
@@ -32,6 +33,7 @@ from ..request.request import UserCodeStatusChange
 from ..request.request_service import RequestService
 from ..response import SyftError
 from ..response import SyftNotReady
+from ..response import SyftResponseMessage
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -400,6 +402,11 @@ class UserCodeService(AbstractService):
 
             # Set Permissions
             if self.is_execution_on_owned_args(kwargs, context):
+                # TODO: Beach Fix
+                # why is this mock permission check being called because the user is
+                # submitting their own vars?
+                # we need user onwed vars for input policies, this should be different
+                # to mock permission which is not storing vars but executing jobs
                 if self.is_execution_on_owned_args_allowed(context):
                     context.has_execute_permissions = True
                 else:
@@ -436,7 +443,19 @@ class UserCodeService(AbstractService):
                         return Err(
                             "Execution denied: Your code is waiting for approval"
                         )
-                    if not (is_valid := output_policy._is_valid(context)):  # type: ignore
+                    # TODO: Beach Fix
+                    # why were we treating a bool as a Result or SyftSuccess/SyftError
+                    # in the below code?
+                    is_valid = output_policy._is_valid(context)
+                    if isinstance(is_valid, OkErr):
+                        if is_valid.is_ok():
+                            is_valid_bool = bool(is_valid.ok())
+                        else:
+                            is_valid_bool = False
+                    else:
+                        is_valid_bool = bool(is_valid)
+
+                    if not is_valid_bool:  # type: ignore
                         if len(output_history) > 0 and not skip_read_cache:
                             last_executed_output = output_history[-1]
                             # Check if the inputs of the last executed output match
@@ -452,8 +471,16 @@ class UserCodeService(AbstractService):
                                     usr_input_kwargs=kwarg2id,
                                     code_item_id=code.id,
                                 )
-                                if inp_policy_validation.is_err():
+                                if (
+                                    isinstance(inp_policy_validation, OkErr)
+                                    and inp_policy_validation.is_err()
+                                ):
                                     return inp_policy_validation
+                                elif (
+                                    isinstance(inp_policy_validation, bool)
+                                    and not inp_policy_validation
+                                ):
+                                    return Err("Input Policy not valid.")
 
                             result: Result[ActionObject, str] = resolve_outputs(
                                 context=context,
@@ -463,15 +490,36 @@ class UserCodeService(AbstractService):
                                 return result
 
                             res = delist_if_single(result.ok())
+                            # TODO: Beach Fix
+                            # why does the is_valid sometimes have a .message type?
+                            message = (
+                                "No Error"
+                                if not hasattr(is_valid, "message")
+                                else is_valid.message
+                            )
                             return Ok(
                                 CachedSyftObject(
                                     result=res,
-                                    error_msg=is_valid.message,
+                                    error_msg=message,
                                 )
                             )
                         else:
-                            return cast(Err, is_valid.to_result())
-                    return can_execute.to_result()  # type: ignore
+                            # TODO: Beach Fix
+                            # we need to set some consistent signature interfaces
+                            # so we don't have to juggle between
+                            # - bool
+                            # - Result[bool]
+                            # - SyftResponseMessage[SyftError]
+
+                            if isinstance(is_valid, SyftError):
+                                return cast(Err, is_valid.to_result())
+                            return Err("Output Policy not valid.")
+                    # TODO: Beach Fix
+                    # can execute is a variety of SyftResponseMessage types of which
+                    # only SyftError has a to_result() method
+                    if isinstance(can_execute, SyftResponseMessage):
+                        return Err(can_execute.message)
+                    return Err("Bad things are happening.")
 
             # Execute the code item
             context.node = cast(AbstractNode, context.node)
