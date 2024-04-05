@@ -133,7 +133,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip uv==0.1.18 bump2version tox tox-uv==1.5.1
+          pip install --upgrade pip uv==0.1.28 bump2version tox tox-uv==1.5.1
           uv --version
 
       - name: Get Release tag
@@ -165,7 +165,6 @@ jobs:
             echo "short_release_platform=arm64" >> $GITHUB_OUTPUT
           fi
           echo "grid_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
-          echo "seaweedfs_version=$(grep 'SEAWEEDFS_VERSION' packages/grid/default.env | cut -d '=' -f2)" >> $GITHUB_OUTPUT
 
       # TODO: Optimize redundant bump protocol version checks
       - name: Check and Bump Protocol Version
@@ -239,8 +238,6 @@ jobs:
           context: ./packages/grid/seaweedfs
           file: ./packages/grid/seaweedfs/seaweedfs.dockerfile
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
-          build-args: |
-            SEAWEEDFS_VERSION=${{ steps.release_metadata.outputs.seaweedfs_version }}
           outputs: type=image,name=openmined/grid-seaweedfs,push-by-digest=true,name-canonical=true,push=true
           cache-from: type=registry,ref=openmined/grid-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform }}
           cache-to: type=registry,ref=openmined/grid-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
@@ -345,6 +342,7 @@ jobs:
 
     outputs:
       syft_version: ${{ steps.release_checks.outputs.syft_version }}
+      release_platform: ${{ github.event.inputs.release_platform }}
 
     steps:
       - name: Permission to home directory
@@ -370,7 +368,7 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          pip install --upgrade pip uv==0.1.18 tox tox-uv==1.5.1 setuptools wheel twine bump2version PyYAML
+          pip install --upgrade pip uv==0.1.28 tox tox-uv==1.5.1 setuptools wheel twine bump2version PyYAML
           uv --version
 
       - name: Bump the Version
@@ -563,3 +561,4 @@ jobs:
     uses: OpenMined/PySyft/.github/workflows/cd-post-release-tests.yml@dev
     with:
       syft_version: ${{ needs.deploy-syft.outputs.syft_version }}
+      release_platform: ${{ github.event.inputs.release_platform}}

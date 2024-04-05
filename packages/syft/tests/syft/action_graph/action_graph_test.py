@@ -142,7 +142,7 @@ def test_node_action_data_update() -> None:
     assert len(node_action_data_update.to_dict(exclude_empty=True)) == 1
     assert (
         node_action_data_update.to_dict(exclude_empty=False)
-        == node_action_data_update.dict()
+        == node_action_data_update.to_dict()
     )
 
 

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 # stdlib
 from concurrent import futures
+import json
+import os
 from typing import Any
 
 # third party
@@ -22,20 +24,48 @@ from .client import SyftClient as Client
 NETWORK_REGISTRY_URL = (
     "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/gateways.json"
 )
+
 NETWORK_REGISTRY_REPO = "https://github.com/OpenMined/NetworkRegistry"
+
+
+def _get_all_networks(network_json: dict, version: str) -> list[dict]:
+    return network_json.get(version, {}).get("gateways", [])
 
 
 class NetworkRegistry:
     def __init__(self) -> None:
         self.all_networks: list[dict] = []
+
         try:
-            response = requests.get(NETWORK_REGISTRY_URL)  # nosec
-            network_json = response.json()
-            self.all_networks = network_json["2.0.0"]["gateways"]
+            network_json = self.load_network_registry_json()
+            self.all_networks = _get_all_networks(
+                network_json=network_json, version="2.0.0"
+            )
+        except Exception as e:
+            warning(
+                f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. Exception: {e}"
+            )
+
+    @staticmethod
+    def load_network_registry_json() -> dict:
+        try:
+            # Get the environment variable
+            network_registry_json = os.getenv("NETWORK_REGISTRY_JSON")
+            # If the environment variable exists, use it
+            if network_registry_json is not None:
+                network_json: dict = json.loads(network_registry_json)
+            else:
+                # Load the network registry from the NETWORK_REGISTRY_URL
+                response = requests.get(NETWORK_REGISTRY_URL, timeout=10)  # nosec
+                network_json = response.json()
+
+            return network_json
+
         except Exception as e:
             warning(
                 f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
             )
+            return {}
 
     @property
     def online_networks(self) -> list[dict]:
@@ -83,22 +113,18 @@ class NetworkRegistry:
                 executor.map(lambda network: check_network(network), networks)
             )
 
-        online_networks = []
-        for each in _online_networks:
-            if each is not None:
-                online_networks.append(each)
-        return online_networks
+        return [network for network in _online_networks if network is not None]
 
     def _repr_html_(self) -> str:
         on = self.online_networks
         if len(on) == 0:
-            return "(no gateways online - try syft.gateways.all_gateways to see offline gateways)"
+            return "(no gateways online - try syft.gateways.all_networks to see offline gateways)"
         return pd.DataFrame(on)._repr_html_()  # type: ignore
 
     def __repr__(self) -> str:
         on = self.online_networks
         if len(on) == 0:
-            return "(no gateways online - try syft.gateways.all_gateways to see offline gateways)"
+            return "(no gateways online - try syft.gateways.all_networks to see offline gateways)"
         return pd.DataFrame(on).to_string()
 
     @staticmethod
@@ -131,15 +157,24 @@ class NetworkRegistry:
 class DomainRegistry:
     def __init__(self) -> None:
         self.all_networks: list[dict] = []
-        self.all_domains: list = []
+        self.all_domains: dict[str, NodePeer] = {}
         try:
-            response = requests.get(NETWORK_REGISTRY_URL)  # nosec
-            network_json = response.json()
-            self.all_networks = network_json["2.0.0"]["gateways"]
+            network_json = NetworkRegistry.load_network_registry_json()
+            self.all_networks = _get_all_networks(
+                network_json=network_json, version="2.0.0"
+            )
+            self._get_all_domains()
         except Exception as e:
             warning(
                 f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
             )
+
+    def _get_all_domains(self) -> None:
+        for network in self.all_networks:
+            network_client = NetworkRegistry.create_client(network)
+            domains: list[NodePeer] = network_client.domains.retrieve_nodes()
+            for domain in domains:
+                self.all_domains[str(domain.id)] = domain
 
     @property
     def online_networks(self) -> list[dict]:
@@ -178,6 +213,7 @@ class DomainRegistry:
                     except Exception:
                         network["version"] = "unknown"
                 return network
+
             return None
 
         # We can use a with statement to ensure threads are cleaned up promptly
@@ -187,11 +223,7 @@ class DomainRegistry:
                 executor.map(lambda network: check_network(network), networks)
             )
 
-        online_networks = []
-        for each in _online_networks:
-            if each is not None:
-                online_networks.append(each)
-        return online_networks
+        return [network for network in _online_networks if network is not None]
 
     @property
     def online_domains(self) -> list[tuple[NodePeer, NodeMetadataJSON | None]]:
@@ -202,37 +234,33 @@ class DomainRegistry:
                 guest_client = peer.guest_client
                 metadata = guest_client.metadata
                 return peer, metadata
-            except Exception:  # nosec
-                pass
+            except Exception as e:  # nosec
+                print(f"Error in checking domain with exception {e}")
             return None
 
         networks = self.online_networks
 
-        self.all_domains = []
         # We can use a with statement to ensure threads are cleaned up promptly
         with futures.ThreadPoolExecutor(max_workers=20) as executor:
             # map
             _all_online_domains = []
             for network in networks:
                 network_client = NetworkRegistry.create_client(network)
-                domains = network_client.domains
-                self.all_domains += domains
+                domains: list[NodePeer] = network_client.domains.retrieve_nodes()
+                for domain in domains:
+                    self.all_domains[str(domain.id)] = domain
                 _online_domains = list(
                     executor.map(lambda domain: check_domain(domain), domains)
                 )
                 _all_online_domains += _online_domains
 
-        online_domains = []
-        for each in _all_online_domains:
-            if each is not None:
-                online_domains.append(each)
-        return online_domains
+        return [domain for domain in _all_online_domains if domain is not None]
 
     def __make_dict__(self) -> list[dict[str, Any]]:
         on = self.online_domains
-        domains = []
-        domain_dict: dict[str, Any] = {}
+        domains: list[dict[str, Any]] = []
         for domain, metadata in on:
+            domain_dict: dict[str, Any] = {}
             domain_dict["name"] = domain.name
             if metadata is not None:
                 domain_dict["organization"] = metadata.organization
@@ -245,16 +273,17 @@ class DomainRegistry:
             domain_dict["port"] = route.port if route else "-"
             domain_dict["id"] = domain.id
             domains.append(domain_dict)
+
         return domains
 
     def _repr_html_(self) -> str:
-        on = self.__make_dict__()
+        on: list[dict[str, Any]] = self.__make_dict__()
         if len(on) == 0:
             return "(no domains online - try syft.domains.all_domains to see offline domains)"
         return pd.DataFrame(on)._repr_html_()  # type: ignore
 
     def __repr__(self) -> str:
-        on = self.__make_dict__()
+        on: list[dict[str, Any]] = self.__make_dict__()
         if len(on) == 0:
             return "(no domains online - try syft.domains.all_domains to see offline domains)"
         return pd.DataFrame(on).to_string()

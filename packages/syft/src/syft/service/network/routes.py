@@ -5,7 +5,6 @@ from __future__ import annotations
 import secrets
 from typing import Any
 from typing import TYPE_CHECKING
-from typing import cast
 
 # third party
 from typing_extensions import Self
@@ -39,8 +38,6 @@ class NodeRoute:
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
             return client_type
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
         return client_type(connection=connection, credentials=context.node.signing_key)
 
     def validate_with_context(self, context: AuthedServiceContext) -> NodePeer:
@@ -59,7 +56,6 @@ class NodeRoute:
             return challenge_signature
 
         try:
-            context.node = cast(AbstractNode, context.node)
             # Verifying if the challenge is valid
             context.node.verify_key.verify_key.verify(
                 random_challenge, challenge_signature
