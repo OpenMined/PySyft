@@ -43,6 +43,7 @@ from ..service.action.action_store import ActionStore
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
+from ..service.api.api_service import APIService
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.status_service import UserCodeStatusService
 from ..service.code.user_code_service import UserCodeService
@@ -855,6 +856,7 @@ class Node(AbstractNode):
             {"svc": RequestService},
             {"svc": QueueService},
             {"svc": JobService},
+            {"svc": APIService},
             {"svc": DataSubjectService},
             {"svc": NetworkService},
             {"svc": PolicyService},

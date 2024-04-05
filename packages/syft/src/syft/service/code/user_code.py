@@ -56,6 +56,7 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
+from ..action.action_endpoint import CustomEndpointActionObject
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
@@ -1443,6 +1444,10 @@ def execute_byte_code(
 
         if code_item.uses_domain:
             kwargs["domain"] = LocalDomainClient()
+
+        for k, v in kwargs.items():
+            if isinstance(v, CustomEndpointActionObject):
+                kwargs[k] = v.add_context(context=context)
 
         stdout = StringIO()
         stderr = StringIO()
