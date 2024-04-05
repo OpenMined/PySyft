@@ -5,6 +5,7 @@ from typing import Any
 # third party
 from result import Ok
 from result import Result
+from syft.service.action.action_endpoint import CustomEndpointActionObject
 
 # relative
 from ...client.api import NodeIdentity
@@ -262,6 +263,7 @@ class SyncService(AbstractService):
             if isinstance(items, SyftError):
                 return items
             all_items.extend(items)
+        
 
         # NOTE we only need action objects from outputs for now
         action_object_ids = set()
@@ -272,6 +274,10 @@ class SyncService(AbstractService):
                 if isinstance(obj.result, ActionObject):
                     obj.result = obj.result.as_empty()
                 action_object_ids.add(obj.result.id)
+
+        custom_endpoint_ids = [x.id for x in context.node.get_service("actionservice").store.data.values()
+                               if isinstance(x, CustomEndpointActionObject)]
+        action_object_ids |= set(custom_endpoint_ids)
 
         for uid in action_object_ids:
             action_object = context.node.get_service("actionservice").get(
