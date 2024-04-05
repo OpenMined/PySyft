@@ -12,7 +12,7 @@ from ..service.response import SyftError
 from ..service.response import SyftException
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
-from ..util.fonts import fonts_css
+from ..util.fonts import FONT_CSS
 from .client import SyftClient
 
 
@@ -105,7 +105,7 @@ class GatewayClient(SyftClient):
 
         return f"""
         <style>
-            {fonts_css}
+            {FONT_CSS}
 
             .syft-container {{
                 padding: 5px;
