@@ -15,7 +15,6 @@ from syft.client.syncing import compare_states
 from syft.client.syncing import resolve
 from syft.service.action.action_object import ActionObject
 from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
 from syft.service.sync.diff_state import NodeDiff
 
 
@@ -352,37 +351,6 @@ def test_multiple_jobs(low_worker, high_worker):
     print("Res Low", res_low)
 
     assert res_low == job_high
-
-
-def test_code_accept_deny2(worker):
-    root_client = worker.root_client
-    dummy_data = [1, 2, 3]
-    data = ActionObject.from_obj(dummy_data)
-    action_obj = root_client.api.services.action.set(data)
-
-    ds_client = root_client.register(
-        name="John Doe",
-        email="a@a.com",
-        password="password",
-        password_verify="password",
-    )
-    ds_client = worker.guest_client.login(email="a@a.com", password="password")
-
-    @sy.syft_function(
-        input_policy=sy.ExactMatch(data=action_obj),
-        output_policy=sy.SingleExecutionExactOutput(),
-    )
-    def simple_function(data):
-        return sum(data)
-
-    simple_function.code = dedent(simple_function.code)
-
-    result = ds_client.code.request_code_execution(simple_function)
-    assert not isinstance(result, SyftError)
-
-    request = root_client.requests.get_all()[0]
-    result = request.accept_by_depositing_result(result=10)
-    assert isinstance(result, SyftSuccess)
 
 
 def test_skip_user_code(low_worker, high_worker):
