@@ -5,10 +5,8 @@ from __future__ import annotations
 from enum import Enum
 from enum import auto
 from typing import Any
-from typing import cast
 
 # relative
-from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -59,7 +57,6 @@ class CustomEndpointActionObject(SyftObject):
         self, call_mode: EXECUTION_MODE, *args: Any, **kwargs: Any
     ) -> Any:
         self.context = self.__check_context()
-        self.context.node = cast(AbstractNode, self.context.node)
         endpoint_service = self.context.node.get_service("apiservice")
 
         if call_mode == EXECUTION_MODE.MOCK:
