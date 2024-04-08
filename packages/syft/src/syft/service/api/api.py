@@ -367,7 +367,6 @@ class TwinAPIEndpoint(SyftObject):
 
             # Update code context state
             code.update_state(internal_context.state)
-            context.node = cast(AbstractNode, context.node)
 
             if isinstance(code, PublicAPIEndpoint):
                 self.mock_function = code

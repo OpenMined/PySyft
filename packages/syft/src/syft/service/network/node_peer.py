@@ -200,7 +200,6 @@ class NodePeer(SyftObject):
             )
         if isinstance(client_type, SyftError):
             return Err(client_type.message)
-
         return Ok(
             client_type(connection=connection, credentials=context.node.signing_key)
         )

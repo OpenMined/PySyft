@@ -1,7 +1,6 @@
 # stdlib
 import importlib
 from typing import Any
-from typing import cast
 
 # third party
 import numpy as np
@@ -10,7 +9,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.datetime import DateTime
@@ -59,7 +57,7 @@ class ActionService(AbstractService):
         if not isinstance(data, np.ndarray):
             data = np.array(data)
         # cast here since we are sure that AuthedServiceContext has a node
-        context.node = cast(AbstractNode, context.node)
+
         np_obj = NumpyArrayObject(
             dtype=data.dtype,
             shape=data.shape,
@@ -127,7 +125,7 @@ class ActionService(AbstractService):
                     action_object = action_object.private
                 else:
                     action_object = action_object.mock
-            context.node = cast(AbstractNode, context.node)
+
             action_object.syft_point_to(context.node.id)
             return Ok(action_object)
         return result.err()
@@ -267,7 +265,7 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> Result[ActionObjectPointer, str]:
         """Get a pointer from the action store"""
-        context.node = cast(AbstractNode, context.node)
+
         result = self.store.get_pointer(
             uid=uid, credentials=context.credentials, node_uid=context.node.id
         )
@@ -443,7 +441,7 @@ class ActionService(AbstractService):
             output_readers = []
 
         read_permission = ActionPermission.READ
-        context.node = cast(AbstractNode, context.node)
+
         result_action_object._set_obj_location_(
             context.node.id,
             context.credentials,
@@ -659,7 +657,6 @@ class ActionService(AbstractService):
         # relative
         from .plan import Plan
 
-        context.node = cast(AbstractNode, context.node)
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)
             # print(action.create_object, "already in blob storage")
