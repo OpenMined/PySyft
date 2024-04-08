@@ -168,6 +168,10 @@ class DomainClient(SyftClient):
     #     else:
     #         return {}
 
+    def refresh(self) -> None:
+        if self._api and self._api.refresh_api_callback:
+            self._api.refresh_api_callback()
+
     def get_sync_state(self) -> SyncState | SyftError:
         state: SyncState = self.api.services.sync._get_state()
         if isinstance(state, SyftError):

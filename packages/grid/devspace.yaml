@@ -25,14 +25,15 @@ vars:
   DEVSPACE_ENV_FILE: "default.env"
   CONTAINER_REGISTRY: "docker.io"
   NODE_NAME: "mynode"
-  VERSION: "0.8.7-beta.0"
+  VERSION: "0.8.7-beta.1"
+  PLATFORM: $(uname -m | grep -q 'arm64' && echo "arm64" || echo "amd64")
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
 images:
   backend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}"
-    buildKit: {}
+    buildKit: { args: ["--platform", "linux/${PLATFORM}"] }
     dockerfile: ./backend/backend.dockerfile
     context: ../
     tags:
@@ -40,7 +41,8 @@ images:
   frontend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
     buildKit:
-      args: ["--target", "grid-ui-production"]
+      args:
+        ["--target", "grid-ui-production", "--platform", "linux/${PLATFORM}"]
     dockerfile: ./frontend/frontend.dockerfile
     target: "grid-ui-production"
     context: ./frontend

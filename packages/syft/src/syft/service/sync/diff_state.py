@@ -313,16 +313,14 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         # relative
         from .resolve_widget import DiffStatus
 
-        obj_low = self.low_obj
-        obj_high = self.high_obj
-        if obj_low is not None:
-            repr_attrs = getattr(obj_low, "__repr_attrs__", [])
-        else:
-            repr_attrs = getattr(obj_high, "__repr_attrs__", [])
+        low_attrs = self.repr_attr_dict("low")
+        high_attrs = self.repr_attr_dict("high")
+        all_attrs = set(low_attrs.keys()) | set(high_attrs.keys())
+
         res = {}
-        for attr in repr_attrs:
-            value_low = getattr(obj_low, attr, None)
-            value_high = getattr(obj_high, attr, None)
+        for attr in all_attrs:
+            value_low = low_attrs.get(attr, None)
+            value_high = high_attrs.get(attr, None)
 
             if value_low is None or value_high is None:
                 res[attr] = DiffStatus.NEW
@@ -334,6 +332,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
     def repr_attr_dict(self, side: str) -> dict[str, Any]:
         obj = self.low_obj if side == "low" else self.high_obj
+        if isinstance(obj, ActionObject):
+            return {"value": obj.syft_action_data_cache}
         repr_attrs = getattr(obj, "__repr_attrs__", [])
         res = {}
         for attr in repr_attrs:
