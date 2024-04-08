@@ -4,20 +4,20 @@ FROM chrislusf/seaweedfs:${SEAWEEDFS_VERSION}_large_disk
 WORKDIR /root/swfs
 
 RUN apk update && \
-    apk add --no-cache python3 py3-pip curl
+    apk add --no-cache python3 py3-pip curl openssl envsubst
 
 COPY ./requirements.txt .
 
 RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
 
-RUN mkdir -p /data/master/ /data/vol/blob/ /data/vol/idx/ ~/.seaweedfs/ && \
+RUN mkdir -p /data/master/ /data/vol/blob/ /data/vol/idx/ && \
     ulimit -n 10240
 
 COPY ./scripts ./scripts
 COPY ./src ./src
-COPY ./config/supervisord.conf ./config/automount.yaml .
-COPY ./config/filer.toml /etc/seaweedfs/filer.toml
-COPY ./config/master.toml /etc/seaweedfs/master.toml
+COPY ./config/app/ .
+COPY ./config/seaweedfs/ /etc/seaweedfs/
+COPY ./config/s3config.template.json /etc/secrets/
 
 ENV \
     # master
@@ -33,9 +33,7 @@ ENV \
     SWFS_VOLUME_INDEX="leveldb" \
     SWFS_VOLUME_UPLOAD_LIMIT_MB="0" \
     SWFS_VOLUME_DOWNLOAD_LIMIT_MB="0" \
-    # s3
-    S3_CONFIG_PATH="/home/root/.seaweedfs/s3_config.json" \
-    S3_ROOT_USER="admin" \
+    SWFS_UNCACHE_MINAGE="86400" \
     # mount api
     MOUNT_API_PORT="4001" \
     UVICORN_LOG_LEVEL="info"

@@ -56,8 +56,14 @@ seaweedfs:
   # Mount API
   mountApi:
     port: 4001
-    # automount.yaml
-    autoMountConfig: null
+
+    # automount:
+    #   - local_bucket: test-bucket
+    #     remote_bucket:
+    #       type: gcs
+    #       bucket_name: test-bucket
+    #       creds: /etc/secrets/gcs_creds.json
+    automount: null
 
   # Extra environment vars
   env: null

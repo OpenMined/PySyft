@@ -21,10 +21,10 @@ data:
     # End filer config
   {{- end }}
 
-  {{- if .Values.seaweedfs.mountApi.autoMountConfig }}
+  {{- if .Values.seaweedfs.mountApi.mounts }}
   automount.yaml: |
     # User provisioned automount config
-    {{ .Values.seaweedfs.mountApi.autoMountConfig | nindent 4 }}
+    mounts: {{ toYaml .Values.seaweedfs.mountApi.mounts | nindent 6 }}
     # End automount config
   {{- end }}
 

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 LOCAL_BUCKET_PATH = "/buckets"
 
 # Supervisord "include" path
-MOUNT_CONF_DIR = Path("/data/mounts/")
+SUPERVISORD_CONF_DIR = Path("/data/mounts/")
 
 
 VALID_MOUNT_CREDENTIAL_KEYS = {
@@ -42,7 +42,7 @@ VALID_MOUNT_CREDENTIAL_KEYS = {
 
 def mount_bucket(
     opts: MountOptions,
-    conf_dir: Path = MOUNT_CONF_DIR,
+    conf_dir: Path = SUPERVISORD_CONF_DIR,
     overwrite: bool = False,
 ) -> dict:
     """Mount a remote bucket in seaweedfs"""

@@ -9,8 +9,8 @@ from ..mount import mount_bucket
 from ..mount_options import MountOptions
 
 AUTOMOUNT_CONFIG_FILE = Path("./automount.yaml")
-AUTOMOUNT_SUPERVISORD_DIR = Path(Path.home(), ".mount")
-AUTOMOUNT_SUPERVISORD_DIR.mkdir(parents=True, exist_ok=True)
+SUPERVISORD_CONF_DIR = Path("/etc/mounts/")
+SUPERVISORD_CONF_DIR.mkdir(mode=0o600, parents=True, exist_ok=True)
 
 
 def automount(config_path: Path) -> None:
@@ -23,7 +23,7 @@ def automount(config_path: Path) -> None:
         print(
             f"Mounting type={mount_opts.remote_bucket} bucket={mount_opts.remote_bucket.bucket_name}"
         )
-        mount_bucket(mount_opts, conf_dir=AUTOMOUNT_SUPERVISORD_DIR, overwrite=True)
+        mount_bucket(mount_opts, conf_dir=SUPERVISORD_CONF_DIR, overwrite=True)
 
 
 if __name__ == "__main__":

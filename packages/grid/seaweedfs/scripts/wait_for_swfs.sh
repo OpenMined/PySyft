@@ -10,5 +10,3 @@ FILER_URL="localhost:8888"
 curl --silent $RETRY_ARGS http://$MASTER_URL/cluster/healthz > /dev/null
 curl --silent $RETRY_ARGS http://$MASTER_URL/vol/status > /dev/null
 curl --silent $RETRY_ARGS http://$FILER_URL/ > /dev/null
-
-echo "SWFS is ready"

@@ -47,27 +47,41 @@ spec:
             - mountPath: /data/
               name: seaweedfs-data
               readOnly: false
-            {{- if .Values.seaweedfs.filer.config -}}
-            # filer conf
-            - mountPath: /root/swfs/filer.toml
+
+            {{- if .Values.seaweedfs.filer.config }}
+            # filer conf in $HOME/.seaweedfs/
+            - mountPath: /root/.seaweedfs/filer.toml
               subPath: filer.toml
               name: seaweedfs-config
-              readOnly: false
+              readOnly: true
             {{- end }}
-            {{- if .Values.seaweedfs.master.config -}}
-            # filer conf
-            - mountPath: /root/swfs/master.toml
+
+            {{- if .Values.seaweedfs.master.config }}
+            # filer conf in $HOME/.seaweedfs/
+            - mountPath: /root/.seaweedfs/master.toml
               subPath: master.toml
               name: seaweedfs-config
-              readOnly: false
+              readOnly: true
             {{- end }}
-            {{- if .Values.seaweedfs.mountApi.autoMountConfig -}}
+
+            {{- if .Values.seaweedfs.mountApi.mounts }}
             # automount config
             - mountPath: /root/swfs/automount.yaml
               subPath: automount.yaml
               name: seaweedfs-config
-              readOnly: false
+              readOnly: true
             {{- end }}
+
+            {{- if .Values.seaweedfs.secret.mountCredentials }}
+            # mount credentials to /run/secrets/
+            {{- range $obj := $.Values.seaweedfs.secret.mountCredentials }}
+            - mountPath: /run/secrets/{{ $obj.name }}
+              subPath: {{ $obj.name }}
+              name: seaweedfs-mount-creds
+              readOnly: true
+            {{- end }}
+            {{- end}}
+
             {{- if .Values.seaweedfs.volumeMounts }}
             {{- toYaml .Values.seaweedfs.volumeMounts | nindent 12 }}
             {{- end }}
@@ -76,7 +90,16 @@ spec:
         - name: seaweedfs-config
           configMap:
             name: seaweedfs-config
+
+        {{- if .Values.seaweedfs.secret.mountCredentials }}
+        # mount secret as volume
+        - name: seaweedfs-mount-creds
+          secret:
+            secretName: seaweedfs-mount-secret
+        {{- end }}
+
         {{- if .Values.seaweedfs.volumes }}
+        # custom volumes
         {{- toYaml .Values.seaweedfs.volumes | nindent 8 }}
         {{- end }}
   volumeClaimTemplates:
