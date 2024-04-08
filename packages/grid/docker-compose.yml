@@ -151,7 +151,6 @@ services:
       - DEV_MODE=${DEV_MODE}
       - DEFAULT_ROOT_EMAIL=${DEFAULT_ROOT_EMAIL}
       - DEFAULT_ROOT_PASSWORD=${DEFAULT_ROOT_PASSWORD}
-      - BACKEND_STORAGE_PATH=${BACKEND_STORAGE_PATH}
       - QUEUE_PORT=${QUEUE_PORT}
       - CREATE_PRODUCER=true
       - N_CONSUMERS=1
@@ -160,7 +159,6 @@ services:
     command: "./grid/start.sh"
     network_mode: service:proxy
     volumes:
-      - ${BACKEND_STORAGE_PATH}:/storage
       - ${CREDENTIALS_VOLUME}:/root/data/creds/
       - /var/run/docker.sock:/var/run/docker.sock
     stdin_open: true
