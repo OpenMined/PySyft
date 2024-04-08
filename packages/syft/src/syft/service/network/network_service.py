@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import Callable
+from enum import Enum
 import secrets
 from typing import Any
 
@@ -49,6 +50,13 @@ from .routes import VeilidNodeRoute
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 NodeTypePartitionKey = PartitionKey(key="node_type", type_=NodeType)
 OrderByNamePartitionKey = PartitionKey(key="name", type_=str)
+
+
+@serializable()
+class NodePeerAssociationStatus(Enum):
+    PEER_ASSOCIATED = "PEER_ASSOCIATED"
+    ASSOCIATION_PENDING = "PEER_ASSOCIATION_PENDING"
+    PEER_NOT_FOUND = "PEER_NOT_FOUND"
 
 
 @instrument
@@ -268,10 +276,14 @@ class NetworkService(AbstractService):
 
         return challenge_signature
 
-    @service_method(path="network.ping", name="ping", roles=GUEST_ROLE_LEVEL)
-    def find_peer(
+    @service_method(
+        path="network.check_peer_association",
+        name="check_peer_association",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def check_peer_association(
         self, context: AuthedServiceContext, peer_id: UID
-    ) -> SyftSuccess | SyftError:
+    ) -> NodePeerAssociationStatus | SyftError:
         """Check if a peer exists in the network stash"""
 
         # get the node peer for the given sender_peer_id
@@ -280,9 +292,12 @@ class NetworkService(AbstractService):
             return SyftError(message=f"Failed to query peer from stash: {peer.err()}")
 
         if peer.ok() is None:
-            return SyftError(message=f"Peer not found: {peer_id}")
+            return NodePeerAssociationStatus.PEER_NOT_FOUND
 
-        return SyftSuccess(message="Peer exists")
+        # TODO (PR: Healthchecks): Checks requests for pending association requests
+        # once association requests are implemented
+
+        return NodePeerAssociationStatus.PEER_ASSOCIATED
 
     @service_method(path="network.add_route_for", name="add_route_for")
     def add_route_for(
