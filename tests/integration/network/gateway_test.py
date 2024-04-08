@@ -383,9 +383,24 @@ def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
     assert domain_peer.node_routes[0].priority == 4
 
     # the gateway gets the proxy client to the domain
-    # TODO: the proxy client should use the route with the highest priority
+    # the proxy client should use the route with the highest priority
     proxy_domain_client = gateway_client.peers[0]
     assert isinstance(proxy_domain_client, DomainClient)
+
+    # add another existed route (port 10000)
+    res = gateway_client.api.services.network.add_route(
+        peer=domain_peer, route=domain_peer.node_routes[1]
+    )
+    assert "route already exists" in res.message
+    assert isinstance(res, SyftSuccess)
+    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert len(domain_peer.node_routes) == 3
+    assert domain_peer.node_routes[1].priority == 5
+    # getting the proxy client using the current highest priority route should
+    # give back an error since it is a route with a random port (10000)
+    proxy_domain_client = gateway_client.peers[0]
+    assert isinstance(proxy_domain_client, SyftError)
+    assert "Failed to establish a connection with" in proxy_domain_client.message
 
     # the routes the domain client uses to connect to the gateway should stay the same
     gateway_peer: NodePeer = domain_client.peers[0]

@@ -28,9 +28,11 @@ class GatewayClient(SyftClient):
         from .enclave_client import EnclaveClient
 
         connection: type[NodeConnection] = self.connection.with_proxy(peer.id)
-        metadata: NodeMetadataJSON = connection.get_node_metadata(
+        metadata: NodeMetadataJSON | SyftError = connection.get_node_metadata(
             credentials=SyftSigningKey.generate()
         )
+        if isinstance(metadata, SyftError):
+            return metadata
         if metadata.node_type == NodeType.DOMAIN.value:
             client_type: type[SyftClient] = DomainClient
         elif metadata.node_type == NodeType.ENCLAVE.value:

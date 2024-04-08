@@ -212,7 +212,9 @@ class HTTPConnection(NodeConnection):
 
         return response.content
 
-    def get_node_metadata(self, credentials: SyftSigningKey) -> NodeMetadataJSON:
+    def get_node_metadata(
+        self, credentials: SyftSigningKey
+    ) -> NodeMetadataJSON | SyftError:
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
                 make_call=self.make_call,
@@ -429,7 +431,9 @@ class VeilidConnection(NodeConnection):
 
         return response.content
 
-    def get_node_metadata(self, credentials: SyftSigningKey) -> NodeMetadataJSON:
+    def get_node_metadata(
+        self, credentials: SyftSigningKey
+    ) -> NodeMetadataJSON | SyftError:
         # TODO: Implement message proxy forwarding for gateway
 
         response = self._make_get(self.routes.ROUTE_METADATA.value)
@@ -554,7 +558,9 @@ class PythonConnection(NodeConnection):
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         return PythonConnection(node=self.node, proxy_target_uid=proxy_target_uid)
 
-    def get_node_metadata(self, credentials: SyftSigningKey) -> NodeMetadataJSON:
+    def get_node_metadata(
+        self, credentials: SyftSigningKey
+    ) -> NodeMetadataJSON | SyftError:
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
                 make_call=self.make_call,

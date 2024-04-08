@@ -1032,7 +1032,7 @@ class Node(AbstractNode):
 
     def forward_message(
         self, api_call: SyftAPICall | SignedSyftAPICall
-    ) -> Result[QueueItem | SyftObject, Err]:
+    ) -> Result | QueueItem | SyftObject | SyftError | Any:
         node_uid = api_call.message.node_uid
         if "networkservice" not in self.service_path_map:
             return SyftError(
@@ -1059,7 +1059,11 @@ class Node(AbstractNode):
                 context = AuthedServiceContext(
                     node=self, credentials=api_call.credentials
                 )
+
                 client = peer.client_with_context(context=context)
+                if client.is_err():
+                    return SyftError(message=f"{client.err()}")
+                client = client.ok()
 
                 self.peer_client_cache[peer_cache_key] = client
 

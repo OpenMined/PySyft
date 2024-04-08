@@ -1,6 +1,11 @@
 # stdlib
 from collections.abc import Callable
 
+# third party
+from result import Err
+from result import Ok
+from result import Result
+
 # relative
 from ...abstract_node import NodeType
 from ...client.client import NodeConnection
@@ -175,18 +180,30 @@ class NodePeer(SyftObject):
 
     def client_with_context(
         self, context: NodeServiceContext
-    ) -> type[SyftClient] | SyftError:
+    ) -> Result[type[SyftClient], str]:
+        # third party
+        from loguru import logger
+
         if len(self.node_routes) < 1:
             raise ValueError(f"No routes to peer: {self}")
         # select the highest priority route (i.e. added or updated the latest)
         final_route: NodeRoute = self.pick_highest_priority_route()
         connection: NodeConnection = route_to_connection(route=final_route)
-        client_type = connection.get_client_type()
+        try:
+            client_type = connection.get_client_type()
+        except Exception as e:
+            logger.error(
+                f"Failed to establish a connection with {self.node_type} '{self.name}'. Exception: {e}"
+            )
+            return Err(
+                f"Failed to establish a connection with {self.node_type} '{self.name}'"
+            )
         if isinstance(client_type, SyftError):
-            return client_type
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
-        return client_type(connection=connection, credentials=context.node.signing_key)
+            return Err(client_type.message)
+
+        return Ok(
+            client_type(connection=connection, credentials=context.node.signing_key)
+        )
 
     def client_with_key(self, credentials: SyftSigningKey) -> SyftClient | SyftError:
         if len(self.node_routes) < 1:
