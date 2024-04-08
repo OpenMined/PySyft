@@ -113,7 +113,7 @@ def forward_message_to_proxy(
         # generate a random signing key
         credentials = SyftSigningKey.generate()
 
-    signed_message = call.sign(credentials=credentials)
+    signed_message: SignedSyftAPICall = call.sign(credentials=credentials)
     signed_result = make_call(signed_message)
     response = debox_signed_syftapicall_response(signed_result)
     return response

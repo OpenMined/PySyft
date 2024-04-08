@@ -1053,7 +1053,6 @@ class Node(AbstractNode):
             # Since we have several routes to a peer
             # we need to cache the client for a given node_uid along with the route
             peer_cache_key = hash(node_uid) + hash(peer.pick_highest_priority_route())
-
             if peer_cache_key in self.peer_client_cache:
                 client = self.peer_client_cache[peer_cache_key]
             else:
@@ -1061,6 +1060,7 @@ class Node(AbstractNode):
                     node=self, credentials=api_call.credentials
                 )
                 client = peer.client_with_context(context=context)
+
                 self.peer_client_cache[peer_cache_key] = client
 
         if client:
@@ -1131,6 +1131,7 @@ class Node(AbstractNode):
 
         if api_call.message.node_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
+
         if api_call.message.path == "queue":
             return self.resolve_future(
                 credentials=api_call.credentials, uid=api_call.message.kwargs["uid"]

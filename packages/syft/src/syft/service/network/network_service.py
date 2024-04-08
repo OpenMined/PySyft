@@ -705,7 +705,6 @@ class NetworkService(AbstractService):
         peer: NodePeer,
         route: NodeRoute,
         priority: int | None = None,
-        called_by_peer: bool = False,
     ) -> SyftSuccess | SyftError:
         """
         Ask the peer (the "remote node") to update the priority of the given route

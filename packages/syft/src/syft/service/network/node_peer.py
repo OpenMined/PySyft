@@ -150,6 +150,7 @@ class NodePeer(SyftObject):
             )
 
         existed, index = self.existed_route(route_id=route.id)
+        print("Inside node_peer.py: ", existed, index)
         if not existed or index is None:
             return SyftError(message=f"Route with id {route.id} does not exist.")
 
@@ -191,7 +192,11 @@ class NodePeer(SyftObject):
         if len(self.node_routes) < 1:
             raise ValueError(f"No routes to peer: {self}")
         # select the latest added route
-        final_route = self.pick_highest_priority_route()
+        final_route: NodeRoute = self.pick_highest_priority_route()
+
+        print(
+            f"inside node_peer.py::client_with_key. {final_route = }; {final_route.port = }"
+        )
         connection = route_to_connection(route=final_route)
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
