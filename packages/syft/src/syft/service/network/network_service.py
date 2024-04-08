@@ -720,8 +720,6 @@ class NetworkService(AbstractService):
         if remote_client.is_err():
             return SyftError(message=f"{remote_client.err()}")
         remote_client = remote_client.ok()
-        # ask the remote node to add the route to the self node
-        # note that the `.to` transform gives a NodePeer object without its routes
         self_node_peer: NodePeer = context.node.settings.to(NodePeer)
         result = remote_client.api.services.network.update_route_priority(
             peer=self_node_peer,
@@ -764,20 +762,29 @@ class NetworkService(AbstractService):
                     f"{peer.verify_key} does not match the signature of the message"
                 )
             )
+        # get the full peer object from the store to update its routes
+        remote_node_peer: NodePeer | SyftError = (
+            self._get_remote_node_peer_by_verify_key(context, peer.verify_key)
+        )
+        if isinstance(remote_node_peer, SyftError):
+            return remote_node_peer
         # update the route's priority for the peer
         updated_node_route: NodeRouteType | SyftError = (
-            peer.update_existed_route_priority(route=route, priority=priority)
+            remote_node_peer.update_existed_route_priority(
+                route=route, priority=priority
+            )
         )
         if isinstance(updated_node_route, SyftError):
             return updated_node_route
         new_priority: int = updated_node_route.priority
         # update the peer in the store
-        result = self.stash.update(context.node.verify_key, peer)
+        result = self.stash.update(context.node.verify_key, remote_node_peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
 
         return SyftSuccess(
-            message=f"Route {route.id}'s priority updated to {new_priority} for peer {peer.name}"
+            message=f"Route {route.id}'s priority updated to "
+            f"{new_priority} for peer {remote_node_peer.name}"
         )
 
     def _get_remote_node_peer_by_verify_key(
