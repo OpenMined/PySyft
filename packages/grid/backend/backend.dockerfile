@@ -15,6 +15,8 @@ RUN apk update && apk upgrade && \
 
 WORKDIR /root/app
 
+ENV UV_HTTP_TIMEOUT=600
+
 # keep static deps separate to have each layer cached independently
 # if amd64 then we need to append +cpu to the torch version
 # limitation of uv - https://github.com/astral-sh/uv/issues/2541

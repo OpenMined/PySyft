@@ -18,8 +18,9 @@ ARG PIP_PACKAGES="pip --dry-run"
 ARG CUSTOM_CMD='echo "No custom commands passed"'
 
 # Worker specific environment variables go here
-ENV SYFT_WORKER="true"
-ENV SYFT_VERSION_TAG=${SYFT_VERSION_TAG}
+ENV SYFT_WORKER="true" \
+    SYFT_VERSION_TAG=${SYFT_VERSION_TAG} \
+    UV_HTTP_TIMEOUT=600
 
 RUN apk update && apk upgrade && \
     apk add --no-cache ${SYSTEM_PACKAGES} && \
