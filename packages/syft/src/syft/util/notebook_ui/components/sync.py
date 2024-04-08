@@ -1,9 +1,17 @@
+# stdlib
+from typing import Any
+
+# third party
+from pydantic import model_validator
+
 # relative
+from ....client.sync_decision import SyncDirection
 from ....service.code.user_code import UserCode
 from ....service.job.job_stash import Job
 from ....service.request.request import Request
 from ....types.syft_object import SYFT_OBJECT_VERSION_1
 from ....types.syft_object import SyftObject
+from ..notebook_addons import CSS_CODE
 from .base import HTMLComponentBase
 
 COPY_ICON = (
@@ -83,10 +91,6 @@ class SyncTableObject(HTMLComponentBase):
             return f"Execute {self.object.code.service_func_name}"
         return ""
 
-    @property
-    def object_type_name(self) -> str:
-        return type(self.object).__name__
-
     def type_badge_class(self) -> str:
         if isinstance(self.object, UserCode):
             return "label-light-blue"
@@ -95,7 +99,11 @@ class SyncTableObject(HTMLComponentBase):
         elif isinstance(self.object, Request):  # type: ignore
             # TODO: handle other requests
             return "label-light-purple"
-        return ""
+        return "label-light-blue"
+
+    @property
+    def object_type_name(self) -> str:
+        return type(self.object).__name__
 
     def get_status_str(self) -> str:
         if isinstance(self.object, UserCode):
@@ -131,8 +139,8 @@ class SyncTableObject(HTMLComponentBase):
         status_str = self.get_status_str()
         status_seperator = " • " if len(status_str) else ""
         summary_html = f"""
-            <div style="display: flex; gap: 8px; justify-content: space-between; width: 100%; overflow: hidden;">
-            <div style="display: flex; gap: 8px; justify-content: start">
+            <div style="display: flex; gap: 8px; justify-content: space-between; width: 100%; overflow: hidden; align-items: center;">
+            <div style="display: flex; gap: 8px; justify-content: start align-items: center;">
             {type_html} {description_html}
             </div>
             {copy_id_button.to_html()}
@@ -142,6 +150,68 @@ class SyncTableObject(HTMLComponentBase):
             {status_str}{status_seperator}Updated by {updated_by} {updated_delta_str}
             </span>
             </div>
-        """
+        """  # noqa: E501
         summary_html = summary_html.replace("\n", "").replace("    ", "")
         return summary_html
+
+
+class SyncWidgetHeader(SyncTableObject):
+    diff_batch: Any
+
+    @model_validator(mode="before")
+    @classmethod
+    def add_object(cls, values: dict) -> dict:
+        if "diff_batch" not in values:
+            raise ValueError("diff_batch is required")
+        diff_batch = values["diff_batch"]
+        values["object"] = diff_batch.root_diff.non_empty_object
+        return values
+
+    def to_html(self) -> str:
+        # CSS Styles
+        style = CSS_CODE
+
+        first_line_html = "<span style='color: #B4B0BF;'>Syncing changes on</span>"
+
+        badge_class = self.type_badge_class()
+        object_type = self.object_type_name.upper()
+        type_html = (
+            f'<div class="label {badge_class}" '
+            f'style="white-space: nowrap; overflow: hidden;">{object_type}</div>'
+        )
+
+        description_str = self.main_object_description_str()
+        description_style = "white-space: nowrap; overflow: ellipsis; flex-grow: 1;"
+        description_html = f'<span class="syncstate-description" style="{description_style}">{description_str}</span>'
+
+        copy_id_button = CopyIDButton(copy_text=str(self.object.id.id), max_width=60)
+
+        second_line_html = f"""
+            <div style="display: flex; gap: 8px; justify-content: start; width: 100%; overflow: hidden; align-items: center;">
+            <div style="display: flex; gap: 8px; justify-content: start; align-items: center;">
+            {type_html} {description_html}
+            </div>
+            {copy_id_button.to_html()}
+            </div>
+        """  # noqa: E501
+
+        num_diffs = len(self.diff_batch.get_dependencies(include_roots=True))
+        if self.diff_batch.sync_direction == SyncDirection.HIGH_TO_LOW:
+            source_side = "High"
+            target_side = "Low"
+        else:
+            source_side = "Low"
+            target_side = "High"
+
+        # Third line HTML
+        third_line_html = f"<span style='color: #5E5A72;'>This would sync <span style='color: #B8520A'>{num_diffs} changes </span> from <i>{source_side} Node</i> to <i>{target_side} Node</i></span>"  # noqa: E501
+
+        header_html = f"""
+        <style>{style}</style>
+        {first_line_html}
+        {second_line_html}
+        {third_line_html}
+        <div style='height: 16px;'></div>
+        """
+
+        return header_html

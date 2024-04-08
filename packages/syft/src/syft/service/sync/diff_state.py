@@ -743,12 +743,12 @@ class ObjectDiffBatch(SyftObject):
         if self.root_diff.low_obj is None:
             low_html = no_obj_html
         else:
-            low_html = SyncTableObject(object=self.root_diff.low_obj).summary_html()
+            low_html = SyncTableObject(object=self.root_diff.low_obj).to_html()
 
         if self.root_diff.high_obj is None:
             high_html = no_obj_html
         else:
-            high_html = SyncTableObject(object=self.root_diff.high_obj).summary_html()
+            high_html = SyncTableObject(object=self.root_diff.high_obj).to_html()
 
         return {
             "Merge status": self.status_badge(),

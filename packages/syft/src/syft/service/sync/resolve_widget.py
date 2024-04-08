@@ -2,15 +2,11 @@
 from enum import Enum
 from enum import auto
 import html
-import json
 from typing import Any
 
 # third party
-from IPython.display import Javascript
-from IPython.display import display
 import ipywidgets as widgets
 from ipywidgets import Button
-from ipywidgets import HBox
 from ipywidgets import HTML
 from ipywidgets import Layout
 from ipywidgets import VBox
@@ -22,7 +18,7 @@ from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
 from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
-from ...util.notebook_ui.components.sync import SyncTableObject
+from ...util.notebook_ui.components.sync import SyncWidgetHeader
 from ...util.notebook_ui.notebook_addons import CSS_CODE
 from ..action.action_object import ActionObject
 from ..log.log import SyftLog
@@ -68,120 +64,6 @@ colors = {
     DiffStatus.MODIFIED: "#B8520A;",
     DiffStatus.DELETED: "#353243",
 }
-
-
-class HeaderWidget:
-    def __init__(
-        self,
-        item_type: str,
-        item_name: str,
-        item_id: str,
-        num_diffs: int,
-        source_side: str,
-        target_side: str,
-    ):
-        self.item_type = item_type
-        self.item_name = item_name
-        self.item_id = item_id
-        self.num_diffs = num_diffs
-        self.source_side = source_side
-        self.target_side = target_side
-        self.widget = self.create_widget()
-
-    @classmethod
-    def from_object_diff_batch(cls, obj_diff_batch: ObjectDiffBatch) -> Self:
-        """
-        (
-            diff=self.obj_diff_batch.root_diff,
-            item_type=self.obj_diff_batch.root_type_name,
-            item_name="compute_mean",
-            item_id=self.obj_diff_batch.root_id,
-            num_diffs=2,
-            source_side="Low",
-            target_side="High",
-        )
-
-        """
-        if obj_diff_batch.sync_direction == SyncDirection.LOW_TO_HIGH:
-            source_side = "Low side"
-            target_side = "High side"
-        else:
-            source_side = "High side"
-            target_side = "Low side"
-
-        root_diff = obj_diff_batch.root_diff
-        root_obj = (
-            root_diff.low_obj if root_diff.low_obj is not None else root_diff.high_obj
-        )
-        obj_view = SyncTableObject(object=root_obj)
-        return cls(
-            item_type=obj_view.object_type_name,
-            item_name=obj_view.main_object_description_str(),
-            item_id=str(root_obj.id.id),  # type: ignore
-            num_diffs=len(obj_diff_batch.get_dependencies(include_roots=True)),
-            source_side=source_side,
-            target_side=target_side,
-        )
-
-    def copy_text_button(self, text: str) -> widgets.Widget:
-        button = widgets.Button(
-            icon="clone",
-            layout=widgets.Layout(width="25px", height="25px", margin="0", padding="0"),
-        )
-        output = widgets.Output(layout=widgets.Layout(display="none"))
-        copy_js = Javascript(f"navigator.clipboard.writeText({json.dumps(text)})")
-
-        def on_click(_: widgets.Button) -> None:
-            output.clear_output()
-            with output:
-                display(copy_js)
-
-        button.on_click(on_click)
-
-        return widgets.Box(
-            (button, output),
-            layout=widgets.Layout(display="flex", align_items="center"),
-        )
-
-    def create_item_type_label(self, item_type: str) -> HTML:
-        # TODO different bg for different types (levels?)
-        style = (
-            "background-color: #C2DEF0; "
-            "border-radius: 4px; "
-            "padding: 4px 6px; "
-            "color: #373B7B;"
-        )
-        return HTML(
-            value=f"<span style='{style}'>{item_type.upper()}</span>",
-            layout=Layout(margin="0 5px 0 0"),
-        )
-
-    def create_name_id_label(self, item_name: str, item_id: str) -> HTML:
-        item_id_short = item_id[:4] + "..." if len(item_id) > 4 else item_id
-        return HTML(
-            value=(
-                f"<span style='margin-left: 5px; font-weight: bold; color: #373B7B;'>{item_name}</span> "
-                f"<span style='margin-left: 5px; color: #B4B0BF;'>#{item_id_short}</span>"
-            )
-        )
-
-    def create_widget(self) -> VBox:
-        type_box = self.create_item_type_label(self.item_type)
-        name_id_label = self.create_name_id_label(self.item_name, self.item_id)
-        copy_button = self.copy_text_button(self.item_id)
-
-        first_line = HTML(
-            value="<span style='color: #B4B0BF;'>Syncing changes on</span>"
-        )
-        second_line = HBox(
-            [type_box, name_id_label, copy_button], layout=Layout(align_items="center")
-        )
-        third_line = HTML(
-            value=f"<span style='color: #5E5A72;'>This would sync <span style='color: #B8520A'>{self.num_diffs} changes </span> from <i>{self.source_side} Node</i> to <i>{self.target_side} Node</i></span>"  # noqa: E501
-        )
-        fourth_line = HTML(value="<div style='height: 16px;'></div>")
-        header = VBox([first_line, second_line, third_line, fourth_line])
-        return header
 
 
 # TODO use ObjectDiff instead
@@ -579,7 +461,7 @@ class ResolveWidget:
 
         full_widget = widgets.VBox(
             [
-                self.build_header().widget,
+                self.build_header(),
                 self.main_object_diff_widget.widget,
                 self.spacer(16),
                 main_batch_items,
@@ -613,5 +495,6 @@ class ResolveWidget:
             layout=Layout(width="100%"),
         )
 
-    def build_header(self) -> HeaderWidget:
-        return HeaderWidget.from_object_diff_batch(self.obj_diff_batch)
+    def build_header(self) -> HTML:
+        header_html = SyncWidgetHeader(diff_batch=self.obj_diff_batch).to_html()
+        return HTML(value=header_html)
