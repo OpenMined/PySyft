@@ -252,8 +252,6 @@ services:
       - MOUNT_API_PORT=${MOUNT_API_PORT:-4001}
     volumes:
       - seaweedfs-data:/data
-      - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
-      - ./seaweedfs/start.sh:/etc/seaweedfs/start.sh
     labels:
       - "orgs.openmined.syft=this is a syft seaweedfs container"
 
