@@ -30,7 +30,8 @@ jobs:
         # os: [om-ci-16vcpu-ubuntu2204]
         os: [ubuntu-latest]
         python-version: ["3.12"]
-        pytest-modules: ["frontend network container_workload local_node"]
+        pytest-modules:
+          ["frontend or network or container_workload or local_node"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
@@ -522,7 +523,7 @@ jobs:
         # os: [om-ci-16vcpu-ubuntu2204]
         os: [ubuntu-latest]
         python-version: ["3.12"]
-        pytest-modules: ["frontend network"]
+        pytest-modules: ["frontend or network"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}

@@ -20,7 +20,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows]
         python-version: ["3.12"]
-        pytest-modules: ["frontend network"]
+        pytest-modules: ["frontend or network"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
