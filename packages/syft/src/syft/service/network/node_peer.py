@@ -155,7 +155,7 @@ class NodePeer(SyftObject):
             )
 
         existed, index = self.existed_route(route_id=route.id)
-        print("Inside node_peer.py: ", existed, index)
+
         if not existed or index is None:
             return SyftError(message=f"Route with id {route.id} does not exist.")
 
