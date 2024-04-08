@@ -14,7 +14,6 @@ syft.node.node
    .. autosummary::
    
       create_admin_new
-      create_oblv_key_pair
       create_worker_metadata
       get_default_root_email
       get_default_root_password
