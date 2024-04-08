@@ -32,6 +32,7 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.fonts import FONT_CSS
 from ...util.fonts import ITABLES_CSS
+from ...util.notebook_ui.components.sync import SyncTableObject
 from ...util.notebook_ui.notebook_addons import ARROW_ICON
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
@@ -45,7 +46,6 @@ from ..output.output_service import ExecutionOutput
 from ..request.request import Request
 from ..response import SyftError
 from .sync_state import SyncState
-from .sync_state import SyncView
 
 sketchy_tab = "‎ " * 4
 
@@ -182,6 +182,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         "low_state",
         "high_state",
     ]
+    __syft_include_id_coll_repr__ = False
 
     def is_mock(self, side: str) -> bool:
         # An object is a mock object if it exists on both sides,
@@ -742,12 +743,12 @@ class ObjectDiffBatch(SyftObject):
         if self.root_diff.low_obj is None:
             low_html = no_obj_html
         else:
-            low_html = SyncView(object=self.root_diff.low_obj).summary_html()
+            low_html = SyncTableObject(object=self.root_diff.low_obj).summary_html()
 
         if self.root_diff.high_obj is None:
             high_html = no_obj_html
         else:
-            high_html = SyncView(object=self.root_diff.high_obj).summary_html()
+            high_html = SyncTableObject(object=self.root_diff.high_obj).summary_html()
 
         return {
             "Merge status": self.status_badge(),

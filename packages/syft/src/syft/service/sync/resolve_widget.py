@@ -22,6 +22,7 @@ from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
 from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
+from ...util.notebook_ui.components.sync import SyncTableObject
 from ...util.notebook_ui.notebook_addons import CSS_CODE
 from ..action.action_object import ActionObject
 from ..log.log import SyftLog
@@ -31,7 +32,6 @@ from .diff_state import ObjectDiff
 from .diff_state import ObjectDiffBatch
 from .diff_state import ResolvedSyncState
 from .diff_state import SyncInstruction
-from .sync_state import SyncView
 
 # Standard div Jupyter Lab uses for notebook outputs
 # This is needed to use alert styles from SyftSuccess and SyftError
@@ -113,7 +113,7 @@ class HeaderWidget:
         root_obj = (
             root_diff.low_obj if root_diff.low_obj is not None else root_diff.high_obj
         )
-        obj_view = SyncView(object=root_obj)
+        obj_view = SyncTableObject(object=root_obj)
         return cls(
             item_type=obj_view.object_type_name,
             item_name=obj_view.main_object_description_str(),
