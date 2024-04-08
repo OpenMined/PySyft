@@ -12,6 +12,7 @@
 ARG SYFT_VERSION_TAG="0.8.7-beta.0"
 FROM openmined/grid-backend:${SYFT_VERSION_TAG}
 
+ARG PYTHON_VERSION="3.12"
 ARG SYSTEM_PACKAGES=""
 ARG PIP_PACKAGES="pip --dry-run"
 ARG CUSTOM_CMD='echo "No custom commands passed"'
