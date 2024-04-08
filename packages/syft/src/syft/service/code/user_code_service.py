@@ -118,9 +118,6 @@ class UserCodeService(AbstractService):
             _ = context.node.get_service("usercodestatusservice").remove(
                 root_context, user_code.status_link.object_uid
             )
-            _ = context.node.get_service("codehistoryservice").delete(
-                root_context, user_code.version_link.object_uid
-            )
             return result
         result = self._request_code_execution_inner(context, user_code, reason)
         return result
