@@ -13,9 +13,6 @@ from fastapi import Response
 from loguru import logger
 
 # relative
-from .models import ResponseModel
-from .models import TestVeilidStreamerRequest
-from .models import TestVeilidStreamerResponse
 from .utils import generate_random_alphabets
 from .veilid_connection_singleton import VeilidConnectionSingleton
 from .veilid_core import app_call
@@ -24,6 +21,9 @@ from .veilid_core import generate_vld_key
 from .veilid_core import healthcheck
 from .veilid_core import ping
 from .veilid_core import retrieve_vld_key
+from .veilid_models import ResponseModel
+from .veilid_models import TestVeilidStreamerRequest
+from .veilid_models import TestVeilidStreamerResponse
 
 # Logging Configuration
 log_level = os.getenv("APP_LOG_LEVEL", "INFO").upper()

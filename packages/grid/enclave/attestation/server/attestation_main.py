@@ -7,11 +7,11 @@ from fastapi import FastAPI
 from loguru import logger
 
 # relative
+from .attestation_models import CPUAttestationResponseModel
+from .attestation_models import GPUAttestationResponseModel
+from .attestation_models import ResponseModel
 from .cpu_attestation import attest_cpu
 from .gpu_attestation import attest_gpu
-from .models import CPUAttestationResponseModel
-from .models import GPUAttestationResponseModel
-from .models import ResponseModel
 
 # Logging Configuration
 log_level = os.getenv("APP_LOG_LEVEL", "INFO").upper()

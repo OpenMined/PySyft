@@ -43,8 +43,8 @@ from ..service.action.action_store import ActionStore
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
-from ..service.attestation.attestation_service import AttestationService
 from ..service.api.api_service import APIService
+from ..service.attestation.attestation_service import AttestationService
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.status_service import UserCodeStatusService
 from ..service.code.user_code_service import UserCodeService
