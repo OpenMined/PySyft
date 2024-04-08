@@ -1,6 +1,6 @@
 ARG PYTHON_VERSION="3.12"
-ARG UV_VERSION="0.1.26-r0"
-ARG TORCH_VERSION="2.2.1"
+ARG UV_VERSION="0.1.29-r0"
+ARG TORCH_VERSION="2.2.2"
 
 # ==================== [BUILD STEP] Python Dev Base ==================== #
 FROM cgr.dev/chainguard/wolfi-base as syft_deps
@@ -24,9 +24,6 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     if [[ "$ARCH" = "amd64" ]]; then TORCH_VERSION="$TORCH_VERSION+cpu"; fi && \
     uv pip install torch==$TORCH_VERSION --index-url https://download.pytorch.org/whl/cpu
 
-# RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-#     uv pip install jupyterlab==4.1.5
-
 COPY syft/setup.py syft/setup.cfg syft/pyproject.toml ./syft/
 
 COPY syft/src/syft/VERSION ./syft/src/syft/
@@ -48,7 +45,7 @@ RUN apk update && apk upgrade && \
 
 WORKDIR /root/app/
 
-# Copy pre-built jupyterlab, syft dependencies
+# Copy pre-built syft dependencies
 COPY --from=syft_deps /root/app/.venv .venv
 
 # copy grid
