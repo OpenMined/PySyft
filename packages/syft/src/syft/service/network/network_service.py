@@ -268,6 +268,22 @@ class NetworkService(AbstractService):
 
         return challenge_signature
 
+    @service_method(path="network.ping", name="ping", roles=GUEST_ROLE_LEVEL)
+    def find_peer(
+        self, context: AuthedServiceContext, peer_id: UID
+    ) -> SyftSuccess | SyftError:
+        """Check if a peer exists in the network stash"""
+
+        # get the node peer for the given sender_peer_id
+        peer = self.stash.get_by_uid(context.node.verify_key, peer_id)
+        if peer.is_err():
+            return SyftError(message=f"Failed to query peer from stash: {peer.err()}")
+
+        if peer.ok() is None:
+            return SyftError(message=f"Peer not found: {peer_id}")
+
+        return SyftSuccess(message="Peer exists")
+
     @service_method(path="network.add_route_for", name="add_route_for")
     def add_route_for(
         self,

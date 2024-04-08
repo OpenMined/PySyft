@@ -1,5 +1,8 @@
 # stdlib
 
+# stdlib
+from enum import Enum
+
 # relative
 from ...abstract_node import NodeType
 from ...client.client import SyftClient
@@ -7,7 +10,9 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...service.response import SyftError
+from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..context import NodeServiceContext
@@ -21,8 +26,14 @@ from .routes import connection_to_route
 from .routes import route_to_connection
 
 
+class NodePeerConnectionStatus(Enum):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+    TIMEOUT = "TIMEOUT"
+
+
 @serializable()
-class NodePeer(SyftObject):
+class NodePeerV2(SyftObject):
     # version
     __canonical_name__ = "NodePeer"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -37,6 +48,27 @@ class NodePeer(SyftObject):
     node_routes: list[NodeRouteType] = []
     node_type: NodeType
     admin_email: str
+
+
+@serializable()
+class NodePeer(SyftObject):
+    # version
+    __canonical_name__ = "NodePeer"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    __attr_searchable__ = ["name", "node_type", "ping_status"]
+    __attr_unique__ = ["verify_key"]
+    __repr_attrs__ = ["name", "node_type", "admin_email", "ping_status"]
+
+    id: UID | None = None  # type: ignore[assignment]
+    name: str
+    verify_key: SyftVerifyKey
+    node_routes: list[NodeRouteType] = []
+    node_type: NodeType
+    admin_email: str
+    ping_status: NodePeerConnectionStatus | None = None
+    ping_status_message: str | None = None
+    pinged_timestamp: DateTime | None = None
 
     def update_routes(self, new_routes: list[NodeRoute]) -> None:
         add_routes = []
