@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-import base64
 from collections.abc import Callable
 from copy import deepcopy
 from enum import Enum
@@ -15,7 +14,6 @@ from typing import cast
 
 # third party
 from argon2 import PasswordHasher
-from pydantic import Field
 from pydantic import field_validator
 import requests
 from requests import Response
@@ -48,11 +46,7 @@ from ..service.user.user import UserPrivateKey
 from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
-from ..service.veilid.veilid_endpoints import VEILID_PROXY_PATH
-from ..service.veilid.veilid_endpoints import VEILID_SERVICE_URL
-from ..service.veilid.veilid_endpoints import VEILID_SYFT_PROXY_URL
 from ..types.grid_url import GridURL
-from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.uid import UID
 from ..util.logger import debug
@@ -309,218 +303,6 @@ class HTTPConnection(NodeConnection):
 
     def __hash__(self) -> int:
         return hash(self.proxy_target_uid) + hash(self.url)
-
-    def get_client_type(self) -> type[SyftClient]:
-        # TODO: Rasswanth, should remove passing in credentials
-        # when metadata are proxy forwarded in the grid routes
-        # in the gateway fixes PR
-        # relative
-        from .domain_client import DomainClient
-        from .enclave_client import EnclaveClient
-        from .gateway_client import GatewayClient
-
-        metadata = self.get_node_metadata(credentials=SyftSigningKey.generate())
-        if metadata.node_type == NodeType.DOMAIN.value:
-            return DomainClient
-        elif metadata.node_type == NodeType.GATEWAY.value:
-            return GatewayClient
-        elif metadata.node_type == NodeType.ENCLAVE.value:
-            return EnclaveClient
-        else:
-            return SyftError(message=f"Unknown node type {metadata.node_type}")
-
-
-@serializable(
-    attrs=["proxy_target_uid", "vld_key", "vld_forward_proxy", "vld_reverse_proxy"]
-)
-class VeilidConnection(NodeConnection):
-    __canonical_name__ = "VeilidConnection"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    vld_forward_proxy: GridURL = Field(default=GridURL.from_url(VEILID_SERVICE_URL))
-    vld_reverse_proxy: GridURL = Field(default=GridURL.from_url(VEILID_SYFT_PROXY_URL))
-    vld_key: str
-    proxy_target_uid: UID | None = None
-    routes: type[Routes] = Field(default=Routes)
-    session_cache: Session | None = None
-
-    @field_validator("vld_forward_proxy", mode="before")
-    def make_forward_proxy_url(cls, v: GridURL | str) -> GridURL:
-        if isinstance(v, str):
-            return GridURL.from_url(v)
-        else:
-            return v
-
-    # TODO: Remove this once when we remove reverse proxy in Veilid Connection
-    @field_validator("vld_reverse_proxy", mode="before")
-    def make_reverse_proxy_url(cls, v: GridURL | str) -> GridURL:
-        if isinstance(v, str):
-            return GridURL.from_url(v)
-        else:
-            return v
-
-    def with_proxy(self, proxy_target_uid: UID) -> Self:
-        raise NotImplementedError("VeilidConnection does not support with_proxy")
-
-    def get_cache_key(self) -> str:
-        return str(self.vld_key)
-
-    # def to_blob_route(self, path: str, **kwargs) -> GridURL:
-    #     _path = self.routes.ROUTE_BLOB_STORE.value + path
-    #     return self.url.with_path(_path)
-
-    @property
-    def session(self) -> Session:
-        if self.session_cache is None:
-            session = requests.Session()
-            retry = Retry(total=3, backoff_factor=0.5)
-            adapter = HTTPAdapter(max_retries=retry)
-            session.mount("http://", adapter)
-            session.mount("https://", adapter)
-            self.session_cache = session
-        return self.session_cache
-
-    def _make_get(self, path: str, params: dict | None = None) -> bytes:
-        rev_proxy_url = self.vld_reverse_proxy.with_path(path)
-        forward_proxy_url = self.vld_forward_proxy.with_path(VEILID_PROXY_PATH)
-
-        json_data = {
-            "url": str(rev_proxy_url),
-            "method": "GET",
-            "vld_key": self.vld_key,
-            "params": params,
-        }
-        response = self.session.get(str(forward_proxy_url), json=json_data)
-        if response.status_code != 200:
-            raise requests.ConnectionError(
-                f"Failed to fetch {forward_proxy_url}. Response returned with code {response.status_code}"
-            )
-
-        return response.content
-
-    def _make_post(
-        self,
-        path: str,
-        json: dict[str, Any] | None = None,
-        data: bytes | None = None,
-    ) -> bytes:
-        rev_proxy_url = self.vld_reverse_proxy.with_path(path)
-        forward_proxy_url = self.vld_forward_proxy.with_path(VEILID_PROXY_PATH)
-
-        # Since JSON expects strings, we need to encode the bytes to base64
-        # as some bytes may not be valid utf-8
-        # TODO: Can we optimize this?
-        data_base64 = base64.b64encode(data).decode() if data else None
-
-        json_data = {
-            "url": str(rev_proxy_url),
-            "method": "POST",
-            "vld_key": self.vld_key,
-            "json": json,
-            "data": data_base64,
-        }
-
-        response = self.session.post(str(forward_proxy_url), json=json_data)
-        if response.status_code != 200:
-            raise requests.ConnectionError(
-                f"Failed to fetch {forward_proxy_url}. Response returned with code {response.status_code}"
-            )
-
-        return response.content
-
-    def get_node_metadata(self, credentials: SyftSigningKey) -> NodeMetadataJSON:
-        # TODO: Implement message proxy forwarding for gateway
-
-        response = self._make_get(self.routes.ROUTE_METADATA.value)
-        metadata_json = json.loads(response)
-        return NodeMetadataJSON(**metadata_json)
-
-    def get_api(
-        self, credentials: SyftSigningKey, communication_protocol: int
-    ) -> SyftAPI:
-        # TODO: Implement message proxy forwarding for gateway
-
-        params = {
-            "verify_key": str(credentials.verify_key),
-            "communication_protocol": communication_protocol,
-        }
-        content = self._make_get(self.routes.ROUTE_API.value, params=params)
-        obj = _deserialize(content, from_bytes=True)
-        obj.connection = self
-        obj.signing_key = credentials
-        obj.communication_protocol = communication_protocol
-        if self.proxy_target_uid:
-            obj.node_uid = self.proxy_target_uid
-        return cast(SyftAPI, obj)
-
-    def login(
-        self,
-        email: str,
-        password: str,
-    ) -> SyftSigningKey | None:
-        # TODO: Implement message proxy forwarding for gateway
-
-        credentials = {"email": email, "password": password}
-        response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
-        obj = _deserialize(response, from_bytes=True)
-
-        return obj
-
-    def register(self, new_user: UserCreate) -> Any:
-        # TODO: Implement message proxy forwarding for gateway
-
-        data = _serialize(new_user, to_bytes=True)
-        response = self._make_post(self.routes.ROUTE_REGISTER.value, data=data)
-        response = _deserialize(response, from_bytes=True)
-        return response
-
-    def make_call(self, signed_call: SignedSyftAPICall) -> Any:
-        msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
-        # Since JSON expects strings, we need to encode the bytes to base64
-        # as some bytes may not be valid utf-8
-        # TODO: Can we optimize this?
-        msg_base64 = base64.b64encode(msg_bytes).decode()
-
-        rev_proxy_url = self.vld_reverse_proxy.with_path(
-            self.routes.ROUTE_API_CALL.value
-        )
-        forward_proxy_url = self.vld_forward_proxy.with_path(VEILID_PROXY_PATH)
-        json_data = {
-            "url": str(rev_proxy_url),
-            "method": "POST",
-            "vld_key": self.vld_key,
-            "data": msg_base64,
-        }
-        response = requests.post(  # nosec
-            url=str(forward_proxy_url),
-            json=json_data,
-        )
-
-        if response.status_code != 200:
-            raise requests.ConnectionError(
-                f"Failed to fetch metadata. Response returned with code {response.status_code}"
-            )
-
-        result = _deserialize(response.content, from_bytes=True)
-        return result
-
-    def __repr__(self) -> str:
-        return self.__str__()
-
-    def __str__(self) -> str:
-        res = f"{type(self).__name__}:"
-        res += f"\n DHT Key: {self.vld_key}"
-        res += f"\n Forward Proxy: {self.vld_forward_proxy}"
-        res += f"\n Reverse Proxy: {self.vld_reverse_proxy}"
-        return res
-
-    def __hash__(self) -> int:
-        return (
-            hash(self.proxy_target_uid)
-            + hash(self.vld_key)
-            + hash(self.vld_forward_proxy)
-            + hash(self.vld_reverse_proxy)
-        )
 
     def get_client_type(self) -> type[SyftClient]:
         # TODO: Rasswanth, should remove passing in credentials
@@ -882,13 +664,6 @@ class SyftClient:
                 remote_node_route=remote_node_route,
                 remote_node_verify_key=client.metadata.to(NodeMetadataV3).verify_key,
             )
-
-        elif protocol == SyftProtocol.VEILID:
-            remote_node_route = connection_to_route(client.connection)
-
-            result = self.api.services.network.exchange_veilid_route(
-                remote_node_route=remote_node_route,
-            )
         else:
             raise ValueError(
                 f"Invalid Route Exchange SyftProtocol: {protocol}.Supported protocols are {SyftProtocol.all()}"
@@ -1166,18 +941,9 @@ def connect(
     url: str | GridURL = DEFAULT_PYGRID_ADDRESS,
     node: AbstractNode | None = None,
     port: int | None = None,
-    vld_forward_proxy: str | GridURL | None = None,
-    vld_reverse_proxy: str | GridURL | None = None,
-    vld_key: str | None = None,
 ) -> SyftClient:
     if node:
         connection = PythonConnection(node=node)
-    elif vld_key and vld_forward_proxy and vld_reverse_proxy:
-        connection = VeilidConnection(
-            vld_forward_proxy=vld_forward_proxy,
-            vld_reverse_proxy=vld_reverse_proxy,
-            vld_key=vld_key,
-        )
     else:
         url = GridURL.from_url(url)
         if isinstance(port, int | str):
@@ -1219,19 +985,12 @@ def login_as_guest(
     port: int | None = None,
     # PythonConnection
     node: AbstractNode | None = None,
-    # Veilid Connection
-    vld_forward_proxy: str | GridURL | None = None,
-    vld_reverse_proxy: str | GridURL | None = None,
-    vld_key: str | None = None,
     verbose: bool = True,
 ) -> SyftClient:
     _client = connect(
         url=url,
         node=node,
         port=port,
-        vld_forward_proxy=vld_forward_proxy,
-        vld_reverse_proxy=vld_reverse_proxy,
-        vld_key=vld_key,
     )
 
     if isinstance(_client, SyftError):
@@ -1254,10 +1013,6 @@ def login(
     port: int | None = None,
     # PythonConnection
     node: AbstractNode | None = None,
-    # Veilid Connection
-    vld_forward_proxy: str | GridURL | None = None,
-    vld_reverse_proxy: str | GridURL | None = None,
-    vld_key: str | None = None,
     password: str | None = None,
     cache: bool = True,
 ) -> SyftClient:
@@ -1265,9 +1020,6 @@ def login(
         url=url,
         node=node,
         port=port,
-        vld_forward_proxy=vld_forward_proxy,
-        vld_reverse_proxy=vld_reverse_proxy,
-        vld_key=vld_key,
     )
 
     if isinstance(_client, SyftError):
