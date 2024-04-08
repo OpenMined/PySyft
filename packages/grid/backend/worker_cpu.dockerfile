@@ -21,6 +21,7 @@ ENV SYFT_WORKER="true"
 ENV SYFT_VERSION_TAG=${SYFT_VERSION_TAG}
 
 RUN apk update && apk upgrade && \
-    apk add ${SYSTEM_PACKAGES} && \
-    uv pip install ${PIP_PACKAGES} && \
-    bash -c ". .venv/bin/activate && $CUSTOM_CMD"
+    apk add --no-cache ${SYSTEM_PACKAGES} && \
+    # if uv is present then run uv pip install else simple pip install
+    if [ -x "$(command -v uv)" ]; then uv pip install --no-cache ${PIP_PACKAGES}; else pip install --user ${PIP_PACKAGES}; fi && \
+    bash -c "$CUSTOM_CMD"
