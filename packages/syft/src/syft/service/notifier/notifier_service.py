@@ -1,7 +1,6 @@
 # stdlib
 
 # stdlib
-from typing import cast
 
 # third party
 from pydantic import EmailStr
@@ -54,7 +53,6 @@ class NotifierService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> NotificationPreferences:
-        context.node = cast(AbstractNode, context.node)
         user_service = context.node.get_service("userservice")
         user_view = user_service.get_current_user(context)
         notifications = user_view.notifications_enabled
@@ -199,7 +197,7 @@ class NotifierService(AbstractService):
         Activate email notifications for the authenticated user.
         This will only work if the domain owner has enabled notifications.
         """
-        context.node = cast(AbstractNode, context.node)
+
         user_service = context.node.get_service("userservice")
         return user_service.enable_notifications(context, notifier_type=notifier_type)
 
@@ -209,7 +207,7 @@ class NotifierService(AbstractService):
         """Deactivate email notifications for the authenticated user
         This will only work if the domain owner has enabled notifications.
         """
-        context.node = cast(AbstractNode, context.node)
+
         user_service = context.node.get_service("userservice")
         return user_service.disable_notifications(context, notifier_type=notifier_type)
 
@@ -272,7 +270,7 @@ class NotifierService(AbstractService):
                     notifier.email_username = email_username
                     notifier.email_sender = email_sender
                     notifier.email_server = smtp_host
-                    notifier.email_port = int(smtp_port)
+                    notifier.email_port = smtp_port
                     notifier.active = True
 
             notifier_stash.set(node.signing_key.verify_key, notifier)
@@ -286,7 +284,6 @@ class NotifierService(AbstractService):
     def dispatch_notification(
         self, context: AuthedServiceContext, notification: Notification
     ) -> SyftError:
-        context.node = cast(AbstractNode, context.node)
         admin_key = context.node.get_service("userservice").admin_verify_key()
         notifier = self.stash.get(admin_key)
         if notifier.is_err():

@@ -63,7 +63,7 @@ jobs:
 
       - name: Install Deps
         run: |
-          pip install --upgrade pip uv==0.1.18 tox tox-uv==1.5.1
+          pip install --upgrade pip uv==0.1.28 tox tox-uv==1.5.1
 
       - name: Get pip cache dir
         id: pip-cache

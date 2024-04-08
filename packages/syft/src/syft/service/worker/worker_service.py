@@ -8,7 +8,6 @@ import docker
 from docker.models.containers import Container
 
 # relative
-from ...abstract_node import AbstractNode
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...custom_worker.k8s import PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
@@ -56,7 +55,7 @@ class WorkerService(AbstractService):
         self, context: AuthedServiceContext, n: int = 1
     ) -> list[ContainerSpawnStatus] | SyftError:
         """Add a Container Image."""
-        context.node = cast(AbstractNode, context.node)
+
         worker_pool_service = context.node.get_service("SyftWorkerPoolService")
         return worker_pool_service.add_workers(
             context, number=n, pool_name=DEFAULT_WORKER_POOL_NAME
@@ -161,7 +160,7 @@ class WorkerService(AbstractService):
         worker = self._get_worker(context=context, uid=uid)
         if isinstance(worker, SyftError):
             return worker
-        context.node = cast(AbstractNode, context.node)
+
         worker_pool_name = worker.worker_pool_name
 
         # relative

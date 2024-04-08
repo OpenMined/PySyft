@@ -55,7 +55,7 @@ jobs:
 
       - name: Upgrade pip
         run: |
-          pip install --upgrade pip uv==0.1.18
+          pip install --upgrade pip uv==0.1.28
           uv --version
 
       # - name: Get pip cache dir

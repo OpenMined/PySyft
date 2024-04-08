@@ -79,7 +79,7 @@ jobs:
       - name: Install Hagrid, tox and uv
         run: |
           pip install -U hagrid
-          pip install --upgrade pip uv==0.1.18 tox tox-uv==1.5.1
+          pip install --upgrade pip uv==0.1.28 tox tox-uv==1.5.1
 
       - name: Hagrid Version
         run: |
@@ -231,7 +231,7 @@ jobs:
 
       - name: Install tox
         run: |
-          pip install --upgrade pip uv==0.1.18 tox tox-uv==1.5.1
+          pip install --upgrade pip uv==0.1.28 tox tox-uv==1.5.1
 
       - name: Run K8s tests
         env:
@@ -293,7 +293,7 @@ jobs:
       - name: Install Hagrid, tox and uv
         run: |
           pip install -U hagrid
-          pip install --upgrade pip uv==0.1.18 tox tox-uv==1.5.1 tox-current-env
+          pip install --upgrade pip uv==0.1.28 tox tox-uv==1.5.1 tox-current-env
 
       - name: Run unit tests
         run: |
