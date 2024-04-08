@@ -51,8 +51,12 @@ def configure_azure(first_res: dict) -> str:
     remote_name = first_res["remote_name"]
     bucket_name = first_res["bucket_name"]
 
+    logger.info(
+        f"Configuring azure bucket name={bucket_name} remote={remote_name} container={container_name}"
+    )
+
     # popen a daemon process
-    res = subprocess.Popen(
+    res = subprocess.run(
         [
             "sh",
             "scripts/mount_command.sh",
