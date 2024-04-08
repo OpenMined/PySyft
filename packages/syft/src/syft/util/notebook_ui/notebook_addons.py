@@ -359,6 +359,13 @@ CSS_CODE = """
         background-color: #D5F1D5;
         color: #256B24;
     }
+    
+    .label-red {
+        label;
+        background-color: #F2D9DE;
+        color: #9B2737;
+
+    }
 
     .badge-blue {
         badge;

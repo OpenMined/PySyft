@@ -87,6 +87,7 @@ class Job(SyncableSyftObject):
         "user_code_name",
     ]
     __exclude_sync_diff_attrs__ = ["action"]
+    __syft_include_id_coll_repr__ = False
 
     @field_validator("creation_time")
     @classmethod
@@ -404,6 +405,44 @@ class Job(SyncableSyftObject):
     # def __repr__(self) -> str:
     #     return f"<Job: {self.id}>: {self.status}"
 
+    def status_badge(self) -> dict[str, str]:
+        status = self.status
+        if status in [JobStatus.COMPLETED]:
+            badge_color = "label-green"
+        elif status in [JobStatus.PROCESSING, JobStatus.CREATED]:
+            badge_color = "label-gray"
+        elif status in [JobStatus.ERRORED, JobStatus.INTERRUPTED]:
+            badge_color = "label-red"
+        else:
+            badge_color = "label-orange"
+        return {"value": status.upper(), "type": badge_color}
+
+    def summary_html(self) -> str:
+        try:
+            # type_html = f'<div class="label {self.type_badge_class()}">{self.object_type_name.upper()}</div>'
+            description_html = f"<span class='syncstate-description'>{self.user_code_name}</span>"
+            updated_delta_str = "29m ago"
+            updated_by = "john@doe.org"
+            
+            status_str = self.status
+            status_seperator = " • " if len(status_str) else ""
+            summary_html = f"""
+    <div style="display: flex; gap: 8px; justify-content: start; width: 100%;">
+    {description_html}
+    </div>
+    <div style="display: table-row">
+    <span class='syncstate-col-footer'>{self.creation_time[:-7]}</span>
+    </div>
+    <div style="display: table-row">
+    <span class='syncstate-col-footer'>{'on worker'}</span>
+    </div>
+    """
+            summary_html = summary_html.replace("\n", "")
+        except Exception as e:
+            print("Failed to build table", e)
+            raise
+        return summary_html
+
     def _coll_repr_(self) -> dict[str, Any]:
         logs = self.logs(_print=False, stderr=False)
         if logs is not None:
@@ -414,19 +453,21 @@ class Job(SyncableSyftObject):
 
         created_time = self.creation_time[:-7] if self.creation_time is not None else ""
         return {
-            "status": f"{self.action_display_name}: {self.status}"
-            + (
-                f"\non worker {short_uid(self.job_worker_id)}"
-                if self.job_worker_id
-                else ""
-            ),
-            "progress": self.progress,
-            "eta": self.eta_string,
-            "created": f"{created_time} by {self.owner.email}",
-            "logs": logs,
+            # "status": f"{self.action_display_name}: {self.status}"
+            # + (
+            #     f"\non worker {short_uid(self.job_worker_id)}"
+            #     if self.job_worker_id
+            #     else ""
+            # ),
+            "Status": self.status_badge(),
+            'Job': self.summary_html(),
+            "# Subjobs": len(subjobs),
+            "Progress": self.progress,
+            "Eta": self.eta_string,
+            # "created": f"{created_time} by {self.owner.email}",
+            "Logs": logs,
             # "result": result,
             # "parent_id": str(self.parent_job_id) if self.parent_job_id else "-",
-            "subjobs": len(subjobs),
         }
 
     @property
