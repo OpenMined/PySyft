@@ -3,7 +3,6 @@ from typing import Any
 from typing import cast
 
 # relative
-from ...abstract_node import AbstractNode
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -117,8 +116,6 @@ class JobService(AbstractService):
         if res.is_err():
             return SyftError(message=res.err())
 
-        context.node = cast(AbstractNode, context.node)
-
         job = res.ok()
         job.status = JobStatus.CREATED
         self.update(context=context, job=job)
@@ -228,7 +225,6 @@ class JobService(AbstractService):
     def add_read_permission_log_for_code_owner(
         self, context: AuthedServiceContext, log_id: UID, user_code: UserCode
     ) -> Any:
-        context.node = cast(AbstractNode, context.node)
         log_service = context.node.get_service("logservice")
         log_service = cast(LogService, log_service)
         return log_service.stash.add_permission(
@@ -245,7 +241,6 @@ class JobService(AbstractService):
     def create_job_for_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> Job | SyftError:
-        context.node = cast(AbstractNode, context.node)
         job = Job(
             id=UID(),
             node_uid=context.node.id,

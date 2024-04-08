@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 from typing import cast
 
 # relative
-from ...abstract_node import AbstractNode
 from ...store.linked_obj import LinkedObject
 from ..context import AuthedServiceContext
 
@@ -25,12 +24,10 @@ class EmailTemplate:
 class OnBoardEmailTemplate(EmailTemplate):
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
-        context.node = cast(AbstractNode, context.node)
         return f"Welcome to {context.node.name} node!"
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
-        context.node = cast(AbstractNode, context.node)
         user_service = context.node.get_service("userservice")
         admin_name = user_service.get_by_verify_key(
             user_service.admin_verify_key()
@@ -113,7 +110,6 @@ class OnBoardEmailTemplate(EmailTemplate):
 class RequestEmailTemplate(EmailTemplate):
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
-        context.node = cast(AbstractNode, context.node)
         notification.linked_obj = cast(LinkedObject, notification.linked_obj)
         request_obj = notification.linked_obj.resolve_with_context(context=context).ok()
 
@@ -121,7 +117,6 @@ class RequestEmailTemplate(EmailTemplate):
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
-        context.node = cast(AbstractNode, context.node)
         notification.linked_obj = cast(LinkedObject, notification.linked_obj)
         request_obj = notification.linked_obj.resolve_with_context(context=context).ok()
 
@@ -262,12 +257,10 @@ class RequestEmailTemplate(EmailTemplate):
 class RequestUpdateEmailTemplate(EmailTemplate):
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
-        context.node = cast(AbstractNode, context.node)
         return f"Domain {context.node.name}: {notification.subject}"
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
-        context.node = cast(AbstractNode, context.node)
         notification.linked_obj = cast(LinkedObject, notification.linked_obj)
         request_obj = notification.linked_obj.resolve_with_context(context=context).ok()
         badge_color = "red" if request_obj.status.name == "REJECTED" else "green"

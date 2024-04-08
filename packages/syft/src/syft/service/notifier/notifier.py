@@ -2,7 +2,6 @@
 
 # stdlib
 from typing import TypeVar
-from typing import cast
 
 # third party
 from result import Err
@@ -10,7 +9,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -72,8 +70,6 @@ class EmailNotifier(BaseNotifier):
         self, context: AuthedServiceContext, notification: Notification
     ) -> Result[Ok, Err]:
         try:
-            context.node = cast(AbstractNode, context.node)
-
             user_service = context.node.get_service("userservice")
 
             receiver = user_service.get_by_verify_key(notification.to_user_verify_key)
