@@ -7,7 +7,6 @@ from ...types.datetime import DateTime
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
 from .network_service import NetworkService
-from .network_service import NetworkStash
 from .node_peer import NodePeer
 from .node_peer import NodePeerConnectionStatus
 
@@ -22,7 +21,8 @@ def peer_route_heathcheck(context: AuthedServiceContext) -> None:
     Returns:
         None
     """
-    network_stash: NetworkStash = context.node.get_service(NetworkService).stash
+    network_service = cast(NetworkService, context.node.get_service(NetworkService))
+    network_stash = network_service.stash
 
     result = network_stash.get_all(context.node.verify_key)
 
@@ -50,10 +50,6 @@ def peer_route_heathcheck(context: AuthedServiceContext) -> None:
                 else NodePeerConnectionStatus.INACTIVE
             )
             peer.ping_status_message = peer_status.message
-
-        network_stash = cast(
-            NetworkStash, context.node.get_service(NetworkService).stash
-        )
 
         result = network_stash.update_peer(
             credentials=context.node.verify_key, peer=peer
