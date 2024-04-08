@@ -17,6 +17,7 @@ from ...client.client import PythonConnection
 from ...client.client import SyftClient
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -129,6 +130,25 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         return hash(self.worker_settings.id)
 
 
+@serializable()
+class VeilidNodeRoute(SyftObject, NodeRoute):
+    __canonical_name__ = "VeilidNodeRoute"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    vld_key: str
+    proxy_target_uid: UID | None = None
+    priority: int = 1
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, VeilidNodeRoute):
+            return hash(self) == hash(other)
+        return self == other
+
+    def __hash__(self) -> int:
+        return hash(self.vld_key)
+
+
+NodeRouteTypeV1 = HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute
 NodeRouteType = HTTPNodeRoute | PythonNodeRoute
 
 
