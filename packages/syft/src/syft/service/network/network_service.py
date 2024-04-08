@@ -535,7 +535,7 @@ class NetworkService(AbstractService):
         return SyftSuccess(
             message=f"New route ({str(route)}) with id '{route.id}' "
             f"to peer {remote_node_peer.node_type.value} '{remote_node_peer.name}' "
-            f"was added for {context.node.node_type.value} '{context.node.name}'"
+            f"was added for {str(context.node.node_type)} '{context.node.name}'"
         )
 
     @service_method(path="network.delete_route_for", name="delete_route_for")
@@ -630,12 +630,13 @@ class NetworkService(AbstractService):
                 context=context, peer_verify_key=peer.verify_key
             )
         )
+
         if len(remote_node_peer.node_routes) == 1:
             warning_message = (
                 f"There is only one route left to peer "
                 f"{remote_node_peer.node_type.value} '{remote_node_peer.name}'. "
                 f"Removing this route will remove the peer for "
-                f"{context.node.node_type.value} '{context.node.name}'."
+                f"{str(context.node.node_type)} '{context.node.name}'."
             )
             response: bool = prompt_warning_message(
                 message=warning_message,
@@ -653,14 +654,14 @@ class NetworkService(AbstractService):
             return_message = (
                 f"Route '{str(route)}' with id '{route.id}' to peer "
                 f"{remote_node_peer.node_type.value} '{remote_node_peer.name}' "
-                f"was deleted for {context.node.node_type.value} '{context.node.name}'."
+                f"was deleted for {str(context.node.node_type)} '{context.node.name}'."
             )
         if route_id:
             result = remote_node_peer.delete_route(route_id=route_id)
             return_message = (
                 f"Route with id '{route_id}' to peer "
                 f"{remote_node_peer.node_type.value} '{remote_node_peer.name}' "
-                f"was deleted for {context.node.node_type.value} '{context.node.name}'."
+                f"was deleted for {str(context.node.node_type)} '{context.node.name}'."
             )
         if isinstance(result, SyftError):
             return result
@@ -676,7 +677,7 @@ class NetworkService(AbstractService):
             return_message += (
                 f" There is no routes left to connect to peer "
                 f"{remote_node_peer.node_type.value} '{remote_node_peer.name}', so it is deleted for "
-                f"{context.node.node_type.value} '{context.node.name}'."
+                f"{str(context.node.node_type)} '{context.node.name}'."
             )
         else:
             # update the peer with the route removed
