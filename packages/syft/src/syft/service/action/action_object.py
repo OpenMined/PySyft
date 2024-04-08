@@ -302,6 +302,7 @@ passthrough_attrs = [
     "__exclude_sync_diff_attrs__",  # syft
     "__repr_attrs__",  # syft
     "get_sync_dependencies",
+    "_data_repr",
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -321,8 +322,8 @@ dont_wrap_output_attrs = [
     "__sha256__",
     "__hash_exclude_attrs__",
     "__exclude_sync_diff_attrs__",  # syft
-    "__repr_attrs__",
-    "get_sync_dependencies",
+    "__repr_attrs__",  # syft
+    "get_sync_dependencies",  # syft
 ]
 dont_make_side_effects = [
     "__repr_attrs__",
@@ -623,6 +624,7 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "__exclude_sync_diff_attrs__",
     "__repr_attrs__",
     "get_sync_dependencies",
+    "_data_repr",
 ]
 
 
@@ -1858,6 +1860,16 @@ class ActionObject(SyncableSyftObject):
 
         return f"```python\n{res}\n```\n{data_repr_}"
 
+    def _data_repr(self) -> str | None:
+        if isinstance(self.syft_action_data_cache, ActionDataEmpty):
+            data_repr = self.syft_action_data_repr_
+        elif inspect.isclass(self.syft_action_data_cache):
+            data_repr = repr_cls(self.syft_action_data_cache)
+        else:
+            data_repr = self.syft_action_data_cache.__repr__()
+
+        return data_repr
+
     def __repr__(self) -> str:
         if self.is_mock:
             res = "TwinPointer(Mock)"
@@ -1865,14 +1877,8 @@ class ActionObject(SyncableSyftObject):
             res = "TwinPointer(Real)"
         if not self.is_twin:
             res = "Pointer"
-        if isinstance(self.syft_action_data_cache, ActionDataEmpty):
-            data_repr_ = self.syft_action_data_repr_
-        else:
-            if inspect.isclass(self.syft_action_data_cache):
-                data_repr_ = repr_cls(self.syft_action_data_cache)
-            else:
-                data_repr_ = self.syft_action_data_cache.__repr__()
-        return f"{res}:\n{data_repr_}"
+        data_repr = self._data_repr()
+        return f"{res}:\n{data_repr}"
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         return self.__call__(*args, **kwds)
