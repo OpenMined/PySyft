@@ -70,8 +70,6 @@ ENV \
     DEV_MODE="False" \
     DEBUGGER_ENABLED="False" \
     CONTAINER_HOST="docker" \
-    OBLV_ENABLED="False" \
-    OBLV_LOCALHOST_PORT=3030 \
     DEFAULT_ROOT_EMAIL="info@openmined.org" \
     DEFAULT_ROOT_PASSWORD="changethis" \
     STACK_API_KEY="changeme" \
