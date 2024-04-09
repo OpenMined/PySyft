@@ -4,6 +4,7 @@ from time import sleep
 
 # relative
 from ..abstract_node import NodeSideType
+from ..node.credentials import SyftVerifyKey
 from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionPermission
 from ..service.action.action_permissions import StoragePermission
@@ -21,21 +22,23 @@ from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
 
 
-def compare_states(state1: SyncState, state2: SyncState) -> NodeDiff:
-    # NodeDiff
+def compare_states(from_state: SyncState, to_state: SyncState) -> NodeDiff:
+    if from_state.user_verify_key != to_state.user_verify_key:
+        raise ValueError("Cannot compare states from different users")
+
     if (
-        state1.node_side_type == NodeSideType.LOW_SIDE
-        and state2.node_side_type == NodeSideType.HIGH_SIDE
+        from_state.node_side_type == NodeSideType.LOW_SIDE
+        and to_state.node_side_type == NodeSideType.HIGH_SIDE
     ):
-        low_state = state1
-        high_state = state2
+        low_state = from_state
+        high_state = to_state
         direction = SyncDirection.LOW_TO_HIGH
     elif (
-        state1.node_side_type == NodeSideType.HIGH_SIDE
-        and state2.node_side_type == NodeSideType.LOW_SIDE
+        from_state.node_side_type == NodeSideType.HIGH_SIDE
+        and to_state.node_side_type == NodeSideType.LOW_SIDE
     ):
-        low_state = state2
-        high_state = state1
+        low_state = to_state
+        high_state = from_state
         direction = SyncDirection.HIGH_TO_LOW
     else:
         raise ValueError("Invalid SyncStates")
@@ -44,8 +47,12 @@ def compare_states(state1: SyncState, state2: SyncState) -> NodeDiff:
     )
 
 
-def compare_clients(low_client: SyftClient, high_client: SyftClient) -> NodeDiff:
-    return compare_states(low_client.get_sync_state(), high_client.get_sync_state())
+def compare_clients(
+    low_client: SyftClient, high_client: SyftClient, user: SyftVerifyKey | None = None
+) -> NodeDiff:
+    low_state = low_client.get_sync_state(user=user)
+    high_state = high_client.get_sync_state(user=user)
+    return compare_states(low_state, high_state)
 
 
 def get_user_input_for_resolve() -> SyncDecision:

@@ -2,12 +2,14 @@
 from datetime import timedelta
 from typing import Any
 from typing import Optional
+from typing import TypeVar
 
 # third party
 from pydantic import Field
 
 # relative
 from ...abstract_node import NodeSideType
+from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
@@ -32,6 +34,26 @@ def get_hierarchy_level_prefix(level: int) -> str:
         return ""
     else:
         return "--" * level + " "
+
+
+T = TypeVar("T")
+
+
+def find_all_connected_items(root: T, edges: dict[T, set[T]]) -> set[T]:
+    """
+    Returns all items connected to the root, recursively using DFS.
+    Assumes edges are directional.
+    """
+
+    def dfs(node: T, edges: dict[T, set[T]], visited: set[T]) -> set[T]:
+        if node in visited:
+            return visited
+        visited.add(node)
+        for child in edges.get(node, set()):
+            visited = dfs(child, edges, visited)
+        return visited
+
+    return dfs(root, edges, set())
 
 
 @serializable()
@@ -198,12 +220,14 @@ class SyncState(SyftObject):
     node_side_type: NodeSideType
     objects: dict[UID, SyncableSyftObject] = {}
     dependencies: dict[UID, list[UID]] = {}
+    dependents: dict[UID, list[UID]] = {}
     created_at: DateTime = Field(default_factory=DateTime.now)
     previous_state_link: LinkedObject | None = None
     permissions: dict[UID, set[str]] = {}
     storage_permissions: dict[UID, set[UID]] = {}
     ignored_batches: dict[UID, int] = {}
     object_sync_dates: dict[UID, DateTime] = {}
+    user_verify_key: SyftVerifyKey | None = None
 
     # NOTE importing NodeDiff annotation with TYPE_CHECKING does not work here,
     # since typing.get_type_hints does not check for TYPE_CHECKING-imported types
@@ -267,6 +291,7 @@ class SyncState(SyftObject):
         # need to build dependencies every time to not have UIDs
         # in dependencies that are not in objects
         self._build_dependencies(context=context)
+        self._build_dependents(context=context)
 
     def _build_dependencies(self, context: AuthedServiceContext) -> None:
         self.dependencies = {}
@@ -279,6 +304,72 @@ class SyncState(SyftObject):
                 # TODO: Why is this en check here? here?
                 if len(deps):
                     self.dependencies[obj.id.id] = deps
+
+    def _build_dependents(self, context: AuthedServiceContext) -> None:
+        dependents: dict = {}
+        for parent, children in self.dependencies.items():
+            for child in children:
+                dependents[child] = dependents.get(child, []) + [parent]
+        self.dependents = dependents
+
+    def group_ids_by_usercode(self) -> dict[UID, set[UID]]:
+        all_relations = {}
+        for obj_id, deps in self.dependencies.items():
+            all_relations[obj_id] = set(deps)
+        for obj_id, deps in self.dependents.items():
+            all_relations[obj_id] = all_relations.get(obj_id, set()) | set(deps)
+
+        all_usercode_ids = {
+            uid for uid, obj in self.objects.items() if isinstance(obj, UserCode)
+        }
+
+        ids_for_usercode: dict[UID, set[UID]] = {}
+        for usercode_id in all_usercode_ids:
+            ids_for_usercode[usercode_id] = find_all_connected_items(
+                usercode_id, all_relations
+            )
+
+        return ids_for_usercode
+
+    def filter_ids(self, context: AuthedServiceContext, ids: set[UID]) -> "SyncState":
+        permissions_filtered = {uid: self.permissions[uid] for uid in ids}
+        storage_permissions_filtered = {
+            uid: self.storage_permissions[uid] for uid in ids
+        }
+        object_sync_dates_filtered = {uid: self.object_sync_dates[uid] for uid in ids}
+
+        new_state = SyncState(
+            node_uid=self.node_uid,
+            node_name=self.node_name,
+            node_side_type=self.node_side_type,
+            previous_state_link=self.previous_state_link,
+            permissions=permissions_filtered,
+            storage_permissions=storage_permissions_filtered,
+            object_sync_dates=object_sync_dates_filtered,
+        )
+
+        objects_filtered = [self.objects[uid] for uid in ids]
+        new_state.add_objects(objects_filtered, context=context)
+
+        return new_state
+
+    def filter_for_user(
+        self, context: AuthedServiceContext, user_verify_key: SyftVerifyKey
+    ) -> "SyncState":
+        all_user_codes = [
+            obj for obj in self.objects.values() if isinstance(obj, UserCode)
+        ]
+        ids_for_usercode = self.group_ids_by_usercode()
+
+        ids_for_user: set[UID] = set()
+        for user_code in all_user_codes:
+            if user_code.user_verify_key == user_verify_key:
+                ids_for_user |= ids_for_usercode.get(user_code.id, set())
+
+        new_state = self.filter_ids(context, ids_for_user)
+        new_state.user_verify_key = user_verify_key
+
+        return new_state
 
     @property
     def rows(self) -> list[SyncStateRow]:

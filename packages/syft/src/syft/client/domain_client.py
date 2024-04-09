@@ -15,6 +15,7 @@ from tqdm import tqdm
 # relative
 from ..abstract_node import NodeSideType
 from ..img.base64 import base64read
+from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
 from ..service.code_history.code_history import CodeHistoriesDict
@@ -172,8 +173,10 @@ class DomainClient(SyftClient):
         if self._api and self._api.refresh_api_callback:
             self._api.refresh_api_callback()
 
-    def get_sync_state(self) -> SyncState | SyftError:
-        state: SyncState = self.api.services.sync._get_state()
+    def get_sync_state(
+        self, user: SyftVerifyKey | None = None
+    ) -> SyncState | SyftError:
+        state: SyncState = self.api.services.sync._get_state(filter_user=user)
         if isinstance(state, SyftError):
             return state
 

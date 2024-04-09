@@ -8,6 +8,7 @@ from result import Result
 
 # relative
 from ...client.api import NodeIdentity
+from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
@@ -355,9 +356,18 @@ class SyncService(AbstractService):
         name="_get_state",
         roles=ADMIN_ROLE_LEVEL,
     )
-    def _get_state(self, context: AuthedServiceContext) -> SyncState | SyftError:
+    def _get_state(
+        self,
+        context: AuthedServiceContext,
+        filter_user: SyftVerifyKey | None = None,
+    ) -> SyncState | SyftError:
         res = self.build_current_state(context)
         if res.is_err():
             return SyftError(message=res.value)
-        else:
-            return res.ok()
+
+        sync_state = res.ok()
+
+        if filter_user is not None:
+            sync_state = sync_state.filter_for_user(filter_user)
+
+        return sync_state
