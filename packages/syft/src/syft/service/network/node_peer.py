@@ -1,5 +1,4 @@
 # stdlib
-from collections.abc import Callable
 
 # third party
 from result import Err
@@ -67,10 +66,8 @@ class NodePeer(SyftObject):
         if route:
             if not isinstance(route, HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute):
                 raise ValueError(f"Unsupported route type: {type(route)}")
-
-            same_route: Callable = _route_type_to_same_route_check(route)
             for i, r in enumerate(self.node_routes):
-                if same_route(route, r):
+                if route == r:
                     return (True, i)
 
         elif route_id:
@@ -256,79 +253,10 @@ class NodePeer(SyftObject):
 
         if route:
             try:
-                same_route: Callable = _route_type_to_same_route_check(route)
-                self.node_routes = [
-                    r for r in self.node_routes if not same_route(r, route)
-                ]
+                self.node_routes = [r for r in self.node_routes if r != route]
             except Exception as e:
                 return SyftError(
                     message=f"Error deleting route with id {route.id}. Exception: {e}"
                 )
 
         return None
-
-
-def _route_type_to_same_route_check(
-    route: NodeRouteType,
-) -> Callable[[NodeRouteType, NodeRouteType], bool]:
-    """
-    Takes a route as input and returns a function that can be
-    used to compare if the two routes are the same.
-
-    Args:
-        route (NodeRouteType): The route for which to get a comparison function.
-
-    Returns:
-        Callable[[NodeRouteType, NodeRouteType], bool]: A function that takes two routes as input and returns a boolean
-        indicating whether the routes are the same.
-    """
-    route_type_to_comparison_method: dict[
-        type[NodeRouteType], Callable[[NodeRouteType, NodeRouteType], bool]
-    ] = {
-        HTTPNodeRoute: _same_http_route,
-        PythonNodeRoute: _same_python_route,
-        VeilidNodeRoute: _same_veilid_route,
-    }
-    return route_type_to_comparison_method[type(route)]
-
-
-def _same_http_route(route: HTTPNodeRoute, other: HTTPNodeRoute) -> bool:
-    """
-    Check if two HTTPNodeRoute are the same based on protocol, host_or_ip (url) and port
-    """
-    if type(route) != type(other):
-        return False
-    return (
-        (route.host_or_ip == other.host_or_ip)
-        and (route.port == other.port)
-        and (route.protocol == other.protocol)
-    )
-
-
-def _same_python_route(route: PythonNodeRoute, other: PythonNodeRoute) -> bool:
-    """
-    Check if two PythonNodeRoute are the same based on the metatdata of their worker settings (name, id...)
-    """
-    if type(route) != type(other):
-        return False
-    return (
-        (route.worker_settings.id == other.worker_settings.id)
-        and (route.worker_settings.name == other.worker_settings.name)
-        and (route.worker_settings.node_type == other.worker_settings.node_type)
-        and (
-            route.worker_settings.node_side_type == other.worker_settings.node_side_type
-        )
-        and (route.worker_settings.signing_key == other.worker_settings.signing_key)
-    )
-
-
-def _same_veilid_route(route: VeilidNodeRoute, other: VeilidNodeRoute) -> bool:
-    """
-    Check if two VeilidNodeRoute are the same based on their veilid keys and proxy_target_uid
-    """
-    if type(route) != type(other):
-        return False
-    return (
-        route.vld_key == other.vld_key
-        and route.proxy_target_uid == other.proxy_target_uid
-    )

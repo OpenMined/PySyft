@@ -98,9 +98,14 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
     priority: int = 1
 
     def __eq__(self, other: Any) -> bool:
-        if isinstance(other, HTTPNodeRoute):
-            return hash(self) == hash(other)
-        return self == other
+        if not isinstance(other, HTTPNodeRoute):
+            return False
+        return (
+            (self.host_or_ip == other.host_or_ip)
+            and (self.port == other.port)
+            and (self.protocol == other.protocol)
+            and (self.proxy_target_uid == other.proxy_target_uid)
+        )
 
     def __hash__(self) -> int:
         return hash(self.host_or_ip) + hash(self.port) + hash(self.protocol)
@@ -119,9 +124,12 @@ class VeilidNodeRoute(SyftObject, NodeRoute):
     priority: int = 1
 
     def __eq__(self, other: Any) -> bool:
-        if isinstance(other, VeilidNodeRoute):
-            return hash(self) == hash(other)
-        return self == other
+        if not isinstance(other, VeilidNodeRoute):
+            return False
+        return (
+            self.vld_key == other.vld_key
+            and self.proxy_target_uid == other.proxy_target_uid
+        )
 
     def __hash__(self) -> int:
         return hash(self.vld_key)
@@ -159,9 +167,18 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         return cls(id=worker_settings.id, worker_settings=worker_settings)
 
     def __eq__(self, other: Any) -> bool:
-        if isinstance(other, PythonNodeRoute):
-            return hash(self) == hash(other)
-        return self == other
+        if not isinstance(other, PythonNodeRoute):
+            return False
+        return (
+            (self.worker_settings.id == other.worker_settings.id)
+            and (self.worker_settings.name == other.worker_settings.name)
+            and (self.worker_settings.node_type == other.worker_settings.node_type)
+            and (
+                self.worker_settings.node_side_type
+                == other.worker_settings.node_side_type
+            )
+            and (self.worker_settings.signing_key == other.worker_settings.signing_key)
+        )
 
     def __hash__(self) -> int:
         return hash(self.worker_settings.id)

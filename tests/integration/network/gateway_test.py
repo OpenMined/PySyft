@@ -566,14 +566,14 @@ def test_delete_route_on_peer(
 
     # gateway delete the routes for the domain
     res = gateway_client.api.services.network.delete_route_on_peer(
-        peer_verify_key=domain_peer.verify_key, route_id=new_route.id
+        peer=domain_peer, route_id=new_route.id
     )
     assert isinstance(res, SyftSuccess)
     gateway_peer = domain_client.peers[0]
     assert len(gateway_peer.node_routes) == 2
 
     res = gateway_client.api.services.network.delete_route_on_peer(
-        peer_verify_key=domain_peer.verify_key, route=new_route2
+        peer=domain_peer, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
     gateway_peer = domain_client.peers[0]
@@ -582,7 +582,7 @@ def test_delete_route_on_peer(
     # gateway deletes the last the route to it for the domain
     last_route: NodeRouteType = gateway_peer.node_routes[0]
     res = gateway_client.api.services.network.delete_route_on_peer(
-        peer_verify_key=domain_peer.verify_key, route=last_route
+        peer=domain_peer, route=last_route
     )
     assert isinstance(res, SyftSuccess)
     assert "There is no routes left" in res.message
