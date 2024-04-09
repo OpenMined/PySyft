@@ -1,8 +1,6 @@
 # stdlib
-from typing import cast
 
 # relative
-from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...exceptions.user import UserAlreadyExistsException
 from ...node.credentials import SyftSigningKey
@@ -273,7 +271,7 @@ class UserService(AbstractService):
 
         edits_non_role_attrs = any(
             getattr(user_update, attr) is not Empty
-            for attr in user_update.dict()
+            for attr in user_update.to_dict()
             if attr != "role"
         )
 
@@ -414,8 +412,6 @@ class UserService(AbstractService):
         self, context: NodeServiceContext, new_user: UserCreate
     ) -> tuple[SyftSuccess, UserPrivateKey] | SyftError:
         """Register new user"""
-
-        context.node = cast(AbstractNode, context.node)
 
         request_user_role = (
             ServiceRole.GUEST

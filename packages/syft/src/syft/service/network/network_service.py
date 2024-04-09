@@ -2,13 +2,11 @@
 from collections.abc import Callable
 import secrets
 from typing import Any
-from typing import cast
 
 # third party
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...client.client import HTTPConnection
 from ...client.client import PythonConnection
@@ -187,7 +185,7 @@ class NetworkService(AbstractService):
             remote_node_peer = NodePeer.from_client(remote_client)
 
         # save the remote peer for later
-        context.node = cast(AbstractNode, context.node)
+
         result = self.stash.update_peer(
             context.node.verify_key,
             remote_node_peer,
@@ -221,7 +219,6 @@ class NetworkService(AbstractService):
                 )
             )
 
-        context.node = cast(AbstractNode, context.node)
         if verify_key != context.node.verify_key:
             return SyftError(
                 message="verify_key does not match the remote node's verify_key for add_peer"
@@ -259,7 +256,7 @@ class NetworkService(AbstractService):
 
         # this way they can match up who we are with who they think we are
         # Sending a signed messages for the peer to verify
-        context.node = cast(AbstractNode, context.node)
+
         challenge_signature = context.node.signing_key.signing_key.sign(
             challenge
         ).signature
@@ -290,7 +287,7 @@ class NetworkService(AbstractService):
     ) -> SyftSuccess | SyftError:
         """Add a Network Node Route"""
         # get the peer asking for route verification from its verify_key
-        context.node = cast(AbstractNode, context.node)
+
         peer = self.stash.get_for_verify_key(
             context.node.verify_key,
             context.credentials,
@@ -319,7 +316,7 @@ class NetworkService(AbstractService):
         self, context: AuthedServiceContext
     ) -> list[NodePeer] | SyftError:
         """Get all Peers"""
-        context.node = cast(AbstractNode, context.node)
+
         result = self.stash.get_all(
             credentials=context.node.verify_key,
             order_by=OrderByNamePartitionKey,
@@ -336,7 +333,7 @@ class NetworkService(AbstractService):
         self, context: AuthedServiceContext, name: str
     ) -> NodePeer | None | SyftError:
         """Get Peer by Name"""
-        context.node = cast(AbstractNode, context.node)
+
         result = self.stash.get_by_name(
             credentials=context.node.verify_key,
             name=name,
@@ -354,7 +351,6 @@ class NetworkService(AbstractService):
     def get_peers_by_type(
         self, context: AuthedServiceContext, node_type: NodeType
     ) -> list[NodePeer] | SyftError:
-        context.node = cast(AbstractNode, context.node)
         result = self.stash.get_by_node_type(
             credentials=context.node.verify_key,
             node_type=node_type,
@@ -391,7 +387,7 @@ class NetworkService(AbstractService):
         remote_node_route: NodeRoute,
     ) -> SyftSuccess | SyftError:
         """Exchange Route With Another Node"""
-        context.node = cast(AbstractNode, context.node)
+
         # Step 1: Get our own Veilid Node Peer to send to the remote node
         self_node_peer: NodePeer = context.node.settings.to(NodePeer)
 
@@ -434,7 +430,7 @@ class NetworkService(AbstractService):
         peer: NodePeer,
     ) -> NodePeer | SyftError:
         """Add a Veilid Node Peer"""
-        context.node = cast(AbstractNode, context.node)
+
         # Step 1: Using the verify_key of the peer to verify the signature
         # It is also our single source of truth for the peer
         if peer.verify_key != context.credentials:

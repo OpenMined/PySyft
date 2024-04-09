@@ -65,7 +65,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade pip uv==0.1.18
+          pip install --upgrade pip uv==0.1.28
           uv --version
 
       - name: Get pip cache dir
@@ -110,6 +110,7 @@ jobs:
         python-version: ["3.12"]
         deployment-type: ["python"]
         notebook-paths: ["tutorials"]
+        bump-version: ["False"]
         include:
           - python-version: "3.11"
             os: "ubuntu-latest"
@@ -119,6 +120,11 @@ jobs:
             os: "ubuntu-latest"
             deployment-type: "python"
             notebook-paths: "tutorials"
+          - python-version: "3.12"
+            os: "ubuntu-latest"
+            deployment-type: "python"
+            notebook-paths: "tutorials"
+            bump-version: "True"
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -153,7 +159,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade pip uv==0.1.18
+          pip install --upgrade pip uv==0.1.28
           uv --version
 
       - name: Get pip cache dir
@@ -183,6 +189,7 @@ jobs:
         env:
           ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
           TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
+          BUMP_VERSION: "${{ matrix.bump-version }}"
         with:
           timeout_seconds: 2400
           max_attempts: 3
@@ -234,7 +241,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true'
         run: |
-          pip install --upgrade pip uv==0.1.18
+          pip install --upgrade pip uv==0.1.28
           uv --version
 
       - name: Get pip cache dir
@@ -333,7 +340,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade pip uv==0.1.18
+          pip install --upgrade pip uv==0.1.28
           uv --version
 
       - name: Get pip cache dir
