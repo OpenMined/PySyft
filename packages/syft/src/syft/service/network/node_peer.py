@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Callable
 
 # third party
 from result import Err
@@ -13,14 +14,18 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...service.response import SyftError
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
+from ...types.transforms import TransformContext
 from ...types.uid import UID
 from ..context import NodeServiceContext
 from ..metadata.node_metadata import NodeMetadataV3
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
 from .routes import NodeRouteType
+from .routes import NodeRouteTypeV1
 from .routes import PythonNodeRoute
 from .routes import VeilidNodeRoute
 from .routes import connection_to_route
@@ -28,7 +33,7 @@ from .routes import route_to_connection
 
 
 @serializable()
-class NodePeer(SyftObject):
+class NodePeerV2(SyftObject):
     # version
     __canonical_name__ = "NodePeer"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -40,9 +45,25 @@ class NodePeer(SyftObject):
     id: UID | None = None  # type: ignore[assignment]
     name: str
     verify_key: SyftVerifyKey
-    node_routes: list[
-        NodeRouteType
-    ] = []  # one peer will probably have only several routes, so using a list instead of a dict will save memory
+    node_routes: list[NodeRouteTypeV1] = []
+    node_type: NodeType
+    admin_email: str
+
+
+@serializable()
+class NodePeer(SyftObject):
+    # version
+    __canonical_name__ = "NodePeer"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    __attr_searchable__ = ["name", "node_type"]
+    __attr_unique__ = ["verify_key"]
+    __repr_attrs__ = ["name", "node_type", "admin_email"]
+
+    id: UID | None = None  # type: ignore[assignment]
+    name: str
+    verify_key: SyftVerifyKey
+    node_routes: list[NodeRouteType] = []
     node_type: NodeType
     admin_email: str
 
@@ -260,3 +281,28 @@ class NodePeer(SyftObject):
                 )
 
         return None
+
+
+def drop_veilid_route() -> Callable:
+    def _drop_veilid_route(context: TransformContext) -> TransformContext:
+        if context.output:
+            node_routes = context.output["node_routes"]
+            new_routes = [
+                node_route
+                for node_route in node_routes
+                if not isinstance(node_route, VeilidNodeRoute)
+            ]
+            context.output["node_routes"] = new_routes
+        return context
+
+    return _drop_veilid_route
+
+
+@migrate(NodePeerV2, NodePeer)
+def upgrade_node_peer() -> list[Callable]:
+    return [drop_veilid_route()]
+
+
+@migrate(NodePeerV2, NodePeer)
+def downgrade_node_peer() -> list[Callable]:
+    return []
