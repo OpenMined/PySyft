@@ -26,6 +26,7 @@ from ...store.document_store import QueryKeys
 from ...types.grid_url import GridURL
 from ...types.transforms import TransformContext
 from ...types.transforms import keep
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import transform_method
 from ...types.uid import UID
@@ -35,6 +36,7 @@ from ..data_subject.data_subject import NamePartitionKey
 from ..metadata.node_metadata import NodeMetadataV3
 from ..request.request import Request
 from ..request.request import SubmitRequest
+from ..request.request_service import RequestService
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -141,30 +143,63 @@ class NetworkService(AbstractService):
         self_node_route: NodeRoute,
         remote_node_route: NodeRoute,
         remote_node_verify_key: SyftVerifyKey,
-    ) -> SyftSuccess | SyftError | Request:
+    ) -> SyftSuccess | SyftError:
         """Exchange Route With Another Node"""
 
-        association_change = AssociationRequestChange(
+        # Step 1: Validate the Route
+        self_node_peer = self_node_route.validate_with_context(context=context)
+
+        if isinstance(self_node_peer, SyftError):
+            return self_node_peer
+
+        # Step 2: Send the Node Peer to the remote node
+        # Also give them their own to validate that it belongs to them
+        # random challenge prevents replay attacks
+        remote_client: SyftClient = remote_node_route.client_with_context(
+            context=context
+        )
+        random_challenge = secrets.token_bytes(16)
+
+        remote_res = remote_client.api.services.network.add_peer(
+            peer=self_node_peer,
+            challenge=random_challenge,
             self_node_route=remote_node_route,
-            remote_node_route=self_node_route,
-            remote_node_verify_key=context.credentials,
+            verify_key=remote_node_verify_key,
         )
 
-        changes = [association_change]
-        request = SubmitRequest(changes=changes)
+        if isinstance(remote_res, SyftError):
+            return remote_res
 
+        association_request_approved = not isinstance(remote_res, Request)
+
+        if association_request_approved:
+            challenge_signature, remote_node_peer = remote_res
+
+            # Verifying if the challenge is valid
+
+            try:
+                remote_node_verify_key.verify_key.verify(
+                    random_challenge, challenge_signature
+                )
+            except Exception as e:
+                return SyftError(message=str(e))
+        else:
+            remote_node_peer = NodePeer.from_client(remote_client)
+
+        # save the remote peer for later
         context.node = cast(AbstractNode, context.node)
+        result = self.stash.update_peer(
+            context.node.verify_key,
+            remote_node_peer,
+        )
+        if result.is_err():
+            return SyftError(message=str(result.err()))
 
-        remote_client = remote_node_route.client_with_context(context=context)
-        result = remote_client.api.services.request.submit(request=request)
-
-        if context.node.auto_accept_association_request():
-            if isinstance(result, SyftError):
-                return result
-            request = cast(Request, result)
-            return request.approve(context=context, disable_warnings=True)
-
-        return result
+        return (
+            SyftSuccess(message="Routes Exchanged")
+            if association_request_approved
+            else remote_res
+        )
 
     @service_method(path="network.add_peer", name="add_peer", roles=GUEST_ROLE_LEVEL)
     def add_peer(
@@ -192,44 +227,25 @@ class NetworkService(AbstractService):
                 message="verify_key does not match the remote node's verify_key for add_peer"
             )
 
-        try:
-            remote_client: SyftClient = peer.client_with_context(context=context)
-            random_challenge = secrets.token_bytes(16)
-            remote_res = remote_client.api.services.network.ping(
-                challenge=random_challenge
-            )
-        except Exception as e:
-            return SyftError(message="Remote Peer cannot ping peer:" + str(e))
+        association_request_change = AssociationRequestChange(
+            self_node_route=self_node_route, challenge=challenge, remote_peer=peer
+        )
 
-        if isinstance(remote_res, SyftError):
-            return remote_res
+        submit_request = SubmitRequest(
+            changes=[association_request_change],
+            requesting_user_verify_key=context.credentials,
+        )
 
-        challenge_signature = remote_res
+        request_submit_method = context.node.get_service_method(RequestService.submit)
 
-        # Verifying if the challenge is valid
-        try:
-            peer.verify_key.verify_key.verify(random_challenge, challenge_signature)
-        except Exception as e:
-            return SyftError(message=str(e))
+        request = request_submit_method(context, submit_request)
 
-        result = self.stash.update_peer(context.node.verify_key, peer)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-
-        # this way they can match up who we are with who they think we are
-        # Sending a signed messages for the peer to verify
-        self_node_peer = self_node_route.validate_with_context(context=context)
-
-        if isinstance(self_node_peer, SyftError):
-            return self_node_peer
-
-        # Q,TODO: Should the returned node peer also be signed
-        # as the challenge is already signed
-        challenge_signature = context.node.signing_key.signing_key.sign(
-            challenge
-        ).signature
-
-        return [challenge_signature, self_node_peer]
+        if (
+            isinstance(request, Request)
+            and context.node.auto_accept_association_request()
+        ):
+            return request.approve(disable_warnings=True)
+        return request
 
     @service_method(path="network.ping", name="ping", roles=GUEST_ROLE_LEVEL)
     def ping(
@@ -517,7 +533,15 @@ def veilid_connection_to_node_route(
 @transform(NodeMetadataV3, NodePeer)
 def metadata_to_peer() -> list[Callable]:
     return [
-        keep(["id", "name", "verify_key", "node_type", "admin_email"]),
+        keep(
+            [
+                "id",
+                "name",
+                "verify_key",
+                "node_type",
+            ]
+        ),
+        make_set_default("admin_email", ""),
     ]
 
 
