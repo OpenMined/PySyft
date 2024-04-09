@@ -239,12 +239,17 @@ class ProjectService(AbstractService):
                         + " Kindly exchange routes with the peer"
                     )
                 peer = peer.ok()
-                client = peer.client_with_context(context=context)
-                if client.is_err():
-                    return SyftError(message=f"{client.err()}")
-                client = client.ok()
+                remote_client = peer.client_with_context(context=context)
+                if remote_client.is_err():
+                    return SyftError(
+                        message=f"Failed to create remote client for peer: "
+                        f"{peer.id}. Error: {remote_client.err()}"
+                    )
+                remote_client = remote_client.ok()
 
-                event_result = client.api.services.project.add_event(project_event)
+                event_result = remote_client.api.services.project.add_event(
+                    project_event
+                )
                 if isinstance(event_result, SyftError):
                     return event_result
 

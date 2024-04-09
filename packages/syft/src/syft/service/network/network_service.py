@@ -83,7 +83,7 @@ class NetworkStash(BaseUIDStoreStash):
             return Err(message=valid.err())
         return super().update(credentials, peer)
 
-    def create_and_update_peer(
+    def create_or_update_peer(
         self, credentials: SyftVerifyKey, peer: NodePeer
     ) -> Result[NodePeer, str]:
         """
@@ -191,7 +191,7 @@ class NetworkService(AbstractService):
             return SyftError(message=str(e))
 
         # save the remote peer for later
-        result = self.stash.create_and_update_peer(
+        result = self.stash.create_or_update_peer(
             context.node.verify_key,
             remote_node_peer,
         )
@@ -230,7 +230,10 @@ class NetworkService(AbstractService):
         try:
             remote_client = peer.client_with_context(context=context)
             if remote_client.is_err():
-                return SyftError(message=f"{remote_client.err()}")
+                return SyftError(
+                    message=f"Failed to create remote client for peer: "
+                    f"{peer.id}. Error: {remote_client.err()}"
+                )
             remote_client = remote_client.ok()
 
             random_challenge = secrets.token_bytes(16)
@@ -251,7 +254,7 @@ class NetworkService(AbstractService):
         except Exception as e:
             return SyftError(message=str(e))
 
-        result = self.stash.create_and_update_peer(context.node.verify_key, peer)
+        result = self.stash.create_or_update_peer(context.node.verify_key, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
 
@@ -397,7 +400,7 @@ class NetworkService(AbstractService):
             return remote_node_peer
 
         # Step 4: Add the remote Node Peer to our stash
-        result = self.stash.create_and_update_peer(
+        result = self.stash.create_or_update_peer(
             context.node.verify_key, remote_node_peer
         )
         if result.is_err():
@@ -426,7 +429,7 @@ class NetworkService(AbstractService):
             )
 
         # Step 2: Save the remote peer to our stash
-        result = self.stash.create_and_update_peer(context.node.verify_key, peer)
+        result = self.stash.create_or_update_peer(context.node.verify_key, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
 
@@ -443,16 +446,15 @@ class NetworkService(AbstractService):
 
         return self_node_peer
 
-    @service_method(path="network.add_route_for", name="add_route_for")
-    def add_route_for(
+    @service_method(path="network.add_route_on_peer", name="add_route_on_peer")
+    def add_route_on_peer(
         self,
         context: AuthedServiceContext,
         peer: NodePeer,
         route: NodeRoute,
     ) -> SyftSuccess | SyftError:
         """
-        Ask the peer (the "remote node") to add the given route to the list of routes
-        it can use to connect to the current node ("self node").
+        Add or update the route information on the remote peer.
 
         Args:
             context (AuthedServiceContext): The authentication context.
@@ -467,7 +469,10 @@ class NetworkService(AbstractService):
         # of the current node's client
         remote_client = peer.client_with_context(context=context)
         if remote_client.is_err():
-            return SyftError(message=f"{remote_client.err()}")
+            return SyftError(
+                message=f"Failed to create remote client for peer: "
+                f"{peer.id}. Error: {remote_client.err()}"
+            )
         remote_client = remote_client.ok()
         # ask the remote node to add the route to the self node
         # note that the `.to` transform gives a NodePeer object without its routes
@@ -533,8 +538,8 @@ class NetworkService(AbstractService):
             f"was added for {str(context.node.node_type)} '{context.node.name}'"
         )
 
-    @service_method(path="network.delete_route_for", name="delete_route_for")
-    def delete_route_for(
+    @service_method(path="network.delete_route_on_peer", name="delete_route_on_peer")
+    def delete_route_on_peer(
         self,
         context: AuthedServiceContext,
         peer: NodePeer,
@@ -542,8 +547,7 @@ class NetworkService(AbstractService):
         route_id: UID | None = None,
     ) -> SyftSuccess | SyftError | SyftInfo:
         """
-        Ask the peer (the "remote node") to delete the given route from the list of
-        routes it can use to connect to the current node (the "self node").
+        Delete the route on the remote peer.
 
         Args:
             context (AuthedServiceContext): The authentication context for the service.
@@ -572,7 +576,10 @@ class NetworkService(AbstractService):
         # of the current node's client
         remote_client = peer.client_with_context(context=context)
         if remote_client.is_err():
-            return SyftError(message=f"{remote_client.err()}")
+            return SyftError(
+                message=f"Failed to create remote client for peer: "
+                f"{peer.id}. Error: {remote_client.err()}"
+            )
         remote_client = remote_client.ok()
         # ask the remote node to delete the route to the self node,
         # note that the `.to` transform gives a NodePeer object without its routes
@@ -685,9 +692,10 @@ class NetworkService(AbstractService):
         return SyftSuccess(message=return_message)
 
     @service_method(
-        path="network.update_route_priority_for", name="update_route_priority_for"
+        path="network.update_route_priority_on_peer",
+        name="update_route_priority_on_peer",
     )
-    def update_route_priority_for(
+    def update_route_priority_on_peer(
         self,
         context: AuthedServiceContext,
         peer: NodePeer,
@@ -695,8 +703,7 @@ class NetworkService(AbstractService):
         priority: int | None = None,
     ) -> SyftSuccess | SyftError:
         """
-        Ask the peer (the "remote node") to update the priority of the given route
-        it uses to connect to the current node ("self node").
+        Update the route priority on the remote peer.
 
         Args:
             context (AuthedServiceContext): The authentication context.
@@ -713,7 +720,10 @@ class NetworkService(AbstractService):
         # of the current node's client
         remote_client = peer.client_with_context(context=context)
         if remote_client.is_err():
-            return SyftError(message=f"{remote_client.err()}")
+            return SyftError(
+                message=f"Failed to create remote client for peer: "
+                f"{peer.id}. Error: {remote_client.err()}"
+            )
         remote_client = remote_client.ok()
         self_node_peer: NodePeer = context.node.settings.to(NodePeer)
         result = remote_client.api.services.network.update_route_priority(

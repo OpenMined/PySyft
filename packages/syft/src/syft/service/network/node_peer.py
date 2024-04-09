@@ -210,9 +210,6 @@ class NodePeer(SyftObject):
         # select the latest added route
         final_route: NodeRoute = self.pick_highest_priority_route()
 
-        print(
-            f"inside node_peer.py::client_with_key. {final_route = }; {final_route.port = }"
-        )
         connection = route_to_connection(route=final_route)
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):

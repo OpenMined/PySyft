@@ -1062,7 +1062,10 @@ class Node(AbstractNode):
 
                 client = peer.client_with_context(context=context)
                 if client.is_err():
-                    return SyftError(message=f"{client.err()}")
+                    return SyftError(
+                        message=f"Failed to create remote client for peer: "
+                        f"{peer.id}. Error: {client.err()}"
+                    )
                 client = client.ok()
 
                 self.peer_client_cache[peer_cache_key] = client
