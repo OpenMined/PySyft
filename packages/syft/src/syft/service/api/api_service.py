@@ -68,7 +68,7 @@ class APIService(AbstractService):
 
         result = result.ok()
         action_obj = ActionObject.from_obj(
-            id=result.id,
+            id=new_endpoint.action_object_id,
             syft_action_data=CustomEndpointActionObject(endpoint_id=result.id),
             syft_node_location=context.node.id,
             syft_client_verify_key=context.credentials,

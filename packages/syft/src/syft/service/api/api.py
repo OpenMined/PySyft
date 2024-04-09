@@ -15,6 +15,7 @@ from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
+from syft.types.uid import UID
 
 # relative
 from ...abstract_node import AbstractNode
@@ -23,7 +24,7 @@ from ...serde.signature import signature_remove_context
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
-from ...types.transforms import TransformContext
+from ...types.transforms import TransformContext, generate_action_object_id
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ..context import AuthedServiceContext
@@ -61,6 +62,7 @@ class TwinAPIEndpointView(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     path: str
+    action_object_id: UID
     signature: Signature
     access: str = "Public"
     mock_function: str | None = None
@@ -247,6 +249,7 @@ class TwinAPIEndpoint(SyftObject):
     mock_function: PublicAPIEndpoint
     signature: Signature
     description: str | None = None
+    action_object_id: UID
 
     __attr_searchable__ = ["path"]
     __attr_unique__ = ["path"]
@@ -461,7 +464,7 @@ def extract_code_string(code_field: str) -> Callable:
 
 @transform(CreateTwinAPIEndpoint, TwinAPIEndpoint)
 def endpoint_create_to_twin_endpoint() -> list[Callable]:
-    return [generate_id, check_and_cleanup_signature]
+    return [generate_id, generate_action_object_id, check_and_cleanup_signature]
 
 
 @transform(TwinAPIEndpoint, TwinAPIEndpointView)

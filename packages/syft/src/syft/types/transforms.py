@@ -142,6 +142,13 @@ def generate_id(context: TransformContext) -> TransformContext:
         context.output["id"] = UID()
     return context
 
+def generate_action_object_id(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+    if "action_object_id" not in context.output or not isinstance(context.output["action_object_id"], UID):
+        context.output["action_object_id"] = UID()
+    return context
+
 
 def validate_url(context: TransformContext) -> TransformContext:
     if context.output and context.output["url"] is not None:
