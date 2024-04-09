@@ -96,7 +96,6 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
-from ..service.veilid import VeilidServiceProvider
 from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
@@ -874,8 +873,7 @@ class Node(AbstractNode):
             {"svc": SyftImageRegistryService},
             {"svc": SyncService},
             {"svc": OutputService},
-            {"svc": UserCodeStatusService},
-            {"svc": VeilidServiceProvider},  # this is lazy
+            {"svc": UserCodeStatusService},  # this is lazy
         ]
 
         for svc_kwargs in default_services:
