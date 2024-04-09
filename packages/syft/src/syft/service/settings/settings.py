@@ -14,7 +14,7 @@ from ...types.uid import UID
 
 
 @serializable()
-class NodeSettingsUpdate(PartialSyftObject):
+class NodeSettingsUpdateV1(PartialSyftObject):
     __canonical_name__ = "NodeSettingsUpdate"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -25,6 +25,7 @@ class NodeSettingsUpdate(PartialSyftObject):
     on_board: bool
     signup_enabled: bool
     admin_email: str
+
 
 @serializable()
 class NodeSettingsUpdate(PartialSyftObject):

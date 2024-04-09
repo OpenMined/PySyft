@@ -1394,7 +1394,7 @@ class Node(AbstractNode):
     def get_default_worker_pool(self) -> WorkerPool | None | SyftError:
         result = self.pool_stash.get_by_name(
             credentials=self.verify_key,
-            pool_name=get_default_worker_pool_name(),
+            pool_name=self.settings.default_worker_pool,
         )
         if result.is_err():
             return SyftError(message=f"{result.err()}")
@@ -1448,6 +1448,7 @@ class Node(AbstractNode):
                     admin_email=admin_email,
                     node_side_type=self.node_side_type.value,  # type: ignore
                     show_warnings=self.enable_warnings,
+                    default_worker_pool=get_default_worker_pool_name(),
                 )
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings
@@ -1542,7 +1543,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
     credentials = node.verify_key
     pull_image = not node.dev_mode
     image_stash = node.get_service(SyftWorkerImageService).stash
-    default_pool_name = get_default_worker_pool_name()
+    default_pool_name = node.settings.default_worker_pool
     default_worker_pool = node.get_default_worker_pool()
     default_worker_tag = get_default_worker_tag_by_env(node.dev_mode)
     worker_count = get_default_worker_pool_count(node)
