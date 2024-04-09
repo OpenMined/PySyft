@@ -1,8 +1,6 @@
 # stdlib
-from typing import cast
 
 # relative
-from ...abstract_node import AbstractNode
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -45,7 +43,6 @@ class CodeHistoryService(AbstractService):
         code: SubmitUserCode | UserCode,
         comment: str | None = None,
     ) -> SyftSuccess | SyftError:
-        context.node = cast(AbstractNode, context.node)
         user_code_service = context.node.get_service("usercodeservice")
         if isinstance(code, SubmitUserCode):
             result = user_code_service._submit(context=context, code=code)
@@ -126,7 +123,7 @@ class CodeHistoryService(AbstractService):
         result = self.stash.get_by_verify_key(
             credentials=context.credentials, user_verify_key=user_verify_key
         )
-        context.node = cast(AbstractNode, context.node)
+
         user_code_service = context.node.get_service("usercodeservice")
 
         def get_code(uid: UID) -> UserCode | SyftError:
@@ -170,7 +167,6 @@ class CodeHistoryService(AbstractService):
     def get_history_for_user(
         self, context: AuthedServiceContext, email: str
     ) -> CodeHistoriesDict | SyftError:
-        context.node = cast(AbstractNode, context.node)
         user_service = context.node.get_service("userservice")
         result = user_service.stash.get_by_email(
             credentials=context.credentials, email=email
@@ -195,7 +191,6 @@ class CodeHistoryService(AbstractService):
             return SyftError(message=result.err())
         code_histories: list[CodeHistory] = result.ok()
 
-        context.node = cast(AbstractNode, context.node)
         user_service = context.node.get_service("userservice")
         result = user_service.stash.get_all(context.credentials)
         if result.is_err():
@@ -228,7 +223,6 @@ class CodeHistoryService(AbstractService):
         user_email: str,
         user_id: UID,
     ) -> list[CodeHistory] | SyftError:
-        context.node = cast(AbstractNode, context.node)
         user_service = context.node.get_service("userservice")
         user_verify_key = user_service.user_verify_key(user_email)
 

@@ -3,7 +3,6 @@ from typing import Any
 from typing import cast
 
 # relative
-from ...abstract_node import AbstractNode
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -93,6 +92,19 @@ class JobService(AbstractService):
         return SyftSuccess(message="Great Success!")
 
     @service_method(
+        path="job.get_by_result_id",
+        name="get_by_result_id",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def get_by_result_id(
+        self, context: AuthedServiceContext, result_id: UID
+    ) -> Job | None | SyftError:
+        res = self.stash.get_by_result_id(context.credentials, result_id)
+        if res.is_err():
+            return SyftError(message=res.err())
+        return res.ok()
+
+    @service_method(
         path="job.restart",
         name="restart",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
@@ -103,8 +115,6 @@ class JobService(AbstractService):
         res = self.stash.get_by_uid(context.credentials, uid=uid)
         if res.is_err():
             return SyftError(message=res.err())
-
-        context.node = cast(AbstractNode, context.node)
 
         job = res.ok()
         job.status = JobStatus.CREATED
@@ -215,7 +225,6 @@ class JobService(AbstractService):
     def add_read_permission_log_for_code_owner(
         self, context: AuthedServiceContext, log_id: UID, user_code: UserCode
     ) -> Any:
-        context.node = cast(AbstractNode, context.node)
         log_service = context.node.get_service("logservice")
         log_service = cast(LogService, log_service)
         return log_service.stash.add_permission(
@@ -232,7 +241,6 @@ class JobService(AbstractService):
     def create_job_for_user_code_id(
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> Job | SyftError:
-        context.node = cast(AbstractNode, context.node)
         job = Job(
             id=UID(),
             node_uid=context.node.id,
@@ -253,7 +261,7 @@ class JobService(AbstractService):
         self.add_read_permission_job_for_code_owner(context, job, user_code)
 
         log_service = context.node.get_service("logservice")
-        res = log_service.add(context, job.log_id)
+        res = log_service.add(context, job.log_id, job.id)
         if isinstance(res, SyftError):
             return res
         # The owner of the code should be able to read the job log

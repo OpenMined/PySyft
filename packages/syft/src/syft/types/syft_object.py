@@ -25,7 +25,6 @@ from typing import TYPE_CHECKING
 from typing import Union
 from typing import get_args
 from typing import get_origin
-import warnings
 
 # third party
 import pandas as pd
@@ -554,25 +553,17 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     def to_dict(
         self, exclude_none: bool = False, exclude_empty: bool = False
     ) -> dict[str, Any]:
-        warnings.warn(
-            "`SyftObject.to_dict` is deprecated and will be removed in a future version",
-            PendingDeprecationWarning,
-            stacklevel=2,
-        )
-        # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
-        if not exclude_none and not exclude_empty:
-            return self.dict()
-        else:
-            new_dict = {}
-            for k, v in dict(self).items():
-                # exclude dynamically added syft attributes
-                if k in DYNAMIC_SYFT_ATTRIBUTES:
-                    continue
-                if exclude_empty and v is not Empty:
-                    new_dict[k] = v
-                if exclude_none and v is not None:
-                    new_dict[k] = v
-            return new_dict
+        new_dict = {}
+        for k, v in dict(self).items():
+            # exclude dynamically added syft attributes
+            if k in DYNAMIC_SYFT_ATTRIBUTES:
+                continue
+            if exclude_empty and v is Empty:
+                continue
+            if exclude_none and v is None:
+                continue
+            new_dict[k] = v
+        return new_dict
 
     def __post_init__(self) -> None:
         pass
@@ -582,7 +573,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             return
         # Validate and set private attributes
         # https://github.com/pydantic/pydantic/issues/2105
-        annotations = typing.get_type_hints(self.__class__, localns=locals())
+        annotations = typing.get_type_hints(self.__class__)
         for attr, decl in self.__private_attributes__.items():
             value = kwargs.get(attr, decl.get_default())
             var_annotation = annotations.get(attr)
@@ -787,7 +778,8 @@ def get_repr_values_table(
 
         # get id
         id_ = getattr(item, "id", None)
-        if id_ is not None:
+        include_id = getattr(item, "__syft_include_id_coll_repr__", True)
+        if id_ is not None and include_id:
             cols["id"].append({"value": str(id_), "type": "clipboard"})
 
         if type(item) == type:
@@ -802,6 +794,7 @@ def get_repr_values_table(
             cols["type"].append(t)
 
         # if has _coll_repr_
+
         if hasattr(item, "_coll_repr_"):
             ret_val = item._coll_repr_()
             if "id" in ret_val:

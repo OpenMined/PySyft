@@ -1,12 +1,10 @@
 # stdlib
 from pathlib import Path
-from typing import cast
 
 # third party
 import requests
 
 # relative
-from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...service.action.action_object import ActionObject
 from ...store.blob_storage import BlobRetrieval
@@ -87,8 +85,6 @@ class BlobStorageService(AbstractService):
         if res.is_err():
             return SyftError(message=res.value)
         remote_profile = res.ok()
-
-        context.node = cast(AbstractNode, context.node)
 
         seaweed_config = context.node.blob_storage_client.config
         # we cache this here such that we can use it when reading a file from azure
@@ -204,7 +200,6 @@ class BlobStorageService(AbstractService):
                     message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
                 )
 
-            context.node = cast(AbstractNode, context.node)
             with context.node.blob_storage_client.connect() as conn:
                 res: BlobRetrieval = conn.read(
                     obj.location, obj.type_, bucket_name=obj.bucket_name
@@ -222,7 +217,6 @@ class BlobStorageService(AbstractService):
     def allocate(
         self, context: AuthedServiceContext, obj: CreateBlobStorageEntry
     ) -> BlobDepositType | SyftError:
-        context.node = cast(AbstractNode, context.node)
         with context.node.blob_storage_client.connect() as conn:
             secure_location = conn.allocate(obj)
 
@@ -305,7 +299,7 @@ class BlobStorageService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=f"{result.err()}")
-        context.node = cast(AbstractNode, context.node)
+
         with context.node.blob_storage_client.connect() as conn:
             result = conn.complete_multipart_upload(obj, etags)
 
@@ -323,8 +317,6 @@ class BlobStorageService(AbstractService):
                 return SyftError(
                     message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
                 )
-
-            context.node = cast(AbstractNode, context.node)
 
             try:
                 with context.node.blob_storage_client.connect() as conn:
