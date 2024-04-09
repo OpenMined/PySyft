@@ -29,7 +29,7 @@ data:
   TRAEFIK_VERSION: v2.8.1
   REDIS_VERSION: 6.2
   RABBITMQ_VERSION: 3
-  VERSION: 0.8.7-beta.0
+  VERSION: 0.8.7-beta.1
   VERSION_HASH: unknown
   STACK_API_KEY: ""
 
@@ -100,11 +100,6 @@ data:
 
   # Worker
   USE_BLOB_STORAGE: False
-
-  #Oblivious
-  OBLV_ENABLED: false
-  OBLV_KEY_PATH: "~/.oblv"
-  OBLV_LOCALHOST_PORT: 3030
 
   # Registation
   ENABLE_SIGNUP: False

@@ -1,13 +1,11 @@
 # stdlib
 from typing import Any
-from typing import cast
 
 # third party
 import pydantic
 from result import OkErr
 
 # relative
-from ...abstract_node import AbstractNode
 from ...custom_worker.config import CustomWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
@@ -112,7 +110,7 @@ class SyftWorkerPoolService(AbstractService):
             )
 
         worker_image: SyftWorkerImage = result.ok()
-        context.node = cast(AbstractNode, context.node)
+
         worker_service: AbstractService = context.node.get_service("WorkerService")
         worker_stash = worker_service.stash
 
@@ -218,7 +216,7 @@ class SyftWorkerPoolService(AbstractService):
         # Create a the request object with the changes and submit it
         # for approval.
         request = SubmitRequest(changes=changes)
-        context.node = cast(AbstractNode, context.node)
+
         method = context.node.get_service_method(RequestService.submit)
         result = method(context=context, request=request, reason=reason)
 
@@ -318,7 +316,7 @@ class SyftWorkerPoolService(AbstractService):
 
         # Create a request object and submit a request for approval
         request = SubmitRequest(changes=changes)
-        context.node = cast(AbstractNode, context.node)
+
         method = context.node.get_service_method(RequestService.submit)
         result = method(context=context, request=request, reason=reason)
 
@@ -403,7 +401,6 @@ class SyftWorkerPoolService(AbstractService):
 
         worker_image: SyftWorkerImage = result.ok()
 
-        context.node = cast(AbstractNode, context.node)
         worker_service: AbstractService = context.node.get_service("WorkerService")
         worker_stash = worker_service.stash
 
@@ -453,7 +450,7 @@ class SyftWorkerPoolService(AbstractService):
         Scale the worker pool to the given number of workers in Kubernetes.
         Allows both scaling up and down the worker pool.
         """
-        context.node = cast(AbstractNode, context.node)
+
         if not IN_KUBERNETES:
             return SyftError(message="Scaling is only supported in Kubernetes mode")
         elif number < 0:
@@ -649,7 +646,6 @@ def _create_workers_in_pool(
     reg_username: str | None = None,
     reg_password: str | None = None,
 ) -> tuple[list[LinkedObject], list[ContainerSpawnStatus]] | SyftError:
-    context.node = cast(AbstractNode, context.node)
     queue_port = context.node.queue_config.client_config.queue_port
 
     # Check if workers needs to be run in memory or as containers
