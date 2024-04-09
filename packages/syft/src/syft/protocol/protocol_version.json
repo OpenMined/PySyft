@@ -104,6 +104,32 @@
           "hash": "4dbfa0813f5a3f7be0b36249ff2d67e395ad7c9e138c5a122fc7342b8dcc4b92",
           "action": "remove"
         }
+      },
+      "EnclaveMetadata": {
+        "2": {
+          "version": 2,
+          "hash": "6dcc26695abc6a9ecd9d7d1e6507a9f1a92cc5ccd10987e92419bf984245f9a1",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "d2f23411927c68e2307a84d180ad053b3e4ba12d74aba64d34dac224c90e815d",
+          "action": "add"
+        }
+      },
+      "NodePeer": {
+        "3": {
+          "version": 3,
+          "hash": "dababb03d2463b6218ae22d55293a60580f5a14bebd0c664d71da104e2f0b835",
+          "action": "add"
+        }
+      },
+      "VeilidConnection": {
+        "1": {
+          "version": 1,
+          "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
+          "action": "remove"
+        }
       }
     }
   }
