@@ -25,8 +25,10 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
+from ...types.transforms import generate_action_object_id
 from ...types.transforms import generate_id
 from ...types.transforms import transform
+from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
 
@@ -62,6 +64,7 @@ class TwinAPIEndpointView(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     path: str
+    action_object_id: UID
     signature: Signature
     access: str = "Public"
     mock_function: str | None = None
@@ -248,6 +251,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
     mock_function: PublicAPIEndpoint
     signature: Signature
     description: str | None = None
+    action_object_id: UID
 
     __attr_searchable__ = ["path"]
     __attr_unique__ = ["path"]
@@ -462,7 +466,7 @@ def extract_code_string(code_field: str) -> Callable:
 
 @transform(CreateTwinAPIEndpoint, TwinAPIEndpoint)
 def endpoint_create_to_twin_endpoint() -> list[Callable]:
-    return [generate_id, check_and_cleanup_signature]
+    return [generate_id, generate_action_object_id, check_and_cleanup_signature]
 
 
 @transform(TwinAPIEndpoint, TwinAPIEndpointView)
