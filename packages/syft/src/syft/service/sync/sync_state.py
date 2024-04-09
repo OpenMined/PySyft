@@ -10,12 +10,13 @@ from syft.service.request.request import Request
 from syft.util.colors import SURFACE
 from syft.util.fonts import ITABLES_CSS, FONT_CSS
 from ...util import options
+from ...util.notebook_ui.notebook_addons import create_table_template
 
 # relative
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
-from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_1, get_repr_values_table
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
@@ -294,4 +295,7 @@ class SyncState(SyftObject):
             {date_html}
         </div>
 """
-        return repr + self.rows._repr_html_()
+
+        rews = get_repr_values_table(self.rows, True)
+        return repr + create_table_template(rews, "SyncStateRow", grid_template_columns="auto auto 1fr auto", grid_template_cell_columns="unset", table_icon=None)
+
