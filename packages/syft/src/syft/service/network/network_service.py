@@ -83,7 +83,7 @@ class NetworkStash(BaseUIDStoreStash):
             return Err(message=valid.err())
         return super().update(credentials, peer)
 
-    def update_peer_and_route_priority(
+    def create_and_update_peer(
         self, credentials: SyftVerifyKey, peer: NodePeer
     ) -> Result[NodePeer, str]:
         """
@@ -191,7 +191,7 @@ class NetworkService(AbstractService):
             return SyftError(message=str(e))
 
         # save the remote peer for later
-        result = self.stash.update_peer_and_route_priority(
+        result = self.stash.create_and_update_peer(
             context.node.verify_key,
             remote_node_peer,
         )
@@ -251,9 +251,7 @@ class NetworkService(AbstractService):
         except Exception as e:
             return SyftError(message=str(e))
 
-        result = self.stash.update_peer_and_route_priority(
-            context.node.verify_key, peer
-        )
+        result = self.stash.create_and_update_peer(context.node.verify_key, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
 
@@ -400,7 +398,7 @@ class NetworkService(AbstractService):
             return remote_node_peer
 
         # Step 4: Add the remote Node Peer to our stash
-        result = self.stash.update_peer_and_route_priority(
+        result = self.stash.create_and_update_peer(
             context.node.verify_key, remote_node_peer
         )
         if result.is_err():
@@ -429,9 +427,7 @@ class NetworkService(AbstractService):
             )
 
         # Step 2: Save the remote peer to our stash
-        result = self.stash.update_peer_and_route_priority(
-            context.node.verify_key, peer
-        )
+        result = self.stash.create_and_update_peer(context.node.verify_key, peer)
         if result.is_err():
             return SyftError(message=str(result.err()))
 
