@@ -15,6 +15,7 @@ from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
+from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
@@ -213,6 +214,17 @@ class APIService(AbstractService):
 
         return api_endpoint_view
 
+    @service_method(path="api.get_all", name="get_all", roles=ADMIN_ROLE_LEVEL)
+    def get_all(
+        self,
+        context: AuthedServiceContext,
+    ) -> list[TwinAPIEndpoint] | SyftError:
+        """Get all API endpoints."""
+        result = self.stash.get_all(context.credentials)
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message=result.err())
+
     @service_method(path="api.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self,
@@ -357,3 +369,6 @@ class APIService(AbstractService):
             return result.ok()
 
         return SyftError(message=f"Unable to get {endpoint_path} CustomAPIEndpoint")
+
+
+TYPE_TO_SERVICE[TwinAPIEndpoint] = APIService

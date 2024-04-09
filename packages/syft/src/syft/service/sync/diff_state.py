@@ -37,6 +37,7 @@ from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import StoragePermission
+from ..api.api import TwinAPIEndpoint
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatusCollection
 from ..job.job_stash import Job
@@ -1158,12 +1159,11 @@ It will be available for review again."""
 
         for diff in obj_uid_to_diff.values():
             diff_obj = diff.low_obj if diff.low_obj is not None else diff.high_obj
-            if isinstance(diff_obj, Request):
-                root_ids.append(diff.object_id)
-            elif isinstance(diff_obj, Job) and diff_obj.parent_job_id is None:  # type: ignore
-                root_ids.append(diff.object_id)  # type: ignore
-            elif isinstance(diff_obj, UserCode):
+            if isinstance(diff_obj, Request | UserCode | TwinAPIEndpoint):
                 # TODO: Figure out nested user codes, do we even need that?
+
+                root_ids.append(diff.object_id)  # type: ignore
+            elif isinstance(diff_obj, Job) and diff_obj.parent_job_id is None:  # type: ignore
                 root_ids.append(diff.object_id)  # type: ignore
 
         for root_uid in root_ids:
@@ -1216,14 +1216,15 @@ class SyncInstruction(SyftObject):
         if sync_direction == SyncDirection.HIGH_TO_LOW:
             if widget.share_private_data or diff.object_type == "Job":
                 if share_to_user is None:
-                    raise ValueError("empty to user to share with")
-                new_permissions_low_side = [
-                    ActionObjectPermission(
-                        uid=widget.diff.object_id,
-                        permission=ActionPermission.READ,
-                        credentials=share_to_user,  # type: ignore
-                    )
-                ]
+                    raise ValueError("share_to_user is required for private data")
+                else:
+                    new_permissions_low_side = [
+                        ActionObjectPermission(
+                            uid=widget.diff.object_id,
+                            permission=ActionPermission.READ,
+                            credentials=share_to_user,  # type: ignore
+                        )
+                    ]
 
         # mockify
         mockify = widget.mockify

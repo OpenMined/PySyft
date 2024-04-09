@@ -23,6 +23,7 @@ from ...serde.signature import signature_remove_context
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import generate_id
 from ...types.transforms import transform
@@ -234,7 +235,7 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
 
 
 @serializable()
-class TwinAPIEndpoint(SyftObject):
+class TwinAPIEndpoint(SyncableSyftObject):
     # version
     __canonical_name__ = "TwinAPIEndpoint"
     __version__ = SYFT_OBJECT_VERSION_1
