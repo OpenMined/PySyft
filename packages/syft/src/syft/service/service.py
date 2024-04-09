@@ -226,14 +226,15 @@ def register_lib_obj(lib_obj: CMPBase) -> None:
 
             LibConfigRegistry.register(lib_config)
 
-    # hacky, prevent circular imports
-    for lib_obj in action_execute_registry_libs.flatten():
-        # # for functions
-        # func_name = func.__name__
-        # # for classes
-        # func_name = path.split(".")[-1]
-        if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
-            register_lib_obj(lib_obj)
+
+# hacky, prevent circular imports
+for lib_obj in action_execute_registry_libs.flatten():
+    # # for functions
+    # func_name = func.__name__
+    # # for classes
+    # func_name = path.split(".")[-1]
+    if isinstance(lib_obj, CMPFunction) or isinstance(lib_obj, CMPClass):
+        register_lib_obj(lib_obj)
 
 
 def deconstruct_param(param: inspect.Parameter) -> dict[str, Any]:
