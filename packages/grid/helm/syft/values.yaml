@@ -144,7 +144,6 @@ ingress:
 # Enclave attestation Service
 attestation:
   enabled: false
-  serverFlags: null
   appLogLevel: "info"
   uvicornLogLevel: "info"
 

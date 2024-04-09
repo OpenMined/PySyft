@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: attestation-container
-          image: {{ .Values.global.registry }}/openmined/grid-attestation:{{ .Values.global.version }}
+          image: {{ .Values.global.registry }}/openmined/grid-enclave-attestation:{{ .Values.global.version }}
           imagePullPolicy: Always
           resources: {{ include "common.resources.set" (dict "resources" .Values.attestation.resources "preset" .Values.attestation.resourcesPreset) | nindent 12 }}
 
@@ -31,10 +31,6 @@ spec:
               value: {{ .Values.attestation.uvicornLogLevel }}
             - name: APP_LOG_LEVEL
               value: {{ .Values.attestation.appLogLevel }}
-            {{- if .Values.attestation.serverFlags }}
-            - name: ATTESTATION_FLAGS
-              value: {{ .Values.attestation.serverFlags | quote }}
-            {{- end }}
             {{- if .Values.attestation.env }}
             {{- toYaml .Values.attestation.env | nindent 12 }}
             {{- end }}

@@ -58,8 +58,8 @@ images:
   attestation:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_ENCLAVE_ATTESTATION}"
     buildKit:
-      args: ["--platform", "linux/amd64"] # TODO verify if this is correct
-    dockerfile: ./enclave/attestation.dockerfile
+      args: ["--platform", "linux/amd64"]
+    dockerfile: ./enclave/attestation/attestation.dockerfile
     context: ./enclave/attestation
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
