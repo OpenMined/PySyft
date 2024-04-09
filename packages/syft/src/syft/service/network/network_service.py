@@ -345,8 +345,7 @@ class NetworkService(AbstractService):
     @service_method(
         path="network.delete_peer_by_id",
         name="delete_peer_by_id",
-        # roles=DATA_OWNER_ROLE_LEVEL,
-        roles=GUEST_ROLE_LEVEL,
+        roles=DATA_OWNER_ROLE_LEVEL,
     )
     def delete_peer_by_id(
         self, context: AuthedServiceContext, uid: UID
