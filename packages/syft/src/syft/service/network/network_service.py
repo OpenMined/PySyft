@@ -476,9 +476,8 @@ class NetworkService(AbstractService):
         remote_client = remote_client.ok()
         # ask the remote node to add the route to the self node
         # note that the `.to` transform gives a NodePeer object without its routes
-        self_node_peer: NodePeer = context.node.settings.to(NodePeer)
         result = remote_client.api.services.network.add_route(
-            peer=self_node_peer,
+            peer_verify_key=context.credentials,
             route=route,
             called_by_peer=True,
         )
@@ -488,7 +487,7 @@ class NetworkService(AbstractService):
     def add_route(
         self,
         context: AuthedServiceContext,
-        peer: NodePeer,
+        peer_verify_key: SyftVerifyKey,
         route: NodeRoute,
         called_by_peer: bool = False,
     ) -> SyftSuccess | SyftError:
@@ -497,7 +496,7 @@ class NetworkService(AbstractService):
 
         Args:
             context (AuthedServiceContext): The authentication context of the remote node.
-            peer (NodePeer): The peer representing the remote node.
+            peer_verify_key (SyftVerifyKey): The verify key of the remote node peer.
             route (NodeRoute): The route to be added.
             called_by_peer (bool): The flag to indicate that it's called by a remote peer.
 
@@ -505,16 +504,16 @@ class NetworkService(AbstractService):
             SyftSuccess | SyftError
         """
         # verify if the peer is truly the one sending the request to add the route to itself
-        if called_by_peer and peer.verify_key != context.credentials:
+        if called_by_peer and peer_verify_key != context.credentials:
             return SyftError(
                 message=(
-                    f"The {type(peer).__name__}.verify_key: "
-                    f"{peer.verify_key} does not match the signature of the message"
+                    f"The {type(peer_verify_key).__name__}.verify_key: "
+                    f"{peer_verify_key} does not match the signature of the message"
                 )
             )
         # get the full peer object from the store to update its routes
         remote_node_peer: NodePeer | SyftError = (
-            self._get_remote_node_peer_by_verify_key(context, peer.verify_key)
+            self._get_remote_node_peer_by_verify_key(context, peer_verify_key)
         )
         if isinstance(remote_node_peer, SyftError):
             return remote_node_peer

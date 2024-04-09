@@ -354,7 +354,7 @@ def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
     new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
     domain_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route(
-        peer=domain_peer, route=new_route
+        peer_verify_key=domain_peer.verify_key, route=new_route
     )
     assert isinstance(res, SyftSuccess)
     domain_peer = gateway_client.api.services.network.get_all_peers()[0]
@@ -364,7 +364,7 @@ def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
     # adding another route to the domain
     new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
     res = gateway_client.api.services.network.add_route(
-        peer=domain_peer, route=new_route2
+        peer_verify_key=domain_peer.verify_key, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
     domain_peer = gateway_client.api.services.network.get_all_peers()[0]
@@ -374,7 +374,7 @@ def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
 
     # add an existed route to the domain and check its priority gets updated
     res = gateway_client.api.services.network.add_route(
-        peer=domain_peer, route=domain_peer.node_routes[0]
+        peer_verify_key=domain_peer.verify_key, route=domain_peer.node_routes[0]
     )
     assert "route already exists" in res.message
     assert isinstance(res, SyftSuccess)
@@ -389,7 +389,7 @@ def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
 
     # add another existed route (port 10000)
     res = gateway_client.api.services.network.add_route(
-        peer=domain_peer, route=domain_peer.node_routes[1]
+        peer_verify_key=domain_peer.verify_key, route=domain_peer.node_routes[1]
     )
     assert "route already exists" in res.message
     assert isinstance(res, SyftSuccess)
@@ -430,7 +430,7 @@ def test_delete_route(set_env_var, gateway_port: int, domain_1_port: int) -> Non
     new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
     domain_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route(
-        peer=domain_peer, route=new_route
+        peer_verify_key=domain_peer.verify_key, route=new_route
     )
     assert isinstance(res, SyftSuccess)
     domain_peer = gateway_client.api.services.network.get_all_peers()[0]
@@ -466,6 +466,10 @@ def test_add_route_on_peer(set_env_var, gateway_port: int, domain_1_port: int) -
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
+
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
     # connecting the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
@@ -612,11 +616,11 @@ def test_update_route_priority(
     new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
     domain_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
     res = gateway_client.api.services.network.add_route(
-        peer=domain_peer, route=new_route
+        peer_verify_key=domain_peer.verify_key, route=new_route
     )
     assert isinstance(res, SyftSuccess)
     res = gateway_client.api.services.network.add_route(
-        peer=domain_peer, route=new_route2
+        peer_verify_key=domain_peer.verify_key, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
 
