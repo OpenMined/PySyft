@@ -61,7 +61,7 @@ COPY_CSS = """
 
 class CopyIDButton(HTMLComponentBase):
     __canonical_name__ = "CopyButton"
-    __version__ = "1.0"
+    __version__ = SYFT_OBJECT_VERSION_1
     copy_text: str
     max_width: int = 50
 
@@ -89,7 +89,7 @@ class SyncTableObject(HTMLComponentBase):
         elif isinstance(self.object, Request):  # type: ignore
             # TODO: handle other requests
             return f"Execute {self.object.code.service_func_name}"
-        return ""
+        return ""  # type: ignore
 
     def type_badge_class(self) -> str:
         if isinstance(self.object, UserCode):
@@ -99,7 +99,7 @@ class SyncTableObject(HTMLComponentBase):
         elif isinstance(self.object, Request):  # type: ignore
             # TODO: handle other requests
             return "label-light-purple"
-        return "label-light-blue"
+        return "label-light-blue"  # type: ignore
 
     @property
     def object_type_name(self) -> str:
@@ -118,7 +118,7 @@ class SyncTableObject(HTMLComponentBase):
             status_tuple = statusses[0]
             status, _ = status_tuple
             return status.value
-        return ""
+        return ""  # type: ignore
 
     def to_html(self) -> str:
         badge_class = self.type_badge_class()
