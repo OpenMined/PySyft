@@ -439,7 +439,7 @@ def test_delete_route(set_env_var, gateway_port: int, domain_1_port: int) -> Non
 
     # delete the added route
     res = gateway_client.api.services.network.delete_route(
-        peer=domain_peer, route=new_route
+        peer_verify_key=domain_peer.verify_key, route=new_route
     )
     assert isinstance(res, SyftSuccess)
     domain_peer = gateway_client.api.services.network.get_all_peers()[0]
@@ -566,14 +566,14 @@ def test_delete_route_on_peer(
 
     # gateway delete the routes for the domain
     res = gateway_client.api.services.network.delete_route_on_peer(
-        peer=domain_peer, route_id=new_route.id
+        peer_verify_key=domain_peer.verify_key, route_id=new_route.id
     )
     assert isinstance(res, SyftSuccess)
     gateway_peer = domain_client.peers[0]
     assert len(gateway_peer.node_routes) == 2
 
     res = gateway_client.api.services.network.delete_route_on_peer(
-        peer=domain_peer, route=new_route2
+        peer_verify_key=domain_peer.verify_key, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
     gateway_peer = domain_client.peers[0]
@@ -582,7 +582,7 @@ def test_delete_route_on_peer(
     # gateway deletes the last the route to it for the domain
     last_route: NodeRouteType = gateway_peer.node_routes[0]
     res = gateway_client.api.services.network.delete_route_on_peer(
-        peer=domain_peer, route=last_route
+        peer_verify_key=domain_peer.verify_key, route=last_route
     )
     assert isinstance(res, SyftSuccess)
     assert "There is no routes left" in res.message
@@ -635,7 +635,7 @@ def test_update_route_priority(
 
     # update the priorities for the routes
     res = gateway_client.api.services.network.update_route_priority(
-        peer=domain_peer, route=new_route, priority=5
+        peer_verify_key=domain_peer.verify_key, route=new_route, priority=5
     )
     assert isinstance(res, SyftSuccess)
     domain_peer = gateway_client.api.services.network.get_all_peers()[0]
@@ -645,7 +645,7 @@ def test_update_route_priority(
     assert routes_port_priority[new_route.port] == 5
 
     res = gateway_client.api.services.network.update_route_priority(
-        peer=domain_peer, route=new_route2
+        peer_verify_key=domain_peer.verify_key, route=new_route2
     )
     assert isinstance(res, SyftSuccess)
     domain_peer = gateway_client.api.services.network.get_all_peers()[0]
