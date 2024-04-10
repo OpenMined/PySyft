@@ -422,15 +422,29 @@ class Node(AbstractNode):
         return DictStoreConfig()
 
     def init_blob_storage(self, config: BlobStorageConfig | None = None) -> None:
-        if config is None:
-            client_config = OnDiskBlobStorageClientConfig(
-                base_directory=self.get_temp_dir("blob")
+        if True:
+            config_ = BlobStorageFilesystem.model_validate(
+                {
+                    "config": {
+                        "storage_url": "local://.something/",
+                        "storage_options": {"type": "local", "prefix": "syft-local"},
+                    }
+                }
             )
-            config_ = OnDiskBlobStorageConfig(client_config=client_config)
+
+            self.blob_store_config = config_
+            self.blob_storage_client = config_
+        elif config is None:
+            client_config = BlobStorageFilesystemConfig(
+                storage_url="local://", storage_options={"type": "local"}
+            )
+            config_ = BlobStorageFilesystem(config=client_config)
+            self.blob_store_config = config_
+            self.blob_storage_client = config_.client_type(config=config_.client_config)
         else:
             config_ = config
-        self.blob_store_config = config_
-        self.blob_storage_client = config_.client_type(config=config_.client_config)
+            self.blob_store_config = config_
+            self.blob_storage_client = config_.client_type(config=config_.client_config)
 
         # relative
         from ..store.blob_storage.seaweedfs import SeaweedFSConfig
