@@ -49,7 +49,7 @@ def mount_bucket(
 
     # create a seaweedfs safe config name
     swfs_config_name = seaweed_safe_config_name(
-        remote_name=opts.remote_bucket.type,
+        remote_name=opts.remote_bucket.type.value,
         bucket_name=opts.remote_bucket.full_bucket_name,
     )
 
@@ -70,7 +70,7 @@ def mount_bucket(
             config_name=swfs_config_name,
             local_bucket=opts.local_bucket,
             remote_bucket=opts.remote_bucket.bucket_name,
-            remote_type=opts.remote_bucket.type,
+            remote_type=opts.remote_bucket.type.value,
             remote_creds=get_remote_cred_args(opts.remote_bucket.type),
         )
     )

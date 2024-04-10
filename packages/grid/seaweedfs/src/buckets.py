@@ -1,5 +1,6 @@
 # stdlib
-from enum import StrEnum
+from enum import Enum
+from enum import unique
 import json
 from pathlib import Path
 from typing import Any
@@ -21,7 +22,8 @@ __all__ = [
 ]
 
 
-class BucketType(StrEnum):
+@unique
+class BucketType(Enum):
     """Weed shell supported values"""
 
     S3 = "s3"
