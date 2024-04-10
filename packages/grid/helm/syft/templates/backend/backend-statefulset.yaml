@@ -114,6 +114,11 @@ spec:
               value: "localhost"
             - name: JAEGER_PORT
               value: "14268"
+            # Enclave attestation
+            {{- if .Values.attestation.enabled }}
+            - name: ENCLAVE_ATTESTATION_ENABLED
+              value: {{ .Values.attestation.enabled | quote }}
+            {{- end }}
             {{- if .Values.node.env }}
             {{- toYaml .Values.node.env | nindent 12 }}
             {{- end }}
