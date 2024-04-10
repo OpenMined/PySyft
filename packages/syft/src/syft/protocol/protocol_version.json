@@ -10,5 +10,16 @@
   },
   "4": {
     "release_name": "0.8.5.post1.json"
+  },
+  "dev": {
+    "object_versions": {
+      "TempBlobRetrieval": {
+        "1": {
+          "version": 1,
+          "hash": "3b3a133e848c510ab5f49c8d23fd7d9f8e43674d6732926d4fb272fb7603dcc2",
+          "action": "add"
+        }
+      }
+    }
   }
 }

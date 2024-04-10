@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from enum import Enum
 import inspect
-from io import BytesIO
 from pathlib import Path
 import threading
 import time
@@ -739,37 +738,29 @@ class ActionObject(SyncableSyftObject):
         from ...types.blob_storage import CreateBlobStorageEntry
 
         if not isinstance(data, ActionDataEmpty):
-            if isinstance(data, BlobFile) and not data.uploaded:
-                api = APIRegistry.api_for(
-                    self.syft_node_location, self.syft_client_verify_key
-                )
-                data.upload_to_blobstorage_from_api(api)
+            api = APIRegistry.api_for(
+                self.syft_node_location, self.syft_client_verify_key
+            )
+            if isinstance(data, BlobFile):
+                if not data.uploaded:
+                    data.upload_to_blobstorage_from_api(api)
             else:
                 storage_entry = CreateBlobStorageEntry.from_obj(data)
                 if self.syft_blob_storage_entry_id is not None:
                     # TODO: check if it already exists
                     storage_entry.id = self.syft_blob_storage_entry_id
-                allocate_method = from_api_or_context(
-                    func_or_path="blob_storage.allocate",
-                    syft_node_location=self.syft_node_location,
-                    syft_client_verify_key=self.syft_client_verify_key,
-                )
-                if allocate_method is not None:
-                    blob_deposit_object = allocate_method(storage_entry)
 
-                    if isinstance(blob_deposit_object, SyftError):
-                        return blob_deposit_object
+                secure_path = api.services.blob_storage.allocate(storage_entry)
 
-                    result = blob_deposit_object.write(
-                        BytesIO(serialize(data, to_bytes=True))
-                    )
-                    if isinstance(result, SyftError):
-                        return result
-                    self.syft_blob_storage_entry_id = (
-                        blob_deposit_object.blob_storage_entry_id
-                    )
-                else:
-                    print("cannot save to blob storage")
+                if isinstance(secure_path, SyftError):
+                    return secure_path
+
+                result = api.services.blob_storage.write(storage_entry, secure_path, serialize(data, to_bytes=True))
+
+                if isinstance(result, SyftError):
+                    return result
+
+                self.syft_blob_storage_entry_id = storage_entry.id
 
             self.syft_action_data_type = type(data)
 
