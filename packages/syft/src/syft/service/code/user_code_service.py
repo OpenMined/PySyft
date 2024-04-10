@@ -9,7 +9,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...client.enclave_client import EnclaveClient
 from ...serde.serializable import serializable
@@ -109,14 +108,25 @@ class UserCodeService(AbstractService):
         reason: str | None = "",
     ) -> Request | SyftError:
         user_code: UserCode = code.to(UserCode, context=context)
-        return self._request_code_execution_inner(context, user_code, reason)
+        result = self._validate_request_code_execution(context, user_code)
+        if isinstance(result, SyftError):
+            # if the validation fails, we should remove the user code status
+            # and code version to prevent dangling status
+            root_context = AuthedServiceContext(
+                credentials=context.node.verify_key, node=context.node
+            )
+            _ = context.node.get_service("usercodestatusservice").remove(
+                root_context, user_code.status_link.object_uid
+            )
+            return result
+        result = self._request_code_execution_inner(context, user_code, reason)
+        return result
 
-    def _request_code_execution_inner(
+    def _validate_request_code_execution(
         self,
         context: AuthedServiceContext,
         user_code: UserCode,
-        reason: str | None = "",
-    ) -> Request | SyftError:
+    ) -> SyftSuccess | SyftError:
         if user_code.output_readers is None:
             return SyftError(
                 message=f"there is no verified output readers for {user_code}"
@@ -144,8 +154,6 @@ class UserCodeService(AbstractService):
                 message="The code to be submitted (name and content) already exists"
             )
 
-        context.node = cast(AbstractNode, context.node)
-
         worker_pool_service = context.node.get_service("SyftWorkerPoolService")
         pool_result = worker_pool_service._get_worker_pool(
             context,
@@ -165,6 +173,14 @@ class UserCodeService(AbstractService):
         if isinstance(result, SyftError):
             return result
 
+        return SyftSuccess(message="")
+
+    def _request_code_execution_inner(
+        self,
+        context: AuthedServiceContext,
+        user_code: UserCode,
+        reason: str | None = "",
+    ) -> Request | SyftError:
         # Users that have access to the output also have access to the code item
         if user_code.output_readers is not None:
             self.stash.add_permissions(
@@ -262,7 +278,6 @@ class UserCodeService(AbstractService):
     def get_results(
         self, context: AuthedServiceContext, inp: UID | UserCode
     ) -> list[UserCode] | SyftError:
-        context.node = cast(AbstractNode, context.node)
         uid = inp.id if isinstance(inp, UserCode) else inp
         code_result = self.stash.get_by_uid(context.credentials, uid=uid)
 
@@ -340,7 +355,7 @@ class UserCodeService(AbstractService):
     ) -> bool | SyftError:
         if context.role == ServiceRole.ADMIN:
             return True
-        context.node = cast(AbstractNode, context.node)
+
         user_service = context.node.get_service("userservice")
         current_user = user_service.get_current_user(context=context)
         return current_user.mock_execution_permission
@@ -349,7 +364,6 @@ class UserCodeService(AbstractService):
         self, kwargs: dict[str, Any], context: AuthedServiceContext
     ) -> dict[str, Any] | SyftError:
         """Return only the kwargs that are owned by the user"""
-        context.node = cast(AbstractNode, context.node)
 
         action_service = context.node.get_service("actionservice")
 
@@ -474,7 +488,6 @@ class UserCodeService(AbstractService):
                     return can_execute.to_result()  # type: ignore
 
             # Execute the code item
-            context.node = cast(AbstractNode, context.node)
 
             action_service = context.node.get_service("actionservice")
 
@@ -541,7 +554,6 @@ class UserCodeService(AbstractService):
     def has_code_permission(
         self, code_item: UserCode, context: AuthedServiceContext
     ) -> SyftSuccess | SyftError:
-        context.node = cast(AbstractNode, context.node)
         if not (
             context.credentials == context.node.verify_key
             or context.credentials == code_item.user_verify_key
