@@ -7,6 +7,7 @@ from typing import cast
 from result import Err
 from result import Ok
 from result import Result
+from syft.node.credentials import SyftVerifyKey
 
 # relative
 from ...abstract_node import NodeType
@@ -258,6 +259,16 @@ class UserCodeService(AbstractService):
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
+
+    @service_method(
+        path="code.get_by_user_verify_key",
+        name="get_by_user_verify_key",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def get_by_user_verify_key(
+        self, context: AuthedServiceContext, user_verify_key: SyftVerifyKey
+    ) -> list[UserCode] | SyftError:
+        pass
 
     def update_code_state(
         self, context: AuthedServiceContext, code_item: UserCode

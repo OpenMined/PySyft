@@ -10,6 +10,8 @@ from bcrypt import hashpw
 from pydantic import EmailStr
 from pydantic import ValidationError
 from pydantic import field_validator
+from syft.service.context import AuthedServiceContext
+from syft.types.syncable_object import SyncableSyftObject
 
 # relative
 from ...client.api import APIRegistry
@@ -36,7 +38,7 @@ from .user_roles import ServiceRole
 
 
 @serializable()
-class User(SyftObject):
+class User(SyncableSyftObject):
     # version
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_3
@@ -67,6 +69,25 @@ class User(SyftObject):
     __attr_searchable__ = ["name", "email", "verify_key", "role"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
     __repr_attrs__ = ["name", "email"]
+    __private_sync_attr_mocks__ = {
+        "hashed_password": None,
+        "salt": None,
+        "signing_key": None,
+        "role": ServiceRole.NONE,
+    }
+
+    # def get_sync_dependencies(
+    #     self, context: AuthedServiceContext
+    # ) -> list[UID] | SyftError:
+    #     code_service = context.node.get_service("usercodeservice")
+    #     result = []
+    #     if self.verify_key is not None:
+    #         user_codes = code_service.get_user_codes_for_user(user_id=self.verify_key)
+    #         if isinstance(user_codes, SyftError):
+    #             return user_codes
+    #         result.extend(user_codes)
+
+    #     return result
 
 
 def default_role(role: ServiceRole) -> Callable:

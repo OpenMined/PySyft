@@ -429,6 +429,7 @@ class ResolveWidget:
 
         if batch_decision not in [SyncDecision.skip, SyncDecision.ignore]:
             sync_instructions = []
+            # TODO are we syncing diffs under the ---- separator?
             for diff in batch_diff.get_dependents(include_roots=True):
                 # while making widget: bind buttons to right state
                 # share_state = {diff.object_id: False for diff in obj_diff_batch.get_dependents(include_roots=False)}

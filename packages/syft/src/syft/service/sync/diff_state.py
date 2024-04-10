@@ -1072,6 +1072,7 @@ It will be available for review again."""
 
     @property
     def diffs(self) -> list[ObjectDiff]:
+        # TODO rewrite without sort
         diffs_depthfirst = [
             diff
             for hierarchy in self.batches
@@ -1185,6 +1186,7 @@ It will be available for review again."""
 
     @property
     def is_same(self) -> bool:
+        # TODO remove
         return all(object_diff.status == "SAME" for object_diff in self.diffs)
 
 
