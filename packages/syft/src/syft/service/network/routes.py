@@ -99,15 +99,15 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, HTTPNodeRoute):
             return False
-        return (
-            (self.host_or_ip == other.host_or_ip)
-            and (self.port == other.port)
-            and (self.protocol == other.protocol)
-            and (self.proxy_target_uid == other.proxy_target_uid)
-        )
+        return hash(self) == hash(other)
 
     def __hash__(self) -> int:
-        return hash(self.host_or_ip) + hash(self.port) + hash(self.protocol)
+        return (
+            hash(self.host_or_ip)
+            + hash(self.port)
+            + hash(self.protocol)
+            + hash(self.proxy_target_uid)
+        )
 
     def __str__(self) -> str:
         return f"{self.protocol}://{self.host_or_ip}:{self.port}"
@@ -147,19 +147,16 @@ class PythonNodeRoute(SyftObject, NodeRoute):
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, PythonNodeRoute):
             return False
-        return (
-            (self.worker_settings.id == other.worker_settings.id)
-            and (self.worker_settings.name == other.worker_settings.name)
-            and (self.worker_settings.node_type == other.worker_settings.node_type)
-            and (
-                self.worker_settings.node_side_type
-                == other.worker_settings.node_side_type
-            )
-            and (self.worker_settings.signing_key == other.worker_settings.signing_key)
-        )
+        return hash(self) == hash(other)
 
     def __hash__(self) -> int:
-        return hash(self.worker_settings.id)
+        return (
+            hash(self.worker_settings.id)
+            + hash(self.worker_settings.name)
+            + hash(self.worker_settings.node_type)
+            + hash(self.worker_settings.node_side_type)
+            + hash(self.worker_settings.signing_key)
+        )
 
     def __str__(self) -> str:
         return "PythonNodeRoute"
@@ -177,13 +174,10 @@ class VeilidNodeRoute(SyftObject, NodeRoute):
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, VeilidNodeRoute):
             return False
-        return (
-            self.vld_key == other.vld_key
-            and self.proxy_target_uid == other.proxy_target_uid
-        )
+        return hash(self) == hash(other)
 
     def __hash__(self) -> int:
-        return hash(self.vld_key)
+        return hash(self.vld_key) + hash(self.proxy_target_uid)
 
 
 NodeRouteTypeV1 = HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute
