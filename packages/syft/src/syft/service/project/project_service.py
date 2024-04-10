@@ -91,7 +91,7 @@ class ProjectService(AbstractService):
             # For followers the leader node route is retrieved from its peer
             if leader_node.verify_key != context.node.verify_key:
                 network_service = context.node.get_service("networkservice")
-                peer = network_service.stash.get_for_verify_key(
+                peer = network_service.stash.get_by_verify_key(
                     credentials=context.node.verify_key,
                     verify_key=leader_node.verify_key,
                 )
@@ -228,7 +228,7 @@ class ProjectService(AbstractService):
         for member in project.members:
             if member.verify_key != context.node.verify_key:
                 # Retrieving the NodePeer Object to communicate with the node
-                peer = network_service.stash.get_for_verify_key(
+                peer = network_service.stash.get_by_verify_key(
                     credentials=context.node.verify_key,
                     verify_key=member.verify_key,
                 )
@@ -239,8 +239,17 @@ class ProjectService(AbstractService):
                         + " Kindly exchange routes with the peer"
                     )
                 peer = peer.ok()
-                client = peer.client_with_context(context)
-                event_result = client.api.services.project.add_event(project_event)
+                remote_client = peer.client_with_context(context=context)
+                if remote_client.is_err():
+                    return SyftError(
+                        message=f"Failed to create remote client for peer: "
+                        f"{peer.id}. Error: {remote_client.err()}"
+                    )
+                remote_client = remote_client.ok()
+
+                event_result = remote_client.api.services.project.add_event(
+                    project_event
+                )
                 if isinstance(event_result, SyftError):
                     return event_result
 
