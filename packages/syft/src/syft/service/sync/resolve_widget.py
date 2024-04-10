@@ -249,6 +249,7 @@ class CollapsableObjectDiffWidget:
 
             .{header_id}{{
                 display: flex;
+                align-items: center;
             }}
 
 
