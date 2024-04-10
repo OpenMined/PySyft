@@ -33,7 +33,8 @@ vars:
 images:
   backend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}"
-    buildKit: { args: ["--platform", "linux/${PLATFORM}"] }
+    buildKit:
+      args: ["--target", "backend", "--platform", "linux/${PLATFORM}"]
     dockerfile: ./backend/backend.dockerfile
     context: ../
     tags:
@@ -50,7 +51,8 @@ images:
       - dev-${DEVSPACE_TIMESTAMP}
   seaweedfs:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
-    buildKit: {}
+    buildKit:
+      args: ["--platform", "linux/${PLATFORM}"]
     dockerfile: ./seaweedfs/seaweedfs.dockerfile
     context: ./seaweedfs
     tags:
