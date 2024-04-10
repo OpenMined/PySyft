@@ -1,0 +1,3 @@
+fastapi==0.110.0
+loguru==0.7.2
+uvicorn[standard]==0.27.1
