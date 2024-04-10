@@ -1108,7 +1108,8 @@ It will be available for review again."""
         """  # noqa: E501
         repr_html = repr_html.replace("\n", "")
 
-        return repr_html + self.batches._repr_html_()
+        res = repr_html + self.batches._repr_html_()
+        return res
 
     @staticmethod
     def _sort_batches(hierarchies: list[ObjectDiffBatch]) -> list[ObjectDiffBatch]:

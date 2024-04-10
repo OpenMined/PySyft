@@ -274,6 +274,24 @@ CSS_CODE = """
         font-weight: 600;
         line-height: 19.6px;
         text-align: left;
+        white-space: nowrap;
+        flex-grow: 1;
+    }
+
+    .widget-header2{
+        display: flex;
+        gap: 8px;
+        justify-content: start;
+        width: 100%;
+        overflow: hidden;
+        align-items: center;
+    }
+
+    .widget-header2-2{
+        display: flex;
+        gap: 8px;
+        justify-content: start;
+        align-items: center;
     }
 
     .diff-state-orange-text{
@@ -325,7 +343,9 @@ CSS_CODE = """
     .label {
         code-text;
         border-radius: 4px;
-        padding: 0px 4px;
+        padding: 6px 4px;
+        white-space: nowrap;
+        overflow: hidden;
     }
 
     .label-light-purple {
