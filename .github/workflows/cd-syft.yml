@@ -248,24 +248,7 @@ jobs:
           digest="${{ steps.grid-seaweedfs-build.outputs.digest }}"
           touch "/tmp/digests/grid-seaweedfs/${digest#sha256:}"
 
-      - name: Build and push `grid-veilid` image to DockerHub
-        id: grid-veilid-build
-        uses: docker/build-push-action@v5
-        with:
-          context: ./packages/grid/veilid
-          file: ./packages/grid/veilid/veilid.dockerfile
-          platforms: ${{ steps.release_metadata.outputs.release_platform }}
-          outputs: type=image,name=openmined/grid-veilid,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=registry,ref=openmined/grid-veilid:cache-${{ steps.release_metadata.outputs.short_release_platform }}
-          cache-to: type=registry,ref=openmined/grid-veilid:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
-
-      - name: Export digest for grid-veilid
-        run: |
-          mkdir -p /tmp/digests/grid-veilid
-          digest="${{ steps.grid-veilid-build.outputs.digest }}"
-          touch "/tmp/digests/grid-veilid/${digest#sha256:}"
-
-      - name: Upload digest for grid-backend, grid-frontend and grid-seaweedfs, grid-veilid
+      - name: Upload digest for grid-backend, grid-frontend and grid-seaweedfs
         uses: actions/upload-artifact@v4
         with:
           name: digests-${{ steps.release_metadata.outputs.grid_version }}-${{ steps.release_metadata.outputs.short_release_platform }}
@@ -323,14 +306,6 @@ jobs:
             -t openmined/grid-seaweedfs:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
             -t openmined/grid-seaweedfs:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
             $(printf 'openmined/grid-seaweedfs@sha256:%s ' *)
-
-      - name: Create manifest list and push for grid-veilid
-        working-directory: /tmp/digests/grid-veilid
-        run: |
-          docker buildx imagetools create  \
-            -t openmined/grid-veilid:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
-            -t openmined/grid-veilid:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
-            $(printf 'openmined/grid-veilid@sha256:%s ' *)
 
   deploy-syft:
     needs: [merge-docker-images]
