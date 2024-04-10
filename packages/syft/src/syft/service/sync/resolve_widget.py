@@ -3,6 +3,7 @@ from enum import Enum
 from enum import auto
 import html
 from typing import Any
+from uuid import uuid4
 
 # third party
 import ipywidgets as widgets
@@ -10,6 +11,8 @@ from ipywidgets import Button
 from ipywidgets import HTML
 from ipywidgets import Layout
 from ipywidgets import VBox
+from ipywidgets import HBox
+from ipywidgets import Checkbox
 from typing_extensions import Self
 
 # relative
@@ -66,7 +69,94 @@ colors = {
 }
 
 
-# TODO use ObjectDiff instead
+# TODO move CSS/HTML/JS outside function
+def build_accordion(
+    title: str,
+    body: str,
+    show_sync_checkbox: bool = True,
+    show_private_checkbox: bool = True,
+) -> VBox:
+    uid = str(uuid4())
+    body_id = f"accordion-body-{uid}"
+    header_id = f"accordion-header-{uid}"
+    class_name = f"accordion-{uid}"
+    caret_id = f"caret-{uid}"
+
+    css_accordion = f"""
+        <style>
+        .accordion {{
+            padding: 0 10px;
+        }}
+        
+        .{class_name}-folded {{
+            background: #F4F3F6;
+            border: 0.5px solid #B4B0BF;
+        }}
+        .{class_name}-unfolded {{
+            background: white;
+            border: 0.5px solid #B4B0BF;
+        }}
+        </style>
+    """
+
+    toggle_hide_body_js = f"""
+        var body = document.getElementById('{body_id}');
+        var header = document.getElementById('{header_id}');
+        var caret = document.getElementById('{caret_id}');
+        if (body.style.display === 'none') {{
+            var vbox = document.getElementsByClassName('{class_name}-folded')[0];
+            body.style.display = 'block';
+            vbox.classList.remove('{class_name}-folded');
+            vbox.classList.add('{class_name}-unfolded');
+            caret.classList.remove('fa-caret-right');
+            caret.classList.add('fa-caret-down');
+        }} else {{
+            var vbox = document.getElementsByClassName('{class_name}-unfolded')[0];
+            body.style.display = 'none';
+            vbox.classList.remove('{class_name}-unfolded');
+            vbox.classList.add('{class_name}-folded');
+            caret.classList.remove('fa-caret-down');
+            caret.classList.add('fa-caret-right');
+        }}
+    """
+    caret = f'<i id="{caret_id}" class="fa fa-fw fa-caret-right"></i>'
+    title_html = HTML(
+        value=f"<div id='{header_id}' onclick=\"{toggle_hide_body_js}\" style='cursor: pointer; flex-grow: 1; user-select: none; '>{caret} {title}</div>",
+        layout=Layout(flex="1"),
+    )
+
+    checkbox1 = Checkbox(
+        description="Sync Real Data", layout=Layout(width="auto", margin="0 2px 0 0")
+    )
+    checkbox2 = Checkbox(
+        description="Sync", layout=Layout(width="auto", margin="0 2px 0 0")
+    )
+
+    checkboxes = []
+    if show_sync_checkbox:
+        checkboxes.append(checkbox1)
+    if show_private_checkbox:
+        checkboxes.append(checkbox2)
+
+    accordion_header = HBox(
+        [title_html] + checkboxes,
+        layout=Layout(width="100%", justify_content="space-between"),
+    )
+
+    accordion_body = HTML(
+        value=f"<div id='{body_id}' style='display:none;'>{body}</div>"
+    )
+
+    style = HTML(value=css_accordion)
+
+    accordion = VBox(
+        [style, accordion_header, accordion_body],
+        _dom_classes=(f"accordion-{uid}-folded", "accordion"),
+    )
+    return accordion, checkbox1, checkbox2
+
+
+# TODO separate pure HTML widget for main widget
 class ObjectDiffWidget:
     def __init__(
         self,
@@ -86,6 +176,7 @@ class ObjectDiffWidget:
 
         self.sync: bool = False
 
+        # TODO remove, this is never main widget
         self.is_main_widget = is_main_widget
         self.widget = self.build()
         self.set_and_disable_sync()
@@ -98,6 +189,7 @@ class ObjectDiffWidget:
             return False
 
     @classmethod
+    # TODO this should just be the constructor, get properties/statusses etc in self.build
     def from_diff(
         cls, diff: ObjectDiff, direction: SyncDirection, is_main_widget: bool
     ) -> Self:
@@ -115,6 +207,7 @@ class ObjectDiffWidget:
         return isinstance(self.diff.non_empty_object, SyftLog | ActionObject)
 
     @property
+    # TODO remove, this is never main widget
     def show_sync_button(self) -> bool:
         return not self.is_main_widget
 
@@ -139,6 +232,7 @@ class ObjectDiffWidget:
         if self.show_share_button:
             self._share_private_checkbox.value = True
 
+    # TODO split creating html from/to for main diff widget
     def create_diff_html(
         self,
         title: str,
@@ -450,10 +544,13 @@ class ResolveWidget:
         for widget in dependent_batch_diff_widgets:
             self.id2widget[widget.diff.object_id] = widget
 
+        # TODO is now vbox
         main_batch_items = widgets.Accordion(
             children=[d.widget for d in batch_diff_widgets],
             titles=[d.title for d in batch_diff_widgets],
         )
+
+        # TODO is now vbox
         dependency_items = widgets.Accordion(
             children=[d.widget for d in dependent_batch_diff_widgets],
             titles=[d.title for d in dependent_batch_diff_widgets],
