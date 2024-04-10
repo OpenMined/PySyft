@@ -10,6 +10,7 @@ from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
+from syft.util.notebook_ui.notebook_addons import CSS_CODE
 from typing_extensions import Self
 
 # relative
@@ -55,6 +56,21 @@ class JobStatus(str, Enum):
     COMPLETED = "completed"
     INTERRUPTED = "interrupted"
 
+
+def center_content(text):
+    if isinstance(text, str):
+        text = text.replace('\n', '<br>')
+    center_div = f"""
+    <div style="
+        display: flex;
+        justify-content: center;
+        align-items: center; width: 100%; height: 100%;">
+        {text}
+    </div>
+    """
+    center_div = center_div.replace('\n', '')
+    return center_div
+    
 
 @serializable()
 class Job(SyncableSyftObject):
@@ -418,25 +434,33 @@ class Job(SyncableSyftObject):
         return {"value": status.upper(), "type": badge_color}
 
     def summary_html(self) -> str:
+        # TODO: Fix id for buttons
+        from ...util.notebook_ui.components.sync import CopyIDButton
         try:
             # type_html = f'<div class="label {self.type_badge_class()}">{self.object_type_name.upper()}</div>'
-            description_html = f"<span class='syncstate-description'>{self.user_code_name}</span>"
-            updated_delta_str = "29m ago"
-            updated_by = "john@doe.org"
-            
-            status_str = self.status
-            status_seperator = " • " if len(status_str) else ""
+            description_html = f"<span class='syncstate-description'>{self.user_code_name}</span>"\
+            worker_summary = ''
+            if self.job_worker_id:
+                worker_copy_button = CopyIDButton(copy_text=str(self.job_worker_id), max_width=60)
+                worker_summary = f"""
+                <div style="display: table-row">
+                    <span class='syncstate-col-footer'>{'on worker'} 
+                    {worker_copy_button.to_html()}</span>
+                </div>
+                """
+                
             summary_html = f"""
-    <div style="display: flex; gap: 8px; justify-content: start; width: 100%;">
-    {description_html}
-    </div>
-    <div style="display: table-row">
-    <span class='syncstate-col-footer'>{self.creation_time[:-7]}</span>
-    </div>
-    <div style="display: table-row">
-    <span class='syncstate-col-footer'>{'on worker'}</span>
-    </div>
-    """
+                <div style="display: flex; gap: 8px; justify-content: start; width: 100%;">
+                    {description_html}
+                    <div style="display: flex; gap: 8px; justify-content: end; width: 100%;">
+                        {CopyIDButton(copy_text=str(self.id), max_width=60).to_html()} 
+                    </div>
+                </div>
+                <div style="display: table-row">
+                <span class='syncstate-col-footer'>{self.creation_time[:-7]}</span>
+                </div>
+                {worker_summary}
+                """
             summary_html = summary_html.replace("\n", "")
         except Exception as e:
             print("Failed to build table", e)
@@ -452,6 +476,10 @@ class Job(SyncableSyftObject):
             logs = f"... ({len(log_lines)} lines)\n" + "\n".join(log_lines[-2:])
 
         created_time = self.creation_time[:-7] if self.creation_time is not None else ""
+        
+        def default_value(value):
+            return value if value else '--'
+        
         return {
             # "status": f"{self.action_display_name}: {self.status}"
             # + (
@@ -461,11 +489,11 @@ class Job(SyncableSyftObject):
             # ),
             "Status": self.status_badge(),
             'Job': self.summary_html(),
-            "# Subjobs": len(subjobs),
-            "Progress": self.progress,
-            "Eta": self.eta_string,
+            "# Subjobs": center_content(default_value(len(subjobs))),
+            "Progress": center_content(default_value(self.progress)),
+            "Eta": center_content(default_value(self.eta_string)),
             # "created": f"{created_time} by {self.owner.email}",
-            "Logs": logs,
+            "Logs": center_content(default_value(logs)),
             # "result": result,
             # "parent_id": str(self.parent_job_id) if self.parent_job_id else "-",
         }
@@ -495,6 +523,208 @@ class Job(SyncableSyftObject):
 {logs_w_linenr}
     """
         return as_markdown_code(md)
+
+    def _repr_html_(self) -> str:
+        from ...util.notebook_ui.components.sync import CopyIDButton
+        style = CSS_CODE
+        logs = self.logs(_print=False, stderr=False)
+        
+        type_html = (
+            f'<div class="label label-light-blue"'
+            f'style="display: flex; align-items:center; justify-content: center; width: 34px; height:21px; radius:4px ; padding: 2px, 6px, 2px, 6px">'
+            f'<span style="font: DejaVu Sans Mono; font-szie: 12px; font-weight: 400; line-height:16.8px">JOB</span>'
+            f'</div>'
+        )
+        description_html = f"<span class='jobs-title'>{self.user_code_name}</span>"
+        copy_id_button = CopyIDButton(copy_text=str(self.id), max_width=60)
+        
+        header_line_html = f"""
+            <div style="display: flex; gap: 12px; justify-content: start; width: 100%; overflow: hidden; align-items: center;">
+            <div style="display: flex; gap: 12px; justify-content: start; align-items: center; border: 0px, 0px, 2px, 0px; padding: 0px, 0px, 16px, 0px">
+            {type_html} {description_html}
+            </div>
+            {copy_id_button.to_html()}
+            </div>
+        """  # noqa: E501
+
+        worker_attr = ""
+        if self.job_worker_id:
+            worker = self.worker
+            worker_attr = f"""
+                <div style="margin-top: 6px; margin-bottom: 6px;">
+                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">Worker Pool:</span>
+                    {worker.name} on worker {CopyIDButton(copy_text=str(worker.worker_pool_name), max_width=60).to_html()}
+                </div>
+            """
+
+        attrs_html = f"""<div style="display: table-row; padding: 0px, 0px, 12px, 0px; gap:8px">
+                <div style="margin-top: 6px; margin-bottom: 6px;">
+                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">UserCode:</span> 
+                    {self.user_code_name}
+                </div>
+                <div style="margin-top: 6px; margin-bottom: 6px;">
+                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">Status:</span> 
+                    {self.status.value.title()}
+                </div>
+                <div style="margin-top: 6px; margin-bottom: 6px;">
+                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">Started At:</span>  
+                    {self.creation_time[:-7]} by --
+                </div>
+                <div style="margin-top: 6px; margin-bottom: 6px;">
+                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">Finished At:</span>  
+                    --
+                </div>
+                {worker_attr}
+                <div style="margin-top: 6px; margin-bottom: 6px;">
+                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">Subjobs:</span>
+                    {len(self.subjobs)}
+                </div>
+            </div>
+            """
+
+        result_html = f"""<div id="Result" class="tab" style="background: #F4F3F6; border-color: #CFCDD6; 
+        border-width: 0.5px; border-style: solid; padding: 24px; gap: 8px; margin-top: 24px">
+            <div style="font-size: 12px; font-weight: 400; font: DejaVu Sans Mono; line-height: 16.8px">
+                “Sally Forrest an actress-dancer popular in the ‘40s and ‘50s 
+                died in her home on March 15. She was 86 and had battled cancer.”
+            </div>
+        </div>
+        """
+        logs_lines = logs.split('\n')
+        logs_lines_html = ""
+        for i, line in enumerate(logs_lines):
+            logs_lines_html += f"""
+                <tr style="width:100%">
+                    <td style="text-align: left;">
+                        <div style="margin-right:48px; align-text: left">
+                            0.0s
+                        </div> 
+                    </td>
+                    <td style="text-align: left;">
+                        <div style="margin-right:24px; align-text: center">
+                            {i}
+                        </div>
+                    </td>
+                    <td style="text-align: left;">
+                        <div style="align-text: left">
+                            {line}
+                        </div> 
+                    </td>
+                </tr>
+            """
+        
+        logs_html = f"""<div id="Logs" class="tab" style="background: #F4F3F6; border-color: #CFCDD6; 
+        border-width: 0.5px; border-style: solid; padding: 24px; gap: 8px; margin-top: 24px; display: none;align-items:left">
+            <div style="font-size: 12px; font-weight: 400; font: DejaVu Sans Mono; line-height: 16.8px; ">
+                <table  style="width:100%; justify-content:left; border-collapse: collapse;">
+                <tr style="width:100%">
+                    <td style="text-align: left">
+                        <span style="margin-right:48px; font-weight:700; align-text: left">
+                            Time
+                        </span> 
+                    </td>
+                    <td style="text-align: left"> 
+                        <span style="margin-right:24px; font-weight:700; align-text: center">
+                            #
+                        </span>
+                    </td>
+                    <td  style="text-align: left"> 
+                        <span style="font-weight:700; align-text: left">
+                            Message
+                        </span>
+                    </td>
+                </tr>
+                {logs_lines_html}
+            </div>
+        </div>
+        """
+
+        # TODO: add style change for selected tab 
+        onclick_html = """<script>
+            function onClick(evt, tabname) {
+                existing_tabs = document.getElementsByClassName("tab");
+                for (i = 0; i < existing_tabs.length; i++) {
+                    existing_tabs[i].style.display = "none";
+                }
+                tablinks = document.getElementsByClassName("tablink");
+                for (i = 0; i < tablinks.length; i++) {
+                    tablinks[i].className = tablinks[i].className.replace(" active", "");
+                }
+                tablinks = document.getElementsByClassName("tablink-border");
+                for (i = 0; i < tablinks.length; i++) {
+                    tablinks[i].className = tablinks[i].className.replace(" active-border", "");
+                }
+                document.getElementById(tabname).style.display = "block";
+                evt.currentTarget.className += " active";
+                evt.currentTarget.parentNode.className += " active-border";
+            }
+        </script>
+        """
+
+        list_css = """
+            ul {
+                list-style-type: none;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+
+            li {
+                float: left;
+                border-bottom: solid;
+                border-bottom-color: #CFCDD6;
+            }
+
+            li a {
+                display: block;
+                text-align: center;
+                padding: 14px 16px;
+                color: #CFCDD6
+            }
+
+            .active-border {
+                border-bottom-color: #1F567A;
+            }
+
+            .active {
+                color: #1F567A
+            }
+
+            li a:hover {
+                background-color: #C2DEF0;
+            }"""
+
+        tabs_html = f"""
+            <div style="margin-top: 8px; padding: 8px, 0px, 8px, 0px; gap: 16px">
+            <ul>
+                <li class="tablink-border active-border">
+                    <a  onclick="onClick(event, 'Result')" class='tablink active'>Result</a>
+                </li>
+                <li class="tablink-border">
+                    <a onclick="onClick(event, 'Logs')" class='tablink'>Logs</a>
+                </li>
+            </ul>
+        </div>
+        {result_html}
+        {logs_html}
+        {onclick_html}
+        """
+
+        repr_html = f"""
+        <style>
+        {style}
+        </style>
+        <style>
+        {list_css}
+        </style>
+            {header_line_html}
+            {attrs_html}
+            {tabs_html}
+        <div style='height: 16px;'></div>
+        """
+        
+        # repr_html = repr_html.replace('\n', "")
+        return repr_html
 
     def wait(
         self, job_only: bool = False, timeout: int | None = None
@@ -581,6 +811,7 @@ class Job(SyncableSyftObject):
 
 @serializable()
 class JobInfo(SyftObject):
+    
     __canonical_name__ = "JobInfo"
     __version__ = SYFT_OBJECT_VERSION_2
 

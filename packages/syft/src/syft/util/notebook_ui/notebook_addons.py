@@ -220,6 +220,9 @@ CSS_CODE = """
 
     .grid-std-cells {
         grid-column: span 4;
+        display: flex;
+        justify-content: center;
+        align-items: center; width: 100%; height: 100%;
 
     }
     .grid-index-cells {
@@ -274,6 +277,15 @@ CSS_CODE = """
         font-weight: 600;
         line-height: 19.6px;
         text-align: left;
+    }
+    
+    .jobs-title {
+        font-family: Open Sans;
+        font-size: 18px;
+        font-weight: 600;
+        line-height: 25.2px;
+        text-align: left;
+        color: #1F567A;
     }
 
     .diff-state-orange-text{
@@ -338,7 +350,6 @@ CSS_CODE = """
         label;
         background-color: #C2DEF0;
         color: #1F567A;
-
     }
 
     .label-orange {
@@ -363,7 +374,6 @@ CSS_CODE = """
         label;
         background-color: #F2D9DE;
         color: #9B2737;
-
     }
 
     .badge-blue {
