@@ -118,6 +118,17 @@ jobs:
             ${{ secrets.ACR_SERVER }}/openmined/grid-seaweedfs:dev-${{ github.sha }}
             ${{ secrets.ACR_SERVER }}/openmined/grid-seaweedfs:${{ steps.grid.outputs.GRID_VERSION }}
 
+      - name: Build and push `grid-enclave-attestation` image to registry
+        uses: docker/build-push-action@v5
+        with:
+          context: ./packages/grid/enclave/attestation
+          file: ./packages/grid/enclave/attestation/attestation.dockerfile
+          push: true
+          tags: |
+            ${{ secrets.ACR_SERVER }}/openmined/grid-enclave-attestation:dev
+            ${{ secrets.ACR_SERVER }}/openmined/grid-enclave-attestation:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/grid-enclave-attestation:${{ steps.grid.outputs.GRID_VERSION }}
+
       - name: Build Helm Chart & Copy to infra
         if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'
         shell: bash
