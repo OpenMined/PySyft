@@ -124,6 +124,7 @@ class Routes(Enum):
     ROUTE_REGISTER = f"{API_PATH}/register"
     ROUTE_API_CALL = f"{API_PATH}/api_call"
     ROUTE_BLOB_STORE = "/blob"
+    STREAM = f"{API_PATH}/stream"
 
 
 @serializable(attrs=["proxy_target_uid", "url"])
@@ -204,6 +205,13 @@ class HTTPConnection(NodeConnection):
         self.url = upgrade_tls(self.url, response)
 
         return response.content
+
+    def stream_data(self, credentials: SyftSigningKey) -> dict:
+        url = self.url.with_path(self.routes.STREAM.value)
+        response = self.session.get(
+            str(url), verify=verify_tls(), proxies={}, stream=True
+        )
+        return response
 
     def get_node_metadata(self, credentials: SyftSigningKey) -> NodeMetadataJSON:
         if self.proxy_target_uid:

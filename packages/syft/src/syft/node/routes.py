@@ -1,6 +1,7 @@
 # stdlib
 
 # stdlib
+import asyncio
 from typing import Annotated
 
 # third party
@@ -10,6 +11,7 @@ from fastapi import Depends
 from fastapi import Request
 from fastapi import Response
 from fastapi.responses import JSONResponse
+from fastapi.responses import StreamingResponse
 from loguru import logger
 from pydantic import ValidationError
 
@@ -45,6 +47,15 @@ def make_routes(worker: Worker) -> APIRouter:
 
     async def get_body(request: Request) -> bytes:
         return await request.body()
+
+    async def stream_numbers():
+        for i in range(100):
+            await asyncio.sleep(2)
+            yield str(i)
+
+    @router.get("/stream", name="stream", status_code=200)
+    async def stream(request: Request) -> dict:
+        return StreamingResponse(stream_numbers())
 
     @router.get(
         "/",
