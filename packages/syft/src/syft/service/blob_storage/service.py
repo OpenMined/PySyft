@@ -10,7 +10,6 @@ from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...service.action.action_object import ActionObject
 from ...store.blob_storage import BlobRetrieval
-from ...store.blob_storage.on_disk import OnDiskBlobDeposit
 from ...store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ...store.document_store import DocumentStore
 from ...store.document_store import UIDPartitionKey
@@ -32,7 +31,7 @@ from .remote_profile import AzureRemoteProfile
 from .remote_profile import RemoteProfileStash
 from .stash import BlobStorageStash
 
-BlobDepositType = OnDiskBlobDeposit | SeaweedFSBlobDeposit
+BlobDepositType = SeaweedFSBlobDeposit
 
 
 @serializable()
