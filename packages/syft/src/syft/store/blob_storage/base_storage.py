@@ -16,12 +16,12 @@ from ...types.blob_storage import SecureFilePathLocation
 
 
 @serializable()
-class BlobStorageClientConfig(BaseModel):
+class BlobStorageConfig(BaseModel):
     pass
 
 
 class BlobStorage(BaseModel, ABC):
-    config: BlobStorageClientConfig
+    config: BlobStorageConfig
 
     @abstractmethod
     def __enter__(self) -> "BlobStorage":

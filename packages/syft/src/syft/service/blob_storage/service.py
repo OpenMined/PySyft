@@ -1,5 +1,4 @@
 # stdlib
-from pathlib import Path
 from typing import cast
 
 # third party
@@ -19,6 +18,7 @@ from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import BlobStorageMetadata
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import SeaweedSecureFilePathLocation
+from ...types.blob_storage import SecureFilePathLocation
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -195,23 +195,31 @@ class BlobStorageService(AbstractService):
     def read(
         self, context: AuthedServiceContext, uid: UID
     ) -> BlobRetrieval | SyftError:
-        result = self.stash.get_by_uid(context.credentials, uid=uid)
-        if result.is_ok():
-            obj: BlobStorageEntry | None = result.ok()
-            if obj is None:
-                return SyftError(
-                    message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
-                )
+        try:
+            result = self.stash.get_by_uid(context.credentials, uid=uid)
 
-            context.node = cast(AbstractNode, context.node)
-            with context.node.blob_storage_client.connect() as conn:
-                res: BlobRetrieval = conn.read(
-                    obj.location, obj.type_, bucket_name=obj.bucket_name
-                )
-                res.syft_blob_storage_entry_id = uid
-                res.file_size = obj.file_size
-                return res
-        return SyftError(message=result.err())
+            if result.is_ok():
+                obj: BlobStorageEntry | None = result.ok()
+
+                if obj is None:
+                    return SyftError(
+                        message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
+                    )
+
+                context.node = cast(AbstractNode, context.node)
+
+                with context.node.blob_storage_client.connect() as conn:
+                    res: BlobRetrieval = conn.read(
+                        obj.location,
+                        obj.type_,  # , bucket_name=obj.bucket_name
+                    )
+                    res.syft_blob_storage_entry_id = uid
+                    res.file_size = obj.file_size
+                    return res
+            return SyftError(message="Deu pau geral")
+        except Exception as e:
+            print(f"BlobStorageService(read): failed to read: {e}")
+            return SyftError(message=result.err())
 
     @service_method(
         path="blob_storage.allocate",
@@ -220,56 +228,51 @@ class BlobStorageService(AbstractService):
     )
     def allocate(
         self, context: AuthedServiceContext, obj: CreateBlobStorageEntry
-    ) -> BlobDepositType | SyftError:
+    ) -> SecureFilePathLocation | SyftError:
         context.node = cast(AbstractNode, context.node)
-        with context.node.blob_storage_client.connect() as conn:
-            secure_location = conn.allocate(obj)
 
-            if isinstance(secure_location, SyftError):
-                return secure_location
+        with context.node.blob_storage_client.connect() as conn:
+            return conn.allocate(obj)
+
+    @service_method(
+        path="blob_storage.write",
+        name="write",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def write(
+        self,
+        context: AuthedServiceContext,
+        obj: CreateBlobStorageEntry,
+        fp: SecureFilePathLocation,
+        data: bytes,
+    ):
+        context.node = cast(AbstractNode, context.node)
+
+        with context.node.blob_storage_client.connect() as conn:
+            try:
+                conn.write(fp, data)
+            except Exception as e:
+                return SyftError(
+                    message=f"blob_storage:write::failed to write file: {e}"
+                )
+
+            print(f"stashing {obj.id}, saved at {fp} ({obj.file_size})")
 
             blob_storage_entry = BlobStorageEntry(
                 id=obj.id,
-                location=secure_location,
+                location=fp,
                 type_=obj.type_,
                 mimetype=obj.mimetype,
                 file_size=obj.file_size,
                 uploaded_by=context.credentials,
             )
-            blob_deposit = conn.write(blob_storage_entry)
 
-        result = self.stash.set(context.credentials, blob_storage_entry)
-        if result.is_err():
-            return SyftError(message=f"{result.err()}")
-        return blob_deposit
+            result = self.stash.set(context.credentials, blob_storage_entry)
 
-    @service_method(
-        path="blob_storage.write_to_disk",
-        name="write_to_disk",
-        roles=GUEST_ROLE_LEVEL,
-    )
-    def write_to_disk(
-        self, context: AuthedServiceContext, uid: UID, data: bytes
-    ) -> SyftSuccess | SyftError:
-        result = self.stash.get_by_uid(
-            credentials=context.credentials,
-            uid=uid,
-        )
-        if result.is_err():
-            return SyftError(message=f"{result.err()}")
+            if result.is_err():
+                return SyftError(message=f"{result.err()}")
 
-        obj: BlobStorageEntry | None = result.ok()
-
-        if obj is None:
-            return SyftError(
-                message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
-            )
-
-        try:
-            Path(obj.location.path).write_bytes(data)
             return SyftSuccess(message="File successfully saved.")
-        except Exception as e:
-            return SyftError(message=f"Failed to write object to disk: {e}")
 
     @service_method(
         path="blob_storage.mark_write_complete",

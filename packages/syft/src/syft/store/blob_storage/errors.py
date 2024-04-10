@@ -32,3 +32,7 @@ class BlobStorageReadError(BlobStorageException):
 
 class BlobStorageWriteError(BlobStorageException):
     """Failed to write to blob storage."""
+
+
+class BlobStorageDeleteError(BlobStorageException):
+    """Failed to delete blob."""

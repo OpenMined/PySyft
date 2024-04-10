@@ -108,8 +108,8 @@ from ..service.worker.worker_pool_stash import SyftWorkerPoolStash
 from ..service.worker.worker_service import WorkerService
 from ..service.worker.worker_stash import WorkerStash
 from ..store.blob_storage import BlobStorageConfig
-from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
-from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
+from ..store.blob_storage.fsspec import BlobStorageFilesystem
+from ..store.blob_storage.fsspec import BlobStorageFilesystemConfig
 from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
 from ..store.linked_obj import LinkedObject
