@@ -4,12 +4,12 @@ ARG BACKEND_API_BASE_URL="/api/v2/"
 ENV BACKEND_API_BASE_URL ${BACKEND_API_BASE_URL}
 
 RUN apk update && \
-    apk upgrade && \
-    apk add --no-cache nodejs-20 pnpm corepack
+  apk upgrade && \
+  apk add --no-cache nodejs-20 pnpm corepack
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable
 
 COPY .npmrc ./
 COPY package.json ./
