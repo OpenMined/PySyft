@@ -21,6 +21,7 @@ from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import StoragePermission
+from ..api.api import TwinAPIEndpoint
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
@@ -150,6 +151,18 @@ class SyncService(AbstractService):
         creds = context.credentials
 
         exists = stash.get_by_uid(context.credentials, item.id).ok() is not None
+
+        if isinstance(item, TwinAPIEndpoint):
+            # we need the side effect of set function
+            # to create an action object
+            res = context.node.get_service("apiservice").set(
+                context=context, endpoint=item
+            )
+            if isinstance(res, SyftError):
+                return res
+            else:
+                return Ok(item)
+
         if exists:
             res = stash.update(creds, item)
         else:
@@ -254,6 +267,7 @@ class SyncService(AbstractService):
             "logservice",
             "outputservice",
             "usercodestatusservice",
+            "apiservice",
         ]
 
         for service_name in services_to_sync:
@@ -263,7 +277,6 @@ class SyncService(AbstractService):
                 return items
             all_items.extend(items)
 
-        # NOTE we only need action objects from outputs for now
         action_object_ids = set()
         for obj in all_items:
             if isinstance(obj, ExecutionOutput):
