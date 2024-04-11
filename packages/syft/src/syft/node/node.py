@@ -76,6 +76,7 @@ from ..service.queue.base_queue import QueueProducer
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
 from ..service.queue.queue_service import QueueService
+from ..service.queue.queue_stash import APIEndpointQueueItem
 from ..service.queue.queue_stash import ActionQueueItem
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
@@ -413,10 +414,11 @@ class Node(AbstractNode):
 
     def get_default_store(self, use_sqlite: bool) -> StoreConfig:
         if use_sqlite:
+            path = self.get_temp_dir("db")
             return SQLiteStoreConfig(
                 client_config=SQLiteStoreClientConfig(
                     filename=f"{self.id}.sqlite",
-                    path=self.get_temp_dir("db"),
+                    path=path,
                 )
             )
         return DictStoreConfig()
@@ -1178,6 +1180,40 @@ class Node(AbstractNode):
         else:
             return self.add_api_call_to_queue(api_call)
         return result
+
+    def add_api_endpoint_execution_to_queue(
+        self,
+        credentials: SyftVerifyKey,
+        method: str,
+        path: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Job | SyftError:
+        job_id = UID()
+        task_uid = UID()
+        worker_settings = WorkerSettings.from_node(node=self)
+
+        worker_pool = self.get_default_worker_pool()
+        # Create a Worker pool reference object
+        worker_pool_ref = LinkedObject.from_obj(
+            worker_pool,
+            service_type=SyftWorkerPoolService,
+            node_uid=self.id,
+        )
+        queue_item = APIEndpointQueueItem(
+            id=task_uid,
+            method=method,
+            node_uid=self.id,
+            syft_client_verify_key=credentials,
+            syft_node_location=self.id,
+            job_id=job_id,
+            worker_settings=worker_settings,
+            args=args,
+            kwargs={"path": path, **kwargs},
+            has_execute_permissions=True,
+            worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
+        )
+        return self.add_queueitem_to_queue(queue_item, credentials, None, None)
 
     def add_action_to_queue(
         self,

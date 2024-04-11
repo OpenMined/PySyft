@@ -316,6 +316,9 @@ class TwinAPIEndpoint(SyftObject):
         Returns:
             Any: The result of the executed code.
         """
+        if self.private_function is None:
+            return SyftError(message="No private code available")
+
         if self.has_permission(context):
             return self.exec_code(self.private_function, context, *args, **kwargs)
 

@@ -300,14 +300,14 @@ class RemoteFunction(SyftObject):
 
     def mock(self, *args: Any, **kwargs: Any) -> Any:
         if self.custom_function:
-            return self.__function_call("api.call_public", *args, **kwargs)
+            return self.__function_call("api.call_public_in_jobs", *args, **kwargs)
         return SyftError(
             message="This function doesn't support public/private calls as it's not custom."
         )
 
     def private(self, *args: Any, **kwargs: Any) -> Any:
         if self.custom_function:
-            return self.__function_call("api.call_private", *args, **kwargs)
+            return self.__function_call("api.call_private_in_jobs", *args, **kwargs)
         return SyftError(
             message="This function doesn't support public/private calls as it's not custom."
         )
@@ -454,7 +454,7 @@ def generate_remote_function(
             user_code_id=pre_kwargs["uid"],
         )
     else:
-        custom_function = bool(path == "api.call")
+        custom_function = bool(path == "api.call_in_jobs")
         remote_function = RemoteFunction(
             node_uid=node_uid,
             signature=signature,
@@ -822,7 +822,7 @@ class SyftAPI(SyftObject):
         custom_endpoints = method()
         for custom_endpoint in custom_endpoints:
             pre_kwargs = {"path": custom_endpoint.path}
-            service_path = "api.call"
+            service_path = "api.call_in_jobs"
             path = custom_endpoint.path
             api_end = custom_endpoint.path.split(".")[-1]
             endpoint = APIEndpoint(

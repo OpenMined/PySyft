@@ -1,8 +1,10 @@
 # stdlib
+import time
 from typing import Any
 
 # third party
 from pydantic import ValidationError
+from result import Ok
 
 # relative
 from ...serde.serializable import serializable
@@ -213,6 +215,87 @@ class APIService(AbstractService):
 
         return api_endpoint_view
 
+    @service_method(
+        path="api.call_in_jobs", name="call_in_jobs", roles=GUEST_ROLE_LEVEL
+    )
+    def call_in_jobs(
+        self,
+        context: AuthedServiceContext,
+        path: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any | SyftError:
+        """Call a Custom API Method in a Job"""
+        return self._call_in_jobs(context, "call", path, *args, **kwargs)
+
+    @service_method(
+        path="api.call_private_in_jobs",
+        name="call_private_in_jobs",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def call_private_in_jobs(
+        self,
+        context: AuthedServiceContext,
+        path: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any | SyftError:
+        """Call a Custom API Method in a Job"""
+        print("Calling private method in jobs")
+        return self._call_in_jobs(context, "call_private", path, *args, **kwargs)
+
+    @service_method(
+        path="api.call_public_in_jobs",
+        name="call_public_in_jobs",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def call_public_in_jobs(
+        self,
+        context: AuthedServiceContext,
+        path: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any | SyftError:
+        """Call a Custom API Method in a Job"""
+        print("Calling public method in jobs")
+        return self._call_in_jobs(context, "call_public", path, *args, **kwargs)
+
+    def _call_in_jobs(
+        self,
+        context: AuthedServiceContext,
+        method: str,
+        path: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any | SyftError:
+        result = context.node.add_api_endpoint_execution_to_queue(
+            context.credentials, method, path, *args, **kwargs
+        )
+        if isinstance(result, SyftError):
+            return result
+        # relative
+        from ..job.job_stash import JobStatus
+
+        # So result is a Job object
+        job = result
+        job_service = context.node.get_service("jobservice")
+        job_id = job.id
+
+        # Question: For a small moment, when job status is updated, it doesn't return the job during the .get() as if
+        # it's not in the stash. Then afterwards if appears again. Is this a bug?
+        while (
+            job is None
+            or job.status == JobStatus.PROCESSING
+            or job.status == JobStatus.CREATED
+        ):
+            job = job_service.get(context, job_id)
+            time.sleep(0.1)
+
+        if job.status == JobStatus.COMPLETED:
+            return job.result
+        else:
+            return SyftError(message="Function failed to complete.")
+
     @service_method(path="api.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
         self,
@@ -228,7 +311,7 @@ class APIService(AbstractService):
         )
         if isinstance(custom_endpoint, SyftError):
             return custom_endpoint
-        return custom_endpoint.exec(context, *args, **kwargs)
+        return Ok(custom_endpoint.exec(context, *args, **kwargs))
 
     @service_method(path="api.call_public", name="call_public", roles=GUEST_ROLE_LEVEL)
     def call_public(
@@ -245,7 +328,7 @@ class APIService(AbstractService):
         )
         if isinstance(custom_endpoint, SyftError):
             return custom_endpoint
-        return custom_endpoint.exec_mock_function(context, *args, **kwargs)
+        return Ok(custom_endpoint.exec_mock_function(context, *args, **kwargs))
 
     @service_method(
         path="api.call_private", name="call_private", roles=GUEST_ROLE_LEVEL
@@ -263,7 +346,7 @@ class APIService(AbstractService):
             endpoint_path=path,
         )
         if not isinstance(custom_endpoint, SyftError):
-            result = custom_endpoint.exec_private_function(context, *args, **kwargs)
+            result = Ok(custom_endpoint.exec_private_function(context, *args, **kwargs))
         return result
 
     @service_method(
