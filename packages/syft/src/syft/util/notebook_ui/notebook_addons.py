@@ -326,7 +326,6 @@ CSS_CODE = """
         code-text;
         border-radius: 4px;
         padding: 0px 4px;
-
     }
 
     .label-light-purple {
