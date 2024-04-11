@@ -110,16 +110,20 @@ class MainObjectDiffWidget:
         self.with_box = with_box
         self.widget = self.build()
         self.sync = True
-        self.mockify = False
-        if isinstance(diff.non_empty_object, TwinAPIEndpoint):
-            self.share_private_data = False
-        else:
-            self.share_private_data = True  # there is no private data in this case
         self.is_main_widget: bool = True
 
     def set_share_private_data(self) -> None:
         # No-op for main widget
         pass
+
+    @property
+    def mockify(self) -> bool:
+        return not self.share_private_data
+
+    @property
+    def share_private_data(self) -> bool:
+        # there are TwinAPIEndpoint.__private_sync_attr_mocks__
+        return not isinstance(self.diff.non_empty_object, TwinAPIEndpoint)
 
     def build(self) -> widgets.HBox:
         all_keys = list(self.low_properties.keys()) + list(self.high_properties.keys())
@@ -185,6 +189,8 @@ class CollapsableObjectDiffWidget:
 
     @property
     def mockify(self) -> bool:
+        if isinstance(self.diff.non_empty_object, TwinAPIEndpoint):
+            return True
         if self.show_share_button and not self.share_private_data:
             return True
         else:
