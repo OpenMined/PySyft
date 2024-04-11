@@ -86,7 +86,7 @@ class Job(SyncableSyftObject):
         "creation_time",
         "user_code_name",
     ]
-    __exclude_sync_diff_attrs__ = ["action"]
+    __exclude_sync_diff_attrs__ = ["action", "node_uid"]
 
     @field_validator("creation_time")
     @classmethod

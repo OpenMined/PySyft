@@ -1,2 +1,4 @@
-flask==2.3.2
-flask_shell2http==1.9.1
+fastapi==0.110.0
+pyyaml==6.0.1
+supervisor==4.2.5
+uvicorn==0.27.1
