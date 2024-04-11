@@ -28,7 +28,7 @@ from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
 from ...types.syncable_object import SyncableSyftObject
@@ -70,12 +70,12 @@ def center_content(text):
     """
     center_div = center_div.replace('\n', '')
     return center_div
-    
+
 
 @serializable()
 class Job(SyncableSyftObject):
     __canonical_name__ = "JobItem"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_5
 
     id: UID
     node_uid: UID
@@ -92,6 +92,7 @@ class Job(SyncableSyftObject):
     job_worker_id: UID | None = None
     updated_at: DateTime | None = None
     user_code_id: UID | None = None
+    requested_by: UID | None = None
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
     __repr_attrs__ = [
@@ -109,6 +110,7 @@ class Job(SyncableSyftObject):
     @classmethod
     def check_time(cls, time: Any) -> Any:
         return str(datetime.now()) if time is None else time
+
 
     @model_validator(mode="after")
     def check_user_code_id(self) -> Self:
@@ -438,7 +440,7 @@ class Job(SyncableSyftObject):
         from ...util.notebook_ui.components.sync import CopyIDButton
         try:
             # type_html = f'<div class="label {self.type_badge_class()}">{self.object_type_name.upper()}</div>'
-            description_html = f"<span class='syncstate-description'>{self.user_code_name}</span>"\
+            description_html = f"<span class='syncstate-description'>{self.user_code_name}</span>"
             worker_summary = ''
             if self.job_worker_id:
                 worker_copy_button = CopyIDButton(copy_text=str(self.job_worker_id), max_width=60)
@@ -523,6 +525,49 @@ class Job(SyncableSyftObject):
 {logs_w_linenr}
     """
         return as_markdown_code(md)
+    
+    @property
+    def requesting_user(self) -> UserView | SyftError:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
+        return api.services.user.view(self.requested_by)
+
+    @property
+    def node_name(self) -> str | SyftError:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
+        return api.node_name
+    
+    @property
+    def parent(self) -> str | SyftError:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
+        return api.services.job.get(self.parent_job_id)
+    
+    @property
+    def ancestors_name_list(self) -> str:
+        if self.parent_job_id:
+            parent = self.parent
+            return parent.ancestors_list.append(parent.user_code_name)
+        return []
 
     def _repr_html_(self) -> str:
         from ...util.notebook_ui.components.sync import CopyIDButton
@@ -538,7 +583,10 @@ class Job(SyncableSyftObject):
         description_html = f"<span class='jobs-title'>{self.user_code_name}</span>"
         copy_id_button = CopyIDButton(copy_text=str(self.id), max_width=60)
         
+        api_header = f'{self.node_name}/jobs/' + '/'.join(self.ancestors_name_list)
+        
         header_line_html = f"""
+            <div style="">{api_header}</div>
             <div style="display: flex; gap: 12px; justify-content: start; width: 100%; overflow: hidden; align-items: center;">
             <div style="display: flex; gap: 12px; justify-content: start; align-items: center; border: 0px, 0px, 2px, 0px; padding: 0px, 0px, 16px, 0px">
             {type_html} {description_html}
@@ -556,6 +604,11 @@ class Job(SyncableSyftObject):
                     {worker.name} on worker {CopyIDButton(copy_text=str(worker.worker_pool_name), max_width=60).to_html()}
                 </div>
             """
+        
+        user_repr = "--"
+        if self.requested_by:
+            requesting_user = self.requesting_user
+            user_repr = f"{requesting_user.name} {requesting_user.email}"
 
         attrs_html = f"""<div style="display: table-row; padding: 0px, 0px, 12px, 0px; gap:8px">
                 <div style="margin-top: 6px; margin-bottom: 6px;">
@@ -568,11 +621,11 @@ class Job(SyncableSyftObject):
                 </div>
                 <div style="margin-top: 6px; margin-bottom: 6px;">
                 <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">Started At:</span>  
-                    {self.creation_time[:-7]} by --
+                    {self.creation_time[:-7]} by {user_repr} 
                 </div>
                 <div style="margin-top: 6px; margin-bottom: 6px;">
-                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">Finished At:</span>  
-                    --
+                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">Updated At:</span>  
+                    {self.updated_at[:-7] if self.updated_at else '--'}
                 </div>
                 {worker_attr}
                 <div style="margin-top: 6px; margin-bottom: 6px;">

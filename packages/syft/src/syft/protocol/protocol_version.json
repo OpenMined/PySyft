@@ -104,6 +104,18 @@
           "hash": "4dbfa0813f5a3f7be0b36249ff2d67e395ad7c9e138c5a122fc7342b8dcc4b92",
           "action": "remove"
         }
+      },
+      "JobItem": {
+        "4": {
+          "version": 4,
+          "hash": "6a7cc7c2bb4dd234c1508b0af4d3b403cd3b7b427578a775bf80dc36891923ed",
+          "action": "remove"
+        },
+        "5": {
+          "version": 5,
+          "hash": "82ee08442b09797ed7a3710c31de633bb308b1d2215f51b58a3e01a4c201055d",
+          "action": "add"
+        }
       }
     }
   }
