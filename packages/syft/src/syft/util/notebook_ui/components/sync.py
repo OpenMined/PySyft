@@ -66,9 +66,10 @@ class CopyIDButton(HTMLComponentBase):
     max_width: int = 50
 
     def to_html(self) -> str:
+        copy_js = f"event.stopPropagation(); navigator.clipboard.writeText('{self.copy_text}');"
         button_html = f"""
         <style>{COPY_CSS}</style>
-        <div class="copy-container" onclick="navigator.clipboard.writeText('{self.copy_text}')">
+        <div class="copy-container" onclick="{copy_js}">
             <span class="copy-text-display" style="max-width: {self.max_width}px;">#{self.copy_text}</span>{COPY_ICON}
         </div>
         """
