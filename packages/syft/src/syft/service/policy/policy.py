@@ -14,7 +14,6 @@ from io import StringIO
 import sys
 import types
 from typing import Any
-from typing import cast
 
 # third party
 from RestrictedPython import compile_restricted
@@ -23,7 +22,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
@@ -131,6 +129,7 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
     # relative
     from ...client.api import APIRegistry
     from ...client.api import NodeIdentity
+    from ...client.api import RemoteFunction
     from ...types.twin_object import TwinObject
     from ..action.action_object import ActionObject
 
@@ -143,6 +142,8 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
             uid = v.id
         if isinstance(v, TwinObject):
             uid = v.id
+        if isinstance(v, RemoteFunction):
+            uid = v.custom_function_id()
         if isinstance(v, Asset):
             uid = v.action_id
         if not isinstance(uid, UID):
@@ -202,8 +203,6 @@ class InputPolicy(Policy):
     def _inputs_for_context(self, context: ChangeContext) -> dict | SyftError:
         user_node_view = NodeIdentity.from_change_context(context)
         inputs = self.inputs[user_node_view]
-        if context.node is None:
-            return SyftError(f"context {context}'s node is None")
         root_context = AuthedServiceContext(
             node=context.node, credentials=context.approving_user_credentials
         ).as_root_context()
@@ -229,8 +228,6 @@ def retrieve_from_db(
 ) -> Result[dict[str, Any], str]:
     # relative
     from ...service.action.action_object import TwinMode
-
-    context.node = cast(AbstractNode, context.node)
 
     action_service = context.node.get_service("actionservice")
     code_inputs = {}
@@ -274,7 +271,6 @@ def allowed_ids_only(
     kwargs: dict[str, Any],
     context: AuthedServiceContext,
 ) -> dict[str, UID]:
-    context.node = cast(AbstractNode, context.node)
     if context.node.node_type == NodeType.DOMAIN:
         node_identity = NodeIdentity(
             node_name=context.node.name,
@@ -386,10 +382,11 @@ class OutputPolicy(Policy):
     node_uid: UID | None = None
     output_readers: list[SyftVerifyKey] = []
 
-    def apply_output(
+    def apply_to_output(
         self,
         context: NodeServiceContext,
         outputs: Any,
+        update_policy: bool = True,
     ) -> Any:
         # output_uids: Union[Dict[str, Any], list] = filter_only_uids(outputs)
         # if isinstance(output_uids, UID):
@@ -440,7 +437,6 @@ class OutputPolicyExecuteCount(OutputPolicy):
         )
 
     def _is_valid(self, context: AuthedServiceContext) -> SyftSuccess | SyftError:
-        context.node = cast(AbstractNode, context.node)
         output_service = context.node.get_service("outputservice")
         output_history = output_service.get_by_output_policy_id(context, self.id)
         if isinstance(output_history, SyftError):
@@ -485,10 +481,11 @@ recursive_serde_register_type(CustomPolicy)
 
 @serializable()
 class CustomOutputPolicy(metaclass=CustomPolicy):
-    def apply_output(
+    def apply_to_output(
         self,
         context: NodeServiceContext,
         outputs: Any,
+        update_policy: bool = True,
     ) -> Any | None:
         return outputs
 
@@ -542,10 +539,11 @@ class UserPolicy(Policy):
     def policy_code(self) -> str:
         return self.raw_code
 
-    def apply_output(
+    def apply_to_output(
         self,
         context: NodeServiceContext,
         outputs: Any,
+        update_policy: bool = True,
     ) -> Any | None:
         return outputs
 
@@ -728,7 +726,7 @@ def process_class_code(raw_code: str, class_name: str) -> str:
 def check_class_code(context: TransformContext) -> TransformContext:
     # TODO: define the proper checking for this case based on the ideas from UserCode
     # check for no globals
-    # check for Policy template -> __init__, apply_output, public_state
+    # check for Policy template -> __init__, apply_to_output, public_state
     # parse init signature
     # check dangerous libraries, maybe compile_restricted already does that
     if context.output is None:

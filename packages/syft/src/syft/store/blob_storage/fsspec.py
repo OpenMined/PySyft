@@ -7,15 +7,13 @@ from typing import TypeVar
 from typing import get_args
 
 # third party
+import fsspec
 from pydantic import AnyUrl
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import UrlConstraints
 from pydantic import model_validator
-
-# first party
-import fsspec
 
 # relative
 from . import BlobRetrieval
@@ -55,8 +53,8 @@ class BaseFileSystemConfig(BaseModel):
 class GoogleCloudStorageConfig(BaseFileSystemConfig):
     type: Literal["gs"] = Field(exclude=True)
     token: str | dict
-    project: str = None
-    default_region: str = None
+    project: str | None = None
+    default_region: str | None = None
 
 
 class S3StorageConfig(BaseFileSystemConfig):
@@ -64,22 +62,22 @@ class S3StorageConfig(BaseFileSystemConfig):
     key: str = Field(alias="aws_access_key_id")
     secret: str = Field(alias="aws_secret_access_key")
     token: str = Field(None, alias="aws_session_token")
-    bucket_name: str = None
-    endpoint_url: str = None
-    client_kwargs: dict = None
-    config_kwargs: dict = None
-    s3_additional_kwargs: dict = None
+    bucket_name: str | None = None
+    endpoint_url: str | None = None
+    client_kwargs: dict | None = None
+    config_kwargs: dict | None = None
+    s3_additional_kwargs: dict | None = None
 
 
 class AzureStorageConfig(BaseFileSystemConfig):
     type: Literal["az"] = Field(exclude=True)
     account_key: str
     account_name: str = Field(alias="container_name")
-    connection_string: str = None
-    sas_token: str = None
-    client_id: str = None
-    client_secret: str = None
-    tenant_id: str = None
+    connection_string: str | None = None
+    sas_token: str | None = None
+    client_id: str | None = None
+    client_secret: str | None = None
+    tenant_id: str | None = None
 
 
 class LocalStorageConfig(BaseModel):
@@ -87,7 +85,7 @@ class LocalStorageConfig(BaseModel):
     auto_mkdir: bool = True
 
 
-type StorageOptions = (
+StorageOptions = (
     GoogleCloudStorageConfig | S3StorageConfig | AzureStorageConfig | LocalStorageConfig
 )
 
@@ -95,9 +93,9 @@ type StorageOptions = (
 class BlobStorageFilesystemConfig(BlobStorageConfig):
     storage_url: StorageURL
     storage_options: StorageOptions = Field(discriminator="type")
-    prefix: str = None
-    bucket_name: str = None
-    protocol: SupportedProtocols = None
+    prefix: str | None = None
+    bucket_name: str | None = None
+    protocol: SupportedProtocols | None = None
 
     @model_validator(mode="after")
     def extract_protocol(self) -> "BlobStorageFilesystemConfig":
@@ -222,6 +220,7 @@ class BlobStorageFilesystem(BlobStorage):
             raise BlobStorageAllocationError(e)
 
     def read(self, fp: SecureFilePathLocation, type_: type[T] | None) -> BlobRetrieval:
+        print("we called read in ", type(self))
         try:
             print(f"called read fsspec {fp.path}")
             with self.fs.open(fp.path, mode="rb") as f:

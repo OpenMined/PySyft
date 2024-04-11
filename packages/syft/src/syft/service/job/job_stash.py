@@ -17,7 +17,7 @@ from ...client.api import APIRegistry
 from ...client.api import SyftAPICall
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...service.queue.queue_stash import QueueItem
+from ...service.context import AuthedServiceContext
 from ...service.worker.worker_pool import SyftWorker
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
@@ -36,6 +36,7 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import as_markdown_code
 from ...util.telemetry import instrument
+from ...util.util import prompt_warning_message
 from ..action.action_data_empty import ActionDataLink
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
@@ -77,7 +78,14 @@ class Job(SyncableSyftObject):
     user_code_id: UID | None = None
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
-    __repr_attrs__ = ["id", "result", "resolved", "progress", "creation_time"]
+    __repr_attrs__ = [
+        "id",
+        "result",
+        "resolved",
+        "progress",
+        "creation_time",
+        "user_code_name",
+    ]
     __exclude_sync_diff_attrs__ = ["action"]
 
     @field_validator("creation_time")
@@ -107,6 +115,19 @@ class Job(SyncableSyftObject):
             self.action.syft_node_location = self.syft_node_location
             self.action.syft_client_verify_key = self.syft_client_verify_key
             return self.action.job_display_name
+
+    @property
+    def user_code_name(self) -> str | None:
+        if self.user_code_id is not None:
+            api = APIRegistry.api_for(
+                node_uid=self.syft_node_location,
+                user_verify_key=self.syft_client_verify_key,
+            )
+            if api is None:
+                return None
+            user_code = api.services.code.get_by_id(self.user_code_id)
+            return user_code.service_func_name
+        return None
 
     @property
     def time_remaining_string(self) -> str | None:
@@ -294,7 +315,7 @@ class Job(SyncableSyftObject):
         self.current_iter = job.current_iter
 
     @property
-    def subjobs(self) -> list[QueueItem] | SyftError:
+    def subjobs(self) -> list["Job"] | SyftError:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -304,6 +325,10 @@ class Job(SyncableSyftObject):
                 message=f"Can't access Syft API. You must login to {self.syft_node_location}"
             )
         return api.services.job.get_subjobs(self.id)
+
+    def get_subjobs(self, context: AuthedServiceContext) -> list["Job"] | SyftError:
+        job_service = context.node.get_service("jobservice")
+        return job_service.get_subjobs(context, self.id)
 
     @property
     def owner(self) -> UserView | SyftError:
@@ -335,18 +360,26 @@ class Job(SyncableSyftObject):
         )
         if api is None:
             return f"Can't access Syft API. You must login to {self.syft_node_location}"
+
+        has_permissions = True
+
         results = []
         if stdout:
             stdout_log = api.services.log.get_stdout(self.log_id)
             if isinstance(stdout_log, SyftError):
                 results.append(f"Log {self.log_id} not available")
+                has_permissions = False
             else:
                 results.append(stdout_log)
 
         if stderr:
             try:
                 std_err_log = api.services.log.get_error(self.log_id)
-                results.append(std_err_log)
+                if isinstance(std_err_log, SyftError):
+                    results.append(f"Error log {self.log_id} not available")
+                    has_permissions = False
+                else:
+                    results.append(std_err_log)
             except Exception:
                 # no access
                 if isinstance(self.result, Err):
@@ -355,6 +388,15 @@ class Job(SyncableSyftObject):
             # add short error
             if isinstance(self.result, Err):
                 results.append(self.result.value)
+
+        if has_permissions:
+            has_storage_permission = api.services.log.has_storage_permission(
+                self.log_id
+            )
+            if not has_storage_permission:
+                prompt_warning_message(
+                    message="This is a placeholder object, the real data lives on a different node and is not synced."
+                )
 
         results_str = "\n".join(results)
         if not _print:
@@ -471,7 +513,7 @@ class Job(SyncableSyftObject):
             return self.result
         return SyftNotReady(message=f"{self.id} not ready yet.")
 
-    def get_sync_dependencies(self, **kwargs: dict) -> list[UID]:  # type: ignore
+    def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:  # type: ignore
         dependencies = []
         if self.result is not None:
             dependencies.append(self.result.id.id)
@@ -479,11 +521,23 @@ class Job(SyncableSyftObject):
         if self.log_id:
             dependencies.append(self.log_id)
 
-        subjob_ids = [subjob.id for subjob in self.subjobs]
+        subjobs = self.get_subjobs(context)
+        if isinstance(subjobs, SyftError):
+            return subjobs
+
+        subjob_ids = [subjob.id for subjob in subjobs]
         dependencies.extend(subjob_ids)
 
         if self.user_code_id is not None:
             dependencies.append(self.user_code_id)
+
+        output = context.node.get_service("outputservice").get_by_job_id(  # type: ignore
+            context, self.id
+        )
+        if isinstance(output, SyftError):
+            return output
+        elif output is not None:
+            dependencies.append(output.id)
 
         return dependencies
 
@@ -594,6 +648,25 @@ class JobStash(BaseStash):
         if valid.is_err():
             return SyftError(message=valid.err())
         return super().update(credentials, item, add_permissions)
+
+    def get_by_result_id(
+        self,
+        credentials: SyftVerifyKey,
+        res_id: UID,
+    ) -> Result[Job | None, str]:
+        res = self.get_all(credentials)
+        if res.is_err():
+            return res
+        else:
+            res = res.ok()
+            # beautiful query
+            res = [x for x in res if x.result is not None and x.result.id.id == res_id]
+            if len(res) == 0:
+                return Ok(None)
+            elif len(res) > 1:
+                return Err(message="multiple Jobs found")
+            else:
+                return Ok(res[0])
 
     def set_placeholder(
         self,

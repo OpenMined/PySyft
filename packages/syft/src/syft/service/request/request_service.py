@@ -1,12 +1,10 @@
 # stdlib
-from typing import cast
 
 # third party
 from result import Err
 from result import Ok
 
 # relative
-from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
@@ -73,7 +71,7 @@ class RequestService(AbstractService):
             if result.is_ok():
                 request = result.ok()
                 link = LinkedObject.with_context(request, context=context)
-                context.node = cast(AbstractNode, context.node)
+
                 admin_verify_key = context.node.get_service_method(
                     UserService.admin_verify_key
                 )
@@ -125,7 +123,7 @@ class RequestService(AbstractService):
         page_size: int | None = 0,
     ) -> list[list[RequestInfo]] | list[RequestInfo] | SyftError:
         """Get the information of all requests"""
-        context.node = cast(AbstractNode, context.node)
+
         result = self.stash.get_all(context.credentials)
         if result.is_err():
             return SyftError(message=result.err())
@@ -200,7 +198,6 @@ class RequestService(AbstractService):
         uid: UID,
         **kwargs: dict,
     ) -> SyftSuccess | SyftError:
-        context.node = cast(AbstractNode, context.node)
         request = self.stash.get_by_uid(context.credentials, uid)
         if request.is_ok():
             request = request.ok()
@@ -275,7 +272,7 @@ class RequestService(AbstractService):
             notifier_types=[NOTIFIERS.EMAIL],
             email_template=RequestUpdateEmailTemplate,
         )
-        context.node = cast(AbstractNode, context.node)
+
         send_notification = context.node.get_service_method(NotificationService.send)
         send_notification(context=context, notification=notification)
 

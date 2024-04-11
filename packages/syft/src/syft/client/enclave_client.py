@@ -17,10 +17,10 @@ from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.network.routes import NodeRouteType
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
-from ..util.fonts import fonts_css
+from ..util.fonts import FONT_CSS
 from .api import APIModule
 from .client import SyftClient
 from .client import login
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 @serializable()
 class EnclaveMetadata(SyftObject):
     __canonical_name__ = "EnclaveMetadata"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     route: NodeRouteType
 
@@ -96,7 +96,7 @@ class EnclaveClient(SyftClient):
 
         if isinstance(res, SyftSuccess):
             return SyftSuccess(
-                message=f"Connected {self.metadata.node_type} to {client.name} gateway"
+                message=f"Connected {self.metadata.node_type} {self.metadata.name} to {client.name} gateway"
             )
 
         return res
@@ -182,7 +182,7 @@ class EnclaveClient(SyftClient):
 
         return f"""
         <style>
-            {fonts_css}
+            {FONT_CSS}
 
             .syft-container {{
                 padding: 5px;

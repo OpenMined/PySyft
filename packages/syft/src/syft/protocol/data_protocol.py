@@ -133,6 +133,14 @@ class DataProtocol:
             release_version_path = (
                 protocol_release_dir() / protocol_history[version]["release_name"]
             )
+            if not os.path.exists(release_version_path):
+                error_message = (
+                    f"Missing version {version} file: {release_version_path}"
+                )
+                if get_dev_mode() or self.raise_exception:
+                    raise SyftException(error_message)
+                else:
+                    print(error_message)
             released_version = self.read_json(file_path=release_version_path)
             protocol_history[version] = released_version.get(version, {})
 
@@ -253,6 +261,7 @@ class DataProtocol:
                         + "Is a unique __canonical_name__ for this subclass missing? "
                         + "If the class has changed you will need to define a new class with the changes, "
                         + "with same __canonical_name__ and bump the __version__ number."
+                        + f"{cls.model_fields}"
                     )
 
                     if get_dev_mode() or self.raise_exception:
@@ -457,6 +466,7 @@ class DataProtocol:
 
         # Save history
         self.save_history(protocol_history)
+        self.load_state()
 
     def check_protocol(self) -> Result[SyftSuccess, SyftError]:
         if len(self.diff) != 0:
@@ -502,6 +512,11 @@ class DataProtocol:
         if "dev" in self.protocol_history.keys():
             return True
         return False
+
+    def reset_dev_protocol(self) -> None:
+        if self.has_dev:
+            del self.protocol_history["dev"]
+            self.save_history(self.protocol_history)
 
 
 def get_data_protocol(raise_exception: bool = False) -> DataProtocol:

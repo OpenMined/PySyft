@@ -96,16 +96,10 @@ class DatasetService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
-        if context.node is not None:
-            return SyftSuccess(
-                message=f"Dataset uploaded to '{context.node.name}'. "
-                f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
-            )
-        else:
-            return SyftSuccess(
-                message="Dataset uploaded not to a node."
-                "To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
-            )
+        return SyftSuccess(
+            message=f"Dataset uploaded to '{context.node.name}'. "
+            f"To see the datasets uploaded by a client on this node, use command `[your_client].datasets`"
+        )
 
     @service_method(
         path="dataset.get_all",
@@ -134,9 +128,7 @@ class DatasetService(AbstractService):
             datasets=datasets, page_size=page_size, page_index=page_index
         )
 
-    @service_method(
-        path="dataset.search", name="search", roles=DATA_SCIENTIST_ROLE_LEVEL
-    )
+    @service_method(path="dataset.search", name="search", roles=GUEST_ROLE_LEVEL)
     def search(
         self,
         context: AuthedServiceContext,
@@ -207,8 +199,9 @@ class DatasetService(AbstractService):
         return []
 
     @service_method(
-        path="dataset.delete_by_id",
-        name="dataset_delete_by_id",
+        path="dataset.delete_by_uid",
+        name="delete_by_uid",
+        roles=DATA_OWNER_ROLE_LEVEL,
         warning=HighSideCRUDWarning(confirmation=True),
     )
     def delete_dataset(

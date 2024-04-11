@@ -30,7 +30,6 @@ from result import Err
 from typing_extensions import Self
 
 # relative
-from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
@@ -56,6 +55,7 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import CodeMarkdown
 from ...util.markdown import as_markdown_code
+from ..action.action_endpoint import CustomEndpointActionObject
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..context import AuthedServiceContext
@@ -198,7 +198,6 @@ class UserCodeStatusCollection(SyncableSyftObject):
         return False
 
     def for_user_context(self, context: AuthedServiceContext) -> UserCodeStatus:
-        context.node = cast(AbstractNode, context.node)
         if context.node.node_type == NodeType.ENCLAVE:
             keys = {status for status, _ in self.status_dict.values()}
             if len(keys) == 1 and UserCodeStatus.APPROVED in keys:
@@ -247,7 +246,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
                 message="Cannot Modify Status as the Domain's data is not included in the request"
             )
 
-    def get_sync_dependencies(self, api: Any = None) -> list[UID]:
+    def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
         return [self.user_code_link.object_uid]
 
 
@@ -460,12 +459,6 @@ class UserCode(SyncableSyftObject):
         else:
             raise Exception(f"You can't set {type(value)} as input_policy_state")
 
-    @property
-    def output_policy(self) -> OutputPolicy | None:  # type: ignore
-        if not self.status.approved:
-            return None
-        return self._get_output_policy()
-
     def get_output_policy(self, context: AuthedServiceContext) -> OutputPolicy | None:
         if not self.get_status(context).approved:
             return None
@@ -506,6 +499,12 @@ class UserCode(SyncableSyftObject):
             print(f"Failed to deserialize custom output policy state. {e}")
             return None
 
+    @property
+    def output_policy(self) -> OutputPolicy | None:  # type: ignore
+        if not self.status.approved:
+            return None
+        return self._get_output_policy()
+
     @output_policy.setter  # type: ignore
     def output_policy(self, value: Any) -> None:  # type: ignore
         if isinstance(value, OutputPolicy):
@@ -531,11 +530,11 @@ class UserCode(SyncableSyftObject):
             return SyftError(
                 message="Execution denied, Please wait for the code to be approved"
             )
-        node = cast(AbstractNode, context.node)
-        output_service = cast(OutputService, node.get_service("outputservice"))
+
+        output_service = cast(OutputService, context.node.get_service("outputservice"))
         return output_service.get_by_user_code_id(context, self.id)
 
-    def apply_output(
+    def store_as_history(
         self,
         context: AuthedServiceContext,
         outputs: Any,
@@ -549,7 +548,7 @@ class UserCode(SyncableSyftObject):
             )
 
         output_ids = filter_only_uids(outputs)
-        context.node = cast(AbstractNode, context.node)
+
         output_service = context.node.get_service("outputservice")
         output_service = cast(OutputService, output_service)
         execution_result = output_service.create(
@@ -608,12 +607,18 @@ class UserCode(SyncableSyftObject):
                 all_assets += assets
         return all_assets
 
-    def get_sync_dependencies(self, api: Any = None) -> list[UID] | SyftError:
+    def get_sync_dependencies(
+        self, context: AuthedServiceContext
+    ) -> list[UID] | SyftError:
         dependencies = []
 
         if self.nested_codes is not None:
-            nested_code_ids = [link.object_uid for link in self.nested_codes.values()]
+            nested_code_ids = [
+                link.object_uid for link, _ in self.nested_codes.values()
+            ]
             dependencies.extend(nested_code_ids)
+
+        dependencies.append(self.status_link.object_uid)
 
         return dependencies
 
@@ -1406,37 +1411,41 @@ def execute_byte_code(
             job_id = context.job_id
             log_id = context.job.log_id
 
-            def print(*args: Any, sep: str = " ", end: str = "\n") -> str | None:
-                def to_str(arg: Any) -> str:
-                    if isinstance(arg, bytes):
-                        return arg.decode("utf-8")
-                    if isinstance(arg, Job):
-                        return f"JOB: {arg.id}"
-                    if isinstance(arg, SyftError):
-                        return f"JOB: {arg.message}"
-                    if isinstance(arg, ActionObject):
-                        return str(arg.syft_action_data)
-                    return str(arg)
+            # def print(*args: Any, sep: str = " ", end: str = "\n") -> str | None:
+            #     def to_str(arg: Any) -> str:
+            #         if isinstance(arg, bytes):
+            #             return arg.decode("utf-8")
+            #         if isinstance(arg, Job):
+            #             return f"JOB: {arg.id}"
+            #         if isinstance(arg, SyftError):
+            #             return f"JOB: {arg.message}"
+            #         if isinstance(arg, ActionObject):
+            #             return str(arg.syft_action_data)
+            #         return str(arg)
 
-                new_args = [to_str(arg) for arg in args]
-                new_str = sep.join(new_args) + end
-                if context.node is not None:
-                    log_service = context.node.get_service("LogService")
-                    log_service.append(context=context, uid=log_id, new_str=new_str)
-                time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
-                return __builtin__.print(
-                    f"{time} FUNCTION LOG ({job_id}):",
-                    *new_args,
-                    end=end,
-                    sep=sep,
-                    file=sys.stderr,
-                )
+            #     new_args = [to_str(arg) for arg in args]
+            #     new_str = sep.join(new_args) + end
+            #     if context.node is not None:
+            #         log_service = context.node.get_service("LogService")
+            #         log_service.append(context=context, uid=log_id, new_str=new_str)
+            #     time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
+            #     return __builtin__.print(
+            #         f"{time} FUNCTION LOG ({job_id}):",
+            #         *new_args,
+            #         end=end,
+            #         sep=sep,
+            #         file=sys.stderr,
+            #     )
 
         else:
             print = original_print
 
         if code_item.uses_domain:
             kwargs["domain"] = LocalDomainClient()
+
+        for k, v in kwargs.items():
+            if isinstance(v, CustomEndpointActionObject):
+                kwargs[k] = v.add_context(context=context)
 
         stdout = StringIO()
         stderr = StringIO()

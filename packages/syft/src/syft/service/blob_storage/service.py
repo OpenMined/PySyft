@@ -1,11 +1,9 @@
 # stdlib
-from typing import cast
 
 # third party
 import requests
 
 # relative
-from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...service.action.action_object import ActionObject
 from ...store.blob_storage import BlobRetrieval
@@ -86,8 +84,6 @@ class BlobStorageService(AbstractService):
         if res.is_err():
             return SyftError(message=res.value)
         remote_profile = res.ok()
-
-        context.node = cast(AbstractNode, context.node)
 
         seaweed_config = context.node.blob_storage_client.config
         # we cache this here such that we can use it when reading a file from azure
@@ -186,7 +182,7 @@ class BlobStorageService(AbstractService):
             return blob_storage_entry.to(BlobStorageMetadata)
         return SyftError(message=result.err())
 
-    # TODO: replace name with `create_blob_retrieval`
+    # TODO: replace name with `create_blob_retrieval` @teo why?
     @service_method(
         path="blob_storage.read",
         name="read",
@@ -203,10 +199,13 @@ class BlobStorageService(AbstractService):
 
                 if obj is None:
                     return SyftError(
-                        message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
+                        message=(
+                            f"No blob storage entry exists for uid: {uid}, "
+                            "or you have no permissions to read it"
+                        )
                     )
 
-                context.node = cast(AbstractNode, context.node)
+                # context.node = cast(AbstractNode, context.node)
 
                 with context.node.blob_storage_client.connect() as conn:
                     res: BlobRetrieval = conn.read(
@@ -216,10 +215,12 @@ class BlobStorageService(AbstractService):
                     res.syft_blob_storage_entry_id = uid
                     res.file_size = obj.file_size
                     return res
-            return SyftError(message="Deu pau geral")
+            elif result.is_err():
+                return SyftError(message=result.err())
         except Exception as e:
-            print(f"BlobStorageService(read): failed to read: {e}")
-            return SyftError(message=result.err())
+            return SyftError(
+                message=f"Failed to get UID: {uid} from Blob Storage with {e}"
+            )
 
     @service_method(
         path="blob_storage.allocate",
@@ -229,7 +230,7 @@ class BlobStorageService(AbstractService):
     def allocate(
         self, context: AuthedServiceContext, obj: CreateBlobStorageEntry
     ) -> SecureFilePathLocation | SyftError:
-        context.node = cast(AbstractNode, context.node)
+        # context.node = cast(AbstractNode, context.node)
 
         with context.node.blob_storage_client.connect() as conn:
             return conn.allocate(obj)
@@ -246,7 +247,7 @@ class BlobStorageService(AbstractService):
         fp: SecureFilePathLocation,
         data: bytes,
     ):
-        context.node = cast(AbstractNode, context.node)
+        # context.node = cast(AbstractNode, context.node)
 
         with context.node.blob_storage_client.connect() as conn:
             try:
@@ -307,7 +308,7 @@ class BlobStorageService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=f"{result.err()}")
-        context.node = cast(AbstractNode, context.node)
+
         with context.node.blob_storage_client.connect() as conn:
             result = conn.complete_multipart_upload(obj, etags)
 
@@ -325,8 +326,6 @@ class BlobStorageService(AbstractService):
                 return SyftError(
                     message=f"No blob storage entry exists for uid: {uid}, or you have no permissions to read it"
                 )
-
-            context.node = cast(AbstractNode, context.node)
 
             try:
                 with context.node.blob_storage_client.connect() as conn:

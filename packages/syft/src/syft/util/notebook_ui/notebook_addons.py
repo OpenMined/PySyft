@@ -258,9 +258,105 @@ CSS_CODE = """
         color: var(--tertiary-color);
     }
 
+
+    .syncstate-col-footer {
+        font-family: 'DejaVu Sans Mono', 'Open Sans';
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 16.8px;
+        text-align: left;
+        color: #5E5A72;
+    }
+
+    .syncstate-description {
+        font-family: Open Sans;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 19.6px;
+        text-align: left;
+    }
+
+    .diff-state-orange-text{
+        color: #B8520A;
+    }
+
+    .diff-state-no-obj{
+        font-family: 'DejaVu Sans Mono', 'Open Sans';
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 16.8px;
+        text-align: left;
+        color: #5E5A72;
+    }
+
+    .diff-state-intro{
+        font-family: Open Sans;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 19.6px;
+        text-align: left;
+        color: #B4B0BF;
+    }
+
+    .diff-state-header{
+        font-family: Open Sans;
+        font-size: 22px;
+        font-weight: 600;
+        line-height: 30.8px;
+        text-align: left;
+        color: #353243;
+        display: flex; gap: 8px;
+    }
+
+    .diff-state-sub-header{
+        font-family: Open Sans;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 19.6px;
+        text-align: left;
+        color: #5E5A72;
+    }
+
     .badge {
         code-text;
         border-radius: 30px;
+    }
+
+    .label {
+        code-text;
+        border-radius: 4px;
+        padding: 0px 4px;
+    }
+
+    .label-light-purple {
+        label;
+        background-color: #C9CFE8;
+        color: #373B7B;
+    }
+
+    .label-light-blue {
+        label;
+        background-color: #C2DEF0;
+        color: #1F567A;
+
+    }
+
+    .label-orange {
+        badge;
+        background-color: #FEE9CD;
+        color: #B8520A;
+    }
+
+    .label-gray {
+        badge;
+        background-color: #ECEBEF;
+        color: #353243;
+    }
+
+    .label-green {
+        badge;
+        background-color: #D5F1D5;
+        color: #256B24;
     }
 
     .badge-blue {
@@ -453,6 +549,13 @@ REQUEST_ICON = (
     ' 9.87408 7.90748 9.80014 8 9.70687L9.20687 8.5H11V11Z" fill="#343330"/></svg>'
 )
 
+ARROW_ICON = (
+    '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    '<rect x="0.5" y="0.5" width="23" height="23" rx="1.5" fill="#ECEBEF"/>'
+    '<rect x="0.5" y="0.5" width="23" height="23" rx="1.5" stroke="#B4B0BF"/>'
+    '<path d="M17.8538 12.3538L13.3538 16.8538C13.2599 16.9476 13.1327 17.0003 13 17.0003C12.8673 17.0003 12.7401 16.9476 12.6462 16.8538C12.5524 16.76 12.4997 16.6327 12.4997 16.5C12.4997 16.3674 12.5524 16.2401 12.6462 16.1463L16.2931 12.5H6.5C6.36739 12.5 6.24021 12.4474 6.14645 12.3536C6.05268 12.2598 6 12.1326 6 12C6 11.8674 6.05268 11.7402 6.14645 11.6465C6.24021 11.5527 6.36739 11.5 6.5 11.5H16.2931L12.6462 7.85378C12.5524 7.75996 12.4997 7.63272 12.4997 7.50003C12.4997 7.36735 12.5524 7.2401 12.6462 7.14628C12.7401 7.05246 12.8673 6.99976 13 6.99976C13.1327 6.99976 13.2599 7.05246 13.3538 7.14628L17.8538 11.6463C17.9002 11.6927 17.9371 11.7479 17.9623 11.8086C17.9874 11.8693 18.0004 11.9343 18.0004 12C18.0004 12.0657 17.9874 12.1308 17.9623 12.1915C17.9371 12.2522 17.9002 12.3073 17.8538 12.3538Z" fill="#5E5A72"/></svg>'  # noqa: E501
+)
+
 
 custom_code = """
     <div style='margin-top:15px;'>
@@ -610,6 +713,12 @@ custom_code = """
                                                     badge_div.innerText = String(item[attr].value).toUpperCase();
                                                     div.appendChild(badge_div);
                                                     div.classList.add('grid-row','grid-std-cells');
+                                                } else if (item[attr].type.includes('label')){
+                                                    let label_div = document.createElement("div");
+                                                    label_div.classList.add('label',item[attr].type)
+                                                    label_div.innerText = String(item[attr].value).toUpperCase();
+                                                    div.appendChild(label_div);
+                                                    div.classList.add('grid-row','grid-std-cells');
                                                 } else if (item[attr].type === "clipboard") {
                                                     div.classList.add('grid-row','grid-std-cells');
 
@@ -685,6 +794,12 @@ custom_code = """
                         resetById${uid}('table${uid}')
                         buildGrid${uid}(paginatedElements${uid}, pageIndex)
                     }
+                    (async function() {
+                        const myFont = new FontFace('DejaVu Sans', 'url(https://cdn.jsdelivr.net/npm/dejavu-sans@1.0.0/css/dejavu-sans.min.css)');
+                        await myFont.load();
+                        document.fonts.add(myFont);
+                        document.getElementsByTagName('h1')[0].style.fontFamily = "DejaVu Sans";
+                    })();
 
                     buildPaginationContainer${uid}(paginatedElements${uid})
                 </script>
