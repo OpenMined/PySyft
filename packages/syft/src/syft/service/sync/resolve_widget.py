@@ -26,6 +26,7 @@ from ...util.notebook_ui.components.sync import MainDescription
 from ...util.notebook_ui.components.sync import SyncWidgetHeader
 from ...util.notebook_ui.notebook_addons import CSS_CODE
 from ..action.action_object import ActionObject
+from ..api.api import TwinAPIEndpoint
 from ..log.log import SyftLog
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -110,7 +111,10 @@ class MainObjectDiffWidget:
         self.widget = self.build()
         self.sync = True
         self.mockify = False
-        self.share_private_data = True  # there is not private data in this case
+        if isinstance(diff.non_empty_object, TwinAPIEndpoint):
+            self.share_private_data = False
+        else:
+            self.share_private_data = True  # there is no private data in this case
         self.is_main_widget: bool = True
 
     def set_share_private_data(self) -> None:

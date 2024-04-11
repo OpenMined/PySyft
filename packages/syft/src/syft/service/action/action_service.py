@@ -315,7 +315,7 @@ class ActionService(AbstractService):
 
         if not override_execution_permission:
             if input_policy is None:
-                if not code_item.output_policy_approved:
+                if not code_item.is_output_policy_approved(context):
                     return Err("Execution denied: Your code is waiting for approval")
                 return Err(f"No input policy defined for user code: {code_item.id}")
 
