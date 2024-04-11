@@ -2,12 +2,18 @@ global:
   checkNewVersion: false
   sendAnonymousUsage: false
 
+accessLog: {}
+
 log:
   level: INFO
 
 entryPoints:
   web:
     address: :81
+    transport:
+      respondingTimeouts:
+        tcp:
+          lingeringTimeout: 0
 
 ping:
   manualRouting: true

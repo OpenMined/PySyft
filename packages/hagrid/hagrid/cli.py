@@ -2249,7 +2249,6 @@ def create_launch_docker_cmd(
         "DOCKER_BUILDKIT": 1,
         "HTTP_PORT": int(host_term.free_port),
         "HTTPS_PORT": int(host_term.free_port_tls),
-        "BACKEND_STORAGE_PATH": "credentials-data",
         "TRAEFIK_TAG": str(tag),
         "NODE_NAME": str(snake_name),
         "NODE_TYPE": str(node_type.input),
@@ -2299,7 +2298,7 @@ def create_launch_docker_cmd(
         envs["IGNORE_TLS_ERRORS"] = "True"
 
     if "test" in kwargs and kwargs["test"] is True:
-        envs["S3_VOLUME_SIZE_MB"] = "100"  # GitHub CI is small
+        envs["SWFS_VOLUME_SIZE_LIMIT_MB"] = "100"  # GitHub CI is small
 
     if kwargs.get("release", "") == "development":
         envs["RABBITMQ_MANAGEMENT"] = "-management"
@@ -2326,7 +2325,7 @@ def create_launch_docker_cmd(
         "set_volume_size_limit_mb" in kwargs
         and kwargs["set_volume_size_limit_mb"] is not None
     ):
-        envs["S3_VOLUME_SIZE_MB"] = kwargs["set_volume_size_limit_mb"]
+        envs["SWFS_VOLUME_SIZE_LIMIT_MB"] = kwargs["set_volume_size_limit_mb"]
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
