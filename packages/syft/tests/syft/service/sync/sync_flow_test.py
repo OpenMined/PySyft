@@ -292,6 +292,85 @@ def test_forget_usercode(low_worker, high_worker):
     )
 
 
+@sy.mock_api_endpoint()
+def mock_function(context) -> str:
+    return -42
+
+
+@sy.private_api_endpoint()
+def private_function(context) -> str:
+    return 42
+
+
+def test_twin_api_integration(low_worker, high_worker):
+    low_client = low_worker.root_client
+    high_client = high_worker.root_client
+
+    low_client.register(
+        email="newuser@openmined.org",
+        name="John Doe",
+        password="pw",
+        password_verify="pw",
+    )
+
+    client_low_ds = low_client.login(
+        email="newuser@openmined.org",
+        password="pw",
+    )
+
+    new_endpoint = sy.TwinAPIEndpoint(
+        path="testapi.query",
+        private_function=private_function,
+        mock_function=mock_function,
+        description="",
+    )
+    high_client.api.services.api.add(endpoint=new_endpoint)
+    high_client.refresh()
+    high_private_res = high_client.api.services.testapi.query.private()
+    assert high_private_res == 42
+
+    diff_state = compare_clients(
+        high_client,
+        low_client,
+    )
+    low_items_to_sync, high_items_to_sync = resolve(
+        diff_state, decision="high", share_private_objects=True
+    )
+    low_client.apply_state(low_items_to_sync)
+    high_client.apply_state(high_items_to_sync)
+
+    client_low_ds.refresh()
+    low_private_res = client_low_ds.api.services.testapi.query.private()
+    assert isinstance(
+        low_private_res, SyftError
+    ), "Should not have access to private on low side"
+    low_mock_res = client_low_ds.api.services.testapi.query.mock()
+    high_mock_res = high_client.api.services.testapi.query.mock()
+    assert low_mock_res == high_mock_res == -42
+
+    @sy.syft_function_single_use(
+        compute=client_low_ds.api.services.testapi.query,
+    )
+    def my_compute_fun(compute):
+        return compute()
+
+    my_compute_fun.code = dedent(my_compute_fun.code)
+    res = client_low_ds.code.request_code_execution(my_compute_fun)
+    print(res)
+    print("LOW CODE:", low_client.code.get_all())
+    low_client.refresh()
+    request = low_client.requests[-1]
+
+    low_res = low_client.code.my_compute_fun(
+        compute=low_client.api.services.testapi.query,
+    ).get()
+    request.accept_by_depositing_result(res)
+    low_ds_res = client_low_ds.code.my_compute_fun(
+        compute=low_client.api.services.testapi.query,
+    )
+    assert low_ds_res == low_res == 42
+
+
 def test_skip_user_code(low_worker, high_worker):
     low_client = low_worker.root_client
     client_low_ds = low_worker.guest_client

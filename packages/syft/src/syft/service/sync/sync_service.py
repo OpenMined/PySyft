@@ -21,6 +21,7 @@ from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import StoragePermission
+from ..api.api import TwinAPIEndpoint
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
@@ -150,6 +151,12 @@ class SyncService(AbstractService):
         creds = context.credentials
 
         exists = stash.get_by_uid(context.credentials, item.id).ok() is not None
+
+        if isinstance(item, TwinAPIEndpoint):
+            return context.node.get_service("apiservice").set(
+                context=context, endpoint=item
+            )
+
         if exists:
             res = stash.update(creds, item)
         else:

@@ -45,11 +45,18 @@ class APIService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def set(
-        self, context: AuthedServiceContext, endpoint: CreateTwinAPIEndpoint
+        self,
+        context: AuthedServiceContext,
+        endpoint: CreateTwinAPIEndpoint | TwinAPIEndpoint,
     ) -> SyftSuccess | SyftError:
         """Register an CustomAPIEndpoint."""
         try:
-            new_endpoint = endpoint.to(TwinAPIEndpoint)
+            if isinstance(endpoint, CreateTwinAPIEndpoint):
+                new_endpoint = endpoint.to(TwinAPIEndpoint)
+            elif isinstance(endpoint, TwinAPIEndpoint):
+                new_endpoint = endpoint
+            else:
+                return SyftError(message="Invalid endpoint type.")
         except ValueError as e:
             return SyftError(message=str(e))
 

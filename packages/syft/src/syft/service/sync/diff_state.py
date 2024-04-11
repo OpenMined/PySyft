@@ -776,6 +776,10 @@ class ObjectDiffBatch(SyftObject):
                 ExecutionOutput: [Job],
                 Job: [ActionObject, SyftLog, Job],
             }
+        elif isinstance(root_obj, TwinAPIEndpoint):
+            return TwinAPIEndpoint, {
+                TwinAPIEndpoint: [],
+            }
         else:
             raise ValueError(f"Unknown root type: {self.root.obj_type}")
 
