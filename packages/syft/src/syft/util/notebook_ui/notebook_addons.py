@@ -421,7 +421,7 @@ CSS_CODE = """
     }
 
     .widget-label-basic input[type='checkbox'][disabled] {
-        filter: sepia(1) hue-rotate(45deg);
+        filter: sepia(0.3) hue-rotate(67deg) saturate(3);
     }
 
     .page{
