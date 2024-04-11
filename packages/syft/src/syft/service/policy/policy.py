@@ -143,7 +143,7 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
         if isinstance(v, TwinObject):
             uid = v.id
         if isinstance(v, RemoteFunction):
-            uid = v.custom_function_id()
+            uid = v.custom_function_actionobject_id()
         if isinstance(v, Asset):
             uid = v.action_id
         if not isinstance(uid, UID):
