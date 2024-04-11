@@ -9,11 +9,7 @@ files:
   grid:
     path: packages/grid/
     common:
-    - rabbitmq/rabbitmq.conf
-    - redis/redis.conf
-    - seaweedfs/filer.toml
-    - seaweedfs/start.sh
-    - default.env
+      - default.env
     docker:
     - default.env
     - docker-compose.build.yml
