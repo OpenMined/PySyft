@@ -1,0 +1,9 @@
+[leveldb2]
+enabled = false
+dir = "/data/filerldb2"
+
+[leveldb3]
+# similar to leveldb2.
+# each bucket has its own meta store.
+enabled = true
+dir = "/data/filerldb3"

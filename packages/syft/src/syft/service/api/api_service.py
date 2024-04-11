@@ -15,6 +15,7 @@ from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
+from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
@@ -44,11 +45,18 @@ class APIService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def set(
-        self, context: AuthedServiceContext, endpoint: CreateTwinAPIEndpoint
+        self,
+        context: AuthedServiceContext,
+        endpoint: CreateTwinAPIEndpoint | TwinAPIEndpoint,
     ) -> SyftSuccess | SyftError:
         """Register an CustomAPIEndpoint."""
         try:
-            new_endpoint = endpoint.to(TwinAPIEndpoint)
+            if isinstance(endpoint, CreateTwinAPIEndpoint):  # type: ignore
+                new_endpoint = endpoint.to(TwinAPIEndpoint)
+            elif isinstance(endpoint, TwinAPIEndpoint):  # type: ignore
+                new_endpoint = endpoint
+            else:
+                return SyftError(message="Invalid endpoint type.")
         except ValueError as e:
             return SyftError(message=str(e))
 
@@ -68,7 +76,7 @@ class APIService(AbstractService):
 
         result = result.ok()
         action_obj = ActionObject.from_obj(
-            id=result.id,
+            id=new_endpoint.action_object_id,
             syft_action_data=CustomEndpointActionObject(endpoint_id=result.id),
             syft_node_location=context.node.id,
             syft_client_verify_key=context.credentials,
@@ -212,6 +220,17 @@ class APIService(AbstractService):
             )
 
         return api_endpoint_view
+
+    @service_method(path="api.get_all", name="get_all", roles=ADMIN_ROLE_LEVEL)
+    def get_all(
+        self,
+        context: AuthedServiceContext,
+    ) -> list[TwinAPIEndpoint] | SyftError:
+        """Get all API endpoints."""
+        result = self.stash.get_all(context.credentials)
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message=result.err())
 
     @service_method(path="api.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
@@ -357,3 +376,6 @@ class APIService(AbstractService):
             return result.ok()
 
         return SyftError(message=f"Unable to get {endpoint_path} CustomAPIEndpoint")
+
+
+TYPE_TO_SERVICE[TwinAPIEndpoint] = APIService
