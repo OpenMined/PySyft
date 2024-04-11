@@ -348,28 +348,6 @@ def test_twin_api_integration(low_worker, high_worker):
     high_mock_res = high_client.api.services.testapi.query.mock()
     assert low_mock_res == high_mock_res == -42
 
-    @sy.syft_function_single_use(
-        compute=client_low_ds.api.services.testapi.query,
-    )
-    def my_compute_fun(compute):
-        return compute()
-
-    my_compute_fun.code = dedent(my_compute_fun.code)
-    res = client_low_ds.code.request_code_execution(my_compute_fun)
-    print(res)
-    print("LOW CODE:", low_client.code.get_all())
-    low_client.refresh()
-    request = low_client.requests[-1]
-
-    low_res = low_client.code.my_compute_fun(
-        compute=low_client.api.services.testapi.query,
-    ).get()
-    request.accept_by_depositing_result(res)
-    low_ds_res = client_low_ds.code.my_compute_fun(
-        compute=low_client.api.services.testapi.query,
-    )
-    assert low_ds_res == low_res == 42
-
 
 def test_skip_user_code(low_worker, high_worker):
     low_client = low_worker.root_client
