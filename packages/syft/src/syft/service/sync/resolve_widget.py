@@ -118,15 +118,12 @@ class MainObjectDiffWidget:
 
     @property
     def mockify(self) -> bool:
-        # mock TwinAPIEndpoint.__private_sync_attr_mocks__
-        if isinstance(self.diff.non_empty_object, TwinAPIEndpoint):
-            return True
-        return isinstance(self.diff.non_empty_object, TwinAPIEndpoint)
+        return not self.share_private_data
 
     @property
     def share_private_data(self) -> bool:
-        # there is not private data if this is not a TwinAPIEndpoint
-        return not self.mockify
+        # there are TwinAPIEndpoint.__private_sync_attr_mocks__
+        return not isinstance(self.diff.non_empty_object, TwinAPIEndpoint)
 
     def build(self) -> widgets.HBox:
         all_keys = list(self.low_properties.keys()) + list(self.high_properties.keys())
