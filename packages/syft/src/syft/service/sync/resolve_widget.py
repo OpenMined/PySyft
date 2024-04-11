@@ -3,14 +3,16 @@ from enum import Enum
 from enum import auto
 import html
 from typing import Any
+from uuid import uuid4
 
 # third party
 import ipywidgets as widgets
 from ipywidgets import Button
+from ipywidgets import Checkbox
+from ipywidgets import HBox
 from ipywidgets import HTML
 from ipywidgets import Layout
 from ipywidgets import VBox
-from typing_extensions import Self
 
 # relative
 from ...client.api import APIRegistry
@@ -18,9 +20,13 @@ from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
 from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
+from ...util.notebook_ui.components.sync import Badge
+from ...util.notebook_ui.components.sync import CopyIDButton
+from ...util.notebook_ui.components.sync import MainDescription
 from ...util.notebook_ui.components.sync import SyncWidgetHeader
 from ...util.notebook_ui.notebook_addons import CSS_CODE
 from ..action.action_object import ActionObject
+from ..api.api import TwinAPIEndpoint
 from ..log.log import SyftLog
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -66,100 +72,56 @@ colors = {
 }
 
 
-# TODO use ObjectDiff instead
-class ObjectDiffWidget:
+def create_diff_html(
+    title: str,
+    properties: dict[str, str],
+    statuses: dict[str, DiffStatus],
+) -> str:
+    html_str = f"<div style='width: 100%;'>{title}<br>"
+    html_str += "<div style='font-family: monospace; border-left: 1px solid #B4B0BF; padding-left: 10px;'>"
+
+    for attr, val in properties.items():
+        status = statuses[attr]
+        val = val if val is not None else ""
+        style = f"background-color: {background_colors[status]}; color: {colors[status]}; display: block; white-space: pre-wrap; margin-bottom: 5px;"  # noqa: E501
+        content = html.escape(f"{attr}: {val}")
+        html_str += f"<div style='{style}'>{content}</div>"
+
+    html_str += "</div></div>"
+
+    return html_str
+
+
+# TODO move CSS/HTML/JS outside function
+
+
+class MainObjectDiffWidget:
     def __init__(
         self,
         diff: ObjectDiff,
-        low_properties: list[str],
-        high_properties: list[str],
-        statuses: list[DiffStatus],
         direction: SyncDirection,
-        is_main_widget: bool = False,
+        with_box: bool = True,
     ):
-        self.low_properties = low_properties
-        self.high_properties = high_properties
-        self.statuses = statuses
+        self.low_properties = diff.repr_attr_dict("low")
+        self.high_properties = diff.repr_attr_dict("high")
+        self.statuses = diff.repr_attr_diffstatus_dict()
         self.direction = direction
-        self.share_private_data = False
         self.diff: ObjectDiff = diff
-
-        self.sync: bool = False
-
-        self.is_main_widget = is_main_widget
+        self.with_box = with_box
         self.widget = self.build()
-        self.set_and_disable_sync()
-
-    @property
-    def mockify(self) -> bool:
-        if self.show_share_button and not self.share_private_data:
-            return True
+        self.sync = True
+        self.mockify = False
+        if isinstance(diff.non_empty_object, TwinAPIEndpoint):
+            self.share_private_data = False
         else:
-            return False
-
-    @classmethod
-    def from_diff(
-        cls, diff: ObjectDiff, direction: SyncDirection, is_main_widget: bool
-    ) -> Self:
-        return cls(
-            low_properties=diff.repr_attr_dict("low"),
-            high_properties=diff.repr_attr_dict("high"),
-            statuses=diff.repr_attr_diffstatus_dict(),
-            is_main_widget=is_main_widget,
-            diff=diff,
-            direction=direction,
-        )
-
-    @property
-    def show_share_button(self) -> bool:
-        return isinstance(self.diff.non_empty_object, SyftLog | ActionObject)
-
-    @property
-    def show_sync_button(self) -> bool:
-        return not self.is_main_widget
-
-    @property
-    def num_changes(self) -> int:
-        return len([x for x in self.statuses.values() if x != DiffStatus.SAME])
-
-    @property
-    def title(self) -> str:
-        return f"{self.diff.object_type} ({self.num_changes} changes)"
-
-    def set_and_disable_sync(self) -> None:
-        if self.show_sync_button:
-            self._sync_checkbox.disabled = True
-            self._sync_checkbox.value = True
-
-    def enable_sync(self) -> None:
-        if self.show_sync_button:
-            self._sync_checkbox.disabled = False
+            self.share_private_data = True  # there is no private data in this case
+        self.is_main_widget: bool = True
 
     def set_share_private_data(self) -> None:
-        if self.show_share_button:
-            self._share_private_checkbox.value = True
+        # No-op for main widget
+        pass
 
-    def create_diff_html(
-        self,
-        title: str,
-        properties: dict[str, str],
-        statuses: dict[str, DiffStatus],
-    ) -> str:
-        html_str = f"<div style='width: 100%;'>{title}<br>"
-        html_str += "<div style='font-family: monospace; border-left: 1px solid #B4B0BF; padding-left: 10px;'>"
-
-        for attr, val in properties.items():
-            status = statuses[attr]
-            val = val if val is not None else ""
-            style = f"background-color: {background_colors[status]}; color: {colors[status]}; display: block; white-space: pre-wrap; margin-bottom: 5px;"  # noqa: E501
-            content = html.escape(f"{attr}: {val}")
-            html_str += f"<div style='{style}'>{content}</div>"
-
-        html_str += "</div></div>"
-
-        return html_str
-
-    def build(self) -> widgets.VBox:
+    def build(self) -> widgets.HBox:
         all_keys = list(self.low_properties.keys()) + list(self.high_properties.keys())
         low_properties = {}
         high_properties = {}
@@ -178,10 +140,10 @@ class ObjectDiffWidget:
             source_side = "High side"
             target_side = "Low side"
 
-        html_from = self.create_diff_html(
+        html_from = create_diff_html(
             f"From <i>{source_side}</i> (new values)", from_properties, self.statuses
         )
-        html_to = self.create_diff_html(
+        html_to = create_diff_html(
             f"To <i>{target_side}</i> (old values)", to_properties, self.statuses
         )
 
@@ -191,35 +153,200 @@ class ObjectDiffWidget:
         widget_to = widgets.HTML(
             value=html_to, layout=widgets.Layout(width="50%", overflow="auto")
         )
-        content = widgets.HBox([widget_from, widget_to])
+        css_accordion = """
+            <style>
+            .diff-container {
+                border: 0.5px solid #B4B0BF;
+            }
+            </style>
+        """
+        dom_classes = []
+        if self.with_box:
+            dom_classes.append("diff-container")
+
+        return widgets.HBox(
+            [HTML(css_accordion), widget_from, widget_to], _dom_classes=dom_classes
+        )
+
+
+class CollapsableObjectDiffWidget:
+    def __init__(
+        self,
+        diff: ObjectDiff,
+        direction: SyncDirection,
+    ):
+        self.direction = direction
+        self.share_private_data = False
+        self.diff: ObjectDiff = diff
+        self.sync: bool = False
+        self.is_main_widget: bool = False
+        self.widget = self.build()
+        self.set_and_disable_sync()
+
+    @property
+    def mockify(self) -> bool:
+        if self.show_share_button and not self.share_private_data:
+            return True
+        else:
+            return False
+
+    @property
+    def show_share_button(self) -> bool:
+        return isinstance(self.diff.non_empty_object, SyftLog | ActionObject)
+
+    @property
+    def title(self) -> str:
+        object = self.diff.non_empty_object
+        if object is None:
+            return "n/a"
+        type_html = Badge(object=object).to_html()
+        description_html = MainDescription(object=object).to_html()
+        copy_id_button = CopyIDButton(copy_text=str(object.id.id), max_width=60)
+
+        second_line_html = f"""
+            <div class="widget-header2">
+            <div class="widget-header2-2">
+            {type_html} {description_html}
+            </div>
+            {copy_id_button.to_html()}
+            </div>
+        """  # noqa: E501
+        return second_line_html
+
+    def set_and_disable_sync(self) -> None:
+        self._sync_checkbox.disabled = True
+        self._sync_checkbox.value = True
+
+    def enable_sync(self) -> None:
+        if self.show_sync_button:
+            self._sync_checkbox.disabled = False
+
+    def set_share_private_data(self) -> None:
+        if self.show_share_button:
+            self._share_private_checkbox.value = True
+
+    def build(self) -> widgets.VBox:
+        content = MainObjectDiffWidget(self.diff, self.direction, with_box=False).widget
+
+        accordion, share_private_checkbox, sync_checkbox = self.build_accordion(
+            accordion_body=content,
+            show_sync_checkbox=True,
+            show_share_private_checkbox=self.show_share_button,
+        )
+
+        self._sync_checkbox = sync_checkbox
+        self._sync_checkbox.observe(self._on_sync_change, "value")
+
+        self._share_private_checkbox = share_private_checkbox
+        self._share_private_checkbox.observe(
+            self._on_share_private_data_change, "value"
+        )
+
+        return accordion
+
+    def create_accordion_css(
+        self, header_id: str, body_id: str, class_name: str
+    ) -> str:
+        css_accordion = f"""
+            <style>
+            .accordion {{
+                padding: 0 10px;
+            }}
+
+            .body-hidden {{
+                display: none;
+            }}
+
+            .body-visible {{
+                display: flex;
+            }}
+
+            .{header_id}{{
+                display: flex;
+                align-items: center;
+            }}
+
+
+            .{class_name}-folded {{
+                background: #F4F3F6;
+                border: 0.5px solid #B4B0BF;
+            }}
+            .{class_name}-unfolded {{
+                background: white;
+                border: 0.5px solid #B4B0BF;
+            }}
+            </style>
+        """
+        return css_accordion
+
+    def build_accordion(
+        self,
+        accordion_body: widgets.Widget,
+        show_sync_checkbox: bool = True,
+        show_share_private_checkbox: bool = True,
+    ) -> VBox:
+        uid = str(uuid4())
+        body_id = f"accordion-body-{uid}"
+        header_id = f"accordion-header-{uid}"
+        class_name = f"accordion-{uid}"
+        caret_id = f"caret-{uid}"
+
+        toggle_hide_body_js = f"""
+            var body = document.getElementsByClassName('{body_id}')[0];
+            var caret = document.getElementById('{caret_id}');
+            if (body.classList.contains('body-hidden')) {{
+                var vbox = document.getElementsByClassName('{class_name}-folded')[0];
+                body.classList.remove('body-hidden');
+                body.classList.add('body-visible');
+                vbox.classList.remove('{class_name}-folded');
+                vbox.classList.add('{class_name}-unfolded');
+                caret.classList.remove('fa-caret-right');
+                caret.classList.add('fa-caret-down');
+            }} else {{
+                var vbox = document.getElementsByClassName('{class_name}-unfolded')[0];
+                body.classList.remove('body-visible');
+                body.classList.add('body-hidden');
+                vbox.classList.remove('{class_name}-unfolded');
+                vbox.classList.add('{class_name}-folded');
+                caret.classList.remove('fa-caret-down');
+                caret.classList.add('fa-caret-right');
+            }}
+        """
+        caret = f'<i id="{caret_id}" class="fa fa-fw fa-caret-right"></i>'
+        title_html = HTML(
+            value=f"<div class='{header_id}' onclick=\"{toggle_hide_body_js}\" style='cursor: pointer; flex-grow: 1; user-select: none; '>{caret} {self.title}</div>",  # noqa: E501
+            layout=Layout(flex="1"),
+        )
+
+        share_private_data_checkbox = Checkbox(
+            description="Sync Real Data",
+            layout=Layout(width="auto", margin="0 2px 0 0"),
+        )
+        sync_checkbox = Checkbox(
+            description="Sync", layout=Layout(width="auto", margin="0 2px 0 0")
+        )
 
         checkboxes = []
+        if show_share_private_checkbox:
+            checkboxes.append(share_private_data_checkbox)
+        if show_sync_checkbox:
+            checkboxes.append(sync_checkbox)
 
-        if self.show_sync_button:
-            self._sync_checkbox = widgets.Checkbox(
-                value=self.sync,
-                description="Sync",
-            )
-            self._sync_checkbox.observe(self._on_sync_change, "value")
-            checkboxes.append(self._sync_checkbox)
+        accordion_header = HBox(
+            [title_html] + checkboxes,
+            layout=Layout(width="100%", justify_content="space-between"),
+        )
 
-        if self.show_share_button:
-            self._share_private_checkbox = widgets.Checkbox(
-                value=self.share_private_data,
-                description="Share private data",
-            )
-            self._share_private_checkbox.observe(
-                self._on_share_private_data_change, "value"
-            )
-            checkboxes = [self._share_private_checkbox] + checkboxes
+        accordion_body.add_class(body_id)
+        accordion_body.add_class("body-hidden")
 
-        checkboxes_widget = widgets.HBox(checkboxes)
-        kwargs = {}
-        if self.is_main_widget:
-            kwargs["layout"] = Layout(border="#353243 solid 0.5px", padding="16px")
+        style = HTML(value=self.create_accordion_css(header_id, body_id, class_name))
 
-        widget = widgets.VBox([checkboxes_widget, content], **kwargs)
-        return widget
+        accordion = VBox(
+            [style, accordion_header, accordion_body],
+            _dom_classes=(f"accordion-{uid}-folded", "accordion"),
+        )
+        return accordion, share_private_data_checkbox, sync_checkbox
 
     def _on_sync_change(self, change: Any) -> None:
         self.sync = change["new"]
@@ -231,7 +358,9 @@ class ObjectDiffWidget:
 class ResolveWidget:
     def __init__(self, obj_diff_batch: ObjectDiffBatch):
         self.obj_diff_batch: ObjectDiffBatch = obj_diff_batch
-        self.id2widget: dict[UID, ObjectDiffWidget] = {}
+        self.id2widget: dict[
+            UID, CollapsableObjectDiffWidget | MainObjectDiffWidget
+        ] = {}
         self.main_widget = self.build()
         self.result_widget = VBox()  # Placeholder for SyftSuccess / SyftError
         self.widget = VBox(
@@ -378,14 +507,13 @@ class ResolveWidget:
         return res
 
     @property
-    def batch_diff_widgets(self) -> list[ObjectDiffWidget]:
+    def batch_diff_widgets(self) -> list[CollapsableObjectDiffWidget]:
         dependents = self.obj_diff_batch.get_dependents(
             include_roots=False, include_batch_root=False
         )
         dependent_diff_widgets = [
-            ObjectDiffWidget.from_diff(
+            CollapsableObjectDiffWidget(
                 diff,
-                is_main_widget=False,
                 direction=self.obj_diff_batch.sync_direction,
             )
             for diff in dependents
@@ -393,7 +521,7 @@ class ResolveWidget:
         return dependent_diff_widgets
 
     @property
-    def dependent_batch_diff_widgets(self) -> list[ObjectDiffWidget]:
+    def dependent_batch_diff_widgets(self) -> list[CollapsableObjectDiffWidget]:
         dependencies = self.obj_diff_batch.get_dependencies(
             include_roots=True, include_batch_root=False
         )
@@ -401,18 +529,17 @@ class ResolveWidget:
             d for d in dependencies if d.object_id in self.obj_diff_batch.global_roots
         ]
         dependent_root_diff_widgets = [
-            ObjectDiffWidget.from_diff(
-                diff, is_main_widget=False, direction=self.obj_diff_batch.sync_direction
+            CollapsableObjectDiffWidget(
+                diff, direction=self.obj_diff_batch.sync_direction
             )
             for diff in other_roots
         ]
         return dependent_root_diff_widgets
 
     @property
-    def main_object_diff_widget(self) -> ObjectDiffWidget:
-        obj_diff_widget = ObjectDiffWidget.from_diff(
+    def main_object_diff_widget(self) -> MainObjectDiffWidget:
+        obj_diff_widget = MainObjectDiffWidget(
             self.obj_diff_batch.root_diff,
-            is_main_widget=True,
             direction=self.obj_diff_batch.sync_direction,
         )
         return obj_diff_widget
@@ -450,13 +577,12 @@ class ResolveWidget:
         for widget in dependent_batch_diff_widgets:
             self.id2widget[widget.diff.object_id] = widget
 
-        main_batch_items = widgets.Accordion(
+        main_batch_items = widgets.VBox(
             children=[d.widget for d in batch_diff_widgets],
-            titles=[d.title for d in batch_diff_widgets],
         )
-        dependency_items = widgets.Accordion(
+
+        dependency_items = widgets.VBox(
             children=[d.widget for d in dependent_batch_diff_widgets],
-            titles=[d.title for d in dependent_batch_diff_widgets],
         )
 
         full_widget = widgets.VBox(
