@@ -117,6 +117,9 @@ class Endpoint(SyftObject):
     state: dict[Any, Any] | None = None
     signature: Signature
 
+    def __repr__(self) -> str:
+        return self.api_code
+
     @field_validator("api_code", check_fields=False)
     @classmethod
     def validate_api_code(cls, api_code: str) -> str:
@@ -255,6 +258,12 @@ class TwinAPIEndpoint(SyncableSyftObject):
 
     __attr_searchable__ = ["path"]
     __attr_unique__ = ["path"]
+    __repr_attrs__ = [
+        "path",
+        "description",
+        "private_function",
+        "mock_function",
+    ]
 
     def has_mock(self) -> bool:
         return self.api_mock_code is not None
