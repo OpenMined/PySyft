@@ -99,6 +99,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           tox -e syft.test.unit
+          tox -e seaweedfs.test.unit
 
   pr-tests-syft-notebook-python:
     strategy:
