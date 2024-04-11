@@ -1,0 +1,16 @@
+{
+  "identities": [
+    {
+      "name": "iam",
+      "credentials": [
+        {
+          "accessKey": "${S3_ROOT_USER}",
+          "secretKey": "${S3_ROOT_PWD}"
+        }
+      ],
+      "actions": ["Read", "Write", "List", "Tagging", "Admin"],
+      "account": null
+    }
+  ],
+  "accounts": []
+}
