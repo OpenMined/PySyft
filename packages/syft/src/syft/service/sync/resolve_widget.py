@@ -99,7 +99,7 @@ class MainObjectDiffWidget:
         self,
         diff: ObjectDiff,
         direction: SyncDirection,
-        with_box=True,
+        with_box: bool = True,
     ):
         self.low_properties = diff.repr_attr_dict("low")
         self.high_properties = diff.repr_attr_dict("high")
@@ -111,11 +111,13 @@ class MainObjectDiffWidget:
         self.sync = True
         self.mockify = False
         self.share_private_data = True  # there is not private data in this case
+        self.is_main_widget: bool = True
 
-    def set_share_private_data(self):
+    def set_share_private_data(self) -> None:
+        # No-op for main widget
         pass
 
-    def build(self):
+    def build(self) -> widgets.HBox:
         all_keys = list(self.low_properties.keys()) + list(self.high_properties.keys())
         low_properties = {}
         high_properties = {}
@@ -173,6 +175,7 @@ class CollapsableObjectDiffWidget:
         self.share_private_data = False
         self.diff: ObjectDiff = diff
         self.sync: bool = False
+        self.is_main_widget: bool = False
         self.widget = self.build()
         self.set_and_disable_sync()
 
@@ -190,6 +193,8 @@ class CollapsableObjectDiffWidget:
     @property
     def title(self) -> str:
         object = self.diff.non_empty_object
+        if object is None:
+            return "n/a"
         type_html = Badge(object=object).to_html()
         description_html = MainDescription(object=object).to_html()
         copy_id_button = CopyIDButton(copy_text=str(object.id.id), max_width=60)
@@ -235,7 +240,9 @@ class CollapsableObjectDiffWidget:
 
         return accordion
 
-    def create_accordion_css(self, header_id, body_id, class_name):
+    def create_accordion_css(
+        self, header_id: str, body_id: str, class_name: str
+    ) -> str:
         css_accordion = f"""
             <style>
             .accordion {{
@@ -297,7 +304,7 @@ class CollapsableObjectDiffWidget:
         """
         caret = f'<i id="{caret_id}" class="fa fa-fw fa-caret-right"></i>'
         title_html = HTML(
-            value=f"<div class='{header_id}' onclick=\"{toggle_hide_body_js}\" style='cursor: pointer; flex-grow: 1; user-select: none; '>{caret} {self.title}</div>",
+            value=f"<div class='{header_id}' onclick=\"{toggle_hide_body_js}\" style='cursor: pointer; flex-grow: 1; user-select: none; '>{caret} {self.title}</div>",  # noqa: E501
             layout=Layout(flex="1"),
         )
 
@@ -341,7 +348,9 @@ class CollapsableObjectDiffWidget:
 class ResolveWidget:
     def __init__(self, obj_diff_batch: ObjectDiffBatch):
         self.obj_diff_batch: ObjectDiffBatch = obj_diff_batch
-        self.id2widget: dict[UID, CollapsableObjectDiffWidget] = {}
+        self.id2widget: dict[
+            UID, CollapsableObjectDiffWidget | MainObjectDiffWidget
+        ] = {}
         self.main_widget = self.build()
         self.result_widget = VBox()  # Placeholder for SyftSuccess / SyftError
         self.widget = VBox(
@@ -518,7 +527,7 @@ class ResolveWidget:
         return dependent_root_diff_widgets
 
     @property
-    def main_object_diff_widget(self) -> CollapsableObjectDiffWidget:
+    def main_object_diff_widget(self) -> MainObjectDiffWidget:
         obj_diff_widget = MainObjectDiffWidget(
             self.obj_diff_batch.root_diff,
             direction=self.obj_diff_batch.sync_direction,
