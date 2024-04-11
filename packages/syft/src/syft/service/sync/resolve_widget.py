@@ -21,6 +21,7 @@ from ...types.uid import UID
 from ...util.notebook_ui.components.sync import SyncWidgetHeader
 from ...util.notebook_ui.notebook_addons import CSS_CODE
 from ..action.action_object import ActionObject
+from ..api.api import TwinAPIEndpoint
 from ..log.log import SyftLog
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -92,6 +93,8 @@ class ObjectDiffWidget:
 
     @property
     def mockify(self) -> bool:
+        if isinstance(self.diff.non_empty_object, TwinAPIEndpoint):
+            return True
         if self.show_share_button and not self.share_private_data:
             return True
         else:

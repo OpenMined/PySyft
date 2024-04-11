@@ -117,6 +117,8 @@ class Endpoint(SyftObject):
     state: dict[Any, Any] | None = None
     signature: Signature
 
+    __exclude_sync_diff_attrs__ = ["state"]
+
     def __repr__(self) -> str:
         return self.api_code
 
@@ -255,6 +257,9 @@ class TwinAPIEndpoint(SyncableSyftObject):
     signature: Signature
     description: str | None = None
     action_object_id: UID
+    __private_sync_attr_mocks__ = {
+        "private_function": None,
+    }
 
     __attr_searchable__ = ["path"]
     __attr_unique__ = ["path"]
