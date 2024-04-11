@@ -51,9 +51,9 @@ class APIService(AbstractService):
     ) -> SyftSuccess | SyftError:
         """Register an CustomAPIEndpoint."""
         try:
-            if isinstance(endpoint, CreateTwinAPIEndpoint):
+            if isinstance(endpoint, CreateTwinAPIEndpoint):  # type: ignore
                 new_endpoint = endpoint.to(TwinAPIEndpoint)
-            elif isinstance(endpoint, TwinAPIEndpoint):
+            elif isinstance(endpoint, TwinAPIEndpoint):  # type: ignore
                 new_endpoint = endpoint
             else:
                 return SyftError(message="Invalid endpoint type.")

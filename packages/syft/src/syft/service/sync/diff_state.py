@@ -778,7 +778,7 @@ class ObjectDiffBatch(SyftObject):
                 Job: [ActionObject, SyftLog, Job],
             }
         elif isinstance(root_obj, TwinAPIEndpoint):
-            return TwinAPIEndpoint, {
+            return TwinAPIEndpoint, {  # type: ignore
                 TwinAPIEndpoint: [],
             }
         else:
