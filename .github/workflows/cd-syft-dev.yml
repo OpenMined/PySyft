@@ -83,6 +83,17 @@ jobs:
         run: |
           echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
 
+      - name: Build and push `syft` image to registry
+        uses: docker/build-push-action@v5
+        with:
+          context: ./packages
+          file: ./packages/grid/syft-image/syft.Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.ACR_SERVER }}/openmined/syft:dev
+            ${{ secrets.ACR_SERVER }}/openmined/syft:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft:${{ steps.grid.outputs.GRID_VERSION }}
+
       - name: Build and push `grid-backend` image to registry
         uses: docker/build-push-action@v5
         with:

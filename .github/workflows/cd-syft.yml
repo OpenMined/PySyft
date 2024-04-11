@@ -195,18 +195,6 @@ jobs:
           cache-from: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
           cache-to: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
 
-      # - name: Build and push `syft-base-cpu` image to DockerHub
-      #   id: syft-base-cpu-build
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: ./packages
-      #     file: ./packages/grid/backend/worker_cpu.dockerfile
-      #     platforms: ${{ steps.release_metadata.outputs.release_platform }}
-      #     target: backend
-      #     outputs: type=image,name=openmined/syft-base-cpu,push-by-digest=true,name-canonical=true,push=true
-      #     cache-from: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }}
-      #     cache-to: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
-
       - name: Export digest for grid-backend
         run: |
           mkdir -p /tmp/digests/grid-backend
@@ -248,7 +236,24 @@ jobs:
           digest="${{ steps.grid-seaweedfs-build.outputs.digest }}"
           touch "/tmp/digests/grid-seaweedfs/${digest#sha256:}"
 
-      - name: Upload digest for grid-backend, grid-frontend and grid-seaweedfs
+      - name: Build and push `syft` image to registry
+        id: syft-build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./packages/
+          file: ./packages/grid/syft-image/syft.Dockerfile
+          outputs: type=image,name=openmined/syft,push-by-digest=true,name-canonical=true,push=true
+          platforms: ${{ steps.release_metadata.outputs.release_platform }}
+          cache-from: type=registry,ref=openmined/syft:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/syft:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
+
+      - name: Export digest for `syft` image
+        run: |
+          mkdir -p /tmp/digests/syft
+          digest="${{ steps.syft-build.outputs.digest }}"
+          touch "/tmp/digests/syft/${digest#sha256:}"
+
+      - name: Upload digests
         uses: actions/upload-artifact@v4
         with:
           name: digests-${{ steps.release_metadata.outputs.grid_version }}-${{ steps.release_metadata.outputs.short_release_platform }}
@@ -306,6 +311,14 @@ jobs:
             -t openmined/grid-seaweedfs:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
             -t openmined/grid-seaweedfs:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
             $(printf 'openmined/grid-seaweedfs@sha256:%s ' *)
+
+      - name: Create manifest list and push for syft
+        working-directory: /tmp/digests/syft
+        run: |
+          docker buildx imagetools create  \
+            -t openmined/syft:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
+            -t openmined/syft:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
+            $(printf 'openmined/syft@sha256:%s ' *)
 
   deploy-syft:
     needs: [merge-docker-images]
