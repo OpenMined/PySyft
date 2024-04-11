@@ -111,7 +111,7 @@ class SyncTableObject(HTMLComponentBase):
         status_seperator = " • " if len(status_str) else ""
         summary_html = f"""
             <div style="display: flex; gap: 8px; justify-content: space-between; width: 100%; overflow: hidden; align-items: center;">
-            <div style="display: flex; gap: 8px; justify-content: start align-items: center;">
+            <div style="display: flex; gap: 8px; justify-content: start; align-items: center;">
             {type_html} {description_html}
             </div>
             {copy_id_button}

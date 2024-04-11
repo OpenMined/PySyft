@@ -225,7 +225,7 @@ class CollapsableObjectDiffWidget:
         content = MainObjectDiffWidget(self.diff, self.direction, with_box=False).widget
 
         accordion, share_private_checkbox, sync_checkbox = self.build_accordion(
-            child_widget=content,
+            accordion_body=content,
             show_sync_checkbox=True,
             show_share_private_checkbox=self.show_share_button,
         )
@@ -249,8 +249,12 @@ class CollapsableObjectDiffWidget:
                 padding: 0 10px;
             }}
 
-            .{body_id}{{
+            .body-hidden {{
                 display: none;
+            }}
+
+            .body-visible {{
+                display: flex;
             }}
 
             .{header_id}{{
@@ -273,7 +277,7 @@ class CollapsableObjectDiffWidget:
 
     def build_accordion(
         self,
-        child_widget: widgets.Widget,
+        accordion_body: widgets.Widget,
         show_sync_checkbox: bool = True,
         show_share_private_checkbox: bool = True,
     ) -> VBox:
@@ -286,16 +290,18 @@ class CollapsableObjectDiffWidget:
         toggle_hide_body_js = f"""
             var body = document.getElementsByClassName('{body_id}')[0];
             var caret = document.getElementById('{caret_id}');
-            if (body.style.display === 'none') {{
+            if (body.classList.contains('body-hidden')) {{
                 var vbox = document.getElementsByClassName('{class_name}-folded')[0];
-                body.style.display = 'flex';
+                body.classList.remove('body-hidden');
+                body.classList.add('body-visible');
                 vbox.classList.remove('{class_name}-folded');
                 vbox.classList.add('{class_name}-unfolded');
                 caret.classList.remove('fa-caret-right');
                 caret.classList.add('fa-caret-down');
             }} else {{
                 var vbox = document.getElementsByClassName('{class_name}-unfolded')[0];
-                body.style.display = 'none';
+                body.classList.remove('body-visible');
+                body.classList.add('body-hidden');
                 vbox.classList.remove('{class_name}-unfolded');
                 vbox.classList.add('{class_name}-folded');
                 caret.classList.remove('fa-caret-down');
@@ -327,8 +333,8 @@ class CollapsableObjectDiffWidget:
             layout=Layout(width="100%", justify_content="space-between"),
         )
 
-        child_widget.add_class(body_id)
-        accordion_body = child_widget
+        accordion_body.add_class(body_id)
+        accordion_body.add_class("body-hidden")
 
         style = HTML(value=self.create_accordion_css(header_id, body_id, class_name))
 
