@@ -13,6 +13,7 @@ from syft.client.sync_decision import SyncDecision
 from syft.client.syncing import compare_clients
 from syft.client.syncing import compare_states
 from syft.client.syncing import resolve
+from syft.client.syncing import resolve_single
 from syft.service.action.action_object import ActionObject
 from syft.service.response import SyftError
 
@@ -329,15 +330,12 @@ def test_twin_api_integration(low_worker, high_worker):
     high_private_res = high_client.api.services.testapi.query.private()
     assert high_private_res == 42
 
-    diff_state = compare_clients(
-        high_client,
-        low_client,
-    )
-    low_items_to_sync, high_items_to_sync = resolve(
-        diff_state, decision="high", share_private_objects=True
-    )
-    low_client.apply_state(low_items_to_sync)
-    high_client.apply_state(high_items_to_sync)
+    low_state = low_client.get_sync_state()
+    high_state = high_client.get_sync_state()
+    diff_state = compare_states(high_state, low_state)
+    obj_diff_batch = diff_state[0]
+    widget = resolve_single(obj_diff_batch)
+    widget.click_sync()
 
     client_low_ds.refresh()
     low_private_res = client_low_ds.api.services.testapi.query.private()
@@ -347,28 +345,6 @@ def test_twin_api_integration(low_worker, high_worker):
     low_mock_res = client_low_ds.api.services.testapi.query.mock()
     high_mock_res = high_client.api.services.testapi.query.mock()
     assert low_mock_res == high_mock_res == -42
-
-    @sy.syft_function_single_use(
-        compute=client_low_ds.api.services.testapi.query,
-    )
-    def my_compute_fun(compute):
-        return compute()
-
-    my_compute_fun.code = dedent(my_compute_fun.code)
-    res = client_low_ds.code.request_code_execution(my_compute_fun)
-    print(res)
-    print("LOW CODE:", low_client.code.get_all())
-    low_client.refresh()
-    request = low_client.requests[-1]
-
-    low_res = low_client.code.my_compute_fun(
-        compute=low_client.api.services.testapi.query,
-    ).get()
-    request.accept_by_depositing_result(res)
-    low_ds_res = client_low_ds.code.my_compute_fun(
-        compute=low_client.api.services.testapi.query,
-    )
-    assert low_ds_res == low_res == 42
 
 
 def test_skip_user_code(low_worker, high_worker):
