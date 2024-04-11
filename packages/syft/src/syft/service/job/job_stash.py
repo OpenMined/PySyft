@@ -577,7 +577,7 @@ class Job(SyncableSyftObject):
         type_html = (
             f'<div class="label label-light-blue"'
             f'style="display: flex; align-items:center; justify-content: center; width: 34px; height:21px; radius:4px ; padding: 2px, 6px, 2px, 6px">'
-            f'<span style="font: DejaVu Sans Mono; font-szie: 12px; font-weight: 400; line-height:16.8px">JOB</span>'
+            f'<span style="font: DejaVu Sans Mono; font-size: 12px; font-weight: 400; line-height:16.8px">JOB</span>'
             f'</div>'
         )
         description_html = f"<span class='jobs-title'>{self.user_code_name}</span>"
