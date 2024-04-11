@@ -5,6 +5,7 @@ import inspect
 from inspect import Signature
 import keyword
 import re
+import textwrap
 from typing import Any
 from typing import cast
 
@@ -120,7 +121,12 @@ class Endpoint(SyftObject):
     __exclude_sync_diff_attrs__ = ["state"]
 
     def __repr__(self) -> str:
-        return self.api_code
+        type_name = type(self).__name__
+        repr_str = f"""<{type_name}: {self.func_name}>
+
+        {self.api_code}
+        """
+        return textwrap.dedent(repr_str)
 
     @field_validator("api_code", check_fields=False)
     @classmethod
