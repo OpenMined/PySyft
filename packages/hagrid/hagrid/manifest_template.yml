@@ -28,8 +28,6 @@ files:
     - traefik/docker/traefik.yml
     k8s:
     - devspace.yaml
-    - traefik/k8s/dynamic.yml
-    - traefik/k8s/traefik.yml
     podman:
     - podman/podman-kube/podman-syft-kube-config.yaml
     - podman/podman-kube/podman-syft-kube.yaml
