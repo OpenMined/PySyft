@@ -95,7 +95,7 @@
             "action": "add"
         }
     },
-    "SyncView": {
+    "SyncTableObject": {
         "1": {
             "version": 1,
             "hash": "4e87744e86cd7781e3d5cf4618e63516f3d26309a4da919033dacc5ed338d76d",
