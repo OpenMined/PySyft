@@ -13,6 +13,7 @@ from syft.client.sync_decision import SyncDecision
 from syft.client.syncing import compare_clients
 from syft.client.syncing import compare_states
 from syft.client.syncing import resolve
+from syft.client.syncing import resolve_single
 from syft.service.action.action_object import ActionObject
 from syft.service.response import SyftError
 
@@ -329,15 +330,12 @@ def test_twin_api_integration(low_worker, high_worker):
     high_private_res = high_client.api.services.testapi.query.private()
     assert high_private_res == 42
 
-    diff_state = compare_clients(
-        high_client,
-        low_client,
-    )
-    low_items_to_sync, high_items_to_sync = resolve(
-        diff_state, decision="high", share_private_objects=True
-    )
-    low_client.apply_state(low_items_to_sync)
-    high_client.apply_state(high_items_to_sync)
+    low_state = low_client.get_sync_state()
+    high_state = high_client.get_sync_state()
+    diff_state = compare_states(high_state, low_state)
+    obj_diff_batch = diff_state[0]
+    widget = resolve_single(obj_diff_batch)
+    widget.click_sync()
 
     client_low_ds.refresh()
     low_private_res = client_low_ds.api.services.testapi.query.private()
