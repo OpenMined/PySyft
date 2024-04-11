@@ -163,7 +163,6 @@ class MainObjectDiffWidget:
         )
 
 
-# TODO separate pure HTML widget for main widget
 class CollapsableObjectDiffWidget:
     def __init__(
         self,
@@ -559,12 +558,10 @@ class ResolveWidget:
         for widget in dependent_batch_diff_widgets:
             self.id2widget[widget.diff.object_id] = widget
 
-        # TODO is now vbox
         main_batch_items = widgets.VBox(
             children=[d.widget for d in batch_diff_widgets],
         )
 
-        # TODO is now vbox
         dependency_items = widgets.VBox(
             children=[d.widget for d in dependent_batch_diff_widgets],
         )
