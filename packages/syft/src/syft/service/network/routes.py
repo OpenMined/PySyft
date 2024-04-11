@@ -15,7 +15,6 @@ from ...client.client import HTTPConnection
 from ...client.client import NodeConnection
 from ...client.client import PythonConnection
 from ...client.client import SyftClient
-from ...client.client import VeilidConnection
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -33,14 +32,29 @@ if TYPE_CHECKING:
 
 
 class NodeRoute:
-    def client_with_context(self, context: NodeServiceContext) -> SyftClient:
+    def client_with_context(
+        self, context: NodeServiceContext
+    ) -> SyftClient | SyftError:
+        """
+        Convert the current route (self) to a connection (either HTTP, Veilid or Python)
+        and create a SyftClient from the connection.
+
+        Args:
+            context (NodeServiceContext): The NodeServiceContext containing the node information.
+
+        Returns:
+            SyftClient | SyftError: Returns the created SyftClient, or SyftError
+                if the client type is not valid or if the context's node is None.
+        """
         connection = route_to_connection(route=self, context=context)
         client_type = connection.get_client_type()
         if isinstance(client_type, SyftError):
             return client_type
         return client_type(connection=connection, credentials=context.node.signing_key)
 
-    def validate_with_context(self, context: AuthedServiceContext) -> NodePeer:
+    def validate_with_context(
+        self, context: AuthedServiceContext
+    ) -> NodePeer | SyftError:
         # relative
         from .node_peer import NodePeer
 
@@ -64,7 +78,7 @@ class NodeRoute:
             return SyftError(message="Signature Verification Failed in ping")
 
         # Step 2: Create a Node Peer with the given route
-        self_node_peer = context.node.settings.to(NodePeer)
+        self_node_peer: NodePeer = context.node.settings.to(NodePeer)
         self_node_peer.node_routes.append(self)
 
         return self_node_peer
@@ -83,30 +97,20 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
     priority: int = 1
 
     def __eq__(self, other: Any) -> bool:
-        if isinstance(other, HTTPNodeRoute):
-            return hash(self) == hash(other)
-        return self == other
+        if not isinstance(other, HTTPNodeRoute):
+            return False
+        return hash(self) == hash(other)
 
     def __hash__(self) -> int:
-        return hash(self.host_or_ip) + hash(self.port) + hash(self.protocol)
+        return (
+            hash(self.host_or_ip)
+            + hash(self.port)
+            + hash(self.protocol)
+            + hash(self.proxy_target_uid)
+        )
 
-
-@serializable()
-class VeilidNodeRoute(SyftObject, NodeRoute):
-    __canonical_name__ = "VeilidNodeRoute"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    vld_key: str
-    proxy_target_uid: UID | None = None
-    priority: int = 1
-
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, VeilidNodeRoute):
-            return hash(self) == hash(other)
-        return self == other
-
-    def __hash__(self) -> int:
-        return hash(self.vld_key)
+    def __str__(self) -> str:
+        return f"{self.protocol}://{self.host_or_ip}:{self.port}"
 
 
 @serializable()
@@ -141,15 +145,43 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         return cls(id=worker_settings.id, worker_settings=worker_settings)
 
     def __eq__(self, other: Any) -> bool:
-        if isinstance(other, PythonNodeRoute):
-            return hash(self) == hash(other)
-        return self == other
+        if not isinstance(other, PythonNodeRoute):
+            return False
+        return hash(self) == hash(other)
 
     def __hash__(self) -> int:
-        return hash(self.worker_settings.id)
+        return (
+            hash(self.worker_settings.id)
+            + hash(self.worker_settings.name)
+            + hash(self.worker_settings.node_type)
+            + hash(self.worker_settings.node_side_type)
+            + hash(self.worker_settings.signing_key)
+        )
+
+    def __str__(self) -> str:
+        return "PythonNodeRoute"
 
 
-NodeRouteType = HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute
+@serializable()
+class VeilidNodeRoute(SyftObject, NodeRoute):
+    __canonical_name__ = "VeilidNodeRoute"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    vld_key: str
+    proxy_target_uid: UID | None = None
+    priority: int = 1
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, VeilidNodeRoute):
+            return False
+        return hash(self) == hash(other)
+
+    def __hash__(self) -> int:
+        return hash(self.vld_key) + hash(self.proxy_target_uid)
+
+
+NodeRouteTypeV1 = HTTPNodeRoute | PythonNodeRoute | VeilidNodeRoute
+NodeRouteType = HTTPNodeRoute | PythonNodeRoute
 
 
 def route_to_connection(
@@ -159,8 +191,6 @@ def route_to_connection(
         return route.to(HTTPConnection, context=context)
     elif isinstance(route, PythonNodeRoute):
         return route.to(PythonConnection, context=context)
-    elif isinstance(route, VeilidNodeRoute):
-        return route.to(VeilidConnection, context=context)
     else:
         raise ValueError(f"Route {route} is not supported.")
 
@@ -170,7 +200,5 @@ def connection_to_route(connection: NodeConnection) -> NodeRoute:
         return connection.to(HTTPNodeRoute)
     elif isinstance(connection, PythonConnection):  # type: ignore[unreachable]
         return connection.to(PythonNodeRoute)
-    elif isinstance(connection, VeilidConnection):
-        return connection.to(VeilidNodeRoute)
     else:
         raise ValueError(f"Connection {connection} is not supported.")
