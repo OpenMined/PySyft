@@ -26,7 +26,7 @@ data:
   DOCKER_IMAGE_FRONTEND: openmined/grid-frontend
   DOCKER_IMAGE_SEAWEEDFS: openmined/grid-seaweedfs
   DOCKER_IMAGE_TRAEFIK: traefik
-  TRAEFIK_VERSION: v2.11
+  TRAEFIK_VERSION: v2.11.0
   REDIS_VERSION: 6.2
   RABBITMQ_VERSION: 3
   VERSION: 0.8.7-beta.1
