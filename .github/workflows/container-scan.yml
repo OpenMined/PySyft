@@ -317,7 +317,7 @@ jobs:
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "traefik:v2.11"
+          image-ref: "traefik:v2.11.0"
           format: "cyclonedx"
           output: "traefik-trivy-results.sbom.json"
           timeout: "10m0s"
@@ -333,7 +333,7 @@ jobs:
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "traefik:v2.11"
+          image-ref: "traefik:v2.11.0"
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
@@ -371,7 +371,7 @@ jobs:
       - name: Snyk Container test
         continue-on-error: true
         shell: bash
-        run: snyk container test traefik:v2.11 --sarif --sarif-file-output=snyk-code.sarif
+        run: snyk container test traefik:v2.11.0 --sarif --sarif-file-output=snyk-code.sarif
         env:
           # This is where you will need to introduce the Snyk API token created with your Snyk account
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
