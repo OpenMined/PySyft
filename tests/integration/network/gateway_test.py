@@ -16,8 +16,10 @@ from syft.client.gateway_client import GatewayClient
 from syft.client.registry import NetworkRegistry
 from syft.client.search import SearchResults
 from syft.service.dataset.dataset import Dataset
+from syft.service.network.association_request import AssociationRequestChange
 from syft.service.network.node_peer import NodePeer
 from syft.service.request.request import Request
+from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
 
@@ -84,9 +86,18 @@ def test_domain_connect_to_gateway(
     )
 
     result = domain_client.connect_to_gateway(gateway_client)
-    assert isinstance(result, SyftSuccess)
+    assert isinstance(result, Request)
+    assert isinstance(result.changes[0], AssociationRequestChange)
 
     assert len(domain_client.peers) == 1
+    assert len(gateway_client.peers) == 0
+
+    gateway_client_root = gateway_client.login(
+        email="info@openmined.org", password="changethis"
+    )
+    res = gateway_client_root.api.services.request.get_all()[-1].approve()
+    assert not isinstance(res, SyftError)
+
     assert len(gateway_client.peers) == 1
 
     assert len(sy.domains.all_domains) == 1

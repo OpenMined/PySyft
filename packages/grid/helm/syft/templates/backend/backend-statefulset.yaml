@@ -68,7 +68,7 @@ spec:
             - name: DEBUGGER_ENABLED
               value: "true"
             - name: ASSOCIATION_REQUEST_AUTO_APPROVAL
-              value: "false"
+              value: {{ .Values.node.associationRequestAutoApproval | quote }}
 
             {{- end }}
             # MongoDB
