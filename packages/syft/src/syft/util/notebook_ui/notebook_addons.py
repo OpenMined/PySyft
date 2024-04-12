@@ -346,6 +346,8 @@ CSS_CODE = """
         padding: 6px 4px;
         white-space: nowrap;
         overflow: hidden;
+        line-height: 1.2;
+        font-family: monospace;
     }
 
     .label-light-purple {

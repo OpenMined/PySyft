@@ -153,9 +153,15 @@ class SyncService(AbstractService):
         exists = stash.get_by_uid(context.credentials, item.id).ok() is not None
 
         if isinstance(item, TwinAPIEndpoint):
-            return context.node.get_service("apiservice").set(
+            # we need the side effect of set function
+            # to create an action object
+            res = context.node.get_service("apiservice").set(
                 context=context, endpoint=item
             )
+            if isinstance(res, SyftError):
+                return res
+            else:
+                return Ok(item)
 
         if exists:
             res = stash.update(creds, item)

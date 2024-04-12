@@ -5,6 +5,7 @@ import inspect
 from inspect import Signature
 import keyword
 import re
+import textwrap
 from typing import Any
 from typing import cast
 
@@ -116,6 +117,16 @@ class Endpoint(SyftObject):
     helper_functions: dict[str, str] | None = None
     state: dict[Any, Any] | None = None
     signature: Signature
+
+    __exclude_sync_diff_attrs__ = ["state"]
+
+    def __repr__(self) -> str:
+        type_name = type(self).__name__
+        repr_str = f"""<{type_name}: {self.func_name}>
+
+        {self.api_code}
+        """
+        return textwrap.dedent(repr_str)
 
     @field_validator("api_code", check_fields=False)
     @classmethod
@@ -252,9 +263,18 @@ class TwinAPIEndpoint(SyncableSyftObject):
     signature: Signature
     description: str | None = None
     action_object_id: UID
+    __private_sync_attr_mocks__ = {
+        "private_function": None,
+    }
 
     __attr_searchable__ = ["path"]
     __attr_unique__ = ["path"]
+    __repr_attrs__ = [
+        "path",
+        "description",
+        "private_function",
+        "mock_function",
+    ]
 
     def has_mock(self) -> bool:
         return self.api_mock_code is not None
