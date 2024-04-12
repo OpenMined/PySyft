@@ -34,8 +34,9 @@ images:
   backend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}"
     buildKit:
-      args: ["--target", "backend", "--platform", "linux/${PLATFORM}"]
+      args: ["--platform", "linux/${PLATFORM}"]
     dockerfile: ./backend/backend.dockerfile
+    target: "backend"
     context: ../
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
@@ -43,7 +44,7 @@ images:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
     buildKit:
       args:
-        ["--target", "grid-ui-production"]
+        ["--platform", "linux/${PLATFORM}"]
     dockerfile: ./frontend/frontend.dockerfile
     target: "grid-ui-production"
     context: ./frontend
