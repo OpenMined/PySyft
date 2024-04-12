@@ -117,3 +117,15 @@ profiles:
         path: images.seaweedfs
       - op: remove
         path: dev.seaweedfs
+  - name: gcs
+    patches:
+      - op: replace
+        path: deployments.syft.helm.valuesFiles
+        value:
+          - ./helm/values.gcs.yaml
+  - name: gcs-low
+    patches:
+      - op: replace
+        path: deployments.syft.helm.valuesFiles
+        value:
+          - ./helm/values.gcs.low.yaml

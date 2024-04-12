@@ -9,7 +9,7 @@ RUN apk update && \
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable
 
 COPY .npmrc ./
 COPY package.json ./
