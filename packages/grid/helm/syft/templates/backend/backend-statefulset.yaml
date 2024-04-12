@@ -67,6 +67,9 @@ spec:
             {{- if .Values.node.debuggerEnabled }}
             - name: DEBUGGER_ENABLED
               value: "true"
+            - name: ASSOCIATION_REQUEST_AUTO_APPROVAL
+              value: "false"
+
             {{- end }}
             # MongoDB
             - name: MONGO_PORT

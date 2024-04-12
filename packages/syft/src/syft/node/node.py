@@ -87,7 +87,7 @@ from ..service.response import SyftError
 from ..service.service import AbstractService
 from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
-from ..service.settings.settings import NodeSettingsV2
+from ..service.settings.settings import NodeSettings
 from ..service.settings.settings_service import SettingsService
 from ..service.settings.settings_stash import SettingsStash
 from ..service.sync.sync_service import SyncService
@@ -204,7 +204,7 @@ def get_default_worker_pool_count(node: Node) -> int:
 
 
 def auto_accept_association_request() -> bool:
-    return get_env("ASSOCIATION_REQUEST_AUTO_ACCEPT", "True") == "True"
+    return str_to_bool(get_env("ASSOCIATION_REQUEST_AUTO_APPROVAL"))
 
 
 def in_kubernetes() -> bool:
@@ -405,9 +405,6 @@ class Node(AbstractNode):
             self.find_and_migrate_data()
 
         NodeRegistry.set_node_for(self.id, self)
-
-    def auto_accept_association_request(self) -> bool:
-        return auto_accept_association_request()
 
     @property
     def runs_in_docker(self) -> bool:
@@ -946,7 +943,7 @@ class Node(AbstractNode):
             shutil.rmtree(rootdir, ignore_errors=True)
 
     @property
-    def settings(self) -> NodeSettingsV2:
+    def settings(self) -> NodeSettings:
         settings_stash = SettingsStash(store=self.document_store)
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
@@ -1430,7 +1427,7 @@ class Node(AbstractNode):
     ) -> NodeServiceContext:
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
-    def create_initial_settings(self, admin_email: str) -> NodeSettingsV2 | None:
+    def create_initial_settings(self, admin_email: str) -> NodeSettings | None:
         try:
             settings_stash = SettingsStash(store=self.document_store)
             if self.signing_key is None:
@@ -1445,7 +1442,7 @@ class Node(AbstractNode):
                 # as enclaves do not have superusers
                 if self.node_type == NodeType.ENCLAVE:
                     flags.CAN_REGISTER = True
-                new_settings = NodeSettingsV2(
+                new_settings = NodeSettings(
                     id=self.id,
                     name=self.name,
                     verify_key=self.verify_key,
@@ -1455,6 +1452,7 @@ class Node(AbstractNode):
                     admin_email=admin_email,
                     node_side_type=self.node_side_type.value,  # type: ignore
                     show_warnings=self.enable_warnings,
+                    association_request_auto_approval=auto_accept_association_request(),
                 )
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings

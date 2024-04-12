@@ -15,7 +15,7 @@ from ...client.client import VeilidConnection
 from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
-from ...service.settings.settings import NodeSettingsV2
+from ...service.settings.settings import NodeSettings
 from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -239,7 +239,7 @@ class NetworkService(AbstractService):
 
         if (
             isinstance(request, Request)
-            and context.node.auto_accept_association_request()
+            and context.node.settings.association_request_auto_approval
         ):
             return request.approve(disable_warnings=True)
         return request
@@ -541,7 +541,7 @@ def metadata_to_peer() -> list[Callable]:
     ]
 
 
-@transform(NodeSettingsV2, NodePeer)
+@transform(NodeSettings, NodePeer)
 def settings_to_peer() -> list[Callable]:
     return [
         keep(["id", "name", "verify_key", "node_type", "admin_email"]),

@@ -111,6 +111,25 @@
           "hash": "4dbfa0813f5a3f7be0b36249ff2d67e395ad7c9e138c5a122fc7342b8dcc4b92",
           "action": "remove"
         }
+      },
+      "AssociationRequestChange": {
+        "1": {
+          "version": 1,
+          "hash": "508550c43e9e3f30243813c23eb6eec20918923d7ba09498cddbcd7e8bfa4539",
+          "action": "add"
+        }
+      },
+      "NodeSettings": {
+        "3": {
+          "version": 3,
+          "hash": "2d5f6e79f074f75b5cfc2357eac7cf635b8f083421009a513240b4dbbd5a0fc1",
+          "action": "remove"
+        },
+        "4": {
+          "version": 4,
+          "hash": "6d9f30ec2e06c1947268bf3317f7fff7d0bc11ff9025c4b3c100c02d00f8d374",
+          "action": "add"
+        }
       }
     }
   }
