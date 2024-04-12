@@ -7,6 +7,9 @@ RUN apk update && \
   apk upgrade && \
   apk add --no-cache nodejs-20 pnpm corepack
 
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
 WORKDIR /app
 
 RUN corepack enable
@@ -17,7 +20,7 @@ COPY pnpm-lock.yaml ./
 
 FROM base AS dependencies
 
-RUN pnpm i --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 FROM dependencies as grid-ui-tests
 COPY vite.config.ts ./

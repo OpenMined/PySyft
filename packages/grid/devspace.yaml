@@ -43,7 +43,7 @@ images:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
     buildKit:
       args:
-        ["--target", "grid-ui-production", "--platform", "linux/${PLATFORM}"]
+        ["--target", "grid-ui-production"]
     dockerfile: ./frontend/frontend.dockerfile
     target: "grid-ui-production"
     context: ./frontend
