@@ -7,7 +7,7 @@ images:
   - docker.io/openmined/grid-frontend:0.8.7-beta.1
   - docker.io/openmined/grid-backend:0.8.7-beta.1
   - docker.io/library/mongo:7.0.4
-  - docker.io/traefik:v2.11
+  - docker.io/traefik:v2.11.0
 
 configFiles:
   docker:
