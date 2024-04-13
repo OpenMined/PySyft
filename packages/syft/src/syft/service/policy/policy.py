@@ -672,7 +672,6 @@ class OutputPolicyExecuteCount(OutputPolicy):
         return {"limit": self.limit, "count": self.count}
 
     def apply_to_output(self, context, outputs, update_policy=True):
-        context.node = cast(AbstractNode, context.node)
         output_service = context.node.get_service("outputservice")
         output_history = output_service.get_by_output_policy_id(context, self.id)
         if isinstance(output_history, SyftError):

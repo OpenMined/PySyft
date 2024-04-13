@@ -527,7 +527,6 @@ def extract_code_string(code_field: str) -> Callable:
                 else "private_helper_functions"
             )
 
-            context.node = cast(AbstractNode, context.node)
             admin_key = context.node.get_service("userservice").admin_verify_key()
 
             # If endpoint exists **AND** (has visible access **OR** the user is admin)
