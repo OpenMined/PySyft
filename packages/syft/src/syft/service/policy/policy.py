@@ -449,7 +449,7 @@ def user_code_arg2id(arg):
     elif isinstance(arg, RemoteFunction):
         # TODO: Beach Fix
         # why do we need another call to the server to get the UID?
-        uid = arg.custom_function_id()
+        uid = arg.custom_function_actionobject_id()
     else:
         uid = arg
     return uid
