@@ -400,7 +400,7 @@ class RemoteUserCodeFunction(RemoteFunction):
         # We can recover the function/method pointer by its UID in server side.
         for i in range(len(args)):
             if isinstance(args[i], RemoteFunction) and args[i].custom_function:
-                args[i] = args[i].custom_function_id()
+                args[i] = args[i].custom_function_actionobject_id()
 
         for k, v in kwargs.items():
             if isinstance(v, RemoteFunction) and v.custom_function:
