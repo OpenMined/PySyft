@@ -1,12 +1,10 @@
 # stdlib
 from typing import Any
-from typing import cast
 
 # third party
 from pydantic import ValidationError
 
 # relative
-from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...service.action.action_endpoint import CustomEndpointActionObject
 from ...service.action.action_object import ActionObject
@@ -17,6 +15,7 @@ from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
+from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
@@ -46,11 +45,18 @@ class APIService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def set(
-        self, context: AuthedServiceContext, endpoint: CreateTwinAPIEndpoint
+        self,
+        context: AuthedServiceContext,
+        endpoint: CreateTwinAPIEndpoint | TwinAPIEndpoint,
     ) -> SyftSuccess | SyftError:
         """Register an CustomAPIEndpoint."""
         try:
-            new_endpoint = endpoint.to(TwinAPIEndpoint)
+            if isinstance(endpoint, CreateTwinAPIEndpoint):  # type: ignore
+                new_endpoint = endpoint.to(TwinAPIEndpoint)
+            elif isinstance(endpoint, TwinAPIEndpoint):  # type: ignore
+                new_endpoint = endpoint
+            else:
+                return SyftError(message="Invalid endpoint type.")
         except ValueError as e:
             return SyftError(message=str(e))
 
@@ -68,11 +74,9 @@ class APIService(AbstractService):
         if result.is_err():
             return SyftError(message=result.err())
 
-        context.node = cast(AbstractNode, context.node)
-
         result = result.ok()
         action_obj = ActionObject.from_obj(
-            id=result.id,
+            id=new_endpoint.action_object_id,
             syft_action_data=CustomEndpointActionObject(endpoint_id=result.id),
             syft_node_location=context.node.id,
             syft_client_verify_key=context.credentials,
@@ -186,7 +190,6 @@ class APIService(AbstractService):
         self, context: AuthedServiceContext, path: str
     ) -> TwinAPIEndpointView | SyftError:
         """Retrieves an specific API endpoint."""
-        context.node = cast(AbstractNode, context.node)
         result = self.stash.get_by_path(context.node.verify_key, path)
         if result.is_err():
             return SyftError(message=result.err())
@@ -204,7 +207,6 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
     ) -> list[TwinAPIEndpointView] | SyftError:
         """Retrieves a list of available API endpoints view available to the user."""
-        context.node = cast(AbstractNode, context.node)
         admin_key = context.node.get_service("userservice").admin_verify_key()
         result = self.stash.get_all(admin_key)
         if result.is_err():
@@ -218,6 +220,17 @@ class APIService(AbstractService):
             )
 
         return api_endpoint_view
+
+    @service_method(path="api.get_all", name="get_all", roles=ADMIN_ROLE_LEVEL)
+    def get_all(
+        self,
+        context: AuthedServiceContext,
+    ) -> list[TwinAPIEndpoint] | SyftError:
+        """Get all API endpoints."""
+        result = self.stash.get_all(context.credentials)
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message=result.err())
 
     @service_method(path="api.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
@@ -331,7 +344,6 @@ class APIService(AbstractService):
     def get_endpoint_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> TwinAPIEndpoint | SyftError:
-        context.node = cast(AbstractNode, context.node)
         admin_key = context.node.get_service("userservice").admin_verify_key()
         result = self.stash.get_by_uid(admin_key, uid)
         if result.is_err():
@@ -343,7 +355,6 @@ class APIService(AbstractService):
     ) -> list[TwinAPIEndpoint] | SyftError:
         # TODO: Add ability to specify which roles see which endpoints
         # for now skip auth
-        context.node = cast(AbstractNode, context.node)
         results = self.stash.get_all(context.node.verify_key)
         if results.is_ok():
             return results.ok()
@@ -352,7 +363,6 @@ class APIService(AbstractService):
     def get_code(
         self, context: AuthedServiceContext, endpoint_path: str
     ) -> TwinAPIEndpoint | SyftError:
-        context.node = cast(AbstractNode, context.node)
         result = self.stash.get_by_path(context.node.verify_key, path=endpoint_path)
         if result.is_err():
             return SyftError(
@@ -363,3 +373,6 @@ class APIService(AbstractService):
             return result.ok()
 
         return SyftError(message=f"Unable to get {endpoint_path} CustomAPIEndpoint")
+
+
+TYPE_TO_SERVICE[TwinAPIEndpoint] = APIService

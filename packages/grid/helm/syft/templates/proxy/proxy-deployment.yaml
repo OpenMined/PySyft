@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: proxy-container
-          image: traefik:v2.11
+          image: traefik:v2.11.0
           imagePullPolicy: Always
           resources: {{ include "common.resources.set" (dict "resources" .Values.proxy.resources "preset" .Values.proxy.resourcesPreset) | nindent 12 }}
           {{- if .Values.proxy.env }}

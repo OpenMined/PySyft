@@ -32,11 +32,13 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.fonts import FONT_CSS
 from ...util.fonts import ITABLES_CSS
+from ...util.notebook_ui.components.sync import SyncTableObject
 from ...util.notebook_ui.notebook_addons import ARROW_ICON
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import StoragePermission
+from ..api.api import TwinAPIEndpoint
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatusCollection
 from ..job.job_stash import Job
@@ -45,7 +47,6 @@ from ..output.output_service import ExecutionOutput
 from ..request.request import Request
 from ..response import SyftError
 from .sync_state import SyncState
-from .sync_state import SyncView
 
 sketchy_tab = "‎ " * 4
 
@@ -182,6 +183,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         "low_state",
         "high_state",
     ]
+    __syft_include_id_coll_repr__ = False
 
     def is_mock(self, side: str) -> bool:
         # An object is a mock object if it exists on both sides,
@@ -312,16 +314,14 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         # relative
         from .resolve_widget import DiffStatus
 
-        obj_low = self.low_obj
-        obj_high = self.high_obj
-        if obj_low is not None:
-            repr_attrs = getattr(obj_low, "__repr_attrs__", [])
-        else:
-            repr_attrs = getattr(obj_high, "__repr_attrs__", [])
+        low_attrs = self.repr_attr_dict("low")
+        high_attrs = self.repr_attr_dict("high")
+        all_attrs = set(low_attrs.keys()) | set(high_attrs.keys())
+
         res = {}
-        for attr in repr_attrs:
-            value_low = getattr(obj_low, attr, None)
-            value_high = getattr(obj_high, attr, None)
+        for attr in all_attrs:
+            value_low = low_attrs.get(attr, None)
+            value_high = high_attrs.get(attr, None)
 
             if value_low is None or value_high is None:
                 res[attr] = DiffStatus.NEW
@@ -333,6 +333,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
     def repr_attr_dict(self, side: str) -> dict[str, Any]:
         obj = self.low_obj if side == "low" else self.high_obj
+        if isinstance(obj, ActionObject):
+            return {"value": obj.syft_action_data_cache}
         repr_attrs = getattr(obj, "__repr_attrs__", [])
         res = {}
         for attr in repr_attrs:
@@ -742,12 +744,12 @@ class ObjectDiffBatch(SyftObject):
         if self.root_diff.low_obj is None:
             low_html = no_obj_html
         else:
-            low_html = SyncView(object=self.root_diff.low_obj).summary_html()
+            low_html = SyncTableObject(object=self.root_diff.low_obj).to_html()
 
         if self.root_diff.high_obj is None:
             high_html = no_obj_html
         else:
-            high_html = SyncView(object=self.root_diff.high_obj).summary_html()
+            high_html = SyncTableObject(object=self.root_diff.high_obj).to_html()
 
         return {
             "Merge status": self.status_badge(),
@@ -774,6 +776,10 @@ class ObjectDiffBatch(SyftObject):
                 UserCode: [ExecutionOutput, UserCode],
                 ExecutionOutput: [Job],
                 Job: [ActionObject, SyftLog, Job],
+            }
+        elif isinstance(root_obj, TwinAPIEndpoint):
+            return TwinAPIEndpoint, {  # type: ignore
+                TwinAPIEndpoint: [],
             }
         else:
             raise ValueError(f"Unknown root type: {self.root.obj_type}")
@@ -1107,7 +1113,8 @@ It will be available for review again."""
         """  # noqa: E501
         repr_html = repr_html.replace("\n", "")
 
-        return repr_html + self.batches._repr_html_()
+        res = repr_html + self.batches._repr_html_()
+        return res
 
     @staticmethod
     def _sort_batches(hierarchies: list[ObjectDiffBatch]) -> list[ObjectDiffBatch]:
@@ -1158,12 +1165,11 @@ It will be available for review again."""
 
         for diff in obj_uid_to_diff.values():
             diff_obj = diff.low_obj if diff.low_obj is not None else diff.high_obj
-            if isinstance(diff_obj, Request):
-                root_ids.append(diff.object_id)
-            elif isinstance(diff_obj, Job) and diff_obj.parent_job_id is None:  # type: ignore
-                root_ids.append(diff.object_id)  # type: ignore
-            elif isinstance(diff_obj, UserCode):
+            if isinstance(diff_obj, Request | UserCode | TwinAPIEndpoint):
                 # TODO: Figure out nested user codes, do we even need that?
+
+                root_ids.append(diff.object_id)  # type: ignore
+            elif isinstance(diff_obj, Job) and diff_obj.parent_job_id is None:  # type: ignore
                 root_ids.append(diff.object_id)  # type: ignore
 
         for root_uid in root_ids:
@@ -1216,14 +1222,15 @@ class SyncInstruction(SyftObject):
         if sync_direction == SyncDirection.HIGH_TO_LOW:
             if widget.share_private_data or diff.object_type == "Job":
                 if share_to_user is None:
-                    raise ValueError("empty to user to share with")
-                new_permissions_low_side = [
-                    ActionObjectPermission(
-                        uid=widget.diff.object_id,
-                        permission=ActionPermission.READ,
-                        credentials=share_to_user,  # type: ignore
-                    )
-                ]
+                    raise ValueError("share_to_user is required for private data")
+                else:
+                    new_permissions_low_side = [
+                        ActionObjectPermission(
+                            uid=widget.diff.object_id,
+                            permission=ActionPermission.READ,
+                            credentials=share_to_user,  # type: ignore
+                        )
+                    ]
 
         # mockify
         mockify = widget.mockify

@@ -11,13 +11,17 @@ import pytest
 import syft as sy
 from syft.abstract_node import NodeType
 from syft.client.client import HTTPConnection
+from syft.client.client import SyftClient
 from syft.client.domain_client import DomainClient
 from syft.client.gateway_client import GatewayClient
 from syft.client.registry import NetworkRegistry
 from syft.client.search import SearchResults
 from syft.service.dataset.dataset import Dataset
 from syft.service.network.node_peer import NodePeer
+from syft.service.network.routes import HTTPNodeRoute
+from syft.service.network.routes import NodeRouteType
 from syft.service.request.request import Request
+from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
 
@@ -58,6 +62,17 @@ def _random_hash() -> str:
     return uuid.uuid4().hex[:16]
 
 
+def _remove_existing_peers(client: SyftClient) -> SyftSuccess | SyftError:
+    peers: list[NodePeer] | SyftError = client.api.services.network.get_all_peers()
+    if isinstance(peers, SyftError):
+        return peers
+    for peer in peers:
+        res = client.api.services.network.delete_peer_by_id(peer.id)
+        if isinstance(res, SyftError):
+            return res
+    return SyftSuccess(message="All peers removed.")
+
+
 @pytest.mark.skip(reason="Will be tested when the network registry URL works.")
 def test_network_registry_from_url() -> None:
     assert isinstance(sy.gateways, NetworkRegistry)
@@ -74,21 +89,25 @@ def test_network_registry_env_var(set_env_var) -> None:
 def test_domain_connect_to_gateway(
     set_env_var, domain_1_port: int, gateway_port: int
 ) -> None:
+    # check if we can see the online gateways
     assert isinstance(sy.gateways, NetworkRegistry)
     assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
 
-    gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
-
+    # login to the domain and gateway
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
+    # connecting the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
-
     assert len(domain_client.peers) == 1
     assert len(gateway_client.peers) == 1
 
+    # check that the domain is online on the network
     assert len(sy.domains.all_domains) == 1
     assert len(sy.domains.online_domains) == 1
 
@@ -124,15 +143,21 @@ def test_domain_connect_to_gateway(
         proxy_domain_client.api.endpoints.keys() == domain_client.api.endpoints.keys()
     )
 
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
-def test_dataset_search(set_env_var, domain_1_port, gateway_port):
+
+def test_dataset_search(set_env_var, gateway_port: int, domain_1_port: int) -> None:
     """
     Scenario: Connecting a domain node to a gateway node. The domain
         client then upload a dataset, which should be searchable by the syft network.
         People who install syft can see the mock data and metadata of the uploaded datasets
     """
     # login to the domain and gateway
-    gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
@@ -170,10 +195,18 @@ def test_dataset_search(set_env_var, domain_1_port, gateway_port):
     # the domain client delete the dataset
     domain_client.api.services.dataset.delete_by_uid(uid=dataset.id)
 
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
-def test_domain_gateway_user_code(set_env_var, domain_1_port, gateway_port):
+
+def test_domain_gateway_user_code(
+    set_env_var, domain_1_port: int, gateway_port: int
+) -> None:
     # login to the domain and gateway
-    gateway_client: GatewayClient = sy.login_as_guest(port=gateway_port)
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
@@ -232,3 +265,459 @@ def test_domain_gateway_user_code(set_env_var, domain_1_port, gateway_port):
     result = proxy_ds.code.mock_function(asset=asset)
     final_result = result.get()
     assert (final_result == input_data + 1).all()
+
+    # the domain client delete the dataset
+    domain_client.api.services.dataset.delete_by_uid(uid=dataset.id)
+
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+
+def test_deleting_peers(set_env_var, domain_1_port: int, gateway_port: int) -> None:
+    # login to the domain and gateway
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
+    domain_client: DomainClient = sy.login(
+        port=domain_1_port, email="info@openmined.org", password="changethis"
+    )
+
+    # connecting the domain to the gateway
+    result = domain_client.connect_to_gateway(gateway_client)
+    assert isinstance(result, SyftSuccess)
+    assert len(domain_client.peers) == 1
+    assert len(gateway_client.peers) == 1
+    # check that the domain is online on the network
+    assert len(sy.domains.all_domains) == 1
+    assert len(sy.domains.online_domains) == 1
+
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+    # check that removing peers work as expected
+    assert len(sy.gateways.all_networks) == 1
+    assert len(sy.domains.all_domains) == 0
+    assert len(sy.domains.all_domains) == 0
+    assert len(sy.domains.online_domains) == 0
+    assert len(domain_client.peers) == 0
+    assert len(gateway_client.peers) == 0
+
+    # reconnect the domain to the gateway
+    result = domain_client.connect_to_gateway(gateway_client)
+    assert isinstance(result, SyftSuccess)
+    assert len(domain_client.peers) == 1
+    assert len(gateway_client.peers) == 1
+    # check that the domain
+    assert len(sy.domains.all_domains) == 1
+    assert len(sy.domains.online_domains) == 1
+
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+    # check that removing peers work as expected
+    assert len(sy.domains.all_domains) == 0
+    assert len(sy.domains.all_domains) == 0
+    assert len(sy.domains.online_domains) == 0
+    assert len(domain_client.peers) == 0
+    assert len(gateway_client.peers) == 0
+
+
+def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+    """
+    Test the network service's `add_route` functionalities to add routes directly
+    for a self domain.
+    Scenario: Connect a domain to a gateway. The gateway adds 2 new routes to the domain
+    and check their priorities.
+    Then add an existed route and check if its priority gets updated.
+    Check for the gateway if the proxy client to connect to the domain uses the
+    route with the highest priority.
+    """
+    # login to the domain and gateway
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
+    domain_client: DomainClient = sy.login(
+        port=domain_1_port, email="info@openmined.org", password="changethis"
+    )
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+    # connecting the domain to the gateway
+    result = domain_client.connect_to_gateway(gateway_client)
+    assert isinstance(result, SyftSuccess)
+    assert len(domain_client.peers) == 1
+    assert len(gateway_client.peers) == 1
+
+    # add a new route to connect to the domain
+    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
+    domain_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    res = gateway_client.api.services.network.add_route(
+        peer_verify_key=domain_peer.verify_key, route=new_route
+    )
+    assert isinstance(res, SyftSuccess)
+    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert len(domain_peer.node_routes) == 2
+    assert domain_peer.node_routes[-1].port == new_route.port
+
+    # adding another route to the domain
+    new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
+    res = gateway_client.api.services.network.add_route(
+        peer_verify_key=domain_peer.verify_key, route=new_route2
+    )
+    assert isinstance(res, SyftSuccess)
+    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert len(domain_peer.node_routes) == 3
+    assert domain_peer.node_routes[-1].port == new_route2.port
+    assert domain_peer.node_routes[-1].priority == 3
+
+    # add an existed route to the domain and check its priority gets updated
+    res = gateway_client.api.services.network.add_route(
+        peer_verify_key=domain_peer.verify_key, route=domain_peer.node_routes[0]
+    )
+    assert "route already exists" in res.message
+    assert isinstance(res, SyftSuccess)
+    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert len(domain_peer.node_routes) == 3
+    assert domain_peer.node_routes[0].priority == 4
+
+    # the gateway gets the proxy client to the domain
+    # the proxy client should use the route with the highest priority
+    proxy_domain_client = gateway_client.peers[0]
+    assert isinstance(proxy_domain_client, DomainClient)
+
+    # add another existed route (port 10000)
+    res = gateway_client.api.services.network.add_route(
+        peer_verify_key=domain_peer.verify_key, route=domain_peer.node_routes[1]
+    )
+    assert "route already exists" in res.message
+    assert isinstance(res, SyftSuccess)
+    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert len(domain_peer.node_routes) == 3
+    assert domain_peer.node_routes[1].priority == 5
+    # getting the proxy client using the current highest priority route should
+    # give back an error since it is a route with a random port (10000)
+    proxy_domain_client = gateway_client.peers[0]
+    assert isinstance(proxy_domain_client, SyftError)
+    assert "Failed to establish a connection with" in proxy_domain_client.message
+
+    # the routes the domain client uses to connect to the gateway should stay the same
+    gateway_peer: NodePeer = domain_client.peers[0]
+    assert len(gateway_peer.node_routes) == 1
+
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+
+def test_delete_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+    # login to the domain and gateway
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
+    domain_client: DomainClient = sy.login(
+        port=domain_1_port, email="info@openmined.org", password="changethis"
+    )
+
+    # connecting the domain to the gateway
+    result = domain_client.connect_to_gateway(gateway_client)
+    assert isinstance(result, SyftSuccess)
+    assert len(domain_client.peers) == 1
+    assert len(gateway_client.peers) == 1
+
+    # add a new route to connect to the domain
+    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
+    domain_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    res = gateway_client.api.services.network.add_route(
+        peer_verify_key=domain_peer.verify_key, route=new_route
+    )
+    assert isinstance(res, SyftSuccess)
+    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert len(domain_peer.node_routes) == 2
+    assert domain_peer.node_routes[-1].port == new_route.port
+
+    # delete the added route
+    res = gateway_client.api.services.network.delete_route(
+        peer_verify_key=domain_peer.verify_key, route=new_route
+    )
+    assert isinstance(res, SyftSuccess)
+    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert len(domain_peer.node_routes) == 1
+    assert domain_peer.node_routes[-1].port == domain_1_port
+
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+
+def test_add_route_on_peer(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+    """
+    Test the `add_route_on_peer` of network service.
+    Connect a domain to a gateway.
+    The gateway adds 2 new routes for the domain and check their priorities.
+    Then add an existed route and check if its priority gets updated.
+    Then the domain adds a route to itself for the gateway.
+    """
+    # login to the domain and gateway
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
+    domain_client: DomainClient = sy.login(
+        port=domain_1_port, email="info@openmined.org", password="changethis"
+    )
+
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+    # connecting the domain to the gateway
+    result = domain_client.connect_to_gateway(gateway_client)
+    assert isinstance(result, SyftSuccess)
+    assert len(domain_client.peers) == 1
+    assert len(gateway_client.peers) == 1
+    gateway_peer: NodePeer = domain_client.peers[0]
+    assert len(gateway_peer.node_routes) == 1
+    assert gateway_peer.node_routes[-1].priority == 1
+
+    # adding a new route for the domain
+    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
+    domain_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    res = gateway_client.api.services.network.add_route_on_peer(
+        peer=domain_peer, route=new_route
+    )
+    assert isinstance(res, SyftSuccess)
+    gateway_peer = domain_client.peers[0]
+    assert len(gateway_peer.node_routes) == 2
+    assert gateway_peer.node_routes[-1].port == new_route.port
+    assert gateway_peer.node_routes[-1].priority == 2
+
+    # adding another route for the domain
+    new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
+    res = gateway_client.api.services.network.add_route_on_peer(
+        peer=domain_peer, route=new_route2
+    )
+    assert isinstance(res, SyftSuccess)
+    gateway_peer = domain_client.peers[0]
+    assert len(gateway_peer.node_routes) == 3
+    assert gateway_peer.node_routes[-1].port == new_route2.port
+    assert gateway_peer.node_routes[-1].priority == 3
+
+    # add an existed route for the domain and check its priority gets updated
+    existed_route = gateway_peer.node_routes[0]
+    res = gateway_client.api.services.network.add_route_on_peer(
+        peer=domain_peer, route=existed_route
+    )
+    assert "route already exists" in res.message
+    assert isinstance(res, SyftSuccess)
+    gateway_peer = domain_client.peers[0]
+    assert len(gateway_peer.node_routes) == 3
+    assert gateway_peer.node_routes[0].priority == 4
+
+    # the domain calls `add_route_on_peer` to to add a route to itself for the gateway
+    assert len(domain_peer.node_routes) == 1
+    res = domain_client.api.services.network.add_route_on_peer(
+        peer=gateway_peer, route=new_route
+    )
+    assert isinstance(res, SyftSuccess)
+    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert domain_peer.node_routes[-1].port == new_route.port
+    assert len(domain_peer.node_routes) == 2
+
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+
+def test_delete_route_on_peer(
+    set_env_var, gateway_port: int, domain_1_port: int
+) -> None:
+    """
+    Connect a domain to a gateway, the gateway adds 2 new routes for the domain
+    , then delete them.
+    """
+    # login to the domain and gateway
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
+    domain_client: DomainClient = sy.login(
+        port=domain_1_port, email="info@openmined.org", password="changethis"
+    )
+
+    # connecting the domain to the gateway
+    result = domain_client.connect_to_gateway(gateway_client)
+    assert isinstance(result, SyftSuccess)
+
+    # gateway adds 2 new routes for the domain
+    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
+    new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
+    domain_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    res = gateway_client.api.services.network.add_route_on_peer(
+        peer=domain_peer, route=new_route
+    )
+    assert isinstance(res, SyftSuccess)
+    res = gateway_client.api.services.network.add_route_on_peer(
+        peer=domain_peer, route=new_route2
+    )
+    assert isinstance(res, SyftSuccess)
+
+    gateway_peer: NodePeer = domain_client.peers[0]
+    assert len(gateway_peer.node_routes) == 3
+
+    # gateway delete the routes for the domain
+    res = gateway_client.api.services.network.delete_route_on_peer(
+        peer=domain_peer, route_id=new_route.id
+    )
+    assert isinstance(res, SyftSuccess)
+    gateway_peer = domain_client.peers[0]
+    assert len(gateway_peer.node_routes) == 2
+
+    res = gateway_client.api.services.network.delete_route_on_peer(
+        peer=domain_peer, route=new_route2
+    )
+    assert isinstance(res, SyftSuccess)
+    gateway_peer = domain_client.peers[0]
+    assert len(gateway_peer.node_routes) == 1
+
+    # gateway deletes the last the route to it for the domain
+    last_route: NodeRouteType = gateway_peer.node_routes[0]
+    res = gateway_client.api.services.network.delete_route_on_peer(
+        peer=domain_peer, route=last_route
+    )
+    assert isinstance(res, SyftSuccess)
+    assert "There is no routes left" in res.message
+    assert len(domain_client.peers) == 0  # gateway is no longer a peer of the domain
+
+    # The gateway client also removes the domain as a peer
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+
+def test_update_route_priority(
+    set_env_var, gateway_port: int, domain_1_port: int
+) -> None:
+    # login to the domain and gateway
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
+    domain_client: DomainClient = sy.login(
+        port=domain_1_port, email="info@openmined.org", password="changethis"
+    )
+
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+    # connecting the domain to the gateway
+    result = domain_client.connect_to_gateway(gateway_client)
+    assert isinstance(result, SyftSuccess)
+
+    # gateway adds 2 new routes to the domain
+    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
+    new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
+    domain_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    res = gateway_client.api.services.network.add_route(
+        peer_verify_key=domain_peer.verify_key, route=new_route
+    )
+    assert isinstance(res, SyftSuccess)
+    res = gateway_client.api.services.network.add_route(
+        peer_verify_key=domain_peer.verify_key, route=new_route2
+    )
+    assert isinstance(res, SyftSuccess)
+
+    # check if the priorities of the routes are correct
+    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    routes_port_priority: dict = {
+        route.port: route.priority for route in domain_peer.node_routes
+    }
+    assert routes_port_priority[domain_1_port] == 1
+    assert routes_port_priority[new_route.port] == 2
+    assert routes_port_priority[new_route2.port] == 3
+
+    # update the priorities for the routes
+    res = gateway_client.api.services.network.update_route_priority(
+        peer_verify_key=domain_peer.verify_key, route=new_route, priority=5
+    )
+    assert isinstance(res, SyftSuccess)
+    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    routes_port_priority: dict = {
+        route.port: route.priority for route in domain_peer.node_routes
+    }
+    assert routes_port_priority[new_route.port] == 5
+
+    res = gateway_client.api.services.network.update_route_priority(
+        peer_verify_key=domain_peer.verify_key, route=new_route2
+    )
+    assert isinstance(res, SyftSuccess)
+    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    routes_port_priority: dict = {
+        route.port: route.priority for route in domain_peer.node_routes
+    }
+    assert routes_port_priority[new_route2.port] == 6
+
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+
+def test_update_route_priority_on_peer(
+    set_env_var, gateway_port: int, domain_1_port: int
+) -> None:
+    # login to the domain and gateway
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
+    domain_client: DomainClient = sy.login(
+        port=domain_1_port, email="info@openmined.org", password="changethis"
+    )
+
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+    # connecting the domain to the gateway
+    result = domain_client.connect_to_gateway(gateway_client)
+    assert isinstance(result, SyftSuccess)
+
+    # gateway adds 2 new routes for the domain to itself
+    domain_peer: NodePeer = gateway_client.api.services.network.get_all_peers()[0]
+    new_route = HTTPNodeRoute(host_or_ip="localhost", port=10000)
+    res = gateway_client.api.services.network.add_route_on_peer(
+        peer=domain_peer, route=new_route
+    )
+    assert isinstance(res, SyftSuccess)
+
+    new_route2 = HTTPNodeRoute(host_or_ip="localhost", port=10001)
+    res = gateway_client.api.services.network.add_route_on_peer(
+        peer=domain_peer, route=new_route2
+    )
+    assert isinstance(res, SyftSuccess)
+
+    # check if the priorities of the routes are correct
+    gateway_peer = domain_client.api.services.network.get_all_peers()[0]
+    routes_port_priority: dict = {
+        route.port: route.priority for route in gateway_peer.node_routes
+    }
+    assert routes_port_priority[gateway_port] == 1
+    assert routes_port_priority[new_route.port] == 2
+    assert routes_port_priority[new_route2.port] == 3
+
+    # gateway updates the route priorities for the domain remotely
+    res = gateway_client.api.services.network.update_route_priority_on_peer(
+        peer=domain_peer, route=new_route, priority=5
+    )
+    assert isinstance(res, SyftSuccess)
+    res = gateway_client.api.services.network.update_route_priority_on_peer(
+        peer=domain_peer, route=gateway_peer.node_routes[0]
+    )
+    assert isinstance(res, SyftSuccess)
+
+    gateway_peer = domain_client.api.services.network.get_all_peers()[0]
+    routes_port_priority: dict = {
+        route.port: route.priority for route in gateway_peer.node_routes
+    }
+    assert routes_port_priority[new_route.port] == 5
+    assert routes_port_priority[gateway_port] == 6
+
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)

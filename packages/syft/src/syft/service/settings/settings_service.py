@@ -1,7 +1,6 @@
 # stdlib
 
 # stdlib
-from typing import cast
 
 # third party
 from result import Err
@@ -9,7 +8,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...util.experimental_flags import flags
@@ -38,7 +36,7 @@ class SettingsService(AbstractService):
     @service_method(path="settings.get", name="get")
     def get(self, context: UnauthedServiceContext) -> Result[Ok, Err]:
         """Get Settings"""
-        context.node = cast(AbstractNode, context.node)
+
         result = self.stash.get_all(context.node.signing_key.verify_key)
         if result.is_ok():
             settings = result.ok()
@@ -97,7 +95,6 @@ class SettingsService(AbstractService):
         email_server: str | None = None,
         email_port: str | None = None,
     ) -> SyftSuccess | SyftError:
-        context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         return notifier_service.turn_on(
             context=context,
@@ -117,7 +114,6 @@ class SettingsService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> SyftSuccess | SyftError:
-        context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         return notifier_service.turn_off(context=context)
 
@@ -131,7 +127,7 @@ class SettingsService(AbstractService):
     ) -> SyftSuccess | SyftError:
         """Enable/Disable Registration for Data Scientist or Guest Users."""
         flags.CAN_REGISTER = enable
-        context.node = cast(AbstractNode, context.node)
+
         method = context.node.get_service_method(SettingsService.update)
         settings = NodeSettingsUpdate(signup_enabled=enable)
 

@@ -327,7 +327,7 @@ class RemoteFunction(SyftObject):
             message="This function doesn't support public/private calls as it's not custom."
         )
 
-    def custom_function_id(self) -> UID | SyftError:
+    def custom_function_actionobject_id(self) -> UID | SyftError:
         if self.custom_function and self.pre_kwargs is not None:
             custom_path = self.pre_kwargs.get("path", "")
             api_call = SyftAPICall(
@@ -339,7 +339,7 @@ class RemoteFunction(SyftObject):
             endpoint = self.make_call(api_call=api_call)
             if isinstance(endpoint, SyftError):
                 return endpoint
-            return endpoint.id
+            return endpoint.action_object_id
         return SyftError(message="This function is not a custom function")
 
     def _repr_markdown_(self, wrap_as_python: bool = False, indent: int = 0) -> str:
@@ -404,7 +404,7 @@ class RemoteUserCodeFunction(RemoteFunction):
 
         for k, v in kwargs.items():
             if isinstance(v, RemoteFunction) and v.custom_function:
-                kwargs[k] = v.custom_function_id()
+                kwargs[k] = v.custom_function_actionobject_id()
 
         args, kwargs = convert_to_pointers(
             api=self.api,

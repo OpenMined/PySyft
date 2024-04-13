@@ -13,6 +13,25 @@
   },
   "dev": {
     "object_versions": {
+      "EnclaveMetadata": {
+        "2": {
+          "version": 2,
+          "hash": "6dcc26695abc6a9ecd9d7d1e6507a9f1a92cc5ccd10987e92419bf984245f9a1",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "d2f23411927c68e2307a84d180ad053b3e4ba12d74aba64d34dac224c90e815d",
+          "action": "add"
+        }
+      },
+      "CustomEndpointActionObject": {
+        "1": {
+          "version": 1,
+          "hash": "642facc6cafbaad4de030a33cd619bd68ac31a32b0db07ddc1c1d5d7f914503e",
+          "action": "add"
+        }
+      },
       "ExecutionOutput": {
         "1": {
           "version": 1,
@@ -25,41 +44,38 @@
           "action": "add"
         }
       },
-      "SyftLog": {
-        "3": {
-          "version": 3,
-          "hash": "8964d48238672e0e5d5db6b932cda4ee8eb77581949ab3f7a38a05b1efec13b7",
-          "action": "remove"
-        },
-        "4": {
-          "version": 4,
-          "hash": "ad6ef18ccd87fced669f3824d27ab423aaf52574b0cd4f720687aeaba77524e5",
+      "PolicyRule": {
+        "1": {
+          "version": 1,
+          "hash": "f85221837eb2b73c818618e02064dfac0762563e3a10611af7968e2e927be677",
           "action": "add"
         }
       },
-      "SyncState": {
+      "Matches": {
         "1": {
           "version": 1,
-          "hash": "a0616775ec8ef0629e2d91e0df9cc4237ea3674727eda1ce367f1897ee35767d",
-          "action": "remove"
-        },
-        "2": {
-          "version": 2,
-          "hash": "925f1b8ccd4b9d542700a111f9c4bdd28bfa55978d805ddb2fb3c108cc940d19",
+          "hash": "10c995552f33a05b3ba5ececabca351c22b6f4df23c969a61432af1abc1e3f34",
           "action": "add"
         }
       },
-      "CustomEndpointActionObject": {
+      "UserOwned": {
         "1": {
           "version": 1,
-          "hash": "642facc6cafbaad4de030a33cd619bd68ac31a32b0db07ddc1c1d5d7f914503e",
+          "hash": "c4a2d447da679002a0896fb2bfe459da045735d53c658ea87219c710ea816303",
+          "action": "add"
+        }
+      },
+      "MixedInputPolicy": {
+        "1": {
+          "version": 1,
+          "hash": "0e84e4c91e378717e1a4703574b07e3b1e6a3e5707401b4e0cc8d30088a506b9",
           "action": "add"
         }
       },
       "CustomAPIView": {
         "1": {
           "version": 1,
-          "hash": "21cada3f8b8609e91e4f01f3bfdbdab3f8b96003163e09dba1c4b31041598ca2",
+          "hash": "5cdfaea6b5af235d0f9ab8e6f01d6cebcde7c8bf4efd00aec26c343965ef865e",
           "action": "add"
         }
       },
@@ -94,14 +110,38 @@
       "TwinAPIEndpoint": {
         "1": {
           "version": 1,
-          "hash": "edcd67ab41edfae56deb23d9ef838edc442f587bdb16b8e8c46efa20c04e3c25",
+          "hash": "03a0244c6b322e72032c5c33c1db09b913f83d72cfad1cc51ac4ec90506afcf5",
           "action": "add"
         }
       },
-      "SyncView": {
+      "SyftLog": {
+        "3": {
+          "version": 3,
+          "hash": "8964d48238672e0e5d5db6b932cda4ee8eb77581949ab3f7a38a05b1efec13b7",
+          "action": "remove"
+        },
+        "4": {
+          "version": 4,
+          "hash": "ad6ef18ccd87fced669f3824d27ab423aaf52574b0cd4f720687aeaba77524e5",
+          "action": "add"
+        }
+      },
+      "SyncState": {
         "1": {
           "version": 1,
-          "hash": "4e87744e86cd7781e3d5cf4618e63516f3d26309a4da919033dacc5ed338d76d",
+          "hash": "a0616775ec8ef0629e2d91e0df9cc4237ea3674727eda1ce367f1897ee35767d",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "925f1b8ccd4b9d542700a111f9c4bdd28bfa55978d805ddb2fb3c108cc940d19",
+          "action": "add"
+        }
+      },
+      "NodePeer": {
+        "3": {
+          "version": 3,
+          "hash": "dababb03d2463b6218ae22d55293a60580f5a14bebd0c664d71da104e2f0b835",
           "action": "add"
         }
       },
@@ -112,32 +152,11 @@
           "action": "remove"
         }
       },
-      "PolicyRule": {
+      "VeilidConnection": {
         "1": {
           "version": 1,
-          "hash": "f85221837eb2b73c818618e02064dfac0762563e3a10611af7968e2e927be677",
-          "action": "add"
-        }
-      },
-      "Matches": {
-        "1": {
-          "version": 1,
-          "hash": "10c995552f33a05b3ba5ececabca351c22b6f4df23c969a61432af1abc1e3f34",
-          "action": "add"
-        }
-      },
-      "UserOwned": {
-        "1": {
-          "version": 1,
-          "hash": "c4a2d447da679002a0896fb2bfe459da045735d53c658ea87219c710ea816303",
-          "action": "add"
-        }
-      },
-      "MixedInputPolicy": {
-        "1": {
-          "version": 1,
-          "hash": "0e84e4c91e378717e1a4703574b07e3b1e6a3e5707401b4e0cc8d30088a506b9",
-          "action": "add"
+          "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
+          "action": "remove"
         }
       }
     }

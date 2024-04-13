@@ -31,7 +31,6 @@ from result import Err
 from typing_extensions import Self
 
 # relative
-from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
@@ -200,7 +199,6 @@ class UserCodeStatusCollection(SyncableSyftObject):
         return False
 
     def for_user_context(self, context: AuthedServiceContext) -> UserCodeStatus:
-        context.node = cast(AbstractNode, context.node)
         if context.node.node_type == NodeType.ENCLAVE:
             keys = {status for status, _ in self.status_dict.values()}
             if len(keys) == 1 and UserCodeStatus.APPROVED in keys:
@@ -533,8 +531,8 @@ class UserCode(SyncableSyftObject):
             return SyftError(
                 message="Execution denied, Please wait for the code to be approved"
             )
-        node = cast(AbstractNode, context.node)
-        output_service = cast(OutputService, node.get_service("outputservice"))
+
+        output_service = cast(OutputService, context.node.get_service("outputservice"))
         return output_service.get_by_user_code_id(context, self.id)
 
     def store_as_history(
@@ -551,7 +549,7 @@ class UserCode(SyncableSyftObject):
             )
 
         output_ids = filter_only_uids(outputs)
-        context.node = cast(AbstractNode, context.node)
+
         output_service = context.node.get_service("outputservice")
         output_service = cast(OutputService, output_service)
         execution_result = output_service.create(

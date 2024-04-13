@@ -98,9 +98,6 @@ class EnclaveService(AbstractService):
 def propagate_inputs_to_enclave(
     user_code: UserCode, context: ChangeContext
 ) -> SyftSuccess | SyftError:
-    if context.node is None:
-        return SyftError(message=f"context {context}'s node is None")
-
     if isinstance(user_code.enclave_metadata, EnclaveMetadata):
         # TODO 🟣 Restructure url it work for local mode host.docker.internal
 
