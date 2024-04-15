@@ -130,6 +130,20 @@
           "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
           "action": "remove"
         }
+      },
+      "NodeSettings": {
+        "4": {
+          "version": 4,
+          "hash": "6d9f30ec2e06c1947268bf3317f7fff7d0bc11ff9025c4b3c100c02d00f8d374",
+          "action": "add"
+        }
+      },
+      "AssociationRequestChange": {
+        "1": {
+          "version": 1,
+          "hash": "508550c43e9e3f30243813c23eb6eec20918923d7ba09498cddbcd7e8bfa4539",
+          "action": "add"
+        }
       }
     }
   }
