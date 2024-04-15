@@ -241,7 +241,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./packages/
-          file: ./packages/grid/syft-image/syft.Dockerfile
+          file: ./packages/grid/syft-client/syft.Dockerfile
           outputs: type=image,name=openmined/syft-client,push-by-digest=true,name-canonical=true,push=true
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
           cache-from: type=registry,ref=openmined/syft-client:cache-${{ steps.release_metadata.outputs.short_release_platform }}

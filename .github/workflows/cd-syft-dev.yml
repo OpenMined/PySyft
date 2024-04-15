@@ -87,7 +87,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./packages
-          file: ./packages/grid/syft-image/syft.Dockerfile
+          file: ./packages/grid/syft-client/syft.Dockerfile
           push: true
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/syft-client:dev
