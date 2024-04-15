@@ -77,6 +77,7 @@ def run_uvicorn(
     in_memory_workers: bool,
     queue_port: int | None,
     create_producer: bool,
+    auto_accept_association_request: bool,
     n_consumers: int,
 ) -> None:
     async def _run_uvicorn(
@@ -110,6 +111,7 @@ def run_uvicorn(
                 queue_port=queue_port,
                 create_producer=create_producer,
                 n_consumers=n_consumers,
+                auto_accept_association_request=auto_accept_association_request,
             )
         else:
             worker = worker_class(
@@ -124,6 +126,7 @@ def run_uvicorn(
                 queue_port=queue_port,
                 create_producer=create_producer,
                 n_consumers=n_consumers,
+                auto_accept_association_request=auto_accept_association_request,
             )
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)
