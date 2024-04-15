@@ -242,10 +242,10 @@ jobs:
         with:
           context: ./packages/
           file: ./packages/grid/syft-image/syft.Dockerfile
-          outputs: type=image,name=openmined/syft,push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=openmined/syft-client,push-by-digest=true,name-canonical=true,push=true
           platforms: ${{ steps.release_metadata.outputs.release_platform }}
-          cache-from: type=registry,ref=openmined/syft:cache-${{ steps.release_metadata.outputs.short_release_platform }}
-          cache-to: type=registry,ref=openmined/syft:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
+          cache-from: type=registry,ref=openmined/syft-client:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/syft-client:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
 
       - name: Export digest for `syft` image
         run: |
@@ -316,9 +316,9 @@ jobs:
         working-directory: /tmp/digests/syft
         run: |
           docker buildx imagetools create  \
-            -t openmined/syft:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
-            -t openmined/syft:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
-            $(printf 'openmined/syft@sha256:%s ' *)
+            -t openmined/syft-client:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
+            -t openmined/syft-client:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
+            $(printf 'openmined/syft-client@sha256:%s ' *)
 
   deploy-syft:
     needs: [merge-docker-images]

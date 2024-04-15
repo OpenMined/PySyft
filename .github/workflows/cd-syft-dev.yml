@@ -90,9 +90,9 @@ jobs:
           file: ./packages/grid/syft-image/syft.Dockerfile
           push: true
           tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/syft:dev
-            ${{ secrets.ACR_SERVER }}/openmined/syft:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/syft:${{ steps.grid.outputs.GRID_VERSION }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-client:dev
+            ${{ secrets.ACR_SERVER }}/openmined/syft-client:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-client:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build and push `grid-backend` image to registry
         uses: docker/build-push-action@v5
