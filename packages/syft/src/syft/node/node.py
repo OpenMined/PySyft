@@ -17,6 +17,7 @@ import traceback
 from typing import Any
 
 # third party
+from loguru import logger
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
@@ -1607,6 +1608,10 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
             name=default_pool_name,
             image_uid=default_image.id,
             num_workers=worker_count,
+        )
+    elif isinstance(default_worker_pool, SyftError):
+        logger.error(
+            f"Failed to create default worker pool. Error: {default_worker_pool.message}"
         )
     else:
         # Else add a worker to existing worker pool
