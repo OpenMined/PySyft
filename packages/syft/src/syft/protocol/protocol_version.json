@@ -144,6 +144,13 @@
           "hash": "508550c43e9e3f30243813c23eb6eec20918923d7ba09498cddbcd7e8bfa4539",
           "action": "add"
         }
+      },
+      "NodeSettingsUpdate": {
+        "3": {
+          "version": 3,
+          "hash": "0f812fdd5aecc3e3aa1a7c953bbf7f8d8b03a77c5cdbb37e981fa91c8134c9f4",
+          "action": "add"
+        }
       }
     }
   }

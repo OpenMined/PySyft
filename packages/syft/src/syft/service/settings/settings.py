@@ -18,7 +18,7 @@ from ...types.uid import UID
 
 
 @serializable()
-class NodeSettingsUpdate(PartialSyftObject):
+class NodeSettingsUpdateV2(PartialSyftObject):
     __canonical_name__ = "NodeSettingsUpdate"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -29,6 +29,21 @@ class NodeSettingsUpdate(PartialSyftObject):
     on_board: bool
     signup_enabled: bool
     admin_email: str
+
+
+@serializable()
+class NodeSettingsUpdate(PartialSyftObject):
+    __canonical_name__ = "NodeSettingsUpdate"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    id: UID
+    name: str
+    organization: str
+    description: str
+    on_board: bool
+    signup_enabled: bool
+    admin_email: str
+    association_request_auto_approval: bool
 
 
 @serializable()
@@ -91,4 +106,14 @@ def upgrade_node_settings() -> list[Callable]:
 
 @migrate(NodeSettings, NodeSettingsV2)
 def downgrade_node_settings() -> list[Callable]:
+    return [drop(["association_request_auto_approval"])]
+
+
+@migrate(NodeSettingsUpdateV2, NodeSettingsUpdate)
+def upgrade_node_settings_update() -> list[Callable]:
+    return []
+
+
+@migrate(NodeSettings, NodeSettingsV2)
+def downgrade_node_settings_update() -> list[Callable]:
     return [drop(["association_request_auto_approval"])]

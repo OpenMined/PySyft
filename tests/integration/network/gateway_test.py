@@ -102,6 +102,10 @@ def test_domain_connect_to_gateway(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
+    # Enable automatic acceptance of association requests
+    res = gateway_client.settings.allow_assoc_req_auto_accept(enable=True)
+    assert isinstance(res, SyftSuccess)
+
     # connecting the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
     assert isinstance(result, Request)
@@ -172,6 +176,9 @@ def test_dataset_search(set_env_var, gateway_port: int, domain_1_port: int) -> N
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
+
+    res = gateway_client.settings.allow_assoc_req_auto_accept(enable=True)
+    assert isinstance(res, SyftSuccess)
 
     # connect the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
@@ -244,6 +251,9 @@ def test_domain_gateway_user_code(
     )
     assert isinstance(user_create_res, SyftSuccess)
 
+    res = gateway_client.settings.allow_assoc_req_auto_accept(enable=True)
+    assert isinstance(res, SyftSuccess)
+
     # the domain client connects to the gateway
     gateway_con_res = domain_client.connect_to_gateway(gateway_client)
     assert isinstance(gateway_con_res, SyftSuccess)
@@ -293,6 +303,10 @@ def test_deleting_peers(set_env_var, domain_1_port: int, gateway_port: int) -> N
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
+
+    # Enable automatic acceptance of association requests
+    res = gateway_client.settings.allow_assoc_req_auto_accept(enable=True)
+    assert isinstance(res, SyftSuccess)
 
     # connecting the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
@@ -354,6 +368,10 @@ def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
     # Remove existing peers
     assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+    # Enable automatic acceptance of association requests
+    res = gateway_client.settings.allow_assoc_req_auto_accept(enable=True)
+    assert isinstance(res, SyftSuccess)
 
     # connecting the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
@@ -431,6 +449,10 @@ def test_delete_route(set_env_var, gateway_port: int, domain_1_port: int) -> Non
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
+    # Enable automatic acceptance of association requests
+    res = gateway_client.settings.allow_assoc_req_auto_accept(enable=True)
+    assert isinstance(res, SyftSuccess)
+
     # connecting the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
@@ -481,6 +503,10 @@ def test_add_route_on_peer(set_env_var, gateway_port: int, domain_1_port: int) -
     # Remove existing peers
     assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+    # Enable automatic acceptance of association requests
+    res = gateway_client.settings.allow_assoc_req_auto_accept(enable=True)
+    assert isinstance(res, SyftSuccess)
 
     # connecting the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
@@ -555,6 +581,10 @@ def test_delete_route_on_peer(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
+    # Enable automatic acceptance of association requests
+    res = gateway_client.settings.allow_assoc_req_auto_accept(enable=True)
+    assert isinstance(res, SyftSuccess)
+
     # connecting the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
@@ -617,6 +647,10 @@ def test_update_route_priority(
     # Remove existing peers
     assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+    # Enable automatic acceptance of association requests
+    res = gateway_client.settings.allow_assoc_req_auto_accept(enable=True)
+    assert isinstance(res, SyftSuccess)
 
     # connecting the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
@@ -684,6 +718,10 @@ def test_update_route_priority_on_peer(
     # Remove existing peers
     assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+    # Enable automatic acceptance of association requests
+    res = gateway_client.settings.allow_assoc_req_auto_accept(enable=True)
+    assert isinstance(res, SyftSuccess)
 
     # connecting the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)

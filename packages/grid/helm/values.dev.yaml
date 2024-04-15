@@ -10,6 +10,7 @@ registry:
 node:
   rootEmail: info@openmined.org
   defaultWorkerPoolCount: 1
+  associationRequestAutoApproval: true
 
   secret:
     defaultRootPassword: changethis
