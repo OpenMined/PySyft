@@ -1,6 +1,7 @@
 # stdlib
 from collections.abc import Callable
 from typing import Any
+from typing import Set  # noqa: UP035
 
 # third party
 from pydantic import Field
@@ -500,6 +501,19 @@ class MongoStorePartition(StorePartition):
 
         return False
 
+    def _get_permissions_for_uid(self, uid: UID) -> Result[Set[str], Err]:  # noqa: UP006
+        collection_permissions_status = self.permissions
+        if collection_permissions_status.is_err():
+            return collection_permissions_status
+        collection_permissions: MongoCollection = collection_permissions_status.ok()
+
+        permissions: dict | None = collection_permissions.find_one({"_id": uid})
+
+        if permissions is None:
+            return Err(f"Permissions for object with UID {uid} not found!")
+
+        return Ok(set(permissions["permissions"]))
+
     def add_permission(self, permission: ActionObjectPermission) -> Result[None, Err]:
         collection_permissions_status = self.permissions
         if collection_permissions_status.is_err():
@@ -632,6 +646,23 @@ class MongoStorePartition(StorePartition):
             return Err(
                 f"the node_uid {storage_permission.node_uid} does not exist in the storage permission!"
             )
+
+    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[Set[UID], Err]:  # noqa: UP006
+        storage_permissions_or_err = self.storage_permissions
+        if storage_permissions_or_err.is_err():
+            return storage_permissions_or_err
+        storage_permissions_collection: MongoCollection = (
+            storage_permissions_or_err.ok()
+        )
+
+        storage_permissions: dict | None = storage_permissions_collection.find_one(
+            {"_id": uid}
+        )
+
+        if storage_permissions is None:
+            return Err(f"Storage permissions for object with UID {uid} not found!")
+
+        return Ok(set(storage_permissions["node_uids"]))
 
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey
