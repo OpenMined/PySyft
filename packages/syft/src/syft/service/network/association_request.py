@@ -87,13 +87,11 @@ class AssociationRequestChange(Change):
         if isinstance(self_node_peer, SyftError):
             return Err(self_node_peer)
 
-        # Q,TODO: Should the returned node peer also be signed
-        # as the challenge is already signed
-        challenge_signature = service_ctx.node.signing_key.signing_key.sign(
-            self.challenge
-        ).signature
-
-        return Ok([challenge_signature, self_node_peer])
+        return Ok(
+            SyftSuccess(
+                message=f"Routes successfully added for peer: {self.remote_peer.name}"
+            )
+        )
 
     def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context, apply=True)

@@ -185,19 +185,7 @@ class NetworkService(AbstractService):
 
         association_request_approved = not isinstance(remote_res, Request)
 
-        if association_request_approved:
-            challenge_signature, remote_node_peer = remote_res
-
-            # Verifying if the challenge is valid
-
-            try:
-                remote_node_verify_key.verify_key.verify(
-                    random_challenge, challenge_signature
-                )
-            except Exception as e:
-                return SyftError(message=str(e))
-        else:
-            remote_node_peer = NodePeer.from_client(remote_client)
+        remote_node_peer = NodePeer.from_client(remote_client)
 
         # save the remote peer for later
         result = self.stash.create_or_update_peer(
@@ -257,7 +245,9 @@ class NetworkService(AbstractService):
             isinstance(request, Request)
             and context.node.settings.association_request_auto_approval
         ):
-            return request.approve(disable_warnings=True)
+            request_apply_method = context.node.get_service_method(RequestService.apply)
+            return request_apply_method(context, uid=request.id)
+
         return request
 
     @service_method(path="network.ping", name="ping", roles=GUEST_ROLE_LEVEL)

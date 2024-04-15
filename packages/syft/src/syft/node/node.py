@@ -208,10 +208,6 @@ def get_default_worker_pool_count(node: Node) -> int:
     )
 
 
-def auto_accept_association_request() -> bool:
-    return str_to_bool(get_env("ASSOCIATION_REQUEST_AUTO_APPROVAL"))
-
-
 def in_kubernetes() -> bool:
     return get_container_host() == "k8s"
 
@@ -321,6 +317,7 @@ class Node(AbstractNode):
         email_sender: str | None = None,
         smtp_port: int | None = None,
         smtp_host: str | None = None,
+        auto_accept_association_request: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -353,6 +350,8 @@ class Node(AbstractNode):
         else:
             skey = signing_key
         self.signing_key = skey or SyftSigningKey.generate()
+
+        self.auto_accept_association_request = auto_accept_association_request
 
         self.queue_config = self.create_queue_config(
             n_consumers=n_consumers,
@@ -583,6 +582,7 @@ class Node(AbstractNode):
         dev_mode: bool = False,
         migrate: bool = False,
         in_memory_workers: bool = True,
+        auto_accept_association_request: bool = False,
     ) -> Self:
         uid = UID.with_seed(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -610,6 +610,7 @@ class Node(AbstractNode):
             migrate=migrate,
             in_memory_workers=in_memory_workers,
             reset=reset,
+            auto_accept_association_request=auto_accept_association_request,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -1447,7 +1448,11 @@ class Node(AbstractNode):
                 return None
             settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
             if settings_exists:
-                self.name = settings_exists[0].name
+                node_settings = settings_exists[0]
+                self.name = node_settings.name
+                self.auto_accept_association_request = (
+                    node_settings.association_request_auto_approval
+                )
                 return None
             else:
                 # Currently we allow automatic user registration on enclaves,
@@ -1464,7 +1469,7 @@ class Node(AbstractNode):
                     admin_email=admin_email,
                     node_side_type=self.node_side_type.value,  # type: ignore
                     show_warnings=self.enable_warnings,
-                    association_request_auto_approval=auto_accept_association_request(),
+                    association_request_auto_approval=self.auto_accept_association_request,
                 )
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings

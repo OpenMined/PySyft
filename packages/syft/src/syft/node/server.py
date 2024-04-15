@@ -182,6 +182,7 @@ def serve_node(
     queue_port: int | None = None,
     create_producer: bool = False,
     n_consumers: int = 0,
+    auto_accept_association_request: bool = False,
 ) -> tuple[Callable, Callable]:
     server_process = multiprocessing.Process(
         target=run_uvicorn,
@@ -199,6 +200,7 @@ def serve_node(
             queue_port,
             create_producer,
             n_consumers,
+            auto_accept_association_request,
         ),
     )
 
