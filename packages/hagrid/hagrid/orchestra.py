@@ -390,6 +390,10 @@ def deploy_to_container(
                 node_side_type=node_side_type,
             )
 
+    auto_approve_association_request = str_to_bool(
+        os.environ.get("ASSOCIATION_REQUEST_AUTO_APPROVAL", False)
+    )
+
     # Start a subprocess and capture its output
     commands = ["hagrid", "launch"]
 
@@ -414,6 +418,9 @@ def deploy_to_container(
     # by default , we deploy as container stack
     if deployment_type_enum == DeploymentType.SINGLE_CONTAINER:
         commands.append("--deployment-type=single_container")
+
+    if auto_approve_association_request:
+        commands.append("--enable-association-auto-approval")
 
     if cmd:
         commands.append("--cmd")
@@ -485,11 +492,15 @@ class Orchestra:
         create_producer: bool = False,
         queue_port: int | None = None,
         in_memory_workers: bool = True,
+        association_approval: bool = False,
     ) -> NodeHandle | None:
         NodeType = ImportFromSyft.import_node_type()
         os.environ["DEV_MODE"] = str(dev_mode)
         if dev_mode is True:
             thread_workers = True
+
+        # set association request auto approval
+        os.environ["ASSOCIATION_REQUEST_AUTO_APPROVAL"] = str(association_approval)
 
         # syft 0.8.1
         if node_type == "python":
