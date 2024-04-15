@@ -46,6 +46,12 @@ class AssociationRequestChange(Change):
             remote_client: SyftClient = self.remote_peer.client_with_context(
                 context=service_ctx
             )
+            if remote_client.is_err():
+                return SyftError(
+                    message=f"Failed to create remote client for peer: "
+                    f"{self.remote_peer.id}. Error: {remote_client.err()}"
+                )
+            remote_client = remote_client.ok()
             random_challenge = secrets.token_bytes(16)
             remote_res = remote_client.api.services.network.ping(
                 challenge=random_challenge
@@ -68,7 +74,7 @@ class AssociationRequestChange(Change):
 
         network_stash = service_ctx.node.get_service(NetworkService).stash
 
-        result = network_stash.update_peer(
+        result = network_stash.create_or_update_peer(
             service_ctx.node.verify_key, self.remote_peer
         )
         if result.is_err():

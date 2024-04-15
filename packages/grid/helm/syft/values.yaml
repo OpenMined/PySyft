@@ -37,21 +37,39 @@ frontend:
   resources: null
 
 seaweedfs:
-  # S3 settings
-  s3:
-    port: 8333
-    rootUser: admin
-    volumeSizeMB: 1024
+  # Master
+  master:
+    # Seaweed Volume Size in MB set on master. This is not PVC.
+    volumeSizeMB: 1000
+    # master.toml For details check weed scaffold -config=master
+    config: null
 
-  # Mount API settings
+  # filer
+  filer:
+    # filer.toml For details check weed scaffold -config=filer
+    config: null
+
+  # S3
+  s3:
+    rootUser: admin
+
+  # Mount API
   mountApi:
     port: 4001
+
+    # automount:
+    #   - local_bucket: test-bucket
+    #     remote_bucket:
+    #       type: gcs
+    #       bucket_name: test-bucket
+    #       creds: /etc/secrets/gcs_creds.json
+    automount: null
 
   # Extra environment vars
   env: null
 
   # PVC storage size
-  storageSize: 5Gi
+  storageSize: 10Gi
 
   # Seaweed secret name. Override this if you want to use a self-managed secret.
   # Secret must contain the following keys:
@@ -59,12 +77,17 @@ seaweedfs:
   secretKeyName: seaweedfs-secret
 
   # Pod Resource Limits
-  resourcesPreset: nano
+  resourcesPreset: medium
   resources: null
+
+  # extra volume mounts
+  volumes: null
+  volumeMounts: null
 
   # custom secret values
   secret:
     s3RootPassword: null
+    mountCredentials: null
 
 proxy:
   # Extra environment vars
@@ -79,7 +102,7 @@ registry:
   env: null
 
   # PVC storage size
-  storageSize: 5Gi
+  storageSize: 10Gi
 
   # Pod Resource Limits
   resourcesPreset: nano
@@ -93,6 +116,7 @@ node:
   side: high
   inMemoryWorkers: false
   defaultWorkerPoolCount: 1
+  defaultBucketName: null
   queuePort: 5556
   logLevel: info
   debuggerEnabled: false
@@ -110,7 +134,7 @@ node:
   env: null
 
   # Pod Resource Limits
-  resourcesPreset: small
+  resourcesPreset: medium
   resources: null
 
   # Seaweed secret name. Override this if you want to use a self-managed secret.

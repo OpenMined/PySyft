@@ -86,7 +86,7 @@ class Job(SyncableSyftObject):
         "creation_time",
         "user_code_name",
     ]
-    __exclude_sync_diff_attrs__ = ["action"]
+    __exclude_sync_diff_attrs__ = ["action", "node_uid"]
 
     @field_validator("creation_time")
     @classmethod
@@ -326,6 +326,10 @@ class Job(SyncableSyftObject):
             )
         return api.services.job.get_subjobs(self.id)
 
+    def get_subjobs(self, context: AuthedServiceContext) -> list["Job"] | SyftError:
+        job_service = context.node.get_service("jobservice")
+        return job_service.get_subjobs(context, self.id)
+
     @property
     def owner(self) -> UserView | SyftError:
         api = APIRegistry.api_for(
@@ -517,11 +521,11 @@ class Job(SyncableSyftObject):
         if self.log_id:
             dependencies.append(self.log_id)
 
-        subjobs = self.subjobs
+        subjobs = self.get_subjobs(context)
         if isinstance(subjobs, SyftError):
             return subjobs
 
-        subjob_ids = [subjob.id for subjob in self.subjobs]
+        subjob_ids = [subjob.id for subjob in subjobs]
         dependencies.extend(subjob_ids)
 
         if self.user_code_id is not None:

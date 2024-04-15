@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Callable
+from collections.abc import Iterable
 from enum import Enum
 import inspect
 from io import BytesIO
@@ -303,6 +304,7 @@ passthrough_attrs = [
     "__repr_attrs__",  # syft
     "get_sync_dependencies",
     "_data_repr",
+    "syft_eq",  # syft
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -324,6 +326,7 @@ dont_wrap_output_attrs = [
     "__exclude_sync_diff_attrs__",  # syft
     "__repr_attrs__",  # syft
     "get_sync_dependencies",  # syft
+    "syft_eq",  # syft
 ]
 dont_make_side_effects = [
     "__repr_attrs__",
@@ -343,6 +346,7 @@ dont_make_side_effects = [
     "__exclude_sync_diff_attrs__",  # syft
     "__repr_attrs__",
     "get_sync_dependencies",
+    "syft_eq",  # syft
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -625,6 +629,7 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "__repr_attrs__",
     "get_sync_dependencies",
     "_data_repr",
+    "syft_eq",
 ]
 
 
@@ -678,7 +683,15 @@ class ActionObject(SyncableSyftObject):
 
         low_data = ext_obj.syft_action_data
         high_data = self.syft_action_data
-        if low_data != high_data:
+
+        try:
+            cmp = low_data != high_data
+            if isinstance(cmp, Iterable):
+                cmp = all(cmp)
+        except Exception:
+            cmp = False
+
+        if cmp:
             diff_attr = AttrDiff(
                 attr_name="syft_action_data", low_attr=low_data, high_attr=high_data
             )
@@ -872,6 +885,11 @@ class ActionObject(SyncableSyftObject):
         return isinstance(klass_method, property) or inspect.isdatadescriptor(
             klass_method
         )
+
+    def syft_eq(self, ext_obj: Self | None) -> bool:
+        if ext_obj is None:
+            return False
+        return self.id.id == ext_obj.id.id
 
     def syft_execute_action(
         self, action: Action, sync: bool = True

@@ -2,6 +2,8 @@ global:
   checkNewVersion: false
   sendAnonymousUsage: false
 
+accessLog: {}
+
 log:
   level: INFO
 
