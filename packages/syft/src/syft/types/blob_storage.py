@@ -327,9 +327,10 @@ class CreateBlobStorageEntry(SyftObject):
     extensions: list[str] = []
 
     @classmethod
-    def from_obj(cls, obj: SyftObject) -> Self:
-        file_size = sys.getsizeof(serialize._serialize(obj=obj, to_bytes=True))
-        return cls(file_size=file_size, type_=type(obj))
+    def from_obj(cls, obj: SyftObject, size: None | int = None) -> Self:
+        if size is None:
+            size = sys.getsizeof(serialize._serialize(obj=obj, to_bytes=True))
+        return cls(file_size=size, type_=type(obj))
 
     @classmethod
     def from_path(cls, fp: str | Path, mimetype: str | None = None) -> Self:
