@@ -28,7 +28,9 @@ EXPOSE 2333
 
 # build and run a fake domain to simulate a normal http container service
 # docker build -f domain.dockerfile . -t domain
-# docker run -it -d -p 8080:8000 domain
+# docker run --name domain1 -it -d -p 8080:8000 domain
+
+
 
 # check the web server is running on 8080
 # curl localhost:8080
@@ -37,13 +39,13 @@ EXPOSE 2333
 # docker build -f rathole.dockerfile . -t rathole
 
 # run the rathole server
-# docker run -it -p 8001:8001 -p 8002:8002 -p 2333:2333 -e MODE=server rathole
+# docker run --add-host host.docker.internal:host-gateway --name rathole-server -it -p 8001:8001 -p 8002:8002 -p 2333:2333 -e MODE=server rathole
 
 # check nothing is on port 8001 yet
 # curl localhost:8001
 
 # run the rathole client
-# docker run -it -e MODE=client rathole
+# docker run --add-host host.docker.internal:host-gateway --name rathole-client -it -e MODE=client rathole
 
 # try port 8001 now
 # curl localhost:8001
