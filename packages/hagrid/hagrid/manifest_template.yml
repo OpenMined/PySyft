@@ -1,15 +1,15 @@
 manifestVersion: 0.1
-hagrid_version: 0.3.115
+hagrid_version: 0.3.116
 syft_version: 0.8.7-beta.1
 dockerTag: 0.8.7-beta.1
 baseUrl: https://raw.githubusercontent.com/OpenMined/PySyft/
-hash: a2f8839726edd94a5759407d63c900e77bb3b466
+hash: a697b8f03ab734732949da611a30266c6c8deafa
 target_dir: ~/.hagrid/PySyft/
 files:
   grid:
     path: packages/grid/
     common:
-      - default.env
+    - default.env
     docker:
     - default.env
     - docker-compose.build.yml
