@@ -419,7 +419,9 @@ class UserOwned(PolicyRule):
     __canonical_name__ = "UserOwned"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    type: type[str] | type[float] | type[int] | None
+    # str, float, int, bool, dict, list, set, tuple
+
+    type: type[str] | type[float] | type[int] | type[bool] | type[dict] | type[list] | type[set] | type[tuple] | None
 
     def is_owned(
         self, context: AuthedServiceContext, action_object: ActionObject
