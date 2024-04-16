@@ -1,0 +1,34 @@
+# ===================================================
+# Deploy Syft High Side Node to an AKS Cluster
+# DOES NOT sync seaweedfs to a Azure bucket
+# ===================================================
+
+node:
+  name: syft-azure
+  side: high
+  rootEmail: info@openmined.org
+  defaultWorkerPoolCount: 1
+  resourcesPreset: 2xlarge
+
+ingress:
+  # Make sure cluster is created with --enable-app-routing
+  # az aks create -g group-name -n cluster-name -l region --enable-app-routing
+  className: webapprouting.kubernetes.azure.com
+  # or, has azure-application-gateway setup through dashboard or CLI
+  # className: azure-application-gateway
+
+
+seaweedfs:
+  resourcesPreset: 2xlarge
+
+proxy:
+  resourcesPreset: medium
+
+registry:
+  resourcesPreset: medium
+
+frontend:
+  resourcesPreset: medium
+
+mongo:
+  resourcesPreset: large

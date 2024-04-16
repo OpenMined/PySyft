@@ -22,9 +22,10 @@ pipelines:
       create_deployments --all
 
 vars:
-  DEVSPACE_ENV_FILE: "default.env"
+  DOCKER_IMAGE_BACKEND: openmined/grid-backend
+  DOCKER_IMAGE_FRONTEND: openmined/grid-frontend
+  DOCKER_IMAGE_SEAWEEDFS: openmined/grid-seaweedfs
   CONTAINER_REGISTRY: "docker.io"
-  NODE_NAME: "mynode"
   VERSION: "0.8.7-beta.1"
   PLATFORM: $(uname -m | grep -q 'arm64' && echo "arm64" || echo "amd64")
 
@@ -38,6 +39,7 @@ images:
     context: ../
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
+      - dev
   frontend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
     buildKit:
@@ -48,6 +50,7 @@ images:
     context: ./frontend
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
+      - dev
   seaweedfs:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
     buildKit: {}
@@ -55,6 +58,7 @@ images:
     context: ./seaweedfs
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
+      - dev
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
@@ -67,8 +71,6 @@ deployments:
         global:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
-        node:
-          name: ${NODE_NAME}
       # anything that does not need devspace $env vars should go in values.dev.yaml
       valuesFiles:
         - ./helm/values.dev.yaml
@@ -117,3 +119,24 @@ profiles:
         path: images.seaweedfs
       - op: remove
         path: dev.seaweedfs
+
+  - name: gcp
+    patches:
+      - op: replace
+        path: deployments.syft.helm.valuesFiles
+        value:
+          - ./helm/examples/gcp/gcp.high.yaml
+
+  - name: gcp-low
+    patches:
+      - op: replace
+        path: deployments.syft.helm.valuesFiles
+        value:
+          - ./helm/examples/gcp/gcp.low.yaml
+
+  - name: azure
+    patches:
+      - op: replace
+        path: deployments.syft.helm.valuesFiles
+        value:
+          - ./helm/examples/azure/azure.high.yaml
