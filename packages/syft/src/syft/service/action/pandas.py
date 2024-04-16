@@ -40,7 +40,7 @@ class PandasDataFrameObject(ActionObject):
         return super().syft_is_property(obj, method)
 
     def __bool__(self) -> bool:
-        return bool(self.empty)
+        return bool(self.syft_action_data_cache.empty)
 
 
 @serializable()
