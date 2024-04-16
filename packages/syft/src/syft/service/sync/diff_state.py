@@ -1222,7 +1222,7 @@ class SyncInstruction(SyftObject):
         if sync_direction == SyncDirection.HIGH_TO_LOW:
             # To create read permissions for the object
             # job/usercode/request/TwinAPIEndpoint
-            if widget.share_private_data:# or diff.object_type == "Job":
+            if widget.share_private_data:  # or diff.object_type == "Job":
                 if share_to_user is None:
                     # job ran by another user
                     if not diff.object_type == "Job":

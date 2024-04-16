@@ -20,7 +20,6 @@ from syft.service.action.action_object import ActionObject
 from syft.service.response import SyftError
 
 
-
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 # @pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_sync_flow():
@@ -343,15 +342,12 @@ def full_high_worker(n_consumers: int = 3, create_producer: bool = True) -> Work
     # _node.python_node.cleanup()
     # _node.land()
 
+
 def test_twin_api_integration():
     worker_low = full_low_worker()
     high_worker = full_high_worker()
-    low_client = worker_low.login(
-        email="info@openmined.org", password="changethis"
-    )
-    high_client = high_worker.login(
-        email="info@openmined.org", password="changethis"
-    )
+    low_client = worker_low.login(email="info@openmined.org", password="changethis")
+    high_client = high_worker.login(email="info@openmined.org", password="changethis")
     # low_client = low_worker.root_client
     # high_client = high_worker.root_client
 

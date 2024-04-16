@@ -357,7 +357,9 @@ class APIService(AbstractService):
         action_obj = ActionObject.from_obj(exec_result)
         action_service = cast(ActionService, context.node.get_service(ActionService))
         result = action_service.set_result_to_store(
-            context=context, result_action_object=action_obj, has_result_read_permission=True
+            context=context,
+            result_action_object=action_obj,
+            has_result_read_permission=True,
         )
         if result.is_err():
             return SyftError(message=f"Failed to set result to store: {result.err()}")
