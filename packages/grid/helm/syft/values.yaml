@@ -22,7 +22,7 @@ mongo:
   nodeSelector: null
 
   # Pod Resource Limits
-  resourcesPreset: nano
+  resourcesPreset: large
   resources: null
 
   # PVC storage size
@@ -40,7 +40,7 @@ frontend:
   env: null
 
   # Pod Resource Limits
-  resourcesPreset: micro
+  resourcesPreset: medium
   resources: null
 
 seaweedfs:
@@ -74,7 +74,7 @@ seaweedfs:
   env: null
 
   # PVC storage size
-  storageSize: 10Gi
+  storageSize: 100Gi
 
   # Seaweed secret name. Override this if you want to use a self-managed secret.
   # Secret must contain the following keys:
@@ -89,7 +89,7 @@ seaweedfs:
   nodeSelector: null
 
   # Pod Resource Limits
-  resourcesPreset: medium
+  resourcesPreset: xlarge
   resources: null
 
   # extra volume mounts
@@ -113,7 +113,7 @@ proxy:
   nodeSelector: null
 
   # Pod Resource Limits
-  resourcesPreset: nano
+  resourcesPreset: small
   resources: null
 
 registry:
@@ -121,7 +121,7 @@ registry:
   env: null
 
   # PVC storage size
-  storageSize: 10Gi
+  storageSize: 50Gi
 
   # Pod labels & annotations
   podLabels: null
@@ -131,7 +131,7 @@ registry:
   nodeSelector: null
 
   # Pod Resource Limits
-  resourcesPreset: nano
+  resourcesPreset: medium
   resources: null
 
 node:
@@ -166,7 +166,7 @@ node:
   nodeSelector: null
 
   # Pod Resource Limits
-  resourcesPreset: medium
+  resourcesPreset: xlarge
   resources: null
 
   # Seaweed secret name. Override this if you want to use a self-managed secret.
