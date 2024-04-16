@@ -305,51 +305,13 @@ def private_function(context) -> str:
     return 42
 
 
-def full_low_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
-    _node = sy.orchestra.launch(
-        node_side_type=NodeSideType.LOW_SIDE,
-        name=token_hex(8),
-        dev_mode=True,
-        reset=True,
-        n_consumers=n_consumers,
-        create_producer=create_producer,
-        queue_port=None,
-        in_memory_workers=True,
-        local_db=False,
+def test_twin_api_integration(full_high_worker, full_low_worker):
+    low_client = full_low_worker.login(
+        email="info@openmined.org", password="changethis"
     )
-    # startup code here
-    return _node
-    # # Cleanup code
-    # _node.python_node.cleanup()
-    # _node.land()
-
-
-def full_high_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
-    _node = sy.orchestra.launch(
-        node_side_type=NodeSideType.HIGH_SIDE,
-        name=token_hex(8),
-        dev_mode=True,
-        reset=True,
-        n_consumers=n_consumers,
-        create_producer=create_producer,
-        queue_port=None,
-        in_memory_workers=True,
-        local_db=False,
+    high_client = full_high_worker.login(
+        email="info@openmined.org", password="changethis"
     )
-    # startup code here
-    return _node
-    # Cleanup code
-    # _node.python_node.cleanup()
-    # _node.land()
-
-
-def test_twin_api_integration():
-    worker_low = full_low_worker()
-    high_worker = full_high_worker()
-    low_client = worker_low.login(email="info@openmined.org", password="changethis")
-    high_client = high_worker.login(email="info@openmined.org", password="changethis")
-    # low_client = low_worker.root_client
-    # high_client = high_worker.root_client
 
     low_client.register(
         email="newuser@openmined.org",
@@ -396,7 +358,6 @@ def test_twin_api_integration():
         low_private_res, SyftError
     ), "Should not have access to private on low side"
     low_mock_res = client_low_ds.api.services.testapi.query.mock()
-    print(high_client.worker_pools[0]._coll_repr_())
     high_mock_res = high_client.api.services.testapi.query.mock()
     assert low_mock_res == -42
     assert high_mock_res == -42

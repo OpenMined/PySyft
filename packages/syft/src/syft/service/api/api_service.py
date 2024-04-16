@@ -303,7 +303,9 @@ class APIService(AbstractService):
             job = job_service.get(context, job_id)
             time.sleep(0.1)
             if (time.time() - timeout) > start:
-                return SyftError(message=f"Function timed out in {timeout} seconds.")
+                return SyftError(
+                    message=f"Function timed out in {timeout} seconds. Get the Job with id: {job_id} to check results."
+                )
 
         if job.status == JobStatus.COMPLETED:
             return job.result
