@@ -19,6 +19,9 @@ spec:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: frontend
     spec:
+      {{- if .Values.frontend.nodeSelector }}
+      nodeSelector: {{- .Values.frontend.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: frontend-container
           image: {{ .Values.global.registry }}/openmined/grid-frontend:{{ .Values.global.version }}

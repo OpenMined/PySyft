@@ -14,6 +14,9 @@ mongo:
   # Extra environment vars
   env: null
 
+  # Node selector for pods
+  nodeSelector: null
+
   # Pod Resource Limits
   resourcesPreset: nano
   resources: null
@@ -55,8 +58,6 @@ seaweedfs:
 
   # Mount API
   mountApi:
-    port: 4001
-
     # automount:
     #   - local_bucket: test-bucket
     #     remote_bucket:
@@ -76,6 +77,9 @@ seaweedfs:
   # - s3RootPassword
   secretKeyName: seaweedfs-secret
 
+  # Node selector for pods
+  nodeSelector: null
+
   # Pod Resource Limits
   resourcesPreset: medium
   resources: null
@@ -93,6 +97,9 @@ proxy:
   # Extra environment vars
   env: null
 
+  # Node selector for pods
+  nodeSelector: null
+
   # Pod Resource Limits
   resourcesPreset: nano
   resources: null
@@ -103,6 +110,9 @@ registry:
 
   # PVC storage size
   storageSize: 10Gi
+
+  # Node selector for pods
+  nodeSelector: null
 
   # Pod Resource Limits
   resourcesPreset: nano
@@ -131,6 +141,9 @@ node:
 
   # Extra environment vars
   env: null
+
+  # Node selector for pods
+  nodeSelector: null
 
   # Pod Resource Limits
   resourcesPreset: medium

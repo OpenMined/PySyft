@@ -22,6 +22,9 @@ spec:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: seaweedfs
     spec:
+      {{- if .Values.seaweedfs.nodeSelector }}
+      nodeSelector: {{- .Values.seaweedfs.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: seaweedfs-container
           image: {{ .Values.global.registry }}/openmined/grid-seaweedfs:{{ .Values.global.version }}
@@ -37,8 +40,6 @@ spec:
                 secretKeyRef:
                     name: {{ .Values.seaweedfs.secretKeyName | required "seaweedfs.secretKeyName is required" }}
                     key: s3RootPassword
-            - name: MOUNT_API_PORT
-              value: {{ .Values.seaweedfs.mountApi.port | quote }}
             {{- if .Values.seaweedfs.env }}
             {{- toYaml .Values.seaweedfs.env | nindent 12 }}
             {{- end }}

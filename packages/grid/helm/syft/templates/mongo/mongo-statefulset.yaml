@@ -21,6 +21,9 @@ spec:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: mongo
     spec:
+      {{- if .Values.mongo.nodeSelector }}
+      nodeSelector: {{- .Values.mongo.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: mongo-container
           image: mongo:7

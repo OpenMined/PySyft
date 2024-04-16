@@ -21,6 +21,9 @@ spec:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: backend
     spec:
+      {{- if .Values.node.nodeSelector }}
+      nodeSelector: {{- .Values.node.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: backend-container
           image: {{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}
@@ -104,8 +107,6 @@ spec:
                 secretKeyRef:
                     name: {{ .Values.seaweedfs.secretKeyName | required "seaweedfs.secretKeyName is required" }}
                     key: s3RootPassword
-            - name: SEAWEED_MOUNT_PORT
-              value: {{ .Values.seaweedfs.mountApi.port | quote }}
             {{- end }}
             # Tracing
             - name: TRACE
