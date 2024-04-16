@@ -6,7 +6,6 @@ from collections.abc import Callable
 from collections.abc import Sequence
 import hashlib
 from typing import Any
-from typing import Self
 import uuid
 from uuid import UUID as uuid_type
 
@@ -14,6 +13,15 @@ from uuid import UUID as uuid_type
 from ..serde.serializable import serializable
 from ..util.logger import critical
 from ..util.logger import traceback_and_raise
+
+try:
+    # Python >= 3.11
+    # stdlib
+    from typing import Self
+except ImportError:
+    # Python < 3.11
+    # third party
+    from typing_extensions import Self
 
 
 @serializable(attrs=["value"])
