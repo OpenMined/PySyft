@@ -13,6 +13,39 @@
   },
   "dev": {
     "object_versions": {
+      "NodeSettingsUpdate": {
+        "3": {
+          "version": 3,
+          "hash": "9e2610f6e890b04938792079765f8e162f03906162c30aa0ea30e7c182373cec",
+          "action": "add"
+        }
+      },
+      "NodeSettings": {
+        "4": {
+          "version": 4,
+          "hash": "6b973584c139330bb881a9a6ac71c945e63133ec1b2c5175da37f4e319411921",
+          "action": "add"
+        }
+      },
+      "EnclaveMetadata": {
+        "2": {
+          "version": 2,
+          "hash": "6dcc26695abc6a9ecd9d7d1e6507a9f1a92cc5ccd10987e92419bf984245f9a1",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "d2f23411927c68e2307a84d180ad053b3e4ba12d74aba64d34dac224c90e815d",
+          "action": "add"
+        }
+      },
+      "CustomEndpointActionObject": {
+        "1": {
+          "version": 1,
+          "hash": "642facc6cafbaad4de030a33cd619bd68ac31a32b0db07ddc1c1d5d7f914503e",
+          "action": "add"
+        }
+      },
       "ExecutionOutput": {
         "1": {
           "version": 1,
@@ -22,37 +55,6 @@
         "2": {
           "version": 2,
           "hash": "854fe9df5bcbb5c7e5b7c467bac423cd98c32f93d6876fea7b8eb6c08f6596da",
-          "action": "add"
-        }
-      },
-      "SyftLog": {
-        "3": {
-          "version": 3,
-          "hash": "8964d48238672e0e5d5db6b932cda4ee8eb77581949ab3f7a38a05b1efec13b7",
-          "action": "remove"
-        },
-        "4": {
-          "version": 4,
-          "hash": "ad6ef18ccd87fced669f3824d27ab423aaf52574b0cd4f720687aeaba77524e5",
-          "action": "add"
-        }
-      },
-      "SyncState": {
-        "1": {
-          "version": 1,
-          "hash": "a0616775ec8ef0629e2d91e0df9cc4237ea3674727eda1ce367f1897ee35767d",
-          "action": "remove"
-        },
-        "2": {
-          "version": 2,
-          "hash": "925f1b8ccd4b9d542700a111f9c4bdd28bfa55978d805ddb2fb3c108cc940d19",
-          "action": "add"
-        }
-      },
-      "CustomEndpointActionObject": {
-        "1": {
-          "version": 1,
-          "hash": "642facc6cafbaad4de030a33cd619bd68ac31a32b0db07ddc1c1d5d7f914503e",
           "action": "add"
         }
       },
@@ -98,22 +100,27 @@
           "action": "add"
         }
       },
-      "SyncStateItem": {
-        "1": {
-          "version": 1,
-          "hash": "4dbfa0813f5a3f7be0b36249ff2d67e395ad7c9e138c5a122fc7342b8dcc4b92",
-          "action": "remove"
-        }
-      },
-      "EnclaveMetadata": {
-        "2": {
-          "version": 2,
-          "hash": "6dcc26695abc6a9ecd9d7d1e6507a9f1a92cc5ccd10987e92419bf984245f9a1",
-          "action": "remove"
-        },
+      "SyftLog": {
         "3": {
           "version": 3,
-          "hash": "d2f23411927c68e2307a84d180ad053b3e4ba12d74aba64d34dac224c90e815d",
+          "hash": "8964d48238672e0e5d5db6b932cda4ee8eb77581949ab3f7a38a05b1efec13b7",
+          "action": "remove"
+        },
+        "4": {
+          "version": 4,
+          "hash": "ad6ef18ccd87fced669f3824d27ab423aaf52574b0cd4f720687aeaba77524e5",
+          "action": "add"
+        }
+      },
+      "SyncState": {
+        "1": {
+          "version": 1,
+          "hash": "a0616775ec8ef0629e2d91e0df9cc4237ea3674727eda1ce367f1897ee35767d",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "925f1b8ccd4b9d542700a111f9c4bdd28bfa55978d805ddb2fb3c108cc940d19",
           "action": "add"
         }
       },
@@ -124,6 +131,20 @@
           "action": "add"
         }
       },
+      "APIEndpointQueueItem": {
+        "1": {
+          "version": 1,
+          "hash": "d31b2edfb767401c810584baccd27e4f566181c3ef7706618a82eb25ae20ff6d",
+          "action": "add"
+        }
+      },
+      "SyncStateItem": {
+        "1": {
+          "version": 1,
+          "hash": "4dbfa0813f5a3f7be0b36249ff2d67e395ad7c9e138c5a122fc7342b8dcc4b92",
+          "action": "remove"
+        }
+      },
       "VeilidConnection": {
         "1": {
           "version": 1,
@@ -131,24 +152,24 @@
           "action": "remove"
         }
       },
-      "NodeSettingsUpdate": {
-        "3": {
-          "version": 3,
-          "hash": "9e2610f6e890b04938792079765f8e162f03906162c30aa0ea30e7c182373cec",
+      "NodeActionData": {
+        "2": {
+          "version": 2,
+          "hash": "43d5cd803d9e49d4169e0f8930087357064ad971d528142c26662a5a70d801f8",
           "action": "add"
         }
       },
-      "NodeSettings": {
-        "4": {
-          "version": 4,
-          "hash": "6b973584c139330bb881a9a6ac71c945e63133ec1b2c5175da37f4e319411921",
+      "NodeActionDataUpdate": {
+        "2": {
+          "version": 2,
+          "hash": "ac9a8e5a778c6bd11f11632acdd8d7c089cd9436d30f984eb98f9a7e3b296bc5",
           "action": "add"
         }
       },
-      "APIEndpointQueueItem": {
-        "1": {
-          "version": 1,
-          "hash": "d31b2edfb767401c810584baccd27e4f566181c3ef7706618a82eb25ae20ff6d",
+      "InMemoryGraphConfig": {
+        "2": {
+          "version": 2,
+          "hash": "14c327916251d2fc19782e830b09a389d0ebc6d4afd9ca7c8ccb3343b87c1bfd",
           "action": "add"
         }
       }

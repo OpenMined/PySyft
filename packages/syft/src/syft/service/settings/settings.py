@@ -5,6 +5,7 @@ from ...abstract_node import NodeSideType
 from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
@@ -69,7 +70,7 @@ class NodeSettingsV1(SyftObject):
 
 
 @serializable()
-class NodeSettingsV2(SyftObject):
+class NodeSettings(SyftObject):
     __canonical_name__ = "NodeSettings"
     __version__ = SYFT_OBJECT_VERSION_4
     __repr_attrs__ = [
@@ -92,4 +93,4 @@ class NodeSettingsV2(SyftObject):
     admin_email: str
     node_side_type: NodeSideType = NodeSideType.HIGH_SIDE
     show_warnings: bool
-    default_worker_pool: str
+    default_worker_pool: str = DEFAULT_WORKER_POOL_NAME

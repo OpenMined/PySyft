@@ -288,9 +288,11 @@ class APIService(AbstractService):
         job = result
         job_service = context.node.get_service("jobservice")
         job_id = job.id
-
         # Question: For a small moment, when job status is updated, it doesn't return the job during the .get() as if
         # it's not in the stash. Then afterwards if appears again. Is this a bug?
+        timeout = 5
+        start = time.time()
+        # TODO: what can we do here?????
         while (
             job is None
             or job.status == JobStatus.PROCESSING
@@ -298,6 +300,8 @@ class APIService(AbstractService):
         ):
             job = job_service.get(context, job_id)
             time.sleep(0.1)
+            if (time.time() - timeout) > start:
+                return SyftError(message=f"Function timed out in {timeout} seconds.")
 
         if job.status == JobStatus.COMPLETED:
             return job.result

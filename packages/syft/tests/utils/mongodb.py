@@ -29,7 +29,7 @@ from .random_port import get_random_port
 
 MONGO_CONTAINER_PREFIX = "pytest_mongo"
 MONGO_VERSION = "7.0"
-MONGO_FULL_VERSION = f"{MONGO_VERSION}.6"
+MONGO_FULL_VERSION = f"{MONGO_VERSION}.8"
 PLATFORM_ARCH = platform.machine()
 PLATFORM_SYS = platform.system()
 DISTRO_MONIKER = distro.id() + distro.major_version() + distro.minor_version()
