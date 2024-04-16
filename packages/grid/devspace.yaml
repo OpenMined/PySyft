@@ -55,6 +55,14 @@ images:
     context: ./seaweedfs
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
+  attestation:
+    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_ENCLAVE_ATTESTATION}"
+    buildKit:
+      args: ["--platform", "linux/amd64"]
+    dockerfile: ./enclave/attestation/attestation.dockerfile
+    context: ./enclave/attestation
+    tags:
+      - dev-${DEVSPACE_TIMESTAMP}
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
@@ -93,19 +101,24 @@ dev:
     labelSelector:
       app.kubernetes.io/name: syft
       app.kubernetes.io/component: backend
-    env:
-      - name: RELEASE
-        value: development
-      - name: DEV_MODE
-        value: "True"
-      - name: DEBUGGER_ENABLED
-        value: "True"
     ports:
       - port: "5678" # debugpy
-    sync:
-      - path: ./backend/grid:/root/app/grid
-      - path: ../syft:/root/app/syft
-    ssh: {}
+    containers:
+      backend-container:
+        env:
+          - name: RELEASE
+            value: development
+          - name: DEV_MODE
+            value: "True"
+          - name: DEBUGGER_ENABLED
+            value: "True"
+        sync:
+          - path: ./backend/grid:/root/app/grid
+          - path: ../syft:/root/app/syft
+      enclave-attestation:
+        sync:
+          - path: ./enclave/attestation/server:/app/server
+      ssh: {}
 
 profiles:
   - name: gateway

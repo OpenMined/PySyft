@@ -164,3 +164,16 @@ ingress:
   # ----------------------------------------
   class: null
   className: null
+
+# Enclave attestation Service
+attestation:
+  enabled: false
+  appLogLevel: "info"
+  uvicornLogLevel: "info"
+
+  # Extra environment vars
+  env: null
+
+  # Pod Resource Limits
+  resourcesPreset: nano
+  resources: null

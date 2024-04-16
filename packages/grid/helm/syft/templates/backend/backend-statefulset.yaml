@@ -116,6 +116,11 @@ spec:
               value: "localhost"
             - name: JAEGER_PORT
               value: "14268"
+            # Enclave attestation
+            {{- if .Values.attestation.enabled }}
+            - name: ENCLAVE_ATTESTATION_ENABLED
+              value: {{ .Values.attestation.enabled | quote }}
+            {{- end }}
             {{- if .Values.node.env }}
             {{- toYaml .Values.node.env | nindent 12 }}
             {{- end }}
@@ -141,6 +146,37 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe: null
+        {{- if .Values.attestation.enabled }}
+        - name: enclave-attestation
+          image: {{ .Values.global.registry }}/openmined/grid-enclave-attestation:{{ .Values.global.version }}
+          imagePullPolicy: Always
+          resources: {{ include "common.resources.set" (dict "resources" .Values.attestation.resources "preset" .Values.attestation.resourcesPreset) | nindent 12 }}
+          env:
+            - name: UVICORN_LOG_LEVEL
+              value: {{ .Values.attestation.uvicornLogLevel }}
+            - name: APP_LOG_LEVEL
+              value: {{ .Values.attestation.appLogLevel }}
+            {{- if .Values.attestation.env }}
+            {{- toYaml .Values.attestation.env | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: attestation-api
+              containerPort: 4455
+          startupProbe:
+            httpGet:
+              path: /?probe=startupProbe
+              port: attestation-api
+            failureThreshold: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /?probe=livenessProbe
+              port: attestation-api
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe: null
+        {{ end }}
       serviceAccountName: backend-service-account
       terminationGracePeriodSeconds: 5
   volumeClaimTemplates:
