@@ -303,9 +303,15 @@ def private_function(context) -> str:
     return 42
 
 
-def test_twin_api_integration(low_worker, high_worker):
-    low_client = low_worker.root_client
-    high_client = high_worker.root_client
+def test_twin_api_integration(full_low_worker, full_high_worker):
+    low_client = full_low_worker.login(
+        email="info@openmined.org", password="changethis"
+    )
+    high_client = full_high_worker.login(
+        email="info@openmined.org", password="changethis"
+    )
+    # low_client = low_worker.root_client
+    # high_client = high_worker.root_client
 
     low_client.register(
         email="newuser@openmined.org",

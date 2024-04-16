@@ -1,6 +1,7 @@
 # stdlib
 import time
 from typing import Any
+from typing import cast
 
 # third party
 from pydantic import ValidationError
@@ -13,6 +14,7 @@ from ...service.action.action_object import ActionObject
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -300,8 +302,8 @@ class APIService(AbstractService):
         ):
             job = job_service.get(context, job_id)
             time.sleep(0.1)
-            if (time.time() - timeout) > start:
-                return SyftError(message=f"Function timed out in {timeout} seconds.")
+            # if (time.time() - timeout) > start:
+            #     return SyftError(message=f"Function timed out in {timeout} seconds.")
 
         if job.status == JobStatus.COMPLETED:
             return job.result
@@ -343,7 +345,7 @@ class APIService(AbstractService):
         path: str,
         *args: Any,
         **kwargs: Any,
-    ) -> SyftSuccess | SyftError:
+    ) -> ActionObject | SyftError:
         """Call a Custom API Method in public mode"""
         custom_endpoint = self.get_code(
             context=context,
@@ -351,7 +353,16 @@ class APIService(AbstractService):
         )
         if isinstance(custom_endpoint, SyftError):
             return custom_endpoint
-        return Ok(custom_endpoint.exec_mock_function(context, *args, **kwargs))
+        exec_result = custom_endpoint.exec_mock_function(context, *args, **kwargs)
+        action_obj = ActionObject.from_obj(exec_result)
+        action_service = cast(ActionService, context.node.get_service(ActionService))
+        result = action_service.set_result_to_store(
+            context, action_obj, has_result_read_permission=True
+        )
+        if result.is_err():
+            return SyftError(message=f"Failed to set result to store: {result.err()}")
+
+        return result.ok()
 
     @service_method(
         path="api.call_private", name="call_private", roles=GUEST_ROLE_LEVEL
@@ -362,15 +373,26 @@ class APIService(AbstractService):
         path: str,
         *args: Any,
         **kwargs: Any,
-    ) -> SyftSuccess | SyftError:
+    ) -> ActionObject | SyftError:
         """Call a Custom API Method in private mode"""
         custom_endpoint = self.get_code(
             context=context,
             endpoint_path=path,
         )
-        if not isinstance(custom_endpoint, SyftError):
-            result = Ok(custom_endpoint.exec_private_function(context, *args, **kwargs))
-        return result
+        if isinstance(custom_endpoint, SyftError):
+            return custom_endpoint
+
+        exec_result = custom_endpoint.exec_private_function(context, *args, **kwargs)
+        action_obj = ActionObject.from_obj(exec_result)
+
+        action_service = cast(ActionService, context.node.get_service(ActionService))
+        result = action_service.set_result_to_store(
+            context=context, result_action_object=action_obj
+        )
+        if result.is_err():
+            return SyftError(message=f"Failed to set result to store: {result.err()}")
+
+        return result.ok()
 
     @service_method(
         path="api.exists",

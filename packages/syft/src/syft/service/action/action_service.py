@@ -427,6 +427,7 @@ class ActionService(AbstractService):
         result_action_object: ActionObject | TwinObject,
         context: AuthedServiceContext,
         output_policy: OutputPolicy | None = None,
+        has_result_read_permission: bool = False,
     ) -> Result[ActionObject, str]:
         result_id = result_action_object.id
         # result_blob_id = result_action_object.syft_blob_storage_entry_id
@@ -439,6 +440,10 @@ class ActionService(AbstractService):
             )
         else:
             output_readers = []
+
+        # If flag is True, user has read permissions to the results in BlobStore
+        if has_result_read_permission:
+            output_readers.append(context.credentials)
 
         read_permission = ActionPermission.READ
 
@@ -457,9 +462,12 @@ class ActionService(AbstractService):
             result_blob_id = result_action_object.syft_blob_storage_entry_id  # type: ignore[unreachable]
 
         # pass permission information to the action store as extra kwargs
-        context.extra_kwargs = {"has_result_read_permission": True}
+        # context.extra_kwargs = {"has_result_read_permission": True}
 
-        set_result = self._set(context, result_action_object)
+        # Since this just meta data about the result, they always have access to it.
+        set_result = self._set(
+            context, result_action_object, has_result_read_permission=True
+        )
 
         if set_result.is_err():
             return set_result
