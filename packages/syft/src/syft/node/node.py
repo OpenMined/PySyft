@@ -1565,6 +1565,12 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         role=ServiceRole.ADMIN,
     )
 
+    if isinstance(default_worker_pool, SyftError):
+        logger.error(
+            f"Failed to get default worker pool {default_pool_name}. Error: {default_worker_pool.message}"
+        )
+        return default_worker_pool
+
     print(f"Creating default worker image with tag='{default_worker_tag}'")
     # Get/Create a default worker SyftWorkerImage
     default_image = create_default_image(
@@ -1608,10 +1614,6 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
             name=default_pool_name,
             image_uid=default_image.id,
             num_workers=worker_count,
-        )
-    elif isinstance(default_worker_pool, SyftError):
-        logger.error(
-            f"Failed to create default worker pool. Error: {default_worker_pool.message}"
         )
     else:
         # Else add a worker to existing worker pool
