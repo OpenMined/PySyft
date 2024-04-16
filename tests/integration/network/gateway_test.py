@@ -102,10 +102,6 @@ def test_domain_connect_to_gateway(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
-    # Enable automatic acceptance of association requests
-    res = gateway_client.settings.allow_assoc_req_auto_accept(enable=True)
-    assert isinstance(res, SyftSuccess)
-
     # connecting the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
     assert isinstance(result, Request)
