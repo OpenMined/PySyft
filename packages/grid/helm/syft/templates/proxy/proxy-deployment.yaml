@@ -18,6 +18,12 @@ spec:
       labels:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: proxy
+        {{- if .Values.proxy.podLabels }}
+        {{- toYaml .Values.proxy.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.proxy.podAnnotations }}
+      annotations: {{- toYaml .Values.proxy.podAnnotations | nindent 8 }}
+      {{- end }}
     spec:
       {{- if .Values.proxy.nodeSelector }}
       nodeSelector: {{- .Values.proxy.nodeSelector | toYaml | nindent 8 }}

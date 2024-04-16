@@ -18,6 +18,12 @@ spec:
       labels:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: frontend
+        {{- if .Values.frontend.podLabels }}
+        {{- toYaml .Values.frontend.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.frontend.podAnnotations }}
+      annotations: {{- toYaml .Values.frontend.podAnnotations | nindent 8 }}
+      {{- end }}
     spec:
       {{- if .Values.frontend.nodeSelector }}
       nodeSelector: {{- .Values.frontend.nodeSelector | toYaml | nindent 8 }}

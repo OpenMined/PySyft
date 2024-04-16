@@ -19,6 +19,12 @@ spec:
       labels:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: registry
+        {{- if .Values.registry.podLabels }}
+        {{- toYaml .Values.registry.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.registry.podAnnotations }}
+      annotations: {{- toYaml .Values.registry.podAnnotations | nindent 8 }}
+      {{- end }}
     spec:
       {{- if .Values.registry.nodeSelector }}
       nodeSelector: {{- .Values.registry.nodeSelector | toYaml | nindent 8 }}

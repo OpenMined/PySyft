@@ -21,6 +21,12 @@ spec:
       labels:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: seaweedfs
+        {{- if .Values.seaweedfs.podLabels }}
+        {{- toYaml .Values.seaweedfs.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.seaweedfs.podAnnotations }}
+      annotations: {{- toYaml .Values.seaweedfs.podAnnotations | nindent 8 }}
+      {{- end }}
     spec:
       {{- if .Values.seaweedfs.nodeSelector }}
       nodeSelector: {{- .Values.seaweedfs.nodeSelector | toYaml | nindent 8 }}
