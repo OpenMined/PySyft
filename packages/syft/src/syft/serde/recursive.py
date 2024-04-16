@@ -159,10 +159,21 @@ def recursive_serde_register(
         for alias in alias_fqn:
             TYPE_BANK[alias] = serde_attributes
 
+# def chunk_bytes(
+#     data: bytes, field_name: str | int, builder: _DynamicStructBuilder
+# ) -> None:
+#     CHUNK_SIZE = int(5.12e8) 
+#     list_size = len(data) // CHUNK_SIZE + 1
+#     data_lst = builder.init(field_name, list_size)
+#     for idx in range(list_size):
+#         chunk = data[:CHUNK_SIZE]
+#         data_lst[idx] = chunk
+#         data = data[CHUNK_SIZE:]
 
 def chunk_bytes(
-    data: bytes, field_name: str | int, builder: _DynamicStructBuilder
+    field_obj: Any, ser_func: Any, field_name: str | int, builder: _DynamicStructBuilder
 ) -> None:
+    data = ser_func(field_obj)
     CHUNK_SIZE = int(5.12e8)  # capnp max for a List(Data) field
     list_size = len(data) // CHUNK_SIZE + 1
     data_lst = builder.init(field_name, list_size)
@@ -215,7 +226,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
             raise Exception(
                 f"Cant serialize {type(self)} nonrecursive without serialize."
             )
-        chunk_bytes(serialize(self), "nonrecursiveBlob", msg)
+        chunk_bytes(self, serialize, "nonrecursiveBlob", msg)
         return msg
 
     if attribute_list is None:
@@ -248,9 +259,9 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
         if isinstance(field_obj, types.FunctionType):
             continue
 
-        serialized = sy.serialize(field_obj, to_bytes=True, for_hashing=for_hashing)
+        
         msg.fieldsName[idx] = attr_name
-        chunk_bytes(serialized, idx, msg.fieldsData)
+        chunk_bytes(field_obj, lambda x: sy.serialize(x, to_bytes=True, for_hashing=for_hashing), idx, msg.fieldsData)
 
     return msg
 
