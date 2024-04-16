@@ -66,9 +66,10 @@ class CopyIDButton(HTMLComponentBase):
     max_width: int = 50
 
     def to_html(self) -> str:
+        copy_js = f"event.stopPropagation(); navigator.clipboard.writeText('{self.copy_text}');"
         button_html = f"""
         <style>{COPY_CSS}</style>
-        <div class="copy-container" onclick="navigator.clipboard.writeText('{self.copy_text}')">
+        <div class="copy-container" onclick="{copy_js}">
             <span class="copy-text-display" style="max-width: {self.max_width}px;">#{self.copy_text}</span>{COPY_ICON}
         </div>
         """
@@ -80,30 +81,6 @@ class SyncTableObject(HTMLComponentBase):
     __version__ = SYFT_OBJECT_VERSION_1
 
     object: SyftObject
-
-    def main_object_description_str(self) -> str:
-        if isinstance(self.object, UserCode):
-            return self.object.service_func_name
-        elif isinstance(self.object, Job):  # type: ignore
-            return self.object.user_code_name
-        elif isinstance(self.object, Request):  # type: ignore
-            # TODO: handle other requests
-            return f"Execute {self.object.code.service_func_name}"
-        return ""  # type: ignore
-
-    def type_badge_class(self) -> str:
-        if isinstance(self.object, UserCode):
-            return "label-light-blue"
-        elif isinstance(self.object, Job):  # type: ignore
-            return "label-light-blue"
-        elif isinstance(self.object, Request):  # type: ignore
-            # TODO: handle other requests
-            return "label-light-purple"
-        return "label-light-blue"  # type: ignore
-
-    @property
-    def object_type_name(self) -> str:
-        return type(self.object).__name__
 
     def get_status_str(self) -> str:
         if isinstance(self.object, UserCode):
@@ -121,18 +98,13 @@ class SyncTableObject(HTMLComponentBase):
         return ""  # type: ignore
 
     def to_html(self) -> str:
-        badge_class = self.type_badge_class()
-        object_type = self.object_type_name.upper()
-        type_html = (
-            f'<div class="label {badge_class}" '
-            f'style="white-space: nowrap; overflow: hidden;">{object_type}</div>'
-        )
+        type_html = Badge(object=self.object).to_html()
 
-        description_str = self.main_object_description_str()
-        description_style = "white-space: nowrap; overflow: ellipsis; flex-grow: 1;"
-        description_html = f'<span class="syncstate-description" style="{description_style}">{description_str}</span>'
-
-        copy_id_button = CopyIDButton(copy_text=str(self.object.id.id), max_width=60)
+        type_html = Badge(object=self.object).to_html()
+        description_html = MainDescription(object=self.object).to_html()
+        copy_id_button = CopyIDButton(
+            copy_text=str(self.object.id.id), max_width=60
+        ).to_html()
 
         updated_delta_str = "29m ago"
         updated_by = "john@doe.org"
@@ -140,10 +112,10 @@ class SyncTableObject(HTMLComponentBase):
         status_seperator = " • " if len(status_str) else ""
         summary_html = f"""
             <div style="display: flex; gap: 8px; justify-content: space-between; width: 100%; overflow: hidden; align-items: center;">
-            <div style="display: flex; gap: 8px; justify-content: start align-items: center;">
+            <div style="display: flex; gap: 8px; justify-content: start; align-items: center;">
             {type_html} {description_html}
             </div>
-            {copy_id_button.to_html()}
+            {copy_id_button}
             </div>
             <div style="display: table-row">
             <span class='syncstate-col-footer'>
@@ -153,6 +125,51 @@ class SyncTableObject(HTMLComponentBase):
         """  # noqa: E501
         summary_html = summary_html.replace("\n", "").replace("    ", "")
         return summary_html
+
+
+class Badge(HTMLComponentBase):
+    __canonical_name__ = "CopyButton"
+    __version__ = SYFT_OBJECT_VERSION_1
+    object: SyftObject
+
+    def type_badge_class(self) -> str:
+        if isinstance(self.object, UserCode):
+            return "label-light-blue"
+        elif isinstance(self.object, Job):  # type: ignore
+            return "label-light-blue"
+        elif isinstance(self.object, Request):  # type: ignore
+            # TODO: handle other requests
+            return "label-light-purple"
+        return "label-light-blue"  # type: ignore
+
+    def to_html(self) -> str:
+        badge_class = self.type_badge_class()
+        object_type = type(self.object).__name__.upper()
+        return f'<div class="label {badge_class}">{object_type}</div>'
+
+
+class MainDescription(HTMLComponentBase):
+    __canonical_name__ = "CopyButton"
+    __version__ = SYFT_OBJECT_VERSION_1
+    object: SyftObject
+
+    def main_object_description_str(self) -> str:
+        if isinstance(self.object, UserCode):
+            return self.object.service_func_name
+        elif isinstance(self.object, Job):  # type: ignore
+            return self.object.user_code_name
+        elif isinstance(self.object, Request):  # type: ignore
+            # TODO: handle other requests
+            return f"Execute {self.object.code.service_func_name}"
+        # SyftLog
+        # ExecutionOutput
+        # ActionObject
+        # UserCodeStatusCollection
+
+        return ""  # type: ignore
+
+    def to_html(self) -> str:
+        return f'<span class="syncstate-description">{self.main_object_description_str()}</span>'
 
 
 class SyncWidgetHeader(SyncTableObject):
@@ -173,25 +190,18 @@ class SyncWidgetHeader(SyncTableObject):
 
         first_line_html = "<span style='color: #B4B0BF;'>Syncing changes on</span>"
 
-        badge_class = self.type_badge_class()
-        object_type = self.object_type_name.upper()
-        type_html = (
-            f'<div class="label {badge_class}" '
-            f'style="white-space: nowrap; overflow: hidden;">{object_type}</div>'
-        )
-
-        description_str = self.main_object_description_str()
-        description_style = "white-space: nowrap; overflow: ellipsis; flex-grow: 1;"
-        description_html = f'<span class="syncstate-description" style="{description_style}">{description_str}</span>'
-
-        copy_id_button = CopyIDButton(copy_text=str(self.object.id.id), max_width=60)
+        type_html = Badge(object=self.object).to_html()
+        description_html = MainDescription(object=self.object).to_html()
+        copy_id_button = CopyIDButton(
+            copy_text=str(self.object.id.id), max_width=60
+        ).to_html()
 
         second_line_html = f"""
-            <div style="display: flex; gap: 8px; justify-content: start; width: 100%; overflow: hidden; align-items: center;">
-            <div style="display: flex; gap: 8px; justify-content: start; align-items: center;">
+            <div class="widget-header2">
+            <div class="widget-header2-2">
             {type_html} {description_html}
             </div>
-            {copy_id_button.to_html()}
+            {copy_id_button}
             </div>
         """  # noqa: E501
 
