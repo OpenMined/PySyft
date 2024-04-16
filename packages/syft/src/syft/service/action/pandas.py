@@ -39,6 +39,9 @@ class PandasDataFrameObject(ActionObject):
             return True
         return super().syft_is_property(obj, method)
 
+    def __bool__(self) -> bool:
+        return bool(self.empty)
+
 
 @serializable()
 class PandasSeriesObject(ActionObject):
