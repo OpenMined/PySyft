@@ -1,4 +1,5 @@
 # stdlib
+from secrets import token_hex
 import sys
 from textwrap import dedent
 
@@ -14,8 +15,10 @@ from syft.client.syncing import compare_clients
 from syft.client.syncing import compare_states
 from syft.client.syncing import resolve
 from syft.client.syncing import resolve_single
+from syft.node.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.response import SyftError
+
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
@@ -303,11 +306,50 @@ def private_function(context) -> str:
     return 42
 
 
-def test_twin_api_integration(full_low_worker, full_high_worker):
-    low_client = full_low_worker.login(
+def full_low_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
+    _node = sy.orchestra.launch(
+        node_side_type=NodeSideType.LOW_SIDE,
+        name=token_hex(8),
+        dev_mode=True,
+        reset=True,
+        n_consumers=n_consumers,
+        create_producer=create_producer,
+        queue_port=None,
+        in_memory_workers=True,
+        local_db=False,
+    )
+    # startup code here
+    return _node
+    # # Cleanup code
+    # _node.python_node.cleanup()
+    # _node.land()
+
+
+def full_high_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
+    _node = sy.orchestra.launch(
+        node_side_type=NodeSideType.HIGH_SIDE,
+        name=token_hex(8),
+        dev_mode=True,
+        reset=True,
+        n_consumers=n_consumers,
+        create_producer=create_producer,
+        queue_port=None,
+        in_memory_workers=True,
+        local_db=False,
+    )
+    # startup code here
+    return _node
+    # Cleanup code
+    # _node.python_node.cleanup()
+    # _node.land()
+
+def test_twin_api_integration():
+    worker_low = full_low_worker()
+    high_worker = full_high_worker()
+    low_client = worker_low.login(
         email="info@openmined.org", password="changethis"
     )
-    high_client = full_high_worker.login(
+    high_client = high_worker.login(
         email="info@openmined.org", password="changethis"
     )
     # low_client = low_worker.root_client
@@ -339,18 +381,29 @@ def test_twin_api_integration(full_low_worker, full_high_worker):
     low_state = low_client.get_sync_state()
     high_state = high_client.get_sync_state()
     diff_state = compare_states(high_state, low_state)
+
     obj_diff_batch = diff_state[0]
     widget = resolve_single(obj_diff_batch)
     widget.click_sync()
 
+    obj_diff_batch = diff_state[1]
+    widget = resolve_single(obj_diff_batch)
+    widget.click_sync()
+
+    high_mock_res = high_client.api.services.testapi.query.mock()
+    assert high_mock_res == -42
+
     client_low_ds.refresh()
+    high_client.refresh()
     low_private_res = client_low_ds.api.services.testapi.query.private()
     assert isinstance(
         low_private_res, SyftError
     ), "Should not have access to private on low side"
     low_mock_res = client_low_ds.api.services.testapi.query.mock()
+    print(high_client.worker_pools[0]._coll_repr_())
     high_mock_res = high_client.api.services.testapi.query.mock()
-    assert low_mock_res == high_mock_res == -42
+    assert low_mock_res == -42
+    assert high_mock_res == -42
 
 
 def test_skip_user_code(low_worker, high_worker):

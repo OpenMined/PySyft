@@ -292,7 +292,7 @@ class APIService(AbstractService):
         job_id = job.id
         # Question: For a small moment, when job status is updated, it doesn't return the job during the .get() as if
         # it's not in the stash. Then afterwards if appears again. Is this a bug?
-        timeout = 5
+        timeout = 10
         start = time.time()
         # TODO: what can we do here?????
         while (
@@ -302,8 +302,8 @@ class APIService(AbstractService):
         ):
             job = job_service.get(context, job_id)
             time.sleep(0.1)
-            # if (time.time() - timeout) > start:
-            #     return SyftError(message=f"Function timed out in {timeout} seconds.")
+            if (time.time() - timeout) > start:
+                return SyftError(message=f"Function timed out in {timeout} seconds.")
 
         if job.status == JobStatus.COMPLETED:
             return job.result
@@ -357,7 +357,7 @@ class APIService(AbstractService):
         action_obj = ActionObject.from_obj(exec_result)
         action_service = cast(ActionService, context.node.get_service(ActionService))
         result = action_service.set_result_to_store(
-            context, action_obj, has_result_read_permission=True
+            context=context, result_action_object=action_obj, has_result_read_permission=True
         )
         if result.is_err():
             return SyftError(message=f"Failed to set result to store: {result.err()}")

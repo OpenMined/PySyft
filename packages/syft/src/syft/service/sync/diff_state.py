@@ -1220,9 +1220,13 @@ class SyncInstruction(SyftObject):
 
         # read permissions
         if sync_direction == SyncDirection.HIGH_TO_LOW:
-            if widget.share_private_data or diff.object_type == "Job":
+            # To create read permissions for the object
+            # job/usercode/request/TwinAPIEndpoint
+            if widget.share_private_data:# or diff.object_type == "Job":
                 if share_to_user is None:
-                    raise ValueError("share_to_user is required for private data")
+                    # job ran by another user
+                    if not diff.object_type == "Job":
+                        raise ValueError("share_to_user is required for private data")
                 else:
                     new_permissions_low_side = [
                         ActionObjectPermission(
