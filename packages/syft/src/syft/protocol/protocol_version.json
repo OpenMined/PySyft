@@ -130,6 +130,27 @@
           "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
           "action": "remove"
         }
+      },
+      "NodeSettingsUpdate": {
+        "3": {
+          "version": 3,
+          "hash": "9e2610f6e890b04938792079765f8e162f03906162c30aa0ea30e7c182373cec",
+          "action": "add"
+        }
+      },
+      "NodeSettings": {
+        "4": {
+          "version": 4,
+          "hash": "6b973584c139330bb881a9a6ac71c945e63133ec1b2c5175da37f4e319411921",
+          "action": "add"
+        }
+      },
+      "APIEndpointQueueItem": {
+        "1": {
+          "version": 1,
+          "hash": "d31b2edfb767401c810584baccd27e4f566181c3ef7706618a82eb25ae20ff6d",
+          "action": "add"
+        }
       }
     }
   }
