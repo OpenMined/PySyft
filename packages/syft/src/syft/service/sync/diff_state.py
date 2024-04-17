@@ -6,6 +6,7 @@ from typing import ClassVar
 from typing import Literal
 
 # third party
+import pandas as pd
 from pydantic import model_validator
 from rich import box
 from rich.console import Console
@@ -325,6 +326,14 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
             if value_low is None or value_high is None:
                 res[attr] = DiffStatus.NEW
+            elif isinstance(value_low, pd.DataFrame) and isinstance(
+                value_high, pd.DataFrame
+            ):
+                res[attr] = (
+                    DiffStatus.MODIFIED
+                    if not value_low.equals(value_high)
+                    else DiffStatus.SAME
+                )
             elif value_low != value_high:
                 res[attr] = DiffStatus.MODIFIED
             else:

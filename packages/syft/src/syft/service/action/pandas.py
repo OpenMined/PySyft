@@ -39,6 +39,11 @@ class PandasDataFrameObject(ActionObject):
             return True
         return super().syft_is_property(obj, method)
 
+    def __bool__(self) -> bool:
+        if self.syft_action_data_cache is None:
+            return False
+        return bool(self.syft_action_data_cache.empty)
+
 
 @serializable()
 class PandasSeriesObject(ActionObject):

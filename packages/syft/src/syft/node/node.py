@@ -17,6 +17,7 @@ import traceback
 from typing import Any
 
 # third party
+from loguru import logger
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
@@ -1600,6 +1601,12 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         credentials=credentials,
         role=ServiceRole.ADMIN,
     )
+
+    if isinstance(default_worker_pool, SyftError):
+        logger.error(
+            f"Failed to get default worker pool {default_pool_name}. Error: {default_worker_pool.message}"
+        )
+        return default_worker_pool
 
     print(f"Creating default worker image with tag='{default_worker_tag}'")
     # Get/Create a default worker SyftWorkerImage
