@@ -51,7 +51,7 @@ images:
       - dev-${DEVSPACE_TIMESTAMP}
   seaweedfs:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
-    buildKit: {}
+    buildKit: { args: ["--platform", "linux/${PLATFORM}"] }
     dockerfile: ./seaweedfs/seaweedfs.dockerfile
     context: ./seaweedfs
     tags:
