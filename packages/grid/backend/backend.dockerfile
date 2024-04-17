@@ -1,5 +1,5 @@
 ARG PYTHON_VERSION="3.12"
-ARG UV_VERSION="0.1.29-r0"
+ARG UV_VERSION="0.1.32-r0"
 ARG TORCH_VERSION="2.2.2"
 
 # ==================== [BUILD STEP] Python Dev Base ==================== #
@@ -31,6 +31,8 @@ COPY syft/setup.py syft/setup.cfg syft/pyproject.toml ./syft/
 COPY syft/src/syft/VERSION ./syft/src/syft/
 
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
+    # remove torch because we already have the cpu version pre-installed
+    sed --in-place /torch==/d ./syft/setup.cfg && \
     uv pip install -e ./syft[data_science,telemetry] && \
     uv pip freeze | grep ansible | xargs uv pip uninstall
 
