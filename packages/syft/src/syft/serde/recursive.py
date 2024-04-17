@@ -170,18 +170,40 @@ def recursive_serde_register(
 #         data_lst[idx] = chunk
 #         data = data[CHUNK_SIZE:]
 
+from sys import getsizeof
+
+# def chunk_bytes(
+#     field_obj: Any, ser_func: Any, field_name: str | int, builder: _DynamicStructBuilder
+# ) -> None:
+#     data = ser_func(field_obj)
+#     CHUNK_SIZE = int(5.12e8)  # capnp max for a List(Data) field
+#     list_size = len(data) // CHUNK_SIZE + 1
+#     data_lst = builder.init(field_name, list_size)
+#     END_INDEX = CHUNK_SIZE
+#     for idx in range(list_size):
+#         START_INDEX = idx * CHUNK_SIZE
+#         END_INDEX = min(START_INDEX + CHUNK_SIZE, len(data))
+#         data_lst[idx] = data[START_INDEX:END_INDEX]
+
+import tempfile
 def chunk_bytes(
-    field_obj: Any, ser_func: Any, field_name: str | int, builder: _DynamicStructBuilder
+    field_obj, ser_func, field_name: str | int, builder
 ) -> None:
     data = ser_func(field_obj)
-    CHUNK_SIZE = int(5.12e8)  # capnp max for a List(Data) field
-    list_size = len(data) // CHUNK_SIZE + 1
-    data_lst = builder.init(field_name, list_size)
-    END_INDEX = CHUNK_SIZE
-    for idx in range(list_size):
-        START_INDEX = idx * CHUNK_SIZE
-        END_INDEX = min(START_INDEX + CHUNK_SIZE, len(data))
-        data_lst[idx] = data[START_INDEX:END_INDEX]
+    size_of_data = len(data)
+    with tempfile.TemporaryFile() as tmp_file:
+        # Write data to a file to save RAM
+        tmp_file.write(data)
+        tmp_file.seek(0)
+        del data
+        
+        CHUNK_SIZE = int(5.12e8)  # capnp max for a List(Data) field
+        list_size = size_of_data // CHUNK_SIZE + 1
+        data_lst = builder.init(field_name, list_size)
+        for idx in range(list_size):
+            bytes_to_read = min(CHUNK_SIZE, size_of_data)
+            data_lst[idx] = tmp_file.read(bytes_to_read)
+            size_of_data -= CHUNK_SIZE
 
 
 def combine_bytes(capnp_list: list[bytes]) -> bytes:
@@ -196,6 +218,7 @@ def combine_bytes(capnp_list: list[bytes]) -> bytes:
 def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuilder:
     # relative
     from ..types.syft_object import DYNAMIC_SYFT_ATTRIBUTES
+    from sys import getsizeof
 
     is_type = False
     if isinstance(self, type):
@@ -206,7 +229,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
     if fqn not in TYPE_BANK:
         # third party
         raise Exception(f"{fqn} not in TYPE_BANK")
-
+    print(f"{fqn=}")
     msg.fullyQualifiedName = fqn
     (
         nonrecursive,
@@ -226,6 +249,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
             raise Exception(
                 f"Cant serialize {type(self)} nonrecursive without serialize."
             )
+        print(serialize, getsizeof(self))
         chunk_bytes(self, serialize, "nonrecursiveBlob", msg)
         return msg
 
@@ -251,6 +275,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
             )
 
         field_obj = getattr(self, attr_name)
+        print(f"{attr_name=} {getsizeof(field_obj)}")
         transforms = serde_overrides.get(attr_name, None)
 
         if transforms is not None:

@@ -43,8 +43,8 @@ def serialize_iterable(iterable: Collection) -> bytes:
     message.init("values", len(iterable))
 
     for idx, it in enumerate(iterable):
-        serialized = _serialize(it, to_bytes=True)
-        chunk_bytes(serialized, idx, message.values)
+        # serialized = _serialize(it, to_bytes=True)
+        chunk_bytes(it, lambda x: _serialize(x, to_bytes=True), idx, message.values)
 
     return message.to_bytes()
 
@@ -80,8 +80,8 @@ def _serialize_kv_pairs(size: int, kv_pairs: Iterable[tuple[_KT, _VT]]) -> bytes
 
     for index, (k, v) in enumerate(kv_pairs):
         message.keys[index] = _serialize(k, to_bytes=True)
-        serialized = _serialize(v, to_bytes=True)
-        chunk_bytes(serialized, index, message.values)
+        # serialized = _serialize(v, to_bytes=True)
+        chunk_bytes(v, lambda x: _serialize(x, to_bytes=True), index, message.values)
 
     return message.to_bytes()
 

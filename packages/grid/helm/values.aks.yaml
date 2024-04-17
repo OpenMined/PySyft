@@ -1,0 +1,54 @@
+global:
+  randomizedSecrets: false
+
+registry:
+  storageSize: "50Gi"
+
+node:
+  name: syft-test
+  side: high
+  rootEmail: info@openmined.org
+  defaultWorkerPoolCount: 1
+
+  resourcesPreset: 2xlarge
+
+  # resourcesPreset: null
+  # resources:
+  #   requests:
+  #     cpu: 8
+  #     memory: 32Gi
+  #   limits:
+  #     cpu: 16
+  #     memory: 64Gi
+
+  secret:
+    defaultRootPassword: changethis
+
+mongo:
+  secret:
+    rootPassword: example
+
+seaweedfs:
+  secret:
+    s3RootPassword: admin
+  # resourcesPreset: 2xlarge
+  storageSize: 50Gi
+
+  resourcesPreset: null
+  # resources:
+  #   requests:
+  #     cpu: 8
+  #     memory: 32Gi
+  #   limits:
+  #     cpu: 16
+  #     memory: 64Gi
+  master:
+    # Seaweed Volume Size in MB set on master. This is not PVC.
+    volumeSizeMB: 10000
+    # master.toml For details check weed scaffold -config=master
+    config: null
+  
+
+ingress:
+  className: webapprouting.kubernetes.azure.com
+  # controller.config.proxy-body-size: "0"
