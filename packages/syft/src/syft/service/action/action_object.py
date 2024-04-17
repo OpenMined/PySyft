@@ -1829,7 +1829,7 @@ class ActionObject(SyncableSyftObject):
 
     @property
     def is_link(self) -> bool:
-        return isinstance(self.syft_action_data, ActionDataLink)
+        return self.syft_action_data_type is ActionDataLink
 
     def __setattr__(self, name: str, value: Any) -> Any:
         defined_on_self = name in self.__dict__ or name in self.__private_attributes__
