@@ -1200,13 +1200,18 @@ class Node(AbstractNode):
         method: str,
         path: str,
         *args: Any,
+        worker_pool: str | None = None,
         **kwargs: Any,
     ) -> Job | SyftError:
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(node=self)
 
-        worker_pool = self.get_default_worker_pool()
+        if worker_pool is None:
+            worker_pool = self.get_default_worker_pool()
+        else:
+            worker_pool = self.get_worker_pool_by_name(worker_pool)
+
         # Create a Worker pool reference object
         worker_pool_ref = LinkedObject.from_obj(
             worker_pool,
@@ -1444,6 +1449,15 @@ class Node(AbstractNode):
         result = self.pool_stash.get_by_name(
             credentials=self.verify_key,
             pool_name=self.settings.default_worker_pool,
+        )
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+        worker_pool = result.ok()
+        return worker_pool
+
+    def get_worker_pool_by_name(self, name: str) -> WorkerPool | None | SyftError:
+        result = self.pool_stash.get_by_name(
+            credentials=self.verify_key, pool_name=name
         )
         if result.is_err():
             return SyftError(message=f"{result.err()}")

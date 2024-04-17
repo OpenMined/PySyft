@@ -25,8 +25,10 @@ from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .api import CreateTwinAPIEndpoint
+from .api import Endpoint
 from .api import PrivateAPIEndpoint
 from .api import PublicAPIEndpoint
+from .api import TwinAPIContextView
 from .api import TwinAPIEndpoint
 from .api import TwinAPIEndpointView
 from .api import UpdateTwinAPIEndpoint
@@ -101,8 +103,8 @@ class APIService(AbstractService):
         self,
         context: AuthedServiceContext,
         endpoint_path: str,
-        mock_function: PublicAPIEndpoint | None = None,
-        private_function: PrivateAPIEndpoint | None = None,
+        mock_function: Endpoint | None = None,
+        private_function: Endpoint | None = None,
         hide_definition: bool | None = None,
     ) -> SyftSuccess | SyftError:
         """Updates an specific API endpoint."""
@@ -123,10 +125,12 @@ class APIService(AbstractService):
             )
 
         updated_mock = (
-            mock_function if mock_function is not None else endpoint.mock_function
+            mock_function.to(PublicAPIEndpoint)
+            if mock_function is not None
+            else endpoint.mock_function
         )
         updated_private = (
-            private_function
+            private_function.to(PrivateAPIEndpoint)
             if private_function is not None
             else endpoint.private_function
         )
@@ -251,7 +255,6 @@ class APIService(AbstractService):
         **kwargs: Any,
     ) -> Any | SyftError:
         """Call a Custom API Method in a Job"""
-        print("Calling private method in jobs")
         return self._call_in_jobs(context, "call_private", path, *args, **kwargs)
 
     @service_method(
@@ -267,7 +270,6 @@ class APIService(AbstractService):
         **kwargs: Any,
     ) -> Any | SyftError:
         """Call a Custom API Method in a Job"""
-        print("Calling public method in jobs")
         return self._call_in_jobs(context, "call_public", path, *args, **kwargs)
 
     def _call_in_jobs(
@@ -278,8 +280,20 @@ class APIService(AbstractService):
         *args: Any,
         **kwargs: Any,
     ) -> Any | SyftError:
+        custom_endpoint = self.get_code(
+            context=context,
+            endpoint_path=path,
+        )
+        if isinstance(custom_endpoint, SyftError):
+            return custom_endpoint
+
         result = context.node.add_api_endpoint_execution_to_queue(
-            context.credentials, method, path, *args, **kwargs
+            context.credentials,
+            method,
+            path,
+            worker_pool=custom_endpoint.worker_pool,
+            *args,
+            **kwargs,
         )
         if isinstance(result, SyftError):
             return result
@@ -311,6 +325,48 @@ class APIService(AbstractService):
             return job.result
         else:
             return SyftError(message="Function failed to complete.")
+
+    @service_method(
+        path="api.get_public_context", name="get_public_context", roles=ADMIN_ROLE_LEVEL
+    )
+    def get_public_context(
+        self, context: AuthedServiceContext, path: str
+    ) -> dict[str, Any] | SyftError:
+        """Get specific public api context."""
+        custom_endpoint = self.get_code(
+            context=context,
+            endpoint_path=path,
+        )
+        if isinstance(custom_endpoint, SyftError):
+            return custom_endpoint
+
+        return custom_endpoint.mock_function.build_internal_context(context).to(
+            TwinAPIContextView
+        )
+
+    @service_method(
+        path="api.get_private_context",
+        name="get_private_context",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def get_private_context(
+        self, context: AuthedServiceContext, path: str
+    ) -> dict[str, Any] | SyftError:
+        """Get specific private api context."""
+        custom_endpoint = self.get_code(
+            context=context,
+            endpoint_path=path,
+        )
+        if isinstance(custom_endpoint, SyftError):
+            return custom_endpoint
+
+        custom_endpoint.private_function = cast(
+            PrivateAPIEndpoint, custom_endpoint.private_function
+        )
+
+        return custom_endpoint.private_function.build_internal_context(context).to(
+            TwinAPIContextView
+        )
 
     @service_method(path="api.get_all", name="get_all", roles=ADMIN_ROLE_LEVEL)
     def get_all(
@@ -356,6 +412,10 @@ class APIService(AbstractService):
         if isinstance(custom_endpoint, SyftError):
             return custom_endpoint
         exec_result = custom_endpoint.exec_mock_function(context, *args, **kwargs)
+
+        if isinstance(exec_result, SyftError):
+            return Ok(exec_result)
+
         action_obj = ActionObject.from_obj(exec_result)
         action_service = cast(ActionService, context.node.get_service(ActionService))
         result = action_service.set_result_to_store(
@@ -366,7 +426,7 @@ class APIService(AbstractService):
         if result.is_err():
             return SyftError(message=f"Failed to set result to store: {result.err()}")
 
-        return result.ok()
+        return Ok(result.ok())
 
     @service_method(
         path="api.call_private", name="call_private", roles=GUEST_ROLE_LEVEL
@@ -387,6 +447,10 @@ class APIService(AbstractService):
             return custom_endpoint
 
         exec_result = custom_endpoint.exec_private_function(context, *args, **kwargs)
+
+        if isinstance(exec_result, SyftError):
+            return Ok(exec_result)
+
         action_obj = ActionObject.from_obj(exec_result)
 
         action_service = cast(ActionService, context.node.get_service(ActionService))
@@ -396,7 +460,7 @@ class APIService(AbstractService):
         if result.is_err():
             return SyftError(message=f"Failed to set result to store: {result.err()}")
 
-        return result.ok()
+        return Ok(result.ok())
 
     @service_method(
         path="api.exists",
