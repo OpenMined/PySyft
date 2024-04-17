@@ -2078,6 +2078,11 @@ class AnyActionObject(ActionObject):
     def __int__(self) -> float:
         return int(self.syft_action_data)
 
+    def syft_eq(self, ext_obj: Self | None) -> bool:
+        if ext_obj is None:
+            return False
+        return self.id.id == ext_obj.id.id
+
 
 action_types[Any] = AnyActionObject
 
