@@ -49,6 +49,25 @@ spec:
             {{- if .Values.seaweedfs.env }}
             {{- toYaml .Values.seaweedfs.env | nindent 12 }}
             {{- end }}
+          ports:
+            - name: mount-api-port
+              containerPort: 4001
+            - name: master-port
+              containerPort: 9333
+          startupProbe:
+            httpGet:
+              path: /?probe=startupProbe
+              port: mount-api-port
+            failureThreshold: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /cluster/healthz?probe=livenessProbe
+              port: master-port
+            periodSeconds: 60
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe: null
           volumeMounts:
             # master + filer + volume data
             - mountPath: /data/
