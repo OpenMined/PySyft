@@ -292,7 +292,7 @@ class APIService(AbstractService):
         job_id = job.id
         # Question: For a small moment, when job status is updated, it doesn't return the job during the .get() as if
         # it's not in the stash. Then afterwards if appears again. Is this a bug?
-        timeout = 10
+        timeout = 30  # 10 is too slow on GitHub CI macos?
         start = time.time()
         # TODO: what can we do here?????
         while (
