@@ -206,6 +206,7 @@ class KubernetesBuilder(BuilderBase):
                     "template": {
                         "spec": {
                             "restartPolicy": "Never",
+                            "serviceAccountName": "builder-service-account",
                             "containers": [
                                 {
                                     "name": "kaniko",
