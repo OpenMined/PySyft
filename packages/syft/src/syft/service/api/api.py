@@ -8,7 +8,6 @@ import re
 import textwrap
 from typing import Any
 from typing import Self
-from typing import cast
 
 # third party
 from pydantic import ValidationError
@@ -19,7 +18,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
 from ...client.client import SyftClient

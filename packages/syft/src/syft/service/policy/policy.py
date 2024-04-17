@@ -421,7 +421,17 @@ class UserOwned(PolicyRule):
 
     # str, float, int, bool, dict, list, set, tuple
 
-    type: type[str] | type[float] | type[int] | type[bool] | type[dict] | type[list] | type[set] | type[tuple] | None
+    type: (
+        type[str]
+        | type[float]
+        | type[int]
+        | type[bool]
+        | type[dict]
+        | type[list]
+        | type[set]
+        | type[tuple]
+        | None
+    )
 
     def is_owned(
         self, context: AuthedServiceContext, action_object: ActionObject
