@@ -22,3 +22,6 @@ seaweedfs:
   secret:
     s3RootPassword: admin
 
+# Enclave attestation Service
+# attestation:
+#   enabled: true
