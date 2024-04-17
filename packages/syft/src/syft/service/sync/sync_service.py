@@ -153,9 +153,15 @@ class SyncService(AbstractService):
         exists = stash.get_by_uid(context.credentials, item.id).ok() is not None
 
         if isinstance(item, TwinAPIEndpoint):
-            return context.node.get_service("apiservice").set(
+            # we need the side effect of set function
+            # to create an action object
+            res = context.node.get_service("apiservice").set(
                 context=context, endpoint=item
             )
+            if isinstance(res, SyftError):
+                return res
+            else:
+                return Ok(item)
 
         if exists:
             res = stash.update(creds, item)
@@ -244,9 +250,12 @@ class SyncService(AbstractService):
         for item in items:
             store = get_store(context, item)
             if store is not None:
-                _id = item.id.id
-                permissions[_id] = store.permissions[_id]
-                storage_permissions[_id] = store.storage_permissions[_id]
+                # TODO fix error handling
+                uid = item.id.id
+                permissions[uid] = store._get_permissions_for_uid(uid).ok()
+                storage_permissions[uid] = store._get_storage_permissions_for_uid(
+                    uid
+                ).ok()
         return permissions, storage_permissions
 
     def get_all_syncable_items(

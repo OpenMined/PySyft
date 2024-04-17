@@ -660,7 +660,7 @@ class Request(SyncableSyftObject):
 
         return job
 
-    def _is_action_object_from_job(self, action_object: ActionObject) -> Job | None:  # type: ignore
+    def _get_job_from_action_object(self, action_object: ActionObject) -> Job | None:  # type: ignore
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         if api is None:
             raise ValueError(f"Can't access the api. You must login to {self.node_uid}")
@@ -687,13 +687,19 @@ class Request(SyncableSyftObject):
         elif isinstance(result, ActionObject):
             # Do not allow accepting a result produced by a Job,
             # This can cause an inconsistent Job state
-            if self._is_action_object_from_job(result):
-                action_object_job = self._is_action_object_from_job(result)
-                if action_object_job is not None:
-                    return SyftError(
-                        message=f"This ActionObject is the result of Job {action_object_job.id}, "
-                        f"please use the `Job.info` instead."
-                    )
+            action_object_job = self._get_job_from_action_object(result)
+            if action_object_job is not None:
+                return SyftError(
+                    message=f"This ActionObject is the result of Job {action_object_job.id}, "
+                    f"please use the `Job.info` instead."
+                )
+            else:
+                job_info = JobInfo(
+                    includes_metadata=True,
+                    includes_result=True,
+                    status=JobStatus.COMPLETED,
+                    resolved=True,
+                )
         else:
             # NOTE result is added at the end of function (once ActionObject is created)
             job_info = JobInfo(
