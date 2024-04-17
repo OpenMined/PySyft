@@ -151,10 +151,13 @@ class UserCodeService(AbstractService):
             return SyftError(message=str(find_results.err()))
         find_results = find_results.ok()
 
-        if find_results is not None:
-            return SyftError(
-                message="The code to be submitted (name and content) already exists"
-            )
+        # TODO: Beach Fix
+        # disabling duplicate code upload because code_hash doesnt change
+        # when policies or other parts do change
+        # if find_results is not None:
+        #     return SyftError(
+        #         message="The code to be submitted (name and content) already exists"
+        #     )
 
         worker_pool_service = context.node.get_service("SyftWorkerPoolService")
         pool_result = worker_pool_service._get_worker_pool(
