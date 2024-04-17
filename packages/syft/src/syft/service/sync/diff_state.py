@@ -1232,7 +1232,6 @@ class SyncInstruction(SyftObject):
                         )
                     ]
 
-        # mockify
         mockify = widget.mockify
 
         # storage permissions
