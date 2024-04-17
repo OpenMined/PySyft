@@ -68,6 +68,8 @@ deployments:
         global:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
+        node:
+          type: domain # required for the gateway profile
       # anything that does not need devspace $env vars should go in values.dev.yaml
       valuesFiles:
         - ./helm/values.dev.yaml
