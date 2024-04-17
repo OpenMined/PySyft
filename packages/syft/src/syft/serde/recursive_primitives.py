@@ -10,6 +10,7 @@ import functools
 import pathlib
 from pathlib import PurePath
 import sys
+import tempfile
 from types import MappingProxyType
 from types import UnionType
 from typing import Any
@@ -46,7 +47,14 @@ def serialize_iterable(iterable: Collection) -> bytes:
         # serialized = _serialize(it, to_bytes=True)
         chunk_bytes(it, lambda x: _serialize(x, to_bytes=True), idx, message.values)
 
-    return message.to_bytes()
+    with tempfile.TemporaryFile() as tmp_file:
+        # Write data to a file to save RAM
+        message.write(tmp_file)
+        del message
+        tmp_file.seek(0)
+        return tmp_file.read()
+
+    # return message.to_bytes()
 
 
 def deserialize_iterable(iterable_type: type, blob: bytes) -> Collection:
