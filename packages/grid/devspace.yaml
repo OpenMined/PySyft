@@ -39,7 +39,6 @@ images:
     context: ../
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
-      - dev
   frontend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
     buildKit:
@@ -50,7 +49,6 @@ images:
     context: ./frontend
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
-      - dev
   seaweedfs:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
     buildKit: {}
@@ -58,7 +56,6 @@ images:
     context: ./seaweedfs
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
-      - dev
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
