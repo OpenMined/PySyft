@@ -12,6 +12,7 @@ from inspect import Parameter
 from inspect import Signature
 from io import StringIO
 import sys
+import time
 import types
 from typing import Any
 
@@ -695,6 +696,70 @@ class OutputPolicyExecuteCount(OutputPolicy):
         if isinstance(outputs, dict):
             outputs["calls_remaining"] = self.limit - execution_count
         return outputs
+
+
+@serializable()
+class OutputPolicyRateLimiter(OutputPolicy):
+    __canonical_name__ = "OutputPolicyRateLimiter"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    n_calls: int = 1
+    period_secs: int = 60
+    downloadable_output_args: list[str] = []
+    call_history: dict = {}
+
+    def public_state(self) -> dict:
+        return self.call_history
+
+    def now(self) -> float:
+        return time.time()
+
+    def filter_history(self) -> None:
+        now = self.now()
+        filtered_call_history = {}
+        for execution_time_str, call_item in self.call_history.items():
+            execution_time = float(execution_time_str)
+
+            diff = now - execution_time
+            if diff > self.period_secs:
+                # it has expired so trim
+                pass
+            else:
+                filtered_call_history[execution_time] = call_item
+        self.call_history = filtered_call_history
+
+    def add_call_history(self) -> None:
+        now = self.now()
+        self.call_history[str(now)] = True
+
+    def apply_to_output(
+        self, context: AuthedServiceContext, outputs: Any, update_policy: bool = True
+    ) -> dict:
+        if hasattr(outputs, "syft_action_data"):
+            outputs = outputs.syft_action_data
+        output_dict = {}
+
+        result = self._is_valid(context=context)
+        if isinstance(result, bool):
+            for output_arg in self.downloadable_output_args:
+                output_dict[output_arg] = outputs[output_arg]
+            if update_policy:
+                self.add_call_history()
+        else:
+            return "You've hit the rate limit. Please contact the administrator."
+
+        output_dict["calls_remaining"] = self.n_calls - len(self.call_history)
+        output_dict["period_secs"] = self.period_secs
+        return output_dict
+
+    def _is_valid(self, context: AuthedServiceContext) -> bool | SyftError:
+        self.filter_history()
+        result = self.call_history is not None and len(self.call_history) < self.n_calls
+        if result:
+            return result
+        return SyftError(
+            message=f"You have hit the rate limit of {self.n_calls} calls in {self.period_secs} seconds."
+        )
 
 
 @serializable()

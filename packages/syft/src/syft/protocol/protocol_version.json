@@ -61,7 +61,7 @@
       "UserOwned": {
         "1": {
           "version": 1,
-          "hash": "c4a2d447da679002a0896fb2bfe459da045735d53c658ea87219c710ea816303",
+          "hash": "b24d0abd8ebef359ef07c939157178a7c29ec0679af83140b9a99aa63ac85066",
           "action": "add"
         }
       },
@@ -157,6 +157,13 @@
           "version": 1,
           "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
           "action": "remove"
+        }
+      },
+      "OutputPolicyRateLimiter": {
+        "1": {
+          "version": 1,
+          "hash": "a745293c3bb0669f24bd22ba5bf55beae8c0d0f7be82ec6baa79aa61f433a95f",
+          "action": "add"
         }
       }
     }
