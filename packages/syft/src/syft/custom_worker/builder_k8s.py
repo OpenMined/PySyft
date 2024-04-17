@@ -220,10 +220,10 @@ class KubernetesBuilder(BuilderBase):
                                         # https://github.com/GoogleContainerTools/kaniko/pull/2477
                                         # "--reproducible",
                                         # cache args
-                                        "--cache=true",
-                                        "--cache-copy-layers",
-                                        "--cache-run-layers",
-                                        f"--cache-repo={INTERNAL_REGISTRY_HOST}/builder-cache",
+                                        #"--cache=true",
+                                        #"--cache-copy-layers",
+                                        #"--cache-run-layers",
+                                        #f"--cache-repo={INTERNAL_REGISTRY_HOST}/builder-cache",
                                         # outputs args
                                         "--digest-file=/dev/termination-log",
                                         # other kaniko conf
