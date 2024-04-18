@@ -364,6 +364,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     assert low_mock_res == -42
     assert high_mock_res == -42
 
+
 def test_skip_user_code(low_worker, high_worker):
     low_client = low_worker.root_client
     client_low_ds = low_worker.guest_client
