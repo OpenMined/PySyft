@@ -13,8 +13,9 @@ registry:
 node:
   rootEmail: info@openmined.org
   defaultWorkerPoolCount: 1
+  side: low
 
-  resourcesPreset: null
+  resourcesPreset: 2xlarge
   resources: null
 
   secret:
