@@ -27,9 +27,11 @@ import weakref
 
 # relative
 from .capnp import get_capnp_schema
+from .recursive import SPOOLED_FILE_MAX_SIZE_SERDE
 from .recursive import chunk_bytes
 from .recursive import combine_bytes
 from .recursive import recursive_serde_register
+from .util import compatible_with_large_file_writes_capnp
 
 iterable_schema = get_capnp_schema("iterable.capnp").Iterable
 kv_iterable_schema = get_capnp_schema("kv_iterable.capnp").KVIterable
@@ -47,14 +49,20 @@ def serialize_iterable(iterable: Collection) -> bytes:
         # serialized = _serialize(it, to_bytes=True)
         chunk_bytes(it, lambda x: _serialize(x, to_bytes=True), idx, message.values)
 
-    with tempfile.TemporaryFile() as tmp_file:
-        # Write data to a file to save RAM
-        message.write(tmp_file)
+    if compatible_with_large_file_writes_capnp():
+        with tempfile.SpooledTemporaryFile(
+            max_size=SPOOLED_FILE_MAX_SIZE_SERDE
+        ) as tmp_file:
+            # Write data to a file to save RAM
+            message.write(tmp_file)
+            del message
+            tmp_file.seek(0)
+            res = tmp_file.read()
+            return res
+    else:
+        res = message.to_bytes()
         del message
-        tmp_file.seek(0)
-        return tmp_file.read()
-
-    # return message.to_bytes()
+        return res
 
 
 def deserialize_iterable(iterable_type: type, blob: bytes) -> Collection:

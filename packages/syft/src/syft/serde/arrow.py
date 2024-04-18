@@ -13,7 +13,8 @@ from .serialize import _serialize
 
 
 def arrow_serialize(obj: np.ndarray) -> bytes:
-    def test(obj):
+    # inner function to make sure variables go out of scope after this
+    def inner(obj: np.ndarray) -> tuple:
         original_dtype = obj.dtype
         apache_arrow = pa.Tensor.from_numpy(obj=obj)
         sink = pa.BufferOutputStream()
@@ -26,8 +27,9 @@ def arrow_serialize(obj: np.ndarray) -> bytes:
                 buffer, asbytes=True, codec=flags.APACHE_ARROW_COMPRESSION.value
             )
         dtype = original_dtype.name
-        return(numpy_bytes, buffer.size, dtype)
-    m = test(obj)
+        return (numpy_bytes, buffer.size, dtype)
+
+    m = inner(obj)
     return cast(bytes, _serialize(m, to_bytes=True))
 
 
