@@ -770,9 +770,12 @@ class ActionObject(SyncableSyftObject):
                 )
                 data.upload_to_blobstorage_from_api(api)
             else:
-                serialized = serialize(obj=data, to_bytes=True)
+                serialized = serialize(data, to_bytes=True)
                 size = sys.getsizeof(serialized)
-                storage_entry = CreateBlobStorageEntry.from_obj(data, size=size)
+                storage_entry = CreateBlobStorageEntry.from_obj(data, file_size=size)
+
+                if not TraceResultRegistry.current_thread_is_tracing():
+                    self.syft_action_data_cache = self.as_empty_data()
                 if self.syft_blob_storage_entry_id is not None:
                     # TODO: check if it already exists
                     storage_entry.id = self.syft_blob_storage_entry_id
