@@ -2063,6 +2063,11 @@ class ActionObject(SyncableSyftObject):
 
 @serializable()
 class AnyActionObject(ActionObject):
+    """
+    This is a catch-all class for all objects that are not
+    defined in the `action_types` dictionary.
+    """
+
     __canonical_name__ = "AnyActionObject"
     __version__ = SYFT_OBJECT_VERSION_3
 
