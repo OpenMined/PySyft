@@ -198,8 +198,6 @@ def combine_bytes(capnp_list: list[bytes]) -> bytes:
 
 
 def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuilder:
-    # stdlib
-
     # relative
     from ..types.syft_object import DYNAMIC_SYFT_ATTRIBUTES
 
