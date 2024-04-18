@@ -66,6 +66,7 @@ from ...types.grid_url import GridURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 
@@ -149,6 +150,15 @@ class BlobRetrievalByURL(BlobRetrieval):
 
     url: GridURL | str
 
+
+@serializable()
+class BlobRetrievalByURL(BlobRetrieval):
+    __canonical_name__ = "BlobRetrievalByURL"
+    __version__ = SYFT_OBJECT_VERSION_5
+
+    url: GridURL | str
+    proxy_node_uid: UID | None = None
+
     def read(self) -> SyftObject | SyftError:
         if self.type_ is BlobFileType:
             return BlobFile(
@@ -176,9 +186,15 @@ class BlobRetrievalByURL(BlobRetrieval):
             user_verify_key=self.syft_client_verify_key,
         )
         if api and api.connection and isinstance(self.url, GridURL):
-            blob_url = api.connection.to_blob_route(
-                self.url.url_path, host=self.url.host_or_ip
-            )
+            if self.proxy_node_uid is None:
+                blob_url = api.connection.to_blob_route(
+                    self.url.url_path, host=self.url.host_or_ip
+                )
+            else:
+                blob_url = api.connection.stream_via(
+                    self.proxy_node_uid, self.url.url_path
+                )
+                stream = True
         else:
             blob_url = self.url
         try:

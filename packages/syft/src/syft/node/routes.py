@@ -1,7 +1,6 @@
 # stdlib
 
 # stdlib
-import asyncio
 from typing import Annotated
 
 # third party
@@ -14,6 +13,7 @@ from fastapi.responses import JSONResponse
 from fastapi.responses import StreamingResponse
 from loguru import logger
 from pydantic import ValidationError
+import requests
 
 # relative
 from ..abstract_node import AbstractNode
@@ -27,6 +27,7 @@ from ..service.response import SyftError
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
 from ..service.user.user_service import UserService
+from ..types.uid import UID
 from ..util.telemetry import TRACE_MODE
 from .credentials import SyftVerifyKey
 from .credentials import UserLoginCredentials
@@ -48,14 +49,28 @@ def make_routes(worker: Worker) -> APIRouter:
     async def get_body(request: Request) -> bytes:
         return await request.body()
 
-    async def stream_numbers():
-        for i in range(100):
-            await asyncio.sleep(2)
-            yield str(i)
+    async def stream_blob_url(peer_uid: UID, presigned_url: str):
+        # relative
+        from ..service.network.node_peer import route_to_connection
 
-    @router.get("/stream", name="stream", status_code=200)
-    async def stream(request: Request) -> dict:
-        return StreamingResponse(stream_numbers())
+        network_service = worker.get_service("NetworkService")
+        peer = network_service.stash.get_by_uid(worker.verify_key, peer_uid)
+        peer_node_route = peer.pick_highest_priority_route()
+        connection = route_to_connection(route=peer_node_route)
+        url = connection.api_url.with_path(f"blob/{presigned_url}")
+        yield requests.get(url=url, stream=True)
+
+    @router.get("/stream/{peer_uid_str}/{url_path}/", name="stream", status_code=200)
+    async def stream(peer_uid_str: str, url_path_str: str) -> StreamingResponse:
+        # stdlib
+        import base64
+
+        url_path = base64.b64decode(url_path_str.encode()).decode()
+        peer_uid = UID.from_string(peer_uid_str)
+        print(f"Hello...., {peer_uid_str}, {url_path}")
+        return StreamingResponse(
+            stream_blob_url(peer_uid=peer_uid, presigned_url=url_path)
+        )
 
     @router.get(
         "/",

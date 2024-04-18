@@ -718,7 +718,7 @@ class ActionObject(SyncableSyftObject):
                 if isinstance(blob_retrieval_object, SyftError):
                     print(
                         "Could not fetch actionobject data\n",
-                        type(blob_retrieval_object),
+                        blob_retrieval_object,
                     )
                     return blob_retrieval_object
                 # relative

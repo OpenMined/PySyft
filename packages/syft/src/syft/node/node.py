@@ -1078,15 +1078,15 @@ class Node(AbstractNode):
                 # relative
                 from ..store.blob_storage import BlobRetrievalByURL
 
-                # In the case of blob storage, the gateway downloads the result and then passes it to
-                # the proxy client
                 if isinstance(result, BlobRetrievalByURL):
-                    blob_route = client.api.connection.to_blob_route(
-                        result.url.url_path
-                    )
-                    result.url = blob_route
-                    final_res = result.read()
-                    return final_res
+                    result.proxy_node_uid = peer.id
+
+                    # blob_route = client.api.connection.to_blob_route(
+                    #     result.url.url_path
+                    # )
+                    # result.url = blob_route
+                    # final_res = result.read()
+                    # return final_res
 
             return result
 
