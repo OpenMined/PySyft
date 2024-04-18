@@ -15,7 +15,6 @@ from ipywidgets import Layout
 from ipywidgets import VBox
 
 # relative
-from ...client.api import APIRegistry
 from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
 from ...node.credentials import SyftVerifyKey
@@ -426,8 +425,12 @@ class ResolveWidget:
         # Maybe default read permission for some objects (high -> low)
 
         # TODO: UID
-        resolved_state_low = ResolvedSyncState(node_uid=UID(), alias="low")
-        resolved_state_high = ResolvedSyncState(node_uid=UID(), alias="high")
+        resolved_state_low = ResolvedSyncState(
+            node_uid=self.obj_diff_batch.low_node_uid, alias="low"
+        )
+        resolved_state_high = ResolvedSyncState(
+            node_uid=self.obj_diff_batch.high_node_uid, alias="high"
+        )
 
         batch_diff = self.obj_diff_batch
         if batch_diff.is_unchanged:
@@ -495,25 +498,23 @@ class ResolveWidget:
             resolved_state_low.add_sync_instruction(sync_instruction)
             resolved_state_high.add_sync_instruction(sync_instruction)
 
-        # TODO: ONLY WORKS FOR LOW TO HIGH
-        # relative
-        from ...client.domain_client import DomainClient
-
-        api = APIRegistry.api_for(
-            self.obj_diff_batch.target_node_uid, self.obj_diff_batch.target_verify_key
-        )
-        client = DomainClient(
-            api=api,
-            connection=api.connection,  # type: ignore
-            credentials=api.signing_key,  # type: ignore
-        )
-
         if self.obj_diff_batch.sync_direction is None:
             raise ValueError("no direction specified")
-        if self.obj_diff_batch.sync_direction == SyncDirection.LOW_TO_HIGH:
-            res = client.apply_state(resolved_state_high)
-        else:
-            res = client.apply_state(resolved_state_low)
+        sync_direction = self.obj_diff_batch.sync_direction
+        resolved_state = (
+            resolved_state_high
+            if sync_direction == SyncDirection.LOW_TO_HIGH
+            else resolved_state_low
+        )
+        res = self.obj_diff_batch.target_client.apply_state(resolved_state)
+
+        if sync_direction == SyncDirection.HIGH_TO_LOW:
+            # apply empty state to generete a new state
+            resolved_state_high = ResolvedSyncState(
+                node_uid=self.obj_diff_batch.high_node_uid, alias="high"
+            )
+            high_client = self.obj_diff_batch.source_client
+            res = high_client.apply_state(resolved_state_high)
 
         self.is_synced = True
         self.set_result_state(res)
