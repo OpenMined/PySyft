@@ -459,7 +459,7 @@ class ActionService(AbstractService):
             result_blob_id = result_action_object.syft_blob_storage_entry_id  # type: ignore[unreachable]
 
         # pass permission information to the action store as extra kwargs
-        # context.extra_kwargs = {"has_result_read_permission": True}
+        context.extra_kwargs = {"has_result_read_permission": True}
 
         # Since this just meta data about the result, they always have access to it.
         set_result = self._set(
