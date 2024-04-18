@@ -11,6 +11,7 @@ import functools
 import pathlib
 from pathlib import PurePath
 import sys
+import tempfile
 from types import MappingProxyType
 from types import UnionType
 from typing import Any
@@ -27,9 +28,11 @@ import weakref
 
 # relative
 from .capnp import get_capnp_schema
+from .recursive import SPOOLED_FILE_MAX_SIZE_SERDE
 from .recursive import chunk_bytes
 from .recursive import combine_bytes
 from .recursive import recursive_serde_register
+from .util import compatible_with_large_file_writes_capnp
 
 iterable_schema = get_capnp_schema("iterable.capnp").Iterable
 kv_iterable_schema = get_capnp_schema("kv_iterable.capnp").KVIterable
@@ -44,10 +47,23 @@ def serialize_iterable(iterable: Collection) -> bytes:
     message.init("values", len(iterable))
 
     for idx, it in enumerate(iterable):
-        serialized = _serialize(it, to_bytes=True)
-        chunk_bytes(serialized, idx, message.values)
+        # serialized = _serialize(it, to_bytes=True)
+        chunk_bytes(it, lambda x: _serialize(x, to_bytes=True), idx, message.values)
 
-    return message.to_bytes()
+    if compatible_with_large_file_writes_capnp():
+        with tempfile.SpooledTemporaryFile(
+            max_size=SPOOLED_FILE_MAX_SIZE_SERDE
+        ) as tmp_file:
+            # Write data to a file to save RAM
+            message.write(tmp_file)
+            del message
+            tmp_file.seek(0)
+            res = tmp_file.read()
+            return res
+    else:
+        res = message.to_bytes()
+        del message
+        return res
 
 
 def deserialize_iterable(iterable_type: type, blob: bytes) -> Collection:
@@ -81,8 +97,8 @@ def _serialize_kv_pairs(size: int, kv_pairs: Iterable[tuple[_KT, _VT]]) -> bytes
 
     for index, (k, v) in enumerate(kv_pairs):
         message.keys[index] = _serialize(k, to_bytes=True)
-        serialized = _serialize(v, to_bytes=True)
-        chunk_bytes(serialized, index, message.values)
+        # serialized = _serialize(v, to_bytes=True)
+        chunk_bytes(v, lambda x: _serialize(x, to_bytes=True), index, message.values)
 
     return message.to_bytes()
 
