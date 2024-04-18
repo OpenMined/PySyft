@@ -13,6 +13,25 @@
   },
   "dev": {
     "object_versions": {
+      "EnclaveMetadata": {
+        "2": {
+          "version": 2,
+          "hash": "6dcc26695abc6a9ecd9d7d1e6507a9f1a92cc5ccd10987e92419bf984245f9a1",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "d2f23411927c68e2307a84d180ad053b3e4ba12d74aba64d34dac224c90e815d",
+          "action": "add"
+        }
+      },
+      "CustomEndpointActionObject": {
+        "1": {
+          "version": 1,
+          "hash": "642facc6cafbaad4de030a33cd619bd68ac31a32b0db07ddc1c1d5d7f914503e",
+          "action": "add"
+        }
+      },
       "ExecutionOutput": {
         "1": {
           "version": 1,
@@ -49,10 +68,10 @@
           "action": "add"
         }
       },
-      "CustomEndpointActionObject": {
-        "1": {
-          "version": 1,
-          "hash": "642facc6cafbaad4de030a33cd619bd68ac31a32b0db07ddc1c1d5d7f914503e",
+      "NodePeer": {
+        "3": {
+          "version": 3,
+          "hash": "dababb03d2463b6218ae22d55293a60580f5a14bebd0c664d71da104e2f0b835",
           "action": "add"
         }
       },
@@ -98,30 +117,25 @@
           "action": "add"
         }
       },
+      "TempBlobRetrieval": {
+        "1": {
+          "version": 1,
+          "hash": "3b3a133e848c510ab5f49c8d23fd7d9f8e43674d6732926d4fb272fb7603dcc2",
+          "action": "add"
+        }
+      },
+      "OnDiskBlobDeposit": {
+        "2": {
+          "version": 2,
+          "hash": "6f8f03f6bf76407b8f34aba12970d037c2a59ec3858feee8f8a3234ebe3a744d",
+          "action": "remove"
+        }
+      },
       "SyncStateItem": {
         "1": {
           "version": 1,
           "hash": "4dbfa0813f5a3f7be0b36249ff2d67e395ad7c9e138c5a122fc7342b8dcc4b92",
           "action": "remove"
-        }
-      },
-      "EnclaveMetadata": {
-        "2": {
-          "version": 2,
-          "hash": "6dcc26695abc6a9ecd9d7d1e6507a9f1a92cc5ccd10987e92419bf984245f9a1",
-          "action": "remove"
-        },
-        "3": {
-          "version": 3,
-          "hash": "d2f23411927c68e2307a84d180ad053b3e4ba12d74aba64d34dac224c90e815d",
-          "action": "add"
-        }
-      },
-      "NodePeer": {
-        "3": {
-          "version": 3,
-          "hash": "dababb03d2463b6218ae22d55293a60580f5a14bebd0c664d71da104e2f0b835",
-          "action": "add"
         }
       },
       "VeilidConnection": {

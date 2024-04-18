@@ -71,7 +71,7 @@ class BaseAttrsNonInheritable(AbstractBase):
 
     value: int | None
 
-    def __init__(self, uid: str = None, value: int = None):
+    def __init__(self, uid: str | None = None, value: int | None = None):
         self.uid = uid
         self.value = value
 

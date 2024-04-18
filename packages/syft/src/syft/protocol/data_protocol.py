@@ -133,6 +133,14 @@ class DataProtocol:
             release_version_path = (
                 protocol_release_dir() / protocol_history[version]["release_name"]
             )
+            if not os.path.exists(release_version_path):
+                error_message = (
+                    f"Missing version {version} file: {release_version_path}"
+                )
+                if get_dev_mode() or self.raise_exception:
+                    raise SyftException(error_message)
+                else:
+                    print(error_message)
             released_version = self.read_json(file_path=release_version_path)
             protocol_history[version] = released_version.get(version, {})
 

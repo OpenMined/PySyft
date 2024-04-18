@@ -7,7 +7,6 @@ import keyword
 import re
 import textwrap
 from typing import Any
-from typing import cast
 
 # third party
 from pydantic import ValidationError
@@ -18,7 +17,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
 from ...types.syft_object import PartialSyftObject
@@ -465,7 +463,7 @@ def extract_code_string(code_field: str) -> Callable:
                 else "private_helper_functions"
             )
 
-            context.node = cast(AbstractNode, context.node)
+            # context.node = cast(AbstractNode, context.node)
             admin_key = context.node.get_service("userservice").admin_verify_key()
 
             # If endpoint exists **AND** (has visible access **OR** the user is admin)

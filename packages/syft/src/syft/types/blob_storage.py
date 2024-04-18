@@ -78,7 +78,7 @@ class BlobFile(SyftObject):
         if read_method is not None:
             blob_retrieval_object = read_method(self.syft_blob_storage_entry_id)
             return blob_retrieval_object._read_data(
-                stream=stream, chunk_size=chunk_size, _deserialize=False
+                stream=stream, chunk_size=chunk_size, deserialize=False
             )
         else:
             return None
@@ -94,19 +94,20 @@ class BlobFile(SyftObject):
         if self.path is None:
             raise ValueError("cannot upload BlobFile, no path specified")
         storage_entry = CreateBlobStorageEntry.from_path(self.path)
+        secure_path = api.services.blob_storage.allocate(storage_entry)
 
-        blob_deposit_object = api.services.blob_storage.allocate(storage_entry)
-
-        if isinstance(blob_deposit_object, SyftError):
-            return blob_deposit_object
+        if isinstance(secure_path, SyftError):
+            return secure_path
 
         with open(self.path, "rb") as f:
-            result = blob_deposit_object.write(f)
+            result = api.services.blob_storage.write(
+                storage_entry, secure_path, f.read()
+            )
 
         if isinstance(result, SyftError):
             return result
 
-        self.syft_blob_storage_entry_id = blob_deposit_object.blob_storage_entry_id
+        self.syft_blob_storage_entry_id = storage_entry.id
         self.uploaded = True
 
         return None

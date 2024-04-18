@@ -1411,31 +1411,31 @@ def execute_byte_code(
             job_id = context.job_id
             log_id = context.job.log_id
 
-            def print(*args: Any, sep: str = " ", end: str = "\n") -> str | None:
-                def to_str(arg: Any) -> str:
-                    if isinstance(arg, bytes):
-                        return arg.decode("utf-8")
-                    if isinstance(arg, Job):
-                        return f"JOB: {arg.id}"
-                    if isinstance(arg, SyftError):
-                        return f"JOB: {arg.message}"
-                    if isinstance(arg, ActionObject):
-                        return str(arg.syft_action_data)
-                    return str(arg)
+            # def print(*args: Any, sep: str = " ", end: str = "\n") -> str | None:
+            #     def to_str(arg: Any) -> str:
+            #         if isinstance(arg, bytes):
+            #             return arg.decode("utf-8")
+            #         if isinstance(arg, Job):
+            #             return f"JOB: {arg.id}"
+            #         if isinstance(arg, SyftError):
+            #             return f"JOB: {arg.message}"
+            #         if isinstance(arg, ActionObject):
+            #             return str(arg.syft_action_data)
+            #         return str(arg)
 
-                new_args = [to_str(arg) for arg in args]
-                new_str = sep.join(new_args) + end
-                if context.node is not None:
-                    log_service = context.node.get_service("LogService")
-                    log_service.append(context=context, uid=log_id, new_str=new_str)
-                time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
-                return __builtin__.print(
-                    f"{time} FUNCTION LOG ({job_id}):",
-                    *new_args,
-                    end=end,
-                    sep=sep,
-                    file=sys.stderr,
-                )
+            #     new_args = [to_str(arg) for arg in args]
+            #     new_str = sep.join(new_args) + end
+            #     if context.node is not None:
+            #         log_service = context.node.get_service("LogService")
+            #         log_service.append(context=context, uid=log_id, new_str=new_str)
+            #     time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
+            #     return __builtin__.print(
+            #         f"{time} FUNCTION LOG ({job_id}):",
+            #         *new_args,
+            #         end=end,
+            #         sep=sep,
+            #         file=sys.stderr,
+            #     )
 
         else:
             print = original_print

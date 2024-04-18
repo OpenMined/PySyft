@@ -34,7 +34,7 @@ class Platform:
 
 
 class Hosts:
-    def __init__(self, path: str = None) -> None:
+    def __init__(self, path: str | None = None) -> None:
         self.__path = path
         self.content = self.read()
 
