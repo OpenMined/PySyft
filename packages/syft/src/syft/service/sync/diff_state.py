@@ -17,6 +17,7 @@ from rich.panel import Panel
 from typing_extensions import Self
 
 # relative
+from ...client.api import APIRegistry
 from ...client.client import SyftClient
 from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
@@ -586,6 +587,15 @@ class ObjectDiffBatch(SyftObject):
             return self.low_node_uid
 
     @property
+    def source_node_uid(self) -> UID:
+        if self.sync_direction is None:
+            raise ValueError("no direction specified")
+        if self.sync_direction == SyncDirection.LOW_TO_HIGH:
+            return self.low_node_uid
+        else:
+            return self.high_node_uid
+
+    @property
     def target_verify_key(self) -> SyftVerifyKey:
         if self.sync_direction is None:
             raise ValueError("no direction specified")
@@ -593,6 +603,35 @@ class ObjectDiffBatch(SyftObject):
             return self.user_verify_key_high
         else:
             return self.user_verify_key_low
+
+    @property
+    def source_verify_key(self) -> SyftVerifyKey:
+        if self.sync_direction is None:
+            raise ValueError("no direction specified")
+        if self.sync_direction == SyncDirection.LOW_TO_HIGH:
+            return self.user_verify_key_low
+        else:
+            return self.user_verify_key_high
+
+    @property
+    def source_client(self) -> SyftClient:
+        return self.build(self.source_node_uid, self.source_verify_key)
+
+    @property
+    def target_client(self) -> SyftClient:
+        return self.build(self.target_node_uid, self.target_verify_key)
+
+    def build(self, node_uid: UID, syft_client_verify_key: SyftVerifyKey):  # type: ignore
+        # relative
+        from ...client.domain_client import DomainClient
+
+        api = APIRegistry.api_for(node_uid, syft_client_verify_key)
+        client = DomainClient(
+            api=api,
+            connection=api.connection,  # type: ignore
+            credentials=api.signing_key,  # type: ignore
+        )
+        return client
 
     def get_dependencies(
         self,
@@ -1245,8 +1284,9 @@ class SyncInstruction(SyftObject):
                         )
                     ]
 
-        # mockify
         mockify = widget.mockify
+        if widget.has_unused_share_button:
+            print("Share button was not used, so we will mockify the object")
 
         # storage permissions
         new_storage_permissions = []

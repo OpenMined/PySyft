@@ -599,7 +599,8 @@ class APIModule:
         except AttributeError:
             raise SyftAttributeError(
                 f"'APIModule' api{self.path} object has no submodule or method '{name}', "
-                "you may not have permission to access the module you are trying to access"
+                "you may not have permission to access the module you are trying to access."
+                "If you think this is an error, try calling `client.refresh()` to update the API."
             )
 
     def __getitem__(self, key: str | int) -> Any:
