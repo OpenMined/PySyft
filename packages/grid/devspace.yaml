@@ -25,6 +25,7 @@ vars:
   DOCKER_IMAGE_BACKEND: openmined/grid-backend
   DOCKER_IMAGE_FRONTEND: openmined/grid-frontend
   DOCKER_IMAGE_SEAWEEDFS: openmined/grid-seaweedfs
+  DOCKER_IMAGE_ENCLAVE_ATTESTATION: openmined/grid-enclave-attestation
   CONTAINER_REGISTRY: "docker.io"
   VERSION: "0.8.7-beta.1"
   PLATFORM: $(uname -m | grep -q 'arm64' && echo "arm64" || echo "amd64")
