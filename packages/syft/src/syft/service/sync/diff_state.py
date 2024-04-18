@@ -1233,6 +1233,8 @@ class SyncInstruction(SyftObject):
                     ]
 
         mockify = widget.mockify
+        if widget.has_unused_share_button:
+            print("Share button was not used, so we will mockify the object")
 
         # storage permissions
         new_storage_permissions = []

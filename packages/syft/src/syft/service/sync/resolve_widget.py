@@ -121,6 +121,11 @@ class MainObjectDiffWidget:
         return not self.share_private_data
 
     @property
+    def has_unused_share_button(self) -> bool:
+        # does not have share button
+        return False
+
+    @property
     def share_private_data(self) -> bool:
         # there are TwinAPIEndpoint.__private_sync_attr_mocks__
         return not isinstance(self.diff.non_empty_object, TwinAPIEndpoint)
@@ -191,10 +196,14 @@ class CollapsableObjectDiffWidget:
     def mockify(self) -> bool:
         if isinstance(self.diff.non_empty_object, TwinAPIEndpoint):
             return True
-        if self.show_share_button and not self.share_private_data:
+        if self.has_unused_share_button:
             return True
         else:
             return False
+
+    @property
+    def has_unused_share_button(self) -> bool:
+        return self.show_share_button and not self.share_private_data
 
     @property
     def show_share_button(self) -> bool:

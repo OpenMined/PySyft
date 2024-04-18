@@ -1,5 +1,3 @@
-# stdlib
-
 # syft absolute
 import syft
 from syft.client.domain_client import DomainClient
@@ -12,6 +10,7 @@ def compare_and_resolve(*, from_client: DomainClient, to_client: DomainClient):
     diff_state_before = compare_clients(from_client, to_client)
     for obj_diff_batch in diff_state_before.batches:
         widget = resolve_single(obj_diff_batch)
+        widget.click_share_all_private_data()
         widget.click_sync()
     from_client.refresh()
     to_client.refresh()
