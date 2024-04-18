@@ -8,6 +8,7 @@ from enum import Enum
 import inspect
 from io import BytesIO
 from pathlib import Path
+import sys
 import threading
 import time
 import traceback
@@ -769,7 +770,9 @@ class ActionObject(SyncableSyftObject):
                 )
                 data.upload_to_blobstorage_from_api(api)
             else:
-                storage_entry = CreateBlobStorageEntry.from_obj(data)
+                serialized = serialize(obj=data, to_bytes=True)
+                size = sys.getsizeof(serialized)
+                storage_entry = CreateBlobStorageEntry.from_obj(data, size=size)
                 if self.syft_blob_storage_entry_id is not None:
                     # TODO: check if it already exists
                     storage_entry.id = self.syft_blob_storage_entry_id
@@ -784,9 +787,7 @@ class ActionObject(SyncableSyftObject):
                     if isinstance(blob_deposit_object, SyftError):
                         return blob_deposit_object
 
-                    result = blob_deposit_object.write(
-                        BytesIO(serialize(data, to_bytes=True))
-                    )
+                    result = blob_deposit_object.write(BytesIO(serialized))
                     if isinstance(result, SyftError):
                         return result
                     self.syft_blob_storage_entry_id = (
