@@ -295,12 +295,12 @@ def test_forget_usercode(low_worker, high_worker):
     )
 
 
-@sy.mock_api_endpoint()
+@sy.api_endpoint_method()
 def mock_function(context) -> str:
     return -42
 
 
-@sy.private_api_endpoint()
+@sy.api_endpoint_method()
 def private_function(context) -> str:
     return 42
 
