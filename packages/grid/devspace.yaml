@@ -72,7 +72,7 @@ deployments:
           type: domain # required for the gateway profile
       # anything that does not need devspace $env vars should go in values.dev.yaml
       valuesFiles:
-        - ./helm/values.dev.low.yaml
+        - ./helm/values.dev.yaml
 
 dev:
   mongo:
