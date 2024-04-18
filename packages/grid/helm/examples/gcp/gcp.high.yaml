@@ -1,0 +1,81 @@
+# ===================================================
+# Deploy Syft High Side Node to a GKE Cluster
+# Syncs seaweedfs to a GCS bucket "syft-bucket-high"
+# ===================================================
+
+node:
+  name: syft-gcp
+  side: high
+
+  # Force backend to write results to this bucket
+  # should be same as mountApi.mounts.local_bucket
+  defaultBucketName: syft-bucket-high-gcs
+
+  # For autopilot clusters with GKE 1.28+, uncomment this
+  # nodeSelector:
+  #   cloud.google.com/compute-class: Performance
+  #   cloud.google.com/machine-family: c3
+
+  # Resources set inline with c3-standard-4 machine type
+  resources:
+    requests:
+      cpu: 2
+      memory: "8Gi"
+    limits:
+      cpu: 4
+      memory: "16Gi"
+
+seaweedfs:
+  storageSize: 100Gi
+
+  mountApi:
+    # Mount remote GCS bucket named "syft-bucket-high" to seaweedfs bucket named "syft-bucket-high-gcs
+    mounts:
+      - local_bucket: syft-bucket-high-gcs
+        remote_bucket:
+          type: gcs
+          bucket_name: syft-bucket-high
+          # filename should be as secret.mountCredentials.name
+          # directory will always be /run/secrets/
+          creds: /run/secrets/gcs_creds.json
+
+  secret:
+    mountCredentials:
+      # remove this comment and paste the Service Account JSON Here
+      # TODO: move to workload identity
+      - name: gcs_creds.json
+        value: |
+          {
+            "": ""
+          }
+
+  # For autopilot clusters with GKE 1.28+, uncomment this
+  # nodeSelector:
+  #   cloud.google.com/compute-class: Performance
+  #   cloud.google.com/machine-family: c3
+
+  # Resources set inline with c3-standard-4 machine type
+  resources:
+    requests:
+      cpu: 2
+      memory: "8Gi"
+    limits:
+      cpu: 4
+      memory: "16Gi"
+
+ingress:
+  # GKE 1.28+ need ingressClassName
+  className: gce
+  class: gce
+
+proxy:
+  resourcesPreset: medium
+
+registry:
+  resourcesPreset: medium
+
+frontend:
+  resourcesPreset: medium
+
+mongo:
+  resourcesPreset: large
