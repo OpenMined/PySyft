@@ -77,15 +77,7 @@ seaweedfs:
   secretKeyName: seaweedfs-secret
 
   # Pod Resource Limits
-  # resourcesPreset: medium
-  resourcesPreset: null
-  resources:
-    requests:
-      cpu: 1
-      memory: 2Gi
-    limits:
-      cpu: 1
-      memory: 2Gi
+  resourcesPreset: medium
 
   # extra volume mounts
   volumes: null
