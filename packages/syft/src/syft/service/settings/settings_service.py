@@ -142,10 +142,10 @@ class SettingsService(AbstractService):
         return SyftSuccess(message=f"Registration feature successfully {message}")
 
     @service_method(
-        path="settings.allow_assoc_req_auto_accept",
-        name="allow_assoc_req_auto_accept",
+        path="settings.allow_association_request_auto_approval",
+        name="allow_association_request_auto_approval",
     )
-    def allow_assoc_req_auto_accept(
+    def allow_association_request_auto_approval(
         self, context: AuthedServiceContext, enable: bool
     ) -> SyftSuccess | SyftError:
         new_settings = NodeSettingsUpdate(association_request_auto_approval=enable)

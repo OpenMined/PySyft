@@ -492,7 +492,7 @@ def clean(location: str) -> None:
     help="Set the volume size limit (in MBs)",
 )
 @click.option(
-    "--enable-association-auto-approval",
+    "--association-request-auto-approval",
     is_flag=True,
     help="Enable auto approval of association requests",
 )
@@ -1296,8 +1296,8 @@ def create_launch_cmd(
         parsed_kwargs["set_s3_password"] = kwargs["set_s3_password"]
         parsed_kwargs["set_volume_size_limit_mb"] = kwargs["set_volume_size_limit_mb"]
 
-    parsed_kwargs["enable_association_auto_approval"] = str(
-        kwargs["enable_association_auto_approval"]
+    parsed_kwargs["association_request_auto_approval"] = str(
+        kwargs["association_request_auto_approval"]
     )
 
     parsed_kwargs["node_count"] = (
@@ -2289,9 +2289,9 @@ def create_launch_docker_cmd(
             find_available_port(host="localhost", port=14268, search=True)
         )
 
-    if "enable_association_auto_approval" in kwargs:
+    if "association_request_auto_approval" in kwargs:
         envs["ASSOCIATION_REQUEST_AUTO_APPROVAL"] = kwargs[
-            "enable_association_auto_approval"
+            "association_request_auto_approval"
         ]
 
     if "enable_warnings" in kwargs:

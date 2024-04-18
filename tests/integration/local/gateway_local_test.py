@@ -17,14 +17,14 @@ from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
 
 
-def launch(node_type: NodeType, association_auto_approval: bool = True):
+def launch(node_type: NodeType, association_request_auto_approval: bool = True):
     return sy.orchestra.launch(
         name=token_hex(8),
         node_type=node_type,
         dev_mode=True,
         reset=True,
         local_db=True,
-        association_auto_approval=association_auto_approval,
+        association_request_auto_approval=association_request_auto_approval,
     )
 
 
@@ -37,8 +37,8 @@ def gateway():
 
 
 @pytest.fixture(params=[True, False])
-def gateway_association_auto_approval(request: pytest.FixtureRequest):
-    node = launch(NodeType.GATEWAY, association_auto_approval=request.param)
+def gateway_association_request_auto_approval(request: pytest.FixtureRequest):
+    node = launch(NodeType.GATEWAY, association_request_auto_approval=request.param)
     yield (request.param, node)
     node.python_node.cleanup()
     node.land()
@@ -76,8 +76,10 @@ def test_create_gateway_client(gateway):
 
 
 @pytest.mark.local_node
-def test_domain_connect_to_gateway(gateway_association_auto_approval, domain):
-    association_auto_approval, gateway = gateway_association_auto_approval
+def test_domain_connect_to_gateway(gateway_association_request_auto_approval, domain):
+    association_request_auto_approval, gateway = (
+        gateway_association_request_auto_approval
+    )
     gateway_client: GatewayClient = gateway.login(
         email="info@openmined.org",
         password="changethis",
@@ -89,7 +91,7 @@ def test_domain_connect_to_gateway(gateway_association_auto_approval, domain):
 
     result = domain_client.connect_to_gateway(handle=gateway)
 
-    if association_auto_approval:
+    if association_request_auto_approval:
         assert isinstance(result, SyftSuccess)
     else:
         assert isinstance(result, Request)
@@ -103,7 +105,7 @@ def test_domain_connect_to_gateway(gateway_association_auto_approval, domain):
     # Try via client approach
     result_2 = domain_client.connect_to_gateway(via_client=gateway_client)
 
-    if association_auto_approval:
+    if association_request_auto_approval:
         assert isinstance(result_2, SyftSuccess)
     else:
         assert isinstance(result_2, Request)
