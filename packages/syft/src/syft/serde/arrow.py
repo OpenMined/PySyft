@@ -26,7 +26,8 @@ def arrow_serialize(obj: np.ndarray) -> bytes:
                 buffer, asbytes=True, codec=flags.APACHE_ARROW_COMPRESSION.value
             )
         dtype = original_dtype.name
-        return(numpy_bytes, buffer.size, dtype)
+        return (numpy_bytes, buffer.size, dtype)
+
     m = test(obj)
     return cast(bytes, _serialize(m, to_bytes=True))
 

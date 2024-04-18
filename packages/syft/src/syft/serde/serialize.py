@@ -24,4 +24,3 @@ def _serialize(
 
     if to_proto:
         return proto
-    
