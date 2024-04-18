@@ -37,7 +37,6 @@ from ...util.colors import SURFACE
 from ...util.markdown import as_markdown_code
 from ...util.telemetry import instrument
 from ...util.util import prompt_warning_message
-from ..action.action_data_empty import ActionDataLink
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
@@ -86,7 +85,7 @@ class Job(SyncableSyftObject):
         "creation_time",
         "user_code_name",
     ]
-    __exclude_sync_diff_attrs__ = ["action"]
+    __exclude_sync_diff_attrs__ = ["action", "node_uid"]
 
     @field_validator("creation_time")
     @classmethod
@@ -326,6 +325,10 @@ class Job(SyncableSyftObject):
             )
         return api.services.job.get_subjobs(self.id)
 
+    def get_subjobs(self, context: AuthedServiceContext) -> list["Job"] | SyftError:
+        job_service = context.node.get_service("jobservice")
+        return job_service.get_subjobs(context, self.id)
+
     @property
     def owner(self) -> UserView | SyftError:
         api = APIRegistry.api_for(
@@ -483,7 +486,7 @@ class Job(SyncableSyftObject):
                 result_obj = api.services.action.get(
                     self.result.id, resolve_nested=False
                 )
-                if isinstance(result_obj.syft_action_data, ActionDataLink) and job_only:
+                if result_obj.is_link and job_only:
                     print(
                         "You're trying to wait on a job that has a link as a result."
                         "This means that the job may be ready but the linked result may not."
@@ -517,11 +520,11 @@ class Job(SyncableSyftObject):
         if self.log_id:
             dependencies.append(self.log_id)
 
-        subjobs = self.subjobs
+        subjobs = self.get_subjobs(context)
         if isinstance(subjobs, SyftError):
             return subjobs
 
-        subjob_ids = [subjob.id for subjob in self.subjobs]
+        subjob_ids = [subjob.id for subjob in subjobs]
         dependencies.extend(subjob_ids)
 
         if self.user_code_id is not None:

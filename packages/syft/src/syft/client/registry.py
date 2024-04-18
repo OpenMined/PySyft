@@ -50,20 +50,21 @@ class NetworkRegistry:
     def load_network_registry_json() -> dict:
         try:
             # Get the environment variable
-            network_registry_json = os.getenv("NETWORK_REGISTRY_JSON")
+            network_registry_json: str | None = os.getenv("NETWORK_REGISTRY_JSON")
             # If the environment variable exists, use it
             if network_registry_json is not None:
                 network_json: dict = json.loads(network_registry_json)
             else:
                 # Load the network registry from the NETWORK_REGISTRY_URL
-                response = requests.get(NETWORK_REGISTRY_URL, timeout=10)  # nosec
+                response = requests.get(NETWORK_REGISTRY_URL, timeout=30)  # nosec
+                response.raise_for_status()  # raise an exception if the HTTP request returns an error
                 network_json = response.json()
 
             return network_json
 
         except Exception as e:
             warning(
-                f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
+                f"Failed to get Network Registry from {NETWORK_REGISTRY_REPO}. Exception: {e}"
             )
             return {}
 
