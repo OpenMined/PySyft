@@ -21,7 +21,16 @@ spec:
       labels:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: seaweedfs
+        {{- if .Values.seaweedfs.podLabels }}
+        {{- toYaml .Values.seaweedfs.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.seaweedfs.podAnnotations }}
+      annotations: {{- toYaml .Values.seaweedfs.podAnnotations | nindent 8 }}
+      {{- end }}
     spec:
+      {{- if .Values.seaweedfs.nodeSelector }}
+      nodeSelector: {{- .Values.seaweedfs.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: seaweedfs-container
           image: {{ .Values.global.registry }}/openmined/grid-seaweedfs:{{ .Values.global.version }}
@@ -37,11 +46,28 @@ spec:
                 secretKeyRef:
                     name: {{ .Values.seaweedfs.secretKeyName | required "seaweedfs.secretKeyName is required" }}
                     key: s3RootPassword
-            - name: MOUNT_API_PORT
-              value: {{ .Values.seaweedfs.mountApi.port | quote }}
             {{- if .Values.seaweedfs.env }}
             {{- toYaml .Values.seaweedfs.env | nindent 12 }}
             {{- end }}
+          ports:
+            - name: mount-api-port
+              containerPort: 4001
+            - name: master-port
+              containerPort: 9333
+          startupProbe:
+            httpGet:
+              path: /?probe=startupProbe
+              port: mount-api-port
+            failureThreshold: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /cluster/healthz?probe=livenessProbe
+              port: master-port
+            periodSeconds: 60
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe: null
           volumeMounts:
             # master + filer + volume data
             - mountPath: /data/
