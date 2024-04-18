@@ -3,6 +3,7 @@ from textwrap import dedent
 
 # syft absolute
 import syft
+import syft as sy
 from syft.client.domain_client import DomainClient
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve_single
@@ -44,44 +45,59 @@ def get_ds_client(client: DomainClient) -> DomainClient:
     return client.login(email="a@a.com", password="asdf")
 
 
-def test_diff_widget_merge_status(low_worker, high_worker):
-    low_client = low_worker.root_client
+def test_diff_state(low_worker, high_worker):
+    low_client: DomainClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
-    high_client = high_worker.root_client
+    high_client: DomainClient = high_worker.root_client
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        return 42
+
+    compute.code = dedent(compute.code)
 
     _ = client_low_ds.code.request_code_execution(compute)
 
-    diff_before, diff_after = compare_and_resolve(
+    diff_state_before, diff_state_after = compare_and_resolve(
         from_client=low_client, to_client=high_client
     )
+
+    assert not diff_state_before.is_same
+
+    assert diff_state_after.is_same
+
     run_and_accept_result(high_client)
-    diff_before, diff_after = compare_and_resolve(
+    diff_state_before, diff_state_after = compare_and_resolve(
         from_client=high_client, to_client=low_client
     )
 
-    assert diff_after.is_same
+    high_state = high_client.get_sync_state()
+    low_state = high_client.get_sync_state()
+    assert high_state.get_previous_state_diff().is_same
+    assert low_state.get_previous_state_diff().is_same
+    assert diff_state_after.is_same
 
     client_low_ds.refresh()
     res = client_low_ds.code.compute(blocking=True)
-    assert res == 42
+    assert res == compute(blocking=True).get()
 
 
-@syft.mock_api_endpoint()
+@sy.mock_api_endpoint()
 def mock_function(context) -> str:
     return -42
 
 
-@syft.private_api_endpoint()
+@sy.private_api_endpoint()
 def private_function(context) -> str:
     return 42
 
 
-def test_twin_api_integration2(low_worker, high_worker):
+def test_twin_api_integration(low_worker, high_worker):
     low_client = low_worker.root_client
     high_client = high_worker.root_client
     client_low_ds = get_ds_client(low_client)
 
-    new_endpoint = syft.TwinAPIEndpoint(
+    new_endpoint = sy.TwinAPIEndpoint(
         path="testapi.query",
         private_function=private_function,
         mock_function=mock_function,
