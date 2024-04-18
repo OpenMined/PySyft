@@ -354,6 +354,21 @@ action_data_empty_must_run = [
     "__str__",
 ]
 
+methods_to_check_in_cache = [
+    "_ipython_display_",
+    "_repr_mimebundle_",
+    "_repr_latex_",
+    "_repr_javascript_",
+    "_repr_html_",
+    "_repr_jpeg_",
+    "_repr_png_",
+    "_repr_svg_",
+    "_repr_pretty_",
+    "_repr_pdf_",
+    "_repr_json_",
+    "_repr_markdown_",
+]
+
 
 class PreHookContext(SyftBaseObject):
     __canonical_name__ = "PreHookContext"
@@ -1577,8 +1592,6 @@ class ActionObject(SyncableSyftObject):
         """Find which instance - Syft ActionObject or the original object - has the requested attribute."""
         defined_on_self = name in self.__dict__ or name in self.__private_attributes__
 
-        debug(">> ", name, ", defined_on_self = ", defined_on_self)
-
         # use the custom defined version
         context_self = self
         if not defined_on_self:
@@ -1807,6 +1820,10 @@ class ActionObject(SyncableSyftObject):
             name: str
                 The name of the attribute to access.
         """
+        # bypass ipython canary verification
+        if name == "_ipython_canary_method_should_not_exist_":
+            return None
+
         # bypass certain attrs to prevent recursion issues
         if name.startswith("_syft") or name.startswith("syft"):
             return object.__getattribute__(self, name)
@@ -1817,13 +1834,17 @@ class ActionObject(SyncableSyftObject):
         # third party
         if name in self._syft_passthrough_attrs():
             return object.__getattribute__(self, name)
-        context_self = self._syft_get_attr_context(name)
 
         # Handle bool operator on nonbools
         if name == "__bool__" and not self.syft_has_bool_attr:
             return self._syft_wrap_attribute_for_bool_on_nonbools(name)
 
+        # check cache first
+        if name in methods_to_check_in_cache:
+            return getattr(self.syft_action_data_cache, name, None)
+
         # Handle Properties
+        context_self = self._syft_get_attr_context(name)
         if self.syft_is_property(context_self, name):
             return self._syft_wrap_attribute_for_properties(name)
 
@@ -1880,7 +1901,7 @@ class ActionObject(SyncableSyftObject):
                     else self.syft_action_data_cache.__repr__()
                 )
 
-        return f"```python\n{res}\n```\n{data_repr_}"
+        return f"```python\n{res}\n{data_repr_}```\n"
 
     def _data_repr(self) -> str | None:
         if isinstance(self.syft_action_data_cache, ActionDataEmpty):
