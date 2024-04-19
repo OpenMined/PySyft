@@ -2,6 +2,7 @@
 from datetime import datetime
 from datetime import timedelta
 from enum import Enum
+import random
 from typing import Any
 
 # third party
@@ -10,7 +11,6 @@ from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
-from syft.util.notebook_ui.notebook_addons import CSS_CODE
 from typing_extensions import Self
 
 # relative
@@ -30,12 +30,12 @@ from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SyftObject
-from ...types.syft_object import short_uid
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import as_markdown_code
+from ...util.notebook_ui.notebook_addons import CSS_CODE
 from ...util.telemetry import instrument
 from ...util.util import prompt_warning_message
 from ..action.action_object import Action
@@ -56,9 +56,9 @@ class JobStatus(str, Enum):
     INTERRUPTED = "interrupted"
 
 
-def center_content(text):
+def center_content(text: Any) -> str:
     if isinstance(text, str):
-        text = text.replace('\n', '<br>')
+        text = text.replace("\n", "<br>")
     center_div = f"""
     <div style="
         display: flex;
@@ -67,7 +67,7 @@ def center_content(text):
         {text}
     </div>
     """
-    center_div = center_div.replace('\n', '')
+    center_div = center_div.replace("\n", "")
     return center_div
 
 
@@ -109,7 +109,6 @@ class Job(SyncableSyftObject):
     @classmethod
     def check_time(cls, time: Any) -> Any:
         return str(datetime.now()) if time is None else time
-
 
     @model_validator(mode="after")
     def check_user_code_id(self) -> Self:
@@ -430,7 +429,9 @@ class Job(SyncableSyftObject):
         status = self.status
         if status in [JobStatus.COMPLETED]:
             badge_color = "label-green"
-        elif status in [JobStatus.PROCESSING, JobStatus.CREATED]:
+        elif status in [JobStatus.PROCESSING]:
+            badge_color = "label-orange"
+        elif status in [JobStatus.CREATED]:
             badge_color = "label-gray"
         elif status in [JobStatus.ERRORED, JobStatus.INTERRUPTED]:
             badge_color = "label-red"
@@ -440,29 +441,35 @@ class Job(SyncableSyftObject):
 
     def summary_html(self) -> str:
         # TODO: Fix id for buttons
+        # relative
         from ...util.notebook_ui.components.sync import CopyIDButton
+
         try:
             # type_html = f'<div class="label {self.type_badge_class()}">{self.object_type_name.upper()}</div>'
-            description_html = f"<span class='syncstate-description'>{self.user_code_name}</span>"
-            worker_summary = ''
+            description_html = (
+                f"<span class='syncstate-description'>{self.user_code_name}</span>"
+            )
+            worker_summary = ""
             if self.job_worker_id:
-                worker_copy_button = CopyIDButton(copy_text=str(self.job_worker_id), max_width=60)
+                worker_copy_button = CopyIDButton(
+                    copy_text=str(self.job_worker_id), max_width=60
+                )
                 worker_summary = f"""
                 <div style="display: table-row">
-                    <span class='syncstate-col-footer'>{'on worker'} 
+                    <span class='syncstate-col-footer'>{'on worker'}
                     {worker_copy_button.to_html()}</span>
                 </div>
                 """
-                
+
             summary_html = f"""
                 <div style="display: flex; gap: 8px; justify-content: start; width: 100%;">
                     {description_html}
                     <div style="display: flex; gap: 8px; justify-content: end; width: 100%;">
-                        {CopyIDButton(copy_text=str(self.id), max_width=60).to_html()} 
+                        {CopyIDButton(copy_text=str(self.id), max_width=60).to_html()}
                     </div>
                 </div>
                 <div style="display: table-row">
-                <span class='syncstate-col-footer'>{self.creation_time[:-7]}</span>
+                <span class='syncstate-col-footer'>{self.creation_time[:-7] if self.creation_time else ''}</span>
                 </div>
                 {worker_summary}
                 """
@@ -480,27 +487,16 @@ class Job(SyncableSyftObject):
         if len(log_lines) > 2:
             logs = f"... ({len(log_lines)} lines)\n" + "\n".join(log_lines[-2:])
 
-        created_time = self.creation_time[:-7] if self.creation_time is not None else ""
-        
-        def default_value(value):
-            return value if value else '--'
-        
+        def default_value(value: str) -> str:
+            return value if value else "--"
+
         return {
-            # "status": f"{self.action_display_name}: {self.status}"
-            # + (
-            #     f"\non worker {short_uid(self.job_worker_id)}"
-            #     if self.job_worker_id
-            #     else ""
-            # ),
             "Status": self.status_badge(),
-            'Job': self.summary_html(),
+            "Job": self.summary_html(),
             "# Subjobs": center_content(default_value(len(subjobs))),
             "Progress": center_content(default_value(self.progress)),
             "Eta": center_content(default_value(self.eta_string)),
-            # "created": f"{created_time} by {self.owner.email}",
             "Logs": center_content(default_value(logs)),
-            # "result": result,
-            # "parent_id": str(self.parent_job_id) if self.parent_job_id else "-",
         }
 
     @property
@@ -528,7 +524,7 @@ class Job(SyncableSyftObject):
 {logs_w_linenr}
     """
         return as_markdown_code(md)
-    
+
     @property
     def requesting_user(self) -> UserView | SyftError:
         api = APIRegistry.api_for(
@@ -542,7 +538,7 @@ class Job(SyncableSyftObject):
         return api.services.user.view(self.requested_by)
 
     @property
-    def node_name(self) -> str | SyftError:
+    def node_name(self) -> str | SyftError | None:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -552,9 +548,9 @@ class Job(SyncableSyftObject):
                 message=f"Can't access Syft API. You must login to {self.syft_node_location}"
             )
         return api.node_name
-    
+
     @property
-    def parent(self) -> str | SyftError:
+    def parent(self) -> "Job" | SyftError:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -564,50 +560,72 @@ class Job(SyncableSyftObject):
                 message=f"Can't access Syft API. You must login to {self.syft_node_location}"
             )
         return api.services.job.get(self.parent_job_id)
-    
+
     @property
-    def ancestors_name_list(self) -> str:
+    def ancestors_name_list(self) -> list[str] | SyftError:
         if self.parent_job_id:
             parent = self.parent
-            return parent.ancestors_list.append(parent.user_code_name)
+            if isinstance(parent, SyftError):
+                return parent
+            parent_name_list = parent.ancestors_name_list
+            if isinstance(parent_name_list, SyftError):
+                return parent_name_list
+            parent_name_list.append(parent.user_code_name)
+            return parent_name_list
         return []
 
     def _repr_html_(self) -> str:
+        # relative
         from ...util.notebook_ui.components.sync import CopyIDButton
+
         style = CSS_CODE
         logs = self.logs(_print=False, stderr=False)
-        
+        identifier = random.randint(1, 2**32)
+        result_tab_id = f"Result_{identifier}"
+        logs_tab_id = f"Logs_{identifier}"
+
         type_html = (
             f'<div class="label label-light-blue"'
-            f'style="display: flex; align-items:center; justify-content: center; width: 34px; height:21px; radius:4px ; padding: 2px, 6px, 2px, 6px">'
-            f'<span style="font: DejaVu Sans Mono; font-size: 12px; font-weight: 400; line-height:16.8px">JOB</span>'
-            f'</div>'
+            f'style="display: flex; align-items:center; justify-content: center; width: 34px; height:21px; radius:4px;'
+            f'padding: 2px, 6px, 2px, 6px">'
+            f'<span style="font: DejaVu Sans Mono; font-size: 12px; font-weight: 400; line-height:16.8px">'
+            f'{"JOB" if not self.parent_job_id else "SUBJOB"}</span>'
+            f"</div>"
         )
         description_html = f"<span class='jobs-title'>{self.user_code_name}</span>"
         copy_id_button = CopyIDButton(copy_text=str(self.id), max_width=60)
-        
-        api_header = f'{self.node_name}/jobs/' + '/'.join(self.ancestors_name_list)
-        
+        ancestor_name_list = self.ancestors_name_list
+        if isinstance(ancestor_name_list, SyftError):
+            return ancestor_name_list
+        api_header = f"{self.node_name}/jobs/" + "/".join(ancestor_name_list)
+
         header_line_html = f"""
-            <div style="">{api_header}</div>
-            <div style="display: flex; gap: 12px; justify-content: start; width: 100%; overflow: hidden; align-items: center;">
-            <div style="display: flex; gap: 12px; justify-content: start; align-items: center; border: 0px, 0px, 2px, 0px; padding: 0px, 0px, 16px, 0px">
-            {type_html} {description_html}
-            </div>
-            {copy_id_button.to_html()}
+            <div style="gap: 12px; height: 20 px; font: DejaVu Sans Mono; font-size: 14px; font-weight: 400;
+                line-height:16.8px; color: #4392C5">{api_header}</div>
+            <div style="display: flex; gap: 12px; justify-content: start; width: 100%; overflow:
+                hidden; align-items: center;">
+                <div style="display: flex; gap: 12px; justify-content: start; align-items: center;
+                    border: 0px, 0px, 2px, 0px; padding: 0px, 0px, 16px, 0px">
+                {type_html} {description_html}
+                </div>
+                {copy_id_button.to_html()}
             </div>
         """  # noqa: E501
 
         worker_attr = ""
         if self.job_worker_id:
             worker = self.worker
+            worker_pool_id_button = CopyIDButton(
+                copy_text=str(worker.worker_pool_name), max_width=60
+            )
             worker_attr = f"""
                 <div style="margin-top: 6px; margin-bottom: 6px;">
-                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">Worker Pool:</span>
-                    {worker.name} on worker {CopyIDButton(copy_text=str(worker.worker_pool_name), max_width=60).to_html()}
+                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">
+                    Worker Pool:</span>
+                    {worker.name} on worker {worker_pool_id_button.to_html()}
                 </div>
             """
-        
+
         user_repr = "--"
         if self.requested_by:
             requesting_user = self.requesting_user
@@ -615,20 +633,22 @@ class Job(SyncableSyftObject):
 
         attrs_html = f"""<div style="display: table-row; padding: 0px, 0px, 12px, 0px; gap:8px">
                 <div style="margin-top: 6px; margin-bottom: 6px;">
-                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">UserCode:</span> 
+                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">UserCode:</span>
                     {self.user_code_name}
                 </div>
                 <div style="margin-top: 6px; margin-bottom: 6px;">
-                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">Status:</span> 
+                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">Status:</span>
                     {self.status.value.title()}
                 </div>
                 <div style="margin-top: 6px; margin-bottom: 6px;">
-                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">Started At:</span>  
-                    {self.creation_time[:-7]} by {user_repr} 
+                    <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">
+                        Started At:</span>
+                    {self.creation_time[:-7]if self.creation_time else '--'} by {user_repr}
                 </div>
                 <div style="margin-top: 6px; margin-bottom: 6px;">
-                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">Updated At:</span>  
-                    {self.updated_at[:-7] if self.updated_at else '--'}
+                    <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">
+                    Updated At:</span>
+                    {str(self.updated_at)[:-7] if self.updated_at else '--'}
                 </div>
                 {worker_attr}
                 <div style="margin-top: 6px; margin-bottom: 6px;">
@@ -638,24 +658,18 @@ class Job(SyncableSyftObject):
             </div>
             """
 
-        result_html = f"""<div id="Result" class="tab" style="background: #F4F3F6; border-color: #CFCDD6; 
-        border-width: 0.5px; border-style: solid; padding: 24px; gap: 8px; margin-top: 24px">
+        result_html = f"""<div id="{result_tab_id}" class="tab-{identifier}" style="background: #F4F3F6;
+            border-color: #CFCDD6; border-width: 0.5px; border-style: solid; padding: 24px; gap: 8px; margin-top: 24px">
             <div style="font-size: 12px; font-weight: 400; font: DejaVu Sans Mono; line-height: 16.8px">
-                “Sally Forrest an actress-dancer popular in the ‘40s and ‘50s 
-                died in her home on March 15. She was 86 and had battled cancer.”
+                {self.result}
             </div>
         </div>
         """
-        logs_lines = logs.split('\n')
+        logs_lines = logs.split("\n") if logs else []
         logs_lines_html = ""
         for i, line in enumerate(logs_lines):
             logs_lines_html += f"""
                 <tr style="width:100%">
-                    <td style="text-align: left;">
-                        <div style="margin-right:48px; align-text: left">
-                            0.0s
-                        </div> 
-                    </td>
                     <td style="text-align: left;">
                         <div style="margin-right:24px; align-text: center">
                             {i}
@@ -664,27 +678,23 @@ class Job(SyncableSyftObject):
                     <td style="text-align: left;">
                         <div style="align-text: left">
                             {line}
-                        </div> 
+                        </div>
                     </td>
                 </tr>
             """
-        
-        logs_html = f"""<div id="Logs" class="tab" style="background: #F4F3F6; border-color: #CFCDD6; 
-        border-width: 0.5px; border-style: solid; padding: 24px; gap: 8px; margin-top: 24px; display: none;align-items:left">
+
+        logs_html = f"""<div id="{logs_tab_id}" class="tab-{identifier}" style="background: #F4F3F6;
+        border-color: #CFCDD6; border-width: 0.5px; border-style: solid; padding: 24px; gap: 8px; margin-top: 24px;
+        display: none;align-items:left">
             <div style="font-size: 12px; font-weight: 400; font: DejaVu Sans Mono; line-height: 16.8px; ">
                 <table  style="width:100%; justify-content:left; border-collapse: collapse;">
                 <tr style="width:100%">
                     <td style="text-align: left">
-                        <span style="margin-right:48px; font-weight:700; align-text: left">
-                            Time
-                        </span> 
-                    </td>
-                    <td style="text-align: left"> 
                         <span style="margin-right:24px; font-weight:700; align-text: center">
                             #
                         </span>
                     </td>
-                    <td  style="text-align: left"> 
+                    <td  style="text-align: left">
                         <span style="font-weight:700; align-text: left">
                             Message
                         </span>
@@ -695,25 +705,25 @@ class Job(SyncableSyftObject):
         </div>
         """
 
-        # TODO: add style change for selected tab 
-        onclick_html = """<script>
-            function onClick(evt, tabname) {
-                existing_tabs = document.getElementsByClassName("tab");
-                for (i = 0; i < existing_tabs.length; i++) {
-                    existing_tabs[i].style.display = "none";
-                }
-                tablinks = document.getElementsByClassName("tablink");
-                for (i = 0; i < tablinks.length; i++) {
-                    tablinks[i].className = tablinks[i].className.replace(" active", "");
-                }
-                tablinks = document.getElementsByClassName("tablink-border");
-                for (i = 0; i < tablinks.length; i++) {
-                    tablinks[i].className = tablinks[i].className.replace(" active-border", "");
-                }
-                document.getElementById(tabname).style.display = "block";
-                evt.currentTarget.className += " active";
-                evt.currentTarget.parentNode.className += " active-border";
-            }
+        # TODO: add style change for selected tab
+        onclick_html = f"""<script>
+        function onClick_{identifier}(evt, tabname) {{
+            existing_tabs = document.getElementsByClassName("tab-{identifier}");
+            for (i = 0; i < existing_tabs.length; i++) {{
+                existing_tabs[i].style.display = "none";
+            }}
+            tablinks = document.getElementsByClassName("tablink-{identifier}");
+            for (i = 0; i < tablinks.length; i++) {{
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }}
+            tablinks = document.getElementsByClassName("tablink-border-{identifier}");
+            for (i = 0; i < tablinks.length; i++) {{
+                tablinks[i].className = tablinks[i].className.replace(" active-border", "");
+            }}
+            document.getElementById(tabname).style.display = "block";
+            evt.currentTarget.className += " active";
+            evt.currentTarget.parentNode.className += " active-border";
+        }}
         </script>
         """
 
@@ -753,11 +763,13 @@ class Job(SyncableSyftObject):
         tabs_html = f"""
             <div style="margin-top: 8px; padding: 8px, 0px, 8px, 0px; gap: 16px">
             <ul>
-                <li class="tablink-border active-border">
-                    <a  onclick="onClick(event, 'Result')" class='tablink active'>Result</a>
+                <li class="tablink-border-{identifier} active-border">
+                    <a  onclick="onClick_{identifier}(event, '{result_tab_id}')" class='tablink-{identifier} active'>
+                        Result
+                    </a>
                 </li>
-                <li class="tablink-border">
-                    <a onclick="onClick(event, 'Logs')" class='tablink'>Logs</a>
+                <li class="tablink-border-{identifier}">
+                    <a onclick="onClick_{identifier}(event, '{logs_tab_id}')" class='tablink-{identifier}'>Logs</a>
                 </li>
             </ul>
         </div>
@@ -778,7 +790,7 @@ class Job(SyncableSyftObject):
             {tabs_html}
         <div style='height: 16px;'></div>
         """
-        
+
         # repr_html = repr_html.replace('\n', "")
         return repr_html
 
@@ -867,7 +879,6 @@ class Job(SyncableSyftObject):
 
 @serializable()
 class JobInfo(SyftObject):
-    
     __canonical_name__ = "JobInfo"
     __version__ = SYFT_OBJECT_VERSION_2
 

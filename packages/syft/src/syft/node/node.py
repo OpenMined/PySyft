@@ -1244,8 +1244,10 @@ class Node(AbstractNode):
             has_execute_permissions=has_execute_permissions,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
-        user_id = self.get_service("UserService").get_user_id_for_credentials(credentials)
-        
+        user_id = self.get_service("UserService").get_user_id_for_credentials(
+            credentials
+        )
+
         return self.add_queueitem_to_queue(
             queue_item, credentials, action, parent_job_id, user_id
         )

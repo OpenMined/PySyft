@@ -197,7 +197,9 @@ class UserService(AbstractService):
     #             return user
     #     return SyftError(message=str(result.err()))
 
-    def get_user_id_for_credentials(self, credentials: SyftVerifyKey) -> UID | SyftError:
+    def get_user_id_for_credentials(
+        self, credentials: SyftVerifyKey
+    ) -> UID | SyftError:
         result = self.stash.get_by_verify_key(
             credentials=credentials, verify_key=credentials
         )
