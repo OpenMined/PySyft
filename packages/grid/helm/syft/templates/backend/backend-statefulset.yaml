@@ -20,7 +20,16 @@ spec:
       labels:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: backend
+        {{- if .Values.node.podLabels }}
+        {{- toYaml .Values.node.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.node.podAnnotations }}
+      annotations: {{- toYaml .Values.node.podAnnotations | nindent 8 }}
+      {{- end }}
     spec:
+      {{- if .Values.node.nodeSelector }}
+      nodeSelector: {{- .Values.node.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: backend-container
           image: {{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}
@@ -42,7 +51,7 @@ spec:
             - name: NODE_TYPE
               value: {{ .Values.node.type | default "domain" | quote }}
             - name: NODE_NAME
-              value: {{ .Values.node.name | default .Release.Name | quote }}
+              value: {{ .Values.node.name | default (printf "%s-node" .Release.Name) | quote }}
             - name: NODE_SIDE_TYPE
               value: {{ .Values.node.side | quote }}
             - name: DEFAULT_ROOT_EMAIL
@@ -104,8 +113,6 @@ spec:
                 secretKeyRef:
                     name: {{ .Values.seaweedfs.secretKeyName | required "seaweedfs.secretKeyName is required" }}
                     key: s3RootPassword
-            - name: SEAWEED_MOUNT_PORT
-              value: {{ .Values.seaweedfs.mountApi.port | quote }}
             {{- end }}
             # Tracing
             - name: TRACE
@@ -159,6 +166,11 @@ spec:
             {{- if .Values.attestation.env }}
             {{- toYaml .Values.attestation.env | nindent 12 }}
             {{- end }}
+          volumeMounts:
+            - name: kernel-security
+              mountPath: /sys/kernel/security
+            - name: tpm-device
+              mountPath: /dev/tpmrm0
           ports:
             - name: attestation-api
               containerPort: 4455
@@ -177,6 +189,15 @@ spec:
             failureThreshold: 3
           readinessProbe: null
         {{ end }}
+      {{- if .Values.attestation.enabled }}
+      volumes:
+        - name: kernel-security
+          hostPath:
+            path: /sys/kernel/security
+        - name: tpm-device
+          hostPath:
+            path: /dev/tpmrm0
+      {{- end }}
       serviceAccountName: backend-service-account
       terminationGracePeriodSeconds: 5
   volumeClaimTemplates:
