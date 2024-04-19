@@ -10,7 +10,7 @@ from pydantic import Field
 from ...abstract_node import NodeSideType
 from ...serde.serializable import serializable
 from ...store.linked_obj import LinkedObject
-from ...types.datetime import DateTime
+from ...types.datetime import DateTime, td_format
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
@@ -65,16 +65,13 @@ class SyncStateRow(SyftObject):
         return {"value": status.upper(), "type": badge_color}
 
     def _coll_repr_(self) -> dict[str, Any]:
-        obj_view = SyncTableObject(object=self.object)
+        obj_view = SyncTableObject(
+            object=self.object, last_sync_date=self.last_sync_date
+        )
 
         if self.last_sync_date is not None:
-            last_sync_date = self.last_sync_date
-            last_sync_delta = timedelta(
-                seconds=DateTime.now().utc_timestamp - last_sync_date.utc_timestamp
-            )
-            last_sync_delta_str = td_format(last_sync_delta)
             last_sync_html = (
-                f"<p class='diff-state-no-obj'>{last_sync_delta_str} ago</p>"
+                f"<p class='diff-state-no-obj'>{self.last_sync_date.timeago()}</p>"
             )
         else:
             last_sync_html = "<p class='diff-state-no-obj'>n/a</p>"
@@ -88,30 +85,6 @@ class SyncStateRow(SyftObject):
     def object_type(self) -> str:
         prefix = get_hierarchy_level_prefix(self.level)
         return f"{prefix}{type(self.object).__name__}"
-
-
-def td_format(td_object: timedelta) -> str:
-    seconds = int(td_object.total_seconds())
-    if seconds == 0:
-        return "0 seconds"
-
-    periods = [
-        ("year", 60 * 60 * 24 * 365),
-        ("month", 60 * 60 * 24 * 30),
-        ("day", 60 * 60 * 24),
-        ("hour", 60 * 60),
-        ("minute", 60),
-        ("second", 1),
-    ]
-
-    strings = []
-    for period_name, period_seconds in periods:
-        if seconds >= period_seconds:
-            period_value, seconds = divmod(seconds, period_seconds)
-            has_s = "s" if period_value > 1 else ""
-            strings.append(f"{period_value} {period_name}{has_s}")
-
-    return ", ".join(strings)
 
 
 @serializable()
@@ -238,12 +211,8 @@ class SyncState(SyftObject):
         name_html = prop_template.format("name", self.node_name)
         if self.previous_state_link is not None:
             previous_state = self.previous_state_link.resolve
-            delta = timedelta(
-                seconds=self.created_at.utc_timestamp
-                - previous_state.created_at.utc_timestamp
-            )
-            val = f"{td_format(delta)} ago"
-            date_html = prop_template.format("last sync", val)
+            delta = self.created_at - previous_state.created_at
+            date_html = prop_template.format("last sync", delta.timeago())
         else:
             date_html = prop_template.format("last sync", "not synced yet")
 

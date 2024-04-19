@@ -13,6 +13,7 @@ from ....types.syft_object import SYFT_OBJECT_VERSION_1
 from ....types.syft_object import SyftObject
 from ..notebook_addons import CSS_CODE
 from .base import HTMLComponentBase
+from ....types.datetime import DateTime
 
 COPY_ICON = (
     '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">'
@@ -81,6 +82,11 @@ class SyncTableObject(HTMLComponentBase):
     __version__ = SYFT_OBJECT_VERSION_1
 
     object: SyftObject
+    last_sync_date: DateTime | None = None
+
+    @classmethod
+    def from_object_diff(cls, object: SyftObject, last_sync_date: DateTime) -> Any:
+        return cls(object=object, last_sync_date=last_sync_date)
 
     def get_status_str(self) -> str:
         if isinstance(self.object, UserCode):
@@ -106,7 +112,10 @@ class SyncTableObject(HTMLComponentBase):
             copy_text=str(self.object.id.id), max_width=60
         ).to_html()
 
-        updated_delta_str = "29m ago"
+        updated_delta_str = (
+            self.last_sync_date.timeago() if self.last_sync_date else "n/a"
+        )
+        # updated_delta_str = "29 minutes ago"
         updated_by = "john@doe.org"
         status_str = self.get_status_str()
         status_seperator = " • " if len(status_str) else ""

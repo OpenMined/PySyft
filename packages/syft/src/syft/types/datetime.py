@@ -1,6 +1,7 @@
 # stdlib
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from functools import total_ordering
+
 from typing import Any
 
 # third party
@@ -11,6 +12,30 @@ from ..serde.serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_2
 from .syft_object import SyftObject
 from .uid import UID
+
+
+def td_format(td_object: timedelta) -> str:
+    seconds = int(td_object.total_seconds())
+    if seconds == 0:
+        return "0 seconds"
+
+    periods = [
+        ("year", 60 * 60 * 24 * 365),
+        ("month", 60 * 60 * 24 * 30),
+        ("day", 60 * 60 * 24),
+        ("hour", 60 * 60),
+        ("minute", 60),
+        ("second", 1),
+    ]
+
+    strings = []
+    for period_name, period_seconds in periods:
+        if seconds >= period_seconds:
+            period_value, seconds = divmod(seconds, period_seconds)
+            has_s = "s" if period_value > 1 else ""
+            strings.append(f"{period_value} {period_name}{has_s}")
+
+    return ", ".join(strings)
 
 
 @serializable()
@@ -25,6 +50,13 @@ class DateTime(SyftObject):
     @classmethod
     def now(cls) -> Self:
         return cls(utc_timestamp=datetime.utcnow().timestamp())
+
+    def as_datetime(self) -> datetime:
+        return datetime.utcfromtimestamp(self.utc_timestamp)
+
+    def timeago(self) -> str:
+        delta = datetime.utcnow() - self.as_datetime()
+        return td_format(delta) + " ago"
 
     def __str__(self) -> str:
         utc_datetime = datetime.utcfromtimestamp(self.utc_timestamp)
