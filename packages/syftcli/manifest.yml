@@ -7,7 +7,7 @@ images:
   - docker.io/openmined/grid-frontend:0.8.7-beta.1
   - docker.io/openmined/grid-backend:0.8.7-beta.1
   - docker.io/library/mongo:7.0.4
-  - docker.io/traefik:v2.10
+  - docker.io/traefik:v2.11.0
 
 configFiles:
   docker:
@@ -24,8 +24,6 @@ configFiles:
     - packages/grid/traefik/docker/traefik.yml
   k8s:
     - packages/grid/devspace.yaml
-    - packages/grid/traefik/k8s/dynamic.yml
-    - packages/grid/traefik/k8s/traefik.yml
   podman:
     - packages/grid/podman/podman-kube/podman-syft-kube-config.yaml
     - packages/grid/podman/podman-kube/podman-syft-kube.yaml

@@ -59,7 +59,7 @@
       "CustomAPIView": {
         "1": {
           "version": 1,
-          "hash": "21cada3f8b8609e91e4f01f3bfdbdab3f8b96003163e09dba1c4b31041598ca2",
+          "hash": "5cdfaea6b5af235d0f9ab8e6f01d6cebcde7c8bf4efd00aec26c343965ef865e",
           "action": "add"
         }
       },
@@ -94,7 +94,7 @@
       "TwinAPIEndpoint": {
         "1": {
           "version": 1,
-          "hash": "edcd67ab41edfae56deb23d9ef838edc442f587bdb16b8e8c46efa20c04e3c25",
+          "hash": "03a0244c6b322e72032c5c33c1db09b913f83d72cfad1cc51ac4ec90506afcf5",
           "action": "add"
         }
       },
@@ -115,6 +115,31 @@
           "version": 5,
           "hash": "82ee08442b09797ed7a3710c31de633bb308b1d2215f51b58a3e01a4c201055d",
           "action": "add"
+        },
+      "EnclaveMetadata": {
+        "2": {
+          "version": 2,
+          "hash": "6dcc26695abc6a9ecd9d7d1e6507a9f1a92cc5ccd10987e92419bf984245f9a1",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "d2f23411927c68e2307a84d180ad053b3e4ba12d74aba64d34dac224c90e815d",
+          "action": "add"
+        }
+      },
+      "NodePeer": {
+        "3": {
+          "version": 3,
+          "hash": "dababb03d2463b6218ae22d55293a60580f5a14bebd0c664d71da104e2f0b835",
+          "action": "add"
+        }
+      },
+      "VeilidConnection": {
+        "1": {
+          "version": 1,
+          "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
+          "action": "remove"
         }
       }
     }
