@@ -322,7 +322,7 @@ def test_mock_no_arguments(worker) -> None:
     # no accept_by_depositing_result, mock execution
     users[-1].allow_mock_execution()
     result = ds_client.api.services.code.compute_sum()
-    assert result.get() == compute_sum().get()
+    assert result.get() == 1
 
     # accept_by_depositing_result, no mock execution
     users[-1].allow_mock_execution(allow=False)
@@ -333,4 +333,4 @@ def test_mock_no_arguments(worker) -> None:
     request.accept_by_depositing_result(result)
 
     result = ds_client.api.services.code.compute_sum()
-    assert result.get() == compute_sum().get()
+    assert result.get() == 1
