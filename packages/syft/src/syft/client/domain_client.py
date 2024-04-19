@@ -14,7 +14,6 @@ from tqdm import tqdm
 
 # relative
 from ..abstract_node import NodeSideType
-from ..img.base64 import base64read
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
 from ..service.code_history.code_history import CodeHistoriesDict
@@ -32,6 +31,7 @@ from ..service.user.user_roles import ServiceRole
 from ..types.blob_storage import BlobFile
 from ..types.uid import UID
 from ..util.fonts import FONT_CSS
+from ..util.resources import read_png_base64
 from ..util.util import get_mb_size
 from ..util.util import prompt_warning_message
 from .api import APIModule
@@ -466,7 +466,7 @@ class DomainClient(SyftClient):
         </ul>
         """
 
-        small_grid_symbol_logo = base64read("small-grid-symbol-logo.png")
+        small_grid_symbol_logo = read_png_base64("small-grid-symbol-logo.png")
 
         url = getattr(self.connection, "url", None)
         node_details = f"<strong>URL:</strong> {url}<br />" if url else ""

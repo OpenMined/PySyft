@@ -11,7 +11,6 @@ from hagrid.orchestra import NodeHandle
 # relative
 from ..abstract_node import NodeSideType
 from ..client.api import APIRegistry
-from ..img.base64 import base64read
 from ..serde.serializable import serializable
 from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.network.routes import NodeRouteType
@@ -21,6 +20,7 @@ from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.fonts import FONT_CSS
+from ..util.resources import read_png_base64
 from .api import APIModule
 from .client import SyftClient
 from .client import login
@@ -164,7 +164,7 @@ class EnclaveClient(SyftClient):
         </ul>
         """
 
-        small_grid_symbol_logo = base64read("small-grid-symbol-logo.png")
+        small_grid_symbol_logo = read_png_base64("small-grid-symbol-logo.png")
 
         url = getattr(self.connection, "url", None)
         node_details = f"<strong>URL:</strong> {url}<br />" if url else ""

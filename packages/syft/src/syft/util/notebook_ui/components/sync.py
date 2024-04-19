@@ -11,52 +11,11 @@ from ....service.job.job_stash import Job
 from ....service.request.request import Request
 from ....types.syft_object import SYFT_OBJECT_VERSION_1
 from ....types.syft_object import SyftObject
+from ...resources import read_svg
 from ..notebook_addons import CSS_CODE
 from .base import HTMLComponentBase
 
-COPY_ICON = (
-    '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">'
-    '<path d="M12 0.5H4C3.86739 0.5 3.74021 0.552679 3.64645 0.646447C3.55268 0.740215 3.5 0.867392 '
-    "3.5 1V3.5H1C0.867392 3.5 0.740215 3.55268 0.646447 3.64645C0.552679 3.74021 0.5 3.86739 0.5 "
-    "4V12C0.5 12.1326 0.552679 12.2598 0.646447 12.3536C0.740215 12.4473 0.867392 12.5 1 12.5H9C9.13261 "
-    "12.5 9.25979 12.4473 9.35355 12.3536C9.44732 12.2598 9.5 12.1326 9.5 12V9.5H12C12.1326 9.5 12.2598 "
-    "9.44732 12.3536 9.35355C12.4473 9.25979 12.5 9.13261 12.5 9V1C12.5 0.867392 12.4473 0.740215 12.3536 "
-    "0.646447C12.2598 0.552679 12.1326 0.5 12 0.5ZM8.5 11.5H1.5V4.5H8.5V11.5ZM11.5 8.5H9.5V4C9.5 3.86739 "
-    '9.44732 3.74021 9.35355 3.64645C9.25979 3.55268 9.13261 3.5 9 3.5H4.5V1.5H11.5V8.5Z" fill="#B4B0BF"/>'
-    "</svg>"
-)
-
-COPY_CSS = """
-.copy-container {
-  cursor: pointer;
-  border-radius: 3px;
-  padding: 0px 3px;
-  display: inline-block;
-  transition: background-color 0.3s;
-  user-select: none;
-  color: #B4B0BF;
-  overflow: hidden;
-  white-space: nowrap;
-;
-}
-
-.copy-container:hover {
-  background-color: #f5f5f5;
-}
-
-.copy-container:active {
-  background-color: #ebebeb;
-}
-
-.copy-text-display {
-  display: inline-block;
-  max-width: 50px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  vertical-align: bottom;
-}
-"""
+COPY_ICON = read_svg("copy.svg")
 
 
 class CopyIDButton(HTMLComponentBase):
@@ -68,7 +27,6 @@ class CopyIDButton(HTMLComponentBase):
     def to_html(self) -> str:
         copy_js = f"event.stopPropagation(); navigator.clipboard.writeText('{self.copy_text}');"
         button_html = f"""
-        <style>{COPY_CSS}</style>
         <div class="copy-container" onclick="{copy_js}">
             <span class="copy-text-display" style="max-width: {self.max_width}px;">#{self.copy_text}</span>{COPY_ICON}
         </div>

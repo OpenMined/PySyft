@@ -4,7 +4,6 @@ from typing import Any
 # relative
 from ..abstract_node import NodeSideType
 from ..abstract_node import NodeType
-from ..img.base64 import base64read
 from ..node.credentials import SyftSigningKey
 from ..serde.serializable import serializable
 from ..service.metadata.node_metadata import NodeMetadataJSON
@@ -14,6 +13,7 @@ from ..service.response import SyftException
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 from ..util.fonts import FONT_CSS
+from ..util.resources import read_png_base64
 from .client import SyftClient
 from .connection import NodeConnection
 
@@ -93,7 +93,7 @@ class GatewayClient(SyftClient):
         </ul>
         """
 
-        small_grid_symbol_logo = base64read("small-grid-symbol-logo.png")
+        small_grid_symbol_logo = read_png_base64("small-grid-symbol-logo.png")
 
         url = getattr(self.connection, "url", None)
         node_details = f"<strong>URL:</strong> {url}<br />" if url else ""
