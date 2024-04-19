@@ -1,7 +1,6 @@
 # stdlib
 from secrets import token_hex
 from textwrap import dedent
-from tkinter import NO
 
 # third party
 import pytest
