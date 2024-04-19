@@ -1,6 +1,7 @@
 # stdlib
 from secrets import token_hex
 from textwrap import dedent
+from tkinter import NO
 
 # third party
 import pytest
@@ -115,6 +116,10 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     )
     high_client.api.services.api.add(endpoint=new_endpoint)
     high_client.refresh()
+    high_private_result = high_client.api.services.testapi.query.private()
+
+    job = high_client.api.services.job.get_all()[0]
+    private_job_id = job.id
 
     diff_before, diff_after = compare_and_resolve(
         from_client=high_client, to_client=low_client
@@ -144,5 +149,9 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     )
     client_low_ds.refresh()
     res = client_low_ds.code.compute(query=client_low_ds.api.services.testapi.query)
-    assert res.syft_action_data == high_client.api.services.testapi.query.private()
+    assert res.syft_action_data == high_private_result
     assert diff_after.is_same
+
+    # verify that ds cannot access private job
+    assert client_low_ds.api.services.job.get(private_job_id) is None
+    assert low_client.api.services.job.get(private_job_id) is not None
