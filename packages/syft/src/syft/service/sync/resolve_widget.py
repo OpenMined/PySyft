@@ -469,8 +469,14 @@ class ResolveWidget:
                 sync = widget.sync
 
                 if sync or widget.is_main_widget:
-                    share_to_user: SyftVerifyKey | None = getattr(
-                        self.obj_diff_batch.user_code_high, "user_verify_key", None
+                    # figure out the right verify key to share to
+                    # in case of a job with user code, share to user code owner
+                    # without user code, share to job owner
+                    share_to_user: SyftVerifyKey | None = (
+                        getattr(
+                            self.obj_diff_batch.user_code_high, "user_verify_key", None
+                        )
+                        or self.obj_diff_batch.user_verify_key_high
                     )
                     instruction = SyncInstruction.from_widget_state(
                         widget=widget,
