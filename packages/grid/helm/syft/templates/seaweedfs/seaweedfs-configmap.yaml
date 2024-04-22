@@ -7,15 +7,25 @@ metadata:
     {{- include "common.labels" . | nindent 4 }}
     app.kubernetes.io/component: seaweedfs
 data:
-  filer.toml: |
-    [leveldb2]
-    enabled = true
-    dir = "./filerldb2"
-  start.sh: |
-    #! /usr/bin/env bash
+  {{- if .Values.seaweedfs.master.config }}
+  master.toml: |
+    # User provisioned master config
+    {{ .Values.seaweedfs.master.config | nindent 4 }}
+    # End master config
+  {{- end }}
 
-    sleep 30 &&
-    echo "s3.configure -access_key ${S3_ROOT_USER} -secret_key ${S3_ROOT_PWD} -user iam -actions Read,Write,List,Tagging,Admin -apply" \
-    | weed shell > /dev/null 2>&1 \
-    & weed server -s3 -s3.port=${S3_PORT} -master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}
+  {{- if .Values.seaweedfs.filer.config }}
+  filer.toml: |
+    # User provisioned filer config
+    {{ .Values.seaweedfs.filer.config | nindent 4 }}
+    # End filer config
+  {{- end }}
+
+  {{- if .Values.seaweedfs.mountApi.mounts }}
+  automount.yaml: |
+    # User provisioned automount config
+    mounts: {{ toYaml .Values.seaweedfs.mountApi.mounts | nindent 6 }}
+    # End automount config
+  {{- end }}
+
 {{ end }}

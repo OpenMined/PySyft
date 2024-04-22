@@ -20,7 +20,16 @@ spec:
       labels:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: backend
+        {{- if .Values.node.podLabels }}
+        {{- toYaml .Values.node.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.node.podAnnotations }}
+      annotations: {{- toYaml .Values.node.podAnnotations | nindent 8 }}
+      {{- end }}
     spec:
+      {{- if .Values.node.nodeSelector }}
+      nodeSelector: {{- .Values.node.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: backend-container
           image: {{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}
@@ -42,7 +51,7 @@ spec:
             - name: NODE_TYPE
               value: {{ .Values.node.type | default "domain" | quote }}
             - name: NODE_NAME
-              value: {{ .Values.node.name | default .Release.Name | quote }}
+              value: {{ .Values.node.name | default (printf "%s-node" .Release.Name) | quote }}
             - name: NODE_SIDE_TYPE
               value: {{ .Values.node.side | quote }}
             - name: DEFAULT_ROOT_EMAIL
@@ -64,6 +73,10 @@ spec:
               value: "{{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}"
             - name: DEFAULT_WORKER_POOL_COUNT
               value: {{ .Values.node.defaultWorkerPoolCount | quote }}
+            {{- if .Values.node.defaultBucketName }}
+            - name: DEFAULT_BUCKET_NAME
+              value: {{ .Values.node.defaultBucketName | quote }}
+            {{- end }}
             {{- if .Values.node.debuggerEnabled }}
             - name: DEBUGGER_ENABLED
               value: "true"
@@ -100,10 +113,6 @@ spec:
                 secretKeyRef:
                     name: {{ .Values.seaweedfs.secretKeyName | required "seaweedfs.secretKeyName is required" }}
                     key: s3RootPassword
-            - name: S3_PORT
-              value: {{ .Values.seaweedfs.s3.port | quote }}
-            - name: SEAWEED_MOUNT_PORT
-              value: {{ .Values.seaweedfs.mountApi.port | quote }}
             {{- end }}
             # Tracing
             - name: TRACE
