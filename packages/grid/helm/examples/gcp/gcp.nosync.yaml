@@ -1,7 +1,12 @@
-# ===================================================
-# Deploy Syft High Side Node to a GKE Cluster
-# DOES NOT sync seaweedfs to a GCS bucket
-# ===================================================
+# =================================================================================
+# Syft on GKE Cluster
+#
+# Node side  : high
+# Automount  : NO
+# Ingress    : gce
+# Extras:
+#  - BackendConfig for increased timeout
+# =================================================================================
 
 node:
   name: syft-gcp
@@ -16,6 +21,8 @@ node:
       cpu: 4
       memory: "16Gi"
 
+# =================================================================================
+
 seaweedfs:
   storageSize: 100Gi
 
@@ -28,20 +35,41 @@ seaweedfs:
       cpu: 4
       memory: "16Gi"
 
+# =================================================================================
+
 ingress:
-  # GKE 1.28+ need ingressClassName
+  # GKE 1.28+ needs ingressClassName
   className: gce
   class: gce
+
+# =================================================================================
 
 proxy:
   resourcesPreset: medium
 
+# =================================================================================
+
 registry:
   resourcesPreset: medium
-  storageSize: 100Gi
+
+# =================================================================================
 
 frontend:
   resourcesPreset: medium
 
+# =================================================================================
+
 mongo:
   resourcesPreset: large
+
+# =================================================================================
+
+extraResources:
+  # Configure load balancer backend service
+  # https://cloud.google.com/kubernetes-engine/docs/how-to/ingress-configuration#configuring_ingress_features_through_backendconfig_parameters
+  - apiVersion: cloud.google.com/v1
+    kind: BackendConfig
+    metadata:
+      name: custom-backend-config
+    spec:
+      timeoutSec: 1800
