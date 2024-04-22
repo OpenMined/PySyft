@@ -3,6 +3,7 @@ from datetime import datetime
 from datetime import timedelta
 from enum import Enum
 import random
+from string import Template
 from typing import Any
 
 # third party
@@ -35,8 +36,6 @@ from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import as_markdown_code
-from ...util.notebook_ui.notebook_addons import CSS_CODE
-from ...util.notebook_ui.notebook_addons import JS_DOWNLOAD_FONTS
 from ...util.telemetry import instrument
 from ...util.util import prompt_warning_message
 from ..action.action_object import Action
@@ -46,6 +45,7 @@ from ..response import SyftError
 from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..user.user import UserView
+from .html_template import job_repr_template
 
 
 @serializable()
@@ -579,43 +579,23 @@ class Job(SyncableSyftObject):
         # relative
         from ...util.notebook_ui.components.sync import CopyIDButton
 
-        style = CSS_CODE
-        logs = self.logs(_print=False, stderr=False)
         identifier = random.randint(1, 2**32)
         result_tab_id = f"Result_{identifier}"
         logs_tab_id = f"Logs_{identifier}"
-
-        type_html = f"""
-            <div class="label label-light-blue"
-            style="display: flex; align-items:center; justify-content: center; width: 34px; height:21px; radius:4px;
-                padding: 2px, 6px, 2px, 6px">
-            <span style="font-family: DejaVu Sans Mono, sans-serif;
-                font-size: 12px; font-weight: 400; line-height:16.8px">
-            {"JOB" if not self.parent_job_id else "SUBJOB"}</span>
-            </div>
-"""
-        description_html = f"<span class='jobs-title'>{self.user_code_name}</span>"
-        copy_id_button = CopyIDButton(copy_text=str(self.id), max_width=60)
+        job_type = "JOB" if not self.parent_job_id else "SUBJOB"
         ancestor_name_list = self.ancestors_name_list
         if isinstance(ancestor_name_list, SyftError):
             return ancestor_name_list
         api_header = f"{self.node_name}/jobs/" + "/".join(ancestor_name_list)
+        copy_id_button = CopyIDButton(copy_text=str(self.id), max_width=60)
+        button_html = copy_id_button.to_html()
+        creation_time = self.creation_time[:-7] if self.creation_time else "--"
+        updated_at = str(self.updated_at)[:-7] if self.updated_at else "--"
 
-        header_line_html = f"""
-            <div style="height:16px;"></div>
-            <div style="gap: 12px; height: 20 px; font-family: DejaVu Sans Mono, sans-serif; font-size: 14px; font-weight: 400;
-                line-height:16.8px; color: #4392C5">{api_header}</div>
-            <div style="height:16px;"></div>
-            <div style="display: flex; gap: 12px; justify-content: start; width: 100%; overflow:
-                hidden; align-items: center;">
-                <div style="display: flex; gap: 12px; justify-content: start; align-items: center;
-                    border: 0px, 0px, 2px, 0px; padding: 0px, 0px, 16px, 0px">
-                {type_html} {description_html}
-                </div>
-                {copy_id_button.to_html()}
-            </div>
-            <div style="height:16px;"></div>
-        """  # noqa: E501
+        user_repr = "--"
+        if self.requested_by:
+            requesting_user = self.requesting_user
+            user_repr = f"{requesting_user.name} {requesting_user.email}"
 
         worker_attr = ""
         if self.job_worker_id:
@@ -631,46 +611,7 @@ class Job(SyncableSyftObject):
                 </div>
             """
 
-        user_repr = "--"
-        if self.requested_by:
-            requesting_user = self.requesting_user
-            user_repr = f"{requesting_user.name} {requesting_user.email}"
-
-        attrs_html = f"""<div style="display: table-row; padding: 0px, 0px, 12px, 0px; gap:8px">
-                <div style="margin-top: 6px; margin-bottom: 6px;">
-                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">UserCode:</span>
-                    {self.user_code_name}
-                </div>
-                <div style="margin-top: 6px; margin-bottom: 6px;">
-                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">Status:</span>
-                    {self.status.value.title()}
-                </div>
-                <div style="margin-top: 6px; margin-bottom: 6px;">
-                    <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">
-                        Started At:</span>
-                    {self.creation_time[:-7]if self.creation_time else '--'} by {user_repr}
-                </div>
-                <div style="margin-top: 6px; margin-bottom: 6px;">
-                    <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">
-                    Updated At:</span>
-                    {str(self.updated_at)[:-7] if self.updated_at else '--'}
-                </div>
-                {worker_attr}
-                <div style="margin-top: 6px; margin-bottom: 6px;">
-                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">Subjobs:</span>
-                    {len(self.subjobs)}
-                </div>
-            </div>
-            <div style="height:16px;"></div>
-            """
-
-        result_html = f"""<div id="{result_tab_id}" class="tab-{identifier}" style="background: #F4F3F6;
-            border-color: #CFCDD6; border-width: 0.5px; border-style: solid; padding: 24px; gap: 8px; margin-top: 24px">
-            <div style="font-size: 12px; font-weight: 400; font: DejaVu Sans Mono, sans-serif; line-height: 16.8px">
-                {self.result}
-            </div>
-        </div>
-        """
+        logs = self.logs(_print=False, stderr=False)
         logs_lines = logs.split("\n") if logs else []
         logs_lines_html = ""
         for i, line in enumerate(logs_lines):
@@ -689,122 +630,27 @@ class Job(SyncableSyftObject):
                 </tr>
             """
 
-        logs_html = f"""<div id="{logs_tab_id}" class="tab-{identifier}" style="background: #F4F3F6;
-        border-color: #CFCDD6; border-width: 0.5px; border-style: solid; padding: 24px; gap: 8px; margin-top: 24px;
-        display: none;align-items:left">
-            <div style="font-size: 12px; font-weight: 400; font: DejaVu Sans Mono, sans-serif; line-height: 16.8px; ">
-                <table  style="width:100%; justify-content:left; border-collapse: collapse;">
-                <tr style="width:100%">
-                    <td style="text-align: left">
-                        <span style="margin-right:24px; font-weight:700; align-text: center">
-                            #
-                        </span>
-                    </td>
-                    <td  style="text-align: left">
-                        <span style="font-weight:700; align-text: left">
-                            Message
-                        </span>
-                    </td>
-                </tr>
-                {logs_lines_html}
-            </div>
-        </div>
-        """
-
-        # TODO: add style change for selected tab
-        onclick_html = f"""<script>
-        function onClick_{identifier}(evt, tabname) {{
-            existing_tabs = document.getElementsByClassName("tab-{identifier}");
-            for (i = 0; i < existing_tabs.length; i++) {{
-                existing_tabs[i].style.display = "none";
-            }}
-            tablinks = document.getElementsByClassName("tablink-{identifier}");
-            for (i = 0; i < tablinks.length; i++) {{
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }}
-            tablinks = document.getElementsByClassName("tablink-border-{identifier}");
-            for (i = 0; i < tablinks.length; i++) {{
-                tablinks[i].className = tablinks[i].className.replace(" active-border", "");
-            }}
-            document.getElementById(tabname).style.display = "block";
-            evt.currentTarget.className += " active";
-            evt.currentTarget.parentNode.className += " active-border";
-        }}
-        </script>
-        """
-
-        list_css = """
-            ul {
-                list-style-type: none;
-                margin: 0;
-                padding: 0;
-                overflow: hidden;
-            }
-
-            li {
-                float: left;
-                border-bottom: solid;
-                border-bottom-color: #CFCDD6;
-            }
-
-            li a {
-                display: block;
-                text-align: center;
-                padding: 14px 16px;
-                color: #CFCDD6
-            }
-            .log-tab-header{
-                border-bottom: solid 2px #ECEBEF;
-                padding: 4px 16px
-            }
-
-            .active-border {
-                border-bottom: solid 2px #1F567A;
-                font-weight: 700;
-            }
-
-            .active {
-                color: #1F567A
-            }
-
-            li a:hover {
-                background-color: #C2DEF0;
-            }"""
-
-        tabs_html = f"""
-            <div style="margin-top: 8px; padding: 8px, 0px, 8px, 0px; gap: 16px">
-            <div style="display: flex;">
-                <div class="tablink-border-{identifier} log-tab-header active-border">
-                    <a  onclick="onClick_{identifier}(event, '{result_tab_id}')" class='tablink-{identifier} active'>
-                        Result
-                    </a>
-                </div>
-                <div class="tablink-border-{identifier} log-tab-header">
-                    <a onclick="onClick_{identifier}(event, '{logs_tab_id}')" class='tablink-{identifier}'>Logs</a>
-                </div>
-            </div>
-        </div>
-        {result_html}
-        {logs_html}
-        {onclick_html}
-        """
-
-        repr_html = f"""
-        {JS_DOWNLOAD_FONTS}
-        <style>
-        {style}
-        </style>
-        <style>
-        {list_css}
-        </style>
-            {header_line_html}
-            {attrs_html}
-            {tabs_html}
-        <div style='height: 16px;'></div>
-        """
-
-        # repr_html = repr_html.replace('\n', "")
-        return repr_html
+        template = Template(job_repr_template)
+        return template.substitute(
+            uid=str(UID()),
+            cols=0,
+            job_type=job_type,
+            api_header=api_header,
+            user_code_name=self.user_code_name,
+            button_html=button_html,
+            status=self.status.value.title(),
+            creation_time=creation_time,
+            user_rerp=user_repr,
+            updated_at=updated_at,
+            worker_attr=worker_attr,
+            no_subjobs=len(self.subjobs),
+            logs_tab_id=logs_tab_id,
+            result_tab_id=result_tab_id,
+            identifier=identifier,
+            logs_lines_html=logs_lines_html,
+            result=self.result,
+            user_repr=user_repr,
+        )
 
     def wait(
         self, job_only: bool = False, timeout: int | None = None
