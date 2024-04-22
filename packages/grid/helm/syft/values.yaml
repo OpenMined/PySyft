@@ -70,6 +70,9 @@ seaweedfs:
     #       creds: /etc/secrets/gcs_creds.json
     automount: null
 
+    # Provision the secret externally or through extraResources
+    secretKeyName: null
+
   # Extra environment vars
   env: null
 
@@ -99,7 +102,6 @@ seaweedfs:
   # custom secret values
   secret:
     s3RootPassword: null
-    mountCredentials: null
 
 proxy:
   # Extra environment vars

@@ -98,14 +98,11 @@ spec:
               readOnly: true
             {{- end }}
 
-            {{- if .Values.seaweedfs.secret.mountCredentials }}
-            # mount credentials to /run/secrets/
-            {{- range $obj := $.Values.seaweedfs.secret.mountCredentials }}
-            - mountPath: /run/secrets/{{ $obj.name }}
-              subPath: {{ $obj.name }}
-              name: seaweedfs-mount-creds
+            {{- if .Values.seaweedfs.mountApi.secretKeyName }}
+            # mount all secrets to /run/secrets/
+            - mountPath: /run/secrets/
+              name: mount-secret-vol
               readOnly: true
-            {{- end }}
             {{- end}}
 
             {{- if .Values.seaweedfs.volumeMounts }}
@@ -117,11 +114,10 @@ spec:
           configMap:
             name: seaweedfs-config
 
-        {{- if .Values.seaweedfs.secret.mountCredentials }}
-        # mount secret as volume
-        - name: seaweedfs-mount-creds
+        {{- if .Values.seaweedfs.mountApi.secretKeyName }}
+        - name: mount-secret-vol
           secret:
-            secretName: seaweedfs-mount-secret
+            secretName: {{ .Values.seaweedfs.mountApi.secretKeyName }}
         {{- end }}
 
         {{- if .Values.seaweedfs.volumes }}
