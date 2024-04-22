@@ -141,8 +141,8 @@ class MainObjectDiffWidget:
         elif self.show_share_warning:
             message = (
                 "By default only the object wrapper will be synced. "
-                "If you would like to sync the real log data please "
-                'activate the "Real Data" button above.'
+                "If you would like to sync the real data please "
+                'activate the "Sync Real Data" button above.'
             )
             return Alert(message=message).to_html()
         else:
