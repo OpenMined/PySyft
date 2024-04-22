@@ -9,3 +9,9 @@ class ResponseModel(BaseModel):
 class RatholeConfig(BaseModel):
     uuid: str
     secret_token: str
+    local_addr_host: str
+    local_addr_port: int
+
+    @property
+    def local_address(self) -> str:
+        return f"{self.local_addr_host}:{self.local_addr_port}"
