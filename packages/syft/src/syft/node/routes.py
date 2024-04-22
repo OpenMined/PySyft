@@ -60,14 +60,14 @@ def make_routes(worker: Worker) -> APIRouter:
         url = connection.api_url.with_path(f"blob/{presigned_url}")
         yield requests.get(url=url, stream=True)
 
-    @router.get("/stream/{peer_uid_str}/{url_path}/", name="stream", status_code=200)
+    @router.get("/stream/{peer_uid_str}/{url_path_str}/", name="stream", status_code=200)
     async def stream(peer_uid_str: str, url_path_str: str) -> StreamingResponse:
         # stdlib
         import base64
 
-        url_path = base64.b64decode(url_path_str.encode(), b"-_").decode()
+        url_path = base64.urlsafe_b64decode(url_path_str.encode()).decode()
         peer_uid = UID.from_string(peer_uid_str)
-        print(f"Hello...., {peer_uid_str}, {url_path}")
+
         return StreamingResponse(
             stream_blob_url(peer_uid=peer_uid, presigned_url=url_path)
         )

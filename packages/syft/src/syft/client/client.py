@@ -159,7 +159,7 @@ class HTTPConnection(NodeConnection):
         # stdlib
         import base64
 
-        url_path_str = base64.b64encode(url_path.encode()).decode("utf-8")
+        url_path_str = base64.urlsafe_b64encode(url_path.encode()).decode()
         stream_url_path = f"{self.routes.STREAM.value}/{proxy_uid}/{url_path_str}/"
         return self.url.with_path(stream_url_path)
 
