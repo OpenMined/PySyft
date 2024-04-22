@@ -3,6 +3,7 @@ from collections.abc import Callable
 from enum import Enum
 from enum import EnumMeta
 import sys
+import tempfile
 import types
 from typing import Any
 
@@ -21,6 +22,8 @@ from .capnp import get_capnp_schema
 TYPE_BANK = {}
 
 recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde
+
+SPOOLED_FILE_MAX_SIZE_SERDE = 50 * (1024**2)  # 50MB
 
 
 def get_types(cls: type, keys: list[str] | None = None) -> list[type] | None:
@@ -161,16 +164,28 @@ def recursive_serde_register(
 
 
 def chunk_bytes(
-    data: bytes, field_name: str | int, builder: _DynamicStructBuilder
+    field_obj: Any,
+    ser_func: Callable,
+    field_name: str | int,
+    builder: _DynamicStructBuilder,
 ) -> None:
-    CHUNK_SIZE = int(5.12e8)  # capnp max for a List(Data) field
-    list_size = len(data) // CHUNK_SIZE + 1
-    data_lst = builder.init(field_name, list_size)
-    END_INDEX = CHUNK_SIZE
-    for idx in range(list_size):
-        START_INDEX = idx * CHUNK_SIZE
-        END_INDEX = min(START_INDEX + CHUNK_SIZE, len(data))
-        data_lst[idx] = data[START_INDEX:END_INDEX]
+    data = ser_func(field_obj)
+    size_of_data = len(data)
+    with tempfile.SpooledTemporaryFile(
+        max_size=SPOOLED_FILE_MAX_SIZE_SERDE
+    ) as tmp_file:
+        # Write data to a file to save RAM
+        tmp_file.write(data)
+        tmp_file.seek(0)
+        del data
+
+        CHUNK_SIZE = int(5.12e8)  # capnp max for a List(Data) field
+        list_size = size_of_data // CHUNK_SIZE + 1
+        data_lst = builder.init(field_name, list_size)
+        for idx in range(list_size):
+            bytes_to_read = min(CHUNK_SIZE, size_of_data)
+            data_lst[idx] = tmp_file.read(bytes_to_read)
+            size_of_data -= CHUNK_SIZE
 
 
 def combine_bytes(capnp_list: list[bytes]) -> bytes:
@@ -195,7 +210,6 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
     if fqn not in TYPE_BANK:
         # third party
         raise Exception(f"{fqn} not in TYPE_BANK")
-
     msg.fullyQualifiedName = fqn
     (
         nonrecursive,
@@ -215,7 +229,7 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
             raise Exception(
                 f"Cant serialize {type(self)} nonrecursive without serialize."
             )
-        chunk_bytes(serialize(self), "nonrecursiveBlob", msg)
+        chunk_bytes(self, serialize, "nonrecursiveBlob", msg)
         return msg
 
     if attribute_list is None:
@@ -248,9 +262,13 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
         if isinstance(field_obj, types.FunctionType):
             continue
 
-        serialized = sy.serialize(field_obj, to_bytes=True, for_hashing=for_hashing)
         msg.fieldsName[idx] = attr_name
-        chunk_bytes(serialized, idx, msg.fieldsData)
+        chunk_bytes(
+            field_obj,
+            lambda x: sy.serialize(x, to_bytes=True, for_hashing=for_hashing),
+            idx,
+            msg.fieldsData,
+        )
 
     return msg
 
