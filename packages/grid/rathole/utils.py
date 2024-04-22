@@ -120,7 +120,7 @@ class RatholeClientToml:
             if not uuid:
                 return False
 
-            if not config["token"] and not config["local_addr"]:
+            if not config["token"] or not config["local_addr"]:
                 return False
 
         return True
@@ -130,8 +130,93 @@ class RatholeClientToml:
         return self._validate()
 
 
-class ServerTomlReaderWriter:
+class RatholeServerToml:
     filename: str = "server.toml"
 
     def __init__(self) -> None:
         self.server_toml = TomlReaderWriter(lock=lock, filename=self.filename)
+
+    def set_bind_address(self, bind_address: str) -> None:
+        """Set the bind address in the server toml file."""
+
+        toml = self.server_toml.read()
+
+        # Set the bind address
+        toml["server"]["bind_addr"] = bind_address
+
+        self.server_toml.write(toml)
+
+    def add_config(self, config: RatholeConfig) -> None:
+        """Add a new config to the toml file."""
+
+        toml = self.server_toml.read()
+
+        # Add the new config
+        if "services" not in toml["server"]:
+            toml["server"]["services"] = {}
+
+        if config.uuid not in toml["server"]["services"]:
+            toml["server"]["services"][config.uuid] = {}
+
+        toml["server"]["services"][config.uuid] = {
+            "token": config.secret_token,
+            "bind_addr": config.local_address,
+        }
+
+        self.server_toml.write(toml)
+
+    def remove_config(self, uuid: str) -> None:
+        """Remove a config from the toml file."""
+
+        toml = self.server_toml.read()
+
+        # Remove the config
+        if "services" not in toml["server"]:
+            return
+
+        if uuid not in toml["server"]["services"]:
+            return
+
+        del toml["server"]["services"][uuid]
+
+        self.server_toml.write(toml)
+
+    def update_config(self, config: RatholeConfig) -> None:
+        """Update a config in the toml file."""
+
+        toml = self.server_toml.read()
+
+        # Update the config
+        if "services" not in toml["server"]:
+            return
+
+        if config.uuid not in toml["server"]["services"]:
+            return
+
+        toml["server"]["services"][config.uuid] = {
+            "token": config.secret_token,
+            "bind_addr": config.local_address,
+        }
+
+        self.server_toml.write(toml)
+
+    def _validate(self) -> bool:
+        if not self.server_toml.filename.exists():
+            return False
+
+        toml = self.server_toml.read()
+
+        if not toml["server"]["bind_addr"]:
+            return False
+
+        for uuid, config in toml["server"]["services"].items():
+            if not uuid:
+                return False
+
+            if not config["token"] or not config["bind_addr"]:
+                return False
+
+        return True
+
+    def is_valid(self) -> bool:
+        return self._validate()
