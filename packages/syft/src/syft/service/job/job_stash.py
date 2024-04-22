@@ -588,7 +588,7 @@ class Job(SyncableSyftObject):
             f'<div class="label label-light-blue"'
             f'style="display: flex; align-items:center; justify-content: center; width: 34px; height:21px; radius:4px;'
             f'padding: 2px, 6px, 2px, 6px">'
-            f'<span style="font: DejaVu Sans Mono; font-size: 12px; font-weight: 400; line-height:16.8px">'
+            f'<span style="font-family: DejaVu Sans Mono, sans-serif; font-size: 12px; font-weight: 400; line-height:16.8px">'
             f'{"JOB" if not self.parent_job_id else "SUBJOB"}</span>'
             f"</div>"
         )
@@ -600,8 +600,10 @@ class Job(SyncableSyftObject):
         api_header = f"{self.node_name}/jobs/" + "/".join(ancestor_name_list)
 
         header_line_html = f"""
-            <div style="gap: 12px; height: 20 px; font: DejaVu Sans Mono; font-size: 14px; font-weight: 400;
+            <div style="height:16px;"></div>
+            <div style="gap: 12px; height: 20 px; font-family: DejaVu Sans Mono, sans-serif; font-size: 14px; font-weight: 400;
                 line-height:16.8px; color: #4392C5">{api_header}</div>
+            <div style="height:16px;"></div>
             <div style="display: flex; gap: 12px; justify-content: start; width: 100%; overflow:
                 hidden; align-items: center;">
                 <div style="display: flex; gap: 12px; justify-content: start; align-items: center;
@@ -610,6 +612,7 @@ class Job(SyncableSyftObject):
                 </div>
                 {copy_id_button.to_html()}
             </div>
+            <div style="height:16px;"></div>
         """  # noqa: E501
 
         worker_attr = ""
@@ -656,11 +659,12 @@ class Job(SyncableSyftObject):
                     {len(self.subjobs)}
                 </div>
             </div>
+            <div style="height:16px;"></div>
             """
 
         result_html = f"""<div id="{result_tab_id}" class="tab-{identifier}" style="background: #F4F3F6;
             border-color: #CFCDD6; border-width: 0.5px; border-style: solid; padding: 24px; gap: 8px; margin-top: 24px">
-            <div style="font-size: 12px; font-weight: 400; font: DejaVu Sans Mono; line-height: 16.8px">
+            <div style="font-size: 12px; font-weight: 400; font: DejaVu Sans Mono, sans-serif; line-height: 16.8px">
                 {self.result}
             </div>
         </div>
@@ -686,7 +690,7 @@ class Job(SyncableSyftObject):
         logs_html = f"""<div id="{logs_tab_id}" class="tab-{identifier}" style="background: #F4F3F6;
         border-color: #CFCDD6; border-width: 0.5px; border-style: solid; padding: 24px; gap: 8px; margin-top: 24px;
         display: none;align-items:left">
-            <div style="font-size: 12px; font-weight: 400; font: DejaVu Sans Mono; line-height: 16.8px; ">
+            <div style="font-size: 12px; font-weight: 400; font: DejaVu Sans Mono, sans-serif; line-height: 16.8px; ">
                 <table  style="width:100%; justify-content:left; border-collapse: collapse;">
                 <tr style="width:100%">
                     <td style="text-align: left">
@@ -747,9 +751,14 @@ class Job(SyncableSyftObject):
                 padding: 14px 16px;
                 color: #CFCDD6
             }
+            .log-tab-header{
+                border-bottom: solid 2px #ECEBEF;
+                padding: 4px 16px
+            }
 
             .active-border {
-                border-bottom-color: #1F567A;
+                border-bottom: solid 2px #1F567A;
+                font-weight: 700;
             }
 
             .active {
@@ -762,16 +771,16 @@ class Job(SyncableSyftObject):
 
         tabs_html = f"""
             <div style="margin-top: 8px; padding: 8px, 0px, 8px, 0px; gap: 16px">
-            <ul>
-                <li class="tablink-border-{identifier} active-border">
+            <div style="display: flex;">
+                <div class="tablink-border-{identifier} log-tab-header active-border">
                     <a  onclick="onClick_{identifier}(event, '{result_tab_id}')" class='tablink-{identifier} active'>
                         Result
                     </a>
-                </li>
-                <li class="tablink-border-{identifier}">
+                </div>
+                <div class="tablink-border-{identifier} log-tab-header">
                     <a onclick="onClick_{identifier}(event, '{logs_tab_id}')" class='tablink-{identifier}'>Logs</a>
-                </li>
-            </ul>
+                </div>
+            </div>
         </div>
         {result_html}
         {logs_html}
