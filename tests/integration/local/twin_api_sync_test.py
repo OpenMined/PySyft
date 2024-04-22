@@ -98,6 +98,7 @@ def private_function(context) -> str:
     return 42
 
 
+@pytest.mark.local_node
 def test_twin_api_integration(full_high_worker, full_low_worker):
     low_client = full_low_worker.login(
         email="info@openmined.org", password="changethis"
