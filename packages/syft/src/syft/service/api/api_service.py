@@ -306,7 +306,7 @@ class APIService(AbstractService):
         job_id = job.id
         # Question: For a small moment, when job status is updated, it doesn't return the job during the .get() as if
         # it's not in the stash. Then afterwards if appears again. Is this a bug?
-        timeout = 30  # 10 is too slow on GitHub CI macos?
+
         start = time.time()
         # TODO: what can we do here?????
         while (
@@ -316,9 +316,9 @@ class APIService(AbstractService):
         ):
             job = job_service.get(context, job_id)
             time.sleep(0.1)
-            if (time.time() - timeout) > start:
+            if (time.time() - custom_endpoint.endpoint_timeout) > start:
                 return SyftError(
-                    message=f"Function timed out in {timeout} seconds. Get the Job with id: {job_id} to check results."
+                    message=f"Function timed out in {custom_endpoint.endpoint_timeout} seconds. Get the Job with id: {job_id} to check results."
                 )
 
         if job.status == JobStatus.COMPLETED:

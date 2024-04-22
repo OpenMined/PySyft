@@ -85,11 +85,13 @@ class TwinAPIEndpointView(SyftObject):
     mock_helper_functions: list[str] | None = None
     private_helper_functions: list[str] | None = None
     worker_pool: str | None = None
+    endpoint_timeout: int = 60
 
     __repr_attrs__ = [
         "path",
         "signature",
         "worker_pool",
+        "endpoint_timeout",
     ]
 
     def _coll_repr_(self) -> dict[str, Any]:
@@ -310,6 +312,7 @@ class UpdateTwinAPIEndpoint(PartialSyftObject, BaseTwinAPIEndpoint):
     private_function: PrivateAPIEndpoint | None = None
     mock_function: PublicAPIEndpoint
     description: str | None = None
+    endpoint_timeout: int = 60
 
 
 @serializable()
@@ -324,6 +327,7 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
     signature: Signature
     description: str | None = None
     worker_pool: str | None = None
+    endpoint_timeout: int = 60
 
 
 @serializable()
@@ -342,6 +346,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
     description: str | None = None
     action_object_id: UID
     worker_pool: str | None = None
+    endpoint_timeout: int = 60
 
     __private_sync_attr_mocks__ = {
         "private_function": None,
@@ -354,6 +359,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         "description",
         "private_function",
         "mock_function",
+        "endpoint_timeout",
     ]
 
     def has_mock(self) -> bool:
@@ -605,6 +611,7 @@ def api_endpoint(
     helper_functions: list[Callable] | None = None,
     description: str | None = None,
     worker_pool: str | None = None,
+    endpoint_timeout: int = 60,
 ) -> Callable[..., TwinAPIEndpoint | SyftError]:
     def decorator(f: Callable) -> TwinAPIEndpoint | SyftError:
         try:
@@ -623,6 +630,7 @@ def api_endpoint(
                 signature=inspect.signature(f),
                 description=description,
                 worker_pool=worker_pool,
+                endpoint_timeout=endpoint_timeout,
             )
         except ValidationError as e:
             for error in e.errors():
