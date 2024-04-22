@@ -59,7 +59,7 @@
       "CustomAPIView": {
         "1": {
           "version": 1,
-          "hash": "5cdfaea6b5af235d0f9ab8e6f01d6cebcde7c8bf4efd00aec26c343965ef865e",
+          "hash": "8fe9f0fded4dbce033e2b14798a59d8635c3b73b0562f9ea686b1162ed155e91",
           "action": "add"
         }
       },
@@ -80,21 +80,21 @@
       "UpdateTwinAPIEndpoint": {
         "1": {
           "version": 1,
-          "hash": "6c0c6bc042391e60d5c78893f859c8bdec4b45f0bdc7749957a425e041a4096c",
+          "hash": "cd0d4d67dc03cf6b78832f33ef584ec0ff8fa0b851629396ba27d7db63130342",
           "action": "add"
         }
       },
       "CreateTwinAPIEndpoint": {
         "1": {
           "version": 1,
-          "hash": "98021128a9be0a9a135b43b50cb08f141faed72bc39999a9cedd162bc8814f62",
+          "hash": "e735dc30cba1789c3fb109e35aa40ffa873951f8e00b0b971950b1735c27d1ca",
           "action": "add"
         }
       },
       "TwinAPIEndpoint": {
         "1": {
           "version": 1,
-          "hash": "03a0244c6b322e72032c5c33c1db09b913f83d72cfad1cc51ac4ec90506afcf5",
+          "hash": "540468be5db20efe555d2288c9aed60887306ac9b56d6a63c066246bc0010e9c",
           "action": "add"
         }
       },
@@ -129,6 +129,41 @@
           "version": 1,
           "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
           "action": "remove"
+        }
+      },
+      "NodeSettingsUpdate": {
+        "3": {
+          "version": 3,
+          "hash": "9e2610f6e890b04938792079765f8e162f03906162c30aa0ea30e7c182373cec",
+          "action": "add"
+        }
+      },
+      "NodeSettings": {
+        "4": {
+          "version": 4,
+          "hash": "6b973584c139330bb881a9a6ac71c945e63133ec1b2c5175da37f4e319411921",
+          "action": "add"
+        }
+      },
+      "APIEndpointQueueItem": {
+        "1": {
+          "version": 1,
+          "hash": "d31b2edfb767401c810584baccd27e4f566181c3ef7706618a82eb25ae20ff6d",
+          "action": "add"
+        }
+      },
+      "TwinAPIContextView": {
+        "1": {
+          "version": 1,
+          "hash": "db9c436b95c9cb468eb05e95fefead5dbb30e7009d6bc63cb502bf8d9a709df4",
+          "action": "add"
+        }
+      },
+      "CustomApiEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "13617f3dce60fa692421e0d9deda7ffd365ec02d4a062c18510b48457b6eba02",
+          "action": "add"
         }
       }
     }
