@@ -8,6 +8,7 @@ import numpy as np
 
 # syft absolute
 import syft as sy
+from syft.client.domain_client import DomainClient
 from syft.service.action.action_object import ActionObject
 from syft.service.request.request import Request
 from syft.service.request.request import UserCodeStatusChange
@@ -27,6 +28,13 @@ def mock_syft_func():
 )
 def mock_syft_func_2():
     return 1
+
+
+def test_repr_markdown_not_throwing_error(guest_client: DomainClient) -> None:
+    guest_client.code.submit(mock_syft_func)
+    result = guest_client.code.get_by_service_func_name("mock_syft_func")
+    assert len(result) == 1
+    assert result[0]._repr_markdown_()
 
 
 def test_user_code(worker) -> None:
@@ -59,6 +67,12 @@ def test_user_code(worker) -> None:
 
     real_result = result.get()
     assert isinstance(real_result, int)
+
+    # Validate that the result is cached
+    for _ in range(10):
+        multi_call_res = guest_client.api.services.code.mock_syft_func()
+        assert isinstance(result, ActionObject)
+        assert multi_call_res.get() == result.get()
 
 
 def test_duplicated_user_code(worker, guest_client: User) -> None:

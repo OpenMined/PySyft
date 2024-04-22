@@ -149,11 +149,8 @@ services:
       - JAEGER_PORT=${JAEGER_PORT}
       - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
       - DEV_MODE=${DEV_MODE}
-      - OBLV_LOCALHOST_PORT=${OBLV_LOCALHOST_PORT}
-      - OBLV_ENABLED=${OBLV_ENABLED}
       - DEFAULT_ROOT_EMAIL=${DEFAULT_ROOT_EMAIL}
       - DEFAULT_ROOT_PASSWORD=${DEFAULT_ROOT_PASSWORD}
-      - BACKEND_STORAGE_PATH=${BACKEND_STORAGE_PATH}
       - QUEUE_PORT=${QUEUE_PORT}
       - CREATE_PRODUCER=true
       - N_CONSUMERS=1
@@ -162,7 +159,6 @@ services:
     command: "./grid/start.sh"
     network_mode: service:proxy
     volumes:
-      - ${BACKEND_STORAGE_PATH}:/storage
       - ${CREDENTIALS_VOLUME}:/root/data/creds/
       - /var/run/docker.sock:/var/run/docker.sock
     stdin_open: true
@@ -196,8 +192,6 @@ services:
   #     - JAEGER_HOST=${JAEGER_HOST}
   #     - JAEGER_PORT=${JAEGER_PORT}
   #     - DEV_MODE=${DEV_MODE}
-  #     - OBLV_LOCALHOST_PORT=${OBLV_LOCALHOST_PORT}
-  #     - OBLV_ENABLED=${OBLV_ENABLED}
   #   network_mode: service:proxy
   #   volumes:
   #     - credentials-data:/root/data/creds/
@@ -230,8 +224,6 @@ services:
   #     - JAEGER_HOST=${JAEGER_HOST}
   #     - JAEGER_PORT=${JAEGER_PORT}
   #     - DEV_MODE=${DEV_MODE}
-  #     - OBLV_LOCALHOST_PORT=${OBLV_LOCALHOST_PORT}
-  #     - OBLV_ENABLED=${OBLV_ENABLED}
   #   command: "/app/grid/worker-start.sh"
   #   network_mode: service:proxy
   #   volumes:
@@ -246,15 +238,12 @@ services:
       - .env
     image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}:${VERSION-latest}"
     environment:
-      - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:-1024}
+      - SWFS_VOLUME_SIZE_LIMIT_MB=${SWFS_VOLUME_SIZE_LIMIT_MB:-1000}
       - S3_ROOT_USER=${S3_ROOT_USER:-admin}
       - S3_ROOT_PWD=${S3_ROOT_PWD:-admin}
-      - S3_PORT=${S3_PORT:-8888}
-      - SEAWEED_MOUNT_PORT=${SEAWEED_MOUNT_PORT:-4001}
+      - MOUNT_API_PORT=${MOUNT_API_PORT:-4001}
     volumes:
       - seaweedfs-data:/data
-      - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
-      - ./seaweedfs/start.sh:/etc/seaweedfs/start.sh
     labels:
       - "orgs.openmined.syft=this is a syft seaweedfs container"
 

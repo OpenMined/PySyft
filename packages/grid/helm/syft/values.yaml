@@ -1,10 +1,10 @@
 global:
   # Affects only backend, frontend, and seaweedfs containers
   registry: docker.io
-  version: 0.8.5-beta.9
+  version: 0.8.7-beta.2
 
-  # Force default secret values for development. DO NOT USE IN PRODUCTION
-  useDefaultSecrets: false
+  # Force default secret values for development. DO NOT SET THIS TO FALSE IN PRODUCTION
+  randomizedSecrets: true
 
 mongo:
   # MongoDB config
@@ -14,8 +14,15 @@ mongo:
   # Extra environment vars
   env: null
 
+  # Pod labels & annotations
+  podLabels: null
+  podAnnotations: null
+
+  # Node selector for pods
+  nodeSelector: null
+
   # Pod Resource Limits
-  resourcesPreset: nano
+  resourcesPreset: large
   resources: null
 
   # PVC storage size
@@ -24,54 +31,89 @@ mongo:
   # Mongo secret name. Override this if you want to use a self-managed secret.
   secretKeyName: mongo-secret
 
-  # Dev mode default passwords
-  defaultSecret:
-    rootPassword: example
+  # custom secret values
+  secret:
+    rootPassword: null
 
 frontend:
   # Extra environment vars
   env: null
 
   # Pod Resource Limits
-  resourcesPreset: micro
+  resourcesPreset: medium
   resources: null
 
 seaweedfs:
-  # S3 settings
-  s3:
-    port: 8333
-    rootUser: admin
-    volumeSizeMB: 1024
+  # Master
+  master:
+    # Seaweed Volume Size in MB set on master. This is not PVC.
+    volumeSizeMB: 1000
+    # master.toml For details check weed scaffold -config=master
+    config: null
 
-  # Mount API settings
+  # filer
+  filer:
+    # filer.toml For details check weed scaffold -config=filer
+    config: null
+
+  # S3
+  s3:
+    rootUser: admin
+
+  # Mount API
   mountApi:
-    port: 4001
+    # automount:
+    #   - local_bucket: test-bucket
+    #     remote_bucket:
+    #       type: gcs
+    #       bucket_name: test-bucket
+    #       creds: /etc/secrets/gcs_creds.json
+    automount: null
 
   # Extra environment vars
   env: null
 
   # PVC storage size
-  storageSize: 5Gi
+  storageSize: 100Gi
 
   # Seaweed secret name. Override this if you want to use a self-managed secret.
   # Secret must contain the following keys:
   # - s3RootPassword
   secretKeyName: seaweedfs-secret
 
+  # Pod labels & annotations
+  podLabels: null
+  podAnnotations: null
+
+  # Node selector for pods
+  nodeSelector: null
+
   # Pod Resource Limits
-  resourcesPreset: nano
+  resourcesPreset: xlarge
   resources: null
 
-  # Dev mode default passwords
-  defaultSecret:
-    s3RootPassword: admin
+  # extra volume mounts
+  volumes: null
+  volumeMounts: null
+
+  # custom secret values
+  secret:
+    s3RootPassword: null
+    mountCredentials: null
 
 proxy:
   # Extra environment vars
   env: null
 
+  # Pod labels & annotations
+  podLabels: null
+  podAnnotations: null
+
+  # Node selector for pods
+  nodeSelector: null
+
   # Pod Resource Limits
-  resourcesPreset: nano
+  resourcesPreset: small
   resources: null
 
 registry:
@@ -79,10 +121,17 @@ registry:
   env: null
 
   # PVC storage size
-  storageSize: 5Gi
+  storageSize: 50Gi
+
+  # Pod labels & annotations
+  podLabels: null
+  podAnnotations: null
+
+  # Node selector for pods
+  nodeSelector: null
 
   # Pod Resource Limits
-  resourcesPreset: nano
+  resourcesPreset: medium
   resources: null
 
 node:
@@ -93,6 +142,7 @@ node:
   side: high
   inMemoryWorkers: false
   defaultWorkerPoolCount: 1
+  defaultBucketName: null
   queuePort: 5556
   logLevel: info
   debuggerEnabled: false
@@ -105,16 +155,18 @@ node:
     username: apikey
     password: password
 
-  # Oblivious settings
-  oblv:
-    enabled: false
-    port: 3030
-
   # Extra environment vars
   env: null
 
+  # Pod labels & annotations
+  podLabels: null
+  podAnnotations: null
+
+  # Node selector for pods
+  nodeSelector: null
+
   # Pod Resource Limits
-  resourcesPreset: small
+  resourcesPreset: xlarge
   resources: null
 
   # Seaweed secret name. Override this if you want to use a self-managed secret.
@@ -122,9 +174,9 @@ node:
   # - defaultRootPassword
   secretKeyName: backend-secret
 
-  # Dev mode default passwords
-  defaultSecret:
-    defaultRootPassword: changethis
+  # custom secret values
+  secret:
+    defaultRootPassword: null
 
 ingress:
   hostname: null # do not make this localhost
@@ -145,20 +197,3 @@ ingress:
   # ----------------------------------------
   class: null
   className: null
-
-# ----------------------------------------
-# For Veilid Core Debug Logs
-# serverFlags: "--debug"
-# ----------------------------------------
-veilid:
-  enabled: false
-  serverFlags: ""
-  appLogLevel: "info"
-  uvicornLogLevel: "info"
-
-  # Extra environment vars
-  env: null
-
-  # Pod Resource Limits
-  resourcesPreset: nano
-  resources: null

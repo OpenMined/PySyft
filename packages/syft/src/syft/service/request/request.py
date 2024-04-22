@@ -4,7 +4,6 @@ from enum import Enum
 import hashlib
 import inspect
 from typing import Any
-from typing import cast
 
 # third party
 from result import Err
@@ -13,7 +12,6 @@ from result import Result
 from typing_extensions import Self
 
 # relative
-from ...abstract_node import AbstractNode
 from ...abstract_node import NodeSideType
 from ...client.api import APIRegistry
 from ...client.client import SyftClient
@@ -54,6 +52,7 @@ from ..job.job_stash import Job
 from ..job.job_stash import JobInfo
 from ..job.job_stash import JobStatus
 from ..notification.notifications import Notification
+from ..policy.policy import UserPolicy
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
@@ -105,8 +104,6 @@ class ActionStoreChange(Change):
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
         try:
-            if context.node is None:
-                return Err(SyftError(message=f"context {context}'s node is None"))
             action_service: ActionService = context.node.get_service(ActionService)  # type: ignore[assignment]
             blob_storage_service = context.node.get_service(BlobStorageService)
             action_store = action_service.store
@@ -205,9 +202,6 @@ class CreateCustomImageChange(Change):
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
         try:
-            if context.node is None:
-                return Err(SyftError(message=f"context {context}'s node is None"))
-
             worker_image_service = context.node.get_service("SyftWorkerImageService")
 
             service_context = context.to_service_ctx()
@@ -293,8 +287,6 @@ class CreateCustomWorkerPoolChange(Change):
         # SyftError or SyftSuccess
         if apply:
             # get the worker pool service and try to launch a pool
-            if context.node is None:
-                return Err(SyftError(message=f"context {context}'s node is None"))
             worker_pool_service = context.node.get_service("SyftWorkerPoolService")
             service_context: AuthedServiceContext = context.to_service_ctx()
 
@@ -367,6 +359,7 @@ class Request(SyncableSyftObject):
         "changes",
         "requesting_user_verify_key",
     ]
+    __exclude_sync_diff_attrs__ = ["node_uid"]
 
     def _repr_html_(self) -> Any:
         # add changes
@@ -637,7 +630,6 @@ class Request(SyncableSyftObject):
         # relative
         from .request_service import RequestService
 
-        context.node = cast(AbstractNode, context.node)
         save_method = context.node.get_service_method(RequestService.save)
         return save_method(context=context, request=self)
 
@@ -668,7 +660,7 @@ class Request(SyncableSyftObject):
 
         return job
 
-    def _is_action_object_from_job(self, action_object: ActionObject) -> Job | None:  # type: ignore
+    def _get_job_from_action_object(self, action_object: ActionObject) -> Job | None:  # type: ignore
         api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
         if api is None:
             raise ValueError(f"Can't access the api. You must login to {self.node_uid}")
@@ -695,13 +687,19 @@ class Request(SyncableSyftObject):
         elif isinstance(result, ActionObject):
             # Do not allow accepting a result produced by a Job,
             # This can cause an inconsistent Job state
-            if self._is_action_object_from_job(result):
-                action_object_job = self._is_action_object_from_job(result)
-                if action_object_job is not None:
-                    return SyftError(
-                        message=f"This ActionObject is the result of Job {action_object_job.id}, "
-                        f"please use the `Job.info` instead."
-                    )
+            action_object_job = self._get_job_from_action_object(result)
+            if action_object_job is not None:
+                return SyftError(
+                    message=f"This ActionObject is the result of Job {action_object_job.id}, "
+                    f"please use the `Job.info` instead."
+                )
+            else:
+                job_info = JobInfo(
+                    includes_metadata=True,
+                    includes_result=True,
+                    status=JobStatus.COMPLETED,
+                    resolved=True,
+                )
         else:
             # NOTE result is added at the end of function (once ActionObject is created)
             job_info = JobInfo(
@@ -712,6 +710,18 @@ class Request(SyncableSyftObject):
             )
 
         user_code_status_change: UserCodeStatusChange = self.changes[0]
+        code = user_code_status_change.code
+        output_history = code.output_history
+        if isinstance(output_history, SyftError):
+            return output_history
+        output_policy = code.output_policy
+        if isinstance(output_policy, SyftError):
+            return output_policy
+        if isinstance(user_code_status_change.code.output_policy_type, UserPolicy):
+            return SyftError(
+                message="UserCode uses an user-submitted custom policy. Please use .approve()"
+            )
+
         if not user_code_status_change.change_object_is_type(UserCodeStatusCollection):
             raise TypeError(
                 f"accept_by_depositing_result can only be run on {UserCodeStatusCollection} not "
@@ -736,13 +746,6 @@ class Request(SyncableSyftObject):
         if isinstance(permission_request, SyftError):
             return permission_request
 
-        code = user_code_status_change.code
-        output_history = code.output_history
-        if isinstance(output_history, SyftError):
-            return output_history
-        output_policy = code.output_policy
-        if isinstance(output_policy, SyftError):
-            return output_policy
         job = self._get_latest_or_create_job()
         if isinstance(job, SyftError):
             return job
@@ -837,8 +840,16 @@ class Request(SyncableSyftObject):
             if isinstance(approved, SyftError):
                 return approved
 
-            res = api.services.code.apply_output(
-                user_code_id=code.id, outputs=result, job_id=job.id
+            input_ids = {}
+            if code.input_policy is not None:
+                for inps in code.input_policy.inputs.values():
+                    input_ids.update(inps)
+
+            res = api.services.code.store_as_history(
+                user_code_id=code.id,
+                outputs=result,
+                job_id=job.id,
+                input_ids=input_ids,
             )
             if isinstance(res, SyftError):
                 return res
@@ -877,7 +888,9 @@ class Request(SyncableSyftObject):
         job.apply_info(job_info)
         return job_service.update(job)
 
-    def get_sync_dependencies(self, api: Any = None) -> list[UID] | SyftError:
+    def get_sync_dependencies(
+        self, context: AuthedServiceContext
+    ) -> list[UID] | SyftError:
         dependencies = []
 
         code_id = self.code_id
@@ -1244,8 +1257,6 @@ class UserCodeStatusChange(Change):
         context: ChangeContext,
         undo: bool,
     ) -> UserCodeStatusCollection | SyftError:
-        if context.node is None:
-            return SyftError(message=f"context {context}'s node is None")
         reason: str = context.extra_kwargs.get("reason", "")
 
         if not undo:

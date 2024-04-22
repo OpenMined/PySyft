@@ -20,6 +20,7 @@ from ..node.credentials import SyftSigningKey
 from ..node.credentials import SyftVerifyKey
 from ..serde.serializable import serializable
 from ..service.action.action_permissions import ActionObjectPermission
+from ..service.action.action_permissions import StoragePermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
@@ -520,6 +521,24 @@ class StorePartition:
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         raise NotImplementedError
 
+    def _get_permissions_for_uid(self, uid: UID) -> Result[set[str], str]:
+        raise NotImplementedError
+
+    def add_storage_permission(self, permission: StoragePermission) -> None:
+        raise NotImplementedError
+
+    def add_storage_permissions(self, permissions: list[StoragePermission]) -> None:
+        raise NotImplementedError
+
+    def remove_storage_permission(self, permission: StoragePermission) -> None:
+        raise NotImplementedError
+
+    def has_storage_permission(self, permission: StoragePermission | UID) -> bool:
+        raise NotImplementedError
+
+    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], str]:
+        raise NotImplementedError
+
     def _migrate_data(
         self,
         to_klass: SyftObject,
@@ -602,6 +621,9 @@ class BaseStash:
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         return self.partition.has_permission(permission=permission)
+
+    def has_storage_permission(self, permission: StoragePermission) -> bool:
+        return self.partition.has_storage_permission(permission=permission)
 
     def __len__(self) -> int:
         return len(self.partition)

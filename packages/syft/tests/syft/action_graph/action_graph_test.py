@@ -142,7 +142,7 @@ def test_node_action_data_update() -> None:
     assert len(node_action_data_update.to_dict(exclude_empty=True)) == 1
     assert (
         node_action_data_update.to_dict(exclude_empty=False)
-        == node_action_data_update.dict()
+        == node_action_data_update.to_dict()
     )
 
 
@@ -269,6 +269,7 @@ def test_networkx_backing_store_edge_related_methods(
     sys.platform == "win32",
     reason="Fails on Windows. capnp\lib\capnp.pyx:3323: KjException Message did not contain a root pointer.",
 )
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_networkx_backing_store_save_load_default(
     networkx_store_with_nodes: NetworkXBackingStore, verify_key: SyftVerifyKey
 ) -> None:

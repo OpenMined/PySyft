@@ -1,4 +1,4 @@
-__version__ = "0.8.5-beta.9"
+__version__ = "0.8.7-beta.2"
 
 # stdlib
 from collections.abc import Callable
@@ -26,8 +26,6 @@ from .client.search import SearchResults  # noqa: F401
 from .client.user_settings import UserSettings  # noqa: F401
 from .client.user_settings import settings  # noqa: F401
 from .custom_worker.config import DockerWorkerConfig  # noqa: F401
-from .external import OBLV  # noqa: F401
-from .external import enable_external_lib  # noqa: F401
 from .node.credentials import SyftSigningKey  # noqa: F401
 from .node.domain import Domain  # noqa: F401
 from .node.enclave import Enclave  # noqa: F401
@@ -47,6 +45,10 @@ from .service.action.action_data_empty import ActionDataEmpty  # noqa: F401
 from .service.action.action_object import ActionObject  # noqa: F401
 from .service.action.plan import Plan  # noqa: F401
 from .service.action.plan import planify  # noqa: F401
+from .service.api.api import api_endpoint  # noqa: F401
+from .service.api.api import create_new_api_endpoint as TwinAPIEndpoint  # noqa: F401
+from .service.api.api import mock_api_endpoint  # noqa: F401
+from .service.api.api import private_api_endpoint  # noqa: F401
 from .service.code.user_code import UserCodeStatus  # noqa: F401; noqa: F401
 from .service.code.user_code import syft_function  # noqa: F401; noqa: F401
 from .service.code.user_code import syft_function_single_use  # noqa: F401; noqa: F401
@@ -106,10 +108,6 @@ try:
     # )
 except:  # noqa: E722
     pass  # nosec
-
-# For server-side, to enable by environment variable
-if OBLV:
-    enable_external_lib("oblv")
 
 
 def module_property(func: Any) -> Callable:

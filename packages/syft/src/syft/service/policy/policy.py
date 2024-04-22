@@ -14,14 +14,14 @@ from io import StringIO
 import sys
 import types
 from typing import Any
-from typing import cast
 
 # third party
 from RestrictedPython import compile_restricted
+from result import Err
 from result import Ok
+from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...abstract_node import NodeType
 from ...client.api import APIRegistry
 from ...client.api import NodeIdentity
@@ -129,6 +129,7 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
     # relative
     from ...client.api import APIRegistry
     from ...client.api import NodeIdentity
+    from ...client.api import RemoteFunction
     from ...types.twin_object import TwinObject
     from ..action.action_object import ActionObject
 
@@ -141,6 +142,8 @@ def partition_by_node(kwargs: dict[str, Any]) -> dict[NodeIdentity, dict[str, UI
             uid = v.id
         if isinstance(v, TwinObject):
             uid = v.id
+        if isinstance(v, RemoteFunction):
+            uid = v.custom_function_actionobject_id()
         if isinstance(v, Asset):
             uid = v.action_id
         if not isinstance(uid, UID):
@@ -177,8 +180,19 @@ class InputPolicy(Policy):
             init_kwargs = partition_by_node(kwargs)
         super().__init__(*args, init_kwargs=init_kwargs, **kwargs)
 
+    def _is_valid(
+        self,
+        context: AuthedServiceContext,
+        usr_input_kwargs: dict,
+        code_item_id: UID,
+    ) -> Result[bool, str]:
+        raise NotImplementedError
+
     def filter_kwargs(
-        self, kwargs: dict[Any, Any], context: AuthedServiceContext, code_item_id: UID
+        self,
+        kwargs: dict[Any, Any],
+        context: AuthedServiceContext,
+        code_item_id: UID,
     ) -> dict[Any, Any]:
         raise NotImplementedError
 
@@ -189,8 +203,6 @@ class InputPolicy(Policy):
     def _inputs_for_context(self, context: ChangeContext) -> dict | SyftError:
         user_node_view = NodeIdentity.from_change_context(context)
         inputs = self.inputs[user_node_view]
-        if context.node is None:
-            return SyftError(f"context {context}'s node is None")
         root_context = AuthedServiceContext(
             node=context.node, credentials=context.approving_user_credentials
         ).as_root_context()
@@ -213,11 +225,9 @@ class InputPolicy(Policy):
 
 def retrieve_from_db(
     code_item_id: UID, allowed_inputs: dict[str, UID], context: AuthedServiceContext
-) -> dict:
+) -> Result[dict[str, Any], str]:
     # relative
     from ...service.action.action_object import TwinMode
-
-    context.node = cast(AbstractNode, context.node)
 
     action_service = context.node.get_service("actionservice")
     code_inputs = {}
@@ -239,13 +249,13 @@ def retrieve_from_db(
                 has_permission=True,
             )
             if kwarg_value.is_err():
-                return SyftError(message=kwarg_value.err())
+                return Err(kwarg_value.err())
             code_inputs[var_name] = kwarg_value.ok()
 
     elif context.node.node_type == NodeType.ENCLAVE:
         dict_object = action_service.get(context=root_context, uid=code_item_id)
         if dict_object.is_err():
-            return SyftError(message=dict_object.err())
+            return Err(dict_object.err())
         for value in dict_object.ok().syft_action_data.values():
             code_inputs.update(value)
 
@@ -261,7 +271,6 @@ def allowed_ids_only(
     kwargs: dict[str, Any],
     context: AuthedServiceContext,
 ) -> dict[str, UID]:
-    context.node = cast(AbstractNode, context.node)
     if context.node.node_type == NodeType.DOMAIN:
         node_identity = NodeIdentity(
             node_name=context.node.name,
@@ -288,7 +297,7 @@ def allowed_ids_only(
 
             if uid != allowed_inputs[key]:
                 raise Exception(
-                    f"Input {type(value)} for {key} not in allowed {allowed_inputs}"
+                    f"Input with uid: {uid} for `{key}` not in allowed inputs: {allowed_inputs}"
                 )
             filtered_kwargs[key] = value
     return filtered_kwargs
@@ -301,15 +310,56 @@ class ExactMatch(InputPolicy):
     __version__ = SYFT_OBJECT_VERSION_2
 
     def filter_kwargs(
-        self, kwargs: dict[Any, Any], context: AuthedServiceContext, code_item_id: UID
-    ) -> dict[Any, Any]:
-        allowed_inputs = allowed_ids_only(
-            allowed_inputs=self.inputs, kwargs=kwargs, context=context
-        )
-        results = retrieve_from_db(
-            code_item_id=code_item_id, allowed_inputs=allowed_inputs, context=context
-        )
+        self,
+        kwargs: dict[Any, Any],
+        context: AuthedServiceContext,
+        code_item_id: UID,
+    ) -> Result[dict[Any, Any], str]:
+        try:
+            allowed_inputs = allowed_ids_only(
+                allowed_inputs=self.inputs, kwargs=kwargs, context=context
+            )
+
+            results = retrieve_from_db(
+                code_item_id=code_item_id,
+                allowed_inputs=allowed_inputs,
+                context=context,
+            )
+        except Exception as e:
+            return Err(str(e))
         return results
+
+    def _is_valid(
+        self,
+        context: AuthedServiceContext,
+        usr_input_kwargs: dict,
+        code_item_id: UID,
+    ) -> Result[bool, str]:
+        filtered_input_kwargs = self.filter_kwargs(
+            kwargs=usr_input_kwargs,
+            context=context,
+            code_item_id=code_item_id,
+        )
+
+        if filtered_input_kwargs.is_err():
+            return filtered_input_kwargs
+
+        filtered_input_kwargs = filtered_input_kwargs.ok()
+
+        expected_input_kwargs = set()
+        for _inp_kwargs in self.inputs.values():
+            for k in _inp_kwargs.keys():
+                if k not in usr_input_kwargs:
+                    return Err(f"Function missing required keyword argument: '{k}'")
+            expected_input_kwargs.update(_inp_kwargs.keys())
+
+        permitted_input_kwargs = list(filtered_input_kwargs.keys())
+        not_approved_kwargs = set(expected_input_kwargs) - set(permitted_input_kwargs)
+        if len(not_approved_kwargs) > 0:
+            return Err(
+                f"Input arguments: {not_approved_kwargs} to the function are not approved yet."
+            )
+        return Ok(True)
 
 
 @serializable()
@@ -332,10 +382,11 @@ class OutputPolicy(Policy):
     node_uid: UID | None = None
     output_readers: list[SyftVerifyKey] = []
 
-    def apply_output(
+    def apply_to_output(
         self,
         context: NodeServiceContext,
         outputs: Any,
+        update_policy: bool = True,
     ) -> Any:
         # output_uids: Union[Dict[str, Any], list] = filter_only_uids(outputs)
         # if isinstance(output_uids, UID):
@@ -386,7 +437,6 @@ class OutputPolicyExecuteCount(OutputPolicy):
         )
 
     def _is_valid(self, context: AuthedServiceContext) -> SyftSuccess | SyftError:
-        context.node = cast(AbstractNode, context.node)
         output_service = context.node.get_service("outputservice")
         output_history = output_service.get_by_output_policy_id(context, self.id)
         if isinstance(output_history, SyftError):
@@ -431,10 +481,11 @@ recursive_serde_register_type(CustomPolicy)
 
 @serializable()
 class CustomOutputPolicy(metaclass=CustomPolicy):
-    def apply_output(
+    def apply_to_output(
         self,
         context: NodeServiceContext,
         outputs: Any,
+        update_policy: bool = True,
     ) -> Any | None:
         return outputs
 
@@ -488,10 +539,11 @@ class UserPolicy(Policy):
     def policy_code(self) -> str:
         return self.raw_code
 
-    def apply_output(
+    def apply_to_output(
         self,
         context: NodeServiceContext,
         outputs: Any,
+        update_policy: bool = True,
     ) -> Any | None:
         return outputs
 
@@ -674,7 +726,7 @@ def process_class_code(raw_code: str, class_name: str) -> str:
 def check_class_code(context: TransformContext) -> TransformContext:
     # TODO: define the proper checking for this case based on the ideas from UserCode
     # check for no globals
-    # check for Policy template -> __init__, apply_output, public_state
+    # check for Policy template -> __init__, apply_to_output, public_state
     # parse init signature
     # check dangerous libraries, maybe compile_restricted already does that
     if context.output is None:

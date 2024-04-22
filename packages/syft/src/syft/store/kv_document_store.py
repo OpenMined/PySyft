@@ -302,6 +302,11 @@ class KeyValueStorePartition(StorePartition):
 
         return False
 
+    def _get_permissions_for_uid(self, uid: UID) -> Result[set[str], Err]:
+        if uid in self.permissions:
+            return Ok(self.permissions[uid])
+        return Err(f"No permissions found for uid: {uid}")
+
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
         permissions.add(permission.node_uid)
@@ -316,7 +321,10 @@ class KeyValueStorePartition(StorePartition):
         permissions.remove(permission.node_uid)
         self.storage_permissions[permission.uid] = permissions
 
-    def has_storage_permission(self, permission: StoragePermission) -> bool:
+    def has_storage_permission(self, permission: StoragePermission | UID) -> bool:
+        if isinstance(permission, UID):
+            permission = StoragePermission(uid=permission, node_uid=self.node_uid)
+
         if permission.uid in self.storage_permissions:
             return permission.node_uid in self.storage_permissions[permission.uid]
         return False
@@ -333,6 +341,11 @@ class KeyValueStorePartition(StorePartition):
         if order_by is not None:
             result = sorted(result, key=lambda x: getattr(x, order_by.key, ""))
         return Ok(result)
+
+    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], Err]:
+        if uid in self.storage_permissions:
+            return Ok(self.storage_permissions[uid])
+        return Err(f"No storage permissions found for uid: {uid}")
 
     def _remove_keys(
         self,

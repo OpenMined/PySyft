@@ -82,7 +82,17 @@ jobs:
         shell: bash
         run: |
           echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
-          echo "SEAWEEDFS_VERSION=$(grep 'SEAWEEDFS_VERSION' packages/grid/default.env | cut -d '=' -f2)" >> $GITHUB_OUTPUT
+
+      - name: Build and push `syft` image to registry
+        uses: docker/build-push-action@v5
+        with:
+          context: ./packages
+          file: ./packages/grid/syft-client/syft.Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.ACR_SERVER }}/openmined/syft-client:dev
+            ${{ secrets.ACR_SERVER }}/openmined/syft-client:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-client:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build and push `grid-backend` image to registry
         uses: docker/build-push-action@v5
@@ -113,24 +123,11 @@ jobs:
         with:
           context: ./packages/grid/seaweedfs
           file: ./packages/grid/seaweedfs/seaweedfs.dockerfile
-          build-args: |
-            SEAWEEDFS_VERSION=${{ steps.grid.outputs.SEAWEEDFS_VERSION }}
           push: true
           tags: |
             ${{ secrets.ACR_SERVER }}/openmined/grid-seaweedfs:dev
             ${{ secrets.ACR_SERVER }}/openmined/grid-seaweedfs:dev-${{ github.sha }}
             ${{ secrets.ACR_SERVER }}/openmined/grid-seaweedfs:${{ steps.grid.outputs.GRID_VERSION }}
-
-      - name: Build and push `grid-veilid` image to registry
-        uses: docker/build-push-action@v5
-        with:
-          context: ./packages/grid/veilid
-          file: ./packages/grid/veilid/veilid.dockerfile
-          push: true
-          tags: |
-            ${{ secrets.ACR_SERVER }}/openmined/grid-veilid:dev
-            ${{ secrets.ACR_SERVER }}/openmined/grid-veilid:dev-${{ github.sha }}
-            ${{ secrets.ACR_SERVER }}/openmined/grid-veilid:${{ steps.grid.outputs.GRID_VERSION }}
 
       - name: Build Helm Chart & Copy to infra
         if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'
