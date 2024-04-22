@@ -7,13 +7,15 @@ from ..abstract_node import NodeType
 from ..img.base64 import base64read
 from ..node.credentials import SyftSigningKey
 from ..serde.serializable import serializable
+from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.network.node_peer import NodePeer
 from ..service.response import SyftError
 from ..service.response import SyftException
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
-from ..util.fonts import fonts_css
+from ..util.fonts import FONT_CSS
 from .client import SyftClient
+from .connection import NodeConnection
 
 
 @serializable()
@@ -25,8 +27,12 @@ class GatewayClient(SyftClient):
         from .domain_client import DomainClient
         from .enclave_client import EnclaveClient
 
-        connection = self.connection.with_proxy(peer.id)
-        metadata = connection.get_node_metadata(credentials=SyftSigningKey.generate())
+        connection: type[NodeConnection] = self.connection.with_proxy(peer.id)
+        metadata: NodeMetadataJSON | SyftError = connection.get_node_metadata(
+            credentials=SyftSigningKey.generate()
+        )
+        if isinstance(metadata, SyftError):
+            return metadata
         if metadata.node_type == NodeType.DOMAIN.value:
             client_type: type[SyftClient] = DomainClient
         elif metadata.node_type == NodeType.ENCLAVE.value:
@@ -105,7 +111,7 @@ class GatewayClient(SyftClient):
 
         return f"""
         <style>
-            {fonts_css}
+            {FONT_CSS}
 
             .syft-container {{
                 padding: 5px;

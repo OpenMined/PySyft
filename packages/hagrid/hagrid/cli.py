@@ -2182,12 +2182,29 @@ def create_launch_docker_cmd(
             **kwargs,
         )
 
+    default_env = f"{template_grid_dir}/default.env"
+    if not os.path.exists(default_env):
+        # old path
+        default_env = f"{template_grid_dir}/.env"
+    default_envs = {}
+    with open(default_env) as f:
+        for line in f.readlines():
+            if "=" in line:
+                parts = line.strip().split("=")
+                key = parts[0]
+                value = ""
+                if len(parts) > 1:
+                    value = parts[1]
+                default_envs[key] = value
+
     single_container_mode = kwargs["deployment_type"] == "single_container"
     in_mem_workers = kwargs.get("in_mem_workers")
     smtp_username = kwargs.get("smtp_username")
     smtp_sender = kwargs.get("smtp_sender")
     smtp_password = kwargs.get("smtp_password")
     smtp_port = kwargs.get("smtp_port")
+    if smtp_port is None or smtp_port == "":
+        smtp_port = int(default_envs["SMTP_PORT"])
     smtp_host = kwargs.get("smtp_host")
 
     print("  - NAME: " + str(snake_name))
@@ -2232,7 +2249,6 @@ def create_launch_docker_cmd(
         "DOCKER_BUILDKIT": 1,
         "HTTP_PORT": int(host_term.free_port),
         "HTTPS_PORT": int(host_term.free_port_tls),
-        "BACKEND_STORAGE_PATH": "credentials-data",
         "TRAEFIK_TAG": str(tag),
         "NODE_NAME": str(snake_name),
         "NODE_TYPE": str(node_type.input),
@@ -2282,7 +2298,7 @@ def create_launch_docker_cmd(
         envs["IGNORE_TLS_ERRORS"] = "True"
 
     if "test" in kwargs and kwargs["test"] is True:
-        envs["S3_VOLUME_SIZE_MB"] = "100"  # GitHub CI is small
+        envs["SWFS_VOLUME_SIZE_LIMIT_MB"] = "100"  # GitHub CI is small
 
     if kwargs.get("release", "") == "development":
         envs["RABBITMQ_MANAGEMENT"] = "-management"
@@ -2309,7 +2325,7 @@ def create_launch_docker_cmd(
         "set_volume_size_limit_mb" in kwargs
         and kwargs["set_volume_size_limit_mb"] is not None
     ):
-        envs["S3_VOLUME_SIZE_MB"] = kwargs["set_volume_size_limit_mb"]
+        envs["SWFS_VOLUME_SIZE_LIMIT_MB"] = kwargs["set_volume_size_limit_mb"]
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
@@ -2337,20 +2353,6 @@ def create_launch_docker_cmd(
     # new docker compose regression work around
     # default_env = os.path.expanduser("~/.hagrid/app/.env")
 
-    default_env = f"{template_grid_dir}/default.env"
-    if not os.path.exists(default_env):
-        # old path
-        default_env = f"{template_grid_dir}/.env"
-    default_envs = {}
-    with open(default_env) as f:
-        for line in f.readlines():
-            if "=" in line:
-                parts = line.strip().split("=")
-                key = parts[0]
-                value = ""
-                if len(parts) > 1:
-                    value = parts[1]
-                default_envs[key] = value
     default_envs.update(envs)
 
     # env file path

@@ -31,7 +31,7 @@ from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..types.blob_storage import BlobFile
 from ..types.uid import UID
-from ..util.fonts import fonts_css
+from ..util.fonts import FONT_CSS
 from ..util.util import get_mb_size
 from ..util.util import prompt_warning_message
 from .api import APIModule
@@ -168,6 +168,10 @@ class DomainClient(SyftClient):
     #     else:
     #         return {}
 
+    def refresh(self) -> None:
+        if self._api and self._api.refresh_api_callback:
+            self._api.refresh_api_callback()
+
     def get_sync_state(self) -> SyncState | SyftError:
         state: SyncState = self.api.services.sync._get_state()
         if isinstance(state, SyftError):
@@ -302,10 +306,10 @@ class DomainClient(SyftClient):
         if isinstance(res, SyftSuccess):
             if self.metadata:
                 return SyftSuccess(
-                    message=f"Connected {self.metadata.node_type} to {client.name} gateway"
+                    message=f"Connected {self.metadata.node_type} '{self.metadata.name}' to gateway '{client.name}'"
                 )
             else:
-                return SyftSuccess(message=f"Connected to {client.name} gateway")
+                return SyftSuccess(message=f"Connected to '{client.name}' gateway")
         return res
 
     @property
@@ -480,7 +484,7 @@ class DomainClient(SyftClient):
 
         return f"""
         <style>
-            {fonts_css}
+            {FONT_CSS}
 
             .syft-container {{
                 padding: 5px;

@@ -1,19 +1,18 @@
 # stdlib
 from collections import defaultdict
 from typing import Any
-from typing import cast
 
 # third party
 from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...client.api import NodeIdentity
 from ...serde.serializable import serializable
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
+from ...types.datetime import DateTime
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
@@ -22,6 +21,7 @@ from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import StoragePermission
+from ..api.api import TwinAPIEndpoint
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
@@ -93,7 +93,9 @@ class SyncService(AbstractService):
                 x.node_uid = context.node.id  # type: ignore
 
     def transform_item(
-        self, context: AuthedServiceContext, item: SyftObject
+        self,
+        context: AuthedServiceContext,
+        item: SyncableSyftObject,
     ) -> SyftObject:
         if isinstance(item, UserCodeStatusCollection):
             identity = NodeIdentity.from_node(context.node)
@@ -149,6 +151,18 @@ class SyncService(AbstractService):
         creds = context.credentials
 
         exists = stash.get_by_uid(context.credentials, item.id).ok() is not None
+
+        if isinstance(item, TwinAPIEndpoint):
+            # we need the side effect of set function
+            # to create an action object
+            res = context.node.get_service("apiservice").set(
+                context=context, endpoint=item
+            )
+            if isinstance(res, SyftError):
+                return res
+            else:
+                return Ok(item)
+
         if exists:
             res = stash.update(creds, item)
         else:
@@ -169,7 +183,7 @@ class SyncService(AbstractService):
     def sync_items(
         self,
         context: AuthedServiceContext,
-        items: list[ActionObject | SyftObject],
+        items: list[SyncableSyftObject],
         permissions: list[ActionObjectPermission],
         storage_permissions: list[StoragePermission],
         ignored_batches: dict[UID, int],
@@ -203,7 +217,13 @@ class SyncService(AbstractService):
                 else:
                     return SyftError(message=f"Failed to sync {res.err()}")
 
-        res = self.build_current_state(context, ignored_batches, unignored_batches)
+        res = self.build_current_state(
+            context,
+            new_items=items,
+            new_ignored_batches=ignored_batches,
+            new_unignored_batches=unignored_batches,
+        )
+
         if res.is_err():
             return SyftError(message=res.message)
         else:
@@ -230,15 +250,17 @@ class SyncService(AbstractService):
         for item in items:
             store = get_store(context, item)
             if store is not None:
-                _id = item.id.id
-                permissions[_id] = store.permissions[_id]
-                storage_permissions[_id] = store.storage_permissions[_id]
+                # TODO fix error handling
+                uid = item.id.id
+                permissions[uid] = store._get_permissions_for_uid(uid).ok()
+                storage_permissions[uid] = store._get_storage_permissions_for_uid(
+                    uid
+                ).ok()
         return permissions, storage_permissions
 
     def get_all_syncable_items(
         self, context: AuthedServiceContext
     ) -> Result[list[SyncableSyftObject], str]:
-        node = cast(AbstractNode, context.node)
         all_items = []
 
         services_to_sync = [
@@ -248,16 +270,16 @@ class SyncService(AbstractService):
             "logservice",
             "outputservice",
             "usercodestatusservice",
+            "apiservice",
         ]
 
         for service_name in services_to_sync:
-            service = node.get_service(service_name)
+            service = context.node.get_service(service_name)
             items = service.get_all(context)
             if isinstance(items, SyftError):
                 return items
             all_items.extend(items)
 
-        # NOTE we only need action objects from outputs for now
         action_object_ids = set()
         for obj in all_items:
             if isinstance(obj, ExecutionOutput):
@@ -268,7 +290,7 @@ class SyncService(AbstractService):
                 action_object_ids.add(obj.result.id)
 
         for uid in action_object_ids:
-            action_object = node.get_service("actionservice").get(
+            action_object = context.node.get_service("actionservice").get(
                 context, uid, resolve_nested=False
             )  # type: ignore
             if action_object.is_err():
@@ -280,9 +302,11 @@ class SyncService(AbstractService):
     def build_current_state(
         self,
         context: AuthedServiceContext,
+        new_items: list[SyncableSyftObject] | None = None,
         new_ignored_batches: dict[UID, int] | None = None,
         new_unignored_batches: set[UID] | None = None,
     ) -> Result[SyncState, str]:
+        new_items = new_items if new_items is not None else []
         new_ignored_batches = (
             new_ignored_batches if new_ignored_batches is not None else {}
         )
@@ -321,12 +345,21 @@ class SyncService(AbstractService):
             k: v for k, v in ignored_batches.items() if k not in unignored_batches
         }
 
+        object_sync_dates = (
+            previous_state.object_sync_dates.copy() if previous_state else {}
+        )
+        for obj in new_items:
+            object_sync_dates[obj.id.id] = DateTime.now()
+
         new_state = SyncState(
             node_uid=context.node.id,  # type: ignore
+            node_name=context.node.name,  # type: ignore
+            node_side_type=context.node.node_side_type,  # type: ignore
             previous_state_link=previous_state_link,
             permissions=permissions,
             storage_permissions=storage_permissions,
             ignored_batches=ignored_batches,
+            object_sync_dates=object_sync_dates,
         )
 
         new_state.add_objects(objects, context)

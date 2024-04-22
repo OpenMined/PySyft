@@ -1,8 +1,6 @@
 # stdlib
-from typing import cast
 
 # relative
-from ...abstract_node import AbstractNode
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
@@ -54,7 +52,7 @@ class NotificationService(AbstractService):
         result = self.stash.set(
             context.credentials, new_notification, add_permissions=permissions
         )
-        context.node = cast(AbstractNode, context.node)
+
         notifier_service = context.node.get_service("notifierservice")
 
         res = notifier_service.dispatch_notification(context, new_notification)
@@ -98,7 +96,6 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> NotifierSettings | SyftError:
-        context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         return notifier_service.user_settings(context)
 
@@ -111,7 +108,6 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> NotifierSettings | SyftError:
-        context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         result = notifier_service.settings(context)
         return result
@@ -125,7 +121,6 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Notification | SyftError:
-        context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         result = notifier_service.activate(context)
         return result
@@ -139,7 +134,6 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Notification | SyftError:
-        context.node = cast(AbstractNode, context.node)
         notifier_service = context.node.get_service("notifierservice")
         result = notifier_service.deactivate(context)
         return result
@@ -247,12 +241,11 @@ class NotificationService(AbstractService):
     @service_method(
         path="notifications.resolve_object",
         name="resolve_object",
-        roles=DATA_SCIENTIST_ROLE_LEVEL,
+        roles=GUEST_ROLE_LEVEL,
     )
     def resolve_object(
         self, context: AuthedServiceContext, linked_obj: LinkedObject
     ) -> Notification | SyftError:
-        context.node = cast(AbstractNode, context.node)
         service = context.node.get_service(linked_obj.service_type)
         result = service.resolve_link(context=context, linked_obj=linked_obj)
         if result.is_err():

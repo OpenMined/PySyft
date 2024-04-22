@@ -1,18 +1,14 @@
 manifestVersion: 0.1
-hagrid_version: 0.3.113
-syft_version: 0.8.7-beta.0
-dockerTag: 0.8.7-beta.0
+hagrid_version: 0.3.116
+syft_version: 0.8.7-beta.1
+dockerTag: 0.8.7-beta.1
 baseUrl: https://raw.githubusercontent.com/OpenMined/PySyft/
-hash: c51169a89a83506dd401442a3900c4cea5330af6
+hash: a697b8f03ab734732949da611a30266c6c8deafa
 target_dir: ~/.hagrid/PySyft/
 files:
   grid:
     path: packages/grid/
     common:
-    - rabbitmq/rabbitmq.conf
-    - redis/redis.conf
-    - seaweedfs/filer.toml
-    - seaweedfs/start.sh
     - default.env
     docker:
     - default.env
@@ -28,8 +24,6 @@ files:
     - traefik/docker/traefik.yml
     k8s:
     - devspace.yaml
-    - traefik/k8s/dynamic.yml
-    - traefik/k8s/traefik.yml
     podman:
     - podman/podman-kube/podman-syft-kube-config.yaml
     - podman/podman-kube/podman-syft-kube.yaml
