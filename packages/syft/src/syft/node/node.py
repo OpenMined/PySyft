@@ -17,6 +17,7 @@ import traceback
 from typing import Any
 
 # third party
+from loguru import logger
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
@@ -192,6 +193,12 @@ def get_default_worker_image() -> str | None:
 
 def get_default_worker_pool_name() -> str | None:
     return get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME)
+
+
+def get_default_bucket_name() -> str:
+    env = get_env("DEFAULT_BUCKET_NAME")
+    node_id = get_node_uid_env() or "syft-bucket"
+    return env or node_id or "syft-bucket"
 
 
 def get_default_worker_pool_count(node: Node) -> int:
@@ -1557,6 +1564,12 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         credentials=credentials,
         role=ServiceRole.ADMIN,
     )
+
+    if isinstance(default_worker_pool, SyftError):
+        logger.error(
+            f"Failed to get default worker pool {default_pool_name}. Error: {default_worker_pool.message}"
+        )
+        return default_worker_pool
 
     print(f"Creating default worker image with tag='{default_worker_tag}'")
     # Get/Create a default worker SyftWorkerImage
