@@ -65,7 +65,7 @@ def make_routes(worker: Worker) -> APIRouter:
         # stdlib
         import base64
 
-        url_path = base64.b64decode(url_path_str.encode()).decode()
+        url_path = base64.b64decode(url_path_str.encode(), b"-_").decode()
         peer_uid = UID.from_string(peer_uid_str)
         print(f"Hello...., {peer_uid_str}, {url_path}")
         return StreamingResponse(
