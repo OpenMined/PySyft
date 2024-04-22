@@ -22,17 +22,17 @@ logger.add(sys.stderr, colorize=True, level=log_level)
 app = FastAPI(title="Rathole")
 
 
-class RatholeServiceType(Enum):
+class RatholeMode(Enum):
     CLIENT = "client"
     SERVER = "server"
 
 
-ServiceType = os.getenv("RATHOLE_SERVICE_TYPE")
+ServiceType = os.getenv("RATHOLE_MODE", "client").lower()
 
 
 RatholeTomlManager = (
     RatholeServerToml()
-    if ServiceType == RatholeServiceType.SERVER.value
+    if ServiceType == RatholeMode.SERVER.value
     else RatholeClientToml()
 )
 
