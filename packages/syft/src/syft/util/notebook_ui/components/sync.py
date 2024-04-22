@@ -11,11 +11,9 @@ from ....service.job.job_stash import Job
 from ....service.request.request import Request
 from ....types.syft_object import SYFT_OBJECT_VERSION_1
 from ....types.syft_object import SyftObject
-from ...resources import read_svg
+from ..icons import Icon
 from ..notebook_addons import CSS_CODE
 from .base import HTMLComponentBase
-
-COPY_ICON = read_svg("copy.svg")
 
 
 class CopyIDButton(HTMLComponentBase):
@@ -28,7 +26,10 @@ class CopyIDButton(HTMLComponentBase):
         copy_js = f"event.stopPropagation(); navigator.clipboard.writeText('{self.copy_text}');"
         button_html = f"""
         <div class="copy-container" onclick="{copy_js}">
-            <span class="copy-text-display" style="max-width: {self.max_width}px;">#{self.copy_text}</span>{COPY_ICON}
+            <span class="copy-text-display"
+                  style="max-width: {self.max_width}px;">
+                #{self.copy_text}
+            </span>{Icon.COPY.svg}
         </div>
         """
         return button_html

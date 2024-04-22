@@ -377,14 +377,9 @@ class ResolveWidget:
         ] = {}
         self.main_widget = self.build()
         self.result_widget = VBox()  # Placeholder for SyftSuccess / SyftError
-        self.widget = VBox(
-            [self.build_css_widget(), self.main_widget, self.result_widget]
-        )
+        self.widget = VBox([self.main_widget, self.result_widget])
         self.is_synced = False
         self.hide_result_widget()
-
-    def build_css_widget(self) -> HTML:
-        return widgets.HTML(value=CSS_CODE)
 
     def _repr_mimebundle_(self, **kwargs: dict) -> dict[str, str] | None:
         # from IPython.display import display

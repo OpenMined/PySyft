@@ -6,21 +6,14 @@ from typing import Any
 
 # relative
 from ...types.uid import UID
-from ..resources import read_css
-from ..resources import read_svg
+from .icons import Icon
+from ..resources import load_css
 
 CSS_CODE = f"""
 <style>
-{read_css("style.css")}
+{load_css("style.css")}
 </style>
 """
-
-SEARCH_ICON = read_svg("search.svg")
-CLIPBOARD_ICON = read_svg("clipboard.svg")
-TABLE_ICON = read_svg("table.svg")
-FOLDER_ICON = read_svg("folder.svg")
-REQUEST_ICON = read_svg("request.svg")
-ARROW_ICON = read_svg("arrow.svg")
 
 custom_code = """
     <div style='margin-top:15px;'>
@@ -94,7 +87,7 @@ custom_code = """
 
                 <div><h4 id='total${uid}'>0</h4></div>
             </div>
-            <div id='table${uid}' class='grid-table${uid}' style='margin-top: 25px;'>
+            <div id='table${uid}' class='grid-table' style='margin-top: 25px; grid-template-columns: 1fr repeat(${cols}, 1fr);'>
                 <script>
                     function paginate${uid}(arr, size) {
                         const res = [];
@@ -277,7 +270,7 @@ def create_table_template(
     items: Sequence, list_name: Any, rows: int = 5, table_icon: Any = None
 ) -> str:
     if not table_icon:
-        table_icon = TABLE_ICON
+        table_icon = Icon.TABLE.svg
 
     items_dict = json.dumps(items)
     code = CSS_CODE + custom_code
@@ -294,6 +287,6 @@ def create_table_template(
         cols=cols,
         rows=rows,
         icon=table_icon,
-        searchIcon=SEARCH_ICON,
-        clipboardIcon=CLIPBOARD_ICON,
+        searchIcon=Icon.SEARCH.svg,
+        clipboardIcon=Icon.CLIPBOARD.svg,
     )

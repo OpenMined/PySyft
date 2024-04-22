@@ -2,32 +2,30 @@
 import pytest
 
 # syft absolute
-from syft.util.resources import read_css
-from syft.util.resources import read_js
-from syft.util.resources import read_png_base64
-from syft.util.resources import read_svg
+from syft.util.resources import load_css
+from syft.util.resources import load_png_base64
+from syft.util.resources import load_svg
 
 
-def test_read_png_base64():
-    png = read_png_base64("logo.png")
+def test_load_png_base64():
+    png = load_png_base64("logo.png")
     assert isinstance(png, str)
 
     with pytest.raises(FileNotFoundError):
-        read_png_base64("non_existent.png")
+        load_png_base64("non_existent.png")
 
 
-def test_read_svg():
-    svg = read_svg("copy.svg")
+def test_load_svg():
+    svg = load_svg("copy.svg")
     assert isinstance(svg, str)
+
     assert svg.startswith("<svg")
     assert svg.endswith("</svg>")
+    # Required for notebook_addons table
+    assert "\n" not in svg
+    assert '"' not in svg
 
 
-def test_read_css():
-    css = read_css("style.css")
+def test_load_css():
+    css = load_css("style.css")
     assert isinstance(css, str)
-
-
-def test_read_js():
-    js = read_js("copy.js")
-    assert isinstance(js, str)

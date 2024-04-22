@@ -1,37 +1,39 @@
 # stdlib
 import base64
 from functools import lru_cache
-import importlib.resources as pkg_resources
+import importlib.resources
 
-IMAGE_RESOURCES = "syft.static.img"
-CSS_RESOURCES = "syft.static.css"
-JS_RESOURCES = "syft.static.js"
-SVG_RESOURCES = "syft.static.img.svg"
+# third party
+import lxml.etree
+
+IMAGE_RESOURCES = "syft.assets.img"
+SVG_RESOURCES = "syft.assets.svg"
+CSS_RESOURCES = "syft.assets.css"
+
+
+def _cleanup_svg(svg: str) -> str:
+    # notebook_addons table template requires SVGs with single quotes and no newlines
+    parser = lxml.etree.XMLParser(remove_blank_text=True)
+    elem = lxml.etree.XML(svg, parser=parser)
+    parsed = lxml.etree.tostring(elem, encoding="unicode")
+    # NOTE UNSAFE for non-SVG xml
+    parsed = parsed.replace('"', "'")
+    return parsed
 
 
 @lru_cache(maxsize=32)
-def read_resource(package: str, resource: str, mode: str = "r") -> str | bytes:
-    if mode == "r":
-        return pkg_resources.read_text(package, resource)
-    elif mode == "rb":
-        return pkg_resources.read_binary(package, resource)
-    else:
-        raise ValueError("Invalid mode")
+def load_svg(fname: str) -> str:
+    res = importlib.resources.read_text(SVG_RESOURCES, fname)
+    return _cleanup_svg(res)
 
 
-def read_png_base64(fname: str) -> str:
-    b = read_resource(IMAGE_RESOURCES, fname, mode="rb")
+@lru_cache(maxsize=32)
+def load_png_base64(fname: str) -> str:
+    b = importlib.resources.read_binary(IMAGE_RESOURCES, fname)
     res = base64.b64encode(b)
     return f"data:image/png;base64,{res.decode('utf-8')}"
 
 
-def read_css(fname: str) -> str:
-    return read_resource(CSS_RESOURCES, fname, mode="r")  # type: ignore
-
-
-def read_js(fname: str) -> str:
-    return read_resource(JS_RESOURCES, fname, mode="r")  # type: ignore
-
-
-def read_svg(fname: str) -> str:
-    return read_resource(SVG_RESOURCES, fname, mode="r")  # type: ignore
+@lru_cache(maxsize=32)
+def load_css(fname: str) -> str:
+    return importlib.resources.read_text(CSS_RESOURCES, fname)
