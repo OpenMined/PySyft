@@ -197,3 +197,5 @@ ingress:
   # ----------------------------------------
   class: null
   className: null
+
+extraResources: []
