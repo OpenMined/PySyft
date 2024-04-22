@@ -6,9 +6,9 @@ import importlib.resources
 # third party
 import lxml.etree
 
-IMAGE_RESOURCES = "syft.assets.img"
-SVG_RESOURCES = "syft.assets.svg"
-CSS_RESOURCES = "syft.assets.css"
+IMAGE_ASSETS = "syft.assets.img"
+SVG_ASSETS = "syft.assets.svg"
+CSS_ASSETS = "syft.assets.css"
 
 
 def _cleanup_svg(svg: str) -> str:
@@ -23,17 +23,17 @@ def _cleanup_svg(svg: str) -> str:
 
 @lru_cache(maxsize=32)
 def load_svg(fname: str) -> str:
-    res = importlib.resources.read_text(SVG_RESOURCES, fname)
+    res = importlib.resources.read_text(SVG_ASSETS, fname)
     return _cleanup_svg(res)
 
 
 @lru_cache(maxsize=32)
 def load_png_base64(fname: str) -> str:
-    b = importlib.resources.read_binary(IMAGE_RESOURCES, fname)
+    b = importlib.resources.read_binary(IMAGE_ASSETS, fname)
     res = base64.b64encode(b)
     return f"data:image/png;base64,{res.decode('utf-8')}"
 
 
 @lru_cache(maxsize=32)
 def load_css(fname: str) -> str:
-    return importlib.resources.read_text(CSS_RESOURCES, fname)
+    return importlib.resources.read_text(CSS_ASSETS, fname)

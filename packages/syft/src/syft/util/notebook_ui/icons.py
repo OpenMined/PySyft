@@ -2,7 +2,7 @@
 import enum
 
 # relative
-from ..resources import load_svg
+from ..assets import load_svg
 
 
 class Icon(enum.Enum):

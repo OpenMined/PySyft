@@ -6,8 +6,8 @@ from typing import Any
 
 # relative
 from ...types.uid import UID
+from ..assets import load_css
 from .icons import Icon
-from ..resources import load_css
 
 CSS_CODE = f"""
 <style>

@@ -2,9 +2,9 @@
 import pytest
 
 # syft absolute
-from syft.util.resources import load_css
-from syft.util.resources import load_png_base64
-from syft.util.resources import load_svg
+from syft.util.assets import load_css
+from syft.util.assets import load_png_base64
+from syft.util.assets import load_svg
 
 
 def test_load_png_base64():
