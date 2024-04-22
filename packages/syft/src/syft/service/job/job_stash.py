@@ -550,7 +550,7 @@ class Job(SyncableSyftObject):
         return api.node_name
 
     @property
-    def parent(self) -> "Job" | SyftError:
+    def parent(self) -> Self | SyftError:
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
