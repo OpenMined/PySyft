@@ -53,7 +53,7 @@ seaweedfs:
         remote_bucket:
           type: gcs
           bucket_name: syft-bucket-high
-          creds: /run/secrets/gcs_creds.json
+          creds: /run/secrets/mount/gcs_creds.json
     secretKeyName: seaweedfs-mount-secret
 
   # Pod resources set inline with c3-standard-4 machine type

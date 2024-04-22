@@ -119,6 +119,9 @@ proxy:
   podLabels: null
   podAnnotations: null
 
+  # Proxy Service annotations
+  serviceAnnotations: null
+
   # Node selector for pods
   nodeSelector: null
 
