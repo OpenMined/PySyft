@@ -47,6 +47,10 @@ ingress:
 proxy:
   resourcesPreset: medium
 
+  # Use custom backend config for increased timeout
+  serviceAnnotations:
+    cloud.google.com/backend-config: '{"default": "custom-backend-config"}'
+
 # =================================================================================
 
 registry:
