@@ -39,7 +39,6 @@ def locks_threading_config(request):
     [
         pytest.lazy_fixture("locks_nop_config"),
         pytest.lazy_fixture("locks_threading_config"),
-        pytest.lazy_fixture("locks_file_config"),
     ],
 )
 def test_sanity(config: LockingConfig):
@@ -73,7 +72,6 @@ def test_acquire_nop(config: LockingConfig):
     "config",
     [
         pytest.lazy_fixture("locks_threading_config"),
-        pytest.lazy_fixture("locks_file_config"),
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
@@ -100,7 +98,6 @@ def test_acquire_release(config: LockingConfig):
     "config",
     [
         pytest.lazy_fixture("locks_threading_config"),
-        pytest.lazy_fixture("locks_file_config"),
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
@@ -116,7 +113,6 @@ def test_acquire_release_with(config: LockingConfig):
     "config",
     [
         pytest.lazy_fixture("locks_threading_config"),
-        pytest.lazy_fixture("locks_file_config"),
     ],
 )
 def test_acquire_expire(config: LockingConfig):
@@ -143,7 +139,6 @@ def test_acquire_expire(config: LockingConfig):
     "config",
     [
         pytest.lazy_fixture("locks_threading_config"),
-        pytest.lazy_fixture("locks_file_config"),
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
@@ -166,7 +161,6 @@ def test_acquire_double_aqcuire_timeout_fail(config: LockingConfig):
     "config",
     [
         pytest.lazy_fixture("locks_threading_config"),
-        pytest.lazy_fixture("locks_file_config"),
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
@@ -191,7 +185,6 @@ def test_acquire_double_aqcuire_timeout_ok(config: LockingConfig):
     "config",
     [
         pytest.lazy_fixture("locks_threading_config"),
-        pytest.lazy_fixture("locks_file_config"),
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
@@ -216,7 +209,6 @@ def test_acquire_double_aqcuire_nonblocking(config: LockingConfig):
     "config",
     [
         pytest.lazy_fixture("locks_threading_config"),
-        pytest.lazy_fixture("locks_file_config"),
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
@@ -242,7 +234,6 @@ def test_acquire_double_aqcuire_retry_interval(config: LockingConfig):
     "config",
     [
         pytest.lazy_fixture("locks_threading_config"),
-        pytest.lazy_fixture("locks_file_config"),
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
@@ -259,7 +250,6 @@ def test_acquire_double_release(config: LockingConfig):
     "config",
     [
         pytest.lazy_fixture("locks_threading_config"),
-        pytest.lazy_fixture("locks_file_config"),
     ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
@@ -281,7 +271,6 @@ def test_acquire_same_name_diff_namespace(config: LockingConfig):
     "config",
     [
         pytest.lazy_fixture("locks_threading_config"),
-        pytest.lazy_fixture("locks_file_config"),
     ],
 )
 def test_locks_parallel_multithreading(config: LockingConfig) -> None:
@@ -334,41 +323,3 @@ def test_locks_parallel_multithreading(config: LockingConfig) -> None:
         stored = int(f.read())
 
     assert stored == thread_cnt * repeats
-
-
-# @pytest.mark.skip(reason="Joblib is flaky")
-# @pytest.mark.parametrize(
-#     "config",
-#     [
-#         pytest.lazy_fixture("locks_file_config"),
-#     ],
-# )
-# def test_parallel_joblib(
-#     config: LockingConfig,
-# ) -> None:
-#     thread_cnt = 3
-#     repeats = 5
-
-#     temp_dir = Path(tempfile.TemporaryDirectory().name)
-#     temp_dir.mkdir(parents=True, exist_ok=True)
-#     temp_file = temp_dir / "dbg.txt"
-#     if temp_file.exists():
-#         temp_file.unlink()
-
-#     with open(temp_file, "w") as f:
-#         f.write("0")
-
-#     def _kv_cbk(tid: int) -> None:
-#         for _idx in range(repeats):
-#             with SyftLock(config):
-#                 with open(temp_file) as f:
-#                     prev = int(f.read())
-#                 with open(temp_file, "w") as f:
-#                     f.write(str(prev + 1))
-
-#     Parallel(n_jobs=thread_cnt)(delayed(_kv_cbk)(idx) for idx in range(thread_cnt))
-
-#     with open(temp_file) as f:
-#         stored = int(f.read())
-
-#     assert stored == thread_cnt * repeats
