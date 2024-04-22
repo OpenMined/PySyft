@@ -7,9 +7,16 @@ from typing import Any
 # relative
 from ...types.uid import UID
 
-CSS_CODE = """
+STYLESHEET_URLS = [
+    "https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,200;1,300;1,400;1,500;1,600;1,700;1,800&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap",
+    "https://fonts.cdnfonts.com/css/dejavu-sans-mono",
+]
+STYLESHEET_JS_CALLS = "\n".join([f'addStyleSheet("{s}")' for s in STYLESHEET_URLS])
+
+
+JS_DOWNLOAD_FONTS = f"""
 <script>
-function addCss(fileName) {
+function addStyleSheet(fileName) {{
 
   var head = document.head;
   var link = document.createElement("link");
@@ -19,14 +26,14 @@ function addCss(fileName) {
   link.href = fileName;
 
   head.appendChild(link);
-}
+}}
 
-addCss("https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,200;1,300;1,400;1,500;1,600;1,700;1,800&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap");
-addCss("https://fonts.cdnfonts.com/css/dejavu-sans-mono");
-
+{STYLESHEET_JS_CALLS}
 </script>
+"""
 
 
+CSS = """
 <style>
   body[data-jp-theme-light='false'] {
         --primary-color: #111111;
@@ -250,6 +257,10 @@ addCss("https://fonts.cdnfonts.com/css/dejavu-sans-mono");
         font-weight: 600;
         background-color: var(--secondary-color) !important;
         color: var(--tertiary-color);
+    }
+
+    .center-content-cell{
+        margin: auto;
     }
 
     .grid-header {
@@ -538,6 +549,11 @@ addCss("https://fonts.cdnfonts.com/css/dejavu-sans-mono");
 
 """
 
+CSS_CODE = f"""
+{JS_DOWNLOAD_FONTS}
+{CSS}
+"""
+
 SEARCH_ICON = (
     '<svg width="11" height="10" viewBox="0 0 11 10" fill="none"'
     ' xmlns="http://www.w3.org/2000/svg"><path d="M10.5652 9.23467L8.21819'
@@ -783,6 +799,7 @@ custom_code = """
                                                     let label_div = document.createElement("div");
                                                     label_div.classList.add('label',item[attr].type)
                                                     label_div.innerText = String(item[attr].value).toUpperCase();
+                                                    label_div.classList.add('center-content-cell');
                                                     div.appendChild(label_div);
                                                     div.classList.add('grid-row','grid-std-cells');
                                                 } else if (item[attr].type === "clipboard") {

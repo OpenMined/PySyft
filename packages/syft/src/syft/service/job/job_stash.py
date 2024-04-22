@@ -36,6 +36,7 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import as_markdown_code
 from ...util.notebook_ui.notebook_addons import CSS_CODE
+from ...util.notebook_ui.notebook_addons import JS_DOWNLOAD_FONTS
 from ...util.telemetry import instrument
 from ...util.util import prompt_warning_message
 from ..action.action_object import Action
@@ -495,7 +496,7 @@ class Job(SyncableSyftObject):
             "Job": self.summary_html(),
             "# Subjobs": center_content(default_value(len(subjobs))),
             "Progress": center_content(default_value(self.progress)),
-            "Eta": center_content(default_value(self.eta_string)),
+            "ETA": center_content(default_value(self.eta_string)),
             "Logs": center_content(default_value(logs)),
         }
 
@@ -584,14 +585,15 @@ class Job(SyncableSyftObject):
         result_tab_id = f"Result_{identifier}"
         logs_tab_id = f"Logs_{identifier}"
 
-        type_html = (
-            f'<div class="label label-light-blue"'
-            f'style="display: flex; align-items:center; justify-content: center; width: 34px; height:21px; radius:4px;'
-            f'padding: 2px, 6px, 2px, 6px">'
-            f'<span style="font-family: DejaVu Sans Mono, sans-serif; font-size: 12px; font-weight: 400; line-height:16.8px">'
-            f'{"JOB" if not self.parent_job_id else "SUBJOB"}</span>'
-            f"</div>"
-        )
+        type_html = f"""
+            <div class="label label-light-blue"
+            style="display: flex; align-items:center; justify-content: center; width: 34px; height:21px; radius:4px;
+                padding: 2px, 6px, 2px, 6px">
+            <span style="font-family: DejaVu Sans Mono, sans-serif;
+                font-size: 12px; font-weight: 400; line-height:16.8px">
+            {"JOB" if not self.parent_job_id else "SUBJOB"}</span>
+            </div>
+"""
         description_html = f"<span class='jobs-title'>{self.user_code_name}</span>"
         copy_id_button = CopyIDButton(copy_text=str(self.id), max_width=60)
         ancestor_name_list = self.ancestors_name_list
@@ -787,27 +789,8 @@ class Job(SyncableSyftObject):
         {onclick_html}
         """
 
-        download_fonts = """
-<script>
-function addCss(fileName) {
-
-  var head = document.head;
-  var link = document.createElement("link");
-
-  link.type = "text/css";
-  link.rel = "stylesheet";
-  link.href = fileName;
-
-  head.appendChild(link);
-}
-
-addCss("https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,200;1,300;1,400;1,500;1,600;1,700;1,800&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap");
-
-</script>
-        """
-
         repr_html = f"""
-        {download_fonts}
+        {JS_DOWNLOAD_FONTS}
         <style>
         {style}
         </style>
