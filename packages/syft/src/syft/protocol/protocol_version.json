@@ -59,7 +59,7 @@
       "CustomAPIView": {
         "1": {
           "version": 1,
-          "hash": "051b8f0ffb1974bfd1a66f040b01b7b422f276170bcdb6ca2bb710b7f8f6d925",
+          "hash": "8fe9f0fded4dbce033e2b14798a59d8635c3b73b0562f9ea686b1162ed155e91",
           "action": "add"
         }
       },
@@ -80,21 +80,21 @@
       "UpdateTwinAPIEndpoint": {
         "1": {
           "version": 1,
-          "hash": "6c0c6bc042391e60d5c78893f859c8bdec4b45f0bdc7749957a425e041a4096c",
+          "hash": "cd0d4d67dc03cf6b78832f33ef584ec0ff8fa0b851629396ba27d7db63130342",
           "action": "add"
         }
       },
       "CreateTwinAPIEndpoint": {
         "1": {
           "version": 1,
-          "hash": "e26c26838d6475b205643b5530d75d433c14f47cd5adf9e5323cafac187a9a40",
+          "hash": "e735dc30cba1789c3fb109e35aa40ffa873951f8e00b0b971950b1735c27d1ca",
           "action": "add"
         }
       },
       "TwinAPIEndpoint": {
         "1": {
           "version": 1,
-          "hash": "06110db2dedecff31eca4df6d571de3662c848e9498d95f864d60118653b9cc3",
+          "hash": "540468be5db20efe555d2288c9aed60887306ac9b56d6a63c066246bc0010e9c",
           "action": "add"
         }
       },
