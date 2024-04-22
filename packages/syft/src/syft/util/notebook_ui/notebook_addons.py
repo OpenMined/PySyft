@@ -491,6 +491,10 @@ CSS = """
         color: var(--tertiary-color);
     }
 
+    .rendered_html tbody tr:nth-child(odd) {
+        background: transparent;
+    }
+
     .search-field {
         display: flex;
         align-items: center;
