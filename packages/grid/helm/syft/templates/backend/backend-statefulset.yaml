@@ -171,6 +171,8 @@ spec:
               mountPath: /sys/kernel/security
             - name: tpm-device
               mountPath: /dev/tpmrm0
+          securityContext:
+            privileged: true
           ports:
             - name: attestation-api
               containerPort: 4455
