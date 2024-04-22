@@ -33,6 +33,7 @@ from ...types.transforms import transform
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
+from ..user.user import UserView
 
 NOT_ACCESSIBLE_STRING = "N / A"
 
@@ -48,6 +49,7 @@ class TwinAPIAuthedContext(AuthedServiceContext):
     __canonical_name__ = "AuthedServiceContext"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    user: UserView | None = None
     settings: dict[str, Any] | None = None
     code: HelperFunctionSet | None = None
     state: dict[Any, Any] | None = None
@@ -58,7 +60,8 @@ class TwinAPIContextView(SyftObject):
     __canonical_name__ = "TwinAPIContextView"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __repr_attrs__ = ["settings", "state"]
+    __repr_attrs__ = ["settings", "state", "user"]
+    user: UserView
     settings: dict[str, Any]
     state: dict[Any, Any]
 
@@ -193,6 +196,9 @@ class Endpoint(SyftObject):
 
         helper_function_set = HelperFunctionSet(helper_function_dict)
 
+        user_service = context.node.get_service("userservice")
+        user = user_service.get_current_user(context)
+
         return TwinAPIAuthedContext(
             credentials=context.credentials,
             role=context.role,
@@ -204,6 +210,7 @@ class Endpoint(SyftObject):
             settings=self.settings or {},
             code=helper_function_set,
             state=self.state or {},
+            user=user,
         )
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
@@ -555,7 +562,7 @@ def extract_code_string(code_field: str) -> Callable:
 
 @transform(TwinAPIAuthedContext, TwinAPIContextView)
 def twin_api_context_to_twin_api_context_view() -> list[Callable]:
-    return [keep(["state", "settings"])]
+    return [keep(["state", "settings", "user"])]
 
 
 @transform(CreateTwinAPIEndpoint, TwinAPIEndpoint)
