@@ -5,6 +5,7 @@ import inspect
 from inspect import Signature
 import keyword
 import re
+import textwrap
 from typing import Any
 from typing import cast
 
@@ -23,9 +24,12 @@ from ...serde.signature import signature_remove_context
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
+from ...types.transforms import generate_action_object_id
 from ...types.transforms import generate_id
 from ...types.transforms import transform
+from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftError
 
@@ -61,6 +65,7 @@ class TwinAPIEndpointView(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     path: str
+    action_object_id: UID
     signature: Signature
     access: str = "Public"
     mock_function: str | None = None
@@ -112,6 +117,16 @@ class Endpoint(SyftObject):
     helper_functions: dict[str, str] | None = None
     state: dict[Any, Any] | None = None
     signature: Signature
+
+    __exclude_sync_diff_attrs__ = ["state"]
+
+    def __repr__(self) -> str:
+        type_name = type(self).__name__
+        repr_str = f"""<{type_name}: {self.func_name}>
+
+        {self.api_code}
+        """
+        return textwrap.dedent(repr_str)
 
     @field_validator("api_code", check_fields=False)
     @classmethod
@@ -234,7 +249,7 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
 
 
 @serializable()
-class TwinAPIEndpoint(SyftObject):
+class TwinAPIEndpoint(SyncableSyftObject):
     # version
     __canonical_name__ = "TwinAPIEndpoint"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -247,9 +262,19 @@ class TwinAPIEndpoint(SyftObject):
     mock_function: PublicAPIEndpoint
     signature: Signature
     description: str | None = None
+    action_object_id: UID
+    __private_sync_attr_mocks__ = {
+        "private_function": None,
+    }
 
     __attr_searchable__ = ["path"]
     __attr_unique__ = ["path"]
+    __repr_attrs__ = [
+        "path",
+        "description",
+        "private_function",
+        "mock_function",
+    ]
 
     def has_mock(self) -> bool:
         return self.api_mock_code is not None
@@ -461,7 +486,7 @@ def extract_code_string(code_field: str) -> Callable:
 
 @transform(CreateTwinAPIEndpoint, TwinAPIEndpoint)
 def endpoint_create_to_twin_endpoint() -> list[Callable]:
-    return [generate_id, check_and_cleanup_signature]
+    return [generate_id, generate_action_object_id, check_and_cleanup_signature]
 
 
 @transform(TwinAPIEndpoint, TwinAPIEndpointView)

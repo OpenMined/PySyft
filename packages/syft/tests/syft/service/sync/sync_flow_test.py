@@ -7,14 +7,52 @@ import numpy as np
 import pytest
 
 # syft absolute
+import syft
 import syft as sy
 from syft.abstract_node import NodeSideType
+from syft.client.domain_client import DomainClient
 from syft.client.sync_decision import SyncDecision
 from syft.client.syncing import compare_clients
 from syft.client.syncing import compare_states
 from syft.client.syncing import resolve
+from syft.client.syncing import resolve_single
 from syft.service.action.action_object import ActionObject
 from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
+
+
+def compare_and_resolve(*, from_client: DomainClient, to_client: DomainClient):
+    diff_state_before = compare_clients(from_client, to_client)
+    for obj_diff_batch in diff_state_before.batches:
+        widget = resolve_single(obj_diff_batch)
+        widget.click_share_all_private_data()
+        res = widget.click_sync()
+        assert isinstance(res, SyftSuccess)
+    from_client.refresh()
+    to_client.refresh()
+    diff_state_after = compare_clients(from_client, to_client)
+    return diff_state_before, diff_state_after
+
+
+def run_and_accept_result(client):
+    job_high = client.code.compute(blocking=True)
+    client.requests[0].accept_by_depositing_result(job_high)
+    return job_high
+
+
+@syft.syft_function_single_use()
+def compute() -> int:
+    return 42
+
+
+def get_ds_client(client: DomainClient) -> DomainClient:
+    client.register(
+        name="a",
+        email="a@a.com",
+        password="asdf",
+        password_verify="asdf",
+    )
+    return client.login(email="a@a.com", password="asdf")
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
@@ -208,41 +246,6 @@ def test_sync_flow():
     )
     low_worker.cleanup()
     high_worker.cleanup()
-
-
-def test_diff_state(low_worker, high_worker):
-    low_client = low_worker.root_client
-    client_low_ds = low_worker.guest_client
-    high_client = high_worker.root_client
-
-    @sy.syft_function_single_use()
-    def compute() -> int:
-        return 42
-
-    compute.code = dedent(compute.code)
-
-    _ = client_low_ds.code.request_code_execution(compute)
-
-    diff_state = compare_clients(low_client, high_client)
-    low_items_to_sync, high_items_to_sync = resolve(
-        diff_state, decision="low", share_private_objects=True
-    )
-
-    assert not diff_state.is_same
-    assert not low_items_to_sync.is_empty
-    assert not high_items_to_sync.is_empty
-
-    low_client.apply_state(low_items_to_sync)
-    high_client.apply_state(high_items_to_sync)
-
-    diff_state = compare_clients(low_client, high_client)
-    low_items_to_sync, high_items_to_sync = resolve(
-        diff_state, decision="low", share_private_objects=True
-    )
-
-    assert diff_state.is_same
-    assert low_items_to_sync.is_empty
-    assert high_items_to_sync.is_empty
 
 
 def test_forget_usercode(low_worker, high_worker):

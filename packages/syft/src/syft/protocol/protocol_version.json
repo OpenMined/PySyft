@@ -821,7 +821,7 @@
       "CustomAPIView": {
         "1": {
           "version": 1,
-          "hash": "21cada3f8b8609e91e4f01f3bfdbdab3f8b96003163e09dba1c4b31041598ca2",
+          "hash": "5cdfaea6b5af235d0f9ab8e6f01d6cebcde7c8bf4efd00aec26c343965ef865e",
           "action": "add"
         }
       },
@@ -856,6 +856,7 @@
       "TwinAPIEndpoint": {
         "1": {
           "version": 1,
+
           "hash": "edcd67ab41edfae56deb23d9ef838edc442f587bdb16b8e8c46efa20c04e3c25",
           "action": "add"
         }
@@ -863,7 +864,7 @@
       "QueueItem": {
         "4": {
           "version": 4,
-          "hash": "96b0ab4ae935558cd391b86e923f8c7e172b3c27b288c0133197bdc41bd7e19f",
+          "hash": "03a0244c6b322e72032c5c33c1db09b913f83d72cfad1cc51ac4ec90506afcf5",
           "action": "add"
         }
       },

@@ -6,6 +6,7 @@ from typing import ClassVar
 from typing import Literal
 
 # third party
+import pandas as pd
 from pydantic import model_validator
 from rich import box
 from rich.console import Console
@@ -16,6 +17,7 @@ from rich.panel import Panel
 from typing_extensions import Self
 
 # relative
+from ...client.api import APIRegistry
 from ...client.client import SyftClient
 from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
@@ -32,11 +34,13 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.fonts import FONT_CSS
 from ...util.fonts import ITABLES_CSS
+from ...util.notebook_ui.components.sync import SyncTableObject
 from ...util.notebook_ui.notebook_addons import ARROW_ICON
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import StoragePermission
+from ..api.api import TwinAPIEndpoint
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatusCollection
 from ..job.job_stash import Job
@@ -45,7 +49,6 @@ from ..output.output_service import ExecutionOutput
 from ..request.request import Request
 from ..response import SyftError
 from .sync_state import SyncState
-from .sync_state import SyncView
 
 sketchy_tab = "‎ " * 4
 
@@ -182,6 +185,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         "low_state",
         "high_state",
     ]
+    __syft_include_id_coll_repr__ = False
 
     def is_mock(self, side: str) -> bool:
         # An object is a mock object if it exists on both sides,
@@ -323,6 +327,14 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
             if value_low is None or value_high is None:
                 res[attr] = DiffStatus.NEW
+            elif isinstance(value_low, pd.DataFrame) and isinstance(
+                value_high, pd.DataFrame
+            ):
+                res[attr] = (
+                    DiffStatus.MODIFIED
+                    if not value_low.equals(value_high)
+                    else DiffStatus.SAME
+                )
             elif value_low != value_high:
                 res[attr] = DiffStatus.MODIFIED
             else:
@@ -575,6 +587,15 @@ class ObjectDiffBatch(SyftObject):
             return self.low_node_uid
 
     @property
+    def source_node_uid(self) -> UID:
+        if self.sync_direction is None:
+            raise ValueError("no direction specified")
+        if self.sync_direction == SyncDirection.LOW_TO_HIGH:
+            return self.low_node_uid
+        else:
+            return self.high_node_uid
+
+    @property
     def target_verify_key(self) -> SyftVerifyKey:
         if self.sync_direction is None:
             raise ValueError("no direction specified")
@@ -582,6 +603,35 @@ class ObjectDiffBatch(SyftObject):
             return self.user_verify_key_high
         else:
             return self.user_verify_key_low
+
+    @property
+    def source_verify_key(self) -> SyftVerifyKey:
+        if self.sync_direction is None:
+            raise ValueError("no direction specified")
+        if self.sync_direction == SyncDirection.LOW_TO_HIGH:
+            return self.user_verify_key_low
+        else:
+            return self.user_verify_key_high
+
+    @property
+    def source_client(self) -> SyftClient:
+        return self.build(self.source_node_uid, self.source_verify_key)
+
+    @property
+    def target_client(self) -> SyftClient:
+        return self.build(self.target_node_uid, self.target_verify_key)
+
+    def build(self, node_uid: UID, syft_client_verify_key: SyftVerifyKey):  # type: ignore
+        # relative
+        from ...client.domain_client import DomainClient
+
+        api = APIRegistry.api_for(node_uid, syft_client_verify_key)
+        client = DomainClient(
+            api=api,
+            connection=api.connection,  # type: ignore
+            credentials=api.signing_key,  # type: ignore
+        )
+        return client
 
     def get_dependencies(
         self,
@@ -742,12 +792,12 @@ class ObjectDiffBatch(SyftObject):
         if self.root_diff.low_obj is None:
             low_html = no_obj_html
         else:
-            low_html = SyncView(object=self.root_diff.low_obj).summary_html()
+            low_html = SyncTableObject(object=self.root_diff.low_obj).to_html()
 
         if self.root_diff.high_obj is None:
             high_html = no_obj_html
         else:
-            high_html = SyncView(object=self.root_diff.high_obj).summary_html()
+            high_html = SyncTableObject(object=self.root_diff.high_obj).to_html()
 
         return {
             "Merge status": self.status_badge(),
@@ -774,6 +824,10 @@ class ObjectDiffBatch(SyftObject):
                 UserCode: [ExecutionOutput, UserCode],
                 ExecutionOutput: [Job],
                 Job: [ActionObject, SyftLog, Job],
+            }
+        elif isinstance(root_obj, TwinAPIEndpoint):
+            return TwinAPIEndpoint, {  # type: ignore
+                TwinAPIEndpoint: [],
             }
         else:
             raise ValueError(f"Unknown root type: {self.root.obj_type}")
@@ -1107,7 +1161,8 @@ It will be available for review again."""
         """  # noqa: E501
         repr_html = repr_html.replace("\n", "")
 
-        return repr_html + self.batches._repr_html_()
+        res = repr_html + self.batches._repr_html_()
+        return res
 
     @staticmethod
     def _sort_batches(hierarchies: list[ObjectDiffBatch]) -> list[ObjectDiffBatch]:
@@ -1158,12 +1213,11 @@ It will be available for review again."""
 
         for diff in obj_uid_to_diff.values():
             diff_obj = diff.low_obj if diff.low_obj is not None else diff.high_obj
-            if isinstance(diff_obj, Request):
-                root_ids.append(diff.object_id)
-            elif isinstance(diff_obj, Job) and diff_obj.parent_job_id is None:  # type: ignore
-                root_ids.append(diff.object_id)  # type: ignore
-            elif isinstance(diff_obj, UserCode):
+            if isinstance(diff_obj, Request | UserCode | TwinAPIEndpoint):
                 # TODO: Figure out nested user codes, do we even need that?
+
+                root_ids.append(diff.object_id)  # type: ignore
+            elif isinstance(diff_obj, Job) and diff_obj.parent_job_id is None:  # type: ignore
                 root_ids.append(diff.object_id)  # type: ignore
 
         for root_uid in root_ids:
@@ -1216,17 +1270,19 @@ class SyncInstruction(SyftObject):
         if sync_direction == SyncDirection.HIGH_TO_LOW:
             if widget.share_private_data or diff.object_type == "Job":
                 if share_to_user is None:
-                    raise ValueError("empty to user to share with")
-                new_permissions_low_side = [
-                    ActionObjectPermission(
-                        uid=widget.diff.object_id,
-                        permission=ActionPermission.READ,
-                        credentials=share_to_user,  # type: ignore
-                    )
-                ]
+                    raise ValueError("share_to_user is required for private data")
+                else:
+                    new_permissions_low_side = [
+                        ActionObjectPermission(
+                            uid=widget.diff.object_id,
+                            permission=ActionPermission.READ,
+                            credentials=share_to_user,  # type: ignore
+                        )
+                    ]
 
-        # mockify
         mockify = widget.mockify
+        if widget.has_unused_share_button:
+            print("Share button was not used, so we will mockify the object")
 
         # storage permissions
         new_storage_permissions = []
