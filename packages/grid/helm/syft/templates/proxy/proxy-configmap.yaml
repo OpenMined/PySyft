@@ -54,12 +54,15 @@ data:
       checkNewVersion: false
       sendAnonymousUsage: false
 
+    accessLog: {}
+
     log:
       level: INFO
 
     entryPoints:
       web:
         address: :80
+
       ping:
         address: :8082
 

@@ -1,6 +1,7 @@
 # stdlib
 from collections.abc import Callable
 from typing import Any
+from typing import Set  # noqa: UP035
 
 # third party
 from pydantic import Field
@@ -22,6 +23,7 @@ from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionObjectREAD
 from ..service.action.action_permissions import ActionObjectWRITE
 from ..service.action.action_permissions import ActionPermission
+from ..service.action.action_permissions import StoragePermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
@@ -148,8 +150,18 @@ class MongoStorePartition(StorePartition):
         if collection_permissions_status.is_err():
             return collection_permissions_status
 
+        collection_storage_permissions_status = (
+            client.with_collection_storage_permissions(
+                collection_settings=self.settings, store_config=self.store_config
+            )
+        )
+
+        if collection_storage_permissions_status.is_err():
+            return collection_storage_permissions_status
+
         self._collection = collection_status.ok()
         self._permissions = collection_permissions_status.ok()
+        self._storage_permissions = collection_storage_permissions_status.ok()
 
         return self._create_update_index()
 
@@ -233,6 +245,15 @@ class MongoStorePartition(StorePartition):
 
         return Ok(self._permissions)
 
+    @property
+    def storage_permissions(self) -> Result[MongoCollection, Err]:
+        if not hasattr(self, "_storage_permissions"):
+            res = self.init_store()
+            if res.is_err():
+                return res
+
+        return Ok(self._storage_permissions)
+
     def set(self, *args: Any, **kwargs: Any) -> Result[SyftObject, str]:
         return self._set(*args, **kwargs)
 
@@ -291,8 +312,12 @@ class MongoStorePartition(StorePartition):
                 self.add_permissions(add_permissions)
 
             if add_storage_permission:
-                # TODO: add storage permissions to Mongo store
-                pass
+                self.add_storage_permission(
+                    StoragePermission(
+                        uid=obj.id,
+                        node_uid=self.node_uid,
+                    )
+                )
 
             return Ok(obj)
         else:
@@ -476,6 +501,19 @@ class MongoStorePartition(StorePartition):
 
         return False
 
+    def _get_permissions_for_uid(self, uid: UID) -> Result[Set[str], Err]:  # noqa: UP006
+        collection_permissions_status = self.permissions
+        if collection_permissions_status.is_err():
+            return collection_permissions_status
+        collection_permissions: MongoCollection = collection_permissions_status.ok()
+
+        permissions: dict | None = collection_permissions.find_one({"_id": uid})
+
+        if permissions is None:
+            return Err(f"Permissions for object with UID {uid} not found!")
+
+        return Ok(set(permissions["permissions"]))
+
     def add_permission(self, permission: ActionObjectPermission) -> Result[None, Err]:
         collection_permissions_status = self.permissions
         if collection_permissions_status.is_err():
@@ -532,6 +570,99 @@ class MongoStorePartition(StorePartition):
                 collection_permissions.delete_one({"_id": permission.uid})
         else:
             return Err(f"the permission {permission.permission_string} does not exist!")
+
+    def add_storage_permission(self, storage_permission: StoragePermission) -> None:
+        storage_permissions_or_err = self.storage_permissions
+        if storage_permissions_or_err.is_err():
+            return storage_permissions_or_err
+        storage_permissions_collection: MongoCollection = (
+            storage_permissions_or_err.ok()
+        )
+
+        storage_permissions: dict | None = storage_permissions_collection.find_one(
+            {"_id": storage_permission.uid}
+        )
+        if storage_permissions is None:
+            # Permission doesn't exist, add a new one
+            storage_permissions_collection.insert_one(
+                {
+                    "_id": storage_permission.uid,
+                    "node_uids": {storage_permission.node_uid},
+                }
+            )
+        else:
+            # update the permissions with the new permission string
+            node_uids: set = storage_permissions["node_uids"]
+            node_uids.add(storage_permission.node_uid)
+            storage_permissions_collection.update_one(
+                {"_id": storage_permission.uid},
+                {"$set": {"node_uids": node_uids}},
+            )
+
+    def add_storage_permissions(self, permissions: list[StoragePermission]) -> None:
+        for permission in permissions:
+            self.add_storage_permission(permission)
+
+    def has_storage_permission(self, permission: StoragePermission) -> bool:  # type: ignore
+        """Check if the storage_permission is inside the storage_permission collection"""
+        storage_permissions_or_err = self.storage_permissions
+        if storage_permissions_or_err.is_err():
+            return storage_permissions_or_err
+        storage_permissions_collection: MongoCollection = (
+            storage_permissions_or_err.ok()
+        )
+        storage_permissions: dict | None = storage_permissions_collection.find_one(
+            {"_id": permission.uid}
+        )
+
+        if storage_permissions is None or "node_uids" not in storage_permissions:
+            return False
+
+        return permission.node_uid in storage_permissions["node_uids"]
+
+    def remove_storage_permission(
+        self, storage_permission: StoragePermission
+    ) -> Result[None, Err]:
+        storage_permissions_or_err = self.storage_permissions
+        if storage_permissions_or_err.is_err():
+            return storage_permissions_or_err
+        storage_permissions_collection = storage_permissions_or_err.ok()
+
+        storage_permissions: dict | None = storage_permissions_collection.find_one(
+            {"_id": storage_permission.uid}
+        )
+        if storage_permissions is None:
+            return Err(
+                f"storage permission with UID {storage_permission.uid} not found!"
+            )
+        node_uids: set = storage_permissions["node_uids"]
+        if storage_permission.node_uid in node_uids:
+            node_uids.remove(storage_permission.node_uid)
+            storage_permissions_collection.update_one(
+                {"_id": storage_permission.uid},
+                {"$set": {"node_uids": node_uids}},
+            )
+        else:
+            return Err(
+                f"the node_uid {storage_permission.node_uid} does not exist in the storage permission!"
+            )
+
+    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[Set[UID], Err]:  # noqa: UP006
+        storage_permissions_or_err = self.storage_permissions
+        if storage_permissions_or_err.is_err():
+            return storage_permissions_or_err
+        storage_permissions_collection: MongoCollection = (
+            storage_permissions_or_err.ok()
+        )
+
+        storage_permissions: dict | None = storage_permissions_collection.find_one(
+            {"_id": uid}
+        )
+
+        if storage_permissions is None:
+            return Err(f"Storage permissions for object with UID {uid} not found!")
+
+        return Ok(set(storage_permissions["node_uids"]))
 
     def take_ownership(
         self, uid: UID, credentials: SyftVerifyKey

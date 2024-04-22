@@ -9,6 +9,128 @@
     "release_name": "0.8.4.json"
   },
   "4": {
-    "release_name": "0.8.5.json"
+    "release_name": "0.8.6.json"
+  },
+  "dev": {
+    "object_versions": {
+      "ExecutionOutput": {
+        "1": {
+          "version": 1,
+          "hash": "c2337099eba14767ead75fcc1b1fa265c1898461ede0b5e7758a0e8d11d1757d",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "854fe9df5bcbb5c7e5b7c467bac423cd98c32f93d6876fea7b8eb6c08f6596da",
+          "action": "add"
+        }
+      },
+      "SyftLog": {
+        "3": {
+          "version": 3,
+          "hash": "8964d48238672e0e5d5db6b932cda4ee8eb77581949ab3f7a38a05b1efec13b7",
+          "action": "remove"
+        },
+        "4": {
+          "version": 4,
+          "hash": "ad6ef18ccd87fced669f3824d27ab423aaf52574b0cd4f720687aeaba77524e5",
+          "action": "add"
+        }
+      },
+      "SyncState": {
+        "1": {
+          "version": 1,
+          "hash": "a0616775ec8ef0629e2d91e0df9cc4237ea3674727eda1ce367f1897ee35767d",
+          "action": "remove"
+        },
+        "2": {
+          "version": 2,
+          "hash": "925f1b8ccd4b9d542700a111f9c4bdd28bfa55978d805ddb2fb3c108cc940d19",
+          "action": "add"
+        }
+      },
+      "CustomEndpointActionObject": {
+        "1": {
+          "version": 1,
+          "hash": "642facc6cafbaad4de030a33cd619bd68ac31a32b0db07ddc1c1d5d7f914503e",
+          "action": "add"
+        }
+      },
+      "CustomAPIView": {
+        "1": {
+          "version": 1,
+          "hash": "5cdfaea6b5af235d0f9ab8e6f01d6cebcde7c8bf4efd00aec26c343965ef865e",
+          "action": "add"
+        }
+      },
+      "PrivateAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "004ec19753263440e2896b4e35d7a6305322934512f473f37d54043af5726fe6",
+          "action": "add"
+        }
+      },
+      "PublicAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "5589b6bdd045ee9c45987dae78fd5a1124530a6c493e2328b304d9273b75177f",
+          "action": "add"
+        }
+      },
+      "UpdateTwinAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "6c0c6bc042391e60d5c78893f859c8bdec4b45f0bdc7749957a425e041a4096c",
+          "action": "add"
+        }
+      },
+      "CreateTwinAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "98021128a9be0a9a135b43b50cb08f141faed72bc39999a9cedd162bc8814f62",
+          "action": "add"
+        }
+      },
+      "TwinAPIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "03a0244c6b322e72032c5c33c1db09b913f83d72cfad1cc51ac4ec90506afcf5",
+          "action": "add"
+        }
+      },
+      "SyncStateItem": {
+        "1": {
+          "version": 1,
+          "hash": "4dbfa0813f5a3f7be0b36249ff2d67e395ad7c9e138c5a122fc7342b8dcc4b92",
+          "action": "remove"
+        }
+      },
+      "EnclaveMetadata": {
+        "2": {
+          "version": 2,
+          "hash": "6dcc26695abc6a9ecd9d7d1e6507a9f1a92cc5ccd10987e92419bf984245f9a1",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "d2f23411927c68e2307a84d180ad053b3e4ba12d74aba64d34dac224c90e815d",
+          "action": "add"
+        }
+      },
+      "NodePeer": {
+        "3": {
+          "version": 3,
+          "hash": "dababb03d2463b6218ae22d55293a60580f5a14bebd0c664d71da104e2f0b835",
+          "action": "add"
+        }
+      },
+      "VeilidConnection": {
+        "1": {
+          "version": 1,
+          "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
+          "action": "remove"
+        }
+      }
+    }
   }
 }

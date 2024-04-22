@@ -8,6 +8,14 @@ on:
         required: true
         type: string
 
+      release_platform:
+        description: "Release Platform"
+        required: true
+        type: choice
+        options:
+          - "REAL_PYPI"
+          - "TEST_PYPI"
+
   workflow_call:
     inputs:
       syft_version:
@@ -15,8 +23,15 @@ on:
         required: true
         type: string
 
+      release_platform:
+        description: "Release Platform"
+        required: true
+        type: string
+        default: "REAL_PYPI"
+
 jobs:
   notebook-test-hagrid:
+    if: github.event.inputs.release_platform == 'REAL_PYPI'
     strategy:
       max-parallel: 99
       matrix:
@@ -64,7 +79,7 @@ jobs:
       - name: Install Hagrid, tox and uv
         run: |
           pip install -U hagrid
-          pip install --upgrade pip uv==0.1.18 tox tox-uv==1.5.1
+          pip install --upgrade pip uv==0.1.28 tox tox-uv==1.5.1
 
       - name: Hagrid Version
         run: |
@@ -154,14 +169,21 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Syft
+        shell: bash
         run: |
-          pip install syft==${{ inputs.syft_version }}
+          if [[ ${{inputs.release_platform}} == "REAL_PYPI" ]]; then
+            pip install syft==${{inputs.syft_version}}
+          fi
+          if [[ ${{ inputs.release_platform }} == "TEST_PYPI" ]]; then
+            pip install --extra-index-url https://test.pypi.org/simple/ syft==${{inputs.syft_version}}
+          fi
 
       - name: Check Syft version
         run: |
           python -c "import syft; print(syft.__version__)"
 
   notebook-test-k8s-k3d:
+    if: github.event.inputs.release_platform == 'REAL_PYPI'
     strategy:
       max-parallel: 99
       matrix:
@@ -209,10 +231,70 @@ jobs:
 
       - name: Install tox
         run: |
-          pip install --upgrade pip uv==0.1.18 tox tox-uv==1.5.1
+          pip install --upgrade pip uv==0.1.28 tox tox-uv==1.5.1
 
       - name: Run K8s tests
         env:
           SYFT_VERSION: ${{ inputs.syft_version }}
         run: |
           tox -e syft.test.helm
+
+  # This job is used to test the syft unit tests on Test PyPi
+  syft-unit-tests:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.12", "3.11", "3.10"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: System Architecture
+        run: |
+          echo "System Architecture: $(uname -m)"
+          echo "System Version: $(uname -a)"
+
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: pip cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Syft
+        env:
+          SYFT_VERSION: ${{ inputs.syft_version }}
+        run: |
+          if [[ ${{ inputs.release_platform }} == "TEST_PYPI" ]]; then
+            pip install --extra-index-url https://test.pypi.org/simple/ syft[data_science,dev]==${{ inputs.syft_version }}
+          fi
+          if [[ ${{ inputs.release_platform }} == "REAL_PYPI" ]]; then
+            pip install syft[data_science,dev]==${{ inputs.syft_version }}
+          fi
+
+      - name: Install Hagrid, tox and uv
+        run: |
+          pip install -U hagrid
+          pip install --upgrade pip uv==0.1.28 tox tox-uv==1.5.1 tox-current-env
+
+      - name: Run unit tests
+        run: |
+          tox -e syft.test.unit --current-env

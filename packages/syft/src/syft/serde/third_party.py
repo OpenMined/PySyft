@@ -3,6 +3,7 @@ from datetime import date
 from datetime import datetime
 from datetime import time
 import functools
+from importlib.util import find_spec
 from io import BytesIO
 
 # third party
@@ -227,3 +228,33 @@ recursive_serde_register(
     serialize=serialize_networkx_graph,
     deserialize=deserialize_networkx_graph,
 )
+
+try:
+    # Just register these serializers if the google.cloud.bigquery & db_dtypes module are available
+    # third party
+    from google.cloud.bigquery.job.query import QueryJob
+    from google.cloud.bigquery.table import RowIterator
+
+    # Checking db_dtypes availability this way to avoid unused ruff issues, but this package is used internally
+    if not find_spec("db_dtypes"):
+        raise ImportError("db_dtypes module not found")
+
+    def convert_to_dataframe(obj: RowIterator) -> bytes:
+        dataframe = obj.to_dataframe()
+        return serialize_dataframe(dataframe)
+
+    def convert_from_dataframe(blob: bytes) -> DataFrame:
+        dataframe = deserialize_dataframe(blob)
+        return dataframe
+
+    recursive_serde_register(
+        RowIterator, serialize=convert_to_dataframe, deserialize=convert_from_dataframe
+    )
+
+    recursive_serde_register(
+        QueryJob,
+        serialize=lambda obj: convert_to_dataframe(obj.result()),
+        deserialize=convert_from_dataframe,
+    )
+except ImportError:
+    pass

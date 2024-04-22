@@ -55,6 +55,7 @@ from ..types.syft_object import SyftObject
 from ..types.uid import LineageID
 from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
+from ..util.markdown import as_markdown_python_code
 from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
 from .connection import NodeConnection
@@ -231,6 +232,7 @@ class RemoteFunction(SyftObject):
     pre_kwargs: dict[str, Any] | None = None
     communication_protocol: PROTOCOL_TYPE
     warning: APIEndpointWarning | None = None
+    custom_function: bool = False
 
     @property
     def __ipython_inspector_signature_override__(self) -> Signature | None:
@@ -251,7 +253,9 @@ class RemoteFunction(SyftObject):
 
         return args, kwargs
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    def __function_call(
+        self, path: str, *args: Any, cache_result: bool = True, **kwargs: Any
+    ) -> Any:
         if "blocking" in self.signature.parameters:
             raise Exception(
                 f"Signature {self.signature} can't have 'blocking' kwarg because it's reserved"
@@ -274,7 +278,7 @@ class RemoteFunction(SyftObject):
 
         api_call = SyftAPICall(
             node_uid=self.node_uid,
-            path=self.path,
+            path=path,
             args=list(_valid_args),
             kwargs=_valid_kwargs,
             blocking=blocking,
@@ -283,13 +287,79 @@ class RemoteFunction(SyftObject):
         allowed = self.warning.show() if self.warning else True
         if not allowed:
             return
-        result = self.make_call(api_call=api_call)
+        result = self.make_call(api_call=api_call, cache_result=cache_result)
 
         result, _ = migrate_args_and_kwargs(
             [result], kwargs={}, to_latest_protocol=True
         )
         result = result[0]
         return result
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return self.__function_call(self.path, *args, **kwargs)
+
+    def mock(self, *args: Any, **kwargs: Any) -> Any:
+        if self.custom_function:
+            return self.__function_call("api.call_public", *args, **kwargs)
+        return SyftError(
+            message="This function doesn't support public/private calls as it's not custom."
+        )
+
+    def private(self, *args: Any, **kwargs: Any) -> Any:
+        if self.custom_function:
+            return self.__function_call("api.call_private", *args, **kwargs)
+        return SyftError(
+            message="This function doesn't support public/private calls as it's not custom."
+        )
+
+    def custom_function_actionobject_id(self) -> UID | SyftError:
+        if self.custom_function and self.pre_kwargs is not None:
+            custom_path = self.pre_kwargs.get("path", "")
+            api_call = SyftAPICall(
+                node_uid=self.node_uid,
+                path="api.view",
+                args=[custom_path],
+                kwargs={},
+            )
+            endpoint = self.make_call(api_call=api_call)
+            if isinstance(endpoint, SyftError):
+                return endpoint
+            return endpoint.action_object_id
+        return SyftError(message="This function is not a custom function")
+
+    def _repr_markdown_(self, wrap_as_python: bool = False, indent: int = 0) -> str:
+        if self.custom_function and self.pre_kwargs is not None:
+            custom_path = self.pre_kwargs.get("path", "")
+            api_call = SyftAPICall(
+                node_uid=self.node_uid,
+                path="api.view",
+                args=[custom_path],
+                kwargs={},
+            )
+            endpoint = self.make_call(api_call=api_call)
+            if isinstance(endpoint, SyftError):
+                return endpoint._repr_html_()
+
+            str_repr = "## API: " + custom_path + "\n"
+            str_repr += (
+                "### Description: "
+                + f'<span style="font-weight: normal;">{endpoint.description}</span><br>'
+                + "\n"
+            )
+            str_repr += "#### Private Code:\n"
+            str_repr += as_markdown_python_code(endpoint.private_function) + "\n"
+            if endpoint.private_helper_functions:
+                str_repr += "##### Helper Functions:\n"
+                for helper_function in endpoint.private_helper_functions:
+                    str_repr += as_markdown_python_code(helper_function) + "\n"
+            str_repr += "#### Public Code:\n"
+            str_repr += as_markdown_python_code(endpoint.mock_function) + "\n"
+            if endpoint.mock_helper_functions:
+                str_repr += "##### Helper Functions:\n"
+                for helper_function in endpoint.mock_helper_functions:
+                    str_repr += as_markdown_python_code(helper_function) + "\n"
+            return str_repr
+        return super()._repr_markdown_()
 
 
 class RemoteUserCodeFunction(RemoteFunction):
@@ -310,6 +380,16 @@ class RemoteUserCodeFunction(RemoteFunction):
         if isinstance(res, SyftError):
             return res
         args, kwargs = res
+
+        # Check remote function type to avoid function/method serialization
+        # We can recover the function/method pointer by its UID in server side.
+        for i in range(len(args)):
+            if isinstance(args[i], RemoteFunction) and args[i].custom_function:
+                args[i] = args[i].custom_function_id()
+
+        for k, v in kwargs.items():
+            if isinstance(v, RemoteFunction) and v.custom_function:
+                kwargs[k] = v.custom_function_actionobject_id()
 
         args, kwargs = convert_to_pointers(
             api=self.api,
@@ -374,6 +454,7 @@ def generate_remote_function(
             user_code_id=pre_kwargs["uid"],
         )
     else:
+        custom_function = bool(path == "api.call")
         remote_function = RemoteFunction(
             node_uid=node_uid,
             signature=signature,
@@ -382,6 +463,7 @@ def generate_remote_function(
             pre_kwargs=pre_kwargs,
             communication_protocol=communication_protocol,
             warning=warning,
+            custom_function=custom_function,
         )
 
     return remote_function
@@ -491,7 +573,8 @@ class APIModule:
         except AttributeError:
             raise SyftAttributeError(
                 f"'APIModule' api{self.path} object has no submodule or method '{name}', "
-                "you may not have permission to access the module you are trying to access"
+                "you may not have permission to access the module you are trying to access."
+                "If you think this is an error, try calling `client.refresh()` to update the API."
             )
 
     def __getitem__(self, key: str | int) -> Any:
@@ -637,6 +720,8 @@ class SyftAPI(SyftObject):
         user_verify_key: SyftVerifyKey | None = None,
     ) -> SyftAPI:
         # relative
+        from ..service.api.api_service import APIService
+
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
         from ..service.code.user_code_service import UserCodeService
 
@@ -733,6 +818,26 @@ class SyftAPI(SyftObject):
             )
             endpoints[unique_path] = endpoint
 
+        # get admin defined custom api endpoints
+        method = node.get_method_with_context(APIService.get_endpoints, context)
+        custom_endpoints = method()
+        for custom_endpoint in custom_endpoints:
+            pre_kwargs = {"path": custom_endpoint.path}
+            service_path = "api.call"
+            path = custom_endpoint.path
+            api_end = custom_endpoint.path.split(".")[-1]
+            endpoint = APIEndpoint(
+                service_path=service_path,
+                module_path=path,
+                name=api_end,
+                description="",
+                doc_string="",
+                signature=custom_endpoint.signature,
+                has_self=False,
+                pre_kwargs=pre_kwargs,
+            )
+            endpoints[path] = endpoint
+
         return SyftAPI(
             node_name=node.name,
             node_uid=node.id,
@@ -746,7 +851,7 @@ class SyftAPI(SyftObject):
     def user_role(self) -> ServiceRole:
         return self.__user_role
 
-    def make_call(self, api_call: SyftAPICall) -> Result:
+    def make_call(self, api_call: SyftAPICall, cache_result: bool = True) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
         if self.connection is not None:
             signed_result = self.connection.make_call(signed_call)
@@ -757,10 +862,14 @@ class SyftAPI(SyftObject):
 
         if isinstance(result, CachedSyftObject):
             if result.error_msg is not None:
-                prompt_warning_message(
-                    message=f"{result.error_msg}. Loading results from cache."
-                )
-            result = result.result
+                if cache_result:
+                    prompt_warning_message(
+                        message=f"{result.error_msg}. Loading results from cache."
+                    )
+                else:
+                    result = SyftError(message=result.error_msg)
+            if cache_result:
+                result = result.result
 
         if isinstance(result, OkErr):
             if result.is_ok():

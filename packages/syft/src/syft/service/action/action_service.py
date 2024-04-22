@@ -1,7 +1,6 @@
 # stdlib
 import importlib
 from typing import Any
-from typing import cast
 
 # third party
 import numpy as np
@@ -10,7 +9,6 @@ from result import Ok
 from result import Result
 
 # relative
-from ...abstract_node import AbstractNode
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...types.datetime import DateTime
@@ -59,7 +57,7 @@ class ActionService(AbstractService):
         if not isinstance(data, np.ndarray):
             data = np.array(data)
         # cast here since we are sure that AuthedServiceContext has a node
-        context.node = cast(AbstractNode, context.node)
+
         np_obj = NumpyArrayObject(
             dtype=data.dtype,
             shape=data.shape,
@@ -127,7 +125,7 @@ class ActionService(AbstractService):
                     action_object = action_object.private
                 else:
                     action_object = action_object.mock
-            context.node = cast(AbstractNode, context.node)
+
             action_object.syft_point_to(context.node.id)
             return Ok(action_object)
         return result.err()
@@ -142,12 +140,11 @@ class ActionService(AbstractService):
     ) -> Result[Ok[bool], Err[str]]:
         """Get an object from the action store"""
         # relative
-        from .action_data_empty import ActionDataLink
 
         result = self._get(context, uid)
         if result.is_ok():
             obj = result.ok()
-            if isinstance(obj.syft_action_data, ActionDataLink):
+            if obj.is_link:
                 result = self.resolve_links(
                     context, obj.syft_action_data.action_object_id.id
                 )
@@ -179,7 +176,6 @@ class ActionService(AbstractService):
     ) -> Result[Ok[ActionObject], Err[str]]:
         """Get an object from the action store"""
         # relative
-        from .action_data_empty import ActionDataLink
 
         result = self.store.get(uid=uid, credentials=context.credentials)
         # If user has permission to get the object / object exists
@@ -187,7 +183,7 @@ class ActionService(AbstractService):
             obj = result.ok()
 
             # If it's not a leaf
-            if isinstance(obj.syft_action_data, ActionDataLink):
+            if obj.is_link:
                 nested_result = self.resolve_links(
                     context, obj.syft_action_data.action_object_id.id, twin_mode
                 )
@@ -221,7 +217,6 @@ class ActionService(AbstractService):
         # stdlib
 
         # relative
-        from .action_data_empty import ActionDataLink
 
         result = self.store.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission
@@ -236,7 +231,7 @@ class ActionService(AbstractService):
             if (
                 not isinstance(obj, TwinObject)  # type: ignore[unreachable]
                 and resolve_nested
-                and isinstance(obj.syft_action_data, ActionDataLink)
+                and obj.is_link
             ):
                 if not self.is_resolved(  # type: ignore[unreachable]
                     context, obj.syft_action_data.action_object_id.id
@@ -267,7 +262,7 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> Result[ActionObjectPointer, str]:
         """Get a pointer from the action store"""
-        context.node = cast(AbstractNode, context.node)
+
         result = self.store.get_pointer(
             uid=uid, credentials=context.credentials, node_uid=context.node.id
         )
@@ -290,6 +285,14 @@ class ActionService(AbstractService):
             return result.ok()
         return SyftError(message=result.err())
 
+    @service_method(
+        path="action.has_storage_permission",
+        name="has_storage_permission",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def has_storage_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
+        return self.store.has_storage_permission(uid)
+
     # not a public service endpoint
     def _user_code_execute(
         self,
@@ -301,12 +304,15 @@ class ActionService(AbstractService):
         override_execution_permission = (
             context.has_execute_permissions or context.role == ServiceRole.ADMIN
         )
+        if context.node:
+            user_code_service = context.node.get_service("usercodeservice")
 
         input_policy = code_item.get_input_policy(context)
+        output_policy = code_item.get_output_policy(context)
 
         if not override_execution_permission:
             if input_policy is None:
-                if not code_item.output_policy_approved:
+                if not code_item.is_output_policy_approved(context):
                     return Err("Execution denied: Your code is waiting for approval")
                 return Err(f"No input policy defined for user code: {code_item.id}")
 
@@ -327,7 +333,10 @@ class ActionService(AbstractService):
             if is_approved.is_err():
                 return is_approved
         else:
-            filtered_kwargs = retrieve_from_db(code_item.id, kwargs, context).ok()
+            result = retrieve_from_db(code_item.id, kwargs, context)
+            if isinstance(result, SyftError):
+                return Err(result.message)
+            filtered_kwargs = result.ok()
         # update input policy to track any input state
 
         has_twin_inputs = False
@@ -347,6 +356,14 @@ class ActionService(AbstractService):
                     real_kwargs, twin_mode=TwinMode.NONE
                 )
                 exec_result = execute_byte_code(code_item, filtered_kwargs, context)
+                if output_policy:
+                    exec_result.result = output_policy.apply_to_output(
+                        context,
+                        exec_result.result,
+                        update_policy=not override_execution_permission,
+                    )
+                code_item.output_policy = output_policy
+                user_code_service.update_code_state(context, code_item)
                 if isinstance(exec_result.result, ActionObject):
                     result_action_object = ActionObject.link(
                         result_id=result_id, pointer_id=exec_result.result.id
@@ -361,6 +378,14 @@ class ActionService(AbstractService):
                 private_exec_result = execute_byte_code(
                     code_item, private_kwargs, context
                 )
+                if output_policy:
+                    private_exec_result.result = output_policy.apply_to_output(
+                        context,
+                        private_exec_result.result,
+                        update_policy=not override_execution_permission,
+                    )
+                code_item.output_policy = output_policy
+                user_code_service.update_code_state(context, code_item)
                 result_action_object_private = wrap_result(
                     result_id, private_exec_result.result
                 )
@@ -375,6 +400,10 @@ class ActionService(AbstractService):
                     mock_exec_result = execute_byte_code(
                         code_item, mock_kwargs, context
                     )
+                    if output_policy:
+                        mock_exec_result.result = output_policy.apply_to_output(
+                            context, mock_exec_result.result, update_policy=False
+                        )
                     mock_exec_result_obj = mock_exec_result.result
 
                 result_action_object_mock = wrap_result(result_id, mock_exec_result_obj)
@@ -395,7 +424,7 @@ class ActionService(AbstractService):
         result_action_object: ActionObject | TwinObject,
         context: AuthedServiceContext,
         output_policy: OutputPolicy | None = None,
-    ) -> Result[ActionObject, str] | SyftError:
+    ) -> Result[ActionObject, str]:
         result_id = result_action_object.id
         # result_blob_id = result_action_object.syft_blob_storage_entry_id
 
@@ -409,14 +438,14 @@ class ActionService(AbstractService):
             output_readers = []
 
         read_permission = ActionPermission.READ
-        context.node = cast(AbstractNode, context.node)
+
         result_action_object._set_obj_location_(
             context.node.id,
             context.credentials,
         )
         blob_store_result = result_action_object._save_to_blob_storage()
         if isinstance(blob_store_result, SyftError):
-            return blob_store_result
+            return Err(blob_store_result.message)
 
         # IMPORTANT: DO THIS ONLY AFTER ._save_to_blob_storage
         if isinstance(result_action_object, TwinObject):
@@ -625,7 +654,6 @@ class ActionService(AbstractService):
         # relative
         from .plan import Plan
 
-        context.node = cast(AbstractNode, context.node)
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = Ok(action.create_object)
             # print(action.create_object, "already in blob storage")

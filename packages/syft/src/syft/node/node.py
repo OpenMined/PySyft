@@ -17,6 +17,7 @@ import traceback
 from typing import Any
 
 # third party
+from loguru import logger
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
@@ -34,7 +35,6 @@ from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
 from ..client.client import SyftClient
 from ..exceptions.exception import PySyftException
-from ..external import OblvServiceProvider
 from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
@@ -44,6 +44,7 @@ from ..service.action.action_store import ActionStore
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
+from ..service.api.api_service import APIService
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.status_service import UserCodeStatusService
 from ..service.code.user_code_service import UserCodeService
@@ -96,7 +97,6 @@ from ..service.user.user import UserCreate
 from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
-from ..service.veilid import VeilidServiceProvider
 from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
@@ -121,6 +121,7 @@ from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.experimental_flags import flags
 from ..util.telemetry import instrument
+from ..util.util import get_dev_mode
 from ..util.util import get_env
 from ..util.util import get_queue_address
 from ..util.util import random_name
@@ -178,10 +179,6 @@ def get_default_root_password() -> str | None:
     return get_env(DEFAULT_ROOT_PASSWORD, "changethis")  # nosec
 
 
-def get_dev_mode() -> bool:
-    return str_to_bool(get_env("DEV_MODE", "False"))
-
-
 def get_enable_warnings() -> bool:
     return str_to_bool(get_env("ENABLE_WARNINGS", "False"))
 
@@ -196,6 +193,12 @@ def get_default_worker_image() -> str | None:
 
 def get_default_worker_pool_name() -> str | None:
     return get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME)
+
+
+def get_default_bucket_name() -> str:
+    env = get_env("DEFAULT_BUCKET_NAME")
+    node_id = get_node_uid_env() or "syft-bucket"
+    return env or node_id or "syft-bucket"
 
 
 def get_default_worker_pool_count(node: Node) -> int:
@@ -859,6 +862,7 @@ class Node(AbstractNode):
             {"svc": RequestService},
             {"svc": QueueService},
             {"svc": JobService},
+            {"svc": APIService},
             {"svc": DataSubjectService},
             {"svc": NetworkService},
             {"svc": PolicyService},
@@ -876,9 +880,7 @@ class Node(AbstractNode):
             {"svc": SyftImageRegistryService},
             {"svc": SyncService},
             {"svc": OutputService},
-            {"svc": UserCodeStatusService},
-            {"svc": VeilidServiceProvider},  # this is lazy
-            {"svc": OblvServiceProvider},  # this is lazy
+            {"svc": UserCodeStatusService},  # this is lazy
         ]
 
         for svc_kwargs in default_services:
@@ -1035,7 +1037,7 @@ class Node(AbstractNode):
 
     def forward_message(
         self, api_call: SyftAPICall | SignedSyftAPICall
-    ) -> Result[QueueItem | SyftObject, Err]:
+    ) -> Result | QueueItem | SyftObject | SyftError | Any:
         node_uid = api_call.message.node_uid
         if "networkservice" not in self.service_path_map:
             return SyftError(
@@ -1056,14 +1058,21 @@ class Node(AbstractNode):
             # Since we have several routes to a peer
             # we need to cache the client for a given node_uid along with the route
             peer_cache_key = hash(node_uid) + hash(peer.pick_highest_priority_route())
-
             if peer_cache_key in self.peer_client_cache:
                 client = self.peer_client_cache[peer_cache_key]
             else:
                 context = AuthedServiceContext(
                     node=self, credentials=api_call.credentials
                 )
+
                 client = peer.client_with_context(context=context)
+                if client.is_err():
+                    return SyftError(
+                        message=f"Failed to create remote client for peer: "
+                        f"{peer.id}. Error: {client.err()}"
+                    )
+                client = client.ok()
+
                 self.peer_client_cache[peer_cache_key] = client
 
         if client:
@@ -1134,6 +1143,7 @@ class Node(AbstractNode):
 
         if api_call.message.node_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
+
         if api_call.message.path == "queue":
             return self.resolve_future(
                 credentials=api_call.credentials, uid=api_call.message.kwargs["uid"]
@@ -1284,7 +1294,7 @@ class Node(AbstractNode):
 
         log_service = self.get_service("logservice")
 
-        result = log_service.add(context, log_id)
+        result = log_service.add(context, log_id, queue_item.job_id)
         if isinstance(result, SyftError):
             return result
         return job
@@ -1427,8 +1437,6 @@ class Node(AbstractNode):
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
     def create_initial_settings(self, admin_email: str) -> NodeSettingsV2 | None:
-        if self.name is None:
-            self.name = random_name()
         try:
             settings_stash = SettingsStash(store=self.document_store)
             if self.signing_key is None:
@@ -1506,33 +1514,6 @@ def create_admin_new(
     return None
 
 
-# def create_oblv_key_pair(
-#     worker: Node,
-# ) -> str | None:
-#     try:
-#         # relative
-#         from ..external.oblv.oblv_keys_stash import OblvKeys
-#         from ..external.oblv.oblv_keys_stash import OblvKeysStash
-#         from ..external.oblv.oblv_service import generate_oblv_key
-
-#         oblv_keys_stash = OblvKeysStash(store=worker.document_store)
-
-#         if not len(oblv_keys_stash) and worker.signing_key:
-#             public_key, private_key = generate_oblv_key(oblv_key_name=worker.name)
-#             oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
-#             res = oblv_keys_stash.set(worker.signing_key.verify_key, oblv_keys)
-#             if res.is_ok():
-#                 print("Successfully generated Oblv Key pair at startup")
-#             return res.err()
-#         else:
-#             print(f"Using Existing Public/Private Key pair: {len(oblv_keys_stash)}")
-#     except Exception as e:
-#         print("Unable to create Oblv Keys.", e)
-#         return None
-
-#     return None
-
-
 class NodeRegistry:
     __node_registry__: dict[UID, Node] = {}
 
@@ -1583,6 +1564,12 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         credentials=credentials,
         role=ServiceRole.ADMIN,
     )
+
+    if isinstance(default_worker_pool, SyftError):
+        logger.error(
+            f"Failed to get default worker pool {default_pool_name}. Error: {default_worker_pool.message}"
+        )
+        return default_worker_pool
 
     print(f"Creating default worker image with tag='{default_worker_tag}'")
     # Get/Create a default worker SyftWorkerImage

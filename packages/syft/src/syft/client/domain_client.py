@@ -31,7 +31,7 @@ from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..types.blob_storage import BlobFile
 from ..types.uid import UID
-from ..util.fonts import fonts_css
+from ..util.fonts import FONT_CSS
 from ..util.util import get_mb_size
 from ..util.util import prompt_warning_message
 from .api import APIModule
@@ -168,11 +168,20 @@ class DomainClient(SyftClient):
     #     else:
     #         return {}
 
+    def refresh(self) -> None:
+        if self._api and self._api.refresh_api_callback:
+            self._api.refresh_api_callback()
+
     def get_sync_state(self) -> SyncState | SyftError:
         state: SyncState = self.api.services.sync._get_state()
+        if isinstance(state, SyftError):
+            return state
+
         for uid, obj in state.objects.items():
             if isinstance(obj, ActionObject):
-                state.objects[uid] = obj.refresh_object()
+                obj = obj.refresh_object(resolve_nested=False)
+                obj.reload_cache()
+                state.objects[uid] = obj
         return state
 
     def apply_state(self, resolved_state: ResolvedSyncState) -> SyftSuccess | SyftError:
@@ -181,38 +190,22 @@ class DomainClient(SyftClient):
         items = resolved_state.create_objs + resolved_state.update_objs
 
         action_objects = [x for x in items if isinstance(x, ActionObject)]
-        # permissions = self.get_permissions_for_other_node(items)
-
-        permissions: dict[UID, set[str]] = {}
-        for p in resolved_state.new_permissions:
-            if p.uid in permissions:
-                permissions[p.uid].add(p.permission_string)
-            else:
-                permissions[p.uid] = {p.permission_string}
-
-        storage_permissions: dict[UID, set[UID]] = {}
-        for sp in resolved_state.new_storage_permissions:
-            if sp.uid in storage_permissions:
-                storage_permissions[sp.uid].add(sp.node_uid)
-            else:
-                storage_permissions[sp.uid] = {sp.node_uid}
 
         for action_object in action_objects:
             # NOTE permissions are added separately server side
             action_object._send(self, add_storage_permission=False)
 
+        ignored_batches = resolved_state.ignored_batches
+
         res = self.api.services.sync.sync_items(
             items,
-            permissions,
-            storage_permissions,
+            resolved_state.new_permissions,
+            resolved_state.new_storage_permissions,
+            ignored_batches,
+            unignored_batches=resolved_state.unignored_batches,
         )
         if isinstance(res, SyftError):
             return res
-
-        # Add updated node state to store to have a previous_state for next sync
-        new_state = self.api.services.sync._get_state(add_to_store=True)
-        if isinstance(new_state, SyftError):
-            return new_state
 
         self._fetch_api(self.credentials)
         return res
@@ -313,10 +306,10 @@ class DomainClient(SyftClient):
         if isinstance(res, SyftSuccess):
             if self.metadata:
                 return SyftSuccess(
-                    message=f"Connected {self.metadata.node_type} to {client.name} gateway"
+                    message=f"Connected {self.metadata.node_type} '{self.metadata.name}' to gateway '{client.name}'"
                 )
             else:
-                return SyftSuccess(message=f"Connected to {client.name} gateway")
+                return SyftSuccess(message=f"Connected to '{client.name}' gateway")
         return res
 
     @property
@@ -491,7 +484,7 @@ class DomainClient(SyftClient):
 
         return f"""
         <style>
-            {fonts_css}
+            {FONT_CSS}
 
             .syft-container {{
                 padding: 5px;
