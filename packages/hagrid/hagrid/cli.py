@@ -2235,13 +2235,13 @@ def create_launch_docker_cmd(
     # use a docker volume
     host_path = "credentials-data"
 
-    # in development use a folder mount
-    if kwargs.get("release", "") == "development":
-        RELATIVE_PATH = ""
-        # if EDITABLE_MODE:
-        #     RELATIVE_PATH = "../"
-        # we might need to change this for the hagrid template mode
-        host_path = f"{RELATIVE_PATH}./backend/grid/storage/{snake_name}"
+    # # in development use a folder mount
+    # if kwargs.get("release", "") == "development":
+    #     RELATIVE_PATH = ""
+    #     # if EDITABLE_MODE:
+    #     #     RELATIVE_PATH = "../"
+    #     # we might need to change this for the hagrid template mode
+    #     host_path = f"{RELATIVE_PATH}./data/storage/{snake_name}"
 
     envs = {
         "RELEASE": "production",

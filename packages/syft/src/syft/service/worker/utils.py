@@ -81,21 +81,36 @@ def extract_config_from_backend(
     environment = details["Config"]["Env"]
 
     # Extract Volume Binds
+    vol_binds = {}
+
+    # ignore any irrelevant binds for the worker like
+    # packages/grid/backend/grid:/root/app/grid
+    # packages/syft:/root/app/syft
+    # packages/grid/data/package-cache:/root/.cache
+    valid_binds = {
+        "/var/run/docker.sock",
+        "/root/.cache",
+    }
+
     for vol in host_config["Binds"]:
         parts = vol.split(":")
         key = parts[0]
         bind = parts[1]
         mode = parts[2]
-        if "/storage" in bind:
+
+        if "/root/data/creds" in vol:
             # we need this because otherwise we are using the same node private key
             # which will make account creation fail
-            worker_postfix = worker_name.split("-", 1)[1]
-            key = f"{key}-{worker_postfix}"
-        extracted_config["volume_binds"][key] = {"bind": bind, "mode": mode}
+            key = f"{key}-{worker_name}"
+        elif bind not in valid_binds:
+            continue
+
+        vol_binds[key] = {"bind": bind, "mode": mode}
 
     # Extract Environment Variables
     extracted_config["environment"] = dict([e.split("=", 1) for e in environment])
     extracted_config["network_mode"] = f"container:{backend_container.id}"
+    extracted_config["volume_binds"] = vol_binds
 
     return extracted_config
 
