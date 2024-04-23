@@ -1,5 +1,4 @@
 # stdlib
-from re import L
 import threading
 from threading import Thread
 import time
@@ -405,9 +404,12 @@ def helper_queue_set_delete_threading(
 
         assert res.is_ok()
 
+    lock = threading.Lock()
+
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
-        queue = create_queue_cbk()
+        with lock:
+            queue = create_queue_cbk()
         for idx in range(repeats):
             item_idx = tid * repeats + idx
 
