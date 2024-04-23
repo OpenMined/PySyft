@@ -19,8 +19,8 @@ from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..warnings import HighSideCRUDWarning
+from .settings import NodeSettings
 from .settings import NodeSettingsUpdate
-from .settings import NodeSettingsV2
 from .settings_stash import SettingsStash
 
 
@@ -50,7 +50,7 @@ class SettingsService(AbstractService):
 
     @service_method(path="settings.set", name="set")
     def set(
-        self, context: AuthedServiceContext, settings: NodeSettingsV2
+        self, context: AuthedServiceContext, settings: NodeSettings
     ) -> Result[Ok, Err]:
         """Set a new the Node Settings"""
         print("Here!")

@@ -1,8 +1,11 @@
 # stdlib
+import time
 from typing import Any
+from typing import cast
 
 # third party
 from pydantic import ValidationError
+from result import Ok
 
 # relative
 from ...serde.serializable import serializable
@@ -11,6 +14,7 @@ from ...service.action.action_object import ActionObject
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -21,8 +25,10 @@ from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from .api import CreateTwinAPIEndpoint
+from .api import Endpoint
 from .api import PrivateAPIEndpoint
 from .api import PublicAPIEndpoint
+from .api import TwinAPIContextView
 from .api import TwinAPIEndpoint
 from .api import TwinAPIEndpointView
 from .api import UpdateTwinAPIEndpoint
@@ -97,8 +103,8 @@ class APIService(AbstractService):
         self,
         context: AuthedServiceContext,
         endpoint_path: str,
-        mock_function: PublicAPIEndpoint | None = None,
-        private_function: PrivateAPIEndpoint | None = None,
+        mock_function: Endpoint | None = None,
+        private_function: Endpoint | None = None,
         hide_definition: bool | None = None,
     ) -> SyftSuccess | SyftError:
         """Updates an specific API endpoint."""
@@ -119,10 +125,12 @@ class APIService(AbstractService):
             )
 
         updated_mock = (
-            mock_function if mock_function is not None else endpoint.mock_function
+            mock_function.to(PublicAPIEndpoint)
+            if mock_function is not None
+            else endpoint.mock_function
         )
         updated_private = (
-            private_function
+            private_function.to(PrivateAPIEndpoint)
             if private_function is not None
             else endpoint.private_function
         )
@@ -221,6 +229,145 @@ class APIService(AbstractService):
 
         return api_endpoint_view
 
+    @service_method(
+        path="api.call_in_jobs", name="call_in_jobs", roles=GUEST_ROLE_LEVEL
+    )
+    def call_in_jobs(
+        self,
+        context: AuthedServiceContext,
+        path: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any | SyftError:
+        """Call a Custom API Method in a Job"""
+        return self._call_in_jobs(context, "call", path, *args, **kwargs)
+
+    @service_method(
+        path="api.call_private_in_jobs",
+        name="call_private_in_jobs",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def call_private_in_jobs(
+        self,
+        context: AuthedServiceContext,
+        path: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any | SyftError:
+        """Call a Custom API Method in a Job"""
+        return self._call_in_jobs(context, "call_private", path, *args, **kwargs)
+
+    @service_method(
+        path="api.call_public_in_jobs",
+        name="call_public_in_jobs",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def call_public_in_jobs(
+        self,
+        context: AuthedServiceContext,
+        path: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any | SyftError:
+        """Call a Custom API Method in a Job"""
+        return self._call_in_jobs(context, "call_public", path, *args, **kwargs)
+
+    def _call_in_jobs(
+        self,
+        context: AuthedServiceContext,
+        method: str,
+        path: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any | SyftError:
+        custom_endpoint = self.get_code(
+            context=context,
+            endpoint_path=path,
+        )
+        if isinstance(custom_endpoint, SyftError):
+            return custom_endpoint
+
+        result = context.node.add_api_endpoint_execution_to_queue(
+            context.credentials,
+            method,
+            path,
+            worker_pool=custom_endpoint.worker_pool,
+            *args,
+            **kwargs,
+        )
+        if isinstance(result, SyftError):
+            return result
+        # relative
+        from ..job.job_stash import JobStatus
+
+        # So result is a Job object
+        job = result
+        job_service = context.node.get_service("jobservice")
+        job_id = job.id
+        # Question: For a small moment, when job status is updated, it doesn't return the job during the .get() as if
+        # it's not in the stash. Then afterwards if appears again. Is this a bug?
+
+        start = time.time()
+        # TODO: what can we do here?????
+        while (
+            job is None
+            or job.status == JobStatus.PROCESSING
+            or job.status == JobStatus.CREATED
+        ):
+            job = job_service.get(context, job_id)
+            time.sleep(0.1)
+            if (time.time() - custom_endpoint.endpoint_timeout) > start:
+                return SyftError(
+                    message=f"Function timed out in {custom_endpoint.endpoint_timeout} seconds. Get the Job with id: {job_id} to check results."
+                )
+
+        if job.status == JobStatus.COMPLETED:
+            return job.result
+        else:
+            return SyftError(message="Function failed to complete.")
+
+    @service_method(
+        path="api.get_public_context", name="get_public_context", roles=ADMIN_ROLE_LEVEL
+    )
+    def get_public_context(
+        self, context: AuthedServiceContext, path: str
+    ) -> dict[str, Any] | SyftError:
+        """Get specific public api context."""
+        custom_endpoint = self.get_code(
+            context=context,
+            endpoint_path=path,
+        )
+        if isinstance(custom_endpoint, SyftError):
+            return custom_endpoint
+
+        return custom_endpoint.mock_function.build_internal_context(context).to(
+            TwinAPIContextView
+        )
+
+    @service_method(
+        path="api.get_private_context",
+        name="get_private_context",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def get_private_context(
+        self, context: AuthedServiceContext, path: str
+    ) -> dict[str, Any] | SyftError:
+        """Get specific private api context."""
+        custom_endpoint = self.get_code(
+            context=context,
+            endpoint_path=path,
+        )
+        if isinstance(custom_endpoint, SyftError):
+            return custom_endpoint
+
+        custom_endpoint.private_function = cast(
+            PrivateAPIEndpoint, custom_endpoint.private_function
+        )
+
+        return custom_endpoint.private_function.build_internal_context(context).to(
+            TwinAPIContextView
+        )
+
     @service_method(path="api.get_all", name="get_all", roles=ADMIN_ROLE_LEVEL)
     def get_all(
         self,
@@ -247,7 +394,7 @@ class APIService(AbstractService):
         )
         if isinstance(custom_endpoint, SyftError):
             return custom_endpoint
-        return custom_endpoint.exec(context, *args, **kwargs)
+        return Ok(custom_endpoint.exec(context, *args, **kwargs))
 
     @service_method(path="api.call_public", name="call_public", roles=GUEST_ROLE_LEVEL)
     def call_public(
@@ -256,7 +403,7 @@ class APIService(AbstractService):
         path: str,
         *args: Any,
         **kwargs: Any,
-    ) -> SyftSuccess | SyftError:
+    ) -> ActionObject | SyftError:
         """Call a Custom API Method in public mode"""
         custom_endpoint = self.get_code(
             context=context,
@@ -264,7 +411,22 @@ class APIService(AbstractService):
         )
         if isinstance(custom_endpoint, SyftError):
             return custom_endpoint
-        return custom_endpoint.exec_mock_function(context, *args, **kwargs)
+        exec_result = custom_endpoint.exec_mock_function(context, *args, **kwargs)
+
+        if isinstance(exec_result, SyftError):
+            return Ok(exec_result)
+
+        action_obj = ActionObject.from_obj(exec_result)
+        action_service = cast(ActionService, context.node.get_service(ActionService))
+        result = action_service.set_result_to_store(
+            context=context,
+            result_action_object=action_obj,
+            has_result_read_permission=True,
+        )
+        if result.is_err():
+            return SyftError(message=f"Failed to set result to store: {result.err()}")
+
+        return Ok(result.ok())
 
     @service_method(
         path="api.call_private", name="call_private", roles=GUEST_ROLE_LEVEL
@@ -275,15 +437,30 @@ class APIService(AbstractService):
         path: str,
         *args: Any,
         **kwargs: Any,
-    ) -> SyftSuccess | SyftError:
+    ) -> ActionObject | SyftError:
         """Call a Custom API Method in private mode"""
         custom_endpoint = self.get_code(
             context=context,
             endpoint_path=path,
         )
-        if not isinstance(custom_endpoint, SyftError):
-            result = custom_endpoint.exec_private_function(context, *args, **kwargs)
-        return result
+        if isinstance(custom_endpoint, SyftError):
+            return custom_endpoint
+
+        exec_result = custom_endpoint.exec_private_function(context, *args, **kwargs)
+
+        if isinstance(exec_result, SyftError):
+            return Ok(exec_result)
+
+        action_obj = ActionObject.from_obj(exec_result)
+
+        action_service = cast(ActionService, context.node.get_service(ActionService))
+        result = action_service.set_result_to_store(
+            context=context, result_action_object=action_obj
+        )
+        if result.is_err():
+            return SyftError(message=f"Failed to set result to store: {result.err()}")
+
+        return Ok(result.ok())
 
     @service_method(
         path="api.exists",
