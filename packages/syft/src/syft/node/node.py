@@ -77,6 +77,7 @@ from ..service.queue.base_queue import QueueProducer
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
 from ..service.queue.queue_service import QueueService
+from ..service.queue.queue_stash import APIEndpointQueueItem
 from ..service.queue.queue_stash import ActionQueueItem
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
@@ -422,10 +423,11 @@ class Node(AbstractNode):
 
     def get_default_store(self, use_sqlite: bool) -> StoreConfig:
         if use_sqlite:
+            path = self.get_temp_dir("db")
             return SQLiteStoreConfig(
                 client_config=SQLiteStoreClientConfig(
                     filename=f"{self.id}.sqlite",
-                    path=self.get_temp_dir("db"),
+                    path=path,
                 )
             )
         return DictStoreConfig()
@@ -1197,6 +1199,45 @@ class Node(AbstractNode):
             return self.add_api_call_to_queue(api_call)
         return result
 
+    def add_api_endpoint_execution_to_queue(
+        self,
+        credentials: SyftVerifyKey,
+        method: str,
+        path: str,
+        *args: Any,
+        worker_pool: str | None = None,
+        **kwargs: Any,
+    ) -> Job | SyftError:
+        job_id = UID()
+        task_uid = UID()
+        worker_settings = WorkerSettings.from_node(node=self)
+
+        if worker_pool is None:
+            worker_pool = self.get_default_worker_pool()
+        else:
+            worker_pool = self.get_worker_pool_by_name(worker_pool)
+
+        # Create a Worker pool reference object
+        worker_pool_ref = LinkedObject.from_obj(
+            worker_pool,
+            service_type=SyftWorkerPoolService,
+            node_uid=self.id,
+        )
+        queue_item = APIEndpointQueueItem(
+            id=task_uid,
+            method=method,
+            node_uid=self.id,
+            syft_client_verify_key=credentials,
+            syft_node_location=self.id,
+            job_id=job_id,
+            worker_settings=worker_settings,
+            args=args,
+            kwargs={"path": path, **kwargs},
+            has_execute_permissions=True,
+            worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
+        )
+        return self.add_queueitem_to_queue(queue_item, credentials, None, None)
+
     def add_action_to_queue(
         self,
         action: Action,
@@ -1412,7 +1453,16 @@ class Node(AbstractNode):
     def get_default_worker_pool(self) -> WorkerPool | None | SyftError:
         result = self.pool_stash.get_by_name(
             credentials=self.verify_key,
-            pool_name=get_default_worker_pool_name(),
+            pool_name=self.settings.default_worker_pool,
+        )
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+        worker_pool = result.ok()
+        return worker_pool
+
+    def get_worker_pool_by_name(self, name: str) -> WorkerPool | None | SyftError:
+        result = self.pool_stash.get_by_name(
+            credentials=self.verify_key, pool_name=name
         )
         if result.is_err():
             return SyftError(message=f"{result.err()}")
@@ -1471,6 +1521,7 @@ class Node(AbstractNode):
                     node_side_type=self.node_side_type.value,  # type: ignore
                     show_warnings=self.enable_warnings,
                     association_request_auto_approval=self.association_request_auto_approval,
+                    default_worker_pool=get_default_worker_pool_name(),
                 )
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings
@@ -1565,7 +1616,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
     credentials = node.verify_key
     pull_image = not node.dev_mode
     image_stash = node.get_service(SyftWorkerImageService).stash
-    default_pool_name = get_default_worker_pool_name()
+    default_pool_name = node.settings.default_worker_pool
     default_worker_pool = node.get_default_worker_pool()
     default_worker_tag = get_default_worker_tag_by_env(node.dev_mode)
     worker_count = get_default_worker_pool_count(node)

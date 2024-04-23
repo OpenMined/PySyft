@@ -1,11 +1,12 @@
 # stdlib
-from collections.abc import Callable
+from typing import Callable
 
 # relative
 from ...abstract_node import NodeSideType
 from ...abstract_node import NodeType
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -71,6 +72,7 @@ class NodeSettings(SyftObject):
     node_side_type: NodeSideType = NodeSideType.HIGH_SIDE
     show_warnings: bool
     association_request_auto_approval: bool
+    default_worker_pool: str = DEFAULT_WORKER_POOL_NAME
 
 
 @serializable()

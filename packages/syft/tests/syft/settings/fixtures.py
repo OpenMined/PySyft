@@ -40,6 +40,7 @@ def settings(worker, faker) -> NodeSettings:
         verify_key=SyftSigningKey.generate().verify_key,
         node_type=NodeType.DOMAIN,
         association_request_auto_approval=False,
+        default_worker_pool="default-pool",
     )
 
 
