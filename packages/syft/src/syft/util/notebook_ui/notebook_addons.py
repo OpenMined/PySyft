@@ -721,7 +721,7 @@ custom_code = """
                                 });
 
                                 let page = items[pageIndex -1]
-                                if (page !== 'undefine'){
+                                if (page !== 'undefined'){
                                     let table_index${uid} = ((pageIndex - 1) * page_size${uid})
                                     page.forEach((item) => {
                                         let grid = document.getElementById("table${uid}");
