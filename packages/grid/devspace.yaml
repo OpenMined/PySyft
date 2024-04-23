@@ -34,16 +34,17 @@ vars:
 images:
   backend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}"
-    buildKit: { args: ["--platform", "linux/${PLATFORM}"] }
+    buildKit:
+      args: ["--platform", "linux/${PLATFORM}"]
     dockerfile: ./backend/backend.dockerfile
+    target: "backend"
     context: ../
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
   frontend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
     buildKit:
-      args:
-        ["--target", "grid-ui-production", "--platform", "linux/${PLATFORM}"]
+      args: ["--platform", "linux/${PLATFORM}"]
     dockerfile: ./frontend/frontend.dockerfile
     target: "grid-ui-production"
     context: ./frontend
@@ -51,7 +52,8 @@ images:
       - dev-${DEVSPACE_TIMESTAMP}
   seaweedfs:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
-    buildKit: {}
+    buildKit:
+      args: ["--platform", "linux/${PLATFORM}"]
     dockerfile: ./seaweedfs/seaweedfs.dockerfile
     context: ./seaweedfs
     tags:

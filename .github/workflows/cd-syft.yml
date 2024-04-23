@@ -389,7 +389,7 @@ jobs:
         shell: bash
         run: |
           # install k3d
-          K3D_VERSION=v5.6.0
+          K3D_VERSION=v5.6.3
           wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
           mv k3d-linux-amd64 k3d
           chmod +x k3d
@@ -397,7 +397,7 @@ jobs:
           k3d version
 
           #Install Devspace
-          DEVSPACE_VERSION=v6.3.3
+          DEVSPACE_VERSION=v6.3.12
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version

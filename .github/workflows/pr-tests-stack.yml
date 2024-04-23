@@ -607,7 +607,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         run: |
           # install k9s
-          wget https://github.com/derailed/k9s/releases/download/v0.27.4/k9s_Linux_amd64.tar.gz
+          wget https://github.com/derailed/k9s/releases/download/v0.32.4/k9s_Linux_amd64.tar.gz
           tar -xvf k9s_Linux_amd64.tar.gz
           chmod +x k9s
           sudo install k9s /usr/local/bin;
@@ -629,8 +629,8 @@ jobs:
           GITHUB_CI: true
         shell: bash
         run: |
-          K3D_VERSION=v5.6.0
-          DEVSPACE_VERSION=v6.3.10
+          K3D_VERSION=v5.6.3
+          DEVSPACE_VERSION=v6.3.12
           # install k3d
           wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
           mv k3d-linux-amd64 k3d
