@@ -46,7 +46,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.frontend == 'true'
         run: |
-          pip install --upgrade pip uv==0.1.28
+          pip install --upgrade pip uv==0.1.35
           uv --version
 
       - name: Get pip cache dir
@@ -128,7 +128,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade pip uv==0.1.28
+          pip install --upgrade pip uv==0.1.35
           uv --version
 
       - name: Get pip cache dir
