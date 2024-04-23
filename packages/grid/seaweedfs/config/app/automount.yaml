@@ -6,7 +6,7 @@
 #     remote_bucket:
 #       type: gcs
 #       bucket_name: test-bucket
-#       creds: /run/secrets/test-bucket-gcs-credentials.json
+#       creds: /run/secrets/mount/test-bucket-gcs-credentials.json
 #       # ------- test-bucket-gcs-credentials.json -------
 #       # {
 #       #   "type": "service_account",
@@ -20,7 +20,7 @@
 #     remote_bucket:
 #       type: s3
 #       bucket_name: test-bucket
-#       creds: /run/secrets/test-bucket-s3-credentials.json
+#       creds: /run/secrets/mount/test-bucket-s3-credentials.json
 #       # ------- test-bucket-azure-credentials.json -------
 #       # {
 #       #   "aws_access_key_id": "example"
@@ -32,7 +32,7 @@
 #     remote_bucket:
 #       type: azure
 #       bucket_name: test-bucket
-#       creds: /run/secrets/test-bucket-azure-credentials.json
+#       creds: /run/secrets/mount/test-bucket-azure-credentials.json
 #       # ------- test-bucket-azure-credentials.json -------
 #       # {
 #       #   "azure_account_name": "example"
