@@ -415,6 +415,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     __owner__: str
 
     __repr_attrs__: ClassVar[list[str]] = []  # show these in html repr collections
+    __grid_template_columns__: ClassVar[str] = ""
+    __grid_cell_span__: ClassVar[str] = ""
     __attr_custom_repr__: ClassVar[list[str] | None] = (
         None  # show these in html repr of an object
     )

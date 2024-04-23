@@ -302,6 +302,8 @@ passthrough_attrs = [
     "__private_sync_attr_mocks__",  # syft
     "__exclude_sync_diff_attrs__",  # syft
     "__repr_attrs__",  # syft
+    "__grid_template_columns__",  # syft
+    "__grid_cell_span__",  # syft
     "get_sync_dependencies",
     "_data_repr",
     "syft_eq",  # syft
@@ -310,6 +312,8 @@ dont_wrap_output_attrs = [
     "__repr__",
     "__str__",
     "__repr_attrs__",
+    "__grid_template_columns__",
+    "__grid_cell_span__",
     "_repr_html_",
     "_repr_markdown_",
     "_repr_latex_",
@@ -333,6 +337,8 @@ dont_make_side_effects = [
     "_repr_html_",
     "_repr_markdown_",
     "_repr_latex_",
+    "__grid_template_columns__",
+    "__grid_cell_span__",
     "__repr__",
     "__getitem__",
     "__setitem__",

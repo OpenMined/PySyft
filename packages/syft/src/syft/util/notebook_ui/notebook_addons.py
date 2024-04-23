@@ -851,9 +851,9 @@ def create_table_template(
         cols = 0
     else:
         cols = (len(items[0].keys())) * 4
-    if grid_template_columns is None:
+    if not grid_template_columns:
         grid_template_columns = f"1fr repeat({cols}, 1fr)"
-    if grid_cell_span is None:
+    if not grid_cell_span:
         grid_cell_span = "span 4"
     return template.substitute(
         uid=str(UID()),
