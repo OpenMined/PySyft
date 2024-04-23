@@ -17,6 +17,7 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...store.linked_obj import LinkedObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SyftObject
@@ -85,6 +86,15 @@ class ActionQueueItem(QueueItem):
 
     method: str = "execute"
     service: str = "actionservice"
+
+
+@serializable()
+class APIEndpointQueueItem(QueueItem):
+    __canonical_name__ = "APIEndpointQueueItem"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    method: str
+    service: str = "apiservice"
 
 
 @instrument

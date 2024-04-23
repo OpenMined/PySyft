@@ -140,12 +140,11 @@ class ActionService(AbstractService):
     ) -> Result[Ok[bool], Err[str]]:
         """Get an object from the action store"""
         # relative
-        from .action_data_empty import ActionDataLink
 
         result = self._get(context, uid)
         if result.is_ok():
             obj = result.ok()
-            if isinstance(obj.syft_action_data, ActionDataLink):
+            if obj.is_link:
                 result = self.resolve_links(
                     context, obj.syft_action_data.action_object_id.id
                 )
@@ -177,7 +176,6 @@ class ActionService(AbstractService):
     ) -> Result[Ok[ActionObject], Err[str]]:
         """Get an object from the action store"""
         # relative
-        from .action_data_empty import ActionDataLink
 
         result = self.store.get(uid=uid, credentials=context.credentials)
         # If user has permission to get the object / object exists
@@ -185,7 +183,7 @@ class ActionService(AbstractService):
             obj = result.ok()
 
             # If it's not a leaf
-            if isinstance(obj.syft_action_data, ActionDataLink):
+            if obj.is_link:
                 nested_result = self.resolve_links(
                     context, obj.syft_action_data.action_object_id.id, twin_mode
                 )
@@ -219,7 +217,6 @@ class ActionService(AbstractService):
         # stdlib
 
         # relative
-        from .action_data_empty import ActionDataLink
 
         result = self.store.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission
@@ -234,7 +231,7 @@ class ActionService(AbstractService):
             if (
                 not isinstance(obj, TwinObject)  # type: ignore[unreachable]
                 and resolve_nested
-                and isinstance(obj.syft_action_data, ActionDataLink)
+                and obj.is_link
             ):
                 if not self.is_resolved(  # type: ignore[unreachable]
                     context, obj.syft_action_data.action_object_id.id
@@ -427,6 +424,7 @@ class ActionService(AbstractService):
         result_action_object: ActionObject | TwinObject,
         context: AuthedServiceContext,
         output_policy: OutputPolicy | None = None,
+        has_result_read_permission: bool = False,
     ) -> Result[ActionObject, str]:
         result_id = result_action_object.id
         # result_blob_id = result_action_object.syft_blob_storage_entry_id
@@ -439,6 +437,10 @@ class ActionService(AbstractService):
             )
         else:
             output_readers = []
+
+        # If flag is True, user has read permissions to the results in BlobStore
+        if has_result_read_permission:
+            output_readers.append(context.credentials)
 
         read_permission = ActionPermission.READ
 
@@ -457,9 +459,12 @@ class ActionService(AbstractService):
             result_blob_id = result_action_object.syft_blob_storage_entry_id  # type: ignore[unreachable]
 
         # pass permission information to the action store as extra kwargs
-        context.extra_kwargs = {"has_result_read_permission": True}
+        # context.extra_kwargs = {"has_result_read_permission": True}
 
-        set_result = self._set(context, result_action_object)
+        # Since this just meta data about the result, they always have access to it.
+        set_result = self._set(
+            context, result_action_object, has_result_read_permission=True
+        )
 
         if set_result.is_err():
             return set_result

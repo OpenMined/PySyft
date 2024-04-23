@@ -269,6 +269,11 @@ class KeyValueActionStore(ActionStore):
         for permission in permissions:
             self.add_permission(permission)
 
+    def _get_permissions_for_uid(self, uid: UID) -> Result[set[str], str]:
+        if uid in self.permissions:
+            return Ok(self.permissions[uid])
+        return Err(f"No permissions found for uid: {uid}")
+
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
         permissions.add(permission.node_uid)
@@ -290,6 +295,11 @@ class KeyValueActionStore(ActionStore):
         if permission.uid in self.storage_permissions:
             return permission.node_uid in self.storage_permissions[permission.uid]
         return False
+
+    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], str]:
+        if uid in self.storage_permissions:
+            return Ok(self.storage_permissions[uid])
+        return Err(f"No storage permissions found for uid: {uid}")
 
     def migrate_data(
         self, to_klass: SyftObject, credentials: SyftVerifyKey

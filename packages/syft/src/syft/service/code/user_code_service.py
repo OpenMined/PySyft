@@ -389,7 +389,9 @@ class UserCodeService(AbstractService):
     def is_execution_on_owned_args(
         self, kwargs: dict[str, Any], context: AuthedServiceContext
     ) -> bool:
-        return len(self.keep_owned_kwargs(kwargs, context)) == len(kwargs)
+        return bool(kwargs) and len(self.keep_owned_kwargs(kwargs, context)) == len(
+            kwargs
+        )
 
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
@@ -582,6 +584,11 @@ class UserCodeService(AbstractService):
             has_result_read_permission = context.extra_kwargs.get(
                 "has_result_read_permission", False
             )
+
+            # TODO: Just to fix the issue with the current implementation
+            if context.role == ServiceRole.ADMIN:
+                has_result_read_permission = True
+
             if isinstance(result, TwinObject):
                 if has_result_read_permission:
                     return Ok(result.private)
