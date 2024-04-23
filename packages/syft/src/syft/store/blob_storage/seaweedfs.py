@@ -75,7 +75,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
             with tqdm(
                 total=total_iterations,
                 desc=f"Uploading progress",  # noqa
-                disable=True,
+                # disable=True,
             ) as pbar:
                 for part_no, url in enumerate(
                     self.urls,
