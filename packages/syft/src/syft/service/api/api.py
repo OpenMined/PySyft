@@ -340,7 +340,7 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
 @serializable()
 class TwinAPIEndpoint(SyncableSyftObject):
     # version
-    __canonical_name__ = "TwinAPIEndpoint"
+    __canonical_name__: str = "TwinAPIEndpoint"
     __version__ = SYFT_OBJECT_VERSION_1
 
     def __init__(self, **kwargs: Any) -> None:
