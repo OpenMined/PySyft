@@ -24,6 +24,7 @@ from ...client.api import NodeIdentity
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
+from ...service.user.user import UserView
 from ...service.user.user_service import UserService
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
@@ -56,6 +57,7 @@ class TwinAPIAuthedContext(AuthedServiceContext):
     code: HelperFunctionSet | None = None
     state: dict[Any, Any] | None = None
     client: SyftClient | None = None
+    user_view: UserView | None = None
 
 
 @serializable()
@@ -232,6 +234,7 @@ class Endpoint(SyftObject):
             code=helper_function_set,
             state=self.state or {},
             client=user_client,
+            user_view=user_client.me,
         )
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:

@@ -72,6 +72,7 @@ from .service.response import SyftError  # noqa: F401
 from .service.response import SyftNotReady  # noqa: F401
 from .service.response import SyftSuccess  # noqa: F401
 from .service.user.roles import Roles as roles  # noqa: F401
+from .service.user.user_roles import ServiceRole  # noqa: F401
 from .service.user.user_service import UserService  # noqa: F401
 from .stable_version import LATEST_STABLE_SYFT
 from .types.twin_object import TwinObject  # noqa: F401

@@ -195,15 +195,31 @@ class APIService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def view(
-        self, context: AuthedServiceContext, path: str
+        self, context: AuthedServiceContext, api_path: str
     ) -> TwinAPIEndpointView | SyftError:
         """Retrieves an specific API endpoint."""
-        result = self.stash.get_by_path(context.node.verify_key, path)
+        result = self.stash.get_by_path(context.node.verify_key, api_path)
         if result.is_err():
             return SyftError(message=result.err())
         api_endpoint = result.ok()
 
         return api_endpoint.to(TwinAPIEndpointView, context=context)
+
+    @service_method(
+        path="api.get",
+        name="get",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def get(
+        self, context: AuthedServiceContext, api_path: str
+    ) -> TwinAPIEndpoint | SyftError:
+        """Retrieves an specific API endpoint."""
+        result = self.stash.get_by_path(context.node.verify_key, api_path)
+        if result.is_err():
+            return SyftError(message=result.err())
+        api_endpoint = result.ok()
+
+        return api_endpoint
 
     @service_method(
         path="api.api_endpoints",
