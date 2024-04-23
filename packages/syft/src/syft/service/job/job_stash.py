@@ -642,6 +642,8 @@ class Job(SyncableSyftObject):
         template = Template(job_repr_template)
         return template.substitute(
             uid=str(UID()),
+            grid_template_columns=None,
+            grid_template_cell_columns=None,
             cols=0,
             job_type=job_type,
             api_header=api_header,
