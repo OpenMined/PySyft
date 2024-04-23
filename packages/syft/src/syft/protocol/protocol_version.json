@@ -204,10 +204,43 @@
           "action": "add"
         }
       },
+      "SyftImageRegistry": {
+        "2": {
+          "version": 2,
+          "hash": "862410fcf514a41ee13273d9540a245ed79e26bb82a0acfe2ad48accc3af1bef",
+          "action": "add"
+        }
+      },
+      "SyftWorkerImage": {
+        "2": {
+          "version": 2,
+          "hash": "1063e826436e24707eef3f37dbc15f8008ca038fc3f02ad489a49248c8666ba3",
+          "action": "add"
+        }
+      },
+      "SyftWorker": {
+        "2": {
+          "version": 2,
+          "hash": "ad19971aabbdf6d032fba708357eb0f0d0bd59f993c58b3e36a1b7ca04332453",
+          "action": "add"
+        }
+      },
+      "WorkerPool": {
+        "2": {
+          "version": 2,
+          "hash": "1b81621b7c03eacfe8369c30bbc97967acef6b5d29a3c67d5f8ad81b49556dac",
+          "action": "add"
+        }
+      },
       "NodeSettingsUpdate": {
         "2": {
           "version": 2,
           "hash": "e1dc9d2f30c4aae1f7359eb3fd44de5537788cd3c69be5f30c36fb019f07c261",
+          "action": "add"
+        },
+        "3": {
+          "version": 3,
+          "hash": "9e2610f6e890b04938792079765f8e162f03906162c30aa0ea30e7c182373cec",
           "action": "add"
         }
       },
@@ -215,6 +248,11 @@
         "3": {
           "version": 3,
           "hash": "2d5f6e79f074f75b5cfc2357eac7cf635b8f083421009a513240b4dbbd5a0fc1",
+          "action": "add"
+        },
+        "4": {
+          "version": 4,
+          "hash": "6b973584c139330bb881a9a6ac71c945e63133ec1b2c5175da37f4e319411921",
           "action": "add"
         }
       },
@@ -271,34 +309,6 @@
         "3": {
           "version": 3,
           "hash": "22568b8c3d700b7eaa3291b9f3d014dda3d6dbe20f1f8eab87210ccb2f035bbc",
-          "action": "add"
-        }
-      },
-      "SyftImageRegistry": {
-        "2": {
-          "version": 2,
-          "hash": "862410fcf514a41ee13273d9540a245ed79e26bb82a0acfe2ad48accc3af1bef",
-          "action": "add"
-        }
-      },
-      "SyftWorkerImage": {
-        "2": {
-          "version": 2,
-          "hash": "1063e826436e24707eef3f37dbc15f8008ca038fc3f02ad489a49248c8666ba3",
-          "action": "add"
-        }
-      },
-      "SyftWorker": {
-        "2": {
-          "version": 2,
-          "hash": "ad19971aabbdf6d032fba708357eb0f0d0bd59f993c58b3e36a1b7ca04332453",
-          "action": "add"
-        }
-      },
-      "WorkerPool": {
-        "2": {
-          "version": 2,
-          "hash": "1b81621b7c03eacfe8369c30bbc97967acef6b5d29a3c67d5f8ad81b49556dac",
           "action": "add"
         }
       },
@@ -785,10 +795,24 @@
           "action": "add"
         }
       },
+      "TwinAPIContextView": {
+        "1": {
+          "version": 1,
+          "hash": "db9c436b95c9cb468eb05e95fefead5dbb30e7009d6bc63cb502bf8d9a709df4",
+          "action": "add"
+        }
+      },
       "CustomAPIView": {
         "1": {
           "version": 1,
           "hash": "8fe9f0fded4dbce033e2b14798a59d8635c3b73b0562f9ea686b1162ed155e91",
+          "action": "add"
+        }
+      },
+      "CustomApiEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "13617f3dce60fa692421e0d9deda7ffd365ec02d4a062c18510b48457b6eba02",
           "action": "add"
         }
       },
@@ -864,6 +888,13 @@
         "3": {
           "version": 3,
           "hash": "5bcda9c7df78ded9ea4b53710191f37054d3046ea01125b755afc8c30dd9eed2",
+          "action": "add"
+        }
+      },
+      "APIEndpointQueueItem": {
+        "1": {
+          "version": 1,
+          "hash": "d31b2edfb767401c810584baccd27e4f566181c3ef7706618a82eb25ae20ff6d",
           "action": "add"
         }
       },
@@ -948,41 +979,6 @@
         "2": {
           "version": 2,
           "hash": "f8e623e1887df2c0051caf9e06820e6603148e8ae688460e10a6f4b2dd405e9d",
-          "action": "add"
-        }
-      },
-      "NodeSettingsUpdate": {
-        "3": {
-          "version": 3,
-          "hash": "9e2610f6e890b04938792079765f8e162f03906162c30aa0ea30e7c182373cec",
-          "action": "add"
-        }
-      },
-      "NodeSettings": {
-        "4": {
-          "version": 4,
-          "hash": "6b973584c139330bb881a9a6ac71c945e63133ec1b2c5175da37f4e319411921",
-          "action": "add"
-        }
-      },
-      "APIEndpointQueueItem": {
-        "1": {
-          "version": 1,
-          "hash": "d31b2edfb767401c810584baccd27e4f566181c3ef7706618a82eb25ae20ff6d",
-          "action": "add"
-        }
-      },
-      "TwinAPIContextView": {
-        "1": {
-          "version": 1,
-          "hash": "db9c436b95c9cb468eb05e95fefead5dbb30e7009d6bc63cb502bf8d9a709df4",
-          "action": "add"
-        }
-      },
-      "CustomApiEndpoint": {
-        "1": {
-          "version": 1,
-          "hash": "13617f3dce60fa692421e0d9deda7ffd365ec02d4a062c18510b48457b6eba02",
           "action": "add"
         }
       }
