@@ -797,7 +797,6 @@ class StoreConfig(SyftBaseObject):
             The config used for store locking. Available options:
                 * NoLockingConfig: no locking, ideal for single-thread stores.
                 * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
-                * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
             Defaults to NoLockingConfig.
     """
 
