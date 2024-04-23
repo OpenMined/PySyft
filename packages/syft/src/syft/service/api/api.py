@@ -365,9 +365,6 @@ class TwinAPIEndpoint(SyncableSyftObject):
     __canonical_name__ = "TwinAPIEndpoint"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-
     path: str
     private_function: PrivateAPIEndpoint | None = None
     mock_function: PublicAPIEndpoint
@@ -464,7 +461,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
 
         return SyftError(message="You're not allowed to run this code.")
 
-    def get_user_client_from_node(context: AuthedServiceContext) -> SyftClient:
+    def get_user_client_from_node(self, context: AuthedServiceContext) -> SyftClient:
         # get a user client
         guest_client = context.node.get_guest_client()
         user_client = guest_client
@@ -546,7 +543,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
                 )
             else:
                 return SyftError(
-                    message="Ops something went wrong during this endpoint execution, please contact your admin."
+                    message="Oops something went wrong during this endpoint execution, please contact your admin."
                 )
 
 
