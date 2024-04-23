@@ -316,7 +316,9 @@ class StorePartition:
         self.root_verify_key = root_verify_key
         self.settings = settings
         self.store_config = store_config
-        self.init_store()
+        res = self.init_store()
+        if res.is_err():
+            raise Exception(f"Something went wrong initializing the store: {res.err()}")
 
         store_config.locking_config.lock_name = f"StorePartition-{settings.name}"
         self.lock = SyftLock(store_config.locking_config)

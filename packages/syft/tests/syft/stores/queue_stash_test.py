@@ -1,6 +1,9 @@
 # stdlib
+from re import L
+import threading
 from threading import Thread
 import time
+import traceback
 from typing import Any
 
 # third party
@@ -275,10 +278,12 @@ def helper_queue_set_threading(root_verify_key, create_queue_cbk) -> None:
     repeats = 5
 
     execution_err = None
+    lock = threading.Lock()
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
-        queue = create_queue_cbk()
+        with lock:
+            queue = create_queue_cbk()
 
         for _ in range(repeats):
             obj = mock_queue_object()
@@ -334,10 +339,12 @@ def helper_queue_update_threading(root_verify_key, create_queue_cbk) -> None:
     obj = mock_queue_object()
     queue.set(root_verify_key, obj, ignore_duplicates=False)
     execution_err = None
+    lock = threading.Lock()
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
-        queue_local = create_queue_cbk()
+        with lock:
+            queue_local = create_queue_cbk()
 
         for repeat in range(repeats):
             obj.args = [repeat]
