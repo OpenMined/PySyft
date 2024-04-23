@@ -38,6 +38,7 @@ from .user import UserViewPage
 from .user import check_pwd
 from .user import salt_and_hash_password
 from .user_roles import DATA_OWNER_ROLE_LEVEL
+from .user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .user_roles import GUEST_ROLE_LEVEL
 from .user_roles import ServiceRole
 from .user_roles import ServiceRoleCapability
@@ -83,7 +84,7 @@ class UserService(AbstractService):
         user = result.ok()
         return user.to(UserView)
 
-    @service_method(path="user.view", name="view")
+    @service_method(path="user.view", name="view", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def view(
         self, context: AuthedServiceContext, uid: UID
     ) -> UserView | None | SyftError:
