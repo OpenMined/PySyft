@@ -66,12 +66,14 @@ SYFT_OBJECT_VERSION_1 = 1
 SYFT_OBJECT_VERSION_2 = 2
 SYFT_OBJECT_VERSION_3 = 3
 SYFT_OBJECT_VERSION_4 = 4
+SYFT_OBJECT_VERSION_5 = 5
 
 supported_object_versions = [
     SYFT_OBJECT_VERSION_1,
     SYFT_OBJECT_VERSION_2,
     SYFT_OBJECT_VERSION_3,
     SYFT_OBJECT_VERSION_4,
+    SYFT_OBJECT_VERSION_5,
 ]
 
 HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
@@ -856,7 +858,7 @@ def get_repr_values_table(
     return df.to_dict("records")  # type: ignore
 
 
-def _get_grid_template_columns(first_value: Any) -> str:
+def _get_grid_template_columns(first_value: Any) -> tuple[str | None, str | None]:
     grid_template_cols = getattr(first_value, "__table_coll_widths__", None)
     if isinstance(grid_template_cols, list):
         grid_template_columns = " ".join(grid_template_cols)

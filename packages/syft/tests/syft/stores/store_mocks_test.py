@@ -57,7 +57,7 @@ class MockStore(DocumentStore):
 
 @serializable()
 class MockSyftObject(SyftObject):
-    __canonical_name__ = str(UID())
+    __canonical_name__ = f"MockSyftObject_{UID()}"
     data: Any
 
 

@@ -7,7 +7,33 @@ from typing import Any
 # relative
 from ...types.uid import UID
 
-CSS_CODE = """
+STYLESHEET_URLS = [
+    "https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,200;1,300;1,400;1,500;1,600;1,700;1,800&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap",
+    "https://fonts.cdnfonts.com/css/dejavu-sans-mono",
+]
+STYLESHEET_JS_CALLS = "\n".join([f'addStyleSheet("{s}")' for s in STYLESHEET_URLS])
+
+
+JS_DOWNLOAD_FONTS = f"""
+<script>
+function addStyleSheet(fileName) {{
+
+  var head = document.head;
+  var link = document.createElement("link");
+
+  link.type = "text/css";
+  link.rel = "stylesheet";
+  link.href = fileName;
+
+  head.appendChild(link);
+}}
+
+{STYLESHEET_JS_CALLS}
+</script>
+"""
+
+
+CSS = """
 <style>
   body[data-jp-theme-light='false'] {
         --primary-color: #111111;
@@ -220,6 +246,9 @@ CSS_CODE = """
 
     .grid-std-cells${uid} {
         grid-column: ${grid_template_cell_columns};
+        display: flex;
+        justify-content: center;
+        align-items: center; width: 100%; height: 100%;
     }
 
     .grid-index-cells {
@@ -228,6 +257,10 @@ CSS_CODE = """
         font-weight: 600;
         background-color: var(--secondary-color) !important;
         color: var(--tertiary-color);
+    }
+
+    .center-content-cell{
+        margin: auto;
     }
 
     .grid-header {
@@ -292,6 +325,15 @@ CSS_CODE = """
         gap: 8px;
         justify-content: start;
         align-items: center;
+    }
+
+    .jobs-title {
+        font-family: Open Sans, sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        line-height: 25.2px;
+        text-align: left;
+        color: #1F567A;
     }
 
     .diff-state-orange-text{
@@ -360,7 +402,6 @@ CSS_CODE = """
         label;
         background-color: #C2DEF0;
         color: #1F567A;
-
     }
 
     .label-orange {
@@ -379,6 +420,12 @@ CSS_CODE = """
         badge;
         background-color: #D5F1D5;
         color: #256B24;
+    }
+
+    .label-red {
+        label;
+        background-color: #F2D9DE;
+        color: #9B2737;
     }
 
     .badge-blue {
@@ -444,6 +491,10 @@ CSS_CODE = """
         color: var(--tertiary-color);
     }
 
+    .rendered_html tbody tr:nth-child(odd) {
+        background: transparent;
+    }
+
     .search-field {
         display: flex;
         align-items: center;
@@ -500,6 +551,11 @@ CSS_CODE = """
     }
 </style>
 
+"""
+
+CSS_CODE = f"""
+{JS_DOWNLOAD_FONTS}
+{CSS}
 """
 
 SEARCH_ICON = (
@@ -747,6 +803,7 @@ custom_code = """
                                                     let label_div = document.createElement("div");
                                                     label_div.classList.add('label',item[attr].type)
                                                     label_div.innerText = String(item[attr].value).toUpperCase();
+                                                    label_div.classList.add('center-content-cell');
                                                     div.appendChild(label_div);
                                                     div.classList.add('grid-row','grid-std-cells${uid}');
                                                 } else if (item[attr].type === "clipboard") {
