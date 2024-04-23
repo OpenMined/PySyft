@@ -17,7 +17,6 @@ from ...abstract_node import AbstractNode
 from ...custom_worker.builder import CustomWorkerBuilder
 from ...custom_worker.builder_types import ImageBuildResult
 from ...custom_worker.builder_types import ImagePushResult
-from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.k8s import KubeUtils
 from ...custom_worker.k8s import PodStatus
@@ -535,47 +534,20 @@ def create_default_image(
     tag: str,
     in_kubernetes: bool = False,
 ) -> SyftError | SyftWorkerImage:
-    # TODO: Hardcode worker dockerfile since not able to COPY
-    # worker_cpu.dockerfile to backend in backend.dockerfile.
-
-    # default_cpu_dockerfile = get_syft_cpu_dockerfile()
-    # DockerWorkerConfig.from_path(default_cpu_dockerfile)
-
     if not in_kubernetes:
-        default_cpu_dockerfile = f"""ARG SYFT_VERSION_TAG='{tag}' \n"""
-        default_cpu_dockerfile += """FROM openmined/grid-backend:${SYFT_VERSION_TAG}
-        ARG PYTHON_VERSION="3.12"
-        ARG SYSTEM_PACKAGES=""
-        ARG PIP_PACKAGES="pip --dry-run"
-        ARG CUSTOM_CMD='echo "No custom commands passed"'
+        tag = f"openmined/grid-backend:{tag}"
 
-        # Worker specific environment variables go here
-        ENV SYFT_WORKER="true"
-        ENV DOCKER_TAG=${SYFT_VERSION_TAG}
+    worker_config = PrebuiltWorkerConfig(
+        tag=tag,
+        description="Prebuilt default worker image",
+    )
 
-        RUN apk update && \
-            apk add ${SYSTEM_PACKAGES} && \
-            pip install --user ${PIP_PACKAGES} && \
-            bash -c "$CUSTOM_CMD"
-        """
-        worker_config = DockerWorkerConfig(dockerfile=default_cpu_dockerfile)
-        _new_image = SyftWorkerImage(
-            config=worker_config,
-            created_by=credentials,
-        )
-    else:
-        # in k8s we don't need to build the image, just the tag of backend is enough
-        worker_config = PrebuiltWorkerConfig(
-            tag=tag,
-            description="Prebuilt default worker image",
-        )
-
-        # create SyftWorkerImage from a pre-built image
-        _new_image = SyftWorkerImage(
-            config=worker_config,
-            created_by=credentials,
-            image_identifier=SyftWorkerImageIdentifier.from_str(tag),
-        )
+    # create SyftWorkerImage from a pre-built image
+    _new_image = SyftWorkerImage(
+        config=worker_config,
+        created_by=credentials,
+        image_identifier=SyftWorkerImageIdentifier.from_str(tag),
+    )
 
     result = image_stash.get_by_docker_config(
         credentials=credentials,
@@ -609,8 +581,6 @@ def image_build(
             return builder.build_image(
                 config=image.config,
                 tag=full_tag,
-                # rm=True,
-                # forcerm=True,
                 **kwargs,
             )
         except docker.errors.APIError as e:

@@ -122,6 +122,9 @@ class PrebuiltWorkerConfig(WorkerConfig):
     def set_description(self, description_text: str) -> None:
         self.description = description_text
 
+    def __hash__(self) -> int:
+        return hash(self.tag)
+
 
 @serializable()
 class DockerWorkerConfig(WorkerConfig):
