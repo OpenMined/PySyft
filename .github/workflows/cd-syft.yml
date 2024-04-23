@@ -248,38 +248,34 @@ jobs:
           digest="${{ steps.grid-seaweedfs-build.outputs.digest }}"
           touch "/tmp/digests/grid-seaweedfs/${digest#sha256:}"
 
+      # Some of the dependencies of grid-enclave-attestation are not available for arm64
+      # Hence, we are building grid-enclave-attestation only for x64
       - name: Build and push `grid-enclave-attestation` image to DockerHub
+        if: ${{ endsWith(matrix.runner, '-x64') }}
         id: grid-enclave-attestation-build
         uses: docker/build-push-action@v5
         with:
           context: ./packages/grid/enclave/attestation
           file: ./packages/grid/enclave/attestation/attestation.dockerfile
-          platforms: ${{ steps.release_metadata.outputs.release_platform }} # TODO only do this for arm64
+          platforms: ${{ steps.release_metadata.outputs.release_platform }}
           outputs: type=image,name=openmined/grid-enclave-attestation,push-by-digest=true,name-canonical=true,push=true
           cache-from: type=registry,ref=openmined/grid-enclave-attestation:cache-${{ steps.release_metadata.outputs.short_release_platform }}
           cache-to: type=registry,ref=openmined/grid-enclave-attestation:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
 
       - name: Export digest for grid-enclave-attestation
+        if: ${{ endsWith(matrix.runner, '-x64') }}
         run: |
           mkdir -p /tmp/digests/grid-enclave-attestation
           digest="${{ steps.grid-enclave-attestation-build.outputs.digest }}"
           touch "/tmp/digests/grid-enclave-attestation/${digest#sha256:}"
 
-      - name: Upload digest for grid-backend, grid-frontend, grid-seaweedfs and grid-enclave-attestation
+      - name: Upload digest for grid-backend, grid-frontend, grid-seaweedfs and (x64 only) grid-enclave-attestation
         uses: actions/upload-artifact@v4
         with:
           name: digests-${{ steps.release_metadata.outputs.grid_version }}-${{ steps.release_metadata.outputs.short_release_platform }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
-
-      - name: Create manifest list and push for grid-enclave-attestation
-        working-directory: /tmp/digests/grid-enclave-attestation
-        run: |
-          docker buildx imagetools create \
-            -t openmined/grid-enclave-attestation:${{ steps.release_metadata.outputs.grid_version }} \
-            -t openmined/grid-enclave-attestation:${{ steps.get_release_tag.outputs.release_tag }} \
-            $(printf 'openmined/grid-enclave-attestation@sha256:%s ' *)
 
   #Used to merge x64 and arm64 into one docker image
   merge-docker-images:
@@ -331,6 +327,15 @@ jobs:
             -t openmined/grid-seaweedfs:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
             -t openmined/grid-seaweedfs:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
             $(printf 'openmined/grid-seaweedfs@sha256:%s ' *)
+
+      - name: Create manifest list and push for grid-enclave-attestation
+        if: ${{ endsWith(needs.build-and-push-docker-images.result.matrix.runner, '-x64') }}
+        working-directory: /tmp/digests/grid-enclave-attestation
+        run: |
+          docker buildx imagetools create  \
+            -t openmined/grid-enclave-attestation:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
+            -t openmined/grid-enclave-attestation:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
+            $(printf 'openmined/grid-enclave-attestation@sha256:%s ' *)
 
   deploy-syft:
     needs: [merge-docker-images]
