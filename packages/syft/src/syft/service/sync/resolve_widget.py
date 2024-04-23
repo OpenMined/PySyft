@@ -15,11 +15,11 @@ from ipywidgets import Layout
 from ipywidgets import VBox
 
 # relative
-from ...client.api import APIRegistry
 from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
 from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
+from ...util.notebook_ui.components.sync import Alert
 from ...util.notebook_ui.components.sync import Badge
 from ...util.notebook_ui.components.sync import CopyIDButton
 from ...util.notebook_ui.components.sync import MainDescription
@@ -101,6 +101,7 @@ class MainObjectDiffWidget:
         diff: ObjectDiff,
         direction: SyncDirection,
         with_box: bool = True,
+        show_share_warning: bool = False,
     ):
         self.low_properties = diff.repr_attr_dict("low")
         self.high_properties = diff.repr_attr_dict("high")
@@ -108,9 +109,11 @@ class MainObjectDiffWidget:
         self.direction = direction
         self.diff: ObjectDiff = diff
         self.with_box = with_box
-        self.widget = self.build()
+        self.show_share_warning = show_share_warning
         self.sync = True
         self.is_main_widget: bool = True
+
+        self.widget = self.build()
 
     def set_share_private_data(self) -> None:
         # No-op for main widget
@@ -121,9 +124,29 @@ class MainObjectDiffWidget:
         return not self.share_private_data
 
     @property
+    def has_unused_share_button(self) -> bool:
+        # does not have share button
+        return False
+
+    @property
     def share_private_data(self) -> bool:
         # there are TwinAPIEndpoint.__private_sync_attr_mocks__
         return not isinstance(self.diff.non_empty_object, TwinAPIEndpoint)
+
+    @property
+    def warning_html(self) -> str:
+        if isinstance(self.diff.non_empty_object, TwinAPIEndpoint):
+            message = "Only the private function of a TwinAPI will be synced to the public node."
+            return Alert(message=message).to_html()
+        elif self.show_share_warning:
+            message = (
+                "By default only the object wrapper will be synced. "
+                "If you would like to sync the real data please "
+                'activate the "Sync Real Data" button above.'
+            )
+            return Alert(message=message).to_html()
+        else:
+            return ""
 
     def build(self) -> widgets.HBox:
         all_keys = list(self.low_properties.keys()) + list(self.high_properties.keys())
@@ -164,13 +187,17 @@ class MainObjectDiffWidget:
             }
             </style>
         """
-        dom_classes = []
-        if self.with_box:
-            dom_classes.append("diff-container")
 
-        return widgets.HBox(
-            [HTML(css_accordion), widget_from, widget_to], _dom_classes=dom_classes
-        )
+        result = widgets.HBox([HTML(css_accordion), widget_from, widget_to])
+
+        warning = self.warning_html
+        if warning:
+            result = VBox([widgets.HTML(warning), result])
+
+        if self.with_box:
+            result._dom_classes = result._dom_classes + ("diff-container",)
+
+        return result
 
 
 class CollapsableObjectDiffWidget:
@@ -191,10 +218,25 @@ class CollapsableObjectDiffWidget:
     def mockify(self) -> bool:
         if isinstance(self.diff.non_empty_object, TwinAPIEndpoint):
             return True
-        if self.show_share_button and not self.share_private_data:
+        if self.has_unused_share_button:
             return True
         else:
             return False
+
+    @property
+    def has_unused_share_button(self) -> bool:
+        return self.show_share_button and not self.share_private_data
+
+    @property
+    def warning_html(self) -> str:
+        if self.show_share_button:
+            message = (
+                "By default only the object wrapper will be synced. "
+                "If you would like to sync the real log data please "
+                "activate the “Real Data” button above."
+            )
+            return Alert(message=message).to_html()
+        return ""
 
     @property
     def show_share_button(self) -> bool:
@@ -232,7 +274,12 @@ class CollapsableObjectDiffWidget:
             self._share_private_checkbox.value = True
 
     def build(self) -> widgets.VBox:
-        content = MainObjectDiffWidget(self.diff, self.direction, with_box=False).widget
+        content = MainObjectDiffWidget(
+            self.diff,
+            self.direction,
+            with_box=False,
+            show_share_warning=self.show_share_button,
+        ).widget
 
         accordion, share_private_checkbox, sync_checkbox = self.build_accordion(
             accordion_body=content,
@@ -257,6 +304,7 @@ class CollapsableObjectDiffWidget:
             <style>
             .accordion {{
                 padding: 0 10px;
+                margin: 3px 0px;
             }}
 
             .body-hidden {{
@@ -417,8 +465,12 @@ class ResolveWidget:
         # Maybe default read permission for some objects (high -> low)
 
         # TODO: UID
-        resolved_state_low = ResolvedSyncState(node_uid=UID(), alias="low")
-        resolved_state_high = ResolvedSyncState(node_uid=UID(), alias="high")
+        resolved_state_low = ResolvedSyncState(
+            node_uid=self.obj_diff_batch.low_node_uid, alias="low"
+        )
+        resolved_state_high = ResolvedSyncState(
+            node_uid=self.obj_diff_batch.high_node_uid, alias="high"
+        )
 
         batch_diff = self.obj_diff_batch
         if batch_diff.is_unchanged:
@@ -457,8 +509,14 @@ class ResolveWidget:
                 sync = widget.sync
 
                 if sync or widget.is_main_widget:
-                    share_to_user: SyftVerifyKey | None = getattr(
-                        self.obj_diff_batch.user_code_high, "user_verify_key", None
+                    # figure out the right verify key to share to
+                    # in case of a job with user code, share to user code owner
+                    # without user code, share to job owner
+                    share_to_user: SyftVerifyKey | None = (
+                        getattr(
+                            self.obj_diff_batch.user_code_high, "user_verify_key", None
+                        )
+                        or self.obj_diff_batch.user_verify_key_high
                     )
                     instruction = SyncInstruction.from_widget_state(
                         widget=widget,
@@ -486,25 +544,23 @@ class ResolveWidget:
             resolved_state_low.add_sync_instruction(sync_instruction)
             resolved_state_high.add_sync_instruction(sync_instruction)
 
-        # TODO: ONLY WORKS FOR LOW TO HIGH
-        # relative
-        from ...client.domain_client import DomainClient
-
-        api = APIRegistry.api_for(
-            self.obj_diff_batch.target_node_uid, self.obj_diff_batch.target_verify_key
-        )
-        client = DomainClient(
-            api=api,
-            connection=api.connection,  # type: ignore
-            credentials=api.signing_key,  # type: ignore
-        )
-
         if self.obj_diff_batch.sync_direction is None:
             raise ValueError("no direction specified")
-        if self.obj_diff_batch.sync_direction == SyncDirection.LOW_TO_HIGH:
-            res = client.apply_state(resolved_state_high)
-        else:
-            res = client.apply_state(resolved_state_low)
+        sync_direction = self.obj_diff_batch.sync_direction
+        resolved_state = (
+            resolved_state_high
+            if sync_direction == SyncDirection.LOW_TO_HIGH
+            else resolved_state_low
+        )
+        res = self.obj_diff_batch.target_client.apply_state(resolved_state)
+
+        if sync_direction == SyncDirection.HIGH_TO_LOW:
+            # apply empty state to generete a new state
+            resolved_state_high = ResolvedSyncState(
+                node_uid=self.obj_diff_batch.high_node_uid, alias="high"
+            )
+            high_client = self.obj_diff_batch.source_client
+            res = high_client.apply_state(resolved_state_high)
 
         self.is_synced = True
         self.set_result_state(res)
@@ -583,6 +639,7 @@ class ResolveWidget:
         for widget in dependent_batch_diff_widgets:
             self.id2widget[widget.diff.object_id] = widget
 
+        # put a 4px spacer between each item
         main_batch_items = widgets.VBox(
             children=[d.widget for d in batch_diff_widgets],
         )
@@ -595,11 +652,11 @@ class ResolveWidget:
             [
                 self.build_header(),
                 self.main_object_diff_widget.widget,
-                self.spacer(16),
+                self.spacer(8),
                 main_batch_items,
                 self.separator(),
                 dependency_items,
-                self.spacer(16),
+                self.spacer(8),
                 self.sync_button(),
             ]
         )
@@ -623,7 +680,7 @@ class ResolveWidget:
 
     def separator(self) -> widgets.HTML:
         return widgets.HTML(
-            value='<div style="text-align: center; margin: 10px 0; border: 1px dashed #B4B0BF;"></div>',
+            value='<div style="text-align: center; margin: 3px 0; border: 1px dashed #B4B0BF;"></div>',
             layout=Layout(width="100%"),
         )
 
