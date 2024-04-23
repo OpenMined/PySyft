@@ -27,7 +27,7 @@ jobs:
 
       - name: Install tox
         run: |
-          pip install --upgrade pip uv==0.1.28 tox tox-uv==1.5.1
+          pip install --upgrade pip uv==0.1.35 tox tox-uv==1.5.1
           uv --version
 
       - name: Build the docs
