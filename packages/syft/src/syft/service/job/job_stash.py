@@ -579,7 +579,7 @@ class Job(SyncableSyftObject):
         # relative
         from ...util.notebook_ui.components.sync import CopyIDButton
 
-        identifier = random.randint(1, 2**32)
+        identifier = random.randint(1, 2**32)  # nosec
         result_tab_id = f"Result_{identifier}"
         logs_tab_id = f"Logs_{identifier}"
         job_type = "JOB" if not self.parent_job_id else "SUBJOB"
