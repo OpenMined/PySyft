@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from collections import defaultdict
 from collections.abc import Callable
@@ -7,7 +10,6 @@ import inspect
 from inspect import Parameter
 from typing import Any
 from typing import TYPE_CHECKING
-from typing import Union
 
 # third party
 from result import Ok
@@ -441,7 +443,7 @@ def from_api_or_context(
     func_or_path: str,
     syft_node_location: UID | None = None,
     syft_client_verify_key: SyftVerifyKey | None = None,
-) -> Union["APIModule", SyftError, partial] | None:
+) -> APIModule | SyftError | partial | None:
     # relative
     from ..client.api import APIRegistry
     from ..node.node import AuthNodeContextRegistry
