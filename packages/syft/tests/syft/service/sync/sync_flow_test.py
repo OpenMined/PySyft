@@ -1,4 +1,5 @@
 # stdlib
+from secrets import token_hex
 import sys
 from textwrap import dedent
 
@@ -7,14 +8,53 @@ import numpy as np
 import pytest
 
 # syft absolute
+import syft
 import syft as sy
 from syft.abstract_node import NodeSideType
+from syft.client.domain_client import DomainClient
 from syft.client.sync_decision import SyncDecision
 from syft.client.syncing import compare_clients
 from syft.client.syncing import compare_states
 from syft.client.syncing import resolve
+from syft.client.syncing import resolve_single
+from syft.node.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.response import SyftError
+from syft.service.response import SyftSuccess
+
+
+def compare_and_resolve(*, from_client: DomainClient, to_client: DomainClient):
+    diff_state_before = compare_clients(from_client, to_client)
+    for obj_diff_batch in diff_state_before.batches:
+        widget = resolve_single(obj_diff_batch)
+        widget.click_share_all_private_data()
+        res = widget.click_sync()
+        assert isinstance(res, SyftSuccess)
+    from_client.refresh()
+    to_client.refresh()
+    diff_state_after = compare_clients(from_client, to_client)
+    return diff_state_before, diff_state_after
+
+
+def run_and_accept_result(client):
+    job_high = client.code.compute(blocking=True)
+    client.requests[0].accept_by_depositing_result(job_high)
+    return job_high
+
+
+@syft.syft_function_single_use()
+def compute() -> int:
+    return 42
+
+
+def get_ds_client(client: DomainClient) -> DomainClient:
+    client.register(
+        name="a",
+        email="a@a.com",
+        password="asdf",
+        password_verify="asdf",
+    )
+    return client.login(email="a@a.com", password="asdf")
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
@@ -210,41 +250,6 @@ def test_sync_flow():
     high_worker.cleanup()
 
 
-def test_diff_state(low_worker, high_worker):
-    low_client = low_worker.root_client
-    client_low_ds = low_worker.guest_client
-    high_client = high_worker.root_client
-
-    @sy.syft_function_single_use()
-    def compute() -> int:
-        return 42
-
-    compute.code = dedent(compute.code)
-
-    _ = client_low_ds.code.request_code_execution(compute)
-
-    diff_state = compare_clients(low_client, high_client)
-    low_items_to_sync, high_items_to_sync = resolve(
-        diff_state, decision="low", share_private_objects=True
-    )
-
-    assert not diff_state.is_same
-    assert not low_items_to_sync.is_empty
-    assert not high_items_to_sync.is_empty
-
-    low_client.apply_state(low_items_to_sync)
-    high_client.apply_state(high_items_to_sync)
-
-    diff_state = compare_clients(low_client, high_client)
-    low_items_to_sync, high_items_to_sync = resolve(
-        diff_state, decision="low", share_private_objects=True
-    )
-
-    assert diff_state.is_same
-    assert low_items_to_sync.is_empty
-    assert high_items_to_sync.is_empty
-
-
 def test_forget_usercode(low_worker, high_worker):
     low_client = low_worker.root_client
     client_low_ds = low_worker.guest_client
@@ -290,6 +295,74 @@ def test_forget_usercode(low_worker, high_worker):
         share_private_objects=True,
         decision_callback=skip_if_user_code,
     )
+
+
+@sy.api_endpoint_method()
+def mock_function(context) -> str:
+    return -42
+
+
+@sy.api_endpoint_method()
+def private_function(context) -> str:
+    return 42
+
+
+def test_twin_api_integration(full_high_worker, full_low_worker):
+    low_client = full_low_worker.login(
+        email="info@openmined.org", password="changethis"
+    )
+    high_client = full_high_worker.login(
+        email="info@openmined.org", password="changethis"
+    )
+
+    low_client.register(
+        email="newuser@openmined.org",
+        name="John Doe",
+        password="pw",
+        password_verify="pw",
+    )
+
+    client_low_ds = low_client.login(
+        email="newuser@openmined.org",
+        password="pw",
+    )
+
+    new_endpoint = sy.TwinAPIEndpoint(
+        path="testapi.query",
+        private_function=private_function,
+        mock_function=mock_function,
+        description="",
+    )
+    high_client.api.services.api.add(endpoint=new_endpoint)
+    high_client.refresh()
+    high_private_res = high_client.api.services.testapi.query.private()
+    assert high_private_res == 42
+
+    low_state = low_client.get_sync_state()
+    high_state = high_client.get_sync_state()
+    diff_state = compare_states(high_state, low_state)
+
+    obj_diff_batch = diff_state[0]
+    widget = resolve_single(obj_diff_batch)
+    widget.click_sync()
+
+    obj_diff_batch = diff_state[1]
+    widget = resolve_single(obj_diff_batch)
+    widget.click_sync()
+
+    high_mock_res = high_client.api.services.testapi.query.mock()
+    assert high_mock_res == -42
+
+    client_low_ds.refresh()
+    high_client.refresh()
+    low_private_res = client_low_ds.api.services.testapi.query.private()
+    assert isinstance(
+        low_private_res, SyftError
+    ), "Should not have access to private on low side"
+    low_mock_res = client_low_ds.api.services.testapi.query.mock()
+    high_mock_res = high_client.api.services.testapi.query.mock()
+    assert low_mock_res == -42
+    assert high_mock_res == -42
 
 
 def test_skip_user_code(low_worker, high_worker):

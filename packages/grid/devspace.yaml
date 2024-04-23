@@ -22,10 +22,12 @@ pipelines:
       create_deployments --all
 
 vars:
-  DEVSPACE_ENV_FILE: "default.env"
+  DOCKER_IMAGE_BACKEND: openmined/grid-backend
+  DOCKER_IMAGE_FRONTEND: openmined/grid-frontend
+  DOCKER_IMAGE_SEAWEEDFS: openmined/grid-seaweedfs
+  DOCKER_IMAGE_ENCLAVE_ATTESTATION: openmined/grid-enclave-attestation
   CONTAINER_REGISTRY: "docker.io"
-  NODE_NAME: "mynode"
-  VERSION: "0.8.7-beta.1"
+  VERSION: "0.8.7-beta.2"
   PLATFORM: $(uname -m | grep -q 'arm64' && echo "arm64" || echo "amd64")
 
 # This is a list of `images` that DevSpace can build for this project
@@ -33,16 +35,17 @@ vars:
 images:
   backend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_BACKEND}"
-    buildKit: { args: ["--platform", "linux/${PLATFORM}"] }
+    buildKit:
+      args: ["--platform", "linux/${PLATFORM}"]
     dockerfile: ./backend/backend.dockerfile
+    target: "backend"
     context: ../
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
   frontend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
     buildKit:
-      args:
-        ["--target", "grid-ui-production", "--platform", "linux/${PLATFORM}"]
+      args: ["--platform", "linux/${PLATFORM}"]
     dockerfile: ./frontend/frontend.dockerfile
     target: "grid-ui-production"
     context: ./frontend
@@ -50,7 +53,8 @@ images:
       - dev-${DEVSPACE_TIMESTAMP}
   seaweedfs:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
-    buildKit: {}
+    buildKit:
+      args: ["--platform", "linux/${PLATFORM}"]
     dockerfile: ./seaweedfs/seaweedfs.dockerfile
     context: ./seaweedfs
     tags:
@@ -76,7 +80,7 @@ deployments:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
         node:
-          name: ${NODE_NAME}
+          type: domain # required for the gateway profile
       # anything that does not need devspace $env vars should go in values.dev.yaml
       valuesFiles:
         - ./helm/values.dev.yaml
@@ -101,25 +105,24 @@ dev:
     labelSelector:
       app.kubernetes.io/name: syft
       app.kubernetes.io/component: backend
-    env:
-      - name: RELEASE
-        value: development
-      - name: DEV_MODE
-        value: "True"
-      - name: DEBUGGER_ENABLED
-        value: "True"
     ports:
       - port: "5678" # debugpy
-    sync:
-      - path: ./backend/grid:/root/app/grid
-      - path: ../syft:/root/app/syft
-    ssh: {}
-  attestation:
-    labelSelector:
-      app.kubernetes.io/name: syft
-      app.kubernetes.io/component: attestation
-    sync:
-      - path: ./enclave/attestation/server:/app/server
+    containers:
+      backend-container:
+        env:
+          - name: RELEASE
+            value: development
+          - name: DEV_MODE
+            value: "True"
+          - name: DEBUGGER_ENABLED
+            value: "True"
+        sync:
+          - path: ./backend/grid:/root/app/grid
+          - path: ../syft:/root/app/syft
+      enclave-attestation:
+        sync:
+          - path: ./enclave/attestation/server:/app/server
+      ssh: {}
 
 profiles:
   - name: gateway
@@ -131,3 +134,24 @@ profiles:
         path: images.seaweedfs
       - op: remove
         path: dev.seaweedfs
+
+  - name: gcp
+    patches:
+      - op: replace
+        path: deployments.syft.helm.valuesFiles
+        value:
+          - ./helm/examples/gcp/gcp.high.yaml
+
+  - name: gcp-low
+    patches:
+      - op: replace
+        path: deployments.syft.helm.valuesFiles
+        value:
+          - ./helm/examples/gcp/gcp.low.yaml
+
+  - name: azure
+    patches:
+      - op: replace
+        path: deployments.syft.helm.valuesFiles
+        value:
+          - ./helm/examples/azure/azure.high.yaml

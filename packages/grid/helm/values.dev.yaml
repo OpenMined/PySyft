@@ -5,20 +5,44 @@ global:
   randomizedSecrets: false
 
 registry:
+  resourcesPreset: null
+  resources: null
+
   storageSize: "5Gi"
 
 node:
   rootEmail: info@openmined.org
   defaultWorkerPoolCount: 1
 
+  resourcesPreset: null
+  resources: null
+
   secret:
     defaultRootPassword: changethis
 
 mongo:
+  resourcesPreset: null
+  resources: null
+
   secret:
     rootPassword: example
 
 seaweedfs:
+  resourcesPreset: null
+  resources: null
+
   secret:
     s3RootPassword: admin
 
+frontend:
+  resourcesPreset: null
+  resources: null
+
+proxy:
+  resourcesPreset: null
+  resources: null
+
+# attestation:
+#   enabled: true
+#   resourcesPreset: null
+#   resources: null

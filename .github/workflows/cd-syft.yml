@@ -133,7 +133,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip uv==0.1.28 bump2version tox tox-uv==1.5.1
+          pip install --upgrade pip uv==0.1.35 bump2version tox tox-uv==1.5.1
           uv --version
 
       - name: Get Release tag
@@ -195,18 +195,6 @@ jobs:
           cache-from: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
           cache-to: type=registry,ref=openmined/grid-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
 
-      # - name: Build and push `syft-base-cpu` image to DockerHub
-      #   id: syft-base-cpu-build
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: ./packages
-      #     file: ./packages/grid/backend/worker_cpu.dockerfile
-      #     platforms: ${{ steps.release_metadata.outputs.release_platform }}
-      #     target: backend
-      #     outputs: type=image,name=openmined/syft-base-cpu,push-by-digest=true,name-canonical=true,push=true
-      #     cache-from: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }}
-      #     cache-to: type=registry,ref=openmined/syft-base-cpu:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
-
       - name: Export digest for grid-backend
         run: |
           mkdir -p /tmp/digests/grid-backend
@@ -249,7 +237,7 @@ jobs:
           touch "/tmp/digests/grid-seaweedfs/${digest#sha256:}"
 
       # Some of the dependencies of grid-enclave-attestation are not available for arm64
-      # Hence, we are building grid-enclave-attestation only for x64
+      # Hence, we are building grid-enclave-attestation only for x64 (see the `if` conditional)
       - name: Build and push `grid-enclave-attestation` image to DockerHub
         if: ${{ endsWith(matrix.runner, '-x64') }}
         id: grid-enclave-attestation-build
@@ -269,7 +257,24 @@ jobs:
           digest="${{ steps.grid-enclave-attestation-build.outputs.digest }}"
           touch "/tmp/digests/grid-enclave-attestation/${digest#sha256:}"
 
-      - name: Upload digest for grid-backend, grid-frontend, grid-seaweedfs and (x64 only) grid-enclave-attestation
+      - name: Build and push `syft` image to registry
+        id: syft-build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./packages/
+          file: ./packages/grid/syft-client/syft.Dockerfile
+          outputs: type=image,name=openmined/syft-client,push-by-digest=true,name-canonical=true,push=true
+          platforms: ${{ steps.release_metadata.outputs.release_platform }}
+          cache-from: type=registry,ref=openmined/syft-client:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/syft-client:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
+
+      - name: Export digest for `syft` image
+        run: |
+          mkdir -p /tmp/digests/syft
+          digest="${{ steps.syft-build.outputs.digest }}"
+          touch "/tmp/digests/syft/${digest#sha256:}"
+
+      - name: Upload digests
         uses: actions/upload-artifact@v4
         with:
           name: digests-${{ steps.release_metadata.outputs.grid_version }}-${{ steps.release_metadata.outputs.short_release_platform }}
@@ -337,6 +342,14 @@ jobs:
             -t openmined/grid-enclave-attestation:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
             $(printf 'openmined/grid-enclave-attestation@sha256:%s ' *)
 
+      - name: Create manifest list and push for syft
+        working-directory: /tmp/digests/syft
+        run: |
+          docker buildx imagetools create  \
+            -t openmined/syft-client:${{ needs.build-and-push-docker-images.outputs.grid_version }} \
+            -t openmined/syft-client:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
+            $(printf 'openmined/syft-client@sha256:%s ' *)
+
   deploy-syft:
     needs: [merge-docker-images]
     if: always() &&  needs.merge-docker-images.result == 'success'
@@ -373,7 +386,7 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          pip install --upgrade pip uv==0.1.28 tox tox-uv==1.5.1 setuptools wheel twine bump2version PyYAML
+          pip install --upgrade pip uv==0.1.35 tox tox-uv==1.5.1 setuptools wheel twine bump2version PyYAML
           uv --version
 
       - name: Bump the Version
@@ -406,7 +419,7 @@ jobs:
         shell: bash
         run: |
           # install k3d
-          K3D_VERSION=v5.6.0
+          K3D_VERSION=v5.6.3
           wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
           mv k3d-linux-amd64 k3d
           chmod +x k3d
@@ -414,7 +427,7 @@ jobs:
           k3d version
 
           #Install Devspace
-          DEVSPACE_VERSION=v6.3.3
+          DEVSPACE_VERSION=v6.3.12
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version

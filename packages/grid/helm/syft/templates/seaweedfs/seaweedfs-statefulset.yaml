@@ -21,15 +21,25 @@ spec:
       labels:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: seaweedfs
+        {{- if .Values.seaweedfs.podLabels }}
+        {{- toYaml .Values.seaweedfs.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.seaweedfs.podAnnotations }}
+      annotations: {{- toYaml .Values.seaweedfs.podAnnotations | nindent 8 }}
+      {{- end }}
     spec:
+      {{- if .Values.seaweedfs.nodeSelector }}
+      nodeSelector: {{- .Values.seaweedfs.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
+      serviceAccountName: seaweedfs-service-account
       containers:
         - name: seaweedfs-container
           image: {{ .Values.global.registry }}/openmined/grid-seaweedfs:{{ .Values.global.version }}
           imagePullPolicy: Always
           resources: {{ include "common.resources.set" (dict "resources" .Values.seaweedfs.resources "preset" .Values.seaweedfs.resourcesPreset) | nindent 12 }}
           env:
-            - name: S3_VOLUME_SIZE_MB
-              value: {{ .Values.seaweedfs.s3.volumeSizeMB | quote }}
+            - name: SWFS_VOLUME_SIZE_LIMIT_MB
+              value: {{ .Values.seaweedfs.master.volumeSizeMB | quote }}
             - name: S3_ROOT_USER
               value: {{ .Values.seaweedfs.s3.rootUser | quote }}
             - name: S3_ROOT_PWD
@@ -37,31 +47,84 @@ spec:
                 secretKeyRef:
                     name: {{ .Values.seaweedfs.secretKeyName | required "seaweedfs.secretKeyName is required" }}
                     key: s3RootPassword
-            - name: S3_PORT
-              value: {{ .Values.seaweedfs.s3.port | quote }}
-            - name: SEAWEED_MOUNT_PORT
-              value: {{ .Values.seaweedfs.mountApi.port | quote }}
             {{- if .Values.seaweedfs.env }}
             {{- toYaml .Values.seaweedfs.env | nindent 12 }}
             {{- end }}
+          ports:
+            - name: mount-api-port
+              containerPort: 4001
+            - name: master-port
+              containerPort: 9333
+          startupProbe:
+            httpGet:
+              path: /?probe=startupProbe
+              port: mount-api-port
+            failureThreshold: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /cluster/healthz?probe=livenessProbe
+              port: master-port
+            periodSeconds: 60
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe: null
           volumeMounts:
-            - mountPath: /etc/seaweedfs/filer.toml
-              name: seaweedfs-config
-              readOnly: false
-              subPath: filer.toml
-            - mountPath: /etc/seaweedfs/start.sh
-              name: seaweedfs-config
-              readOnly: false
-              subPath: start.sh
-            - mountPath: /data/blob
+            # master + filer + volume data
+            - mountPath: /data/
               name: seaweedfs-data
               readOnly: false
-              subPath: ''
+
+            {{- if .Values.seaweedfs.filer.config }}
+            # filer conf in $HOME/.seaweedfs/
+            - mountPath: /root/.seaweedfs/filer.toml
+              subPath: filer.toml
+              name: seaweedfs-config
+              readOnly: true
+            {{- end }}
+
+            {{- if .Values.seaweedfs.master.config }}
+            # filer conf in $HOME/.seaweedfs/
+            - mountPath: /root/.seaweedfs/master.toml
+              subPath: master.toml
+              name: seaweedfs-config
+              readOnly: true
+            {{- end }}
+
+            {{- if .Values.seaweedfs.mountApi.mounts }}
+            # automount config
+            - mountPath: /root/swfs/automount.yaml
+              subPath: automount.yaml
+              name: seaweedfs-config
+              readOnly: true
+            {{- end }}
+
+            {{- if .Values.seaweedfs.mountApi.secretKeyName }}
+            # mount all secrets to /run/secrets/mount/
+            - mountPath: /run/secrets/mount/
+              name: mount-secret-vol
+              readOnly: true
+            {{- end}}
+
+            {{- if .Values.seaweedfs.volumeMounts }}
+            {{- toYaml .Values.seaweedfs.volumeMounts | nindent 12 }}
+            {{- end }}
       terminationGracePeriodSeconds: 5
       volumes:
-        - configMap:
+        - name: seaweedfs-config
+          configMap:
             name: seaweedfs-config
-          name: seaweedfs-config
+
+        {{- if .Values.seaweedfs.mountApi.secretKeyName }}
+        - name: mount-secret-vol
+          secret:
+            secretName: {{ .Values.seaweedfs.mountApi.secretKeyName }}
+        {{- end }}
+
+        {{- if .Values.seaweedfs.volumes }}
+        # custom volumes
+        {{- toYaml .Values.seaweedfs.volumes | nindent 8 }}
+        {{- end }}
   volumeClaimTemplates:
   - metadata:
       name: seaweedfs-data

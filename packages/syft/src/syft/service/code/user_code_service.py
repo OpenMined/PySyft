@@ -415,7 +415,12 @@ class UserCodeService(AbstractService):
             # Set Permissions
             if self.is_execution_on_owned_args(kwargs, context):
                 if self.is_execution_on_owned_args_allowed(context):
+                    # handles the case: if we have 1 or more owned args and execution permission
+                    # handles the case: if we have 0 owned args and execution permission
                     context.has_execute_permissions = True
+                elif len(kwargs) == 0:
+                    # handles the case: if we have 0 owned args and execution permission
+                    pass
                 else:
                     return Err(
                         "You do not have the permissions for mock execution, please contact the admin"
@@ -531,6 +536,11 @@ class UserCodeService(AbstractService):
             has_result_read_permission = context.extra_kwargs.get(
                 "has_result_read_permission", False
             )
+
+            # TODO: Just to fix the issue with the current implementation
+            if context.role == ServiceRole.ADMIN:
+                has_result_read_permission = True
+
             if isinstance(result, TwinObject):
                 if has_result_read_permission:
                     return Ok(result.private)
