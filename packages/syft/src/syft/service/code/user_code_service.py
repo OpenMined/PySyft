@@ -536,6 +536,11 @@ class UserCodeService(AbstractService):
             has_result_read_permission = context.extra_kwargs.get(
                 "has_result_read_permission", False
             )
+
+            # TODO: Just to fix the issue with the current implementation
+            if context.role == ServiceRole.ADMIN:
+                has_result_read_permission = True
+
             if isinstance(result, TwinObject):
                 if has_result_read_permission:
                     return Ok(result.private)
