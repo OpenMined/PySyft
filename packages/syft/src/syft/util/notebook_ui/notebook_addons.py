@@ -221,7 +221,7 @@ CSS_CODE = """
     .grid-std-cells${uid} {
         grid-column: ${grid_cell_span};
     }
-    
+
     .grid-index-cells {
         grid-column: span 1;
         /* tmp fix to make left col stand out (fix with font-family) */
@@ -838,7 +838,12 @@ custom_code = """
 
 
 def create_table_template(
-    items: Sequence, list_name: Any, rows: int = 5, table_icon: Any = None, grid_template_columns: str | None = None, grid_cell_span: str | None = None
+    items: Sequence,
+    list_name: Any,
+    rows: int = 5,
+    table_icon: Any = None,
+    grid_template_columns: str | None = None,
+    grid_cell_span: str | None = None,
 ) -> str:
     if not table_icon:
         table_icon = TABLE_ICON
