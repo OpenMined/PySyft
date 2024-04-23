@@ -31,6 +31,7 @@ spec:
       {{- if .Values.seaweedfs.nodeSelector }}
       nodeSelector: {{- .Values.seaweedfs.nodeSelector | toYaml | nindent 8 }}
       {{- end }}
+      serviceAccountName: seaweedfs-service-account
       containers:
         - name: seaweedfs-container
           image: {{ .Values.global.registry }}/openmined/grid-seaweedfs:{{ .Values.global.version }}
