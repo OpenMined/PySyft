@@ -175,6 +175,8 @@ class DockerWorkerConfig(WorkerConfig):
                 kwargs["fileobj"] = io.BytesIO(self.dockerfile.encode("utf-8"))
                 _, logs = client.images.build(
                     tag=tag,
+                    rm=True,
+                    labels={"orgs.openmined.syft": "Test image build"},
                     **kwargs,
                 )
                 return SyftSuccess(message=iterator_to_string(iterator=logs))
