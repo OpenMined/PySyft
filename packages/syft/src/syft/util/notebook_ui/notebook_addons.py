@@ -825,10 +825,9 @@ custom_code = """
                         buildGrid${uid}(paginatedElements${uid}, pageIndex)
                     }
                     (async function() {
-                        const myFont = new FontFace('DejaVu Sans', 'url(https://cdn.jsdelivr.net/npm/dejavu-sans@1.0.0/css/dejavu-sans.min.css)');
+                        const myFont = new FontFace('DejaVu Sans', 'url(https://cdn.jsdelivr.net/npm/dejavu-sans@1.0.0/fonts/dejavu-sans-webfont.woff2?display=swap');
                         await myFont.load();
                         document.fonts.add(myFont);
-                        document.getElementsByTagName('h1')[0].style.fontFamily = "DejaVu Sans";
                     })();
 
                     buildPaginationContainer${uid}(paginatedElements${uid})
