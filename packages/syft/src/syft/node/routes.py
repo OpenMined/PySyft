@@ -49,18 +49,23 @@ def make_routes(worker: Worker) -> APIRouter:
     async def get_body(request: Request) -> bytes:
         return await request.body()
 
-    async def stream_blob_url(peer_uid: UID, presigned_url: str):
+    def stream_blob_url(peer_uid: UID, presigned_url: str):
         # relative
         from ..service.network.node_peer import route_to_connection
 
         network_service = worker.get_service("NetworkService")
         peer = network_service.stash.get_by_uid(worker.verify_key, peer_uid)
+        peer = peer.ok()
         peer_node_route = peer.pick_highest_priority_route()
         connection = route_to_connection(route=peer_node_route)
-        url = connection.api_url.with_path(f"blob/{presigned_url}")
-        yield requests.get(url=url, stream=True)
+        url = connection.to_blob_route(f"{presigned_url}")
+        resp = requests.get(url=str(url), stream=True)
 
-    @router.get("/stream/{peer_uid_str}/{url_path_str}/", name="stream", status_code=200)
+        yield from resp.iter_content()
+
+    @router.get(
+        "/stream/{peer_uid_str}/{url_path_str}/", name="stream", status_code=200
+    )
     async def stream(peer_uid_str: str, url_path_str: str) -> StreamingResponse:
         # stdlib
         import base64
@@ -69,7 +74,8 @@ def make_routes(worker: Worker) -> APIRouter:
         peer_uid = UID.from_string(peer_uid_str)
 
         return StreamingResponse(
-            stream_blob_url(peer_uid=peer_uid, presigned_url=url_path)
+            stream_blob_url(peer_uid=peer_uid, presigned_url=url_path),
+            media_type="text/event-stream",
         )
 
     @router.get(

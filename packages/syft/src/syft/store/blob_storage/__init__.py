@@ -190,7 +190,8 @@ class BlobRetrievalByURL(BlobRetrieval):
                 blob_url = api.connection.to_blob_route(
                     self.url.url_path, host=self.url.host_or_ip
                 )
-            else:
+                print("Blob url...........", blob_url)
+            elif self.proxy_node_uid is not None:
                 blob_url = api.connection.stream_via(
                     self.proxy_node_uid, self.url.url_path
                 )
@@ -206,9 +207,18 @@ class BlobRetrievalByURL(BlobRetrieval):
                     response.raise_for_status()
                     return response.content
             else:
+                # stdlib
+
+                # pdb.set_trace()
+                print(str(blob_url))
                 response = requests.get(str(blob_url), stream=stream)  # nosec
+
+                print("Response", response)
+                resp_content = response.content
+                print("Response content", resp_content)
+
                 response.raise_for_status()
-                return deserialize(response.content, from_bytes=True)
+                return deserialize(resp_content, from_bytes=True)
         except requests.RequestException as e:
             return SyftError(message=f"Failed to retrieve with Error: {e}")
 
