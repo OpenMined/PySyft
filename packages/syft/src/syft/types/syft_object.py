@@ -861,6 +861,9 @@ def list_dict_repr_html(self: Mapping | Set | Iterable) -> str:
         items_checked = 0
         has_syft = False
         extra_fields: list = []
+        grid_template_columns = None
+        grid_cell_span = None
+
         if isinstance(self, Mapping):
             values: Any = list(self.values())
         elif isinstance(self, Set):
@@ -886,6 +889,8 @@ def list_dict_repr_html(self: Mapping | Set | Iterable) -> str:
             if "syft" in str(mro).lower():
                 has_syft = True
                 extra_fields = getattr(item, "__repr_attrs__", [])
+                grid_template_columns = getattr(item, "__grid_template_columns__", None)
+                grid_cell_span = getattr(item, "__grid_cell_span__", None)
                 break
 
         if has_syft:
@@ -895,7 +900,7 @@ def list_dict_repr_html(self: Mapping | Set | Iterable) -> str:
                 table_icon = values[0].icon
             # this is a list of dicts
             is_homogenous = len({type(x) for x in values}) == 1
-            # third party
+
             first_value = values[0]
             if is_homogenous:
                 cls_name = first_value.__class__.__name__
@@ -912,6 +917,8 @@ def list_dict_repr_html(self: Mapping | Set | Iterable) -> str:
                 vals,
                 f"{cls_name} {self.__class__.__name__.capitalize()}",
                 table_icon=table_icon,
+                grid_cell_span=grid_cell_span,
+                grid_template_columns=grid_template_columns,
             )
 
     except Exception as e:

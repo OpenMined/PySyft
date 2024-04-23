@@ -1,6 +1,6 @@
 # stdlib
 from datetime import timedelta
-from typing import Any
+from typing import Any, ClassVar
 from typing import Optional
 
 # third party
@@ -53,6 +53,10 @@ class SyncStateRow(SyftObject):
         "previous_state",
         "current_state",
     ]
+
+    # Regulates table grid disposition and cell dimension
+    __grid_template_columns__: ClassVar[str] = "auto auto 1fr auto"
+    __grid_cell_span__: ClassVar[str] = "unset"
 
     def status_badge(self) -> dict[str, str]:
         status = self.status

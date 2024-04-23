@@ -212,16 +212,16 @@ CSS_CODE = """
 
     .grid-table${uid} {
         display:grid;
-        grid-template-columns: 1fr repeat(${cols}, 1fr);
-        grid-template-rows: repeat(2, 1fr);
+        grid-template-columns: ${grid_template_columns};
+        #grid-template-rows: repeat(2, 1fr);
         overflow-x: auto;
         position: relative;
     }
 
-    .grid-std-cells {
-        grid-column: span 4;
-
+    .grid-std-cells${uid} {
+        grid-column: ${grid_cell_span};
     }
+    
     .grid-index-cells {
         grid-column: span 1;
         /* tmp fix to make left col stand out (fix with font-family) */
@@ -714,7 +714,7 @@ custom_code = """
                                 grid.appendChild(div);
                                 headers.forEach((title) =>{
                                     let div = document.createElement("div");
-                                    div.classList.add('grid-header', 'grid-std-cells');
+                                    div.classList.add('grid-header', 'grid-std-cells${uid}');
                                     div.innerText = title;
 
                                     grid.appendChild(div);
@@ -742,15 +742,15 @@ custom_code = """
                                                     badge_div.classList.add('badge',item[attr].type)
                                                     badge_div.innerText = String(item[attr].value).toUpperCase();
                                                     div.appendChild(badge_div);
-                                                    div.classList.add('grid-row','grid-std-cells');
+                                                    div.classList.add('grid-row','grid-std-cells${uid}');
                                                 } else if (item[attr].type.includes('label')){
                                                     let label_div = document.createElement("div");
                                                     label_div.classList.add('label',item[attr].type)
                                                     label_div.innerText = String(item[attr].value).toUpperCase();
                                                     div.appendChild(label_div);
-                                                    div.classList.add('grid-row','grid-std-cells');
+                                                    div.classList.add('grid-row','grid-std-cells${uid}');
                                                 } else if (item[attr].type === "clipboard") {
-                                                    div.classList.add('grid-row','grid-std-cells');
+                                                    div.classList.add('grid-row','grid-std-cells${uid}');
 
                                                     // Create clipboard div
                                                     let clipboard_div = document.createElement('div');
@@ -778,7 +778,7 @@ custom_code = """
                                                     div.appendChild(clipboard_div);
                                                 }
                                             } else{
-                                                div.classList.add('grid-row','grid-std-cells');
+                                                div.classList.add('grid-row','grid-std-cells${uid}');
                                                 if (item[attr] == null) {
                                                     text = ' '
                                                 } else {
@@ -839,7 +839,7 @@ custom_code = """
 
 
 def create_table_template(
-    items: Sequence, list_name: Any, rows: int = 5, table_icon: Any = None
+    items: Sequence, list_name: Any, rows: int = 5, table_icon: Any = None, grid_template_columns: str | None = None, grid_cell_span: str | None = None
 ) -> str:
     if not table_icon:
         table_icon = TABLE_ICON
@@ -852,6 +852,10 @@ def create_table_template(
         cols = 0
     else:
         cols = (len(items[0].keys())) * 4
+    if grid_template_columns is None:
+        grid_template_columns = f"1fr repeat({cols}, 1fr)"
+    if grid_cell_span is None:
+        grid_cell_span = "span 4"
     return template.substitute(
         uid=str(UID()),
         element=items_dict,
@@ -861,4 +865,6 @@ def create_table_template(
         icon=table_icon,
         searchIcon=SEARCH_ICON,
         clipboardIcon=CLIPBOARD_ICON,
+        grid_cell_span=grid_cell_span,
+        grid_template_columns=grid_template_columns,
     )
