@@ -109,7 +109,7 @@ ENV PATH=$PATH:$HOME/.local/bin \
 COPY --chown=$USER_GRP --from=syft_deps $HOME/.local $HOME/.local
 
 # copy grid
-COPY --chown=$USER_GRP grid/backend/grid grid/backend/worker_cpu.dockerfile ./grid/
+COPY --chown=$USER_GRP grid/backend/grid ./grid/
 
 # copy syft
 COPY --chown=$USER_GRP syft/ ./syft/
