@@ -1,9 +1,16 @@
-# ===================================================
-# Deploy Syft Low Side Node to a GKE Cluster
-# Syncs seaweedfs to a GCS bucket "syft-bucket-low"
-# ===================================================
+# =================================================================================
+# Syft on GKE Cluster
+#
+# Node side : low
+# Automount : YES. 1 GCS bucket mounted to seaweedfs
+# Ingress   : gce
+# Extras:
+#  - BackendConfig for increased timeout
+#  - Secret for seaweedfs mount
+# =================================================================================
 
 node:
+  # Basic Node Config
   name: syft-gcp
   side: low
 
@@ -16,7 +23,7 @@ node:
   #   cloud.google.com/compute-class: Performance
   #   cloud.google.com/machine-family: c3
 
-  # Resources set inline with c3-standard-4 machine type
+  # Pod resources set inline with c3-standard-4 machine type
   resources:
     requests:
       cpu: 2
@@ -25,36 +32,31 @@ node:
       cpu: 4
       memory: "16Gi"
 
+# =================================================================================
+
 seaweedfs:
+  # SeaweedFS PVC size
   storageSize: 100Gi
-
-  mountApi:
-    # Mount remote GCS bucket named "syft-bucket-low" to seaweedfs bucket named "syft-bucket-low-gcs
-    mounts:
-      - local_bucket: syft-bucket-low-gcs
-        remote_bucket:
-          type: gcs
-          bucket_name: syft-bucket-low
-          # filename should be as secret.mountCredentials.name
-          # directory will always be /run/secrets/
-          creds: /run/secrets/gcs_creds.json
-
-  secret:
-    mountCredentials:
-      # remove this comment and paste the Service Account JSON Here
-      # TODO: move to workload identity
-      - name: gcs_creds.json
-        value: |
-          {
-            "": ""
-          }
 
   # For autopilot clusters with GKE 1.28+, uncomment this
   # nodeSelector:
   #   cloud.google.com/compute-class: Performance
   #   cloud.google.com/machine-family: c3
 
-  # Resources set inline with c3-standard-4 machine type
+  # Automount Config
+  # -- Mounts GCS bucket "syft-bucket-low" to SeaweedFS bucket "syft-bucket-low-gcs"
+  # -- "gcs_creds.json" must exist in "seaweedfs-mount-secret"
+  # -- "seaweedfs-mount-secret" must be provisioned externally or in extraResources
+  mountApi:
+    mounts:
+      - local_bucket: syft-bucket-low-gcs
+        remote_bucket:
+          type: gcs
+          bucket_name: syft-bucket-low
+          creds: /run/secrets/mount/gcs_creds.json
+    secretKeyName: seaweedfs-mount-secret
+
+  # Pod resources set inline with c3-standard-4 machine type
   resources:
     requests:
       cpu: 2
@@ -63,20 +65,54 @@ seaweedfs:
       cpu: 4
       memory: "16Gi"
 
+# =================================================================================
+
 ingress:
-  # GKE 1.28+ need ingressClassName
+  # GKE 1.28+ needs ingressClassName
   className: gce
   class: gce
+
+# =================================================================================
 
 proxy:
   resourcesPreset: medium
 
+  # Use custom backend config for increased timeout
+  serviceAnnotations:
+    cloud.google.com/backend-config: '{"default": "custom-backend-config"}'
+
+# =================================================================================
+
 registry:
   resourcesPreset: medium
-  storageSize: 50Gi
+
+# =================================================================================
 
 frontend:
   resourcesPreset: medium
 
+# =================================================================================
+
 mongo:
   resourcesPreset: large
+
+# =================================================================================
+
+extraResources:
+  # Configure GCE load balancer backend
+  # https://cloud.google.com/kubernetes-engine/docs/how-to/ingress-configuration#configuring_ingress_features_through_backendconfig_parameters
+  - apiVersion: cloud.google.com/v1
+    kind: BackendConfig
+    metadata:
+      name: custom-backend-config
+    spec:
+      timeoutSec: 1800
+
+  # Secret to mount GCS bucket in seaweedfs
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: seaweedfs-mount-secret
+    type: Opaque
+    data:
+      gcs_creds.json: base64 encoded value

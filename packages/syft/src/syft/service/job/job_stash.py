@@ -104,6 +104,15 @@ class Job(SyncableSyftObject):
         "user_code_name",
     ]
     __exclude_sync_diff_attrs__ = ["action", "node_uid"]
+    __table_coll_widths__ = [
+        "min-content",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+    ]
     __syft_include_id_coll_repr__ = False
 
     @field_validator("creation_time")
@@ -633,6 +642,8 @@ class Job(SyncableSyftObject):
         template = Template(job_repr_template)
         return template.substitute(
             uid=str(UID()),
+            grid_template_columns=None,
+            grid_template_cell_columns=None,
             cols=0,
             job_type=job_type,
             api_header=api_header,
