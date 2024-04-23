@@ -1285,8 +1285,12 @@ class Node(AbstractNode):
             has_execute_permissions=has_execute_permissions,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
+        user_id = self.get_service("UserService").get_user_id_for_credentials(
+            credentials
+        )
+
         return self.add_queueitem_to_queue(
-            queue_item, credentials, action, parent_job_id
+            queue_item, credentials, action, parent_job_id, user_id
         )
 
     def add_queueitem_to_queue(
@@ -1295,6 +1299,7 @@ class Node(AbstractNode):
         credentials: SyftVerifyKey,
         action: Action | None = None,
         parent_job_id: UID | None = None,
+        user_id: UID | None = None,
     ) -> Job | SyftError:
         log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
@@ -1327,6 +1332,7 @@ class Node(AbstractNode):
             log_id=log_id,
             parent_job_id=parent_job_id,
             action=action,
+            requested_by=user_id,
         )
 
         # 🟡 TODO 36: Needs distributed lock
