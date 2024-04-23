@@ -7,9 +7,13 @@ import nginx
 from nginx import Conf
 
 
-class NginxConfigBuilder:
+class RatholeNginxConfigBuilder:
     def __init__(self, filename: str | Path) -> None:
-        self.filename = Path(filename)
+        self.filename = Path(filename).absolute()
+
+        if not self.filename.exists():
+            self.filename.touch()
+
         self.lock = FileLock(f"{filename}.lock")
         self.lock_timeout = 30
 
@@ -24,30 +28,53 @@ class NginxConfigBuilder:
             nginx.dumpf(conf, self.filename)
 
     def add_server(self, listen_port: int, location: str, proxy_pass: str) -> None:
-        conf = self.read()
-        server = conf.servers.add()
-        server.listen = listen_port
-        location = server.locations.add()
-        location.path = location
-        location.proxy_pass = proxy_pass
-        self.write(conf)
+        n_config = self.read()
+        server_to_modify = self.find_server_with_listen_port(listen_port)
+
+        if server_to_modify is not None:
+            server_to_modify.add(
+                nginx.Location(location, nginx.Key("proxy_pass", proxy_pass))
+            )
+        else:
+            server = nginx.Server(
+                nginx.Key("listen", listen_port),
+                nginx.Location(location, nginx.Key("proxy_pass", proxy_pass)),
+            )
+            n_config.add(server)
+        self.write(n_config)
 
     def remove_server(self, listen_port: int) -> None:
         conf = self.read()
         for server in conf.servers:
-            if server.listen == listen_port:
-                conf.servers.remove(server)
-                break
+            for child in server.children:
+                if child.name == "listen" and int(child.value) == listen_port:
+                    conf.remove(server)
+                    break
         self.write(conf)
 
-    def modify_location_for_port(
+    def find_server_with_listen_port(self, listen_port: int) -> nginx.Server | None:
+        conf = self.read()
+        for server in conf.servers:
+            for child in server.children:
+                if child.name == "listen" and int(child.value) == listen_port:
+                    return server
+        return None
+
+    def modify_proxy_for_port(
         self, listen_port: int, location: str, proxy_pass: str
     ) -> None:
         conf = self.read()
-        for server in conf.servers:
-            if server.listen == listen_port:
-                for loc in server.locations:
-                    if loc.path == location:
-                        loc.proxy_pass = proxy_pass
-                        break
+        server_to_modify = self.find_server_with_listen_port(listen_port)
+
+        if server_to_modify is None:
+            raise ValueError(f"Server with listen port {listen_port} not found")
+
+        for location in server_to_modify.locations:
+            if location.value != location:
+                continue
+            for key in location.keys:
+                if key.name == "proxy_pass":
+                    key.value = proxy_pass
+                    break
+
         self.write(conf)

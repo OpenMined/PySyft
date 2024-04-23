@@ -10,7 +10,7 @@ FILE_LOCK_TIMEOUT = 30
 
 class TomlReaderWriter:
     def __init__(self, lock: FileLock, filename: Path | str) -> None:
-        self.filename = Path(filename)
+        self.filename = Path(filename).absolute()
         self.timeout = FILE_LOCK_TIMEOUT
         self.lock = lock
 
