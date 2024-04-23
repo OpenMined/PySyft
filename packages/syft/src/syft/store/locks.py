@@ -63,6 +63,13 @@ class ThreadingLockingConfig(LockingConfig):
     pass
 
 
+@serializable()
+class FileLockingConfig(LockingConfig):
+    """File locking policy"""
+
+    client_path: Path | None = None
+
+
 class ThreadingLock(BaseLock):
     """
     Threading-based Lock. Used to provide the same API as the rest of the locks.
@@ -313,6 +320,12 @@ class SyftLock(BaseLock):
             self.passthrough = True
         elif isinstance(config, ThreadingLockingConfig):
             self._lock = ThreadingLock(**base_params)
+        elif isinstance(config, FileLockingConfig):
+            client: Path | None = config.client_path
+            self._lock = PatchedFileLock(
+                **base_params,
+                client=client,
+            )
         else:
             raise ValueError("Unsupported config type")
 
