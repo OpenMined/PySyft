@@ -61,9 +61,7 @@ def make_routes(worker: Worker) -> APIRouter:
 
         return str(url)
 
-    @router.get(
-        "/stream/{peer_uid_str}/{url_path_str}/", name="stream", status_code=200
-    )
+    @router.get("/stream/{peer_uid_str}/{url_path_str}/", name="stream")
     async def stream(peer_uid_str: str, url_path_str: str) -> StreamingResponse:
         url_path = base64.urlsafe_b64decode(url_path_str.encode()).decode()
         peer_uid = UID.from_string(peer_uid_str)
