@@ -33,11 +33,10 @@ from ...util.fonts import FONT_CSS
 from ...util.fonts import ITABLES_CSS
 from ...util.markdown import as_markdown_python_code
 from ...util.notebook_ui.notebook_addons import FOLDER_ICON
+from ..dataset.dataset import Contributor
+from ..dataset.dataset import MarkdownDescription
 from ..response import SyftError
 from ..response import SyftSuccess
-from ..dataset.dataset import MarkdownDescription
-from ..dataset.dataset import Contributor
-
 
 
 @serializable()
@@ -48,7 +47,8 @@ class ModelPageView(SyftObject):
 
     models: DictTuple
     total: int
-    
+
+
 @serializable()
 class ModelAsset(SyftObject):
     # version
@@ -118,7 +118,7 @@ class ModelAsset(SyftObject):
             and self.endpoint_path == other.endpoint_path
             and self.created_at == other.created_at
         )
-    
+
     @property
     def endpoint(self) -> Any:
         # relative
@@ -136,9 +136,9 @@ class ModelAsset(SyftObject):
                 except Exception as e:
                     print(f"Invalid path: {self.endpoint_path}")
                     raise e
-            
+
             return path_node
-    
+
     def __call__(self, *args, **kwargs) -> Any:
         endpoint = self.endpoint
         result = endpoint.__call__(*args, **kwargs)
@@ -163,7 +163,9 @@ class CreateModelAsset(SyftObject):
     model_config = ConfigDict(validate_assignment=True)
 
     def __init__(self, description: str | None = "", **kwargs: Any) -> None:
-        super().__init__(**kwargs, description=MarkdownDescription(text=str(description)))
+        super().__init__(
+            **kwargs, description=MarkdownDescription(text=str(description))
+        )
 
     def add_contributor(
         self,
@@ -402,6 +404,7 @@ def add_msg_creation_time(context: TransformContext) -> TransformContext:
     context.output["created_at"] = DateTime.now()
     return context
 
+
 def add_default_node_uid(context: TransformContext) -> TransformContext:
     if context.output is not None:
         if context.output["node_uid"] is None and context.node is not None:
@@ -410,13 +413,11 @@ def add_default_node_uid(context: TransformContext) -> TransformContext:
         raise ValueError(f"{context}'s output is None. No transformation happened")
     return context
 
+
 @transform(CreateModelAsset, ModelAsset)
 def createmodelasset_to_asset() -> list[Callable]:
-    return [
-        generate_id,
-        add_msg_creation_time,
-        add_default_node_uid
-    ]
+    return [generate_id, add_msg_creation_time, add_default_node_uid]
+
 
 def convert_asset(context: TransformContext) -> TransformContext:
     if context.output is None:

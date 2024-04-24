@@ -142,7 +142,7 @@ def handle_message_multiprocessing(
     credentials: SyftVerifyKey,
 ) -> None:
     # this is a temp hack to prevent some multithreading issues
-    time.sleep(0.5)
+    time.sleep(0.1)
     queue_config = worker_settings.queue_config
     if queue_config is None:
         raise ValueError(f"{worker_settings} has no queue configurations!")
@@ -263,6 +263,9 @@ def evaluate_can_run_job(
     return Ok(job_item)
 
 
+worker_cache = {}
+
+
 @serializable()
 class APICallMessageHandler(AbstractMessageHandler):
     queue_name = "api_call"
@@ -274,26 +277,31 @@ class APICallMessageHandler(AbstractMessageHandler):
 
         queue_item = deserialize(message, from_bytes=True)
         worker_settings = queue_item.worker_settings
-
         queue_config = worker_settings.queue_config
         queue_config.client_config.create_producer = False
         queue_config.client_config.n_consumers = 0
 
-        worker = Node(
-            id=worker_settings.id,
-            name=worker_settings.name,
-            signing_key=worker_settings.signing_key,
-            document_store_config=worker_settings.document_store_config,
-            action_store_config=worker_settings.action_store_config,
-            blob_storage_config=worker_settings.blob_store_config,
-            queue_config=queue_config,
-            is_subprocess=True,
-            migrate=False,
-        )
+        worker_settings_hash = hash(worker_settings)
+        if worker_settings_hash in worker_cache:
+            worker = worker_cache[worker_settings_hash]
+        else:
+            worker = Node(
+                id=worker_settings.id,
+                name=worker_settings.name,
+                signing_key=worker_settings.signing_key,
+                document_store_config=worker_settings.document_store_config,
+                action_store_config=worker_settings.action_store_config,
+                blob_storage_config=worker_settings.blob_store_config,
+                queue_config=queue_config,
+                is_subprocess=True,
+                migrate=False,
+            )
 
-        # otherwise it reads it from env, resulting in the wrong credentials
-        worker.id = worker_settings.id
-        worker.signing_key = worker_settings.signing_key
+            # otherwise it reads it from env, resulting in the wrong credentials
+            worker.id = worker_settings.id
+            worker.signing_key = worker_settings.signing_key
+
+            worker_cache[worker_settings_hash] = worker
 
         credentials = queue_item.syft_client_verify_key
 
@@ -327,6 +335,9 @@ class APICallMessageHandler(AbstractMessageHandler):
         job_result = worker.job_stash.set_result(credentials, job_item)
         if isinstance(job_result, SyftError):
             raise Exception(f"{job_result.err()}")
+
+        # force threads because its faster
+        queue_config.thread_workers = True
 
         if queue_config.thread_workers:
             # stdlib
