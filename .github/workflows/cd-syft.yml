@@ -133,7 +133,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip uv==0.1.28 bump2version tox tox-uv==1.5.1
+          pip install --upgrade pip uv==0.1.35 bump2version tox tox-uv==1.5.1
           uv --version
 
       - name: Get Release tag
@@ -356,7 +356,7 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          pip install --upgrade pip uv==0.1.28 tox tox-uv==1.5.1 setuptools wheel twine bump2version PyYAML
+          pip install --upgrade pip uv==0.1.35 tox tox-uv==1.5.1 setuptools wheel twine bump2version PyYAML
           uv --version
 
       - name: Bump the Version
