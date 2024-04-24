@@ -1,4 +1,5 @@
 # stdlib
+from abc import ABCMeta
 from collections import OrderedDict
 from collections import defaultdict
 from collections.abc import Collection
@@ -437,3 +438,5 @@ recursive_serde_register_type(GenericAlias)
 
 recursive_serde_register_type(Any)
 recursive_serde_register_type(EnumMeta)
+
+recursive_serde_register_type(ABCMeta)

@@ -280,6 +280,17 @@ class UserCode(SyncableSyftObject):
     nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
     worker_pool_name: str | None = None
 
+    __table_coll_widths__ = [
+        "min-content",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+    ]
+
     __attr_searchable__: ClassVar[list[str]] = [
         "user_verify_key",
         "service_func_name",

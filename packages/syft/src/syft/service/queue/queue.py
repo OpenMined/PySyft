@@ -197,9 +197,10 @@ def handle_message_multiprocessing(
 
         result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
 
+        status = Status.COMPLETED
+        job_status = JobStatus.COMPLETED
+
         if isinstance(result, Ok):
-            status = Status.COMPLETED
-            job_status = JobStatus.COMPLETED
             result = result.ok()
         elif isinstance(result, SyftError) or isinstance(result, Err):
             status = Status.ERRORED

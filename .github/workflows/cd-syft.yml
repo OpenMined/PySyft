@@ -133,7 +133,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip uv==0.1.28 bump2version tox tox-uv==1.5.1
+          pip install --upgrade pip uv==0.1.35 bump2version tox tox-uv==1.5.1
           uv --version
 
       - name: Get Release tag
@@ -356,7 +356,7 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          pip install --upgrade pip uv==0.1.28 tox tox-uv==1.5.1 setuptools wheel twine bump2version PyYAML
+          pip install --upgrade pip uv==0.1.35 tox tox-uv==1.5.1 setuptools wheel twine bump2version PyYAML
           uv --version
 
       - name: Bump the Version
@@ -389,7 +389,7 @@ jobs:
         shell: bash
         run: |
           # install k3d
-          K3D_VERSION=v5.6.0
+          K3D_VERSION=v5.6.3
           wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
           mv k3d-linux-amd64 k3d
           chmod +x k3d
@@ -397,7 +397,7 @@ jobs:
           k3d version
 
           #Install Devspace
-          DEVSPACE_VERSION=v6.3.3
+          DEVSPACE_VERSION=v6.3.12
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version

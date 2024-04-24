@@ -204,10 +204,43 @@
           "action": "add"
         }
       },
+      "SyftImageRegistry": {
+        "2": {
+          "version": 2,
+          "hash": "862410fcf514a41ee13273d9540a245ed79e26bb82a0acfe2ad48accc3af1bef",
+          "action": "add"
+        }
+      },
+      "SyftWorkerImage": {
+        "2": {
+          "version": 2,
+          "hash": "1063e826436e24707eef3f37dbc15f8008ca038fc3f02ad489a49248c8666ba3",
+          "action": "add"
+        }
+      },
+      "SyftWorker": {
+        "2": {
+          "version": 2,
+          "hash": "ad19971aabbdf6d032fba708357eb0f0d0bd59f993c58b3e36a1b7ca04332453",
+          "action": "add"
+        }
+      },
+      "WorkerPool": {
+        "2": {
+          "version": 2,
+          "hash": "1b81621b7c03eacfe8369c30bbc97967acef6b5d29a3c67d5f8ad81b49556dac",
+          "action": "add"
+        }
+      },
       "NodeSettingsUpdate": {
         "2": {
           "version": 2,
           "hash": "e1dc9d2f30c4aae1f7359eb3fd44de5537788cd3c69be5f30c36fb019f07c261",
+          "action": "add"
+        },
+        "3": {
+          "version": 3,
+          "hash": "0f812fdd5aecc3e3aa1a7c953bbf7f8d8b03a77c5cdbb37e981fa91c8134c9f4",
           "action": "add"
         }
       },
@@ -215,6 +248,11 @@
         "3": {
           "version": 3,
           "hash": "2d5f6e79f074f75b5cfc2357eac7cf635b8f083421009a513240b4dbbd5a0fc1",
+          "action": "add"
+        },
+        "4": {
+          "version": 4,
+          "hash": "318e578f8a9af213a6af0cc2c567b62196b0ff81769d808afff4dd1eb7c372b8",
           "action": "add"
         }
       },
@@ -271,34 +309,6 @@
         "3": {
           "version": 3,
           "hash": "22568b8c3d700b7eaa3291b9f3d014dda3d6dbe20f1f8eab87210ccb2f035bbc",
-          "action": "add"
-        }
-      },
-      "SyftImageRegistry": {
-        "2": {
-          "version": 2,
-          "hash": "862410fcf514a41ee13273d9540a245ed79e26bb82a0acfe2ad48accc3af1bef",
-          "action": "add"
-        }
-      },
-      "SyftWorkerImage": {
-        "2": {
-          "version": 2,
-          "hash": "1063e826436e24707eef3f37dbc15f8008ca038fc3f02ad489a49248c8666ba3",
-          "action": "add"
-        }
-      },
-      "SyftWorker": {
-        "2": {
-          "version": 2,
-          "hash": "ad19971aabbdf6d032fba708357eb0f0d0bd59f993c58b3e36a1b7ca04332453",
-          "action": "add"
-        }
-      },
-      "WorkerPool": {
-        "2": {
-          "version": 2,
-          "hash": "1b81621b7c03eacfe8369c30bbc97967acef6b5d29a3c67d5f8ad81b49556dac",
           "action": "add"
         }
       },
@@ -504,9 +514,9 @@
         }
       },
       "JobItem": {
-        "4": {
-          "version": 4,
-          "hash": "6a7cc7c2bb4dd234c1508b0af4d3b403cd3b7b427578a775bf80dc36891923ed",
+        "5": {
+          "version": 5,
+          "hash": "82ee08442b09797ed7a3710c31de633bb308b1d2215f51b58a3e01a4c201055d",
           "action": "add"
         }
       },
@@ -790,10 +800,24 @@
           "action": "add"
         }
       },
+      "TwinAPIContextView": {
+        "1": {
+          "version": 1,
+          "hash": "7d368102d0b473009af3b8c46e0ea6d35893c5ebb172b373ad7d52553c12c9fa",
+          "action": "add"
+        }
+      },
       "CustomAPIView": {
         "1": {
           "version": 1,
-          "hash": "5cdfaea6b5af235d0f9ab8e6f01d6cebcde7c8bf4efd00aec26c343965ef865e",
+          "hash": "8fe9f0fded4dbce033e2b14798a59d8635c3b73b0562f9ea686b1162ed155e91",
+          "action": "add"
+        }
+      },
+      "CustomApiEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "13617f3dce60fa692421e0d9deda7ffd365ec02d4a062c18510b48457b6eba02",
           "action": "add"
         }
       },
@@ -814,21 +838,21 @@
       "UpdateTwinAPIEndpoint": {
         "1": {
           "version": 1,
-          "hash": "6c0c6bc042391e60d5c78893f859c8bdec4b45f0bdc7749957a425e041a4096c",
+          "hash": "cd0d4d67dc03cf6b78832f33ef584ec0ff8fa0b851629396ba27d7db63130342",
           "action": "add"
         }
       },
       "CreateTwinAPIEndpoint": {
         "1": {
           "version": 1,
-          "hash": "98021128a9be0a9a135b43b50cb08f141faed72bc39999a9cedd162bc8814f62",
+          "hash": "e735dc30cba1789c3fb109e35aa40ffa873951f8e00b0b971950b1735c27d1ca",
           "action": "add"
         }
       },
       "TwinAPIEndpoint": {
         "1": {
           "version": 1,
-          "hash": "03a0244c6b322e72032c5c33c1db09b913f83d72cfad1cc51ac4ec90506afcf5",
+          "hash": "540468be5db20efe555d2288c9aed60887306ac9b56d6a63c066246bc0010e9c",
           "action": "add"
         }
       },
@@ -858,6 +882,13 @@
           "action": "add"
         }
       },
+      "AssociationRequestChange": {
+        "1": {
+          "version": 1,
+          "hash": "508550c43e9e3f30243813c23eb6eec20918923d7ba09498cddbcd7e8bfa4539",
+          "action": "add"
+        }
+      },
       "QueueItem": {
         "4": {
           "version": 4,
@@ -869,6 +900,13 @@
         "3": {
           "version": 3,
           "hash": "5bcda9c7df78ded9ea4b53710191f37054d3046ea01125b755afc8c30dd9eed2",
+          "action": "add"
+        }
+      },
+      "APIEndpointQueueItem": {
+        "1": {
+          "version": 1,
+          "hash": "d31b2edfb767401c810584baccd27e4f566181c3ef7706618a82eb25ae20ff6d",
           "action": "add"
         }
       },

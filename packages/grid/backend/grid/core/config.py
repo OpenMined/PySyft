@@ -152,6 +152,9 @@ class Settings(BaseSettings):
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False
     )
     ASSOCIATION_TIMEOUT: int = 10
+    ASSOCIATION_REQUEST_AUTO_APPROVAL: bool = str_to_bool(
+        os.getenv("ASSOCIATION_REQUEST_AUTO_APPROVAL", "False")
+    )
     model_config = SettingsConfigDict(case_sensitive=True)
 
 
