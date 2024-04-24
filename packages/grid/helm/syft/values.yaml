@@ -164,6 +164,7 @@ node:
   logLevel: info
   debuggerEnabled: false
   associationRequestAutoApproval: false
+  useInternalRegistry: true
 
   # SMTP Settings
   smtp:
