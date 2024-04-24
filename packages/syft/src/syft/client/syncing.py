@@ -132,10 +132,6 @@ def handle_sync_batch(
         )
         sync_instructions.append(instruction)
 
-    import ipdb
-
-    ipdb.set_trace()
-
     print(f"Decision: Syncing {len(sync_instructions)} objects")
 
     # Apply empty state to source side to signal that we are done syncing

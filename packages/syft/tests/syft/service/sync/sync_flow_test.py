@@ -423,23 +423,16 @@ def test_unignore(low_worker, high_worker):
 
     diff_state = compare_clients(low_client, high_client)
 
-    # stdlib
-    import pdb
-
     for ignored in diff_state.ignored_changes:
         deps = ignored.batch.get_dependencies()
         if "Request" in [dep.object_type for dep in deps]:
             ignored.stage_change()
-
-    pdb.set_trace()
 
     low_items_to_sync, high_items_to_sync = resolve(
         diff_state,
         share_private_objects=True,
         decision="low",
     )
-
-    pdb.set_trace()
 
     assert not low_items_to_sync.is_empty
     assert not high_items_to_sync.is_empty
