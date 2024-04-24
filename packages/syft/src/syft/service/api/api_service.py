@@ -108,7 +108,7 @@ class APIService(AbstractService):
         mock_function: Endpoint | None = None,
         private_function: Endpoint | None = None,
         hide_definition: bool | None = None,
-        endpoint_timeout: int = 60,
+        endpoint_timeout: int | None = None,
     ) -> SyftSuccess | SyftError:
         """Updates an specific API endpoint."""
 
@@ -122,9 +122,9 @@ class APIService(AbstractService):
 
         endpoint: TwinAPIEndpoint = endpoint_result.ok()
 
-        if not (mock_function or private_function or (hide_definition is not None)):
+        if not (mock_function or private_function or endpoint_timeout or (hide_definition is not None)):
             return SyftError(
-                message='Either "mock_function","private_function" or "hide_definition" are required.'
+                message='Either "mock_function","private_function", "hide_definition" or "endpoint_timeout" are required.'
             )
 
         updated_mock = (
@@ -151,6 +151,7 @@ class APIService(AbstractService):
         endpoint.mock_function = endpoint_update.mock_function
         endpoint.private_function = endpoint_update.private_function
         endpoint.signature = updated_mock.signature
+        endpoint.endpoint_timeout = endpoint_update.endpoint_timeout
         view_access = (
             not hide_definition
             if hide_definition is not None
