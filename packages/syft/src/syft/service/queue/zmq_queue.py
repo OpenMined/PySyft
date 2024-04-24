@@ -272,7 +272,7 @@ class ZMQProducer(QueueProducer):
         while True:
             if self._stop.is_set():
                 break
-            sleep(1)
+            sleep(0.1)
 
             # Items to be queued
             items_to_queue = self.queue_stash.get_by_status(

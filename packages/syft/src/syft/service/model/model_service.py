@@ -22,10 +22,10 @@ from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..warnings import CRUDReminder
 from ..warnings import HighSideCRUDWarning
-from .model import CreateModelAsset
 from .model import CreateModel
-from .model import ModelAsset
+from .model import CreateModelAsset
 from .model import Model
+from .model import ModelAsset
 from .model import ModelPageView
 from .model_stash import ModelStash
 
@@ -60,9 +60,7 @@ def _paginate_model_collection(
     results = DictTuple(chunk, lambda model: model.name)
 
     return (
-        results
-        if slice_ is None
-        else ModelPageView(models=results, total=len(models))
+        results if slice_ is None else ModelPageView(models=results, total=len(models))
     )
 
 
