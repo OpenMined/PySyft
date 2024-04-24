@@ -452,6 +452,7 @@ class ResolveWidget:
         return {uid: widget.mockify for uid, widget in self.id2widget.items()}
 
     def click_ignore(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
+        # relative
         from ...client.syncing import handle_ignore_batch
 
         if self.is_synced:
@@ -468,6 +469,7 @@ class ResolveWidget:
         return res
 
     def click_unignore(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
+        # relative
         from ...client.syncing import handle_unignore_batch
 
         if self.is_synced:
@@ -483,6 +485,7 @@ class ResolveWidget:
         return res
 
     def click_sync(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
+        # relative
         from ...client.syncing import handle_sync_batch
 
         if self.is_synced:

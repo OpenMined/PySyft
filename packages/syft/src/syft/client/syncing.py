@@ -2,17 +2,16 @@
 from collections.abc import Callable
 from time import sleep
 
-from syft.node.credentials import SyftVerifyKey
-from syft.service.response import SyftError, SyftSuccess
-from syft.types.uid import UID
-
 # relative
 from ..abstract_node import NodeSideType
+from ..node.credentials import SyftVerifyKey
 from ..service.action.action_permissions import ActionObjectPermission
 from ..service.action.action_permissions import ActionPermission
 from ..service.action.action_permissions import StoragePermission
 from ..service.code.user_code import UserCode
 from ..service.job.job_stash import Job
+from ..service.response import SyftError
+from ..service.response import SyftSuccess
 from ..service.sync.diff_state import NodeDiff
 from ..service.sync.diff_state import ObjectDiff
 from ..service.sync.diff_state import ObjectDiffBatch
@@ -20,6 +19,7 @@ from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.diff_state import SyncInstruction
 from ..service.sync.resolve_widget import ResolveWidget
 from ..service.sync.sync_state import SyncState
+from ..types.uid import UID
 from .client import SyftClient
 from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
@@ -88,12 +88,8 @@ def get_other_ignore_batches(
                 d.object_id for d in other_batch.get_dependencies(include_roots=True)
             }
             if len(other_batch_ids & ignored_ids) != 0:
-                other_batch.decision = SyncDecision.IGNORE
                 other_ignore_batches.append(other_batch)
                 ignored_ids.update(other_batch_ids)
-                print(
-                    f"Ignoring other batch with root {other_batch.root_type.__name__}"
-                )
 
     return other_ignore_batches
 
@@ -212,9 +208,11 @@ def handle_ignore_batch(
 
     obj_diff_batch.decision = SyncDecision.IGNORE
     other_batches = [b for b in all_batches if b is not obj_diff_batch]
-    other_ignore_batches = get_other_ignore_batches(
-        obj_diff_batch, SyncDecision.IGNORE, other_batches
-    )
+    other_ignore_batches = get_other_ignore_batches(obj_diff_batch, other_batches)
+
+    for other_batch in other_ignore_batches:
+        other_batch.decision = SyncDecision.IGNORE
+        print(f"Ignoring other batch with root {other_batch.root_type.__name__}")
 
     src_client = obj_diff_batch.source_client
     tgt_client = obj_diff_batch.target_client

@@ -47,7 +47,8 @@ from ..job.job_stash import Job
 from ..log.log import SyftLog
 from ..output.output_service import ExecutionOutput
 from ..request.request import Request
-from ..response import SyftError, SyftSuccess
+from ..response import SyftError
+from ..response import SyftSuccess
 from .sync_state import SyncState
 
 sketchy_tab = "‎ " * 4
@@ -676,11 +677,13 @@ class ObjectDiffBatch(SyftObject):
         return sum(hash(x) for x in diffs)
 
     def ignore(self) -> SyftSuccess | SyftError:
+        # relative
         from ...client.syncing import handle_ignore_batch
 
         return handle_ignore_batch(self, self.global_batches)
 
     def unignore(self) -> SyftSuccess | SyftError:
+        # relative
         from ...client.syncing import handle_unignore_batch
 
         return handle_unignore_batch(self)
@@ -816,7 +819,7 @@ class ObjectDiffBatch(SyftObject):
         return {"value": status.upper(), "type": badge_color}
 
     def _coll_repr_(self) -> dict[str, Any]:
-        no_obj_html = "<p class='diff-state-no-obj'>No object detected</p>"
+        no_obj_html = "<p class='diff-state-no-obj'>No object</p>"
         if self.root_diff.low_obj is None:
             low_html = no_obj_html
         else:
