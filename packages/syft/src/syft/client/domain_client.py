@@ -438,20 +438,14 @@ class DomainClient(SyftClient):
             <span class='syft-code-block'>&lt;your_client&gt;.code.submit?</span> - display function signature
         </li>"""
         ds_commands = """
-        <li><span class='syft-code-block'>&lt;your_client&gt;.datasets</span> - list datasets</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.code</span> - list code</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.projects</span> - list projects</li>
-        <li>
-            <span class='syft-code-block'>&lt;your_client&gt;.code.submit?</span> - display function signature
-        </li>"""
+        <li><span class='syft-code-block'>&lt;your_client&gt;.models</span> - list models</li>
+        """
 
         do_commands = """
-        <li><span class='syft-code-block'>&lt;your_client&gt;.projects</span> - list projects</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.requests</span> - list requests</li>
-        <li><span class='syft-code-block'>&lt;your_client&gt;.users</span> - list users</li>
-        <li>
-            <span class='syft-code-block'>&lt;your_client&gt;.requests.submit?</span> - display function signature
-        </li>"""
+        <li><span class='syft-code-block'>&lt;your_client&gt;.me.set_email('new@email.com')</span> - update admin email</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.me.set_password('abc123')</span> - update admin password</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.models</span> - list models</li>
+        """
 
         # TODO: how to select ds/do commands based on self.__user_role
 
