@@ -171,9 +171,7 @@ def chunk_bytes(
 ) -> None:
     data = ser_func(field_obj)
     size_of_data = len(data)
-    with tempfile.SpooledTemporaryFile(
-        max_size=SPOOLED_FILE_MAX_SIZE_SERDE
-    ) as tmp_file:
+    with tempfile.TemporaryFile() as tmp_file:
         # Write data to a file to save RAM
         tmp_file.write(data)
         tmp_file.seek(0)
