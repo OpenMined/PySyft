@@ -57,11 +57,13 @@ class APIService(AbstractService):
     ) -> SyftSuccess | SyftError:
         """Register an CustomAPIEndpoint."""
         try:
+            new_endpoint = None
             if isinstance(endpoint, CreateTwinAPIEndpoint):  # type: ignore
                 new_endpoint = endpoint.to(TwinAPIEndpoint)
             elif isinstance(endpoint, TwinAPIEndpoint):  # type: ignore
                 new_endpoint = endpoint
-            else:
+
+            if new_endpoint is None:
                 return SyftError(message="Invalid endpoint type.")
         except ValueError as e:
             return SyftError(message=str(e))
@@ -106,6 +108,7 @@ class APIService(AbstractService):
         mock_function: Endpoint | None = None,
         private_function: Endpoint | None = None,
         hide_definition: bool | None = None,
+        endpoint_timeout: int = 60,
     ) -> SyftSuccess | SyftError:
         """Updates an specific API endpoint."""
 
@@ -140,6 +143,7 @@ class APIService(AbstractService):
                 path=endpoint_path,
                 mock_function=updated_mock,
                 private_function=updated_private,
+                endpoint_timeout=endpoint_timeout,
             )
         except ValidationError as e:
             return SyftError(message=str(e))
