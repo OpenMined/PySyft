@@ -530,10 +530,10 @@ def check_and_cleanup_signature(context: TransformContext) -> TransformContext:
 def decorator_cleanup(code: str) -> str:
     # Regular expression to remove decorator
     # It matches from "@" to "def" (non-greedy) across multiple lines
-    decorator_regex = r"@.*?def"
+    decorator_regex = r"@.*?def "
 
     # Substituting the matched pattern with "def"
-    return re.sub(decorator_regex, "def", code, count=1, flags=re.DOTALL)
+    return re.sub(decorator_regex, "def ", code, count=1, flags=re.DOTALL)
 
 
 def extract_code_string(code_field: str) -> Callable:
