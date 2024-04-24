@@ -1,8 +1,6 @@
 # stdlib
 import base64
-from collections.abc import Iterator
 from typing import Annotated
-from typing import Any
 
 # third party
 from fastapi import APIRouter
