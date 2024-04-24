@@ -87,7 +87,6 @@ def upgrade_tls(url: GridURL, response: Response) -> GridURL:
 
 
 def forward_message_to_proxy(
-    node_connection: NodeConnection,
     make_call: Callable,
     proxy_target_uid: UID,
     path: str,
@@ -231,7 +230,6 @@ class HTTPConnection(NodeConnection):
     ) -> NodeMetadataJSON | SyftError:
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
-                node_connection=self,
                 make_call=self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="metadata",
@@ -252,7 +250,6 @@ class HTTPConnection(NodeConnection):
         }
         if self.proxy_target_uid:
             obj = forward_message_to_proxy(
-                self,
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="api",
@@ -280,7 +277,6 @@ class HTTPConnection(NodeConnection):
         credentials = {"email": email, "password": password}
         if self.proxy_target_uid:
             obj = forward_message_to_proxy(
-                self,
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="login",
@@ -296,7 +292,6 @@ class HTTPConnection(NodeConnection):
         data = _serialize(new_user, to_bytes=True)
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
-                self,
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="register",
@@ -367,7 +362,6 @@ class PythonConnection(NodeConnection):
     ) -> NodeMetadataJSON | SyftError:
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
-                self,
                 make_call=self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="metadata",
@@ -390,7 +384,6 @@ class PythonConnection(NodeConnection):
         # todo: its a bit odd to identify a user by its verify key maybe?
         if self.proxy_target_uid:
             obj = forward_message_to_proxy(
-                self,
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="api",
@@ -432,7 +425,6 @@ class PythonConnection(NodeConnection):
     ) -> SyftSigningKey | None:
         if self.proxy_target_uid:
             obj = forward_message_to_proxy(
-                self,
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="login",
@@ -446,7 +438,6 @@ class PythonConnection(NodeConnection):
     def register(self, new_user: UserCreate) -> SyftSigningKey | None:
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
-                self,
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="register",
