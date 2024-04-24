@@ -7,10 +7,10 @@ import sys
 from fastapi import FastAPI
 from fastapi import status
 from loguru import logger
-from models import RatholeConfig
-from models import ResponseModel
-from utils import RatholeClientToml
-from utils import RatholeServerToml
+from server.models import RatholeConfig
+from server.models import ResponseModel
+from server.utils import RatholeClientToml
+from server.utils import RatholeServerToml
 
 # Logging Configuration
 log_level = os.getenv("APP_LOG_LEVEL", "INFO").upper()
@@ -40,7 +40,7 @@ async def healthcheck() -> bool:
 
 
 @app.get(
-    "/healthcheck",
+    "/",
     response_model=ResponseModel,
     status_code=status.HTTP_200_OK,
 )
@@ -84,8 +84,11 @@ async def update_config(config: RatholeConfig) -> ResponseModel:
 
 @app.get(
     "/config/{uuid}",
-    response_model=RatholeConfig,
+    response_model=RatholeConfig | ResponseModel,
     status_code=status.HTTP_201_CREATED,
 )
 async def get_config(uuid: str) -> RatholeConfig:
-    return RatholeTomlManager.get_config(uuid)
+    config = RatholeTomlManager.get_config(uuid)
+    if config is None:
+        return ResponseModel(message="Config not found")
+    return config

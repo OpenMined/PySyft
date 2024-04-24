@@ -22,13 +22,8 @@ COPY ./start-server.sh /app/start-server.sh
 COPY ./client.toml /app/client.toml
 COPY ./server.toml /app/server.toml
 COPY ./nginx.conf /etc/nginx/conf.d/default.conf
-COPY ./__init__.py /app/__init__.py
-COPY ./main.py /app/main.py
-COPY ./models.py /app/models.py
-COPY ./nginx_builder.py /app/nginx_builder.py
-COPY ./utils.py /app/utils.py
-COPY ./toml_writer.py /app/toml_writer.py
 COPY ./requirements.txt /app/requirements.txt
+COPY ./server/ /app/server/
 
 RUN pip install --user -r requirements.txt
 CMD ["sh", "-c", "/app/start-$MODE.sh"]
