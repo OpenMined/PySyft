@@ -62,7 +62,7 @@ class APIService(AbstractService):
             elif isinstance(endpoint, TwinAPIEndpoint):  # type: ignore
                 new_endpoint = endpoint
             else:
-                return SyftError(message="Invalid endpoint type.")
+                return SyftError(message="Invalid endpoint type.")  # type: ignore
         except ValueError as e:
             return SyftError(message=str(e))
 
