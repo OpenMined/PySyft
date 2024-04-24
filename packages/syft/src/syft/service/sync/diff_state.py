@@ -1035,7 +1035,7 @@ class NodeDiff(SyftObject):
     def ignored_changes(self) -> list[IgnoredBatchView]:
         result = []
         for ignored_batch in self.ignored_batches:
-            other_batches = [b for b in self.batches if b is not ignored_batch]
+            other_batches = [b for b in self.all_batches if b is not ignored_batch]
             result.append(
                 IgnoredBatchView(batch=ignored_batch, other_batches=other_batches)
             )
@@ -1374,9 +1374,7 @@ class ResolvedSyncState(SyftObject):
     new_permissions: list[ActionObjectPermission] = []
     new_storage_permissions: list[StoragePermission] = []
     ignored_batches: dict[UID, int] = {}  # batch root uid -> hash of the batch
-    unignored_batches: set[UID] = (
-        set()
-    )  # NOTE: using '{}' as default value does not work here
+    unignored_batches: set[UID] = set()
     alias: str
 
     @classmethod

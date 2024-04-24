@@ -264,7 +264,7 @@ def resolve(
     resolved_state_low = ResolvedSyncState(node_uid=state.low_node_uid, alias="low")
     resolved_state_high = ResolvedSyncState(node_uid=state.high_node_uid, alias="high")
 
-    for batch_diff in state.batches:
+    for batch_diff in state.all_batches:
         if batch_diff.is_unchanged:
             # Hierarchy has no diffs
             continue
@@ -283,7 +283,7 @@ def resolve(
 
         batch_diff.decision = batch_decision
 
-        other_batches = [b for b in state.batches if b is not batch_diff]
+        other_batches = [b for b in state.all_batches if b is not batch_diff]
         handle_ignore_skip(batch_diff, batch_decision, other_batches)
 
         if batch_decision not in [SyncDecision.SKIP, SyncDecision.IGNORE]:
