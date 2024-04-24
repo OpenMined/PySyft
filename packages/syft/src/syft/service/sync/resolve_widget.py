@@ -479,6 +479,7 @@ class ResolveWidget:
 
         res = handle_unignore_batch(
             obj_diff_batch=self.obj_diff_batch,
+            all_batches=self.obj_diff_batch.global_batches,
         )
 
         self.set_widget_result_state(res)

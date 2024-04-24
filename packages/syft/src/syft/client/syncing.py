@@ -184,15 +184,24 @@ def handle_ignore_batch(
 
 def handle_unignore_batch(
     obj_diff_batch: ObjectDiffBatch,
+    all_batches: list[ObjectDiffBatch],
 ) -> SyftSuccess | SyftError:
     src_client = obj_diff_batch.source_client
     tgt_client = obj_diff_batch.target_client
     src_resolved_state, tgt_resolved_state = obj_diff_batch.create_new_resolved_states()
 
     obj_diff_batch.decision = None
-
     src_resolved_state.add_unignored(obj_diff_batch.root_id)
     tgt_resolved_state.add_unignored(obj_diff_batch.root_id)
+
+    # Unignore dependencies
+    other_batches = [b for b in all_batches if b is not obj_diff_batch]
+    other_unignore_batches = get_other_unignore_batches(obj_diff_batch, other_batches)
+    for other_batch in other_unignore_batches:
+        print(f"Ignoring other batch with root {other_batch.root_type.__name__}")
+        other_batch.decision = None
+        src_resolved_state.add_unignored(other_batch.root_id)
+        tgt_resolved_state.add_unignored(other_batch.root_id)
 
     res_src = src_client.apply_state(src_resolved_state)
     if isinstance(res_src, SyftError):
@@ -200,6 +209,29 @@ def handle_unignore_batch(
 
     res_tgt = tgt_client.apply_state(tgt_resolved_state)
     return res_tgt
+
+
+def get_other_unignore_batches(
+    batch: ObjectDiffBatch,
+    other_batches: list[ObjectDiffBatch],
+) -> list[ObjectDiffBatch]:
+    if batch.decision is not None:
+        return []
+
+    other_unignore_batches = []
+    required_dependencies = {
+        d.object_id for d in batch.get_dependencies(include_roots=True)
+    }
+
+    for other_batch in other_batches:
+        if other_batch == batch:
+            continue
+        elif (
+            other_batch.decision == SyncDecision.IGNORE
+            and other_batch.root_id in required_dependencies
+        ):
+            other_unignore_batches.append(other_batch)
+    return other_unignore_batches
 
 
 def get_other_ignore_batches(

@@ -686,7 +686,7 @@ class ObjectDiffBatch(SyftObject):
         # relative
         from ...client.syncing import handle_unignore_batch
 
-        return handle_unignore_batch(self)
+        return handle_unignore_batch(self, self.global_batches)
 
     @property
     def root_id(self) -> UID:
