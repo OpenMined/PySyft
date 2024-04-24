@@ -1,4 +1,5 @@
 # stdlib
+import base64
 from collections.abc import Generator
 from typing import Annotated
 from typing import Any
@@ -68,9 +69,6 @@ def make_routes(worker: Worker) -> APIRouter:
         "/stream/{peer_uid_str}/{url_path_str}/", name="stream", status_code=200
     )
     async def stream(peer_uid_str: str, url_path_str: str) -> StreamingResponse:
-        # stdlib
-        import base64
-
         url_path = base64.urlsafe_b64decode(url_path_str.encode()).decode()
         peer_uid = UID.from_string(peer_uid_str)
 

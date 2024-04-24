@@ -1102,13 +1102,6 @@ class Node(AbstractNode):
                 if isinstance(result, BlobRetrievalByURL):
                     result.proxy_node_uid = peer.id
 
-                    # blob_route = client.api.connection.to_blob_route(
-                    #     result.url.url_path
-                    # )
-                    # result.url = blob_route
-                    # final_res = result.read()
-                    # return final_res
-
             return result
 
         return SyftError(message=(f"Node has no route to {node_uid}"))
