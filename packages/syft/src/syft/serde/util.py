@@ -5,8 +5,14 @@ from sys import platform
 from capnp.lib.capnp import _DynamicStructBuilder
 
 
-def compatible_with_large_file_writes_capnp(msg: _DynamicStructBuilder) -> bool:
+def get_size(thing: _DynamicStructBuilder | int) -> int:
+    if isinstance(int, thing):
+        return thing
+    return thing.total_size.word_count
+
+
+def compatible_with_large_file_writes_capnp(thing: _DynamicStructBuilder | int) -> bool:
     if platform in ["darwin", "win32"]:
         return False
     else:
-        return msg.total_size.word_count > 50000000  # roughly 0.5GB
+        return get_size(thing) > 50000000  # roughly 0.5GB

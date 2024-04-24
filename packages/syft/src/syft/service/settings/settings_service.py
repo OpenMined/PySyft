@@ -55,7 +55,6 @@ class SettingsService(AbstractService):
         self, context: AuthedServiceContext, settings: NodeSettings
     ) -> Result[Ok, Err]:
         """Set a new the Node Settings"""
-        print("Here!")
         result = self.stash.set(context.credentials, settings)
         if result.is_ok():
             return result

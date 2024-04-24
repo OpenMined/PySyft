@@ -18,6 +18,7 @@ import syft as sy
 from ..util.util import get_fully_qualified_name
 from ..util.util import index_syft_by_module_name
 from .capnp import get_capnp_schema
+from .util import compatible_with_large_file_writes_capnp
 
 TYPE_BANK = {}
 
@@ -171,19 +172,29 @@ def chunk_bytes(
 ) -> None:
     data = ser_func(field_obj)
     size_of_data = len(data)
-    with tempfile.TemporaryFile() as tmp_file:
-        # Write data to a file to save RAM
-        tmp_file.write(data)
-        tmp_file.seek(0)
-        del data
+    if compatible_with_large_file_writes_capnp(size_of_data):
+        with tempfile.TemporaryFile() as tmp_file:
+            # Write data to a file to save RAM
+            tmp_file.write(data)
+            tmp_file.seek(0)
+            del data
 
+            CHUNK_SIZE = int(5.12e8)  # capnp max for a List(Data) field
+            list_size = size_of_data // CHUNK_SIZE + 1
+            data_lst = builder.init(field_name, list_size)
+            for idx in range(list_size):
+                bytes_to_read = min(CHUNK_SIZE, size_of_data)
+                data_lst[idx] = tmp_file.read(bytes_to_read)
+                size_of_data -= CHUNK_SIZE
+    else:
         CHUNK_SIZE = int(5.12e8)  # capnp max for a List(Data) field
-        list_size = size_of_data // CHUNK_SIZE + 1
+        list_size = len(data) // CHUNK_SIZE + 1
         data_lst = builder.init(field_name, list_size)
+        END_INDEX = CHUNK_SIZE
         for idx in range(list_size):
-            bytes_to_read = min(CHUNK_SIZE, size_of_data)
-            data_lst[idx] = tmp_file.read(bytes_to_read)
-            size_of_data -= CHUNK_SIZE
+            START_INDEX = idx * CHUNK_SIZE
+            END_INDEX = min(START_INDEX + CHUNK_SIZE, len(data))
+            data_lst[idx] = data[START_INDEX:END_INDEX]
 
 
 def combine_bytes(capnp_list: list[bytes]) -> bytes:
