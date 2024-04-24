@@ -98,7 +98,7 @@ jobs:
         python-version: ["3.12"]
 
     # bug on ubuntu 22 microsoft apt error
-    runs-on: ubuntu-20.04  # ${{ matrix.os }}
+    runs-on: ubuntu-20.04 # ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
