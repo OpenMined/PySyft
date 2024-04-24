@@ -189,22 +189,22 @@ def serve_node(
 ) -> tuple[Callable, Callable]:
     server_process = multiprocessing.Process(
         target=run_uvicorn,
-        args=(
-            name,
-            node_type,
-            host,
-            port,
-            processes,
-            reset,
-            dev_mode,
-            node_side_type,
-            enable_warnings,
-            in_memory_workers,
-            queue_port,
-            create_producer,
-            n_consumers,
-            association_request_auto_approval,
-        ),
+        kwargs={
+            "name":name,
+            "node_type":node_type,
+            "host":host,
+            "port": port,
+            "processes": processes,
+            "reset": reset,
+            "dev_mode": dev_mode,
+            "node_side_type": node_side_type,
+            "enable_warnings": enable_warnings,
+            "in_memory_workers": in_memory_workers,
+            "queue_port": queue_port,
+            "create_producer": create_producer,
+            "n_consumers": n_consumers,
+            "association_request_auto_approval": association_request_auto_approval,
+        },
     )
 
     def stop() -> None:
