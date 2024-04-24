@@ -1105,6 +1105,8 @@ class NodeDiff(SyftObject):
 
         if not include_ignored:
             batches = [b for b in all_batches if not b.is_ignored]
+        else:
+            batches = all_batches
 
         return cls(
             low_node_uid=low_state.node_uid,
