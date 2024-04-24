@@ -12,6 +12,10 @@ node:
   name: syft-gcp
   side: high
 
+  # Skip intermediate registry & directly build & push container images to target registry
+  # Useful when workload identity is setup
+  useInternalRegistry: false
+
   # Resources set inline with c3-standard-4 machine type
   resources:
     requests:
