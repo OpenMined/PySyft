@@ -445,6 +445,7 @@ class DomainClient(SyftClient):
         <li><span class='syft-code-block'>&lt;your_client&gt;.me.set_email('new@email.com')</span> - update admin email</li>
         <li><span class='syft-code-block'>&lt;your_client&gt;.me.set_password('abc123')</span> - update admin password</li>
         <li><span class='syft-code-block'>&lt;your_client&gt;.models</span> - list models</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.register</span> - register a new (non-admin) user</li>
         """
 
         # TODO: how to select ds/do commands based on self.__user_role
