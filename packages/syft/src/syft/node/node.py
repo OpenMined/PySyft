@@ -57,6 +57,7 @@ from ..service.context import UserLoginCredentials
 from ..service.data_subject.data_subject_member_service import DataSubjectMemberService
 from ..service.data_subject.data_subject_service import DataSubjectService
 from ..service.dataset.dataset_service import DatasetService
+from ..service.model.model_service import ModelService
 from ..service.enclave.enclave_service import EnclaveService
 from ..service.job.job_service import JobService
 from ..service.job.job_stash import Job
@@ -883,6 +884,7 @@ class Node(AbstractNode):
             {"svc": SyncService},
             {"svc": OutputService},
             {"svc": UserCodeStatusService},  # this is lazy
+            {"svc": ModelService},
         ]
 
         for svc_kwargs in default_services:

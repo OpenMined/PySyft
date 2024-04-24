@@ -40,6 +40,8 @@ from .client import login
 from .client import login_as_guest
 from .connection import NodeConnection
 from .protocol import SyftProtocol
+from ..service.model.model import CreateModel
+
 
 if TYPE_CHECKING:
     # relative
@@ -168,6 +170,9 @@ class DomainClient(SyftClient):
     #     else:
     #         return {}
 
+    def upload_model(self, model: CreateModel) -> SyftSuccess | SyftError:
+        return self.api.services.model.add(model=model)
+        
     def refresh(self) -> None:
         if self._api and self._api.refresh_api_callback:
             self._api.refresh_api_callback()
@@ -342,6 +347,12 @@ class DomainClient(SyftClient):
     def datasets(self) -> APIModule | None:
         if self.api.has_service("dataset"):
             return self.api.services.dataset
+        return None
+    
+    @property
+    def models(self) -> APIModule | None:
+        if self.api.has_service("model"):
+            return self.api.services.model
         return None
 
     @property
