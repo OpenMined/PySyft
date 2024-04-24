@@ -319,6 +319,7 @@ class Node(AbstractNode):
         email_sender: str | None = None,
         smtp_port: int | None = None,
         smtp_host: str | None = None,
+        association_request_auto_approval: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -351,6 +352,8 @@ class Node(AbstractNode):
         else:
             skey = signing_key
         self.signing_key = skey or SyftSigningKey.generate()
+
+        self.association_request_auto_approval = association_request_auto_approval
 
         self.queue_config = self.create_queue_config(
             n_consumers=n_consumers,
@@ -582,6 +585,7 @@ class Node(AbstractNode):
         dev_mode: bool = False,
         migrate: bool = False,
         in_memory_workers: bool = True,
+        association_request_auto_approval: bool = False,
     ) -> Self:
         uid = UID.with_seed(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -609,6 +613,7 @@ class Node(AbstractNode):
             migrate=migrate,
             in_memory_workers=in_memory_workers,
             reset=reset,
+            association_request_auto_approval=association_request_auto_approval,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -1285,8 +1290,12 @@ class Node(AbstractNode):
             has_execute_permissions=has_execute_permissions,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
+        user_id = self.get_service("UserService").get_user_id_for_credentials(
+            credentials
+        )
+
         return self.add_queueitem_to_queue(
-            queue_item, credentials, action, parent_job_id
+            queue_item, credentials, action, parent_job_id, user_id
         )
 
     def add_queueitem_to_queue(
@@ -1295,6 +1304,7 @@ class Node(AbstractNode):
         credentials: SyftVerifyKey,
         action: Action | None = None,
         parent_job_id: UID | None = None,
+        user_id: UID | None = None,
     ) -> Job | SyftError:
         log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
@@ -1327,6 +1337,7 @@ class Node(AbstractNode):
             log_id=log_id,
             parent_job_id=parent_job_id,
             action=action,
+            requested_by=user_id,
         )
 
         # 🟡 TODO 36: Needs distributed lock
@@ -1494,7 +1505,11 @@ class Node(AbstractNode):
                 return None
             settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
             if settings_exists:
-                self.name = settings_exists[0].name
+                node_settings = settings_exists[0]
+                self.name = node_settings.name
+                self.association_request_auto_approval = (
+                    node_settings.association_request_auto_approval
+                )
                 return None
             else:
                 # Currently we allow automatic user registration on enclaves,
@@ -1511,6 +1526,7 @@ class Node(AbstractNode):
                     admin_email=admin_email,
                     node_side_type=self.node_side_type.value,  # type: ignore
                     show_warnings=self.enable_warnings,
+                    association_request_auto_approval=self.association_request_auto_approval,
                     default_worker_pool=get_default_worker_pool_name(),
                 )
                 result = settings_stash.set(

@@ -43,7 +43,7 @@ class JobService(AbstractService):
         name="get",
         roles=GUEST_ROLE_LEVEL,
     )
-    def get(self, context: AuthedServiceContext, uid: UID) -> list[Job] | SyftError:
+    def get(self, context: AuthedServiceContext, uid: UID) -> Job | SyftError:
         res = self.stash.get_by_uid(context.credentials, uid=uid)
         if res.is_err():
             return SyftError(message=res.err())

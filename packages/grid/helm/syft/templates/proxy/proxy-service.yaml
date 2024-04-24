@@ -5,6 +5,9 @@ metadata:
   labels:
     {{- include "common.labels" . | nindent 4 }}
     app.kubernetes.io/component: proxy
+  {{- if .Values.proxy.serviceAnnotations }}
+  annotations: {{ toYaml .Values.proxy.serviceAnnotations | nindent 4 }}
+  {{- end }}
 spec:
   type: ClusterIP
   selector:
