@@ -1,7 +1,7 @@
 # stdlib
-
-# stdlib
+from collections.abc import Generator
 from typing import Annotated
+from typing import Any
 
 # third party
 from fastapi import APIRouter
@@ -49,13 +49,14 @@ def make_routes(worker: Worker) -> APIRouter:
     async def get_body(request: Request) -> bytes:
         return await request.body()
 
-    def stream_blob_url(peer_uid: UID, presigned_url: str):
+    def stream_blob_url(
+        peer_uid: UID, presigned_url: str
+    ) -> Generator[bytes, Any, None]:
         # relative
         from ..service.network.node_peer import route_to_connection
 
         network_service = worker.get_service("NetworkService")
-        peer = network_service.stash.get_by_uid(worker.verify_key, peer_uid)
-        peer = peer.ok()
+        peer = network_service.stash.get_by_uid(worker.verify_key, peer_uid).ok()
         peer_node_route = peer.pick_highest_priority_route()
         connection = route_to_connection(route=peer_node_route)
         url = connection.to_blob_route(f"{presigned_url}")

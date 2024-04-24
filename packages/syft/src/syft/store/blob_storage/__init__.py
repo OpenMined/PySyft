@@ -144,7 +144,7 @@ def syft_iter_content(
 
 
 @serializable()
-class BlobRetrievalByURL(BlobRetrieval):
+class BlobRetrievalByURLV4(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
     __version__ = SYFT_OBJECT_VERSION_4
 
@@ -185,42 +185,31 @@ class BlobRetrievalByURL(BlobRetrieval):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+
         if api and api.connection and isinstance(self.url, GridURL):
             if self.proxy_node_uid is None:
                 blob_url = api.connection.to_blob_route(
                     self.url.url_path, host=self.url.host_or_ip
                 )
-                print("Blob url...........", blob_url)
-            elif self.proxy_node_uid is not None:
+            else:
                 blob_url = api.connection.stream_via(
                     self.proxy_node_uid, self.url.url_path
                 )
                 stream = True
         else:
             blob_url = self.url
+
         try:
-            if self.type_ is BlobFileType:
-                if stream:
-                    return syft_iter_content(blob_url, chunk_size)
-                else:
-                    response = requests.get(str(blob_url), stream=False)  # nosec
-                    response.raise_for_status()
-                    return response.content
-            else:
-                # stdlib
+            if isinstance(self.type_, BlobFileType) and stream:
+                return syft_iter_content(blob_url, chunk_size)
 
-                # pdb.set_trace()
-                print(str(blob_url))
-                response = requests.get(str(blob_url), stream=stream)  # nosec
+            response = requests.get(str(blob_url), stream=stream)  # nosec
+            resp_content = response.content
+            response.raise_for_status()
 
-                print("Response", response)
-                resp_content = response.content
-                print("Response content", resp_content)
-
-                response.raise_for_status()
-                return deserialize(resp_content, from_bytes=True)
+            return deserialize(resp_content, from_bytes=True)
         except requests.RequestException as e:
-            return SyftError(message=f"Failed to retrieve with Error: {e}")
+            return SyftError(message=f"Failed to retrieve with error: {e}")
 
 
 @serializable()

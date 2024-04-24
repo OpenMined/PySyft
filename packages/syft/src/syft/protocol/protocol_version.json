@@ -373,6 +373,11 @@
         }
       },
       "BlobRetrievalByURL": {
+        "4": {
+          "version": 4,
+          "hash": "3a82ec6220eda51289931689db2f598e5e44a610b0a229113c4695f897cc9f2b",
+          "action": "add"
+        },
         "5": {
           "version": 5,
           "hash": "4934bf72bb10ac0a670c87ab735175088274e090819436563543473e64cf15e3",

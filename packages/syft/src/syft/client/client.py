@@ -220,7 +220,7 @@ class HTTPConnection(NodeConnection):
 
         return response.content
 
-    def stream_data(self, credentials: SyftSigningKey) -> dict:
+    def stream_data(self, credentials: SyftSigningKey) -> Response:
         url = self.url.with_path(self.routes.STREAM.value)
         response = self.session.get(
             str(url), verify=verify_tls(), proxies={}, stream=True
