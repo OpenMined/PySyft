@@ -1612,8 +1612,8 @@ class NodeRegistry:
 def get_default_worker_tag_by_env(dev_mode: bool = False) -> str | None:
     if in_kubernetes():
         return get_default_worker_image()
-    elif dev_mode:
-        return "local-dev"
+    elif os.getenv("VERSION") is not None:
+        return os.getenv("VERSION")
     else:
         return __version__
 

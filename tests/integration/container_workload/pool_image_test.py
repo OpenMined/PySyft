@@ -20,9 +20,14 @@ from syft.service.worker.worker_pool import SyftWorker
 from syft.service.worker.worker_pool import WorkerPool
 
 SYFT_BASE_TAG = get_default_worker_tag_by_env()
-hagrid_flags = os.getenv("HAGRID_FLAGS")
+
+hagrid_flags: str = os.getenv("HAGRID_FLAGS")
 if hagrid_flags:
-    SYFT_BASE_TAG = get_default_worker_tag_by_env(dev_mode=True)
+    tag: str = hagrid_flags.split(" ")[0]
+    release_type: str = hagrid_flags.split(" ")[1]
+    SYFT_BASE_TAG = tag.split("=")[1]
+    if "dev" in release_type:
+        SYFT_BASE_TAG += "-dev"
 
 
 @pytest.mark.container_workload
