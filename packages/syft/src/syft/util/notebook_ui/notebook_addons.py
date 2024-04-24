@@ -240,7 +240,6 @@ CSS = """
         display:grid;
         grid-template-columns: ${grid_template_columns};
         /*grid-template-rows: repeat(2, 1fr);*/
-        overflow-x: auto;
         position: relative;
     }
 
