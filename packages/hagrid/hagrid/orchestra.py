@@ -237,6 +237,7 @@ def deploy_to_python(
     thread_workers: bool,
     create_producer: bool = False,
     queue_port: int | None = None,
+    association_request_auto_approval: bool = False,
 ) -> NodeHandle | None:
     stage_protocol_changes = ImportFromSyft.import_stage_protocol_changes()
     NodeType = ImportFromSyft.import_node_type()
@@ -270,6 +271,7 @@ def deploy_to_python(
         "queue_port": queue_port,
         "n_consumers": n_consumers,
         "create_producer": create_producer,
+        "association_request_auto_approval": association_request_auto_approval,
     }
 
     if port:
@@ -369,6 +371,7 @@ def deploy_to_container(
     name: str,
     enable_warnings: bool,
     in_memory_workers: bool,
+    association_request_auto_approval: bool = False,
 ) -> NodeHandle | None:
     if port == "auto" or port is None:
         if container_exists(name=name):
@@ -414,6 +417,9 @@ def deploy_to_container(
     # by default , we deploy as container stack
     if deployment_type_enum == DeploymentType.SINGLE_CONTAINER:
         commands.append("--deployment-type=single_container")
+
+    if association_request_auto_approval:
+        commands.append("--enable-association-auto-approval")
 
     if cmd:
         commands.append("--cmd")
@@ -485,6 +491,7 @@ class Orchestra:
         create_producer: bool = False,
         queue_port: int | None = None,
         in_memory_workers: bool = True,
+        association_request_auto_approval: bool = False,
     ) -> NodeHandle | None:
         NodeType = ImportFromSyft.import_node_type()
         os.environ["DEV_MODE"] = str(dev_mode)
@@ -531,6 +538,7 @@ class Orchestra:
                 thread_workers=thread_workers,
                 create_producer=create_producer,
                 queue_port=queue_port,
+                association_request_auto_approval=association_request_auto_approval,
             )
 
         elif deployment_type_enum == DeploymentType.K8S:
@@ -560,6 +568,7 @@ class Orchestra:
                 node_side_type=node_side_type_enum,
                 enable_warnings=enable_warnings,
                 in_memory_workers=in_memory_workers,
+                association_request_auto_approval=association_request_auto_approval,
             )
         elif deployment_type_enum == DeploymentType.PODMAN:
             return deploy_to_podman(

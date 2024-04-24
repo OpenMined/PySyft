@@ -240,7 +240,7 @@
         },
         "3": {
           "version": 3,
-          "hash": "9e2610f6e890b04938792079765f8e162f03906162c30aa0ea30e7c182373cec",
+          "hash": "0f812fdd5aecc3e3aa1a7c953bbf7f8d8b03a77c5cdbb37e981fa91c8134c9f4",
           "action": "add"
         }
       },
@@ -252,7 +252,7 @@
         },
         "4": {
           "version": 4,
-          "hash": "6b973584c139330bb881a9a6ac71c945e63133ec1b2c5175da37f4e319411921",
+          "hash": "318e578f8a9af213a6af0cc2c567b62196b0ff81769d808afff4dd1eb7c372b8",
           "action": "add"
         }
       },
@@ -874,6 +874,13 @@
         "3": {
           "version": 3,
           "hash": "dababb03d2463b6218ae22d55293a60580f5a14bebd0c664d71da104e2f0b835",
+          "action": "add"
+        }
+      },
+      "AssociationRequestChange": {
+        "1": {
+          "version": 1,
+          "hash": "508550c43e9e3f30243813c23eb6eec20918923d7ba09498cddbcd7e8bfa4539",
           "action": "add"
         }
       },
