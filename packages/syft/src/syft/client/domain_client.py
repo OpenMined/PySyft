@@ -439,6 +439,7 @@ class DomainClient(SyftClient):
         </li>"""
         ds_commands = """
         <li><span class='syft-code-block'>&lt;your_client&gt;.models</span> - list models</li>
+        <li><span class='syft-code-block'>&lt;your_client&gt;.models[0]</span> - select the first model</li>
         """
 
         do_commands = """
