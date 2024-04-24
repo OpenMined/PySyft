@@ -1,6 +1,6 @@
 # stdlib
 import base64
-from collections.abc import Generator
+from collections.abc import Iterator
 from typing import Annotated
 from typing import Any
 
@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import APIRouter
 from fastapi import Body
 from fastapi import Depends
+from fastapi import HTTPException
 from fastapi import Request
 from fastapi import Response
 from fastapi.responses import JSONResponse
@@ -50,9 +51,7 @@ def make_routes(worker: Worker) -> APIRouter:
     async def get_body(request: Request) -> bytes:
         return await request.body()
 
-    def stream_blob_url(
-        peer_uid: UID, presigned_url: str
-    ) -> Generator[bytes, Any, None]:
+    def _blob_url(peer_uid: UID, presigned_url: str) -> str:
         # relative
         from ..service.network.node_peer import route_to_connection
 
@@ -60,10 +59,9 @@ def make_routes(worker: Worker) -> APIRouter:
         peer = network_service.stash.get_by_uid(worker.verify_key, peer_uid).ok()
         peer_node_route = peer.pick_highest_priority_route()
         connection = route_to_connection(route=peer_node_route)
-        url = connection.to_blob_route(f"{presigned_url}")
-        resp = requests.get(url=str(url), stream=True)
+        url = connection.to_blob_route(presigned_url)
 
-        yield from resp.iter_content()
+        return str(url)
 
     @router.get(
         "/stream/{peer_uid_str}/{url_path_str}/", name="stream", status_code=200
@@ -72,10 +70,15 @@ def make_routes(worker: Worker) -> APIRouter:
         url_path = base64.urlsafe_b64decode(url_path_str.encode()).decode()
         peer_uid = UID.from_string(peer_uid_str)
 
-        return StreamingResponse(
-            stream_blob_url(peer_uid=peer_uid, presigned_url=url_path),
-            media_type="text/event-stream",
-        )
+        url = _blob_url(peer_uid=peer_uid, presigned_url=url_path)
+
+        try:
+            resp = requests.get(url=url, stream=True)  # nosec
+            resp.raise_for_status()
+        except requests.RequestException:
+            raise HTTPException(404, "Failed to retrieve data from domain.")
+
+        return StreamingResponse(resp.iter_content(), media_type="text/event-stream")
 
     @router.get(
         "/",
