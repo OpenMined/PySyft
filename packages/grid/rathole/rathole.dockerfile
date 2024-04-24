@@ -13,6 +13,7 @@ RUN cargo build --locked --release --features ${FEATURES:-default}
 FROM python:${PYTHON_VERSION}-bookworm
 ARG RATHOLE_VERSION
 ENV MODE="client"
+ENV APP_LOG_LEVEL="info"
 COPY --from=build /rathole/target/release/rathole /app/rathole
 RUN apt update && apt install -y netcat-openbsd vim
 WORKDIR /app
@@ -21,7 +22,13 @@ COPY ./start-server.sh /app/start-server.sh
 COPY ./client.toml /app/client.toml
 COPY ./server.toml /app/server.toml
 COPY ./nginx.conf /etc/nginx/conf.d/default.conf
+COPY ./main.py /app/main.py
+COPY ./nginx_builder.py /app/nginx_builder.py
+COPY ./utils.py /app/utils.py
+COPY ./requirements.txt /app/requirements.txt
 
+
+RUN pip install --user -r requirements.txt
 CMD ["sh", "-c", "/app/start-$MODE.sh"]
 EXPOSE 2333/udp
 EXPOSE 2333

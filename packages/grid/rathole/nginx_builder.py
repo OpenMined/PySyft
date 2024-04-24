@@ -27,7 +27,13 @@ class RatholeNginxConfigBuilder:
         with self.lock.acquire(timeout=self.lock_timeout):
             nginx.dumpf(conf, self.filename)
 
-    def add_server(self, listen_port: int, location: str, proxy_pass: str) -> None:
+    def add_server(
+        self,
+        listen_port: int,
+        location: str,
+        proxy_pass: str,
+        server_name: str | None = None,
+    ) -> None:
         n_config = self.read()
         server_to_modify = self.find_server_with_listen_port(listen_port)
 
@@ -35,12 +41,18 @@ class RatholeNginxConfigBuilder:
             server_to_modify.add(
                 nginx.Location(location, nginx.Key("proxy_pass", proxy_pass))
             )
+            if server_name is not None:
+                server_to_modify.add(nginx.Key("server_name", server_name))
         else:
             server = nginx.Server(
                 nginx.Key("listen", listen_port),
                 nginx.Location(location, nginx.Key("proxy_pass", proxy_pass)),
             )
+            if server_name is not None:
+                server.add(nginx.Key("server_name", server_name))
+
             n_config.add(server)
+
         self.write(n_config)
 
     def remove_server(self, listen_port: int) -> None:

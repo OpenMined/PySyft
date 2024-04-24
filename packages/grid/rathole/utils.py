@@ -5,6 +5,7 @@ from filelock import FileLock
 
 # relative
 from .models import RatholeConfig
+from .nginx_builder import RatholeNginxConfigBuilder
 from .toml_writer import TomlReaderWriter
 
 lock = FileLock("rathole.toml.lock")
@@ -15,6 +16,7 @@ class RatholeClientToml:
 
     def __init__(self) -> None:
         self.client_toml = TomlReaderWriter(lock=lock, filename=self.filename)
+        self.nginx_mananger = RatholeNginxConfigBuilder("nginx.conf")
 
     def set_remote_addr(self, remote_host: str) -> None:
         """Add a new remote address to the client toml file."""
@@ -50,6 +52,10 @@ class RatholeClientToml:
         }
 
         self.client_toml.write(toml)
+
+        self.nginx_mananger.add_server(
+            config.local_addr_port, location="/", proxy_pass="http://backend:80"
+        )
 
     def remove_config(self, uuid: str) -> None:
         """Remove a config from the toml file."""
@@ -135,6 +141,7 @@ class RatholeServerToml:
 
     def __init__(self) -> None:
         self.server_toml = TomlReaderWriter(lock=lock, filename=self.filename)
+        self.nginx_manager = RatholeNginxConfigBuilder("nginx.conf")
 
     def set_bind_address(self, bind_address: str) -> None:
         """Set the bind address in the server toml file."""
@@ -164,6 +171,13 @@ class RatholeServerToml:
         }
 
         self.server_toml.write(toml)
+
+        self.nginx_manager.add_server(
+            config.local_addr_port,
+            location="/",
+            proxy_pass=config.local_address,
+            server_name=f"{config.server_name}.local*",
+        )
 
     def remove_config(self, uuid: str) -> None:
         """Remove a config from the toml file."""

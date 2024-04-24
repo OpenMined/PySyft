@@ -27,7 +27,7 @@ class RatholeMode(Enum):
     SERVER = "server"
 
 
-ServiceType = os.getenv("RATHOLE_MODE", "client").lower()
+ServiceType = os.getenv("MODE", "client").lower()
 
 
 RatholeTomlManager = (
