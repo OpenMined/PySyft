@@ -369,7 +369,7 @@ class RemoteFunction(SyftObject):
             str_repr = "## API: " + custom_path + "\n"
             str_repr += (
                 "### Description: "
-                + f'<span style="font-weight: lighter; normal;">{endpoint.description}</span><br>'
+                + f'<span style="font-weight: lighter;">{endpoint.description}</span><br>'
                 + "\n"
             )
             str_repr += "#### Private Code:\n"
