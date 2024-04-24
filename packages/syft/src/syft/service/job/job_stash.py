@@ -868,7 +868,7 @@ class JobStash(BaseStash):
             if len(res) == 0:
                 return Ok(None)
             elif len(res) > 1:
-                return Err(message="multiple Jobs found")
+                return Err(SyftError(message="multiple Jobs found"))
             else:
                 return Ok(res[0])
 
