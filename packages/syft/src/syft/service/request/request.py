@@ -347,6 +347,14 @@ class Request(SyncableSyftObject):
     changes: list[Change]
     history: list[ChangeStatus] = []
 
+    __table_coll_widths__ = [
+        "min-content",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+    ]
+
     __attr_searchable__ = [
         "requesting_user_verify_key",
         "approving_user_verify_key",

@@ -1,7 +1,11 @@
-# ===================================================
-# Deploy Syft High Side Node to an AKS Cluster
-# DOES NOT sync seaweedfs to a Azure bucket
-# ===================================================
+# =================================================================================
+# Syft on AKS Cluster
+#
+# Node side : high
+# Automount : NO
+# Ingress   : webapprouting.kubernetes.azure.com
+# Extras    : None
+# =================================================================================
 
 node:
   name: syft-azure
@@ -14,9 +18,9 @@ ingress:
   # Make sure cluster is created with --enable-app-routing
   # az aks create -g group-name -n cluster-name -l region --enable-app-routing
   className: webapprouting.kubernetes.azure.com
-  # or, has azure-application-gateway setup through dashboard or CLI
-  # className: azure-application-gateway
 
+  # or, azure-application-gateway is setup through dashboard or CLI
+  # className: azure-application-gateway
 
 seaweedfs:
   resourcesPreset: 2xlarge
