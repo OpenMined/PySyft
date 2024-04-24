@@ -427,11 +427,7 @@ class ResolveWidget:
         return widgets.HTML(value=CSS_CODE)
 
     def _repr_mimebundle_(self, **kwargs: dict) -> dict[str, str] | None:
-        # from IPython.display import display
         return self.widget._repr_mimebundle_(**kwargs)
-
-    def click_sync(self) -> SyftSuccess | SyftError:
-        return self.button_callback()
 
     def click_share_all_private_data(self) -> None:
         for widget in self.id2widget.values():
@@ -447,125 +443,60 @@ class ResolveWidget:
         widget.set_share_private_data()
         return SyftSuccess(message="Private data shared")
 
-    def button_callback(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
+    def get_share_private_data_state(self) -> dict[UID, bool]:
+        return {
+            uid: widget.share_private_data for uid, widget in self.id2widget.items()
+        }
+
+    def get_mockify_state(self) -> dict[UID, bool]:
+        return {uid: widget.mockify for uid, widget in self.id2widget.items()}
+
+    def click_ignore(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
+        from ...client.syncing import handle_ignore_batch
+
         if self.is_synced:
             return SyftError(
                 message="The changes in this widget have already been synced."
             )
 
-        if self.obj_diff_batch.sync_direction == SyncDirection.LOW_TO_HIGH:
-            # TODO: make dynamic
-            decision = "low"
-        else:
-            decision = "high"
-
-        # previously_ignored_batches = state.low_state.ignored_batches
-        previously_ignored_batches: dict = {}
-        # TODO: only add permissions for objects where we manually give permission
-        # Maybe default read permission for some objects (high -> low)
-
-        # TODO: UID
-        resolved_state_low = ResolvedSyncState(
-            node_uid=self.obj_diff_batch.low_node_uid, alias="low"
-        )
-        resolved_state_high = ResolvedSyncState(
-            node_uid=self.obj_diff_batch.high_node_uid, alias="high"
+        res = handle_ignore_batch(
+            obj_diff_batch=self.obj_diff_batch,
+            all_batches=self.obj_diff_batch.global_batches,
         )
 
-        batch_diff = self.obj_diff_batch
-        if batch_diff.is_unchanged:
-            # Hierarchy has no diffs
-            return SyftSuccess(message="No changes to sync")
+        self.set_widget_result_state(res)
+        return res
 
-        if batch_diff.decision is not None:
-            # handles ignores
-            batch_decision = batch_diff.decision
-        elif decision is not None:
-            batch_decision = SyncDecision(decision)
-        else:
-            pass
-            # batch_decision = get_user_input_for_resolve()
+    def click_unignore(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
+        from ...client.syncing import handle_unignore_batch
 
-        batch_diff.decision = batch_decision
-
-        # TODO: FIX
-        other_batches: list = []
-        # other_batches = [b for b in state.batches if b is not batch_diff]
-        # relative
-        from ...client.syncing import handle_ignore_skip
-
-        handle_ignore_skip(batch_diff, batch_decision, other_batches)
-
-        if batch_decision not in [SyncDecision.skip, SyncDecision.ignore]:
-            sync_instructions = []
-            for diff in batch_diff.get_dependents(include_roots=True):
-                # while making widget: bind buttons to right state
-                # share_state = {diff.object_id: False for diff in obj_diff_batch.get_dependents(include_roots=False)}
-
-                # diff id -> shared (bool)
-
-                # onclick checkbox: set widget state
-                widget = self.id2widget[diff.object_id]
-                sync = widget.sync
-
-                if sync or widget.is_main_widget:
-                    # figure out the right verify key to share to
-                    # in case of a job with user code, share to user code owner
-                    # without user code, share to job owner
-                    share_to_user: SyftVerifyKey | None = (
-                        getattr(
-                            self.obj_diff_batch.user_code_high, "user_verify_key", None
-                        )
-                        or self.obj_diff_batch.user_verify_key_high
-                    )
-                    instruction = SyncInstruction.from_widget_state(
-                        widget=widget,
-                        sync_direction=self.obj_diff_batch.sync_direction,
-                        decision=decision,
-                        share_to_user=share_to_user,
-                    )
-                    sync_instructions.append(instruction)
-        else:
-            sync_instructions = []
-            if batch_decision == SyncDecision.ignore:
-                resolved_state_high.add_ignored(batch_diff)
-                resolved_state_low.add_ignored(batch_diff)
-
-        if (
-            batch_diff.root_id in previously_ignored_batches
-            and batch_diff.decision != SyncDecision.ignore
-        ):
-            resolved_state_high.add_unignored(batch_diff.root_id)
-            resolved_state_low.add_unignored(batch_diff.root_id)
-
-        print(f"Decision: Syncing {len(sync_instructions)} objects")
-
-        for sync_instruction in sync_instructions:
-            resolved_state_low.add_sync_instruction(sync_instruction)
-            resolved_state_high.add_sync_instruction(sync_instruction)
-
-        if self.obj_diff_batch.sync_direction is None:
-            raise ValueError("no direction specified")
-        sync_direction = self.obj_diff_batch.sync_direction
-        resolved_state = (
-            resolved_state_high
-            if sync_direction == SyncDirection.LOW_TO_HIGH
-            else resolved_state_low
-        )
-        res = self.obj_diff_batch.target_client.apply_state(resolved_state)
-
-        if sync_direction == SyncDirection.HIGH_TO_LOW:
-            # apply empty state to generete a new state
-            resolved_state_high = ResolvedSyncState(
-                node_uid=self.obj_diff_batch.high_node_uid, alias="high"
+        if self.is_synced:
+            return SyftError(
+                message="The changes in this widget have already been synced."
             )
-            high_client = self.obj_diff_batch.source_client
-            res = high_client.apply_state(resolved_state_high)
 
-        self.is_synced = True
-        self.set_result_state(res)
-        self.hide_main_widget()
-        self.show_result_widget()
+        res = handle_unignore_batch(
+            obj_diff_batch=self.obj_diff_batch,
+        )
+
+        self.set_widget_result_state(res)
+        return res
+
+    def click_sync(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
+        from ...client.syncing import handle_sync_batch
+
+        if self.is_synced:
+            return SyftError(
+                message="The changes in this widget have already been synced."
+            )
+
+        res = handle_sync_batch(
+            obj_diff_batch=self.obj_diff_batch,
+            share_private_data=self.get_share_private_data_state(),
+            mockify=self.get_mockify_state(),
+        )
+
+        self.set_widget_result_state(res)
         return res
 
     @property
@@ -606,7 +537,13 @@ class ResolveWidget:
         )
         return obj_diff_widget
 
-    def set_result_state(self, result: SyftSuccess | SyftError) -> None:
+    def set_widget_result_state(self, res: SyftSuccess | SyftError) -> None:
+        self.is_synced = True
+        self.set_result_message(res)
+        self.hide_main_widget()
+        self.show_result_widget()
+
+    def set_result_message(self, result: SyftSuccess | SyftError) -> None:
         result_html = result._repr_html_()
         # Wrap in div to match Jupyter Lab output styling
         result_html = NOTEBOOK_OUTPUT_DIV.format(content=result_html)
@@ -672,7 +609,7 @@ class ResolveWidget:
             },
             layout=Layout(border="#464A91 solid 1.5px", width="200px"),
         )
-        sync_button.on_click(self.button_callback)
+        sync_button.on_click(self.click_sync)
         return sync_button
 
     def spacer(self, height: int) -> widgets.HTML:

@@ -287,7 +287,7 @@ def test_forget_usercode(low_worker, high_worker):
 
     def skip_if_user_code(diff):
         if diff.root.object_type == "UserCode":
-            return SyncDecision.ignore
+            return SyncDecision.IGNORE
         raise Exception(f"Should not reach here, but got {diff.root.object_type}")
 
     low_items_to_sync, high_items_to_sync = resolve(
@@ -380,7 +380,7 @@ def test_skip_user_code(low_worker, high_worker):
 
     def skip_if_user_code(diff):
         if diff.root.object_type == "UserCode":
-            return SyncDecision.skip
+            return SyncDecision.SKIP
         raise Exception(f"Should not reach here, but got {diff.root.object_type}")
 
     diff_state = compare_clients(low_client, high_client)
@@ -558,7 +558,7 @@ def test_sync_skip_ignore(low_worker, high_worker, decision):
         # should not be called when decision is ignore before
         if decision == "ignore":
             raise Exception("Should not reach here")
-        return SyncDecision.skip
+        return SyncDecision.SKIP
 
     diff_state = compare_clients(low_client, high_client)
     low_items_to_sync, high_items_to_sync = resolve(
