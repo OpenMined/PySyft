@@ -232,7 +232,12 @@ class SyncService(AbstractService):
             if res.is_err():
                 return SyftError(message=res.message)
             else:
-                return SyftSuccess(message=f"Synced {len(items)} items")
+                message = f"Synced {len(items)} items"
+                if len(ignored_batches) > 0:
+                    message += f", ignored {len(ignored_batches)} batches"
+                if len(unignored_batches) > 0:
+                    message += f", unignored {len(unignored_batches)} batches"
+                return SyftSuccess(message=message)
 
     @service_method(
         path="sync.get_permissions",
