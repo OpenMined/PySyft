@@ -22,6 +22,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
+from ...types.markdown import MarkdownDescription
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
@@ -86,31 +87,6 @@ class Contributor(SyftObject):
 
     def __hash__(self) -> int:
         return hash(self.email)
-
-
-@serializable()
-class MarkdownDescription(SyftObject):
-    # version
-    __canonical_name__ = "MarkdownDescription"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    text: str
-
-    def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
-        style = """
-        <style>
-            .jp-RenderedHTMLCommon pre {
-                background-color: #282c34 !important;
-                padding: 10px 10px 10px;
-            }
-            .jp-RenderedHTMLCommon pre code {
-                background-color: #282c34 !important;  /* Set the background color for the text in the code block */
-                color: #abb2bf !important;  /* Set text color */
-            }
-        </style>
-        """
-        display(HTML(style))
-        return self.text
 
 
 @serializable()
