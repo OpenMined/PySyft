@@ -117,16 +117,16 @@ class KubernetesBuilder(BuilderBase):
     def push_image(
         self,
         tag: str,
-        username: str,
-        password: str,
         registry_url: str,
+        username: str | None = None,
+        password: str | None = None,
         **kwargs: Any,
     ) -> ImagePushResult:
         exit_code = 1
         logs = None
         job_id = self._new_job_id(tag)
         push_secret = None
-        registry_auths = [(registry_url, username, password)]
+        registry_auths = []
 
         if USE_INTERNAL_REGISTRY:
             # local registry auth can be anything
@@ -134,6 +134,11 @@ class KubernetesBuilder(BuilderBase):
         else:
             # kaniko has already pushed the image directly
             return ImagePushResult(logs="Already pushed", exit_code=0)
+
+        # if we have external registry credentials, add them to the list
+        # elsea leave it for workload identity
+        if username and password:
+            registry_auths.append((registry_url, username, password))
 
         try:
             push_secret = self._create_push_secret(
@@ -293,11 +298,11 @@ class KubernetesBuilder(BuilderBase):
         run_cmds = [
             # push with credentials
             "echo Pushing image...",
-            f"crane copy {internal_tag} {tag}",
+            f"krane copy {internal_tag} {tag}",
             # cleanup image from internal registry
             "echo Cleaning up...",
-            f"IMG_DIGEST=$(crane digest {internal_tag})",
-            f"crane delete {internal_reg}/{internal_repo}@$IMG_DIGEST; echo Done",
+            f"IMG_DIGEST=$(krane digest {internal_tag})",
+            f"krane delete {internal_reg}/{internal_repo}@$IMG_DIGEST; echo Done",
         ]
 
         job = Job(
@@ -322,7 +327,7 @@ class KubernetesBuilder(BuilderBase):
                                 {
                                     "name": "crane",
                                     # debug is needed for "sh" to be available
-                                    "image": "gcr.io/go-containerregistry/krane:latest",
+                                    "image": "gcr.io/go-containerregistry/krane:debug",
                                     "command": ["sh"],
                                     "args": ["-c", " && ".join(run_cmds)],
                                     "volumeMounts": [
