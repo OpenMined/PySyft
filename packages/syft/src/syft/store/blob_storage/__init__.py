@@ -41,6 +41,7 @@ Read/retrieve SyftObject from blob storage
 """
 
 # stdlib
+from collections.abc import Callable
 from collections.abc import Generator
 from io import BytesIO
 from typing import Any
@@ -63,11 +64,14 @@ from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import DEFAULT_CHUNK_SIZE
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.grid_url import GridURL
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SyftObject
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...types.uid import UID
 
 DEFAULT_TIMEOUT = 10
@@ -262,3 +266,13 @@ class BlobStorageClient(SyftBaseModel):
 class BlobStorageConfig(SyftBaseModel):
     client_type: type[BlobStorageClient]
     client_config: BlobStorageClientConfig
+
+
+@migrate(BlobRetrievalByURLV4, BlobRetrievalByURL)
+def upgrade_blob_retrieval_by_url() -> list[Callable]:
+    return [make_set_default("proxy_node_uid", None)]
+
+
+@migrate(BlobRetrievalByURL, BlobRetrievalByURLV4)
+def downgrade_blob_retrieval_by_url() -> list[Callable]:
+    return [drop(["proxy_node_uid"])]
