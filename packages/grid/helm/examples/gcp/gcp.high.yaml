@@ -13,6 +13,7 @@ node:
   # Basic Node Config
   name: syft-gcp
   side: high
+  useInternalRegistry: false
 
   # Force backend to write results to this bucket
   # should be same as mountApi.mounts.local_bucket

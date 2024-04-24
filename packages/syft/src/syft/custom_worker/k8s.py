@@ -14,14 +14,14 @@ from kr8s.objects import Secret
 from pydantic import BaseModel
 from typing_extensions import Self
 
-# Time after which Job will be deleted
-JOB_COMPLETION_TTL = 60
-
 # Kubernetes namespace
 KUBERNETES_NAMESPACE = os.getenv("K8S_NAMESPACE", "syft")
 
 # Kubernetes runtime flag
 IN_KUBERNETES = os.getenv("CONTAINER_HOST") == "k8s"
+
+# skip pushing to internal registry
+USE_INTERNAL_REGISTRY = os.getenv("USE_INTERNAL_REGISTRY", "true").lower() == "true"
 
 # Internal registry URL
 DEFAULT_INTERNAL_REGISTRY = f"registry.{KUBERNETES_NAMESPACE}.svc.cluster.local"
