@@ -349,233 +349,233 @@ jobs:
             -t openmined/syft-client:${{ needs.build-and-push-docker-images.outputs.release_tag }} \
             $(printf 'openmined/syft-client@sha256:%s ' *)
 
-  # deploy-syft:
-  #   needs: [merge-docker-images]
-  #   if: always() &&  needs.merge-docker-images.result == 'success'
+  deploy-syft:
+    needs: [merge-docker-images]
+    if: always() &&  needs.merge-docker-images.result == 'success'
 
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: write # For tag and release notes.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # For tag and release notes.
 
-  #   outputs:
-  #     syft_version: ${{ steps.release_checks.outputs.syft_version }}
-  #     release_platform: ${{ github.event.inputs.release_platform }}
+    outputs:
+      syft_version: ${{ steps.release_checks.outputs.syft_version }}
+      release_platform: ${{ github.event.inputs.release_platform }}
 
-  #   steps:
-  #     - name: Permission to home directory
-  #       run: |
-  #         sudo chown -R $USER:$USER $HOME
+    steps:
+      - name: Permission to home directory
+        run: |
+          sudo chown -R $USER:$USER $HOME
 
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
 
-  #     # free 10GB of space
-  #     - name: Remove unnecessary files
-  #       run: |
-  #         sudo rm -rf /usr/share/dotnet
-  #         sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-  #         docker image prune --all --force
-  #         docker builder prune --all --force
-  #         docker system prune --all --force
+      # free 10GB of space
+      - name: Remove unnecessary files
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
 
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: "3.12"
-  #     - name: Install dependencies
-  #       run: |
-  #         pip install --upgrade pip uv==0.1.35 tox tox-uv==1.5.1 setuptools wheel twine bump2version PyYAML
-  #         uv --version
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip uv==0.1.35 tox tox-uv==1.5.1 setuptools wheel twine bump2version PyYAML
+          uv --version
 
-  #     - name: Bump the Version
-  #       if: needs.merge-docker-images.outputs.release_tag == 'beta'
-  #       run: |
-  #         ls **/VERSION | xargs -I {} python {}
-  #         cat packages/grid/devspace.yaml | grep '0\.'
-  #         bump2version prenum --allow-dirty --no-commit
-  #         ls **/VERSION | xargs -I {} python {}
-  #         cat packages/grid/devspace.yaml | grep '0\.'
-  #         python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
+      - name: Bump the Version
+        if: needs.merge-docker-images.outputs.release_tag == 'beta'
+        run: |
+          ls **/VERSION | xargs -I {} python {}
+          cat packages/grid/devspace.yaml | grep '0\.'
+          bump2version prenum --allow-dirty --no-commit
+          ls **/VERSION | xargs -I {} python {}
+          cat packages/grid/devspace.yaml | grep '0\.'
+          python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
 
-  #     - name: Generate Release Metadata
-  #       id: release_checks
-  #       run: |
-  #         echo "github_release_version=$(python packages/grid/VERSION |  sed 's/-beta./b/')" >> $GITHUB_OUTPUT
-  #         echo "future_stable_version=$(python packages/grid/VERSION |   sed 's/-beta.*//')" >> $GITHUB_OUTPUT
-  #         echo "syft_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
-  #         if [[ ${{ needs.merge-docker-images.outputs.release_tag}} == "beta" ]]; then
-  #           echo "is_beta_release=true" >> $GITHUB_OUTPUT
-  #         else
-  #           echo "is_beta_release=false" >> $GITHUB_OUTPUT
-  #         fi
+      - name: Generate Release Metadata
+        id: release_checks
+        run: |
+          echo "github_release_version=$(python packages/grid/VERSION |  sed 's/-beta./b/')" >> $GITHUB_OUTPUT
+          echo "future_stable_version=$(python packages/grid/VERSION |   sed 's/-beta.*//')" >> $GITHUB_OUTPUT
+          echo "syft_version=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
+          if [[ ${{ needs.merge-docker-images.outputs.release_tag}} == "beta" ]]; then
+            echo "is_beta_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_beta_release=false" >> $GITHUB_OUTPUT
+          fi
 
-  #     - name: Check Protocol Version
-  #       run: |
-  #         tox -e syft.protocol.check
+      - name: Check Protocol Version
+        run: |
+          tox -e syft.protocol.check
 
-  #     - name: Build Helm Chart
-  #       shell: bash
-  #       run: |
-  #         # install k3d
-  #         K3D_VERSION=v5.6.3
-  #         wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
-  #         mv k3d-linux-amd64 k3d
-  #         chmod +x k3d
-  #         export PATH=`pwd`:$PATH
-  #         k3d version
+      - name: Build Helm Chart
+        shell: bash
+        run: |
+          # install k3d
+          K3D_VERSION=v5.6.3
+          wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
+          mv k3d-linux-amd64 k3d
+          chmod +x k3d
+          export PATH=`pwd`:$PATH
+          k3d version
 
-  #         #Install Devspace
-  #         DEVSPACE_VERSION=v6.3.12
-  #         curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
-  #         chmod +x devspace
-  #         devspace version
+          #Install Devspace
+          DEVSPACE_VERSION=v6.3.12
+          curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
+          chmod +x devspace
+          devspace version
 
-  #         # Install helm
-  #         curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-  #         helm version
+          # Install helm
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
 
-  #         tox -e syft.build.helm
-  #         tox -e syft.package.helm
+          tox -e syft.build.helm
+          tox -e syft.package.helm
 
-  #     - name: Check and Bump Protocol Version
-  #       run: |
-  #         if [[ "${{ needs.merge-docker-images.outputs.release_tag }}" == "latest" ]]; then
-  #           export BUMP=True
-  #         fi
-  #         tox -e syft.protocol.check
+      - name: Check and Bump Protocol Version
+        run: |
+          if [[ "${{ needs.merge-docker-images.outputs.release_tag }}" == "latest" ]]; then
+            export BUMP=True
+          fi
+          tox -e syft.protocol.check
 
-  #     - name: Update PyPI Readme
-  #       run: |
-  #         python scripts/convert_to_pypi_readme.py --input-file  packages/syft/README.md --output-file packages/syft/PYPI.md --version ${{ steps.release_checks.outputs.future_stable_version }}
+      - name: Update PyPI Readme
+        run: |
+          python scripts/convert_to_pypi_readme.py --input-file  packages/syft/README.md --output-file packages/syft/PYPI.md --version ${{ steps.release_checks.outputs.future_stable_version }}
 
-  #     - name: Linting
-  #       run: |
-  #         tox -e lint || true
+      - name: Linting
+        run: |
+          tox -e lint || true
 
-  #     - name: Changes to commit to Syft Repo during beta release
-  #       if: needs.merge-docker-images.outputs.release_tag == 'beta'
-  #       uses: EndBug/add-and-commit@v9
-  #       with:
-  #         author_name: ${{ secrets.OM_BOT_NAME }}
-  #         author_email: ${{ secrets.OM_BOT_EMAIL }}
-  #         message: "[syft]bump version"
-  #         add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION','packages/syft/PYPI.md', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml','packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py', 'packages/grid/podman/podman-kube/podman-syft-kube.yaml' ,'packages/grid/podman/podman-kube/podman-syft-kube-config.yaml', 'packages/syftcli/manifest.yml', 'packages/syft/src/syft/protocol/protocol_version.json', 'packages/syft/src/syft/protocol/releases/', 'packages/grid/backend/worker_cpu.dockerfile','packages/grid/helm/syft/values.yaml','packages/grid/helm/syft']"
+      - name: Changes to commit to Syft Repo during beta release
+        if: needs.merge-docker-images.outputs.release_tag == 'beta'
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: ${{ secrets.OM_BOT_NAME }}
+          author_email: ${{ secrets.OM_BOT_EMAIL }}
+          message: "[syft]bump version"
+          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION','packages/syft/PYPI.md', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/syft/setup.cfg', 'packages/grid/frontend/package.json', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml', 'packages/grid/helm/syft/Chart.yaml','packages/grid/helm/repo', 'packages/hagrid/hagrid/deps.py', 'packages/grid/podman/podman-kube/podman-syft-kube.yaml' ,'packages/grid/podman/podman-kube/podman-syft-kube-config.yaml', 'packages/syftcli/manifest.yml', 'packages/syft/src/syft/protocol/protocol_version.json', 'packages/syft/src/syft/protocol/releases/', 'packages/grid/backend/worker_cpu.dockerfile','packages/grid/helm/syft/values.yaml','packages/grid/helm/syft']"
 
-  #     - name: Changes to commit to Syft Repo during stable release
-  #       if: needs.merge-docker-images.outputs.release_tag == 'latest'
-  #       uses: EndBug/add-and-commit@v9
-  #       with:
-  #         author_name: ${{ secrets.OM_BOT_NAME }}
-  #         author_email: ${{ secrets.OM_BOT_EMAIL }}
-  #         message: "[syft] bump protocol version"
-  #         add: "['packages/syft/src/syft/protocol/protocol_version.json', 'packages/syft/src/syft/protocol/releases/','packages/syft/PYPI.md','packages/grid/helm/repo']"
+      - name: Changes to commit to Syft Repo during stable release
+        if: needs.merge-docker-images.outputs.release_tag == 'latest'
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: ${{ secrets.OM_BOT_NAME }}
+          author_email: ${{ secrets.OM_BOT_EMAIL }}
+          message: "[syft] bump protocol version"
+          add: "['packages/syft/src/syft/protocol/protocol_version.json', 'packages/syft/src/syft/protocol/releases/','packages/syft/PYPI.md','packages/grid/helm/repo']"
 
-  #     - name: Scheduled Build and Publish
-  #       if: github.event_name == 'schedule'
-  #       run: |
-  #         tox -e syft.publish
-  #         twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
+      - name: Scheduled Build and Publish
+        if: github.event_name == 'schedule'
+        run: |
+          tox -e syft.publish
+          twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
 
-  #     - name: Manual Build and Publish
-  #       if: github.event_name != 'schedule'
-  #       run: |
-  #         tox -e syft.publish
-  #         if [[ "${{ github.event.inputs.release_platform }}" == "REAL_PYPI" ]]; then
-  #           twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
-  #         fi
-  #         if [[ "${{ github.event.inputs.release_platform }}" == "TEST_PYPI" ]]; then
-  #           twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
-  #         fi
-  #         if [[ "${{ github.event.inputs.release_platform }}" == "REAL_AND_TEST_PYPI" ]]; then
-  #           twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
-  #           twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
-  #         fi
+      - name: Manual Build and Publish
+        if: github.event_name != 'schedule'
+        run: |
+          tox -e syft.publish
+          if [[ "${{ github.event.inputs.release_platform }}" == "REAL_PYPI" ]]; then
+            twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
+          fi
+          if [[ "${{ github.event.inputs.release_platform }}" == "TEST_PYPI" ]]; then
+            twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
+          fi
+          if [[ "${{ github.event.inputs.release_platform }}" == "REAL_AND_TEST_PYPI" ]]; then
+            twine upload -u __token__ -p ${{ secrets.OM_SYFT_PYPI_TOKEN }} packages/syft/dist/*
+            twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
+          fi
 
-  #     # Checkout Infra repo (nested)
-  #     - name: Checkout Infra Repo
-  #       uses: actions/checkout@v4
-  #       with:
-  #         repository: ${{ secrets.INFRA_REPO }}
-  #         ref: "main"
-  #         token: ${{ secrets.INFRA_BOT_COMMIT_TOKEN }}
-  #         path: infrastructure
+      # Checkout Infra repo (nested)
+      - name: Checkout Infra Repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.INFRA_REPO }}
+          ref: "main"
+          token: ${{ secrets.INFRA_BOT_COMMIT_TOKEN }}
+          path: infrastructure
 
-  #     # This step will copy the generated K8s manifest files to the correct directory in Infra repo
-  #     - name: Copy files to Infra Repo
-  #       run: |
-  #         if [[ "${{ needs.merge-docker-images.outputs.release_tag }}" == "beta" ]]; then
-  #           rm -rf infrastructure/gitops/environments/pre_release/
-  #           mkdir -p infrastructure/gitops/environments/pre_release/
-  #           cp -R packages/grid/helm/syft/. infrastructure/gitops/environments/pre_release/
-  #         else
-  #           rm -rf infrastructure/gitops/environments/stable/
-  #           mkdir -p infrastructure/gitops/environments/stable/
-  #           cp -R packages/grid/helm/syft/. infrastructure/gitops/environments/stable/
-  #         fi
+      # This step will copy the generated K8s manifest files to the correct directory in Infra repo
+      - name: Copy files to Infra Repo
+        run: |
+          if [[ "${{ needs.merge-docker-images.outputs.release_tag }}" == "beta" ]]; then
+            rm -rf infrastructure/gitops/environments/pre_release/
+            mkdir -p infrastructure/gitops/environments/pre_release/
+            cp -R packages/grid/helm/syft/. infrastructure/gitops/environments/pre_release/
+          else
+            rm -rf infrastructure/gitops/environments/stable/
+            mkdir -p infrastructure/gitops/environments/stable/
+            cp -R packages/grid/helm/syft/. infrastructure/gitops/environments/stable/
+          fi
 
-  #     - name: Commit changes to Infra Repo
-  #       uses: EndBug/add-and-commit@v9
-  #       with:
-  #         author_name: ${{ secrets.OM_BOT_NAME }}
-  #         author_email: ${{ secrets.OM_BOT_EMAIL }}
-  #         message: "Update K8s Manifests from Syft Repo"
-  #         add: "."
-  #         push: "origin main"
-  #         cwd: "./infrastructure/"
+      - name: Commit changes to Infra Repo
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: ${{ secrets.OM_BOT_NAME }}
+          author_email: ${{ secrets.OM_BOT_EMAIL }}
+          message: "Update K8s Manifests from Syft Repo"
+          add: "."
+          push: "origin main"
+          cwd: "./infrastructure/"
 
-  #     - name: Create SyftCLI Config assets
-  #       run: |
-  #         pip install pyyaml
-  #         python scripts/create_syftcli_config.py
+      - name: Create SyftCLI Config assets
+        run: |
+          pip install pyyaml
+          python scripts/create_syftcli_config.py
 
-  #     - name: GitHub Release
-  #       if: github.event.inputs.release_platform  != 'TEST_PYPI'
-  #       uses: softprops/action-gh-release@v2
-  #       with:
-  #         name: v${{ steps.release_checks.outputs.github_release_version }}
-  #         generate_release_notes: true
-  #         prerelease: ${{ steps.release_checks.outputs.is_beta_release }}
-  #         files: |
-  #           ./packages/syftcli/manifest.yml
-  #           ./build/syftcli-config/*
-  #           ./packages/hagrid/hagrid/manifest_template.yml
-  #         tag_name: v${{ steps.release_checks.outputs.github_release_version }}
+      - name: GitHub Release
+        if: github.event.inputs.release_platform  != 'TEST_PYPI'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: v${{ steps.release_checks.outputs.github_release_version }}
+          generate_release_notes: true
+          prerelease: ${{ steps.release_checks.outputs.is_beta_release }}
+          files: |
+            ./packages/syftcli/manifest.yml
+            ./build/syftcli-config/*
+            ./packages/hagrid/hagrid/manifest_template.yml
+          tag_name: v${{ steps.release_checks.outputs.github_release_version }}
 
-  #     # Checkout to gh-pages and update helm repo
-  #     - name: Checkout to gh-pages
-  #       uses: actions/checkout@v4
-  #       with:
-  #         ref: gh-pages
-  #         token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
-  #         path: ghpages
+      # Checkout to gh-pages and update helm repo
+      - name: Checkout to gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
+          path: ghpages
 
-  #     - name: Copy helm repo files from Syft Repo
-  #       run: |
-  #         rm -rf ghpages/helm/*
-  #         cp -R packages/grid/helm/repo/. ghpages/helm/
+      - name: Copy helm repo files from Syft Repo
+        run: |
+          rm -rf ghpages/helm/*
+          cp -R packages/grid/helm/repo/. ghpages/helm/
 
-  #     - name: Commit changes to gh-pages
-  #       uses: EndBug/add-and-commit@v9
-  #       with:
-  #         author_name: ${{ secrets.OM_BOT_NAME }}
-  #         author_email: ${{ secrets.OM_BOT_EMAIL }}
-  #         message: "Update Helm package from Syft Repo"
-  #         add: "helm/"
-  #         push: "origin gh-pages"
-  #         cwd: "./ghpages/"
+      - name: Commit changes to gh-pages
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: ${{ secrets.OM_BOT_NAME }}
+          author_email: ${{ secrets.OM_BOT_EMAIL }}
+          message: "Update Helm package from Syft Repo"
+          add: "helm/"
+          push: "origin gh-pages"
+          cwd: "./ghpages/"
 
-  #     # Since the post-release tests are dependent on the release being available on PyPI
-  #     # we need to wait for PyPI to update before running the post-release tests
-  #     - name: Wait for PyPI to update
-  #       run: |
-  #         sleep 60
+      # Since the post-release tests are dependent on the release being available on PyPI
+      # we need to wait for PyPI to update before running the post-release tests
+      - name: Wait for PyPI to update
+        run: |
+          sleep 60
 
-  # # Can we remove the always flag from the below job?
-  # call-cd-post-release-tests:
-  #   needs: [deploy-syft]
-  #   if: always() && github.repository == 'OpenMined/PySyft' && needs.deploy-syft.result == 'success' # don't run on forks
-  #   uses: OpenMined/PySyft/.github/workflows/cd-post-release-tests.yml@dev
-  #   with:
-  #     syft_version: ${{ needs.deploy-syft.outputs.syft_version }}
-  #     release_platform: ${{ github.event.inputs.release_platform}}
+  # Can we remove the always flag from the below job?
+  call-cd-post-release-tests:
+    needs: [deploy-syft]
+    if: always() && github.repository == 'OpenMined/PySyft' && needs.deploy-syft.result == 'success' # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/cd-post-release-tests.yml@dev
+    with:
+      syft_version: ${{ needs.deploy-syft.outputs.syft_version }}
+      release_platform: ${{ github.event.inputs.release_platform}}
