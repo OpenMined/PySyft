@@ -328,6 +328,18 @@ class UserService(AbstractService):
         else:
             return user
 
+    @service_method(
+        path="user.key_for_email", name="key_for_email", roles=DATA_OWNER_ROLE_LEVEL
+    )
+    def key_for_email(
+        self, context: AuthedServiceContext, email: str
+    ) -> UserPrivateKey | SyftError:
+        result = self.stash.get_by_email(credentials=context.credentials, email=email)
+        if result.is_ok():
+            user = result.ok()
+            return user.to(UserPrivateKey)
+        return SyftError(message=str(result.err()))
+
     @service_method(path="user.delete", name="delete", roles=GUEST_ROLE_LEVEL)
     def delete(self, context: AuthedServiceContext, uid: UID) -> bool | SyftError:
         # third party

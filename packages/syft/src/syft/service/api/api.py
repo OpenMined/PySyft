@@ -7,7 +7,6 @@ import keyword
 import re
 import textwrap
 from typing import Any
-from typing import Self
 
 # third party
 from pydantic import ValidationError
@@ -16,6 +15,7 @@ from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
+from typing_extensions import Self
 
 # relative
 from ...abstract_node import AbstractNode
@@ -58,6 +58,7 @@ class TwinAPIAuthedContext(AuthedServiceContext):
     state: dict[Any, Any] | None = None
     client: SyftClient | None = None
     user_view: UserView | None = None
+    admin_client: SyftClient | None = None
 
 
 @serializable()
@@ -208,7 +209,10 @@ class Endpoint(SyftObject):
         )
 
     def build_internal_context(
-        self, context: AuthedServiceContext, user_client: SyftClient | None
+        self,
+        context: AuthedServiceContext,
+        user_client: SyftClient | None,
+        admin_client: SyftClient | None,
     ) -> TwinAPIAuthedContext:
         helper_function_dict: dict[str, Callable] = {}
         self.helper_functions = self.helper_functions or {}
@@ -235,6 +239,7 @@ class Endpoint(SyftObject):
             state=self.state or {},
             client=user_client,
             user_view=user_client.me,
+            admin_client=admin_client,
         )
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
@@ -258,7 +263,9 @@ class Endpoint(SyftObject):
         # load it
         exec(raw_byte_code)  # nosec
 
-        internal_context = self.build_internal_context(context, user_client=None)
+        internal_context = self.build_internal_context(
+            context, user_client=None, admin_client=None
+        )
 
         # execute it
         evil_string = f"{self.func_name}(*args, **kwargs,context=internal_context)"
@@ -294,11 +301,20 @@ class BaseTwinAPIEndpoint(SyftObject):
     @model_validator(mode="before")
     @classmethod
     def validate_signature(cls, data: dict[str, Any]) -> dict[str, Any]:
-        mock_function = data["mock_function"]  # mock_function can't be None
+        mock_function = data.get("mock_function")
         private_function = data.get("private_function")
 
+        if mock_function is None and private_function is None:
+            raise ValueError(
+                "Mock and Private API Endpoints must have at least one function."
+            )
+
         # Add none check
-        if private_function and private_function.signature != mock_function.signature:
+        if (
+            mock_function
+            and private_function
+            and private_function.signature != mock_function.signature
+        ):
             raise ValueError(
                 "Mock and Private API Endpoints must have the same signature."
             )
@@ -355,7 +371,7 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
 
     path: str
     private_function: PrivateAPIEndpoint | None = None
-    mock_function: PublicAPIEndpoint
+    mock_function: PublicAPIEndpoint | None = None
     signature: Signature
     description: str | None = None
     worker_pool: str | None = None
@@ -370,7 +386,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
 
     path: str
     private_function: PrivateAPIEndpoint | None = None
-    mock_function: PublicAPIEndpoint
+    mock_function: PublicAPIEndpoint | None = None
     signature: Signature
     description: str | None = None
     action_object_id: UID
@@ -478,6 +494,11 @@ class TwinAPIEndpoint(SyncableSyftObject):
         user_client.credentials = signing_key
         return user_client
 
+    def get_admin_client_from_node(self, context: AuthedServiceContext) -> SyftClient:
+        admin_client = admin_client = context.node.get_guest_client()
+        admin_client.credentials = context.node.signing_key
+        return admin_client
+
     def exec_code(
         self,
         code: PrivateAPIEndpoint | PublicAPIEndpoint,
@@ -492,7 +513,11 @@ class TwinAPIEndpoint(SyncableSyftObject):
             raw_byte_code = compile(ast.unparse(inner_function), "<string>", "exec")
 
             user_client = self.get_user_client_from_node(context)
-            internal_context = code.build_internal_context(context, user_client)
+            admin_client = self.get_admin_client_from_node(context)
+
+            internal_context = code.build_internal_context(
+                context, user_client, admin_client
+            )
 
             # TODO: Beach Fix
             # this means admin code doesn't need to manually set NodeIdenity for
@@ -730,34 +755,36 @@ def api_endpoint_method(
 
 def create_new_api_endpoint(
     path: str,
-    mock_function: Endpoint,
+    mock_function: Endpoint | None = None,
     private_function: Endpoint | None = None,
     description: str | None = None,
     worker_pool: str | None = None,
 ) -> CreateTwinAPIEndpoint | SyftError:
     try:
         # Parse the string to extract the function name
+        if mock_function is None and private_function is None:
+            return SyftError(message="You must specify at least one endpoint function")
 
-        endpoint_signature = mock_function.signature
+        endpoint_signature = None
+        if mock_function is not None:
+            endpoint_signature = mock_function.signature
+            mock_function = mock_function.to(PublicAPIEndpoint)
+
         if private_function is not None:
+            endpoint_signature = private_function.signature
+            private_function.view_access = False
+            private_function = private_function.to(PrivateAPIEndpoint)
+
+        if mock_function and private_function:
             if private_function.signature != mock_function.signature:
                 return SyftError(message="Signatures don't match")
-            endpoint_signature = mock_function.signature
-            private_function.view_access = False
-
-            return CreateTwinAPIEndpoint(
-                path=path,
-                private_function=private_function.to(PrivateAPIEndpoint),
-                mock_function=mock_function.to(PublicAPIEndpoint),
-                signature=endpoint_signature,
-                description=description,
-                worker_pool=worker_pool,
-            )
 
         return CreateTwinAPIEndpoint(
             path=path,
-            prublic_code=mock_function.to(PublicAPIEndpoint),
+            private_function=private_function,
+            mock_function=mock_function,
             signature=endpoint_signature,
+            description=description,
             worker_pool=worker_pool,
         )
     except ValidationError as e:

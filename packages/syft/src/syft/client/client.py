@@ -741,6 +741,21 @@ class SyftClient:
 
         return _guest_client
 
+    def login_as(self, email: str) -> Self:
+        user_private_key = self.api.services.user.key_for_email(email=email)
+        if not isinstance(user_private_key, UserPrivateKey):
+            return user_private_key
+        print(
+            f"Logged into <{self.name}: {self.metadata.node_side_type.capitalize()}-side "
+            f"{self.metadata.node_type.capitalize()}> as {email}"
+        )
+
+        return self.__class__(
+            connection=self.connection,
+            credentials=user_private_key.signing_key,
+            metadata=self.metadata,
+        )
+
     def login(
         self,
         email: str | None = None,

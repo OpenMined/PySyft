@@ -222,6 +222,73 @@ class APIService(AbstractService):
         return api_endpoint
 
     @service_method(
+        path="api.set_state",
+        name="set_state",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def set_state(
+        self,
+        context: AuthedServiceContext,
+        api_path: str,
+        state: dict,
+        private: bool = False,
+        mock: bool = False,
+        both: bool = False,
+    ) -> TwinAPIEndpoint | SyftError:
+        """Sets the state of a specific API endpoint."""
+        if both:
+            private = True
+            mock = True
+        result = self.stash.get_by_path(context.node.verify_key, api_path)
+        if result.is_err():
+            return SyftError(message=result.err())
+        api_endpoint = result.ok()
+
+        if private and api_endpoint.private_function:
+            api_endpoint.private_function.state = state
+        if mock and api_endpoint.mock_function:
+            api_endpoint.mock_function.state = state
+
+        result = self.stash.upsert(context.credentials, endpoint=api_endpoint)
+        if result.is_err():
+            return SyftError(message=result.err())
+        return SyftSuccess(message=f"APIEndpoint {api_path} state updated.")
+
+    @service_method(
+        path="api.set_settings",
+        name="set_settings",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def set_settings(
+        self,
+        context: AuthedServiceContext,
+        api_path: str,
+        settings: dict,
+        private: bool = False,
+        mock: bool = False,
+        both: bool = False,
+    ) -> TwinAPIEndpoint | SyftError:
+        """Sets the settings of a specific API endpoint."""
+        if both:
+            private = True
+            mock = True
+        result = self.stash.get_by_path(context.node.verify_key, api_path)
+        if result.is_err():
+            return SyftError(message=result.err())
+        api_endpoint = result.ok()
+        print("got api endpoint", api_endpoint, type(api_endpoint))
+        if private and api_endpoint.private_function:
+            api_endpoint.private_function.settings = settings
+        if mock and api_endpoint.mock_function:
+            api_endpoint.mock_function.settings = settings
+
+        result = self.stash.upsert(context.credentials, endpoint=api_endpoint)
+        print("calling result", result)
+        if result.is_err():
+            return SyftError(message=result.err())
+        return SyftSuccess(message=f"APIEndpoint {api_path} settings updated.")
+
+    @service_method(
         path="api.api_endpoints",
         name="api_endpoints",
         roles=DATA_SCIENTIST_ROLE_LEVEL,

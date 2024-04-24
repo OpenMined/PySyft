@@ -138,14 +138,14 @@
       "CreateTwinAPIEndpoint": {
         "1": {
           "version": 1,
-          "hash": "e735dc30cba1789c3fb109e35aa40ffa873951f8e00b0b971950b1735c27d1ca",
+          "hash": "61cc1b1fefeb764dd0c130d5cd8c5ec617f50e4cf2b92c93c6faac3dfd1b8778",
           "action": "add"
         }
       },
       "TwinAPIEndpoint": {
         "1": {
           "version": 1,
-          "hash": "540468be5db20efe555d2288c9aed60887306ac9b56d6a63c066246bc0010e9c",
+          "hash": "f4c599f4f74a4906e405f05173c6e14095afe57e27ec4792a3bf853bf3f97aa8",
           "action": "add"
         }
       },
