@@ -6,6 +6,8 @@ global:
   # Force default secret values for development. DO NOT SET THIS TO FALSE IN PRODUCTION
   randomizedSecrets: true
 
+# =================================================================================
+
 mongo:
   # MongoDB config
   port: 27017
@@ -31,9 +33,11 @@ mongo:
   # Mongo secret name. Override this if you want to use a self-managed secret.
   secretKeyName: mongo-secret
 
-  # custom secret values
+  # default/custom secret raw values
   secret:
     rootPassword: null
+
+# =================================================================================
 
 frontend:
   # Extra environment vars
@@ -42,6 +46,8 @@ frontend:
   # Pod Resource Limits
   resourcesPreset: medium
   resources: null
+
+# =================================================================================
 
 seaweedfs:
   # Master
@@ -70,6 +76,9 @@ seaweedfs:
     #       creds: /etc/secrets/gcs_creds.json
     automount: null
 
+    # Provision the secret externally or through extraResources
+    secretKeyName: null
+
   # Extra environment vars
   env: null
 
@@ -96,10 +105,11 @@ seaweedfs:
   volumes: null
   volumeMounts: null
 
-  # custom secret values
+  # default/custom secret raw values
   secret:
     s3RootPassword: null
-    mountCredentials: null
+
+# =================================================================================
 
 proxy:
   # Extra environment vars
@@ -109,12 +119,17 @@ proxy:
   podLabels: null
   podAnnotations: null
 
+  # Proxy Service annotations
+  serviceAnnotations: null
+
   # Node selector for pods
   nodeSelector: null
 
   # Pod Resource Limits
   resourcesPreset: small
   resources: null
+
+# =================================================================================
 
 registry:
   # Extra environment vars
@@ -134,6 +149,8 @@ registry:
   resourcesPreset: medium
   resources: null
 
+# =================================================================================
+
 node:
   # Syft settings
   name: null
@@ -146,6 +163,7 @@ node:
   queuePort: 5556
   logLevel: info
   debuggerEnabled: false
+  associationRequestAutoApproval: false
 
   # SMTP Settings
   smtp:
@@ -174,9 +192,11 @@ node:
   # - defaultRootPassword
   secretKeyName: backend-secret
 
-  # custom secret values
+  # default/custom secret raw values
   secret:
     defaultRootPassword: null
+
+# =================================================================================
 
 ingress:
   hostname: null # do not make this localhost
@@ -197,3 +217,7 @@ ingress:
   # ----------------------------------------
   class: null
   className: null
+
+# =================================================================================
+
+extraResources: []
