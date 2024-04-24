@@ -401,10 +401,12 @@ class Request(SyncableSyftObject):
                 f"outputs are <strong>shared</strong> with the owners of {owners_string} once computed"
             )
 
+        node_info = ""
         if api is not None:
             metadata = api.services.metadata.get_metadata()
             node_name = api.node_name.capitalize() if api.node_name is not None else ""
             node_type = metadata.node_type.value.capitalize()
+            node_info = f"<p><strong>Requested on: </strong> {node_name} of type <strong>{node_type}</strong></p>"
 
         email_str = (
             f"({self.requesting_user_email})" if self.requesting_user_email else ""
@@ -426,8 +428,7 @@ class Request(SyncableSyftObject):
                 {updated_at_line}
                 {shared_with_line}
                 <p><strong>Status: </strong>{self.status}</p>
-                <p><strong>Requested on: </strong> {node_name} of type <strong> \
-                    {node_type}</strong></p>
+                {node_info}
                 <p><strong>Requested by:</strong> {self.requesting_user_name} {email_str} {institution_str}</p>
                 <p><strong>Changes: </strong> {str_changes}</p>
             </div>
