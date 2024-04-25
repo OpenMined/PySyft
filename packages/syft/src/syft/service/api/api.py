@@ -112,12 +112,16 @@ class TwinAPIEndpointView(SyftObject):
                 for node in ast.walk(private_parsed_code)
                 if isinstance(node, ast.FunctionDef)
             ][0]
+        worker_pool = "UNSET (DEFAULT)"
+        if self.worker_pool is not None:
+            worker_pool = self.worker_pool
         return {
             "API path": self.path,
             "Signature": self.path + str(self.signature),
             "Access": self.access,
             "Mock Function": mock_function_name,
             "Private Function": private_function_name,
+            "Worker Pool": worker_pool,
         }
 
 
