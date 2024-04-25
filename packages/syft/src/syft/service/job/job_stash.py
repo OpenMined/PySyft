@@ -623,7 +623,7 @@ class Job(SyncableSyftObject):
 
         logs = self.logs(_print=False)
         log_lines = logs.strip().split("\n") if logs else []
-        log_lines.insert(0, "Message")
+        log_lines.insert(0, f"<strong>{"Message"}</strong>")
 
         log_lines = [f"<code>{line}</code>" for line in log_lines]
         logs = "\n".join(log_lines)
@@ -656,6 +656,7 @@ pre code::before {{
 
 pre code:first-of-type::before {{
     content: "#";
+    font-weight: bold;
 }}
 
 </style>
