@@ -19,6 +19,7 @@ from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
 from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
+from ...util.notebook_ui.components.sync import Alert
 from ...util.notebook_ui.components.sync import Badge
 from ...util.notebook_ui.components.sync import CopyIDButton
 from ...util.notebook_ui.components.sync import MainDescription
@@ -100,6 +101,7 @@ class MainObjectDiffWidget:
         diff: ObjectDiff,
         direction: SyncDirection,
         with_box: bool = True,
+        show_share_warning: bool = False,
     ):
         self.low_properties = diff.repr_attr_dict("low")
         self.high_properties = diff.repr_attr_dict("high")
@@ -107,9 +109,11 @@ class MainObjectDiffWidget:
         self.direction = direction
         self.diff: ObjectDiff = diff
         self.with_box = with_box
-        self.widget = self.build()
+        self.show_share_warning = show_share_warning
         self.sync = True
         self.is_main_widget: bool = True
+
+        self.widget = self.build()
 
     def set_share_private_data(self) -> None:
         # No-op for main widget
@@ -128,6 +132,21 @@ class MainObjectDiffWidget:
     def share_private_data(self) -> bool:
         # there are TwinAPIEndpoint.__private_sync_attr_mocks__
         return not isinstance(self.diff.non_empty_object, TwinAPIEndpoint)
+
+    @property
+    def warning_html(self) -> str:
+        if isinstance(self.diff.non_empty_object, TwinAPIEndpoint):
+            message = "Only the private function of a TwinAPI will be synced to the public node."
+            return Alert(message=message).to_html()
+        elif self.show_share_warning:
+            message = (
+                "By default only the object wrapper will be synced. "
+                "If you would like to sync the real data please "
+                'activate the "Sync Real Data" button above.'
+            )
+            return Alert(message=message).to_html()
+        else:
+            return ""
 
     def build(self) -> widgets.HBox:
         all_keys = list(self.low_properties.keys()) + list(self.high_properties.keys())
@@ -168,13 +187,17 @@ class MainObjectDiffWidget:
             }
             </style>
         """
-        dom_classes = []
-        if self.with_box:
-            dom_classes.append("diff-container")
 
-        return widgets.HBox(
-            [HTML(css_accordion), widget_from, widget_to], _dom_classes=dom_classes
-        )
+        result = widgets.HBox([HTML(css_accordion), widget_from, widget_to])
+
+        warning = self.warning_html
+        if warning:
+            result = VBox([widgets.HTML(warning), result])
+
+        if self.with_box:
+            result._dom_classes = result._dom_classes + ("diff-container",)
+
+        return result
 
 
 class CollapsableObjectDiffWidget:
@@ -203,6 +226,17 @@ class CollapsableObjectDiffWidget:
     @property
     def has_unused_share_button(self) -> bool:
         return self.show_share_button and not self.share_private_data
+
+    @property
+    def warning_html(self) -> str:
+        if self.show_share_button:
+            message = (
+                "By default only the object wrapper will be synced. "
+                "If you would like to sync the real log data please "
+                "activate the “Real Data” button above."
+            )
+            return Alert(message=message).to_html()
+        return ""
 
     @property
     def show_share_button(self) -> bool:
@@ -240,7 +274,12 @@ class CollapsableObjectDiffWidget:
             self._share_private_checkbox.value = True
 
     def build(self) -> widgets.VBox:
-        content = MainObjectDiffWidget(self.diff, self.direction, with_box=False).widget
+        content = MainObjectDiffWidget(
+            self.diff,
+            self.direction,
+            with_box=False,
+            show_share_warning=self.show_share_button,
+        ).widget
 
         accordion, share_private_checkbox, sync_checkbox = self.build_accordion(
             accordion_body=content,
@@ -265,6 +304,7 @@ class CollapsableObjectDiffWidget:
             <style>
             .accordion {{
                 padding: 0 10px;
+                margin: 3px 0px;
             }}
 
             .body-hidden {{
@@ -387,11 +427,7 @@ class ResolveWidget:
         return widgets.HTML(value=CSS_CODE)
 
     def _repr_mimebundle_(self, **kwargs: dict) -> dict[str, str] | None:
-        # from IPython.display import display
         return self.widget._repr_mimebundle_(**kwargs)
-
-    def click_sync(self) -> SyftSuccess | SyftError:
-        return self.button_callback()
 
     def click_share_all_private_data(self) -> None:
         for widget in self.id2widget.values():
@@ -407,119 +443,64 @@ class ResolveWidget:
         widget.set_share_private_data()
         return SyftSuccess(message="Private data shared")
 
-    def button_callback(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
+    def get_share_private_data_state(self) -> dict[UID, bool]:
+        return {
+            uid: widget.share_private_data for uid, widget in self.id2widget.items()
+        }
+
+    def get_mockify_state(self) -> dict[UID, bool]:
+        return {uid: widget.mockify for uid, widget in self.id2widget.items()}
+
+    def click_ignore(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
+        # relative
+        from ...client.syncing import handle_ignore_batch
+
         if self.is_synced:
             return SyftError(
                 message="The changes in this widget have already been synced."
             )
 
-        if self.obj_diff_batch.sync_direction == SyncDirection.LOW_TO_HIGH:
-            # TODO: make dynamic
-            decision = "low"
-        else:
-            decision = "high"
-
-        # previously_ignored_batches = state.low_state.ignored_batches
-        previously_ignored_batches: dict = {}
-        # TODO: only add permissions for objects where we manually give permission
-        # Maybe default read permission for some objects (high -> low)
-
-        # TODO: UID
-        resolved_state_low = ResolvedSyncState(
-            node_uid=self.obj_diff_batch.low_node_uid, alias="low"
-        )
-        resolved_state_high = ResolvedSyncState(
-            node_uid=self.obj_diff_batch.high_node_uid, alias="high"
+        res = handle_ignore_batch(
+            obj_diff_batch=self.obj_diff_batch,
+            all_batches=self.obj_diff_batch.global_batches,
         )
 
-        batch_diff = self.obj_diff_batch
-        if batch_diff.is_unchanged:
-            # Hierarchy has no diffs
-            return SyftSuccess(message="No changes to sync")
+        self.set_widget_result_state(res)
+        return res
 
-        if batch_diff.decision is not None:
-            # handles ignores
-            batch_decision = batch_diff.decision
-        elif decision is not None:
-            batch_decision = SyncDecision(decision)
-        else:
-            pass
-            # batch_decision = get_user_input_for_resolve()
-
-        batch_diff.decision = batch_decision
-
-        # TODO: FIX
-        other_batches: list = []
-        # other_batches = [b for b in state.batches if b is not batch_diff]
+    def click_unignore(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
         # relative
-        from ...client.syncing import handle_ignore_skip
+        from ...client.syncing import handle_unignore_batch
 
-        handle_ignore_skip(batch_diff, batch_decision, other_batches)
-
-        if batch_decision not in [SyncDecision.skip, SyncDecision.ignore]:
-            sync_instructions = []
-            for diff in batch_diff.get_dependents(include_roots=True):
-                # while making widget: bind buttons to right state
-                # share_state = {diff.object_id: False for diff in obj_diff_batch.get_dependents(include_roots=False)}
-
-                # diff id -> shared (bool)
-
-                # onclick checkbox: set widget state
-                widget = self.id2widget[diff.object_id]
-                sync = widget.sync
-
-                if sync or widget.is_main_widget:
-                    share_to_user: SyftVerifyKey | None = getattr(
-                        self.obj_diff_batch.user_code_high, "user_verify_key", None
-                    )
-                    instruction = SyncInstruction.from_widget_state(
-                        widget=widget,
-                        sync_direction=self.obj_diff_batch.sync_direction,
-                        decision=decision,
-                        share_to_user=share_to_user,
-                    )
-                    sync_instructions.append(instruction)
-        else:
-            sync_instructions = []
-            if batch_decision == SyncDecision.ignore:
-                resolved_state_high.add_ignored(batch_diff)
-                resolved_state_low.add_ignored(batch_diff)
-
-        if (
-            batch_diff.root_id in previously_ignored_batches
-            and batch_diff.decision != SyncDecision.ignore
-        ):
-            resolved_state_high.add_unignored(batch_diff.root_id)
-            resolved_state_low.add_unignored(batch_diff.root_id)
-
-        print(f"Decision: Syncing {len(sync_instructions)} objects")
-
-        for sync_instruction in sync_instructions:
-            resolved_state_low.add_sync_instruction(sync_instruction)
-            resolved_state_high.add_sync_instruction(sync_instruction)
-
-        if self.obj_diff_batch.sync_direction is None:
-            raise ValueError("no direction specified")
-        sync_direction = self.obj_diff_batch.sync_direction
-        resolved_state = (
-            resolved_state_high
-            if sync_direction == SyncDirection.LOW_TO_HIGH
-            else resolved_state_low
-        )
-        res = self.obj_diff_batch.target_client.apply_state(resolved_state)
-
-        if sync_direction == SyncDirection.HIGH_TO_LOW:
-            # apply empty state to generete a new state
-            resolved_state_high = ResolvedSyncState(
-                node_uid=self.obj_diff_batch.high_node_uid, alias="high"
+        if self.is_synced:
+            return SyftError(
+                message="The changes in this widget have already been synced."
             )
-            high_client = self.obj_diff_batch.source_client
-            res = high_client.apply_state(resolved_state_high)
 
-        self.is_synced = True
-        self.set_result_state(res)
-        self.hide_main_widget()
-        self.show_result_widget()
+        res = handle_unignore_batch(
+            obj_diff_batch=self.obj_diff_batch,
+            all_batches=self.obj_diff_batch.global_batches,
+        )
+
+        self.set_widget_result_state(res)
+        return res
+
+    def click_sync(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
+        # relative
+        from ...client.syncing import handle_sync_batch
+
+        if self.is_synced:
+            return SyftError(
+                message="The changes in this widget have already been synced."
+            )
+
+        res = handle_sync_batch(
+            obj_diff_batch=self.obj_diff_batch,
+            share_private_data=self.get_share_private_data_state(),
+            mockify=self.get_mockify_state(),
+        )
+
+        self.set_widget_result_state(res)
         return res
 
     @property
@@ -560,7 +541,13 @@ class ResolveWidget:
         )
         return obj_diff_widget
 
-    def set_result_state(self, result: SyftSuccess | SyftError) -> None:
+    def set_widget_result_state(self, res: SyftSuccess | SyftError) -> None:
+        self.is_synced = True
+        self.set_result_message(res)
+        self.hide_main_widget()
+        self.show_result_widget()
+
+    def set_result_message(self, result: SyftSuccess | SyftError) -> None:
         result_html = result._repr_html_()
         # Wrap in div to match Jupyter Lab output styling
         result_html = NOTEBOOK_OUTPUT_DIV.format(content=result_html)
@@ -593,6 +580,7 @@ class ResolveWidget:
         for widget in dependent_batch_diff_widgets:
             self.id2widget[widget.diff.object_id] = widget
 
+        # put a 4px spacer between each item
         main_batch_items = widgets.VBox(
             children=[d.widget for d in batch_diff_widgets],
         )
@@ -605,11 +593,11 @@ class ResolveWidget:
             [
                 self.build_header(),
                 self.main_object_diff_widget.widget,
-                self.spacer(16),
+                self.spacer(8),
                 main_batch_items,
                 self.separator(),
                 dependency_items,
-                self.spacer(16),
+                self.spacer(8),
                 self.sync_button(),
             ]
         )
@@ -625,7 +613,7 @@ class ResolveWidget:
             },
             layout=Layout(border="#464A91 solid 1.5px", width="200px"),
         )
-        sync_button.on_click(self.button_callback)
+        sync_button.on_click(self.click_sync)
         return sync_button
 
     def spacer(self, height: int) -> widgets.HTML:
@@ -633,7 +621,7 @@ class ResolveWidget:
 
     def separator(self) -> widgets.HTML:
         return widgets.HTML(
-            value='<div style="text-align: center; margin: 10px 0; border: 1px dashed #B4B0BF;"></div>',
+            value='<div style="text-align: center; margin: 3px 0; border: 1px dashed #B4B0BF;"></div>',
             layout=Layout(width="100%"),
         )
 
