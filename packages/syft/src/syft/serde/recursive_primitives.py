@@ -1,4 +1,5 @@
 # stdlib
+from abc import ABCMeta
 from collections import OrderedDict
 from collections import defaultdict
 from collections.abc import Collection
@@ -49,10 +50,8 @@ def serialize_iterable(iterable: Collection) -> bytes:
         # serialized = _serialize(it, to_bytes=True)
         chunk_bytes(it, lambda x: _serialize(x, to_bytes=True), idx, message.values)
 
-    if compatible_with_large_file_writes_capnp():
-        with tempfile.SpooledTemporaryFile(
-            max_size=SPOOLED_FILE_MAX_SIZE_SERDE
-        ) as tmp_file:
+    if compatible_with_large_file_writes_capnp(message):
+        with tempfile.TemporaryFile() as tmp_file:
             # Write data to a file to save RAM
             message.write(tmp_file)
             del message
@@ -437,3 +436,5 @@ recursive_serde_register_type(GenericAlias)
 
 recursive_serde_register_type(Any)
 recursive_serde_register_type(EnumMeta)
+
+recursive_serde_register_type(ABCMeta)

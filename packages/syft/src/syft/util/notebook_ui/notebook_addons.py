@@ -7,7 +7,33 @@ from typing import Any
 # relative
 from ...types.uid import UID
 
-CSS_CODE = """
+STYLESHEET_URLS = [
+    "https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,200;1,300;1,400;1,500;1,600;1,700;1,800&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap",
+    "https://fonts.cdnfonts.com/css/dejavu-sans-mono",
+]
+STYLESHEET_JS_CALLS = "\n".join([f'addStyleSheet("{s}")' for s in STYLESHEET_URLS])
+
+
+JS_DOWNLOAD_FONTS = f"""
+<script>
+function addStyleSheet(fileName) {{
+
+  var head = document.head;
+  var link = document.createElement("link");
+
+  link.type = "text/css";
+  link.rel = "stylesheet";
+  link.href = fileName;
+
+  head.appendChild(link);
+}}
+
+{STYLESHEET_JS_CALLS}
+</script>
+"""
+
+
+CSS = """
 <style>
   body[data-jp-theme-light='false'] {
         --primary-color: #111111;
@@ -212,22 +238,28 @@ CSS_CODE = """
 
     .grid-table${uid} {
         display:grid;
-        grid-template-columns: 1fr repeat(${cols}, 1fr);
-        grid-template-rows: repeat(2, 1fr);
-        overflow-x: auto;
+        grid-template-columns: ${grid_template_columns};
+        /*grid-template-rows: repeat(2, 1fr);*/
         position: relative;
     }
 
-    .grid-std-cells {
-        grid-column: span 4;
-
+    .grid-std-cells${uid} {
+        grid-column: ${grid_template_cell_columns};
+        display: flex;
+        justify-content: center;
+        align-items: center; width: 100%; height: 100%;
     }
+
     .grid-index-cells {
         grid-column: span 1;
         /* tmp fix to make left col stand out (fix with font-family) */
         font-weight: 600;
         background-color: var(--secondary-color) !important;
         color: var(--tertiary-color);
+    }
+
+    .center-content-cell{
+        margin: auto;
     }
 
     .grid-header {
@@ -292,6 +324,15 @@ CSS_CODE = """
         gap: 8px;
         justify-content: start;
         align-items: center;
+    }
+
+    .jobs-title {
+        font-family: Open Sans, sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        line-height: 25.2px;
+        text-align: left;
+        color: #1F567A;
     }
 
     .diff-state-orange-text{
@@ -360,7 +401,6 @@ CSS_CODE = """
         label;
         background-color: #C2DEF0;
         color: #1F567A;
-
     }
 
     .label-orange {
@@ -379,6 +419,12 @@ CSS_CODE = """
         badge;
         background-color: #D5F1D5;
         color: #256B24;
+    }
+
+    .label-red {
+        label;
+        background-color: #F2D9DE;
+        color: #9B2737;
     }
 
     .badge-blue {
@@ -444,6 +490,10 @@ CSS_CODE = """
         color: var(--tertiary-color);
     }
 
+    .rendered_html tbody tr:nth-child(odd) {
+        background: transparent;
+    }
+
     .search-field {
         display: flex;
         align-items: center;
@@ -500,6 +550,11 @@ CSS_CODE = """
     }
 </style>
 
+"""
+
+CSS_CODE = f"""
+{JS_DOWNLOAD_FONTS}
+{CSS}
 """
 
 SEARCH_ICON = (
@@ -714,14 +769,14 @@ custom_code = """
                                 grid.appendChild(div);
                                 headers.forEach((title) =>{
                                     let div = document.createElement("div");
-                                    div.classList.add('grid-header', 'grid-std-cells');
+                                    div.classList.add('grid-header', 'grid-std-cells${uid}');
                                     div.innerText = title;
 
                                     grid.appendChild(div);
                                 });
 
                                 let page = items[pageIndex -1]
-                                if (page !== 'undefine'){
+                                if (page !== 'undefined'){
                                     let table_index${uid} = ((pageIndex - 1) * page_size${uid})
                                     page.forEach((item) => {
                                         let grid = document.getElementById("table${uid}");
@@ -742,15 +797,16 @@ custom_code = """
                                                     badge_div.classList.add('badge',item[attr].type)
                                                     badge_div.innerText = String(item[attr].value).toUpperCase();
                                                     div.appendChild(badge_div);
-                                                    div.classList.add('grid-row','grid-std-cells');
+                                                    div.classList.add('grid-row','grid-std-cells${uid}');
                                                 } else if (item[attr].type.includes('label')){
                                                     let label_div = document.createElement("div");
                                                     label_div.classList.add('label',item[attr].type)
                                                     label_div.innerText = String(item[attr].value).toUpperCase();
+                                                    label_div.classList.add('center-content-cell');
                                                     div.appendChild(label_div);
-                                                    div.classList.add('grid-row','grid-std-cells');
+                                                    div.classList.add('grid-row','grid-std-cells${uid}');
                                                 } else if (item[attr].type === "clipboard") {
-                                                    div.classList.add('grid-row','grid-std-cells');
+                                                    div.classList.add('grid-row','grid-std-cells${uid}');
 
                                                     // Create clipboard div
                                                     let clipboard_div = document.createElement('div');
@@ -778,7 +834,7 @@ custom_code = """
                                                     div.appendChild(clipboard_div);
                                                 }
                                             } else{
-                                                div.classList.add('grid-row','grid-std-cells');
+                                                div.classList.add('grid-row','grid-std-cells${uid}');
                                                 if (item[attr] == null) {
                                                     text = ' '
                                                 } else {
@@ -825,10 +881,9 @@ custom_code = """
                         buildGrid${uid}(paginatedElements${uid}, pageIndex)
                     }
                     (async function() {
-                        const myFont = new FontFace('DejaVu Sans', 'url(https://cdn.jsdelivr.net/npm/dejavu-sans@1.0.0/css/dejavu-sans.min.css)');
+                        const myFont = new FontFace('DejaVu Sans', 'url(https://cdn.jsdelivr.net/npm/dejavu-sans@1.0.0/fonts/dejavu-sans-webfont.woff2?display=swap');
                         await myFont.load();
                         document.fonts.add(myFont);
-                        document.getElementsByTagName('h1')[0].style.fontFamily = "DejaVu Sans";
                     })();
 
                     buildPaginationContainer${uid}(paginatedElements${uid})
@@ -839,10 +894,19 @@ custom_code = """
 
 
 def create_table_template(
-    items: Sequence, list_name: Any, rows: int = 5, table_icon: Any = None
+    items: Sequence,
+    list_name: str,
+    rows: int = 5,
+    table_icon: str | None = None,
+    grid_template_columns: str | None = None,
+    grid_template_cell_columns: str | None = None,
 ) -> str:
-    if not table_icon:
+    if table_icon is None:
         table_icon = TABLE_ICON
+    if grid_template_columns is None:
+        grid_template_columns = "1fr repeat({cols}, 1fr)"
+    if grid_template_cell_columns is None:
+        grid_template_cell_columns = "span 4"
 
     items_dict = json.dumps(items)
     code = CSS_CODE + custom_code
@@ -852,6 +916,8 @@ def create_table_template(
         cols = 0
     else:
         cols = (len(items[0].keys())) * 4
+    if "{cols}" in grid_template_columns:
+        grid_template_columns = grid_template_columns.format(cols=cols)
     return template.substitute(
         uid=str(UID()),
         element=items_dict,
@@ -861,4 +927,6 @@ def create_table_template(
         icon=table_icon,
         searchIcon=SEARCH_ICON,
         clipboardIcon=CLIPBOARD_ICON,
+        grid_template_columns=grid_template_columns,
+        grid_template_cell_columns=grid_template_cell_columns,
     )

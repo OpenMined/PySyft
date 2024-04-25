@@ -2,6 +2,8 @@
 from datetime import datetime
 from datetime import timedelta
 from enum import Enum
+import random
+from string import Template
 from typing import Any
 
 # third party
@@ -27,9 +29,8 @@ from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SyftObject
-from ...types.syft_object import short_uid
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util import options
@@ -44,6 +45,7 @@ from ..response import SyftError
 from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..user.user import UserView
+from .html_template import job_repr_template
 
 
 @serializable()
@@ -55,10 +57,25 @@ class JobStatus(str, Enum):
     INTERRUPTED = "interrupted"
 
 
+def center_content(text: Any) -> str:
+    if isinstance(text, str):
+        text = text.replace("\n", "<br>")
+    center_div = f"""
+    <div style="
+        display: flex;
+        justify-content: center;
+        align-items: center; width: 100%; height: 100%;">
+        {text}
+    </div>
+    """
+    center_div = center_div.replace("\n", "")
+    return center_div
+
+
 @serializable()
 class Job(SyncableSyftObject):
     __canonical_name__ = "JobItem"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_5
 
     id: UID
     node_uid: UID
@@ -75,6 +92,7 @@ class Job(SyncableSyftObject):
     job_worker_id: UID | None = None
     updated_at: DateTime | None = None
     user_code_id: UID | None = None
+    requested_by: UID | None = None
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
     __repr_attrs__ = [
@@ -86,6 +104,16 @@ class Job(SyncableSyftObject):
         "user_code_name",
     ]
     __exclude_sync_diff_attrs__ = ["action", "node_uid"]
+    __table_coll_widths__ = [
+        "min-content",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+    ]
+    __syft_include_id_coll_repr__ = False
 
     @field_validator("creation_time")
     @classmethod
@@ -407,6 +435,60 @@ class Job(SyncableSyftObject):
     # def __repr__(self) -> str:
     #     return f"<Job: {self.id}>: {self.status}"
 
+    def status_badge(self) -> dict[str, str]:
+        status = self.status
+        if status in [JobStatus.COMPLETED]:
+            badge_color = "label-green"
+        elif status in [JobStatus.PROCESSING]:
+            badge_color = "label-orange"
+        elif status in [JobStatus.CREATED]:
+            badge_color = "label-gray"
+        elif status in [JobStatus.ERRORED, JobStatus.INTERRUPTED]:
+            badge_color = "label-red"
+        else:
+            badge_color = "label-orange"
+        return {"value": status.upper(), "type": badge_color}
+
+    def summary_html(self) -> str:
+        # TODO: Fix id for buttons
+        # relative
+        from ...util.notebook_ui.components.sync import CopyIDButton
+
+        try:
+            # type_html = f'<div class="label {self.type_badge_class()}">{self.object_type_name.upper()}</div>'
+            description_html = (
+                f"<span class='syncstate-description'>{self.user_code_name}</span>"
+            )
+            worker_summary = ""
+            if self.job_worker_id:
+                worker_copy_button = CopyIDButton(
+                    copy_text=str(self.job_worker_id), max_width=60
+                )
+                worker_summary = f"""
+                <div style="display: table-row">
+                    <span class='syncstate-col-footer'>{'on worker'}
+                    {worker_copy_button.to_html()}</span>
+                </div>
+                """
+
+            summary_html = f"""
+                <div style="display: flex; gap: 8px; justify-content: start; width: 100%;">
+                    {description_html}
+                    <div style="display: flex; gap: 8px; justify-content: end; width: 100%;">
+                        {CopyIDButton(copy_text=str(self.id), max_width=60).to_html()}
+                    </div>
+                </div>
+                <div style="display: table-row">
+                <span class='syncstate-col-footer'>{self.creation_time[:-7] if self.creation_time else ''}</span>
+                </div>
+                {worker_summary}
+                """
+            summary_html = summary_html.replace("\n", "")
+        except Exception as e:
+            print("Failed to build table", e)
+            raise
+        return summary_html
+
     def _coll_repr_(self) -> dict[str, Any]:
         logs = self.logs(_print=False, stderr=False)
         if logs is not None:
@@ -415,21 +497,16 @@ class Job(SyncableSyftObject):
         if len(log_lines) > 2:
             logs = f"... ({len(log_lines)} lines)\n" + "\n".join(log_lines[-2:])
 
-        created_time = self.creation_time[:-7] if self.creation_time is not None else ""
+        def default_value(value: str) -> str:
+            return value if value else "--"
+
         return {
-            "status": f"{self.action_display_name}: {self.status}"
-            + (
-                f"\non worker {short_uid(self.job_worker_id)}"
-                if self.job_worker_id
-                else ""
-            ),
-            "progress": self.progress,
-            "eta": self.eta_string,
-            "created": f"{created_time} by {self.owner.email}",
-            "logs": logs,
-            # "result": result,
-            # "parent_id": str(self.parent_job_id) if self.parent_job_id else "-",
-            "subjobs": len(subjobs),
+            "Status": self.status_badge(),
+            "Job": self.summary_html(),
+            "# Subjobs": center_content(default_value(len(subjobs))),
+            "Progress": center_content(default_value(self.progress)),
+            "ETA": center_content(default_value(self.eta_string)),
+            "Logs": center_content(default_value(logs)),
         }
 
     @property
@@ -457,6 +534,134 @@ class Job(SyncableSyftObject):
 {logs_w_linenr}
     """
         return as_markdown_code(md)
+
+    @property
+    def requesting_user(self) -> UserView | SyftError:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
+        return api.services.user.view(self.requested_by)
+
+    @property
+    def node_name(self) -> str | SyftError | None:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
+        return api.node_name
+
+    @property
+    def parent(self) -> Self | SyftError:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
+        return api.services.job.get(self.parent_job_id)
+
+    @property
+    def ancestors_name_list(self) -> list[str] | SyftError:
+        if self.parent_job_id:
+            parent = self.parent
+            if isinstance(parent, SyftError):
+                return parent
+            parent_name_list = parent.ancestors_name_list
+            if isinstance(parent_name_list, SyftError):
+                return parent_name_list
+            parent_name_list.append(parent.user_code_name)
+            return parent_name_list
+        return []
+
+    def _repr_html_(self) -> str:
+        # relative
+        from ...util.notebook_ui.components.sync import CopyIDButton
+
+        identifier = random.randint(1, 2**32)  # nosec
+        result_tab_id = f"Result_{identifier}"
+        logs_tab_id = f"Logs_{identifier}"
+        job_type = "JOB" if not self.parent_job_id else "SUBJOB"
+        ancestor_name_list = self.ancestors_name_list
+        if isinstance(ancestor_name_list, SyftError):
+            return ancestor_name_list
+        api_header = f"{self.node_name}/jobs/" + "/".join(ancestor_name_list)
+        copy_id_button = CopyIDButton(copy_text=str(self.id), max_width=60)
+        button_html = copy_id_button.to_html()
+        creation_time = self.creation_time[:-7] if self.creation_time else "--"
+        updated_at = str(self.updated_at)[:-7] if self.updated_at else "--"
+
+        user_repr = "--"
+        if self.requested_by:
+            requesting_user = self.requesting_user
+            user_repr = f"{requesting_user.name} {requesting_user.email}"
+
+        worker_attr = ""
+        if self.job_worker_id:
+            worker = self.worker
+            worker_pool_id_button = CopyIDButton(
+                copy_text=str(worker.worker_pool_name), max_width=60
+            )
+            worker_attr = f"""
+                <div style="margin-top: 6px; margin-bottom: 6px;">
+                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">
+                    Worker Pool:</span>
+                    {worker.name} on worker {worker_pool_id_button.to_html()}
+                </div>
+            """
+
+        logs = self.logs(_print=False, stderr=False)
+        logs_lines = logs.split("\n") if logs else []
+        logs_lines_html = ""
+        for i, line in enumerate(logs_lines):
+            logs_lines_html += f"""
+                <tr style="width:100%">
+                    <td style="text-align: left;">
+                        <div style="margin-right:24px; align-text: center">
+                            {i}
+                        </div>
+                    </td>
+                    <td style="text-align: left;">
+                        <div style="align-text: left">
+                            {line}
+                        </div>
+                    </td>
+                </tr>
+            """
+
+        template = Template(job_repr_template)
+        return template.substitute(
+            uid=str(UID()),
+            grid_template_columns=None,
+            grid_template_cell_columns=None,
+            cols=0,
+            job_type=job_type,
+            api_header=api_header,
+            user_code_name=self.user_code_name,
+            button_html=button_html,
+            status=self.status.value.title(),
+            creation_time=creation_time,
+            user_rerp=user_repr,
+            updated_at=updated_at,
+            worker_attr=worker_attr,
+            no_subjobs=len(self.subjobs),
+            logs_tab_id=logs_tab_id,
+            result_tab_id=result_tab_id,
+            identifier=identifier,
+            logs_lines_html=logs_lines_html,
+            result=self.result,
+            user_repr=user_repr,
+        )
 
     def wait(
         self, job_only: bool = False, timeout: int | None = None
@@ -514,7 +719,7 @@ class Job(SyncableSyftObject):
 
     def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:  # type: ignore
         dependencies = []
-        if self.result is not None:
+        if self.result is not None and isinstance(self.result, ActionObject):
             dependencies.append(self.result.id.id)
 
         if self.log_id:
@@ -659,11 +864,15 @@ class JobStash(BaseStash):
         else:
             res = res.ok()
             # beautiful query
-            res = [x for x in res if x.result is not None and x.result.id.id == res_id]
+            res = [
+                x
+                for x in res
+                if isinstance(x.result, ActionObject) and x.result.id.id == res_id
+            ]
             if len(res) == 0:
                 return Ok(None)
             elif len(res) > 1:
-                return Err(message="multiple Jobs found")
+                return Err(SyftError(message="multiple Jobs found"))
             else:
                 return Ok(res[0])
 

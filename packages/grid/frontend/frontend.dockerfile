@@ -4,12 +4,15 @@ ARG BACKEND_API_BASE_URL="/api/v2/"
 ENV BACKEND_API_BASE_URL ${BACKEND_API_BASE_URL}
 
 RUN apk update && \
-    apk upgrade && \
-    apk add --no-cache nodejs-20 pnpm corepack
+  apk upgrade && \
+  apk add --no-cache nodejs-20 pnpm corepack
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable
 
 COPY .npmrc ./
 COPY package.json ./
@@ -17,7 +20,7 @@ COPY pnpm-lock.yaml ./
 
 FROM base AS dependencies
 
-RUN pnpm i --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 FROM dependencies as grid-ui-tests
 COPY vite.config.ts ./

@@ -1,9 +1,11 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from collections.abc import Callable
 from collections.abc import Sequence
 import hashlib
 from typing import Any
-from typing import Union
 import uuid
 from uuid import UUID as uuid_type
 
@@ -11,6 +13,15 @@ from uuid import UUID as uuid_type
 from ..serde.serializable import serializable
 from ..util.logger import critical
 from ..util.logger import traceback_and_raise
+
+try:
+    # Python >= 3.11
+    # stdlib
+    from typing import Self
+except ImportError:
+    # Python < 3.11
+    # third party
+    from typing_extensions import Self
 
 
 @serializable(attrs=["value"])
@@ -38,7 +49,7 @@ class UID:
     __slots__ = "value"
     value: uuid_type
 
-    def __init__(self, value: Union[uuid_type, str, bytes, "UID"] | None = None):
+    def __init__(self, value: Self | uuid_type | str | bytes | None = None):
         """Initializes the internal id using the uuid package.
 
         This initializes the object. Normal use for this object is
@@ -191,18 +202,18 @@ class UID:
     def id(self) -> "UID":
         return self
 
-    @staticmethod
-    def _check_or_convert(value: Union[str, "UID", uuid.UUID]) -> "UID":
+    @classmethod
+    def _check_or_convert(cls, value: str | uuid.UUID | UID) -> UID:
         if isinstance(value, uuid.UUID):
             return UID(value)
         elif isinstance(value, str):
             return UID.from_string(value)
-        elif isinstance(value, UID):
+        elif isinstance(value, cls):
             return value
         else:
             # Ask @Madhava , can we check for  invalid types , even though type annotation is specified.
             return ValueError(  # type: ignore
-                f"Incorrect value,type:{value,type(value)} for conversion to UID, expected Union[str,UID,UUID]"
+                f"Incorrect value,type:{value,type(value)} for conversion to UID, expected str | uuid.UUID | Self"
             )
 
 
@@ -214,7 +225,7 @@ class LineageID(UID):
 
     def __init__(
         self,
-        value: Union[uuid_type, str, bytes, "LineageID"] | None = None,
+        value: Self | UID | uuid_type | str | bytes | None = None,
         syft_history_hash: int | None = None,
     ):
         if isinstance(value, LineageID):

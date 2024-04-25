@@ -133,8 +133,8 @@ jobs:
         if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'
         shell: bash
         run: |
-          K3D_VERSION=v5.6.0
-          DEVSPACE_VERSION=v6.3.4
+          K3D_VERSION=v5.6.3
+          DEVSPACE_VERSION=v6.3.12
 
           # install k3d
           wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64

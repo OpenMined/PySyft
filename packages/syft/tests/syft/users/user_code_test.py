@@ -290,3 +290,47 @@ def test_mock_multiple_arguments(worker) -> None:
     # Mixed execution fails, no result from cache
     result = ds_client.api.services.code.compute_sum(data1=1, data2=data)
     assert isinstance(result, SyftError)
+
+
+def test_mock_no_arguments(worker) -> None:
+    root_domain_client = worker.root_client
+
+    root_domain_client.register(
+        name="data-scientist",
+        email="test_user@openmined.org",
+        password="0000",
+        password_verify="0000",
+    )
+    ds_client = root_domain_client.login(
+        email="test_user@openmined.org",
+        password="0000",
+    )
+
+    users = root_domain_client.users.get_all()
+
+    @sy.syft_function_single_use()
+    def compute_sum():
+        return 1
+
+    compute_sum.code = dedent(compute_sum.code)
+    ds_client.api.services.code.request_code_execution(compute_sum)
+
+    # no accept_by_depositing_result, no mock execution
+    result = ds_client.api.services.code.compute_sum()
+    assert isinstance(result, SyftError)
+
+    # no accept_by_depositing_result, mock execution
+    users[-1].allow_mock_execution()
+    result = ds_client.api.services.code.compute_sum()
+    assert result.get() == 1
+
+    # accept_by_depositing_result, no mock execution
+    users[-1].allow_mock_execution(allow=False)
+    message = root_domain_client.notifications[-1]
+    request = message.link
+    user_code = request.changes[0].code
+    result = user_code.unsafe_function()
+    request.accept_by_depositing_result(result)
+
+    result = ds_client.api.services.code.compute_sum()
+    assert result.get() == 1

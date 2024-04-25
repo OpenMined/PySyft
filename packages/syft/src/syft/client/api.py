@@ -253,7 +253,7 @@ class RemoteFunction(SyftObject):
 
         return args, kwargs
 
-    def __function_call(
+    def function_call(
         self, path: str, *args: Any, cache_result: bool = True, **kwargs: Any
     ) -> Any:
         if "blocking" in self.signature.parameters:
@@ -296,20 +296,46 @@ class RemoteFunction(SyftObject):
         return result
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        return self.__function_call(self.path, *args, **kwargs)
+        return self.function_call(self.path, *args, **kwargs)
 
-    def mock(self, *args: Any, **kwargs: Any) -> Any:
+    @property
+    def mock(self) -> Any:
         if self.custom_function:
-            return self.__function_call("api.call_public", *args, **kwargs)
+            remote_func = self
+
+            class PrivateCustomAPIReference:
+                def __call__(self, *args: Any, **kwargs: Any) -> Any:
+                    return remote_func.function_call(
+                        "api.call_public_in_jobs", *args, **kwargs
+                    )
+
+                @property
+                def context(self) -> Any:
+                    return remote_func.function_call("api.get_public_context")
+
+            return PrivateCustomAPIReference()
         return SyftError(
-            message="This function doesn't support public/private calls as it's not custom."
+            message="This function doesn't support mock/private calls as it's not custom."
         )
 
-    def private(self, *args: Any, **kwargs: Any) -> Any:
+    @property
+    def private(self) -> Any:
         if self.custom_function:
-            return self.__function_call("api.call_private", *args, **kwargs)
+            remote_func = self
+
+            class PrivateCustomAPIReference:
+                def __call__(self, *args: Any, **kwargs: Any) -> Any:
+                    return remote_func.function_call(
+                        "api.call_private_in_jobs", *args, **kwargs
+                    )
+
+                @property
+                def context(self) -> Any:
+                    return remote_func.function_call("api.get_private_context")
+
+            return PrivateCustomAPIReference()
         return SyftError(
-            message="This function doesn't support public/private calls as it's not custom."
+            message="This function doesn't support mock/private calls as it's not custom."
         )
 
     def custom_function_actionobject_id(self) -> UID | SyftError:
@@ -343,7 +369,7 @@ class RemoteFunction(SyftObject):
             str_repr = "## API: " + custom_path + "\n"
             str_repr += (
                 "### Description: "
-                + f'<span style="font-weight: normal;">{endpoint.description}</span><br>'
+                + f'<span style="font-weight: lighter;">{endpoint.description}</span><br>'
                 + "\n"
             )
             str_repr += "#### Private Code:\n"
@@ -454,7 +480,7 @@ def generate_remote_function(
             user_code_id=pre_kwargs["uid"],
         )
     else:
-        custom_function = bool(path == "api.call")
+        custom_function = bool(path == "api.call_in_jobs")
         remote_function = RemoteFunction(
             node_uid=node_uid,
             signature=signature,
@@ -823,7 +849,7 @@ class SyftAPI(SyftObject):
         custom_endpoints = method()
         for custom_endpoint in custom_endpoints:
             pre_kwargs = {"path": custom_endpoint.path}
-            service_path = "api.call"
+            service_path = "api.call_in_jobs"
             path = custom_endpoint.path
             api_end = custom_endpoint.path.split(".")[-1]
             endpoint = APIEndpoint(

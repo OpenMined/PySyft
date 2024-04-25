@@ -209,6 +209,8 @@ class KubernetesRunner:
                             }
                         },
                         "spec": {
+                            # TODO: make this configurable
+                            "serviceAccountName": "backend-service-account",
                             "containers": [
                                 {
                                     "name": pool_name,
