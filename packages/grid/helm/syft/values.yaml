@@ -1,7 +1,7 @@
 global:
   # Affects only backend, frontend, and seaweedfs containers
   registry: docker.io
-  version: 0.8.7-beta.2
+  version: 0.8.7-beta.3
 
   # Force default secret values for development. DO NOT SET THIS TO FALSE IN PRODUCTION
   randomizedSecrets: true
@@ -164,6 +164,7 @@ node:
   logLevel: info
   debuggerEnabled: false
   associationRequestAutoApproval: false
+  useInternalRegistry: true
 
   # SMTP Settings
   smtp:

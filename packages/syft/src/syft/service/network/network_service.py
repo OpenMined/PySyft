@@ -83,7 +83,7 @@ class NetworkStash(BaseUIDStoreStash):
     ) -> Result[NodePeer, str]:
         valid = self.check_type(peer, NodePeer)
         if valid.is_err():
-            return Err(message=valid.err())
+            return Err(SyftError(message=valid.err()))
         return super().update(credentials, peer)
 
     def create_or_update_peer(
