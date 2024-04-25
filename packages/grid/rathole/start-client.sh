@@ -7,8 +7,6 @@ PORT=${PORT:-80}
 RELOAD=""
 DEBUG_CMD=""
 
-
-
 apt update && apt install -y nginx
 nginx &
 exec python -m $DEBUG_CMD uvicorn $RELOAD --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE" &

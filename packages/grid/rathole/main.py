@@ -7,12 +7,10 @@ import sys
 from fastapi import FastAPI
 from fastapi import status
 from loguru import logger
-
-# relative
-from .models import RatholeConfig
-from .models import ResponseModel
-from .utils import RatholeClientToml
-from .utils import RatholeServerToml
+from models import RatholeConfig
+from models import ResponseModel
+from utils import RatholeClientToml
+from utils import RatholeServerToml
 
 # Logging Configuration
 log_level = os.getenv("APP_LOG_LEVEL", "INFO").upper()
