@@ -112,12 +112,16 @@ class TwinAPIEndpointView(SyftObject):
                 for node in ast.walk(private_parsed_code)
                 if isinstance(node, ast.FunctionDef)
             ][0]
+        worker_pool = "UNSET (DEFAULT)"
+        if self.worker_pool is not None:
+            worker_pool = self.worker_pool
         return {
             "API path": self.path,
             "Signature": self.path + str(self.signature),
             "Access": self.access,
             "Mock Function": mock_function_name,
             "Private Function": private_function_name,
+            "Worker Pool": worker_pool,
         }
 
 
@@ -521,10 +525,10 @@ def check_and_cleanup_signature(context: TransformContext) -> TransformContext:
 def decorator_cleanup(code: str) -> str:
     # Regular expression to remove decorator
     # It matches from "@" to "def" (non-greedy) across multiple lines
-    decorator_regex = r"@.*?def"
+    decorator_regex = r"@.*?def "
 
     # Substituting the matched pattern with "def"
-    return re.sub(decorator_regex, "def", code, count=1, flags=re.DOTALL)
+    return re.sub(decorator_regex, "def ", code, count=1, flags=re.DOTALL)
 
 
 def extract_code_string(code_field: str) -> Callable:
@@ -679,6 +683,7 @@ def create_new_api_endpoint(
     private_function: Endpoint | None = None,
     description: str | None = None,
     worker_pool: str | None = None,
+    endpoint_timeout: int = 60,
 ) -> CreateTwinAPIEndpoint | SyftError:
     try:
         # Parse the string to extract the function name
@@ -697,6 +702,7 @@ def create_new_api_endpoint(
                 signature=endpoint_signature,
                 description=description,
                 worker_pool=worker_pool,
+                endpoint_timeout=endpoint_timeout,
             )
 
         return CreateTwinAPIEndpoint(
@@ -704,6 +710,7 @@ def create_new_api_endpoint(
             prublic_code=mock_function.to(PublicAPIEndpoint),
             signature=endpoint_signature,
             worker_pool=worker_pool,
+            endpoint_timeout=endpoint_timeout,
         )
     except ValidationError as e:
         for error in e.errors():
