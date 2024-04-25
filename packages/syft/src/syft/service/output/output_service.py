@@ -228,7 +228,7 @@ class OutputStash(BaseUIDStoreStash):
             if len(res) == 0:
                 return Ok(None)
             elif len(res) > 1:
-                return Err(message="Too many outputs found")
+                return Err(SyftError(message="Too many outputs found"))
             else:
                 return Ok(res[0])
 

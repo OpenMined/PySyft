@@ -74,20 +74,28 @@ class DataSubjectService(AbstractService):
             DataSubjectMemberService.add
         )
 
-        member_relationships = data_subject.member_relationships
-        for member_relationship in member_relationships:
-            parent_ds, child_ds = member_relationship
-            for ds in [parent_ds, child_ds]:
-                result = self.stash.set(
-                    context.credentials,
-                    ds.to(DataSubject, context=context),
-                    ignore_duplicates=True,
-                )
-                if result.is_err():
-                    return SyftError(message=str(result.err()))
-            result = member_relationship_add(context, parent_ds.name, child_ds.name)
-            if isinstance(result, SyftError):
-                return result
+        member_relationships: set[tuple[str, str]] = data_subject.member_relationships
+        if len(member_relationships) == 0:
+            result = self.stash.set(
+                context.credentials,
+                data_subject.to(DataSubject, context=context),
+            )
+            if result.is_err():
+                return SyftError(message=str(result.err()))
+        else:
+            for member_relationship in member_relationships:
+                parent_ds, child_ds = member_relationship
+                for ds in [parent_ds, child_ds]:
+                    result = self.stash.set(
+                        context.credentials,
+                        ds.to(DataSubject, context=context),
+                        ignore_duplicates=True,
+                    )
+                    if result.is_err():
+                        return SyftError(message=str(result.err()))
+                result = member_relationship_add(context, parent_ds.name, child_ds.name)
+                if isinstance(result, SyftError):
+                    return result
 
         return SyftSuccess(
             message=f"{len(member_relationships)+1} Data Subjects Registered"

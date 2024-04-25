@@ -1,8 +1,6 @@
 # stdlib
 
 # third party
-from result import Err
-from result import Ok
 
 # relative
 from ...serde.serializable import serializable
@@ -91,11 +89,13 @@ class RequestService(AbstractService):
                     method = context.node.get_service_method(NotificationService.send)
                     result = method(context=context, notification=message)
                     if isinstance(result, Notification):
-                        return Ok(request)
+                        return request
                     else:
-                        return Err(result)
+                        return SyftError(
+                            message=f"Failed to send notification: {result.err()}"
+                        )
 
-                return Ok(request)
+                return request
 
             if result.is_err():
                 return SyftError(message=str(result.err()))

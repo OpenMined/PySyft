@@ -4,6 +4,7 @@ from syft.node.domain import Domain
 from syft.node.domain import Node
 from syft.node.enclave import Enclave
 from syft.node.gateway import Gateway
+from syft.node.node import get_default_bucket_name
 from syft.node.node import get_enable_warnings
 from syft.node.node import get_node_name
 from syft.node.node import get_node_side_type
@@ -61,7 +62,7 @@ def seaweedfs_config() -> SeaweedFSConfig:
         access_key=settings.S3_ROOT_USER,
         secret_key=settings.S3_ROOT_PWD,
         region=settings.S3_REGION,
-        default_bucket_name=get_node_uid_env(),
+        default_bucket_name=get_default_bucket_name(),
         mount_port=settings.SEAWEED_MOUNT_PORT,
     )
 
@@ -103,4 +104,5 @@ worker: Node = worker_class(
     email_sender=settings.EMAIL_SENDER,
     smtp_port=settings.SMTP_PORT,
     smtp_host=settings.SMTP_HOST,
+    association_request_auto_approval=settings.ASSOCIATION_REQUEST_AUTO_APPROVAL,
 )

@@ -18,10 +18,19 @@ spec:
       labels:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: proxy
+        {{- if .Values.proxy.podLabels }}
+        {{- toYaml .Values.proxy.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.proxy.podAnnotations }}
+      annotations: {{- toYaml .Values.proxy.podAnnotations | nindent 8 }}
+      {{- end }}
     spec:
+      {{- if .Values.proxy.nodeSelector }}
+      nodeSelector: {{- .Values.proxy.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: proxy-container
-          image: traefik:v2.11
+          image: traefik:v2.11.0
           imagePullPolicy: Always
           resources: {{ include "common.resources.set" (dict "resources" .Values.proxy.resources "preset" .Values.proxy.resourcesPreset) | nindent 12 }}
           {{- if .Values.proxy.env }}
