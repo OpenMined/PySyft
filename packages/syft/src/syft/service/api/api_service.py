@@ -107,10 +107,24 @@ class APIService(AbstractService):
         endpoint_path: str,
         mock_function: Endpoint | None = None,
         private_function: Endpoint | None = None,
-        hide_definition: bool | None = None,
+        hide_mock_definition: bool | None = None,
         endpoint_timeout: int | None = None,
     ) -> SyftSuccess | SyftError:
         """Updates an specific API endpoint."""
+
+        # if any of these are supplied e.g. truthy then keep going otherwise return
+        # an error
+        # TODO: change to an Update object with autosplat
+        if not (
+            mock_function
+            or private_function
+            or (hide_mock_definition is not None)
+            or endpoint_timeout
+        ):
+            return SyftError(
+                message='At least one of "mock_function", "private_function", '
+                '"hide_mock_definition" or "endpoint_timeout" is required.'
+            )
 
         endpoint_result = self.stash.get_by_path(context.credentials, endpoint_path)
 
@@ -122,10 +136,11 @@ class APIService(AbstractService):
 
         endpoint: TwinAPIEndpoint = endpoint_result.ok()
 
-        if not (mock_function or private_function or endpoint_timeout or (hide_definition is not None)):
-            return SyftError(
-                message='Either "mock_function","private_function", "hide_definition" or "endpoint_timeout" are required.'
-            )
+        endpoint_timeout = (
+            endpoint_timeout
+            if endpoint_timeout is not None
+            else endpoint.endpoint_timeout
+        )
 
         updated_mock = (
             mock_function.to(PublicAPIEndpoint)
@@ -152,16 +167,12 @@ class APIService(AbstractService):
         endpoint.private_function = endpoint_update.private_function
         endpoint.signature = updated_mock.signature
         endpoint.endpoint_timeout = endpoint_update.endpoint_timeout
-        view_access = (
-            not hide_definition
-            if hide_definition is not None
-            else endpoint.mock_function.view_access
-        )
-        endpoint.mock_function.view_access = view_access
-        # Check if the endpoint has a private function
-        if endpoint.private_function:
-            endpoint.private_function.view_access = view_access
 
+        if hide_mock_definition is not None:
+            view_access = not hide_mock_definition
+            endpoint.mock_function.view_access = view_access
+
+        # save changes
         result = self.stash.upsert(context.credentials, endpoint=endpoint)
         if result.is_err():
             return SyftError(message=result.err())
