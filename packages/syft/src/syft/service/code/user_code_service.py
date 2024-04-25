@@ -550,7 +550,7 @@ class UserCodeService(AbstractService):
                 return Ok(result)
             elif result.syft_action_data_type is Err:
                 # result contains the error but the request was handled correctly
-                return result.syft_action_data
+                return Ok(result)
             elif has_result_read_permission:
                 return Ok(result)
             else:

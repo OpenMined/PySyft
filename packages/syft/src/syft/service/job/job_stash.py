@@ -677,7 +677,7 @@ class Job(SyncableSyftObject):
             return self.resolve
 
         if not job_only and self.result is not None:
-            self.result.wait()
+            self.result.wait(timeout)
 
         if api is None:
             raise ValueError(

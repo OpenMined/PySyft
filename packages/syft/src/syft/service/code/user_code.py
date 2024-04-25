@@ -1489,7 +1489,11 @@ def execute_byte_code(
                 original_print(
                     f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
                 )
-            if context.node is not None:
+            if (
+                context.node is not None
+                and context.job is not None
+                and context.job.log_id is not None
+            ):
                 log_id = context.job.log_id
                 log_service = context.node.get_service("LogService")
                 log_service.append(context=context, uid=log_id, new_err=error_msg)
