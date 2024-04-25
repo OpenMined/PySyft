@@ -1486,10 +1486,15 @@ def execute_byte_code(
                 original_print(
                     f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
                 )
-            if context.node is not None and context.job is not None:
-                log_id = context.job.log_id
+            if (
+                context.node is not None
+                and context.job is not None
+                and context.job.log_id is not None
+            ):
                 log_service = context.node.get_service("LogService")
-                log_service.append(context=context, uid=log_id, new_err=error_msg)
+                log_service.append(
+                    context=context, uid=context.job.log_id, new_err=error_msg
+                )
             exc_type, exc_value, exc_traceback = sys.exc_info()
             stack = traceback.extract_tb(exc_traceback)
             lineno = f" at line {stack[-1].lineno}" if stack else None
