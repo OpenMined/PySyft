@@ -65,8 +65,8 @@ border-color: #CFCDD6; border-width: 0.5px; border-style: solid; padding: 24px; 
 display: none;align-items:left">
     <div style="font-size: 12px; font-weight: 400; font: DejaVu Sans Mono, sans-serif; line-height: 16.8px; ">
         <table  style="width:100%; justify-content:left; border-collapse: collapse;">
-        <tr style="width:100%">
-            <td style="text-align: left">
+        <tr style="width:100%; background: rgb(244, 243, 246);">
+            <td style="text-align: left; width:50px;">
                 <span style="margin-right:24px; font-weight:700; align-text: center">
                     #
                 </span>

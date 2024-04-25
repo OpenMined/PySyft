@@ -1489,6 +1489,10 @@ def execute_byte_code(
                 original_print(
                     f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
                 )
+            else:
+                # for local execution
+                time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
+                original_print(f"{time} EXCEPTION LOG:\n{error_msg}\n", file=sys.stderr)
             if (
                 context.node is not None
                 and context.job is not None
