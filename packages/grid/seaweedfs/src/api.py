@@ -1,5 +1,6 @@
 # stdlib
 import logging
+from pathlib import Path
 import subprocess
 
 # third party
@@ -7,12 +8,25 @@ from fastapi import FastAPI
 from fastapi import HTTPException
 
 # first party
+from src.automount import automount
 from src.mount import mount_bucket
 from src.mount_options import MountOptions
 
-app = FastAPI(title="SeaweedFS Remote Mount API")
+# Automount all configured buckets
+AUTOMOUNT_CONFIG = Path("./automount.yaml")
+
+# keeping it away from /data/ to avoid these being persisted in a volume
+PRIVATE_CONF_DIR = Path("/etc/mounts/")
+PRIVATE_CONF_DIR.mkdir(mode=0o600, parents=True, exist_ok=True)
 
 logger = logging.getLogger("uvicorn.error")
+
+app = FastAPI(title="SeaweedFS Remote Mount API")
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    automount(automount_conf=AUTOMOUNT_CONFIG, mount_conf_dir=PRIVATE_CONF_DIR)
 
 
 @app.get("/")
@@ -32,15 +46,15 @@ def mount(opts: MountOptions, overwrite: bool = False) -> dict:
             "name": result["name"],
         }
     except FileExistsError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
     except subprocess.CalledProcessError as e:
         logger.error(
-            f"Subprocess error: code={e.returncode} stdout={e.stdout} stderr={e.stderr}"
+            f"Mount error: code={e.returncode} stdout={e.stdout} stderr={e.stderr}"
         )
-        raise HTTPException(status_code=503, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         logger.error(f"Unhandled exception: {e}")
-        raise HTTPException(status_code=503, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/configure_azure", deprecated=True)

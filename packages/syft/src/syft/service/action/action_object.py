@@ -306,6 +306,7 @@ passthrough_attrs = [
     "get_sync_dependencies",
     "_data_repr",
     "syft_eq",  # syft
+    "__table_coll_widths__",
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -328,6 +329,7 @@ dont_wrap_output_attrs = [
     "__repr_attrs__",  # syft
     "get_sync_dependencies",  # syft
     "syft_eq",  # syft
+    "__table_coll_widths__",
 ]
 dont_make_side_effects = [
     "__repr_attrs__",
@@ -348,6 +350,7 @@ dont_make_side_effects = [
     "__repr_attrs__",
     "get_sync_dependencies",
     "syft_eq",  # syft
+    "__table_coll_widths__",
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -646,6 +649,7 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "get_sync_dependencies",
     "_data_repr",
     "syft_eq",
+    "__table_coll_widths__",
 ]
 
 
@@ -1901,7 +1905,7 @@ class ActionObject(SyncableSyftObject):
                     else self.syft_action_data_cache.__repr__()
                 )
 
-        return f"```python\n{res}\n{data_repr_}```\n"
+        return f"```python\n{res}\n{data_repr_}\n```\n"
 
     def _data_repr(self) -> str | None:
         if isinstance(self.syft_action_data_cache, ActionDataEmpty):
