@@ -633,7 +633,11 @@ class ZMQConsumer(QueueConsumer):
         self.producer_ping_t = Timeout(PRODUCER_TIMEOUT_SEC)
         self.reconnect_to_producer()
 
+    def disconnect_from_producer(self) -> None:
+        self.send_to_producer(QueueMsgProtocol.W_DISCONNECT)
+
     def close(self) -> None:
+        self.disconnect_from_producer()
         self._stop.set()
         try:
             self.poller.unregister(self.socket)
