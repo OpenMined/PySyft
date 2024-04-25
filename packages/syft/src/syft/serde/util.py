@@ -6,7 +6,7 @@ from capnp.lib.capnp import _DynamicStructBuilder
 
 
 def get_size(thing: _DynamicStructBuilder | int) -> int:
-    if isinstance(int, thing):
+    if isinstance(thing, int):
         return thing
     return thing.total_size.word_count
 
