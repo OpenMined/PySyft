@@ -621,18 +621,18 @@ class Job(SyncableSyftObject):
                     </div>
                 """
 
-        logs = self.logs(_print=False, stderr=False)
+        logs = self.logs(_print=False)
         logs_lines = logs.split("\n") if logs else []
         logs_lines_html = ""
         for i, line in enumerate(logs_lines):
             logs_lines_html += f"""
-                <tr style="width:100%">
-                    <td style="text-align: left;">
+                <tr style="width:100%; background: rgb(244, 243, 246);">
+                    <td style="text-align: left; width: 50px;">
                         <div style="margin-right:24px; align-text: center">
                             {i}
                         </div>
                     </td>
-                    <td style="text-align: left;">
+                    <td style="text-align: left; overflow: hidden;">
                         <div style="align-text: left">
                             {line}
                         </div>
@@ -678,7 +678,7 @@ class Job(SyncableSyftObject):
             return self.resolve
 
         if not job_only and self.result is not None:
-            self.result.wait()
+            self.result.wait(timeout)
 
         if api is None:
             raise ValueError(
