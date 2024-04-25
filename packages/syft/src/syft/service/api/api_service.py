@@ -394,7 +394,23 @@ class APIService(AbstractService):
         )
         if isinstance(custom_endpoint, SyftError):
             return custom_endpoint
-        return Ok(custom_endpoint.exec(context, *args, **kwargs))
+
+        exec_result = custom_endpoint.exec(context, *args, **kwargs)
+
+        if isinstance(exec_result, SyftError):
+            return Ok(exec_result)
+
+        action_obj = ActionObject.from_obj(exec_result)
+        action_service = cast(ActionService, context.node.get_service(ActionService))
+        result = action_service.set_result_to_store(
+            context=context,
+            result_action_object=action_obj,
+            has_result_read_permission=True,
+        )
+        if result.is_err():
+            return SyftError(message=f"Failed to set result to store: {result.err()}")
+
+        return Ok(result.ok())
 
     @service_method(path="api.call_public", name="call_public", roles=GUEST_ROLE_LEVEL)
     def call_public(

@@ -183,7 +183,7 @@ class ActionStoreChange(Change):
 
     def __repr_syft_nested__(self) -> str:
         return f"Apply <b>{self.apply_permission_type}</b> to \
-            <i>{self.linked_obj.object_type.__canonical_name__}:{self.linked_obj.object_uid.short()}</i>"
+<i>{self.linked_obj.object_type.__canonical_name__}:{self.linked_obj.object_uid.short()}</i>."
 
 
 @serializable()
@@ -435,6 +435,19 @@ class Request(SyncableSyftObject):
 
             """
 
+    @property
+    def html_description(self) -> str:
+        desc = " ".join([x.__repr_syft_nested__() for x in self.changes])
+        # desc = desc.replace('\n', '')
+        # desc = desc.replace('<br>', '\n')
+        desc = desc.replace(". ", ".\n\n")
+        desc = desc.replace("<b>", "")
+        desc = desc.replace("</b>", "")
+        desc = desc.replace("<i>", "")
+        desc = desc.replace("</i>", "")
+
+        return desc
+
     def _coll_repr_(self) -> dict[str, str | dict[str, str]]:
         if self.status == RequestStatus.APPROVED:
             badge_color = "badge-green"
@@ -452,7 +465,7 @@ class Request(SyncableSyftObject):
         ]
 
         return {
-            "Description": " ".join([x.__repr_syft_nested__() for x in self.changes]),
+            "Description": self.html_description,
             "Requested By": "\n".join(user_data),
             "Status": status_badge,
         }
@@ -1202,15 +1215,15 @@ class UserCodeStatusChange(Change):
             f"Request to change <b>{self.code.service_func_name}</b> "
             f"(Pool Id: <b>{self.code.worker_pool_name}</b>) "
         )
-        msg += "to permission <b>RequestStatus.APPROVED</b>"
+        msg += "to permission <strong>RequestStatus.APPROVED.</strong>"
         if self.nested_solved:
             if self.link.nested_codes == {}:  # type: ignore
-                msg += ". No nested requests"
+                msg += "No nested requests."
             else:
-                msg += ".<br><br>This change requests the following nested functions calls:<br>"
+                msg += "<br><br>This change requests the following nested functions calls:<br>"
                 msg += self.nested_repr()
         else:
-            msg += ". Nested Requests not resolved"
+            msg += "Nested Requests not resolved."
         return msg
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
