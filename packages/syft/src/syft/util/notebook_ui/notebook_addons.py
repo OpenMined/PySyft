@@ -247,7 +247,7 @@ CSS = """
         grid-column: ${grid_template_cell_columns};
         display: flex;
         justify-content: center;
-        align-items: center; width: 100%; height: 100%;
+        align-items: center;
     }
 
     .grid-index-cells {
@@ -256,7 +256,6 @@ CSS = """
         font-weight: 600;
         background-color: var(--secondary-color) !important;
         color: var(--tertiary-color);
-        height: 100%;
     }
 
     .center-content-cell{
