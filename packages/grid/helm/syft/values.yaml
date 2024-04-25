@@ -163,6 +163,8 @@ node:
   queuePort: 5556
   logLevel: info
   debuggerEnabled: false
+  associationRequestAutoApproval: false
+  useInternalRegistry: true
 
   # SMTP Settings
   smtp:
