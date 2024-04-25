@@ -13,6 +13,7 @@ registry:
 node:
   rootEmail: info@openmined.org
   defaultWorkerPoolCount: 1
+  associationRequestAutoApproval: true
 
   resourcesPreset: null
   resources: null

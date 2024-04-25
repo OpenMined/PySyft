@@ -491,6 +491,11 @@ def clean(location: str) -> None:
     type=click.IntRange(1024, 50000),
     help="Set the volume size limit (in MBs)",
 )
+@click.option(
+    "--association-request-auto-approval",
+    is_flag=True,
+    help="Enable auto approval of association requests",
+)
 def launch(args: tuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -1290,6 +1295,10 @@ def create_launch_cmd(
         parsed_kwargs["set_s3_username"] = kwargs["set_s3_username"]
         parsed_kwargs["set_s3_password"] = kwargs["set_s3_password"]
         parsed_kwargs["set_volume_size_limit_mb"] = kwargs["set_volume_size_limit_mb"]
+
+    parsed_kwargs["association_request_auto_approval"] = str(
+        kwargs["association_request_auto_approval"]
+    )
 
     parsed_kwargs["node_count"] = (
         int(kwargs["node_count"]) if "node_count" in kwargs else 1
@@ -2279,6 +2288,11 @@ def create_launch_docker_cmd(
         envs["JAEGER_PORT"] = int(
             find_available_port(host="localhost", port=14268, search=True)
         )
+
+    if "association_request_auto_approval" in kwargs:
+        envs["ASSOCIATION_REQUEST_AUTO_APPROVAL"] = kwargs[
+            "association_request_auto_approval"
+        ]
 
     if "enable_warnings" in kwargs:
         envs["ENABLE_WARNINGS"] = kwargs["enable_warnings"]
