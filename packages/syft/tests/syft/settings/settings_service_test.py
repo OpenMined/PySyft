@@ -242,6 +242,7 @@ def test_settings_allow_guest_registration(
         node_side_type=NodeSideType.LOW_SIDE,
         show_warnings=False,
         deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
+        association_request_auto_approval=False,
     )
 
     with mock.patch(
@@ -326,6 +327,7 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
         node_side_type=NodeSideType.LOW_SIDE,
         show_warnings=False,
         deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
+        association_request_auto_approval=False,
     )
 
     with mock.patch(

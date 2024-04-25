@@ -14,6 +14,10 @@ node:
   name: syft-gcp
   side: low
 
+  # Skip intermediate registry & directly build & push container images to target registry
+  # Useful when workload identity is setup
+  useInternalRegistry: false
+
   # Force backend to write results to this bucket
   # should be same as mountApi.mounts.local_bucket
   defaultBucketName: syft-bucket-low-gcs

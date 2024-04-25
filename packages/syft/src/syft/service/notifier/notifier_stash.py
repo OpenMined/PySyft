@@ -8,6 +8,7 @@ from result import Result
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
+from ...service.response import SyftError
 from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
@@ -50,7 +51,7 @@ class NotifierStash(BaseStash):
             ]  # TODO: Should we check if theres more than one? => Report corruption
             return Ok(result)
         else:
-            return Err(message=result.err())
+            return Err(SyftError(message=result.err()))
 
     def set(
         self,
@@ -63,7 +64,7 @@ class NotifierStash(BaseStash):
         result = self.check_type(settings, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if result.is_err():
-            return Err(message=result.err())
+            return Err(SyftError(message=result.err()))
         return super().set(
             credentials=credentials, obj=result.ok()
         )  # TODO check if result isInstance(Ok)
@@ -77,7 +78,7 @@ class NotifierStash(BaseStash):
         result = self.check_type(settings, self.object_type)
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if result.is_err():
-            return Err(message=result.err())
+            return Err(SyftError(message=result.err()))
         return super().update(
             credentials=credentials, obj=result.ok()
         )  # TODO check if result isInstance(Ok)

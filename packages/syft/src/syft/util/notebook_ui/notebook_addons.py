@@ -35,14 +35,14 @@ function addStyleSheet(fileName) {{
 
 CSS = """
 <style>
-  body[data-jp-theme-light='false'] {
+  .syft-widget body[data-jp-theme-light='false'] {
         --primary-color: #111111;
         --secondary-color: #212121;
         --tertiary-color: #CFCDD6;
         --button-color: #111111;
   }
 
-  body {
+  .syft-widget body {
         --primary-color: #ffffff;
         --secondary-color: #f5f5f5;
         --tertiary-color: #000000de;
@@ -240,7 +240,6 @@ CSS = """
         display:grid;
         grid-template-columns: ${grid_template_columns};
         /*grid-template-rows: repeat(2, 1fr);*/
-        overflow-x: auto;
         position: relative;
     }
 
@@ -257,6 +256,7 @@ CSS = """
         font-weight: 600;
         background-color: var(--secondary-color) !important;
         color: var(--tertiary-color);
+        height: 100%;
     }
 
     .center-content-cell{
@@ -554,7 +554,6 @@ CSS = """
 """
 
 CSS_CODE = f"""
-{JS_DOWNLOAD_FONTS}
 {CSS}
 """
 
@@ -919,7 +918,7 @@ def create_table_template(
         cols = (len(items[0].keys())) * 4
     if "{cols}" in grid_template_columns:
         grid_template_columns = grid_template_columns.format(cols=cols)
-    return template.substitute(
+    final_html = template.substitute(
         uid=str(UID()),
         element=items_dict,
         list_name=list_name,
@@ -931,3 +930,4 @@ def create_table_template(
         grid_template_columns=grid_template_columns,
         grid_template_cell_columns=grid_template_cell_columns,
     )
+    return final_html
