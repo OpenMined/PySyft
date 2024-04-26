@@ -617,23 +617,11 @@ class Job(SyncableSyftObject):
                 """
 
         logs = self.logs(_print=False)
-        logs_lines = logs.split("\n") if logs else []
-        logs_lines_html = ""
-        for i, line in enumerate(logs_lines):
-            logs_lines_html += f"""
-                <tr style="width:100%; background: rgb(244, 243, 246);">
-                    <td style="text-align: left; width: 50px;">
-                        <div style="margin-right:24px; align-text: center">
-                            {i}
-                        </div>
-                    </td>
-                    <td style="text-align: left; overflow: hidden;">
-                        <div style="align-text: left">
-                            {line}
-                        </div>
-                    </td>
-                </tr>
-            """
+        logs_lines = logs.strip().split("\n") if logs else []
+        logs_lines.insert(0, "<strong>Message</strong>")
+
+        logs_lines = [f"<code>{line}</code>" for line in logs_lines]
+        logs_lines_html = "\n".join(logs_lines)
 
         template = Template(job_repr_template)
         return template.substitute(
