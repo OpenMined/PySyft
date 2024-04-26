@@ -1,5 +1,6 @@
 # stdlib
 import base64
+import binascii
 from typing import Annotated
 
 # third party
@@ -61,12 +62,16 @@ def make_routes(worker: Worker) -> APIRouter:
 
         return str(url)
 
-    @router.get("/stream/{peer_uid_str}/{url_path_str}/", name="stream")
-    async def stream(peer_uid_str: str, url_path_str: str) -> StreamingResponse:
-        url_path = base64.urlsafe_b64decode(url_path_str.encode()).decode()
-        peer_uid = UID.from_string(peer_uid_str)
+    @router.get("/stream/{peer_uid}/{url_path}/", name="stream")
+    async def stream(peer_uid: str, url_path: str) -> StreamingResponse:
+        try:
+            url_path_parsed = base64.urlsafe_b64decode(url_path.encode()).decode()
+        except binascii.Error:
+            raise HTTPException(404, "Invalid `url_path`.")
 
-        url = _blob_url(peer_uid=peer_uid, presigned_url=url_path)
+        peer_uid_parsed = UID.from_string(peer_uid)
+
+        url = _blob_url(peer_uid=peer_uid_parsed, presigned_url=url_path_parsed)
 
         try:
             resp = requests.get(url=url, stream=True)  # nosec
