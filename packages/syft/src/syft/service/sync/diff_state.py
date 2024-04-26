@@ -801,7 +801,14 @@ class ObjectDiffBatch(SyftObject):
         return flatten_dict(self.get_visual_hierarchy())
 
     def _repr_html_(self) -> str:
-        diffs = self.flatten_visual_hierarchy()
+        try:
+            diffs = self.flatten_visual_hierarchy()
+        except Exception as _:
+            return SyftError(
+                message=html.escape(
+                    "Could not render batch, please use resolve_single(<batch>) instead."
+                )
+            )._repr_html_()
 
         return f"""
 <h2> ObjectBatchDiff </h2>
@@ -876,11 +883,18 @@ class ObjectDiffBatch(SyftObject):
     def root(self) -> ObjectDiff:
         return self.root_diff
 
-    def __repr__(self) -> str:
-        return f"""{self.hierarchy_str('low')}
+    def __repr__(self) -> Any:
+        try:
+            return f"""{self.hierarchy_str('low')}
 
-{self.hierarchy_str('high')}
-"""
+    {self.hierarchy_str('high')}
+    """
+        except Exception as _:
+            return SyftError(
+                message=html.escape(
+                    "Could not render batch, please use resolve_single(<batch>) instead."
+                )
+            )._repr_html_()
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return ""  # Turns off the _repr_markdown_ of SyftObject

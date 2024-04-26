@@ -26,7 +26,7 @@ vars:
   DOCKER_IMAGE_FRONTEND: openmined/grid-frontend
   DOCKER_IMAGE_SEAWEEDFS: openmined/grid-seaweedfs
   CONTAINER_REGISTRY: "docker.io"
-  VERSION: "0.8.7-beta.3"
+  VERSION: "0.8.7-beta.5"
   PLATFORM: $(uname -m | grep -q 'arm64' && echo "arm64" || echo "amd64")
 
 # This is a list of `images` that DevSpace can build for this project

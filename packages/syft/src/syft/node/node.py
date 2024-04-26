@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections import OrderedDict
+from collections import defaultdict
 from collections.abc import Callable
 from datetime import datetime
 from functools import partial
@@ -463,6 +464,9 @@ class Node(AbstractNode):
         for p in self.queue_manager.producers.values():
             p.close()
 
+        self.queue_manager.producers.clear()
+        self.queue_manager.consumers.clear()
+
         NodeRegistry.remove_node(self.id)
 
     def close(self) -> None:
@@ -566,6 +570,18 @@ class Node(AbstractNode):
             syft_worker_id=syft_worker_id,
         )
         consumer.run()
+
+    def remove_consumer_with_id(self, syft_worker_id: UID) -> None:
+        for _, consumers in self.queue_manager.consumers.items():
+            # Grab the list of consumers for the given queue
+            consumer_to_pop = None
+            for consumer_idx, consumer in enumerate(consumers):
+                if consumer.syft_worker_id == syft_worker_id:
+                    consumer.close()
+                    consumer_to_pop = consumer_idx
+                    break
+            if consumer_to_pop is not None:
+                consumers.pop(consumer_to_pop)
 
     @classmethod
     def named(
@@ -1236,7 +1252,14 @@ class Node(AbstractNode):
             has_execute_permissions=True,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
-        return self.add_queueitem_to_queue(queue_item, credentials, None, None)
+
+        action = Action.from_api_endpoint_execution()
+        return self.add_queueitem_to_queue(
+            queue_item,
+            credentials,
+            action,
+            None,
+        )
 
     def add_action_to_queue(
         self,

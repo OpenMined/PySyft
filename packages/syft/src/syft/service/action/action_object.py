@@ -81,6 +81,7 @@ class ActionType(Enum):
     FUNCTION = 8
     CREATEOBJECT = 16
     SYFTFUNCTION = 32
+    TWINAPI = 64
 
 
 def repr_cls(c: Any) -> str:
@@ -198,6 +199,16 @@ class Action(SyftObject):
             user_code_id=function_id,
         )
         return action
+
+    @classmethod
+    def from_api_endpoint_execution(cls: type[Self]) -> Action:
+        return cls(
+            args=[],
+            kwargs={},
+            result_id=LineageID(),
+            action_type=ActionType.TWINAPI,
+            user_code_id=None,
+        )
 
     def __repr__(self) -> str:
         def repr_uid(_id: LineageID) -> str:
@@ -1905,7 +1916,7 @@ class ActionObject(SyncableSyftObject):
                     else self.syft_action_data_cache.__repr__()
                 )
 
-        return f"```python\n{res}\n{data_repr_}```\n"
+        return f"```python\n{res}\n{data_repr_}\n```\n"
 
     def _data_repr(self) -> str | None:
         if isinstance(self.syft_action_data_cache, ActionDataEmpty):
