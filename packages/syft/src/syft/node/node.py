@@ -1252,7 +1252,14 @@ class Node(AbstractNode):
             has_execute_permissions=True,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
-        return self.add_queueitem_to_queue(queue_item, credentials, None, None)
+
+        action = Action.from_api_endpoint_execution()
+        return self.add_queueitem_to_queue(
+            queue_item,
+            credentials,
+            action,
+            None,
+        )
 
     def add_action_to_queue(
         self,
