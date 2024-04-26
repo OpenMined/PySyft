@@ -1,5 +1,6 @@
 # stdlib
 from secrets import token_hex
+import sys
 from textwrap import dedent
 
 # third party
@@ -101,6 +102,7 @@ def private_function(context) -> str:
     return 42
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_twin_api_integration(full_high_worker, full_low_worker):
     low_client = full_low_worker.login(
         email="info@openmined.org", password="changethis"
@@ -167,6 +169,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     ), "Should not be able to access private function on low side."
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_function_error(full_low_worker) -> None:
     root_domain_client = full_low_worker.login(
         email="info@openmined.org", password="changethis"
