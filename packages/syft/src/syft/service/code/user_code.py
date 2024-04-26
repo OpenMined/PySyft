@@ -1498,15 +1498,12 @@ def execute_byte_code(
                 and context.job is not None
                 and context.job.log_id is not None
             ):
+                log_id = context.job.log_id
                 log_service = context.node.get_service("LogService")
-                log_service.append(
-                    context=context, uid=context.job.log_id, new_err=error_msg
-                )
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            stack = traceback.extract_tb(exc_traceback)
-            lineno = f" at line {stack[-1].lineno}" if stack else None
+                log_service.append(context=context, uid=log_id, new_err=error_msg)
+
             result_message = (
-                f"Exception encountered while running {code_item.service_func_name}{lineno}"
+                f"Exception encountered while running {code_item.service_func_name}"
                 ", please contact the Node Admin for more info."
             )
             if context.dev_mode:
