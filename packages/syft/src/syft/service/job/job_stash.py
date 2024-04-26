@@ -7,7 +7,7 @@ from string import Template
 from typing import Any
 
 # third party
-from pydantic import field_validator
+from pydantic import Field
 from pydantic import model_validator
 from result import Err
 from result import Ok
@@ -86,7 +86,7 @@ class Job(SyncableSyftObject):
     parent_job_id: UID | None = None
     n_iters: int | None = 0
     current_iter: int | None = None
-    creation_time: str | None = None
+    creation_time: str | None = Field(default_factory=lambda: str(datetime.now()))
     action: Action | None = None
     job_pid: int | None = None
     job_worker_id: UID | None = None
@@ -114,11 +114,6 @@ class Job(SyncableSyftObject):
         "auto",
     ]
     __syft_include_id_coll_repr__ = False
-
-    @field_validator("creation_time")
-    @classmethod
-    def check_time(cls, time: Any) -> Any:
-        return str(datetime.now()) if time is None else time
 
     @model_validator(mode="after")
     def check_user_code_id(self) -> Self:
