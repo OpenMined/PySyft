@@ -60,12 +60,59 @@ attrs_html = """<div style="display: table-row; padding: 0px, 0px, 12px, 0px; ga
 <div style="height:16px;"></div>
 """
 
-logs_html = """<div id="${logs_tab_id}" class="tab-${identifier}" style="background: #F4F3F6;
-border-color: #CFCDD6; border-width: 0.5px; border-style: solid; padding: 24px; gap: 8px; margin-top: 24px;
-display: none;align-items:left">
-    <div style="font-size: 12px; font-weight: 400; font: DejaVu Sans Mono line-height: 16.8px; ">
+logs_html = """
+<style>
+pre {
+    counter-reset: line -1;
+    background-color: transparent;
+    color: black;
+}
+
+pre code {
+    display: block;
+    counter-increment: line;
+    background-color: transparent;
+    color: black;
+    font-family: DejaVu Sans Mono, sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16.8px;
+}
+
+pre code::before {
+    content: counter(line);
+    display: inline-block;
+    width: 2em;
+    padding-right: 1.5em;
+    margin-right: 1.5em;
+    text-align: right;
+}
+
+pre code:first-of-type::before {
+    content: "#";
+    font-weight: bold;
+}
+
+.logsTab {
+    color: #000000;
+    background: #F4F3F6;
+    border-color: #CFCDD6;
+    border-width: 0.5px;
+    border-style: solid;
+    padding: 24px;
+    gap: 8px;
+    margin-top: 24px;
+    display: none;
+    align-items: left;
+
+}
+
+</style>
+
+<div id="${logs_tab_id}" class="tab-${identifier} logsTab">
+    <pre>
         ${logs_lines_html}
-    </div>
+    </pre>
 </div>
 """
 

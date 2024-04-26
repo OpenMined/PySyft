@@ -622,49 +622,11 @@ class Job(SyncableSyftObject):
                 """
 
         logs = self.logs(_print=False)
-        log_lines = logs.strip().split("\n") if logs else []
-        log_lines.insert(0, "<strong>Message</strong>")
+        logs_lines = logs.strip().split("\n") if logs else []
+        logs_lines.insert(0, "<strong>Message</strong>")
 
-        log_lines = [f"<code>{line}</code>" for line in log_lines]
-        logs = "\n".join(log_lines)
-
-        logs_lines_html = r"""
-<style>
-pre {{
-    counter-reset: line -1;
-    background-color: transparent;
-    color: black;
-
-}}
-
-pre code {{
-    display: block;
-    counter-increment: line;
-    background-color: transparent;
-    color: black;
-
-}}
-
-pre code::before {{
-    content: counter(line);
-    display: inline-block;
-    width: 2em;
-    padding-right: 1.5em;
-    margin-right: 1.5em;
-    text-align: right;
-}}
-
-pre code:first-of-type::before {{
-    content: "#";
-    font-weight: bold;
-}}
-
-</style>
-
-<pre>
-{logs}
-</pre>
-""".format(logs=logs)
+        logs_lines = [f"<code>{line}</code>" for line in logs_lines]
+        logs_lines_html = "\n".join(logs_lines)
 
         template = Template(job_repr_template)
         return template.substitute(
