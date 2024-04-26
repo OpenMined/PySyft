@@ -4,6 +4,7 @@ from textwrap import dedent
 
 # third party
 import pytest
+from result import Err
 
 # syft absolute
 import syft
@@ -86,6 +87,42 @@ def test_diff_state(low_worker, high_worker):
     client_low_ds.refresh()
     res = client_low_ds.code.compute(blocking=True)
     assert res == compute(blocking=True).get()
+
+
+def test_sync_with_error(low_worker, high_worker):
+    """Check syncing with an error in a syft function"""
+    low_client: DomainClient = low_worker.root_client
+    client_low_ds = get_ds_client(low_client)
+    high_client: DomainClient = high_worker.root_client
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        assert False
+        return 42
+
+    compute.code = dedent(compute.code)
+
+    _ = client_low_ds.code.request_code_execution(compute)
+
+    diff_state_before, diff_state_after = compare_and_resolve(
+        from_client=low_client, to_client=high_client
+    )
+
+    assert not diff_state_before.is_same
+
+    assert diff_state_after.is_same
+
+    run_and_accept_result(high_client)
+    diff_state_before, diff_state_after = compare_and_resolve(
+        from_client=high_client, to_client=low_client
+    )
+
+    assert not diff_state_before.is_same
+    assert diff_state_after.is_same
+
+    client_low_ds.refresh()
+    res = client_low_ds.code.compute(blocking=True)
+    assert isinstance(res.get(), Err)
 
 
 def test_ignore_unignore_single(low_worker, high_worker):

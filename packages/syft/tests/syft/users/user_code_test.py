@@ -87,7 +87,8 @@ def test_duplicated_user_code(worker, guest_client: User) -> None:
     assert len(guest_client.code.get_all()) == 1
 
     # request the a different function name but same content will also succeed
-    mock_syft_func_2()
+    # flaky if not blocking
+    mock_syft_func_2(blocking=True)
     result = guest_client.api.services.code.request_code_execution(mock_syft_func_2)
     assert isinstance(result, Request)
     assert len(guest_client.code.get_all()) == 2
