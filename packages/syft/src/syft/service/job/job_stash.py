@@ -104,6 +104,15 @@ class Job(SyncableSyftObject):
         "user_code_name",
     ]
     __exclude_sync_diff_attrs__ = ["action", "node_uid"]
+    __table_coll_widths__ = [
+        "min-content",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+    ]
     __syft_include_id_coll_repr__ = False
 
     @field_validator("creation_time")
@@ -600,29 +609,30 @@ class Job(SyncableSyftObject):
         worker_attr = ""
         if self.job_worker_id:
             worker = self.worker
-            worker_pool_id_button = CopyIDButton(
-                copy_text=str(worker.worker_pool_name), max_width=60
-            )
-            worker_attr = f"""
-                <div style="margin-top: 6px; margin-bottom: 6px;">
-                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">
-                    Worker Pool:</span>
-                    {worker.name} on worker {worker_pool_id_button.to_html()}
-                </div>
-            """
+            if not isinstance(worker, SyftError):
+                worker_pool_id_button = CopyIDButton(
+                    copy_text=str(worker.worker_pool_name), max_width=60
+                )
+                worker_attr = f"""
+                    <div style="margin-top: 6px; margin-bottom: 6px;">
+                    <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">
+                        Worker Pool:</span>
+                        {worker.name} on worker {worker_pool_id_button.to_html()}
+                    </div>
+                """
 
-        logs = self.logs(_print=False, stderr=False)
+        logs = self.logs(_print=False)
         logs_lines = logs.split("\n") if logs else []
         logs_lines_html = ""
         for i, line in enumerate(logs_lines):
             logs_lines_html += f"""
-                <tr style="width:100%">
-                    <td style="text-align: left;">
+                <tr style="width:100%; background: rgb(244, 243, 246);">
+                    <td style="text-align: left; width: 50px;">
                         <div style="margin-right:24px; align-text: center">
                             {i}
                         </div>
                     </td>
-                    <td style="text-align: left;">
+                    <td style="text-align: left; overflow: hidden;">
                         <div style="align-text: left">
                             {line}
                         </div>
@@ -633,6 +643,8 @@ class Job(SyncableSyftObject):
         template = Template(job_repr_template)
         return template.substitute(
             uid=str(UID()),
+            grid_template_columns=None,
+            grid_template_cell_columns=None,
             cols=0,
             job_type=job_type,
             api_header=api_header,
@@ -666,7 +678,7 @@ class Job(SyncableSyftObject):
             return self.resolve
 
         if not job_only and self.result is not None:
-            self.result.wait()
+            self.result.wait(timeout)
 
         if api is None:
             raise ValueError(
@@ -708,7 +720,7 @@ class Job(SyncableSyftObject):
 
     def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:  # type: ignore
         dependencies = []
-        if self.result is not None:
+        if self.result is not None and isinstance(self.result, ActionObject):
             dependencies.append(self.result.id.id)
 
         if self.log_id:
@@ -853,11 +865,15 @@ class JobStash(BaseStash):
         else:
             res = res.ok()
             # beautiful query
-            res = [x for x in res if x.result is not None and x.result.id.id == res_id]
+            res = [
+                x
+                for x in res
+                if isinstance(x.result, ActionObject) and x.result.id.id == res_id
+            ]
             if len(res) == 0:
                 return Ok(None)
             elif len(res) > 1:
-                return Err(message="multiple Jobs found")
+                return Err(SyftError(message="multiple Jobs found"))
             else:
                 return Ok(res[0])
 

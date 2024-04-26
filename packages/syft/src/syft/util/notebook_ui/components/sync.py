@@ -42,7 +42,7 @@ COPY_CSS = """
   color: #B4B0BF;
   overflow: hidden;
   white-space: nowrap;
-;
+  vertical-align: middle;
 }
 
 .copy-container:hover {
@@ -202,7 +202,7 @@ class MainDescription(HTMLComponentBase):
         if isinstance(self.object, UserCode):
             return self.object.service_func_name
         elif isinstance(self.object, Job):  # type: ignore
-            return self.object.user_code_name
+            return self.object.user_code_name or ""
         elif isinstance(self.object, Request):  # type: ignore
             # TODO: handle other requests
             return f"Execute {self.object.code.service_func_name}"
@@ -262,7 +262,7 @@ class SyncWidgetHeader(SyncTableObject):
         third_line_html = f"<span style='color: #5E5A72;'>This would sync <span style='color: #B8520A'>{num_diffs} changes </span> from <i>{source_side} Node</i> to <i>{target_side} Node</i></span>"  # noqa: E501
 
         header_html = f"""
-        <style>{style}</style>
+        {style}
         {first_line_html}
         {second_line_html}
         {third_line_html}

@@ -18,12 +18,9 @@ def _serialize(
 
     proto = rs_object2proto(obj, for_hashing=for_hashing)
     if to_bytes:
-        if compatible_with_large_file_writes_capnp():
-            with tempfile.SpooledTemporaryFile(
-                max_size=SPOOLED_FILE_MAX_SIZE_SERDE
-            ) as tmp_file:
+        if compatible_with_large_file_writes_capnp(proto):
+            with tempfile.TemporaryFile() as tmp_file:
                 # Write data to a file to save RAM
-
                 proto.write(tmp_file)
                 # proto in memory, and bytes in file
                 del proto

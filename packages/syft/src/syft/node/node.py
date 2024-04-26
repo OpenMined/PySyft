@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections import OrderedDict
+from collections import defaultdict
 from collections.abc import Callable
 from datetime import datetime
 from functools import partial
@@ -319,6 +320,7 @@ class Node(AbstractNode):
         email_sender: str | None = None,
         smtp_port: int | None = None,
         smtp_host: str | None = None,
+        association_request_auto_approval: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -351,6 +353,8 @@ class Node(AbstractNode):
         else:
             skey = signing_key
         self.signing_key = skey or SyftSigningKey.generate()
+
+        self.association_request_auto_approval = association_request_auto_approval
 
         self.queue_config = self.create_queue_config(
             n_consumers=n_consumers,
@@ -460,6 +464,9 @@ class Node(AbstractNode):
         for p in self.queue_manager.producers.values():
             p.close()
 
+        self.queue_manager.producers.clear()
+        self.queue_manager.consumers.clear()
+
         NodeRegistry.remove_node(self.id)
 
     def close(self) -> None:
@@ -564,6 +571,18 @@ class Node(AbstractNode):
         )
         consumer.run()
 
+    def remove_consumer_with_id(self, syft_worker_id: UID) -> None:
+        for _, consumers in self.queue_manager.consumers.items():
+            # Grab the list of consumers for the given queue
+            consumer_to_pop = None
+            for consumer_idx, consumer in enumerate(consumers):
+                if consumer.syft_worker_id == syft_worker_id:
+                    consumer.close()
+                    consumer_to_pop = consumer_idx
+                    break
+            if consumer_to_pop is not None:
+                consumers.pop(consumer_to_pop)
+
     @classmethod
     def named(
         cls,
@@ -582,6 +601,7 @@ class Node(AbstractNode):
         dev_mode: bool = False,
         migrate: bool = False,
         in_memory_workers: bool = True,
+        association_request_auto_approval: bool = False,
     ) -> Self:
         uid = UID.with_seed(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -609,6 +629,7 @@ class Node(AbstractNode):
             migrate=migrate,
             in_memory_workers=in_memory_workers,
             reset=reset,
+            association_request_auto_approval=association_request_auto_approval,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -1500,7 +1521,11 @@ class Node(AbstractNode):
                 return None
             settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
             if settings_exists:
-                self.name = settings_exists[0].name
+                node_settings = settings_exists[0]
+                self.name = node_settings.name
+                self.association_request_auto_approval = (
+                    node_settings.association_request_auto_approval
+                )
                 return None
             else:
                 # Currently we allow automatic user registration on enclaves,
@@ -1517,6 +1542,7 @@ class Node(AbstractNode):
                     admin_email=admin_email,
                     node_side_type=self.node_side_type.value,  # type: ignore
                     show_warnings=self.enable_warnings,
+                    association_request_auto_approval=self.association_request_auto_approval,
                     default_worker_pool=get_default_worker_pool_name(),
                 )
                 result = settings_stash.set(
