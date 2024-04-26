@@ -1233,6 +1233,11 @@ class Node(AbstractNode):
         else:
             worker_pool = self.get_worker_pool_by_name(worker_pool)
 
+        if isinstance(worker_pool, SyftError):
+            return worker_pool
+        elif worker_pool is None:
+            return SyftError(message="Worker pool not found")
+
         # Create a Worker pool reference object
         worker_pool_ref = LinkedObject.from_obj(
             worker_pool,
