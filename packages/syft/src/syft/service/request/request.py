@@ -877,6 +877,11 @@ class Request(SyncableSyftObject):
                 return res
 
         job_info.result = action_object
+        job_info.status = (
+            JobStatus.ERRORED
+            if isinstance(action_object.syft_action_data, Err)
+            else JobStatus.COMPLETED
+        )
 
         existing_result = job.result.id if job.result is not None else None
         print(
