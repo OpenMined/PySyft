@@ -20,10 +20,10 @@ http:
       loadBalancer:
         servers:
           - url: "http://seaweedfs:4001"
-    headscale:
+    rathole:
       loadBalancer:
         servers:
-          - url: "http://headscale:8080"
+          - url: "http://rathole:5555"
   routers:
     frontend:
       rule: "PathPrefix(`/`)"

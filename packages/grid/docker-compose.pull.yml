@@ -24,3 +24,6 @@ services:
   # Temporary fix until we refactor pull, build, launch UI step during hagrid launch
   worker:
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
+
+  rathole:
+    image: "${DOCKER_IMAGE_RATHOLE?Variable not set}:${VERSION-latest}"

@@ -2,9 +2,11 @@
 
 # third party
 from filelock import FileLock
-from models import RatholeConfig
-from nginx_builder import RatholeNginxConfigBuilder
-from toml_writer import TomlReaderWriter
+
+# relative
+from .models import RatholeConfig
+from .nginx_builder import RatholeNginxConfigBuilder
+from .toml_writer import TomlReaderWriter
 
 lock = FileLock("rathole.toml.lock")
 

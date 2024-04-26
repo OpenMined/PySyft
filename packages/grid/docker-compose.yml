@@ -64,18 +64,15 @@ services:
       - rathole
     environment:
       - SERVICE_NAME=rathole
-      - APP_LOG_LEVEL=${APP_LOG_LEVEL}
+      - APP_LOG_LEVEL=${APP_LOG_LEVEL:-info}
       - MODE=${MODE}
       - DEV_MODE=${DEV_MODE}
-      - APP_PORT=${APP_PORT}
+      - APP_PORT=${APP_PORT:-5555}
       - RATHOLE_PORT=${RATHOLE_PORT:-2333}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     labels:
       - "orgs.openmined.syft=this is a syft rathole container"
-    ports:
-      - "${APP_PORT}:${APP_PORT}"
-      - "${RATHOLE_PORT}:${RATHOLE_PORT}"
 
   # redis:
   #   restart: always

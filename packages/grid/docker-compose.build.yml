@@ -25,6 +25,5 @@ services:
 
   rathole:
     build:
-      context: ${RELATIVE_PATH}../
-      dockerfile: ./grid/rathole/rathole.dockerfile
-      target: "rathole"
+      context: ${RELATIVE_PATH}./rathole
+      dockerfile: rathole.dockerfile
