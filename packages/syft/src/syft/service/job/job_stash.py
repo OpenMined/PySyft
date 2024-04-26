@@ -623,7 +623,7 @@ class Job(SyncableSyftObject):
 
         logs = self.logs(_print=False)
         log_lines = logs.strip().split("\n") if logs else []
-        log_lines.insert(0, f"<strong>{"Message"}</strong>")
+        log_lines.insert(0, "<strong>Message</strong>")
 
         log_lines = [f"<code>{line}</code>" for line in log_lines]
         logs = "\n".join(log_lines)
@@ -631,7 +631,7 @@ class Job(SyncableSyftObject):
         logs_lines_html = r"""
 <style>
 pre {{
-    counter-reset: line;
+    counter-reset: line -1;
     background-color: transparent;
     color: black;
 
