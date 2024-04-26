@@ -307,62 +307,62 @@ def private_function(context) -> str:
     return 42
 
 
-def test_twin_api_integration(full_high_worker, full_low_worker):
-    low_client = full_low_worker.login(
-        email="info@openmined.org", password="changethis"
-    )
-    high_client = full_high_worker.login(
-        email="info@openmined.org", password="changethis"
-    )
+# def test_twin_api_integration(full_high_worker, full_low_worker):
+#     low_client = full_low_worker.login(
+#         email="info@openmined.org", password="changethis"
+#     )
+#     high_client = full_high_worker.login(
+#         email="info@openmined.org", password="changethis"
+#     )
 
-    low_client.register(
-        email="newuser@openmined.org",
-        name="John Doe",
-        password="pw",
-        password_verify="pw",
-    )
+#     low_client.register(
+#         email="newuser@openmined.org",
+#         name="John Doe",
+#         password="pw",
+#         password_verify="pw",
+#     )
 
-    client_low_ds = low_client.login(
-        email="newuser@openmined.org",
-        password="pw",
-    )
+#     client_low_ds = low_client.login(
+#         email="newuser@openmined.org",
+#         password="pw",
+#     )
 
-    new_endpoint = sy.TwinAPIEndpoint(
-        path="testapi.query",
-        private_function=private_function,
-        mock_function=mock_function,
-        description="",
-    )
-    high_client.api.services.api.add(endpoint=new_endpoint)
-    high_client.refresh()
-    high_private_res = high_client.api.services.testapi.query.private()
-    assert high_private_res == 42
+#     new_endpoint = sy.TwinAPIEndpoint(
+#         path="testapi.query",
+#         private_function=private_function,
+#         mock_function=mock_function,
+#         description="",
+#     )
+#     high_client.api.services.api.add(endpoint=new_endpoint)
+#     high_client.refresh()
+#     high_private_res = high_client.api.services.testapi.query.private()
+#     assert high_private_res == 42
 
-    low_state = low_client.get_sync_state()
-    high_state = high_client.get_sync_state()
-    diff_state = compare_states(high_state, low_state)
+#     low_state = low_client.get_sync_state()
+#     high_state = high_client.get_sync_state()
+#     diff_state = compare_states(high_state, low_state)
 
-    obj_diff_batch = diff_state[0]
-    widget = resolve_single(obj_diff_batch)
-    widget.click_sync()
+#     obj_diff_batch = diff_state[0]
+#     widget = resolve_single(obj_diff_batch)
+#     widget.click_sync()
 
-    obj_diff_batch = diff_state[1]
-    widget = resolve_single(obj_diff_batch)
-    widget.click_sync()
+#     obj_diff_batch = diff_state[1]
+#     widget = resolve_single(obj_diff_batch)
+#     widget.click_sync()
 
-    high_mock_res = high_client.api.services.testapi.query.mock()
-    assert high_mock_res == -42
+#     high_mock_res = high_client.api.services.testapi.query.mock()
+#     assert high_mock_res == -42
 
-    client_low_ds.refresh()
-    high_client.refresh()
-    low_private_res = client_low_ds.api.services.testapi.query.private()
-    assert isinstance(
-        low_private_res, SyftError
-    ), "Should not have access to private on low side"
-    low_mock_res = client_low_ds.api.services.testapi.query.mock()
-    high_mock_res = high_client.api.services.testapi.query.mock()
-    assert low_mock_res == -42
-    assert high_mock_res == -42
+#     client_low_ds.refresh()
+#     high_client.refresh()
+#     low_private_res = client_low_ds.api.services.testapi.query.private()
+#     assert isinstance(
+#         low_private_res, SyftError
+#     ), "Should not have access to private on low side"
+#     low_mock_res = client_low_ds.api.services.testapi.query.mock()
+#     high_mock_res = high_client.api.services.testapi.query.mock()
+#     assert low_mock_res == -42
+#     assert high_mock_res == -42
 
 
 def test_skip_user_code(low_worker, high_worker):

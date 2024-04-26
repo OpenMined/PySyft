@@ -200,11 +200,15 @@ def handle_message_multiprocessing(
         status = Status.COMPLETED
         job_status = JobStatus.COMPLETED
 
-        if isinstance(result, Ok):
+        if isinstance(result.ok().syft_action_data, Err):
+            status = Status.ERRORED
+            job_status = JobStatus.ERRORED
             result = result.ok()
         elif isinstance(result, SyftError) or isinstance(result, Err):
             status = Status.ERRORED
             job_status = JobStatus.ERRORED
+        elif isinstance(result, Ok):
+            result = result.ok()
     except Exception as e:  # nosec
         status = Status.ERRORED
         job_status = JobStatus.ERRORED

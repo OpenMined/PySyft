@@ -609,29 +609,30 @@ class Job(SyncableSyftObject):
         worker_attr = ""
         if self.job_worker_id:
             worker = self.worker
-            worker_pool_id_button = CopyIDButton(
-                copy_text=str(worker.worker_pool_name), max_width=60
-            )
-            worker_attr = f"""
-                <div style="margin-top: 6px; margin-bottom: 6px;">
-                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">
-                    Worker Pool:</span>
-                    {worker.name} on worker {worker_pool_id_button.to_html()}
-                </div>
-            """
+            if not isinstance(worker, SyftError):
+                worker_pool_id_button = CopyIDButton(
+                    copy_text=str(worker.worker_pool_name), max_width=60
+                )
+                worker_attr = f"""
+                    <div style="margin-top: 6px; margin-bottom: 6px;">
+                    <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">
+                        Worker Pool:</span>
+                        {worker.name} on worker {worker_pool_id_button.to_html()}
+                    </div>
+                """
 
-        logs = self.logs(_print=False, stderr=False)
+        logs = self.logs(_print=False)
         logs_lines = logs.split("\n") if logs else []
         logs_lines_html = ""
         for i, line in enumerate(logs_lines):
             logs_lines_html += f"""
-                <tr style="width:100%">
-                    <td style="text-align: left;">
+                <tr style="width:100%; background: rgb(244, 243, 246);">
+                    <td style="text-align: left; width: 50px;">
                         <div style="margin-right:24px; align-text: center">
                             {i}
                         </div>
                     </td>
-                    <td style="text-align: left;">
+                    <td style="text-align: left; overflow: hidden;">
                         <div style="align-text: left">
                             {line}
                         </div>
@@ -677,7 +678,7 @@ class Job(SyncableSyftObject):
             return self.resolve
 
         if not job_only and self.result is not None:
-            self.result.wait()
+            self.result.wait(timeout)
 
         if api is None:
             raise ValueError(
