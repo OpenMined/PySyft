@@ -34,6 +34,23 @@ def test_image_id_with_registry():
     assert image_id.full_name_with_tag == tag
 
 
+def test_image_id_with_gcp_registry():
+    tag = "openmined/test-image:1.0"
+
+    gcp_url = "us-central1-docker.pkg.dev/project-12345/registry-name"
+    registry = SyftImageRegistry.from_url(gcp_url)
+    image_id = SyftWorkerImageIdentifier.with_registry(tag, registry)
+
+    assert (
+        image_id.registry_host
+        == "us-central1-docker.pkg.dev/project-12345/registry-name"
+    )
+    assert image_id.repo == "openmined/test-image"
+    assert image_id.tag == "1.0"
+    assert image_id.repo_with_tag == "openmined/test-image:1.0"
+    assert image_id.full_name_with_tag == f"{gcp_url}/{tag}"
+
+
 def test_image_id_with_incorrect_registry():
     with pytest.raises(ValueError):
         tag = "docker.io/openmined/test-nginx:0.7.8"

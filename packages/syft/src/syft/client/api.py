@@ -369,17 +369,20 @@ class RemoteFunction(SyftObject):
             str_repr = "## API: " + custom_path + "\n"
             str_repr += (
                 "### Description: "
-                + f'<span style="font-weight: normal;">{endpoint.description}</span><br>'
+                + f'<span style="font-weight: lighter;">{endpoint.description}</span><br>'
                 + "\n"
             )
             str_repr += "#### Private Code:\n"
-            str_repr += as_markdown_python_code(endpoint.private_function) + "\n"
+            not_accessible_code = "N / A"
+            private_code_repr = endpoint.private_function or not_accessible_code
+            public_code_repr = endpoint.mock_function or not_accessible_code
+            str_repr += as_markdown_python_code(private_code_repr) + "\n"
             if endpoint.private_helper_functions:
                 str_repr += "##### Helper Functions:\n"
                 for helper_function in endpoint.private_helper_functions:
                     str_repr += as_markdown_python_code(helper_function) + "\n"
             str_repr += "#### Public Code:\n"
-            str_repr += as_markdown_python_code(endpoint.mock_function) + "\n"
+            str_repr += as_markdown_python_code(public_code_repr) + "\n"
             if endpoint.mock_helper_functions:
                 str_repr += "##### Helper Functions:\n"
                 for helper_function in endpoint.mock_helper_functions:

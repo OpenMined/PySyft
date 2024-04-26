@@ -114,11 +114,7 @@ def mount_bucket(
         check=True,
         capture_output=True,
     )
-    logger.info(
-        "Supervisor updated. ",
-        f"stdout={proc.stdout.decode()} ",
-        f"stderr={proc.stderr.decode()}",
-    )
+    logger.info("Supervisor updated. stdout=%s stderr=%s", proc.stdout, proc.stderr)
 
     return {"name": swfs_config_name, "path": mount_conf_dir}
 

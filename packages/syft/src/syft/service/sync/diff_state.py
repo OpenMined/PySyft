@@ -48,6 +48,7 @@ from ..log.log import SyftLog
 from ..output.output_service import ExecutionOutput
 from ..request.request import Request
 from ..response import SyftError
+from ..response import SyftSuccess
 from .sync_state import SyncState
 
 sketchy_tab = "‎ " * 4
@@ -536,6 +537,7 @@ class ObjectDiffBatch(SyftObject):
     # the first diff is the root of the hierarchy
     global_diffs: dict[UID, ObjectDiff]
     global_roots: list[UID]
+    global_batches: list["ObjectDiffBatch"] | None = None
 
     hierarchy_levels: list[int]
     dependencies: dict[UID, list[UID]] = {}
@@ -674,6 +676,18 @@ class ObjectDiffBatch(SyftObject):
         diffs = self.get_dependents(include_roots=False)
         return sum(hash(x) for x in diffs)
 
+    def ignore(self) -> SyftSuccess | SyftError:
+        # relative
+        from ...client.syncing import handle_ignore_batch
+
+        return handle_ignore_batch(self, self.global_batches)
+
+    def unignore(self) -> SyftSuccess | SyftError:
+        # relative
+        from ...client.syncing import handle_unignore_batch
+
+        return handle_unignore_batch(self, self.global_batches)
+
     @property
     def root_id(self) -> UID:
         return self.root_diff.object_id
@@ -684,11 +698,28 @@ class ObjectDiffBatch(SyftObject):
 
     @property
     def is_ignored(self) -> bool:
-        return self.decision == SyncDecision.ignore
+        return self.decision == SyncDecision.IGNORE
 
     @property
     def is_skipped(self) -> bool:
-        return self.decision == SyncDecision.skip
+        return self.decision == SyncDecision.SKIP
+
+    def create_new_resolved_states(
+        self,
+    ) -> tuple["ResolvedSyncState", "ResolvedSyncState"]:
+        """
+        Returns new ResolvedSyncState objects for the source and target nodes
+        """
+        resolved_state_low = ResolvedSyncState(node_uid=self.low_node_uid, alias="low")
+        resolved_state_high = ResolvedSyncState(
+            node_uid=self.high_node_uid, alias="high"
+        )
+
+        # Return source, target
+        if self.sync_direction == SyncDirection.LOW_TO_HIGH:
+            return resolved_state_low, resolved_state_high
+        else:
+            return resolved_state_high, resolved_state_low
 
     @classmethod
     def from_dependencies(
@@ -770,7 +801,14 @@ class ObjectDiffBatch(SyftObject):
         return flatten_dict(self.get_visual_hierarchy())
 
     def _repr_html_(self) -> str:
-        diffs = self.flatten_visual_hierarchy()
+        try:
+            diffs = self.flatten_visual_hierarchy()
+        except Exception as _:
+            return SyftError(
+                message=html.escape(
+                    "Could not render batch, please use resolve_single(<batch>) instead."
+                )
+            )._repr_html_()
 
         return f"""
 <h2> ObjectBatchDiff </h2>
@@ -788,7 +826,7 @@ class ObjectDiffBatch(SyftObject):
         return {"value": status.upper(), "type": badge_color}
 
     def _coll_repr_(self) -> dict[str, Any]:
-        no_obj_html = "<p class='diff-state-no-obj'>No object detected</p>"
+        no_obj_html = "<p class='diff-state-no-obj'>No object</p>"
         if self.root_diff.low_obj is None:
             low_html = no_obj_html
         else:
@@ -845,11 +883,18 @@ class ObjectDiffBatch(SyftObject):
     def root(self) -> ObjectDiff:
         return self.root_diff
 
-    def __repr__(self) -> str:
-        return f"""{self.hierarchy_str('low')}
+    def __repr__(self) -> Any:
+        try:
+            return f"""{self.hierarchy_str('low')}
 
-{self.hierarchy_str('high')}
-"""
+    {self.hierarchy_str('high')}
+    """
+        except Exception as _:
+            return SyftError(
+                message=html.escape(
+                    "Could not render batch, please use resolve_single(<batch>) instead."
+                )
+            )._repr_html_()
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return ""  # Turns off the _repr_markdown_ of SyftObject
@@ -969,7 +1014,7 @@ class IgnoredBatchView(SyftObject):
 
         for other_batch in self.other_batches:
             if (
-                other_batch.decision == SyncDecision.ignore
+                other_batch.decision == SyncDecision.IGNORE
                 and other_batch.root_id in required_dependencies
             ):
                 print(f"ignoring other batch ({other_batch.root_type.__name__})")
@@ -987,19 +1032,27 @@ class NodeDiff(SyftObject):
     obj_uid_to_diff: dict[UID, ObjectDiff] = {}
     obj_dependencies: dict[UID, list[UID]] = {}
     batches: list[ObjectDiffBatch] = []
+    all_batches: list[ObjectDiffBatch] = []
     low_state: SyncState
     high_state: SyncState
     direction: SyncDirection | None
+
+    include_ignored: bool = False
 
     def __getitem__(self, idx: Any) -> ObjectDiffBatch:
         return self.batches[idx]
 
     @property
+    def ignored_batches(self) -> list[ObjectDiffBatch]:
+        return [
+            batch for batch in self.all_batches if batch.decision == SyncDecision.IGNORE
+        ]
+
+    @property
     def ignored_changes(self) -> list[IgnoredBatchView]:
-        ignored_batches = [b for b in self.batches if b.decision == SyncDecision.ignore]
         result = []
-        for ignored_batch in ignored_batches:
-            other_batches = [b for b in self.batches if b is not ignored_batch]
+        for ignored_batch in self.ignored_batches:
+            other_batches = [b for b in self.all_batches if b is not ignored_batch]
             result.append(
                 IgnoredBatchView(batch=ignored_batch, other_batches=other_batches)
             )
@@ -1011,6 +1064,7 @@ class NodeDiff(SyftObject):
         low_state: SyncState,
         high_state: SyncState,
         direction: SyncDirection,
+        include_ignored: bool = False,
         _include_node_status: bool = False,
     ) -> "NodeDiff":
         obj_uid_to_diff = {}
@@ -1051,7 +1105,7 @@ class NodeDiff(SyftObject):
             obj_uid_to_diff[diff.object_id] = diff
 
         obj_dependencies = NodeDiff.dependencies_from_states(low_state, high_state)
-        batches = NodeDiff.hierarchies(
+        all_batches = NodeDiff.hierarchies(
             low_state,
             high_state,
             obj_dependencies,
@@ -1061,7 +1115,12 @@ class NodeDiff(SyftObject):
 
         # TODO: Check if high and low ignored batches are the same else error
         previously_ignored_batches = low_state.ignored_batches
-        NodeDiff.apply_previous_ignore_state(batches, previously_ignored_batches)
+        NodeDiff.apply_previous_ignore_state(all_batches, previously_ignored_batches)
+
+        if not include_ignored:
+            batches = [b for b in all_batches if not b.is_ignored]
+        else:
+            batches = all_batches
 
         return cls(
             low_node_uid=low_state.node_uid,
@@ -1071,6 +1130,7 @@ class NodeDiff(SyftObject):
             obj_uid_to_diff=obj_uid_to_diff,
             obj_dependencies=obj_dependencies,
             batches=batches,
+            all_batches=all_batches,
             low_state=low_state,
             high_state=high_state,
             direction=direction,
@@ -1080,15 +1140,17 @@ class NodeDiff(SyftObject):
     def apply_previous_ignore_state(
         batches: list[ObjectDiffBatch], previously_ignored_batches: dict[UID, int]
     ) -> None:
-        """Loop through all ignored batches in syncstate. If batch did not change, set to ignored
+        """
+        Loop through all ignored batches in syncstate. If batch did not change, set to ignored
         If another batch needs to exist in order to accept that changed batch: also unignore
-        e.g. if a job changed, also unignore the usercode"""
+        e.g. if a job changed, also unignore the usercode
+        """
 
         for root_id, batch_hash in previously_ignored_batches.items():
             for batch in batches:
                 if batch.root_id == root_id:
                     if hash(batch) == batch_hash:
-                        batch.decision = SyncDecision.ignore
+                        batch.decision = SyncDecision.IGNORE
                     else:
                         print(
                             f"""A batch with type {batch.root_type.__name__} was previously ignored but has changed
@@ -1208,7 +1270,7 @@ It will be available for review again."""
         obj_uid_to_diff: dict[UID, ObjectDiff],
         direction: SyncDirection,
     ) -> list[ObjectDiffBatch]:
-        batches = []
+        batches: list[ObjectDiffBatch] = []
         root_ids = []
 
         for diff in obj_uid_to_diff.values():
@@ -1234,6 +1296,11 @@ It will be available for review again."""
             )
             batches.append(batch)
 
+        # TODO ref back to NodeDiff would clean up a lot of logic,
+        # No need to save NodeDiff state on every batch
+        for batch in batches:
+            batch.global_batches = batches
+
         hierarchies_sorted = NodeDiff._sort_batches(batches)
         return hierarchies_sorted
 
@@ -1255,38 +1322,41 @@ class SyncInstruction(SyftObject):
     mockify: bool
 
     @classmethod
-    def from_widget_state(
+    def from_batch_decision(
         cls,
+        diff: ObjectDiff,
         sync_direction: SyncDirection,
-        widget: Any,
+        share_private_data: bool,
+        mockify: bool,
         decision: SyncDecision,
         share_to_user: SyftVerifyKey | None,
     ) -> Self:
         # read widget state
-        diff = widget.diff
         new_permissions_low_side = []
 
         # read permissions
         if sync_direction == SyncDirection.HIGH_TO_LOW:
             # To create read permissions for the object
             # job/usercode/request/TwinAPIEndpoint
-            if widget.share_private_data:  # or diff.object_type == "Job":
+            if share_private_data:  # or diff.object_type == "Job":
                 if share_to_user is None:
                     # job ran by another user
                     if not diff.object_type == "Job":
-                        raise ValueError("share_to_user is required for private data")
+                        raise ValueError(
+                            "share_to_user is required to share private data"
+                        )
                 else:
                     new_permissions_low_side = [
                         ActionObjectPermission(
-                            uid=widget.diff.object_id,
+                            uid=diff.object_id,
                             permission=ActionPermission.READ,
-                            credentials=share_to_user,  # type: ignore
+                            credentials=share_to_user,
                         )
                     ]
 
-        mockify = widget.mockify
-        if widget.has_unused_share_button:
-            print("Share button was not used, so we will mockify the object")
+        # TODO move this to the widget
+        # if widget.has_unused_share_button:
+        #     print("Share button was not used, so we will mockify the object")
 
         # storage permissions
         new_storage_permissions = []
@@ -1323,9 +1393,7 @@ class ResolvedSyncState(SyftObject):
     new_permissions: list[ActionObjectPermission] = []
     new_storage_permissions: list[StoragePermission] = []
     ignored_batches: dict[UID, int] = {}  # batch root uid -> hash of the batch
-    unignored_batches: set[UID] = (
-        set()
-    )  # NOTE: using '{}' as default value does not work here
+    unignored_batches: set[UID] = set()
     alias: str
 
     @classmethod
@@ -1345,8 +1413,8 @@ class ResolvedSyncState(SyftObject):
 
     def add_sync_instruction(self, sync_instruction: SyncInstruction) -> None:
         if (
-            sync_instruction.decision == SyncDecision.ignore
-            or sync_instruction.decision == SyncDecision.skip
+            sync_instruction.decision == SyncDecision.IGNORE
+            or sync_instruction.decision == SyncDecision.SKIP
         ):
             return
         diff = sync_instruction.diff
