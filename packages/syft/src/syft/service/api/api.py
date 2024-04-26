@@ -98,20 +98,26 @@ class TwinAPIEndpointView(SyftObject):
     ]
 
     def _coll_repr_(self) -> dict[str, Any]:
-        mock_parsed_code = ast.parse(self.mock_function)
-        mock_function_name = [
-            node.name
-            for node in ast.walk(mock_parsed_code)
-            if isinstance(node, ast.FunctionDef)
-        ][0]
-        private_function_name = NOT_ACCESSIBLE_STRING
-        if self.private_function != NOT_ACCESSIBLE_STRING:
+        if self.mock_function:
+            mock_parsed_code = ast.parse(self.mock_function)
+            mock_function_name = [
+                node.name
+                for node in ast.walk(mock_parsed_code)
+                if isinstance(node, ast.FunctionDef)
+            ][0]
+        else:
+            mock_function_name = NOT_ACCESSIBLE_STRING
+
+        if self.private_function:
             private_parsed_code = ast.parse(self.private_function)
             private_function_name = [
                 node.name
                 for node in ast.walk(private_parsed_code)
                 if isinstance(node, ast.FunctionDef)
             ][0]
+        else:
+            private_function_name = NOT_ACCESSIBLE_STRING
+
         worker_pool = "UNSET (DEFAULT)"
         if self.worker_pool is not None:
             worker_pool = self.worker_pool
@@ -557,7 +563,7 @@ def extract_code_string(code_field: str) -> Callable:
                     endpoint_type.helper_functions.values() or []
                 )
             else:
-                context.output[code_field] = NOT_ACCESSIBLE_STRING
+                context.output[code_field] = None
                 context.output[helper_function_field] = []
         return context
 
