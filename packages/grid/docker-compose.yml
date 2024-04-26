@@ -50,12 +50,23 @@ services:
       - VERSION_HASH=${VERSION_HASH}
       - PORT=80
       - HTTP_PORT=${HTTP_PORT}
-      - HTTPS_PORT=${HTTPS_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}RELOAD
       - BACKEND_API_BASE_URL=${BACKEND_API_BASE_URL}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     labels:
       - "orgs.openmined.syft=this is a syft frontend container"
+
+  rathole:
+    restart: always
+    image: "${DOCKER_IMAGE_RATHOLE?Variable not set}:${VERSION-latest}"
+    profiles:
+      - rathole
+    environment:
+      - SERVICE_NAME=rathole
+      - APP_LOG_LEVEL=${APP_LOG_LEVEL}
+      - MODE=${MODE}
+      - DEV_MODE=${DEV_MODE}
 
   # redis:
   #   restart: always

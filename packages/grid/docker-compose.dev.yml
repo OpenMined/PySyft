@@ -52,6 +52,12 @@ services:
     stdin_open: true
     tty: true
 
+  rathole:
+    volumes:
+      - ${RELATIVE_PATH}./rathole/server:/root/app/server
+    environment:
+      - DEV_MODE=True
+
   # backend_stream:
   #   volumes:
   #     - ${RELATIVE_PATH}./backend/grid:/root/app/grid

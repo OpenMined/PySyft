@@ -496,6 +496,11 @@ def clean(location: str) -> None:
     is_flag=True,
     help="Enable auto approval of association requests",
 )
+@click.option(
+    "--rathole",
+    is_flag=True,
+    help="Enable rathole service",
+)
 def launch(args: tuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -1314,6 +1319,7 @@ def create_launch_cmd(
     parsed_kwargs["headless"] = headless
 
     parsed_kwargs["tls"] = bool(kwargs["tls"])
+    parsed_kwargs["enable_rathole"] = bool(kwargs["rathole"])
     parsed_kwargs["test"] = bool(kwargs["test"])
     parsed_kwargs["dev"] = bool(kwargs["dev"])
 
@@ -2241,6 +2247,11 @@ def create_launch_docker_cmd(
         else bool(kwargs["use_blob_storage"])
     )
 
+    enable_rathole = bool(kwargs.get("enable_rathole")) or str(node_type.input) in [
+        "network",
+        "gateway",
+    ]
+
     # use a docker volume
     host_path = "credentials-data"
 
@@ -2410,6 +2421,9 @@ def create_launch_docker_cmd(
 
         if use_blob_storage:
             cmd += " --profile blob-storage"
+
+        if enable_rathole:
+            cmd += " --profile rathole"
 
         # no frontend container so expect bad gateway on the / route
         if not bool(kwargs["headless"]):

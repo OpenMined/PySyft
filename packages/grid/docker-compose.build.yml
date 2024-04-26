@@ -22,3 +22,9 @@ services:
       context: ${RELATIVE_PATH}../
       dockerfile: ./grid/backend/backend.dockerfile
       target: "backend"
+
+  rathole:
+    build:
+      context: ${RELATIVE_PATH}../
+      dockerfile: ./grid/rathole/rathole.dockerfile
+      target: "rathole"

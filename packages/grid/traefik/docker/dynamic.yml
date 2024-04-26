@@ -48,14 +48,13 @@ http:
       middlewares:
         - "blob-storage-url"
         - "blob-storage-host"
-    vpn:
-      rule: "PathPrefix(`/vpn`)"
+    rathole:
+      rule: "PathPrefix(`/rathole`)"
       entryPoints:
         - web
-        - vpn
-      service: "headscale"
+      service: "rathole"
       middlewares:
-        - "vpn-url"
+        - "rathole-url"
     ping:
       rule: "PathPrefix(`/ping`)"
       entryPoints:
@@ -73,7 +72,7 @@ http:
       stripprefix:
         prefixes: /blob
         forceslash: true
-    vpn-url:
+    rathole-url:
       stripprefix:
-        prefixes: /vpn
+        prefixes: /rathole
         forceslash: true
