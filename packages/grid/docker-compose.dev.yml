@@ -57,6 +57,10 @@ services:
       - ${RELATIVE_PATH}./rathole/server:/root/app/server
     environment:
       - DEV_MODE=True
+    stdin_open: true
+    tty: true
+    ports:
+      - "2333"
 
   # backend_stream:
   #   volumes:

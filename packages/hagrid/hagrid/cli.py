@@ -2263,6 +2263,10 @@ def create_launch_docker_cmd(
         # we might need to change this for the hagrid template mode
         host_path = f"{RELATIVE_PATH}./backend/grid/storage/{snake_name}"
 
+    rathole_mode = (
+        "client" if enable_rathole and str(node_type.input) in ["domain"] else "server"
+    )
+
     envs = {
         "RELEASE": "production",
         "COMPOSE_DOCKER_CLI_BUILD": 1,
@@ -2357,6 +2361,9 @@ def create_launch_docker_cmd(
 
     if "enable_signup" in kwargs:
         envs["ENABLE_SIGNUP"] = kwargs["enable_signup"]
+
+    if enable_rathole:
+        envs["MODE"] = rathole_mode
 
     cmd = ""
     args = []
