@@ -17,8 +17,8 @@ from syft.node.credentials import SyftVerifyKey
 from syft.service.context import AuthedServiceContext
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
+from syft.service.settings.settings import NodeSettings
 from syft.service.settings.settings import NodeSettingsUpdate
-from syft.service.settings.settings import NodeSettingsV2
 from syft.service.settings.settings_service import SettingsService
 from syft.service.settings.settings_stash import SettingsStash
 from syft.service.user.user import UserCreate
@@ -28,7 +28,7 @@ from syft.service.user.user_roles import ServiceRole
 def test_settingsservice_get_success(
     monkeypatch: MonkeyPatch,
     settings_service: SettingsService,
-    settings: NodeSettingsV2,
+    settings: NodeSettings,
     authed_context: AuthedServiceContext,
 ) -> None:
     mock_stash_get_all_output = [settings, settings]
@@ -41,7 +41,7 @@ def test_settingsservice_get_success(
 
     response = settings_service.get(context=authed_context)
 
-    assert isinstance(response.ok(), NodeSettingsV2)
+    assert isinstance(response.ok(), NodeSettings)
     assert response == expected_output
 
 
@@ -75,20 +75,20 @@ def test_settingsservice_get_stash_fail(
 
 def test_settingsservice_set_success(
     settings_service: SettingsService,
-    settings: NodeSettingsV2,
+    settings: NodeSettings,
     authed_context: AuthedServiceContext,
 ) -> None:
     response = settings_service.set(authed_context, settings)
 
     assert response.is_ok() is True
-    assert isinstance(response.ok(), NodeSettingsV2)
+    assert isinstance(response.ok(), NodeSettings)
     assert response.ok() == settings
 
 
 def test_settingsservice_set_fail(
     monkeypatch: MonkeyPatch,
     settings_service: SettingsService,
-    settings: NodeSettingsV2,
+    settings: NodeSettings,
     authed_context: AuthedServiceContext,
 ) -> None:
     mock_error_message = "database failure"
@@ -107,8 +107,8 @@ def test_settingsservice_set_fail(
 def add_mock_settings(
     root_verify_key: SyftVerifyKey,
     settings_stash: SettingsStash,
-    settings: NodeSettingsV2,
-) -> NodeSettingsV2:
+    settings: NodeSettings,
+) -> NodeSettings:
     # create a mock settings in the stash so that we can update it
     result = settings_stash.partition.set(root_verify_key, settings)
     assert result.is_ok()
@@ -124,7 +124,7 @@ def test_settingsservice_update_success(
     monkeypatch: MonkeyPatch,
     settings_stash: SettingsStash,
     settings_service: SettingsService,
-    settings: NodeSettingsV2,
+    settings: NodeSettings,
     update_settings: NodeSettingsUpdate,
     authed_context: AuthedServiceContext,
 ) -> None:
@@ -198,7 +198,7 @@ def test_settingsservice_update_stash_empty(
 
 def test_settingsservice_update_fail(
     monkeypatch: MonkeyPatch,
-    settings: NodeSettingsV2,
+    settings: NodeSettings,
     settings_service: SettingsService,
     update_settings: NodeSettingsUpdate,
     authed_context: AuthedServiceContext,
@@ -214,7 +214,7 @@ def test_settingsservice_update_fail(
 
     mock_update_error_message = "Failed to update obj NodeMetadata"
 
-    def mock_stash_update_error(credentials, update_settings: NodeSettingsV2) -> Err:
+    def mock_stash_update_error(credentials, update_settings: NodeSettings) -> Err:
         return Err(mock_update_error_message)
 
     monkeypatch.setattr(settings_service.stash, "update", mock_stash_update_error)
@@ -231,7 +231,7 @@ def test_settings_allow_guest_registration(
     # Create a new worker
 
     verify_key = SyftSigningKey.generate().verify_key
-    mock_node_settings = NodeSettingsV2(
+    mock_node_settings = NodeSettings(
         name=faker.name(),
         verify_key=verify_key,
         highest_version=1,
@@ -242,6 +242,7 @@ def test_settings_allow_guest_registration(
         node_side_type=NodeSideType.LOW_SIDE,
         show_warnings=False,
         deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
+        association_request_auto_approval=False,
     )
 
     with mock.patch(
@@ -315,7 +316,7 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
         )
 
     verify_key = SyftSigningKey.generate().verify_key
-    mock_node_settings = NodeSettingsV2(
+    mock_node_settings = NodeSettings(
         name=faker.name(),
         verify_key=verify_key,
         highest_version=1,
@@ -326,6 +327,7 @@ def test_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker):
         node_side_type=NodeSideType.LOW_SIDE,
         show_warnings=False,
         deployed_on=datetime.now().date().strftime("%m/%d/%Y"),
+        association_request_auto_approval=False,
     )
 
     with mock.patch(

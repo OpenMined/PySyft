@@ -1,10 +1,12 @@
 global:
   # Affects only backend, frontend, and seaweedfs containers
   registry: docker.io
-  version: 0.8.7-beta.1
+  version: 0.8.7-beta.4
 
   # Force default secret values for development. DO NOT SET THIS TO FALSE IN PRODUCTION
   randomizedSecrets: true
+
+# =================================================================================
 
 mongo:
   # MongoDB config
@@ -14,8 +16,15 @@ mongo:
   # Extra environment vars
   env: null
 
+  # Pod labels & annotations
+  podLabels: null
+  podAnnotations: null
+
+  # Node selector for pods
+  nodeSelector: null
+
   # Pod Resource Limits
-  resourcesPreset: nano
+  resourcesPreset: large
   resources: null
 
   # PVC storage size
@@ -24,17 +33,21 @@ mongo:
   # Mongo secret name. Override this if you want to use a self-managed secret.
   secretKeyName: mongo-secret
 
-  # custom secret values
+  # default/custom secret raw values
   secret:
     rootPassword: null
+
+# =================================================================================
 
 frontend:
   # Extra environment vars
   env: null
 
   # Pod Resource Limits
-  resourcesPreset: micro
+  resourcesPreset: medium
   resources: null
+
+# =================================================================================
 
 seaweedfs:
   # Master
@@ -55,8 +68,6 @@ seaweedfs:
 
   # Mount API
   mountApi:
-    port: 4001
-
     # automount:
     #   - local_bucket: test-bucket
     #     remote_bucket:
@@ -65,48 +76,80 @@ seaweedfs:
     #       creds: /etc/secrets/gcs_creds.json
     automount: null
 
+    # Provision the secret externally or through extraResources
+    secretKeyName: null
+
   # Extra environment vars
   env: null
 
   # PVC storage size
-  storageSize: 10Gi
+  storageSize: 100Gi
 
   # Seaweed secret name. Override this if you want to use a self-managed secret.
   # Secret must contain the following keys:
   # - s3RootPassword
   secretKeyName: seaweedfs-secret
 
+  # Pod labels & annotations
+  podLabels: null
+  podAnnotations: null
+
+  # Node selector for pods
+  nodeSelector: null
+
   # Pod Resource Limits
-  resourcesPreset: medium
+  resourcesPreset: xlarge
   resources: null
 
   # extra volume mounts
   volumes: null
   volumeMounts: null
 
-  # custom secret values
+  # default/custom secret raw values
   secret:
     s3RootPassword: null
-    mountCredentials: null
+
+# =================================================================================
 
 proxy:
   # Extra environment vars
   env: null
 
+  # Pod labels & annotations
+  podLabels: null
+  podAnnotations: null
+
+  # Proxy Service annotations
+  serviceAnnotations: null
+
+  # Node selector for pods
+  nodeSelector: null
+
   # Pod Resource Limits
-  resourcesPreset: nano
+  resourcesPreset: small
   resources: null
+
+# =================================================================================
 
 registry:
   # Extra environment vars
   env: null
 
   # PVC storage size
-  storageSize: 10Gi
+  storageSize: 50Gi
+
+  # Pod labels & annotations
+  podLabels: null
+  podAnnotations: null
+
+  # Node selector for pods
+  nodeSelector: null
 
   # Pod Resource Limits
-  resourcesPreset: nano
+  resourcesPreset: medium
   resources: null
+
+# =================================================================================
 
 node:
   # Syft settings
@@ -120,6 +163,8 @@ node:
   queuePort: 5556
   logLevel: info
   debuggerEnabled: false
+  associationRequestAutoApproval: false
+  useInternalRegistry: true
 
   # SMTP Settings
   smtp:
@@ -132,8 +177,15 @@ node:
   # Extra environment vars
   env: null
 
+  # Pod labels & annotations
+  podLabels: null
+  podAnnotations: null
+
+  # Node selector for pods
+  nodeSelector: null
+
   # Pod Resource Limits
-  resourcesPreset: medium
+  resourcesPreset: xlarge
   resources: null
 
   # Seaweed secret name. Override this if you want to use a self-managed secret.
@@ -141,9 +193,11 @@ node:
   # - defaultRootPassword
   secretKeyName: backend-secret
 
-  # custom secret values
+  # default/custom secret raw values
   secret:
     defaultRootPassword: null
+
+# =================================================================================
 
 ingress:
   hostname: null # do not make this localhost
@@ -164,3 +218,7 @@ ingress:
   # ----------------------------------------
   class: null
   className: null
+
+# =================================================================================
+
+extraResources: []

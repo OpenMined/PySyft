@@ -35,9 +35,10 @@ from ...types.grid_url import GridURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...util.constants import DEFAULT_TIMEOUT
 
+MAX_QUEUE_SIZE = 100
 WRITE_EXPIRATION_TIME = 900  # seconds
-DEFAULT_FILE_PART_SIZE = (1024**3) * 5  # 5GB
-DEFAULT_UPLOAD_CHUNK_SIZE = 819200
+DEFAULT_FILE_PART_SIZE = 1024**3  # 1GB
+DEFAULT_UPLOAD_CHUNK_SIZE = 1024 * 800  # 800KB
 
 
 @serializable()
@@ -94,7 +95,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
                         def async_generator(
                             self, chunk_size: int = DEFAULT_UPLOAD_CHUNK_SIZE
                         ) -> Generator:
-                            item_queue: Queue = Queue()
+                            item_queue: Queue = Queue(maxsize=MAX_QUEUE_SIZE)
                             threading.Thread(
                                 target=self.add_chunks_to_queue,
                                 kwargs={"queue": item_queue, "chunk_size": chunk_size},

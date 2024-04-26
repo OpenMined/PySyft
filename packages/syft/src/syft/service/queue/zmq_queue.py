@@ -388,6 +388,14 @@ class ZMQProducer(QueueProducer):
             return
 
         try:
+            # Check if worker is present in the database
+            worker = self.worker_stash.get_by_uid(
+                credentials=self.worker_stash.partition.root_verify_key,
+                uid=syft_worker_id,
+            )
+            if worker.is_ok() and worker.ok() is None:
+                return
+
             res = self.worker_stash.update_consumer_state(
                 credentials=self.worker_stash.partition.root_verify_key,
                 worker_uid=syft_worker_id,
@@ -395,13 +403,14 @@ class ZMQProducer(QueueProducer):
             )
             if res.is_err():
                 logger.error(
-                    "Failed to update consumer state for worker id={} error={}",
+                    "Failed to update consumer state for worker id={} to state: {} error={}",
                     syft_worker_id,
+                    consumer_state,
                     res.err(),
                 )
         except Exception as e:
             logger.error(
-                f"Failed to update consumer state for worker id: {syft_worker_id}. Error: {e}"
+                f"Failed to update consumer state for worker id: {syft_worker_id} to state {consumer_state}. Error: {e}"
             )
 
     def worker_waiting(self, worker: Worker) -> None:
@@ -572,9 +581,10 @@ class ZMQProducer(QueueProducer):
 
         self.workers.pop(worker.identity, None)
 
-        self.update_consumer_state_for_worker(
-            worker.syft_worker_id, ConsumerState.DETACHED
-        )
+        if worker.syft_worker_id is not None:
+            self.update_consumer_state_for_worker(
+                worker.syft_worker_id, ConsumerState.DETACHED
+            )
 
     @property
     def alive(self) -> bool:
@@ -633,7 +643,11 @@ class ZMQConsumer(QueueConsumer):
         self.producer_ping_t = Timeout(PRODUCER_TIMEOUT_SEC)
         self.reconnect_to_producer()
 
+    def disconnect_from_producer(self) -> None:
+        self.send_to_producer(QueueMsgProtocol.W_DISCONNECT)
+
     def close(self) -> None:
+        self.disconnect_from_producer()
         self._stop.set()
         try:
             self.poller.unregister(self.socket)

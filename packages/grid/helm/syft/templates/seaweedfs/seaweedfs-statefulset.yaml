@@ -21,7 +21,17 @@ spec:
       labels:
         {{- include "common.labels" . | nindent 8 }}
         app.kubernetes.io/component: seaweedfs
+        {{- if .Values.seaweedfs.podLabels }}
+        {{- toYaml .Values.seaweedfs.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.seaweedfs.podAnnotations }}
+      annotations: {{- toYaml .Values.seaweedfs.podAnnotations | nindent 8 }}
+      {{- end }}
     spec:
+      {{- if .Values.seaweedfs.nodeSelector }}
+      nodeSelector: {{- .Values.seaweedfs.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
+      serviceAccountName: seaweedfs-service-account
       containers:
         - name: seaweedfs-container
           image: {{ .Values.global.registry }}/openmined/grid-seaweedfs:{{ .Values.global.version }}
@@ -37,11 +47,28 @@ spec:
                 secretKeyRef:
                     name: {{ .Values.seaweedfs.secretKeyName | required "seaweedfs.secretKeyName is required" }}
                     key: s3RootPassword
-            - name: MOUNT_API_PORT
-              value: {{ .Values.seaweedfs.mountApi.port | quote }}
             {{- if .Values.seaweedfs.env }}
             {{- toYaml .Values.seaweedfs.env | nindent 12 }}
             {{- end }}
+          ports:
+            - name: mount-api-port
+              containerPort: 4001
+            - name: master-port
+              containerPort: 9333
+          startupProbe:
+            httpGet:
+              path: /?probe=startupProbe
+              port: mount-api-port
+            failureThreshold: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /cluster/healthz?probe=livenessProbe
+              port: master-port
+            periodSeconds: 60
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe: null
           volumeMounts:
             # master + filer + volume data
             - mountPath: /data/
@@ -72,14 +99,11 @@ spec:
               readOnly: true
             {{- end }}
 
-            {{- if .Values.seaweedfs.secret.mountCredentials }}
-            # mount credentials to /run/secrets/
-            {{- range $obj := $.Values.seaweedfs.secret.mountCredentials }}
-            - mountPath: /run/secrets/{{ $obj.name }}
-              subPath: {{ $obj.name }}
-              name: seaweedfs-mount-creds
+            {{- if .Values.seaweedfs.mountApi.secretKeyName }}
+            # mount all secrets to /run/secrets/mount/
+            - mountPath: /run/secrets/mount/
+              name: mount-secret-vol
               readOnly: true
-            {{- end }}
             {{- end}}
 
             {{- if .Values.seaweedfs.volumeMounts }}
@@ -91,11 +115,10 @@ spec:
           configMap:
             name: seaweedfs-config
 
-        {{- if .Values.seaweedfs.secret.mountCredentials }}
-        # mount secret as volume
-        - name: seaweedfs-mount-creds
+        {{- if .Values.seaweedfs.mountApi.secretKeyName }}
+        - name: mount-secret-vol
           secret:
-            secretName: seaweedfs-mount-secret
+            secretName: {{ .Values.seaweedfs.mountApi.secretKeyName }}
         {{- end }}
 
         {{- if .Values.seaweedfs.volumes }}
