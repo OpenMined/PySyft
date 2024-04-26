@@ -405,23 +405,21 @@ class APIService(AbstractService):
         **kwargs: Any,
     ) -> SyftSuccess | SyftError:
         """Call a Custom API Method"""
+        custom_endpoint = self.get_code(
+            context=context,
+            endpoint_path=path,
+        )
+        if isinstance(custom_endpoint, SyftError):
+            return custom_endpoint
+
+        exec_result = custom_endpoint.exec(context, *args, **kwargs)
+
+        if isinstance(exec_result, SyftError):
+            return Ok(exec_result)
+
+        action_obj = ActionObject.from_obj(exec_result)
+        action_service = cast(ActionService, context.node.get_service(ActionService))
         try:
-            custom_endpoint = self.get_code(
-                context=context,
-                endpoint_path=path,
-            )
-            if isinstance(custom_endpoint, SyftError):
-                return custom_endpoint
-
-            exec_result = custom_endpoint.exec(context, *args, **kwargs)
-
-            if isinstance(exec_result, SyftError):
-                return Ok(exec_result)
-
-            action_obj = ActionObject.from_obj(exec_result)
-            action_service = cast(
-                ActionService, context.node.get_service(ActionService)
-            )
             result = action_service.set_result_to_store(
                 context=context,
                 result_action_object=action_obj,
@@ -448,22 +446,20 @@ class APIService(AbstractService):
         **kwargs: Any,
     ) -> ActionObject | SyftError:
         """Call a Custom API Method in public mode"""
+        custom_endpoint = self.get_code(
+            context=context,
+            endpoint_path=path,
+        )
+        if isinstance(custom_endpoint, SyftError):
+            return custom_endpoint
+        exec_result = custom_endpoint.exec_mock_function(context, *args, **kwargs)
+
+        if isinstance(exec_result, SyftError):
+            return Ok(exec_result)
+
+        action_obj = ActionObject.from_obj(exec_result)
+        action_service = cast(ActionService, context.node.get_service(ActionService))
         try:
-            custom_endpoint = self.get_code(
-                context=context,
-                endpoint_path=path,
-            )
-            if isinstance(custom_endpoint, SyftError):
-                return custom_endpoint
-            exec_result = custom_endpoint.exec_mock_function(context, *args, **kwargs)
-
-            if isinstance(exec_result, SyftError):
-                return Ok(exec_result)
-
-            action_obj = ActionObject.from_obj(exec_result)
-            action_service = cast(
-                ActionService, context.node.get_service(ActionService)
-            )
             result = action_service.set_result_to_store(
                 context=context,
                 result_action_object=action_obj,
@@ -491,27 +487,23 @@ class APIService(AbstractService):
         *args: Any,
         **kwargs: Any,
     ) -> ActionObject | SyftError:
+        """Call a Custom API Method in private mode"""
+        custom_endpoint = self.get_code(
+            context=context,
+            endpoint_path=path,
+        )
+        if isinstance(custom_endpoint, SyftError):
+            return custom_endpoint
+
+        exec_result = custom_endpoint.exec_private_function(context, *args, **kwargs)
+
+        if isinstance(exec_result, SyftError):
+            return Ok(exec_result)
+
+        action_obj = ActionObject.from_obj(exec_result)
+
+        action_service = cast(ActionService, context.node.get_service(ActionService))
         try:
-            """Call a Custom API Method in private mode"""
-            custom_endpoint = self.get_code(
-                context=context,
-                endpoint_path=path,
-            )
-            if isinstance(custom_endpoint, SyftError):
-                return custom_endpoint
-
-            exec_result = custom_endpoint.exec_private_function(
-                context, *args, **kwargs
-            )
-
-            if isinstance(exec_result, SyftError):
-                return Ok(exec_result)
-
-            action_obj = ActionObject.from_obj(exec_result)
-
-            action_service = cast(
-                ActionService, context.node.get_service(ActionService)
-            )
             result = action_service.set_result_to_store(
                 context=context, result_action_object=action_obj
             )
