@@ -74,7 +74,9 @@ def make_routes(worker: Worker) -> APIRouter:
         except requests.RequestException:
             raise HTTPException(404, "Failed to retrieve data from domain.")
 
-        return StreamingResponse(resp.iter_content(), media_type="text/event-stream")
+        return StreamingResponse(
+            resp.iter_content(chunk_size=None), media_type="text/event-stream"
+        )
 
     @router.get(
         "/",
