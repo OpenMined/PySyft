@@ -1,0 +1,38 @@
+# =================================================================================
+# Syft on AKS Cluster
+#
+# Node side : high
+# Automount : NO
+# Ingress   : webapprouting.kubernetes.azure.com
+# Extras    : None
+# =================================================================================
+
+node:
+  name: syft-azure
+  side: high
+  rootEmail: info@openmined.org
+  defaultWorkerPoolCount: 1
+  resourcesPreset: 2xlarge
+
+ingress:
+  # Make sure cluster is created with --enable-app-routing
+  # az aks create -g group-name -n cluster-name -l region --enable-app-routing
+  className: webapprouting.kubernetes.azure.com
+
+  # or, azure-application-gateway is setup through dashboard or CLI
+  # className: azure-application-gateway
+
+seaweedfs:
+  resourcesPreset: 2xlarge
+
+proxy:
+  resourcesPreset: medium
+
+registry:
+  resourcesPreset: medium
+
+frontend:
+  resourcesPreset: medium
+
+mongo:
+  resourcesPreset: large

@@ -67,6 +67,7 @@ if TYPE_CHECKING:
     # relative
     from ..service.network.node_peer import NodePeer
 
+
 # use to enable mitm proxy
 # from syft.grid.connections.http_connection import HTTPConnection
 # HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}
@@ -106,7 +107,7 @@ def forward_message_to_proxy(
         # generate a random signing key
         credentials = SyftSigningKey.generate()
 
-    signed_message = call.sign(credentials=credentials)
+    signed_message: SignedSyftAPICall = call.sign(credentials=credentials)
     signed_result = make_call(signed_message)
     response = debox_signed_syftapicall_response(signed_result)
     return response
@@ -205,7 +206,9 @@ class HTTPConnection(NodeConnection):
 
         return response.content
 
-    def get_node_metadata(self, credentials: SyftSigningKey) -> NodeMetadataJSON:
+    def get_node_metadata(
+        self, credentials: SyftSigningKey
+    ) -> NodeMetadataJSON | SyftError:
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
                 make_call=self.make_call,
@@ -304,7 +307,7 @@ class HTTPConnection(NodeConnection):
     def __hash__(self) -> int:
         return hash(self.proxy_target_uid) + hash(self.url)
 
-    def get_client_type(self) -> type[SyftClient]:
+    def get_client_type(self) -> type[SyftClient] | SyftError:
         # TODO: Rasswanth, should remove passing in credentials
         # when metadata are proxy forwarded in the grid routes
         # in the gateway fixes PR
@@ -335,7 +338,9 @@ class PythonConnection(NodeConnection):
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         return PythonConnection(node=self.node, proxy_target_uid=proxy_target_uid)
 
-    def get_node_metadata(self, credentials: SyftSigningKey) -> NodeMetadataJSON:
+    def get_node_metadata(
+        self, credentials: SyftSigningKey
+    ) -> NodeMetadataJSON | SyftError:
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
                 make_call=self.make_call,
@@ -434,7 +439,7 @@ class PythonConnection(NodeConnection):
     def __str__(self) -> str:
         return f"{type(self).__name__}"
 
-    def get_client_type(self) -> type[SyftClient]:
+    def get_client_type(self) -> type[SyftClient] | SyftError:
         # relative
         from .domain_client import DomainClient
         from .enclave_client import EnclaveClient

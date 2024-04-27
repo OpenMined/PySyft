@@ -77,6 +77,7 @@ def run_uvicorn(
     in_memory_workers: bool,
     queue_port: int | None,
     create_producer: bool,
+    association_request_auto_approval: bool,
     n_consumers: int,
 ) -> None:
     async def _run_uvicorn(
@@ -110,6 +111,7 @@ def run_uvicorn(
                 queue_port=queue_port,
                 create_producer=create_producer,
                 n_consumers=n_consumers,
+                association_request_auto_approval=association_request_auto_approval,
             )
         else:
             worker = worker_class(
@@ -124,6 +126,7 @@ def run_uvicorn(
                 queue_port=queue_port,
                 create_producer=create_producer,
                 n_consumers=n_consumers,
+                association_request_auto_approval=association_request_auto_approval,
             )
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)
@@ -182,24 +185,26 @@ def serve_node(
     queue_port: int | None = None,
     create_producer: bool = False,
     n_consumers: int = 0,
+    association_request_auto_approval: bool = False,
 ) -> tuple[Callable, Callable]:
     server_process = multiprocessing.Process(
         target=run_uvicorn,
-        args=(
-            name,
-            node_type,
-            host,
-            port,
-            processes,
-            reset,
-            dev_mode,
-            node_side_type,
-            enable_warnings,
-            in_memory_workers,
-            queue_port,
-            create_producer,
-            n_consumers,
-        ),
+        kwargs={
+            "name": name,
+            "node_type": node_type,
+            "host": host,
+            "port": port,
+            "processes": processes,
+            "reset": reset,
+            "dev_mode": dev_mode,
+            "node_side_type": node_side_type,
+            "enable_warnings": enable_warnings,
+            "in_memory_workers": in_memory_workers,
+            "queue_port": queue_port,
+            "create_producer": create_producer,
+            "n_consumers": n_consumers,
+            "association_request_auto_approval": association_request_auto_approval,
+        },
     )
 
     def stop() -> None:

@@ -1,0 +1,43 @@
+# Auto mount remote buckets on seaweed startup
+# Example:
+
+# mounts:
+#   - local_bucket: gcs-test-bucket
+#     remote_bucket:
+#       type: gcs
+#       bucket_name: test-bucket
+#       creds: /run/secrets/mount/test-bucket-gcs-credentials.json
+#       # ------- test-bucket-gcs-credentials.json -------
+#       # {
+#       #   "type": "service_account",
+#       #   "project_id": "...",
+#       #   ...
+#       #   "universe_domain": "googleapis.com",
+#       # }
+#       # ------------------------------------------------
+
+#   - local_bucket: s3-test-bucket
+#     remote_bucket:
+#       type: s3
+#       bucket_name: test-bucket
+#       creds: /run/secrets/mount/test-bucket-s3-credentials.json
+#       # ------- test-bucket-azure-credentials.json -------
+#       # {
+#       #   "aws_access_key_id": "example"
+#       #   "aws_secret_access_key": "example"
+#       # }
+#       # --------------------------------------------------
+
+#   - local_bucket: azure-test-bucket
+#     remote_bucket:
+#       type: azure
+#       bucket_name: test-bucket
+#       creds: /run/secrets/mount/test-bucket-azure-credentials.json
+#       # ------- test-bucket-azure-credentials.json -------
+#       # {
+#       #   "azure_account_name": "example"
+#       #   "azure_account_key": "example"
+#       # }
+#       # --------------------------------------------------
+
+mounts: []

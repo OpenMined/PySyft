@@ -21,10 +21,8 @@ from ...util import options
 from ...util.colors import SURFACE
 from ...util.fonts import FONT_CSS
 from ...util.fonts import ITABLES_CSS
-from ..code.user_code import UserCode
+from ...util.notebook_ui.components.sync import SyncTableObject
 from ..context import AuthedServiceContext
-from ..job.job_stash import Job
-from ..request.request import Request
 
 
 def get_hierarchy_level_prefix(level: int) -> str:
@@ -32,78 +30,6 @@ def get_hierarchy_level_prefix(level: int) -> str:
         return ""
     else:
         return "--" * level + " "
-
-
-@serializable()
-class SyncView(SyftObject):
-    __canonical_name__ = "SyncView"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    object: SyftObject
-
-    def main_object_description_str(self) -> str:
-        if isinstance(self.object, UserCode):
-            return self.object.service_func_name
-        elif isinstance(self.object, Job):  # type: ignore
-            return self.object.user_code_name
-        elif isinstance(self.object, Request):  # type: ignore
-            # TODO: handle other requests
-            return f"Execute {self.object.code.service_func_name}"
-        else:
-            return ""
-
-    @property
-    def object_type_name(self) -> str:
-        return type(self.object).__name__
-
-    def type_badge_class(self) -> str:
-        if isinstance(self.object, UserCode):
-            return "label-light-blue"
-        elif isinstance(self.object, Job):  # type: ignore
-            return "label-light-blue"
-        elif isinstance(self.object, Request):  # type: ignore
-            # TODO: handle other requests
-            return "label-light-purple"
-        else:
-            return ""
-
-    def get_status_str(self) -> str:
-        if isinstance(self.object, UserCode):
-            return ""
-        elif isinstance(self.object, Job):  # type: ignore
-            return f"Status: {self.object.status.value}"
-        elif isinstance(self.object, Request):
-            code = self.object.code
-            statusses = list(code.status.status_dict.values())
-            if len(statusses) != 1:
-                raise ValueError("Request code should have exactly one status")
-            status_tuple = statusses[0]
-            status, _ = status_tuple
-            return status.value
-        else:
-            return ""
-
-    def summary_html(self) -> str:
-        try:
-            type_html = f'<div class="label {self.type_badge_class()}">{self.object_type_name.upper()}</div>'
-            description_html = f"<span class='syncstate-description'>{self.main_object_description_str()}</span>"
-            updated_delta_str = "29m ago"
-            updated_by = "john@doe.org"
-            status_str = self.get_status_str()
-            status_seperator = " • " if len(status_str) else ""
-            summary_html = f"""
-    <div style="display: flex; gap: 8px; justify-content: start; width: 100%;">
-    {type_html} {description_html}
-    </div>
-    <div style="display: table-row">
-    <span class='syncstate-col-footer'>{status_str}{status_seperator}Updated by {updated_by} {updated_delta_str}</span>
-    </div>
-    """
-            summary_html = summary_html.replace("\n", "")
-        except Exception as e:
-            print("Failed to build table", e)
-            raise
-        return summary_html
 
 
 class SyncStateRow(SyftObject):
@@ -127,6 +53,7 @@ class SyncStateRow(SyftObject):
         "previous_state",
         "current_state",
     ]
+    __table_coll_widths__ = ["min-content", "auto", "auto", "auto"]
 
     def status_badge(self) -> dict[str, str]:
         status = self.status
@@ -139,7 +66,7 @@ class SyncStateRow(SyftObject):
         return {"value": status.upper(), "type": badge_color}
 
     def _coll_repr_(self) -> dict[str, Any]:
-        obj_view = SyncView(object=self.object)
+        obj_view = SyncTableObject(object=self.object)
 
         if self.last_sync_date is not None:
             last_sync_date = self.last_sync_date
@@ -154,7 +81,7 @@ class SyncStateRow(SyftObject):
             last_sync_html = "<p class='diff-state-no-obj'>n/a</p>"
         return {
             "Status": self.status_badge(),
-            "Summary": obj_view.summary_html(),
+            "Summary": obj_view.to_html(),
             "Last Sync": last_sync_html,
         }
 

@@ -83,6 +83,17 @@ jobs:
         run: |
           echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_OUTPUT
 
+      - name: Build and push `syft` image to registry
+        uses: docker/build-push-action@v5
+        with:
+          context: ./packages
+          file: ./packages/grid/syft-client/syft.Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.ACR_SERVER }}/openmined/syft-client:dev
+            ${{ secrets.ACR_SERVER }}/openmined/syft-client:dev-${{ github.sha }}
+            ${{ secrets.ACR_SERVER }}/openmined/syft-client:${{ steps.grid.outputs.GRID_VERSION }}
+
       - name: Build and push `grid-backend` image to registry
         uses: docker/build-push-action@v5
         with:
@@ -122,8 +133,8 @@ jobs:
         if: github.ref == 'refs/heads/dev' || github.event.inputs.deploy-helm == 'true'
         shell: bash
         run: |
-          K3D_VERSION=v5.6.0
-          DEVSPACE_VERSION=v6.3.4
+          K3D_VERSION=v5.6.3
+          DEVSPACE_VERSION=v6.3.12
 
           # install k3d
           wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64

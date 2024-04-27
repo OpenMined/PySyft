@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections import OrderedDict
+from collections import defaultdict
 from collections.abc import Callable
 from datetime import datetime
 from functools import partial
@@ -17,6 +18,7 @@ import traceback
 from typing import Any
 
 # third party
+from loguru import logger
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
@@ -76,6 +78,7 @@ from ..service.queue.base_queue import QueueProducer
 from ..service.queue.queue import APICallMessageHandler
 from ..service.queue.queue import QueueManager
 from ..service.queue.queue_service import QueueService
+from ..service.queue.queue_stash import APIEndpointQueueItem
 from ..service.queue.queue_stash import ActionQueueItem
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
@@ -87,7 +90,7 @@ from ..service.response import SyftError
 from ..service.service import AbstractService
 from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
-from ..service.settings.settings import NodeSettingsV2
+from ..service.settings.settings import NodeSettings
 from ..service.settings.settings_service import SettingsService
 from ..service.settings.settings_stash import SettingsStash
 from ..service.sync.sync_service import SyncService
@@ -192,6 +195,12 @@ def get_default_worker_image() -> str | None:
 
 def get_default_worker_pool_name() -> str | None:
     return get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME)
+
+
+def get_default_bucket_name() -> str:
+    env = get_env("DEFAULT_BUCKET_NAME")
+    node_id = get_node_uid_env() or "syft-bucket"
+    return env or node_id or "syft-bucket"
 
 
 def get_default_worker_pool_count(node: Node) -> int:
@@ -311,6 +320,7 @@ class Node(AbstractNode):
         email_sender: str | None = None,
         smtp_port: int | None = None,
         smtp_host: str | None = None,
+        association_request_auto_approval: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -343,6 +353,8 @@ class Node(AbstractNode):
         else:
             skey = signing_key
         self.signing_key = skey or SyftSigningKey.generate()
+
+        self.association_request_auto_approval = association_request_auto_approval
 
         self.queue_config = self.create_queue_config(
             n_consumers=n_consumers,
@@ -412,10 +424,11 @@ class Node(AbstractNode):
 
     def get_default_store(self, use_sqlite: bool) -> StoreConfig:
         if use_sqlite:
+            path = self.get_temp_dir("db")
             return SQLiteStoreConfig(
                 client_config=SQLiteStoreClientConfig(
                     filename=f"{self.id}.sqlite",
-                    path=self.get_temp_dir("db"),
+                    path=path,
                 )
             )
         return DictStoreConfig()
@@ -450,6 +463,9 @@ class Node(AbstractNode):
                 c.close()
         for p in self.queue_manager.producers.values():
             p.close()
+
+        self.queue_manager.producers.clear()
+        self.queue_manager.consumers.clear()
 
         NodeRegistry.remove_node(self.id)
 
@@ -555,6 +571,18 @@ class Node(AbstractNode):
         )
         consumer.run()
 
+    def remove_consumer_with_id(self, syft_worker_id: UID) -> None:
+        for _, consumers in self.queue_manager.consumers.items():
+            # Grab the list of consumers for the given queue
+            consumer_to_pop = None
+            for consumer_idx, consumer in enumerate(consumers):
+                if consumer.syft_worker_id == syft_worker_id:
+                    consumer.close()
+                    consumer_to_pop = consumer_idx
+                    break
+            if consumer_to_pop is not None:
+                consumers.pop(consumer_to_pop)
+
     @classmethod
     def named(
         cls,
@@ -573,6 +601,7 @@ class Node(AbstractNode):
         dev_mode: bool = False,
         migrate: bool = False,
         in_memory_workers: bool = True,
+        association_request_auto_approval: bool = False,
     ) -> Self:
         uid = UID.with_seed(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -600,6 +629,7 @@ class Node(AbstractNode):
             migrate=migrate,
             in_memory_workers=in_memory_workers,
             reset=reset,
+            association_request_auto_approval=association_request_auto_approval,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -937,7 +967,7 @@ class Node(AbstractNode):
             shutil.rmtree(rootdir, ignore_errors=True)
 
     @property
-    def settings(self) -> NodeSettingsV2:
+    def settings(self) -> NodeSettings:
         settings_stash = SettingsStash(store=self.document_store)
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
@@ -1030,7 +1060,7 @@ class Node(AbstractNode):
 
     def forward_message(
         self, api_call: SyftAPICall | SignedSyftAPICall
-    ) -> Result[QueueItem | SyftObject, Err]:
+    ) -> Result | QueueItem | SyftObject | SyftError | Any:
         node_uid = api_call.message.node_uid
         if "networkservice" not in self.service_path_map:
             return SyftError(
@@ -1051,14 +1081,21 @@ class Node(AbstractNode):
             # Since we have several routes to a peer
             # we need to cache the client for a given node_uid along with the route
             peer_cache_key = hash(node_uid) + hash(peer.pick_highest_priority_route())
-
             if peer_cache_key in self.peer_client_cache:
                 client = self.peer_client_cache[peer_cache_key]
             else:
                 context = AuthedServiceContext(
                     node=self, credentials=api_call.credentials
                 )
+
                 client = peer.client_with_context(context=context)
+                if client.is_err():
+                    return SyftError(
+                        message=f"Failed to create remote client for peer: "
+                        f"{peer.id}. Error: {client.err()}"
+                    )
+                client = client.ok()
+
                 self.peer_client_cache[peer_cache_key] = client
 
         if client:
@@ -1129,6 +1166,7 @@ class Node(AbstractNode):
 
         if api_call.message.node_uid != self.id and check_call_location:
             return self.forward_message(api_call=api_call)
+
         if api_call.message.path == "queue":
             return self.resolve_future(
                 credentials=api_call.credentials, uid=api_call.message.kwargs["uid"]
@@ -1176,6 +1214,52 @@ class Node(AbstractNode):
         else:
             return self.add_api_call_to_queue(api_call)
         return result
+
+    def add_api_endpoint_execution_to_queue(
+        self,
+        credentials: SyftVerifyKey,
+        method: str,
+        path: str,
+        *args: Any,
+        worker_pool: str | None = None,
+        **kwargs: Any,
+    ) -> Job | SyftError:
+        job_id = UID()
+        task_uid = UID()
+        worker_settings = WorkerSettings.from_node(node=self)
+
+        if worker_pool is None:
+            worker_pool = self.get_default_worker_pool()
+        else:
+            worker_pool = self.get_worker_pool_by_name(worker_pool)
+
+        # Create a Worker pool reference object
+        worker_pool_ref = LinkedObject.from_obj(
+            worker_pool,
+            service_type=SyftWorkerPoolService,
+            node_uid=self.id,
+        )
+        queue_item = APIEndpointQueueItem(
+            id=task_uid,
+            method=method,
+            node_uid=self.id,
+            syft_client_verify_key=credentials,
+            syft_node_location=self.id,
+            job_id=job_id,
+            worker_settings=worker_settings,
+            args=args,
+            kwargs={"path": path, **kwargs},
+            has_execute_permissions=True,
+            worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
+        )
+
+        action = Action.from_api_endpoint_execution()
+        return self.add_queueitem_to_queue(
+            queue_item,
+            credentials,
+            action,
+            None,
+        )
 
     def add_action_to_queue(
         self,
@@ -1229,8 +1313,12 @@ class Node(AbstractNode):
             has_execute_permissions=has_execute_permissions,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
+        user_id = self.get_service("UserService").get_user_id_for_credentials(
+            credentials
+        )
+
         return self.add_queueitem_to_queue(
-            queue_item, credentials, action, parent_job_id
+            queue_item, credentials, action, parent_job_id, user_id
         )
 
     def add_queueitem_to_queue(
@@ -1239,6 +1327,7 @@ class Node(AbstractNode):
         credentials: SyftVerifyKey,
         action: Action | None = None,
         parent_job_id: UID | None = None,
+        user_id: UID | None = None,
     ) -> Job | SyftError:
         log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
@@ -1271,6 +1360,7 @@ class Node(AbstractNode):
             log_id=log_id,
             parent_job_id=parent_job_id,
             action=action,
+            requested_by=user_id,
         )
 
         # 🟡 TODO 36: Needs distributed lock
@@ -1392,7 +1482,16 @@ class Node(AbstractNode):
     def get_default_worker_pool(self) -> WorkerPool | None | SyftError:
         result = self.pool_stash.get_by_name(
             credentials=self.verify_key,
-            pool_name=get_default_worker_pool_name(),
+            pool_name=self.settings.default_worker_pool,
+        )
+        if result.is_err():
+            return SyftError(message=f"{result.err()}")
+        worker_pool = result.ok()
+        return worker_pool
+
+    def get_worker_pool_by_name(self, name: str) -> WorkerPool | None | SyftError:
+        result = self.pool_stash.get_by_name(
+            credentials=self.verify_key, pool_name=name
         )
         if result.is_err():
             return SyftError(message=f"{result.err()}")
@@ -1421,7 +1520,7 @@ class Node(AbstractNode):
     ) -> NodeServiceContext:
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
-    def create_initial_settings(self, admin_email: str) -> NodeSettingsV2 | None:
+    def create_initial_settings(self, admin_email: str) -> NodeSettings | None:
         try:
             settings_stash = SettingsStash(store=self.document_store)
             if self.signing_key is None:
@@ -1429,14 +1528,18 @@ class Node(AbstractNode):
                 return None
             settings_exists = settings_stash.get_all(self.signing_key.verify_key).ok()
             if settings_exists:
-                self.name = settings_exists[0].name
+                node_settings = settings_exists[0]
+                self.name = node_settings.name
+                self.association_request_auto_approval = (
+                    node_settings.association_request_auto_approval
+                )
                 return None
             else:
                 # Currently we allow automatic user registration on enclaves,
                 # as enclaves do not have superusers
                 if self.node_type == NodeType.ENCLAVE:
                     flags.CAN_REGISTER = True
-                new_settings = NodeSettingsV2(
+                new_settings = NodeSettings(
                     id=self.id,
                     name=self.name,
                     verify_key=self.verify_key,
@@ -1446,6 +1549,8 @@ class Node(AbstractNode):
                     admin_email=admin_email,
                     node_side_type=self.node_side_type.value,  # type: ignore
                     show_warnings=self.enable_warnings,
+                    association_request_auto_approval=self.association_request_auto_approval,
+                    default_worker_pool=get_default_worker_pool_name(),
                 )
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings
@@ -1540,7 +1645,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
     credentials = node.verify_key
     pull_image = not node.dev_mode
     image_stash = node.get_service(SyftWorkerImageService).stash
-    default_pool_name = get_default_worker_pool_name()
+    default_pool_name = node.settings.default_worker_pool
     default_worker_pool = node.get_default_worker_pool()
     default_worker_tag = get_default_worker_tag_by_env(node.dev_mode)
     worker_count = get_default_worker_pool_count(node)
@@ -1549,6 +1654,12 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         credentials=credentials,
         role=ServiceRole.ADMIN,
     )
+
+    if isinstance(default_worker_pool, SyftError):
+        logger.error(
+            f"Failed to get default worker pool {default_pool_name}. Error: {default_worker_pool.message}"
+        )
+        return default_worker_pool
 
     print(f"Creating default worker image with tag='{default_worker_tag}'")
     # Get/Create a default worker SyftWorkerImage

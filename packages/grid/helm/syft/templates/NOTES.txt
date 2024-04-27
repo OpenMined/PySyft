@@ -10,6 +10,51 @@
     Following class versions are either added/removed.
 
     {
+    "NodeSettingsUpdate": {
+        "3": {
+            "version": 3,
+            "hash": "0f812fdd5aecc3e3aa1a7c953bbf7f8d8b03a77c5cdbb37e981fa91c8134c9f4",
+            "action": "add"
+        }
+    },
+    "NodeSettings": {
+        "4": {
+            "version": 4,
+            "hash": "318e578f8a9af213a6af0cc2c567b62196b0ff81769d808afff4dd1eb7c372b8",
+            "action": "add"
+        }
+    },
+    "EnclaveMetadata": {
+        "2": {
+            "version": 2,
+            "hash": "6dcc26695abc6a9ecd9d7d1e6507a9f1a92cc5ccd10987e92419bf984245f9a1",
+            "action": "remove"
+        },
+        "3": {
+            "version": 3,
+            "hash": "d2f23411927c68e2307a84d180ad053b3e4ba12d74aba64d34dac224c90e815d",
+            "action": "add"
+        }
+    },
+    "CustomEndpointActionObject": {
+        "1": {
+            "version": 1,
+            "hash": "642facc6cafbaad4de030a33cd619bd68ac31a32b0db07ddc1c1d5d7f914503e",
+            "action": "add"
+        }
+    },
+    "JobItem": {
+        "4": {
+            "version": 4,
+            "hash": "6a7cc7c2bb4dd234c1508b0af4d3b403cd3b7b427578a775bf80dc36891923ed",
+            "action": "remove"
+        },
+        "5": {
+            "version": 5,
+            "hash": "82ee08442b09797ed7a3710c31de633bb308b1d2215f51b58a3e01a4c201055d",
+            "action": "add"
+        }
+    },
     "ExecutionOutput": {
         "1": {
             "version": 1,
@@ -19,6 +64,62 @@
         "2": {
             "version": 2,
             "hash": "854fe9df5bcbb5c7e5b7c467bac423cd98c32f93d6876fea7b8eb6c08f6596da",
+            "action": "add"
+        }
+    },
+    "TwinAPIContextView": {
+        "1": {
+            "version": 1,
+            "hash": "7d368102d0b473009af3b8c46e0ea6d35893c5ebb172b373ad7d52553c12c9fa",
+            "action": "add"
+        }
+    },
+    "CustomAPIView": {
+        "1": {
+            "version": 1,
+            "hash": "8fe9f0fded4dbce033e2b14798a59d8635c3b73b0562f9ea686b1162ed155e91",
+            "action": "add"
+        }
+    },
+    "CustomApiEndpoint": {
+        "1": {
+            "version": 1,
+            "hash": "13617f3dce60fa692421e0d9deda7ffd365ec02d4a062c18510b48457b6eba02",
+            "action": "add"
+        }
+    },
+    "PrivateAPIEndpoint": {
+        "1": {
+            "version": 1,
+            "hash": "004ec19753263440e2896b4e35d7a6305322934512f473f37d54043af5726fe6",
+            "action": "add"
+        }
+    },
+    "PublicAPIEndpoint": {
+        "1": {
+            "version": 1,
+            "hash": "5589b6bdd045ee9c45987dae78fd5a1124530a6c493e2328b304d9273b75177f",
+            "action": "add"
+        }
+    },
+    "UpdateTwinAPIEndpoint": {
+        "1": {
+            "version": 1,
+            "hash": "cd0d4d67dc03cf6b78832f33ef584ec0ff8fa0b851629396ba27d7db63130342",
+            "action": "add"
+        }
+    },
+    "CreateTwinAPIEndpoint": {
+        "1": {
+            "version": 1,
+            "hash": "e735dc30cba1789c3fb109e35aa40ffa873951f8e00b0b971950b1735c27d1ca",
+            "action": "add"
+        }
+    },
+    "TwinAPIEndpoint": {
+        "1": {
+            "version": 1,
+            "hash": "540468be5db20efe555d2288c9aed60887306ac9b56d6a63c066246bc0010e9c",
             "action": "add"
         }
     },
@@ -46,59 +147,24 @@
             "action": "add"
         }
     },
-    "CustomEndpointActionObject": {
-        "1": {
-            "version": 1,
-            "hash": "642facc6cafbaad4de030a33cd619bd68ac31a32b0db07ddc1c1d5d7f914503e",
+    "NodePeer": {
+        "3": {
+            "version": 3,
+            "hash": "dababb03d2463b6218ae22d55293a60580f5a14bebd0c664d71da104e2f0b835",
             "action": "add"
         }
     },
-    "CustomAPIView": {
+    "AssociationRequestChange": {
         "1": {
             "version": 1,
-            "hash": "21cada3f8b8609e91e4f01f3bfdbdab3f8b96003163e09dba1c4b31041598ca2",
+            "hash": "508550c43e9e3f30243813c23eb6eec20918923d7ba09498cddbcd7e8bfa4539",
             "action": "add"
         }
     },
-    "PrivateAPIEndpoint": {
+    "APIEndpointQueueItem": {
         "1": {
             "version": 1,
-            "hash": "004ec19753263440e2896b4e35d7a6305322934512f473f37d54043af5726fe6",
-            "action": "add"
-        }
-    },
-    "PublicAPIEndpoint": {
-        "1": {
-            "version": 1,
-            "hash": "5589b6bdd045ee9c45987dae78fd5a1124530a6c493e2328b304d9273b75177f",
-            "action": "add"
-        }
-    },
-    "UpdateTwinAPIEndpoint": {
-        "1": {
-            "version": 1,
-            "hash": "6c0c6bc042391e60d5c78893f859c8bdec4b45f0bdc7749957a425e041a4096c",
-            "action": "add"
-        }
-    },
-    "CreateTwinAPIEndpoint": {
-        "1": {
-            "version": 1,
-            "hash": "98021128a9be0a9a135b43b50cb08f141faed72bc39999a9cedd162bc8814f62",
-            "action": "add"
-        }
-    },
-    "TwinAPIEndpoint": {
-        "1": {
-            "version": 1,
-            "hash": "edcd67ab41edfae56deb23d9ef838edc442f587bdb16b8e8c46efa20c04e3c25",
-            "action": "add"
-        }
-    },
-    "SyncView": {
-        "1": {
-            "version": 1,
-            "hash": "4e87744e86cd7781e3d5cf4618e63516f3d26309a4da919033dacc5ed338d76d",
+            "hash": "d31b2edfb767401c810584baccd27e4f566181c3ef7706618a82eb25ae20ff6d",
             "action": "add"
         }
     },
@@ -106,6 +172,13 @@
         "1": {
             "version": 1,
             "hash": "4dbfa0813f5a3f7be0b36249ff2d67e395ad7c9e138c5a122fc7342b8dcc4b92",
+            "action": "remove"
+        }
+    },
+    "VeilidConnection": {
+        "1": {
+            "version": 1,
+            "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
             "action": "remove"
         }
     }
