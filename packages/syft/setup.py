@@ -15,7 +15,7 @@ def install(package):
 if __name__ == "__main__":
     setuptools.setup()
     try:
-        # third party     
+        # third party
         import google.colab
 
         install("numpy==1.25.2")  # version for Google Colab
