@@ -17,16 +17,6 @@ services:
     environment:
       - FRONTEND_TARGET=grid-ui-development
 
-  # redis:
-  #   ports:
-  #     - "6379"
-
-  # queue:
-  #   image: rabbitmq:3-management
-  #   ports:
-  #     - "15672" # admin web port
-  #     # - "5672" # AMQP port
-
   mongo:
     ports:
       - "27017"
@@ -62,23 +52,7 @@ services:
     stdin_open: true
     tty: true
     ports:
-      - "2333:2333"
-
-  # backend_stream:
-  #   volumes:
-  #     - ${RELATIVE_PATH}./backend/grid:/root/app/grid
-  #     - ${RELATIVE_PATH}../syft:/root/app/syft
-  #     - ${RELATIVE_PATH}./data/package-cache:/root/.cache
-  #   environment:
-  #     - DEV_MODE=True
-
-  # celeryworker:
-  #   volumes:
-  #     - ${RELATIVE_PATH}./backend/grid:/root/app/grid
-  #     - ${RELATIVE_PATH}../syft/:/root/app/syft
-  #     - ${RELATIVE_PATH}./data/package-cache:/root/.cache
-  #   environment:
-  #     - DEV_MODE=True
+      - 2333:2333
 
   seaweedfs:
     volumes:

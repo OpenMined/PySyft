@@ -74,27 +74,6 @@ services:
     labels:
       - "orgs.openmined.syft=this is a syft rathole container"
 
-  # redis:
-  #   restart: always
-  #   image: redis:${REDIS_VERSION?Variable not set}
-  #   volumes:
-  #     - app-redis-data:/data
-  #     - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
-  #   environment:
-  #     - SERVICE_NAME=redis
-  #     - RELEASE=${RELEASE:-production}
-  #   env_file:
-  #     - .env
-
-  # queue:
-  #   restart: always
-  #   image: rabbitmq:3
-  #   environment:
-  #     - SERVICE_NAME=queue
-  #     - RELEASE=${RELEASE:-production}
-  #   volumes:
-  #     - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
-
   worker:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
@@ -182,69 +161,6 @@ services:
     tty: true
     labels:
       - "orgs.openmined.syft=this is a syft backend container"
-
-  # backend_stream:
-  #   restart: always
-  #   image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
-  #   depends_on:
-  #     - proxy
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - SERVICE_NAME=backend_stream
-  #     - RELEASE=${RELEASE:-production}
-  #     - VERSION=${VERSION}
-  #     - VERSION_HASH=${VERSION_HASH}
-  #     - NODE_TYPE=${NODE_TYPE?Variable not set}
-  #     - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
-  #     - STACK_API_KEY=${STACK_API_KEY}
-  #     - PORT=8011
-  #     - STREAM_QUEUE=1
-  #     - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
-  #     - HTTP_PORT=${HTTP_PORT}
-  #     - HTTPS_PORT=${HTTPS_PORT}
-  #     - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
-  #     - CONTAINER_HOST=${CONTAINER_HOST}
-  #     - TRACE=${TRACE}
-  #     - JAEGER_HOST=${JAEGER_HOST}
-  #     - JAEGER_PORT=${JAEGER_PORT}
-  #     - DEV_MODE=${DEV_MODE}
-  #   network_mode: service:proxy
-  #   volumes:
-  #     - credentials-data:/root/data/creds/
-
-  # celeryworker:
-  #   restart: always
-  #   image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
-  #   depends_on:
-  #     - proxy
-  #     - queue
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - SERVICE_NAME=celeryworker
-  #     - RELEASE=${RELEASE:-production}
-  #     - VERSION=${VERSION}
-  #     - VERSION_HASH=${VERSION_HASH}
-  #     - NODE_TYPE=${NODE_TYPE?Variable not set}
-  #     - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
-  #     - C_FORCE_ROOT=1
-  #     - STACK_API_KEY=${STACK_API_KEY}
-  #     - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
-  #     - HTTP_PORT=${HTTP_PORT}
-  #     - HTTPS_PORT=${HTTPS_PORT}
-  #     - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
-  #     - CONTAINER_HOST=${CONTAINER_HOST}
-  #     - NETWORK_CHECK_INTERVAL=${NETWORK_CHECK_INTERVAL}
-  #     - DOMAIN_CHECK_INTERVAL=${DOMAIN_CHECK_INTERVAL}
-  #     - TRACE=${TRACE}
-  #     - JAEGER_HOST=${JAEGER_HOST}
-  #     - JAEGER_PORT=${JAEGER_PORT}
-  #     - DEV_MODE=${DEV_MODE}
-  #   command: "/app/grid/worker-start.sh"
-  #   network_mode: service:proxy
-  #   volumes:
-  #     - credentials-data:/storage
 
   seaweedfs:
     profiles:
