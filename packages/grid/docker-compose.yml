@@ -62,6 +62,8 @@ services:
     image: "${DOCKER_IMAGE_RATHOLE?Variable not set}:${VERSION-latest}"
     profiles:
       - rathole
+    depends_on:
+      - proxy
     environment:
       - SERVICE_NAME=rathole
       - APP_LOG_LEVEL=${APP_LOG_LEVEL:-info}
