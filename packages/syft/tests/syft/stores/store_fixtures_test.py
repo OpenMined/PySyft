@@ -39,7 +39,6 @@ MONGO_CLIENT_CACHE = None
 
 locking_scenarios = [
     "nop",
-    # "file",  # makes tests pretty unstable
     "threading",
 ]
 
