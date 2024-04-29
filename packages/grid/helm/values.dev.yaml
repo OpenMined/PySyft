@@ -42,3 +42,8 @@ frontend:
 proxy:
   resourcesPreset: null
   resources: null
+
+# attestation:
+#   enabled: true
+#   resourcesPreset: null
+#   resources: null
