@@ -1,7 +1,7 @@
 include src/syft/VERSION
 include src/syft/capnp/*
 include src/syft/cache/*
-include src/syft/img/*
+recursive-include src/syft/assets *
 include src/syft/protocol/protocol_version.json
 include src/syft/protocol/releases/*
 
