@@ -1,4 +1,4 @@
-__version__ = "0.8.7-beta.2"
+__version__ = "0.8.7-beta.7"
 
 # stdlib
 from collections.abc import Callable
@@ -46,9 +46,8 @@ from .service.action.action_object import ActionObject  # noqa: F401
 from .service.action.plan import Plan  # noqa: F401
 from .service.action.plan import planify  # noqa: F401
 from .service.api.api import api_endpoint  # noqa: F401
+from .service.api.api import api_endpoint_method  # noqa: F401
 from .service.api.api import create_new_api_endpoint as TwinAPIEndpoint  # noqa: F401
-from .service.api.api import mock_api_endpoint  # noqa: F401
-from .service.api.api import private_api_endpoint  # noqa: F401
 from .service.code.user_code import UserCodeStatus  # noqa: F401; noqa: F401
 from .service.code.user_code import syft_function  # noqa: F401; noqa: F401
 from .service.code.user_code import syft_function_single_use  # noqa: F401; noqa: F401

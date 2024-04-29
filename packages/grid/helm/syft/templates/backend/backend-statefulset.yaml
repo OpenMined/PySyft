@@ -73,6 +73,8 @@ spec:
               value: "{{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}"
             - name: DEFAULT_WORKER_POOL_COUNT
               value: {{ .Values.node.defaultWorkerPoolCount | quote }}
+            - name: USE_INTERNAL_REGISTRY
+              value: {{ .Values.node.useInternalRegistry | quote }}
             {{- if .Values.node.defaultBucketName }}
             - name: DEFAULT_BUCKET_NAME
               value: {{ .Values.node.defaultBucketName | quote }}
@@ -80,6 +82,8 @@ spec:
             {{- if .Values.node.debuggerEnabled }}
             - name: DEBUGGER_ENABLED
               value: "true"
+            - name: ASSOCIATION_REQUEST_AUTO_APPROVAL
+              value: {{ .Values.node.associationRequestAutoApproval | quote }}
             {{- end }}
             # MongoDB
             - name: MONGO_PORT

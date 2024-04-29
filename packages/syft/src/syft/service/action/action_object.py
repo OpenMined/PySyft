@@ -81,6 +81,7 @@ class ActionType(Enum):
     FUNCTION = 8
     CREATEOBJECT = 16
     SYFTFUNCTION = 32
+    TWINAPI = 64
 
 
 def repr_cls(c: Any) -> str:
@@ -199,6 +200,16 @@ class Action(SyftObject):
         )
         return action
 
+    @classmethod
+    def from_api_endpoint_execution(cls: type[Self]) -> Action:
+        return cls(
+            args=[],
+            kwargs={},
+            result_id=LineageID(),
+            action_type=ActionType.TWINAPI,
+            user_code_id=None,
+        )
+
     def __repr__(self) -> str:
         def repr_uid(_id: LineageID) -> str:
             return f"{str(_id)[:3]}..{str(_id)[-1]}"
@@ -306,6 +317,7 @@ passthrough_attrs = [
     "get_sync_dependencies",
     "_data_repr",
     "syft_eq",  # syft
+    "__table_coll_widths__",
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -328,6 +340,7 @@ dont_wrap_output_attrs = [
     "__repr_attrs__",  # syft
     "get_sync_dependencies",  # syft
     "syft_eq",  # syft
+    "__table_coll_widths__",
 ]
 dont_make_side_effects = [
     "__repr_attrs__",
@@ -348,6 +361,7 @@ dont_make_side_effects = [
     "__repr_attrs__",
     "get_sync_dependencies",
     "syft_eq",  # syft
+    "__table_coll_widths__",
 ]
 action_data_empty_must_run = [
     "__repr__",
@@ -646,6 +660,7 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "get_sync_dependencies",
     "_data_repr",
     "syft_eq",
+    "__table_coll_widths__",
 ]
 
 
@@ -747,7 +762,7 @@ class ActionObject(SyncableSyftObject):
                 if isinstance(blob_retrieval_object, SyftError):
                     print(
                         "Could not fetch actionobject data\n",
-                        type(blob_retrieval_object),
+                        blob_retrieval_object,
                     )
                     return blob_retrieval_object
                 # relative
@@ -1901,7 +1916,7 @@ class ActionObject(SyncableSyftObject):
                     else self.syft_action_data_cache.__repr__()
                 )
 
-        return f"```python\n{res}\n{data_repr_}```\n"
+        return f"```python\n{res}\n{data_repr_}\n```\n"
 
     def _data_repr(self) -> str | None:
         if isinstance(self.syft_action_data_cache, ActionDataEmpty):
