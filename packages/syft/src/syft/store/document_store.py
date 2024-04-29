@@ -521,6 +521,9 @@ class StorePartition:
     def has_permission(self, permission: ActionObjectPermission) -> bool:
         raise NotImplementedError
 
+    def _get_permissions_for_uid(self, uid: UID) -> Result[set[str], str]:
+        raise NotImplementedError
+
     def add_storage_permission(self, permission: StoragePermission) -> None:
         raise NotImplementedError
 
@@ -531,6 +534,9 @@ class StorePartition:
         raise NotImplementedError
 
     def has_storage_permission(self, permission: StoragePermission | UID) -> bool:
+        raise NotImplementedError
+
+    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], str]:
         raise NotImplementedError
 
     def _migrate_data(
@@ -791,7 +797,6 @@ class StoreConfig(SyftBaseObject):
             The config used for store locking. Available options:
                 * NoLockingConfig: no locking, ideal for single-thread stores.
                 * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
-                * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
             Defaults to NoLockingConfig.
     """
 

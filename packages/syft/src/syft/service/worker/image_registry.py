@@ -1,6 +1,5 @@
 # stdlib
 import re
-from urllib.parse import urlparse
 
 # third party
 from pydantic import field_validator
@@ -10,9 +9,12 @@ from typing_extensions import Self
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
-from ...types.uid import UID
 
-REGX_DOMAIN = re.compile(r"^(localhost|([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*))(\:\d{1,5})?$")
+# Checks for
+# - localhost:[port]
+# - (sub.)*.name.tld
+# - (sub.)*.name.tld:[port]
+REGX_DOMAIN = re.compile(r"^(localhost|([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*))(\:\d{1,5})?")
 
 
 @serializable()
@@ -22,10 +24,8 @@ class SyftImageRegistry(SyftObject):
 
     __attr_searchable__ = ["url"]
     __attr_unique__ = ["url"]
-
     __repr_attrs__ = ["url"]
 
-    id: UID
     url: str
 
     @field_validator("url")
@@ -41,13 +41,7 @@ class SyftImageRegistry(SyftObject):
 
     @classmethod
     def from_url(cls, full_str: str) -> Self:
-        # this is only for urlparse
-        if "://" not in full_str:
-            full_str = f"http://{full_str}"
-        parsed = urlparse(full_str)
-
-        # netloc includes the host & port, so local dev should work as expected
-        return cls(id=UID(), url=parsed.netloc)
+        return cls(url=full_str)
 
     def __hash__(self) -> int:
         return hash(self.url + str(self.tls_enabled))

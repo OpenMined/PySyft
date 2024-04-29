@@ -53,6 +53,7 @@ class SyncStateRow(SyftObject):
         "previous_state",
         "current_state",
     ]
+    __table_coll_widths__ = ["min-content", "auto", "auto", "auto"]
 
     def status_badge(self) -> dict[str, str]:
         status = self.status

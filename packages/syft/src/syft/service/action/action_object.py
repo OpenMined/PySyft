@@ -8,6 +8,7 @@ from enum import Enum
 import inspect
 from io import BytesIO
 from pathlib import Path
+import sys
 import threading
 import time
 import traceback
@@ -80,6 +81,7 @@ class ActionType(Enum):
     FUNCTION = 8
     CREATEOBJECT = 16
     SYFTFUNCTION = 32
+    TWINAPI = 64
 
 
 def repr_cls(c: Any) -> str:
@@ -198,6 +200,16 @@ class Action(SyftObject):
         )
         return action
 
+    @classmethod
+    def from_api_endpoint_execution(cls: type[Self]) -> Action:
+        return cls(
+            args=[],
+            kwargs={},
+            result_id=LineageID(),
+            action_type=ActionType.TWINAPI,
+            user_code_id=None,
+        )
+
     def __repr__(self) -> str:
         def repr_uid(_id: LineageID) -> str:
             return f"{str(_id)[:3]}..{str(_id)[-1]}"
@@ -305,6 +317,7 @@ passthrough_attrs = [
     "get_sync_dependencies",
     "_data_repr",
     "syft_eq",  # syft
+    "__table_coll_widths__",
 ]
 dont_wrap_output_attrs = [
     "__repr__",
@@ -327,6 +340,7 @@ dont_wrap_output_attrs = [
     "__repr_attrs__",  # syft
     "get_sync_dependencies",  # syft
     "syft_eq",  # syft
+    "__table_coll_widths__",
 ]
 dont_make_side_effects = [
     "__repr_attrs__",
@@ -347,10 +361,26 @@ dont_make_side_effects = [
     "__repr_attrs__",
     "get_sync_dependencies",
     "syft_eq",  # syft
+    "__table_coll_widths__",
 ]
 action_data_empty_must_run = [
     "__repr__",
     "__str__",
+]
+
+methods_to_check_in_cache = [
+    "_ipython_display_",
+    "_repr_mimebundle_",
+    "_repr_latex_",
+    "_repr_javascript_",
+    "_repr_html_",
+    "_repr_jpeg_",
+    "_repr_png_",
+    "_repr_svg_",
+    "_repr_pretty_",
+    "_repr_pdf_",
+    "_repr_json_",
+    "_repr_markdown_",
 ]
 
 
@@ -630,6 +660,7 @@ BASE_PASSTHROUGH_ATTRS: list[str] = [
     "get_sync_dependencies",
     "_data_repr",
     "syft_eq",
+    "__table_coll_widths__",
 ]
 
 
@@ -731,7 +762,7 @@ class ActionObject(SyncableSyftObject):
                 if isinstance(blob_retrieval_object, SyftError):
                     print(
                         "Could not fetch actionobject data\n",
-                        type(blob_retrieval_object),
+                        blob_retrieval_object,
                     )
                     return blob_retrieval_object
                 # relative
@@ -769,7 +800,12 @@ class ActionObject(SyncableSyftObject):
                 )
                 data.upload_to_blobstorage_from_api(api)
             else:
-                storage_entry = CreateBlobStorageEntry.from_obj(data)
+                serialized = serialize(data, to_bytes=True)
+                size = sys.getsizeof(serialized)
+                storage_entry = CreateBlobStorageEntry.from_obj(data, file_size=size)
+
+                if not TraceResultRegistry.current_thread_is_tracing():
+                    self.syft_action_data_cache = self.as_empty_data()
                 if self.syft_blob_storage_entry_id is not None:
                     # TODO: check if it already exists
                     storage_entry.id = self.syft_blob_storage_entry_id
@@ -784,9 +820,7 @@ class ActionObject(SyncableSyftObject):
                     if isinstance(blob_deposit_object, SyftError):
                         return blob_deposit_object
 
-                    result = blob_deposit_object.write(
-                        BytesIO(serialize(data, to_bytes=True))
-                    )
+                    result = blob_deposit_object.write(BytesIO(serialized))
                     if isinstance(result, SyftError):
                         return result
                     self.syft_blob_storage_entry_id = (
@@ -1573,8 +1607,6 @@ class ActionObject(SyncableSyftObject):
         """Find which instance - Syft ActionObject or the original object - has the requested attribute."""
         defined_on_self = name in self.__dict__ or name in self.__private_attributes__
 
-        debug(">> ", name, ", defined_on_self = ", defined_on_self)
-
         # use the custom defined version
         context_self = self
         if not defined_on_self:
@@ -1803,6 +1835,10 @@ class ActionObject(SyncableSyftObject):
             name: str
                 The name of the attribute to access.
         """
+        # bypass ipython canary verification
+        if name == "_ipython_canary_method_should_not_exist_":
+            return None
+
         # bypass certain attrs to prevent recursion issues
         if name.startswith("_syft") or name.startswith("syft"):
             return object.__getattribute__(self, name)
@@ -1813,13 +1849,17 @@ class ActionObject(SyncableSyftObject):
         # third party
         if name in self._syft_passthrough_attrs():
             return object.__getattribute__(self, name)
-        context_self = self._syft_get_attr_context(name)
 
         # Handle bool operator on nonbools
         if name == "__bool__" and not self.syft_has_bool_attr:
             return self._syft_wrap_attribute_for_bool_on_nonbools(name)
 
+        # check cache first
+        if name in methods_to_check_in_cache:
+            return getattr(self.syft_action_data_cache, name, None)
+
         # Handle Properties
+        context_self = self._syft_get_attr_context(name)
         if self.syft_is_property(context_self, name):
             return self._syft_wrap_attribute_for_properties(name)
 
@@ -1829,7 +1869,7 @@ class ActionObject(SyncableSyftObject):
 
     @property
     def is_link(self) -> bool:
-        return isinstance(self.syft_action_data, ActionDataLink)
+        return self.syft_action_data_type is ActionDataLink
 
     def __setattr__(self, name: str, value: Any) -> Any:
         defined_on_self = name in self.__dict__ or name in self.__private_attributes__
@@ -1876,7 +1916,7 @@ class ActionObject(SyncableSyftObject):
                     else self.syft_action_data_cache.__repr__()
                 )
 
-        return f"```python\n{res}\n```\n{data_repr_}"
+        return f"```python\n{res}\n{data_repr_}\n```\n"
 
     def _data_repr(self) -> str | None:
         if isinstance(self.syft_action_data_cache, ActionDataEmpty):
@@ -2059,6 +2099,11 @@ class ActionObject(SyncableSyftObject):
 
 @serializable()
 class AnyActionObject(ActionObject):
+    """
+    This is a catch-all class for all objects that are not
+    defined in the `action_types` dictionary.
+    """
+
     __canonical_name__ = "AnyActionObject"
     __version__ = SYFT_OBJECT_VERSION_3
 
