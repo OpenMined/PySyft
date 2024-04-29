@@ -64,8 +64,8 @@ http:
       entryPoints:
         - web
       service: "ratholeforward"
-      middlewares:
-        - "rathole-redirect"
+      # middlewares:
+      #   - "rathole-redirect"
     ping:
       rule: "PathPrefix(`/ping`)"
       entryPoints:
@@ -90,5 +90,5 @@ http:
     rathole-redirect:
       redirectregex:
         regex: "^.+"
-        replacement: "http://rathole:8000/"
+        replacement: "http://rathole:8000$${1}"
         permanent: true
