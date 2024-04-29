@@ -27,7 +27,7 @@ http:
     ratholeforward:
       loadBalancer:
         servers:
-          - url: "http://rathole:80"
+          - url: "http://rathole:8000"
   routers:
     frontend:
       rule: "PathPrefix(`/`)"
@@ -90,5 +90,5 @@ http:
     rathole-redirect:
       redirectregex:
         regex: "^.+"
-        replacement: "http://rathole:80/"
+        replacement: "http://rathole:8000/"
         permanent: true
