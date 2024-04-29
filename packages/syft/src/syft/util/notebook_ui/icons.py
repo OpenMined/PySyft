@@ -13,6 +13,7 @@ class Icon(enum.Enum):
     REQUEST = "request.svg"
     ARROW = "arrow.svg"
     COPY = "copy.svg"
+    INFO = "info.svg"
 
     @property
     def svg(self) -> str:
