@@ -66,6 +66,8 @@ from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.network.network_service import NetworkService
+from ..service.network.utils import PeerHealthCheck
+from ..service.network.utils import PeerHealthCheckTask
 from ..service.notification.notification_service import NotificationService
 from ..service.notifier.notifier_service import NotifierService
 from ..service.object_search.migration_state_service import MigrateStateService
@@ -456,6 +458,10 @@ class Node(AbstractNode):
                 self.blob_store_config.client_config.remote_profiles[
                     remote_profile.profile_name
                 ] = remote_profile
+
+    def run_peer_health_checks(self, context: AuthedServiceContext) -> None:
+        self.peer_health_manager = PeerHealthCheckTask()
+        self.peer_health_manager.run(context=context)
 
     def stop(self) -> None:
         for consumer_list in self.queue_manager.consumers.values():

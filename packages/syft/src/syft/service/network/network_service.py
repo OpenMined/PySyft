@@ -292,59 +292,18 @@ class NetworkService(AbstractService):
         if peer.is_err():
             return SyftError(message=f"Failed to query peer from stash: {peer.err()}")
 
+        # TODO (PR: Healthchecks): Checks requests for pending association requests
+        # once association requests are implemented
+        # Get the list of all requests
+        # Filter the request by checking if AssociationRequestChange is present as
+        # one of the Change in the changes list
+        # If change is present, then check if request `status` is pending
+        # then return PEER_ASSOCIATION_PENDING
+
         if peer.ok() is None:
             return NodePeerAssociationStatus.PEER_NOT_FOUND
 
-        # TODO (PR: Healthchecks): Checks requests for pending association requests
-        # once association requests are implemented
-
         return NodePeerAssociationStatus.PEER_ASSOCIATED
-
-    @service_method(path="network.add_route_for", name="add_route_for")
-    def add_route_for(
-        self,
-        context: AuthedServiceContext,
-        route: NodeRoute,
-        peer: NodePeer,
-    ) -> SyftSuccess | SyftError:
-        """Add Route for this Node to another Node"""
-        # check root user is asking for the exchange
-        client = peer.client_with_context(context=context)
-        result = client.api.services.network.verify_route(route)
-
-        if not isinstance(result, SyftSuccess):
-            return result
-        return SyftSuccess(message="Route Verified")
-
-    @service_method(
-        path="network.verify_route", name="verify_route", roles=GUEST_ROLE_LEVEL
-    )
-    def verify_route(
-        self, context: AuthedServiceContext, route: NodeRoute
-    ) -> SyftSuccess | SyftError:
-        """Add a Network Node Route"""
-        # get the peer asking for route verification from its verify_key
-
-        peer = self.stash.get_for_verify_key(
-            context.node.verify_key,
-            context.credentials,
-        )
-        if peer.is_err():
-            return SyftError(message=peer.err())
-        peer = peer.ok()
-
-        if peer.verify_key != context.credentials:
-            return SyftError(
-                message=(
-                    f"verify_key: {context.credentials} at route {route} "
-                    f"does not match listed peer: {peer}"
-                )
-            )
-        peer.update_routes([route])
-        result = self.stash.update_peer(context.node.verify_key, peer)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-        return SyftSuccess(message="Network Route Verified")
 
     @service_method(
         path="network.get_all_peers", name="get_all_peers", roles=GUEST_ROLE_LEVEL
