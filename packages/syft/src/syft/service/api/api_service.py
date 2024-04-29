@@ -5,6 +5,7 @@ from typing import cast
 
 # third party
 from pydantic import ValidationError
+from result import Err
 from result import Ok
 
 # relative
@@ -418,15 +419,23 @@ class APIService(AbstractService):
 
         action_obj = ActionObject.from_obj(exec_result)
         action_service = cast(ActionService, context.node.get_service(ActionService))
-        result = action_service.set_result_to_store(
-            context=context,
-            result_action_object=action_obj,
-            has_result_read_permission=True,
-        )
-        if result.is_err():
-            return SyftError(message=f"Failed to set result to store: {result.err()}")
+        try:
+            result = action_service.set_result_to_store(
+                context=context,
+                result_action_object=action_obj,
+                has_result_read_permission=True,
+            )
+            if result.is_err():
+                return SyftError(
+                    message=f"Failed to set result to store: {result.err()}"
+                )
 
-        return Ok(result.ok())
+            return Ok(result.ok())
+        except Exception as e:
+            # stdlib
+            import traceback
+
+            return Err(value=f"Failed to run. {e}, {traceback.format_exc()}")
 
     @service_method(path="api.call_public", name="call_public", roles=GUEST_ROLE_LEVEL)
     def call_public(
@@ -450,15 +459,23 @@ class APIService(AbstractService):
 
         action_obj = ActionObject.from_obj(exec_result)
         action_service = cast(ActionService, context.node.get_service(ActionService))
-        result = action_service.set_result_to_store(
-            context=context,
-            result_action_object=action_obj,
-            has_result_read_permission=True,
-        )
-        if result.is_err():
-            return SyftError(message=f"Failed to set result to store: {result.err()}")
+        try:
+            result = action_service.set_result_to_store(
+                context=context,
+                result_action_object=action_obj,
+                has_result_read_permission=True,
+            )
+            if result.is_err():
+                return SyftError(
+                    message=f"Failed to set result to store: {result.err()}"
+                )
 
-        return Ok(result.ok())
+            return Ok(result.ok())
+        except Exception as e:
+            # stdlib
+            import traceback
+
+            return Err(value=f"Failed to run. {e}, {traceback.format_exc()}")
 
     @service_method(
         path="api.call_private", name="call_private", roles=GUEST_ROLE_LEVEL
@@ -486,13 +503,22 @@ class APIService(AbstractService):
         action_obj = ActionObject.from_obj(exec_result)
 
         action_service = cast(ActionService, context.node.get_service(ActionService))
-        result = action_service.set_result_to_store(
-            context=context, result_action_object=action_obj
-        )
-        if result.is_err():
-            return SyftError(message=f"Failed to set result to store: {result.err()}")
+        try:
+            result = action_service.set_result_to_store(
+                context=context, result_action_object=action_obj
+            )
+            if result.is_err():
+                return SyftError(
+                    message=f"Failed to set result to store: {result.err()}"
+                )
 
-        return Ok(result.ok())
+            return Ok(result.ok())
+
+        except Exception as e:
+            # stdlib
+            import traceback
+
+            return Err(value=f"Failed to run. {e}, {traceback.format_exc()}")
 
     @service_method(
         path="api.exists",

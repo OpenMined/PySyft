@@ -184,6 +184,13 @@
           "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
           "action": "remove"
         }
+      },
+      "BlobRetrievalByURL": {
+        "5": {
+          "version": 5,
+          "hash": "4934bf72bb10ac0a670c87ab735175088274e090819436563543473e64cf15e3",
+          "action": "add"
+        }
       }
     }
   }
