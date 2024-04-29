@@ -208,6 +208,9 @@ class WorkerService(AbstractService):
                 stopped = _stop_worker_container(worker, docker_container, force)
                 if stopped is not None:
                     return stopped
+        else:
+            # kill the in memory worker thread
+            context.node.remove_consumer_with_id(syft_worker_id=worker.id)
 
         # remove the worker from the pool
         try:
