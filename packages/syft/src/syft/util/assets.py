@@ -12,7 +12,11 @@ CSS_ASSETS = "syft.assets.css"
 
 
 def _cleanup_svg(svg: str) -> str:
-    # notebook_addons table template requires SVGs with single quotes and no newlines
+    """
+    notebook_addons table template requires SVGs with single quotes and no newlines.
+
+    TODO remove after refactoring table
+    """
     parser = lxml.etree.XMLParser(remove_blank_text=True)
     elem = lxml.etree.XML(svg, parser=parser)
     parsed = lxml.etree.tostring(elem, encoding="unicode")
