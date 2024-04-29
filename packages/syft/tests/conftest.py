@@ -10,6 +10,7 @@ from unittest import mock
 
 # third party
 from faker import Faker
+import mongomock
 import pytest
 
 # syft absolute
@@ -36,7 +37,6 @@ from .syft.stores.store_fixtures_test import sqlite_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_queue_stash  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_store_partition  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_workspace  # noqa: F401
-from .utils.mongomock import mongomock
 
 
 def patch_protocol_file(filepath: Path):
