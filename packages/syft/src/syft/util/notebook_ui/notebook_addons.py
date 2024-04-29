@@ -243,7 +243,7 @@ custom_code = """
                                                     div.onclick = function() {
                                                         navigator.clipboard.writeText(item[attr].value);
                                                     };
-                                                    clipboard_img.innerHTML = "${clipboardIcon}";
+                                                    clipboard_img.innerHTML = ${clipboardIconEscaped};
 
                                                     clipboard_div.appendChild(clipboard_img);
                                                     div.appendChild(clipboard_div);
@@ -341,7 +341,7 @@ def create_table_template(
         rows=rows,
         icon=table_icon,
         searchIcon=Icon.SEARCH.svg,
-        clipboardIcon=Icon.CLIPBOARD.svg,
+        clipboardIconEscaped=Icon.CLIPBOARD.js_escaped_svg,
         grid_template_columns=grid_template_columns,
         grid_template_cell_columns=grid_template_cell_columns,
     )

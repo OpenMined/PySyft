@@ -1,5 +1,6 @@
 # stdlib
 import enum
+import json
 
 # relative
 from ..assets import load_svg
@@ -18,3 +19,11 @@ class Icon(enum.Enum):
     @property
     def svg(self) -> str:
         return load_svg(self.value)
+
+    @property
+    def js_escaped_svg(self) -> str:
+        """
+        Required for in-line SVGs in JS
+        TODO remove after refactoring table + templating
+        """
+        return json.dumps(self.svg)

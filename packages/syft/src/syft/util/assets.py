@@ -3,32 +3,15 @@ import base64
 from functools import lru_cache
 import importlib.resources
 
-# third party
-import lxml.etree
-
 IMAGE_ASSETS = "syft.assets.img"
 SVG_ASSETS = "syft.assets.svg"
 CSS_ASSETS = "syft.assets.css"
 
 
-def _cleanup_svg(svg: str) -> str:
-    """
-    notebook_addons table template requires SVGs with single quotes and no newlines.
-
-    TODO remove after refactoring table
-    """
-    parser = lxml.etree.XMLParser(remove_blank_text=True)
-    elem = lxml.etree.XML(svg, parser=parser)
-    parsed = lxml.etree.tostring(elem, encoding="unicode")
-    # NOTE UNSAFE for non-SVG xml
-    parsed = parsed.replace('"', "'")
-    return parsed
-
-
 @lru_cache(maxsize=32)
 def load_svg(fname: str) -> str:
-    res = importlib.resources.read_text(SVG_ASSETS, fname)
-    return _cleanup_svg(res)
+    # TODO add resize support
+    return importlib.resources.read_text(SVG_ASSETS, fname)
 
 
 @lru_cache(maxsize=32)
