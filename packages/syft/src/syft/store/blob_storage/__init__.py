@@ -204,14 +204,18 @@ class BlobRetrievalByURL(BlobRetrieval):
             blob_url = self.url
 
         try:
-            if isinstance(self.type_, BlobFileType) and stream:
+            if (is_blob_file := issubclass(self.type_, BlobFileType)) and stream:
                 return syft_iter_content(blob_url, chunk_size)
 
             response = requests.get(str(blob_url), stream=stream)  # nosec
             resp_content = response.content
             response.raise_for_status()
 
-            return deserialize(resp_content, from_bytes=True)
+            return (
+                resp_content
+                if is_blob_file
+                else deserialize(resp_content, from_bytes=True)
+            )
         except requests.RequestException as e:
             return SyftError(message=f"Failed to retrieve with error: {e}")
 
