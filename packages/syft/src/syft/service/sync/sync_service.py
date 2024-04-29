@@ -232,7 +232,12 @@ class SyncService(AbstractService):
             if res.is_err():
                 return SyftError(message=res.message)
             else:
-                return SyftSuccess(message=f"Synced {len(items)} items")
+                message = f"Synced {len(items)} items"
+                if len(ignored_batches) > 0:
+                    message += f", ignored {len(ignored_batches)} batches"
+                if len(unignored_batches) > 0:
+                    message += f", unignored {len(unignored_batches)} batches"
+                return SyftSuccess(message=message)
 
     @service_method(
         path="sync.get_permissions",
@@ -287,7 +292,7 @@ class SyncService(AbstractService):
             elif isinstance(obj, Job) and obj.result is not None:
                 if isinstance(obj.result, ActionObject):
                     obj.result = obj.result.as_empty()
-                action_object_ids.add(obj.result.id)
+                    action_object_ids.add(obj.result.id)
 
         for uid in action_object_ids:
             action_object = context.node.get_service("actionservice").get(

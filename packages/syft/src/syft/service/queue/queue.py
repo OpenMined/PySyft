@@ -197,13 +197,22 @@ def handle_message_multiprocessing(
 
         result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
 
+        status = Status.COMPLETED
+        job_status = JobStatus.COMPLETED
+
         if isinstance(result, Ok):
-            status = Status.COMPLETED
-            job_status = JobStatus.COMPLETED
             result = result.ok()
+            if hasattr(result, "syft_action_data") and isinstance(
+                result.syft_action_data, Err
+            ):
+                status = Status.ERRORED
+                job_status = JobStatus.ERRORED
         elif isinstance(result, SyftError) or isinstance(result, Err):
             status = Status.ERRORED
             job_status = JobStatus.ERRORED
+
+        else:
+            raise Exception(f"Unknown result type: {type(result)}")
     except Exception as e:  # nosec
         status = Status.ERRORED
         job_status = JobStatus.ERRORED

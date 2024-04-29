@@ -1,12 +1,19 @@
 # stdlib
+from secrets import token_hex
 from textwrap import dedent
+
+# third party
+import pytest
+from result import Err
 
 # syft absolute
 import syft
 import syft as sy
+from syft.abstract_node import NodeSideType
 from syft.client.domain_client import DomainClient
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve_single
+from syft.node.worker import Worker
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 
@@ -82,64 +89,74 @@ def test_diff_state(low_worker, high_worker):
     assert res == compute(blocking=True).get()
 
 
-@sy.mock_api_endpoint()
-def mock_function(context) -> str:
-    return -42
-
-
-@sy.private_api_endpoint()
-def private_function(context) -> str:
-    return 42
-
-
-def test_twin_api_integration(low_worker, high_worker):
-    low_client = low_worker.root_client
-    high_client = high_worker.root_client
+def test_sync_with_error(low_worker, high_worker):
+    """Check syncing with an error in a syft function"""
+    low_client: DomainClient = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
+    high_client: DomainClient = high_worker.root_client
 
-    new_endpoint = sy.TwinAPIEndpoint(
-        path="testapi.query",
-        private_function=private_function,
-        mock_function=mock_function,
-        description="",
-    )
-    high_client.api.services.api.add(endpoint=new_endpoint)
-    high_client.refresh()
-    high_private_res = high_client.api.services.testapi.query.private()
-    assert high_private_res == 42
-
-    diff_before, diff_after = compare_and_resolve(
-        from_client=high_client, to_client=low_client
-    )
-
-    client_low_ds.refresh()
-    low_private_res = client_low_ds.api.services.testapi.query.private()
-    assert isinstance(
-        low_private_res, SyftError
-    ), "Should not have access to private on low side"
-    low_mock_res = client_low_ds.api.services.testapi.query.mock()
-    high_mock_res = high_client.api.services.testapi.query.mock()
-    assert low_mock_res == high_mock_res == -42
-
-    @syft.syft_function_single_use(
-        query=client_low_ds.api.services.testapi.query,
-    )
-    def compute(query):
-        return query()
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        assert False
+        return 42
 
     compute.code = dedent(compute.code)
+
     _ = client_low_ds.code.request_code_execution(compute)
 
-    diff_before, diff_after = compare_and_resolve(
+    diff_state_before, diff_state_after = compare_and_resolve(
         from_client=low_client, to_client=high_client
     )
 
-    job_high = high_client.code.compute(query=high_client.api.services.testapi.query)
-    high_client.requests[0].accept_by_depositing_result(job_high)
-    diff_before, diff_after = compare_and_resolve(
+    assert not diff_state_before.is_same
+
+    assert diff_state_after.is_same
+
+    run_and_accept_result(high_client)
+    diff_state_before, diff_state_after = compare_and_resolve(
         from_client=high_client, to_client=low_client
     )
+
+    assert not diff_state_before.is_same
+    assert diff_state_after.is_same
+
     client_low_ds.refresh()
-    res = client_low_ds.code.compute(query=client_low_ds.api.services.testapi.query)
-    assert res.syft_action_data == high_client.api.services.testapi.query.private()
-    assert diff_after.is_same
+    res = client_low_ds.code.compute(blocking=True)
+    assert isinstance(res.get(), Err)
+
+
+def test_ignore_unignore_single(low_worker, high_worker):
+    low_client: DomainClient = low_worker.root_client
+    client_low_ds = get_ds_client(low_client)
+    high_client: DomainClient = high_worker.root_client
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        return 42
+
+    compute.code = dedent(compute.code)
+
+    _ = client_low_ds.code.request_code_execution(compute)
+
+    diff = compare_clients(low_client, high_client)
+
+    assert len(diff.batches) == 2  # Request + UserCode
+    assert len(diff.ignored_batches) == 0
+
+    # Ignore usercode, request also gets ignored
+    res = diff[0].ignore()
+    assert isinstance(res, SyftSuccess)
+
+    diff = compare_clients(low_client, high_client)
+    assert len(diff.batches) == 0
+    assert len(diff.ignored_batches) == 2
+    assert len(diff.all_batches) == 2
+
+    # Unignore usercode
+    res = diff.ignored_batches[0].unignore()
+    assert isinstance(res, SyftSuccess)
+
+    diff = compare_clients(low_client, high_client)
+    assert len(diff.batches) == 1
+    assert len(diff.ignored_batches) == 1
+    assert len(diff.all_batches) == 2
