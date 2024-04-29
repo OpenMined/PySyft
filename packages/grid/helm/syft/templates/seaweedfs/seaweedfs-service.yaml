@@ -12,11 +12,15 @@ spec:
     {{- include "common.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: seaweedfs
   ports:
-    - name: filer
+    - name: master-api
+      protocol: TCP
+      port: 9333
+      targetPort: 9333
+    - name: filer-ui
       protocol: TCP
       port: 8888
       targetPort: 8888
-    - name: s3
+    - name: s3-api
       protocol: TCP
       port: 8333
       targetPort: 8333

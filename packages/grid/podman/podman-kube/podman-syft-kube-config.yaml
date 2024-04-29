@@ -26,10 +26,10 @@ data:
   DOCKER_IMAGE_FRONTEND: openmined/grid-frontend
   DOCKER_IMAGE_SEAWEEDFS: openmined/grid-seaweedfs
   DOCKER_IMAGE_TRAEFIK: traefik
-  TRAEFIK_VERSION: v2.8.1
+  TRAEFIK_VERSION: v2.11.0
   REDIS_VERSION: 6.2
   RABBITMQ_VERSION: 3
-  VERSION: 0.8.7-beta.0
+  VERSION: 0.8.7-beta.7
   VERSION_HASH: unknown
   STACK_API_KEY: ""
 
@@ -65,7 +65,6 @@ data:
   S3_ROOT_PWD: "admin"
   S3_REGION: "us-east-1"
   S3_PRESIGNED_TIMEOUT_SECS: 1800
-  S3_VOLUME_SIZE_MB: 1024
 
   # Jax
   JAX_ENABLE_X64: True

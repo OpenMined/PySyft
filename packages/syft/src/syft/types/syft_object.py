@@ -66,12 +66,14 @@ SYFT_OBJECT_VERSION_1 = 1
 SYFT_OBJECT_VERSION_2 = 2
 SYFT_OBJECT_VERSION_3 = 3
 SYFT_OBJECT_VERSION_4 = 4
+SYFT_OBJECT_VERSION_5 = 5
 
 supported_object_versions = [
     SYFT_OBJECT_VERSION_1,
     SYFT_OBJECT_VERSION_2,
     SYFT_OBJECT_VERSION_3,
     SYFT_OBJECT_VERSION_4,
+    SYFT_OBJECT_VERSION_5,
 ]
 
 HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
@@ -419,6 +421,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         None  # show these in html repr of an object
     )
     __validate_private_attrs__: ClassVar[bool] = True
+    __table_coll_widths__: ClassVar[list[str] | None] = None
 
     def __syft_get_funcs__(self) -> list[tuple[str, Signature]]:
         funcs = print_type_cache[type(self)]
@@ -855,6 +858,17 @@ def get_repr_values_table(
     return df.to_dict("records")  # type: ignore
 
 
+def _get_grid_template_columns(first_value: Any) -> tuple[str | None, str | None]:
+    grid_template_cols = getattr(first_value, "__table_coll_widths__", None)
+    if isinstance(grid_template_cols, list):
+        grid_template_columns = " ".join(grid_template_cols)
+        grid_template_cell_columns = "unset"
+    else:
+        grid_template_columns = None
+        grid_template_cell_columns = None
+    return grid_template_columns, grid_template_cell_columns
+
+
 def list_dict_repr_html(self: Mapping | Set | Iterable) -> str:
     try:
         max_check = 1
@@ -896,11 +910,7 @@ def list_dict_repr_html(self: Mapping | Set | Iterable) -> str:
             # this is a list of dicts
             is_homogenous = len({type(x) for x in values}) == 1
             # third party
-            first_value = values[0]
-            if is_homogenous:
-                cls_name = first_value.__class__.__name__
-            else:
-                cls_name = ""
+
             try:
                 vals = get_repr_values_table(
                     self, is_homogenous, extra_fields=extra_fields
@@ -908,10 +918,23 @@ def list_dict_repr_html(self: Mapping | Set | Iterable) -> str:
             except Exception:
                 return str(self)
 
+            first_value = values[0]
+            if is_homogenous:
+                cls_name = first_value.__class__.__name__
+                grid_template_columns, grid_template_cell_columns = (
+                    _get_grid_template_columns(first_value)
+                )
+            else:
+                cls_name = ""
+                grid_template_columns = None
+                grid_template_cell_columns = None
+
             return create_table_template(
                 vals,
                 f"{cls_name} {self.__class__.__name__.capitalize()}",
                 table_icon=table_icon,
+                grid_template_columns=grid_template_columns,
+                grid_template_cell_columns=grid_template_cell_columns,
             )
 
     except Exception as e:
