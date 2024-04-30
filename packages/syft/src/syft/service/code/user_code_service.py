@@ -402,7 +402,13 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, user_code: UserCode
     ) -> bool:
         """This is a temporary fix that is needed until every function is always just ran as job"""
-        if user_code.worker_pool_name is not None and context.is_blocking_api_call:
+        # relative
+        from ...node.node import get_default_worker_pool_name
+
+        has_custom_worker_pool = (
+            user_code.worker_pool_name is not None
+        ) and user_code.worker_pool_name != get_default_worker_pool_name()
+        if has_custom_worker_pool and context.is_blocking_api_call:
             return False
         else:
             return True
