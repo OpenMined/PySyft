@@ -1,0 +1,9 @@
+include tox.ini
+include tests/*.py
+include *.rst
+include *.txt
+include AUTHORS
+include Changelog
+include LICENSE
+include Makefile
+recursive-include tests *.json
