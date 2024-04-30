@@ -31,7 +31,7 @@ from ..service.user.user_roles import ServiceRole
 from ..types.blob_storage import BlobFile
 from ..types.uid import UID
 from ..util.assets import load_png_base64
-from ..util.notebook_ui.fonts import FONT_CSS
+from ..util.notebook_ui.styles import FONT_CSS
 from ..util.util import get_mb_size
 from ..util.util import prompt_warning_message
 from .api import APIModule

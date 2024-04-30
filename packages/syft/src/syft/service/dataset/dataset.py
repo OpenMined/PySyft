@@ -34,9 +34,9 @@ from ...util.colors import ON_SURFACE_HIGHEST
 from ...util.colors import SURFACE
 from ...util.colors import SURFACE_SURFACE
 from ...util.markdown import as_markdown_python_code
-from ...util.notebook_ui.fonts import FONT_CSS
-from ...util.notebook_ui.fonts import ITABLES_CSS
 from ...util.notebook_ui.icons import Icon
+from ...util.notebook_ui.styles import FONT_CSS
+from ...util.notebook_ui.styles import ITABLES_CSS
 from ...util.util import get_mb_size
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate

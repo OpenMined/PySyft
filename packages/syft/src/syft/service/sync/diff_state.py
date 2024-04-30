@@ -33,9 +33,9 @@ from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.notebook_ui.components.sync import SyncTableObject
-from ...util.notebook_ui.fonts import FONT_CSS
-from ...util.notebook_ui.fonts import ITABLES_CSS
 from ...util.notebook_ui.icons import Icon
+from ...util.notebook_ui.styles import FONT_CSS
+from ...util.notebook_ui.styles import ITABLES_CSS
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission

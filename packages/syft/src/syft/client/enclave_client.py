@@ -20,7 +20,7 @@ from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
 from ..util.assets import load_png_base64
-from ..util.notebook_ui.fonts import FONT_CSS
+from ..util.notebook_ui.styles import FONT_CSS
 from .api import APIModule
 from .client import SyftClient
 from .client import login
