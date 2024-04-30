@@ -35,6 +35,7 @@ from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
 from ..metadata.node_metadata import NodeMetadataV3
 from ..request.request import Request
+from ..request.request import RequestStatus
 from ..request.request import SubmitRequest
 from ..request.request_service import RequestService
 from ..response import SyftError
@@ -62,7 +63,7 @@ OrderByNamePartitionKey = PartitionKey(key="name", type_=str)
 @serializable()
 class NodePeerAssociationStatus(Enum):
     PEER_ASSOCIATED = "PEER_ASSOCIATED"
-    ASSOCIATION_PENDING = "PEER_ASSOCIATION_PENDING"
+    PEER_ASSOCIATION_PENDING = "PEER_ASSOCIATION_PENDING"
     PEER_NOT_FOUND = "PEER_NOT_FOUND"
 
 
@@ -292,18 +293,35 @@ class NetworkService(AbstractService):
         if peer.is_err():
             return SyftError(message=f"Failed to query peer from stash: {peer.err()}")
 
-        # TODO (PR: Healthchecks): Checks requests for pending association requests
-        # once association requests are implemented
-        # Get the list of all requests
-        # Filter the request by checking if AssociationRequestChange is present as
-        # one of the Change in the changes list
-        # If change is present, then check if request `status` is pending
-        # then return PEER_ASSOCIATION_PENDING
+        if isinstance(peer.ok(), NodePeer):
+            return NodePeerAssociationStatus.PEER_ASSOCIATED
 
         if peer.ok() is None:
-            return NodePeerAssociationStatus.PEER_NOT_FOUND
+            # 2 cases: Either the peer is pending or it's not trying to connect (not found)
+            # First case: Check if peer is pending
+            # Get the list of all requests
+            request_get_all_method: Callable = context.node.get_service_method(
+                RequestService.get_all
+            )
+            all_requests: list[Request] = request_get_all_method(context)
+            # Then, filter the requests by checking if any AssociationRequestChange from the
+            # peer is present as one of the changes in the request's changes list
+            association_requests = []
+            for request in all_requests:
+                for change in request.changes:
+                    if (
+                        isinstance(change, AssociationRequestChange)
+                        and change.remote_peer.id == peer_id
+                    ):
+                        association_requests.append(request)
+            # Check if the all the association requests have a status of "pending"
+            if association_requests and all(
+                request.status == RequestStatus.PENDING
+                for request in association_requests
+            ):
+                return NodePeerAssociationStatus.PEER_ASSOCIATION_PENDING
 
-        return NodePeerAssociationStatus.PEER_ASSOCIATED
+        return NodePeerAssociationStatus.PEER_NOT_FOUND
 
     @service_method(
         path="network.get_all_peers", name="get_all_peers", roles=GUEST_ROLE_LEVEL
@@ -370,6 +388,7 @@ class NetworkService(AbstractService):
         result = self.stash.delete_by_uid(context.credentials, uid)
         if result.is_err():
             return SyftError(message=str(result.err()))
+        # TODO: delete all the association requests associated with this peer
         # TODO: Notify the peer (either by email or by other form of notifications)
         # that it has been deleted from the network
         return SyftSuccess(message=f"Node Peer with id {uid} Deleted")

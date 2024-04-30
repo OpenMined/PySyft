@@ -365,9 +365,6 @@ def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
-    # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
-    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
     # Enable automatic acceptance of association requests
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
@@ -501,8 +498,8 @@ def test_add_route_on_peer(set_env_var, gateway_port: int, domain_1_port: int) -
     )
 
     # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
-    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+    _remove_existing_peers(domain_client)
+    _remove_existing_peers(gateway_client)
 
     # Enable automatic acceptance of association requests
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
@@ -644,9 +641,9 @@ def test_update_route_priority(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
-    # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
-    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+    # Try remove existing peers
+    _remove_existing_peers(domain_client)
+    _remove_existing_peers(gateway_client)
 
     # Enable automatic acceptance of association requests
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
@@ -716,8 +713,8 @@ def test_update_route_priority_on_peer(
     )
 
     # Remove existing peers
-    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
-    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+    _remove_existing_peers(domain_client)
+    _remove_existing_peers(gateway_client)
 
     # Enable automatic acceptance of association requests
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
@@ -786,6 +783,10 @@ def test_dataset_stream(set_env_var, gateway_port: int, domain_1_port: int) -> N
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
+    # Remove existing peers just to make sure
+    _remove_existing_peers(domain_client)
+    _remove_existing_peers(gateway_client)
+
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
@@ -820,6 +821,10 @@ def test_dataset_stream(set_env_var, gateway_port: int, domain_1_port: int) -> N
     # the domain client delete the dataset
     domain_client.api.services.dataset.delete_by_uid(uid=retrieved_dataset.id)
 
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
 
 def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -> None:
     """
@@ -838,6 +843,10 @@ def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
+    # Try removing existing peers just to make sure
+    _remove_existing_peers(domain_client)
+    _remove_existing_peers(gateway_client)
+
     # gateway checks that the domain is not yet associated
     res = gateway_client.api.services.network.check_peer_association(
         peer_id=UID(domain_client.metadata.id)
@@ -845,12 +854,33 @@ def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -
     assert isinstance(res, NodePeerAssociationStatus)
     assert res.value == "PEER_NOT_FOUND"
 
-    # connecting the domain to the gateway
+    # the domain tries to connect to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
     assert isinstance(result, Request)
     assert isinstance(result.changes[0], AssociationRequestChange)
 
-    # the gateway client approves the association request
+    # check that the peer's association request is pending
+    res = gateway_client.api.services.network.check_peer_association(
+        peer_id=UID(domain_client.metadata.id)
+    )
+    assert isinstance(res, NodePeerAssociationStatus)
+    assert res.value == "PEER_ASSOCIATION_PENDING"
+
+    # the domain tries to connect to the gateway (again)
+    result = domain_client.connect_to_gateway(gateway_client)
+    assert isinstance(result, Request)
+    assert isinstance(result.changes[0], AssociationRequestChange)
+    # there should be 2 association requests from the domain
+    assert len(gateway_client.api.services.request.get_all()) == 2
+
+    # check again that the peer's association request is still pending
+    res = gateway_client.api.services.network.check_peer_association(
+        peer_id=UID(domain_client.metadata.id)
+    )
+    assert isinstance(res, NodePeerAssociationStatus)
+    assert res.value == "PEER_ASSOCIATION_PENDING"
+
+    # the gateway client approves one of the association requests
     res = gateway_client.api.services.request.get_all()[-1].approve()
     assert not isinstance(res, SyftError)
     assert len(gateway_client.peers) == 1
@@ -861,3 +891,7 @@ def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -
     )
     assert isinstance(res, NodePeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATED"
+
+    # Remove existing peers
+    assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
+    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
