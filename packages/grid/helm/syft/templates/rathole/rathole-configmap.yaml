@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rathole-config
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rathole
+data:
+  myserver.toml: |
+    [server]
+    bind_addr = "0.0.0.0:2333"

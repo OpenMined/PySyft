@@ -25,6 +25,7 @@ vars:
   DOCKER_IMAGE_BACKEND: openmined/grid-backend
   DOCKER_IMAGE_FRONTEND: openmined/grid-frontend
   DOCKER_IMAGE_SEAWEEDFS: openmined/grid-seaweedfs
+  DOCKER_IMAGE_RATHOLE: openmined/grid-rathole
   CONTAINER_REGISTRY: "docker.io"
   VERSION: "0.8.7-beta.2"
   PLATFORM: $(uname -m | grep -q 'arm64' && echo "arm64" || echo "amd64")
@@ -56,6 +57,14 @@ images:
       args: ["--platform", "linux/${PLATFORM}"]
     dockerfile: ./seaweedfs/seaweedfs.dockerfile
     context: ./seaweedfs
+    tags:
+      - dev-${DEVSPACE_TIMESTAMP}
+  rathole:
+    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_RATHOLE}"
+    buildKit:
+      args: ["--platform", "linux/${PLATFORM}"]
+    dockerfile: ./rathole/rathole.dockerfile
+    context: ./rathole
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
 
@@ -109,6 +118,10 @@ dev:
       - path: ./backend/grid:/root/app/grid
       - path: ../syft:/root/app/syft
     ssh: {}
+  rathole:
+    labelSelector:
+      app.kubernetes.io/name: syft
+      app.kubernetes.io/component: rathole
 
 profiles:
   - name: gateway

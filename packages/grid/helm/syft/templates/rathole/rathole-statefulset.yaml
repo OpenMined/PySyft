@@ -34,7 +34,7 @@ spec:
       - name: rathole
         image: {{ .Values.global.registry }}/openmined/grid-rathole:{{ .Values.global.version }}
         imagePullPolicy: Always
-          resources: {{ include "common.resources.set" (dict "resources" .Values.rathole.resources "preset" .Values.rathole.resourcesPreset) | nindent 12 }}
+        resources: {{ include "common.resources.set" (dict "resources" .Values.rathole.resources "preset" .Values.rathole.resourcesPreset) | nindent 12 }}
         env:
             - name: SERVICE_NAME
               value: "rathole"
@@ -65,25 +65,34 @@ spec:
           failureThreshold: 30
         livenessProbe:
           httpGet:
-            path: /ping?probe=livenessProbe
+            path: /?probe=livenessProbe
             port: api-port
           periodSeconds: 15
           timeoutSeconds: 5
           failureThreshold: 3
         volumeMounts:
-          - name: rathole-data
-            mountPath: /data
+          - name: rathole-config
+            mountPath: /app/data/myserver.toml
+            subPath: myserver.toml
             readOnly: false
-          # TODO: Mount the .toml and nginx.conf files
+      terminationGracePeriodSeconds: 5
+      volumes:
+        - name: rathole-config
+          configMap:
+            name: rathole-config
+            # TODO: Mount the .toml and nginx.conf files
 
         # Add any additional container configuration here
         # such as environment variables, volumes, etc.
   volumeClaimTemplates:
   - metadata:
       name: rathole-data
+      labels:
+        {{- include "common.volumeLabels" . | nindent 8 }}
+        app.kubernetes.io/component: rathole
     spec:
-      accessModes: [ "ReadWriteOnce" ]
+      accessModes:
+      - ReadWriteOnce
       resources:
         requests:
-          storage: {{ .Values.rathole.volumeSize | quote }}
-      storageClassName: {{ .Values.rathole.storageClassName | quote }}
+          storage: 10Mi
