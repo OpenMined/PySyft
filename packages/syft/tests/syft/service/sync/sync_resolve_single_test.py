@@ -1,20 +1,12 @@
-# stdlib
-from secrets import token_hex
-from textwrap import dedent
-
 # third party
-import pytest
 from result import Err
 
 # syft absolute
 import syft
 import syft as sy
-from syft.abstract_node import NodeSideType
 from syft.client.domain_client import DomainClient
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve_single
-from syft.node.worker import Worker
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 
 
@@ -61,8 +53,6 @@ def test_diff_state(low_worker, high_worker):
     def compute() -> int:
         return 42
 
-    compute.code = dedent(compute.code)
-
     _ = client_low_ds.code.request_code_execution(compute)
 
     diff_state_before, diff_state_after = compare_and_resolve(
@@ -100,8 +90,6 @@ def test_sync_with_error(low_worker, high_worker):
         assert False
         return 42
 
-    compute.code = dedent(compute.code)
-
     _ = client_low_ds.code.request_code_execution(compute)
 
     diff_state_before, diff_state_after = compare_and_resolve(
@@ -133,8 +121,6 @@ def test_ignore_unignore_single(low_worker, high_worker):
     @sy.syft_function_single_use()
     def compute() -> int:
         return 42
-
-    compute.code = dedent(compute.code)
 
     _ = client_low_ds.code.request_code_execution(compute)
 

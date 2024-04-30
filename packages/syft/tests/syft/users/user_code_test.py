@@ -308,7 +308,6 @@ def test_mock_no_arguments(worker) -> None:
     def compute_sum():
         return 1
 
-    compute_sum.code = dedent(compute_sum.code)
     ds_client.api.services.code.request_code_execution(compute_sum)
 
     # no accept_by_depositing_result, no mock execution
