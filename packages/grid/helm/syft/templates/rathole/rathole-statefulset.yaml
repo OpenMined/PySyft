@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rathole
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rathole
+spec:
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: rathole
+  serviceName: rathole
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+        app.kubernetes.io/component: rathole
+        {{- if .Values.rathole.podLabels }}
+        {{- toYaml .Values.rathole.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.rathole.podAnnotations }}
+      annotations: {{- toYaml .Values.rathole.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.rathole.nodeSelector }}
+      nodeSelector: {{- .Values.rathole.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: rathole
+        image: {{ .Values.global.registry }}/openmined/grid-rathole:{{ .Values.global.version }}
+        imagePullPolicy: Always
+          resources: {{ include "common.resources.set" (dict "resources" .Values.rathole.resources "preset" .Values.rathole.resourcesPreset) | nindent 12 }}
+        env:
+            - name: SERVICE_NAME
+              value: "rathole"
+            - name: APP_LOG_LEVEL
+              value: {{ .Values.rathole.appLogLevel | quote }}
+            - name: MODE
+              value: {{ .Values.rathole.mode | quote }}
+            - name: DEV_MODE
+              value: {{ .Values.rathole.devMode | quote }}
+            - name: APP_PORT
+              value: {{ .Values.rathole.appPort | quote }}
+            - name: RATHOLE_PORT
+              value: {{ .Values.rathole.ratholePort | quote }}
+            {{- if .Values.rathole.env }}
+            {{- toYaml .Values.rathole.env | nindent 12 }}
+            {{- end }}
+        ports:
+          - name: rathole-port
+            containerPort: 2333
+          - name: api-port
+            containerPort: 5555
+          - name: nginx-port
+            containerPort: 80
+        startupProbe:
+          httpGet:
+            path: /?probe=startupProbe
+            port: api-port
+          failureThreshold: 30
+        livenessProbe:
+          httpGet:
+            path: /ping?probe=livenessProbe
+            port: api-port
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+          - name: rathole-data
+            mountPath: /data
+            readOnly: false
+          # TODO: Mount the .toml and nginx.conf files
+
+        # Add any additional container configuration here
+        # such as environment variables, volumes, etc.
+  volumeClaimTemplates:
+  - metadata:
+      name: rathole-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.rathole.volumeSize | quote }}
+      storageClassName: {{ .Values.rathole.storageClassName | quote }}

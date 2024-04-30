@@ -222,3 +222,27 @@ ingress:
 # =================================================================================
 
 extraResources: []
+
+
+# =================================================================================
+
+rathole:
+  # Extra environment vars
+  env: null
+
+  ratholePort: 2333
+  appPort: 5555
+  mode: "client"
+  devMode: "false"
+  appLogLevel: "info"
+
+  # Pod labels & annotations
+  podLabels: null
+  podAnnotations: null
+
+  # Node selector for pods
+  nodeSelector: null
+
+  # Pod Resource Limits
+  resourcesPreset: small
+  resources: null
