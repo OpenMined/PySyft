@@ -1115,15 +1115,8 @@ class Node(AbstractNode):
                 # relative
                 from ..store.blob_storage import BlobRetrievalByURL
 
-                # In the case of blob storage, the gateway downloads the result and then passes it to
-                # the proxy client
                 if isinstance(result, BlobRetrievalByURL):
-                    blob_route = client.api.connection.to_blob_route(
-                        result.url.url_path
-                    )
-                    result.url = blob_route
-                    final_res = result.read()
-                    return final_res
+                    result.proxy_node_uid = peer.id
 
             return result
 
@@ -1252,7 +1245,14 @@ class Node(AbstractNode):
             has_execute_permissions=True,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
-        return self.add_queueitem_to_queue(queue_item, credentials, None, None)
+
+        action = Action.from_api_endpoint_execution()
+        return self.add_queueitem_to_queue(
+            queue_item,
+            credentials,
+            action,
+            None,
+        )
 
     def add_action_to_queue(
         self,
