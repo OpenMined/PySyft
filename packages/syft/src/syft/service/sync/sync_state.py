@@ -19,9 +19,9 @@ from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
-from ...util.fonts import FONT_CSS
-from ...util.fonts import ITABLES_CSS
 from ...util.notebook_ui.components.sync import SyncTableObject
+from ...util.notebook_ui.styles import FONT_CSS
+from ...util.notebook_ui.styles import ITABLES_CSS
 from ..context import AuthedServiceContext
 
 
