@@ -1,5 +1,5 @@
 # stdlib
-from textwrap import dedent
+import os
 from time import sleep
 
 # third party
@@ -11,11 +11,17 @@ import pytest
 import syft as sy
 from syft.client.domain_client import DomainClient
 from syft.custom_worker.config import DockerWorkerConfig
+from syft.node.node import get_default_worker_tag_by_env
 from syft.service.request.request import Request
 from syft.service.response import SyftSuccess
 from syft.service.worker.worker_image import SyftWorkerImage
 from syft.service.worker.worker_pool import SyftWorker
 from syft.service.worker.worker_pool import WorkerPool
+
+SYFT_BASE_TAG = get_default_worker_tag_by_env()
+hagrid_flags = os.getenv("HAGRID_FLAGS")
+if hagrid_flags:
+    SYFT_BASE_TAG = get_default_worker_tag_by_env(dev_mode=True)
 
 
 @pytest.mark.container_workload
@@ -24,11 +30,9 @@ def test_image_build(domain_1_port) -> None:
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
-    syft_base_tag = sy.__version__
-
     # Submit Docker Worker Config
     docker_config_rl = f"""
-        FROM openmined/grid-backend:{syft_base_tag}
+        FROM openmined/grid-backend:{SYFT_BASE_TAG}
         RUN pip install recordlinkage
     """
     docker_config = DockerWorkerConfig(dockerfile=docker_config_rl)
@@ -50,6 +54,7 @@ def test_image_build(domain_1_port) -> None:
     docker_build_result = domain_client.api.services.worker_image.build(
         image_uid=workerimage.id,
         tag=docker_tag,
+        pull=False,
     )
     assert isinstance(docker_build_result, SyftSuccess)
 
@@ -79,11 +84,9 @@ def test_pool_launch(domain_1_port) -> None:
     )
     assert len(domain_client.worker_pools.get_all()) == 1
 
-    syft_base_tag = sy.__version__
-
     # Submit Docker Worker Config
     docker_config_opendp = f"""
-        FROM openmined/grid-backend:{syft_base_tag}
+        FROM openmined/grid-backend:{SYFT_BASE_TAG}
         RUN pip install opendp
     """
     docker_config = DockerWorkerConfig(dockerfile=docker_config_opendp)
@@ -105,6 +108,7 @@ def test_pool_launch(domain_1_port) -> None:
     docker_build_result = domain_client.api.services.worker_image.build(
         image_uid=worker_image.id,
         tag=docker_tag,
+        pull=False,
     )
     assert isinstance(docker_build_result, SyftSuccess)
 
@@ -181,12 +185,9 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     assert isinstance(res, SyftSuccess)
     ds_client = sy.login(email=ds_email, password="secret_pw", port=domain_1_port)
 
-    syft_base_tag = sy.__version__
-
     # the DS makes a request to create an image and a pool based on the image
-
     docker_config_np = f"""
-        FROM openmined/grid-backend:{syft_base_tag}
+        FROM openmined/grid-backend:{SYFT_BASE_TAG}
         RUN pip install numpy
     """
     docker_config = DockerWorkerConfig(dockerfile=docker_config_np)
@@ -200,6 +201,7 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
         tag=docker_tag,
         config=docker_config,
         reason="I want to do some more cool data science with PySyft and Recordlinkage",
+        pull_image=False,
     )
     assert isinstance(request, Request)
     assert len(request.changes) == 2
@@ -247,7 +249,6 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     def custom_worker_func(x):
         return {"y": x + 1}
 
-    custom_worker_func.code = dedent(custom_worker_func.code)
     assert custom_worker_func.worker_pool_name == launched_pool.name
     # Request code execution
     code_request = ds_client.code.request_code_execution(custom_worker_func)

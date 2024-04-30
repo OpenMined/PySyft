@@ -384,9 +384,7 @@ class UserCodeService(AbstractService):
     def is_execution_on_owned_args(
         self, kwargs: dict[str, Any], context: AuthedServiceContext
     ) -> bool:
-        return bool(kwargs) and len(self.keep_owned_kwargs(kwargs, context)) == len(
-            kwargs
-        )
+        return len(self.keep_owned_kwargs(kwargs, context)) == len(kwargs)
 
     @service_method(path="code.call", name="call", roles=GUEST_ROLE_LEVEL)
     def call(
@@ -417,7 +415,12 @@ class UserCodeService(AbstractService):
             # Set Permissions
             if self.is_execution_on_owned_args(kwargs, context):
                 if self.is_execution_on_owned_args_allowed(context):
+                    # handles the case: if we have 1 or more owned args and execution permission
+                    # handles the case: if we have 0 owned args and execution permission
                     context.has_execute_permissions = True
+                elif len(kwargs) == 0:
+                    # handles the case: if we have 0 owned args and execution permission
+                    pass
                 else:
                     return Err(
                         "You do not have the permissions for mock execution, please contact the admin"
@@ -547,7 +550,7 @@ class UserCodeService(AbstractService):
                 return Ok(result)
             elif result.syft_action_data_type is Err:
                 # result contains the error but the request was handled correctly
-                return result.syft_action_data
+                return Ok(result)
             elif has_result_read_permission:
                 return Ok(result)
             else:

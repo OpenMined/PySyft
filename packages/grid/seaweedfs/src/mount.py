@@ -81,11 +81,16 @@ def mount_bucket(
         check=True,
         capture_output=True,
     )
-    logger.info(
-        f"Mount {opts.remote_bucket.bucket_name} configured.",
-        f'stdout="{proc.stdout!r}"',
-        f'stderr="{proc.stderr!r}"',
-    )
+    # weed shell will be successful, but the internal command might throw error
+    if b"error" in proc.stdout or b"error" in proc.stderr:
+        raise subprocess.CalledProcessError(
+            proc.returncode,
+            proc.args,
+            output=proc.stdout,
+            stderr=proc.stderr,
+        )
+
+    logger.info(f"Mount {opts.remote_bucket.bucket_name} configured.")
 
     # create sync command
     sync_cmd = create_sync_cmd(opts.local_bucket)
@@ -109,11 +114,7 @@ def mount_bucket(
         check=True,
         capture_output=True,
     )
-    logger.info(
-        "Supervisor updated.",
-        f'stdout="{proc.stdout!r}"',
-        f'stderr="{proc.stderr!r}"',
-    )
+    logger.info("Supervisor updated. stdout=%s stderr=%s", proc.stdout, proc.stderr)
 
     return {"name": swfs_config_name, "path": mount_conf_dir}
 

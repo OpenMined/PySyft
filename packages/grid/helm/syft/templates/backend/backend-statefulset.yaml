@@ -73,6 +73,8 @@ spec:
               value: "{{ .Values.global.registry }}/openmined/grid-backend:{{ .Values.global.version }}"
             - name: DEFAULT_WORKER_POOL_COUNT
               value: {{ .Values.node.defaultWorkerPoolCount | quote }}
+            - name: USE_INTERNAL_REGISTRY
+              value: {{ .Values.node.useInternalRegistry | quote }}
             {{- if .Values.node.defaultBucketName }}
             - name: DEFAULT_BUCKET_NAME
               value: {{ .Values.node.defaultBucketName | quote }}
@@ -80,6 +82,8 @@ spec:
             {{- if .Values.node.debuggerEnabled }}
             - name: DEBUGGER_ENABLED
               value: "true"
+            - name: ASSOCIATION_REQUEST_AUTO_APPROVAL
+              value: {{ .Values.node.associationRequestAutoApproval | quote }}
             {{- end }}
             # MongoDB
             - name: MONGO_PORT
@@ -123,6 +127,11 @@ spec:
               value: "localhost"
             - name: JAEGER_PORT
               value: "14268"
+            # Enclave attestation
+            {{- if .Values.attestation.enabled }}
+            - name: ENCLAVE_ATTESTATION_ENABLED
+              value: {{ .Values.attestation.enabled | quote }}
+            {{- end }}
             {{- if .Values.node.env }}
             {{- toYaml .Values.node.env | nindent 12 }}
             {{- end }}
@@ -148,6 +157,53 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe: null
+        {{- if .Values.attestation.enabled }}
+        - name: enclave-attestation
+          image: {{ .Values.global.registry }}/openmined/grid-enclave-attestation:{{ .Values.global.version }}
+          imagePullPolicy: Always
+          resources: {{ include "common.resources.set" (dict "resources" .Values.attestation.resources "preset" .Values.attestation.resourcesPreset) | nindent 12 }}
+          env:
+            - name: UVICORN_LOG_LEVEL
+              value: {{ .Values.attestation.uvicornLogLevel }}
+            - name: APP_LOG_LEVEL
+              value: {{ .Values.attestation.appLogLevel }}
+            {{- if .Values.attestation.env }}
+            {{- toYaml .Values.attestation.env | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: kernel-security
+              mountPath: /sys/kernel/security
+            - name: tpm-device
+              mountPath: /dev/tpmrm0
+          securityContext:
+            privileged: true
+          ports:
+            - name: attestation-api
+              containerPort: 4455
+          startupProbe:
+            httpGet:
+              path: /?probe=startupProbe
+              port: attestation-api
+            failureThreshold: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /?probe=livenessProbe
+              port: attestation-api
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe: null
+        {{ end }}
+      {{- if .Values.attestation.enabled }}
+      volumes:
+        - name: kernel-security
+          hostPath:
+            path: /sys/kernel/security
+        - name: tpm-device
+          hostPath:
+            path: /dev/tpmrm0
+      {{- end }}
       serviceAccountName: backend-service-account
       terminationGracePeriodSeconds: 5
   volumeClaimTemplates:

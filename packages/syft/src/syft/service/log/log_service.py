@@ -8,6 +8,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ..action.action_permissions import StoragePermission
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -134,9 +135,8 @@ class LogService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def has_storage_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
-        result = self.stash.has_storage_permission(
-            uid,
-        )
+        permission = StoragePermission(uid=uid, node_uid=context.node.id)
+        result = self.stash.has_storage_permission(permission)
 
         return result
 

@@ -1,5 +1,4 @@
 # stdlib
-from textwrap import dedent
 import uuid
 
 # third party
@@ -87,7 +86,8 @@ def test_duplicated_user_code(worker, guest_client: User) -> None:
     assert len(guest_client.code.get_all()) == 1
 
     # request the a different function name but same content will also succeed
-    mock_syft_func_2()
+    # flaky if not blocking
+    mock_syft_func_2(blocking=True)
     result = guest_client.api.services.code.request_code_execution(mock_syft_func_2)
     assert isinstance(result, Request)
     assert len(guest_client.code.get_all()) == 2
@@ -128,8 +128,6 @@ def test_scientist_can_list_code_assets(worker: sy.Worker, faker: Faker) -> None
     @sy.syft_function_single_use(asset=asset_input)
     def func(asset):
         return 0
-
-    func.code = dedent(func.code)
 
     request = guest_client.code.request_code_execution(func)
     assert not isinstance(request, sy.SyftError)
@@ -213,7 +211,6 @@ def test_user_code_mock_execution(worker) -> None:
     def compute_mean(data):
         return data.mean()
 
-    compute_mean.code = dedent(compute_mean.code)
     ds_client.api.services.code.request_code_execution(compute_mean)
 
     # Guest attempts to set own permissions
@@ -271,7 +268,6 @@ def test_mock_multiple_arguments(worker) -> None:
     def compute_sum(data1, data2):
         return data1 + data2
 
-    compute_sum.code = dedent(compute_sum.code)
     ds_client.api.services.code.request_code_execution(compute_sum)
     root_domain_client.requests[-1].approve()
 
@@ -290,3 +286,46 @@ def test_mock_multiple_arguments(worker) -> None:
     # Mixed execution fails, no result from cache
     result = ds_client.api.services.code.compute_sum(data1=1, data2=data)
     assert isinstance(result, SyftError)
+
+
+def test_mock_no_arguments(worker) -> None:
+    root_domain_client = worker.root_client
+
+    root_domain_client.register(
+        name="data-scientist",
+        email="test_user@openmined.org",
+        password="0000",
+        password_verify="0000",
+    )
+    ds_client = root_domain_client.login(
+        email="test_user@openmined.org",
+        password="0000",
+    )
+
+    users = root_domain_client.users.get_all()
+
+    @sy.syft_function_single_use()
+    def compute_sum():
+        return 1
+
+    ds_client.api.services.code.request_code_execution(compute_sum)
+
+    # no accept_by_depositing_result, no mock execution
+    result = ds_client.api.services.code.compute_sum()
+    assert isinstance(result, SyftError)
+
+    # no accept_by_depositing_result, mock execution
+    users[-1].allow_mock_execution()
+    result = ds_client.api.services.code.compute_sum()
+    assert result.get() == 1
+
+    # accept_by_depositing_result, no mock execution
+    users[-1].allow_mock_execution(allow=False)
+    message = root_domain_client.notifications[-1]
+    request = message.link
+    user_code = request.changes[0].code
+    result = user_code.unsafe_function()
+    request.accept_by_depositing_result(result)
+
+    result = ds_client.api.services.code.compute_sum()
+    assert result.get() == 1
