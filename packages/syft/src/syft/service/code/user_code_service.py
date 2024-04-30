@@ -398,6 +398,15 @@ class UserCodeService(AbstractService):
         else:
             return result.ok()
 
+    def valid_worker_pool_for_context(
+        self, context: AuthedServiceContext, user_code: UserCode
+    ) -> bool:
+        """This is a temporary fix that is needed until every function is always just ran as job"""
+        if user_code.worker_pool_name is not None and context.is_blocking_api_call:
+            return False
+        else:
+            return True
+
     def _call(
         self,
         context: AuthedServiceContext,
@@ -411,6 +420,13 @@ class UserCodeService(AbstractService):
             if code_result.is_err():
                 return code_result
             code: UserCode = code_result.ok()
+
+            if not self.valid_worker_pool_for_context(context, code):
+                return Err(
+                    value="You tried to run a syft function attached to a worker pool in blocking mode,"
+                    "which is currently not supported. Run your function with `blocking=False` to run"
+                    " as a job on your worker pool"
+                )
 
             # Set Permissions
             if self.is_execution_on_owned_args(kwargs, context):
