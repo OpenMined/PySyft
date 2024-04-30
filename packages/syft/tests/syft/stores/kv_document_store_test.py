@@ -44,12 +44,10 @@ def test_kv_store_partition_init_failed(root_verify_key) -> None:
     store_config = MockStoreConfig(is_crashed=True)
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
-    kv_store_partition = KeyValueStorePartition(
-        UID(), root_verify_key, settings=settings, store_config=store_config
-    )
-
-    res = kv_store_partition.init_store()
-    assert res.is_err()
+    with pytest.raises(Exception):
+        kv_store_partition = KeyValueStorePartition(
+            UID(), root_verify_key, settings=settings, store_config=store_config
+        )
 
 
 def test_kv_store_partition_set(
@@ -81,15 +79,10 @@ def test_kv_store_partition_set_backend_fail(root_verify_key) -> None:
     store_config = MockStoreConfig(is_crashed=True)
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
-    kv_store_partition = KeyValueStorePartition(
-        UID(), root_verify_key, settings=settings, store_config=store_config
-    )
-    kv_store_partition.init_store()
-
-    obj = MockSyftObject(data=1)
-
-    res = kv_store_partition.set(root_verify_key, obj, ignore_duplicates=False)
-    assert res.is_err()
+    with pytest.raises(Exception):
+        kv_store_partition = KeyValueStorePartition(
+            UID(), root_verify_key, settings=settings, store_config=store_config
+        )
 
 
 def test_kv_store_partition_delete(
