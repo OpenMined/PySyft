@@ -505,7 +505,10 @@ class UserCode(SyncableSyftObject):
                 raise Exception("output_policy is None during init")
 
         try:
-            return _deserialize(self.output_policy_state, from_bytes=True)
+            output_policy = _deserialize(self.output_policy_state, from_bytes=True)
+            output_policy.syft_node_location = self.syft_node_location
+            output_policy.syft_client_verify_key = self.syft_client_verify_key
+            return output_policy
         except Exception as e:
             print(f"Failed to deserialize custom output policy state. {e}")
             return None
@@ -1486,7 +1489,15 @@ def execute_byte_code(
                 original_print(
                     f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
                 )
-            if context.node is not None:
+            else:
+                # for local execution
+                time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
+                original_print(f"{time} EXCEPTION LOG:\n{error_msg}\n", file=sys.stderr)
+            if (
+                context.node is not None
+                and context.job is not None
+                and context.job.log_id is not None
+            ):
                 log_id = context.job.log_id
                 log_service = context.node.get_service("LogService")
                 log_service.append(context=context, uid=log_id, new_err=error_msg)

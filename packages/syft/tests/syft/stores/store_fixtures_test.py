@@ -18,7 +18,6 @@ from syft.store.dict_document_store import DictDocumentStore
 from syft.store.dict_document_store import DictStoreConfig
 from syft.store.dict_document_store import DictStorePartition
 from syft.store.document_store import PartitionSettings
-from syft.store.locks import FileLockingConfig
 from syft.store.locks import LockingConfig
 from syft.store.locks import NoLockingConfig
 from syft.store.locks import ThreadingLockingConfig
@@ -40,7 +39,6 @@ MONGO_CLIENT_CACHE = None
 
 locking_scenarios = [
     "nop",
-    # "file",  # makes tests pretty unstable
     "threading",
 ]
 
@@ -48,27 +46,10 @@ locking_scenarios = [
 def str_to_locking_config(conf: str) -> LockingConfig:
     if conf == "nop":
         return NoLockingConfig()
-    elif conf == "file":
-        lock_name = token_hex(8) + ".lock"
-        root = os.getenv("SYFT_TEMP_ROOT", "syft")
-        workspace_folder = Path(tempfile.gettempdir(), root, "test_locks")
-        workspace_folder.mkdir(parents=True, exist_ok=True)
-
-        client_path = workspace_folder / lock_name
-
-        return FileLockingConfig(client_path=client_path)
     elif conf == "threading":
         return ThreadingLockingConfig()
     else:
         raise NotImplementedError(f"unknown locking config {conf}")
-
-
-def cleanup_locks(locking_config: LockingConfig):
-    if isinstance(locking_config, FileLockingConfig):
-        try:
-            locking_config.client_path.exists() and locking_config.client_path.unlink()
-        except BaseException as e:
-            print("failed to cleanup file lock", e)
 
 
 @pytest.fixture(scope="function")
@@ -129,8 +110,6 @@ def sqlite_store_partition(
 
     yield store
 
-    cleanup_locks(store.store_config.locking_config)
-
 
 def sqlite_document_store_fn(
     root_verify_key,
@@ -155,7 +134,6 @@ def sqlite_document_store(root_verify_key, sqlite_workspace: tuple[Path, str], r
         root_verify_key, sqlite_workspace, locking_config_name=locking_config_name
     )
     yield store
-    cleanup_locks(store.store_config.locking_config)
 
 
 def sqlite_queue_stash_fn(
@@ -199,8 +177,6 @@ def sqlite_action_store(sqlite_workspace: tuple[Path, str], request):
         root_verify_key=ver_key,
     )
 
-    cleanup_locks(locking_config)
-
 
 def mongo_store_partition_fn(
     mongo_client,
@@ -242,8 +218,6 @@ def mongo_store_partition(root_verify_key, mongo_client, request):
         mongo_client.drop_database(mongo_db_name)
     except BaseException as e:
         print("failed to cleanup mongo fixture", e)
-
-    cleanup_locks(partition.store_config.locking_config)
 
 
 def mongo_document_store_fn(

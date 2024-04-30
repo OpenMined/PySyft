@@ -12,17 +12,19 @@ from syft.client.domain_client import DomainClient
 from syft.client.enclave_client import EnclaveClient
 from syft.client.gateway_client import GatewayClient
 from syft.service.network.node_peer import NodePeer
+from syft.service.request.request import Request
 from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
 
 
-def launch(node_type):
+def launch(node_type: NodeType, association_request_auto_approval: bool = True):
     return sy.orchestra.launch(
         name=token_hex(8),
         node_type=node_type,
         dev_mode=True,
         reset=True,
         local_db=True,
+        association_request_auto_approval=association_request_auto_approval,
     )
 
 
@@ -30,6 +32,14 @@ def launch(node_type):
 def gateway():
     node = launch(NodeType.GATEWAY)
     yield node
+    node.python_node.cleanup()
+    node.land()
+
+
+@pytest.fixture(params=[True, False])
+def gateway_association_request_auto_approval(request: pytest.FixtureRequest):
+    node = launch(NodeType.GATEWAY, association_request_auto_approval=request.param)
+    yield (request.param, node)
     node.python_node.cleanup()
     node.land()
 
@@ -66,7 +76,10 @@ def test_create_gateway_client(gateway):
 
 
 @pytest.mark.local_node
-def test_domain_connect_to_gateway(gateway, domain):
+def test_domain_connect_to_gateway(gateway_association_request_auto_approval, domain):
+    association_request_auto_approval, gateway = (
+        gateway_association_request_auto_approval
+    )
     gateway_client: GatewayClient = gateway.login(
         email="info@openmined.org",
         password="changethis",
@@ -77,7 +90,13 @@ def test_domain_connect_to_gateway(gateway, domain):
     )
 
     result = domain_client.connect_to_gateway(handle=gateway)
-    assert isinstance(result, SyftSuccess)
+
+    if association_request_auto_approval:
+        assert isinstance(result, SyftSuccess)
+    else:
+        assert isinstance(result, Request)
+        r = gateway_client.api.services.request.get_all()[-1].approve()
+        assert isinstance(r, SyftSuccess)
 
     # check priority
     all_peers = gateway_client.api.services.network.get_all_peers()
@@ -85,7 +104,13 @@ def test_domain_connect_to_gateway(gateway, domain):
 
     # Try via client approach
     result_2 = domain_client.connect_to_gateway(via_client=gateway_client)
-    assert isinstance(result_2, SyftSuccess)
+
+    if association_request_auto_approval:
+        assert isinstance(result_2, SyftSuccess)
+    else:
+        assert isinstance(result_2, Request)
+        r = gateway_client.api.services.request.get_all()[-1].approve()
+        assert isinstance(r, SyftSuccess)
 
     assert len(domain_client.peers) == 1
     assert len(gateway_client.peers) == 1

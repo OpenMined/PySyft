@@ -2,6 +2,8 @@
 
 # stdlib
 
+# stdlib
+
 # third party
 from result import Err
 from result import Ok
@@ -53,7 +55,6 @@ class SettingsService(AbstractService):
         self, context: AuthedServiceContext, settings: NodeSettings
     ) -> Result[Ok, Err]:
         """Set a new the Node Settings"""
-        print("Here!")
         result = self.stash.set(context.credentials, settings)
         if result.is_ok():
             return result
@@ -68,7 +69,7 @@ class SettingsService(AbstractService):
         if result.is_ok():
             current_settings = result.ok()
             if len(current_settings) > 0:
-                new_settings = current_settings[0].copy(
+                new_settings = current_settings[0].model_copy(
                     update=settings.to_dict(exclude_empty=True)
                 )
                 update_result = self.stash.update(context.credentials, new_settings)
@@ -138,3 +139,20 @@ class SettingsService(AbstractService):
 
         message = "enabled" if enable else "disabled"
         return SyftSuccess(message=f"Registration feature successfully {message}")
+
+    @service_method(
+        path="settings.allow_association_request_auto_approval",
+        name="allow_association_request_auto_approval",
+    )
+    def allow_association_request_auto_approval(
+        self, context: AuthedServiceContext, enable: bool
+    ) -> SyftSuccess | SyftError:
+        new_settings = NodeSettingsUpdate(association_request_auto_approval=enable)
+        result = self.update(context, settings=new_settings)
+        if result.is_err():
+            return SyftError(message=result.err())
+
+        message = "enabled" if enable else "disabled"
+        return SyftSuccess(
+            message="Association request auto-approval successfully " + message
+        )
