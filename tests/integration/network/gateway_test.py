@@ -843,13 +843,16 @@ def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=False)
+    assert isinstance(res, SyftSuccess)
+
     # Try removing existing peers just to make sure
     _remove_existing_peers(domain_client)
     _remove_existing_peers(gateway_client)
 
     # gateway checks that the domain is not yet associated
     res = gateway_client.api.services.network.check_peer_association(
-        peer_id=UID(domain_client.metadata.id)
+        peer_id=domain_client.id
     )
     assert isinstance(res, NodePeerAssociationStatus)
     assert res.value == "PEER_NOT_FOUND"
@@ -861,7 +864,7 @@ def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -
 
     # check that the peer's association request is pending
     res = gateway_client.api.services.network.check_peer_association(
-        peer_id=UID(domain_client.metadata.id)
+        peer_id=domain_client.id
     )
     assert isinstance(res, NodePeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATION_PENDING"
@@ -875,7 +878,7 @@ def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -
 
     # check again that the peer's association request is still pending
     res = gateway_client.api.services.network.check_peer_association(
-        peer_id=UID(domain_client.metadata.id)
+        peer_id=domain_client.id
     )
     assert isinstance(res, NodePeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATION_PENDING"
@@ -887,7 +890,7 @@ def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -
 
     # the gateway client checks that the peer is associated
     res = gateway_client.api.services.network.check_peer_association(
-        peer_id=gateway_client.peers[0].id
+        peer_id=domain_client.id
     )
     assert isinstance(res, NodePeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATED"
