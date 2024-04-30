@@ -1177,7 +1177,11 @@ class Node(AbstractNode):
 
             role = self.get_role_for_credentials(credentials=credentials)
             context = AuthedServiceContext(
-                node=self, credentials=credentials, role=role, job_id=job_id
+                node=self,
+                credentials=credentials,
+                role=role,
+                job_id=job_id,
+                is_blocking_api_call=is_blocking,
             )
             AuthNodeContextRegistry.set_node_context(self.id, context, credentials)
 
