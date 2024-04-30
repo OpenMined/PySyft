@@ -13,9 +13,9 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import GUEST_ROLE_LEVEL
-from .attestation_endpoints import ATTESTATION_SERVICE_URL
-from .attestation_endpoints import ATTEST_CPU_ENDPOINT
-from .attestation_endpoints import ATTEST_GPU_ENDPOINT
+from .attestation_constants import ATTESTATION_SERVICE_URL
+from .attestation_constants import ATTEST_CPU_ENDPOINT
+from .attestation_constants import ATTEST_GPU_ENDPOINT
 
 
 @serializable()

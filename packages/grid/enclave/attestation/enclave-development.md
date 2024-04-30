@@ -107,7 +107,7 @@ client.attest()
 
 - The attestation container runs inside the backend pod (so backend pod has two containers now). However, in order to run the attestation container, you need to uncomment the attestation flags in `packages/grid/helm/values.dev.yaml`
 - Next, we run the deployment. Since k3d creates an intermediate layer of nesting, we need to mount some volumes from host to k3d registry. Thus, when launching, use the following tox command `tox -e dev.k8s.start -- --volume /sys/kernel/security:/sys/kernel/security --volume /dev/tmprm0:/dev/tmprm0`
-- Finally, note that the GPU privilages/drivers etc. have not been completed so while the GPU attestation endpoints should work, they will not produce the expected tokens. To test the GPU code, follow the steps provided in [For GPU Attestation
+- Finally, note that the GPU privileges/drivers etc. have not been completed so while the GPU attestation endpoints should work, they will not produce the expected tokens. To test the GPU code, follow the steps provided in [For GPU Attestation
   ](#for-gpu-attestation) to look at the tokens.
 
 ### Local Client-side Verification
@@ -115,7 +115,7 @@ client.attest()
 Use the following function to perform local, client-side verification of tokens. They expire quick.
 
 ```python3
-def verify_token(token: str, type: str):
+def verify_token(token: str, token_type: str):
     """
     Verifies a JSON Web Token (JWT) using a public key obtained from a JWKS (JSON Web Key Set) endpoint,
     based on the specified type of token ('cpu' or 'gpu'). The function handles two distinct processes
@@ -156,7 +156,7 @@ def verify_token(token: str, type: str):
 
 
     # Determine JWKS URL based on the token type
-    if type.lower() == "gpu":
+    if token_type.lower() == "gpu":
         jwks_url = 'https://nras.attestation.nvidia.com/.well-known/jwks.json'
     else:
         unverified_header = jwt.get_unverified_header(token)
@@ -176,7 +176,7 @@ def verify_token(token: str, type: str):
         return False
 
     # Convert the key based on the token type
-    if type.lower() == "gpu" and "x5c" in key:
+    if token_type.lower() == "gpu" and "x5c" in key:
         try:
             cert_bytes = base64.b64decode(key['x5c'][0])
             cert = load_der_x509_certificate(cert_bytes)
@@ -184,14 +184,14 @@ def verify_token(token: str, type: str):
         except Exception as e:
             print("Failed to process certificate:", str(e))
             return False
-    elif type.lower() == "cpu":
+    elif token_type.lower() == "cpu":
         try:
             public_key = RSAAlgorithm.from_jwk(key)
         except Exception as e:
             print("Failed to convert JWK to PEM:", str(e))
             return False
     else:
-        print("Invalid type or key information.")
+        print("Invalid token_type or key information.")
         return False
 
     # Verify the JWT using the public key

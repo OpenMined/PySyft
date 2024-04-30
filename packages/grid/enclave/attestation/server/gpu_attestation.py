@@ -8,7 +8,9 @@ import sys
 from loguru import logger
 from nv_attestation_sdk import attestation
 
-NRAS_URL = "https://nras.attestation.nvidia.com/v1/attest/gpu"
+# relative
+# relative imports
+from .attestation_constants import NRAS_URL
 
 
 # Function to process captured output to extract the token
