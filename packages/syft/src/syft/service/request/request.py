@@ -36,7 +36,7 @@ from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import markdown_as_class_with_fields
-from ...util.notebook_ui.notebook_addons import REQUEST_ICON
+from ...util.notebook_ui.icons import Icon
 from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
@@ -511,7 +511,7 @@ class Request(SyncableSyftObject):
 
     @property
     def icon(self) -> str:
-        return REQUEST_ICON
+        return Icon.REQUEST.svg
 
     @property
     def status(self) -> RequestStatus:
@@ -877,6 +877,11 @@ class Request(SyncableSyftObject):
                 return res
 
         job_info.result = action_object
+        job_info.status = (
+            JobStatus.ERRORED
+            if isinstance(action_object.syft_action_data, Err)
+            else JobStatus.COMPLETED
+        )
 
         existing_result = job.result.id if job.result is not None else None
         print(

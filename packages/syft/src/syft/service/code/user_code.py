@@ -14,6 +14,7 @@ from io import StringIO
 import itertools
 import random
 import sys
+from textwrap import dedent
 from threading import Thread
 import time
 import traceback
@@ -966,7 +967,7 @@ def syft_function(
 
     def decorator(f: Any) -> SubmitUserCode:
         res = SubmitUserCode(
-            code=inspect.getsource(f),
+            code=dedent(inspect.getsource(f)),
             func_name=f.__name__,
             signature=inspect.signature(f),
             input_policy_type=input_policy_type,
@@ -1489,7 +1490,15 @@ def execute_byte_code(
                 original_print(
                     f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
                 )
-            if context.node is not None:
+            else:
+                # for local execution
+                time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
+                original_print(f"{time} EXCEPTION LOG:\n{error_msg}\n", file=sys.stderr)
+            if (
+                context.node is not None
+                and context.job is not None
+                and context.job.log_id is not None
+            ):
                 log_id = context.job.log_id
                 log_service = context.node.get_service("LogService")
                 log_service.append(context=context, uid=log_id, new_err=error_msg)
