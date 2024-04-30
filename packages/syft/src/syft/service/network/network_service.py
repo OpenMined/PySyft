@@ -288,7 +288,7 @@ class NetworkService(AbstractService):
     ) -> NodePeerAssociationStatus | SyftError:
         """Check if a peer exists in the network stash"""
 
-        # get the node peer for the given sender_peer_id
+        # get the node peer for the given sender peer_id
         peer = self.stash.get_by_uid(context.node.verify_key, peer_id)
         if peer.is_err():
             return SyftError(message=f"Failed to query peer from stash: {peer.err()}")
@@ -296,24 +296,12 @@ class NetworkService(AbstractService):
         if isinstance(peer.ok(), NodePeer):
             return NodePeerAssociationStatus.PEER_ASSOCIATED
 
-        if peer.ok() is None:
-            # 2 cases: Either the peer is pending or it's not trying to connect (not found)
-            # First case: Check if peer is pending
-            # Get the list of all requests
-            request_get_all_method: Callable = context.node.get_service_method(
-                RequestService.get_all
+        if peer.ok() is None:  # peer is either pending or not found
+            association_requests: list[Request] = (
+                self._get_association_requests_by_peer_id(
+                    context=context, peer_id=peer_id
+                )
             )
-            all_requests: list[Request] = request_get_all_method(context)
-            # Then, filter the requests by checking if any AssociationRequestChange from the
-            # peer is present as one of the changes in the request's changes list
-            association_requests = []
-            for request in all_requests:
-                for change in request.changes:
-                    if (
-                        isinstance(change, AssociationRequestChange)
-                        and change.remote_peer.id == peer_id
-                    ):
-                        association_requests.append(request)
             # Check if the all the association requests have a status of "pending"
             if association_requests and all(
                 request.status == RequestStatus.PENDING
@@ -388,7 +376,17 @@ class NetworkService(AbstractService):
         result = self.stash.delete_by_uid(context.credentials, uid)
         if result.is_err():
             return SyftError(message=str(result.err()))
-        # TODO: delete all the association requests associated with this peer
+        # Delete all the association requests from this peer
+        association_requests: list[Request] = self._get_association_requests_by_peer_id(
+            context=context, peer_id=uid
+        )
+        for request in association_requests:
+            request_delete_method = context.node.get_service_method(
+                RequestService.delete_by_id
+            )
+            res = request_delete_method(context, request.id)
+            if isinstance(res, SyftError):
+                return res
         # TODO: Notify the peer (either by email or by other form of notifications)
         # that it has been deleted from the network
         return SyftSuccess(message=f"Node Peer with id {uid} Deleted")
@@ -756,6 +754,26 @@ class NetworkService(AbstractService):
                 message=f"Can't retrive {remote_node_peer.name} from the store of peers (None)."
             )
         return remote_node_peer
+
+    def _get_association_requests_by_peer_id(
+        self, context: AuthedServiceContext, peer_id: UID
+    ) -> list[Request]:
+        """
+        Get all the association requests from a peer
+        """
+        request_get_all_method: Callable = context.node.get_service_method(
+            RequestService.get_all
+        )
+        all_requests: list[Request] = request_get_all_method(context)
+        association_requests: list[Request] = []
+        for request in all_requests:
+            for change in request.changes:
+                if (
+                    isinstance(change, AssociationRequestChange)
+                    and change.remote_peer.id == peer_id
+                ):
+                    association_requests.append(request)
+        return association_requests
 
 
 TYPE_TO_SERVICE[NodePeer] = NetworkService
