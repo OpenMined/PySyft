@@ -12,7 +12,7 @@ from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
 from ...types.syft_object import get_repr_values_table
 from ...types.uid import UID
-from ...util.notebook_ui.notebook_addons import create_table_template
+from ...util.notebook_ui.components.table import create_table_template
 from ..code.user_code import UserCode
 from ..response import SyftError
 

@@ -1,6 +1,6 @@
 # stdlib
 from secrets import token_hex
-from textwrap import dedent
+import sys
 
 # third party
 import pytest
@@ -101,6 +101,8 @@ def private_function(context) -> str:
     return 42
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
+@pytest.mark.local_node
 def test_twin_api_integration(full_high_worker, full_low_worker):
     low_client = full_low_worker.login(
         email="info@openmined.org", password="changethis"
@@ -137,7 +139,6 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     def compute(query):
         return query()
 
-    compute.code = dedent(compute.code)
     _ = client_low_ds.code.request_code_execution(compute)
 
     diff_before, diff_after = compare_and_resolve(
@@ -167,6 +168,8 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     ), "Should not be able to access private function on low side."
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
+@pytest.mark.local_node
 def test_function_error(full_low_worker) -> None:
     root_domain_client = full_low_worker.login(
         email="info@openmined.org", password="changethis"
@@ -188,7 +191,6 @@ def test_function_error(full_low_worker) -> None:
     def compute_sum():
         assert False
 
-    compute_sum.code = dedent(compute_sum.code)
     ds_client.api.services.code.request_code_execution(compute_sum)
 
     users[-1].allow_mock_execution()
