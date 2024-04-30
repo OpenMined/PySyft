@@ -12,7 +12,7 @@ from ....service.request.request import Request
 from ....types.syft_object import SYFT_OBJECT_VERSION_1
 from ....types.syft_object import SyftObject
 from ..icons import Icon
-from ..notebook_addons import CSS_CODE
+from ..styles import CSS_CODE
 from .base import HTMLComponentBase
 
 COPY_CSS = """

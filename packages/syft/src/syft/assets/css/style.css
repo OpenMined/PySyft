@@ -521,3 +521,41 @@
   transform: rotate(45deg);
   -webkit-transform: rotate(45deg);
 }
+
+.syft-widget ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.syft-widget li {
+  float: left;
+  border-bottom: solid;
+  border-bottom-color: #cfcdd6;
+}
+
+.syft-widget li a {
+  display: block;
+  text-align: center;
+  padding: 14px 16px;
+  color: #cfcdd6;
+}
+
+.log-tab-header {
+  border-bottom: solid 2px #ecebef;
+  padding: 4px 16px;
+}
+
+.active-border {
+  border-bottom: solid 2px #1f567a;
+  font-weight: 700;
+}
+
+.active {
+  color: #1f567a;
+}
+
+.syft-widget li a:hover {
+  background-color: #c2def0;
+}
