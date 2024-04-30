@@ -20,6 +20,7 @@ from syft.client.registry import NetworkRegistry
 from syft.client.search import SearchResults
 from syft.service.dataset.dataset import Dataset
 from syft.service.network.association_request import AssociationRequestChange
+from syft.service.network.network_service import NodePeerAssociationStatus
 from syft.service.network.node_peer import NodePeer
 from syft.service.network.routes import HTTPNodeRoute
 from syft.service.network.routes import NodeRouteType
@@ -27,6 +28,7 @@ from syft.service.request.request import Request
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
+from syft.types.uid import UID
 
 
 @pytest.fixture(scope="function")
@@ -817,3 +819,45 @@ def test_dataset_stream(set_env_var, gateway_port: int, domain_1_port: int) -> N
 
     # the domain client delete the dataset
     domain_client.api.services.dataset.delete_by_uid(uid=retrieved_dataset.id)
+
+
+def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+    """
+    Scenario: Connecting a domain node to a gateway node.
+    The gateway client approves the association request.
+    The gateway client checks that the domain peer is associated
+    TODO: check that the domain is online with `DomainRegistry.online_domains`
+        Then make the domain go offline, which should be reflected when calling
+        `DomainRegistry.online_domains`
+    """
+    # login to the domain and gateway
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
+    domain_client: DomainClient = sy.login(
+        port=domain_1_port, email="info@openmined.org", password="changethis"
+    )
+
+    # gateway checks that the domain is not yet associated
+    res = gateway_client.api.services.network.check_peer_association(
+        peer_id=UID(domain_client.metadata.id)
+    )
+    assert isinstance(res, NodePeerAssociationStatus)
+    assert res.value == "PEER_NOT_FOUND"
+
+    # connecting the domain to the gateway
+    result = domain_client.connect_to_gateway(gateway_client)
+    assert isinstance(result, Request)
+    assert isinstance(result.changes[0], AssociationRequestChange)
+
+    # the gateway client approves the association request
+    res = gateway_client.api.services.request.get_all()[-1].approve()
+    assert not isinstance(res, SyftError)
+    assert len(gateway_client.peers) == 1
+
+    # the gateway client checks that the peer is associated
+    res = gateway_client.api.services.network.check_peer_association(
+        peer_id=gateway_client.peers[0].id
+    )
+    assert isinstance(res, NodePeerAssociationStatus)
+    assert res.value == "PEER_ASSOCIATED"
