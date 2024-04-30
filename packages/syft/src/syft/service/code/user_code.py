@@ -14,6 +14,7 @@ from io import StringIO
 import itertools
 import random
 import sys
+from textwrap import dedent
 from threading import Thread
 import time
 import traceback
@@ -966,7 +967,7 @@ def syft_function(
 
     def decorator(f: Any) -> SubmitUserCode:
         res = SubmitUserCode(
-            code=inspect.getsource(f),
+            code=dedent(inspect.getsource(f)),
             func_name=f.__name__,
             signature=inspect.signature(f),
             input_policy_type=input_policy_type,
