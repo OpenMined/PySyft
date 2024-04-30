@@ -1,7 +1,6 @@
 # stdlib
 from secrets import token_hex
 import sys
-from textwrap import dedent
 
 # third party
 import numpy as np
@@ -136,8 +135,6 @@ def test_sync_flow():
     def compute_mean(data) -> float:
         return data.mean()
 
-    compute_mean.code = dedent(compute_mean.code)
-
     res = client_low_ds.code.request_code_execution(compute_mean)
     res = client_low_ds.code.request_code_execution(compute_mean)
     print(res)
@@ -260,8 +257,6 @@ def test_forget_usercode(low_worker, high_worker):
         print("computing...")
         return 42
 
-    compute.code = dedent(compute.code)
-
     _ = client_low_ds.code.request_code_execution(compute)
 
     diff_state = compare_clients(low_client, high_client)
@@ -316,8 +311,6 @@ def test_skip_user_code(low_worker, high_worker):
     def compute() -> int:
         return 42
 
-    compute.code = dedent(compute.code)
-
     _ = client_low_ds.code.request_code_execution(compute)
 
     def skip_if_user_code(diff):
@@ -346,8 +339,6 @@ def test_unignore(low_worker, high_worker):
     @sy.syft_function_single_use()
     def compute() -> int:
         return 42
-
-    compute.code = dedent(compute.code)
 
     _ = client_low_ds.code.request_code_execution(compute)
 
@@ -401,19 +392,13 @@ def test_request_code_execution_multiple(low_worker, high_worker):
     def compute() -> int:
         return 42
 
-    compute.code = dedent(compute.code)
-
     @sy.syft_function_single_use()
     def compute_twice() -> int:
         return 42 * 2
 
-    compute_twice.code = dedent(compute_twice.code)
-
     @sy.syft_function_single_use()
     def compute_thrice() -> int:
         return 42 * 3
-
-    compute_thrice.code = dedent(compute_thrice.code)
 
     _ = client_low_ds.code.request_code_execution(compute)
     _ = client_low_ds.code.request_code_execution(compute_twice)
@@ -453,8 +438,6 @@ def test_sync_high(low_worker, high_worker):
     def compute() -> int:
         return 42
 
-    compute.code = dedent(compute.code)
-
     _ = client_low_ds.code.request_code_execution(compute)
 
     diff_state = compare_clients(low_client, high_client)
@@ -480,8 +463,6 @@ def test_sync_skip_ignore(low_worker, high_worker, decision):
     @sy.syft_function_single_use()
     def compute() -> int:
         return 42
-
-    compute.code = dedent(compute.code)
 
     _ = client_low_ds.code.request_code_execution(compute)
 
@@ -520,8 +501,6 @@ def test_update_after_ignore(low_worker, high_worker):
     def compute() -> int:
         return 42
 
-    compute.code = dedent(compute.code)
-
     _ = client_low_ds.code.request_code_execution(compute)
 
     diff_state = compare_clients(low_client, high_client)
@@ -540,8 +519,6 @@ def test_update_after_ignore(low_worker, high_worker):
     @sy.syft_function_single_use()
     def compute() -> int:
         return 43
-
-    compute.code = dedent(compute.code)
 
     # _ = client_low_ds.code.request_code_execution(compute)
     low_client.requests[-1].approve()
@@ -653,7 +630,6 @@ def test_sync_flow_no_sharing():
     def compute_mean(data) -> float:
         return data.mean()
 
-    compute_mean.code = dedent(compute_mean.code)
     res = client_low_ds.code.request_code_execution(compute_mean)
     print(res)
     print("LOW CODE:", low_client.code.get_all())
