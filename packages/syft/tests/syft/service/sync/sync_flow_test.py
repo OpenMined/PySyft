@@ -10,19 +10,14 @@ import pytest
 import syft
 import syft as sy
 from syft.abstract_node import NodeSideType
-from syft.client.client import SyftClient
 from syft.client.domain_client import DomainClient
 from syft.client.sync_decision import SyncDecision
+from syft.client.syncing import compare_clients
 from syft.client.syncing import compare_states
 from syft.client.syncing import resolve
 from syft.client.syncing import resolve_single
 from syft.service.action.action_object import ActionObject
 from syft.service.response import SyftError
-from syft.service.sync.diff_state import NodeDiff
-
-
-def compare_clients(low_client: SyftClient, high_client: SyftClient) -> NodeDiff:
-    return compare_states(low_client.get_sync_state(), high_client.get_sync_state())
 from syft.service.response import SyftSuccess
 
 
@@ -276,14 +271,21 @@ def test_forget_usercode(low_worker, high_worker):
 
     high_client.code.get_all()
     job_high = high_client.code.compute().get()
+    # job_info = job_high.info(public_metadata=True, result=True)
 
-    high_client.requests[0].accept_by_depositing_result(job_high)
+    request = high_client.requests[0]
+    request.accept_by_depositing_result(job_high)
 
-    diff_state_2 = compare_clients(low_client, high_client)
+    # job_high._get_log_objs()
+
+    low_state = low_client.get_sync_state()
+    high_state = high_client.get_sync_state()
+
+    diff_state_2 = compare_states(low_state, high_state)
 
     def skip_if_user_code(diff):
         if diff.root.object_type == "UserCode":
-            return SyncDecision.ignore
+            return SyncDecision.IGNORE
         raise Exception(f"Should not reach here, but got {diff.root.object_type}")
 
     low_items_to_sync, high_items_to_sync = resolve(
@@ -293,67 +295,14 @@ def test_forget_usercode(low_worker, high_worker):
     )
 
 
-@pytest.mark.skip(reason="need to implement soft delete")
-def test_multiple_jobs(low_worker, high_worker):
-    low_client = low_worker.root_client
-    client_low_ds = low_worker.guest_client
-    high_client = high_worker.root_client
+@sy.api_endpoint_method()
+def mock_function(context) -> str:
+    return -42
 
-    @sy.syft_function_single_use()
-    def compute() -> int:
-        print("computing...")
-        return 42
 
-    compute.code = dedent(compute.code)
-    _ = client_low_ds.code.request_code_execution(compute)
-
-    diff_state = compare_clients(low_client, high_client)
-    low_items_to_sync, high_items_to_sync = resolve(
-        diff_state, decision="low", share_private_objects=True
-    )
-    low_client.apply_state(low_items_to_sync)
-    high_client.apply_state(high_items_to_sync)
-
-    high_client.code.get_all()
-    job_high = high_client.code.compute().get()
-
-    high_client.requests[0].accept_by_depositing_result(job_high)
-
-    @sy.syft_function_single_use()
-    def compute() -> int:
-        print("log changed...")
-        return 42
-
-    compute.code = dedent(compute.code)
-
-    _ = client_low_ds.code.request_code_execution(compute)
-
-    diff_state = compare_clients(low_client, high_client)
-    low_items_to_sync, high_items_to_sync = resolve(
-        diff_state, decision="low", share_private_objects=True
-    )
-    low_client.apply_state(low_items_to_sync)
-    high_client.apply_state(high_items_to_sync)
-
-    high_client.code.get_all()
-    job_high = high_client.code.compute().get()
-
-    high_client.requests[0].accept_by_depositing_result(job_high)
-
-    diff_state_2 = compare_clients(low_client, high_client)
-
-    low_items_to_sync, high_items_to_sync = resolve(
-        diff_state_2,
-        share_private_objects=True,
-        decision="high",
-    )
-
-    low_client.apply_state(low_items_to_sync)
-
-    res_low = client_low_ds.code.compute().get()
-    print("Res Low", res_low)
-
-    assert res_low == job_high
+@sy.api_endpoint_method()
+def private_function(context) -> str:
+    return 42
 
 
 def test_skip_user_code(low_worker, high_worker):
@@ -371,13 +320,10 @@ def test_skip_user_code(low_worker, high_worker):
 
     def skip_if_user_code(diff):
         if diff.root.object_type == "UserCode":
-            return SyncDecision.skip
+            return SyncDecision.SKIP
         raise Exception(f"Should not reach here, but got {diff.root.object_type}")
 
-    diff_state = compare_clients(
-        high_client,
-        low_client,
-    )
+    diff_state = compare_clients(low_client, high_client)
     low_items_to_sync, high_items_to_sync = resolve(
         diff_state,
         share_private_objects=True,
@@ -416,6 +362,7 @@ def test_unignore(low_worker, high_worker):
     assert high_items_to_sync.is_empty
 
     diff_state = compare_clients(low_client, high_client)
+
     for ignored in diff_state.ignored_changes:
         deps = ignored.batch.get_dependencies()
         if "Request" in [dep.object_type for dep in deps]:
@@ -426,6 +373,7 @@ def test_unignore(low_worker, high_worker):
         share_private_objects=True,
         decision="low",
     )
+
     assert not low_items_to_sync.is_empty
     assert not high_items_to_sync.is_empty
 
@@ -552,7 +500,7 @@ def test_sync_skip_ignore(low_worker, high_worker, decision):
         # should not be called when decision is ignore before
         if decision == "ignore":
             raise Exception("Should not reach here")
-        return SyncDecision.skip
+        return SyncDecision.SKIP
 
     diff_state = compare_clients(low_client, high_client)
     low_items_to_sync, high_items_to_sync = resolve(
