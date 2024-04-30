@@ -41,6 +41,7 @@ Read/retrieve SyftObject from blob storage
 """
 
 # stdlib
+from collections.abc import Callable
 from collections.abc import Generator
 from io import BytesIO
 from typing import Any
@@ -63,10 +64,14 @@ from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import DEFAULT_CHUNK_SIZE
 from ...types.blob_storage import SecureFilePathLocation
 from ...types.grid_url import GridURL
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SyftObject
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ...types.uid import UID
 
 DEFAULT_TIMEOUT = 10
@@ -143,11 +148,20 @@ def syft_iter_content(
 
 
 @serializable()
-class BlobRetrievalByURL(BlobRetrieval):
+class BlobRetrievalByURLV4(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
     __version__ = SYFT_OBJECT_VERSION_4
 
     url: GridURL | str
+
+
+@serializable()
+class BlobRetrievalByURL(BlobRetrieval):
+    __canonical_name__ = "BlobRetrievalByURL"
+    __version__ = SYFT_OBJECT_VERSION_5
+
+    url: GridURL | str
+    proxy_node_uid: UID | None = None
 
     def read(self) -> SyftObject | SyftError:
         if self.type_ is BlobFileType:
@@ -175,26 +189,35 @@ class BlobRetrievalByURL(BlobRetrieval):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+
         if api and api.connection and isinstance(self.url, GridURL):
-            blob_url = api.connection.to_blob_route(
-                self.url.url_path, host=self.url.host_or_ip
-            )
+            if self.proxy_node_uid is None:
+                blob_url = api.connection.to_blob_route(
+                    self.url.url_path, host=self.url.host_or_ip
+                )
+            else:
+                blob_url = api.connection.stream_via(
+                    self.proxy_node_uid, self.url.url_path
+                )
+                stream = True
         else:
             blob_url = self.url
+
         try:
-            if self.type_ is BlobFileType:
-                if stream:
-                    return syft_iter_content(blob_url, chunk_size)
-                else:
-                    response = requests.get(str(blob_url), stream=False)  # nosec
-                    response.raise_for_status()
-                    return response.content
-            else:
-                response = requests.get(str(blob_url), stream=stream)  # nosec
-                response.raise_for_status()
-                return deserialize(response.content, from_bytes=True)
+            if (is_blob_file := issubclass(self.type_, BlobFileType)) and stream:
+                return syft_iter_content(blob_url, chunk_size)
+
+            response = requests.get(str(blob_url), stream=stream)  # nosec
+            resp_content = response.content
+            response.raise_for_status()
+
+            return (
+                resp_content
+                if is_blob_file
+                else deserialize(resp_content, from_bytes=True)
+            )
         except requests.RequestException as e:
-            return SyftError(message=f"Failed to retrieve with Error: {e}")
+            return SyftError(message=f"Failed to retrieve with error: {e}")
 
 
 @serializable()
@@ -247,3 +270,13 @@ class BlobStorageClient(SyftBaseModel):
 class BlobStorageConfig(SyftBaseModel):
     client_type: type[BlobStorageClient]
     client_config: BlobStorageClientConfig
+
+
+@migrate(BlobRetrievalByURLV4, BlobRetrievalByURL)
+def upgrade_blob_retrieval_by_url() -> list[Callable]:
+    return [make_set_default("proxy_node_uid", None)]
+
+
+@migrate(BlobRetrievalByURL, BlobRetrievalByURLV4)
+def downgrade_blob_retrieval_by_url() -> list[Callable]:
+    return [drop(["proxy_node_uid"])]
