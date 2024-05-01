@@ -232,7 +232,7 @@ rathole:
 
   ratholePort: 2333
   appPort: 5555
-  mode: "client"
+  mode: "server"
   devMode: "false"
   appLogLevel: "info"
 

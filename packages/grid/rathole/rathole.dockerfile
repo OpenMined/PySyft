@@ -25,7 +25,7 @@ COPY ./requirements.txt /app/requirements.txt
 COPY ./server/ /app/server/
 
 RUN pip install --user -r requirements.txt
-CMD ["sh", "-c", "/app/start-$MODE.sh"]
+CMD ["sh", "-c", "/app/start.sh"]
 EXPOSE 2333/udp
 EXPOSE 2333
 

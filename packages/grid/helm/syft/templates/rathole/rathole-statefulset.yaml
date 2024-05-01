@@ -71,10 +71,19 @@ spec:
           timeoutSeconds: 5
           failureThreshold: 3
         volumeMounts:
+          {{- if -eq .Values.rathole.mode "server" }}
           - name: rathole-config
-            mountPath: /app/data/myserver.toml
-            subPath: myserver.toml
+            mountPath: /app/data/server.toml
+            subPath: server.toml
             readOnly: false
+          {{- end }}
+
+          {{- if -eq .Values.rathole.mode "client" }}
+          - name: rathole-config
+            mountPath: /app/data/client.toml
+            subPath: client.toml
+            readOnly: false
+          {{- end }}
       terminationGracePeriodSeconds: 5
       volumes:
         - name: rathole-config
