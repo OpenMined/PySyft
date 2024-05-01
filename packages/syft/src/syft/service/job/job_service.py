@@ -216,8 +216,20 @@ class JobService(AbstractService):
 
         job.status = JobStatus.INTERRUPTED
         res = self.stash.update(context.credentials, obj=job)
-        if res.is_err():
-            return SyftError(message=res.err())
+        results = [res]
+
+        # attempt to kill all subjobs
+        subjobs_or_err = self.stash.get_by_parent_id(context.credentials, uid=id)
+        if subjobs_or_err.is_ok() and subjobs_or_err.ok() is not None:
+            subjobs = subjobs_or_err.ok()
+            for subjob in subjobs:
+                subjob.status = JobStatus.INTERRUPTED
+                res = self.stash.update(context.credentials, obj=subjob)
+                results.append(res)
+
+        errors = [res.err() for res in results if res.is_err()]
+        if errors:
+            return SyftError(message=f"Failed to kill job: {errors}")
         return SyftSuccess(message="Job killed successfully!")
 
     @service_method(
