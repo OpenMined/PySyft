@@ -1,4 +1,5 @@
 # stdlib
+import time
 from typing import Any
 from typing import cast
 
@@ -7,6 +8,7 @@ from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
+from ...util import logger
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -112,11 +114,40 @@ class JobService(AbstractService):
     def restart(
         self, context: AuthedServiceContext, uid: UID
     ) -> SyftSuccess | SyftError:
-        res = self.stash.get_by_uid(context.credentials, uid=uid)
-        if res.is_err():
-            return SyftError(message=res.err())
+        job_or_err = self.stash.get_by_uid(context.credentials, uid=uid)
+        if job_or_err.is_err():
+            return SyftError(message=job_or_err.err())
+        if job_or_err.ok() is None:
+            return SyftError(message="Job not found")
 
-        job = res.ok()
+        job = job_or_err.ok()
+        if job.parent_job_id is not None:
+            return SyftError(
+                message="Not possible to restart subjobs. Please restart the parent job."
+            )
+        if job.job_pid is None:
+            return SyftError(
+                message="Job restart is disabled in dev mode. "
+                "Set 'dev_mode=False' or 'thread_workers=False' to enable."
+            )
+
+        job.status = JobStatus.INTERRUPTED
+        res = self.stash.update(context.credentials, obj=job)
+
+        # poll for status change
+        timeout = 10
+        while job := self.stash.get_by_uid(context.credentials, uid=uid).ok():
+            if job.status == JobStatus.INTERRUPTED:
+                break
+            if timeout == 0:
+                logger.warning(
+                    "Timeout reached while waiting for job to be interrupted, "
+                    "continuing to restart anyway."
+                )
+                break
+            time.sleep(1)
+            timeout -= 1
+
         job.status = JobStatus.CREATED
         self.update(context=context, job=job)
 
@@ -164,22 +195,30 @@ class JobService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def kill(self, context: AuthedServiceContext, id: UID) -> SyftSuccess | SyftError:
-        res = self.stash.get_by_uid(context.credentials, uid=id)
+        job_or_err = self.stash.get_by_uid(context.credentials, uid=id)
+        if job_or_err.is_err():
+            return SyftError(message=job_or_err.err())
+        if job_or_err.ok() is None:
+            return SyftError(message="Job not found")
+
+        job = job_or_err.ok()
+        if job.parent_job_id is not None:
+            return SyftError(
+                message="Not possible to cancel subjobs. To stop execution, please cancel the parent job."
+            )
+        if job.job_pid is None:
+            return SyftError(
+                message="Job termination disabled in dev mode. "
+                "Set 'dev_mode=False' or 'thread_workers=False' to enable."
+            )
+        if job.status != JobStatus.PROCESSING:
+            return SyftError(message="Job is not running")
+
+        job.status = JobStatus.INTERRUPTED
+        res = self.stash.update(context.credentials, obj=job)
         if res.is_err():
             return SyftError(message=res.err())
-
-        job = res.ok()
-        if job.job_pid is not None and job.status == JobStatus.PROCESSING:
-            job.status = JobStatus.INTERRUPTED
-            res = self.stash.update(context.credentials, obj=job)
-            if res.is_err():
-                return SyftError(message=res.err())
-            return SyftSuccess(message="Job killed successfully!")
-        else:
-            return SyftError(
-                message="Job is not running or isn't running in multiprocessing mode."
-                "Killing threads is currently not supported"
-            )
+        return SyftSuccess(message="Job killed successfully!")
 
     @service_method(
         path="job.get_subjobs",
