@@ -41,7 +41,7 @@ def faker():
     return Faker()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def full_low_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
     _node = sy.orchestra.launch(
         node_side_type=NodeSideType.LOW_SIDE,
@@ -62,7 +62,7 @@ def full_low_worker(n_consumers: int = 3, create_producer: bool = True) -> Worke
     _node.land()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def full_high_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
     _node = sy.orchestra.launch(
         node_side_type=NodeSideType.HIGH_SIDE,
