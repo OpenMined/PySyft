@@ -1,4 +1,5 @@
 # stdlib
+from datetime import datetime
 import threading
 import time
 from typing import Any
@@ -141,8 +142,8 @@ def handle_message_multiprocessing(
     queue_item: QueueItem,
     credentials: SyftVerifyKey,
 ) -> None:
-    # this is a temp hack to prevent some multithreading issues
-    time.sleep(0.5)
+    print(f"date: {datetime.now()} - message: handle_message_multiprocessing start")
+
     queue_config = worker_settings.queue_config
     if queue_config is None:
         raise ValueError(f"{worker_settings} has no queue configurations!")
@@ -194,8 +195,10 @@ def handle_message_multiprocessing(
             context=context,
             user_verify_key=credentials,
         )
+        print(f"date: {datetime.now()} - message: call_method start")
 
         result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
+        print(f"date: {datetime.now()} - message: call_method end")
 
         status = Status.COMPLETED
         job_status = JobStatus.COMPLETED
@@ -237,12 +240,15 @@ def handle_message_multiprocessing(
     job_item.result = result
     job_item.resolved = True
     job_item.status = job_status
+    print(f"date: {datetime.now()} - message: set_result")
 
     worker.queue_stash.set_result(credentials, queue_item)
     worker.job_stash.set_result(credentials, job_item)
+    print(f"date: {datetime.now()} - message: Finish monitor thread")
 
     # Finish monitor thread
     monitor_thread.stop()
+    print(f"date: {datetime.now()} - message: Finish monitor thread end")
 
 
 def evaluate_can_run_job(
@@ -277,6 +283,7 @@ class APICallMessageHandler(AbstractMessageHandler):
 
     @staticmethod
     def handle_message(message: bytes, syft_worker_id: UID) -> None:
+        print(f"date: {datetime.now()} - message: Node")
         # relative
         from ...node.node import Node
 
@@ -304,6 +311,7 @@ class APICallMessageHandler(AbstractMessageHandler):
         worker.signing_key = worker_settings.signing_key
 
         credentials = queue_item.syft_client_verify_key
+        print(f"date: {datetime.now()} - message: evaluate_can_run_job")
 
         res = evaluate_can_run_job(queue_item.job_id, worker.job_stash, credentials)
         if res.is_err():
@@ -317,14 +325,6 @@ class APICallMessageHandler(AbstractMessageHandler):
         job_item.node_uid = cast(UID, worker.id)
         job_item.updated_at = DateTime.now()
 
-        # try:
-        #     worker_name = os.getenv("DOCKER_WORKER_NAME", None)
-        #     docker_worker = worker.worker_stash.get_worker_by_name(
-        #         credentials, worker_name
-        #     ).ok()
-        #     job_item.job_worker_id = str(docker_worker.container_id)
-        # except Exception:
-        #     job_item.job_worker_id = str(worker.id)
         if syft_worker_id is not None:
             job_item.job_worker_id = syft_worker_id
 
@@ -336,25 +336,4 @@ class APICallMessageHandler(AbstractMessageHandler):
         if isinstance(job_result, SyftError):
             raise Exception(f"{job_result.err()}")
 
-        if queue_config.thread_workers:
-            # stdlib
-            from threading import Thread
-
-            thread = Thread(
-                target=handle_message_multiprocessing,
-                args=(worker_settings, queue_item, credentials),
-            )
-            thread.start()
-            thread.join()
-        else:
-            # stdlib
-            from multiprocessing import Process
-
-            process = Process(
-                target=handle_message_multiprocessing,
-                args=(worker_settings, queue_item, credentials),
-            )
-            process.start()
-            job_item.job_pid = process.pid
-            worker.job_stash.set_result(credentials, job_item)
-            process.join()
+        handle_message_multiprocessing(worker_settings, queue_item, credentials)

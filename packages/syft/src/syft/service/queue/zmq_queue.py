@@ -1,6 +1,7 @@
 # stdlib
 from binascii import hexlify
 from collections import defaultdict
+from datetime import datetime
 import itertools
 import socketserver
 import threading
@@ -272,7 +273,6 @@ class ZMQProducer(QueueProducer):
         while True:
             if self._stop.is_set():
                 break
-            sleep(1)
 
             # Items to be queued
             items_to_queue = self.queue_stash.get_by_status(
@@ -335,7 +335,7 @@ class ZMQProducer(QueueProducer):
                     # or heartbeat fails
                     # or container id doesn't exists, kill process or container
                     # else decrease retry count and mark status as CREATED.
-                    pass
+                    sleep(0.25)
 
     def run(self) -> None:
         self.thread = threading.Thread(target=self._run)

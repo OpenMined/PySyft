@@ -640,8 +640,10 @@ def resolve_outputs(
                 result = action_service.get(
                     context, uid=output_id, twin_mode=TwinMode.PRIVATE
                 )
-                if result.is_err():
+                if isinstance(result, Err):
                     return result
+                elif isinstance(result, SyftError):
+                    return Err(result.message)
                 outputs.append(result.ok())
         return Ok(outputs)
     else:

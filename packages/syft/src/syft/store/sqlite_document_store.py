@@ -138,7 +138,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         try:
             with self.lock:
                 self.cur.execute(
-                    f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
+                    f"CREATE TABLE IF NOT EXISTS {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
                     + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
                     + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
                 )
@@ -198,16 +198,11 @@ class SQLiteBackingStore(KeyValueBackingStore):
             return Ok(cursor)
 
     def _set(self, key: UID, value: Any) -> None:
-        if self._exists(key):
-            self._update(key, value)
-        else:
-            insert_sql = (
-                f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
-            )
-            data = _serialize(value, to_bytes=True)
-            res = self._execute(insert_sql, [str(key), _repr_debug_(value), data])
-            if res.is_err():
-                raise ValueError(res.err())
+        insert_sql = f"insert or replace into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
+        data = _serialize(value, to_bytes=True)
+        res = self._execute(insert_sql, [str(key), _repr_debug_(value), data])
+        if res.is_err():
+            raise ValueError(res.err())
 
     def _update(self, key: UID, value: Any) -> None:
         insert_sql = (

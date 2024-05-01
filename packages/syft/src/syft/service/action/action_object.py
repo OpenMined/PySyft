@@ -1401,11 +1401,12 @@ class ActionObject(SyncableSyftObject):
         else:
             obj_id = self.id
 
-        counter = 0
+        counter = 0.0
+        delta_sleep = 0.25
         while api and not api.services.action.is_resolved(obj_id):
-            time.sleep(1)
+            time.sleep(delta_sleep)
             if timeout is not None:
-                counter += 1
+                counter += delta_sleep
                 if counter > timeout:
                     return SyftError(message="Reached Timeout!")
 

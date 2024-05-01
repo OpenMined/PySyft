@@ -597,7 +597,7 @@ class Job(SyncableSyftObject):
         updated_at = str(self.updated_at)[:-7] if self.updated_at else "--"
 
         user_repr = "--"
-        if self.requested_by:
+        if self.requested_by and not isinstance(self.requesting_user, SyftError):
             requesting_user = self.requesting_user
             user_repr = f"{requesting_user.name} {requesting_user.email}"
 
@@ -668,7 +668,8 @@ class Job(SyncableSyftObject):
                 f"Can't access Syft API. You must login to {self.syft_node_location}"
             )
         print_warning = True
-        counter = 0
+        counter = 0.0
+        delta_sleep = 0.25
         while True:
             self.fetch()
             if print_warning and self.result is not None:
@@ -682,12 +683,12 @@ class Job(SyncableSyftObject):
                         "Use job.wait().get() instead to wait for the linked result."
                     )
                     print_warning = False
-            sleep(1)
             if self.resolved:
                 break  # type: ignore[unreachable]
             # TODO: fix the mypy issue
+            sleep(delta_sleep)
             if timeout is not None:
-                counter += 1
+                counter += delta_sleep
                 if counter > timeout:
                     return SyftError(message="Reached Timeout!")
         return self.resolve  # type: ignore[unreachable]
