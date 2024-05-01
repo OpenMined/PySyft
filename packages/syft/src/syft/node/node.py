@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections import OrderedDict
+from collections import defaultdict
 from collections.abc import Callable
 from datetime import datetime
 from functools import partial
@@ -463,6 +464,9 @@ class Node(AbstractNode):
         for p in self.queue_manager.producers.values():
             p.close()
 
+        self.queue_manager.producers.clear()
+        self.queue_manager.consumers.clear()
+
         NodeRegistry.remove_node(self.id)
 
     def close(self) -> None:
@@ -566,6 +570,18 @@ class Node(AbstractNode):
             syft_worker_id=syft_worker_id,
         )
         consumer.run()
+
+    def remove_consumer_with_id(self, syft_worker_id: UID) -> None:
+        for _, consumers in self.queue_manager.consumers.items():
+            # Grab the list of consumers for the given queue
+            consumer_to_pop = None
+            for consumer_idx, consumer in enumerate(consumers):
+                if consumer.syft_worker_id == syft_worker_id:
+                    consumer.close()
+                    consumer_to_pop = consumer_idx
+                    break
+            if consumer_to_pop is not None:
+                consumers.pop(consumer_to_pop)
 
     @classmethod
     def named(
@@ -1099,15 +1115,8 @@ class Node(AbstractNode):
                 # relative
                 from ..store.blob_storage import BlobRetrievalByURL
 
-                # In the case of blob storage, the gateway downloads the result and then passes it to
-                # the proxy client
                 if isinstance(result, BlobRetrievalByURL):
-                    blob_route = client.api.connection.to_blob_route(
-                        result.url.url_path
-                    )
-                    result.url = blob_route
-                    final_res = result.read()
-                    return final_res
+                    result.proxy_node_uid = peer.id
 
             return result
 
@@ -1168,7 +1177,11 @@ class Node(AbstractNode):
 
             role = self.get_role_for_credentials(credentials=credentials)
             context = AuthedServiceContext(
-                node=self, credentials=credentials, role=role, job_id=job_id
+                node=self,
+                credentials=credentials,
+                role=role,
+                job_id=job_id,
+                is_blocking_api_call=is_blocking,
             )
             AuthNodeContextRegistry.set_node_context(self.id, context, credentials)
 
@@ -1217,6 +1230,11 @@ class Node(AbstractNode):
         else:
             worker_pool = self.get_worker_pool_by_name(worker_pool)
 
+        if isinstance(worker_pool, SyftError):
+            return worker_pool
+        elif worker_pool is None:
+            return SyftError(message="Worker pool not found")
+
         # Create a Worker pool reference object
         worker_pool_ref = LinkedObject.from_obj(
             worker_pool,
@@ -1236,7 +1254,14 @@ class Node(AbstractNode):
             has_execute_permissions=True,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
-        return self.add_queueitem_to_queue(queue_item, credentials, None, None)
+
+        action = Action.from_api_endpoint_execution()
+        return self.add_queueitem_to_queue(
+            queue_item,
+            credentials,
+            action,
+            None,
+        )
 
     def add_action_to_queue(
         self,

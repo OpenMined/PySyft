@@ -32,6 +32,7 @@ from ...types.transforms import keep
 from ...types.transforms import transform
 from ...types.uid import UID
 from ..context import AuthedServiceContext
+from ..dataset.dataset import MarkdownDescription
 from ..response import SyftError
 from ..user.user import UserView
 
@@ -84,7 +85,7 @@ class TwinAPIEndpointView(SyftObject):
     access: str = "Public"
     mock_function: str | None = None
     private_function: str | None = None
-    description: str | None = None
+    description: MarkdownDescription | None = None
     mock_helper_functions: list[str] | None = None
     private_helper_functions: list[str] | None = None
     worker_pool: str | None = None
@@ -98,20 +99,26 @@ class TwinAPIEndpointView(SyftObject):
     ]
 
     def _coll_repr_(self) -> dict[str, Any]:
-        mock_parsed_code = ast.parse(self.mock_function)
-        mock_function_name = [
-            node.name
-            for node in ast.walk(mock_parsed_code)
-            if isinstance(node, ast.FunctionDef)
-        ][0]
-        private_function_name = NOT_ACCESSIBLE_STRING
-        if self.private_function != NOT_ACCESSIBLE_STRING:
+        if self.mock_function:
+            mock_parsed_code = ast.parse(self.mock_function)
+            mock_function_name = [
+                node.name
+                for node in ast.walk(mock_parsed_code)
+                if isinstance(node, ast.FunctionDef)
+            ][0]
+        else:
+            mock_function_name = NOT_ACCESSIBLE_STRING
+
+        if self.private_function:
             private_parsed_code = ast.parse(self.private_function)
             private_function_name = [
                 node.name
                 for node in ast.walk(private_parsed_code)
                 if isinstance(node, ast.FunctionDef)
             ][0]
+        else:
+            private_function_name = NOT_ACCESSIBLE_STRING
+
         worker_pool = "UNSET (DEFAULT)"
         if self.worker_pool is not None:
             worker_pool = self.worker_pool
@@ -322,7 +329,7 @@ class UpdateTwinAPIEndpoint(PartialSyftObject, BaseTwinAPIEndpoint):
     path: str
     private_function: PrivateAPIEndpoint | None = None
     mock_function: PublicAPIEndpoint
-    description: str | None = None
+    description: MarkdownDescription | None = None
     endpoint_timeout: int = 60
 
 
@@ -336,9 +343,17 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
     private_function: PrivateAPIEndpoint | None = None
     mock_function: PublicAPIEndpoint
     signature: Signature
-    description: str | None = None
+    description: MarkdownDescription | None = None
     worker_pool: str | None = None
     endpoint_timeout: int = 60
+
+    def __init__(
+        self, description: str | MarkdownDescription | None = "", **kwargs: Any
+    ) -> None:
+        if isinstance(description, str):
+            description = MarkdownDescription(text=description)
+
+        super().__init__(**kwargs, description=description)
 
 
 @serializable()
@@ -354,7 +369,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
     private_function: PrivateAPIEndpoint | None = None
     mock_function: PublicAPIEndpoint
     signature: Signature
-    description: str | None = None
+    description: MarkdownDescription | None = None
     action_object_id: UID
     worker_pool: str | None = None
     endpoint_timeout: int = 60
@@ -557,7 +572,7 @@ def extract_code_string(code_field: str) -> Callable:
                     endpoint_type.helper_functions.values() or []
                 )
             else:
-                context.output[code_field] = NOT_ACCESSIBLE_STRING
+                context.output[code_field] = None
                 context.output[helper_function_field] = []
         return context
 
@@ -620,7 +635,7 @@ def api_endpoint(
     path: str,
     settings: dict[str, str] | None = None,
     helper_functions: list[Callable] | None = None,
-    description: str | None = None,
+    description: MarkdownDescription | None = None,
     worker_pool: str | None = None,
     endpoint_timeout: int = 60,
 ) -> Callable[..., TwinAPIEndpoint | SyftError]:
@@ -681,7 +696,7 @@ def create_new_api_endpoint(
     path: str,
     mock_function: Endpoint,
     private_function: Endpoint | None = None,
-    description: str | None = None,
+    description: MarkdownDescription | None = None,
     worker_pool: str | None = None,
     endpoint_timeout: int = 60,
 ) -> CreateTwinAPIEndpoint | SyftError:

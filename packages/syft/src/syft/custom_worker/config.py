@@ -184,4 +184,7 @@ class DockerWorkerConfig(WorkerConfig):
                 )
                 return SyftSuccess(message=iterator_to_string(iterator=logs))
         except Exception as e:
-            return SyftError(message=f"Failed to build: {e}")
+            # stdlib
+            import traceback
+
+            return SyftError(message=f"Failed to build: {e} {traceback.format_exc()}")

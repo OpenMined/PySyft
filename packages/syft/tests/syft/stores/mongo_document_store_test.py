@@ -3,7 +3,7 @@ from secrets import token_hex
 from threading import Thread
 
 # third party
-from pymongo.collection import Collection as MongoCollection
+from mongomock.collection import Collection as MongoCollection
 import pytest
 from result import Err
 
