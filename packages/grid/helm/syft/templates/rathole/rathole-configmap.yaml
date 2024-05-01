@@ -10,6 +10,10 @@ data:
   server.toml: |
     [server]
     bind_addr = "0.0.0.0:2333"
+
+    [server.services.domain]
+    token = "domain-specific-rathole-secret"
+    bind_addr = "0.0.0.0:8001"
   {{- end }}
 
   {{- if eq .Values.rathole.mode "client" }}

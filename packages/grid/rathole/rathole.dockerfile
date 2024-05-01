@@ -18,8 +18,6 @@ COPY --from=build /rathole/target/release/rathole /app/rathole
 RUN apt update && apt install -y netcat-openbsd vim
 WORKDIR /app
 COPY ./start.sh /app/start.sh
-COPY ./client.toml /app/client.toml
-COPY ./server.toml /app/server.toml
 COPY ./nginx.conf /etc/nginx/conf.d/default.conf
 COPY ./requirements.txt /app/requirements.txt
 COPY ./server/ /app/server/
