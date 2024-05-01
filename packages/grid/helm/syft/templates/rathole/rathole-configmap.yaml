@@ -16,3 +16,4 @@ data:
   client.toml: |
     [client]
     remote_addr = ""
+  {{- end }}
