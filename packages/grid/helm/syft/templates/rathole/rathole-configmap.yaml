@@ -6,6 +6,13 @@ metadata:
     {{- include "common.labels" . | nindent 4 }}
     app.kubernetes.io/component: rathole
 data:
-  myserver.toml: |
+  {{- if eq .Values.rathole.mode "server" }}
+  server.toml: |
     [server]
     bind_addr = "0.0.0.0:2333"
+  {{- end }}
+
+  {{- if eq .Values.rathole.mode "client" }}
+  client.toml: |
+    [client]
+    remote_addr = ""

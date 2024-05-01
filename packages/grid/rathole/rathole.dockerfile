@@ -17,8 +17,7 @@ ENV APP_LOG_LEVEL="info"
 COPY --from=build /rathole/target/release/rathole /app/rathole
 RUN apt update && apt install -y netcat-openbsd vim
 WORKDIR /app
-COPY ./start-client.sh /app/start-client.sh
-COPY ./start-server.sh /app/start-server.sh
+COPY ./start.sh /app/start.sh
 COPY ./client.toml /app/client.toml
 COPY ./server.toml /app/server.toml
 COPY ./nginx.conf /etc/nginx/conf.d/default.conf
