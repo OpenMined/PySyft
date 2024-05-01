@@ -13,7 +13,6 @@ from hashlib import sha256
 import inspect
 from inspect import Signature
 import re
-import traceback
 import types
 from types import NoneType
 from types import UnionType
@@ -27,6 +26,7 @@ from typing import get_args
 from typing import get_origin
 
 # third party
+from loguru import logger
 import pandas as pd
 import pydantic
 from pydantic import ConfigDict
@@ -764,7 +764,7 @@ def short_uid(uid: UID | None) -> str | None:
         return str(uid)[:6] + "..."
 
 
-def get_repr_values_table(
+def _get_table_data(
     _self: Mapping | Iterable,
     is_homogenous: bool,
     extra_fields: list | None = None,
@@ -850,11 +850,18 @@ def get_repr_values_table(
                     value = None
                 cols[field].append(str(value))
 
+    col_lengts = {len(cols[col]) for col in cols.keys()}
+    if len(col_lengts) > 1:
+        raise ValueError(
+            "Cannot create table for items with different number of fields."
+        )
+
     df = pd.DataFrame(cols)
 
-    if "created_at" in df.columns:
-        df.sort_values(by="created_at", ascending=False, inplace=True)
-
+    # TODO Move sorting to backend
+    # We cannot sort here, causes mismatch between repr index and actual index
+    # if "created_at" in df.columns:
+    #     df.sort_values(by="created_at", ascending=False, inplace=True)
     return df.to_dict("records")  # type: ignore
 
 
@@ -869,84 +876,73 @@ def _get_grid_template_columns(first_value: Any) -> tuple[str | None, str | None
     return grid_template_columns, grid_template_cell_columns
 
 
-def list_dict_repr_html(self: Mapping | Set | Iterable) -> str:
+def list_dict_repr_html(self: Mapping | Set | Iterable) -> str | None:
     try:
-        max_check = 1
-        items_checked = 0
-        has_syft = False
-        extra_fields: list = []
-        if isinstance(self, Mapping):
-            values: Any = list(self.values())
-        elif isinstance(self, Set):
-            values = list(self)
-        else:
-            values = self
+        values = _get_values_for_table_repr(self)
 
         if len(values) == 0:
-            return self.__repr__()
+            # _repr_html_ returns None -> fallback to default repr
+            return None
 
-        for item in iter(self.values() if isinstance(self, Mapping) else self):
-            items_checked += 1
-            if items_checked > max_check:
-                break
+        first_value = values[0]
+        if not _syft_in_mro(self, first_value):
+            return None
 
-            if hasattr(type(item), "mro") and type(item) != type:
-                mro: list | str = type(item).mro()
-            elif hasattr(item, "mro") and type(item) != type:
-                mro = item.mro()
-            else:
-                mro = str(self)
+        extra_fields = getattr(first_value, "__repr_attrs__", [])
+        is_homogenous = len({type(x) for x in values}) == 1
+        table_data = _get_table_data(
+            self,
+            is_homogenous,
+            extra_fields=extra_fields,
+        )
 
-            if "syft" in str(mro).lower():
-                has_syft = True
-                extra_fields = getattr(item, "__repr_attrs__", [])
-                break
-
-        if has_syft:
-            # if custom_repr:
-            table_icon = None
-            if hasattr(values[0], "icon"):
-                table_icon = values[0].icon
-            # this is a list of dicts
-            is_homogenous = len({type(x) for x in values}) == 1
-            # third party
-
-            try:
-                vals = get_repr_values_table(
-                    self, is_homogenous, extra_fields=extra_fields
-                )
-            except Exception:
-                return str(self)
-
-            first_value = values[0]
-            if is_homogenous:
-                cls_name = first_value.__class__.__name__
-                grid_template_columns, grid_template_cell_columns = (
-                    _get_grid_template_columns(first_value)
-                )
-            else:
-                cls_name = ""
-                grid_template_columns = None
-                grid_template_cell_columns = None
-
-            return create_table_template(
-                vals,
-                f"{cls_name} {self.__class__.__name__.capitalize()}",
-                table_icon=table_icon,
-                grid_template_columns=grid_template_columns,
-                grid_template_cell_columns=grid_template_cell_columns,
+        if is_homogenous:
+            cls_name = first_value.__class__.__name__
+            grid_template_columns, grid_template_cell_columns = (
+                _get_grid_template_columns(first_value)
             )
+        else:
+            cls_name = ""
+            grid_template_columns = None
+            grid_template_cell_columns = None
+
+        table_icon = getattr(first_value, "icon", None)
+        table_name = f"{cls_name} {self.__class__.__name__.capitalize()}"
+        return create_table_template(
+            table_data,
+            table_name,
+            table_icon=table_icon,
+            grid_template_columns=grid_template_columns,
+            grid_template_cell_columns=grid_template_cell_columns,
+        )
 
     except Exception as e:
-        print(
-            f"error representing {type(self)} of objects. {e}, {traceback.format_exc()}"
-        )
-        pass
+        logger.debug(f"Could not create table: {e}")
 
-    # stdlib
-    import html
+    # _repr_html_ returns None -> fallback to default repr
+    return None
 
-    return html.escape(self.__repr__())
+
+def _get_values_for_table_repr(obj: Any) -> Any:
+    if isinstance(obj, Mapping):
+        values = list(obj.values())
+    elif isinstance(obj, Set):
+        values = list(obj)
+    else:
+        values = obj
+
+    return values
+
+
+def _syft_in_mro(self: Any, item: Any) -> bool:
+    if hasattr(type(item), "mro") and type(item) != type:
+        mro = type(item).mro()
+    elif hasattr(item, "mro") and type(item) != type:
+        mro = item.mro()
+    else:
+        mro = str(self)  # type: ignore
+
+    return "syft" in str(mro).lower()
 
 
 # give lists and dicts a _repr_html_ if they contain SyftObject's
