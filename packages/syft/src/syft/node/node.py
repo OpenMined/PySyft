@@ -1182,7 +1182,11 @@ class Node(AbstractNode):
 
             role = self.get_role_for_credentials(credentials=credentials)
             context = AuthedServiceContext(
-                node=self, credentials=credentials, role=role, job_id=job_id
+                node=self,
+                credentials=credentials,
+                role=role,
+                job_id=job_id,
+                is_blocking_api_call=is_blocking,
             )
             AuthNodeContextRegistry.set_node_context(self.id, context, credentials)
 
@@ -1230,6 +1234,11 @@ class Node(AbstractNode):
             worker_pool = self.get_default_worker_pool()
         else:
             worker_pool = self.get_worker_pool_by_name(worker_pool)
+
+        if isinstance(worker_pool, SyftError):
+            return worker_pool
+        elif worker_pool is None:
+            return SyftError(message="Worker pool not found")
 
         # Create a Worker pool reference object
         worker_pool_ref = LinkedObject.from_obj(
