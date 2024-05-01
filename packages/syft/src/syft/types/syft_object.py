@@ -881,8 +881,8 @@ def list_dict_repr_html(self: Mapping | Set | Iterable) -> str | None:
         values = _get_values_for_table_repr(self)
 
         if len(values) == 0:
-            # _repr_html_ returns None -> fallback to default repr
-            return None
+            # TODO cleanup tech debt: _repr_html_ is used in syft without `None` fallback.
+            return self.__repr__()
 
         first_value = values[0]
         if not _syft_in_mro(self, first_value):
