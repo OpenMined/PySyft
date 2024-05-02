@@ -50,37 +50,36 @@ except ImportError:
         BEFORE = False
         AFTER = True
 
-    from mongomock.read_preferences import PRIMARY as _READ_PREFERENCE_PRIMARY
+    from .read_preferences import PRIMARY as _READ_PREFERENCE_PRIMARY
 
-# third party
-import mongomock  # Used for utcnow - please see https://github.com/mongomock/mongomock#utcnow
-from mongomock import BulkWriteError
-from mongomock import ConfigurationError
-from mongomock import DuplicateKeyError
-from mongomock import InvalidOperation
-from mongomock import ObjectId
-from mongomock import OperationFailure
-from mongomock import WriteError
-from mongomock import aggregate
-from mongomock import codec_options as mongomock_codec_options
-from mongomock import filtering
-from mongomock import helpers
-from mongomock.filtering import filter_applies
-from mongomock.not_implemented import raise_for_feature as raise_not_implemented
-from mongomock.results import BulkWriteResult
-from mongomock.results import DeleteResult
-from mongomock.results import InsertManyResult
-from mongomock.results import InsertOneResult
-from mongomock.results import UpdateResult
-from mongomock.write_concern import WriteConcern
-from sentinels import NOTHING
+# relative
+from . import BulkWriteError
+from . import ConfigurationError
+from . import DuplicateKeyError
+from . import InvalidOperation
+from . import ObjectId
+from . import OperationFailure
+from . import WriteError
+from . import aggregate
+from . import codec_options as mongomock_codec_options
+from . import filtering
+from . import helpers
+from . import utcnow
+from .filtering import filter_applies
+from .not_implemented import raise_for_feature as raise_not_implemented
+from .results import BulkWriteResult
+from .results import DeleteResult
+from .results import InsertManyResult
+from .results import InsertOneResult
+from .results import UpdateResult
+from .write_concern import WriteConcern
 
 try:
     # third party
     from pymongo.read_concern import ReadConcern
 except ImportError:
-    # third party
-    from mongomock.read_concern import ReadConcern
+    # relative
+    from .read_concern import ReadConcern
 
 _KwargOption = collections.namedtuple("KwargOption", ["typename", "default", "attrs"])
 
@@ -279,7 +278,7 @@ def _project_by_spec(doc, combined_projection_spec, is_include, container):
     doc_copy = container()
 
     for key, val in doc.items():
-        spec = combined_projection_spec.get(key, NOTHING)
+        spec = combined_projection_spec.get(key, None)
         if isinstance(spec, dict):
             if isinstance(val, (list, tuple)):
                 doc_copy[key] = [
@@ -288,9 +287,7 @@ def _project_by_spec(doc, combined_projection_spec, is_include, container):
                 ]
             elif isinstance(val, dict):
                 doc_copy[key] = _project_by_spec(val, spec, is_include, container)
-        elif (is_include and spec is not NOTHING) or (
-            not is_include and spec is NOTHING
-        ):
+        elif (is_include and spec is not None) or (not is_include and spec is None):
             doc_copy[key] = _copy_field(val, container)
 
     return doc_copy
@@ -1414,12 +1411,12 @@ class Collection(object):
                             doc_copy[field] = [item]
                             break
 
-                    # nothing have matched
+                    # None have matched
                     if not matched:
                         del doc_copy[field]
 
                 else:
-                    # remove the field since there is nothing to iterate
+                    # remove the field since there is None to iterate
                     del doc_copy[field]
 
     def _copy_only_fields(self, doc, fields, container):
@@ -2422,7 +2419,7 @@ class Cursor(object):
         unique = set()
         for x in self._compute_results():
             for values in filtering.iter_key_candidates(key, x):
-                if values == NOTHING:
+                if values == None:
                     continue
                 if not isinstance(values, (tuple, list)):
                     values = [values]
@@ -2586,7 +2583,7 @@ def _current_date_updater(doc, field_name, value, codec_options=None):
             # as it currently using time.time internally
             doc[field_name] = helpers.get_current_timestamp()
         else:
-            doc[field_name] = mongomock.utcnow()
+            doc[field_name] = utcnow()
 
 
 _updaters = {
