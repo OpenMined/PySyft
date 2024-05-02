@@ -8,6 +8,8 @@ from ....types.uid import UID
 from ..icons import Icon
 from ..styles import CSS_CODE
 
+TABLE_INDEX_KEY = "_table_repr_index"
+
 custom_code = """
 <style>
     /* TODO Refactor table and remove templated CSS classes */
@@ -145,6 +147,8 @@ custom_code = """
 
                     function buildGrid${uid}(items, pageIndex){
                                 let headers = Object.keys(element${uid}[0]);
+                                // remove index from header
+                                headers = headers.filter((header) => header !== '_table_repr_index');
 
                                 let grid = document.getElementById("table${uid}");
                                 let div = document.createElement("div");
@@ -160,17 +164,20 @@ custom_code = """
 
                                 let page = items[pageIndex -1]
                                 if (page !== 'undefined'){
-                                    let table_index${uid} = ((pageIndex - 1) * page_size${uid})
+                                    let table_index${uid} = ((pageIndex - 1) * page_size${uid});
                                     page.forEach((item) => {
                                         let grid = document.getElementById("table${uid}");
                                         // Add new index value in index cells
                                         let divIndex = document.createElement("div");
                                         divIndex.classList.add('grid-row', 'grid-index-cells');
-                                        divIndex.innerText = table_index${uid};
+                                        let itemIndex = item['_table_repr_index'] || table_index${uid};
+                                        divIndex.innerText = itemIndex;
                                         grid.appendChild(divIndex);
 
                                         // Iterate over the actual obj
                                         for (const attr in item) {
+                                            if (attr === '_table_repr_index') continue;
+
                                             let div = document.createElement("div");
                                             if (typeof item[attr] === 'object'
                                                 && item[attr] !== null
@@ -277,37 +284,39 @@ custom_code = """
 
 
 def create_table_template(
-    items: Sequence,
-    list_name: str,
+    table_data: Sequence,
+    name: str,
     rows: int = 5,
-    table_icon: str | None = None,
+    icon: str | None = None,
     grid_template_columns: str | None = None,
     grid_template_cell_columns: str | None = None,
+    **kwargs: dict,
 ) -> str:
-    if table_icon is None:
-        table_icon = Icon.TABLE.svg
+    if icon is None:
+        icon = Icon.TABLE.svg
     if grid_template_columns is None:
         grid_template_columns = "1fr repeat({cols}, 1fr)"
     if grid_template_cell_columns is None:
         grid_template_cell_columns = "span 4"
 
-    items_dict = json.dumps(items)
+    items_dict = json.dumps(table_data)
     code = CSS_CODE + custom_code
     template = Template(code)
-    rows = min(len(items), rows)
-    if len(items) == 0:
+    rows = min(len(table_data), rows)
+    if len(table_data) == 0:
         cols = 0
     else:
-        cols = (len(items[0].keys())) * 4
+        col_names = [k for k in table_data[0].keys() if k != TABLE_INDEX_KEY]
+        cols = (len(col_names)) * 4
     if "{cols}" in grid_template_columns:
         grid_template_columns = grid_template_columns.format(cols=cols)
     final_html = template.substitute(
         uid=str(UID()),
         element=items_dict,
-        list_name=list_name,
+        list_name=name,
         cols=cols,
         rows=rows,
-        icon=table_icon,
+        icon=icon,
         searchIcon=Icon.SEARCH.svg,
         clipboardIconEscaped=Icon.CLIPBOARD.js_escaped_svg,
         grid_template_columns=grid_template_columns,

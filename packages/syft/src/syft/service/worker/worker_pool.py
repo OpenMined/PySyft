@@ -154,6 +154,7 @@ class WorkerPool(SyftObject):
         "workers",
         "created_at",
     ]
+    __table_sort_attr__ = "Created at"
 
     name: str
     image_id: UID | None = None

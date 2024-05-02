@@ -64,7 +64,7 @@ class CodeHistoryView(SyftObject):
                 raw_code = "\n".join(raw_code.split("\n", 5))
             r["Code"] = raw_code
         # rows = sorted(rows, key=lambda x: x["Version"])
-        return create_table_template(rows, "CodeHistory", table_icon=None)
+        return create_table_template(rows, "CodeHistory", icon=None)
 
     def __getitem__(self, index: int | str) -> UserCode | SyftError:
         if isinstance(index, str):
@@ -139,4 +139,4 @@ class UsersCodeHistoriesDict(SyftObject):
         rows = []
         for user, funcs in self.user_dict.items():
             rows += [{"user": user, "UserCodes": funcs}]
-        return create_table_template(rows, "UserCodeHistory", table_icon=None)
+        return create_table_template(rows, "UserCodeHistory", icon=None)

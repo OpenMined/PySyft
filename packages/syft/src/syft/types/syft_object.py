@@ -44,6 +44,7 @@ from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
+from ..util.notebook_ui.components.table import TABLE_INDEX_KEY
 from ..util.notebook_ui.components.table import create_table_template
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
@@ -422,6 +423,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     )
     __validate_private_attrs__: ClassVar[bool] = True
     __table_coll_widths__: ClassVar[list[str] | None] = None
+    __table_sort_attr__: ClassVar[str | None] = None
 
     def __syft_get_funcs__(self) -> list[tuple[str, Signature]]:
         funcs = print_type_cache[type(self)]
@@ -764,16 +766,47 @@ def short_uid(uid: UID | None) -> str | None:
         return str(uid)[:6] + "..."
 
 
+def _sort_table_rows(rows: list[dict[str, Any]], sort_key: str) -> list[dict[str, Any]]:
+    # relative
+    from .datetime import DateTime
+    from .datetime import str_is_datetime
+
+    if sort_key not in rows[0]:
+        return rows
+
+    sort_values = [row[sort_key] for row in rows]
+    if isinstance(sort_values[0], str) and str_is_datetime(sort_values[0]):
+        sort_values = [DateTime.from_str(v) for v in sort_values]
+
+    reverse_sort = False
+    if isinstance(sort_values[0], DateTime):
+        sort_values = [d.utc_timestamp for d in sort_values]
+        reverse_sort = True
+
+    rows_sorted = [
+        row
+        for _, row in sorted(
+            zip(sort_values, rows),
+            reverse=reverse_sort,
+            key=lambda pair: pair[0],
+        )
+    ]
+
+    return rows_sorted
+
+
 def _get_table_data(
     _self: Mapping | Iterable,
     is_homogenous: bool,
     extra_fields: list | None = None,
-) -> dict:
+    add_index: bool = True,
+) -> list[dict[str, Any]]:
     if extra_fields is None:
         extra_fields = []
 
+    values = _get_values_for_table_repr(_self)
     cols = defaultdict(list)
-    for item in iter(_self.items() if isinstance(_self, Mapping) else _self):
+    for item in values:
         # unpack dict
         if isinstance(_self, Mapping):
             key, item = item
@@ -850,19 +883,30 @@ def _get_table_data(
                     value = None
                 cols[field].append(str(value))
 
-    col_lengts = {len(cols[col]) for col in cols.keys()}
-    if len(col_lengts) > 1:
+    col_lengths = {len(cols[col]) for col in cols.keys()}
+    if len(col_lengths) != 1:
         raise ValueError(
             "Cannot create table for items with different number of fields."
         )
 
-    df = pd.DataFrame(cols)
+    num_rows = col_lengths.pop()
+    if add_index and TABLE_INDEX_KEY not in cols:
+        cols[TABLE_INDEX_KEY] = list(range(num_rows))
 
-    # TODO Move sorting to backend
-    # We cannot sort here, causes mismatch between repr index and actual index
-    # if "created_at" in df.columns:
-    #     df.sort_values(by="created_at", ascending=False, inplace=True)
-    return df.to_dict("records")  # type: ignore
+    rows = []
+    for i in range(num_rows):
+        row = {}
+        for col in cols.keys():
+            row[col] = cols[col][i]
+        rows.append(row)
+
+    if is_homogenous:
+        sort_key = getattr(values[0], "__table_sort_attr__", None) or "created_at"
+    else:
+        sort_key = "created_at"
+    rows = _sort_table_rows(rows, sort_key)
+
+    return rows
 
 
 def _get_grid_template_columns(first_value: Any) -> tuple[str | None, str | None]:
@@ -876,44 +920,63 @@ def _get_grid_template_columns(first_value: Any) -> tuple[str | None, str | None
     return grid_template_columns, grid_template_cell_columns
 
 
+def _prepare_table_data(
+    obj: Any,
+    add_index: bool = True,
+) -> tuple[list[dict], dict]:
+    """
+    Returns a tuple[list[dict], dict] of table_data, table_metadata
+    """
+
+    values = _get_values_for_table_repr(obj)
+    if len(values) == 0:
+        return [], {}
+
+    first_value = values[0]
+    if not _syft_in_mro(obj, first_value):
+        raise ValueError("Cannot create table for Non-syft objects.")
+
+    extra_fields = getattr(first_value, "__repr_attrs__", [])
+    is_homogenous = len({type(x) for x in values}) == 1
+    table_data = _get_table_data(
+        _self=obj,
+        is_homogenous=is_homogenous,
+        extra_fields=extra_fields,
+        add_index=add_index,
+    )
+
+    if is_homogenous:
+        cls_name = first_value.__class__.__name__
+        grid_template_columns, grid_template_cell_columns = _get_grid_template_columns(
+            first_value
+        )
+    else:
+        cls_name = ""
+        grid_template_columns = None
+        grid_template_cell_columns = None
+
+    table_icon = getattr(first_value, "icon", None)
+    table_name = f"{cls_name} {obj.__class__.__name__.capitalize()}"
+
+    table_metadata = {
+        "name": table_name,
+        "icon": table_icon,
+        "grid_template_columns": grid_template_columns,
+        "grid_template_cell_columns": grid_template_cell_columns,
+    }
+
+    return table_data, table_metadata
+
+
 def list_dict_repr_html(self: Mapping | Set | Iterable) -> str | None:
     try:
-        values = _get_values_for_table_repr(self)
-
-        if len(values) == 0:
-            # TODO cleanup tech debt: _repr_html_ is used in syft without `None` fallback.
+        table_data, table_metadata = _prepare_table_data(self)
+        if len(table_data) == 0:
+            # TODO # TODO cleanup tech debt: _repr_html_ is used in syft without `None` fallback.
             return self.__repr__()
-
-        first_value = values[0]
-        if not _syft_in_mro(self, first_value):
-            return None
-
-        extra_fields = getattr(first_value, "__repr_attrs__", [])
-        is_homogenous = len({type(x) for x in values}) == 1
-        table_data = _get_table_data(
-            self,
-            is_homogenous,
-            extra_fields=extra_fields,
-        )
-
-        if is_homogenous:
-            cls_name = first_value.__class__.__name__
-            grid_template_columns, grid_template_cell_columns = (
-                _get_grid_template_columns(first_value)
-            )
-        else:
-            cls_name = ""
-            grid_template_columns = None
-            grid_template_cell_columns = None
-
-        table_icon = getattr(first_value, "icon", None)
-        table_name = f"{cls_name} {self.__class__.__name__.capitalize()}"
         return create_table_template(
-            table_data,
-            table_name,
-            table_icon=table_icon,
-            grid_template_columns=grid_template_columns,
-            grid_template_cell_columns=grid_template_cell_columns,
+            table_data=table_data,
+            **table_metadata,
         )
 
     except Exception as e:

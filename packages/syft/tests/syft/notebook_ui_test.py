@@ -18,6 +18,8 @@ def table_test_cases() -> list[tuple[list, str | None]]:
     homogenous_ao = ([ao_1, ao_2], True)
     non_homogenous_same_repr = ([ao_1, ao_2, np_ao], True)
     homogenous_user = ([user_1, user_2], True)
+    # TODO techdebt: makes table because syft misuses _html_repr_
+    empty_list = ([], True)
 
     # Doesn't make table
     non_homogenous_different_repr = ([ao_1, ao_2, user_1, user_2], False)
@@ -28,6 +30,7 @@ def table_test_cases() -> list[tuple[list, str | None]]:
         homogenous_ao,
         non_homogenous_same_repr,
         homogenous_user,
+        empty_list,
         non_homogenous_different_repr,
         non_syft_obj_1,
         non_syft_obj_2,
