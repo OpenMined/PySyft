@@ -3,41 +3,41 @@ repos:
     rev: v4.5.0
     hooks:
       - id: check-ast
-        exclude: ^(packages/grid/ansible/|third_party)
+        exclude: ^(packages/grid/ansible/|packages/syft/tests/mongomock)
         always_run: true
       - id: trailing-whitespace
         always_run: true
-        exclude: ^(docs/|.+\.md|.bumpversion.cfg|third_party)
+        exclude: ^(docs/|.+\.md|.bumpversion.cfg|packages/syft/tests/mongomock)
       - id: check-docstring-first
         always_run: true
-        exclude: ^(packages/grid/ansible/|third_party)
+        exclude: ^(packages/grid/ansible/|packages/syft/tests/mongomock)
       - id: check-json
         always_run: true
-        exclude: ^(packages/grid/frontend/|third_party)
+        exclude: ^(packages/grid/frontend/|packages/syft/tests/mongomock)
       - id: check-added-large-files
         always_run: true
         exclude: ^(packages/grid/backend/wheels/.*|docs/img/header.png|docs/img/terminalizer.gif)
       - id: check-yaml
         always_run: true
-        exclude: ^(packages/grid/k8s/rendered/|packages/grid/helm/|third_party)
+        exclude: ^(packages/grid/k8s/rendered/|packages/grid/helm/|packages/syft/tests/mongomock)
       - id: check-merge-conflict
         always_run: true
         args: ["--assume-in-merge"]
       - id: check-executables-have-shebangs
         always_run: true
-        exclude: ^(packages/grid/ansible/|third_party)
+        exclude: ^(packages/grid/ansible/|packages/syft/tests/mongomock)
       - id: debug-statements
         always_run: true
-        exclude: ^(packages/grid/ansible/|third_party)
+        exclude: ^(packages/grid/ansible/|packages/syft/tests/mongomock)
       - id: name-tests-test
         always_run: true
-        exclude: ^(.*/tests/utils/)|^(.*fixtures.py|third_party)
+        exclude: ^(.*/tests/utils/)|^(.*fixtures.py|packages/syft/tests/mongomock)
       - id: requirements-txt-fixer
         always_run: true
-        exclude: "third_party"
+        exclude: "packages/syft/tests/mongomock"
       - id: mixed-line-ending
         args: ["--fix=lf"]
-        exclude: '\.bat|\.csv|\.ps1$|third_party'
+        exclude: '\.bat|\.csv|\.ps1$|packages/syft/tests/mongomock'
 
   - repo: https://github.com/MarcoGorelli/absolufy-imports
     rev: v0.3.1
@@ -204,7 +204,7 @@ repos:
     rev: "v3.0.0-alpha.9-for-vscode"
     hooks:
       - id: prettier
-        exclude: ^(packages/grid/helm|packages/grid/frontend/pnpm-lock.yaml|packages/hagrid/hagrid/manifest_template.yml|third_party)
+        exclude: ^(packages/grid/helm|packages/grid/frontend/pnpm-lock.yaml|packages/hagrid/hagrid/manifest_template.yml|packages/syft/tests/mongomock)
 
   # - repo: meta
   #   hooks:
