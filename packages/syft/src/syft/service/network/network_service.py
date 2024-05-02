@@ -322,10 +322,9 @@ class NetworkService(AbstractService):
                     context=context, peer_id=peer_id
                 )
             )
-
-            if association_requests and all(
-                request.status == RequestStatus.PENDING
-                for request in association_requests
+            if (
+                association_requests
+                and association_requests[-1].status == RequestStatus.PENDING
             ):
                 return NodePeerAssociationStatus.PEER_ASSOCIATION_PENDING
 
