@@ -2,16 +2,16 @@
 import warnings
 
 # third party
-from mongomock import codec_options as mongomock_codec_options
-from mongomock import helpers
-from mongomock import read_preferences
-from mongomock import store
 from packaging import version
 
 # relative
 from . import CollectionInvalid
 from . import InvalidName
 from . import OperationFailure
+from . import codec_options as mongomock_codec_options
+from . import helpers
+from . import read_preferences
+from . import store
 from .collection import Collection
 from .filtering import filter_applies
 

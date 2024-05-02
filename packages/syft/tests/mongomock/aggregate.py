@@ -16,14 +16,14 @@ import sys
 import warnings
 
 # third party
-import mongomock
-from mongomock import OperationFailure
-from mongomock import command_cursor
-from mongomock import filtering
-from mongomock import helpers
 from packaging import version
 import pytz
-from sentinels import NOTHING
+
+# relative
+from . import OperationFailure
+from . import command_cursor
+from . import filtering
+from . import helpers
 
 try:
     # third party
@@ -315,11 +315,11 @@ class _Parser(object):
         except KeyError:
             return False
 
-    def _parse_or_nothing(self, expression):
+    def _parse_or_None(self, expression):
         try:
             return self.parse(expression)
         except KeyError:
-            return NOTHING
+            return None
 
     def _parse_basic_expression(self, expression):
         if isinstance(expression, str) and expression.startswith("$"):
@@ -418,7 +418,10 @@ class _Parser(object):
 
         assert isinstance(values, (tuple, list)), (
             "Parameter to %s must evaluate to a list, got '%s'"
-            % (operator, type(values))
+            % (
+                operator,
+                type(values),
+            )
         )
 
         parsed_values = list(self.parse_many(values))
@@ -781,9 +784,9 @@ class _Parser(object):
                 if k not in {"input", "as", "in"}:
                     raise OperationFailure("Unrecognized parameter to $map: %s" % k)
 
-            input_array = self._parse_or_nothing(value["input"])
+            input_array = self._parse_or_None(value["input"])
 
-            if input_array is None or input_array is NOTHING:
+            if input_array is None or input_array is None:
                 return None
 
             if not isinstance(input_array, (list, tuple)):
@@ -810,11 +813,11 @@ class _Parser(object):
                         "%d were passed in." % len(value)
                     )
                 value = value[0]
-            array_value = self._parse_or_nothing(value)
+            array_value = self._parse_or_None(value)
             if not isinstance(array_value, (list, tuple)):
                 raise OperationFailure(
                     "The argument to $size must be an array, but was of type: %s"
-                    % ("missing" if array_value is NOTHING else type(array_value))
+                    % ("missing" if array_value is None else type(array_value))
                 )
             return len(array_value)
 
@@ -1055,11 +1058,14 @@ class _Parser(object):
         )
 
     def _handle_conditional_operator(self, operator, values):
+        # relative
+        from . import SERVER_VERSION
+
         if operator == "$ifNull":
             fields = values[:-1]
-            if len(fields) > 1 and version.parse(
-                mongomock.SERVER_VERSION
-            ) <= version.parse("4.4"):
+            if len(fields) > 1 and version.parse(SERVER_VERSION) <= version.parse(
+                "4.4"
+            ):
                 raise OperationFailure(
                     "$ifNull supports only one input expression "
                     " in MongoDB v4.4 and lower"
@@ -1622,7 +1628,7 @@ def _handle_replace_root_stage(in_collection, unused_database, options):
         try:
             new_doc = _parse_expression(new_root, doc, ignore_missing_keys=True)
         except KeyError:
-            new_doc = NOTHING
+            new_doc = None
         if not isinstance(new_doc, dict):
             raise OperationFailure(
                 "'newRoot' expression must evaluate to an object, but resulting value was: {}".format(
