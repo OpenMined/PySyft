@@ -869,10 +869,10 @@ def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -
 
     # the domain tries to connect to the gateway (again)
     result = domain_client.connect_to_gateway(gateway_client)
-    assert isinstance(result, Request)
-    assert isinstance(result.changes[0], AssociationRequestChange)
-    # there should be 2 association requests from the domain
-    assert len(gateway_client.api.services.request.get_all()) == 2
+    assert isinstance(result, SyftError)
+    assert "There is already a pending association request" in result.message
+    # there should be only 1 association requests from the domain
+    assert len(gateway_client.api.services.request.get_all()) == 1
 
     # check again that the peer's association request is still pending
     res = gateway_client.api.services.network.check_peer_association(

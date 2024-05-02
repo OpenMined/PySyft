@@ -218,7 +218,7 @@ class NetworkService(AbstractService):
         challenge: bytes,
         self_node_route: NodeRoute,
         verify_key: SyftVerifyKey,
-    ) -> list | SyftError:
+    ) -> Request | SyftSuccess | SyftError:
         """Add a Network Node Peer. Called by a remote node to add
         itself as a peer for the current node.
         """
@@ -237,19 +237,39 @@ class NetworkService(AbstractService):
                 message="verify_key does not match the remote node's verify_key for add_peer"
             )
 
+        # check if the peer already is a node peer
+        existed_peer = self.stash.get_by_uid(context.node.verify_key, peer.id)
+        if existed_peer.is_err():
+            return SyftError(
+                message=f"Failed to query peer from stash: {existed_peer.err()}"
+            )
+        if isinstance(existed_peer.ok(), NodePeer):
+            return SyftError(
+                message=f"The peer '{peer.name}' is already associated with '{context.node.name}'"
+            )
+
+        # check if the peer already submitted an association request
+        association_requests: list[Request] = self._get_association_requests_by_peer_id(
+            context=context, peer_id=peer.id
+        )
+        if (
+            association_requests
+            and association_requests[-1].status == RequestStatus.PENDING
+        ):
+            return SyftError(
+                message="There is already a pending association request for this peer"
+            )
+        # only create and submit a new request if there is no requests yet
+        # or all previous requests have been rejected
         association_request_change = AssociationRequestChange(
             self_node_route=self_node_route, challenge=challenge, remote_peer=peer
         )
-
         submit_request = SubmitRequest(
             changes=[association_request_change],
             requesting_user_verify_key=context.credentials,
         )
-
         request_submit_method = context.node.get_service_method(RequestService.submit)
-
         request = request_submit_method(context, submit_request)
-
         if (
             isinstance(request, Request)
             and context.node.settings.association_request_auto_approval
@@ -759,7 +779,7 @@ class NetworkService(AbstractService):
         self, context: AuthedServiceContext, peer_id: UID
     ) -> list[Request]:
         """
-        Get all the association requests from a peer
+        Get all the association requests from a peer. The association requests are sorted by request_time.
         """
         request_get_all_method: Callable = context.node.get_service_method(
             RequestService.get_all
@@ -773,6 +793,9 @@ class NetworkService(AbstractService):
                     and change.remote_peer.id == peer_id
                 ):
                     association_requests.append(request)
+        association_requests = sorted(
+            association_requests, key=lambda request: request.request_time
+        )
         return association_requests
 
 
