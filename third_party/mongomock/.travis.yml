@@ -1,0 +1,72 @@
+language: python
+cache: pip
+os: linux
+dist: focal # OS+dist should be kept in sync with Dockerfile and UBUNTU_VERSION below.
+env:
+  global:
+    # Ubuntu version, keep in sync with os + dist above.
+    - UBUNTU_VERSION=2004
+    # MongoDB version should be kept in sync with docker-compose image and mongomock/__init__.py
+    - MONGODB=5.0.5
+jobs:
+  include:
+    - python: pypy3
+      env: TOX_ENV=pypy3-pymongo-pyexecjs
+    - python: 3.6
+      env: TOX_ENV=py36-pymongo-pyexecjs
+    - python: 3.7
+      env: TOX_ENV=py37-pymongo-pyexecjs
+    - python: 3.8
+      env: TOX_ENV=py38-pymongo-pyexecjs
+    - python: 3.9
+      env: TOX_ENV=py39-pymongo361-pyexecjs
+    - python: 3.9
+      env: TOX_ENV=py39-pymongo-pyexecjs
+    - python: "3.10"
+      env: TOX_ENV=py310
+    - python: "3.10"
+      env: TOX_ENV=py310-pymongo
+    - python: "3.10"
+      env: TOX_ENV=py310-pyexecjs
+    - python: "3.10"
+      env: TOX_ENV=py310-pymongo-pyexecjs
+    - python: "3.10"
+      env: TOX_ENV=pep8
+    - python: "3.10"
+      env: TOX_ENV=pylint
+    - python: "3.10"
+      env: TOX_ENV=mypy
+    - python: "3.10"
+      env: TOX_ENV=py310-pymongo-pyexecjs-mongodb4 MONGODB=4.4.0
+script:
+  - tox -e $TOX_ENV
+before_install:
+  - "sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10"
+  - "sudo apt-get update"
+  - "sudo apt-get install libcurl4 -y"
+before_script:
+  - mkdir ${PWD}/mongodb-linux-x86_64-ubuntu${UBUNTU_VERSION}-${MONGODB}/data
+  - ${PWD}/mongodb-linux-x86_64-ubuntu${UBUNTU_VERSION}-${MONGODB}/bin/mongod --dbpath ${PWD}/mongodb-linux-x86_64-ubuntu${UBUNTU_VERSION}-${MONGODB}/data --logpath ${PWD}/mongodb-linux-x86_64-ubuntu${UBUNTU_VERSION}-${MONGODB}/mongodb.log --fork
+  - "until nc -z localhost 27017; do echo Waiting for MongoDB; sleep 1; done"
+after_script:
+  - pkill mongod
+install:
+  - wget https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu${UBUNTU_VERSION}-${MONGODB}.tgz
+  - tar xzf mongodb-linux-x86_64-ubuntu${UBUNTU_VERSION}-${MONGODB}.tgz
+  - ${PWD}/mongodb-linux-x86_64-ubuntu${UBUNTU_VERSION}-${MONGODB}/bin/mongod --version
+  - pip install tox
+deploy:
+  provider: pypi
+  username: __token__
+  distributions: "bdist_wheel sdist"
+  password:
+    secure: "V77o/nLMWGzQ83Ilpb7zqLmQZAGWRScAQDqloBFeriJXrjh8IFETjl4euWYNbFPzlImXb/ujxYoW0Jd3IdWY/WNTgWaasW++RRBSguwhMzAYZrL2xLOMw23zFOtvOuQ9JEKSJyS3G3GvadUdzQC1Wt/H6LPOuclxJF5oIgQUVU9T4mXpr6xMhw1D86joLCFD
+juzvZux02CDfUryRmcNqVd8KDYcs7JCLC9bgJxEB/7nBJEdICONZ8J/kGaiMEFDfplgdpAfR1KX/sVBEMYBCG5eDin1S2Bi22mgJ6FRsTegd5dy1sj+sT+sATmWJ8IlCpnkCszg/psQRmSiSkNEpH2mSUp3KZLspUSS+E9gWwbOyYGR+5OwHQ0NQzfCyPf8nADP/l1v3Wxdw
+4gqZUynAmV4cWmGP1tnKCpgkGvTr3QRCLmjQGXPnhgYOcJpu6TT5UhmdB5dhdVWYgYqGu27pjAVy+grK9GmtHYAg5MmZC0v6GClEsxeA/qXe9McyFU13YHKppmAelzIcewy+tJxwFmFSPvscHK8Q/j58C5NIOBqVT9GR3jWQqtsvA8yCxmp/KD1sPSF1KSHHUHlCMlmOpmzc
+ZLkLaskRWqznM6wxiLs8UeuyaEEA5R/BdZs4oNZFm9ls0gsf5GPZA6r+8GI5OrSWs6uun/+Th+Xys9yNiMU="
+  on:
+    condition: "$TOX_ENV = py310"
+    python: "3.10"
+    tags: true
+    all_branches: true
+    repo: mongomock/mongomock

@@ -24,7 +24,7 @@ from ...util.notebook_ui.components.sync import Badge
 from ...util.notebook_ui.components.sync import CopyIDButton
 from ...util.notebook_ui.components.sync import MainDescription
 from ...util.notebook_ui.components.sync import SyncWidgetHeader
-from ...util.notebook_ui.notebook_addons import CSS_CODE
+from ...util.notebook_ui.styles import CSS_CODE
 from ..action.action_object import ActionObject
 from ..api.api import TwinAPIEndpoint
 from ..log.log import SyftLog

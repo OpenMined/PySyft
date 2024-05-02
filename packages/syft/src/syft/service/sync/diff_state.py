@@ -32,10 +32,10 @@ from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
-from ...util.fonts import FONT_CSS
-from ...util.fonts import ITABLES_CSS
 from ...util.notebook_ui.components.sync import SyncTableObject
-from ...util.notebook_ui.notebook_addons import ARROW_ICON
+from ...util.notebook_ui.icons import Icon
+from ...util.notebook_ui.styles import FONT_CSS
+from ...util.notebook_ui.styles import ITABLES_CSS
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -1217,7 +1217,7 @@ It will be available for review again."""
         <p style="margin-bottom:16px;"></p>
         <div class="diff-state-intro">Comparing sync states</div>
         <p style="margin-bottom:16px;"></p>
-        <div class="diff-state-header"><span>{name1}</span> {ARROW_ICON} <span>{name2}</span></div>
+        <div class="diff-state-header"><span>{name1}</span> {Icon.ARROW.svg} <span>{name2}</span></div>
         <p style="margin-bottom:16px;"></p>
         <div class="diff-state-sub-header"> This would sync <span class="diff-state-orange-text">{n} batches</span> from <i>{name1}</i> to <i>{name2}</i></div>
         """  # noqa: E501

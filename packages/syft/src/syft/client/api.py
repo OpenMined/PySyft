@@ -367,9 +367,13 @@ class RemoteFunction(SyftObject):
                 return endpoint._repr_html_()
 
             str_repr = "## API: " + custom_path + "\n"
+            if endpoint.description is not None:
+                text = endpoint.description.text
+            else:
+                text = ""
             str_repr += (
                 "### Description: "
-                + f'<span style="font-weight: lighter;">{endpoint.description}</span><br>'
+                + f'<span style="font-weight: lighter;">{text}</span><br>'
                 + "\n"
             )
             str_repr += "#### Private Code:\n"

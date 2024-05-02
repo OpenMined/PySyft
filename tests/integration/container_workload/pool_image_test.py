@@ -1,6 +1,5 @@
 # stdlib
 import os
-from textwrap import dedent
 from time import sleep
 
 # third party
@@ -255,7 +254,6 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     def custom_worker_func(x):
         return {"y": x + 1}
 
-    custom_worker_func.code = dedent(custom_worker_func.code)
     assert custom_worker_func.worker_pool_name == launched_pool.name
     # Request code execution
     code_request = ds_client.code.request_code_execution(custom_worker_func)
