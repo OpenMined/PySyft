@@ -1263,6 +1263,27 @@ class Node(AbstractNode):
             None,
         )
 
+    def get_worker_pool_ref_by_name(
+        self, credentials, worker_pool_name: str | None = None
+    ) -> LinkedObject | SyftError:
+        # If worker pool id is not set, then use default worker pool
+        # Else, get the worker pool for given uid
+        if worker_pool_name is None:
+            worker_pool = self.get_default_worker_pool()
+        else:
+            result = self.pool_stash.get_by_name(credentials, worker_pool_name)
+            if result.is_err():
+                return SyftError(message=f"{result.err()}")
+            worker_pool = result.ok()
+
+        # Create a Worker pool reference object
+        worker_pool_ref = LinkedObject.from_obj(
+            worker_pool,
+            service_type=SyftWorkerPoolService,
+            node_uid=self.id,
+        )
+        return worker_pool_ref
+
     def add_action_to_queue(
         self,
         action: Action,
@@ -1286,23 +1307,11 @@ class Node(AbstractNode):
                 user_code = result.ok()
                 worker_pool_name = user_code.worker_pool_name
 
-        # If worker pool id is not set, then use default worker pool
-        # Else, get the worker pool for given uid
-        if worker_pool_name is None:
-            worker_pool = self.get_default_worker_pool()
-        else:
-            result = self.pool_stash.get_by_name(credentials, worker_pool_name)
-            if result.is_err():
-                return SyftError(message=f"{result.err()}")
-            worker_pool = result.ok()
-
-        # Create a Worker pool reference object
-        worker_pool_ref = LinkedObject.from_obj(
-            worker_pool,
-            service_type=SyftWorkerPoolService,
-            node_uid=self.id,
+        worker_pool_ref = self.get_worker_pool_ref_by_name(
+            credentials, worker_pool_name
         )
-
+        if isinstance(worker_pool_ref, SyftError):
+            return worker_pool_ref
         queue_item = ActionQueueItem(
             id=task_uid,
             node_uid=self.id,
@@ -1447,12 +1456,10 @@ class Node(AbstractNode):
 
         else:
             worker_settings = WorkerSettings.from_node(node=self)
-            default_worker_pool = self.get_default_worker_pool()
-            worker_pool = LinkedObject.from_obj(
-                default_worker_pool,
-                service_type=SyftWorkerPoolService,
-                node_uid=self.id,
-            )
+            worker_pool_ref = self.get_worker_pool_ref_by_name(credentials=credentials)
+            if isinstance(worker_pool_ref, SyftError):
+                return worker_pool_ref
+
             queue_item = QueueItem(
                 id=UID(),
                 node_uid=self.id,
@@ -1464,7 +1471,7 @@ class Node(AbstractNode):
                 method=method_str,
                 args=unsigned_call.args,
                 kwargs=unsigned_call.kwargs,
-                worker_pool=worker_pool,
+                worker_pool=worker_pool_ref,
             )
             return self.add_queueitem_to_queue(
                 queue_item,

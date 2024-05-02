@@ -4,6 +4,7 @@ import sys
 from time import sleep
 
 # third party
+import psutil
 import pytest
 from result import Err
 
@@ -26,7 +27,14 @@ from syft.service.response import SyftSuccess
 
 @pytest.mark.local_node
 def test_job_kill_restart(full_low_worker) -> None:
-    node = full_low_worker
+    node = sy.orchestra.launch(
+        name="test-domain-helm2",
+        dev_mode=False,
+        thread_workers=False,
+        reset=True,
+        n_consumers=4,
+        create_producer=True,
+    )
 
     client = node.login(email="info@openmined.org", password="changethis")
     res = client.register(name="a", email="aa@b.org", password="c", password_verify="c")
@@ -56,17 +64,30 @@ def test_job_kill_restart(full_low_worker) -> None:
     client.requests[-1].approve(approve_nested=True)
     client = node.login(email="info@openmined.org", password="changethis")
     job = client.code.process_all(blocking=False)
-    while not job.subjobs:
-        sleep(0.5)
+    # wait for job to start
+
+    print("initilasing job")
+    job.wait(timeout=5)
+    # while job.status != JobStatus.PROCESSING or len(job.subjobs) == 0:
+    #     print(job.status)
+    #     sleep(2)
 
     result = job.subjobs[0].kill()
     assert isinstance(result, SyftError), "Should not kill subjob"
     result = job.subjobs[0].restart()
     assert isinstance(result, SyftError), "Should not restart subjob"
-    # result = job.restart()
-    # assert isinstance(result, SyftSuccess), "Should restart job"
+    result = job.restart()
+    assert isinstance(result, SyftError), "Should not restart running job"
     result = job.kill()
     assert isinstance(result, SyftSuccess), "Should kill job"
+    result = job.restart()
+    assert isinstance(result, SyftSuccess), "Should restart idle job"
 
-    node.python_node.cleanup()
-    node.land()
+    print("wait for job to start")
+    job.wait(timeout=5)
+    while not psutil.pid_exists(job.job_pid):
+        sleep(2)
+
+    # cleanup and land
+    result = job.kill()
+    assert isinstance(result, SyftSuccess), "Should kill job"

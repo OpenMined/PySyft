@@ -1,5 +1,7 @@
 # stdlib
+from multiprocessing import Process
 import threading
+from threading import Thread
 import time
 from typing import Any
 from typing import cast
@@ -67,8 +69,11 @@ class MonitorThread(threading.Thread):
             self.queue_item.resolved = True
             self.worker.queue_stash.set_result(self.credentials, self.queue_item)
             self.worker.job_stash.set_result(self.credentials, job)
-            process = psutil.Process(job.job_pid)
-            process.terminate()
+            if psutil.pid_exists(job.job_pid):
+                process = psutil.Process(job.job_pid)
+                process.terminate()
+            else:
+                print(f"Process with PID {job.job_pid} not found.")
 
     def stop(self) -> None:
         self.stop_requested.set()
@@ -337,9 +342,6 @@ class APICallMessageHandler(AbstractMessageHandler):
             raise Exception(f"{job_result.err()}")
 
         if queue_config.thread_workers:
-            # stdlib
-            from threading import Thread
-
             thread = Thread(
                 target=handle_message_multiprocessing,
                 args=(worker_settings, queue_item, credentials),
@@ -347,14 +349,15 @@ class APICallMessageHandler(AbstractMessageHandler):
             thread.start()
             thread.join()
         else:
-            # stdlib
-            from multiprocessing import Process
+            if psutil.pid_exists(job_item.job_pid):
+                psutil.Process(job_item.job_pid).terminate()
 
             process = Process(
                 target=handle_message_multiprocessing,
                 args=(worker_settings, queue_item, credentials),
             )
             process.start()
+
             job_item.job_pid = process.pid
             worker.job_stash.set_result(credentials, job_item)
             process.join()
