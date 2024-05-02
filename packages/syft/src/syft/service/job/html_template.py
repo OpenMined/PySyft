@@ -1,6 +1,6 @@
 # relative
-from ...util.notebook_ui.notebook_addons import CSS_CODE
-from ...util.notebook_ui.notebook_addons import JS_DOWNLOAD_FONTS
+from ...util.notebook_ui.styles import CSS_CODE
+from ...util.notebook_ui.styles import JS_DOWNLOAD_FONTS
 
 type_html = """
             <div class="label label-light-blue"
@@ -154,47 +154,6 @@ tabs_html = """
 </div>
 """
 
-LIST_CSS = """
-<style>
-    .syft-widget ul {
-        list-style-type: none;
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-    }
-
-    .syft-widget li {
-        float: left;
-        border-bottom: solid;
-        border-bottom-color: #CFCDD6;
-    }
-
-    .syft-widget li a {
-        display: block;
-        text-align: center;
-        padding: 14px 16px;
-        color: #CFCDD6
-    }
-    .log-tab-header{
-        border-bottom: solid 2px #ECEBEF;
-        padding: 4px 16px
-    }
-
-    .active-border {
-        border-bottom: solid 2px #1F567A;
-        font-weight: 700;
-    }
-
-    .active {
-        color: #1F567A
-    }
-
-    .syft-widget li a:hover {
-        background-color: #C2DEF0;
-    }
-</style>
-"""
-
 result_html = """<div id="${result_tab_id}" class="tab-${identifier}" style="background: #F4F3F6;
     border-color: #CFCDD6; border-width: 0.5px; border-style: solid; padding: 24px; gap: 8px; margin-top: 24px">
     <div style="font-size: 12px; font-weight: 400; font: DejaVu Sans Mono, sans-serif; line-height: 16.8px">
@@ -214,10 +173,6 @@ job_repr_template = f"""
 <!-- Start CSS_CODE -->
 {CSS_CODE}
 <!-- End CSS_CODE -->
-
-<!-- Start LIST_CSS -->
-{LIST_CSS}
-<!-- End LIST_CSS -->
 
 <!-- Start header_line_html -->
 {header_line_html}
