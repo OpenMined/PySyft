@@ -133,6 +133,9 @@ profiles:
         path: images.seaweedfs
       - op: remove
         path: dev.seaweedfs
+      - op: replace
+        path: deployments.syft.helm.values.rathole.mode
+        value: "server"
 
   - name: gcp
     patches:

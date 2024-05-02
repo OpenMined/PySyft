@@ -54,45 +54,22 @@ spec:
         ports:
           - name: rathole-port
             containerPort: 2333
-          - name: api-port
-            containerPort: 5555
-          - name: nginx-port
-            containerPort: 80
-        startupProbe:
-          httpGet:
-            path: /?probe=startupProbe
-            port: api-port
-          failureThreshold: 30
-        livenessProbe:
-          httpGet:
-            path: /?probe=livenessProbe
-            port: api-port
-          periodSeconds: 15
-          timeoutSeconds: 5
-          failureThreshold: 3
+        startupProbe: null
+        livenessProbe: null
         volumeMounts:
-          {{- if eq .Values.rathole.mode "server" }}
-          - name: rathole-config
-            mountPath: /app/server.toml
-            subPath: server.toml
+          - name: mount-config
+            mountPath: /conf/
             readOnly: false
-          {{- end }}
-
-          {{- if eq .Values.rathole.mode "client" }}
           - name: rathole-config
-            mountPath: /app/client.toml
-            subPath: client.toml
+            mountPath: /app/conf/
             readOnly: false
-          {{- end }}
       terminationGracePeriodSeconds: 5
       volumes:
         - name: rathole-config
+          emptyDir: {}
+        - name: mount-config
           configMap:
             name: rathole-config
-            # TODO: Mount the .toml and nginx.conf files
-
-        # Add any additional container configuration here
-        # such as environment variables, volumes, etc.
   volumeClaimTemplates:
   - metadata:
       name: rathole-data

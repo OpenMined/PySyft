@@ -72,4 +72,13 @@ data:
     providers:
       file:
         filename: /etc/traefik/dynamic.yml
+---
 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: proxy-config-dynamic
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: proxy
+data: {}

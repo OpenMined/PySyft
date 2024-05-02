@@ -11,20 +11,8 @@ spec:
     {{- include "common.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: rathole
   ports:
-    - name: nginx
-      protocol: TCP
-      port: 80
-      targetPort: 80
-    - name: api
-      protocol: TCP
-      port: 5555
-      targetPort: 5555
-  type: NodePort
-  selector:
-    {{- include "common.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: rathole
-  ports:
     - name: rathole
       protocol: TCP
       port: 2333
       targetPort: 2333
+

@@ -45,6 +45,10 @@ spec:
             - mountPath: /etc/traefik
               name: traefik-conf
               readOnly: false
+          volumeMounts:
+            - mountPath: /etc/traefik/dynamic
+              name: traefik-conf-dynamic
+              readOnly: false
           startupProbe: null
           livenessProbe:
             httpGet:
@@ -59,3 +63,6 @@ spec:
       - configMap:
           name: proxy-config
         name: traefik-conf
+      - configMap:
+          name: proxy-config-dynamic
+        name: traefik-conf-dynamic
