@@ -938,13 +938,13 @@ class SyftClient:
             metadata.check_version(__version__)
             self.metadata = metadata
 
-    def _fetch_api(self, credentials: SyftSigningKey) -> None:
+    def _fetch_api(self, credentials: SyftSigningKey) -> SyftAPI:
         _api: SyftAPI = self.connection.get_api(
             credentials=credentials,
             communication_protocol=self.communication_protocol,
         )
 
-        def refresh_callback() -> None:
+        def refresh_callback() -> SyftAPI:
             return self._fetch_api(self.credentials)
 
         _api.refresh_api_callback = refresh_callback
@@ -958,6 +958,7 @@ class SyftClient:
             api=_api,
         )
         self._api = _api
+        return _api
 
 
 @instrument

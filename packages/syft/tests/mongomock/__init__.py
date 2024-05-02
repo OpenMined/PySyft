@@ -106,11 +106,8 @@ except ImportError:
 
 from .helpers import ObjectId, utcnow  # noqa
 
-# third party
-from mongomock.__version__ import __version__
 
 __all__ = [
-    "__version__",
     "Database",
     "DuplicateKeyError",
     "Collection",
