@@ -5,6 +5,8 @@ import pytest
 # syft absolute
 from syft.service.action.action_object import ActionObject
 from syft.service.user.user import User
+from syft.util.table import TABLE_INDEX_KEY
+from syft.util.table import prepare_table_data
 
 
 def table_test_cases() -> list[tuple[list, str | None]]:
@@ -45,3 +47,31 @@ def test_list_dict_repr_html(test_case):
     assert (dict(enumerate(obj))._repr_html_() is not None) == expected
     assert (set(obj)._repr_html_() is not None) == expected
     assert (tuple(obj)._repr_html_() is not None) == expected
+
+
+def test_sort_table_rows():
+    emails = [
+        "x@y.z",
+        "a@b.c",
+        "c@d.e",
+    ]
+    sorted_order = [1, 2, 0]
+    users = [User(email=email) for email in emails]
+
+    table_data, _ = prepare_table_data(users)
+
+    # No sorting
+    for i, row in enumerate(table_data):
+        print(row)
+    table_emails = [row["email"] for row in table_data]
+    table_indices = [row[TABLE_INDEX_KEY] for row in table_data]
+    assert table_emails == emails
+    assert table_indices == list(range(len(emails)))
+
+    # Sort by email
+    User.__table_sort_attr__ = "email"
+    table_data_sorted, _ = prepare_table_data(users)
+    table_emails_sorted = [row["email"] for row in table_data_sorted]
+    table_indices_sorted = [row[TABLE_INDEX_KEY] for row in table_data_sorted]
+    assert table_emails_sorted == sorted(emails)
+    assert table_indices_sorted == sorted_order

@@ -170,7 +170,12 @@ custom_code = """
                                         // Add new index value in index cells
                                         let divIndex = document.createElement("div");
                                         divIndex.classList.add('grid-row', 'grid-index-cells');
-                                        let itemIndex = item['_table_repr_index'] || table_index${uid};
+                                        let itemIndex;
+                                        if ('_table_repr_index' in item) {
+                                            itemIndex = item['_table_repr_index'];
+                                        } else {
+                                            itemIndex = table_index${uid};
+                                        }
                                         divIndex.innerText = itemIndex;
                                         grid.appendChild(divIndex);
 
