@@ -3,6 +3,9 @@ import time
 from typing import Any
 from typing import cast
 
+# third party
+import psutil
+
 # relative
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
@@ -136,17 +139,15 @@ class JobService(AbstractService):
 
         # poll for status change
         timeout = 10
-        while job := self.stash.get_by_uid(context.credentials, uid=uid).ok():
-            if job.status == JobStatus.INTERRUPTED:
-                break
-            if timeout == 0:
-                logger.warning(
-                    "Timeout reached while waiting for job to be interrupted, "
-                    "continuing to restart anyway."
-                )
-                break
+        while psutil.Process(job.job_pid).is_running() and timeout:
             time.sleep(1)
             timeout -= 1
+
+        if psutil.Process(job.job_pid).is_running():
+            logger.warning(
+                "Timeout reached while waiting for job to be interrupted, "
+                "continuing to restart anyway."
+            )
 
         job.status = JobStatus.CREATED
         self.update(context=context, job=job)
