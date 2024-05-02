@@ -6,9 +6,6 @@ import operator
 import re
 import uuid
 
-# third party
-from sentinels import NOTHING
-
 # relative
 from . import OperationFailure
 from .helpers import ObjectId
@@ -78,14 +75,14 @@ class _Filterer(object):
                 "$all": self._all_op,
                 "$in": _in_op,
                 "$nin": lambda dv, sv: not _in_op(dv, sv),
-                "$exists": lambda dv, sv: bool(sv) == (dv is not NOTHING),
-                "$regex": _not_nothing_and(_regex),
+                "$exists": lambda dv, sv: bool(sv) == (dv is not None),
+                "$regex": _not_None_and(_regex),
                 "$elemMatch": self._elem_match_op,
                 "$size": _size_op,
                 "$type": _type_op,
             },
             **{
-                key: _not_nothing_and(_list_expand(_compare_objects(op)))
+                key: _not_None_and(_list_expand(_compare_objects(op)))
                 for key, op in SORTING_OPERATOR_MAP.items()
             },
         )
@@ -142,7 +139,7 @@ class _Filterer(object):
                     continue
 
             for doc_val in iter_key_candidates(key, document):
-                has_candidates |= doc_val is not NOTHING
+                has_candidates |= doc_val is not None
                 is_ops_filter = (
                     search
                     and isinstance(search, dict)
@@ -188,7 +185,7 @@ class _Filterer(object):
                         is_match |= str(search) in doc_val
                 else:
                     is_match = (doc_val == search) or (
-                        search is None and doc_val is NOTHING
+                        search is None and doc_val is None
                     )
 
                 # When checking negative match, all the elements should match.
@@ -261,7 +258,7 @@ def iter_key_candidates(key, doc):
 
     key_parts = key.split(".")
     if len(key_parts) == 1:
-        return [doc.get(key, NOTHING)]
+        return [doc.get(key, None)]
 
     sub_key = ".".join(key_parts[1:])
     sub_doc = doc.get(key_parts[0], {})
@@ -290,7 +287,7 @@ def _iter_key_candidates_sublist(key, doc):
                 if sub_key in sub_doc:
                     ret.extend(iter_key_candidates(key_remainder, sub_doc[sub_key]))
                 else:
-                    ret.append(NOTHING)
+                    ret.append(None)
         return ret
 
     # subkey is an index
@@ -309,7 +306,7 @@ def _force_list(v):
 def _in_op(doc_val, search_val):
     if not isinstance(search_val, (list, tuple)):
         raise OperationFailure("$in needs an array")
-    if doc_val is NOTHING and None in search_val:
+    if doc_val is None and None in search_val:
         return True
     doc_val = _force_list(doc_val)
     is_regex_list = [isinstance(x, _RE_TYPES) for x in search_val]
@@ -321,9 +318,9 @@ def _in_op(doc_val, search_val):
     return False
 
 
-def _not_nothing_and(f):
-    """wrap an operator to return False if the first arg is NOTHING"""
-    return lambda v, l: v is not NOTHING and f(v, l)
+def _not_None_and(f):
+    """wrap an operator to return False if the first arg is None"""
+    return lambda v, l: v is not None and f(v, l)
 
 
 def _compare_objects(op):
@@ -441,7 +438,7 @@ def _regex(doc_val, regex):
 def _size_op(doc_val, search_val):
     if isinstance(doc_val, (list, tuple, dict)):
         return search_val == len(doc_val)
-    return search_val == 1 if doc_val and doc_val is not NOTHING else 0
+    return search_val == 1 if doc_val and doc_val is not None else 0
 
 
 def _list_expand(f, negative=False):
@@ -508,7 +505,7 @@ def _combine_regex_options(search):
 
 
 def operator_eq(doc_val, search_val):
-    if doc_val is NOTHING and search_val is None:
+    if doc_val is None and search_val is None:
         return True
     return operator.eq(doc_val, search_val)
 
@@ -564,13 +561,13 @@ TYPE_MAP = {
 
 
 def resolve_key(key, doc):
-    return next(iter(iter_key_candidates(key, doc)), NOTHING)
+    return next(iter(iter_key_candidates(key, doc)), None)
 
 
 def resolve_sort_key(key, doc):
     value = resolve_key(key, doc)
     # see http://docs.mongodb.org/manual/reference/method/cursor.sort/#ascending-descending-sort
-    if value is NOTHING:
+    if value is None:
         return 1, BsonComparable(None)
 
     # List or tuples are sorted solely by their first value.

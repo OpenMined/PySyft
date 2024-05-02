@@ -10,8 +10,10 @@ from urllib.parse import unquote_plus
 import warnings
 
 # third party
-from mongomock import InvalidURI
 from packaging import version
+
+# relative
+from . import InvalidURI
 
 # Get ObjectId from bson if available or import a crafted one. This is not used
 # in this module but is made available for callers of this module.
@@ -24,7 +26,7 @@ try:
     PYMONGO_VERSION = version.parse(pymongo_version)
     HAVE_PYMONGO = True
 except ImportError:
-    from mongomock.object_id import ObjectId  # noqa
+    from .object_id import ObjectId  # noqa
 
     Timestamp = None
     # Default Pymongo version if not present.
@@ -135,11 +137,13 @@ class hashdict(dict):
         return frozenset(
             (
                 k,
-                hashdict(v)
-                if isinstance(v, dict)
-                else tuple(v)
-                if isinstance(v, list)
-                else v,
+                (
+                    hashdict(v)
+                    if isinstance(v, dict)
+                    else tuple(v)
+                    if isinstance(v, list)
+                    else v
+                ),
             )
             for k, v in self.items()
         )
