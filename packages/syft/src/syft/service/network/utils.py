@@ -7,8 +7,9 @@ from typing import cast
 # relative
 from ...types.datetime import DateTime
 from ..context import AuthedServiceContext
-from ..response import SyftSuccess
+from ..response import SyftError
 from .network_service import NetworkService
+from .network_service import NodePeerAssociationStatus
 from .node_peer import NodePeer
 from .node_peer import NodePeerConnectionStatus
 
@@ -57,12 +58,17 @@ class PeerHealthCheckTask:
                 )
                 peer.ping_status = (
                     NodePeerConnectionStatus.ACTIVE
-                    if isinstance(peer_status, SyftSuccess)
+                    if peer_status == NodePeerAssociationStatus.PEER_ASSOCIATED
                     else NodePeerConnectionStatus.INACTIVE
                 )
-                peer.ping_status_message = peer_status.message
+                if isinstance(peer_status, SyftError):
+                    peer.ping_status_message = (
+                        f"Error `{peer_status.message}` when pinging peer '{peer.name}'"
+                    )
+                else:
+                    peer.ping_status_message = f"Peer '{peer.name}''s ping status: {peer.ping_status.value.lower()}"
 
-            result = network_stash.update_peer(
+            result = network_stash.update(
                 credentials=context.node.verify_key, peer=peer
             )
 
@@ -77,10 +83,17 @@ class PeerHealthCheckTask:
 
     def run(self, context: AuthedServiceContext) -> None:
         if self.thread is not None:
-            logging.info("Peer health check task is already running.")
-
-        self.thread = threading.Thread(target=self._run, args=(context,))
-        self.thread.start()
+            logging.info(
+                f"Peer health check task is already running in thread "
+                f"{self.thread.name} with ID: {self.thread.ident}."
+            )
+        else:
+            self.thread = threading.Thread(target=self._run, args=(context,))
+            logging.info(
+                f"Start running peers health check in thread "
+                f"{self.thread.name} with ID: {self.thread.ident}."
+            )
+            self.thread.start()
 
     def stop(self) -> None:
         if self.thread:
