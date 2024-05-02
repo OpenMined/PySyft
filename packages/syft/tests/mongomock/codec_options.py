@@ -4,8 +4,10 @@
 import collections
 
 # third party
-from mongomock import helpers
 from packaging import version
+
+# relative
+from . import helpers
 
 try:
     # third party
