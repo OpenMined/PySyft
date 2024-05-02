@@ -12,7 +12,6 @@ from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
 from ...types.uid import UID
 from ...util.notebook_ui.components.table import create_table_template
-from ...util.table import _create_table_rows
 from ...util.table import prepare_table_data
 from ..code.user_code import UserCode
 from ..response import SyftError
@@ -56,7 +55,7 @@ class CodeHistoryView(SyftObject):
         return {"Number of versions": len(self.user_code_history)}
 
     def _repr_html_(self) -> str:
-        # TODO techdebt: make _coll_repr_ instead of _repr_html_
+        # TODO techdebt: move this to _coll_repr_
         rows, _ = prepare_table_data(self.user_code_history)
         for i, r in enumerate(rows):
             r["Version"] = f"v{i}"
