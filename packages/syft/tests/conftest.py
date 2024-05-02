@@ -10,7 +10,6 @@ from unittest import mock
 
 # third party
 from faker import Faker
-import mongomock
 import pytest
 
 # syft absolute
@@ -24,6 +23,8 @@ from syft.protocol.data_protocol import stage_protocol_changes
 from syft.service.user import user
 
 # relative
+# our version of mongomock that has a fix for CodecOptions and custom TypeRegistry Support
+from .mongomock.mongo_client import MongoClient
 from .syft.stores.store_fixtures_test import dict_action_store  # noqa: F401
 from .syft.stores.store_fixtures_test import dict_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import dict_queue_stash  # noqa: F401
@@ -246,7 +247,7 @@ def mongo_client(testrun_uid):
     conn_str = f"mongodb://localhost:27017/{db_name}"
 
     # create a client, and test the connection
-    client = mongomock.MongoClient(conn_str)
+    client = MongoClient(conn_str)
     assert client.server_info().get("ok") == 1.0
 
     yield client
@@ -256,7 +257,7 @@ def mongo_client(testrun_uid):
 
 @pytest.fixture(autouse=True)
 def patched_mongo_client(monkeypatch):
-    monkeypatch.setattr("pymongo.mongo_client.MongoClient", mongomock.MongoClient)
+    monkeypatch.setattr("pymongo.mongo_client.MongoClient", MongoClient)
 
 
 @pytest.fixture(autouse=True)

@@ -33,10 +33,10 @@ from ...util import options
 from ...util.colors import ON_SURFACE_HIGHEST
 from ...util.colors import SURFACE
 from ...util.colors import SURFACE_SURFACE
-from ...util.fonts import FONT_CSS
-from ...util.fonts import ITABLES_CSS
 from ...util.markdown import as_markdown_python_code
-from ...util.notebook_ui.notebook_addons import FOLDER_ICON
+from ...util.notebook_ui.icons import Icon
+from ...util.notebook_ui.styles import FONT_CSS
+from ...util.notebook_ui.styles import ITABLES_CSS
 from ...util.util import get_mb_size
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
@@ -468,7 +468,7 @@ class Dataset(SyftObject):
 
     @property
     def icon(self) -> str:
-        return FOLDER_ICON
+        return Icon.FOLDER.svg
 
     def _coll_repr_(self) -> dict[str, Any]:
         return {
