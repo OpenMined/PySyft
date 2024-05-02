@@ -47,12 +47,19 @@ class PeerHealthCheckTask:
             peer.pinged_timestamp = DateTime.now()
             try:
                 peer_client = peer.client_with_context(context=context)
+                if peer_client.is_err():
+                    logging.error(
+                        f"Failed to create client for peer: {peer}: {peer_client.err()}"
+                    )
+                    peer.ping_status = NodePeerConnectionStatus.TIMEOUT
+                    peer_client = None
             except Exception as e:
                 logging.error(f"Failed to create client for peer: {peer}: {e}")
                 peer.ping_status = NodePeerConnectionStatus.TIMEOUT
                 peer_client = None
 
             if peer_client is not None:
+                peer_client = peer_client.ok()
                 peer_status = peer_client.api.services.network.check_peer_association(
                     peer_id=context.node.id
                 )
