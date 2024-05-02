@@ -34,6 +34,7 @@ from .routes import connection_to_route
 from .routes import route_to_connection
 
 
+@serializable()
 class NodePeerConnectionStatus(Enum):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"

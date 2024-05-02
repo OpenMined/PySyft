@@ -322,6 +322,7 @@ class Node(AbstractNode):
         smtp_port: int | None = None,
         smtp_host: str | None = None,
         association_request_auto_approval: bool = False,
+        background_tasks: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -407,6 +408,14 @@ class Node(AbstractNode):
         self.init_queue_manager(queue_config=self.queue_config)
 
         self.init_blob_storage(config=blob_storage_config)
+
+        context = AuthedServiceContext(
+            node=self,
+            credentials=self.verify_key,
+            role=ServiceRole.ADMIN,
+        )
+        if background_tasks:
+            self.run_peer_health_checks(context=context)
 
         # Migrate data before any operation on db
         if migrate:
@@ -607,6 +616,7 @@ class Node(AbstractNode):
         migrate: bool = False,
         in_memory_workers: bool = True,
         association_request_auto_approval: bool = False,
+        background_tasks: bool = False,
     ) -> Self:
         uid = UID.with_seed(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -635,6 +645,7 @@ class Node(AbstractNode):
             in_memory_workers=in_memory_workers,
             reset=reset,
             association_request_auto_approval=association_request_auto_approval,
+            background_tasks=background_tasks,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:

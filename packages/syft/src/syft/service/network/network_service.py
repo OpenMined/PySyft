@@ -302,7 +302,7 @@ class NetworkService(AbstractService):
                     context=context, peer_id=peer_id
                 )
             )
-            # Check if the all the association requests have a status of "pending"
+
             if association_requests and all(
                 request.status == RequestStatus.PENDING
                 for request in association_requests

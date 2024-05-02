@@ -272,6 +272,7 @@ def deploy_to_python(
         "n_consumers": n_consumers,
         "create_producer": create_producer,
         "association_request_auto_approval": association_request_auto_approval,
+        "background_tasks": True,
     }
 
     if port:

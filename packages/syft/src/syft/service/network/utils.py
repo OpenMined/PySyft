@@ -17,7 +17,7 @@ from .node_peer import NodePeerConnectionStatus
 class PeerHealthCheckTask:
     def __init__(self) -> None:
         self.thread: threading.Thread | None = None
-        self.repeat_time = 300  # in seconds
+        self.repeat_time = 10  # in seconds
         self.started_time = None
 
     def peer_route_heathcheck(self, context: AuthedServiceContext) -> None:
@@ -54,7 +54,9 @@ class PeerHealthCheckTask:
                     peer.ping_status = NodePeerConnectionStatus.TIMEOUT
                     peer_client = None
             except Exception as e:
-                logging.error(f"Failed to create client for peer: {peer}: {e}")
+                logging.error(
+                    f"Failed to create client for peer: {peer} with exception {e}"
+                )
                 peer.ping_status = NodePeerConnectionStatus.TIMEOUT
                 peer_client = None
 
@@ -76,7 +78,9 @@ class PeerHealthCheckTask:
                     peer.ping_status_message = f"Peer '{peer.name}''s ping status: {peer.ping_status.value.lower()}"
 
             result = network_stash.update(
-                credentials=context.node.verify_key, peer=peer
+                credentials=context.node.verify_key,
+                peer=peer,
+                has_permission=True,
             )
 
             if result.is_err():
