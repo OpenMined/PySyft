@@ -11,7 +11,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
 from ...types.uid import UID
-from ...util.notebook_ui.components.table import create_table_template
+from ...util.notebook_ui.components.table_template import create_table_template
 from ...util.table import prepare_table_data
 from ..code.user_code import UserCode
 from ..response import SyftError

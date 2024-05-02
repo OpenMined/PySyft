@@ -10,8 +10,8 @@ from typing import Any
 from loguru import logger
 
 # relative
-from .notebook_ui.components.table import TABLE_INDEX_KEY
-from .notebook_ui.components.table import create_table_template
+from .notebook_ui.components.table_template import TABLE_INDEX_KEY
+from .notebook_ui.components.table_template import create_table_template
 from .util import full_name_with_qualname
 
 
