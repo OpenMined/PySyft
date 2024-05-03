@@ -33,7 +33,12 @@ class AttestationService(AbstractService):
             response.raise_for_status()
             message = response.json().get("result")
             raw_token = response.json().get("token")
-            return raw_token if raw else SyftSuccess(message=message)
+            if raw:
+                return raw_token
+            elif message:
+                return SyftSuccess(message=message)
+            else: 
+                return SyftError(message=message)
         except requests.HTTPError:
             return SyftError(message=f"{response.json()['detail']}")
         except requests.RequestException as e:

@@ -1,4 +1,3 @@
-# standard imports
 # stdlib
 import io
 import re
@@ -9,7 +8,6 @@ from loguru import logger
 from nv_attestation_sdk import attestation
 
 # relative
-# relative imports
 from .attestation_constants import NRAS_URL
 
 
