@@ -20,10 +20,10 @@ from ...client.sync_decision import SyncDirection
 from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
 from ...util.notebook_ui.components.sync import Alert
-from ...util.notebook_ui.components.sync import TypeLabel
 from ...util.notebook_ui.components.sync import CopyIDButton
 from ...util.notebook_ui.components.sync import MainDescription
 from ...util.notebook_ui.components.sync import SyncWidgetHeader
+from ...util.notebook_ui.components.sync import TypeLabel
 from ...util.notebook_ui.styles import CSS_CODE
 from ..action.action_object import ActionObject
 from ..api.api import TwinAPIEndpoint

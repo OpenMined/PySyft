@@ -567,12 +567,12 @@ body {
 .tabulator .tabulator-cell:last-child {
   border-right: none;
 } */
-/* 
+/*
 .tabulator .tabulator-header .tabulator-col {
   background-color: var(--secondary-color);
   border-right: 1px solid #E0E0E0;
 } */
-/* 
+/*
 .tabulator .tabulator-header .tabulator-col:last-child {
   border-right: none;
 }

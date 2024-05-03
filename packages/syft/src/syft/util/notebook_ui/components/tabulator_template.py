@@ -1,10 +1,20 @@
+# stdlib
 import json
 import secrets
-from syft.util.assets import load_css, load_js
-from .sync import Badge, Label, CopyButton
-from ...table import TABLE_INDEX_KEY, prepare_table_data
+
+# third party
+from IPython.display import HTML
+from IPython.display import display
 import jinja2
-from IPython.display import display, HTML
+
+# relative
+from ...assets import load_css
+from ...assets import load_js
+from ...table import TABLE_INDEX_KEY
+from ...table import prepare_table_data
+from .sync import Badge
+from .sync import CopyButton
+from .sync import Label
 
 DEFAULT_ID_WIDTH = 110
 DEFAULT_INDEX_WIDTH = 50
