@@ -353,6 +353,7 @@ class Request(SyncableSyftObject):
         "auto",
         "auto",
         "auto",
+        "auto",
     ]
 
     __attr_searchable__ = [
@@ -368,6 +369,7 @@ class Request(SyncableSyftObject):
         "requesting_user_verify_key",
     ]
     __exclude_sync_diff_attrs__ = ["node_uid"]
+    __table_sort_attr__ = "Request time"
 
     def _repr_html_(self) -> Any:
         # add changes
@@ -465,6 +467,7 @@ class Request(SyncableSyftObject):
         ]
 
         return {
+            "Request time": str(self.request_time),
             "Description": self.html_description,
             "Requested By": "\n".join(user_data),
             "Status": status_badge,
