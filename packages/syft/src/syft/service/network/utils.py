@@ -39,7 +39,8 @@ class PeerHealthCheckTask:
         result = network_stash.get_all(context.node.verify_key)
 
         if result.is_err():
-            logging.info(f"Failed to fetch peers from stash: {result.err()}")
+            print(f"Failed to fetch peers from stash: {result.err()}")
+            return SyftError(message=f"{result.err()}")
 
         all_peers: list[NodePeer] = result.ok()
 

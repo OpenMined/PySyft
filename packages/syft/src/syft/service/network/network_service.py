@@ -179,6 +179,28 @@ class NetworkService(AbstractService):
         remote_client: SyftClient = remote_node_route.client_with_context(
             context=context
         )
+
+        remote_node_peer = NodePeer.from_client(remote_client)
+        existing_peer_result = self.stash.get_by_uid(
+            context.credentials.verify_key, remote_node_peer.id
+        )
+        if (
+            existing_peer_result.is_ok()
+            and (existing_peer := existing_peer_result.ok()) is not None
+        ):
+            if existing_peer != remote_node_peer:
+                result = self.stash.create_or_update_peer(
+                    context.node.verify_key,
+                    remote_node_peer,
+                )
+                if result.is_err():
+                    return SyftError(message="Failed to update route information.")
+                return SyftSuccess(
+                    "Routes already exchanged. Route information updated."
+                )
+
+            return SyftSuccess("Routes already exchanged.")
+
         random_challenge = secrets.token_bytes(16)
 
         # ask the remote client to add this node (represented by `self_node_peer`) as a peer
@@ -194,15 +216,13 @@ class NetworkService(AbstractService):
 
         association_request_approved = not isinstance(remote_res, Request)
 
-        remote_node_peer = NodePeer.from_client(remote_client)
-
         # save the remote peer for later
         result = self.stash.create_or_update_peer(
             context.node.verify_key,
             remote_node_peer,
         )
         if result.is_err():
-            return SyftError(message=str(result.err()))
+            return SyftError(message="Failed to update route information.")
 
         return (
             SyftSuccess(message="Routes Exchanged")
@@ -244,7 +264,7 @@ class NetworkService(AbstractService):
                 message=f"Failed to query peer from stash: {existed_peer.err()}"
             )
         if isinstance(existed_peer.ok(), NodePeer):
-            return SyftError(
+            return SyftSuccess(
                 message=f"The peer '{peer.name}' is already associated with '{context.node.name}'"
             )
 
@@ -254,11 +274,10 @@ class NetworkService(AbstractService):
         )
         if (
             association_requests
-            and association_requests[-1].status == RequestStatus.PENDING
+            and (association_request := association_requests[-1]).status
+            == RequestStatus.PENDING
         ):
-            return SyftError(
-                message="There is already a pending association request for this peer"
-            )
+            return association_request
         # only create and submit a new request if there is no requests yet
         # or all previous requests have been rejected
         association_request_change = AssociationRequestChange(

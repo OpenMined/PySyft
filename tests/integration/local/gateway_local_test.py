@@ -13,6 +13,7 @@ from syft.client.enclave_client import EnclaveClient
 from syft.client.gateway_client import GatewayClient
 from syft.service.network.node_peer import NodePeer
 from syft.service.request.request import Request
+from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
 
@@ -253,3 +254,33 @@ def test_enclave_connect_to_gateway(faker: Faker, gateway, enclave):
     assert (
         proxy_enclave_client.api.endpoints.keys() == enclave_client.api.endpoints.keys()
     )
+
+
+@pytest.mark.local_node
+@pytest.mark.parametrize(
+    "gateway_association_request_auto_approval", [False], indirect=True
+)
+def test_repeated_association_requests(
+    gateway_association_request_auto_approval, domain
+):
+    _, gateway = gateway_association_request_auto_approval
+    gateway_client: GatewayClient = gateway.login(
+        email="info@openmined.org",
+        password="changethis",
+    )
+    domain_client: DomainClient = domain.login(
+        email="info@openmined.org",
+        password="changethis",
+    )
+
+    result = domain_client.connect_to_gateway(handle=gateway)
+    assert isinstance(result, Request)
+
+    result = domain_client.connect_to_gateway(handle=gateway)
+    assert isinstance(result, Request)
+
+    r = gateway_client.api.services.request.get_all()[-1].approve()
+    assert isinstance(r, SyftSuccess)
+
+    result = domain_client.connect_to_gateway(handle=gateway)
+    assert isinstance(result, SyftSuccess)
