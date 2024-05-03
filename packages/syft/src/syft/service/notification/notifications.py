@@ -73,6 +73,7 @@ class Notification(SyftObject):
         "status",
     ]
     __repr_attrs__ = ["subject", "status", "created_at", "linked_obj"]
+    __table_sort_attr__ = "Created at"
 
     def _repr_html_(self) -> str:
         return f"""
@@ -101,7 +102,7 @@ class Notification(SyftObject):
         return {
             "Subject": self.subject,
             "Status": self.determine_status().name.capitalize(),
-            "Created At": str(self.created_at),
+            "Created at": str(self.created_at),
             "Linked object": f"{self.linked_obj.object_type.__canonical_name__} ({self.linked_obj.object_uid})",
         }
 
