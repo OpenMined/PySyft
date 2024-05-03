@@ -310,8 +310,8 @@ class NetworkService(AbstractService):
 
         # get the node peer for the given sender peer_id
         peer = self.stash.get_by_uid(context.node.verify_key, peer_id)
-        if peer.is_err():
-            return SyftError(message=f"Failed to query peer from stash: {peer.err()}")
+        if err := peer.is_err():
+            return SyftError(message=f"Failed to query peer from stash: {err}")
 
         if isinstance(peer.ok(), NodePeer):
             return NodePeerAssociationStatus.PEER_ASSOCIATED
@@ -393,8 +393,8 @@ class NetworkService(AbstractService):
     ) -> SyftSuccess | SyftError:
         """Delete Node Peer"""
         result = self.stash.delete_by_uid(context.credentials, uid)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
+        if err := result.is_err():
+            return SyftError(message=f"Failed to delete peer with UID {uid}: {err}.")
         # Delete all the association requests from this peer
         association_requests: list[Request] = self._get_association_requests_by_peer_id(
             context=context, peer_id=uid
@@ -408,7 +408,7 @@ class NetworkService(AbstractService):
                 return res
         # TODO: Notify the peer (either by email or by other form of notifications)
         # that it has been deleted from the network
-        return SyftSuccess(message=f"Node Peer with id {uid} Deleted")
+        return SyftSuccess(message=f"Node Peer with id {uid} deleted.")
 
     @service_method(path="network.add_route_on_peer", name="add_route_on_peer")
     def add_route_on_peer(
@@ -792,10 +792,10 @@ class NetworkService(AbstractService):
                     and change.remote_peer.id == peer_id
                 ):
                     association_requests.append(request)
-        association_requests = sorted(
-            association_requests, key=lambda request: request.request_time
+
+        return sorted(
+            association_requests, key=lambda request: request.request_time.utc_timestamp
         )
-        return association_requests
 
 
 TYPE_TO_SERVICE[NodePeer] = NetworkService
