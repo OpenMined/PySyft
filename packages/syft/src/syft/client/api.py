@@ -48,10 +48,12 @@ from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
 from ..types.cache_object import CachedSyftObject
 from ..types.identity import Identity
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftMigrationRegistry
 from ..types.syft_object import SyftObject
+from ..types.syft_object import list_dict_repr_html
 from ..types.uid import LineageID
 from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
@@ -64,6 +66,19 @@ if TYPE_CHECKING:
     # relative
     from ..node import Node
     from ..service.job.job_stash import Job
+
+
+try:
+    # third party
+    from IPython.core.guarded_eval import EVALUATION_POLICIES
+
+    ipython = get_ipython()  # type: ignore
+    ipython.Completer.evaluation = "limited"
+    EVALUATION_POLICIES["limited"].allowed_getattr_external.add(
+        ("syft.client.api", "APIModule")
+    )
+except Exception:
+    pass
 
 
 class APIRegistry:
@@ -585,6 +600,19 @@ def generate_remote_lib_function(
     return wrapper
 
 
+class APISubModulesView(SyftObject):
+    __canonical_name__ = "APISubModulesView"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    submodule: str = ""
+    endpoints: list[str] = []
+
+    __syft_include_id_coll_repr__ = False
+
+    def _coll_repr_(self) -> dict[str, Any]:
+        return {"submodule": self.submodule, "endpoints": "\n".join(self.endpoints)}
+
+
 @serializable()
 class APIModule:
     _modules: list[str]
@@ -595,6 +623,9 @@ class APIModule:
         self._modules = []
         self.path = path
         self.refresh_callback = refresh_callback
+
+    def __dir__(self) -> list[str]:
+        return self._modules + ["path"]
 
     def has_submodule(self, name: str) -> bool:
         """We use this as hasattr() triggers __getattribute__ which triggers recursion"""
@@ -610,7 +641,7 @@ class APIModule:
         setattr(self, attr_name, module_or_func)
         self._modules.append(attr_name)
 
-    def __getattribute__(self, name: str) -> Any:
+    def __getattr__(self, name: str) -> Any:
         try:
             return object.__getattribute__(self, name)
         except AttributeError:
@@ -638,7 +669,31 @@ class APIModule:
 
     def _repr_html_(self) -> Any:
         if not hasattr(self, "get_all"):
-            return NotImplementedError
+
+            def recursively_get_submodules(
+                module: APIModule | Callable,
+            ) -> list[APIModule | Callable]:
+                children = [module]
+                if isinstance(module, APIModule):
+                    for submodule_name in module._modules:
+                        submodule = getattr(module, submodule_name)
+                        children += recursively_get_submodules(submodule)
+                return children
+
+            views = []
+            for submodule_name in self._modules:
+                submodule = getattr(self, submodule_name)
+                children = recursively_get_submodules(submodule)
+                child_paths = [
+                    x.path for x in children if isinstance(x, RemoteFunction)
+                ]
+                views.append(
+                    APISubModulesView(submodule=submodule_name, endpoints=child_paths)
+                )
+
+            return list_dict_repr_html(views)
+            # return NotImplementedError
+
         results = self.get_all()
         return results._repr_html_()
 
@@ -763,9 +818,6 @@ class SyftAPI(SyftObject):
     refresh_api_callback: Callable | None = None
     __user_role: ServiceRole = ServiceRole.NONE
     communication_protocol: PROTOCOL_TYPE
-
-    # def __post_init__(self) -> None:
-    #     pass
 
     @staticmethod
     def for_user(
