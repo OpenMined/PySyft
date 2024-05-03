@@ -37,7 +37,7 @@ class AttestationService(AbstractService):
                 return raw_token
             elif message:
                 return SyftSuccess(message=message)
-            else: 
+            else:
                 return SyftError(message=message)
         except requests.HTTPError:
             return SyftError(message=f"{response.json()['detail']}")
