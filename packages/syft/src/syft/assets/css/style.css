@@ -1,11 +1,11 @@
-.syft-widget body[data-jp-theme-light="false"] {
+body[data-jp-theme-light="false"] {
   --primary-color: #111111;
   --secondary-color: #212121;
   --tertiary-color: #cfcdd6;
   --button-color: #111111;
 }
 
-.syft-widget body {
+body {
   --primary-color: #ffffff;
   --secondary-color: #f5f5f5;
   --tertiary-color: #000000de;

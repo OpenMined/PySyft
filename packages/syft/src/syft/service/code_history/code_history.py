@@ -10,9 +10,9 @@ from ...service.user.user_roles import ServiceRole
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
-from ...types.syft_object import get_repr_values_table
 from ...types.uid import UID
-from ...util.notebook_ui.components.table import create_table_template
+from ...util.notebook_ui.components.table_template import create_table_template
+from ...util.table import prepare_table_data
 from ..code.user_code import UserCode
 from ..response import SyftError
 
@@ -55,7 +55,8 @@ class CodeHistoryView(SyftObject):
         return {"Number of versions": len(self.user_code_history)}
 
     def _repr_html_(self) -> str:
-        rows = get_repr_values_table(self.user_code_history, True)
+        # TODO techdebt: move this to _coll_repr_
+        rows, _ = prepare_table_data(self.user_code_history)
         for i, r in enumerate(rows):
             r["Version"] = f"v{i}"
             raw_code = self.user_code_history[i].raw_code
@@ -64,7 +65,7 @@ class CodeHistoryView(SyftObject):
                 raw_code = "\n".join(raw_code.split("\n", 5))
             r["Code"] = raw_code
         # rows = sorted(rows, key=lambda x: x["Version"])
-        return create_table_template(rows, "CodeHistory", table_icon=None)
+        return create_table_template(rows, "CodeHistory", icon=None)
 
     def __getitem__(self, index: int | str) -> UserCode | SyftError:
         if isinstance(index, str):
@@ -139,4 +140,4 @@ class UsersCodeHistoriesDict(SyftObject):
         rows = []
         for user, funcs in self.user_dict.items():
             rows += [{"user": user, "UserCodes": funcs}]
-        return create_table_template(rows, "UserCodeHistory", table_icon=None)
+        return create_table_template(rows, "UserCodeHistory", icon=None)
