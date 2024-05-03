@@ -3,7 +3,6 @@ RATHOLE_MODE=${RATHOLE_MODE:-server}
 
 cp -L -r -f /conf/* conf/
 
-#!/bin/bash
 if [[ $RATHOLE_MODE == "server" ]]; then
   /app/rathole conf/server.toml &
 elif [[ $RATHOLE_MODE = "client" ]]; then
@@ -12,6 +11,7 @@ else
   echo "RATHOLE_MODE is set to an invalid value. Exiting."
 fi
 
+# reload config every 10 seconds
 while true
 do
     # Execute your script here
