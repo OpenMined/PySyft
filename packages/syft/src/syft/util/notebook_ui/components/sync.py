@@ -48,24 +48,36 @@ COPY_CSS = """
 """
 
 
-class CopyIDButton(HTMLComponentBase):
+class CopyButton(HTMLComponentBase):
     __canonical_name__ = "CopyButton"
     __version__ = SYFT_OBJECT_VERSION_1
     copy_text: str
     max_width: int = 50
 
+    def format_copy_text(self, copy_text: str) -> str:
+        return copy_text
+
     def to_html(self) -> str:
         copy_js = f"event.stopPropagation(); navigator.clipboard.writeText('{self.copy_text}');"
+        text_formatted = self.format_copy_text(self.copy_text)
         button_html = f"""
         <style>{COPY_CSS}</style>
         <div class="copy-container" onclick="{copy_js}">
             <span class="copy-text-display" style="max-width: {self.max_width}px;">
-                #{self.copy_text}
+                {text_formatted}
             </span>
             {Icon.COPY.svg}
         </div>
         """
         return button_html
+
+
+class CopyIDButton(CopyButton):
+    __canonical_name__ = "CopyIDButton"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    def format_copy_text(self, copy_text: str) -> str:
+        return f"#{copy_text}"
 
 
 class SyncTableObject(HTMLComponentBase):
@@ -90,9 +102,9 @@ class SyncTableObject(HTMLComponentBase):
         return ""  # type: ignore
 
     def to_html(self) -> str:
-        type_html = Badge(object=self.object).to_html()
+        type_html = TypeLabel(object=self.object).to_html()
 
-        type_html = Badge(object=self.object).to_html()
+        type_html = TypeLabel(object=self.object).to_html()
         description_html = MainDescription(object=self.object).to_html()
         copy_id_button = CopyIDButton(
             copy_text=str(self.object.id.id), max_width=60
@@ -144,7 +156,7 @@ ALERT_CSS = """
 
 class Alert(HTMLComponentBase):
     __canonical_name__ = "Alert"
-    __version__ = SYFT_OBJECT_VERSION_1  # Ensure the version constant is correctly defined elsewhere
+    __version__ = SYFT_OBJECT_VERSION_1
     message: str
 
     def to_html(self) -> str:
@@ -160,24 +172,50 @@ class Alert(HTMLComponentBase):
 
 
 class Badge(HTMLComponentBase):
-    __canonical_name__ = "CopyButton"
+    __canonical_name__ = "Badge"
+    __version__ = SYFT_OBJECT_VERSION_1
+    value: str
+    badge_class: str
+
+    def to_html(self) -> str:
+        value = str(self.value).upper()
+        return f'<div class="badge {self.badge_class}">{value}</div>'
+
+
+class Label(HTMLComponentBase):
+    __canonical_name__ = "Label"
+    __version__ = SYFT_OBJECT_VERSION_1
+    value: str
+    label_class: str
+
+    def to_html(self) -> str:
+        value = str(self.value).upper()
+        return f'<div class="label {self.label_class}">{value}</div>'
+
+
+class TypeLabel(HTMLComponentBase):
+    __canonical_name__ = "TypeLabel"
     __version__ = SYFT_OBJECT_VERSION_1
     object: SyftObject
 
-    def type_badge_class(self) -> str:
-        if isinstance(self.object, UserCode):
+    @model_validator(mode="before")
+    @classmethod
+    def validate_label(cls, data: dict) -> dict:
+        obj = data["object"]
+        data["label_class"] = cls.type_label_class(obj)
+        data["value"] = type(obj).__name__.upper()
+        return data
+
+    @staticmethod
+    def type_label_class(obj) -> str:
+        if isinstance(obj, UserCode):
             return "label-light-blue"
-        elif isinstance(self.object, Job):  # type: ignore
+        elif isinstance(obj, Job):  # type: ignore
             return "label-light-blue"
-        elif isinstance(self.object, Request):  # type: ignore
+        elif isinstance(obj, Request):  # type: ignore
             # TODO: handle other requests
             return "label-light-purple"
         return "label-light-blue"  # type: ignore
-
-    def to_html(self) -> str:
-        badge_class = self.type_badge_class()
-        object_type = type(self.object).__name__.upper()
-        return f'<div class="label {badge_class}">{object_type}</div>'
 
 
 class MainDescription(HTMLComponentBase):
@@ -222,7 +260,7 @@ class SyncWidgetHeader(SyncTableObject):
 
         first_line_html = "<span style='color: #B4B0BF;'>Syncing changes on</span>"
 
-        type_html = Badge(object=self.object).to_html()
+        type_html = TypeLabel(object=self.object).to_html()
         description_html = MainDescription(object=self.object).to_html()
         copy_id_button = CopyIDButton(
             copy_text=str(self.object.id.id), max_width=60

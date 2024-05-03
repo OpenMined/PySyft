@@ -20,7 +20,7 @@ from ...client.sync_decision import SyncDirection
 from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
 from ...util.notebook_ui.components.sync import Alert
-from ...util.notebook_ui.components.sync import Badge
+from ...util.notebook_ui.components.sync import TypeLabel
 from ...util.notebook_ui.components.sync import CopyIDButton
 from ...util.notebook_ui.components.sync import MainDescription
 from ...util.notebook_ui.components.sync import SyncWidgetHeader
@@ -247,7 +247,7 @@ class CollapsableObjectDiffWidget:
         object = self.diff.non_empty_object
         if object is None:
             return "n/a"
-        type_html = Badge(object=object).to_html()
+        type_html = TypeLabel(object=object).to_html()
         description_html = MainDescription(object=object).to_html()
         copy_id_button = CopyIDButton(copy_text=str(object.id.id), max_width=60)
 

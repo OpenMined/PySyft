@@ -1,0 +1,30 @@
+<script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js" async=false></script>
+<link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_materialize.min.css" rel="stylesheet">
+{# <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_bootstrap5.min.css" rel="stylesheet"> #}
+{# <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_semanticui.min.css" rel="stylesheet"> #}
+
+<style>
+{{ css | safe }}
+</style>
+
+<div style="width: 90%; margin: auto;">
+  <div class="search-field" style="width: 50%; margin-top: 16px; margin-bottom: 16px;">
+    <input
+      id="search-{{ uid }}" type="text" 
+      placeholder="Search..." 
+      class="search-input escape-unfocus"
+    >
+  </div>
+  <div id="table-{{ uid }}"></div>
+</div>
+
+<script type="text/javascript">
+{{ js | safe }}
+
+buildTable(
+    {{ columns | safe }},
+    {{ data | safe }},
+    "table-{{ uid }}",
+    "search-{{ uid }}"
+);
+</script>
