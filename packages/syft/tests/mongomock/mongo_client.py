@@ -3,14 +3,13 @@ import itertools
 import warnings
 
 # third party
-import mongomock
-from mongomock import ConfigurationError
-from mongomock import codec_options as mongomock_codec_options
-from mongomock import helpers
-from mongomock import read_preferences
 from packaging import version
 
 # relative
+from . import ConfigurationError
+from . import codec_options as mongomock_codec_options
+from . import helpers
+from . import read_preferences
 from .database import Database
 from .store import ServerStore
 
@@ -84,8 +83,10 @@ class MongoClient(object):
             self.host, self.port = split_hosts(self.host, default_port=self.port)[0]
 
         self.__default_database_name = dbase
+        # relative
+        from . import SERVER_VERSION
 
-        self._server_version = mongomock.SERVER_VERSION
+        self._server_version = SERVER_VERSION
 
     def __getitem__(self, db_name):
         return self.get_database(db_name)

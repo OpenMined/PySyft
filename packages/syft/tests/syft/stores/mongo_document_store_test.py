@@ -3,7 +3,6 @@ from secrets import token_hex
 from threading import Thread
 
 # third party
-from mongomock.collection import Collection as MongoCollection
 import pytest
 from result import Err
 
@@ -25,6 +24,7 @@ from syft.store.mongo_document_store import MongoStorePartition
 from syft.types.uid import UID
 
 # relative
+from ...mongomock.collection import Collection as MongoCollection
 from .store_constants_test import TEST_VERIFY_KEY_STRING_HACKER
 from .store_fixtures_test import mongo_store_partition_fn
 from .store_mocks_test import MockObjectType
