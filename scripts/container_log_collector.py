@@ -1,15 +1,14 @@
 # stdlib
 import os
-from pathlib import Path
-from pathlib import PosixPath
 import subprocess
+from pathlib import Path, PosixPath
 
 # Make a log directory
 log_path = Path("logs")
 log_path.mkdir(exist_ok=True)
 
 # Get the github job name and create a directory for it
-job_name = os.getenv("GITHUB_JOB")
+job_name = os.getenv("GITHUB_JOB", "")
 job_path: PosixPath = log_path / job_name
 job_path.mkdir(exist_ok=True)
 
