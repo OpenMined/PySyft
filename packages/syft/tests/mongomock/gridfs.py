@@ -1,10 +1,10 @@
 # stdlib
 from unittest import mock
 
-# third party
-from mongomock import Collection as MongoMockCollection
-from mongomock import Database as MongoMockDatabase
-from mongomock.collection import Cursor as MongoMockCursor
+# relative
+from . import Collection as MongoMockCollection
+from . import Database as MongoMockDatabase
+from ..collection import Cursor as MongoMockCursor
 
 try:
     # third party

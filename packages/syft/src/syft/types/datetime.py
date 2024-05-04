@@ -1,6 +1,7 @@
 # stdlib
 from datetime import datetime
 from functools import total_ordering
+import re
 from typing import Any
 
 # third party
@@ -11,6 +12,13 @@ from ..serde.serializable import serializable
 from .syft_object import SYFT_OBJECT_VERSION_2
 from .syft_object import SyftObject
 from .uid import UID
+
+DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+DATETIME_REGEX = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
+
+
+def str_is_datetime(str_: str) -> bool:
+    return bool(re.match(DATETIME_REGEX, str_))
 
 
 @serializable()
@@ -26,9 +34,14 @@ class DateTime(SyftObject):
     def now(cls) -> Self:
         return cls(utc_timestamp=datetime.utcnow().timestamp())
 
+    @classmethod
+    def from_str(cls, datetime_str: str) -> "DateTime":
+        dt = datetime.strptime(datetime_str, DATETIME_FORMAT)
+        return cls(utc_timestamp=dt.timestamp())
+
     def __str__(self) -> str:
         utc_datetime = datetime.utcfromtimestamp(self.utc_timestamp)
-        return utc_datetime.strftime("%Y-%m-%d %H:%M:%S")
+        return utc_datetime.strftime(DATETIME_FORMAT)
 
     def __hash__(self) -> int:
         return hash(self.utc_timestamp)

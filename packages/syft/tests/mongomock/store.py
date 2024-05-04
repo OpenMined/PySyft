@@ -3,9 +3,9 @@ import collections
 import datetime
 import functools
 
-# third party
-import mongomock
-from mongomock.thread import RWLock
+# relative
+from .helpers import utcnow
+from .thread import RWLock
 
 
 class ServerStore(object):
@@ -156,7 +156,7 @@ class CollectionStore(object):
 
         # "key" structure = list of (field name, direction) tuples
         ttl_field_name = next(iter(index["key"]))[0]
-        ttl_now = mongomock.utcnow()
+        ttl_now = utcnow()
 
         with self._rwlock.reader():
             expired_ids = [

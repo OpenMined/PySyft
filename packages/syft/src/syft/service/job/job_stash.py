@@ -287,29 +287,31 @@ class Job(SyncableSyftObject):
             )
         return None
 
-    def kill(self) -> SyftError | None:
-        if self.job_pid is not None:
-            api = APIRegistry.api_for(
-                node_uid=self.syft_node_location,
-                user_verify_key=self.syft_client_verify_key,
-            )
-            if api is None:
-                return SyftError(
-                    message=f"Can't access Syft API. You must login to {self.syft_node_location}"
-                )
-            call = SyftAPICall(
-                node_uid=self.node_uid,
-                path="job.kill",
-                args=[],
-                kwargs={"id": self.id},
-                blocking=True,
-            )
-            api.make_call(call)
-            return None
-        else:
+    def kill(self) -> SyftError | SyftSuccess:
+        if self.status != JobStatus.PROCESSING:
+            return SyftError(message="Job is not running")
+        if self.job_pid is None:
             return SyftError(
-                message="Job is not running or isn't running in multiprocessing mode."
+                message="Job termination disabled in dev mode. "
+                "Set 'dev_mode=False' or 'thread_workers=False' to enable."
             )
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
+        call = SyftAPICall(
+            node_uid=self.node_uid,
+            path="job.kill",
+            args=[],
+            kwargs={"id": self.id},
+            blocking=True,
+        )
+        api.make_call(call)
+        return SyftSuccess(message="Job is killed successfully!")
 
     def fetch(self) -> None:
         api = APIRegistry.api_for(
