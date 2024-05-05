@@ -81,4 +81,5 @@ metadata:
   labels:
     {{- include "common.labels" . | nindent 4 }}
     app.kubernetes.io/component: proxy
-data: {}
+data:
+  rathole-dynamic.yml: |

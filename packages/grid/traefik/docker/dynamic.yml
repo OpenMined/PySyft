@@ -20,14 +20,6 @@ http:
       loadBalancer:
         servers:
           - url: "http://seaweedfs:4001"
-    rathole:
-      loadBalancer:
-        servers:
-          - url: "http://rathole:5555"
-    ratholeforward:
-      loadBalancer:
-        servers:
-          - url: "http://rathole:8000"
   routers:
     frontend:
       rule: "PathPrefix(`/`)"
@@ -52,20 +44,6 @@ http:
       middlewares:
         - "blob-storage-url"
         - "blob-storage-host"
-    rathole:
-      rules: "PathPrefix(`/rathole`)"
-      entryPoints:
-        - web
-      service: "rathole"
-      middlewares:
-        - "rathole-url"
-    ratholeforward:
-      rules: "HostRegexp(`{subdomain:[a-z]+}.local.rathole`)"
-      entryPoints:
-        - web
-      service: "ratholeforward"
-      # middlewares:
-      #   - "rathole-redirect"
     ping:
       rule: "PathPrefix(`/ping`)"
       entryPoints:
@@ -83,12 +61,3 @@ http:
       stripprefix:
         prefixes: /blob
         forceslash: true
-    rathole-url:
-      stripprefix:
-        prefixes: /rathole
-        forceslash: true
-    rathole-redirect:
-      redirectregex:
-        regex: "^.+"
-        replacement: "http://rathole:8000$${1}"
-        permanent: true

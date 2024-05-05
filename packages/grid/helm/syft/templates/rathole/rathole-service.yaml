@@ -15,4 +15,3 @@ spec:
       protocol: TCP
       port: 2333
       targetPort: 2333
-
