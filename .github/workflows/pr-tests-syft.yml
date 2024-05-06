@@ -196,7 +196,7 @@ jobs:
           max_attempts: 3
           command: tox -e syft.test.notebook
 
-  pr-tests-syft-notebook-container:
+  pr-tests-syft-notebook-single-container:
     strategy:
       max-parallel: 99
       matrix:
