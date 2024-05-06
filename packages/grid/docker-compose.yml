@@ -312,4 +312,3 @@ networks:
   default:
     labels:
       orgs.openmined.syft: "this is a syft default network"
-  

@@ -1,7 +1,8 @@
 # stdlib
 import os
+from pathlib import Path
+from pathlib import PosixPath
 import subprocess
-from pathlib import Path, PosixPath
 
 # Make a log directory
 log_path = Path("logs")
