@@ -67,7 +67,14 @@ class NodePeer(SyftObject):
 
     __attr_searchable__ = ["name", "node_type"]
     __attr_unique__ = ["verify_key"]
-    __repr_attrs__ = ["name", "node_type", "admin_email"]
+    __repr_attrs__ = [
+        "name",
+        "node_type",
+        "admin_email",
+        "ping_status",
+        "ping_status_message",
+        "pinged_timestamp",
+    ]
 
     id: UID | None = None  # type: ignore[assignment]
     name: str

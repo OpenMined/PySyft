@@ -4,6 +4,9 @@ import threading
 import time
 from typing import cast
 
+# third party
+from loguru import logger
+
 # relative
 from ...serde.serializable import serializable
 from ...types.datetime import DateTime
@@ -88,7 +91,7 @@ class PeerHealthCheckTask:
             )
 
             if result.is_err():
-                logging.info(f"Failed to update peer in stash: {result.err()}")
+                logger.info(f"Failed to update peer in stash: {result.err()}")
 
         return None
 

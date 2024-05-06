@@ -188,7 +188,7 @@ class NetworkService(AbstractService):
             existing_peer_result.is_ok()
             and (existing_peer := existing_peer_result.ok()) is not None
         ):
-            msg = [f"Routes already exchanged."]
+            msg = ["Routes already exchanged."]
 
             if existing_peer != remote_node_peer:
                 result = self.stash.create_or_update_peer(
@@ -442,7 +442,7 @@ class NetworkService(AbstractService):
         )
         for request in association_requests:
             request_delete_method = context.node.get_service_method(
-                RequestService.delete_by_id
+                RequestService.delete_by_uid
             )
             res = request_delete_method(context, request.id)
             if isinstance(res, SyftError):

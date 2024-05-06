@@ -289,10 +289,10 @@ class RequestService(AbstractService):
         )
 
     @service_method(
-        path="request.delete_by_id",
-        name="delete_by_id",
+        path="request.delete_by_uid",
+        name="delete_by_uid",
     )
-    def delete_by_id(
+    def delete_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> SyftSuccess | SyftError:
         """Delete the request with the given uid."""
