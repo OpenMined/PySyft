@@ -41,7 +41,7 @@ from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
-from ..util.table import list_dict_repr_html
+from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
@@ -763,10 +763,10 @@ def short_uid(uid: UID | None) -> str | None:
 
 
 # give lists and dicts a _repr_html_ if they contain SyftObject's
-aggressive_set_attr(type([]), "_repr_html_", list_dict_repr_html)
-aggressive_set_attr(type({}), "_repr_html_", list_dict_repr_html)
-aggressive_set_attr(type(set()), "_repr_html_", list_dict_repr_html)
-aggressive_set_attr(tuple, "_repr_html_", list_dict_repr_html)
+aggressive_set_attr(type([]), "_repr_html_", build_tabulator_table)
+aggressive_set_attr(type({}), "_repr_html_", build_tabulator_table)
+aggressive_set_attr(type(set()), "_repr_html_", build_tabulator_table)
+aggressive_set_attr(tuple, "_repr_html_", build_tabulator_table)
 
 
 class StorableObjectType:

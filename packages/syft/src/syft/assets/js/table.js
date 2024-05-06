@@ -31,16 +31,21 @@ function buildTable(columns, rowHeader, data, uid) {
     height: "500px",
   });
 
-  // Fix cell height issue after switching pages
+  // Events needed for cell overflow:
+  // fixes incomplete border + cells too much height for overflowing cells
   table.on("pageLoaded", function (_pageno) {
+    // paginate
     table.redraw();
   });
-  // Redraw on resize: cell hight gets recalcualted for overflowing content
   table.on("columnResized", function (_column) {
+    // drag resize
+    table.redraw();
+  });
+  table.on("tableBuilt", function () {
+    // first build
     table.redraw();
   });
 
-  // set number of rows
   const numrowsElement = document.querySelector(`#${numrowsId}`);
   if (numrowsElement) {
     numrowsElement.innerHTML = data.length;

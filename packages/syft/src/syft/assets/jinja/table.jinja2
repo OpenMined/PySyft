@@ -1,12 +1,16 @@
-<script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js" async=false></script>
+<script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
 <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_materialize.min.css" rel="stylesheet">
 
 <style>
 {{ css | safe }}
 </style>
 
+<div class='flex gap-10' style='align-items: center; margin-top: 16px;'>
+    <div class='folder-icon'>{{ icon | safe}}</div>
+    <p class='header-3'>{{ name }}</p>
+</div>
 <div style="display: flex; justify-content: space-between; width: 100%; margin-top: 16px; margin-bottom: 16px;">
-  <div class="search-field" style="width: 50%;">
+  <div class="search-field" style="width: 40%;">
     <input
       id="search-{{ uid }}" type="text"
       placeholder="Search..."
@@ -14,7 +18,7 @@
     >
   </div>
   <div id="total-rows" style="text-align: right;">
-    Total: <span id="numrows-{{ uid }}">-1</span>
+    <h4>Total: <span id="numrows-{{ uid }}">0</span></h4>
   </div>
 </div>
 <div id="table-{{ uid }}"></div>
