@@ -83,6 +83,9 @@ def format_table_data(table_data: list[dict[str, Any]]) -> list[dict[str, str]]:
     for row in table_data:
         row_formatted: dict[str, str] = {}
         for k, v in row.items():
+            if isinstance(v, str):
+                row_formatted[k] = v.replace("\n", "<br>")
+                continue
             v_formatted = format_dict(v)
             row_formatted[k] = v_formatted
         formatted.append(row_formatted)

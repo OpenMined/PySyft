@@ -179,7 +179,7 @@ class Badge(HTMLComponentBase):
 
     def to_html(self) -> str:
         value = str(self.value).upper()
-        return f'<div class="badge {self.badge_class}">{value}</div>'
+        return f'<span class="badge {self.badge_class}">{value}</span>'
 
 
 class Label(HTMLComponentBase):
@@ -190,7 +190,7 @@ class Label(HTMLComponentBase):
 
     def to_html(self) -> str:
         value = str(self.value).upper()
-        return f'<div class="label {self.label_class}">{value}</div>'
+        return f'<span class="label {self.label_class}">{value}</span>'
 
 
 class TypeLabel(Label):

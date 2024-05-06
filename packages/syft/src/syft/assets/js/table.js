@@ -23,12 +23,21 @@ function buildTable(columns, rowHeader, data, uid) {
     data: data,
     columns: columns,
     rowHeader: rowHeader,
-    layout: "fitColumns",
+    layout: "fitDataStretch",
     resizableColumnFit: true,
     resizableColumnGuide: true,
     pagination: "local",
     paginationSize: 5,
     height: "500px",
+  });
+
+  // Fix cell height issue after switching pages
+  table.on("pageLoaded", function (_pageno) {
+    table.redraw();
+  });
+  // Redraw on resize: cell hight gets recalcualted for overflowing content
+  table.on("columnResized", function (_column) {
+    table.redraw();
   });
 
   // set number of rows

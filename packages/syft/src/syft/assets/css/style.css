@@ -343,7 +343,12 @@ body {
 
 .badge {
   /* code-text; */
-  border-radius: 30px;
+  border-radius: 4px;
+  padding: 6px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  line-height: 1.2;
+  font-family: monospace;
 }
 
 .label {
@@ -405,9 +410,6 @@ body {
 }
 
 .badge-green {
-  /* badge; */
-
-  /* Success/Container */
   background-color: #d5f1d5;
   color: #256b24;
 }
@@ -560,21 +562,30 @@ body {
   background-color: #c2def0;
 }
 
-.tabulator .tabulator-cell {
+.tabulator .tabulator-row .tabulator-cell {
   border-right: 1px solid #e0e0e0;
-  white-space: normal;
-  overflow-wrap: break-word;
 }
 
-.tabulator .tabulator-cell:last-child {
-  border-right: none;
+.tabulator .tabulator-row .tabulator-cell {
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .tabulator .tabulator-header .tabulator-col {
   background-color: var(--secondary-color);
   border-right: 1px solid #e0e0e0;
+  border-top: 1px solid #e0e0e0;
 }
 
-.tabulator .tabulator-header .tabulator-col:last-child {
-  border-right: none;
+.tabulator .tabulator-header .tabulator-col:first-child {
+  border-left: 1px solid #e0e0e0;
+}
+
+.tabulator-row .tabulator-cell.tabulator-row-header {
+  background-color: var(--secondary-color);
+  border-right: 2px solid #e0e0e0;
+}
+
+.tabulator .tabulator-row .tabulator-cell:first-child {
+  border-left: 1px solid #e0e0e0;
 }
