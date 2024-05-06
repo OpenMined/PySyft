@@ -20,7 +20,7 @@ class PeerHealthCheckTask:
         self.repeat_time = 10  # in seconds
         self.started_time = None
 
-    def peer_route_heathcheck(self, context: AuthedServiceContext) -> None:
+    def peer_route_heathcheck(self, context: AuthedServiceContext) -> SyftError | None:
         """
         Perform a health check on the peers in the network stash.
         - If peer is accessible, ping the peer.
@@ -86,6 +86,8 @@ class PeerHealthCheckTask:
 
             if result.is_err():
                 logging.info(f"Failed to update peer in stash: {result.err()}")
+
+        return None
 
     def _run(self, context: AuthedServiceContext) -> None:
         self.started_time = DateTime.now()

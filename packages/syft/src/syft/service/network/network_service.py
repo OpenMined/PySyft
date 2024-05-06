@@ -352,7 +352,7 @@ class NetworkService(AbstractService):
         # get the node peer for the given sender peer_id
         peer = self.stash.get_by_uid(context.node.verify_key, peer_id)
         if err := peer.is_err():
-            return SyftError(message=f"Failed to query peer from stash: {err}")
+            return SyftError(message=f"Failed to query peer from stash. Err: {err}")
 
         if isinstance(peer.ok(), NodePeer):
             return NodePeerAssociationStatus.PEER_ASSOCIATED
