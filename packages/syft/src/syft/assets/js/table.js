@@ -8,7 +8,11 @@ document.querySelectorAll(".escape-unfocus").forEach((input) => {
   });
 });
 
-function buildTable(columns, data, tableId, searchBarId) {
+function buildTable(columns, rowHeader, data, uid) {
+  const tableId = `table-${uid}`;
+  const searchBarId = `search-${uid}`;
+  const numrowsId = `numrows-${uid}`;
+
   const tableElement = document.querySelector(`#${tableId}`);
   if (!tableElement) {
     console.error(`Element with id "${tableId}" not found.`);
@@ -18,6 +22,7 @@ function buildTable(columns, data, tableId, searchBarId) {
   const table = new Tabulator(`#${tableId}`, {
     data: data,
     columns: columns,
+    rowHeader: rowHeader,
     layout: "fitColumns",
     resizableColumnFit: true,
     resizableColumnGuide: true,
@@ -26,13 +31,11 @@ function buildTable(columns, data, tableId, searchBarId) {
     height: "500px",
   });
 
-  // TODO dark theme
-  // var body = document.querySelector('body');
-  // if (body.getAttribute('data-jp-theme-light') === 'false') {
-  //     tableElement.querySelector('.tabulator-table').classList.add('table-dark');
-  // } else {
-  //     tableElement.querySelector('.tabulator-table').classList.remove('table-dark');
-  // }
+  // set number of rows
+  const numrowsElement = document.querySelector(`#${numrowsId}`);
+  if (numrowsElement) {
+    numrowsElement.innerHTML = data.length;
+  }
 
   configureSearch(table, searchBarId, columns);
 

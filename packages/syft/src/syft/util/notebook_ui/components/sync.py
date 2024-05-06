@@ -193,7 +193,7 @@ class Label(HTMLComponentBase):
         return f'<div class="label {self.label_class}">{value}</div>'
 
 
-class TypeLabel(HTMLComponentBase):
+class TypeLabel(Label):
     __canonical_name__ = "TypeLabel"
     __version__ = SYFT_OBJECT_VERSION_1
     object: SyftObject
@@ -207,7 +207,7 @@ class TypeLabel(HTMLComponentBase):
         return data
 
     @staticmethod
-    def type_label_class(obj) -> str:
+    def type_label_class(obj: Any) -> str:
         if isinstance(obj, UserCode):
             return "label-light-blue"
         elif isinstance(obj, Job):  # type: ignore

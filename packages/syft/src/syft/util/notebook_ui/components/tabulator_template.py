@@ -1,6 +1,7 @@
 # stdlib
 import json
 import secrets
+from typing import Any
 
 # third party
 from IPython.display import HTML
@@ -17,53 +18,50 @@ from .sync import CopyButton
 from .sync import Label
 
 DEFAULT_ID_WIDTH = 110
-DEFAULT_INDEX_WIDTH = 50
 env = jinja2.Environment(loader=jinja2.PackageLoader("syft", "assets/jinja"))
 
 
 def create_tabulator_columns(
     column_names: list[str],
     column_widths: dict | None = None,
-) -> list[dict]:
+) -> tuple[list[dict], dict | None]:
+    """Returns tuple of (columns, row_header) for tabulator table"""
     if column_widths is None:
         column_widths = {}
 
+    columns = []
+    row_header = {}
     if TABLE_INDEX_KEY in column_names:
-        index_column = {
-            "title": "",
+        row_header = {
             "field": TABLE_INDEX_KEY,
-            "formatter": "plaintext",
-            "width": DEFAULT_INDEX_WIDTH,
+            "headerSort": False,
             "resizable": False,
+            "frozen": True,
+            "widthGrow": 0.3,
+            "minWidth": 60,
         }
 
-    columns = [
-        {
-            "title": colname,
-            "field": colname,
-            "formatter": "html",
-            "resizable": True,
-        }
-        for colname in column_names
-        if colname != TABLE_INDEX_KEY
-    ]
+    for colname in column_names:
+        if colname != TABLE_INDEX_KEY:
+            column = {
+                "title": colname,
+                "field": colname,
+                "formatter": "html",
+                "resizable": True,
+            }
+            if colname == "id":
+                pass
+                # column["width"] = "min-content"
+                # column["widthGrow"] = 1
+                # column["widthShrink"] = 1
+            if colname in column_widths:
+                column["widthGrow"] = column_widths[colname]
+            columns.append(column)
 
-    columns = [index_column] + columns
-
-    # Prevent resizing out of bounds
-    columns[0]["resizable"] = False
-    columns[-1]["resizable"] = False
-
-    for col in columns:
-        if col["field"] == "id":
-            col["width"] = DEFAULT_ID_WIDTH
-        if col["field"] in column_widths:
-            col["widthGrow"] = column_widths[col["field"]]
-
-    return columns
+    return columns, row_header
 
 
-def dict_to_html(data: dict) -> str:
+def format_dict(data: Any) -> str:
     if not isinstance(data, dict):
         return data
 
@@ -77,36 +75,36 @@ def dict_to_html(data: dict) -> str:
     if "clipboard" in data["type"]:
         return CopyButton(copy_text=data["value"]).to_html()
 
+    return str(data)
 
-def format_table_data(table_data: list[dict]) -> list[dict]:
-    formatted = []
+
+def format_table_data(table_data: list[dict[str, Any]]) -> list[dict[str, str]]:
+    formatted: list[dict[str, str]] = []
     for row in table_data:
-        row_formatted = {}
+        row_formatted: dict[str, str] = {}
         for k, v in row.items():
-            row_formatted[k] = dict_to_html(v)
+            v_formatted = format_dict(v)
+            row_formatted[k] = v_formatted
         formatted.append(row_formatted)
     return formatted
 
 
-table_template = env.get_template("table.j2")
-js = load_js("table.js")
-css = load_css("style.css")
-
-
-def show_table(obj):
+def build_tabulator_table(obj: Any) -> str | None:
     try:
+        table_template = env.get_template("table.jinja2")
+        js = load_js("table.js")
+        css = load_css("style.css")
+
         table_data, table_metadata = prepare_table_data(obj)
         if len(table_data) == 0:
             return obj.__repr__()
-        colnames = list(table_data[0].keys())
 
-        column_data = create_tabulator_columns(colnames)
-        column_data[0]["resizable"] = True
+        column_data, row_header = create_tabulator_columns(table_metadata["columns"])
         table_data = format_table_data(table_data)
-
         table_html = table_template.render(
             uid=secrets.token_hex(4),
             columns=json.dumps(column_data),
+            row_header=json.dumps(row_header),
             data=json.dumps(table_data),
             css=css,
             js=js,
@@ -118,3 +116,9 @@ def show_table(obj):
         print("error building table", e)
 
     return None
+
+
+def show_table(obj: Any) -> None:
+    table = build_tabulator_table(obj)
+    if table is not None:
+        display(HTML(table))
