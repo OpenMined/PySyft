@@ -459,6 +459,7 @@ class DomainClient(SyftClient):
                 f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
             )
 
+        self._fetch_node_metadata(self.credentials)
         return f"""
         <style>
             {FONT_CSS}
