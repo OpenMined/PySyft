@@ -456,6 +456,7 @@ class Dataset(SyftObject):
     __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
     __attr_unique__ = ["name"]
     __repr_attrs__ = ["name", "url", "created_at"]
+    __table_sort_attr__ = "Created at"
 
     def __init__(
         self,
@@ -476,7 +477,7 @@ class Dataset(SyftObject):
             "Assets": len(self.asset_list),
             "Size": f"{self.mb_size} (MB)",
             "Url": self.url,
-            "created at": str(self.created_at),
+            "Created at": str(self.created_at),
         }
 
     def _repr_html_(self) -> Any:
