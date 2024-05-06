@@ -15,7 +15,7 @@ from .node_peer import NodePeer
 from .node_peer import NodePeerConnectionStatus
 
 
-@serializable()
+@serializable(without=["thread"])
 class PeerHealthCheckTask:
     def __init__(self) -> None:
         self.thread: threading.Thread | None = None
