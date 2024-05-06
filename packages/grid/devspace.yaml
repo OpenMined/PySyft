@@ -59,14 +59,6 @@ images:
     context: ./seaweedfs
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
-  attestation:
-    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_ENCLAVE_ATTESTATION}"
-    buildKit:
-      args: ["--platform", "linux/amd64"]
-    dockerfile: ./enclave/attestation/attestation.dockerfile
-    context: ./enclave/attestation
-    tags:
-      - dev-${DEVSPACE_TIMESTAMP}
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
@@ -119,10 +111,8 @@ dev:
         sync:
           - path: ./backend/grid:/root/app/grid
           - path: ../syft:/root/app/syft
-      enclave-attestation:
-        sync:
-          - path: ./enclave/attestation/server:/app/server
-      ssh: {}
+        ssh:
+          localPort: 3480
 
 profiles:
   - name: gateway
@@ -146,6 +136,11 @@ profiles:
         path: dev.backend.ports[0].port
         value: 5679:5678
 
+      # Backend Container SSH
+      - op: replace
+        path: dev.backend.containers.backend-container.ssh.localPort
+        value: 3481
+
   - name: gcp
     patches:
       - op: replace
@@ -166,3 +161,29 @@ profiles:
         path: deployments.syft.helm.valuesFiles
         value:
           - ./helm/examples/azure/azure.high.yaml
+
+  - name: enclave
+    patches:
+      - op: add
+        path: images
+        value:
+          enclave-attestation:
+            image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_ENCLAVE_ATTESTATION}"
+            buildKit:
+              args: ["--platform", "linux/amd64"]
+            dockerfile: ./enclave/attestation/attestation.dockerfile
+            context: ./enclave/attestation
+            tags:
+              - dev-${DEVSPACE_TIMESTAMP}
+      - op: add
+        path: dev.backend.containers
+        value:
+          enclave-attestation:
+            sync:
+              - path: ./enclave/attestation/server:/app/server
+
+      - op: add
+        path: deployments.syft.helm.values
+        value:
+          attestation:
+            enabled: true
