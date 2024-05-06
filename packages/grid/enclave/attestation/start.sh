@@ -2,7 +2,7 @@
 set -e
 export PATH="/root/.local/bin:${PATH}"
 
-APP_MODULE=server.main:app
+APP_MODULE=server.attestation_main:app
 APP_LOG_LEVEL=${APP_LOG_LEVEL:-info}
 UVICORN_LOG_LEVEL=${UVICORN_LOG_LEVEL:-info}
 HOST=${HOST:-0.0.0.0}
