@@ -7,6 +7,7 @@ import requests
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...util.util import str_to_bool
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -35,7 +36,7 @@ class AttestationService(AbstractService):
             raw_token = response.json().get("token")
             if raw:
                 return raw_token
-            elif message:
+            elif str_to_bool(message):
                 return SyftSuccess(message=message)
             else:
                 return SyftError(message=message)
