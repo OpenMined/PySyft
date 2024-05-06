@@ -188,18 +188,23 @@ class NetworkService(AbstractService):
             existing_peer_result.is_ok()
             and (existing_peer := existing_peer_result.ok()) is not None
         ):
+            msg = [f"Routes already exchanged."]
+
             if existing_peer != remote_node_peer:
                 result = self.stash.create_or_update_peer(
                     context.node.verify_key,
                     remote_node_peer,
                 )
-                if result.is_err():
-                    return SyftError(message="Failed to update route information.")
-                return SyftSuccess(
-                    "Routes already exchanged. Route information updated."
-                )
+                msg.append("Route information change detected.")
 
-            return SyftSuccess("Routes already exchanged.")
+                if result.is_err():
+                    msg.append("Attempt to update route information failed.")
+                    return SyftError(message="\n".join(msg))
+
+                msg.append("Route information successfully updated.")
+                return SyftSuccess(message="\n".join(msg))
+
+            return SyftSuccess(message="\n".join(msg))
 
         random_challenge = secrets.token_bytes(16)
 
@@ -258,15 +263,32 @@ class NetworkService(AbstractService):
             )
 
         # check if the peer already is a node peer
-        existed_peer = self.stash.get_by_uid(context.node.verify_key, peer.id)
-        if existed_peer.is_err():
+        existing_peer_res = self.stash.get_by_uid(context.node.verify_key, peer.id)
+        if existing_peer_res.is_err():
             return SyftError(
-                message=f"Failed to query peer from stash: {existed_peer.err()}"
+                message=f"Failed to query peer from stash: {existing_peer_res.err()}"
             )
-        if isinstance(existed_peer.ok(), NodePeer):
-            return SyftSuccess(
-                message=f"The peer '{peer.name}' is already associated with '{context.node.name}'"
-            )
+
+        if isinstance(existing_peer := existing_peer_res.ok(), NodePeer):
+            msg = [
+                f"The peer '{peer.name}' is already associated with '{context.node.name}'."
+            ]
+
+            if existing_peer != peer:
+                result = self.stash.create_or_update_peer(
+                    context.node.verify_key,
+                    peer,
+                )
+                msg.append("Peer information change detected.")
+
+                if result.is_err():
+                    msg.append("Attempt to update peer information failed.")
+                    return SyftError(message="\n".join(msg))
+
+                msg.append("Peer information successfully updated.")
+                return SyftSuccess(message="\n".join(msg))
+
+            return SyftSuccess(message="\n".join(msg))
 
         # check if the peer already submitted an association request
         association_requests: list[Request] = self._get_association_requests_by_peer_id(
