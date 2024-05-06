@@ -74,7 +74,7 @@ class SettingsService(AbstractService):
                 )
                 update_result = self.stash.update(context.credentials, new_settings)
                 if update_result.is_ok():
-                    return result
+                    return SyftSuccess(message="Settings updated successfully")
                 else:
                     return SyftError(message=update_result.err())
             else:
