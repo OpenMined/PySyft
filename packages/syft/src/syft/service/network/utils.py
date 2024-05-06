@@ -5,6 +5,7 @@ import time
 from typing import cast
 
 # relative
+from ...serde.serializable import serializable
 from ...types.datetime import DateTime
 from ..context import AuthedServiceContext
 from ..response import SyftError
@@ -14,6 +15,7 @@ from .node_peer import NodePeer
 from .node_peer import NodePeerConnectionStatus
 
 
+@serializable()
 class PeerHealthCheckTask:
     def __init__(self) -> None:
         self.thread: threading.Thread | None = None
