@@ -21,6 +21,7 @@ class PeerHealthCheckTask:
         self.thread: threading.Thread | None = None
         self.repeat_time = 10  # in seconds
         self.started_time = None
+        self._stop = False
 
     def peer_route_heathcheck(self, context: AuthedServiceContext) -> SyftError | None:
         """
@@ -94,6 +95,8 @@ class PeerHealthCheckTask:
     def _run(self, context: AuthedServiceContext) -> None:
         self.started_time = DateTime.now()
         while True:
+            if self._stop:
+                break
             self.peer_route_heathcheck(context)
             time.sleep(self.repeat_time)
 
@@ -113,6 +116,7 @@ class PeerHealthCheckTask:
 
     def stop(self) -> None:
         if self.thread:
+            self._stop = True
             self.thread.join()
             self.thread = None
             self.started_time = None

@@ -414,6 +414,8 @@ class Node(AbstractNode):
             credentials=self.verify_key,
             role=ServiceRole.ADMIN,
         )
+
+        self.peer_health_manager: PeerHealthCheckTask | None = None
         if background_tasks:
             self.run_peer_health_checks(context=context)
 
@@ -472,6 +474,9 @@ class Node(AbstractNode):
         self.peer_health_manager.run(context=context)
 
     def stop(self) -> None:
+        if self.peer_health_manager is not None:
+            self.peer_health_manager.stop()
+
         for consumer_list in self.queue_manager.consumers.values():
             for c in consumer_list:
                 c.close()
