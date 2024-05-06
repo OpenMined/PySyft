@@ -10,7 +10,6 @@ from unittest import mock
 
 # third party
 from faker import Faker
-from pymongo import MongoClient
 import pytest
 
 # syft absolute
@@ -24,6 +23,8 @@ from syft.protocol.data_protocol import stage_protocol_changes
 from syft.service.user import user
 
 # relative
+# our version of mongomock that has a fix for CodecOptions and custom TypeRegistry Support
+from .mongomock.mongo_client import MongoClient
 from .syft.stores.store_fixtures_test import dict_action_store  # noqa: F401
 from .syft.stores.store_fixtures_test import dict_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import dict_queue_stash  # noqa: F401
@@ -37,9 +38,6 @@ from .syft.stores.store_fixtures_test import sqlite_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_queue_stash  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_store_partition  # noqa: F401
 from .syft.stores.store_fixtures_test import sqlite_workspace  # noqa: F401
-from .utils.mongodb import start_mongo_server
-from .utils.mongodb import stop_mongo_server
-from .utils.xdist_state import SharedState
 
 
 def patch_protocol_file(filepath: Path):
@@ -244,22 +242,9 @@ def mongo_client(testrun_uid):
     Cleans up the server when the session ends, or when the last client disconnects.
     """
     db_name = f"pytest_mongo_{testrun_uid}"
-    root_dir = Path(gettempdir(), db_name)
-    state = SharedState(db_name)
-    KEY_CONN_STR = "mongoConnectionString"
-    KEY_CLIENTS = "mongoClients"
 
-    # start the server if it's not already running
-    with state.lock:
-        conn_str = state.get(KEY_CONN_STR, None)
-
-        if not conn_str:
-            conn_str = start_mongo_server(db_name)
-            state.set(KEY_CONN_STR, conn_str)
-
-        # increment the number of clients
-        clients = state.get(KEY_CLIENTS, 0) + 1
-        state.set(KEY_CLIENTS, clients)
+    # rand conn str
+    conn_str = f"mongodb://localhost:27017/{db_name}"
 
     # create a client, and test the connection
     client = MongoClient(conn_str)
@@ -267,16 +252,12 @@ def mongo_client(testrun_uid):
 
     yield client
 
-    # decrement the number of clients
-    with state.lock:
-        clients = state.get(KEY_CLIENTS, 0) - 1
-        state.set(KEY_CLIENTS, clients)
+    # stop_mongo_server(db_name)
 
-    # if no clients are connected, destroy the server
-    if clients <= 0:
-        stop_mongo_server(db_name)
-        state.purge()
-        shutil.rmtree(root_dir, ignore_errors=True)
+
+@pytest.fixture(autouse=True)
+def patched_mongo_client(monkeypatch):
+    monkeypatch.setattr("pymongo.mongo_client.MongoClient", MongoClient)
 
 
 @pytest.fixture(autouse=True)

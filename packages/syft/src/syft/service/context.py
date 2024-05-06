@@ -35,6 +35,7 @@ class AuthedServiceContext(NodeServiceContext):
     job_id: UID | None = None
     extra_kwargs: dict = {}
     has_execute_permissions: bool = False
+    is_blocking_api_call: bool = False
 
     @property
     def dev_mode(self) -> Any:
