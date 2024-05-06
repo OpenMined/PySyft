@@ -169,6 +169,9 @@ class DomainClient(SyftClient):
     #         return {}
 
     def refresh(self) -> None:
+        if self.credentials:
+            self._fetch_node_metadata(self.credentials)
+
         if self._api and self._api.refresh_api_callback:
             self._api.refresh_api_callback()
 
