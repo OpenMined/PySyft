@@ -181,9 +181,9 @@ class NetworkService(AbstractService):
         remote_client: SyftClient = remote_node_route.client_with_context(
             context=context
         )
-
         remote_node_peer = NodePeer.from_client(remote_client)
-        # check if the remote node already exists as a peer
+
+        # check locally if the remote node already exists as a peer
         existing_peer_result = self.stash.get_by_uid(
             context.node.verify_key, remote_node_peer.id
         )
@@ -191,24 +191,49 @@ class NetworkService(AbstractService):
             existing_peer_result.is_ok()
             and (existing_peer := existing_peer_result.ok()) is not None
         ):
-            # TODO: Also check remotely if the self node already exists as a peer
-
-            msg = ["Routes already exchanged."]
+            msg = [
+                f"Peer '{existing_peer.name}' already exist for {self_node_peer.node_type} '{self_node_peer.name}'."
+            ]
             if existing_peer != remote_node_peer:
                 result = self.stash.create_or_update_peer(
                     context.node.verify_key,
                     remote_node_peer,
                 )
-                msg.append("Route information change detected.")
-
+                msg.append(
+                    f"Node peer '{existing_peer.name}' information change detected."
+                )
                 if result.is_err():
-                    msg.append("Attempt to update route information failed.")
+                    msg.append(
+                        f"Attempt to update peer '{existing_peer.name}' information failed."
+                    )
                     return SyftError(message="\n".join(msg))
+                msg.append(
+                    f"Node peer '{existing_peer.name}' information successfully updated."
+                )
 
-                msg.append("Route information successfully updated.")
-                return SyftSuccess(message="\n".join(msg))
+            # Also check remotely if the self node already exists as a peer
+            remote_self_node_peer = remote_client.api.services.network.get_peer_by_name(
+                name=self_node_peer.name
+            )
+            if isinstance(remote_self_node_peer, NodePeer):
+                msg.append(
+                    f"Peer '{self_node_peer.name}' already exist for {remote_node_peer.node_type} '{remote_node_peer.name}'."
+                )
+                if remote_self_node_peer != self_node_peer:
+                    result = remote_client.api.services.network.update_peer(
+                        peer=self_node_peer,
+                    )
+                    if result.is_err():
+                        msg.append(
+                            f"Attempt to remotely update peer '{remote_self_node_peer.name}' information remotely failed."
+                        )
+                        return SyftError(message="\n".join(msg))
+                    msg.append(
+                        f"Node peer '{self_node_peer.name}' information successfully updated."
+                    )
+                msg.append("Routes already exchanged.")
 
-            return SyftSuccess(message="\n".join(msg))
+                return SyftSuccess(message=". ".join(msg))
 
         # If the peer does not exist, ask the remote client to add this node
         # (represented by `self_node_peer`) as a peer
@@ -427,6 +452,26 @@ class NetworkService(AbstractService):
 
         # Return peers or an empty list when result is None
         return result.ok() or []
+
+    @service_method(
+        path="network.update_peer", name="update_peer", roles=GUEST_ROLE_LEVEL
+    )
+    def update_peer(
+        self,
+        context: AuthedServiceContext,
+        peer: NodePeer,
+    ) -> SyftSuccess | SyftError:
+        result = self.stash.update(
+            credentials=context.node.verify_key,
+            peer=peer,
+        )
+        if result.is_err():
+            return SyftError(
+                message=f"Failed to update peer '{peer.name}'. Error: {result.err()}"
+            )
+        return SyftSuccess(
+            message=f"Peer '{result.ok().name}' information successfully updated."
+        )
 
     @service_method(
         path="network.delete_peer_by_id",
