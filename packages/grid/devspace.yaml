@@ -25,6 +25,7 @@ vars:
   DOCKER_IMAGE_BACKEND: openmined/grid-backend
   DOCKER_IMAGE_FRONTEND: openmined/grid-frontend
   DOCKER_IMAGE_SEAWEEDFS: openmined/grid-seaweedfs
+  DOCKER_IMAGE_ENCLAVE_ATTESTATION: openmined/grid-enclave-attestation
   CONTAINER_REGISTRY: "docker.io"
   VERSION: "0.8.7-beta.7"
   PLATFORM: $(uname -m | grep -q 'arm64' && echo "arm64" || echo "amd64")
@@ -56,6 +57,14 @@ images:
       args: ["--platform", "linux/${PLATFORM}"]
     dockerfile: ./seaweedfs/seaweedfs.dockerfile
     context: ./seaweedfs
+    tags:
+      - dev-${DEVSPACE_TIMESTAMP}
+  attestation:
+    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_ENCLAVE_ATTESTATION}"
+    buildKit:
+      args: ["--platform", "linux/amd64"]
+    dockerfile: ./enclave/attestation/attestation.dockerfile
+    context: ./enclave/attestation
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
 
@@ -96,19 +105,24 @@ dev:
     labelSelector:
       app.kubernetes.io/name: syft
       app.kubernetes.io/component: backend
-    env:
-      - name: RELEASE
-        value: development
-      - name: DEV_MODE
-        value: "True"
-      - name: DEBUGGER_ENABLED
-        value: "True"
     ports:
       - port: "5678" # debugpy
-    sync:
-      - path: ./backend/grid:/root/app/grid
-      - path: ../syft:/root/app/syft
-    ssh: {}
+    containers:
+      backend-container:
+        env:
+          - name: RELEASE
+            value: development
+          - name: DEV_MODE
+            value: "True"
+          - name: DEBUGGER_ENABLED
+            value: "True"
+        sync:
+          - path: ./backend/grid:/root/app/grid
+          - path: ../syft:/root/app/syft
+      enclave-attestation:
+        sync:
+          - path: ./enclave/attestation/server:/app/server
+      ssh: {}
 
 profiles:
   - name: gateway

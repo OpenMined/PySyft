@@ -36,7 +36,7 @@ from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
 from ...util.markdown import markdown_as_class_with_fields
-from ...util.notebook_ui.notebook_addons import REQUEST_ICON
+from ...util.notebook_ui.icons import Icon
 from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
 from ..action.action_service import ActionService
@@ -353,6 +353,7 @@ class Request(SyncableSyftObject):
         "auto",
         "auto",
         "auto",
+        "auto",
     ]
 
     __attr_searchable__ = [
@@ -368,6 +369,7 @@ class Request(SyncableSyftObject):
         "requesting_user_verify_key",
     ]
     __exclude_sync_diff_attrs__ = ["node_uid"]
+    __table_sort_attr__ = "Request time"
 
     def _repr_html_(self) -> Any:
         # add changes
@@ -465,6 +467,7 @@ class Request(SyncableSyftObject):
         ]
 
         return {
+            "Request time": str(self.request_time),
             "Description": self.html_description,
             "Requested By": "\n".join(user_data),
             "Status": status_badge,
@@ -511,7 +514,7 @@ class Request(SyncableSyftObject):
 
     @property
     def icon(self) -> str:
-        return REQUEST_ICON
+        return Icon.REQUEST.svg
 
     @property
     def status(self) -> RequestStatus:
