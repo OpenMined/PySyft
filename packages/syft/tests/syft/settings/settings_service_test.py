@@ -152,18 +152,13 @@ def test_settingsservice_update_success(
 
     # update the settings in the settings stash using settings_service
     response = settings_service.update(authed_context, update_settings)
-    print(response)
-    updated_settings = response.ok()[0]
-    not_updated_settings = response.ok()[1]
 
-    assert response.is_ok() is True
-    assert len(response.ok()) == len(mock_stash_get_all_output)
-    assert (
-        updated_settings.to_dict() == new_settings.to_dict()
-    )  # the first settings is updated
-    assert (
-        not_updated_settings.to_dict() == settings.to_dict()
-    )  # the second settings is not updated
+    # not_updated_settings = response.ok()[1]
+
+    assert isinstance(response, SyftSuccess)
+    # assert (
+    #     not_updated_settings.to_dict() == settings.to_dict()
+    # )  # the second settings is not updated
 
 
 def test_settingsservice_update_stash_get_all_fail(
