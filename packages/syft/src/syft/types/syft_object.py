@@ -818,5 +818,5 @@ def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> N
             for attr_name, attr_value in attr_dict.items():
                 setattr(_object, attr_name, attr_value)
 
-            for obj in _object.__dict__.values():
-                attach_attribute_to_syft_object(obj, attr_dict)
+            for field in _object.model_fields.keys():
+                attach_attribute_to_syft_object(getattr(_object, field), attr_dict)
