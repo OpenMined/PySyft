@@ -8,9 +8,11 @@ class ResponseModel(BaseModel):
 
 class CPUAttestationResponseModel(BaseModel):
     result: str
+    token: str = ""
     vendor: str | None = None  # Hardware Manufacturer
 
 
 class GPUAttestationResponseModel(BaseModel):
     result: str
+    token: str = ""
     vendor: str | None = None  # Hardware Manufacturer

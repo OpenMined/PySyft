@@ -102,3 +102,107 @@ print ("[RemoteGPUTest] node name :", client.get_name())
 client.add_verifier(attestation.Devices.GPU, attestation.Environment.REMOTE, NRAS_URL, "")
 client.attest()
 ```
+
+### Instructions for using helm charts
+
+- The attestation container runs inside the backend pod (so backend pod has two containers now). However, in order to run the attestation container, you need to uncomment the attestation flags in `packages/grid/helm/values.dev.yaml`
+- Next, we run the deployment. Since k3d creates an intermediate layer of nesting, we need to mount some volumes from host to k3d registry. Thus, when launching, use the following tox command `tox -e dev.k8s.start -- --volume /sys/kernel/security:/sys/kernel/security --volume /dev/tmprm0:/dev/tmprm0`
+- Finally, note that the GPU privileges/drivers etc. have not been completed so while the GPU attestation endpoints should work, they will not produce the expected tokens. To test the GPU code, follow the steps provided in [For GPU Attestation
+  ](#for-gpu-attestation) to look at the tokens.
+
+### Local Client-side Verification
+
+Use the following function to perform local, client-side verification of tokens. They expire quick.
+
+```python3
+def verify_token(token: str, token_type: str):
+    """
+    Verifies a JSON Web Token (JWT) using a public key obtained from a JWKS (JSON Web Key Set) endpoint,
+    based on the specified type of token ('cpu' or 'gpu'). The function handles two distinct processes
+    for token verification depending on the type specified:
+
+    - 'cpu': Fetches the JWKS from the 'jku' URL specified in the JWT's unverified header,
+             finds the key by 'kid', and converts the JWK to a PEM format public key for verification.
+
+    - 'gpu': Directly uses a fixed JWKS URL to retrieve the keys, finds the key by 'kid', and uses the
+             'x5c' field to extract a certificate which is then used to verify the token.
+
+    Parameters:
+        token (str): The JWT that needs to be verified.
+        type (str): Type of the token which dictates the verification process; expected values are 'cpu' or 'gpu'.
+
+    Returns:
+        bool: True if the JWT is successfully verified, False otherwise.
+
+    Raises:
+        Exception: Raises various exceptions internally but catches them to return False, except for
+                   printing error messages related to the specific failures (e.g., key not found, invalid certificate).
+
+    Example usage:
+        verify_token('your.jwt.token', 'cpu')
+        verify_token('your.jwt.token', 'gpu')
+
+    Note:
+        - The function prints out details about the verification process and errors, if any.
+        - Ensure that the cryptography and PyJWT libraries are properly installed and updated in your environment.
+    """
+    import jwt
+    import json
+    import base64
+    import requests
+    from jwt.algorithms import RSAAlgorithm
+    from cryptography.x509 import load_der_x509_certificate
+    from cryptography.hazmat.primitives import serialization
+
+
+    # Determine JWKS URL based on the token type
+    if token_type.lower() == "gpu":
+        jwks_url = 'https://nras.attestation.nvidia.com/.well-known/jwks.json'
+    else:
+        unverified_header = jwt.get_unverified_header(token)
+        jwks_url = unverified_header['jku']
+
+    # Fetch the JWKS from the endpoint
+    jwks = requests.get(jwks_url).json()
+
+    # Get the key ID from the JWT header
+    header = jwt.get_unverified_header(token)
+    kid = header['kid']
+
+    # Find the key with the matching kid in the JWKS
+    key = next((item for item in jwks["keys"] if item["kid"] == kid), None)
+    if not key:
+        print("Public key not found in JWKS list.")
+        return False
+
+    # Convert the key based on the token type
+    if token_type.lower() == "gpu" and "x5c" in key:
+        try:
+            cert_bytes = base64.b64decode(key['x5c'][0])
+            cert = load_der_x509_certificate(cert_bytes)
+            public_key = cert.public_key()
+        except Exception as e:
+            print("Failed to process certificate:", str(e))
+            return False
+    elif token_type.lower() == "cpu":
+        try:
+            public_key = RSAAlgorithm.from_jwk(key)
+        except Exception as e:
+            print("Failed to convert JWK to PEM:", str(e))
+            return False
+    else:
+        print("Invalid token_type or key information.")
+        return False
+
+    # Verify the JWT using the public key
+    try:
+        payload = jwt.decode(token, public_key, algorithms=[header['alg']], options={"verify_exp": True})
+        print("JWT Payload:", json.dumps(payload, indent=2))
+        return True
+    except jwt.ExpiredSignatureError:
+        print("JWT token has expired.")
+    except jwt.InvalidTokenError as e:
+        print("JWT token signature is invalid:", str(e))
+
+    return False
+```
