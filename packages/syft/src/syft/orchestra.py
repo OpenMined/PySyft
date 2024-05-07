@@ -166,7 +166,7 @@ def deploy_to_python(
     create_producer: bool = False,
     queue_port: int | None = None,
     association_request_auto_approval: bool = False,
-) -> NodeHandle | None:
+) -> NodeHandle:
     worker_classes = {
         NodeType.DOMAIN: Domain,
         NodeType.GATEWAY: Gateway,
@@ -281,7 +281,7 @@ class Orchestra:
         create_producer: bool = False,
         queue_port: int | None = None,
         association_request_auto_approval: bool = False,
-    ) -> NodeHandle | None:
+    ) -> NodeHandle:
         if dev_mode is True:
             thread_workers = True
         os.environ["DEV_MODE"] = str(dev_mode)
@@ -324,6 +324,6 @@ class Orchestra:
                 name=name,
                 node_side_type=node_side_type_enum,
             )
-        else:
-            print(f"deployment_type: {deployment_type_enum} is not supported")
-            return None
+        raise NotImplementedError(
+            f"deployment_type: {deployment_type_enum} is not supported"
+        )
