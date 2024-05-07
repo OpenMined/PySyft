@@ -64,7 +64,7 @@ class SettingsService(AbstractService):
     @service_method(path="settings.update", name="update")
     def update(
         self, context: AuthedServiceContext, settings: NodeSettingsUpdate
-    ) -> Result[Ok, Err]:
+    ) -> Result[SyftSuccess, SyftError]:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             current_settings = result.ok()
@@ -151,8 +151,8 @@ class SettingsService(AbstractService):
     ) -> SyftSuccess | SyftError:
         new_settings = NodeSettingsUpdate(association_request_auto_approval=enable)
         result = self.update(context, settings=new_settings)
-        if result.is_err():
-            return SyftError(message=result.err())
+        if isinstance(result, SyftError):
+            return result
 
         message = "enabled" if enable else "disabled"
         return SyftSuccess(
