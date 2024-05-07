@@ -507,7 +507,6 @@ class SyftClient:
         self.metadata = metadata
         self.credentials: SyftSigningKey | None = credentials
         self._api = api
-        # TODO
         self.services: APIModule | None = None
         self.communication_protocol: int | str | None = None
         self.current_protocol: int | str | None = None

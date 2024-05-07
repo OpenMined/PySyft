@@ -837,9 +837,6 @@ class SyftAPI(SyftObject):
     # informs getattr does not have nasty side effects
     __syft_allow_autocomplete__ = ["services"]
 
-    # def _repr_html_(self) -> str:
-    #     return self.services._repr_html_()
-
     def __dir__(self) -> list[str]:
         return ["services"]
 
