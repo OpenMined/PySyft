@@ -1,3 +1,6 @@
+TABULATOR_SRC = "https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min"
+TABULATOR_CSS = "https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_materialize.min.css"
+
 document.querySelectorAll(".escape-unfocus").forEach((input) => {
   input.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
@@ -8,13 +11,51 @@ document.querySelectorAll(".escape-unfocus").forEach((input) => {
   });
 });
 
-function loadExternalScript(scriptPath, elementId, handler) {
-  var elem = document.getElementById(elementId);
+function load_script(scriptPath, elementId, on_load, on_error) {
+  var element = document.getElementById(elementId);
   var script = document.createElement("script");
-  script.type = "text/javascript";
+  script.type = "application/javascript";
   script.src = scriptPath;
-  script.onload = handler;
-  elem.appendChild(script);
+  script.onload = on_load;
+  script.onerror = on_error;
+  console.debug("Injecting script:", scriptPath)
+  element.appendChild(script);
+}
+
+function load_css(cssPath, elementId, on_load, on_error) {
+  var element = document.getElementById(elementId);
+  var css = document.createElement("link");
+  css.onload = on_load;
+  css.onerror = on_error;
+  css.rel = "stylesheet";
+  css.type = "text/css";
+  css.href = cssPath;
+  console.debug("Injecting css:", cssPath);
+  element.appendChild(css);
+}
+
+function fix_url_for_require(url) {
+  return url.endsWith('.js')
+    ? url.replace(/(\.js)(?!.*\1)/, '')
+    : url
+}
+
+function load_tabulator(elementId) {
+  load_css(TABULATOR_CSS, elementId)
+
+  return new Promise((resolve, reject) => {
+    if (typeof require !== 'undefined') {
+      url = fix_url_for_require(TABULATOR_SRC)
+      return require([url], function(module) {
+        window.Tabulator = module;
+        resolve()
+      }, reject)
+    } else if (typeof window.Tabulator === 'undefined') {
+      load_script(TABULATOR_SRC, elementId, resolve, reject)
+    } else {
+      resolve()
+    }
+  })
 }
 
 function buildTable(columns, rowHeader, data, uid) {

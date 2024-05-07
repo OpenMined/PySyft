@@ -1,14 +1,8 @@
-
-<div id="table-{{ uid }}-requirements">
-<link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_materialize.min.css" rel="stylesheet">
-<style>
-{{ css | safe }}
-</style>
-</div>
+<div id="table-{{ uid }}-requirements"></div>
 
 <div class='flex gap-10' style='align-items: center; margin-top: 16px;'>
-    <div class='folder-icon'>{{ icon | safe}}</div>
-    <p class='header-3'>{{ name }}</p>
+  <div class='folder-icon'>{{ icon | safe}}</div>
+  <p class='header-3'>{{ name }}</p>
 </div>
 <div style="display: flex; justify-content: space-between; width: 100%; margin-top: 16px; margin-bottom: 16px;">
   <div class="search-field" style="width: 40%;">
@@ -24,20 +18,21 @@
 </div>
 <div id="table-{{ uid }}"></div>
 
-<script type="text/javascript">
-{{ js | safe }}
+<script type="application/javascript">
+  {{ js | safe }}
 
-loadExternalScript(
-  "https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js",
-  "table-{{ uid }}-requirements",
-  function() {
+  load_tabulator("table-{{ uid }}-requirements")
+    .then(() => {
       buildTable(
-      {{ columns | safe }},
-      {{ row_header | safe }},
-      {{ data | safe }},
-      "{{ uid }}",
-    );
-  }
-);
-
+        {{ columns | safe }},
+        {{ row_header | safe }},
+        {{ data | safe }},
+        "{{ uid }}"
+      )
+    })
+    .catch(err => console.debug('Failed to load Tabulator', err))
 </script>
+
+<style>
+  {{ css | safe }}
+</style>
