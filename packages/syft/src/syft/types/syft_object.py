@@ -797,18 +797,20 @@ recursive_serde_register_type(PartialSyftObject)
 
 def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> None:
     if isinstance(result, OkErr):
-        result = result._value
 
-    if isinstance(result, Mapping):
-        iterable_keys: Iterable = result.keys()
+        def iterator():  # type: ignore
+            yield result._value
+
+    elif isinstance(result, Mapping):
+        iterator = result.values
     elif isinstance(result, Sequence):
-        iterable_keys = range(len(result))
+        iterator = lambda: result
     else:
-        result = [result]
-        iterable_keys = [0]
 
-    for key in iterable_keys:
-        _object = result[key]
+        def iterator():  # type: ignore
+            yield result
+
+    for _object in iterator():
         # if object is SyftBaseObject,
         # then attach the value to the attribute
         # on the object
