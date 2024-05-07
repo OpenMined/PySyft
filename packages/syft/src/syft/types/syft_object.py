@@ -795,30 +795,17 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
 recursive_serde_register_type(PartialSyftObject)
 
 
-def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> Any:
-    constructor = None
-    extra_args = []
-
-    single_entity = False
-
+def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> None:
     if isinstance(result, OkErr):
-        constructor = type(result)
-        result = result.value
+        result = result._value
 
-    if isinstance(result, MutableMapping):
+    if isinstance(result, Mapping):
         iterable_keys: Iterable = result.keys()
-    elif isinstance(result, MutableSequence):
+    elif isinstance(result, Sequence):
         iterable_keys = range(len(result))
-    elif isinstance(result, tuple):
-        iterable_keys = range(len(result))
-        constructor = type(result)
-        if isinstance(result, DictTuple):
-            extra_args.append(result.keys())
-        result = list(result)
     else:
-        iterable_keys = range(1)
         result = [result]
-        single_entity = True
+        iterable_keys = [0]
 
     for key in iterable_keys:
         _object = result[key]
@@ -829,13 +816,5 @@ def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> A
             for attr_name, attr_value in attr_dict.items():
                 setattr(_object, attr_name, attr_value)
 
-            for field_name, attr in _object.__dict__.items():
-                updated_attr = attach_attribute_to_syft_object(attr, attr_dict)
-                setattr(_object, field_name, updated_attr)
-        result[key] = _object
-
-    wrapped_result = result[0] if single_entity else result
-    if constructor is not None:
-        wrapped_result = constructor(wrapped_result, *extra_args)
-
-    return wrapped_result
+            for obj in _object.__dict__.values():
+                attach_attribute_to_syft_object(obj, attr_dict)
