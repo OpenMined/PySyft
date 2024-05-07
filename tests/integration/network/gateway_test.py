@@ -14,7 +14,6 @@ from syft.client.client import HTTPConnection
 from syft.client.client import SyftClient
 from syft.client.domain_client import DomainClient
 from syft.client.gateway_client import GatewayClient
-from syft.client.gateway_client import ProxyClient
 from syft.client.registry import NetworkRegistry
 from syft.client.search import SearchResults
 from syft.service.dataset.dataset import Dataset
