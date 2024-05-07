@@ -525,6 +525,11 @@ class NetworkService(AbstractService):
             return remote_node_peer
         # add and update the priority for the peer
         existed_route: NodeRoute | None = remote_node_peer.update_route(route)
+        if existed_route:
+            return SyftSuccess(
+                message=f"The route already exists between '{context.node.name}' and "
+                f"peer '{remote_node_peer.name}' with id '{existed_route.id}'."
+            )
         # update the peer in the store with the updated routes
         result = self.stash.update(
             credentials=context.node.verify_key,
@@ -532,11 +537,6 @@ class NetworkService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
-        if existed_route:
-            return SyftSuccess(
-                message=f"The route already exists between '{context.node.name}' and "
-                f"peer '{remote_node_peer.name}' with id '{existed_route.id}', so its priority was updated"
-            )
         return SyftSuccess(
             message=f"New route ({str(route)}) with id '{route.id}' "
             f"to peer {remote_node_peer.node_type.value} '{remote_node_peer.name}' "

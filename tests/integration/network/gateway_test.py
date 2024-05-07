@@ -352,7 +352,7 @@ def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
     for a self domain.
     Scenario: Connect a domain to a gateway. The gateway adds 2 new routes to the domain
     and check their priorities.
-    Then add an existed route and check if its priority gets updated.
+    Then update an existed route's priority and check if its priority gets updated.
     Check for the gateway if the proxy client to connect to the domain uses the
     route with the highest priority.
     """
@@ -363,6 +363,10 @@ def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
+
+    # Try removing existing peers just to make sure
+    _remove_existing_peers(domain_client)
+    _remove_existing_peers(gateway_client)
 
     # Enable automatic acceptance of association requests
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
@@ -396,7 +400,7 @@ def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
     assert domain_peer.node_routes[-1].port == new_route2.port
     assert domain_peer.node_routes[-1].priority == 3
 
-    # add an existed route to the domain and check its priority gets updated
+    # add an existed route to the domain. Its priority should not be updated
     res = gateway_client.api.services.network.add_route(
         peer_verify_key=domain_peer.verify_key, route=domain_peer.node_routes[0]
     )
@@ -404,27 +408,26 @@ def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
     assert isinstance(res, SyftSuccess)
     domain_peer = gateway_client.api.services.network.get_all_peers()[0]
     assert len(domain_peer.node_routes) == 3
-    assert domain_peer.node_routes[0].priority == 4
+    assert domain_peer.node_routes[0].priority == 1
 
-    # the gateway gets the proxy client to the domain
-    # the proxy client should use the route with the highest priority
-    proxy_domain_client = gateway_client.peers[0]
-    assert isinstance(proxy_domain_client, DomainClient)
-
-    # add another existed route (port 10000)
-    res = gateway_client.api.services.network.add_route(
-        peer_verify_key=domain_peer.verify_key, route=domain_peer.node_routes[1]
-    )
-    assert "route already exists" in res.message
-    assert isinstance(res, SyftSuccess)
-    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert len(domain_peer.node_routes) == 3
-    assert domain_peer.node_routes[1].priority == 5
     # getting the proxy client using the current highest priority route should
-    # give back an error since it is a route with a random port (10000)
+    # give back an error since it is a route with a random port (10001)
     proxy_domain_client = gateway_client.peers[0]
     assert isinstance(proxy_domain_client, SyftError)
     assert "Failed to establish a connection with" in proxy_domain_client.message
+
+    # update the valid route to have the highest priority
+    res = gateway_client.api.services.network.update_route_priority(
+        peer_verify_key=domain_peer.verify_key, route=domain_peer.node_routes[0]
+    )
+    assert isinstance(res, SyftSuccess)
+    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert len(domain_peer.node_routes) == 3
+    assert domain_peer.node_routes[0].priority == 4
+
+    # proxying should success now
+    proxy_domain_client = gateway_client.peers[0]
+    assert isinstance(proxy_domain_client, DomainClient)
 
     # the routes the domain client uses to connect to the gateway should stay the same
     gateway_peer: NodePeer = domain_client.peers[0]
