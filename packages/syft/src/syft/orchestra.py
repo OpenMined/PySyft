@@ -60,7 +60,7 @@ def get_deployment_type(deployment_type: str | None) -> DeploymentType | None:
 # ORCHESTRA_DEPLOYMENT_TYPE
 class DeploymentType(Enum):
     PYTHON = "python"
-    K8S = "k8s"
+    REMOTE = "remote"
 
 
 class NodeHandle:
@@ -241,7 +241,7 @@ def deploy_to_python(
         )
 
 
-def deploy_to_k8s(
+def deploy_to_remote(
     node_type_enum: NodeType,
     deployment_type_enum: DeploymentType,
     name: str,
@@ -317,8 +317,8 @@ class Orchestra:
                 queue_port=queue_port,
                 association_request_auto_approval=association_request_auto_approval,
             )
-        elif deployment_type_enum == DeploymentType.K8S:
-            return deploy_to_k8s(
+        elif deployment_type_enum == DeploymentType.REMOTE:
+            return deploy_to_remote(
                 node_type_enum=node_type_enum,
                 deployment_type_enum=deployment_type_enum,
                 name=name,
