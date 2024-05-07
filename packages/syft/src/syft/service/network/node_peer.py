@@ -71,7 +71,7 @@ class NodePeer(SyftObject):
         "name",
         "node_type",
         "admin_email",
-        "ping_status",
+        "ping_status.value",
         "ping_status_message",
         "pinged_timestamp",
     ]
@@ -131,24 +131,24 @@ class NodePeer(SyftObject):
         route.priority = current_max_priority + 1
         return route
 
-    def update_route(self, new_route: NodeRoute) -> NodeRoute | None:
+    def update_route(self, route: NodeRoute) -> NodeRoute | None:
         """
         Update the route for the node.
-        If the route already exists, updates the priority of the existing route.
-        If it doesn't, it append the new route to the peer's list of node routes.
+        If the route already exists, return it.
+        If the route is new, assign it to have the highest priority
+        before appending it to the peer's list of node routes.
 
         Args:
-            new_route (NodeRoute): The new route to be added to the node.
+            route (NodeRoute): The new route to be added to the peer.
 
         Returns:
             NodeRoute | None: if the route already exists, return it, else returns None
         """
-        new_route = self.assign_highest_priority(new_route)
-        existed, index = self.existed_route(new_route)
-        if existed and index is not None:
-            self.node_routes[index].priority = new_route.priority
-            return self.node_routes[index]
+        existed, _ = self.existed_route(route)
+        if existed:
+            return route
         else:
+            new_route = self.assign_highest_priority(route)
             self.node_routes.append(new_route)
             return None
 

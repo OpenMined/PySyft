@@ -183,6 +183,7 @@ class NetworkService(AbstractService):
         )
 
         remote_node_peer = NodePeer.from_client(remote_client)
+        # check if the remote node already exists as a peer
         existing_peer_result = self.stash.get_by_uid(
             context.node.verify_key, remote_node_peer.id
         )
@@ -200,12 +201,12 @@ class NetworkService(AbstractService):
 
                 if result.is_err():
                     msg.append("Attempt to update route information failed.")
-                    return SyftError(message=". ".join(msg))
+                    return SyftError(message="\n".join(msg))
 
                 msg.append("Route information successfully updated.")
-                return SyftSuccess(message=". ".join(msg))
+                return SyftSuccess(message="\n".join(msg))
 
-            return SyftSuccess(message=". ".join(msg))
+            return SyftSuccess(message="\n".join(msg))
 
         # If the peer does not exist, ask the remote client to add this node
         # (represented by `self_node_peer`) as a peer

@@ -144,7 +144,7 @@ def test_domain_connect_to_gateway(gateway_association_request_auto_approval, do
 
     # check priority
     all_peers = gateway_client.api.services.network.get_all_peers()
-    assert all_peers[0].node_routes[0].priority == 2
+    assert all_peers[0].node_routes[0].priority == 1
 
 
 @pytest.mark.local_node
@@ -170,13 +170,13 @@ def test_domain_connect_to_gateway_routes_priority(gateway, domain, domain_2) ->
     domain_1_routes = all_peers[0].node_routes
     assert domain_1_routes[0].priority == 1
 
-    # reconnect to the gateway. The route's priority should be increased by 1
+    # reconnect to the gateway
     result = domain_client.connect_to_gateway(via_client=gateway_client)
     assert isinstance(result, SyftSuccess)
     all_peers = gateway_client.api.services.network.get_all_peers()
     assert len(all_peers) == 1
     domain_1_routes = all_peers[0].node_routes
-    assert domain_1_routes[0].priority == 2
+    assert domain_1_routes[0].priority == 1
 
     # another domain client connects to the gateway
     domain_client_2: DomainClient = domain_2.login(
@@ -189,10 +189,7 @@ def test_domain_connect_to_gateway_routes_priority(gateway, domain, domain_2) ->
     all_peers = gateway_client.api.services.network.get_all_peers()
     assert len(all_peers) == 2
     for peer in all_peers:
-        if peer.name == domain_client.metadata.name:
-            assert peer.node_routes[0].priority == 2
-        if peer.name == domain_client_2.metadata.name:
-            assert peer.node_routes[0].priority == 1
+        assert peer.node_routes[0].priority == 1
 
 
 @pytest.mark.local_node
