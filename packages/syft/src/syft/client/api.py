@@ -68,17 +68,22 @@ if TYPE_CHECKING:
     from ..service.job.job_stash import Job
 
 
-try:
-    # third party
-    from IPython.core.guarded_eval import EVALUATION_POLICIES
+IPYNB_BACKGROUND_METHODS = set(
+    [
+        "getdoc",
+        "_partialmethod",
+        "__name__",
+        "__code__",
+        "__wrapped__",
+        "__custom_documentations__",
+        "__signature__",
+        "__defaults__",
+        "__kwdefaults__",
+        "__custom_documentations__",
+    ]
+)
 
-    ipython = get_ipython()  # type: ignore
-    ipython.Completer.evaluation = "limited"
-    EVALUATION_POLICIES["limited"].allowed_getattr_external.add(
-        ("syft.client.api", "APIModule")
-    )
-except Exception:
-    pass
+IPYNB_BACKGROUND_PREFIXES = ["_ipy", "_repr", "__ipython", "__pydantic"]
 
 
 class APIRegistry:
@@ -646,13 +651,23 @@ class APIModule:
             return object.__getattribute__(self, name)
         except AttributeError:
             # if we fail, we refresh the api and try again
-            if self.refresh_callback is not None:
+            # however, we dont want this to happen all the time because of ipy magic happening
+            # in the background
+            if (
+                self.refresh_callback is not None
+                and name not in IPYNB_BACKGROUND_METHODS
+                and not any(
+                    name.startswith(prefix) for prefix in IPYNB_BACKGROUND_PREFIXES
+                )
+            ):
                 api = self.refresh_callback()
                 try:
+                    # get current path in the module tree
                     new_current_module = api.services
                     for submodule in self.path.split("."):
                         if submodule != "":
                             new_current_module = getattr(new_current_module, submodule)
+                    # retry getting the attribute, if this fails, we throw an error
                     return object.__getattribute__(new_current_module, name)
                 except AttributeError:
                     pass
@@ -818,6 +833,15 @@ class SyftAPI(SyftObject):
     refresh_api_callback: Callable | None = None
     __user_role: ServiceRole = ServiceRole.NONE
     communication_protocol: PROTOCOL_TYPE
+
+    # informs getattr does not have nasty side effects
+    __syft_allow_autocomplete__ = ["services"]
+
+    # def _repr_html_(self) -> str:
+    #     return self.services._repr_html_()
+
+    def __dir__(self) -> list[str]:
+        return ["services"]
 
     @staticmethod
     def for_user(

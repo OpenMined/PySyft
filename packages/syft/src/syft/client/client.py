@@ -485,6 +485,17 @@ class SyftClient:
     __logged_in_username: str = ""
     __user_role: ServiceRole = ServiceRole.NONE
 
+    # informs getattr does not have nasty side effects
+    __syft_allow_autocomplete__ = [
+        "api",
+        "code",
+        "jobs",
+        "users",
+        "settings",
+        "notifications",
+        "custom_api",
+    ]
+
     def __init__(
         self,
         connection: NodeConnection,

@@ -109,6 +109,40 @@ except:  # noqa: E722
     pass  # nosec
 
 
+try:
+    # third party
+    from IPython.core.guarded_eval import EVALUATION_POLICIES
+
+    ipython = get_ipython()  # type: ignore
+    ipython.Completer.evaluation = "limited"
+    ipython.Completer.use_jedi = False
+    policy = EVALUATION_POLICIES["limited"]
+
+    # this allow for dynamic attribute getters for autocomplete
+    policy.allowed_getattr_external.update(
+        [
+            ("syft.client.api", "APIModule"),
+            ("syft.client.api", "SyftAPI"),
+        ]
+    )
+    original_can_get_attr = policy.can_get_attr
+
+    def patched_can_get_attr(value: Any, attr: str) -> bool:
+        attr_name = "__syft_allow_autocomplete__"
+
+        # first check if exist to prevent side effects
+        if hasattr(value, attr_name) and attr in getattr(value, attr_name, []):
+            return True
+        else:
+            return original_can_get_attr(value, attr)
+
+    # this allows property getters to be used in nested autocomplete
+    policy.can_get_attr = patched_can_get_attr
+
+except Exception as e:
+    print(e)
+
+
 def module_property(func: Any) -> Callable:
     """Decorator to turn module functions into properties.
     Function names must be prefixed with an underscore."""
