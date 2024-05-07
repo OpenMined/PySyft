@@ -564,6 +564,7 @@ body {
 
 .tabulator .tabulator-row .tabulator-cell {
   border-right: 1px solid #e0e0e0;
+  background-color: var(--primary-color);
 }
 
 .tabulator .tabulator-row .tabulator-cell {
@@ -588,4 +589,8 @@ body {
 
 .tabulator .tabulator-row .tabulator-cell:first-child {
   border-left: 1px solid #e0e0e0;
+}
+
+.tabulator .tabulator-footer {
+  border-top: none;
 }

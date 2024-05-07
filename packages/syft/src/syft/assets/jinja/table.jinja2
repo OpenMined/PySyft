@@ -1,9 +1,10 @@
-<script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
-<link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_materialize.min.css" rel="stylesheet">
 
+<div id="table-{{ uid }}-requirements">
+<link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_materialize.min.css" rel="stylesheet">
 <style>
 {{ css | safe }}
 </style>
+</div>
 
 <div class='flex gap-10' style='align-items: center; margin-top: 16px;'>
     <div class='folder-icon'>{{ icon | safe}}</div>
@@ -26,10 +27,17 @@
 <script type="text/javascript">
 {{ js | safe }}
 
-buildTable(
-    {{ columns | safe }},
-    {{ row_header | safe }},
-    {{ data | safe }},
-    "{{ uid }}",
+loadExternalScript(
+  "https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js",
+  "table-{{ uid }}-requirements",
+  function() {
+      buildTable(
+      {{ columns | safe }},
+      {{ row_header | safe }},
+      {{ data | safe }},
+      "{{ uid }}",
+    );
+  }
 );
+
 </script>

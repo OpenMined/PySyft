@@ -8,6 +8,15 @@ document.querySelectorAll(".escape-unfocus").forEach((input) => {
   });
 });
 
+function loadExternalScript(scriptPath, elementId, handler) {
+  var elem = document.getElementById(elementId);
+  var script = document.createElement("script");
+  script.type = "text/javascript";
+  script.src = scriptPath;
+  script.onload = handler;
+  elem.appendChild(script);
+}
+
 function buildTable(columns, rowHeader, data, uid) {
   const tableId = `table-${uid}`;
   const searchBarId = `search-${uid}`;
@@ -28,7 +37,6 @@ function buildTable(columns, rowHeader, data, uid) {
     resizableColumnGuide: true,
     pagination: "local",
     paginationSize: 5,
-    height: "500px",
   });
 
   // Events needed for cell overflow:

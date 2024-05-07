@@ -7,6 +7,7 @@ from typing import Any
 from IPython.display import HTML
 from IPython.display import display
 import jinja2
+from loguru import logger
 
 # relative
 from ...assets import load_css
@@ -98,6 +99,7 @@ def build_tabulator_table(obj: Any) -> str | None:
             return obj.__repr__()
 
         table_template = env.get_template("table.jinja2")
+        # tabulator_js = load_js("tabulator.min.js")
         js = load_js("table.js")
         css = load_css("style.css")
 
@@ -117,11 +119,12 @@ def build_tabulator_table(obj: Any) -> str | None:
             index_field_name=TABLE_INDEX_KEY,
             icon=icon,
             name=table_metadata["name"],
+            # tabulator_js=tabulator_js,
         )
 
         return table_html
     except Exception as e:
-        print("error building table", e)
+        logger.debug("error building table", e)
 
     return None
 
