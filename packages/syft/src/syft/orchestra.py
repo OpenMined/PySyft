@@ -1,4 +1,4 @@
-"""Python Level API to launch Docker Containers using Hagrid"""
+"""Python Level API to launch Syft services."""
 
 # future
 from __future__ import annotations
@@ -27,8 +27,6 @@ from .util.util import find_available_port
 
 DEFAULT_PORT = 8080
 DEFAULT_URL = "http://localhost"
-# Gevent used instead of threading module ,as we monkey patch gevent in syft
-# and this causes context switch error when we use normal threading in hagrid
 
 ClientAlias = Any  # we don't want to import Client in case it changes
 

@@ -1,11 +1,9 @@
 # stdlib
 import argparse
 
-# third party
-from hagrid.orchestra import NodeHandle
-
 # relative
-from ..client.deploy import Orchestra
+from ..orchestra import NodeHandle
+from ..orchestra import Orchestra
 
 
 def str_to_bool(bool_str: str | None) -> bool:
@@ -71,16 +69,8 @@ def run() -> NodeHandle | None:
         default="True",
         dest="tail",
     )
-    parser.add_argument(
-        "--cmd",
-        help="cmd mode",
-        type=str,
-        default="False",
-        dest="cmd",
-    )
 
     args = parser.parse_args()
-
     if args.command != "launch":
         print("syft launch is the only command currently supported")
 
@@ -100,7 +90,6 @@ def run() -> NodeHandle | None:
         local_db=args.local_db,
         processes=args.processes,
         tail=args.tail,
-        cmd=args.cmd,
     )
     if not args.tail:
         return node
