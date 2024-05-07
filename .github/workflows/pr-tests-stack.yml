@@ -177,8 +177,13 @@ jobs:
           chmod 700 get_helm.sh
           ./get_helm.sh
 
-      - name: Install K3D and Devspace
+      - name: Run K8s & Helm integration tests
         if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 60
+        env:
+          PYTEST_MODULES: "${{ matrix.pytest-modules }}"
+          GITHUB_CI: true
+        shell: bash
         run: |
           K3D_VERSION=v5.6.3
           DEVSPACE_VERSION=v6.3.12
@@ -192,14 +197,6 @@ jobs:
           chmod +x devspace
           devspace version
 
-      - name: Run K8s & Helm integration tests
-        if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 60
-        env:
-          PYTEST_MODULES: "${{ matrix.pytest-modules }}"
-          GITHUB_CI: true
-        shell: bash
-        run: |
           tox -e stack.test.integration.k8s
           tox -e syft.build.helm
           tox -e syft.package.helm
@@ -332,8 +329,12 @@ jobs:
           chmod 700 get_helm.sh
           ./get_helm.sh
 
-      - name: Install K3D and Devspace
+      - name: Run Notebooks Tests
         if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 60
+        env:
+          GITHUB_CI: true
+        shell: bash
         run: |
           K3D_VERSION=v5.6.3
           DEVSPACE_VERSION=v6.3.12
@@ -346,14 +347,6 @@ jobs:
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
-
-      - name: Run Notebooks Tests
-        if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 60
-        env:
-          GITHUB_CI: true
-        shell: bash
-        run: |
           tox -e stack.test.notebook.k8s
 
       - name: Get current timestamp
