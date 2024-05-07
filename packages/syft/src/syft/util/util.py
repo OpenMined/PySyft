@@ -19,6 +19,7 @@ import operator
 import os
 from pathlib import Path
 import platform
+import random
 import re
 from secrets import randbelow
 import socket
@@ -309,7 +310,11 @@ def print_dynamic_log(
     return (finish, success)
 
 
-def find_available_port(host: str, port: int, search: bool = False) -> int:
+def find_available_port(
+    host: str, port: int | None = None, search: bool = False
+) -> int:
+    if port is None:
+        port = random.randint(1500, 65000)  # nosec
     port_available = False
     while not port_available:
         try:
@@ -324,6 +329,7 @@ def find_available_port(host: str, port: int, search: bool = False) -> int:
                     port += 1
                 else:
                     break
+            sock.close()
 
         except Exception as e:
             print(f"Failed to check port {port}. {e}")
