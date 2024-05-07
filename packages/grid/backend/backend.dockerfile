@@ -1,6 +1,6 @@
 ARG PYTHON_VERSION="3.12"
-ARG UV_VERSION="0.1.32-r0"
-ARG TORCH_VERSION="2.2.2"
+ARG UV_VERSION="0.1.39-r0"
+ARG TORCH_VERSION="2.3.0"
 
 # ==================== [BUILD STEP] Python Dev Base ==================== #
 FROM cgr.dev/chainguard/wolfi-base as syft_deps
