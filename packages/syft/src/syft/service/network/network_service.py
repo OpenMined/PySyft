@@ -191,6 +191,8 @@ class NetworkService(AbstractService):
             existing_peer_result.is_ok()
             and (existing_peer := existing_peer_result.ok()) is not None
         ):
+            # TODO: Also check remotely if the self node already exists as a peer
+
             msg = ["Routes already exchanged."]
             if existing_peer != remote_node_peer:
                 result = self.stash.create_or_update_peer(

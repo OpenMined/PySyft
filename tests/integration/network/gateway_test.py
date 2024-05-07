@@ -346,7 +346,9 @@ def test_deleting_peers(set_env_var, domain_1_port: int, gateway_port: int) -> N
     assert len(gateway_client.peers) == 0
 
 
-def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+def test_add_update_route_priority(
+    set_env_var, gateway_port: int, domain_1_port: int
+) -> None:
     """
     Test the network service's `add_route` functionalities to add routes directly
     for a self domain.
@@ -439,6 +441,11 @@ def test_add_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
 
 
 def test_delete_route(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+    """
+    Scenario:
+    Connect a domain to a gateway. The gateway adds a new route to the domain
+    and then deletes it.
+    """
     # login to the domain and gateway
     gateway_client: GatewayClient = sy.login(
         port=gateway_port, email="info@openmined.org", password="changethis"
@@ -482,12 +489,14 @@ def test_delete_route(set_env_var, gateway_port: int, domain_1_port: int) -> Non
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-def test_add_route_on_peer(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+def test_add_update_route_priority_on_peer(
+    set_env_var, gateway_port: int, domain_1_port: int
+) -> None:
     """
     Test the `add_route_on_peer` of network service.
     Connect a domain to a gateway.
     The gateway adds 2 new routes for the domain and check their priorities.
-    Then add an existed route and check if its priority gets updated.
+    The gateway updates the route priority for the domain remotely.
     Then the domain adds a route to itself for the gateway.
     """
     # login to the domain and gateway
@@ -538,21 +547,17 @@ def test_add_route_on_peer(set_env_var, gateway_port: int, domain_1_port: int) -
     assert gateway_peer.node_routes[-1].port == new_route2.port
     assert gateway_peer.node_routes[-1].priority == 3
 
-    # add an existed route for the domain and check its priority gets updated
-    existed_route = gateway_peer.node_routes[0]
-    res = gateway_client.api.services.network.add_route_on_peer(
-        peer=domain_peer, route=existed_route
+    # update the route priority remotely on the domain
+    first_route = gateway_peer.node_routes[0]
+    res = gateway_client.api.services.network.update_route_priority_on_peer(
+        peer=domain_peer, route=first_route
     )
-    assert "route already exists" in res.message
     assert isinstance(res, SyftSuccess)
-    gateway_peer = domain_client.peers[0]
-    assert len(gateway_peer.node_routes) == 3
-    assert gateway_peer.node_routes[0].priority == 4
 
     # the domain calls `add_route_on_peer` to to add a route to itself for the gateway
     assert len(domain_peer.node_routes) == 1
     res = domain_client.api.services.network.add_route_on_peer(
-        peer=gateway_peer, route=new_route
+        peer=domain_client.peers[0], route=new_route
     )
     assert isinstance(res, SyftSuccess)
     domain_peer = gateway_client.api.services.network.get_all_peers()[0]
