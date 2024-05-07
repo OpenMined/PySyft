@@ -103,15 +103,9 @@ def test_domain_connect_to_gateway(gateway_association_request_auto_approval, do
     all_peers = gateway_client.api.services.network.get_all_peers()
     assert all_peers[0].node_routes[0].priority == 1
 
-    # Try via client approach
+    # Try again (via client approach)
     result_2 = domain_client.connect_to_gateway(via_client=gateway_client)
-
-    if association_request_auto_approval:
-        assert isinstance(result_2, SyftSuccess)
-    else:
-        assert isinstance(result_2, Request)
-        r = gateway_client.api.services.request.get_all()[-1].approve()
-        assert isinstance(r, SyftSuccess)
+    assert isinstance(result_2, SyftSuccess)
 
     assert len(domain_client.peers) == 1
     assert len(gateway_client.peers) == 1

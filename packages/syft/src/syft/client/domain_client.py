@@ -306,7 +306,11 @@ class DomainClient(SyftClient):
         if isinstance(res, SyftSuccess):
             if self.metadata:
                 return SyftSuccess(
-                    message=f"Connected {self.metadata.node_type} '{self.metadata.name}' to gateway '{client.name}'"
+                    message=(
+                        f"Connected {self.metadata.node_type} "
+                        f"'{self.metadata.name}' to gateway '{client.name}'. "
+                        f"{res.message}"
+                    )
                 )
             else:
                 return SyftSuccess(message=f"Connected to '{client.name}' gateway")

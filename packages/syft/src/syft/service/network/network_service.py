@@ -164,8 +164,10 @@ class NetworkService(AbstractService):
         self_node_route: NodeRoute,
         remote_node_route: NodeRoute,
         remote_node_verify_key: SyftVerifyKey,
-    ) -> SyftSuccess | SyftError:
-        """Exchange Route With Another Node"""
+    ) -> Request | SyftSuccess | SyftError:
+        """
+        Exchange Route With Another Node. If there is a pending association request, return it
+        """
 
         # Step 1: Validate the Route
         self_node_peer = self_node_route.validate_with_context(context=context)
@@ -182,14 +184,13 @@ class NetworkService(AbstractService):
 
         remote_node_peer = NodePeer.from_client(remote_client)
         existing_peer_result = self.stash.get_by_uid(
-            context.credentials.verify_key, remote_node_peer.id
+            context.node.verify_key, remote_node_peer.id
         )
         if (
             existing_peer_result.is_ok()
             and (existing_peer := existing_peer_result.ok()) is not None
         ):
             msg = ["Routes already exchanged."]
-
             if existing_peer != remote_node_peer:
                 result = self.stash.create_or_update_peer(
                     context.node.verify_key,
@@ -199,16 +200,16 @@ class NetworkService(AbstractService):
 
                 if result.is_err():
                     msg.append("Attempt to update route information failed.")
-                    return SyftError(message="\n".join(msg))
+                    return SyftError(message=". ".join(msg))
 
                 msg.append("Route information successfully updated.")
-                return SyftSuccess(message="\n".join(msg))
+                return SyftSuccess(message=". ".join(msg))
 
-            return SyftSuccess(message="\n".join(msg))
+            return SyftSuccess(message=". ".join(msg))
 
+        # If the peer does not exist, ask the remote client to add this node
+        # (represented by `self_node_peer`) as a peer
         random_challenge = secrets.token_bytes(16)
-
-        # ask the remote client to add this node (represented by `self_node_peer`) as a peer
         remote_res = remote_client.api.services.network.add_peer(
             peer=self_node_peer,
             challenge=random_challenge,
