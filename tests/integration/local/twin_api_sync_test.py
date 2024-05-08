@@ -188,7 +188,7 @@ def test_function_error(full_low_worker) -> None:
 
     @sy.syft_function_single_use()
     def compute_sum():
-        assert False
+        raise RuntimeError
 
     ds_client.api.services.code.request_code_execution(compute_sum)
 
