@@ -318,7 +318,9 @@ class StorePartition:
         self.store_config = store_config
         res = self.init_store()
         if res.is_err():
-            raise Exception(f"Something went wrong initializing the store: {res.err()}")
+            raise RuntimeError(
+                f"Something went wrong initializing the store: {res.err()}"
+            )
 
         store_config.locking_config.lock_name = f"StorePartition-{settings.name}"
         self.lock = SyftLock(store_config.locking_config)
