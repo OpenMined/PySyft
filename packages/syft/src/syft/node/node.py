@@ -995,9 +995,13 @@ class Node(AbstractNode):
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
         settings = settings_stash.get_all(self.signing_key.verify_key)
+        if settings.is_err():
+            raise ValueError(
+                f"Cannot get node settings for '{self.name}'. Error: {settings.err()}"
+            )
         if settings.is_ok() and len(settings.ok()) > 0:
-            settings_data = settings.ok()[0]
-        return settings_data
+            settings = settings.ok()[0]
+        return settings
 
     @property
     def metadata(self) -> NodeMetadataV3:

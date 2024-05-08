@@ -317,6 +317,7 @@ class DomainClient(SyftClient):
                 )
             else:
                 return SyftSuccess(message=f"Connected to '{client.name}' gateway")
+
         return res
 
     def _get_service_by_name_if_exists(self, name: str) -> APIModule | None:
