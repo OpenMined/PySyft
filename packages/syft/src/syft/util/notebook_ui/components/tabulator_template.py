@@ -99,9 +99,12 @@ def build_tabulator_table(obj: Any) -> str | None:
             return obj.__repr__()
 
         table_template = env.get_template("table.jinja2")
-        # tabulator_js = load_js("tabulator.min.js")
+        tabulator_js = load_js("tabulator.min.js")
         js = load_js("table.js")
         css = load_css("style.css")
+
+        # Add tabulator as a named module for VSCode compatibility
+        tabulator_js = tabulator_js.replace("define(t)", "define('tabulator-tables', [], t)")
 
         icon = table_metadata.get("icon", None)
         if icon is None:
@@ -119,7 +122,7 @@ def build_tabulator_table(obj: Any) -> str | None:
             index_field_name=TABLE_INDEX_KEY,
             icon=icon,
             name=table_metadata["name"],
-            # tabulator_js=tabulator_js,
+            tabulator_js=tabulator_js,
         )
 
         return table_html

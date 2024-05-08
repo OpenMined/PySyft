@@ -1,3 +1,20 @@
+<script type="application/javascript">
+    {{ tabulator_js | safe }};
+</script>
+
+<script type="application/javascript">
+  // VSCode workaround
+  if (typeof define === 'function' && define.amd && typeof require !== 'undefined') {
+    require(['tabulator-tables'], function(Tabulator) {
+      window.Tabulator = Tabulator;
+    });
+  }
+</script>
+
+<style>
+  {{ tabulator_css | safe }}
+</style>
+
 <div id="table-{{ uid }}-requirements"></div>
 
 <div class='flex gap-10' style='align-items: center; margin-top: 16px;'>
@@ -21,16 +38,12 @@
 <script type="application/javascript">
   {{ js | safe }}
 
-  load_tabulator("table-{{ uid }}-requirements")
-    .then(() => {
-      buildTable(
-        {{ columns | safe }},
-        {{ row_header | safe }},
-        {{ data | safe }},
-        "{{ uid }}"
-      )
-    })
-    .catch(err => console.debug('Failed to load Tabulator', err))
+  buildTable(
+    {{ columns | safe }},
+    {{ row_header | safe }},
+    {{ data | safe }},
+    "{{ uid }}"
+  )
 </script>
 
 <style>
