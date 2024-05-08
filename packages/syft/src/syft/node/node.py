@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from collections import OrderedDict
-from collections import defaultdict
 from collections.abc import Callable
 from datetime import datetime
 from functools import partial

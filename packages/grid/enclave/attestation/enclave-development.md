@@ -103,12 +103,13 @@ client.add_verifier(attestation.Devices.GPU, attestation.Environment.REMOTE, NRA
 client.attest()
 ```
 
-### Instructions for using helm charts
+### Instructions for Development (Devspace)
 
-- The attestation container runs inside the backend pod (so backend pod has two containers now). However, in order to run the attestation container, you need to uncomment the attestation flags in `packages/grid/helm/values.dev.yaml`
-- Next, we run the deployment. Since k3d creates an intermediate layer of nesting, we need to mount some volumes from host to k3d registry. Thus, when launching, use the following tox command `tox -e dev.k8s.start -- --volume /sys/kernel/security:/sys/kernel/security --volume /dev/tmprm0:/dev/tmprm0`
-- Finally, note that the GPU privileges/drivers etc. have not been completed so while the GPU attestation endpoints should work, they will not produce the expected tokens. To test the GPU code, follow the steps provided in [For GPU Attestation
-  ](#for-gpu-attestation) to look at the tokens.
+We could launch an enclave stack by the command.
+
+```sh
+tox -e dev.k8s.launch.enclave
+```
 
 ### Local Client-side Verification
 

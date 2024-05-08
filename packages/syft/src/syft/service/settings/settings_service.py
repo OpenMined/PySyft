@@ -75,7 +75,10 @@ class SettingsService(AbstractService):
                 update_result = self.stash.update(context.credentials, new_settings)
                 if update_result.is_ok():
                     return SyftSuccess(
-                        message="Settings updated successfully. You must call <client>.refresh() to sync your client with the changes."
+                        message=(
+                            "Settings updated successfully. "
+                            + "You must call <client>.refresh() to sync your client with the changes."
+                        )
                     )
                 else:
                     return SyftError(message=update_result.err())
