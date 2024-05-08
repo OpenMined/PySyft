@@ -15,9 +15,7 @@ from ipywidgets import Layout
 from ipywidgets import VBox
 
 # relative
-from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
-from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
 from ...util.notebook_ui.components.sync import Alert
 from ...util.notebook_ui.components.sync import CopyIDButton
@@ -32,8 +30,6 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from .diff_state import ObjectDiff
 from .diff_state import ObjectDiffBatch
-from .diff_state import ResolvedSyncState
-from .diff_state import SyncInstruction
 
 # Standard div Jupyter Lab uses for notebook outputs
 # This is needed to use alert styles from SyftSuccess and SyftError
