@@ -38,6 +38,7 @@ from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
 from ..service.context import AuthedServiceContext
 from ..service.context import ChangeContext
+from ..service.metadata.node_metadata import NodeMetadataJSON
 from ..service.response import SyftAttributeError
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
@@ -227,6 +228,7 @@ class RemoteFunction(SyftObject):
 
     node_uid: UID
     signature: Signature
+    refresh_api_callback: Callable | None
     path: str
     make_call: Callable
     pre_kwargs: dict[str, Any] | None = None
@@ -288,6 +290,13 @@ class RemoteFunction(SyftObject):
         if not allowed:
             return
         result = self.make_call(api_call=api_call, cache_result=cache_result)
+
+        # TODO: annotate this on the service method decorator
+        API_CALLS_THAT_REQUIRE_REFRESH = ["settings.enable_eager_execution"]
+
+        if path in API_CALLS_THAT_REQUIRE_REFRESH:
+            if self.refresh_api_callback is not None:
+                self.refresh_api_callback()
 
         result, _ = migrate_args_and_kwargs(
             [result], kwargs={}, to_latest_protocol=True
@@ -490,6 +499,7 @@ def generate_remote_function(
         custom_function = bool(path == "api.call_in_jobs")
         remote_function = RemoteFunction(
             node_uid=node_uid,
+            refresh_api_callback=api.refresh_api_callback,
             signature=signature,
             path=path,
             make_call=make_call,
@@ -763,6 +773,7 @@ class SyftAPI(SyftObject):
     refresh_api_callback: Callable | None = None
     __user_role: ServiceRole = ServiceRole.NONE
     communication_protocol: PROTOCOL_TYPE
+    metadata: NodeMetadataJSON | None = None
 
     # def __post_init__(self) -> None:
     #     pass

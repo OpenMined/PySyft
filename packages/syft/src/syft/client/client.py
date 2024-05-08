@@ -242,7 +242,10 @@ class HTTPConnection(NodeConnection):
             return NodeMetadataJSON(**metadata_json)
 
     def get_api(
-        self, credentials: SyftSigningKey, communication_protocol: int
+        self,
+        credentials: SyftSigningKey,
+        communication_protocol: int,
+        metadata: NodeMetadataJSON | None,
     ) -> SyftAPI:
         params = {
             "verify_key": str(credentials.verify_key),
@@ -265,6 +268,7 @@ class HTTPConnection(NodeConnection):
         obj.connection = self
         obj.signing_key = credentials
         obj.communication_protocol = communication_protocol
+        obj.metadata = metadata
         if self.proxy_target_uid:
             obj.node_uid = self.proxy_target_uid
         return cast(SyftAPI, obj)
@@ -379,7 +383,10 @@ class PythonConnection(NodeConnection):
             return GridURL(port=8333).with_path(path)
 
     def get_api(
-        self, credentials: SyftSigningKey, communication_protocol: int
+        self,
+        credentials: SyftSigningKey,
+        communication_protocol: int,
+        metadata: NodeMetadataJSON | None,
     ) -> SyftAPI:
         # todo: its a bit odd to identify a user by its verify key maybe?
         if self.proxy_target_uid:
@@ -401,6 +408,7 @@ class PythonConnection(NodeConnection):
         obj.connection = self
         obj.signing_key = credentials
         obj.communication_protocol = communication_protocol
+        obj.metadata = metadata
         if self.proxy_target_uid:
             obj.node_uid = self.proxy_target_uid
         return obj
@@ -942,7 +950,9 @@ class SyftClient:
         _api: SyftAPI = self.connection.get_api(
             credentials=credentials,
             communication_protocol=self.communication_protocol,
+            metadata=self.metadata,
         )
+        self._fetch_node_metadata(self.credentials)
 
         def refresh_callback() -> SyftAPI:
             return self._fetch_api(self.credentials)
@@ -958,6 +968,7 @@ class SyftClient:
             api=_api,
         )
         self._api = _api
+        self._api.metadata = self.metadata
         return _api
 
 

@@ -45,6 +45,7 @@ class NodeSettingsUpdate(PartialSyftObject):
     signup_enabled: bool
     admin_email: str
     association_request_auto_approval: bool
+    eager_execution_enabled: bool
 
 
 @serializable()
@@ -68,6 +69,7 @@ class NodeSettings(SyftObject):
     description: str = "Text"
     node_type: NodeType = NodeType.DOMAIN
     signup_enabled: bool
+    eager_execution_enabled: bool = False
     admin_email: str
     node_side_type: NodeSideType = NodeSideType.HIGH_SIDE
     show_warnings: bool

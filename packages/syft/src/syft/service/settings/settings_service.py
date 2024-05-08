@@ -65,6 +65,20 @@ class SettingsService(AbstractService):
     def update(
         self, context: AuthedServiceContext, settings: NodeSettingsUpdate
     ) -> Result[SyftSuccess, SyftError]:
+        res = self._update(context, settings)
+        if res.is_ok():
+            return SyftSuccess(
+                message=(
+                    "Settings updated successfully. "
+                    + "You must call <client>.refresh() to sync your client with the changes."
+                )
+            )
+        else:
+            return SyftError(message=res.err())
+
+    def _update(
+        self, context: AuthedServiceContext, settings: NodeSettingsUpdate
+    ) -> Result[Ok, Err]:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             current_settings = result.ok()
@@ -73,19 +87,11 @@ class SettingsService(AbstractService):
                     update=settings.to_dict(exclude_empty=True)
                 )
                 update_result = self.stash.update(context.credentials, new_settings)
-                if update_result.is_ok():
-                    return SyftSuccess(
-                        message=(
-                            "Settings updated successfully. "
-                            + "You must call <client>.refresh() to sync your client with the changes."
-                        )
-                    )
-                else:
-                    return SyftError(message=update_result.err())
+                return update_result
             else:
-                return SyftError(message="No settings found")
+                return Err(value="No settings found")
         else:
-            return SyftError(message=result.err())
+            return result
 
     @service_method(
         path="settings.enable_notifications",
@@ -124,20 +130,18 @@ class SettingsService(AbstractService):
         return notifier_service.turn_off(context=context)
 
     @service_method(
-        path="settings.allow_guest_signup",
-        name="allow_guest_signup",
+        path="settings.enable_guest_signup",
+        name="enable_guest_signup",
         warning=HighSideCRUDWarning(confirmation=True),
     )
-    def allow_guest_signup(
+    def enable_guest_signup(
         self, context: AuthedServiceContext, enable: bool
     ) -> SyftSuccess | SyftError:
         """Enable/Disable Registration for Data Scientist or Guest Users."""
         flags.CAN_REGISTER = enable
 
-        method = context.node.get_service_method(SettingsService.update)
         settings = NodeSettingsUpdate(signup_enabled=enable)
-
-        result = method(context=context, settings=settings)
+        result = self._update(context=context, settings=settings)
 
         if result.is_err():
             return SyftError(message=f"Failed to update settings: {result.err()}")
@@ -146,14 +150,34 @@ class SettingsService(AbstractService):
         return SyftSuccess(message=f"Registration feature successfully {message}")
 
     @service_method(
-        path="settings.allow_association_request_auto_approval",
-        name="allow_association_request_auto_approval",
+        path="settings.enable_eager_execution",
+        name="enable_eager_execution",
+        warning=HighSideCRUDWarning(confirmation=True),
     )
-    def allow_association_request_auto_approval(
+    def enable_eager_execution(
+        self, context: AuthedServiceContext, enable: bool
+    ) -> SyftSuccess | SyftError:
+        """Enable/Disable Registration for Data Scientist or Guest Users."""
+        flags.CAN_REGISTER = enable
+        settings = NodeSettingsUpdate(eager_execution_enabled=enable)
+
+        result = self._update(context=context, settings=settings)
+
+        if result.is_err():
+            return SyftError(message=f"Failed to update settings: {result.err()}")
+
+        message = "enabled" if enable else "disabled"
+        return SyftSuccess(message=f"Eager execution {message}")
+
+    @service_method(
+        path="settings.enable_association_request_auto_approval",
+        name="enable_association_request_auto_approval",
+    )
+    def enable_association_request_auto_approval(
         self, context: AuthedServiceContext, enable: bool
     ) -> SyftSuccess | SyftError:
         new_settings = NodeSettingsUpdate(association_request_auto_approval=enable)
-        result = self.update(context, settings=new_settings)
+        result = self.update(context, settins=new_settings)
         if isinstance(result, SyftError):
             return result
 

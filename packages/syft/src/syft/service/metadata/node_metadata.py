@@ -76,6 +76,7 @@ class NodeMetadataV3(SyftObject):
     description: str = "Text"
     node_side_type: str
     show_warnings: bool
+    eager_execution_enabled: bool
 
     def check_version(self, client_version: str) -> bool:
         return check_version(
@@ -98,6 +99,7 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     organization: str = "OpenMined"
     description: str = "My cool domain"
     signup_enabled: bool = False
+    eager_execution_enabled: bool = False
     admin_email: str = ""
     node_side_type: str
     show_warnings: bool

@@ -12,6 +12,7 @@ from ..utils.custom_markers import currently_fail_on_python_3_12
 
 def test_eager_permissions(worker, guest_client):
     root_domain_client = worker.root_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
     input_obj = TwinObject(
         private_obj=np.array([[3, 3, 3], [3, 3, 3]]),
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
@@ -36,6 +37,7 @@ def test_eager_permissions(worker, guest_client):
 def test_plan(worker):
     root_domain_client = worker.root_client
     guest_client = worker.guest_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
 
     @planify
     def my_plan(x=np.array([[2, 2, 2], [2, 2, 2]])):  # noqa: B008
@@ -77,6 +79,7 @@ def test_plan(worker):
 def test_plan_with_function_call(worker, guest_client):
     root_domain_client = worker.root_client
     guest_client = worker.guest_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
 
     @planify
     def my_plan(x=np.array([[2, 2, 2], [2, 2, 2]])):  # noqa: B008
@@ -98,11 +101,12 @@ def test_plan_with_function_call(worker, guest_client):
 
 
 def test_plan_with_object_instantiation(worker, guest_client):
+    root_domain_client = worker.root_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
+
     @planify
     def my_plan(x=np.array([1, 2, 3, 4, 5, 6])):  # noqa: B008
         return x + 1
-
-    root_domain_client = worker.root_client
 
     plan_ptr = my_plan.send(guest_client)
 
@@ -123,6 +127,7 @@ def test_plan_with_object_instantiation(worker, guest_client):
 
 def test_setattribute(worker, guest_client):
     root_domain_client = worker.root_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
 
     private_data, mock_data = (
         np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]),
@@ -160,6 +165,7 @@ def test_setattribute(worker, guest_client):
 
 def test_getattribute(worker, guest_client):
     root_domain_client = worker.root_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
     obj = TwinObject(
         private_obj=np.array([[1, 2, 3], [4, 5, 6]]),
         mock_obj=np.array([[1, 1, 1], [1, 1, 1]]),
@@ -176,6 +182,7 @@ def test_getattribute(worker, guest_client):
 
 def test_eager_method(worker, guest_client):
     root_domain_client = worker.root_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
 
     obj = TwinObject(
         private_obj=np.array([[1, 2, 3], [4, 5, 6]]),
@@ -197,6 +204,7 @@ def test_eager_method(worker, guest_client):
 
 def test_eager_dunder_method(worker, guest_client):
     root_domain_client = worker.root_client
+    assert root_domain_client.settings.enable_eager_execution(enable=True)
 
     obj = TwinObject(
         private_obj=np.array([[1, 2, 3], [4, 5, 6]]),

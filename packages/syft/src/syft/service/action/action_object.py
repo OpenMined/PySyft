@@ -415,6 +415,7 @@ class PreHookContext(SyftBaseObject):
 def make_action_side_effect(
     context: PreHookContext, *args: Any, **kwargs: Any
 ) -> Result[Ok[tuple[PreHookContext, tuple[Any, ...], dict[str, Any]]], Err[str]]:
+    print("MAKING ACTioN")
     """Create a new action from context_op_name, and add it to the PreHookContext
 
     Parameters:
@@ -794,11 +795,12 @@ class ActionObject(SyncableSyftObject):
         from ...types.blob_storage import CreateBlobStorageEntry
 
         if not isinstance(data, ActionDataEmpty):
-            if isinstance(data, BlobFile) and not data.uploaded:
-                api = APIRegistry.api_for(
-                    self.syft_node_location, self.syft_client_verify_key
-                )
-                data.upload_to_blobstorage_from_api(api)
+            if isinstance(data, BlobFile):
+                if not data.uploaded:
+                    api = APIRegistry.api_for(
+                        self.syft_node_location, self.syft_client_verify_key
+                    )
+                    data._upload_to_blobstorage_from_api(api)
             else:
                 serialized = serialize(data, to_bytes=True)
                 size = sys.getsizeof(serialized)
@@ -1480,27 +1482,35 @@ class ActionObject(SyncableSyftObject):
         if HOOK_ON_POINTERS not in self.syft_post_hooks__:
             self.syft_pre_hooks__[HOOK_ON_POINTERS] = []
 
-        # this should be a list as orders matters
-        for side_effect in [make_action_side_effect]:
-            if side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
-                self.syft_pre_hooks__[HOOK_ALWAYS].append(side_effect)
+        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        allow_eager_execution = (
+            api is not None
+            and api.metadata is not None
+            and api.metadata.eager_execution_enabled
+        )
 
-        for side_effect in [send_action_side_effect]:
-            if side_effect not in self.syft_pre_hooks__[HOOK_ON_POINTERS]:
-                self.syft_pre_hooks__[HOOK_ON_POINTERS].append(side_effect)
+        if allow_eager_execution:
+            # this should be a list as orders matters
+            for side_effect in [make_action_side_effect]:
+                if side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
+                    self.syft_pre_hooks__[HOOK_ALWAYS].append(side_effect)
 
-        if trace_action_side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
-            self.syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
+            for side_effect in [send_action_side_effect]:
+                if side_effect not in self.syft_pre_hooks__[HOOK_ON_POINTERS]:
+                    self.syft_pre_hooks__[HOOK_ON_POINTERS].append(side_effect)
 
-        if HOOK_ALWAYS not in self.syft_post_hooks__:
-            self.syft_post_hooks__[HOOK_ALWAYS] = []
+            if trace_action_side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
+                self.syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
 
-        if HOOK_ON_POINTERS not in self.syft_post_hooks__:
-            self.syft_post_hooks__[HOOK_ON_POINTERS] = []
+            if HOOK_ALWAYS not in self.syft_post_hooks__:
+                self.syft_post_hooks__[HOOK_ALWAYS] = []
 
-        for side_effect in [propagate_node_uid]:
-            if side_effect not in self.syft_post_hooks__[HOOK_ALWAYS]:
-                self.syft_post_hooks__[HOOK_ALWAYS].append(side_effect)
+            if HOOK_ON_POINTERS not in self.syft_post_hooks__:
+                self.syft_post_hooks__[HOOK_ON_POINTERS] = []
+
+            for side_effect in [propagate_node_uid]:
+                if side_effect not in self.syft_post_hooks__[HOOK_ALWAYS]:
+                    self.syft_post_hooks__[HOOK_ALWAYS].append(side_effect)
 
         if isinstance(self.syft_action_data_type, ActionObject):
             raise Exception("Nested ActionObjects", self.syft_action_data_repr_)

@@ -988,6 +988,7 @@ class Node(AbstractNode):
         organization = settings_data.organization
         description = settings_data.description
         show_warnings = settings_data.show_warnings
+        eager_execution_enabled = settings_data.eager_execution_enabled
         node_type = self.node_type.value if self.node_type else ""
         node_side_type = self.node_side_type.value if self.node_side_type else ""
 
@@ -1003,6 +1004,7 @@ class Node(AbstractNode):
             node_type=node_type,
             node_side_type=node_side_type,
             show_warnings=show_warnings,
+            eager_execution_enabled=eager_execution_enabled,
         )
 
     @property
