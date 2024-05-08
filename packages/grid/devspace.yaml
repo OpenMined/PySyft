@@ -59,14 +59,6 @@ images:
     context: ./seaweedfs
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
-  attestation:
-    image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_ENCLAVE_ATTESTATION}"
-    buildKit:
-      args: ["--platform", "linux/amd64"]
-    dockerfile: ./enclave/attestation/attestation.dockerfile
-    context: ./enclave/attestation
-    tags:
-      - dev-${DEVSPACE_TIMESTAMP}
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
@@ -119,10 +111,8 @@ dev:
         sync:
           - path: ./backend/grid:/root/app/grid
           - path: ../syft:/root/app/syft
-      enclave-attestation:
-        sync:
-          - path: ./enclave/attestation/server:/app/server
-      ssh: {}
+        ssh:
+          localPort: 3480
 
 profiles:
   - name: gateway
@@ -134,6 +124,22 @@ profiles:
         path: images.seaweedfs
       - op: remove
         path: dev.seaweedfs
+
+      # Port Re-Mapping
+      # Mongo
+      - op: replace
+        path: dev.mongo.ports[0].port
+        value: 27018:27017
+
+      # Backend
+      - op: replace
+        path: dev.backend.ports[0].port
+        value: 5679:5678
+
+      # Backend Container SSH
+      - op: replace
+        path: dev.backend.containers.backend-container.ssh.localPort
+        value: 3481
 
   - name: gcp
     patches:
@@ -155,3 +161,57 @@ profiles:
         path: deployments.syft.helm.valuesFiles
         value:
           - ./helm/examples/azure/azure.high.yaml
+
+  - name: enclave
+    patches:
+      - op: replace
+        path: deployments.syft.helm.values.node.type
+        value: "enclave"
+
+      - op: add
+        path: images
+        value:
+          enclave-attestation:
+            image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_ENCLAVE_ATTESTATION}"
+            buildKit:
+              args: ["--platform", "linux/amd64"]
+            dockerfile: ./enclave/attestation/attestation.dockerfile
+            context: ./enclave/attestation
+            tags:
+              - dev-${DEVSPACE_TIMESTAMP}
+      - op: add
+        path: dev.backend.containers
+        value:
+          enclave-attestation:
+            sync:
+              - path: ./enclave/attestation/server:/app/server
+
+      - op: add
+        path: deployments.syft.helm.values
+        value:
+          attestation:
+            enabled: true
+
+      # Port Re-Mapping
+      # Mongo
+      - op: replace
+        path: dev.mongo.ports[0].port
+        value: 27019:27017
+
+      # Backend
+      - op: replace
+        path: dev.backend.ports[0].port
+        value: 5680:5678
+
+      # Backend Container SSH
+      - op: replace
+        path: dev.backend.containers.backend-container.ssh.localPort
+        value: 3482
+
+      - op: replace
+        path: dev.seaweedfs.ports
+        value:
+          - port: "9334:9333" # admin
+          - port: "8889:8888" # filer
+          - port: "8334:8333" # S3
+          - port: "4002:4001" # mount api

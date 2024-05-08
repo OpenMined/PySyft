@@ -3,6 +3,7 @@ ARG UV_VERSION="0.1.41-r0"
 ARG TORCH_VERSION="2.3.0"
 
 # ==================== [BUILD STEP] Python Dev Base ==================== #
+
 FROM cgr.dev/chainguard/wolfi-base as syft_deps
 
 ARG PYTHON_VERSION
@@ -36,7 +37,6 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     uv pip install -e ./syft[data_science,telemetry] && \
     uv pip freeze | grep ansible | xargs uv pip uninstall
 
-
 # ==================== [Final] Setup Syft Server ==================== #
 
 FROM cgr.dev/chainguard/wolfi-base as backend
@@ -53,7 +53,7 @@ WORKDIR /root/app/
 COPY --from=syft_deps /root/app/.venv .venv
 
 # copy grid
-COPY grid/backend/grid grid/backend/worker_cpu.dockerfile ./grid/
+COPY grid/backend/grid ./grid/
 
 # copy syft
 COPY syft ./syft/
