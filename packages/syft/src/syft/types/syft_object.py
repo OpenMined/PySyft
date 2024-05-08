@@ -5,8 +5,6 @@ from collections.abc import Generator
 from collections.abc import Iterable
 from collections.abc import KeysView
 from collections.abc import Mapping
-from collections.abc import MutableMapping
-from collections.abc import MutableSequence
 from collections.abc import Sequence
 from collections.abc import Set
 from hashlib import sha256
@@ -45,7 +43,6 @@ from ..util.table import list_dict_repr_html
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
-from .dicttuple import DictTuple
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
@@ -795,33 +792,18 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
 recursive_serde_register_type(PartialSyftObject)
 
 
-def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> Any:
-    constructor = None
-    extra_args = []
-
-    single_entity = False
-
+def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> None:
+    iterator: Iterable
     if isinstance(result, OkErr):
-        constructor = type(result)
-        result = result.value
-
-    if isinstance(result, MutableMapping):
-        iterable_keys: Iterable = result.keys()
-    elif isinstance(result, MutableSequence):
-        iterable_keys = range(len(result))
-    elif isinstance(result, tuple):
-        iterable_keys = range(len(result))
-        constructor = type(result)
-        if isinstance(result, DictTuple):
-            extra_args.append(result.keys())
-        result = list(result)
+        iterator = (result._value,)
+    elif isinstance(result, Mapping):
+        iterator = result.values()
+    elif isinstance(result, Sequence):
+        iterator = result
     else:
-        iterable_keys = range(1)
-        result = [result]
-        single_entity = True
+        iterator = (result,)
 
-    for key in iterable_keys:
-        _object = result[key]
+    for _object in iterator:
         # if object is SyftBaseObject,
         # then attach the value to the attribute
         # on the object
@@ -829,13 +811,5 @@ def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> A
             for attr_name, attr_value in attr_dict.items():
                 setattr(_object, attr_name, attr_value)
 
-            for field_name, attr in _object.__dict__.items():
-                updated_attr = attach_attribute_to_syft_object(attr, attr_dict)
-                setattr(_object, field_name, updated_attr)
-        result[key] = _object
-
-    wrapped_result = result[0] if single_entity else result
-    if constructor is not None:
-        wrapped_result = constructor(wrapped_result, *extra_args)
-
-    return wrapped_result
+            for field in _object.model_fields.keys():
+                attach_attribute_to_syft_object(getattr(_object, field), attr_dict)
