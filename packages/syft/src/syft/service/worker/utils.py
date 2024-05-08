@@ -17,7 +17,6 @@ from ...abstract_node import AbstractNode
 from ...custom_worker.builder import CustomWorkerBuilder
 from ...custom_worker.builder_types import ImageBuildResult
 from ...custom_worker.builder_types import ImagePushResult
-from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.k8s import KubeUtils
 from ...custom_worker.k8s import PodStatus
@@ -82,21 +81,36 @@ def extract_config_from_backend(
     environment = details["Config"]["Env"]
 
     # Extract Volume Binds
+    vol_binds = {}
+
+    # ignore any irrelevant binds for the worker like
+    # packages/grid/backend/grid:/root/app/grid
+    # packages/syft:/root/app/syft
+    # packages/grid/data/package-cache:/root/.cache
+    valid_binds = {
+        "/var/run/docker.sock",
+        "/root/.cache",
+    }
+
     for vol in host_config["Binds"]:
         parts = vol.split(":")
         key = parts[0]
         bind = parts[1]
         mode = parts[2]
-        if "/storage" in bind:
+
+        if "/root/data/creds" in vol:
             # we need this because otherwise we are using the same node private key
             # which will make account creation fail
-            worker_postfix = worker_name.split("-", 1)[1]
-            key = f"{key}-{worker_postfix}"
-        extracted_config["volume_binds"][key] = {"bind": bind, "mode": mode}
+            key = f"{key}-{worker_name}"
+        elif bind not in valid_binds:
+            continue
+
+        vol_binds[key] = {"bind": bind, "mode": mode}
 
     # Extract Environment Variables
     extracted_config["environment"] = dict([e.split("=", 1) for e in environment])
     extracted_config["network_mode"] = f"container:{backend_container.id}"
+    extracted_config["volume_binds"] = vol_binds
 
     return extracted_config
 
@@ -535,47 +549,20 @@ def create_default_image(
     tag: str,
     in_kubernetes: bool = False,
 ) -> SyftError | SyftWorkerImage:
-    # TODO: Hardcode worker dockerfile since not able to COPY
-    # worker_cpu.dockerfile to backend in backend.dockerfile.
-
-    # default_cpu_dockerfile = get_syft_cpu_dockerfile()
-    # DockerWorkerConfig.from_path(default_cpu_dockerfile)
-
     if not in_kubernetes:
-        default_cpu_dockerfile = f"""ARG SYFT_VERSION_TAG='{tag}' \n"""
-        default_cpu_dockerfile += """FROM openmined/grid-backend:${SYFT_VERSION_TAG}
-        ARG PYTHON_VERSION="3.12"
-        ARG SYSTEM_PACKAGES=""
-        ARG PIP_PACKAGES="pip --dry-run"
-        ARG CUSTOM_CMD='echo "No custom commands passed"'
+        tag = f"openmined/grid-backend:{tag}"
 
-        # Worker specific environment variables go here
-        ENV SYFT_WORKER="true"
-        ENV DOCKER_TAG=${SYFT_VERSION_TAG}
+    worker_config = PrebuiltWorkerConfig(
+        tag=tag,
+        description="Prebuilt default worker image",
+    )
 
-        RUN apk update && \
-            apk add ${SYSTEM_PACKAGES} && \
-            pip install --user ${PIP_PACKAGES} && \
-            bash -c "$CUSTOM_CMD"
-        """
-        worker_config = DockerWorkerConfig(dockerfile=default_cpu_dockerfile)
-        _new_image = SyftWorkerImage(
-            config=worker_config,
-            created_by=credentials,
-        )
-    else:
-        # in k8s we don't need to build the image, just the tag of backend is enough
-        worker_config = PrebuiltWorkerConfig(
-            tag=tag,
-            description="Prebuilt default worker image",
-        )
-
-        # create SyftWorkerImage from a pre-built image
-        _new_image = SyftWorkerImage(
-            config=worker_config,
-            created_by=credentials,
-            image_identifier=SyftWorkerImageIdentifier.from_str(tag),
-        )
+    # create SyftWorkerImage from a pre-built image
+    _new_image = SyftWorkerImage(
+        config=worker_config,
+        created_by=credentials,
+        image_identifier=SyftWorkerImageIdentifier.from_str(tag),
+    )
 
     result = image_stash.get_by_docker_config(
         credentials=credentials,
@@ -609,8 +596,6 @@ def image_build(
             return builder.build_image(
                 config=image.config,
                 tag=full_tag,
-                # rm=True,
-                # forcerm=True,
                 **kwargs,
             )
         except docker.errors.APIError as e:
