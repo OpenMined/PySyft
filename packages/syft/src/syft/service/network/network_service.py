@@ -193,7 +193,7 @@ class NetworkService(AbstractService):
         ):
             msg = [
                 (
-                    f"Peer '{existing_peer.name}' already exist for "
+                    f"{existing_peer.node_type} peer '{existing_peer.name}' already exist for "
                     f"{self_node_peer.node_type} '{self_node_peer.name}'."
                 )
             ]
@@ -203,7 +203,7 @@ class NetworkService(AbstractService):
                     remote_node_peer,
                 )
                 msg.append(
-                    f"Node peer '{existing_peer.name}' information change detected."
+                    f"{existing_peer.node_type} peer '{existing_peer.name}' information change detected."
                 )
                 if result.is_err():
                     msg.append(
@@ -211,7 +211,7 @@ class NetworkService(AbstractService):
                     )
                     return SyftError(message="\n".join(msg))
                 msg.append(
-                    f"Node peer '{existing_peer.name}' information successfully updated."
+                    f"{existing_peer.node_type} peer '{existing_peer.name}' information successfully updated."
                 )
 
             # Also check remotely if the self node already exists as a peer
@@ -221,30 +221,40 @@ class NetworkService(AbstractService):
             if isinstance(remote_self_node_peer, NodePeer):
                 msg.append(
                     (
-                        f"Peer '{self_node_peer.name}' already exist for "
-                        f"{remote_node_peer.node_type} '{remote_node_peer.name}'."
+                        f"{self_node_peer.node_type} '{self_node_peer.name}' already exist "
+                        f"as a peer for {remote_node_peer.node_type} '{remote_node_peer.name}'."
                     )
                 )
                 if remote_self_node_peer != self_node_peer:
                     result = remote_client.api.services.network.update_peer(
                         peer=self_node_peer,
                     )
-                    if result.is_err():
-                        msg.append(
+                    msg.append(
+                        f"{self_node_peer.node_type} peer '{self_node_peer.name}' information change detected."
+                    )
+                    if isinstance(result, SyftError):
+                        msg.apnpend(
                             (
-                                f"Attempt to remotely update peer "
-                                f"'{remote_self_node_peer.name}' information remotely failed."
+                                f"Attempt to remotely update {self_node_peer.node_type} peer "
+                                f"'{self_node_peer.name}' information remotely failed."
                             )
                         )
                         return SyftError(message="\n".join(msg))
                     msg.append(
-                        f"Node peer '{self_node_peer.name}' information successfully updated."
+                        (
+                            f"{self_node_peer.node_type} peer '{self_node_peer.name}' "
+                            f"information successfully updated."
+                        )
                     )
-                msg.append("Routes already exchanged.")
+                msg.append(
+                    (
+                        f"Routes between {remote_node_peer.node_type} '{remote_node_peer.name}' and "
+                        f"{self_node_peer.node_type} '{self_node_peer.name}' already exchanged."
+                    )
+                )
+                return SyftSuccess(message="\n".join(msg))
 
-                return SyftSuccess(message=". ".join(msg))
-
-        # If the peer does not exist, ask the remote client to add this node
+        # If  peer does not exist, ask the remote client to add this node
         # (represented by `self_node_peer`) as a peer
         random_challenge = secrets.token_bytes(16)
         remote_res = remote_client.api.services.network.add_peer(
@@ -309,7 +319,7 @@ class NetworkService(AbstractService):
 
         if isinstance(existing_peer := existing_peer_res.ok(), NodePeer):
             msg = [
-                f"The peer '{peer.name}' is already associated with '{context.node.name}'."
+                f"The peer '{peer.name}' is already associated with '{context.node.name}'"
             ]
 
             if existing_peer != peer:
