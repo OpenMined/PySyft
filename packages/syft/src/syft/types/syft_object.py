@@ -5,8 +5,6 @@ from collections.abc import Generator
 from collections.abc import Iterable
 from collections.abc import KeysView
 from collections.abc import Mapping
-from collections.abc import MutableMapping
-from collections.abc import MutableSequence
 from collections.abc import Sequence
 from collections.abc import Set
 from hashlib import sha256
@@ -45,7 +43,6 @@ from ..util.table import list_dict_repr_html
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
-from .dicttuple import DictTuple
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
@@ -796,21 +793,17 @@ recursive_serde_register_type(PartialSyftObject)
 
 
 def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> None:
+    iterator: Iterable
     if isinstance(result, OkErr):
-
-        def iterator():  # type: ignore
-            yield result._value
-
+        iterator = (result._value,)
     elif isinstance(result, Mapping):
-        iterator = result.values
+        iterator = result.values()
     elif isinstance(result, Sequence):
-        iterator = lambda: result
+        iterator = result
     else:
+        iterator = (result,)
 
-        def iterator():  # type: ignore
-            yield result
-
-    for _object in iterator():
+    for _object in iterator:
         # if object is SyftBaseObject,
         # then attach the value to the attribute
         # on the object
