@@ -409,7 +409,7 @@ class SyftServiceRegistry:
             cls.__object_version_registry__[mapping_string] = cls
 
     @classmethod
-    def versioned_class(cls, name: str, version: int) -> type["SyftObject"] | None:
+    def versioned_class(cls, name: str, version: int) -> type[SyftObject] | None:
         mapping_string = f"{name}_{version}"
         if mapping_string not in cls.__object_version_registry__:
             return None
@@ -429,7 +429,7 @@ class SyftServiceRegistry:
 
     @classmethod
     def get_transform(
-        cls, type_from: type["SyftObject"], type_to: type["SyftObject"]
+        cls, type_from: type[SyftObject], type_to: type[SyftObject]
     ) -> Callable:
         klass_from = type_from.__canonical_name__
         version_from = type_from.__version__
