@@ -14,7 +14,6 @@ from syft.client.domain_client import DomainClient
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve_single
 from syft.node.worker import Worker
-from syft.service.job.job_stash import JobStash
 from syft.service.job.job_stash import JobStatus
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
@@ -189,7 +188,7 @@ def test_function_error(full_low_worker) -> None:
 
     @sy.syft_function_single_use()
     def compute_sum():
-        assert False
+        raise RuntimeError
 
     ds_client.api.services.code.request_code_execution(compute_sum)
 

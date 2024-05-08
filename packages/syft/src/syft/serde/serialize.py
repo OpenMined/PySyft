@@ -3,7 +3,6 @@ import tempfile
 from typing import Any
 
 # relative
-from .recursive import SPOOLED_FILE_MAX_SIZE_SERDE
 from .util import compatible_with_large_file_writes_capnp
 
 
