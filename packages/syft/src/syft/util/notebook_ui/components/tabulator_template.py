@@ -17,7 +17,7 @@ from ...table import prepare_table_data
 from ..icons import Icon
 
 DEFAULT_ID_WIDTH = 110
-env = jinja2.Environment(loader=jinja2.PackageLoader("syft", "assets/jinja"))
+env = jinja2.Environment(loader=jinja2.PackageLoader("syft", "assets/jinja"))  # nosec
 
 
 def create_tabulator_columns(
