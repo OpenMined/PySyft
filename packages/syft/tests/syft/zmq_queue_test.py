@@ -21,9 +21,7 @@ from syft.service.queue.zmq_queue import ZMQQueueConfig
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.util.util import get_queue_address
-
-# relative
-from ..utils.random_port import get_random_port
+from syft.util.util import get_random_port
 
 
 @pytest.fixture

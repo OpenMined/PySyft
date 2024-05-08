@@ -344,6 +344,12 @@ def find_available_port(
     return port
 
 
+def get_random_port() -> int:
+    soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    soc.bind(("", 0))
+    return soc.getsockname()[1]
+
+
 def get_loaded_syft() -> ModuleType:
     return sys.modules[__name__.split(".")[0]]
 
