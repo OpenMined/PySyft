@@ -69,7 +69,7 @@ class MonitorThread(threading.Thread):
             self.queue_item.resolved = True
             self.worker.queue_stash.set_result(self.credentials, self.queue_item)
             self.worker.job_stash.set_result(self.credentials, job)
-            if psutil.pid_exists(job.job_pid):
+            if job.job_pid and psutil.pid_exists(job.job_pid):
                 process = psutil.Process(job.job_pid)
                 process.terminate()
             else:
@@ -349,8 +349,8 @@ class APICallMessageHandler(AbstractMessageHandler):
             thread.start()
             thread.join()
         else:
-            if psutil.pid_exists(job_item.job_pid):
-                psutil.Process(job_item.job_pid).terminate()
+            # if psutil.pid_exists(job_item.job_pid):
+            #     psutil.Process(job_item.job_pid).terminate()
 
             process = Process(
                 target=handle_message_multiprocessing,

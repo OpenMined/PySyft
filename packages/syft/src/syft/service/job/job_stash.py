@@ -269,7 +269,9 @@ class Job(SyncableSyftObject):
             kwargs={"uid": self.id},
             blocking=True,
         )
-        return api.make_call(call)
+        res = api.make_call(call)
+        self.fetch()
+        return res
 
     def kill(self) -> SyftError | SyftSuccess:
         api = APIRegistry.api_for(
@@ -287,7 +289,9 @@ class Job(SyncableSyftObject):
             kwargs={"id": self.id},
             blocking=True,
         )
-        return api.make_call(call)
+        res = api.make_call(call)
+        self.fetch()
+        return res
 
     def fetch(self) -> None:
         api = APIRegistry.api_for(
