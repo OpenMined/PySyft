@@ -20,7 +20,6 @@ from .node.domain import Domain
 from .node.enclave import Enclave
 from .node.gateway import Gateway
 from .node.server import serve_node
-from .node.worker import Worker
 from .protocol.data_protocol import stage_protocol_changes
 from .service.response import SyftError
 from .util.util import find_available_port
