@@ -164,6 +164,10 @@ profiles:
 
   - name: enclave
     patches:
+      - op: replace
+        path: deployments.syft.helm.values.node.type
+        value: "enclave"
+
       - op: add
         path: images
         value:
@@ -187,3 +191,27 @@ profiles:
         value:
           attestation:
             enabled: true
+
+      # Port Re-Mapping
+      # Mongo
+      - op: replace
+        path: dev.mongo.ports[0].port
+        value: 27019:27017
+
+      # Backend
+      - op: replace
+        path: dev.backend.ports[0].port
+        value: 5680:5678
+
+      # Backend Container SSH
+      - op: replace
+        path: dev.backend.containers.backend-container.ssh.localPort
+        value: 3482
+
+      - op: replace
+        path: dev.seaweedfs.ports
+        value:
+          - port: "9334:9333" # admin
+          - port: "8889:8888" # filer
+          - port: "8334:8333" # S3
+          - port: "4002:4001" # mount api
