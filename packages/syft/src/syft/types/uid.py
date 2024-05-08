@@ -83,7 +83,7 @@ class UID:
         self.value = uuid.uuid4() if value is None else value
 
     @staticmethod
-    def from_string(value: str) -> "UID":
+    def from_string(value: str) -> UID:
         try:
             return UID(value=uuid.UUID(value))
         except ValueError as e:
@@ -92,7 +92,7 @@ class UID:
             raise
 
     @staticmethod
-    def with_seed(value: str) -> "UID":
+    def with_seed(value: str) -> UID:
         md5 = hashlib.md5(value.encode("utf-8"), usedforsecurity=False)
         return UID(md5.hexdigest())
 
@@ -199,7 +199,7 @@ class UID:
         return str(self.value)[:8]
 
     @property
-    def id(self) -> "UID":
+    def id(self) -> UID:
         return self
 
     @classmethod
