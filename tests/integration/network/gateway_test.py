@@ -1,6 +1,7 @@
 # stdlib
 import itertools
 import os
+import time
 import uuid
 
 # third party
@@ -14,20 +15,20 @@ from syft.client.client import HTTPConnection
 from syft.client.client import SyftClient
 from syft.client.domain_client import DomainClient
 from syft.client.gateway_client import GatewayClient
-from syft.client.gateway_client import ProxyClient
 from syft.client.registry import NetworkRegistry
 from syft.client.search import SearchResults
 from syft.service.dataset.dataset import Dataset
 from syft.service.network.association_request import AssociationRequestChange
 from syft.service.network.network_service import NodePeerAssociationStatus
 from syft.service.network.node_peer import NodePeer
+from syft.service.network.node_peer import NodePeerConnectionStatus
 from syft.service.network.routes import HTTPNodeRoute
 from syft.service.network.routes import NodeRouteType
+from syft.service.network.utils import PeerHealthCheckTask
 from syft.service.request.request import Request
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
-from syft.types.uid import UID
 
 
 @pytest.fixture(scope="function")
@@ -837,6 +838,7 @@ def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -
     Scenario: Connecting a domain node to a gateway node.
     The gateway client approves the association request.
     The gateway client checks that the domain peer is associated
+    TODO: check for peer connection status through NodePeer.pingstatus
     TODO: check that the domain is online with `DomainRegistry.online_domains`
         Then make the domain go offline, which should be reflected when calling
         `DomainRegistry.online_domains`
@@ -899,6 +901,11 @@ def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -
     )
     assert isinstance(res, NodePeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATED"
+
+    # check for peer connection status
+    time.sleep(PeerHealthCheckTask.repeat_time + 1)
+    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert domain_peer.ping_status == NodePeerConnectionStatus.ACTIVE
 
     # Remove existing peers
     assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)

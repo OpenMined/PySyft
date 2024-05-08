@@ -20,9 +20,10 @@ from .node_peer import NodePeerConnectionStatus
 
 @serializable(without=["thread"])
 class PeerHealthCheckTask:
+    repeat_time = 10  # in seconds
+
     def __init__(self) -> None:
         self.thread: threading.Thread | None = None
-        self.repeat_time = 10  # in seconds
         self.started_time = None
         self._stop = False
 

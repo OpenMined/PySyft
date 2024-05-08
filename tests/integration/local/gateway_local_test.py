@@ -1,5 +1,6 @@
 # stdlib
 from secrets import token_hex
+import time
 
 # third party
 from faker import Faker
@@ -11,9 +12,11 @@ from syft.abstract_node import NodeType
 from syft.client.domain_client import DomainClient
 from syft.client.enclave_client import EnclaveClient
 from syft.client.gateway_client import GatewayClient
+from syft.service.network.network_service import NodePeerAssociationStatus
 from syft.service.network.node_peer import NodePeer
+from syft.service.network.node_peer import NodePeerConnectionStatus
+from syft.service.network.utils import PeerHealthCheckTask
 from syft.service.request.request import Request
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
 
@@ -251,7 +254,7 @@ def test_enclave_connect_to_gateway(faker: Faker, gateway, enclave):
 @pytest.mark.parametrize(
     "gateway_association_request_auto_approval", [False], indirect=True
 )
-def test_repeated_association_requests(
+def test_repeated_association_requests_peers_health_check(
     gateway_association_request_auto_approval, domain
 ):
     _, gateway = gateway_association_request_auto_approval
@@ -275,3 +278,15 @@ def test_repeated_association_requests(
 
     result = domain_client.connect_to_gateway(handle=gateway)
     assert isinstance(result, SyftSuccess)
+
+    # the gateway client checks that the peer is associated
+    res = gateway_client.api.services.network.check_peer_association(
+        peer_id=domain_client.id
+    )
+    assert isinstance(res, NodePeerAssociationStatus)
+    assert res.value == "PEER_ASSOCIATED"
+
+    # check for peer connection status
+    time.sleep(PeerHealthCheckTask.repeat_time + 1)
+    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
+    assert domain_peer.ping_status == NodePeerConnectionStatus.ACTIVE
