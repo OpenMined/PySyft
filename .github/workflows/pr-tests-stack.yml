@@ -183,6 +183,7 @@ jobs:
         env:
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
           GITHUB_CI: true
+          AZURE_BLOB_STORAGE_KEY: "${{ secrets.AZURE_BLOB_STORAGE_KEY }}"
         shell: bash
         run: |
           K3D_VERSION=v5.6.3
