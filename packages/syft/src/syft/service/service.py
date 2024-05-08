@@ -372,9 +372,8 @@ def service_method(
                 "syft_node_location": context.node.id,
                 "syft_client_verify_key": context.credentials,
             }
-            return attach_attribute_to_syft_object(
-                result=result, attr_dict=attrs_to_attach
-            )
+            attach_attribute_to_syft_object(result=result, attr_dict=attrs_to_attach)
+            return result
 
         if autosplat is not None and len(autosplat) > 0:
             signature = expand_signature(signature=input_signature, autosplat=autosplat)
