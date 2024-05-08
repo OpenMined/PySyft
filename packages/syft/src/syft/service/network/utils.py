@@ -1,5 +1,4 @@
 # stdlib
-import logging
 import threading
 import time
 from typing import cast
@@ -20,7 +19,7 @@ from .node_peer import NodePeerConnectionStatus
 
 @serializable(without=["thread"])
 class PeerHealthCheckTask:
-    repeat_time = 10  # in seconds
+    repeat_time = 60  # in seconds
 
     def __init__(self) -> None:
         self.thread: threading.Thread | None = None
@@ -46,7 +45,7 @@ class PeerHealthCheckTask:
         result = network_stash.get_all(context.node.verify_key)
 
         if result.is_err():
-            print(f"Failed to fetch peers from stash: {result.err()}")
+            logger.error(f"Failed to fetch peers from stash: {result.err()}")
             return SyftError(message=f"{result.err()}")
 
         all_peers: list[NodePeer] = result.ok()
@@ -56,13 +55,13 @@ class PeerHealthCheckTask:
             try:
                 peer_client = peer.client_with_context(context=context)
                 if peer_client.is_err():
-                    logging.error(
+                    logger.error(
                         f"Failed to create client for peer: {peer}: {peer_client.err()}"
                     )
                     peer.ping_status = NodePeerConnectionStatus.TIMEOUT
                     peer_client = None
             except Exception as e:
-                logging.error(
+                logger.error(
                     f"Failed to create client for peer: {peer} with exception {e}"
                 )
                 peer.ping_status = NodePeerConnectionStatus.TIMEOUT
@@ -106,13 +105,13 @@ class PeerHealthCheckTask:
 
     def run(self, context: AuthedServiceContext) -> None:
         if self.thread is not None:
-            logging.info(
+            logger.info(
                 f"Peer health check task is already running in thread "
                 f"{self.thread.name} with ID: {self.thread.ident}."
             )
         else:
             self.thread = threading.Thread(target=self._run, args=(context,))
-            logging.info(
+            logger.info(
                 f"Start running peers health check in thread "
                 f"{self.thread.name} with ID: {self.thread.ident}."
             )
@@ -124,4 +123,4 @@ class PeerHealthCheckTask:
             self.thread.join()
             self.thread = None
             self.started_time = None
-        logging.info("Peer health check task stopped.")
+        logger.info("Peer health check task stopped.")
