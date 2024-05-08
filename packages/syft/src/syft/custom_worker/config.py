@@ -122,6 +122,9 @@ class PrebuiltWorkerConfig(WorkerConfig):
     def set_description(self, description_text: str) -> None:
         self.description = description_text
 
+    def __hash__(self) -> int:
+        return hash(self.tag)
+
 
 @serializable()
 class DockerWorkerConfig(WorkerConfig):
@@ -175,8 +178,13 @@ class DockerWorkerConfig(WorkerConfig):
                 kwargs["fileobj"] = io.BytesIO(self.dockerfile.encode("utf-8"))
                 _, logs = client.images.build(
                     tag=tag,
+                    rm=True,
+                    labels={"orgs.openmined.syft": "Test image build"},
                     **kwargs,
                 )
                 return SyftSuccess(message=iterator_to_string(iterator=logs))
         except Exception as e:
-            return SyftError(message=f"Failed to build: {e}")
+            # stdlib
+            import traceback
+
+            return SyftError(message=f"Failed to build: {e} {traceback.format_exc()}")

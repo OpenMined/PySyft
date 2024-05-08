@@ -1,4 +1,5 @@
 # stdlib
+import threading
 from threading import Thread
 import time
 from typing import Any
@@ -275,10 +276,12 @@ def helper_queue_set_threading(root_verify_key, create_queue_cbk) -> None:
     repeats = 5
 
     execution_err = None
+    lock = threading.Lock()
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
-        queue = create_queue_cbk()
+        with lock:
+            queue = create_queue_cbk()
 
         for _ in range(repeats):
             obj = mock_queue_object()
@@ -308,69 +311,20 @@ def helper_queue_set_threading(root_verify_key, create_queue_cbk) -> None:
     assert len(queue) == thread_cnt * repeats
 
 
-# def helper_queue_set_joblib(root_verify_key, create_queue_cbk) -> None:
-#     thread_cnt = 3
-#     repeats = 5
-
-#     def _kv_cbk(tid: int) -> None:
-#         queue = create_queue_cbk()
-#         for _ in range(repeats):
-#             worker_pool_obj = WorkerPool(
-#                 name="mypool",
-#                 image_id=UID(),
-#                 max_count=0,
-#                 worker_list=[],
-#             )
-#             linked_worker_pool = LinkedObject.from_obj(
-#                 worker_pool_obj,
-#                 node_uid=UID(),
-#                 service_type=SyftWorkerPoolService,
-#             )
-#             obj = QueueItem(
-#                 id=UID(),
-#                 node_uid=UID(),
-#                 method="dummy_method",
-#                 service="dummy_service",
-#                 args=[],
-#                 kwargs={},
-#                 worker_pool=linked_worker_pool,
-#             )
-#             for _ in range(10):
-#                 res = queue.set(root_verify_key, obj, ignore_duplicates=False)
-#                 if res.is_ok():
-#                     break
-
-#             if res.is_err():
-#                 return res
-#         return None
-
-#     errs = Parallel(n_jobs=thread_cnt)(
-#         delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
-#     )
-
-#     for execution_err in errs:
-#         assert execution_err is None
-
-#     queue = create_queue_cbk()
-#     assert len(queue) == thread_cnt * repeats
-
-
-@pytest.mark.parametrize("backend", [helper_queue_set_threading])
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_queue_set_sqlite(root_verify_key, sqlite_workspace, backend):
+def test_queue_set_sqlite(root_verify_key, sqlite_workspace):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(root_verify_key, sqlite_workspace)
 
-    backend(root_verify_key, create_queue_cbk)
+    helper_queue_set_threading(root_verify_key, create_queue_cbk)
 
 
-@pytest.mark.parametrize("backend", [helper_queue_set_threading])
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_queue_set_threading_mongo(root_verify_key, mongo_document_store, backend):
+def test_queue_set_threading_mongo(root_verify_key, mongo_document_store):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
 
-    backend(root_verify_key, create_queue_cbk)
+    helper_queue_set_threading(root_verify_key, create_queue_cbk)
 
 
 def helper_queue_update_threading(root_verify_key, create_queue_cbk) -> None:
@@ -383,10 +337,12 @@ def helper_queue_update_threading(root_verify_key, create_queue_cbk) -> None:
     obj = mock_queue_object()
     queue.set(root_verify_key, obj, ignore_duplicates=False)
     execution_err = None
+    lock = threading.Lock()
 
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
-        queue_local = create_queue_cbk()
+        with lock:
+            queue_local = create_queue_cbk()
 
         for repeat in range(repeats):
             obj.args = [repeat]
@@ -413,53 +369,20 @@ def helper_queue_update_threading(root_verify_key, create_queue_cbk) -> None:
     assert execution_err is None
 
 
-# def helper_queue_update_joblib(root_verify_key, create_queue_cbk) -> None:
-#     thread_cnt = 3
-#     repeats = 5
-
-#     def _kv_cbk(tid: int) -> None:
-#         queue_local = create_queue_cbk()
-
-#         for repeat in range(repeats):
-#             obj.args = [repeat]
-
-#             for _ in range(10):
-#                 res = queue_local.update(root_verify_key, obj)
-#                 if res.is_ok():
-#                     break
-
-#             if res.is_err():
-#                 return res
-#         return None
-
-#     queue = create_queue_cbk()
-
-#     obj = mock_queue_object()
-#     queue.set(root_verify_key, obj, ignore_duplicates=False)
-
-#     errs = Parallel(n_jobs=thread_cnt)(
-#         delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
-#     )
-#     for execution_err in errs:
-#         assert execution_err is None
-
-
-@pytest.mark.parametrize("backend", [helper_queue_update_threading])
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_queue_update_threading_sqlite(root_verify_key, sqlite_workspace, backend):
+def test_queue_update_threading_sqlite(root_verify_key, sqlite_workspace):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(root_verify_key, sqlite_workspace)
 
-    backend(root_verify_key, create_queue_cbk)
+    helper_queue_update_threading(root_verify_key, create_queue_cbk)
 
 
-@pytest.mark.parametrize("backend", [helper_queue_update_threading])
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_queue_update_threading_mongo(root_verify_key, mongo_document_store, backend):
+def test_queue_update_threading_mongo(root_verify_key, mongo_document_store):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
 
-    backend(root_verify_key, create_queue_cbk)
+    helper_queue_update_threading(root_verify_key, create_queue_cbk)
 
 
 def helper_queue_set_delete_threading(
@@ -480,9 +403,12 @@ def helper_queue_set_delete_threading(
 
         assert res.is_ok()
 
+    lock = threading.Lock()
+
     def _kv_cbk(tid: int) -> None:
         nonlocal execution_err
-        queue = create_queue_cbk()
+        with lock:
+            queue = create_queue_cbk()
         for idx in range(repeats):
             item_idx = tid * repeats + idx
 
@@ -509,62 +435,17 @@ def helper_queue_set_delete_threading(
     assert len(queue) == 0
 
 
-# def helper_queue_set_delete_joblib(
-#     root_verify_key,
-#     create_queue_cbk,
-# ) -> None:
-#     thread_cnt = 3
-#     repeats = 5
-
-#     def _kv_cbk(tid: int) -> None:
-#         nonlocal execution_err
-#         queue = create_queue_cbk()
-#         for idx in range(repeats):
-#             item_idx = tid * repeats + idx
-
-#             for _ in range(10):
-#                 res = queue.find_and_delete(root_verify_key, id=objs[item_idx].id)
-#                 if res.is_ok():
-#                     break
-
-#             if res.is_err():
-#                 execution_err = res
-#             assert res.is_ok()
-
-#     queue = create_queue_cbk()
-#     execution_err = None
-#     objs = []
-
-#     for _ in range(repeats * thread_cnt):
-#         obj = mock_queue_object()
-#         res = queue.set(root_verify_key, obj, ignore_duplicates=False)
-#         objs.append(obj)
-
-#         assert res.is_ok()
-
-#     errs = Parallel(n_jobs=thread_cnt)(
-#         delayed(_kv_cbk)(idx) for idx in range(thread_cnt)
-#     )
-
-#     for execution_err in errs:
-#         assert execution_err is None
-
-#     assert len(queue) == 0
-
-
-@pytest.mark.parametrize("backend", [helper_queue_set_delete_threading])
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_queue_delete_threading_sqlite(root_verify_key, sqlite_workspace, backend):
+def test_queue_delete_threading_sqlite(root_verify_key, sqlite_workspace):
     def create_queue_cbk():
         return sqlite_queue_stash_fn(root_verify_key, sqlite_workspace)
 
-    backend(root_verify_key, create_queue_cbk)
+    helper_queue_set_delete_threading(root_verify_key, create_queue_cbk)
 
 
-@pytest.mark.parametrize("backend", [helper_queue_set_delete_threading])
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_queue_delete_threading_mongo(root_verify_key, mongo_document_store, backend):
+def test_queue_delete_threading_mongo(root_verify_key, mongo_document_store):
     def create_queue_cbk():
         return mongo_queue_stash_fn(mongo_document_store)
 
-    backend(root_verify_key, create_queue_cbk)
+    helper_queue_set_delete_threading(root_verify_key, create_queue_cbk)

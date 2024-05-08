@@ -45,3 +45,7 @@ proxy:
 
 rathole:
   enabled: "true"
+# attestation:
+#   enabled: true
+#   resourcesPreset: null
+#   resources: null

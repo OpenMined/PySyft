@@ -1,7 +1,5 @@
 # stdlib
-from secrets import token_hex
 import sys
-from textwrap import dedent
 
 # third party
 import numpy as np
@@ -17,7 +15,6 @@ from syft.client.syncing import compare_clients
 from syft.client.syncing import compare_states
 from syft.client.syncing import resolve
 from syft.client.syncing import resolve_single
-from syft.node.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
@@ -135,8 +132,6 @@ def test_sync_flow():
     @sy.syft_function_single_use(data=data_low)
     def compute_mean(data) -> float:
         return data.mean()
-
-    compute_mean.code = dedent(compute_mean.code)
 
     res = client_low_ds.code.request_code_execution(compute_mean)
     res = client_low_ds.code.request_code_execution(compute_mean)
@@ -260,8 +255,6 @@ def test_forget_usercode(low_worker, high_worker):
         print("computing...")
         return 42
 
-    compute.code = dedent(compute.code)
-
     _ = client_low_ds.code.request_code_execution(compute)
 
     diff_state = compare_clients(low_client, high_client)
@@ -307,64 +300,6 @@ def private_function(context) -> str:
     return 42
 
 
-def test_twin_api_integration(full_high_worker, full_low_worker):
-    low_client = full_low_worker.login(
-        email="info@openmined.org", password="changethis"
-    )
-    high_client = full_high_worker.login(
-        email="info@openmined.org", password="changethis"
-    )
-
-    low_client.register(
-        email="newuser@openmined.org",
-        name="John Doe",
-        password="pw",
-        password_verify="pw",
-    )
-
-    client_low_ds = low_client.login(
-        email="newuser@openmined.org",
-        password="pw",
-    )
-
-    new_endpoint = sy.TwinAPIEndpoint(
-        path="testapi.query",
-        private_function=private_function,
-        mock_function=mock_function,
-        description="",
-    )
-    high_client.api.services.api.add(endpoint=new_endpoint)
-    high_client.refresh()
-    high_private_res = high_client.api.services.testapi.query.private()
-    assert high_private_res == 42
-
-    low_state = low_client.get_sync_state()
-    high_state = high_client.get_sync_state()
-    diff_state = compare_states(high_state, low_state)
-
-    obj_diff_batch = diff_state[0]
-    widget = resolve_single(obj_diff_batch)
-    widget.click_sync()
-
-    obj_diff_batch = diff_state[1]
-    widget = resolve_single(obj_diff_batch)
-    widget.click_sync()
-
-    high_mock_res = high_client.api.services.testapi.query.mock()
-    assert high_mock_res == -42
-
-    client_low_ds.refresh()
-    high_client.refresh()
-    low_private_res = client_low_ds.api.services.testapi.query.private()
-    assert isinstance(
-        low_private_res, SyftError
-    ), "Should not have access to private on low side"
-    low_mock_res = client_low_ds.api.services.testapi.query.mock()
-    high_mock_res = high_client.api.services.testapi.query.mock()
-    assert low_mock_res == -42
-    assert high_mock_res == -42
-
-
 def test_skip_user_code(low_worker, high_worker):
     low_client = low_worker.root_client
     client_low_ds = low_worker.guest_client
@@ -373,8 +308,6 @@ def test_skip_user_code(low_worker, high_worker):
     @sy.syft_function_single_use()
     def compute() -> int:
         return 42
-
-    compute.code = dedent(compute.code)
 
     _ = client_low_ds.code.request_code_execution(compute)
 
@@ -404,8 +337,6 @@ def test_unignore(low_worker, high_worker):
     @sy.syft_function_single_use()
     def compute() -> int:
         return 42
-
-    compute.code = dedent(compute.code)
 
     _ = client_low_ds.code.request_code_execution(compute)
 
@@ -459,19 +390,13 @@ def test_request_code_execution_multiple(low_worker, high_worker):
     def compute() -> int:
         return 42
 
-    compute.code = dedent(compute.code)
-
     @sy.syft_function_single_use()
     def compute_twice() -> int:
         return 42 * 2
 
-    compute_twice.code = dedent(compute_twice.code)
-
     @sy.syft_function_single_use()
     def compute_thrice() -> int:
         return 42 * 3
-
-    compute_thrice.code = dedent(compute_thrice.code)
 
     _ = client_low_ds.code.request_code_execution(compute)
     _ = client_low_ds.code.request_code_execution(compute_twice)
@@ -511,8 +436,6 @@ def test_sync_high(low_worker, high_worker):
     def compute() -> int:
         return 42
 
-    compute.code = dedent(compute.code)
-
     _ = client_low_ds.code.request_code_execution(compute)
 
     diff_state = compare_clients(low_client, high_client)
@@ -538,8 +461,6 @@ def test_sync_skip_ignore(low_worker, high_worker, decision):
     @sy.syft_function_single_use()
     def compute() -> int:
         return 42
-
-    compute.code = dedent(compute.code)
 
     _ = client_low_ds.code.request_code_execution(compute)
 
@@ -578,8 +499,6 @@ def test_update_after_ignore(low_worker, high_worker):
     def compute() -> int:
         return 42
 
-    compute.code = dedent(compute.code)
-
     _ = client_low_ds.code.request_code_execution(compute)
 
     diff_state = compare_clients(low_client, high_client)
@@ -598,8 +517,6 @@ def test_update_after_ignore(low_worker, high_worker):
     @sy.syft_function_single_use()
     def compute() -> int:
         return 43
-
-    compute.code = dedent(compute.code)
 
     # _ = client_low_ds.code.request_code_execution(compute)
     low_client.requests[-1].approve()
@@ -711,7 +628,6 @@ def test_sync_flow_no_sharing():
     def compute_mean(data) -> float:
         return data.mean()
 
-    compute_mean.code = dedent(compute_mean.code)
     res = client_low_ds.code.request_code_execution(compute_mean)
     print(res)
     print("LOW CODE:", low_client.code.get_all())

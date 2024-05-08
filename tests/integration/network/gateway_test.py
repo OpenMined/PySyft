@@ -1,6 +1,6 @@
 # stdlib
+import itertools
 import os
-from textwrap import dedent
 import uuid
 
 # third party
@@ -269,7 +269,6 @@ def test_domain_gateway_user_code(
     def mock_function(asset):
         return asset + 1
 
-    mock_function.code = dedent(mock_function.code)
     request_res = proxy_ds.code.request_code_execution(mock_function)
     assert isinstance(request_res, Request)
 
@@ -766,3 +765,52 @@ def test_update_route_priority_on_peer(
     # Remove existing peers
     assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+
+
+def test_dataset_stream(set_env_var, gateway_port: int, domain_1_port: int) -> None:
+    """
+    Scenario: Connecting a domain node to a gateway node. The domain
+        client then upload a dataset, which should be searchable by the syft network.
+        People who install syft can see the mock data and metadata of the uploaded datasets
+    """
+    # login to the domain and gateway
+    gateway_client: GatewayClient = sy.login(
+        port=gateway_port, email="info@openmined.org", password="changethis"
+    )
+    domain_client: DomainClient = sy.login(
+        port=domain_1_port, email="info@openmined.org", password="changethis"
+    )
+
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
+    assert isinstance(res, SyftSuccess)
+
+    # connect the domain to the gateway
+    result = domain_client.connect_to_gateway(gateway_client)
+    assert isinstance(result, SyftSuccess)
+    assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
+    assert len(sy.domains.all_domains) == len(sy.domains.online_domains) == 1
+
+    # the domain client uploads a dataset
+    input_data = np.array([1, 2, 3])
+    mock_data = np.array([4, 5, 6])
+    asset_name = _random_hash()
+    asset = sy.Asset(name=asset_name, data=input_data, mock=mock_data)
+    dataset_name = _random_hash()
+    dataset = sy.Dataset(name=dataset_name, asset_list=[asset])
+    dataset_res = domain_client.upload_dataset(dataset)
+    assert isinstance(dataset_res, SyftSuccess)
+
+    domain_proxy_client = next(
+        gateway_client.domains[i]
+        for i in itertools.count()
+        if gateway_client.domains[i].name == domain_client.name
+    )
+    root_proxy_client = domain_proxy_client.login(
+        email="info@openmined.org", password="changethis"
+    )
+    retrieved_dataset = root_proxy_client.datasets[dataset_name]
+    retrieved_asset = retrieved_dataset.assets[asset_name]
+    assert np.all(retrieved_asset.data == input_data)
+
+    # the domain client delete the dataset
+    domain_client.api.services.dataset.delete_by_uid(uid=retrieved_dataset.id)

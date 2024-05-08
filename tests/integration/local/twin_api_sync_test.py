@@ -1,9 +1,10 @@
 # stdlib
 from secrets import token_hex
-from textwrap import dedent
+import sys
 
 # third party
 import pytest
+from result import Err
 
 # syft absolute
 import syft
@@ -13,6 +14,7 @@ from syft.client.domain_client import DomainClient
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve_single
 from syft.node.worker import Worker
+from syft.service.job.job_stash import JobStatus
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 
@@ -98,6 +100,8 @@ def private_function(context) -> str:
     return 42
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
+@pytest.mark.local_node
 def test_twin_api_integration(full_high_worker, full_low_worker):
     low_client = full_low_worker.login(
         email="info@openmined.org", password="changethis"
@@ -134,7 +138,6 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     def compute(query):
         return query()
 
-    compute.code = dedent(compute.code)
     _ = client_low_ds.code.request_code_execution(compute)
 
     diff_before, diff_after = compare_and_resolve(
@@ -162,3 +165,38 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     assert isinstance(
         private_res, SyftError
     ), "Should not be able to access private function on low side."
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
+@pytest.mark.local_node
+def test_function_error(full_low_worker) -> None:
+    root_domain_client = full_low_worker.login(
+        email="info@openmined.org", password="changethis"
+    )
+    root_domain_client.register(
+        name="data-scientist",
+        email="test_user@openmined.org",
+        password="0000",
+        password_verify="0000",
+    )
+    ds_client = root_domain_client.login(
+        email="test_user@openmined.org",
+        password="0000",
+    )
+
+    users = root_domain_client.users.get_all()
+
+    @sy.syft_function_single_use()
+    def compute_sum():
+        raise RuntimeError
+
+    ds_client.api.services.code.request_code_execution(compute_sum)
+
+    users[-1].allow_mock_execution()
+    result = ds_client.api.services.code.compute_sum(blocking=True)
+    assert isinstance(result.get(), Err)
+
+    job_info = ds_client.api.services.code.compute_sum(blocking=False)
+    result = job_info.wait(timeout=10)
+    assert isinstance(result.get(), Err)
+    assert job_info.status == JobStatus.ERRORED

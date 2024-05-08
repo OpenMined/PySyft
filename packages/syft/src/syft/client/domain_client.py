@@ -14,7 +14,6 @@ from tqdm import tqdm
 
 # relative
 from ..abstract_node import NodeSideType
-from ..img.base64 import base64read
 from ..serde.serializable import serializable
 from ..service.action.action_object import ActionObject
 from ..service.code_history.code_history import CodeHistoriesDict
@@ -31,7 +30,8 @@ from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
 from ..types.blob_storage import BlobFile
 from ..types.uid import UID
-from ..util.fonts import FONT_CSS
+from ..util.assets import load_png_base64
+from ..util.notebook_ui.styles import FONT_CSS
 from ..util.util import get_mb_size
 from ..util.util import prompt_warning_message
 from .api import APIModule
@@ -169,6 +169,9 @@ class DomainClient(SyftClient):
     #         return {}
 
     def refresh(self) -> None:
+        if self.credentials:
+            self._fetch_node_metadata(self.credentials)
+
         if self._api and self._api.refresh_api_callback:
             self._api.refresh_api_callback()
 
@@ -312,49 +315,38 @@ class DomainClient(SyftClient):
                 return SyftSuccess(message=f"Connected to '{client.name}' gateway")
         return res
 
+    def _get_service_by_name_if_exists(self, name: str) -> APIModule | None:
+        if self.api.has_service(name):
+            return getattr(self.api.services, name)
+        return None
+
     @property
     def data_subject_registry(self) -> APIModule | None:
-        if self.api.has_service("data_subject"):
-            return self.api.services.data_subject
-        return None
+        return self._get_service_by_name_if_exists("data_subject")
 
     @property
     def code(self) -> APIModule | None:
-        # if self.api.refresh_api_callback is not None:
-        #     self.api.refresh_api_callback()
-        if self.api.has_service("code"):
-            return self.api.services.code
-        return None
+        return self._get_service_by_name_if_exists("code")
 
     @property
     def worker(self) -> APIModule | None:
-        if self.api.has_service("worker"):
-            return self.api.services.worker
-        return None
+        return self._get_service_by_name_if_exists("worker")
 
     @property
     def requests(self) -> APIModule | None:
-        if self.api.has_service("request"):
-            return self.api.services.request
-        return None
+        return self._get_service_by_name_if_exists("request")
 
     @property
     def datasets(self) -> APIModule | None:
-        if self.api.has_service("dataset"):
-            return self.api.services.dataset
-        return None
+        return self._get_service_by_name_if_exists("dataset")
 
     @property
     def projects(self) -> APIModule | None:
-        if self.api.has_service("project"):
-            return self.api.services.project
-        return None
+        return self._get_service_by_name_if_exists("project")
 
     @property
     def code_history_service(self) -> APIModule | None:
-        if self.api is not None and self.api.has_service("code_history"):
-            return self.api.services.code_history
-        return None
+        return self._get_service_by_name_if_exists("code_history")
 
     @property
     def code_history(self) -> CodeHistoriesDict:
@@ -366,39 +358,27 @@ class DomainClient(SyftClient):
 
     @property
     def images(self) -> APIModule | None:
-        if self.api.has_service("worker_image"):
-            return self.api.services.worker_image
-        return None
+        return self._get_service_by_name_if_exists("worker_image")
 
     @property
     def worker_pools(self) -> APIModule | None:
-        if self.api.has_service("worker_pool"):
-            return self.api.services.worker_pool
-        return None
+        return self._get_service_by_name_if_exists("worker_pool")
 
     @property
     def worker_images(self) -> APIModule | None:
-        if self.api.has_service("worker_image"):
-            return self.api.services.worker_image
-        return None
+        return self._get_service_by_name_if_exists("worker_images")
 
     @property
     def sync(self) -> APIModule | None:
-        if self.api.has_service("sync"):
-            return self.api.services.sync
-        return None
+        return self._get_service_by_name_if_exists("sync")
 
     @property
     def code_status(self) -> APIModule | None:
-        if self.api.has_service("code_status"):
-            return self.api.services.code_status
-        return None
+        return self._get_service_by_name_if_exists("code_status")
 
     @property
     def output(self) -> APIModule | None:
-        if self.api.has_service("output"):
-            return self.api.services.output
-        return None
+        return self._get_service_by_name_if_exists("output")
 
     def get_project(
         self,
@@ -466,7 +446,7 @@ class DomainClient(SyftClient):
         </ul>
         """
 
-        small_grid_symbol_logo = base64read("small-grid-symbol-logo.png")
+        small_grid_symbol_logo = load_png_base64("small-grid-symbol-logo.png")
 
         url = getattr(self.connection, "url", None)
         node_details = f"<strong>URL:</strong> {url}<br />" if url else ""
@@ -482,6 +462,7 @@ class DomainClient(SyftClient):
                 f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
             )
 
+        self._fetch_node_metadata(self.credentials)
         return f"""
         <style>
             {FONT_CSS}

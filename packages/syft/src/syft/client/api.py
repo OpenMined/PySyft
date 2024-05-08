@@ -367,19 +367,26 @@ class RemoteFunction(SyftObject):
                 return endpoint._repr_html_()
 
             str_repr = "## API: " + custom_path + "\n"
+            if endpoint.description is not None:
+                text = endpoint.description.text
+            else:
+                text = ""
             str_repr += (
                 "### Description: "
-                + f'<span style="font-weight: lighter;">{endpoint.description}</span><br>'
+                + f'<span style="font-weight: lighter;">{text}</span><br>'
                 + "\n"
             )
             str_repr += "#### Private Code:\n"
-            str_repr += as_markdown_python_code(endpoint.private_function) + "\n"
+            not_accessible_code = "N / A"
+            private_code_repr = endpoint.private_function or not_accessible_code
+            public_code_repr = endpoint.mock_function or not_accessible_code
+            str_repr += as_markdown_python_code(private_code_repr) + "\n"
             if endpoint.private_helper_functions:
                 str_repr += "##### Helper Functions:\n"
                 for helper_function in endpoint.private_helper_functions:
                     str_repr += as_markdown_python_code(helper_function) + "\n"
             str_repr += "#### Public Code:\n"
-            str_repr += as_markdown_python_code(endpoint.mock_function) + "\n"
+            str_repr += as_markdown_python_code(public_code_repr) + "\n"
             if endpoint.mock_helper_functions:
                 str_repr += "##### Helper Functions:\n"
                 for helper_function in endpoint.mock_helper_functions:
@@ -582,10 +589,20 @@ def generate_remote_lib_function(
 class APIModule:
     _modules: list[str]
     path: str
+    refresh_callback: Callable | None
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, refresh_callback: Callable | None) -> None:
         self._modules = []
         self.path = path
+        self.refresh_callback = refresh_callback
+
+    def has_submodule(self, name: str) -> bool:
+        """We use this as hasattr() triggers __getattribute__ which triggers recursion"""
+        try:
+            _ = object.__getattribute__(self, name)
+            return True
+        except AttributeError:
+            return False
 
     def _add_submodule(
         self, attr_name: str, module_or_func: Callable | APIModule
@@ -597,6 +614,17 @@ class APIModule:
         try:
             return object.__getattribute__(self, name)
         except AttributeError:
+            # if we fail, we refresh the api and try again
+            if self.refresh_callback is not None:
+                api = self.refresh_callback()
+                try:
+                    new_current_module = api.services
+                    for submodule in self.path.split("."):
+                        if submodule != "":
+                            new_current_module = getattr(new_current_module, submodule)
+                    return object.__getattribute__(new_current_module, name)
+                except AttributeError:
+                    pass
             raise SyftAttributeError(
                 f"'APIModule' api{self.path} object has no submodule or method '{name}', "
                 "you may not have permission to access the module you are trying to access."
@@ -912,9 +940,8 @@ class SyftAPI(SyftObject):
             if self.refresh_api_callback is not None:
                 self.refresh_api_callback()
 
-    @staticmethod
     def _add_route(
-        api_module: APIModule, endpoint: APIEndpoint, endpoint_method: Callable
+        self, api_module: APIModule, endpoint: APIEndpoint, endpoint_method: Callable
     ) -> None:
         """Recursively create a module path to the route endpoint."""
 
@@ -924,9 +951,16 @@ class SyftAPI(SyftObject):
         _last_module = _modules.pop()
         while _modules:
             module = _modules.pop(0)
-            if not hasattr(_self, module):
-                submodule_path = f"{_self.path}.{module}"
-                _self._add_submodule(module, APIModule(path=submodule_path))
+            if not _self.has_submodule(module):
+                submodule_path = (
+                    f"{_self.path}.{module}" if _self.path != "" else module
+                )
+                _self._add_submodule(
+                    module,
+                    APIModule(
+                        path=submodule_path, refresh_callback=self.refresh_api_callback
+                    ),
+                )
             _self = getattr(_self, module)
         _self._add_submodule(_last_module, endpoint_method)
 
@@ -934,7 +968,7 @@ class SyftAPI(SyftObject):
         def build_endpoint_tree(
             endpoints: dict[str, LibEndpoint], communication_protocol: PROTOCOL_TYPE
         ) -> APIModule:
-            api_module = APIModule(path="")
+            api_module = APIModule(path="", refresh_callback=self.refresh_api_callback)
             for _, v in endpoints.items():
                 signature = v.signature
                 if not v.has_self:

@@ -1,5 +1,6 @@
 # relative
-from ...util.notebook_ui.notebook_addons import CSS_CODE
+from ...util.notebook_ui.styles import CSS_CODE
+from ...util.notebook_ui.styles import JS_DOWNLOAD_FONTS
 
 type_html = """
             <div class="label label-light-blue"
@@ -59,25 +60,59 @@ attrs_html = """<div style="display: table-row; padding: 0px, 0px, 12px, 0px; ga
 <div style="height:16px;"></div>
 """
 
-logs_html = """<div id="${logs_tab_id}" class="tab-${identifier}" style="background: #F4F3F6;
-border-color: #CFCDD6; border-width: 0.5px; border-style: solid; padding: 24px; gap: 8px; margin-top: 24px;
-display: none;align-items:left">
-    <div style="font-size: 12px; font-weight: 400; font: DejaVu Sans Mono, sans-serif; line-height: 16.8px; ">
-        <table  style="width:100%; justify-content:left; border-collapse: collapse;">
-        <tr style="width:100%">
-            <td style="text-align: left">
-                <span style="margin-right:24px; font-weight:700; align-text: center">
-                    #
-                </span>
-            </td>
-            <td  style="text-align: left">
-                <span style="font-weight:700; align-text: left">
-                    Message
-                </span>
-            </td>
-        </tr>
+logs_html = """
+<style>
+pre {
+    counter-reset: line -1;
+    background-color: transparent;
+    color: black;
+}
+
+pre code {
+    display: block;
+    counter-increment: line;
+    background-color: transparent;
+    color: black;
+    font-family: DejaVu Sans Mono, sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16.8px;
+}
+
+pre code::before {
+    content: counter(line);
+    display: inline-block;
+    width: 2em;
+    padding-right: 1.5em;
+    margin-right: 1.5em;
+    text-align: right;
+}
+
+pre code:first-of-type::before {
+    content: "#";
+    font-weight: bold;
+}
+
+.logsTab {
+    color: #000000;
+    background: #F4F3F6;
+    border-color: #CFCDD6;
+    border-width: 0.5px;
+    border-style: solid;
+    padding: 24px;
+    gap: 8px;
+    margin-top: 24px;
+    display: none;
+    align-items: left;
+
+}
+
+</style>
+
+<div id="${logs_tab_id}" class="tab-${identifier} logsTab">
+    <pre>
         ${logs_lines_html}
-    </div>
+    </pre>
 </div>
 """
 
@@ -119,44 +154,6 @@ tabs_html = """
 </div>
 """
 
-LIST_CSS = """
-    ul {
-        list-style-type: none;
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-    }
-
-    li {
-        float: left;
-        border-bottom: solid;
-        border-bottom-color: #CFCDD6;
-    }
-
-    li a {
-        display: block;
-        text-align: center;
-        padding: 14px 16px;
-        color: #CFCDD6
-    }
-    .log-tab-header{
-        border-bottom: solid 2px #ECEBEF;
-        padding: 4px 16px
-    }
-
-    .active-border {
-        border-bottom: solid 2px #1F567A;
-        font-weight: 700;
-    }
-
-    .active {
-        color: #1F567A
-    }
-
-    li a:hover {
-        background-color: #C2DEF0;
-    }"""
-
 result_html = """<div id="${result_tab_id}" class="tab-${identifier}" style="background: #F4F3F6;
     border-color: #CFCDD6; border-width: 0.5px; border-style: solid; padding: 24px; gap: 8px; margin-top: 24px">
     <div style="font-size: 12px; font-weight: 400; font: DejaVu Sans Mono, sans-serif; line-height: 16.8px">
@@ -166,17 +163,42 @@ result_html = """<div id="${result_tab_id}" class="tab-${identifier}" style="bac
 """
 
 job_repr_template = f"""
-    <style>
-    {CSS_CODE}
-    </style>
-    <style>
-    {LIST_CSS}
-    </style>
-    {header_line_html}
-    {attrs_html}
-    {tabs_html}
-    {result_html}
-    {logs_html}
-    {onclick_html}
-    <div style='height: 16px;'></div>
+<!-- Start job_repr_template -->
+<div class="syft-widget">
+
+<!-- Start JS_DOWNLOAD_FONTS -->
+{JS_DOWNLOAD_FONTS}
+<!-- End JS_DOWNLOAD_FONTS -->
+
+<!-- Start CSS_CODE -->
+{CSS_CODE}
+<!-- End CSS_CODE -->
+
+<!-- Start header_line_html -->
+{header_line_html}
+<!-- End header_line_html -->
+
+<!-- Start attrs_html -->
+{attrs_html}
+<!-- End attrs_html -->
+
+<!-- Start tabs_html -->
+{tabs_html}
+<!-- End tabs_html -->
+
+<!-- Start result_html -->
+{result_html}
+<!-- End result_html -->
+
+<!-- Start logs_html -->
+{logs_html}
+<!-- End logs_html -->
+
+<!-- Start onclick_html -->
+{onclick_html}
+<!-- End onclick_html -->
+
+<div style='height: 16px;'></div>
+</div>
+<!-- End job_repr_template -->
 """

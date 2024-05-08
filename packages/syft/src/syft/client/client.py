@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import base64
 from collections.abc import Callable
 from copy import deepcopy
 from enum import Enum
@@ -110,6 +111,7 @@ def forward_message_to_proxy(
     signed_message: SignedSyftAPICall = call.sign(credentials=credentials)
     signed_result = make_call(signed_message)
     response = debox_signed_syftapicall_response(signed_result)
+
     return response
 
 
@@ -125,6 +127,7 @@ class Routes(Enum):
     ROUTE_REGISTER = f"{API_PATH}/register"
     ROUTE_API_CALL = f"{API_PATH}/api_call"
     ROUTE_BLOB_STORE = "/blob"
+    STREAM = f"{API_PATH}/stream"
 
 
 @serializable(attrs=["proxy_target_uid", "url"])
@@ -148,6 +151,15 @@ class HTTPConnection(NodeConnection):
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         return HTTPConnection(url=self.url, proxy_target_uid=proxy_target_uid)
+
+    def stream_via(self, proxy_uid: UID, url_path: str) -> GridURL:
+        # Update the presigned url path to
+        # <gatewayurl>/<peer_uid>/<presigned_url>
+        # url_path_bytes = _serialize(url_path, to_bytes=True)
+
+        url_path_str = base64.urlsafe_b64encode(url_path.encode()).decode()
+        stream_url_path = f"{self.routes.STREAM.value}/{proxy_uid}/{url_path_str}/"
+        return self.url.with_path(stream_url_path)
 
     def get_cache_key(self) -> str:
         return str(self.url)
@@ -205,6 +217,13 @@ class HTTPConnection(NodeConnection):
         self.url = upgrade_tls(self.url, response)
 
         return response.content
+
+    def stream_data(self, credentials: SyftSigningKey) -> Response:
+        url = self.url.with_path(self.routes.STREAM.value)
+        response = self.session.get(
+            str(url), verify=verify_tls(), proxies={}, stream=True
+        )
+        return response
 
     def get_node_metadata(
         self, credentials: SyftSigningKey
@@ -919,13 +938,13 @@ class SyftClient:
             metadata.check_version(__version__)
             self.metadata = metadata
 
-    def _fetch_api(self, credentials: SyftSigningKey) -> None:
+    def _fetch_api(self, credentials: SyftSigningKey) -> SyftAPI:
         _api: SyftAPI = self.connection.get_api(
             credentials=credentials,
             communication_protocol=self.communication_protocol,
         )
 
-        def refresh_callback() -> None:
+        def refresh_callback() -> SyftAPI:
             return self._fetch_api(self.credentials)
 
         _api.refresh_api_callback = refresh_callback
@@ -939,6 +958,7 @@ class SyftClient:
             api=_api,
         )
         self._api = _api
+        return _api
 
 
 @instrument

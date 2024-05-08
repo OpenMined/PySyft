@@ -316,7 +316,11 @@ class StorePartition:
         self.root_verify_key = root_verify_key
         self.settings = settings
         self.store_config = store_config
-        self.init_store()
+        res = self.init_store()
+        if res.is_err():
+            raise RuntimeError(
+                f"Something went wrong initializing the store: {res.err()}"
+            )
 
         store_config.locking_config.lock_name = f"StorePartition-{settings.name}"
         self.lock = SyftLock(store_config.locking_config)
@@ -797,7 +801,6 @@ class StoreConfig(SyftBaseObject):
             The config used for store locking. Available options:
                 * NoLockingConfig: no locking, ideal for single-thread stores.
                 * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
-                * FileLockingConfig: file based locking, ideal for same-device different-processes/threads stores.
             Defaults to NoLockingConfig.
     """
 

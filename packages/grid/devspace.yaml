@@ -26,8 +26,9 @@ vars:
   DOCKER_IMAGE_FRONTEND: openmined/grid-frontend
   DOCKER_IMAGE_SEAWEEDFS: openmined/grid-seaweedfs
   DOCKER_IMAGE_RATHOLE: openmined/grid-rathole
+  DOCKER_IMAGE_ENCLAVE_ATTESTATION: openmined/grid-enclave-attestation
   CONTAINER_REGISTRY: "docker.io"
-  VERSION: "0.8.7-beta.2"
+  VERSION: "0.8.7-beta.7"
   PLATFORM: $(uname -m | grep -q 'arm64' && echo "arm64" || echo "amd64")
 
 # This is a list of `images` that DevSpace can build for this project
@@ -105,19 +106,22 @@ dev:
     labelSelector:
       app.kubernetes.io/name: syft
       app.kubernetes.io/component: backend
-    env:
-      - name: RELEASE
-        value: development
-      - name: DEV_MODE
-        value: "True"
-      - name: DEBUGGER_ENABLED
-        value: "True"
     ports:
       - port: "5678" # debugpy
-    sync:
-      - path: ./backend/grid:/root/app/grid
-      - path: ../syft:/root/app/syft
-    ssh: {}
+    containers:
+      backend-container:
+        env:
+          - name: RELEASE
+            value: development
+          - name: DEV_MODE
+            value: "True"
+          - name: DEBUGGER_ENABLED
+            value: "True"
+        sync:
+          - path: ./backend/grid:/root/app/grid
+          - path: ../syft:/root/app/syft
+        ssh:
+          localPort: 3480
   rathole:
     labelSelector:
       app.kubernetes.io/name: syft
@@ -139,6 +143,22 @@ profiles:
         path: deployments.syft.helm.values.rathole.mode
         value: "server"
 
+      # Port Re-Mapping
+      # Mongo
+      - op: replace
+        path: dev.mongo.ports[0].port
+        value: 27018:27017
+
+      # Backend
+      - op: replace
+        path: dev.backend.ports[0].port
+        value: 5679:5678
+
+      # Backend Container SSH
+      - op: replace
+        path: dev.backend.containers.backend-container.ssh.localPort
+        value: 3481
+
   - name: gcp
     patches:
       - op: replace
@@ -159,3 +179,57 @@ profiles:
         path: deployments.syft.helm.valuesFiles
         value:
           - ./helm/examples/azure/azure.high.yaml
+
+  - name: enclave
+    patches:
+      - op: replace
+        path: deployments.syft.helm.values.node.type
+        value: "enclave"
+
+      - op: add
+        path: images
+        value:
+          enclave-attestation:
+            image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_ENCLAVE_ATTESTATION}"
+            buildKit:
+              args: ["--platform", "linux/amd64"]
+            dockerfile: ./enclave/attestation/attestation.dockerfile
+            context: ./enclave/attestation
+            tags:
+              - dev-${DEVSPACE_TIMESTAMP}
+      - op: add
+        path: dev.backend.containers
+        value:
+          enclave-attestation:
+            sync:
+              - path: ./enclave/attestation/server:/app/server
+
+      - op: add
+        path: deployments.syft.helm.values
+        value:
+          attestation:
+            enabled: true
+
+      # Port Re-Mapping
+      # Mongo
+      - op: replace
+        path: dev.mongo.ports[0].port
+        value: 27019:27017
+
+      # Backend
+      - op: replace
+        path: dev.backend.ports[0].port
+        value: 5680:5678
+
+      # Backend Container SSH
+      - op: replace
+        path: dev.backend.containers.backend-container.ssh.localPort
+        value: 3482
+
+      - op: replace
+        path: dev.seaweedfs.ports
+        value:
+          - port: "9334:9333" # admin
+          - port: "8889:8888" # filer
+          - port: "8334:8333" # S3
+          - port: "4002:4001" # mount api

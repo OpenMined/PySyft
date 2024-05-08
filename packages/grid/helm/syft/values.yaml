@@ -1,7 +1,7 @@
 global:
   # Affects only backend, frontend, and seaweedfs containers
   registry: docker.io
-  version: 0.8.7-beta.2
+  version: 0.8.7-beta.7
 
   # Force default secret values for development. DO NOT SET THIS TO FALSE IN PRODUCTION
   randomizedSecrets: true
@@ -221,10 +221,6 @@ ingress:
 
 # =================================================================================
 
-extraResources: []
-
-
-# =================================================================================
 
 rathole:
   # Extra environment vars
@@ -247,3 +243,23 @@ rathole:
   # Pod Resource Limits
   resourcesPreset: small
   resources: null
+
+# =================================================================================
+
+
+# Enclave attestation Service
+attestation:
+  enabled: false
+  appLogLevel: "info"
+  uvicornLogLevel: "info"
+
+  # Extra environment vars
+  env: null
+
+  # Pod Resource Limits
+  resourcesPreset: nano
+  resources: null
+
+# =================================================================================
+
+extraResources: []

@@ -7,7 +7,7 @@ from string import Template
 from typing import Any
 
 # third party
-from pydantic import field_validator
+from pydantic import Field
 from pydantic import model_validator
 from result import Err
 from result import Ok
@@ -86,7 +86,7 @@ class Job(SyncableSyftObject):
     parent_job_id: UID | None = None
     n_iters: int | None = 0
     current_iter: int | None = None
-    creation_time: str | None = None
+    creation_time: str | None = Field(default_factory=lambda: str(datetime.now()))
     action: Action | None = None
     job_pid: int | None = None
     job_worker_id: UID | None = None
@@ -114,11 +114,6 @@ class Job(SyncableSyftObject):
         "auto",
     ]
     __syft_include_id_coll_repr__ = False
-
-    @field_validator("creation_time")
-    @classmethod
-    def check_time(cls, time: Any) -> Any:
-        return str(datetime.now()) if time is None else time
 
     @model_validator(mode="after")
     def check_user_code_id(self) -> Self:
@@ -292,29 +287,31 @@ class Job(SyncableSyftObject):
             )
         return None
 
-    def kill(self) -> SyftError | None:
-        if self.job_pid is not None:
-            api = APIRegistry.api_for(
-                node_uid=self.syft_node_location,
-                user_verify_key=self.syft_client_verify_key,
-            )
-            if api is None:
-                return SyftError(
-                    message=f"Can't access Syft API. You must login to {self.syft_node_location}"
-                )
-            call = SyftAPICall(
-                node_uid=self.node_uid,
-                path="job.kill",
-                args=[],
-                kwargs={"id": self.id},
-                blocking=True,
-            )
-            api.make_call(call)
-            return None
-        else:
+    def kill(self) -> SyftError | SyftSuccess:
+        if self.status != JobStatus.PROCESSING:
+            return SyftError(message="Job is not running")
+        if self.job_pid is None:
             return SyftError(
-                message="Job is not running or isn't running in multiprocessing mode."
+                message="Job termination disabled in dev mode. "
+                "Set 'dev_mode=False' or 'thread_workers=False' to enable."
             )
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
+        call = SyftAPICall(
+            node_uid=self.node_uid,
+            path="job.kill",
+            args=[],
+            kwargs={"id": self.id},
+            blocking=True,
+        )
+        api.make_call(call)
+        return SyftSuccess(message="Job is killed successfully!")
 
     def fetch(self) -> None:
         api = APIRegistry.api_for(
@@ -609,35 +606,24 @@ class Job(SyncableSyftObject):
         worker_attr = ""
         if self.job_worker_id:
             worker = self.worker
-            worker_pool_id_button = CopyIDButton(
-                copy_text=str(worker.worker_pool_name), max_width=60
-            )
-            worker_attr = f"""
-                <div style="margin-top: 6px; margin-bottom: 6px;">
-                <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">
-                    Worker Pool:</span>
-                    {worker.name} on worker {worker_pool_id_button.to_html()}
-                </div>
-            """
+            if not isinstance(worker, SyftError):
+                worker_pool_id_button = CopyIDButton(
+                    copy_text=str(worker.worker_pool_name), max_width=60
+                )
+                worker_attr = f"""
+                    <div style="margin-top: 6px; margin-bottom: 6px;">
+                    <span style="font-weight: 700; line-weight: 19.6px; font-size: 14px; font: 'Open Sans'">
+                        Worker Pool:</span>
+                        {worker.name} on worker {worker_pool_id_button.to_html()}
+                    </div>
+                """
 
-        logs = self.logs(_print=False, stderr=False)
-        logs_lines = logs.split("\n") if logs else []
-        logs_lines_html = ""
-        for i, line in enumerate(logs_lines):
-            logs_lines_html += f"""
-                <tr style="width:100%">
-                    <td style="text-align: left;">
-                        <div style="margin-right:24px; align-text: center">
-                            {i}
-                        </div>
-                    </td>
-                    <td style="text-align: left;">
-                        <div style="align-text: left">
-                            {line}
-                        </div>
-                    </td>
-                </tr>
-            """
+        logs = self.logs(_print=False)
+        logs_lines = logs.strip().split("\n") if logs else []
+        logs_lines.insert(0, "<strong>Message</strong>")
+
+        logs_lines = [f"<code>{line}</code>" for line in logs_lines]
+        logs_lines_html = "\n".join(logs_lines)
 
         template = Template(job_repr_template)
         return template.substitute(
@@ -677,7 +663,7 @@ class Job(SyncableSyftObject):
             return self.resolve
 
         if not job_only and self.result is not None:
-            self.result.wait()
+            self.result.wait(timeout)
 
         if api is None:
             raise ValueError(

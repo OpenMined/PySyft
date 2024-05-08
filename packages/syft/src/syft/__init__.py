@@ -1,4 +1,4 @@
-__version__ = "0.8.7-beta.2"
+__version__ = "0.8.7-beta.7"
 
 # stdlib
 from collections.abc import Callable
@@ -152,6 +152,12 @@ def _settings() -> UserSettings:
 @module_property
 def _orchestra() -> Orchestra:
     return Orchestra
+
+
+@module_property
+def hello_baby() -> None:
+    print("Hello baby!")
+    print("Welcome to the world. \u2764\ufe0f")
 
 
 def search(name: str) -> SearchResults:
