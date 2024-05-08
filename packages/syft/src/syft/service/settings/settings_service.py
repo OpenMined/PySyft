@@ -64,7 +64,7 @@ class SettingsService(AbstractService):
     @service_method(path="settings.update", name="update")
     def update(
         self, context: AuthedServiceContext, settings: NodeSettingsUpdate
-    ) -> Result[Ok, Err]:
+    ) -> Result[SyftSuccess, SyftError]:
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             current_settings = result.ok()
@@ -74,7 +74,9 @@ class SettingsService(AbstractService):
                 )
                 update_result = self.stash.update(context.credentials, new_settings)
                 if update_result.is_ok():
-                    return result
+                    return SyftSuccess(
+                        message="Settings updated successfully. You must call <client>.refresh() to sync your client with the changes."
+                    )
                 else:
                     return SyftError(message=update_result.err())
             else:
@@ -149,8 +151,8 @@ class SettingsService(AbstractService):
     ) -> SyftSuccess | SyftError:
         new_settings = NodeSettingsUpdate(association_request_auto_approval=enable)
         result = self.update(context, settings=new_settings)
-        if result.is_err():
-            return SyftError(message=result.err())
+        if isinstance(result, SyftError):
+            return result
 
         message = "enabled" if enable else "disabled"
         return SyftSuccess(
