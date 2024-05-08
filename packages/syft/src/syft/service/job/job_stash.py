@@ -500,10 +500,10 @@ class Job(SyncableSyftObject):
         return {
             "Status": self.status_badge(),
             "Job": self.summary_html(),
-            "# Subjobs": center_content(default_value(len(subjobs))),
-            "Progress": center_content(default_value(self.progress)),
-            "ETA": center_content(default_value(self.eta_string)),
-            "Logs": center_content(default_value(logs)),
+            "# Subjobs": default_value(len(subjobs)),
+            "Progress": default_value(self.progress),
+            "ETA": default_value(self.eta_string),
+            "Logs": default_value(logs),
         }
 
     @property
