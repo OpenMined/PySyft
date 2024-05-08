@@ -192,7 +192,10 @@ class NetworkService(AbstractService):
             and (existing_peer := existing_peer_result.ok()) is not None
         ):
             msg = [
-                f"Peer '{existing_peer.name}' already exist for {self_node_peer.node_type} '{self_node_peer.name}'."
+                (
+                    f"Peer '{existing_peer.name}' already exist for "
+                    f"{self_node_peer.node_type} '{self_node_peer.name}'."
+                )
             ]
             if existing_peer != remote_node_peer:
                 result = self.stash.create_or_update_peer(
@@ -217,7 +220,10 @@ class NetworkService(AbstractService):
             )
             if isinstance(remote_self_node_peer, NodePeer):
                 msg.append(
-                    f"Peer '{self_node_peer.name}' already exist for {remote_node_peer.node_type} '{remote_node_peer.name}'."
+                    (
+                        f"Peer '{self_node_peer.name}' already exist for "
+                        f"{remote_node_peer.node_type} '{remote_node_peer.name}'."
+                    )
                 )
                 if remote_self_node_peer != self_node_peer:
                     result = remote_client.api.services.network.update_peer(
@@ -225,7 +231,10 @@ class NetworkService(AbstractService):
                     )
                     if result.is_err():
                         msg.append(
-                            f"Attempt to remotely update peer '{remote_self_node_peer.name}' information remotely failed."
+                            (
+                                f"Attempt to remotely update peer "
+                                f"'{remote_self_node_peer.name}' information remotely failed."
+                            )
                         )
                         return SyftError(message="\n".join(msg))
                     msg.append(
