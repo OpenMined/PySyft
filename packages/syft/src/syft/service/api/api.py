@@ -176,9 +176,7 @@ class Endpoint(SyftObject):
     @field_validator("func_name", check_fields=False)
     @classmethod
     def validate_func_name(cls, func_name: str) -> str:
-        if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", func_name) or keyword.iskeyword(
-            func_name
-        ):
+        if not str.isidentifier(func_name) or keyword.iskeyword(func_name):
             raise ValueError("Invalid function name.")
         return func_name
 
@@ -297,8 +295,14 @@ class BaseTwinAPIEndpoint(SyftObject):
     def validate_path(cls, path: str) -> str:
         # TODO: Check path doesn't collide with system endpoints
 
-        if not re.match(r"^[a-z]+(\.[a-z]+)*$", path):
-            raise ValueError('String must be a path-like string (e.g., "new.endpoint")')
+        if path.startswith(".") or path.endswith("."):
+            raise ValueError("Path cannot start or end with a '.'")
+        if not path.islower():
+            raise ValueError("Path must be lowercase")
+        parts = path.split(".")
+        for part in parts:
+            if not str.isidentifier(part) or keyword.iskeyword(part):
+                raise ValueError(f"Invalid path: {part} is not a valid identifier")
 
         return path
 

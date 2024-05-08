@@ -9,19 +9,13 @@ from typing import Any
 import uuid
 from uuid import UUID as uuid_type
 
+# third party
+from typing_extensions import Self
+
 # relative
 from ..serde.serializable import serializable
 from ..util.logger import critical
 from ..util.logger import traceback_and_raise
-
-try:
-    # Python >= 3.11
-    # stdlib
-    from typing import Self
-except ImportError:
-    # Python < 3.11
-    # third party
-    from typing_extensions import Self
 
 
 @serializable(attrs=["value"])
