@@ -308,8 +308,8 @@ class APIService(AbstractService):
             context.credentials,
             method,
             path,
-            worker_pool=custom_endpoint.worker_pool,
             *args,
+            worker_pool=custom_endpoint.worker_pool,
             **kwargs,
         )
         if isinstance(result, SyftError):
@@ -335,7 +335,10 @@ class APIService(AbstractService):
             time.sleep(0.1)
             if (time.time() - custom_endpoint.endpoint_timeout) > start:
                 return SyftError(
-                    message=f"Function timed out in {custom_endpoint.endpoint_timeout} seconds. Get the Job with id: {job_id} to check results."
+                    message=(
+                        f"Function timed out in {custom_endpoint.endpoint_timeout} seconds. "
+                        + f"Get the Job with id: {job_id} to check results."
+                    )
                 )
 
         if job.status == JobStatus.COMPLETED:
