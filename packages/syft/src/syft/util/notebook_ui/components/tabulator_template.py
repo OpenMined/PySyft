@@ -105,7 +105,9 @@ def build_tabulator_table(obj: Any) -> str | None:
         css = load_css("style.css")
 
         # Add tabulator as a named module for VSCode compatibility
-        tabulator_js = tabulator_js.replace("define(t)", "define('tabulator-tables', [], t)")
+        tabulator_js = tabulator_js.replace(
+            "define(t)", "define('tabulator-tables', [], t)"
+        )
 
         icon = table_metadata.get("icon", None)
         if icon is None:

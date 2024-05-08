@@ -1,5 +1,7 @@
-TABULATOR_SRC = "https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min"
-TABULATOR_CSS = "https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_materialize.min.css"
+TABULATOR_SRC =
+  "https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min";
+TABULATOR_CSS =
+  "https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_materialize.min.css";
 
 document.querySelectorAll(".escape-unfocus").forEach((input) => {
   input.addEventListener("keydown", (event) => {
@@ -18,7 +20,7 @@ function load_script(scriptPath, elementId, on_load, on_error) {
   script.src = scriptPath;
   script.onload = on_load;
   script.onerror = on_error;
-  console.debug("Injecting script:", scriptPath)
+  console.debug("Injecting script:", scriptPath);
   element.appendChild(script);
 }
 
@@ -35,27 +37,25 @@ function load_css(cssPath, elementId, on_load, on_error) {
 }
 
 function fix_url_for_require(url) {
-  return url.endsWith('.js')
-    ? url.replace(/(\.js)(?!.*\1)/, '')
-    : url
+  return url.endsWith(".js") ? url.replace(/(\.js)(?!.*\1)/, "") : url;
 }
 
 function load_tabulator(elementId) {
-  load_css(TABULATOR_CSS, elementId)
+  load_css(TABULATOR_CSS, elementId);
 
   return new Promise((resolve, reject) => {
-    if (typeof require !== 'undefined') {
-      url = fix_url_for_require(TABULATOR_SRC)
-      return require([url], function(module) {
+    if (typeof require !== "undefined") {
+      url = fix_url_for_require(TABULATOR_SRC);
+      return require([url], function (module) {
         window.Tabulator = module;
-        resolve()
-      }, reject)
-    } else if (typeof window.Tabulator === 'undefined') {
-      load_script(TABULATOR_SRC, elementId, resolve, reject)
+        resolve();
+      }, reject);
+    } else if (typeof window.Tabulator === "undefined") {
+      load_script(TABULATOR_SRC, elementId, resolve, reject);
     } else {
-      resolve()
+      resolve();
     }
-  })
+  });
 }
 
 function buildTable(columns, rowHeader, data, uid) {
