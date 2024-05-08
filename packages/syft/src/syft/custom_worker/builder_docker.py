@@ -41,6 +41,8 @@ class DockerBuilder(BuilderBase):
                 tag=tag,
                 timeout=BUILD_IMAGE_TIMEOUT_SEC,
                 buildargs=buildargs,
+                rm=True,
+                labels={"orgs.openmined.syft": f"Build image {tag}"},
                 **kwargs,
             )
             return ImageBuildResult(
