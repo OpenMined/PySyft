@@ -22,7 +22,7 @@ from .node.gateway import Gateway
 from .node.server import serve_node
 from .protocol.data_protocol import stage_protocol_changes
 from .service.response import SyftError
-from .util.util import get_random_port
+from .util.util import get_random_available_port
 
 DEFAULT_PORT = 8080
 DEFAULT_URL = "http://localhost"
@@ -196,7 +196,7 @@ def deploy_to_python(
     if port:
         kwargs["in_memory_workers"] = True
         if port == "auto":
-            port = get_random_port()
+            port = get_random_available_port()
             kwargs["port"] = port
 
         sig = inspect.signature(serve_node)

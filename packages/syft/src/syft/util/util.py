@@ -344,10 +344,16 @@ def find_available_port(
     return port
 
 
-def get_random_port() -> int:
-    soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    soc.bind(("", 0))
-    return soc.getsockname()[1]
+def get_random_available_port() -> int:
+    """Retrieve a random available port number from the host OS.
+
+    Returns
+    -------
+    int: Available port number.
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:
+        soc.bind(("localhost", 0))
+        return soc.getsockname()[1]
 
 
 def get_loaded_syft() -> ModuleType:
