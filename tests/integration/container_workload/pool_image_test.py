@@ -62,7 +62,7 @@ def test_image_build(domain_1_port, external_registry_uid) -> None:
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
-    # Submit Docker Worker Config
+    # Submit Docker Worker Config.
     docker_config_rl = f"""
         FROM {registry}/{repo}:{tag}
         RUN pip install recordlinkage
