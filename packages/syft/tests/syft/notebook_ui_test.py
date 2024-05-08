@@ -61,8 +61,6 @@ def test_sort_table_rows():
     table_data, _ = prepare_table_data(users)
 
     # No sorting
-    for i, row in enumerate(table_data):
-        print(row)
     table_emails = [row["email"] for row in table_data]
     table_indices = [row[TABLE_INDEX_KEY] for row in table_data]
     assert table_emails == emails
