@@ -221,13 +221,6 @@ def prepare_table_data(
         grid_template_columns = None
         grid_template_cell_columns = None
 
-    table_metadata = {
-        "name": f"{cls_name} {obj.__class__.__name__.capitalize()}",
-        "icon": getattr(first_value, "icon", None),
-        "grid_template_columns": grid_template_columns,
-        "grid_template_cell_columns": grid_template_cell_columns,
-    }
-
     table_data = _create_table_rows(
         _self=obj,
         is_homogenous=is_homogenous,
@@ -235,6 +228,14 @@ def prepare_table_data(
         add_index=add_index,
     )
     table_data = _sort_table_rows(table_data, sort_key)
+
+    table_metadata = {
+        "name": f"{cls_name} {obj.__class__.__name__.capitalize()}",
+        "columns": list(table_data[0].keys()),
+        "icon": getattr(first_value, "icon", None),
+        "grid_template_columns": grid_template_columns,
+        "grid_template_cell_columns": grid_template_cell_columns,
+    }
 
     return table_data, table_metadata
 
