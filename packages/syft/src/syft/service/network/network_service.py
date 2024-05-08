@@ -651,7 +651,9 @@ class NetworkService(AbstractService):
         )
         return result
 
-    @service_method(path="network.", name="delete_route", roles=GUEST_ROLE_LEVEL)
+    @service_method(
+        path="network.delete_route", name="delete_route", roles=GUEST_ROLE_LEVEL
+    )
     def delete_route(
         self,
         context: AuthedServiceContext,
