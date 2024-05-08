@@ -6,12 +6,12 @@ metadata:
     {{- include "common.labels" . | nindent 4 }}
     app.kubernetes.io/component: rathole
 spec:
-  type: ClusterIP
+  clusterIP: None
   selector:
     {{- include "common.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: rathole
   ports:
     - name: rathole
-      protocol: TCP
       port: 2333
       targetPort: 2333
+      protocol: TCP

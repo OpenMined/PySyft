@@ -42,3 +42,6 @@ frontend:
 proxy:
   resourcesPreset: null
   resources: null
+
+rathole:
+  enabled: "true"

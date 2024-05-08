@@ -122,6 +122,8 @@ dev:
     labelSelector:
       app.kubernetes.io/name: syft
       app.kubernetes.io/component: rathole
+    ports:
+      - port: "2333" # rathole
 
 profiles:
   - name: gateway

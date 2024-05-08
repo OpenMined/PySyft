@@ -83,3 +83,15 @@ metadata:
     app.kubernetes.io/component: proxy
 data:
   rathole-dynamic.yml: |
+    # http:
+    #   services:
+    #     rathole_domain_1:
+    #       loadBalancer:
+    #         servers:
+    #           - url: "http://rathole-0.rathole.syft.svc.cluster.local:2333"
+    #   routers:
+    #     rathole_domain_1:
+    #      rule: "Host('domain1.domain.syft.local')"
+    #      entryPoints:
+    #         - "web"
+    #      service: "rathole_domain_1"

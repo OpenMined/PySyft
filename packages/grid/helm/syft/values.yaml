@@ -229,6 +229,7 @@ extraResources: []
 rathole:
   # Extra environment vars
   env: null
+  enabled: true
 
   ratholePort: 2333
   appPort: 5555
