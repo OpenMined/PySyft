@@ -1,5 +1,5 @@
 ARG PYTHON_VERSION="3.12"
-ARG UV_VERSION="0.1.39-r0"
+ARG UV_VERSION="0.1.41-r0"
 ARG TORCH_VERSION="2.3.0"
 
 # ==================== [BUILD STEP] Python Dev Base ==================== #
@@ -19,7 +19,7 @@ ENV UV_HTTP_TIMEOUT=600
 
 # keep static deps separate to have each layer cached independently
 # if amd64 then we need to append +cpu to the torch version
-# limitation of uv - https://github.com/astral-sh/uv/issues/2541
+# uv issues: https://github.com/astral-sh/uv/issues/3437 & https://github.com/astral-sh/uv/issues/2541
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     uv venv && \
     ARCH=$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/) && \
