@@ -220,10 +220,8 @@ class NetworkService(AbstractService):
             )
             if isinstance(remote_self_node_peer, NodePeer):
                 msg.append(
-                    (
-                        f"{self_node_peer.node_type} '{self_node_peer.name}' already exist "
-                        f"as a peer for {remote_node_peer.node_type} '{remote_node_peer.name}'."
-                    )
+                    f"{self_node_peer.node_type} '{self_node_peer.name}' already exist "
+                    f"as a peer for {remote_node_peer.node_type} '{remote_node_peer.name}'."
                 )
                 if remote_self_node_peer != self_node_peer:
                     result = remote_client.api.services.network.update_peer(
@@ -234,23 +232,17 @@ class NetworkService(AbstractService):
                     )
                     if isinstance(result, SyftError):
                         msg.apnpend(
-                            (
-                                f"Attempt to remotely update {self_node_peer.node_type} peer "
-                                f"'{self_node_peer.name}' information remotely failed."
-                            )
+                            f"Attempt to remotely update {self_node_peer.node_type} peer "
+                            f"'{self_node_peer.name}' information remotely failed."
                         )
                         return SyftError(message="\n".join(msg))
                     msg.append(
-                        (
-                            f"{self_node_peer.node_type} peer '{self_node_peer.name}' "
-                            f"information successfully updated."
-                        )
+                        f"{self_node_peer.node_type} peer '{self_node_peer.name}' "
+                        f"information successfully updated."
                     )
                 msg.append(
-                    (
-                        f"Routes between {remote_node_peer.node_type} '{remote_node_peer.name}' and "
-                        f"{self_node_peer.node_type} '{self_node_peer.name}' already exchanged."
-                    )
+                    f"Routes between {remote_node_peer.node_type} '{remote_node_peer.name}' and "
+                    f"{self_node_peer.node_type} '{self_node_peer.name}' already exchanged."
                 )
                 return SyftSuccess(message="\n".join(msg))
 
