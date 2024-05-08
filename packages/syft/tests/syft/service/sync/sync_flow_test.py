@@ -1,5 +1,4 @@
 # stdlib
-from secrets import token_hex
 import sys
 
 # third party
@@ -16,7 +15,6 @@ from syft.client.syncing import compare_clients
 from syft.client.syncing import compare_states
 from syft.client.syncing import resolve
 from syft.client.syncing import resolve_single
-from syft.node.worker import Worker
 from syft.service.action.action_object import ActionObject
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess

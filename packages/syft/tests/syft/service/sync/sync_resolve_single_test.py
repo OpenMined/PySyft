@@ -87,7 +87,7 @@ def test_sync_with_error(low_worker, high_worker):
 
     @sy.syft_function_single_use()
     def compute() -> int:
-        assert False
+        raise RuntimeError
         return 42
 
     _ = client_low_ds.code.request_code_execution(compute)
