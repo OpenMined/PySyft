@@ -100,6 +100,7 @@ def build_tabulator_table(obj: Any) -> str | None:
 
         table_template = env.get_template("table.jinja2")
         tabulator_js = load_js("tabulator.min.js")
+        tabulator_css = load_css("tabulator_materialize.min.css")
         js = load_js("table.js")
         css = load_css("style.css")
 
@@ -123,6 +124,7 @@ def build_tabulator_table(obj: Any) -> str | None:
             icon=icon,
             name=table_metadata["name"],
             tabulator_js=tabulator_js,
+            tabulator_css=tabulator_css,
         )
 
         return table_html
