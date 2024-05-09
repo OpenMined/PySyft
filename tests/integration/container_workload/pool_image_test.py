@@ -134,7 +134,6 @@ def test_pool_launch(domain_1_port, external_registry_uid) -> None:
     assert isinstance(docker_build_result, SyftSuccess)
 
     # Push Image to External registry
-    push_result = None
     push_result = domain_client.api.services.worker_image.push(
         worker_image.id,
         username=external_registry_username,
