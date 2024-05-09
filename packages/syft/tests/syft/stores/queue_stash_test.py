@@ -181,7 +181,6 @@ def test_queue_set_existing_queue_threading(root_verify_key, queue: Any) -> None
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_update_existing_queue_threading(root_verify_key, queue: Any) -> None:
     thread_cnt = 3
     repeats = 5
