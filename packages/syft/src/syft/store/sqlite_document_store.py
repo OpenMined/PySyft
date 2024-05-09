@@ -20,7 +20,6 @@ from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..types.uid import UID
-from ..util.util import thread_ident
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
@@ -31,31 +30,10 @@ from .locks import LockingConfig
 from .locks import NoLockingConfig
 
 
-def cache_key(db_name: str) -> str:
-    return f"{db_name}_{thread_ident()}"
-
-
 def _repr_debug_(value: Any) -> str:
     if hasattr(value, "_repr_debug_"):
         return str(value._repr_debug_())
     return repr(value)
-
-
-def raise_exception(table_name: str, e: Exception) -> None:
-    if "disk I/O error" in str(e):
-        message = f"Error usually related to concurrent writes. {str(e)}"
-        raise Exception(message)
-
-    if "Cannot operate on a closed database" in str(e):
-        message = (
-            "Error usually related to calling self.db.close()"
-            + f"before last SQLiteBackingStore.__del__ gets called. {str(e)}"
-        )
-        raise Exception(message)
-
-    # if its something else other than "table already exists" raise original e
-    if f"table {table_name} already exists" not in str(e):
-        raise e
 
 
 @serializable(attrs=["index_name", "settings", "store_config"])
@@ -88,36 +66,14 @@ class SQLiteBackingStore(KeyValueBackingStore):
             self.file_path = self.store_config.client_config.file_path
         if store_config.client_config:
             self.db_filename = store_config.client_config.filename
-
+        path = Path(self.file_path)
+        if not path.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
         self.create_table()
 
     @property
     def table_name(self) -> str:
         return f"{self.settings.name}_{self.index_name}"
-
-    def _connect(self) -> None:
-        # SQLite is not thread safe by default so we ensure that each connection
-        # comes from a different thread. In cases of Uvicorn and other AWSGI servers
-        # there will be many threads handling incoming requests so we need to ensure
-        # that different connections are used in each thread. By using a dict for the
-        # _db and _cur we can ensure they are never shared
-
-        path = Path(self.file_path)
-        if not path.exists():
-            path.parent.mkdir(parents=True, exist_ok=True)
-
-        if self.store_config.client_config:
-            connection = sqlite3.connect(
-                self.file_path,
-                timeout=self.store_config.client_config.timeout,
-                check_same_thread=False,  # do we need this if we use the lock?
-                # check_same_thread=self.store_config.client_config.check_same_thread,
-            )
-            # Set journal mode to WAL.
-            connection.execute("PRAGMA journal_mode = WAL")
-            connection.execute("PRAGMA busy_timeout = 5000")
-            connection.execute("PRAGMA temp_store = 2")
-            connection.execute("PRAGMA synchronous = 1")
 
     def create_table(self) -> None:
         with self._execute(
@@ -132,6 +88,25 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self, sql: str, *args: list[Any] | None
     ) -> Generator[sqlite3.Cursor, None, None]:
         con = sqlite3.connect(self.file_path)
+
+        # if self.store_config.client_config:
+        timeout = (
+            self.store_config.client_config.timeout
+            if self.store_config.client_config
+            else 5
+        )
+        con = sqlite3.connect(
+            self.file_path,
+            timeout=timeout,
+            check_same_thread=False,  # do we need this if we use the lock?
+            # check_same_thread=self.store_config.client_config.check_same_thread,
+        )
+        # Set journal mode to WAL.
+        con.execute("PRAGMA journal_mode = WAL")
+        con.execute("PRAGMA busy_timeout = 5000")
+        con.execute("PRAGMA temp_store = 2")
+        con.execute("PRAGMA synchronous = 1")
+
         cur = con.cursor()
         try:
             yield cur.execute(sql, *args)
