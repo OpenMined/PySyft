@@ -191,9 +191,8 @@ jobs:
             pip install syft[data_science,dev]==${{ inputs.syft_version }}
           fi
 
-      - name: Install Hagrid, tox and uv
+      - name: Install tox and uv
         run: |
-          pip install -U hagrid
           pip install --upgrade pip uv==0.1.35 tox tox-uv==1.5.1 tox-current-env
 
       - name: Run unit tests
