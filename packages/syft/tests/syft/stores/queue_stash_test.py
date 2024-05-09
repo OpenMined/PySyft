@@ -2,7 +2,6 @@
 import threading
 from threading import Thread
 import time
-import traceback
 from typing import Any
 
 # third party
