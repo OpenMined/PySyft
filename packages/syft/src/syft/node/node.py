@@ -1265,7 +1265,7 @@ class Node(AbstractNode):
         )
 
     def get_worker_pool_ref_by_name(
-        self, credentials, worker_pool_name: str | None = None
+        self, credentials: SyftVerifyKey, worker_pool_name: str | None = None
     ) -> LinkedObject | SyftError:
         # If worker pool id is not set, then use default worker pool
         # Else, get the worker pool for given uid
