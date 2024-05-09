@@ -1,4 +1,5 @@
 # stdlib
+import secrets
 from typing import Self
 from typing import cast
 
@@ -11,6 +12,7 @@ from ...custom_worker.k8s import get_kr8s_client
 from ...serde import serializable
 from ...types.base import SyftBaseModel
 from .node_peer import NodePeer
+from .rathole_toml import RatholeClientToml
 from .rathole_toml import RatholeServerToml
 from .routes import HTTPNodeRoute
 
@@ -66,13 +68,13 @@ class RatholeService:
     def __init__(self) -> None:
         self.k8rs_client = get_kr8s_client()
 
-    def add_client_to_server(self, peer: NodePeer) -> None:
-        """Add a client to the rathole server toml file."""
+    def add_host_to_server(self, peer: NodePeer) -> None:
+        """Add a host to the rathole server toml file."""
 
         route = cast(HTTPNodeRoute, peer.pick_highest_priority_route())
 
         config = RatholeConfig(
-            uuid=peer.id,
+            uuid=peer.id.to_string(),
             secret_token=peer.rathole_token,
             local_addr_host="localhost",
             local_addr_port=route.port,
@@ -106,21 +108,81 @@ class RatholeService:
         )
 
         # Add the peer info to the proxy config map
-        self.add_port_to_proxy(config)
+        self.add_dynamic_addr_to_rathole(config)
 
-    def add_port_to_proxy(self, config: RatholeConfig, entrypoint: str = "web") -> None:
+    def get_random_port(self) -> int:
+        """Get a random port number."""
+        return secrets.randbits(15)
+
+    def add_host_to_client(self, peer: NodePeer) -> None:
+        """Add a host to the rathole client toml file."""
+
+        random_port = self.get_random_port()
+
+        config = RatholeConfig(
+            uuid=peer.id.to_string(),
+            secret_token=peer.rathole_token,
+            local_addr_host="localhost",
+            local_addr_port=random_port,
+            server_name=peer.name,
+        )
+
+        # Get rathole toml config map
+        rathole_config_map = KubeUtils.get_configmap(
+            client=self.k8rs_client, name=RATHOLE_TOML_CONFIG_MAP
+        )
+
+        client_filename = RatholeClientToml.filename
+
+        toml_str = rathole_config_map.data[client_filename]
+
+        rathole_toml = RatholeClientToml(toml_str=toml_str)
+
+        rathole_toml.add_config(config=config)
+
+        self.add_entrypoint(port=random_port, peer_name=peer.name)
+
+        self.forward_port_to_proxy(config=config, entrypoint=peer.name)
+
+    def forward_port_to_proxy(
+        self, config: RatholeConfig, entrypoint: str = "web"
+    ) -> None:
         """Add a port to the rathole proxy config map."""
 
         rathole_proxy_config_map = KubeUtils.get_configmap(
             self.k8rs_client, RATHOLE_PROXY_CONFIG_MAP
         )
 
-        rathole_proxy = rathole_proxy_config_map.data["rathole-proxy.yml"]
+        rathole_proxy = rathole_proxy_config_map.data["rathole-dynamic.yml"]
 
         if not rathole_proxy:
             rathole_proxy = {"http": {"routers": {}, "services": {}}}
 
-        # TODO: config.port, this should be a random port
+        rathole_proxy["http"]["services"][config.server_name] = {
+            "loadBalancer": {"servers": [{"url": "http://proxy:8001"}]}
+        }
+
+        rathole_proxy["http"]["routers"][config.server_name] = {
+            "rule": "PathPrefix(`/`)",
+            "service": config.server_name,
+            "entryPoints": [entrypoint],
+        }
+
+        KubeUtils.update_configmap(self.k8rs_client, PROXY_CONFIG_MAP, rathole_proxy)
+
+    def add_dynamic_addr_to_rathole(
+        self, config: RatholeConfig, entrypoint: str = "web"
+    ) -> None:
+        """Add a port to the rathole proxy config map."""
+
+        rathole_proxy_config_map = KubeUtils.get_configmap(
+            self.k8rs_client, RATHOLE_PROXY_CONFIG_MAP
+        )
+
+        rathole_proxy = rathole_proxy_config_map.data["rathole-dynamic.yml"]
+
+        if not rathole_proxy:
+            rathole_proxy = {"http": {"routers": {}, "services": {}}}
 
         rathole_proxy["http"]["services"][config.server_name] = {
             "loadBalancer": {
@@ -147,9 +209,7 @@ class RatholeService:
 
         traefik_config = yaml.safe_load(traefik_config_str)
 
-        traefik_config["entryPoints"][f"{peer_name}-entrypoint"] = {
-            "address": f":{port}"
-        }
+        traefik_config["entryPoints"][f"{peer_name}"] = {"address": f":{port}"}
 
         data["traefik.yml"] = yaml.safe_dump(traefik_config)
 
@@ -166,7 +226,7 @@ class RatholeService:
 
         traefik_config = yaml.safe_load(traefik_config_str)
 
-        del traefik_config["entryPoints"][f"{peer_name}-entrypoint"]
+        del traefik_config["entryPoints"][f"{peer_name}"]
 
         data["traefik.yml"] = yaml.safe_dump(traefik_config)
 
