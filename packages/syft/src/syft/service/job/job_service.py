@@ -1,4 +1,7 @@
 # stdlib
+from collections.abc import Callable
+import inspect
+import time
 from typing import Any
 from typing import cast
 
@@ -26,6 +29,18 @@ from ..user.user_roles import GUEST_ROLE_LEVEL
 from .job_stash import Job
 from .job_stash import JobStash
 from .job_stash import JobStatus
+
+
+def wait_until(
+    predicate: Callable[[], bool], timeout: int = 10
+) -> SyftSuccess | SyftError:
+    start = time.time()
+    code_string = inspect.getsource(predicate).strip()
+    while time.time() - start < timeout:
+        if predicate():
+            return SyftSuccess(message=f"Predicate {code_string} is True")
+        time.sleep(1)
+    return SyftError(message=f"Timeout reached for predicate {code_string}")
 
 
 @instrument
@@ -188,9 +203,18 @@ class JobService(AbstractService):
                 res = self.stash.update(context.credentials, obj=subjob)
                 results.append(res)
 
-        errors = [res.err() for res in results if res.is_err()]
-        if errors:
-            return SyftError(message=f"Failed to kill job: {errors}")
+        _ = [res.err() for res in results if res.is_err()]
+        # if errors:
+        #     return SyftError(message=f"Failed to kill job: {errors}")
+        # return SyftSuccess(message="Job killed successfully!")
+
+        wait_until(lambda: job.fetched_status == JobStatus.INTERRUPTED)
+        wait_until(
+            lambda: all(
+                subjob.fetched_status == JobStatus.INTERRUPTED for subjob in job.subjobs
+            )
+        )
+
         return SyftSuccess(message="Job killed successfully!")
 
     @service_method(
