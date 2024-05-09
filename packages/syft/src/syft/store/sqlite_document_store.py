@@ -351,9 +351,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def __del__(self) -> None:
         try:
             self._close()
-        except BaseException:
-            print("Could not close connection")
-            pass
+        except Exception as e:
+            print(f"Could not close connection. Error: {e}")
+            raise e
 
 
 @serializable()

@@ -255,7 +255,10 @@ class DomainRegistry:
             # map
             _all_online_domains = []
             for network in networks:
-                network_client = NetworkRegistry.create_client(network)
+                try:
+                    network_client = NetworkRegistry.create_client(network)
+                except Exception:
+                    continue
                 domains: list[NodePeer] = network_client.domains.retrieve_nodes()
                 for domain in domains:
                     self.all_domains[str(domain.id)] = domain
