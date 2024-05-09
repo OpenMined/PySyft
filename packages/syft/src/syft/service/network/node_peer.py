@@ -66,6 +66,7 @@ class NodePeer(SyftObject):
     node_routes: list[NodeRouteType] = []
     node_type: NodeType
     admin_email: str
+    rathole_token: str | None = None
 
     def existed_route(
         self, route: NodeRouteType | None = None, route_id: UID | None = None
