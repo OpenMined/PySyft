@@ -1,4 +1,5 @@
 # stdlib
+import os
 from secrets import token_hex
 import time
 
@@ -21,7 +22,7 @@ from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
 
 
-def launch(node_type: NodeType, association_request_auto_approval: bool = True):
+def _launch(node_type: NodeType, association_request_auto_approval: bool = True):
     return sy.orchestra.launch(
         name=token_hex(8),
         node_type=node_type,
@@ -34,7 +35,7 @@ def launch(node_type: NodeType, association_request_auto_approval: bool = True):
 
 @pytest.fixture
 def gateway():
-    node = launch(NodeType.GATEWAY)
+    node = _launch(NodeType.GATEWAY)
     yield node
     node.python_node.cleanup()
     node.land()
@@ -42,7 +43,7 @@ def gateway():
 
 @pytest.fixture(params=[True, False])
 def gateway_association_request_auto_approval(request: pytest.FixtureRequest):
-    node = launch(NodeType.GATEWAY, association_request_auto_approval=request.param)
+    node = _launch(NodeType.GATEWAY, association_request_auto_approval=request.param)
     yield (request.param, node)
     node.python_node.cleanup()
     node.land()
@@ -50,7 +51,7 @@ def gateway_association_request_auto_approval(request: pytest.FixtureRequest):
 
 @pytest.fixture
 def domain():
-    node = launch(NodeType.DOMAIN)
+    node = _launch(NodeType.DOMAIN)
     yield node
     node.python_node.cleanup()
     node.land()
@@ -58,7 +59,7 @@ def domain():
 
 @pytest.fixture
 def domain_2():
-    node = launch(NodeType.DOMAIN)
+    node = _launch(NodeType.DOMAIN)
     yield node
     node.python_node.cleanup()
     node.land()
@@ -66,10 +67,47 @@ def domain_2():
 
 @pytest.fixture
 def enclave():
-    node = launch(NodeType.ENCLAVE)
+    node = _launch(NodeType.ENCLAVE)
     yield node
     node.python_node.cleanup()
     node.land()
+
+
+@pytest.fixture(scope="function")
+def set_network_json_env_var(gateway):
+    """Set the environment variable for the network registry JSON string."""
+    json_string = f"""
+        {{
+            "2.0.0": {{
+                "gateways": [
+                    {{
+                        "name": "{gateway.name}",
+                        "host_or_ip": "localhost (in-memory)",
+                        "protocol": "{gateway.deployment_type.value}",
+                        "port": "{gateway.port}",
+                        "admin_email": "support@openmined.org",
+                        "website": "https://www.openmined.org/",
+                        "slack": "https://slack.openmined.org/",
+                        "slack_channel": "#support"
+                    }}
+                ]
+            }}
+        }}
+    """
+    os.environ["NETWORK_REGISTRY_JSON"] = json_string
+    yield
+    # Clean up the environment variable after all tests in the module have run
+    del os.environ["NETWORK_REGISTRY_JSON"]
+
+
+@pytest.mark.local_node
+def test_create_gateway(set_network_json_env_var, gateway):
+    assert isinstance(sy.gateways, sy.NetworkRegistry)
+    assert len(sy.gateways) == 1
+    assert len(sy.gateways.all_networks) == 1
+    assert len(sy.gateways.online_networks) == 1
+    assert sy.gateways.all_networks[0]["name"] == gateway.name
+    assert sy.gateways.all_networks[0]["protocol"] == gateway.deployment_type.value
 
 
 @pytest.mark.local_node

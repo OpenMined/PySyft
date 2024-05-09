@@ -73,39 +73,45 @@ class NetworkRegistry:
         networks = self.all_networks
 
         def check_network(network: dict) -> dict[Any, Any] | None:
-            url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
-            try:
-                res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
-                online = "This is a PyGrid Network node." in res.text
-            except Exception:
-                online = False
-
-            # networks without frontend have a /ping route in 0.7.0
-            if not online:
+            if network["protocol"] == "http":
+                url = (
+                    "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
+                )
                 try:
-                    ping_url = url + "ping"
-                    res = requests.get(ping_url, timeout=DEFAULT_TIMEOUT)  # nosec
-                    online = res.status_code == 200
+                    res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
+                    online = "This is a PyGrid Network node." in res.text
                 except Exception:
                     online = False
 
-            if online:
-                version = network.get("version", None)
-                # Check if syft version was described in NetworkRegistry
-                # If it's unknown, try to update it to an available version.
-                if not version or version == "unknown":
-                    # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
+                # networks without frontend have a /ping route in 0.7.0
+                if not online:
                     try:
-                        version_url = url + "api/v2/metadata"
-                        res = requests.get(version_url, timeout=DEFAULT_TIMEOUT)  # nosec
-                        if res.status_code == 200:
-                            network["version"] = res.json()["syft_version"]
-                        else:
-                            network["version"] = "unknown"
+                        ping_url = url + "ping"
+                        res = requests.get(ping_url, timeout=DEFAULT_TIMEOUT)  # nosec
+                        online = res.status_code == 200
                     except Exception:
-                        network["version"] = "unknown"
+                        online = False
+
+                if online:
+                    version = network.get("version", None)
+                    # Check if syft version was described in NetworkRegistry
+                    # If it's unknown, try to update it to an available version.
+                    if not version or version == "unknown":
+                        # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
+                        try:
+                            version_url = url + "api/v2/metadata"
+                            res = requests.get(version_url, timeout=DEFAULT_TIMEOUT)  # nosec
+                            if res.status_code == 200:
+                                network["version"] = res.json()["syft_version"]
+                            else:
+                                network["version"] = "unknown"
+                        except Exception:
+                            network["version"] = "unknown"
+                    return network
+                return None
+
+            else:
                 return network
-            return None
 
         # We can use a with statement to ensure threads are cleaned up promptly
         with futures.ThreadPoolExecutor(max_workers=20) as executor:
@@ -127,6 +133,9 @@ class NetworkRegistry:
         if len(on) == 0:
             return "(no gateways online - try syft.gateways.all_networks to see offline gateways)"
         return pd.DataFrame(on).to_string()
+
+    def __len__(self) -> int:
+        return len(self.all_networks)
 
     @staticmethod
     def create_client(network: dict[str, Any]) -> Client:
