@@ -61,37 +61,26 @@ class MonitorThread(threading.Thread):
             self.credentials, self.queue_item.job_id
         ).ok()
         if job and job.status == JobStatus.TERMINATING:
-            job.resolved = True
-            job.status = JobStatus.INTERRUPTED
+            self.terminate(job)
+            for subjob in job.subjobs:
+                self.terminate(subjob)
+
             self.queue_item.status = Status.INTERRUPTED
             self.queue_item.resolved = True
             self.worker.queue_stash.set_result(self.credentials, self.queue_item)
-            self.worker.job_stash.set_result(self.credentials, job)
-            print(f"Job with ID {job.id} interrupted.")
-            if job.job_pid and psutil.pid_exists(job.job_pid):
-                process = psutil.Process(job.job_pid)
-                process.terminate()
-                print(f"Process with PID {job.job_pid} terminated.")
-            else:
-                print(f"Process with PID {job.job_pid} not found.")
-            for subjob in job.subjobs:
-                self.terminate(subjob)
+            # How about subjobs of subjobs?
 
     def stop(self) -> None:
         self.stop_requested.set()
 
     def terminate(self, job: Job) -> None:
-        pid = job.job_pid
         job.resolved = True
         job.status = JobStatus.INTERRUPTED
         self.worker.job_stash.set_result(self.credentials, job)
-        if pid and psutil.pid_exists(pid):
-            process = psutil.Process(pid)
-            process.terminate()
-
-            print(f"Process with PID {job.job_pid} terminated.")
-        else:
-            print(f"Process with PID {job.job_pid} not found.")
+        try:
+            psutil.Process(job.job_pid).terminate()
+        except psutil.Error as e:
+            logger.warning(f"Failed to terminate job {job.id}: {e}")
 
 
 @serializable()
@@ -338,7 +327,6 @@ class APICallMessageHandler(AbstractMessageHandler):
                 args=(worker_settings, queue_item, credentials),
             )
             process.start()
-            print(f"Process started with PID: {process.pid}")
             job_item.job_pid = process.pid
             worker.job_stash.set_result(credentials, job_item)
             process.join()

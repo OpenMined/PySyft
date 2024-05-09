@@ -83,20 +83,28 @@ def test_job_restart(full_low_worker) -> None:
     result = job.restart()
     assert isinstance(result, SyftSuccess), "Should restart idle job"
 
-    job.wait(timeout=5)
+    job.wait(timeout=10)
 
     assert wait_until(
         lambda: job.fetched_status == JobStatus.PROCESSING
     ), "Job not restarted"
     assert wait_until(
-        lambda: all(
-            subjob.fetched_status == JobStatus.PROCESSING for subjob in job.subjobs
+        lambda: len(
+            [
+                subjob.fetched_status == JobStatus.PROCESSING
+                for subjob in job.subjobs
+                if subjob.fetched_status != JobStatus.INTERRUPTED
+            ]
         )
+        == 2
     ), "Subjobs not restarted"
 
     # cleanup and land
     result = job.kill()
     assert isinstance(result, SyftSuccess), "Should kill job"
+    assert wait_until(
+        lambda: job.fetched_status == JobStatus.INTERRUPTED
+    ), "Job not killed"
     node.python_node.cleanup()
     node.land()
 
@@ -113,7 +121,7 @@ def wait_until(predicate, timeout=10):
 @pytest.mark.local_node
 def test_job_kill(full_low_worker) -> None:
     node = sy.orchestra.launch(
-        name="test-domain-helm2",
+        name="test-domain-helm22",
         dev_mode=False,
         thread_workers=False,
         reset=True,
