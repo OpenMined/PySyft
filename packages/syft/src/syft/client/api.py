@@ -53,11 +53,11 @@ from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftMigrationRegistry
 from ..types.syft_object import SyftObject
-from ..types.syft_object import list_dict_repr_html
 from ..types.uid import LineageID
 from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
+from ..util.table import list_dict_repr_html
 from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
 from .connection import NodeConnection
