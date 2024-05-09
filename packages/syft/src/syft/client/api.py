@@ -68,20 +68,17 @@ if TYPE_CHECKING:
     from ..service.job.job_stash import Job
 
 
-IPYNB_BACKGROUND_METHODS = set(
-    [
-        "getdoc",
-        "_partialmethod",
-        "__name__",
-        "__code__",
-        "__wrapped__",
-        "__custom_documentations__",
-        "__signature__",
-        "__defaults__",
-        "__kwdefaults__",
-        "__custom_documentations__",
-    ]
-)
+IPYNB_BACKGROUND_METHODS = {
+    "getdoc",
+    "_partialmethod",
+    "__name__",
+    "__code__",
+    "__wrapped__",
+    "__custom_documentations__",
+    "__signature__",
+    "__defaults__",
+    "__kwdefaults__",
+}
 
 IPYNB_BACKGROUND_PREFIXES = ["_ipy", "_repr", "__ipython", "__pydantic"]
 
