@@ -109,11 +109,17 @@ except:  # noqa: E722
     pass  # nosec
 
 
-try:
-    # third party
-    from IPython.core.guarded_eval import EVALUATION_POLICIES
+def _patch_ipython_autocompletion() -> None:
+    try:
+        # third party
+        from IPython.core.guarded_eval import EVALUATION_POLICIES
+    except ImportError:
+        return
 
-    ipython = get_ipython()  # type: ignore
+    ipython = get_ipython()
+    if ipython is None:
+        return
+
     ipython.Completer.evaluation = "limited"
     ipython.Completer.use_jedi = False
     policy = EVALUATION_POLICIES["limited"]
@@ -139,8 +145,8 @@ try:
     # this allows property getters to be used in nested autocomplete
     policy.can_get_attr = patched_can_get_attr
 
-except Exception as e:
-    print(e)
+
+_patch_ipython_autocompletion()
 
 
 def module_property(func: Any) -> Callable:
