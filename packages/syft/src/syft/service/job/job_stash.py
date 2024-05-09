@@ -54,6 +54,7 @@ class JobStatus(str, Enum):
     PROCESSING = "processing"
     ERRORED = "errored"
     COMPLETED = "completed"
+    TERMINATING = "terminating"
     INTERRUPTED = "interrupted"
 
 
@@ -309,7 +310,9 @@ class Job(SyncableSyftObject):
             kwargs={"uid": self.id},
             blocking=True,
         )
-        job: Job = api.make_call(call)
+        job: Job | None = api.make_call(call)
+        if job is None:
+            return
         self.resolved = job.resolved
         if job.resolved:
             self.result = job.result
@@ -511,6 +514,11 @@ class Job(SyncableSyftObject):
 {logs_w_linenr}
     """
         return as_markdown_code(md)
+
+    @property
+    def fetched_status(self) -> JobStatus:
+        self.fetch()
+        return self.status
 
     @property
     def requesting_user(self) -> UserView | SyftError:

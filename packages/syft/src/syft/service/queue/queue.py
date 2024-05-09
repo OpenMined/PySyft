@@ -7,10 +7,10 @@ from typing import Any
 from typing import cast
 
 # third party
+from loguru import logger
 import psutil
 from result import Err
 from result import Ok
-from result import Result
 
 # relative
 from ...node.credentials import SyftVerifyKey
@@ -22,7 +22,6 @@ from ...store.document_store import BaseStash
 from ...types.datetime import DateTime
 from ...types.uid import UID
 from ..job.job_stash import Job
-from ..job.job_stash import JobStash
 from ..job.job_stash import JobStatus
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -61,22 +60,38 @@ class MonitorThread(threading.Thread):
         job = self.worker.job_stash.get_by_uid(
             self.credentials, self.queue_item.job_id
         ).ok()
-        if job is None or job.status != JobStatus.INTERRUPTED:
-            return
-        else:
+        if job and job.status == JobStatus.TERMINATING:
             job.resolved = True
+            job.status = JobStatus.INTERRUPTED
             self.queue_item.status = Status.INTERRUPTED
             self.queue_item.resolved = True
             self.worker.queue_stash.set_result(self.credentials, self.queue_item)
             self.worker.job_stash.set_result(self.credentials, job)
+            print(f"Job with ID {job.id} interrupted.")
             if job.job_pid and psutil.pid_exists(job.job_pid):
                 process = psutil.Process(job.job_pid)
                 process.terminate()
+                print(f"Process with PID {job.job_pid} terminated.")
             else:
                 print(f"Process with PID {job.job_pid} not found.")
+            for subjob in job.subjobs:
+                self.terminate(subjob)
 
     def stop(self) -> None:
         self.stop_requested.set()
+
+    def terminate(self, job: Job) -> None:
+        pid = job.job_pid
+        job.resolved = True
+        job.status = JobStatus.INTERRUPTED
+        self.worker.job_stash.set_result(self.credentials, job)
+        if pid and psutil.pid_exists(pid):
+            process = psutil.Process(pid)
+            process.terminate()
+
+            print(f"Process with PID {job.job_pid} terminated.")
+        else:
+            print(f"Process with PID {job.job_pid} not found.")
 
 
 @serializable()
@@ -250,32 +265,6 @@ def handle_message_multiprocessing(
     monitor_thread.stop()
 
 
-def evaluate_can_run_job(
-    job_id: UID, job_stash: JobStash, credentials: SyftVerifyKey
-) -> Result[Job, str]:
-    """Evaluate if a Job can be executed by the user.
-
-    A Job cannot be executed if any of the following are met:
-    - User doesn't have permission to the job.
-    - Job is either marked Completed or result is available.
-    - Job is Cancelled or Interrupted.
-    """
-    res = job_stash.get_by_uid(credentials, job_id)
-
-    # User doesn't have access to job
-    if res.is_err():
-        return res
-
-    job_item = res.ok()
-
-    if job_item.status == JobStatus.COMPLETED or job_item.resolved:
-        return Err(f"Job: {job_id} already Completed.")
-    elif job_item.status == JobStatus.INTERRUPTED:
-        return Err(f"Job interrupted. Job Id: {job_id}")
-
-    return Ok(job_item)
-
-
 @serializable()
 class APICallMessageHandler(AbstractMessageHandler):
     queue_name = "api_call"
@@ -309,9 +298,9 @@ class APICallMessageHandler(AbstractMessageHandler):
         worker.signing_key = worker_settings.signing_key
 
         credentials = queue_item.syft_client_verify_key
-
-        res = evaluate_can_run_job(queue_item.job_id, worker.job_stash, credentials)
+        res = worker.job_stash.get_by_uid(credentials, queue_item.job_id)
         if res.is_err():
+            logger.warning(res.err())
             raise Exception(res.value)
         job_item: Job = res.ok()
 
@@ -322,14 +311,6 @@ class APICallMessageHandler(AbstractMessageHandler):
         job_item.node_uid = cast(UID, worker.id)
         job_item.updated_at = DateTime.now()
 
-        # try:
-        #     worker_name = os.getenv("DOCKER_WORKER_NAME", None)
-        #     docker_worker = worker.worker_stash.get_worker_by_name(
-        #         credentials, worker_name
-        #     ).ok()
-        #     job_item.job_worker_id = str(docker_worker.container_id)
-        # except Exception:
-        #     job_item.job_worker_id = str(worker.id)
         if syft_worker_id is not None:
             job_item.job_worker_id = syft_worker_id
 
@@ -357,7 +338,7 @@ class APICallMessageHandler(AbstractMessageHandler):
                 args=(worker_settings, queue_item, credentials),
             )
             process.start()
-
+            print(f"Process started with PID: {process.pid}")
             job_item.job_pid = process.pid
             worker.job_stash.set_result(credentials, job_item)
             process.join()

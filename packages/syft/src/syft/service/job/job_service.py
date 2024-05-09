@@ -1,17 +1,12 @@
 # stdlib
-import time
 from typing import Any
 from typing import cast
-
-# third party
-import psutil
 
 # relative
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
-from ...util import logger
 from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -179,8 +174,8 @@ class JobService(AbstractService):
         res = res.ok()
         return SyftSuccess(message="Great Success!")
 
-    def _kill(self, context: AuthedServiceContext, job: Job):
-        job.status = JobStatus.INTERRUPTED
+    def _kill(self, context: AuthedServiceContext, job: Job) -> SyftSuccess | SyftError:
+        job.status = JobStatus.TERMINATING
         res = self.stash.update(context.credentials, obj=job)
         results = [res]
 
@@ -189,7 +184,7 @@ class JobService(AbstractService):
         if subjobs_or_err.is_ok() and subjobs_or_err.ok() is not None:
             subjobs = subjobs_or_err.ok()
             for subjob in subjobs:
-                subjob.status = JobStatus.INTERRUPTED
+                subjob.status = JobStatus.TERMINATING
                 res = self.stash.update(context.credentials, obj=subjob)
                 results.append(res)
 
