@@ -13,7 +13,8 @@ import requests
 
 # relative
 from ..service.metadata.node_metadata import NodeMetadataJSON
-from ..service.network.network_service import NodePeer
+from ..service.network.node_peer import NodePeer
+from ..service.network.node_peer import NodePeerConnectionStatus
 from ..service.response import SyftException
 from ..types.grid_url import GridURL
 from ..util.constants import DEFAULT_TIMEOUT
@@ -73,45 +74,39 @@ class NetworkRegistry:
         networks = self.all_networks
 
         def check_network(network: dict) -> dict[Any, Any] | None:
-            if network["protocol"] == "http":
-                url = (
-                    "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
-                )
+            url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
+            try:
+                res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
+                online = "This is a PyGrid Network node." in res.text
+            except Exception:
+                online = False
+
+            # networks without frontend have a /ping route in 0.7.0
+            if not online:
                 try:
-                    res = requests.get(url, timeout=DEFAULT_TIMEOUT)  # nosec
-                    online = "This is a PyGrid Network node." in res.text
+                    ping_url = url + "ping"
+                    res = requests.get(ping_url, timeout=DEFAULT_TIMEOUT)  # nosec
+                    online = res.status_code == 200
                 except Exception:
                     online = False
 
-                # networks without frontend have a /ping route in 0.7.0
-                if not online:
+            if online:
+                version = network.get("version", None)
+                # Check if syft version was described in NetworkRegistry
+                # If it's unknown, try to update it to an available version.
+                if not version or version == "unknown":
+                    # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
                     try:
-                        ping_url = url + "ping"
-                        res = requests.get(ping_url, timeout=DEFAULT_TIMEOUT)  # nosec
-                        online = res.status_code == 200
-                    except Exception:
-                        online = False
-
-                if online:
-                    version = network.get("version", None)
-                    # Check if syft version was described in NetworkRegistry
-                    # If it's unknown, try to update it to an available version.
-                    if not version or version == "unknown":
-                        # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
-                        try:
-                            version_url = url + "api/v2/metadata"
-                            res = requests.get(version_url, timeout=DEFAULT_TIMEOUT)  # nosec
-                            if res.status_code == 200:
-                                network["version"] = res.json()["syft_version"]
-                            else:
-                                network["version"] = "unknown"
-                        except Exception:
+                        version_url = url + "api/v2/metadata"
+                        res = requests.get(version_url, timeout=DEFAULT_TIMEOUT)  # nosec
+                        if res.status_code == 200:
+                            network["version"] = res.json()["syft_version"]
+                        else:
                             network["version"] = "unknown"
-                    return network
-                return None
-
-            else:
+                    except Exception:
+                        network["version"] = "unknown"
                 return network
+            return None
 
         # We can use a with statement to ensure threads are cleaned up promptly
         with futures.ThreadPoolExecutor(max_workers=20) as executor:
@@ -248,24 +243,25 @@ class DomainRegistry:
                 print(f"Error in checking domain with exception {e}")
             return None
 
-        networks = self.online_networks
+        # networks = self.online_networks
+        networks = self.all_networks
 
-        # We can use a with statement to ensure threads are cleaned up promptly
-        with futures.ThreadPoolExecutor(max_workers=20) as executor:
-            # map
-            _all_online_domains = []
-            for network in networks:
-                try:
-                    network_client = NetworkRegistry.create_client(network)
-                except Exception:
-                    continue
-                domains: list[NodePeer] = network_client.domains.retrieve_nodes()
-                for domain in domains:
-                    self.all_domains[str(domain.id)] = domain
-                _online_domains = list(
-                    executor.map(lambda domain: check_domain(domain), domains)
-                )
-                _all_online_domains += _online_domains
+        _all_online_domains = []
+        for network in networks:
+            try:
+                network_client = NetworkRegistry.create_client(network)
+            except Exception as e:
+                print(f"Error in creating network client with exception {e}")
+                continue
+            domains: list[NodePeer] = network_client.domains.retrieve_nodes()
+            for domain in domains:
+                self.all_domains[str(domain.id)] = domain
+            _online_domains = [
+                (domain, domain.guest_client.metadata)
+                for domain in domains
+                if domain.ping_status == NodePeerConnectionStatus.ACTIVE
+            ]
+            _all_online_domains += _online_domains
 
         return [domain for domain in _all_online_domains if domain is not None]
 
