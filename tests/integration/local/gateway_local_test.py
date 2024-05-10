@@ -35,6 +35,7 @@ def _launch(
         local_db=True,
         association_request_auto_approval=association_request_auto_approval,
         port=port,
+        background_tasks=True,
     )
 
 
