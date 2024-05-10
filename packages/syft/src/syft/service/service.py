@@ -8,12 +8,14 @@ from copy import deepcopy
 from functools import partial
 import inspect
 from inspect import Parameter
-from typing import Any
+import sys
+from typing import Any, Dict, Optional
 from typing import TYPE_CHECKING
 
 # third party
 from result import Ok
 from result import OkErr
+from syft.store.document_store import BaseUIDStoreStash, DocumentStore
 from typing_extensions import Self
 
 # relative
@@ -38,7 +40,7 @@ from ..types.syft_object import attach_attribute_to_syft_object
 from ..types.uid import UID
 from .context import AuthedServiceContext
 from .context import ChangeContext
-from .response import SyftError
+from .response import SyftError, SyftSuccess
 from .user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .user.user_roles import ServiceRole
 from .warnings import APIEndpointWarning
@@ -50,10 +52,136 @@ if TYPE_CHECKING:
 TYPE_TO_SERVICE: dict = {}
 SERVICE_TO_TYPES: defaultdict = defaultdict(set)
 
+def service_method(
+    name: str | None = None,
+    path: str | None = None,
+    roles: list[ServiceRole] | None = None,
+    autosplat: list[str] | None = None,
+    warning: APIEndpointWarning | None = None,
+) -> Callable:
+    if roles is None or len(roles) == 0:
+        # TODO: this is dangerous, we probably want to be more conservative
+        roles = DATA_OWNER_ROLE_LEVEL
+
+    def wrapper(func: Any) -> Callable:
+        func_name = func.__name__
+        class_name = func.__qualname__.split(".")[-2]
+        _path = class_name + "." + func_name
+        signature = inspect.signature(func)
+        signature = signature_remove_self(signature)
+        signature = signature_remove_context(signature)
+
+        input_signature = deepcopy(signature)
+
+        def _decorator(self: Any, *args: Any, **kwargs: Any) -> Callable:
+            communication_protocol = kwargs.pop("communication_protocol", None)
+
+            if communication_protocol:
+                args, kwargs = migrate_args_and_kwargs(
+                    args=args, kwargs=kwargs, to_latest_protocol=True
+                )
+            if autosplat is not None and len(autosplat) > 0:
+                args, kwargs = reconstruct_args_kwargs(
+                    signature=input_signature,
+                    autosplat=autosplat,
+                    args=args,
+                    kwargs=kwargs,
+                )
+            result = func(self, *args, **kwargs)
+            if communication_protocol:
+                result, _ = migrate_args_and_kwargs(
+                    args=(result,),
+                    kwargs={},
+                    to_protocol=communication_protocol,
+                )
+                result = result[0]
+            context = kwargs.get("context", None)
+            context = args[0] if context is None else context
+            attrs_to_attach = {
+                "syft_node_location": context.node.id,
+                "syft_client_verify_key": context.credentials,
+            }
+            return attach_attribute_to_syft_object(
+                result=result, attr_dict=attrs_to_attach
+            )
+
+        if autosplat is not None and len(autosplat) > 0:
+            signature = expand_signature(signature=input_signature, autosplat=autosplat)
+
+        config = ServiceConfig(
+            public_path=_path if path is None else path,
+            private_path=_path,
+            public_name=("public_" + func_name) if name is None else name,
+            method_name=func_name,
+            doc_string=func.__doc__,
+            signature=signature,
+            roles=roles,
+            permissions=["Guest"],
+            warning=warning,
+        )
+        ServiceConfigRegistry.register(config)
+
+        _decorator.__name__ = func.__name__
+        _decorator.__qualname__ = func.__qualname__
+        return _decorator
+
+    return wrapper
 
 class AbstractService:
     node: AbstractNode
     node_uid: UID
+    store: DocumentStore
+    stash: BaseUIDStoreStash
+    
+    def __init__(self, method_params: Optional[Dict[str, Dict[str, Any]]]) -> None:
+        # Add basic CRUD
+        print(f"Creating {self.object_type}", file=sys.stderr)
+        set_wrapper = service_method(path=f"{self.object_type}.set", name="set", **method_params['set'])(self.set)
+        get_wrapper = service_method(path=f"{self.object_type}.get", name="get", **method_params['get'])(self.get)
+        update_wrapper = service_method(path=f"{self.object_type}.update", name="update", **method_params['update'])(self.update)
+        delete_wrapper = service_method(path=f"{self.object_type}.delete", name="delete", **method_params['delete'])(self.delete)
+        
+        self.set = set_wrapper
+        self.get = get_wrapper
+        self.update = update_wrapper
+        self.delete = delete_wrapper
+
+    @property
+    def object_type(self):
+        return self.stash.object_type.__canonical_name__.lower()
+    
+    def set(self, context: AuthedServiceContext, obj: Any) -> SyftError | SyftSuccess:
+        # if hasattr(obj, id):
+        #     res = self.stash.get_by_uid(context.credentials, obj.id)
+        #     if 
+        
+        res = self.stash.set(context.credentials, obj)
+        if res.is_err():
+            return SyftError(message=res.err())
+
+        return SyftSuccess(message=f"{self.object_type} successfully created.")
+        
+    def get(self, context: AuthedServiceContext, uid: UID) -> SyftError | Any:
+        res = self.stash.get_by_uid(context.credentials, uid)
+        if res.is_err():
+            return SyftError(message=res.err())
+        return res.ok()
+    
+    def update(self, context: AuthedServiceContext, obj: Any) -> SyftError | SyftSuccess:
+        res = self.stash.update(context.credentials, obj)
+        if res.is_err():
+            return SyftError(message=res.err())
+
+        return SyftSuccess(message=f"{self.object_type} successfully updated.")
+    
+    def delete(self, context: AuthedServiceContext, uid: UID, force_delete: bool = False) -> SyftError | Any:
+        
+        res = self.stash.delete_by_uid(context.credentials, uid)
+        if res.is_err():
+            return SyftError(message=res.err())
+
+        return SyftSuccess(message=f"{self.object_type} successfully deleted.")
+    
 
     def resolve_link(
         self,
@@ -323,80 +451,6 @@ def expand_signature(signature: Signature, autosplat: list[str]) -> Signature:
     )
 
 
-def service_method(
-    name: str | None = None,
-    path: str | None = None,
-    roles: list[ServiceRole] | None = None,
-    autosplat: list[str] | None = None,
-    warning: APIEndpointWarning | None = None,
-) -> Callable:
-    if roles is None or len(roles) == 0:
-        # TODO: this is dangerous, we probably want to be more conservative
-        roles = DATA_OWNER_ROLE_LEVEL
-
-    def wrapper(func: Any) -> Callable:
-        func_name = func.__name__
-        class_name = func.__qualname__.split(".")[-2]
-        _path = class_name + "." + func_name
-        signature = inspect.signature(func)
-        signature = signature_remove_self(signature)
-        signature = signature_remove_context(signature)
-
-        input_signature = deepcopy(signature)
-
-        def _decorator(self: Any, *args: Any, **kwargs: Any) -> Callable:
-            communication_protocol = kwargs.pop("communication_protocol", None)
-
-            if communication_protocol:
-                args, kwargs = migrate_args_and_kwargs(
-                    args=args, kwargs=kwargs, to_latest_protocol=True
-                )
-            if autosplat is not None and len(autosplat) > 0:
-                args, kwargs = reconstruct_args_kwargs(
-                    signature=input_signature,
-                    autosplat=autosplat,
-                    args=args,
-                    kwargs=kwargs,
-                )
-            result = func(self, *args, **kwargs)
-            if communication_protocol:
-                result, _ = migrate_args_and_kwargs(
-                    args=(result,),
-                    kwargs={},
-                    to_protocol=communication_protocol,
-                )
-                result = result[0]
-            context = kwargs.get("context", None)
-            context = args[0] if context is None else context
-            attrs_to_attach = {
-                "syft_node_location": context.node.id,
-                "syft_client_verify_key": context.credentials,
-            }
-            return attach_attribute_to_syft_object(
-                result=result, attr_dict=attrs_to_attach
-            )
-
-        if autosplat is not None and len(autosplat) > 0:
-            signature = expand_signature(signature=input_signature, autosplat=autosplat)
-
-        config = ServiceConfig(
-            public_path=_path if path is None else path,
-            private_path=_path,
-            public_name=("public_" + func_name) if name is None else name,
-            method_name=func_name,
-            doc_string=func.__doc__,
-            signature=signature,
-            roles=roles,
-            permissions=["Guest"],
-            warning=warning,
-        )
-        ServiceConfigRegistry.register(config)
-
-        _decorator.__name__ = func.__name__
-        _decorator.__qualname__ = func.__qualname__
-        return _decorator
-
-    return wrapper
 
 
 class SyftServiceRegistry:

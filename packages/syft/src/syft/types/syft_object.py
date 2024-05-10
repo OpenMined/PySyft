@@ -35,6 +35,7 @@ from pydantic import Field
 from pydantic import model_validator
 from pydantic.fields import PydanticUndefined
 from result import OkErr
+from syft.types.datetime import DateTime
 from typeguard import check_type
 from typing_extensions import Self
 
@@ -395,6 +396,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
 
     # all objects have a UID
     id: UID
+    # deleted_date: Optional[DateTime] = None
 
     # # move this to transforms
     @model_validator(mode="before")
