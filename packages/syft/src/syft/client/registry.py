@@ -121,13 +121,49 @@ class NetworkRegistry:
         on = self.online_networks
         if len(on) == 0:
             return "(no gateways online - try syft.gateways.all_networks to see offline gateways)"
-        return pd.DataFrame(on)._repr_html_()  # type: ignore
+        df = pd.DataFrame(on)
+        total_df = pd.DataFrame(
+            [
+                [
+                    "",
+                    "",
+                    "",
+                    "",
+                    f"{len(on)} / {len(self.all_networks)} (online networks / all networks)",
+                    "",
+                    "",
+                    "",
+                ]
+            ],
+            columns=df.columns,
+            index=["Total"],
+        )
+        df = pd.concat([df, total_df])
+        return df._repr_html_()  # type: ignore
 
     def __repr__(self) -> str:
         on = self.online_networks
         if len(on) == 0:
             return "(no gateways online - try syft.gateways.all_networks to see offline gateways)"
-        return pd.DataFrame(on).to_string()
+        df = pd.DataFrame(on)
+        total_df = pd.DataFrame(
+            [
+                [
+                    "",
+                    "",
+                    "",
+                    "",
+                    f"{len(on)} / {len(self.all_networks)} (online networks / all networks)",
+                    "",
+                    "",
+                    "",
+                ]
+            ],
+            columns=df.columns,
+            index=["Total"],
+        )
+        df = pd.concat([df, total_df])
+        return df.to_string()
 
     def __len__(self) -> int:
         return len(self.all_networks)
