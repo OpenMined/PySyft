@@ -76,6 +76,7 @@ from ..policy.policy import UserPolicy
 from ..policy.policy import filter_only_uids
 from ..policy.policy import init_policy
 from ..policy.policy import load_policy_code
+from ..policy.policy import partition_by_node
 from ..policy.policy_service import PolicyService
 from ..response import SyftError
 from ..response import SyftInfo
@@ -952,10 +953,13 @@ def syft_function(
     if input_policy is None:
         input_policy = EmpyInputPolicy()
 
+    init_input_kwargs = None
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_type = SubmitUserPolicy.from_obj(input_policy)
+        init_input_kwargs = partition_by_node(input_policy.init_kwargs)
     else:
         input_policy_type = type(input_policy)
+        init_input_kwargs = getattr(input_policy, "init_kwargs", {})
 
     if output_policy is None:
         output_policy = SingleExecutionExactOutput()
@@ -971,7 +975,7 @@ def syft_function(
             func_name=f.__name__,
             signature=inspect.signature(f),
             input_policy_type=input_policy_type,
-            input_policy_init_kwargs=getattr(input_policy, "init_kwargs", {}),
+            input_policy_init_kwargs=init_input_kwargs,
             output_policy_type=output_policy_type,
             output_policy_init_kwargs=getattr(output_policy, "init_kwargs", {}),
             local_function=f,
