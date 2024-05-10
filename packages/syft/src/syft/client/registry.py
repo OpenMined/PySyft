@@ -81,10 +81,10 @@ class NetworkRegistry:
             except Exception:
                 online = False
 
-            # networks without frontend have a /ping route in 0.7.0
+            # networks without frontend
             if not online:
                 try:
-                    ping_url = url + "ping"
+                    ping_url = url + "api/v2/"
                     res = requests.get(ping_url, timeout=DEFAULT_TIMEOUT)  # nosec
                     online = res.status_code == 200
                 except Exception:
@@ -125,15 +125,9 @@ class NetworkRegistry:
         total_df = pd.DataFrame(
             [
                 [
-                    "",
-                    "",
-                    "",
-                    "",
-                    f"{len(on)} / {len(self.all_networks)} (online networks / all networks)",
-                    "",
-                    "",
-                    "",
+                    f"{len(on)} / {len(self.all_networks)} (online networks / all networks)"
                 ]
+                + [""] * (len(df.columns) - 1)
             ],
             columns=df.columns,
             index=["Total"],
@@ -149,15 +143,9 @@ class NetworkRegistry:
         total_df = pd.DataFrame(
             [
                 [
-                    "",
-                    "",
-                    "",
-                    "",
-                    f"{len(on)} / {len(self.all_networks)} (online networks / all networks)",
-                    "",
-                    "",
-                    "",
+                    f"{len(on)} / {len(self.all_networks)} (online networks / all networks)"
                 ]
+                + [""] * (len(df.columns) - 1)
             ],
             columns=df.columns,
             index=["Total"],
@@ -229,10 +217,10 @@ class DomainRegistry:
             except Exception:
                 online = False
 
-            # networks without frontend have a /ping route in 0.7.0
+            # networks without frontend
             if not online:
                 try:
-                    ping_url = url + "ping"
+                    ping_url = url + "api/v2/"
                     res = requests.get(ping_url, timeout=DEFAULT_TIMEOUT)
                     online = res.status_code == 200
                 except Exception:
@@ -268,19 +256,7 @@ class DomainRegistry:
 
     @property
     def online_domains(self) -> list[tuple[NodePeer, NodeMetadataJSON | None]]:
-        def check_domain(
-            peer: NodePeer,
-        ) -> tuple[NodePeer, NodeMetadataJSON | None] | None:
-            try:
-                guest_client = peer.guest_client
-                metadata = guest_client.metadata
-                return peer, metadata
-            except Exception as e:  # nosec
-                print(f"Error in checking domain with exception {e}")
-            return None
-
-        # networks = self.online_networks
-        networks = self.all_networks
+        networks = self.online_networks
 
         _all_online_domains = []
         for network in networks:
@@ -289,15 +265,16 @@ class DomainRegistry:
             except Exception as e:
                 print(f"Error in creating network client with exception {e}")
                 continue
+
             domains: list[NodePeer] = network_client.domains.retrieve_nodes()
             for domain in domains:
                 self.all_domains[str(domain.id)] = domain
-            _online_domains = [
+
+            _all_online_domains += [
                 (domain, domain.guest_client.metadata)
                 for domain in domains
                 if domain.ping_status == NodePeerConnectionStatus.ACTIVE
             ]
-            _all_online_domains += _online_domains
 
         return [domain for domain in _all_online_domains if domain is not None]
 
@@ -325,13 +302,33 @@ class DomainRegistry:
         on: list[dict[str, Any]] = self.__make_dict__()
         if len(on) == 0:
             return "(no domains online - try syft.domains.all_domains to see offline domains)"
-        return pd.DataFrame(on)._repr_html_()  # type: ignore
+        df = pd.DataFrame(on)
+        total_df = pd.DataFrame(
+            [
+                [f"{len(on)} / {len(self.all_domains)} (online domains / all domains)"]
+                + [""] * (len(df.columns) - 1)
+            ],
+            columns=df.columns,
+            index=["Total"],
+        )
+        df = pd.concat([df, total_df])
+        return df._repr_html_()  # type: ignore
 
     def __repr__(self) -> str:
         on: list[dict[str, Any]] = self.__make_dict__()
         if len(on) == 0:
             return "(no domains online - try syft.domains.all_domains to see offline domains)"
-        return pd.DataFrame(on).to_string()
+        df = pd.DataFrame(on)
+        total_df = pd.DataFrame(
+            [
+                [f"{len(on)} / {len(self.all_domains)} (online domains / all domains)"]
+                + [""] * (len(df.columns) - 1)
+            ],
+            columns=df.columns,
+            index=["Total"],
+        )
+        df = pd.concat([df, total_df])
+        return df._repr_html_()  # type: ignore
 
     def create_client(self, peer: NodePeer) -> Client:
         try:

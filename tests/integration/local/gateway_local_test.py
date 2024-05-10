@@ -134,8 +134,8 @@ def test_create_gateway(
     assert len(sy.gateways) == 1
     assert len(sy.gateways.all_networks) == 1
     assert sy.gateways.all_networks[0]["name"] == gateway_webserver.name
-    # assert len(sy.gateways.online_networks) == 1
-    # assert sy.gateways.online_networks[0]["name"] == gateway_webserver.name
+    assert len(sy.gateways.online_networks) == 1
+    assert sy.gateways.online_networks[0]["name"] == gateway_webserver.name
 
     gateway_client: GatewayClient = gateway_webserver.login(
         email="info@openmined.org",
