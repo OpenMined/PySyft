@@ -87,9 +87,6 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _execute(
         self, sql: str, *args: list[Any] | None
     ) -> Generator[sqlite3.Cursor, None, None]:
-        con = sqlite3.connect(self.file_path)
-
-        # if self.store_config.client_config:
         timeout = (
             self.store_config.client_config.timeout
             if self.store_config.client_config
