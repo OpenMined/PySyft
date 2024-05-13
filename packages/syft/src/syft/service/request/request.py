@@ -205,7 +205,7 @@ class CreateCustomImageChange(Change):
             worker_image_service = context.node.get_service("SyftWorkerImageService")
 
             service_context = context.to_service_ctx()
-            result = worker_image_service.submit_dockerfile(
+            result = worker_image_service.submit_container_image(
                 service_context, docker_config=self.config
             )
 
@@ -219,18 +219,28 @@ class CreateCustomImageChange(Change):
             if result.is_err():
                 return Err(SyftError(message=f"{result.err()}"))
 
-            worker_image = result.ok()
+            if (worker_image := result.ok()) is None:
+                return Err(SyftError(message="The worker image does not exist."))
 
-            build_result = worker_image_service.build(
-                service_context,
-                image_uid=worker_image.id,
-                tag=self.tag,
-                registry_uid=self.registry_uid,
-                pull=self.pull_image,
+            build_success_message = "Image was pre-built."
+
+            if not worker_image.is_prebuilt:
+                build_result = worker_image_service.build(
+                    service_context,
+                    image_uid=worker_image.id,
+                    tag=self.tag,
+                    registry_uid=self.registry_uid,
+                    pull=self.pull_image,
+                )
+
+                if isinstance(build_result, SyftError):
+                    return Err(build_result)
+
+                build_success_message = build_result.message
+
+            build_success = SyftSuccess(
+                message=f"Build result: {build_success_message}"
             )
-
-            if isinstance(build_result, SyftError):
-                return Err(build_result)
 
             if IN_KUBERNETES:
                 push_result = worker_image_service.push(
@@ -245,11 +255,11 @@ class CreateCustomImageChange(Change):
 
                 return Ok(
                     SyftSuccess(
-                        message=f"Build Result: {build_result.message} \n Push Result: {push_result.message}"
+                        message=f"{build_success}\nPush result: {push_result.message}"
                     )
                 )
 
-            return Ok(build_result)
+            return Ok(build_success)
 
         except Exception as e:
             return Err(SyftError(message=f"Failed to create/build image: {e}"))

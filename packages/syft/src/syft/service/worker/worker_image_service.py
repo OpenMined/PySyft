@@ -7,6 +7,7 @@ import pydantic
 
 # relative
 from ...custom_worker.config import DockerWorkerConfig
+from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -39,12 +40,12 @@ class SyftWorkerImageService(AbstractService):
         self.stash = SyftWorkerImageStash(store=store)
 
     @service_method(
-        path="worker_image.submit_dockerfile",
-        name="submit_dockerfile",
+        path="worker_image.submit_container_image",
+        name="submit_container_image",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def submit_dockerfile(
-        self, context: AuthedServiceContext, docker_config: DockerWorkerConfig
+    def submit_container_image(
+        self, context: AuthedServiceContext, docker_config: WorkerConfig
     ) -> SyftSuccess | SyftError:
         worker_image = SyftWorkerImage(
             config=docker_config,
