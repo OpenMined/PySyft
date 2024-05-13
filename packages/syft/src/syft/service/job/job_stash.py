@@ -4,6 +4,7 @@ from datetime import timedelta
 from enum import Enum
 import random
 from string import Template
+from time import sleep
 from typing import Any
 
 # third party
@@ -640,23 +641,28 @@ class Job(SyncableSyftObject):
     def wait(
         self, job_only: bool = False, timeout: int | None = None
     ) -> Any | SyftNotReady:
-        # stdlib
-        from time import sleep
-
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
-        if self.resolved:
-            return self.resolve
-
-        if not job_only and self.result is not None:
-            self.result.wait(timeout)
-
         if api is None:
             raise ValueError(
                 f"Can't access Syft API. You must login to {self.syft_node_location}"
             )
+        if self.resolved:
+            return self.resolve
+
+        workers = api.services.worker.get_all()
+        if not workers:
+            return SyftError(
+                message="This node has no workers. "
+                "You need to start a worker to run jobs "
+                "by setting n_consumers > 0."
+            )
+
+        if not job_only and self.result is not None:
+            self.result.wait(timeout)
+
         print_warning = True
         counter = 0
         while True:
