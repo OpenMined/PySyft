@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Generator
+import contextlib
 from contextlib import contextmanager
 from copy import deepcopy
 from pathlib import Path
@@ -76,7 +77,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return f"{self.settings.name}_{self.index_name}"
 
     def create_table(self) -> None:
-        with self._execute(
+        with self._cursor(
             f"create table if not exists {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
             + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
             + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"
@@ -84,7 +85,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             pass
 
     @contextmanager
-    def _execute(
+    def _cursor(
         self, sql: str, *args: list[Any] | None
     ) -> Generator[sqlite3.Cursor, None, None]:
         timeout = (
@@ -92,27 +93,25 @@ class SQLiteBackingStore(KeyValueBackingStore):
             if self.store_config.client_config
             else 5
         )
-        con = sqlite3.connect(
-            self.file_path,
-            timeout=timeout,
-            check_same_thread=False,  # do we need this if we use the lock?
-            # check_same_thread=self.store_config.client_config.check_same_thread,
-        )
-        # Set journal mode to WAL.
-        con.execute("PRAGMA journal_mode = WAL")
-        con.execute("PRAGMA busy_timeout = 5000")
-        con.execute("PRAGMA temp_store = 2")
-        con.execute("PRAGMA synchronous = 1")
-
-        cur = con.cursor()
-        try:
+        with contextlib.closing(
+            sqlite3.connect(
+                self.file_path,
+                timeout=timeout,
+                check_same_thread=False,  # do we need this if we use the lock?
+                # check_same_thread=self.store_config.client_config.check_same_thread,
+            )
+        ) as con:
+            # Set journal mode to WAL.
+            con.execute("PRAGMA journal_mode = WAL")
+            con.execute("PRAGMA busy_timeout = 5000")
+            con.execute("PRAGMA temp_store = 2")
+            con.execute("PRAGMA synchronous = 1")
+            cur = con.cursor()
             yield cur.execute(sql, *args)
-            con.commit()
-        except Exception as e:
-            con.close()
-            raise e
-        finally:
-            con.close()
+            try:
+                con.commit()
+            finally:
+                cur.close()
 
     def _set(self, key: UID, value: Any) -> None:
         if self._exists(key):
@@ -122,7 +121,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
                 f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
             )
             data = _serialize(value, to_bytes=True)
-            with self._execute(insert_sql, [str(key), _repr_debug_(value), data]) as _:
+            with self._cursor(insert_sql, [str(key), _repr_debug_(value), data]) as _:
                 pass
 
     def _update(self, key: UID, value: Any) -> None:
@@ -130,14 +129,14 @@ class SQLiteBackingStore(KeyValueBackingStore):
             f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
         )
         data = _serialize(value, to_bytes=True)
-        with self._execute(
+        with self._cursor(
             insert_sql, [str(key), _repr_debug_(value), data, str(key)]
         ) as _:
             pass
 
     def _get(self, key: UID) -> Any:
         select_sql = f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec
-        with self._execute(select_sql, [str(key)]) as cursor:
+        with self._cursor(select_sql, [str(key)]) as cursor:
             row = cursor.fetchone()
             if row is None or len(row) == 0:
                 raise KeyError(f"{key} not in {type(self)}")
@@ -147,7 +146,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _exists(self, key: UID) -> bool:
         select_sql = f"select uid from {self.table_name} where uid = ?"  # nosec
 
-        with self._execute(select_sql, [str(key)]) as cursor:
+        with self._cursor(select_sql, [str(key)]) as cursor:
             row = cursor.fetchone()
             return bool(row)
 
@@ -156,7 +155,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         keys = []
         data = []
 
-        with self._execute(select_sql) as cursor:
+        with self._cursor(select_sql) as cursor:
             rows = cursor.fetchall() or []
 
             for row in rows:
@@ -168,7 +167,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         select_sql = f"select uid from {self.table_name} order by sqltime"  # nosec
         keys = []
 
-        with self._execute(select_sql) as cursor:
+        with self._cursor(select_sql) as cursor:
             rows = cursor.fetchall() or []
 
             for row in rows:
@@ -177,17 +176,17 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _delete(self, key: UID) -> None:
         select_sql = f"delete from {self.table_name} where uid = ?"  # nosec
-        with self._execute(select_sql, [str(key)]) as _:
+        with self._cursor(select_sql, [str(key)]) as _:
             pass
 
     def _delete_all(self) -> None:
         select_sql = f"delete from {self.table_name}"  # nosec
-        with self._execute(select_sql) as _:
+        with self._cursor(select_sql) as _:
             pass
 
     def _len(self) -> int:
         select_sql = f"select count(uid) from {self.table_name}"  # nosec
-        with self._execute(select_sql) as cursor:
+        with self._cursor(select_sql) as cursor:
             cnt = cursor.fetchone()[0]
             return cnt
 
