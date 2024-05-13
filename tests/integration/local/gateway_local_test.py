@@ -1,4 +1,5 @@
 # stdlib
+import os
 from secrets import token_hex
 import time
 
@@ -21,7 +22,11 @@ from syft.service.response import SyftSuccess
 from syft.service.user.user_roles import ServiceRole
 
 
-def launch(node_type: NodeType, association_request_auto_approval: bool = True):
+def _launch(
+    node_type: NodeType,
+    association_request_auto_approval: bool = True,
+    port: int | str | None = None,
+):
     return sy.orchestra.launch(
         name=token_hex(8),
         node_type=node_type,
@@ -29,12 +34,14 @@ def launch(node_type: NodeType, association_request_auto_approval: bool = True):
         reset=True,
         local_db=True,
         association_request_auto_approval=association_request_auto_approval,
+        port=port,
+        background_tasks=True,
     )
 
 
 @pytest.fixture
 def gateway():
-    node = launch(NodeType.GATEWAY)
+    node = _launch(NodeType.GATEWAY)
     yield node
     node.python_node.cleanup()
     node.land()
@@ -42,7 +49,7 @@ def gateway():
 
 @pytest.fixture(params=[True, False])
 def gateway_association_request_auto_approval(request: pytest.FixtureRequest):
-    node = launch(NodeType.GATEWAY, association_request_auto_approval=request.param)
+    node = _launch(NodeType.GATEWAY, association_request_auto_approval=request.param)
     yield (request.param, node)
     node.python_node.cleanup()
     node.land()
@@ -50,7 +57,7 @@ def gateway_association_request_auto_approval(request: pytest.FixtureRequest):
 
 @pytest.fixture
 def domain():
-    node = launch(NodeType.DOMAIN)
+    node = _launch(NodeType.DOMAIN)
     yield node
     node.python_node.cleanup()
     node.land()
@@ -58,7 +65,7 @@ def domain():
 
 @pytest.fixture
 def domain_2():
-    node = launch(NodeType.DOMAIN)
+    node = _launch(NodeType.DOMAIN)
     yield node
     node.python_node.cleanup()
     node.land()
@@ -66,10 +73,93 @@ def domain_2():
 
 @pytest.fixture
 def enclave():
-    node = launch(NodeType.ENCLAVE)
+    node = _launch(NodeType.ENCLAVE)
     yield node
     node.python_node.cleanup()
     node.land()
+
+
+@pytest.fixture
+def gateway_webserver():
+    node = _launch(node_type=NodeType.GATEWAY, port="auto")
+    yield node
+    node.land()
+
+
+@pytest.fixture
+def domain_webserver():
+    node = _launch(NodeType.DOMAIN, port="auto")
+    yield node
+    node.land()
+
+
+@pytest.fixture
+def domain_2_webserver():
+    node = _launch(NodeType.DOMAIN, port="auto")
+    yield node
+    node.land()
+
+
+@pytest.fixture(scope="function")
+def set_network_json_env_var(gateway_webserver):
+    """Set the environment variable for the network registry JSON string."""
+    json_string = f"""
+        {{
+            "2.0.0": {{
+                "gateways": [
+                    {{
+                        "name": "{gateway_webserver.name}",
+                        "host_or_ip": "localhost",
+                        "protocol": "http",
+                        "port": "{gateway_webserver.port}",
+                        "admin_email": "support@openmined.org",
+                        "website": "https://www.openmined.org/",
+                        "slack": "https://slack.openmined.org/",
+                        "slack_channel": "#support"
+                    }}
+                ]
+            }}
+        }}
+    """
+    os.environ["NETWORK_REGISTRY_JSON"] = json_string
+    yield
+    # Clean up the environment variable after all tests in the module have run
+    del os.environ["NETWORK_REGISTRY_JSON"]
+
+
+@pytest.mark.local_node
+def test_create_gateway(
+    set_network_json_env_var, gateway_webserver, domain_webserver, domain_2_webserver
+):
+    assert isinstance(sy.gateways, sy.NetworkRegistry)
+    assert len(sy.gateways.all_networks) == 1
+    assert sy.gateways.all_networks[0]["name"] == gateway_webserver.name
+    assert len(sy.gateways.online_networks) == 1
+    assert sy.gateways.online_networks[0]["name"] == gateway_webserver.name
+
+    gateway_client: GatewayClient = gateway_webserver.login(
+        email="info@openmined.org",
+        password="changethis",
+    )
+    res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
+    assert isinstance(res, SyftSuccess)
+
+    domain_client: DomainClient = domain_webserver.login(
+        email="info@openmined.org",
+        password="changethis",
+    )
+    domain_client_2: DomainClient = domain_2_webserver.login(
+        email="info@openmined.org",
+        password="changethis",
+    )
+    result = domain_client.connect_to_gateway(handle=gateway_webserver)
+    assert isinstance(result, SyftSuccess)
+    result = domain_client_2.connect_to_gateway(handle=gateway_webserver)
+    assert isinstance(result, SyftSuccess)
+
+    time.sleep(PeerHealthCheckTask.repeat_time + 1)
+    assert len(sy.domains.all_domains) == 2
+    assert len(sy.domains.online_domains) == 2
 
 
 @pytest.mark.local_node

@@ -238,6 +238,7 @@ def deploy_to_python(
     create_producer: bool = False,
     queue_port: int | None = None,
     association_request_auto_approval: bool = False,
+    background_tasks: bool = False,
 ) -> NodeHandle | None:
     stage_protocol_changes = ImportFromSyft.import_stage_protocol_changes()
     NodeType = ImportFromSyft.import_node_type()
@@ -272,7 +273,7 @@ def deploy_to_python(
         "n_consumers": n_consumers,
         "create_producer": create_producer,
         "association_request_auto_approval": association_request_auto_approval,
-        "background_tasks": True,
+        "background_tasks": background_tasks,
     }
 
     if port:
@@ -493,6 +494,7 @@ class Orchestra:
         queue_port: int | None = None,
         in_memory_workers: bool = True,
         association_request_auto_approval: bool = False,
+        background_tasks: bool = False,
     ) -> NodeHandle | None:
         NodeType = ImportFromSyft.import_node_type()
         os.environ["DEV_MODE"] = str(dev_mode)
@@ -540,6 +542,7 @@ class Orchestra:
                 create_producer=create_producer,
                 queue_port=queue_port,
                 association_request_auto_approval=association_request_auto_approval,
+                background_tasks=background_tasks,
             )
 
         elif deployment_type_enum == DeploymentType.K8S:
