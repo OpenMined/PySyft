@@ -751,13 +751,25 @@ class BaseStash:
 @instrument
 class BaseUIDStoreStash(BaseStash):
     def delete_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID, force_delete: bool = False
     ) -> Result[SyftSuccess, str]:
+        from ..types.datetime import DateTime
         qk = UIDPartitionKey.with_obj(uid)
-        result = super().delete(credentials=credentials, qk=qk)
-        if result.is_ok():
-            return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
-        return result
+        if force_delete:
+            result = super().delete(credentials=credentials, qk=qk)
+            if result.is_ok():
+                return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
+            return result
+        result = self.get_by_uid(credentials=credentials, uid=uid)
+        if result.is_err():
+            return result
+        if result is None:
+            return Err(f"Object wiht ID: {uid} not found")
+        # result.deleted_date = DateTime.now()
+        result = result.ok()
+        result.is_deleted = True
+        return self.update(credentials=credentials, obj=result)
+        
 
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID

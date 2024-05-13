@@ -133,13 +133,13 @@ class AbstractService:
     store: DocumentStore
     stash: BaseUIDStoreStash
     
-    def __init__(self, method_params: Optional[Dict[str, Dict[str, Any]]]) -> None:
+    def __init__(self, method_params: Optional[Dict[str, Dict[str, Any]]] = {}) -> None:
         # Add basic CRUD
         print(f"Creating {self.object_type}", file=sys.stderr)
-        set_wrapper = service_method(path=f"{self.object_type}.set", name="set", **method_params['set'])(self.set)
-        get_wrapper = service_method(path=f"{self.object_type}.get", name="get", **method_params['get'])(self.get)
-        update_wrapper = service_method(path=f"{self.object_type}.update", name="update", **method_params['update'])(self.update)
-        delete_wrapper = service_method(path=f"{self.object_type}.delete", name="delete", **method_params['delete'])(self.delete)
+        set_wrapper = service_method(path=f"{self.object_type}.set", name="set", **method_params.get('set', {}))(self.set)
+        get_wrapper = service_method(path=f"{self.object_type}.get", name="get", **method_params.get('get', {}))(self.get)
+        update_wrapper = service_method(path=f"{self.object_type}.update", name="update", **method_params.get('update', {}))(self.update)
+        delete_wrapper = service_method(path=f"{self.object_type}.delete", name="delete", **method_params.get('delete', {}))(self.delete)
         
         self.set = set_wrapper
         self.get = get_wrapper
@@ -176,7 +176,7 @@ class AbstractService:
     
     def delete(self, context: AuthedServiceContext, uid: UID, force_delete: bool = False) -> SyftError | Any:
         
-        res = self.stash.delete_by_uid(context.credentials, uid)
+        res = self.stash.delete_by_uid(context.credentials, uid, force_delete)
         if res.is_err():
             return SyftError(message=res.err())
 

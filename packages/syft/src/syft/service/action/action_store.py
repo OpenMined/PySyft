@@ -210,7 +210,8 @@ class KeyValueActionStore(ActionStore):
         return Err(f"UID: {uid} already owned.")
 
     def delete(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
-        uid = uid.id  # We only need the UID from LineageID or UID
+        if hasattr(uid, 'id'):
+            uid = uid.id  # We only need the UID from LineageID or UID
 
         # if you delete something you need OWNER permission
         # is it bad to evict a key and have someone else reuse it?

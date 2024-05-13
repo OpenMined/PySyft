@@ -35,7 +35,6 @@ from pydantic import Field
 from pydantic import model_validator
 from pydantic.fields import PydanticUndefined
 from result import OkErr
-from syft.types.datetime import DateTime
 from typeguard import check_type
 from typing_extensions import Self
 
@@ -387,7 +386,7 @@ base_attrs_sync_ignore = [
 
 class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     __canonical_name__ = "SyftObject"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -396,7 +395,12 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
 
     # all objects have a UID
     id: UID
-    # deleted_date: Optional[DateTime] = None
+    # deleted_date: Optional["DateTime"] = None
+
+    # @property
+    # def is_deleted(self):
+    #     return self.deleted_date is not None
+    _is_deleted: bool = False
 
     # # move this to transforms
     @model_validator(mode="before")
