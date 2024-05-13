@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import Callable
+from hashlib import sha256
 import secrets
 from typing import Any
 
@@ -48,6 +49,8 @@ from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..warnings import CRUDWarning
 from .association_request import AssociationRequestChange
 from .node_peer import NodePeer
+from .rathole import get_rathole_port
+from .rathole_service import RatholeService
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
 from .routes import NodeRouteType
@@ -140,6 +143,7 @@ class NetworkService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = NetworkStash(store=store)
+        self.rathole_service = RatholeService()
 
     # TODO: Check with MADHAVA, can we even allow guest user to introduce routes to
     # domain nodes?
@@ -172,6 +176,9 @@ class NetworkService(AbstractService):
         )
         random_challenge = secrets.token_bytes(16)
 
+        rathole_token = self._generate_token()
+        self_node_peer.rathole_token = rathole_token
+
         # ask the remote client to add this node (represented by `self_node_peer`) as a peer
         remote_res = remote_client.api.services.network.add_peer(
             peer=self_node_peer,
@@ -195,11 +202,23 @@ class NetworkService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
 
+        remote_addr = f"{remote_node_route.protocol}://{remote_node_route.host_or_ip}:{get_rathole_port()()}"
+
+        self.rathole_service.add_host_to_client(
+            peer_name=self_node_peer.name,
+            peer_id=self_node_peer.id.to_string(),
+            rathole_token=self_node_peer.rathole_token,
+            remote_addr=remote_addr,
+        )
+
         return (
             SyftSuccess(message="Routes Exchanged")
             if association_request_approved
             else remote_res
         )
+
+    def _generate_token(self) -> str:
+        return sha256(secrets.token_bytes(16)).hexdigest()
 
     @service_method(path="network.add_peer", name="add_peer", roles=GUEST_ROLE_LEVEL)
     def add_peer(

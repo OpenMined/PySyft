@@ -1,5 +1,6 @@
 # stdlib
 import secrets
+from typing import cast
 
 # third party
 from result import Err
@@ -72,13 +73,20 @@ class AssociationRequestChange(Change):
         except Exception as e:
             return Err(SyftError(message=str(e)))
 
-        network_stash = service_ctx.node.get_service(NetworkService).stash
+        network_service = cast(
+            NetworkService, service_ctx.node.get_service(NetworkService)
+        )
+
+        network_stash = network_service.stash
 
         result = network_stash.create_or_update_peer(
             service_ctx.node.verify_key, self.remote_peer
         )
+
         if result.is_err():
             return Err(SyftError(message=str(result.err())))
+
+        network_service.rathole_service.add_host_to_server(self.remote_peer)
 
         # this way they can match up who we are with who they think we are
         # Sending a signed messages for the peer to verify

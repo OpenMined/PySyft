@@ -72,17 +72,19 @@ class RatholeService:
         """Get a random port number."""
         return secrets.randbits(15)
 
-    def add_host_to_client(self, peer: NodePeer) -> None:
+    def add_host_to_client(
+        self, peer_name: str, peer_id: str, rathole_token: str, remote_addr: str
+    ) -> None:
         """Add a host to the rathole client toml file."""
 
         random_port = self.get_random_port()
 
         config = RatholeConfig(
-            uuid=peer.id.to_string(),
-            secret_token=peer.rathole_token,
+            uuid=peer_id,
+            secret_token=rathole_token,
             local_addr_host="localhost",
             local_addr_port=random_port,
-            server_name=peer.name,
+            server_name=peer_name,
         )
 
         # Get rathole toml config map
@@ -98,14 +100,16 @@ class RatholeService:
 
         rathole_toml.add_config(config=config)
 
+        rathole_toml.set_remote_addr(remote_addr)
+
         data = {client_filename: rathole_toml.toml_str}
 
         # Update the rathole config map
         KubeUtils.update_configmap(config_map=rathole_config_map, patch={"data": data})
 
-        self.add_entrypoint(port=random_port, peer_name=peer.name)
+        self.add_entrypoint(port=random_port, peer_name=peer_name)
 
-        self.forward_port_to_proxy(config=config, entrypoint=peer.name)
+        self.forward_port_to_proxy(config=config, entrypoint=peer_name)
 
     def forward_port_to_proxy(
         self, config: RatholeConfig, entrypoint: str = "web"
