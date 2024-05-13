@@ -106,6 +106,10 @@ def test_domain_connect_to_gateway(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
+    # Try removing existing peers just to make sure
+    _remove_existing_peers(domain_client)
+    _remove_existing_peers(gateway_client)
+
     # connecting the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
     assert isinstance(result, Request)
@@ -122,6 +126,7 @@ def test_domain_connect_to_gateway(
 
     assert len(gateway_client.peers) == 1
 
+    time.sleep(PeerHealthCheckTask.repeat_time + 1)
     # check that the domain is online on the network
     assert len(sy.domains.all_domains) == 1
     assert len(sy.domains.online_domains) == 1
@@ -177,12 +182,17 @@ def test_dataset_search(set_env_var, gateway_port: int, domain_1_port: int) -> N
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
+    # Try removing existing peers just to make sure
+    _remove_existing_peers(domain_client)
+    _remove_existing_peers(gateway_client)
+
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
 
     # connect the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
+    time.sleep(PeerHealthCheckTask.repeat_time + 1)
     assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
     assert len(sy.domains.all_domains) == len(sy.domains.online_domains) == 1
 
@@ -228,6 +238,10 @@ def test_domain_gateway_user_code(
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
+
+    # Try removing existing peers just to make sure
+    _remove_existing_peers(domain_client)
+    _remove_existing_peers(gateway_client)
 
     # the domain client uploads a dataset
     input_data = np.array([1, 2, 3])
@@ -313,6 +327,7 @@ def test_deleting_peers(set_env_var, domain_1_port: int, gateway_port: int) -> N
     assert len(domain_client.peers) == 1
     assert len(gateway_client.peers) == 1
     # check that the domain is online on the network
+    time.sleep(PeerHealthCheckTask.repeat_time + 1)
     assert len(sy.domains.all_domains) == 1
     assert len(sy.domains.online_domains) == 1
 
@@ -320,6 +335,7 @@ def test_deleting_peers(set_env_var, domain_1_port: int, gateway_port: int) -> N
     assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
     # check that removing peers work as expected
+    time.sleep(PeerHealthCheckTask.repeat_time + 1)
     assert len(sy.gateways.all_networks) == 1
     assert len(sy.domains.all_domains) == 0
     assert len(sy.domains.all_domains) == 0
@@ -332,7 +348,8 @@ def test_deleting_peers(set_env_var, domain_1_port: int, gateway_port: int) -> N
     assert isinstance(result, SyftSuccess)
     assert len(domain_client.peers) == 1
     assert len(gateway_client.peers) == 1
-    # check that the domain
+    # check online domains
+    time.sleep(PeerHealthCheckTask.repeat_time + 1)
     assert len(sy.domains.all_domains) == 1
     assert len(sy.domains.online_domains) == 1
 
@@ -340,6 +357,7 @@ def test_deleting_peers(set_env_var, domain_1_port: int, gateway_port: int) -> N
     assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
     # check that removing peers work as expected
+    time.sleep(PeerHealthCheckTask.repeat_time + 1)
     assert len(sy.domains.all_domains) == 0
     assert len(sy.domains.all_domains) == 0
     assert len(sy.domains.online_domains) == 0
@@ -800,6 +818,8 @@ def test_dataset_stream(set_env_var, gateway_port: int, domain_1_port: int) -> N
     # connect the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
+
+    time.sleep(PeerHealthCheckTask.repeat_time + 1)
     assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
     assert len(sy.domains.all_domains) == len(sy.domains.online_domains) == 1
 
