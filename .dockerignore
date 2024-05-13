@@ -1,11 +1,79 @@
-.tox
-.git
-.vscode
-scripts
+# dot files / folders
+.cache/
+.coverage
+.DS_Store
+.eggs/
+.idea/
 .mypy_cache
-.benchmarks
-docker
-packages/syft/src/target
-packages/grid/apps/domain/src/nodedatabase.db
-packages/grid/apps/network/src/nodedatabase.db
-packages/grid/apps/worker/src/nodedatabase.db
+.python-version
+.vscode/
+.tox/*
+.creds
+build
+
+# python stuff
+*__pycache__*
+*.pyc
+*.swp
+*.swo
+*.ipynb_checkpoints*
+**.pytest_cache/
+**/pip-wheel-metadata
+
+# logs and database files
+**/*.log
+**/*.sqlite
+**/*.sqlite-journal
+
+# docker compose volumes
+docker/data/*
+
+# hagrid temps
+packages/hagrid/syft
+packages/hagrid/grid
+
+# vagrant
+.vagrant
+
+# venv
+venv
+.venv
+
+# docs
+docs/build
+docs/source/_build
+
+# helmcharts
+helm-charts/**/*.tgz
+helm-charts/**/*.lock
+.helm/**
+
+# docker cache
+.docker-cache/
+.docker
+
+# notebook data
+notebooks/medical-federated-learning-program/data-owners/MedNIST.pkl
+notebooks/**/*.pkl
+
+# k3d registry
+k3d-registry
+
+.envfile
+packages/hagrid/.envfile
+
+
+# rendered template dir
+packages/grid/rendered
+
+js/node_modules/*
+
+#nohup
+nohup.out
+
+# notebook data
+notebooks/helm/scenario_data.jsonl
+
+# tox syft.build.helm generated file
+out.*
+.git-blame-ignore-revs
