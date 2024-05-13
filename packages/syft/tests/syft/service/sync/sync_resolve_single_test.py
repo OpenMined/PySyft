@@ -14,9 +14,7 @@ from syft.service.sync.resolve_widget import ResolveWidget
 
 
 def handle_decision(widget: ResolveWidget, decision: SyncDecision):
-    if decision == SyncDecision.SKIP:
-        return widget.click_skip()
-    elif decision == SyncDecision.IGNORE:
+    if decision == SyncDecision.IGNORE:
         return widget.click_ignore()
     elif decision in [SyncDecision.LOW, SyncDecision.HIGH]:
         return widget.click_sync()
