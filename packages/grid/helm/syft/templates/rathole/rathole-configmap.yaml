@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: rathole-config
+  resourceVersion: ""
   labels:
     {{- include "common.labels" . | nindent 4 }}
     app.kubernetes.io/component: rathole

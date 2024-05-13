@@ -27,7 +27,7 @@ class RatholeBaseToml:
         return self.toml_writer.load(self.toml_str)
 
     def save(self, toml_dict: dict) -> None:
-        self.toml_str = self.toml_writer.dump(self.toml_str)
+        self.toml_str = self.toml_writer.dump(toml_dict)
 
     def _validate(self) -> bool:
         raise NotImplementedError
@@ -150,17 +150,17 @@ class RatholeClientToml(RatholeBaseToml):
 class RatholeServerToml(RatholeBaseToml):
     filename: str = "server.toml"
 
-    def set_bind_address(self, bind_address: str) -> None:
+    def set_rathole_listener_addr(self, bind_addr: str) -> None:
         """Set the bind address in the server toml file."""
 
         toml = self.read()
 
         # Set the bind address
-        toml["server"]["bind_addr"] = bind_address
+        toml["server"]["bind_addr"] = bind_addr
 
         self.save(toml)
 
-    def get_bind_address(self) -> str:
+    def get_rathole_listener_addr(self) -> str:
         """Get the bind address from the server toml file."""
 
         toml = self.read()

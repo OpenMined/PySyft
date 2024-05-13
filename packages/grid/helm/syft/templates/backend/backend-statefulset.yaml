@@ -82,8 +82,16 @@ spec:
             {{- if .Values.node.debuggerEnabled }}
             - name: DEBUGGER_ENABLED
               value: "true"
+            {{- end }}
+            {{- if eq .Values.node.type "gateway" }}
             - name: ASSOCIATION_REQUEST_AUTO_APPROVAL
               value: {{ .Values.node.associationRequestAutoApproval | quote }}
+            {{- end }}
+            {{- if .Values.rathole.enabled }}
+            - name: RATHOLE_PORT
+              value: {{ .Values.rathole.port | quote }}
+            - name: RATHOLE_ENABLED
+              value: "true"
             {{- end }}
             # MongoDB
             - name: MONGO_PORT

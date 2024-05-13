@@ -227,9 +227,9 @@ rathole:
   env: null
   enabled: true
 
-  ratholePort: 2333
+  port: 2333
   appPort: 5555
-  mode: "server"
+  mode: "client"
   devMode: "false"
   appLogLevel: "info"
 
