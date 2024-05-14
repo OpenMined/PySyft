@@ -34,7 +34,7 @@ COPY syft/src/syft/VERSION ./syft/src/syft/
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     # remove torch because we already have the cpu version pre-installed
     sed --in-place /torch==/d ./syft/setup.cfg && \
-    uv pip install -e ./syft[data_science,telemetry] && \
+    uv pip install -e ./syft[data_science] && \
     uv pip freeze | grep ansible | xargs uv pip uninstall
 
 # ==================== [Final] Setup Syft Server ==================== #
