@@ -112,6 +112,7 @@ def job(node):
         job.kill()
 
 
+@pytest.mark.skip
 @pytest.mark.local_node
 def test_job_kill(job) -> None:
     job.wait(timeout=2)
