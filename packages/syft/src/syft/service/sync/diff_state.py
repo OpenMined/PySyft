@@ -807,7 +807,7 @@ class ObjectDiffBatch(SyftObject):
         except Exception as _:
             return SyftError(
                 message=html.escape(
-                    "Could not render batch, please use resolve_single(<batch>) instead."
+                    "Could not render batch, please use resolve(<batch>) instead."
                 )
             )._repr_html_()
 
@@ -893,7 +893,7 @@ class ObjectDiffBatch(SyftObject):
         except Exception as _:
             return SyftError(
                 message=html.escape(
-                    "Could not render batch, please use resolve_single(<batch>) instead."
+                    "Could not render batch, please use resolve(<batch>) instead."
                 )
             )._repr_html_()
 

@@ -7,15 +7,19 @@ import syft as sy
 from syft.client.domain_client import DomainClient
 from syft.client.sync_decision import SyncDecision
 from syft.client.syncing import compare_clients
-from syft.client.syncing import resolve_single
+from syft.client.syncing import resolve
 from syft.service.code.user_code import UserCode
+from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.sync.resolve_widget import ResolveWidget
 
 
-def handle_decision(widget: ResolveWidget, decision: SyncDecision):
+def handle_decision(
+    widget: ResolveWidget, decision: SyncDecision
+) -> SyftSuccess | SyftError:
     if decision == SyncDecision.IGNORE:
-        return widget.click_ignore()
+        # ignore not yet implemented on the widget
+        return widget.obj_diff_batch.ignore()
     elif decision in [SyncDecision.LOW, SyncDecision.HIGH]:
         return widget.click_sync()
     else:
@@ -31,7 +35,7 @@ def compare_and_resolve(
 ):
     diff_state_before = compare_clients(from_client, to_client)
     for obj_diff_batch in diff_state_before.active_batches:
-        widget = resolve_single(
+        widget = resolve(
             obj_diff_batch=obj_diff_batch,
         )
         if decision_callback:
