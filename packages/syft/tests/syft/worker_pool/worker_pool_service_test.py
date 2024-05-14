@@ -26,7 +26,7 @@ RUN pip install recordlinkage
 
 CUSTOM_IMAGE_TAG = "openmined/custom-worker-recordlinkage:latest"
 
-DOCKER_CONFIG_TEST_CASES_WITH_N_IMAGES = [
+WORKER_CONFIG_TEST_CASES_WITH_N_IMAGES = [
     (
         CUSTOM_IMAGE_TAG,
         DockerWorkerConfig(dockerfile=CUSTOM_DOCKERFILE),
@@ -36,14 +36,14 @@ DOCKER_CONFIG_TEST_CASES_WITH_N_IMAGES = [
     (PREBUILT_IMAGE_TAG, PrebuiltWorkerConfig(tag=PREBUILT_IMAGE_TAG), 1),
 ]
 
-DOCKER_CONFIG_TEST_CASES = [
-    test_case[:2] for test_case in DOCKER_CONFIG_TEST_CASES_WITH_N_IMAGES
+WORKER_CONFIG_TEST_CASES = [
+    test_case[:2] for test_case in WORKER_CONFIG_TEST_CASES_WITH_N_IMAGES
 ]
 
 
-@pytest.mark.parametrize("docker_tag,docker_config", DOCKER_CONFIG_TEST_CASES)
+@pytest.mark.parametrize("docker_tag,worker_config", WORKER_CONFIG_TEST_CASES)
 def test_create_image_and_pool_request_accept(
-    faker: Faker, worker: Worker, docker_tag: str, docker_config: WorkerConfig
+    faker: Faker, worker: Worker, docker_tag: str, worker_config: WorkerConfig
 ) -> None:
     """
     Test the functionality of `SyftWorkerPoolService.create_image_and_pool_request`
@@ -59,11 +59,11 @@ def test_create_image_and_pool_request_accept(
         pool_name="recordlinkage-pool",
         num_workers=2,
         tag=docker_tag,
-        config=docker_config,
+        config=worker_config,
         reason="I want to do some more cool data science with PySyft and Recordlinkage",
     )
     assert len(request.changes) == 2
-    assert request.changes[0].config == docker_config
+    assert request.changes[0].config == worker_config
     assert request.changes[1].num_workers == 2
     assert request.changes[1].pool_name == "recordlinkage-pool"
 
@@ -85,14 +85,14 @@ def test_create_image_and_pool_request_accept(
 
 
 @pytest.mark.parametrize(
-    "docker_tag,docker_config,n_images",
-    DOCKER_CONFIG_TEST_CASES_WITH_N_IMAGES,
+    "docker_tag,worker_config,n_images",
+    WORKER_CONFIG_TEST_CASES_WITH_N_IMAGES,
 )
 def test_create_pool_request_accept(
     faker: Faker,
     worker: Worker,
     docker_tag: str,
-    docker_config: WorkerConfig,
+    worker_config: WorkerConfig,
     n_images: int,
 ) -> None:
     """
@@ -106,7 +106,7 @@ def test_create_pool_request_accept(
 
     # the DO submits the docker config to build an image
     submit_result = root_client.api.services.worker_image.submit_container_image(
-        docker_config=docker_config
+        docker_config=worker_config
     )
     assert isinstance(submit_result, SyftSuccess)
     assert len(root_client.images.get_all()) == n_images
@@ -142,13 +142,13 @@ def test_create_pool_request_accept(
     assert len(launched_pool.worker_list) == 3
 
 
-WORKER_CONFIGS = [test_case[1] for test_case in DOCKER_CONFIG_TEST_CASES]
+WORKER_CONFIGS = [test_case[1] for test_case in WORKER_CONFIG_TEST_CASES]
 
 
-@pytest.mark.parametrize("docker_config", WORKER_CONFIGS)
+@pytest.mark.parametrize("worker_config", WORKER_CONFIGS)
 def test_get_by_worker_config(
     worker: Worker,
-    docker_config: WorkerConfig,
+    worker_config: WorkerConfig,
 ) -> None:
     root_client = worker.root_client
     for config in WORKER_CONFIGS:
@@ -156,5 +156,5 @@ def test_get_by_worker_config(
             docker_config=config
         )
 
-    worker_image = root_client.api.services.worker_image.get_by_config(docker_config)
-    assert worker_image.config == docker_config
+    worker_image = root_client.api.services.worker_image.get_by_config(worker_config)
+    assert worker_image.config == worker_config
