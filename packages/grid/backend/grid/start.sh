@@ -25,8 +25,6 @@ then
     DEBUG_CMD="python -m debugpy --listen 0.0.0.0:5678 -m"
 fi
 
-source $APPDIR/.venv/bin/activate
-
 export CREDENTIALS_PATH=${CREDENTIALS_PATH:-$HOME/data/creds/credentials.json}
 export NODE_PRIVATE_KEY=$(python $APPDIR/grid/bootstrap.py --private_key)
 export NODE_UID=$(python $APPDIR/grid/bootstrap.py --uid)
