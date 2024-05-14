@@ -1,5 +1,4 @@
 # stdlib
-from secrets import token_hex
 import sys
 
 # third party
@@ -9,11 +8,9 @@ from result import Err
 # syft absolute
 import syft
 import syft as sy
-from syft.abstract_node import NodeSideType
 from syft.client.domain_client import DomainClient
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve_single
-from syft.node.worker import Worker
 from syft.service.job.job_stash import JobStatus
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
@@ -46,48 +43,6 @@ def get_ds_client(client: DomainClient) -> DomainClient:
         password_verify="asdf",
     )
     return client.login(email="a@a.com", password="asdf")
-
-
-@pytest.fixture(scope="function")
-def full_high_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
-    _node = sy.orchestra.launch(
-        node_side_type=NodeSideType.HIGH_SIDE,
-        name=token_hex(8),
-        # dev_mode=True,
-        reset=True,
-        n_consumers=n_consumers,
-        create_producer=create_producer,
-        queue_port=None,
-        in_memory_workers=True,
-        local_db=False,
-        thread_workers=False,
-    )
-    # startup code here
-    yield _node
-    # Cleanup code
-    _node.python_node.cleanup()
-    _node.land()
-
-
-@pytest.fixture(scope="function")
-def full_low_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
-    _node = sy.orchestra.launch(
-        node_side_type=NodeSideType.LOW_SIDE,
-        name=token_hex(8),
-        # dev_mode=True,
-        reset=True,
-        n_consumers=n_consumers,
-        create_producer=create_producer,
-        queue_port=None,
-        in_memory_workers=True,
-        local_db=False,
-        thread_workers=False,
-    )
-    # startup code here
-    yield _node
-    # Cleanup code
-    _node.python_node.cleanup()
-    _node.land()
 
 
 @sy.api_endpoint_method()

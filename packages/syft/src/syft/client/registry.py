@@ -80,10 +80,10 @@ class NetworkRegistry:
             except Exception:
                 online = False
 
-            # networks without frontend have a /ping route in 0.7.0
+            # networks without frontend
             if not online:
                 try:
-                    ping_url = url + "ping"
+                    ping_url = url + "api/v2/"
                     res = requests.get(ping_url, timeout=DEFAULT_TIMEOUT)  # nosec
                     online = res.status_code == 200
                 except Exception:
@@ -189,10 +189,10 @@ class DomainRegistry:
             except Exception:
                 online = False
 
-            # networks without frontend have a /ping route in 0.7.0
+            # networks without frontend
             if not online:
                 try:
-                    ping_url = url + "ping"
+                    ping_url = url + "api/v2/"
                     res = requests.get(ping_url, timeout=DEFAULT_TIMEOUT)
                     online = res.status_code == 200
                 except Exception:
