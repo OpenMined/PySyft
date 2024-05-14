@@ -105,4 +105,5 @@ worker: Node = worker_class(
     smtp_port=settings.SMTP_PORT,
     smtp_host=settings.SMTP_HOST,
     association_request_auto_approval=settings.ASSOCIATION_REQUEST_AUTO_APPROVAL,
+    background_tasks=True,
 )
