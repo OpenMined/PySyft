@@ -71,7 +71,7 @@ class NodePeer(SyftObject):
         "name",
         "node_type",
         "admin_email",
-        "ping_status.value",
+        "ping_status",
         "ping_status_message",
         "pinged_timestamp",
     ]
