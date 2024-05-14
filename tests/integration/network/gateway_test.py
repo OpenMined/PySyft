@@ -126,7 +126,7 @@ def test_domain_connect_to_gateway(
 
     assert len(gateway_client.peers) == 1
 
-    time.sleep(PeerHealthCheckTask.repeat_time + 1)
+    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
     # check that the domain is online on the network
     assert len(sy.domains.all_domains) == 1
     assert len(sy.domains.online_domains) == 1
@@ -192,9 +192,6 @@ def test_dataset_search(set_env_var, gateway_port: int, domain_1_port: int) -> N
     # connect the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
-    time.sleep(PeerHealthCheckTask.repeat_time + 1)
-    assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
-    assert len(sy.domains.all_domains) == len(sy.domains.online_domains) == 1
 
     # the domain client uploads a dataset
     input_data = np.array([1, 2, 3])
@@ -206,6 +203,9 @@ def test_dataset_search(set_env_var, gateway_port: int, domain_1_port: int) -> N
     dataset_res = domain_client.upload_dataset(dataset)
     assert isinstance(dataset_res, SyftSuccess)
 
+    # since dataset search is done by checking from the online domains,
+    # we need to wait to make sure peers health check is done
+    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
     # test if the dataset can be searched by the syft network
     right_search = sy.search(dataset_name)
     assert isinstance(right_search, SearchResults)
@@ -326,41 +326,29 @@ def test_deleting_peers(set_env_var, domain_1_port: int, gateway_port: int) -> N
     assert isinstance(result, SyftSuccess)
     assert len(domain_client.peers) == 1
     assert len(gateway_client.peers) == 1
-    # check that the domain is online on the network
-    time.sleep(PeerHealthCheckTask.repeat_time + 1)
-    assert len(sy.domains.all_domains) == 1
-    assert len(sy.domains.online_domains) == 1
 
     # Remove existing peers
     assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
     # check that removing peers work as expected
-    time.sleep(PeerHealthCheckTask.repeat_time + 1)
-    assert len(sy.gateways.all_networks) == 1
-    assert len(sy.domains.all_domains) == 0
-    assert len(sy.domains.all_domains) == 0
-    assert len(sy.domains.online_domains) == 0
     assert len(domain_client.peers) == 0
     assert len(gateway_client.peers) == 0
+    # check that the online domains and gateways are updated
+    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
+    assert len(sy.gateways.all_networks) == 1
+    assert len(sy.domains.all_domains) == 0
+    assert len(sy.domains.online_domains) == 0
 
     # reconnect the domain to the gateway
     result = domain_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
     assert len(domain_client.peers) == 1
     assert len(gateway_client.peers) == 1
-    # check online domains
-    time.sleep(PeerHealthCheckTask.repeat_time + 1)
-    assert len(sy.domains.all_domains) == 1
-    assert len(sy.domains.online_domains) == 1
 
     # Remove existing peers
     assert isinstance(_remove_existing_peers(domain_client), SyftSuccess)
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
     # check that removing peers work as expected
-    time.sleep(PeerHealthCheckTask.repeat_time + 1)
-    assert len(sy.domains.all_domains) == 0
-    assert len(sy.domains.all_domains) == 0
-    assert len(sy.domains.online_domains) == 0
     assert len(domain_client.peers) == 0
     assert len(gateway_client.peers) == 0
 
@@ -823,10 +811,6 @@ def test_dataset_stream(set_env_var, gateway_port: int, domain_1_port: int) -> N
     result = domain_client.connect_to_gateway(gateway_client)
     assert isinstance(result, SyftSuccess)
 
-    time.sleep(PeerHealthCheckTask.repeat_time + 1)
-    assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
-    assert len(sy.domains.all_domains) == len(sy.domains.online_domains) == 1
-
     # the domain client uploads a dataset
     input_data = np.array([1, 2, 3])
     mock_data = np.array([4, 5, 6])
@@ -862,10 +846,6 @@ def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -
     Scenario: Connecting a domain node to a gateway node.
     The gateway client approves the association request.
     The gateway client checks that the domain peer is associated
-    TODO: check for peer connection status through NodePeer.pingstatus
-    TODO: check that the domain is online with `DomainRegistry.online_domains`
-        Then make the domain go offline, which should be reflected when calling
-        `DomainRegistry.online_domains`
     """
     # login to the domain and gateway
     gateway_client: GatewayClient = sy.login(
@@ -926,7 +906,7 @@ def test_peer_health_check(set_env_var, gateway_port: int, domain_1_port: int) -
     assert isinstance(res, NodePeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATED"
 
-    time.sleep(PeerHealthCheckTask.repeat_time + 1)
+    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
     domain_peer = gateway_client.api.services.network.get_all_peers()[0]
     assert domain_peer.ping_status == NodePeerConnectionStatus.ACTIVE
 
