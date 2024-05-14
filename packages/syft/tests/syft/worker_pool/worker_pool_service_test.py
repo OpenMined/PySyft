@@ -112,14 +112,18 @@ def test_create_pool_request_accept(
     assert len(root_client.images.get_all()) == n_images
 
     # The root client builds the image
-    worker_image: SyftWorkerImage = root_client.images[-1]
+    worker_image: SyftWorkerImage = root_client.api.services.worker_image.get_by_config(
+        worker_config
+    )
     if not worker_image.is_prebuilt:
         docker_build_result = root_client.api.services.worker_image.build(
             image_uid=worker_image.id,
             tag=docker_tag,
         )
         # update the worker image variable after the image was built
-        worker_image: SyftWorkerImage = root_client.images[-1]
+        worker_image: SyftWorkerImage = (
+            root_client.api.services.worker_image.get_by_config(worker_config)
+        )
         assert isinstance(docker_build_result, SyftSuccess)
         assert worker_image.image_identifier.repo_with_tag == docker_tag
 
