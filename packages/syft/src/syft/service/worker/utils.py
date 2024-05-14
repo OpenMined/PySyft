@@ -564,7 +564,7 @@ def create_default_image(
         image_identifier=SyftWorkerImageIdentifier.from_str(tag),
     )
 
-    result = image_stash.get_by_docker_config(
+    result = image_stash.get_by_worker_config(
         credentials=credentials,
         config=worker_config,
     )

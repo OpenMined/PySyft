@@ -212,7 +212,7 @@ class CreateCustomImageChange(Change):
             if isinstance(result, SyftError):
                 return Err(result)
 
-            result = worker_image_service.stash.get_by_docker_config(
+            result = worker_image_service.stash.get_by_worker_config(
                 service_context.credentials, config=self.config
             )
 
@@ -301,7 +301,7 @@ class CreateCustomWorkerPoolChange(Change):
             service_context: AuthedServiceContext = context.to_service_ctx()
 
             if self.config is not None:
-                result = worker_pool_service.image_stash.get_by_docker_config(
+                result = worker_pool_service.image_stash.get_by_worker_config(
                     service_context.credentials, self.config
                 )
                 if result.is_err():

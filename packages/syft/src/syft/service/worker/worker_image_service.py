@@ -6,7 +6,6 @@ import docker
 import pydantic
 
 # relative
-from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
@@ -279,9 +278,9 @@ class SyftWorkerImageService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_by_config(
-        self, context: AuthedServiceContext, docker_config: DockerWorkerConfig
+        self, context: AuthedServiceContext, docker_config: WorkerConfig
     ) -> SyftWorkerImage | SyftError:
-        res = self.stash.get_by_docker_config(
+        res = self.stash.get_by_worker_config(
             credentials=context.credentials, config=docker_config
         )
         if res.is_err():

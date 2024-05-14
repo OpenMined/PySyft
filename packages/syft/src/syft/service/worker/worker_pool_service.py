@@ -257,7 +257,7 @@ class SyftWorkerPoolService(AbstractService):
             return SyftError(message="Registry UID is required in Kubernetes mode.")
 
         # Check if an image already exists for given docker config
-        search_result = self.image_stash.get_by_docker_config(
+        search_result = self.image_stash.get_by_worker_config(
             credentials=context.credentials, config=config
         )
 
