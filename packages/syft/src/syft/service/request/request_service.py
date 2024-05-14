@@ -288,6 +288,19 @@ class RequestService(AbstractService):
             message=f"Failed to update Request: <{request.id}>. Error: {result.err()}"
         )
 
+    @service_method(
+        path="request.delete_by_uid",
+        name="delete_by_uid",
+    )
+    def delete_by_uid(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> SyftSuccess | SyftError:
+        """Delete the request with the given uid."""
+        result = self.stash.delete_by_uid(context.credentials, uid)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return SyftSuccess(message=f"Request with id {uid} deleted.")
+
 
 TYPE_TO_SERVICE[Request] = RequestService
 SERVICE_TO_TYPES[RequestService].update({Request})
