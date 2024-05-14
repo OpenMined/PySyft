@@ -26,7 +26,7 @@ RUN pip install recordlinkage
 
 CUSTOM_IMAGE_TAG = "openmined/custom-worker-recordlinkage:latest"
 
-DOCKER_CONFIG_TEST_CASES = [
+DOCKER_CONFIG_TEST_CASES_WITH_N_IMAGES = [
     (
         CUSTOM_IMAGE_TAG,
         DockerWorkerConfig(dockerfile=CUSTOM_DOCKERFILE),
@@ -36,11 +36,12 @@ DOCKER_CONFIG_TEST_CASES = [
     (PREBUILT_IMAGE_TAG, PrebuiltWorkerConfig(tag=PREBUILT_IMAGE_TAG), 1),
 ]
 
+DOCKER_CONFIG_TEST_CASES = [
+    test_case[:2] for test_case in DOCKER_CONFIG_TEST_CASES_WITH_N_IMAGES
+]
 
-@pytest.mark.parametrize(
-    "docker_tag,docker_config",
-    [test_case[:2] for test_case in DOCKER_CONFIG_TEST_CASES],
-)
+
+@pytest.mark.parametrize("docker_tag,docker_config", DOCKER_CONFIG_TEST_CASES)
 def test_create_image_and_pool_request_accept(
     faker: Faker, worker: Worker, docker_tag: str, docker_config: WorkerConfig
 ) -> None:
@@ -83,7 +84,10 @@ def test_create_image_and_pool_request_accept(
     assert len(launched_pool.worker_list) == 2
 
 
-@pytest.mark.parametrize("docker_tag,docker_config,n_images", DOCKER_CONFIG_TEST_CASES)
+@pytest.mark.parametrize(
+    "docker_tag,docker_config,n_images",
+    DOCKER_CONFIG_TEST_CASES_WITH_N_IMAGES,
+)
 def test_create_pool_request_accept(
     faker: Faker,
     worker: Worker,
@@ -136,3 +140,21 @@ def test_create_pool_request_accept(
     launched_pool = root_client.worker_pools["opendp-pool"]
     assert isinstance(launched_pool, WorkerPool)
     assert len(launched_pool.worker_list) == 3
+
+
+WORKER_CONFIGS = [test_case[1] for test_case in DOCKER_CONFIG_TEST_CASES]
+
+
+@pytest.mark.parametrize("docker_config", WORKER_CONFIGS)
+def test_get_by_worker_config(
+    worker: Worker,
+    docker_config: WorkerConfig,
+) -> None:
+    root_client = worker.root_client
+    for config in WORKER_CONFIGS:
+        root_client.api.services.worker_image.submit_container_image(
+            docker_config=config
+        )
+
+    worker_image = root_client.api.services.worker_image.get_by_config(docker_config)
+    assert worker_image.config == docker_config
