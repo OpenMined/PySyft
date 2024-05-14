@@ -39,7 +39,7 @@ def test_image_build(domain_1_port) -> None:
 
     # Submit Worker Image
     submit_result = domain_client.api.services.worker_image.submit_container_image(
-        docker_config=docker_config
+        worker_config=docker_config
     )
     assert isinstance(submit_result, SyftSuccess)
     assert len(domain_client.images.get_all()) == 2
@@ -93,7 +93,7 @@ def test_pool_launch(domain_1_port) -> None:
 
     # Submit Worker Image
     submit_result = domain_client.api.services.worker_image.submit_container_image(
-        docker_config=docker_config
+        worker_config=docker_config
     )
     assert isinstance(submit_result, SyftSuccess)
 

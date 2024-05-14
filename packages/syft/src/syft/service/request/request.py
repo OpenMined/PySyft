@@ -206,7 +206,7 @@ class CreateCustomImageChange(Change):
 
             service_context = context.to_service_ctx()
             result = worker_image_service.submit_container_image(
-                service_context, docker_config=self.config
+                service_context, worker_config=self.config
             )
 
             if isinstance(result, SyftError):

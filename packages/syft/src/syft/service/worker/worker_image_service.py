@@ -44,10 +44,10 @@ class SyftWorkerImageService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def submit_container_image(
-        self, context: AuthedServiceContext, docker_config: WorkerConfig
+        self, context: AuthedServiceContext, worker_config: WorkerConfig
     ) -> SyftSuccess | SyftError:
         worker_image = SyftWorkerImage(
-            config=docker_config,
+            config=worker_config,
             created_by=context.credentials,
         )
         res = self.stash.set(context.credentials, worker_image)
@@ -278,14 +278,14 @@ class SyftWorkerImageService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_by_config(
-        self, context: AuthedServiceContext, docker_config: WorkerConfig
+        self, context: AuthedServiceContext, worker_config: WorkerConfig
     ) -> SyftWorkerImage | SyftError:
         res = self.stash.get_by_worker_config(
-            credentials=context.credentials, config=docker_config
+            credentials=context.credentials, config=worker_config
         )
         if res.is_err():
             return SyftError(
-                message=f"Failed to get image with docker config {docker_config}. Error: {res.err()}"
+                message=f"Failed to get image with docker config {worker_config}. Error: {res.err()}"
             )
         image: SyftWorkerImage = res.ok()
         return image

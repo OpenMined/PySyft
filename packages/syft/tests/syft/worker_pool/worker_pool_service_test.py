@@ -106,7 +106,7 @@ def test_create_pool_request_accept(
 
     # the DO submits the docker config to build an image
     submit_result = root_client.api.services.worker_image.submit_container_image(
-        docker_config=worker_config
+        worker_config=worker_config
     )
     assert isinstance(submit_result, SyftSuccess)
     assert len(root_client.images.get_all()) == n_images
@@ -157,7 +157,7 @@ def test_get_by_worker_config(
     root_client = worker.root_client
     for config in WORKER_CONFIGS:
         root_client.api.services.worker_image.submit_container_image(
-            docker_config=config
+            worker_config=config
         )
 
     worker_image = root_client.api.services.worker_image.get_by_config(worker_config)
