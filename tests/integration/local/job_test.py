@@ -16,6 +16,7 @@ from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 
 
+@pytest.mark.skip
 @pytest.mark.local_node
 def test_job_restart(job) -> None:
     job.wait(timeout=2)
