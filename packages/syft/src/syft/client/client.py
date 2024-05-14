@@ -683,7 +683,7 @@ class SyftClient:
             if client.metadata is None:
                 return SyftError(f"client {client}'s metadata is None!")
 
-            result = self.api.services.network.exchange_credentials_with(
+            return self.api.services.network.exchange_credentials_with(
                 self_node_route=self_node_route,
                 remote_node_route=remote_node_route,
                 remote_node_verify_key=client.metadata.to(NodeMetadataV3).verify_key,
@@ -692,8 +692,6 @@ class SyftClient:
             raise ValueError(
                 f"Invalid Route Exchange SyftProtocol: {protocol}.Supported protocols are {SyftProtocol.all()}"
             )
-
-        return result
 
     @property
     def jobs(self) -> APIModule | None:
