@@ -158,7 +158,7 @@ def test_create_gateway(
     result = domain_client_2.connect_to_gateway(handle=gateway_webserver)
     assert isinstance(result, SyftSuccess)
 
-    time.sleep(PeerHealthCheckTask.repeat_time + 1)
+    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
     assert len(sy.domains.all_domains) == 2
     assert len(sy.domains.online_domains) == 2
 
@@ -378,6 +378,6 @@ def test_repeated_association_requests_peers_health_check(
     assert res.value == "PEER_ASSOCIATED"
 
     # check for peer connection status
-    time.sleep(PeerHealthCheckTask.repeat_time + 1)
+    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
     domain_peer = gateway_client.api.services.network.get_all_peers()[0]
     assert domain_peer.ping_status == NodePeerConnectionStatus.ACTIVE
