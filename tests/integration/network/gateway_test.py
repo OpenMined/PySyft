@@ -603,6 +603,10 @@ def test_delete_route_on_peer(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
+    # Remove existing peers
+    _remove_existing_peers(domain_client)
+    _remove_existing_peers(gateway_client)
+
     # Enable automatic acceptance of association requests
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
