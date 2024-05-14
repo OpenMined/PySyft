@@ -161,6 +161,9 @@ def test_create_gateway(
     time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
     assert len(sy.domains.all_domains) == 2
     assert len(sy.domains.online_domains) == 2
+    # check for peer connection status
+    for peer in gateway_client.api.services.network.get_all_peers():
+        assert peer.ping_status == NodePeerConnectionStatus.ACTIVE
 
 
 @pytest.mark.local_node
@@ -376,8 +379,3 @@ def test_repeated_association_requests_peers_health_check(
     )
     assert isinstance(res, NodePeerAssociationStatus)
     assert res.value == "PEER_ASSOCIATED"
-
-    # check for peer connection status
-    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
-    domain_peer = gateway_client.api.services.network.get_all_peers()[0]
-    assert domain_peer.ping_status == NodePeerConnectionStatus.ACTIVE

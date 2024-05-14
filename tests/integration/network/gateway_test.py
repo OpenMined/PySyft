@@ -461,6 +461,10 @@ def test_delete_route(set_env_var, gateway_port: int, domain_1_port: int) -> Non
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
+    # Try removing existing peers just to make sure
+    _remove_existing_peers(domain_client)
+    _remove_existing_peers(gateway_client)
+
     # Enable automatic acceptance of association requests
     res = gateway_client.settings.allow_association_request_auto_approval(enable=True)
     assert isinstance(res, SyftSuccess)
