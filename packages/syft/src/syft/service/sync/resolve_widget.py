@@ -447,40 +447,6 @@ class ResolveWidget:
     def get_mockify_state(self) -> dict[UID, bool]:
         return {uid: widget.mockify for uid, widget in self.id2widget.items()}
 
-    def click_ignore(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
-        # relative
-        from ...client.syncing import handle_ignore_batch
-
-        if self.is_synced:
-            return SyftError(
-                message="The changes in this widget have already been synced."
-            )
-
-        res = handle_ignore_batch(
-            obj_diff_batch=self.obj_diff_batch,
-            all_batches=self.obj_diff_batch.global_batches,
-        )
-
-        self.set_widget_result_state(res)
-        return res
-
-    def click_unignore(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
-        # relative
-        from ...client.syncing import handle_unignore_batch
-
-        if self.is_synced:
-            return SyftError(
-                message="The changes in this widget have already been synced."
-            )
-
-        res = handle_unignore_batch(
-            obj_diff_batch=self.obj_diff_batch,
-            all_batches=self.obj_diff_batch.global_batches,
-        )
-
-        self.set_widget_result_state(res)
-        return res
-
     def click_sync(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
         # relative
         from ...client.syncing import handle_sync_batch
