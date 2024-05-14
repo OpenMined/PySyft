@@ -66,6 +66,7 @@ from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.network.network_service import NetworkService
+from ..service.network.utils import PeerHealthCheckTask
 from ..service.notification.notification_service import NotificationService
 from ..service.notifier.notifier_service import NotifierService
 from ..service.object_search.migration_state_service import MigrateStateService
@@ -321,6 +322,7 @@ class Node(AbstractNode):
         smtp_port: int | None = None,
         smtp_host: str | None = None,
         association_request_auto_approval: bool = False,
+        background_tasks: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -407,6 +409,16 @@ class Node(AbstractNode):
 
         self.init_blob_storage(config=blob_storage_config)
 
+        context = AuthedServiceContext(
+            node=self,
+            credentials=self.verify_key,
+            role=ServiceRole.ADMIN,
+        )
+
+        self.peer_health_manager: PeerHealthCheckTask | None = None
+        if background_tasks:
+            self.run_peer_health_checks(context=context)
+
         # Migrate data before any operation on db
         if migrate:
             self.find_and_migrate_data()
@@ -457,7 +469,14 @@ class Node(AbstractNode):
                     remote_profile.profile_name
                 ] = remote_profile
 
+    def run_peer_health_checks(self, context: AuthedServiceContext) -> None:
+        self.peer_health_manager = PeerHealthCheckTask()
+        self.peer_health_manager.run(context=context)
+
     def stop(self) -> None:
+        if self.peer_health_manager is not None:
+            self.peer_health_manager.stop()
+
         for consumer_list in self.queue_manager.consumers.values():
             for c in consumer_list:
                 c.close()
@@ -602,6 +621,7 @@ class Node(AbstractNode):
         migrate: bool = False,
         in_memory_workers: bool = True,
         association_request_auto_approval: bool = False,
+        background_tasks: bool = False,
     ) -> Self:
         uid = UID.with_seed(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -630,6 +650,7 @@ class Node(AbstractNode):
             in_memory_workers=in_memory_workers,
             reset=reset,
             association_request_auto_approval=association_request_auto_approval,
+            background_tasks=background_tasks,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -973,9 +994,13 @@ class Node(AbstractNode):
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
         settings = settings_stash.get_all(self.signing_key.verify_key)
+        if settings.is_err():
+            raise ValueError(
+                f"Cannot get node settings for '{self.name}'. Error: {settings.err()}"
+            )
         if settings.is_ok() and len(settings.ok()) > 0:
-            settings_data = settings.ok()[0]
-        return settings_data
+            settings = settings.ok()[0]
+        return settings
 
     @property
     def metadata(self) -> NodeMetadataV3:
@@ -1264,6 +1289,27 @@ class Node(AbstractNode):
             None,
         )
 
+    def get_worker_pool_ref_by_name(
+        self, credentials: SyftVerifyKey, worker_pool_name: str | None = None
+    ) -> LinkedObject | SyftError:
+        # If worker pool id is not set, then use default worker pool
+        # Else, get the worker pool for given uid
+        if worker_pool_name is None:
+            worker_pool = self.get_default_worker_pool()
+        else:
+            result = self.pool_stash.get_by_name(credentials, worker_pool_name)
+            if result.is_err():
+                return SyftError(message=f"{result.err()}")
+            worker_pool = result.ok()
+
+        # Create a Worker pool reference object
+        worker_pool_ref = LinkedObject.from_obj(
+            worker_pool,
+            service_type=SyftWorkerPoolService,
+            node_uid=self.id,
+        )
+        return worker_pool_ref
+
     def add_action_to_queue(
         self,
         action: Action,
@@ -1287,23 +1333,11 @@ class Node(AbstractNode):
                 user_code = result.ok()
                 worker_pool_name = user_code.worker_pool_name
 
-        # If worker pool id is not set, then use default worker pool
-        # Else, get the worker pool for given uid
-        if worker_pool_name is None:
-            worker_pool = self.get_default_worker_pool()
-        else:
-            result = self.pool_stash.get_by_name(credentials, worker_pool_name)
-            if result.is_err():
-                return SyftError(message=f"{result.err()}")
-            worker_pool = result.ok()
-
-        # Create a Worker pool reference object
-        worker_pool_ref = LinkedObject.from_obj(
-            worker_pool,
-            service_type=SyftWorkerPoolService,
-            node_uid=self.id,
+        worker_pool_ref = self.get_worker_pool_ref_by_name(
+            credentials, worker_pool_name
         )
-
+        if isinstance(worker_pool_ref, SyftError):
+            return worker_pool_ref
         queue_item = ActionQueueItem(
             id=task_uid,
             node_uid=self.id,
@@ -1448,12 +1482,10 @@ class Node(AbstractNode):
 
         else:
             worker_settings = WorkerSettings.from_node(node=self)
-            default_worker_pool = self.get_default_worker_pool()
-            worker_pool = LinkedObject.from_obj(
-                default_worker_pool,
-                service_type=SyftWorkerPoolService,
-                node_uid=self.id,
-            )
+            worker_pool_ref = self.get_worker_pool_ref_by_name(credentials=credentials)
+            if isinstance(worker_pool_ref, SyftError):
+                return worker_pool_ref
+
             queue_item = QueueItem(
                 id=UID(),
                 node_uid=self.id,
@@ -1465,7 +1497,7 @@ class Node(AbstractNode):
                 method=method_str,
                 args=unsigned_call.args,
                 kwargs=unsigned_call.kwargs,
-                worker_pool=worker_pool,
+                worker_pool=worker_pool_ref,
             )
             return self.add_queueitem_to_queue(
                 queue_item,

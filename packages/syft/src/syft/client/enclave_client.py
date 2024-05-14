@@ -95,9 +95,16 @@ class EnclaveClient(SyftClient):
         res = self.exchange_route(client, protocol=protocol)
 
         if isinstance(res, SyftSuccess):
-            return SyftSuccess(
-                message=f"Connected {self.metadata.node_type} {self.metadata.name} to {client.name} gateway"
-            )
+            if self.metadata:
+                return SyftSuccess(
+                    message=(
+                        f"Connected {self.metadata.node_type} "
+                        f"'{self.metadata.name}' to gateway '{client.name}'. "
+                        f"{res.message}"
+                    )
+                )
+            else:
+                return SyftSuccess(message=f"Connected to '{client.name}' gateway")
 
         return res
 
