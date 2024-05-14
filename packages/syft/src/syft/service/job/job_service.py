@@ -190,6 +190,8 @@ class JobService(AbstractService):
         return SyftSuccess(message="Great Success!")
 
     def _kill(self, context: AuthedServiceContext, job: Job) -> SyftSuccess | SyftError:
+        # set job and subjobs status to TERMINATING
+        # so that MonitorThread can kill them
         job.status = JobStatus.TERMINATING
         res = self.stash.update(context.credentials, obj=job)
         results = [res]
@@ -203,11 +205,11 @@ class JobService(AbstractService):
                 res = self.stash.update(context.credentials, obj=subjob)
                 results.append(res)
 
-        _ = [res.err() for res in results if res.is_err()]
-        # if errors:
-        #     return SyftError(message=f"Failed to kill job: {errors}")
-        # return SyftSuccess(message="Job killed successfully!")
+        errors = [res.err() for res in results if res.is_err()]
+        if errors:
+            return SyftError(message=f"Failed to kill job: {errors}")
 
+        # wait for job and subjobs to be killed by MonitorThread
         wait_until(lambda: job.fetched_status == JobStatus.INTERRUPTED)
         wait_until(
             lambda: all(
