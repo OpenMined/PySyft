@@ -76,7 +76,7 @@ def test_diff_state(low_worker, high_worker):
 
     client_low_ds.refresh()
     res = client_low_ds.code.compute(blocking=True)
-    assert res == compute(blocking=True).get()
+    assert res == compute(syft_no_node=True)
 
 
 def test_sync_with_error(low_worker, high_worker):
