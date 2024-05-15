@@ -835,7 +835,22 @@ class SyftAPI(SyftObject):
     __syft_allow_autocomplete__ = ["services"]
 
     def __dir__(self) -> list[str]:
-        return ["services"]
+        modules = getattr(self.api_module, "_modules", [])
+        return ["services"] + modules
+
+    def __syft_dir__(self) -> list[str]:
+        modules = getattr(self.api_module, "_modules", [])
+        return ["services"] + modules
+
+    def __getattr__(self, name: str) -> Any:
+        try:
+            return getattr(self.api_module, name)
+        except Exception:
+            raise SyftAttributeError(
+                f"'SyftAPI' object has no submodule or method '{name}', "
+                "you may not have permission to access the module you are trying to access."
+                "If you think this is an error, try calling `client.refresh()` to update the API."
+            )
 
     @staticmethod
     def for_user(

@@ -5,6 +5,7 @@ from collections.abc import Callable
 import pathlib
 from pathlib import Path
 import sys
+from types import MethodType
 from typing import Any
 
 # relative
@@ -70,6 +71,7 @@ from .service.response import SyftSuccess  # noqa: F401
 from .service.user.roles import Roles as roles  # noqa: F401
 from .service.user.user_service import UserService  # noqa: F401
 from .stable_version import LATEST_STABLE_SYFT
+from .types.syft_object import SyftObject
 from .types.twin_object import TwinObject  # noqa: F401
 from .types.uid import UID  # noqa: F401
 from .util import filterwarnings  # noqa: F401
@@ -120,30 +122,71 @@ def _patch_ipython_autocompletion() -> None:
     if ipython is None:
         return
 
-    ipython.Completer.evaluation = "limited"
-    ipython.Completer.use_jedi = False
-    policy = EVALUATION_POLICIES["limited"]
+    try:
+        # this allows property getters to be used in nested autocomplete
+        ipython.Completer.evaluation = "limited"
+        ipython.Completer.use_jedi = False
+        policy = EVALUATION_POLICIES["limited"]
 
-    # this allow for dynamic attribute getters for autocomplete
-    policy.allowed_getattr_external.update(
-        [
-            ("syft.client.api", "APIModule"),
-            ("syft.client.api", "SyftAPI"),
-        ]
-    )
-    original_can_get_attr = policy.can_get_attr
+        policy.allowed_getattr_external.update(
+            [
+                ("syft.client.api", "APIModule"),
+                ("syft.client.api", "SyftAPI"),
+            ]
+        )
+        original_can_get_attr = policy.can_get_attr
 
-    def patched_can_get_attr(value: Any, attr: str) -> bool:
-        attr_name = "__syft_allow_autocomplete__"
+        def patched_can_get_attr(value: Any, attr: str) -> bool:
+            attr_name = "__syft_allow_autocomplete__"
+            # first check if exist to prevent side effects
+            if hasattr(value, attr_name) and attr in getattr(value, attr_name, []):
+                if attr in dir(value):
+                    return True
+                else:
+                    return False
+            else:
+                return original_can_get_attr(value, attr)
 
-        # first check if exist to prevent side effects
-        if hasattr(value, attr_name) and attr in getattr(value, attr_name, []):
-            return True
-        else:
-            return original_can_get_attr(value, attr)
+        policy.can_get_attr = patched_can_get_attr
+    except Exception:
+        print("Failed to patch ipython autocompletion for syft property getters")
 
-    # this allows property getters to be used in nested autocomplete
-    policy.can_get_attr = patched_can_get_attr
+    try:
+        # this constraints the completions for autocomplete.
+        # if __syft_dir__ is defined we only autocomplete those properties
+        # stdlib
+        import re
+
+        original_attr_matches = ipython.Completer.attr_matches
+
+        def patched_attr_matches(self, text: str) -> list[str]:  # type: ignore
+            res = original_attr_matches(text)
+            m2 = re.match(r"(.+)\.(\w*)$", self.line_buffer)
+            if not m2:
+                return res
+            expr, _ = m2.group(1, 2)
+            obj = self._evaluate_expr(expr)
+            if isinstance(obj, SyftObject) and hasattr(obj, "__syft_dir__"):
+                # here we filter all autocomplete results to only contain those
+                # defined in __syft_dir__, however the original autocomplete prefixes
+                # have the full path, while __syft_dir__ only defines the attr
+                attrs = set(obj.__syft_dir__())
+                new_res = []
+                for r in res:
+                    splitted = r.split(".")
+                    if len(splitted) > 1:
+                        attr_name = splitted[-1]
+                        if attr_name in attrs:
+                            new_res.append(r)
+                return new_res
+            else:
+                return res
+
+        ipython.Completer.attr_matches = MethodType(
+            patched_attr_matches, ipython.Completer
+        )
+    except Exception:
+        print("Failed to patch syft autocompletion for __syft_dir__")
 
 
 _patch_ipython_autocompletion()
