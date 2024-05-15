@@ -228,6 +228,7 @@ rathole:
   enabled: true
 
   port: 2333
+  mode: client
 
   # Pod labels & annotations
   podLabels: null

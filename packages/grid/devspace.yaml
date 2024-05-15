@@ -86,6 +86,8 @@ deployments:
           version: dev-${DEVSPACE_TIMESTAMP}
         node:
           type: domain # required for the gateway profile
+        rathole:
+          mode: client
 
 dev:
   mongo:
