@@ -23,7 +23,7 @@ def test_project_creation(worker):
         name="My Cool Project", description="My Cool Description", members=[ds_client]
     )
 
-    project = new_project.start()
+    project = new_project.send()
 
     assert isinstance(project, Project)
     assert new_project.id == project.id
@@ -47,7 +47,7 @@ def test_error_data_owner_project_creation(worker):
         name="My Cool Project", description="My Cool Description", members=[root_client]
     )
 
-    project = new_project.start()
+    project = new_project.send()
 
     assert isinstance(project, sy.SyftError)
     assert project.message == "Only Data Scientists can create projects"
@@ -96,7 +96,7 @@ def test_project_serde(worker):
         name="My Cool Project", description="My Cool Description", members=[root_client]
     )
 
-    project = new_project.start()
+    project = new_project.send()
 
     ser_data = sy.serialize(project, to_bytes=True)
     assert isinstance(ser_data, bytes)

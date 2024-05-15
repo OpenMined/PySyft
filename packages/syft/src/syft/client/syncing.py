@@ -1,5 +1,4 @@
 # stdlib
-import warnings
 
 # relative
 from ..abstract_node import NodeSideType
@@ -12,6 +11,7 @@ from ..service.sync.diff_state import SyncInstruction
 from ..service.sync.resolve_widget import ResolveWidget
 from ..service.sync.sync_state import SyncState
 from ..types.uid import UID
+from ..util.decorators import deprecated
 from .client import SyftClient
 from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
@@ -69,12 +69,8 @@ def resolve(obj_diff_batch: ObjectDiffBatch) -> ResolveWidget:
     return widget
 
 
+@deprecated(reason="resolve_single has been renamed to resolve", return_syfterror=True)
 def resolve_single(obj_diff_batch: ObjectDiffBatch) -> ResolveWidget:
-    warnings.warn(
-        "resolve_single has been renamed to resolve",
-        DeprecationWarning,
-        stacklevel=1,
-    )
     return resolve(obj_diff_batch)
 
 
