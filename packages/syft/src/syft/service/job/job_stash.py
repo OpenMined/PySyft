@@ -1,6 +1,7 @@
 # stdlib
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 from enum import Enum
 import random
 from string import Template
@@ -88,7 +89,9 @@ class Job(SyncableSyftObject):
     parent_job_id: UID | None = None
     n_iters: int | None = 0
     current_iter: int | None = None
-    creation_time: str | None = Field(default_factory=lambda: str(datetime.now()))
+    creation_time: str | None = Field(
+        default_factory=lambda: str(datetime.now(tz=timezone.utc))
+    )
     action: Action | None = None
     job_pid: int | None = None
     job_worker_id: UID | None = None
@@ -192,7 +195,7 @@ class Job(SyncableSyftObject):
         ):
             return None
 
-        now = datetime.now()
+        now = datetime.now(tz=timezone.utc)
         time_passed = now - datetime.fromisoformat(self.creation_time)
         iter_duration_seconds: float = time_passed.total_seconds() / self.current_iter
         iters_remaining = self.n_iters - self.current_iter

@@ -13,7 +13,7 @@ from ....service.request.request import Request
 from ....service.response import SyftError
 from ....service.user.user import UserView
 from ....types.datetime import DateTime
-from ....types.datetime import format_timedelta
+from ....types.datetime import format_timedelta_human_readable
 from ....types.syft_object import SYFT_OBJECT_VERSION_1
 from ....types.syft_object import SyftObject
 from ..icons import Icon
@@ -116,8 +116,6 @@ class SyncTableObject(HTMLComponentBase):
         user_view: UserView | SyftError | None = None
         if isinstance(self.object, UserCode):
             user_view = self.object.user
-        elif isinstance(self.object, Job):
-            user_view = self.object.requesting_user
 
         if isinstance(user_view, UserView):
             return f"Created by {user_view.email}"
@@ -125,20 +123,21 @@ class SyncTableObject(HTMLComponentBase):
 
     def get_updated_delta_str(self) -> str:
         # TODO replace with centralized SyftObject created/updated by attribute
-        dt: DateTime | None = None
+        if isinstance(self.object, Job):
+            time_str = self.object.creation_time
+            if time_str is not None:
+                t = datetime.datetime.fromisoformat(time_str)
+                delta = datetime.datetime.now(datetime.timezone.utc) - t
+                return format_timedelta_human_readable(delta)
 
+        dt: DateTime | None = None
         if isinstance(self.object, Request):
             dt = self.object.request_time
         if isinstance(self.object, UserCode):
             dt = self.object.submit_time
-        elif isinstance(self.object, Job):
-            time_str = self.object.creation_time
-            if time_str is not None:
-                dt = DateTime(utc_timestamp=datetime.datetime.fromisoformat(time_str))
-
         if dt is not None:
             delta = DateTime.now().timedelta(dt)
-            delta_str = format_timedelta(delta)
+            delta_str = format_timedelta_human_readable(delta)
             return f"{delta_str} ago"
 
         return ""

@@ -74,3 +74,18 @@ def format_timedelta(local_timedelta: timedelta) -> str:
     seconds_string = f"{seconds}".zfill(2)
 
     return f"{hours_string}{minutes_string}{seconds_string}"
+
+
+def format_timedelta_human_readable(local_timedelta: timedelta) -> str:
+    # Returns a human-readable string representing the timedelta
+    units = [("day", 86400), ("hour", 3600), ("minute", 60), ("second", 1)]
+    total_seconds = int(local_timedelta.total_seconds())
+
+    for unit_name, unit_seconds in units:
+        unit_value, total_seconds = divmod(total_seconds, unit_seconds)
+        if unit_value > 0:
+            if unit_value == 1:
+                return f"{unit_value} {unit_name}"
+            else:
+                return f"{unit_value} {unit_name}s"
+    return "0 seconds"
