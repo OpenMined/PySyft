@@ -2,6 +2,7 @@
 
 # stdlib
 from secrets import token_hex
+import time
 
 # third party
 import pytest
@@ -85,7 +86,7 @@ def job(node):
 
     @syft_function()
     def process_batch():
-        import time  # noqa
+        # stdlib
 
         while time.sleep(1) is None:
             ...
@@ -94,9 +95,10 @@ def job(node):
 
     @syft_function_single_use()
     def process_all(domain):
+        # stdlib
+
         _ = domain.launch_job(process_batch)
         _ = domain.launch_job(process_batch)
-        import time  # noqa
 
         while time.sleep(1) is None:
             ...
