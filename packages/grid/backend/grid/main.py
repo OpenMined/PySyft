@@ -1,5 +1,9 @@
 # stdlib
 
+# stdlib
+from contextlib import asynccontextmanager
+from typing import Any
+
 # third party
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
@@ -14,9 +18,20 @@ from grid.core.config import settings
 from grid.core.node import worker
 from grid.logger.handler import get_log_handler
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> Any:
+    try:
+        yield
+    finally:
+        worker.stop()
+        print("Worker Stop !!!")
+
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V2_STR}/openapi.json",
+    lifespan=lifespan,
 )
 
 app.add_event_handler("startup", get_log_handler().init_logger)
@@ -39,12 +54,6 @@ if settings.DEV_MODE:
     print("Staging protocol changes...")
     status = stage_protocol_changes()
     print(status)
-
-
-@app.on_event("shutdown")
-def shutdown() -> None:
-    worker.stop()
-    print("Worker Stop !!!")
 
 
 # needed for Google Kubernetes Engine LoadBalancer Healthcheck
