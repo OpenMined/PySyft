@@ -1,7 +1,15 @@
+# stdlib
+from secrets import token_hex
+
 # third party
 import _pytest
 from faker import Faker
 import pytest
+
+# syft absolute
+import syft as sy
+from syft.abstract_node import NodeSideType
+from syft.node.worker import Worker
 
 
 def pytest_configure(config: _pytest.config.Config) -> None:
@@ -31,3 +39,45 @@ def domain_2_port() -> int:
 @pytest.fixture
 def faker():
     return Faker()
+
+
+@pytest.fixture(scope="function")
+def full_low_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
+    _node = sy.orchestra.launch(
+        node_side_type=NodeSideType.LOW_SIDE,
+        name=token_hex(8),
+        # dev_mode=True,
+        reset=True,
+        n_consumers=n_consumers,
+        create_producer=create_producer,
+        queue_port=None,
+        in_memory_workers=True,
+        local_db=False,
+        thread_workers=False,
+    )
+    # startup code here
+    yield _node
+    # # Cleanup code
+    _node.python_node.cleanup()
+    _node.land()
+
+
+@pytest.fixture(scope="function")
+def full_high_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
+    _node = sy.orchestra.launch(
+        node_side_type=NodeSideType.HIGH_SIDE,
+        name=token_hex(8),
+        # dev_mode=True,
+        reset=True,
+        n_consumers=n_consumers,
+        create_producer=create_producer,
+        queue_port=None,
+        in_memory_workers=True,
+        local_db=False,
+        thread_workers=False,
+    )
+    # startup code here
+    yield _node
+    # Cleanup code
+    _node.python_node.cleanup()
+    _node.land()

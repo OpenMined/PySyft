@@ -1,0 +1,15 @@
+# Paths should be relative to the context dir of this image i.e. /packages/grid/frontend/
+
+# Frontend
+**/*.md
+
+# Dependency directories
+**/node_modules
+**/.svelte-kit
+**/.pnpm-store
+
+# vim
+**/*.swp
+
+# macOS
+**/.DS_Store
