@@ -22,7 +22,7 @@ class RatholeConfig(SyftBaseModel):
 
     @property
     def local_address(self) -> str:
-        return f"http://{self.local_addr_host}:{self.local_addr_port}"
+        return f"{self.local_addr_host}:{self.local_addr_port}"
 
     @classmethod
     def from_peer(cls, peer: NodePeer) -> Self:

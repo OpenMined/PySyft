@@ -6,7 +6,16 @@ cp -L -r -f /conf/* conf/
 if [[ $MODE == "server" ]]; then
   /app/rathole conf/server.toml &
 elif [[ $MODE = "client" ]]; then
-  /app/rathole conf/client.toml &
+  while true; do
+    /app/rathole conf/client.toml
+    status=$?
+    if [ $status -eq 0 ]; then
+        break
+    else
+        echo "Failed to load client.toml, retrying in 5 seconds..."
+        sleep 10
+    fi
+  done &
 else
   echo "RATHOLE MODE is set to an invalid value. Exiting."
 fi

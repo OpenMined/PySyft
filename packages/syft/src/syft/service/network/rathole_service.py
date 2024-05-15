@@ -57,7 +57,7 @@ class RatholeService:
 
         # First time adding a peer
         if not rathole_toml.get_rathole_listener_addr():
-            bind_addr = f"http://localhost:{get_rathole_port()}"
+            bind_addr = f"localhost:{get_rathole_port()}"
             rathole_toml.set_rathole_listener_addr(bind_addr)
 
         data = {client_filename: rathole_toml.toml_str}
