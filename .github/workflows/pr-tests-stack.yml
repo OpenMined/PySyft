@@ -82,6 +82,71 @@ jobs:
         run: |
           tox -e backend.test.basecpu
 
+  pr-tests-syft-integration:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.12"]
+        pytest-modules: ["local_node"]
+      fail-fast: false
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install --upgrade pip uv==0.1.35
+          uv --version
+
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
+
+      - name: pip cache
+        uses: actions/cache@v4
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}
+
+      - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install --upgrade tox tox-uv==1.5.1
+
+      - name: Run Syft Integration Tests
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 60
+        env:
+          PYTEST_MODULES: "${{ matrix.pytest-modules }}"
+          GITHUB_CI: true
+        shell: bash
+        run: |
+          tox -e syft.test.integration
+
   pr-tests-integration-k8s:
     strategy:
       max-parallel: 99
