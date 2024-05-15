@@ -228,10 +228,6 @@ rathole:
   enabled: true
 
   port: 2333
-  appPort: 5555
-  mode: "client"
-  devMode: "false"
-  appLogLevel: "info"
 
   # Pod labels & annotations
   podLabels: null

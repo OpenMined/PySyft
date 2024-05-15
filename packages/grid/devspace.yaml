@@ -76,15 +76,16 @@ deployments:
       releaseName: syft-dev
       chart:
         name: ./helm/syft
+      # anything that does not need devspace $env vars should go in values.dev.yaml
+      valuesFiles:
+        - ./helm/syft/values.yaml
+        - ./helm/values.dev.yaml
       values:
         global:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
         node:
           type: domain # required for the gateway profile
-      # anything that does not need devspace $env vars should go in values.dev.yaml
-      valuesFiles:
-        - ./helm/values.dev.yaml
 
 dev:
   mongo:
@@ -139,9 +140,11 @@ profiles:
         path: images.seaweedfs
       - op: remove
         path: dev.seaweedfs
+
+      # Patch mode to server
       - op: replace
         path: deployments.syft.helm.values.rathole.mode
-        value: "server"
+        value: server
 
       # Port Re-Mapping
       # Mongo
