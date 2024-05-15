@@ -117,9 +117,9 @@ class NodePeer(SyftObject):
 
         return (False, None)
 
-    def assign_highest_priority(self, route: NodeRoute) -> NodeRoute:
+    def update_route_priority(self, route: NodeRoute) -> NodeRoute:
         """
-        Assign the new_route's to have the highest priority
+        Assign the new_route's priority to be current max + 1
 
         Args:
             route (NodeRoute): The new route whose priority is to be updated.
@@ -131,15 +131,39 @@ class NodePeer(SyftObject):
         route.priority = current_max_priority + 1
         return route
 
+    def pick_highest_priority_route(self, oldest: bool = True) -> NodeRoute:
+        """
+        Picks the route with the highest priority from the list of node routes.
+
+        Args:
+            oldest (bool):
+                If True, picks the oldest route to have the highest priority,
+                    meaning the route with min priority value.
+                If False, picks the most recent route with the highest priority,
+                    meaning the route with max priority value.
+
+        Returns:
+            NodeRoute: The route with the highest priority.
+
+        """
+        highest_priority_route: NodeRoute = self.node_routes[-1]
+        for route in self.node_routes[:-1]:
+            if oldest:
+                if route.priority < highest_priority_route.priority:
+                    highest_priority_route = route
+            else:
+                if route.priority > highest_priority_route.priority:
+                    highest_priority_route = route
+        return highest_priority_route
+
     def update_route(self, route: NodeRoute) -> NodeRoute | None:
         """
         Update the route for the node.
         If the route already exists, return it.
-        If the route is new, assign it to have the highest priority
-        before appending it to the peer's list of node routes.
+        If the route is new, assign it to have the priority of (current_max + 1)
 
         Args:
-            route (NodeRoute): The new route to be added to the peer.
+            route (NodeRoute): The new route to be added to the peer's node route list
 
         Returns:
             NodeRoute | None: if the route already exists, return it, else returns None
@@ -148,7 +172,7 @@ class NodePeer(SyftObject):
         if existed:
             return route
         else:
-            new_route = self.assign_highest_priority(route)
+            new_route = self.update_route_priority(route)
             self.node_routes.append(new_route)
             return None
 
@@ -199,7 +223,7 @@ class NodePeer(SyftObject):
         if priority is not None:
             self.node_routes[index].priority = priority
         else:
-            self.node_routes[index].priority = self.assign_highest_priority(
+            self.node_routes[index].priority = self.update_route_priority(
                 route
             ).priority
 
@@ -223,7 +247,7 @@ class NodePeer(SyftObject):
 
         if len(self.node_routes) < 1:
             raise ValueError(f"No routes to peer: {self}")
-        # select the highest priority route (i.e. added or updated the latest)
+        # select the route with highest priority to connect to the peer
         final_route: NodeRoute = self.pick_highest_priority_route()
         connection: NodeConnection = route_to_connection(route=final_route)
         try:
@@ -244,7 +268,7 @@ class NodePeer(SyftObject):
     def client_with_key(self, credentials: SyftSigningKey) -> SyftClient | SyftError:
         if len(self.node_routes) < 1:
             raise ValueError(f"No routes to peer: {self}")
-        # select the latest added route
+
         final_route: NodeRoute = self.pick_highest_priority_route()
 
         connection = route_to_connection(route=final_route)
@@ -261,13 +285,6 @@ class NodePeer(SyftObject):
 
     def proxy_from(self, client: SyftClient) -> SyftClient:
         return client.proxy_to(self)
-
-    def pick_highest_priority_route(self) -> NodeRoute:
-        highest_priority_route: NodeRoute = self.node_routes[-1]
-        for route in self.node_routes:
-            if route.priority > highest_priority_route.priority:
-                highest_priority_route = route
-        return highest_priority_route
 
     def delete_route(
         self, route: NodeRouteType | None = None, route_id: UID | None = None
