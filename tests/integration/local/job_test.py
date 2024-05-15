@@ -2,7 +2,6 @@
 
 # stdlib
 from secrets import token_hex
-import time
 
 # third party
 import pytest
@@ -24,6 +23,7 @@ def test_job_restart(job) -> None:
     assert wait_until(
         lambda: job.fetched_status == JobStatus.PROCESSING
     ), "Job not started"
+    assert wait_until(lambda: len(job.subjobs) == 2), "Subjobs not started"
     assert wait_until(
         lambda: all(
             subjob.fetched_status == JobStatus.PROCESSING for subjob in job.subjobs
@@ -59,6 +59,10 @@ def test_job_restart(job) -> None:
         == 2
     ), "Subjobs not restarted"
 
+    result = job.kill()
+    assert isinstance(result, SyftSuccess), "Should kill job"
+    assert job.fetched_status == JobStatus.INTERRUPTED
+
 
 @pytest.fixture
 def node():
@@ -87,6 +91,7 @@ def job(node):
     @syft_function()
     def process_batch():
         # stdlib
+        import time  # noqa: F811
 
         while time.sleep(1) is None:
             ...
@@ -96,6 +101,7 @@ def job(node):
     @syft_function_single_use()
     def process_all(domain):
         # stdlib
+        import time  # noqa: F811
 
         _ = domain.launch_job(process_batch)
         _ = domain.launch_job(process_batch)
