@@ -82,7 +82,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows-latest'
         uses: crazy-max/ghaction-chocolatey@v3
         with:
-          args: list --localonly
+          args: list
 
       - name: Install git
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows-latest'
