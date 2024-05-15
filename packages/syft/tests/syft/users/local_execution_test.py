@@ -1,14 +1,17 @@
 # stdlib
 from collections import OrderedDict
+import sys
 
 # third party
 import numpy as np
+import pytest
 
 # syft absolute
 import syft as sy
 from syft.client.api import APIRegistry
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_local_execution(worker):
     root_domain_client = worker.root_client
     dataset = sy.Dataset(
@@ -40,5 +43,8 @@ def test_local_execution(worker):
         return x + 1
 
     # time.sleep(10)
-    local_res = my_func(x=asset, time_alive=1)
+    local_res = my_func(
+        x=asset,
+        time_alive=1,
+    )
     assert (local_res == np.array([2, 2, 2])).all()
