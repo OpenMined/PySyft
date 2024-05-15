@@ -18,7 +18,8 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [ubuntu-latest, macos-latest, windows]
+        # issues with macos 14 arm https://github.com/crazy-max/ghaction-setup-docker/pull/53
+        os: [ubuntu-latest, macos-13, windows-latest]
         python-version: ["3.12"]
         pytest-modules: ["frontend network"]
       fail-fast: false
@@ -27,7 +28,7 @@ jobs:
 
     steps:
       - name: "clean .git/config"
-        if: matrix.os == 'windows'
+        if: matrix.os == 'windows-latest'
         continue-on-error: true
         shell: bash
         run: |
@@ -78,31 +79,31 @@ jobs:
           pip install --upgrade tox tox-uv==1.5.1
 
       - name: Show choco installed packages
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows-latest'
         uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: list --localonly
 
       - name: Install git
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows-latest'
         uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
 
       - name: Install cmake
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows-latest'
         uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
       - name: Check cmake version
-        if: steps.changes.outputs.stack == 'true' &&  matrix.os == 'windows'
+        if: steps.changes.outputs.stack == 'true' &&  matrix.os == 'windows-latest'
         run: |
           cmake --version
         shell: cmd
 
       - name: Install visualcpp-build-tools
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows-latest'
         uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install visualstudio2019-workload-vctools -y
@@ -117,11 +118,11 @@ jobs:
           chmod +x ~/.docker/cli-plugins/docker-compose
 
       - name: Docker on MacOS
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.1.0
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-13'
+        uses: crazy-max/ghaction-setup-docker@v3.2.0
 
       - name: Docker Compose on MacOS
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-13'
         shell: bash
         run: |
           brew install docker-compose
@@ -162,7 +163,7 @@ jobs:
         continue-on-error: true
 
       - name: Reboot node
-        if: matrix.os == 'windows' && failure()
+        if: matrix.os == 'windows-latest' && failure()
         run: |
           shutdown /r /t 1
 
