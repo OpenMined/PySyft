@@ -1,66 +1,63 @@
+# Paths should be relative to the context dir of this image i.e. /packages/grid/seaweedfs/
+
 # SeaweedFS
-*.md
+**/tests/
+**/*.md
 
 # Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
 
 # Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+**/.Python
+**/build/
+**/develop-eggs/
+**/dist/
+**/downloads/
+**/eggs/
+**/.eggs/
+**/lib/
+**/lib64/
+**/parts/
+**/sdist/
+**/var/
+**/wheels/
+**/share/python-wheels/
+**/*.egg-info/
+**/.installed.cfg
+**/*.egg
+**/MANIFEST
 
 # Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
+**/.ipynb_checkpoints
 
 # Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+**/.env
+**/.venv
+**/env/
+**/venv/
+**/ENV/
+**/env.bak/
+**/venv.bak/
 
 # Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
+**/htmlcov/
+**/.tox/
+**/.nox/
+**/.coverage
+**/.coverage.*
+**/.cache
+**/nosetests.xml
+**/coverage.xml
+**/*.cover
+**/*.py,cover
+**/.hypothesis/
+**/.pytest_cache/
+**/cover/
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+# vim
+**/*.swp
 
 # macOS
-.DS_Store
+**/.DS_Store
