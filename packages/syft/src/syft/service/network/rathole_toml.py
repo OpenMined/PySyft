@@ -49,10 +49,7 @@ class RatholeClientToml(RatholeBaseToml):
         if "client" not in toml:
             toml["client"] = {}
 
-            toml["client"]["remote_addr"] = remote_host
-
-        if remote_host not in toml["client"]["remote"]:
-            toml["client"]["remote"].append(remote_host)
+        toml["client"]["remote_addr"] = remote_host
 
         self.save(toml)
 

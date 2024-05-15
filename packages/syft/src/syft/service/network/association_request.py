@@ -43,35 +43,36 @@ class AssociationRequestChange(Change):
 
         service_ctx = context.to_service_ctx()
 
-        try:
-            remote_client: SyftClient = self.remote_peer.client_with_context(
-                context=service_ctx
-            )
-            if remote_client.is_err():
-                return SyftError(
-                    message=f"Failed to create remote client for peer: "
-                    f"{self.remote_peer.id}. Error: {remote_client.err()}"
+        if self.remote_peer.rathole_token is None:
+            try:
+                remote_client: SyftClient = self.remote_peer.client_with_context(
+                    context=service_ctx
                 )
-            remote_client = remote_client.ok()
-            random_challenge = secrets.token_bytes(16)
-            remote_res = remote_client.api.services.network.ping(
-                challenge=random_challenge
-            )
-        except Exception as e:
-            return SyftError(message="Remote Peer cannot ping peer:" + str(e))
+                if remote_client.is_err():
+                    return SyftError(
+                        message=f"Failed to create remote client for peer: "
+                        f"{self.remote_peer.id}. Error: {remote_client.err()}"
+                    )
+                remote_client = remote_client.ok()
+                random_challenge = secrets.token_bytes(16)
+                remote_res = remote_client.api.services.network.ping(
+                    challenge=random_challenge
+                )
+            except Exception as e:
+                return SyftError(message="Remote Peer cannot ping peer:" + str(e))
 
-        if isinstance(remote_res, SyftError):
-            return Err(remote_res)
+            if isinstance(remote_res, SyftError):
+                return Err(remote_res)
 
-        challenge_signature = remote_res
+            challenge_signature = remote_res
 
-        # Verifying if the challenge is valid
-        try:
-            self.remote_peer.verify_key.verify_key.verify(
-                random_challenge, challenge_signature
-            )
-        except Exception as e:
-            return Err(SyftError(message=str(e)))
+            # Verifying if the challenge is valid
+            try:
+                self.remote_peer.verify_key.verify_key.verify(
+                    random_challenge, challenge_signature
+                )
+            except Exception as e:
+                return Err(SyftError(message=str(e)))
 
         network_service = cast(
             NetworkService, service_ctx.node.get_service(NetworkService)
@@ -79,14 +80,14 @@ class AssociationRequestChange(Change):
 
         network_stash = network_service.stash
 
+        network_service.rathole_service.add_host_to_server(self.remote_peer)
+
         result = network_stash.create_or_update_peer(
             service_ctx.node.verify_key, self.remote_peer
         )
 
         if result.is_err():
             return Err(SyftError(message=str(result.err())))
-
-        network_service.rathole_service.add_host_to_server(self.remote_peer)
 
         # this way they can match up who we are with who they think we are
         # Sending a signed messages for the peer to verify

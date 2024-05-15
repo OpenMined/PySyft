@@ -188,7 +188,9 @@ class NetworkService(AbstractService):
         )
 
         if isinstance(remote_res, SyftError):
-            return remote_res
+            return SyftError(
+                message=f"returned error from add peer: {remote_res.message}"
+            )
 
         association_request_approved = not isinstance(remote_res, Request)
 
@@ -200,7 +202,9 @@ class NetworkService(AbstractService):
             remote_node_peer,
         )
         if result.is_err():
-            return SyftError(message=str(result.err()))
+            return SyftError(
+                message=f"Failed to update remote node peer: {str(result.err())}"
+            )
 
         remote_addr = f"{remote_node_route.protocol}://{remote_node_route.host_or_ip}:{get_rathole_port()()}"
 
