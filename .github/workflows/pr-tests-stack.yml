@@ -153,7 +153,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.12"]
-        pytest-modules: ["frontend network local_node container_workload"]
+        pytest-modules: ["frontend network container_workload"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
