@@ -84,7 +84,7 @@ class PeerHealthCheckTask:
                 else:
                     peer.ping_status_message = f"Peer '{peer.name}''s ping status: {peer.ping_status.value.lower()}"
 
-            result = network_stash.update(
+            result = network_stash.update_peer_ping_status(
                 credentials=context.node.verify_key,
                 peer=peer,
                 has_permission=True,

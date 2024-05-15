@@ -93,7 +93,7 @@ class NetworkStash(BaseUIDStoreStash):
         valid = self.check_type(peer, NodePeer)
         if valid.is_err():
             return Err(SyftError(message=valid.err()))
-        return super().update(credentials, peer)
+        return super().update(credentials, peer, has_permission=has_permission)
 
     def create_or_update_peer(
         self, credentials: SyftVerifyKey, peer: NodePeer
@@ -113,9 +113,7 @@ class NetworkStash(BaseUIDStoreStash):
         valid = self.check_type(peer, NodePeer)
         if valid.is_err():
             return SyftError(message=valid.err())
-        existing: Result | NodePeer = self.get_by_uid(
-            credentials=credentials, uid=peer.id
-        )
+        existing = self.get_by_uid(credentials=credentials, uid=peer.id)
         if existing.is_ok() and existing.ok():
             existing = existing.ok()
             existing.update_routes(peer.node_routes)
@@ -124,6 +122,25 @@ class NetworkStash(BaseUIDStoreStash):
         else:
             result = self.set(credentials, peer)
             return result
+
+    def update_peer_ping_status(
+        self,
+        credentials: SyftVerifyKey,
+        peer: NodePeer,
+        has_permission: bool = False,
+    ) -> SyftSuccess | SyftError:
+        """
+        Get the existing peer from the store, then only update its ping status related fields
+        """
+        # get the node peer for the given sender peer_id
+        result = self.get_by_uid(credentials=credentials, uid=peer.id)
+        if result.is_err():
+            return Err(message=f"Failed to query peer from stash. Err: {result.err()}")
+        existing: NodePeer = result.ok()
+        existing.ping_status = peer.ping_status
+        existing.ping_status_message = peer.ping_status
+        existing.pinged_timestamp = peer.pinged_timestamp
+        return super().update(credentials, existing, has_permission=has_permission)
 
     def get_by_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
