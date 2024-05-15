@@ -128,7 +128,7 @@ class SyncTableObject(HTMLComponentBase):
             if time_str is not None:
                 t = datetime.datetime.fromisoformat(time_str)
                 delta = datetime.datetime.now(datetime.timezone.utc) - t
-                return format_timedelta_human_readable(delta)
+                return f"{format_timedelta_human_readable(delta)} ago"
 
         dt: DateTime | None = None
         if isinstance(self.object, Request):
