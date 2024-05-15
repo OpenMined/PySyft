@@ -1,4 +1,6 @@
-# Syft
+# Paths should be relative to the context dir of this image i.e. /packages/grid/seaweedfs/
+
+# SeaweedFS
 **/tests/
 **/*.md
 
@@ -30,10 +32,6 @@
 # Jupyter Notebook
 **/.ipynb_checkpoints
 
-# IPython
-**/profile_default/
-**/ipython_config.py
-
 # Environments
 **/.env
 **/.venv
@@ -58,10 +56,8 @@
 **/.pytest_cache/
 **/cover/
 
-# mypy
-**/.mypy_cache/
-**/.dmypy.json
-**/dmypy.json
+# vim
+**/*.swp
 
 # macOS
 **/.DS_Store
