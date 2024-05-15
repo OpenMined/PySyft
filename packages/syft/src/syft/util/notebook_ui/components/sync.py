@@ -124,6 +124,7 @@ class SyncTableObject(HTMLComponentBase):
     def get_updated_delta_str(self) -> str:
         # TODO replace with centralized SyftObject created/updated by attribute
         if isinstance(self.object, Job):
+            # NOTE Job is not using DateTime for creation_time, so we need to handle it separately
             time_str = self.object.creation_time
             if time_str is not None:
                 t = datetime.datetime.fromisoformat(time_str)
