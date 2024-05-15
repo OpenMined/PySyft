@@ -54,6 +54,7 @@ class JobStatus(str, Enum):
     PROCESSING = "processing"
     ERRORED = "errored"
     COMPLETED = "completed"
+    TERMINATING = "terminating"
     INTERRUPTED = "interrupted"
 
 
@@ -254,47 +255,26 @@ class Job(SyncableSyftObject):
             self.result = info.result
 
     def restart(self, kill: bool = False) -> None:
-        if kill:
-            self.kill()
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            raise ValueError(
+                f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
+        call = SyftAPICall(
+            node_uid=self.node_uid,
+            path="job.restart",
+            args=[],
+            kwargs={"uid": self.id},
+            blocking=True,
+        )
+        res = api.make_call(call)
         self.fetch()
-        if not self.has_parent:
-            # this is currently the limitation, we will need to implement
-            # killing toplevel jobs later
-            print("Can only kill nested jobs")
-        elif kill or (
-            self.status != JobStatus.PROCESSING and self.status != JobStatus.CREATED
-        ):
-            api = APIRegistry.api_for(
-                node_uid=self.syft_node_location,
-                user_verify_key=self.syft_client_verify_key,
-            )
-            if api is None:
-                raise ValueError(
-                    f"Can't access Syft API. You must login to {self.syft_node_location}"
-                )
-            call = SyftAPICall(
-                node_uid=self.node_uid,
-                path="job.restart",
-                args=[],
-                kwargs={"uid": self.id},
-                blocking=True,
-            )
-
-            api.make_call(call)
-        else:
-            print(
-                "Job is running or scheduled, if you want to kill it use job.kill() first"
-            )
-        return None
+        return res
 
     def kill(self) -> SyftError | SyftSuccess:
-        if self.status != JobStatus.PROCESSING:
-            return SyftError(message="Job is not running")
-        if self.job_pid is None:
-            return SyftError(
-                message="Job termination disabled in dev mode. "
-                "Set 'dev_mode=False' or 'thread_workers=False' to enable."
-            )
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -310,8 +290,9 @@ class Job(SyncableSyftObject):
             kwargs={"id": self.id},
             blocking=True,
         )
-        api.make_call(call)
-        return SyftSuccess(message="Job is killed successfully!")
+        res = api.make_call(call)
+        self.fetch()
+        return res
 
     def fetch(self) -> None:
         api = APIRegistry.api_for(
@@ -329,7 +310,9 @@ class Job(SyncableSyftObject):
             kwargs={"uid": self.id},
             blocking=True,
         )
-        job: Job = api.make_call(call)
+        job: Job | None = api.make_call(call)
+        if job is None:
+            return
         self.resolved = job.resolved
         if job.resolved:
             self.result = job.result
@@ -500,10 +483,10 @@ class Job(SyncableSyftObject):
         return {
             "Status": self.status_badge(),
             "Job": self.summary_html(),
-            "# Subjobs": center_content(default_value(len(subjobs))),
-            "Progress": center_content(default_value(self.progress)),
-            "ETA": center_content(default_value(self.eta_string)),
-            "Logs": center_content(default_value(logs)),
+            "# Subjobs": default_value(len(subjobs)),
+            "Progress": default_value(self.progress),
+            "ETA": default_value(self.eta_string),
+            "Logs": default_value(logs),
         }
 
     @property
@@ -531,6 +514,11 @@ class Job(SyncableSyftObject):
 {logs_w_linenr}
     """
         return as_markdown_code(md)
+
+    @property
+    def fetched_status(self) -> JobStatus:
+        self.fetch()
+        return self.status
 
     @property
     def requesting_user(self) -> UserView | SyftError:

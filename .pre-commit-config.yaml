@@ -78,7 +78,8 @@ repos:
 
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.8.3
-    files: "^notebooks/(api|tutorials|admin)"
+    # nbQA has no files attribute
+    # files: "^notebooks/(api|tutorials|admin)"
     hooks:
       - id: nbqa-isort
       - id: nbqa-black

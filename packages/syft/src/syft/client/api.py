@@ -680,6 +680,9 @@ class APIModule:
         raise NotImplementedError
 
     def _repr_html_(self) -> Any:
+        if self.path == "settings":
+            return self.get()._repr_html_()
+
         if not hasattr(self, "get_all"):
 
             def recursively_get_submodules(

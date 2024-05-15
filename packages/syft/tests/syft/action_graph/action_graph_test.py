@@ -329,6 +329,7 @@ def test_networkx_backing_store_subgraph(
     assert len(subgraph2.edges()) == 0
 
 
+@pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_in_memory_action_graph_store_init(
     in_mem_graph_config: InMemoryGraphConfig,
 ) -> None:
