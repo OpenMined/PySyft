@@ -206,7 +206,7 @@ class NetworkService(AbstractService):
                 message=f"Failed to update remote node peer: {str(result.err())}"
             )
 
-        remote_addr = f"{remote_node_route.protocol}://{remote_node_route.host_or_ip}:{get_rathole_port()()}"
+        remote_addr = f"{remote_node_route.protocol}://{remote_node_route.host_or_ip}:{get_rathole_port()}"
 
         self.rathole_service.add_host_to_client(
             peer_name=self_node_peer.name,

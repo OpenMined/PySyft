@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-RATHOLE_MODE=${RATHOLE_MODE:-server}
+MODE=${MODE:-server}
 
 cp -L -r -f /conf/* conf/
 
-if [[ $RATHOLE_MODE == "server" ]]; then
+if [[ $MODE == "server" ]]; then
   /app/rathole conf/server.toml &
-elif [[ $RATHOLE_MODE = "client" ]]; then
+elif [[ $MODE = "client" ]]; then
   /app/rathole conf/client.toml &
 else
-  echo "RATHOLE_MODE is set to an invalid value. Exiting."
+  echo "RATHOLE MODE is set to an invalid value. Exiting."
 fi
 
 # reload config every 10 seconds
