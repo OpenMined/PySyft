@@ -136,7 +136,8 @@ class NetworkStash(BaseUIDStoreStash):
         result = self.get_by_uid(credentials=credentials, uid=peer.id)
         if result.is_err():
             return Err(message=f"Failed to query peer from stash. Err: {result.err()}")
-        if existing := result.ok() is None:
+        existing = result.ok()
+        if existing is None:
             return Err(message="Failed to query peer from stash: peer is None")
         existing.ping_status = peer.ping_status
         existing.ping_status_message = peer.ping_status_message
