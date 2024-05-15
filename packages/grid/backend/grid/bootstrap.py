@@ -26,8 +26,7 @@ def get_env(key: str, default: str = "") -> str | None:
     return None
 
 
-DEFAULT_CREDENTIALS_PATH = os.path.expandvars("$HOME/data/creds/credentials.json")
-CREDENTIALS_PATH = str(get_env("CREDENTIALS_PATH", DEFAULT_CREDENTIALS_PATH))
+CREDENTIALS_PATH = str(get_env("CREDENTIALS_PATH", "credentials.json"))
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
 
