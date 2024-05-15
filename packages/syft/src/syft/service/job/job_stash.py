@@ -28,6 +28,7 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...types.datetime import DateTime
+from ...types.datetime import format_timedelta
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SyftObject
@@ -190,17 +191,6 @@ class Job(SyncableSyftObject):
             or self.creation_time is None
         ):
             return None
-
-        def format_timedelta(local_timedelta: timedelta) -> str:
-            total_seconds = int(local_timedelta.total_seconds())
-            hours, leftover = divmod(total_seconds, 3600)
-            minutes, seconds = divmod(leftover, 60)
-
-            hours_string = f"{hours}:" if hours != 0 else ""
-            minutes_string = f"{minutes}:".zfill(3)
-            seconds_string = f"{seconds}".zfill(2)
-
-            return f"{hours_string}{minutes_string}{seconds_string}"
 
         now = datetime.now()
         time_passed = now - datetime.fromisoformat(self.creation_time)

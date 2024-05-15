@@ -1,4 +1,5 @@
 # stdlib
+import datetime
 from typing import Any
 
 # third party
@@ -9,6 +10,10 @@ from ....client.sync_decision import SyncDirection
 from ....service.code.user_code import UserCode
 from ....service.job.job_stash import Job
 from ....service.request.request import Request
+from ....service.response import SyftError
+from ....service.user.user import UserView
+from ....types.datetime import DateTime
+from ....types.datetime import format_timedelta
 from ....types.syft_object import SYFT_OBJECT_VERSION_1
 from ....types.syft_object import SyftObject
 from ..icons import Icon
@@ -101,6 +106,43 @@ class SyncTableObject(HTMLComponentBase):
             return status.value
         return ""  # type: ignore
 
+    def get_updated_by(self) -> str:
+        # TODO replace with centralized SyftObject created/updated by attribute
+        if isinstance(self.object, Request):
+            email = self.object.requesting_user_email
+            if email is not None:
+                return f"Requested by {email}"
+
+        user_view: UserView | SyftError | None = None
+        if isinstance(self.object, UserCode):
+            user_view = self.object.user
+        elif isinstance(self.object, Job):
+            user_view = self.object.requesting_user
+
+        if isinstance(user_view, UserView):
+            return f"Created by {user_view.email}"
+        return ""
+
+    def get_updated_delta_str(self) -> str:
+        # TODO replace with centralized SyftObject created/updated by attribute
+        dt: DateTime | None = None
+
+        if isinstance(self.object, Request):
+            dt = self.object.request_time
+        if isinstance(self.object, UserCode):
+            dt = self.object.submit_time
+        elif isinstance(self.object, Job):
+            time_str = self.object.creation_time
+            if time_str is not None:
+                dt = DateTime(utc_timestamp=datetime.datetime.fromisoformat(time_str))
+
+        if dt is not None:
+            delta = DateTime.now().timedelta(dt)
+            delta_str = format_timedelta(delta)
+            return f"{delta_str} ago"
+
+        return ""
+
     def to_html(self) -> str:
         type_html = TypeLabel(object=self.object).to_html()
 
@@ -110,10 +152,12 @@ class SyncTableObject(HTMLComponentBase):
             copy_text=str(self.object.id.id), max_width=60
         ).to_html()
 
-        updated_delta_str = "29m ago"
-        updated_by = "john@doe.org"
+        updated_delta_str = self.get_updated_delta_str()
+        updated_by = self.get_updated_by()
         status_str = self.get_status_str()
-        status_seperator = " • " if len(status_str) else ""
+        status_row = " • ".join(
+            s for s in [status_str, updated_by, updated_delta_str] if s
+        )
         summary_html = f"""
             <div style="display: flex; gap: 8px; justify-content: space-between; width: 100%; overflow: hidden; align-items: center;">
             <div style="display: flex; gap: 8px; justify-content: start; align-items: center;">
@@ -123,7 +167,7 @@ class SyncTableObject(HTMLComponentBase):
             </div>
             <div style="display: table-row">
             <span class='syncstate-col-footer'>
-            {status_str}{status_seperator}Updated by {updated_by} {updated_delta_str}
+            {status_row}
             </span>
             </div>
         """  # noqa: E501
