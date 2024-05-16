@@ -1,4 +1,4 @@
-body[data-jp-theme-light="false"] {
+body[data-jp-theme-light="false"], body.vscode-dark {
   --primary-color: #111111;
   --secondary-color: #212121;
   --tertiary-color: #cfcdd6;
@@ -19,7 +19,7 @@ body {
   line-height: 100%;
   leading-trim: both;
   text-edge: cap;
-  color: #17161d;
+  color: var(--colors-black)
 }
 
 .header-2 {
@@ -29,7 +29,7 @@ body {
   line-height: 100%;
   leading-trim: both;
   text-edge: cap;
-  color: #17161d;
+  color: var(--colors-black);
 }
 
 .header-3 {
@@ -49,7 +49,7 @@ body {
   line-height: 100%;
   leading-trim: both;
   text-edge: cap;
-  color: #17161d;
+  color: var(--colors-black);
 }
 
 .paragraph {
@@ -560,37 +560,4 @@ body {
 
 .syft-widget li a:hover {
   background-color: #c2def0;
-}
-
-.tabulator .tabulator-row .tabulator-cell {
-  border-right: 1px solid #e0e0e0;
-  background-color: var(--primary-color);
-}
-
-.tabulator .tabulator-row .tabulator-cell {
-  white-space: normal;
-  overflow-wrap: break-word;
-}
-
-.tabulator .tabulator-header .tabulator-col {
-  background-color: var(--secondary-color);
-  border-right: 1px solid #e0e0e0;
-  border-top: 1px solid #e0e0e0;
-}
-
-.tabulator .tabulator-header .tabulator-col:first-child {
-  border-left: 1px solid #e0e0e0;
-}
-
-.tabulator-row .tabulator-cell.tabulator-row-header {
-  background-color: var(--secondary-color);
-  border-right: 2px solid #e0e0e0;
-}
-
-.tabulator .tabulator-row .tabulator-cell:first-child {
-  border-left: 1px solid #e0e0e0;
-}
-
-.tabulator .tabulator-footer {
-  border-top: none;
 }
