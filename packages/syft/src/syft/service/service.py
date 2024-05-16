@@ -77,7 +77,7 @@ def service_method(
         input_signature = deepcopy(signature)
 
         def _decorator(self: Any, *args: Any, **kwargs: Any) -> Callable:
-            print(args, kwargs)
+            print(self, args, kwargs)
             import pdb
             # pdb.set_trace()
 
@@ -151,29 +151,30 @@ class AbstractService:
     def __init__(self, method_params: Optional[Dict[str, Dict[str, Any]]] = {}) -> None:
         # Add basic CRUD
         print(f"Creating {self.object_type} service", file=sys.stderr)
+
         set_wrapper = service_method(
             path=f"{self.object_type}.set", 
             private_path=f"{self.object_type}service.set", 
             name="set", 
-            **method_params.get('set', {}))(self.set)
+            **method_params.get('set', {}))(self.set.__func__)
 
         get_wrapper = service_method(
             path=f"{self.object_type}.get", 
             private_path=f"{self.object_type}service.get", 
             name="get", 
-            **method_params.get('get', {}))(self.get)
+            **method_params.get('get', {}))(self.get.__func__)
 
         update_wrapper = service_method(
             path=f"{self.object_type}.update", 
             private_path=f"{self.object_type}service.update", 
             name="update", 
-            **method_params.get('update', {}))(self.update)
+            **method_params.get('update', {}))(self.update.__func__)
 
         delete_wrapper = service_method(
             path=f"{self.object_type}.delete", 
             private_path=f"{self.object_type}service.delete", 
             name="delete", 
-            **method_params.get('delete', {}))(self.delete)
+            **method_params.get('delete', {}))(self.delete.__func__)
 
         def bind(instance, func, as_name=None):
             """
@@ -183,14 +184,30 @@ class AbstractService:
             """
             if as_name is None:
                 as_name = func.__name__
-            bound_method = func.__get__(instance, instance.__class__)
-            setattr(instance, as_name, bound_method)
-            return bound_method
+
+            # ipython.Completer.attr_matches = MethodType(
+            # patched_attr_matches, ipython.Completer
+            # )
+            from types import MethodType
+            # setattr(instance, as_name, func)
+            setattr(instance, as_name, MethodType(func, instance))
+
+            # bound_method = func.__get__(instance, instance.__class__)
+            # setattr(instance, as_name, bound_method)
+            # return bound_method
                 
         bind(self, set_wrapper)
         bind(self, get_wrapper)
         bind(self, update_wrapper)
         bind(self, delete_wrapper)
+
+    
+    def delete(self, context: AuthedServiceContext, uid: UID, force_delete: bool = False) -> SyftError | Any:
+        
+        res = self.stash.delete_by_uid(context.credentials, uid, force_delete)
+        if res.is_err():
+            return SyftError(message=res.err())
+        return SyftSuccess(message=f"{self.object_type} successfully deleted.")
 
     @property
     def object_type(self):
@@ -217,16 +234,7 @@ class AbstractService:
         if res.is_err():
             return SyftError(message=res.err())
 
-        return SyftSuccess(message=f"{self.object_type} successfully updated.")
-    
-    def delete(self, context: AuthedServiceContext, uid: UID, force_delete: bool = False) -> SyftError | Any:
-        
-        res = self.stash.delete_by_uid(context.credentials, uid, force_delete)
-        if res.is_err():
-            return SyftError(message=res.err())
-
-        return SyftSuccess(message=f"{self.object_type} successfully deleted.")
-    
+        return SyftSuccess(message=f"{self.object_type} successfully updated.") 
 
     def resolve_link(
         self,
