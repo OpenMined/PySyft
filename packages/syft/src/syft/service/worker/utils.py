@@ -367,7 +367,12 @@ def create_kubernetes_pool(
     except Exception as e:
         if pool:
             pool.delete()
-        return SyftError(message=f"Failed to start workers {e}.")
+        # stdlib
+        import traceback
+
+        return SyftError(
+            message=f"Failed to start workers {e} {e.__class__} {e.args} {traceback.format_exc()}."
+        )
 
     return runner.get_pool_pods(pool_name=pool_name)
 
