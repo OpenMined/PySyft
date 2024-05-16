@@ -1,5 +1,0 @@
-fastapi==0.110.0
-filelock==3.13.4
-loguru==0.7.2
-python-nginx
-uvicorn[standard]==0.27.1
