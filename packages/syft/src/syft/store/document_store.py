@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Callable
+from datetime import datetime
 import types
 import typing
 from typing import Any
@@ -13,6 +14,7 @@ from pydantic import Field
 from result import Err
 from result import Ok
 from result import Result
+from syft.types.newdatetime import NewDateTime
 from typeguard import check_type
 
 # relative
@@ -753,7 +755,6 @@ class BaseUIDStoreStash(BaseStash):
     def delete_by_uid(
         self, credentials: SyftVerifyKey, uid: UID, force_delete: bool = False
     ) -> Result[SyftSuccess, str]:
-        from ..types.datetime import DateTime
         qk = UIDPartitionKey.with_obj(uid)
         if force_delete:
             result = super().delete(credentials=credentials, qk=qk)
@@ -765,10 +766,9 @@ class BaseUIDStoreStash(BaseStash):
             return result
         if result is None:
             return Err(f"Object wiht ID: {uid} not found")
-        # result.deleted_date = DateTime.now()
-        result = result.ok()
-        result.is_deleted = True
-        return self.update(credentials=credentials, obj=result)
+        obj = result.ok()
+        obj.deleted_date = NewDateTime.now()
+        return self.update(credentials=credentials, obj=obj)
         
 
     def get_by_uid(
@@ -789,6 +789,8 @@ class BaseUIDStoreStash(BaseStash):
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
             return res
+        if obj.created_date is None:
+            obj.created_date = NewDateTime.now()
         return super().set(
             credentials=credentials,
             obj=res.ok(),
@@ -797,6 +799,18 @@ class BaseUIDStoreStash(BaseStash):
             add_storage_permission=add_storage_permission,
         )
 
+    def update(
+        self,
+        credentials: SyftVerifyKey,
+        obj: BaseStash.object_type,
+        has_permission: bool = False,
+    ) -> Result[BaseUIDStoreStash.object_type, str]:
+        obj.updated_date = NewDateTime.now()
+        return super().update(
+            credentials=credentials,
+            obj=obj,
+            has_permission=has_permission
+        )
 
 @serializable()
 class StoreConfig(SyftBaseObject):

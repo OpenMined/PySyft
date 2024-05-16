@@ -1,27 +1,25 @@
 # stdlib
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import total_ordering
 from typing import Any
 
 # third party
 from typing_extensions import Self
+import pydantic
 
 # relative
 from ..serde.serializable import serializable
-from .syft_object import SyftObject
-from .uid import UID
 from datetime import datetime
-from .syft_object import SYFT_OBJECT_VERSION_2
-
 
 @serializable()
 @total_ordering
-class DateTime(SyftObject):
-    __canonical_name__ = "DateTime"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    id: UID | None = None  # type: ignore
+class NewDateTime(pydantic.BaseModel):
+    # id: UID | None = None  # type: ignore
     utc_timestamp: float
+
+    # @classmethod
+    # def now(cls) -> Self:
+    #     return NewDateTime.utcnow()
 
     @classmethod
     def now(cls) -> Self:
@@ -34,9 +32,9 @@ class DateTime(SyftObject):
     def __hash__(self) -> int:
         return hash(self.utc_timestamp)
 
-    def __sub__(self, other: "DateTime") -> "DateTime":
+    def __sub__(self, other: "NewDateTime") -> "NewDateTime":
         res = self.utc_timestamp - other.utc_timestamp
-        return DateTime(utc_timestamp=res)
+        return NewDateTime(utc_timestamp=res)
 
     def __eq__(self, other: Any) -> bool:
         if other is None:

@@ -35,8 +35,10 @@ from pydantic import Field
 from pydantic import model_validator
 from pydantic.fields import PydanticUndefined
 from result import OkErr
+from ..types.newdatetime import NewDateTime
 from typeguard import check_type
 from typing_extensions import Self
+from datetime import datetime
 
 # relative
 from ..node.credentials import SyftVerifyKey
@@ -395,12 +397,14 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
 
     # all objects have a UID
     id: UID
-    # deleted_date: Optional["DateTime"] = None
+    created_date: NewDateTime | None = None
+    updated_date: NewDateTime | None = None
+    deleted_date: NewDateTime | None = None
 
-    # @property
-    # def is_deleted(self):
-    #     return self.deleted_date is not None
-    _is_deleted: bool = False
+    @property
+    def is_deleted(self):
+        return self.deleted_date is not None
+    # _is_deleted: bool = False
 
     # # move this to transforms
     @model_validator(mode="before")

@@ -972,6 +972,7 @@ class Node(AbstractNode):
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
         settings = settings_stash.get_all(self.signing_key.verify_key)
+        print(settings)
         if settings.is_ok() and len(settings.ok()) > 0:
             settings_data = settings.ok()[0]
         return settings_data
@@ -1193,7 +1194,8 @@ class Node(AbstractNode):
                     return SyftError(
                         message=f"API call not in registered services: {api_call.path}"
                     )
-
+            import pdb
+            # pdb.set_trace()
             _private_api_path = user_config_registry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
             try:
@@ -1477,6 +1479,7 @@ class Node(AbstractNode):
             credentials=self.verify_key,
             pool_name=self.settings.default_worker_pool,
         )
+        print(result)
         if result.is_err():
             return SyftError(message=f"{result.err()}")
         worker_pool = result.ok()
@@ -1548,6 +1551,7 @@ class Node(AbstractNode):
                 result = settings_stash.set(
                     credentials=self.signing_key.verify_key, settings=new_settings
                 )
+                print("INIT:", result)
                 if result.is_ok():
                     return result.ok()
                 return None

@@ -15,7 +15,8 @@ from typing import TYPE_CHECKING
 # third party
 from result import Ok
 from result import OkErr
-from syft.store.document_store import BaseUIDStoreStash, DocumentStore
+from ..store.document_store import BaseUIDStoreStash, DocumentStore
+from ..types.newdatetime import NewDateTime
 from typing_extensions import Self
 
 # relative
@@ -55,9 +56,11 @@ SERVICE_TO_TYPES: defaultdict = defaultdict(set)
 def service_method(
     name: str | None = None,
     path: str | None = None,
+    private_path: str | None = None,
     roles: list[ServiceRole] | None = None,
     autosplat: list[str] | None = None,
     warning: APIEndpointWarning | None = None,
+    obj: Any | None = None,
 ) -> Callable:
     if roles is None or len(roles) == 0:
         # TODO: this is dangerous, we probably want to be more conservative
@@ -74,6 +77,10 @@ def service_method(
         input_signature = deepcopy(signature)
 
         def _decorator(self: Any, *args: Any, **kwargs: Any) -> Callable:
+            print(args, kwargs)
+            import pdb
+            # pdb.set_trace()
+
             communication_protocol = kwargs.pop("communication_protocol", None)
 
             if communication_protocol:
@@ -88,6 +95,7 @@ def service_method(
                     kwargs=kwargs,
                 )
             result = func(self, *args, **kwargs)
+            # result = func(*args, **kwargs)
             if communication_protocol:
                 result, _ = migrate_args_and_kwargs(
                     args=(result,),
@@ -97,6 +105,7 @@ def service_method(
                 result = result[0]
             context = kwargs.get("context", None)
             context = args[0] if context is None else context
+            print(args, kwargs)
             attrs_to_attach = {
                 "syft_node_location": context.node.id,
                 "syft_client_verify_key": context.credentials,
@@ -110,7 +119,7 @@ def service_method(
 
         config = ServiceConfig(
             public_path=_path if path is None else path,
-            private_path=_path,
+            private_path=_path if private_path is None else private_path,
             public_name=("public_" + func_name) if name is None else name,
             method_name=func_name,
             doc_string=func.__doc__,
@@ -123,6 +132,12 @@ def service_method(
 
         _decorator.__name__ = func.__name__
         _decorator.__qualname__ = func.__qualname__
+        # if obj is None:
+        # obj = func.__self__
+        # bound_method = _decorator.__get__(obj, obj.__class__)
+        # setattr(obj, _decorator.__name__, bound_method)
+        
+        # return bound_method
         return _decorator
 
     return wrapper
@@ -135,16 +150,47 @@ class AbstractService:
     
     def __init__(self, method_params: Optional[Dict[str, Dict[str, Any]]] = {}) -> None:
         # Add basic CRUD
-        print(f"Creating {self.object_type}", file=sys.stderr)
-        set_wrapper = service_method(path=f"{self.object_type}.set", name="set", **method_params.get('set', {}))(self.set)
-        get_wrapper = service_method(path=f"{self.object_type}.get", name="get", **method_params.get('get', {}))(self.get)
-        update_wrapper = service_method(path=f"{self.object_type}.update", name="update", **method_params.get('update', {}))(self.update)
-        delete_wrapper = service_method(path=f"{self.object_type}.delete", name="delete", **method_params.get('delete', {}))(self.delete)
-        
-        self.set = set_wrapper
-        self.get = get_wrapper
-        self.update = update_wrapper
-        self.delete = delete_wrapper
+        print(f"Creating {self.object_type} service", file=sys.stderr)
+        set_wrapper = service_method(
+            path=f"{self.object_type}.set", 
+            private_path=f"{self.object_type}service.set", 
+            name="set", 
+            **method_params.get('set', {}))(self.set)
+
+        get_wrapper = service_method(
+            path=f"{self.object_type}.get", 
+            private_path=f"{self.object_type}service.get", 
+            name="get", 
+            **method_params.get('get', {}))(self.get)
+
+        update_wrapper = service_method(
+            path=f"{self.object_type}.update", 
+            private_path=f"{self.object_type}service.update", 
+            name="update", 
+            **method_params.get('update', {}))(self.update)
+
+        delete_wrapper = service_method(
+            path=f"{self.object_type}.delete", 
+            private_path=f"{self.object_type}service.delete", 
+            name="delete", 
+            **method_params.get('delete', {}))(self.delete)
+
+        def bind(instance, func, as_name=None):
+            """
+            Bind the function *func* to *instance*, with either provided name *as_name*
+            or the existing name of *func*. The provided *func* should accept the 
+            instance as the first argument, i.e. "self".
+            """
+            if as_name is None:
+                as_name = func.__name__
+            bound_method = func.__get__(instance, instance.__class__)
+            setattr(instance, as_name, bound_method)
+            return bound_method
+                
+        bind(self, set_wrapper)
+        bind(self, get_wrapper)
+        bind(self, update_wrapper)
+        bind(self, delete_wrapper)
 
     @property
     def object_type(self):
@@ -154,7 +200,6 @@ class AbstractService:
         # if hasattr(obj, id):
         #     res = self.stash.get_by_uid(context.credentials, obj.id)
         #     if 
-        
         res = self.stash.set(context.credentials, obj)
         if res.is_err():
             return SyftError(message=res.err())

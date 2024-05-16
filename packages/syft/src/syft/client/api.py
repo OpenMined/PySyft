@@ -296,6 +296,8 @@ class RemoteFunction(SyftObject):
         return result
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        import pdb
+        # pdb.set_trace()
         return self.function_call(self.path, *args, **kwargs)
 
     @property
