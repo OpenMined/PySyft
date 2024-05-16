@@ -13,6 +13,7 @@ from syft.client.domain_client import DomainClient
 from syft.custom_worker.config import DockerWorkerConfig
 from syft.custom_worker.config import PrebuiltWorkerConfig
 from syft.service.request.request import Request
+from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.worker.worker_image import SyftWorkerImage
 from syft.service.worker.worker_pool import SyftWorker
@@ -120,7 +121,7 @@ def test_pool_launch(
 
     # Submit Worker Image
     worker_config, docker_tag = (
-        (PREBUILT_WORKER_CONFIG, PREBUILT_IMAGE_TAG)
+        (PrebuiltWorkerConfig(tag=(_tag := "docker.io/python:3-slim")), _tag)
         if prebuilt
         else make_docker_config_test_case("opendp")
     )
@@ -159,6 +160,7 @@ def test_pool_launch(
         image_uid=worker_image.id,
         num_workers=3,
     )
+    assert not isinstance(worker_pool_res, SyftError)
     assert len(worker_pool_res) == 3
 
     assert all(worker.error is None for worker in worker_pool_res)
@@ -224,12 +226,17 @@ def test_pool_image_creation_job_requests(
 
     # the DS makes a request to create an image and a pool based on the image
     worker_config, docker_tag = (
-        (PREBUILT_WORKER_CONFIG, PREBUILT_IMAGE_TAG)
+        (
+            PrebuiltWorkerConfig(
+                tag=(_tag := f"docker.io/openmined/grid-backend:{sy.__version__}")
+            ),
+            _tag,
+        )
         if prebuilt
         else make_docker_config_test_case("numpy")
     )
 
-    worker_pool_name = "custom_worker_pool"
+    worker_pool_name = "custom-worker-pool-numpy"
     request = ds_client.api.services.worker_pool.create_image_and_pool_request(
         pool_name=worker_pool_name,
         num_workers=1,
