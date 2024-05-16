@@ -1,31 +1,22 @@
 ARG RATHOLE_VERSION="0.5.0"
 ARG PYTHON_VERSION="3.12"
 
-FROM rust as build
-ARG RATHOLE_VERSION
-ARG FEATURES
-RUN apt update && apt install -y git
-RUN git clone -b v${RATHOLE_VERSION} https://github.com/rapiz1/rathole
-
-WORKDIR /rathole
-RUN cargo build --locked --release --features ${FEATURES:-default}
+FROM rapiz1/rathole:v${RATHOLE_VERSION} as build
 
 FROM python:${PYTHON_VERSION}-bookworm
 ARG RATHOLE_VERSION
 ENV MODE="client"
-ENV APP_LOG_LEVEL="info"
-COPY --from=build /rathole/target/release/rathole /app/rathole
 RUN apt update && apt install -y netcat-openbsd vim
+COPY --from=build /app/rathole   /app/rathole
+
 WORKDIR /app
 COPY ./start.sh /app/start.sh
-COPY ./nginx.conf /etc/nginx/conf.d/default.conf
-COPY ./requirements.txt /app/requirements.txt
-COPY ./server/ /app/server/
 
-RUN pip install --user -r requirements.txt
-CMD ["sh", "-c", "/app/start.sh"]
 EXPOSE 2333/udp
 EXPOSE 2333
+
+CMD ["sh", "-c", "/app/start.sh"]
+
 
 # build and run a fake domain to simulate a normal http container service
 # docker build -f domain.dockerfile . -t domain
