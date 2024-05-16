@@ -770,15 +770,30 @@ class SubmitUserCode(SyftObject):
     def kwargs(self) -> dict[Any, Any] | None:
         return self.input_policy_init_kwargs
 
-    def __call__(self, *args: Any, syft_no_node: bool = False, **kwargs: Any) -> Any:
+    def __call__(
+        self,
+        *args: Any,
+        syft_no_node: bool = False,
+        blocking: bool = False,
+        time_alive: int | None = None,
+        n_consumers: int = 2,
+        **kwargs: Any,
+    ) -> Any:
         if syft_no_node:
             return self.local_call(*args, **kwargs)
-        return self._ephemeral_node_call(*args, **kwargs)
+        return self._ephemeral_node_call(
+            *args,
+            time_alive=time_alive,
+            n_consumers=n_consumers,
+            blocking=blocking,
+            **kwargs,
+        )
 
     def local_call(self, *args: Any, **kwargs: Any) -> Any:
         # only run this on the client side
         if self.local_function:
-            tree = ast.parse(inspect.getsource(self.local_function))
+            source = dedent(inspect.getsource(self.local_function))
+            tree = ast.parse(source)
 
             # check there are no globals
             v = GlobalsVisitor()
@@ -803,26 +818,19 @@ class SubmitUserCode(SyftObject):
 
     def _ephemeral_node_call(
         self,
-        time_alive: int | None = None,
-        n_consumers: int | None = None,
         *args: Any,
+        time_alive: int | None = None,
+        n_consumers: int = 2,
+        blocking: bool = False,
         **kwargs: Any,
     ) -> Any:
         # relative
-        from ... import _orchestra
+        from ...orchestra import Orchestra
 
         # Right now we only create a number of workers
         # In the future we might need to have the same pools/images as well
 
-        if n_consumers is None:
-            print(
-                SyftInfo(
-                    message="Creating a node with n_consumers=2 (the default value)"
-                )
-            )
-            n_consumers = 2
-
-        if time_alive is None and "blocking" in kwargs and not kwargs["blocking"]:
+        if time_alive is None and not blocking:
             print(
                 SyftInfo(
                     message="Closing the node after time_alive=300 (the default value)"
@@ -831,7 +839,7 @@ class SubmitUserCode(SyftObject):
             time_alive = 300
 
         # This could be changed given the work on containers
-        ep_node = _orchestra().launch(
+        ep_node = Orchestra.launch(
             name=f"ephemeral_node_{self.func_name}_{random.randint(a=0, b=10000)}",  # nosec
             reset=True,
             create_producer=True,
