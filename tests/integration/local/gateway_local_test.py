@@ -165,9 +165,7 @@ def test_create_gateway(
     for peer in gateway_client.api.services.network.get_all_peers():
         assert peer.ping_status == NodePeerConnectionStatus.ACTIVE
 
-
-@pytest.mark.local_node
-def test_create_gateway_client(gateway):
+    # check the guest client
     client = gateway.client
     assert isinstance(client, GatewayClient)
     assert client.metadata.node_type == NodeType.GATEWAY.value
@@ -248,7 +246,6 @@ def test_domain_connect_to_gateway(gateway_association_request_auto_approval, do
 def test_domain_connect_to_gateway_routes_priority(gateway, domain, domain_2) -> None:
     """
     A test for routes' priority (PythonNodeRoute)
-    TODO: Add a similar test for HTTPNodeRoute
     """
     gateway_client: GatewayClient = gateway.login(
         email="info@openmined.org",
