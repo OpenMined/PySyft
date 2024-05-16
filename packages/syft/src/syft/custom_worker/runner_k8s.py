@@ -60,8 +60,6 @@ class KubernetesRunner:
                 f"jsonpath='{JSONPATH_AVAILABLE_REPLICAS}'={replicas}",
                 timeout=CREATE_POOL_TIMEOUT_SEC,
             )
-        except Exception:
-            raise
         finally:
             if pull_secret:
                 pull_secret.delete(propagation_policy="Foreground")

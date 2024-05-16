@@ -331,7 +331,6 @@ def create_kubernetes_pool(
     **kwargs: Any,
 ) -> list[Pod] | SyftError:
     pool = None
-    error = False
 
     try:
         print(
@@ -366,11 +365,9 @@ def create_kubernetes_pool(
             reg_url=reg_url,
         )
     except Exception as e:
-        error = True
-        return SyftError(message=f"Failed to start workers {e}")
-    finally:
-        if error and pool:
+        if pool:
             pool.delete()
+        return SyftError(message=f"Failed to start workers {e}.")
 
     return runner.get_pool_pods(pool_name=pool_name)
 
