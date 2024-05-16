@@ -166,7 +166,7 @@ def test_create_gateway(
         assert peer.ping_status == NodePeerConnectionStatus.ACTIVE
 
     # check the guest client
-    client = gateway.client
+    client = gateway_webserver.client
     assert isinstance(client, GatewayClient)
     assert client.metadata.node_type == NodeType.GATEWAY.value
 
