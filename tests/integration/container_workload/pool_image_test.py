@@ -154,7 +154,7 @@ def test_pool_launch(
         assert isinstance(push_result, sy.SyftSuccess), str(push_result)
 
     # Launch a worker pool
-    worker_pool_name = "custom-worker-pool-opendp"
+    worker_pool_name = f"custom-worker-pool-opendp{'-prebuilt' if prebuilt else ''}"
     worker_pool_res = domain_client.api.services.worker_pool.launch(
         name=worker_pool_name,
         image_uid=worker_image.id,
@@ -236,7 +236,7 @@ def test_pool_image_creation_job_requests(
         else make_docker_config_test_case("numpy")
     )
 
-    worker_pool_name = "custom-worker-pool-numpy"
+    worker_pool_name = f"custom-worker-pool-numpy{'-prebuilt' if prebuilt else ''}"
     request = ds_client.api.services.worker_pool.create_image_and_pool_request(
         pool_name=worker_pool_name,
         num_workers=1,
