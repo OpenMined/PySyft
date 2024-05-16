@@ -121,7 +121,7 @@ def test_pool_launch(
 
     # Submit Worker Image
     worker_config, docker_tag = (
-        (PrebuiltWorkerConfig(tag=(_tag := "docker.io/python:3-slim")), _tag)
+        (PrebuiltWorkerConfig(tag=(_tag := "docker.io/library/python:3-slim")), _tag)
         if prebuilt
         else make_docker_config_test_case("opendp")
     )

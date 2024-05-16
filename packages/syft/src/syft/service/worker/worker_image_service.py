@@ -6,6 +6,7 @@ import docker
 import pydantic
 
 # relative
+from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
@@ -49,6 +50,11 @@ class SyftWorkerImageService(AbstractService):
         worker_image = SyftWorkerImage(
             config=worker_config,
             created_by=context.credentials,
+            image_identifier=(
+                SyftWorkerImageIdentifier.from_str(worker_config.tag)
+                if isinstance(worker_config, PrebuiltWorkerConfig)
+                else None
+            ),
         )
         res = self.stash.set(context.credentials, worker_image)
 
