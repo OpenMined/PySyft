@@ -1,4 +1,7 @@
 # stdlib
+from collections.abc import Callable
+import inspect
+import time
 from typing import Any
 from typing import cast
 
@@ -26,6 +29,18 @@ from ..user.user_roles import GUEST_ROLE_LEVEL
 from .job_stash import Job
 from .job_stash import JobStash
 from .job_stash import JobStatus
+
+
+def wait_until(
+    predicate: Callable[[], bool], timeout: int = 10
+) -> SyftSuccess | SyftError:
+    start = time.time()
+    code_string = inspect.getsource(predicate).strip()
+    while time.time() - start < timeout:
+        if predicate():
+            return SyftSuccess(message=f"Predicate {code_string} is True")
+        time.sleep(1)
+    return SyftError(message=f"Timeout reached for predicate {code_string}")
 
 
 @instrument
@@ -112,16 +127,31 @@ class JobService(AbstractService):
     def restart(
         self, context: AuthedServiceContext, uid: UID
     ) -> SyftSuccess | SyftError:
-        res = self.stash.get_by_uid(context.credentials, uid=uid)
-        if res.is_err():
-            return SyftError(message=res.err())
+        job_or_err = self.stash.get_by_uid(context.credentials, uid=uid)
+        if job_or_err.is_err():
+            return SyftError(message=job_or_err.err())
+        if job_or_err.ok() is None:
+            return SyftError(message="Job not found")
 
-        job = res.ok()
+        job = job_or_err.ok()
+        if job.parent_job_id is not None:
+            return SyftError(
+                message="Not possible to restart subjobs. Please restart the parent job."
+            )
+        if job.status == JobStatus.PROCESSING:
+            return SyftError(
+                message="Jobs in progress cannot be restarted. "
+                "Please wait for completion or cancel the job via .cancel() to proceed."
+            )
+
         job.status = JobStatus.CREATED
         self.update(context=context, job=job)
 
         task_uid = UID()
         worker_settings = WorkerSettings.from_node(context.node)
+        worker_pool_ref = context.node.get_worker_pool_ref_by_name(context.credentials)
+        if isinstance(worker_pool_ref, SyftError):
+            return worker_pool_ref
 
         queue_item = ActionQueueItem(
             id=task_uid,
@@ -132,6 +162,7 @@ class JobService(AbstractService):
             worker_settings=worker_settings,
             args=[],
             kwargs={"action": job.action},
+            worker_pool=worker_pool_ref,
         )
 
         context.node.queue_stash.set_placeholder(context.credentials, queue_item)
@@ -139,8 +170,8 @@ class JobService(AbstractService):
 
         log_service = context.node.get_service("logservice")
         result = log_service.restart(context, job.log_id)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
+        if isinstance(result, SyftError):
+            return result
 
         return SyftSuccess(message="Great Success!")
 
@@ -158,28 +189,62 @@ class JobService(AbstractService):
         res = res.ok()
         return SyftSuccess(message="Great Success!")
 
+    def _kill(self, context: AuthedServiceContext, job: Job) -> SyftSuccess | SyftError:
+        # set job and subjobs status to TERMINATING
+        # so that MonitorThread can kill them
+        job.status = JobStatus.TERMINATING
+        res = self.stash.update(context.credentials, obj=job)
+        results = [res]
+
+        # attempt to kill all subjobs
+        subjobs_or_err = self.stash.get_by_parent_id(context.credentials, uid=job.id)
+        if subjobs_or_err.is_ok() and subjobs_or_err.ok() is not None:
+            subjobs = subjobs_or_err.ok()
+            for subjob in subjobs:
+                subjob.status = JobStatus.TERMINATING
+                res = self.stash.update(context.credentials, obj=subjob)
+                results.append(res)
+
+        errors = [res.err() for res in results if res.is_err()]
+        if errors:
+            return SyftError(message=f"Failed to kill job: {errors}")
+
+        # wait for job and subjobs to be killed by MonitorThread
+        wait_until(lambda: job.fetched_status == JobStatus.INTERRUPTED)
+        wait_until(
+            lambda: all(
+                subjob.fetched_status == JobStatus.INTERRUPTED for subjob in job.subjobs
+            )
+        )
+
+        return SyftSuccess(message="Job killed successfully!")
+
     @service_method(
         path="job.kill",
         name="kill",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def kill(self, context: AuthedServiceContext, id: UID) -> SyftSuccess | SyftError:
-        res = self.stash.get_by_uid(context.credentials, uid=id)
-        if res.is_err():
-            return SyftError(message=res.err())
+        job_or_err = self.stash.get_by_uid(context.credentials, uid=id)
+        if job_or_err.is_err():
+            return SyftError(message=job_or_err.err())
+        if job_or_err.ok() is None:
+            return SyftError(message="Job not found")
 
-        job = res.ok()
-        if job.job_pid is not None and job.status == JobStatus.PROCESSING:
-            job.status = JobStatus.INTERRUPTED
-            res = self.stash.update(context.credentials, obj=job)
-            if res.is_err():
-                return SyftError(message=res.err())
-            return SyftSuccess(message="Job killed successfully!")
-        else:
+        job = job_or_err.ok()
+        if job.parent_job_id is not None:
             return SyftError(
-                message="Job is not running or isn't running in multiprocessing mode."
-                "Killing threads is currently not supported"
+                message="Not possible to cancel subjobs. To stop execution, please cancel the parent job."
             )
+        if job.status != JobStatus.PROCESSING:
+            return SyftError(message="Job is not running")
+        if job.job_pid is None:
+            return SyftError(
+                message="Job termination disabled in dev mode. "
+                "Set 'dev_mode=False' or 'thread_workers=False' to enable."
+            )
+
+        return self._kill(context, job)
 
     @service_method(
         path="job.get_subjobs",

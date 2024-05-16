@@ -57,6 +57,9 @@ class SyftError(SyftResponseMessage):
     def to_result(self) -> Err:
         return Err(value=self.message)
 
+    def __bool__(self) -> bool:
+        return False
+
 
 @serializable()
 class SyftSuccess(SyftResponseMessage):

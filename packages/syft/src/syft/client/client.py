@@ -8,7 +8,6 @@ from copy import deepcopy
 from enum import Enum
 from getpass import getpass
 import json
-import os
 from typing import Any
 from typing import TYPE_CHECKING
 from typing import cast
@@ -485,6 +484,17 @@ class SyftClient:
     __logged_in_username: str = ""
     __user_role: ServiceRole = ServiceRole.NONE
 
+    # informs getattr does not have nasty side effects
+    __syft_allow_autocomplete__ = [
+        "api",
+        "code",
+        "jobs",
+        "users",
+        "settings",
+        "notifications",
+        "custom_api",
+    ]
+
     def __init__(
         self,
         connection: NodeConnection,
@@ -496,6 +506,7 @@ class SyftClient:
         self.metadata = metadata
         self.credentials: SyftSigningKey | None = credentials
         self._api = api
+        self.services: APIModule | None = None
         self.communication_protocol: int | str | None = None
         self.current_protocol: int | str | None = None
 
@@ -547,7 +558,7 @@ class SyftClient:
             user_email_address=user_email_address,
             members=[self],
         )
-        project = project_create.start()
+        project = project_create.send()
         return project
 
     # TODO: type of request should be REQUEST, but it will give circular import error
@@ -683,7 +694,7 @@ class SyftClient:
             if client.metadata is None:
                 return SyftError(f"client {client}'s metadata is None!")
 
-            result = self.api.services.network.exchange_credentials_with(
+            return self.api.services.network.exchange_credentials_with(
                 self_node_route=self_node_route,
                 remote_node_route=remote_node_route,
                 remote_node_verify_key=client.metadata.to(NodeMetadataV3).verify_key,
@@ -692,8 +703,6 @@ class SyftClient:
             raise ValueError(
                 f"Invalid Route Exchange SyftProtocol: {protocol}.Supported protocols are {SyftProtocol.all()}"
             )
-
-        return result
 
     @property
     def jobs(self) -> APIModule | None:
@@ -768,15 +777,6 @@ class SyftClient:
         register: bool = False,
         **kwargs: Any,
     ) -> Self:
-        # TODO: Remove this Hack (Note to Rasswanth)
-        # If SYFT_LOGIN_{NODE_NAME}_PASSWORD is set, use that as the password
-        # for the login. This is useful for CI/CD environments to test password
-        # randomization that is implemented by helm charts
-        if self.name is not None and email == "info@openmined.org":
-            pass_env_var = f"SYFT_LOGIN_{self.name}_PASSWORD"
-            if pass_env_var in os.environ:
-                password = os.environ[pass_env_var]
-
         if email is None:
             email = input("Email: ")
         if password is None:
@@ -958,6 +958,7 @@ class SyftClient:
             api=_api,
         )
         self._api = _api
+        self.services = _api.services
         return _api
 
 
