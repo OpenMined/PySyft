@@ -11,6 +11,8 @@ import pytest
 import syft as sy
 from syft.client.domain_client import DomainClient
 from syft.custom_worker.config import DockerWorkerConfig
+from syft.custom_worker.config import PrebuiltWorkerConfig
+from syft.custom_worker.config import WorkerConfig
 from syft.node.node import get_default_worker_tag_by_env
 from syft.service.request.request import Request
 from syft.service.response import SyftSuccess
@@ -24,33 +26,42 @@ if hagrid_flags:
     SYFT_BASE_TAG = get_default_worker_tag_by_env(dev_mode=True)
 
 
+PREBUILT_IMAGE_TAG = f"docker.io/openmined/grid-backend:{sy.__version__}"
+
+PREBUILT_WORKER_CONFIG = PrebuiltWorkerConfig(tag=PREBUILT_IMAGE_TAG)
+
+CUSTOM_DOCKERFILE = f"""
+FROM openmined/grid-backend:{SYFT_BASE_TAG}
+
+RUN pip install recordlinkage
+"""
+
+CUSTOM_IMAGE_TAG = "openmined/custom-worker-recordlinkage"
+
+CUSTOM_DOCKER_WORKER_CONFIG = DockerWorkerConfig(dockerfile=CUSTOM_DOCKERFILE)
+
+
 @pytest.mark.container_workload
 def test_image_build(domain_1_port) -> None:
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
-    # Submit Docker Worker Config
-    docker_config_rl = f"""
-        FROM openmined/grid-backend:{SYFT_BASE_TAG}
-        RUN pip install recordlinkage
-    """
-    docker_config = DockerWorkerConfig(dockerfile=docker_config_rl)
-
-    # Submit Worker Image
     submit_result = domain_client.api.services.worker_image.submit_container_image(
-        worker_config=docker_config
+        worker_config=CUSTOM_DOCKER_WORKER_CONFIG
     )
     assert isinstance(submit_result, SyftSuccess)
     assert len(domain_client.images.get_all()) == 2
 
     # Validate if we can get the worker image object from its config
-    workerimage = domain_client.api.services.worker_image.get_by_config(docker_config)
+    workerimage = domain_client.api.services.worker_image.get_by_config(
+        CUSTOM_DOCKER_WORKER_CONFIG
+    )
     assert not isinstance(workerimage, sy.SyftError)
 
     # Build docker image
     tag_version = sy.UID().short()
-    docker_tag = f"openmined/custom-worker-rl:{tag_version}"
+    docker_tag = f"{CUSTOM_IMAGE_TAG}:{tag_version}"
     docker_build_result = domain_client.api.services.worker_image.build(
         image_uid=workerimage.id,
         tag=docker_tag,
@@ -74,43 +85,41 @@ def test_image_build(domain_1_port) -> None:
     # Validate the image is successfully deleted
     assert len(domain_client.images.get_all()) == 1
     workerimage = domain_client.images.get_all()[0]
-    assert workerimage.config != docker_config
+    assert workerimage.config != CUSTOM_IMAGE_TAG
 
 
 @pytest.mark.container_workload
-def test_pool_launch(domain_1_port) -> None:
+@pytest.mark.parametrize(
+    "worker_config", [PREBUILT_WORKER_CONFIG, CUSTOM_DOCKER_WORKER_CONFIG]
+)
+def test_pool_launch(domain_1_port: int, worker_config: WorkerConfig) -> None:
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
     assert len(domain_client.worker_pools.get_all()) == 1
 
-    # Submit Docker Worker Config
-    docker_config_opendp = f"""
-        FROM openmined/grid-backend:{SYFT_BASE_TAG}
-        RUN pip install opendp
-    """
-    docker_config = DockerWorkerConfig(dockerfile=docker_config_opendp)
-
     # Submit Worker Image
     submit_result = domain_client.api.services.worker_image.submit_container_image(
-        worker_config=docker_config
+        worker_config=worker_config
     )
     assert isinstance(submit_result, SyftSuccess)
 
-    worker_image = domain_client.api.services.worker_image.get_by_config(docker_config)
+    worker_image = domain_client.api.services.worker_image.get_by_config(worker_config)
     assert not isinstance(worker_image, sy.SyftError)
     assert worker_image is not None
-    assert not worker_image.is_built
 
-    # Build docker image
-    tag_version = sy.UID().short()
-    docker_tag = f"openmined/custom-worker-opendp:{tag_version}"
-    docker_build_result = domain_client.api.services.worker_image.build(
-        image_uid=worker_image.id,
-        tag=docker_tag,
-        pull=False,
-    )
-    assert isinstance(docker_build_result, SyftSuccess)
+    if not worker_image.is_prebuilt:
+        assert not worker_image.is_built
+
+        # Build docker image
+        tag_version = sy.UID().short()
+        docker_tag = f"{CUSTOM_IMAGE_TAG}:{tag_version}"
+        docker_build_result = domain_client.api.services.worker_image.build(
+            image_uid=worker_image.id,
+            tag=docker_tag,
+            pull=False,
+        )
+        assert isinstance(docker_build_result, SyftSuccess)
 
     # Launch a worker pool
     pool_version = sy.UID().short()
@@ -163,7 +172,12 @@ def test_pool_launch(domain_1_port) -> None:
 
 
 @pytest.mark.container_workload
-def test_pool_image_creation_job_requests(domain_1_port) -> None:
+@pytest.mark.parametrize(
+    "worker_config", [PREBUILT_WORKER_CONFIG, CUSTOM_DOCKER_WORKER_CONFIG]
+)
+def test_pool_image_creation_job_requests(
+    domain_1_port: int, worker_config: WorkerConfig
+) -> None:
     """
     Test register ds client, ds requests to create an image and pool creation,
     do approves, then ds creates a function attached to the worker pool, then creates another
@@ -186,26 +200,20 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     ds_client = sy.login(email=ds_email, password="secret_pw", port=domain_1_port)
 
     # the DS makes a request to create an image and a pool based on the image
-    docker_config_np = f"""
-        FROM openmined/grid-backend:{SYFT_BASE_TAG}
-        RUN pip install numpy
-    """
-    docker_config = DockerWorkerConfig(dockerfile=docker_config_np)
     tag_version = sy.UID().short()
-    docker_tag = f"openmined/custom-worker-np:{tag_version}"
     pool_version = sy.UID().short()
     worker_pool_name = f"custom_worker_pool_ver{pool_version}"
     request = ds_client.api.services.worker_pool.create_image_and_pool_request(
         pool_name=worker_pool_name,
         num_workers=1,
-        tag=docker_tag,
-        config=docker_config,
-        reason="I want to do some more cool data science with PySyft and Recordlinkage",
+        tag=f"{CUSTOM_IMAGE_TAG}:{tag_version}",
+        config=worker_config,
+        reason="I want to do some more cool data science with PySyft",
         pull_image=False,
     )
     assert isinstance(request, Request)
     assert len(request.changes) == 2
-    assert request.changes[0].config == docker_config
+    assert request.changes[0].config == worker_config
     assert request.changes[1].num_workers == 1
     assert request.changes[1].pool_name == worker_pool_name
 
@@ -230,7 +238,7 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
     assert isinstance(worker.logs, str)
     assert worker.job_id is None
 
-    built_image = ds_client.api.services.worker_image.get_by_config(docker_config)
+    built_image = ds_client.api.services.worker_image.get_by_config(worker_config)
     assert isinstance(built_image, SyftWorkerImage)
     assert built_image.id == launched_pool.image.id
     assert worker.image.id == built_image.id
