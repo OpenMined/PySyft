@@ -242,7 +242,7 @@ class CreateCustomImageChange(Change):
                 message=f"Build result: {build_success_message}"
             )
 
-            if IN_KUBERNETES:
+            if IN_KUBERNETES and not worker_image.is_prebuilt:
                 push_result = worker_image_service.push(
                     service_context,
                     image=worker_image.id,
