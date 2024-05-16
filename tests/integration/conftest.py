@@ -51,7 +51,6 @@ def full_low_worker(n_consumers: int = 3, create_producer: bool = True) -> Worke
         n_consumers=n_consumers,
         create_producer=create_producer,
         queue_port=None,
-        in_memory_workers=True,
         local_db=False,
         thread_workers=False,
     )
@@ -72,7 +71,6 @@ def full_high_worker(n_consumers: int = 3, create_producer: bool = True) -> Work
         n_consumers=n_consumers,
         create_producer=create_producer,
         queue_port=None,
-        in_memory_workers=True,
         local_db=False,
         thread_workers=False,
     )
