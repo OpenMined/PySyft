@@ -177,13 +177,6 @@ class AbstractService:
         bind(self, delete_wrapper)
 
     
-    def delete(self, context: AuthedServiceContext, uid: UID, force_delete: bool = False) -> SyftError | Any:
-        
-        res = self.stash.delete_by_uid(context.credentials, uid, force_delete)
-        if res.is_err():
-            return SyftError(message=res.err())
-        return SyftSuccess(message=f"{self.object_type} successfully deleted.")
-
     @property
     def object_type(self):
         return self.stash.object_type.__canonical_name__.lower()
@@ -210,6 +203,19 @@ class AbstractService:
             return SyftError(message=res.err())
 
         return SyftSuccess(message=f"{self.object_type} successfully updated.") 
+
+    def delete(self, context: AuthedServiceContext, uid: UID, force_delete: bool = False) -> SyftError | Any:
+        
+        res = self.stash.delete_by_uid(context.credentials, uid, force_delete)
+        if res.is_err():
+            return SyftError(message=res.err())
+        return SyftSuccess(message=f"{self.object_type} successfully deleted.")
+
+    def restore(self, context: AuthedServiceContext, uid: UID) -> SyftError | Any:
+        res = self.stash.restore_by_uid(context.credentials, uid)
+        if res.is_err():
+            return SyftError(message=res.err())
+        return SyftSuccess(message=f"{self.object_type} successfully restored.")
 
     def resolve_link(
         self,

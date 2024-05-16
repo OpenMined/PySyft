@@ -276,7 +276,7 @@ class QueryKeys(SyftBaseModel):
 
 
 UIDPartitionKey = PartitionKey(key="id", type_=UID)
-
+IsDeletedPartitionKey = PartitionKey(key="is_deleted", type_=bool)
 
 @serializable()
 class PartitionSettings(BasePartitionSettings):
@@ -640,6 +640,12 @@ class BaseStash:
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[BaseStash.object_type, str]:
+        res = self.check_type(obj, self.object_type)
+        # we dont use and_then logic here as it is hard because of the order of the arguments
+        if res.is_err():
+            return res
+        if obj.created_date is None:
+            obj.created_date = NewDateTime.now()
         return self.partition.set(
             credentials=credentials,
             obj=obj,
@@ -744,20 +750,18 @@ class BaseStash:
         obj: BaseStash.object_type,
         has_permission: bool = False,
     ) -> Result[BaseStash.object_type, str]:
+        obj.updated_date = NewDateTime.now()
         qk = self.partition.store_query_key(obj)
         return self.partition.update(
             credentials=credentials, qk=qk, obj=obj, has_permission=has_permission
         )
 
-
-@instrument
-class BaseUIDStoreStash(BaseStash):
     def delete_by_uid(
         self, credentials: SyftVerifyKey, uid: UID, force_delete: bool = False
     ) -> Result[SyftSuccess, str]:
         qk = UIDPartitionKey.with_obj(uid)
         if force_delete:
-            result = super().delete(credentials=credentials, qk=qk)
+            result = self.delete(credentials=credentials, qk=qk)
             if result.is_ok():
                 return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
             return result
@@ -769,48 +773,20 @@ class BaseUIDStoreStash(BaseStash):
         obj = result.ok()
         obj.deleted_date = NewDateTime.now()
         return self.update(credentials=credentials, obj=obj)
-        
-
+    
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[BaseUIDStoreStash.object_type | None, str]:
-        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
+    ) -> Result[BaseStash.object_type | None, str]:
+        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid), IsDeletedPartitionKey.with_obj(False)])
         return self.query_one(credentials=credentials, qks=qks)
 
-    def set(
-        self,
-        credentials: SyftVerifyKey,
-        obj: BaseUIDStoreStash.object_type,
-        add_permissions: list[ActionObjectPermission] | None = None,
-        add_storage_permission: bool = True,
-        ignore_duplicates: bool = False,
-    ) -> Result[BaseUIDStoreStash.object_type, str]:
-        res = self.check_type(obj, self.object_type)
-        # we dont use and_then logic here as it is hard because of the order of the arguments
-        if res.is_err():
-            return res
-        if obj.created_date is None:
-            obj.created_date = NewDateTime.now()
-        return super().set(
-            credentials=credentials,
-            obj=res.ok(),
-            ignore_duplicates=ignore_duplicates,
-            add_permissions=add_permissions,
-            add_storage_permission=add_storage_permission,
-        )
+    def restore_by_uid(
+        self, credentials: SyftVerifyKey, uid: UID
+    )-> Result[BaseStash.object_type | None, str]:
 
-    def update(
-        self,
-        credentials: SyftVerifyKey,
-        obj: BaseStash.object_type,
-        has_permission: bool = False,
-    ) -> Result[BaseUIDStoreStash.object_type, str]:
-        obj.updated_date = NewDateTime.now()
-        return super().update(
-            credentials=credentials,
-            obj=obj,
-            has_permission=has_permission
-        )
+@instrument
+class BaseUIDStoreStash(BaseStash):
+    pass
 
 @serializable()
 class StoreConfig(SyftBaseObject):
