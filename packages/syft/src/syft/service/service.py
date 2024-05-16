@@ -77,10 +77,6 @@ def service_method(
         input_signature = deepcopy(signature)
 
         def _decorator(self: Any, *args: Any, **kwargs: Any) -> Callable:
-            print(self, args, kwargs)
-            import pdb
-            # pdb.set_trace()
-
             communication_protocol = kwargs.pop("communication_protocol", None)
 
             if communication_protocol:
@@ -95,7 +91,6 @@ def service_method(
                     kwargs=kwargs,
                 )
             result = func(self, *args, **kwargs)
-            # result = func(*args, **kwargs)
             if communication_protocol:
                 result, _ = migrate_args_and_kwargs(
                     args=(result,),
@@ -105,7 +100,6 @@ def service_method(
                 result = result[0]
             context = kwargs.get("context", None)
             context = args[0] if context is None else context
-            print(args, kwargs)
             attrs_to_attach = {
                 "syft_node_location": context.node.id,
                 "syft_client_verify_key": context.credentials,
@@ -132,12 +126,6 @@ def service_method(
 
         _decorator.__name__ = func.__name__
         _decorator.__qualname__ = func.__qualname__
-        # if obj is None:
-        # obj = func.__self__
-        # bound_method = _decorator.__get__(obj, obj.__class__)
-        # setattr(obj, _decorator.__name__, bound_method)
-        
-        # return bound_method
         return _decorator
 
     return wrapper
@@ -177,24 +165,11 @@ class AbstractService:
             **method_params.get('delete', {}))(self.delete.__func__)
 
         def bind(instance, func, as_name=None):
-            """
-            Bind the function *func* to *instance*, with either provided name *as_name*
-            or the existing name of *func*. The provided *func* should accept the 
-            instance as the first argument, i.e. "self".
-            """
             if as_name is None:
                 as_name = func.__name__
-
-            # ipython.Completer.attr_matches = MethodType(
-            # patched_attr_matches, ipython.Completer
-            # )
             from types import MethodType
-            # setattr(instance, as_name, func)
             setattr(instance, as_name, MethodType(func, instance))
 
-            # bound_method = func.__get__(instance, instance.__class__)
-            # setattr(instance, as_name, bound_method)
-            # return bound_method
                 
         bind(self, set_wrapper)
         bind(self, get_wrapper)
