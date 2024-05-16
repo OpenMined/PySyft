@@ -401,8 +401,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     updated_date: NewDateTime | None = None
     deleted_date: NewDateTime | None = None
 
-    @property
-    def is_deleted(self):
+    # @property
+    def is_deleted(self) -> bool:
         return self.deleted_date is not None
     # _is_deleted: bool = False
 
@@ -415,6 +415,10 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             if "id" not in values and id_field.is_required():
                 values["id"] = id_field.annotation()
         return values
+
+    __base_attr_searchable__ : ClassVar[list[str]] = [
+        "is_deleted"
+    ]
 
     __attr_searchable__: ClassVar[
         list[str]
@@ -619,7 +623,9 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
             else:
                 try:
                     method = getattr(cls, key)
+                    print(method, cls, key, method.__annotations__, type(method))
                     if isinstance(method, types.FunctionType):
+                        # print(method.__annotations__)
                         type_ = method.__annotations__["return"]
                 except Exception as e:
                     print(
@@ -628,7 +634,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                     raise e
             # EmailStr seems to be lost every time the value is set even with a validator
             # this means the incoming type is str so our validators fail
-
+            print(type_)
             if type_ is EmailStr:
                 type_ = str
 
@@ -641,7 +647,10 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
 
     @classmethod
     def _syft_searchable_keys_dict(cls) -> dict[str, type]:
-        return cls._syft_keys_types_dict("__attr_searchable__")
+        searchable_keys = cls._syft_keys_types_dict("__attr_searchable__")
+        print(cls._syft_keys_types_dict("__base_attr_searchable__"))
+        searchable_keys.update(cls._syft_keys_types_dict("__base_attr_searchable__"))
+        return searchable_keys
 
     def migrate_to(self, version: int, context: Context | None = None) -> Any:
         if self.__version__ != version:
