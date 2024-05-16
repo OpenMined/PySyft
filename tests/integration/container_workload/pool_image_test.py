@@ -140,7 +140,7 @@ def test_pool_launch(
         docker_build_result = domain_client.api.services.worker_image.build(
             image_uid=worker_image.id,
             tag=docker_tag,
-            pull=False,
+            registry_uid=external_registry_uid,
         )
         assert isinstance(docker_build_result, SyftSuccess)
 
@@ -236,7 +236,7 @@ def test_pool_image_creation_job_requests(
         tag=docker_tag,
         config=worker_config,
         reason="I want to do some more cool data science with PySyft",
-        pull_image=False,
+        registry_uid=external_registry_uid,
     )
     assert isinstance(request, Request)
     assert len(request.changes) == 2
