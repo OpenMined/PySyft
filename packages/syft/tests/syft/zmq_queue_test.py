@@ -21,9 +21,7 @@ from syft.service.queue.zmq_queue import ZMQQueueConfig
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.util.util import get_queue_address
-
-# relative
-from ..utils.random_port import get_random_port
+from syft.util.util import get_random_available_port
 
 
 @pytest.fixture
@@ -118,7 +116,7 @@ def test_zmq_client(client):
 
 @pytest.fixture
 def producer():
-    pub_port = get_random_port()
+    pub_port = get_random_available_port()
     QueueName = token_hex(8)
 
     # Create a producer
