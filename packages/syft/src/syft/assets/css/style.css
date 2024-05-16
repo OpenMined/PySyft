@@ -3,6 +3,7 @@ body[data-jp-theme-light="false"], body.vscode-dark {
   --secondary-color: #212121;
   --tertiary-color: #cfcdd6;
   --button-color: #111111;
+  --colors-black: #ffffff;
 }
 
 body {
@@ -10,6 +11,7 @@ body {
   --secondary-color: #f5f5f5;
   --tertiary-color: #000000de;
   --button-color: #d1d5db;
+  --colors-black: #17161d;
 }
 
 .header-1 {
