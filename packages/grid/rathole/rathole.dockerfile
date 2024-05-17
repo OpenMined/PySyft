@@ -55,3 +55,13 @@ EXPOSE 2333
 # add another client and edit the server.toml and client.toml for port 8002
 
 
+
+
+# docker build -f domain.dockerfile . -t domain
+# docker build -f rathole.dockerfile . -t rathole
+# docker build -f nginx.dockerfile . -t proxy
+
+# docker run -it -d -p 8080:8000 domain
+# docker run -it -p 9090:9090 proxy bash
+# docker run -it -p 8001:8001 -p 8002:8002 -p 2333:2333 -e MODE=server rathole
+# docker run -it -e MODE=client rathole

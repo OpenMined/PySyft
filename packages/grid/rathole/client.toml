@@ -1,5 +1,5 @@
 [client]
-remote_addr = "host.docker.internal:9090/rathole" # public IP and port of gateway
+remote_addr = "host.docker.internal:9090" # public IP and port of gateway
 retry_interval = 1
 
 [client.services.domain]
