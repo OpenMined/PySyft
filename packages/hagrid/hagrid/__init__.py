@@ -4,25 +4,11 @@ from .git_check import verify_git_installation  # noqa
 import sys
 from typing import Any
 
-# third party
-from rich import print
-
 # relative
 from .cli import check_status as check  # noqa: F401
 from .quickstart_ui import QuickstartUI
 from .version import __version__  # noqa: F401
 from .wizard_ui import WizardUI
-
-# Add a Deprecation warning for the old `hagrid` module
-print("\n" * 1)
-print("=" * 80)
-print("DEPRECATION WARNING")
-print("=" * 80)
-print("The Hagrid CLI deployment tool is now deprecated.")
-print("Kindly use the new deployment options available in the below link")
-print("https://github.com/OpenMined/PySyft/tree/dev/notebooks/tutorials/deployments")
-print("=" * 80)
-print("\n" * 1)
 
 
 def module_property(func: Any) -> None:
