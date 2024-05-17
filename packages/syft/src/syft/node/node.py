@@ -437,9 +437,12 @@ class Node(AbstractNode):
     def get_default_store(self, use_sqlite: bool) -> StoreConfig:
         if use_sqlite:
             path = self.get_temp_dir("db")
+            file_name: str = f"{self.id}.sqlite"
+            if self.dev_mode:
+                print(f"SQLite db path: {path/file_name}")
             return SQLiteStoreConfig(
                 client_config=SQLiteStoreClientConfig(
-                    filename=f"{self.id}.sqlite",
+                    filename=file_name,
                     path=path,
                 )
             )
