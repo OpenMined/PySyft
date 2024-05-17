@@ -136,6 +136,10 @@ class GridURL:
         return f"{self.protocol}://{self.host_or_ip}"
 
     @property
+    def url_no_protocol(self) -> str:
+        return f"{self.host_or_ip}:{self.port}{self.path}"
+
+    @property
     def url_path(self) -> str:
         return f"{self.path}{self.query_string}"
 

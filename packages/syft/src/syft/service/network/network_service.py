@@ -49,7 +49,6 @@ from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..warnings import CRUDWarning
 from .association_request import AssociationRequestChange
 from .node_peer import NodePeer
-from .rathole import get_rathole_port
 from .rathole_service import RatholeService
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
@@ -206,7 +205,12 @@ class NetworkService(AbstractService):
                 message=f"Failed to update remote node peer: {str(result.err())}"
             )
 
-        remote_addr = f"{remote_node_route.protocol}://{remote_node_route.host_or_ip}:{get_rathole_port()}"
+        remote_url = GridURL(
+            host_or_ip=remote_node_route.host_or_ip, port=remote_node_route.port
+        )
+        rathole_remote_addr = remote_url.with_path("/rathole").as_container_host()
+
+        remote_addr = rathole_remote_addr.url_no_protocol
 
         self.rathole_service.add_host_to_client(
             peer_name=self_node_peer.name,

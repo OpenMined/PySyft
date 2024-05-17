@@ -12,6 +12,11 @@ data:
     [server]
     bind_addr = "0.0.0.0:2333"
 
+    [server.transport]
+    type = "websocket"
+    [server.transport.websocket]
+    tls = false
+
     [server.services.domain]
     token = "domain-specific-rathole-secret"
     bind_addr = "0.0.0.0:8001"
@@ -21,4 +26,9 @@ data:
   client.toml: |
     [client]
     remote_addr = "0.0.0.0:2333"
+
+    [client.transport]
+    type = "websocket"
+    [client.transport.websocket]
+    tls = false
   {{- end }}
