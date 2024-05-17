@@ -4,6 +4,7 @@ from typing import Any
 
 # third party
 import rich
+from rich.text import Text
 
 # relative
 from .quickstart_ui import QuickstartUI
@@ -20,13 +21,12 @@ table.add_row(
         color="red",
     ),
 )
-table.add_row(
-    "Please refer to https://github.com/OpenMined/PySyft/notebooks/"
-    "tutorials/deployments/00-deployment-types.ipynb for the deployment instructions.",
-    style=rich.style.Style(
-        color=None,
-    ),
-)
+link = "https://github.com/OpenMined/PySyft/tree/dev/notebooks/tutorials/deployments"
+link_text = Text(link, style="link " + link + " cyan")
+normal_text = Text("Please refer to ")
+normal_text.append(link_text)
+normal_text.append(" for the deployment instructions.")
+table.add_row(normal_text)
 console.print(table)
 
 
