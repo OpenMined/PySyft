@@ -163,6 +163,12 @@ class AbstractService:
             private_path=f"{self.object_type}service.delete", 
             name="delete", 
             **method_params.get('delete', {}))(self.delete.__func__)
+        
+        restore_wrapper = service_method(
+            path=f"{self.object_type}.restore", 
+            private_path=f"{self.object_type}service.restore", 
+            name="restore", 
+            **method_params.get('restore', {}))(self.restore.__func__)
 
         def bind(instance, func, as_name=None):
             if as_name is None:
@@ -175,6 +181,7 @@ class AbstractService:
         bind(self, get_wrapper)
         bind(self, update_wrapper)
         bind(self, delete_wrapper)
+        bind(self, restore_wrapper)
 
     
     @property
@@ -191,8 +198,16 @@ class AbstractService:
 
         return SyftSuccess(message=f"{self.object_type} successfully created.")
         
-    def get(self, context: AuthedServiceContext, uid: UID) -> SyftError | Any:
-        res = self.stash.get_by_uid(context.credentials, uid)
+    def get(
+        self, 
+        context: AuthedServiceContext, 
+        uid: UID, 
+        is_deleted: bool = False
+    ) -> SyftError | Any:
+        if is_deleted:
+            if context.role not in DATA_OWNER_ROLE_LEVEL:
+                is_deleted = False
+        res = self.stash.get_by_uid(context.credentials, uid, is_deleted)
         if res.is_err():
             return SyftError(message=res.err())
         return res.ok()
@@ -212,10 +227,14 @@ class AbstractService:
         return SyftSuccess(message=f"{self.object_type} successfully deleted.")
 
     def restore(self, context: AuthedServiceContext, uid: UID) -> SyftError | Any:
-        res = self.stash.restore_by_uid(context.credentials, uid)
-        if res.is_err():
-            return SyftError(message=res.err())
-        return SyftSuccess(message=f"{self.object_type} successfully restored.")
+        obj = self.get(context, uid, is_deleted=True)
+        if obj:
+            obj.deleted_date = None
+            res = self.stash.update(context.credentials, obj)
+            if res.is_err():
+                return SyftError(message=res.err())
+            return SyftSuccess(message=f"{self.object_type} successfully restored.")
+        return SyftError(message=f"Object with id={uid} not found.")
 
     def resolve_link(
         self,

@@ -775,14 +775,16 @@ class BaseStash:
         return self.update(credentials=credentials, obj=obj)
     
     def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
+        self, credentials: SyftVerifyKey, uid: UID, is_deleted: bool = False
     ) -> Result[BaseStash.object_type | None, str]:
-        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid), IsDeletedPartitionKey.with_obj(False)])
+        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid), IsDeletedPartitionKey.with_obj(is_deleted)])
         return self.query_one(credentials=credentials, qks=qks)
 
-    def restore_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
-    )-> Result[BaseStash.object_type | None, str]:
+    # def restore_by_uid(
+    #     self, credentials: SyftVerifyKey, uid: UID
+    # )-> Result[BaseStash.object_type | None, str]:
+    #     qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
+    #     return self.query_one(credentials=credentials, qks=qks)
 
 @instrument
 class BaseUIDStoreStash(BaseStash):
