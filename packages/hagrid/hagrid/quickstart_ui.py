@@ -104,7 +104,7 @@ def fetch_notebooks_for_url(
                 print(nb)
 
         overwrite_all = False
-        for notebook_url in tqdm(notebooks):
+        for notebook_url in tqdm(notebooks, colour="green"):
             file_path, _, overwrite_all = quickstart_download_notebook(
                 url=notebook_url,
                 directory=os.path.abspath(directory + os.sep + str(url_dir) + os.sep),
@@ -184,7 +184,7 @@ def fetch_notebooks_from_zipfile(
 
     extracted_files = []
     overwrite_all = False
-    for notebook in tqdm(notebooks):
+    for notebook in tqdm(notebooks, colour="green"):
         file_path, _, overwrite_all = quickstart_extract_notebook(
             zip_file=path,
             name=notebook,
