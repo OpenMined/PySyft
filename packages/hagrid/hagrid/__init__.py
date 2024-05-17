@@ -10,8 +10,6 @@ from .quickstart_ui import QuickstartUI
 from .version import __version__  # noqa: F401
 from .wizard_ui import WizardUI
 
-from .orchestra import Orchestra  # noqa
-
 
 def module_property(func: Any) -> None:
     """Decorator to turn module functions into properties.
