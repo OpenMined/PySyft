@@ -140,49 +140,18 @@ class AbstractService:
         # Add basic CRUD
         print(f"Creating {self.object_type} service", file=sys.stderr)
 
-        set_wrapper = service_method(
-            path=f"{self.object_type}.set", 
-            private_path=f"{self.object_type}service.set", 
-            name="set", 
-            **method_params.get('set', {}))(self.set.__func__)
-
-        get_wrapper = service_method(
-            path=f"{self.object_type}.get", 
-            private_path=f"{self.object_type}service.get", 
-            name="get", 
-            **method_params.get('get', {}))(self.get.__func__)
-
-        update_wrapper = service_method(
-            path=f"{self.object_type}.update", 
-            private_path=f"{self.object_type}service.update", 
-            name="update", 
-            **method_params.get('update', {}))(self.update.__func__)
-
-        delete_wrapper = service_method(
-            path=f"{self.object_type}.delete", 
-            private_path=f"{self.object_type}service.delete", 
-            name="delete", 
-            **method_params.get('delete', {}))(self.delete.__func__)
-        
-        restore_wrapper = service_method(
-            path=f"{self.object_type}.restore", 
-            private_path=f"{self.object_type}service.restore", 
-            name="restore", 
-            **method_params.get('restore', {}))(self.restore.__func__)
-
-        def bind(instance, func, as_name=None):
-            if as_name is None:
-                as_name = func.__name__
+        def wrap_service(service_name: str):
+            wrapper = service_method(
+                path=f"{self.object_type}.{service_name}", 
+                private_path=f"{self.object_type}service.{service_name}", 
+                name=service_name, 
+                **method_params.get(service_name, {}))(self.set.__func__)
+            
             from types import MethodType
-            setattr(instance, as_name, MethodType(func, instance))
+            setattr(self, wrapper.__name__, MethodType(wrapper, self))
 
-                
-        bind(self, set_wrapper)
-        bind(self, get_wrapper)
-        bind(self, update_wrapper)
-        bind(self, delete_wrapper)
-        bind(self, restore_wrapper)
-
+        for service_name in ["set", "get", "update", "delete", "restore"]:
+            wrap_service(service_name=service_name)
     
     @property
     def object_type(self):
