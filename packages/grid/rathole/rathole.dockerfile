@@ -36,6 +36,10 @@ EXPOSE 2333
 # build and run the rathole container
 # docker build -f rathole.dockerfile . -t rathole
 
+# build nginx container
+# docker build -f nginx.dockerfile . -t proxy
+# docker run -it -p 9090:9090 proxy bash
+
 # run the rathole server
 # docker run -it -p 8001:8001 -p 8002:8002 -p 2333:2333 -e MODE=server rathole
 

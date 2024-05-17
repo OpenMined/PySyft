@@ -4,3 +4,13 @@ bind_addr = "0.0.0.0:2333" # public open port
 [server.services.domain]
 token = "domain-specific-rathole-secret"
 bind_addr = "0.0.0.0:8001"
+
+[server.transport.tcp]
+keepalive_secs = 5 # Optional. Specify `tcp_keepalive_time` in `tcp(7)`, if applicable. Default: 20 seconds
+keepalive_interval = 5 # Optional. Specify `tcp_keepalive_intvl` in `tcp(7)`, if applicable. Default: 8 seconds
+
+[server.transport]
+type = "websocket" 
+
+[server.transport.websocket] 
+tls = false

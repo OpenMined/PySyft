@@ -1,6 +1,17 @@
 [client]
-remote_addr = "host.docker.internal:2333" # public IP and port of gateway
+remote_addr = "host.docker.internal:9090/rathole" # public IP and port of gateway
+retry_interval = 1
 
 [client.services.domain]
 token = "domain-specific-rathole-secret"
 local_addr = "localhost:8000" # nginx proxy
+
+[client.transport.tcp]
+keepalive_secs = 5 # Optional. Specify `tcp_keepalive_time` in `tcp(7)`, if applicable. Default: 20 seconds
+keepalive_interval = 5 # Optional. Specify `tcp_keepalive_intvl` in `tcp(7)`, if applicable. Default: 8 seconds
+
+[client.transport]
+type = "websocket"
+
+[client.transport.websocket] 
+tls = false
