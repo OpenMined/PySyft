@@ -1288,7 +1288,12 @@ It will be available for review again."""
                 # TODO: Figure out nested user codes, do we even need that?
 
                 root_ids.append(diff.object_id)  # type: ignore
-            elif isinstance(diff_obj, Job) and diff_obj.parent_job_id is None:  # type: ignore
+            elif (
+                isinstance(diff_obj, Job)
+                and diff_obj.parent_job_id is None
+                # ignore Job objects created by TwinAPIEndpoint
+                and diff_obj.action_display_name != "None.None"
+            ):
                 root_ids.append(diff.object_id)  # type: ignore
 
         for root_uid in root_ids:
