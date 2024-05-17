@@ -1,14 +1,34 @@
-from .git_check import verify_git_installation  # noqa
-
 # stdlib
 import sys
 from typing import Any
 
+# third party
+import rich
+
 # relative
-from .cli import check_status as check  # noqa: F401
 from .quickstart_ui import QuickstartUI
 from .version import __version__  # noqa: F401
 from .wizard_ui import WizardUI
+
+
+console = rich.get_console()
+table = rich.table.Table(show_header=False)
+table.add_column(justify="center")
+table.add_row(
+    "🚨🚨🚨 Hagrid has been deprecated. 🚨🚨🚨",
+    style=rich.style.Style(
+        bold=True,
+        color="red",
+    ),
+)
+table.add_row(
+    "Please refer to https://github.com/OpenMined/PySyft/notebooks/"
+    "tutorials/deployments/00-deployment-types.ipynb for the deployment instructions.",
+    style=rich.style.Style(
+        color=None,
+    ),
+)
+console.print(table)
 
 
 def module_property(func: Any) -> None:
