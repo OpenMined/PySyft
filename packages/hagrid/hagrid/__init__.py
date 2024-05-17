@@ -10,6 +10,7 @@ from .quickstart_ui import QuickstartUI
 from .version import __version__  # noqa: F401
 from .wizard_ui import WizardUI
 
+
 console = rich.get_console()
 table = rich.table.Table(show_header=False)
 table.add_column(justify="center")
