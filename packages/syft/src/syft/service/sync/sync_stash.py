@@ -8,7 +8,7 @@ from result import Result
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
@@ -22,7 +22,7 @@ OrderByDatePartitionKey = PartitionKey(key="created_at", type_=DateTime)
 
 @instrument
 @serializable()
-class SyncStash(BaseUIDStoreStash):
+class SyncStash(BaseStash):
     object_type = SyncState
     settings: PartitionSettings = PartitionSettings(
         name=SyncState.__canonical_name__,

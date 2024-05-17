@@ -14,7 +14,7 @@ from typing_extensions import ParamSpec
 from syft.serde.serializable import serializable
 from syft.service.response import SyftSuccess
 from syft.store.dict_document_store import DictDocumentStore
-from syft.store.document_store import BaseUIDStoreStash
+from syft.store.document_store import BaseStash
 from syft.store.document_store import PartitionKey
 from syft.store.document_store import PartitionSettings
 from syft.store.document_store import QueryKey
@@ -42,7 +42,7 @@ DescPartitionKey = PartitionKey(key="desc", type_=str)
 ImportancePartitionKey = PartitionKey(key="importance", type_=int)
 
 
-class MockStash(BaseUIDStoreStash):
+class MockStash(BaseStash):
     object_type = MockObject
     settings = PartitionSettings(
         name=MockObject.__canonical_name__, object_type=MockObject

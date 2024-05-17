@@ -9,7 +9,7 @@ from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
@@ -22,7 +22,7 @@ WorkerConfigPK = PartitionKey(key="config", type_=WorkerConfig)
 
 
 @serializable()
-class SyftWorkerImageStash(BaseUIDStoreStash):
+class SyftWorkerImageStash(BaseStash):
     object_type = SyftWorkerImage
     settings: PartitionSettings = PartitionSettings(
         name=SyftWorkerImage.__canonical_name__,

@@ -6,7 +6,7 @@ from result import Result
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
@@ -26,7 +26,7 @@ from .user_code import UserCodeStatusCollection
 
 @instrument
 @serializable()
-class StatusStash(BaseUIDStoreStash):
+class StatusStash(BaseStash):
     object_type = UserCodeStatusCollection
     settings: PartitionSettings = PartitionSettings(
         name=UserCodeStatusCollection.__canonical_name__,

@@ -6,7 +6,7 @@ from result import Result
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
@@ -22,7 +22,7 @@ ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 
 @instrument
 @serializable()
-class DatasetStash(BaseUIDStoreStash):
+class DatasetStash(BaseStash):
     object_type = Dataset
     settings: PartitionSettings = PartitionSettings(
         name=Dataset.__canonical_name__, object_type=Dataset

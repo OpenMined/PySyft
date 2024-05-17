@@ -6,7 +6,7 @@ from result import Result
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
@@ -21,7 +21,7 @@ ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 
 @instrument
 @serializable()
-class SettingsStash(BaseUIDStoreStash):
+class SettingsStash(BaseStash):
     object_type = NodeSettings
     settings: PartitionSettings = PartitionSettings(
         name=NodeSettings.__canonical_name__, object_type=NodeSettings

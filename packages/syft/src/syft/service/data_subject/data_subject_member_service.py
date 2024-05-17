@@ -6,7 +6,7 @@ from result import Result
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
@@ -24,7 +24,7 @@ from .data_subject_member import ParentPartitionKey
 
 @instrument
 @serializable()
-class DataSubjectMemberStash(BaseUIDStoreStash):
+class DataSubjectMemberStash(BaseStash):
     object_type = DataSubjectMemberRelationship
     settings: PartitionSettings = PartitionSettings(
         name=DataSubjectMemberRelationship.__canonical_name__,

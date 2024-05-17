@@ -6,7 +6,7 @@ from result import Result
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import BaseStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
@@ -23,7 +23,7 @@ OrderByRequestTimeStampPartitionKey = PartitionKey(key="request_time", type_=Dat
 
 @instrument
 @serializable()
-class RequestStash(BaseUIDStoreStash):
+class RequestStash(BaseStash):
     object_type = Request
     settings: PartitionSettings = PartitionSettings(
         name=Request.__canonical_name__, object_type=Request

@@ -6,7 +6,7 @@ from result import Result
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import BaseStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
@@ -23,7 +23,7 @@ NamePartitionKey = PartitionKey(key="name", type_=str)
 
 @instrument
 @serializable()
-class ProjectStash(BaseUIDStoreStash):
+class ProjectStash(BaseStash):
     object_type = Project
     settings: PartitionSettings = PartitionSettings(
         name=Project.__canonical_name__, object_type=Project

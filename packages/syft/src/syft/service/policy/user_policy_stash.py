@@ -6,7 +6,7 @@ from result import Result
 # relative
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
@@ -15,7 +15,7 @@ from .policy import UserPolicy
 
 
 @serializable()
-class UserPolicyStash(BaseUIDStoreStash):
+class UserPolicyStash(BaseStash):
     object_type = UserPolicy
     settings: PartitionSettings = PartitionSettings(
         name=UserPolicy.__canonical_name__, object_type=UserPolicy

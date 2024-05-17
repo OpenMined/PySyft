@@ -16,7 +16,7 @@ from ...node.credentials import SyftVerifyKey
 from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...service.settings.settings import NodeSettings
-from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
@@ -60,7 +60,7 @@ OrderByNamePartitionKey = PartitionKey(key="name", type_=str)
 
 @instrument
 @serializable()
-class NetworkStash(BaseUIDStoreStash):
+class NetworkStash(BaseStash):
     object_type = NodePeer
     settings: PartitionSettings = PartitionSettings(
         name=NodePeer.__canonical_name__, object_type=NodePeer

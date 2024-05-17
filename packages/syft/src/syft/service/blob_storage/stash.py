@@ -1,13 +1,13 @@
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...types.blob_storage import BlobStorageEntry
 
 
 @serializable()
-class BlobStorageStash(BaseUIDStoreStash):
+class BlobStorageStash(BaseStash):
     object_type = BlobStorageEntry
     settings: PartitionSettings = PartitionSettings(
         name=BlobStorageEntry.__canonical_name__, object_type=BlobStorageEntry

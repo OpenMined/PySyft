@@ -11,7 +11,7 @@ from result import Result
 from ...client.api import APIRegistry
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
-from ...store.document_store import BaseUIDStoreStash
+from ...store.document_store import BaseStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
@@ -190,7 +190,7 @@ class ExecutionOutput(SyncableSyftObject):
 
 @instrument
 @serializable()
-class OutputStash(BaseUIDStoreStash):
+class OutputStash(BaseStash):
     object_type = ExecutionOutput
     settings: PartitionSettings = PartitionSettings(
         name=ExecutionOutput.__canonical_name__, object_type=ExecutionOutput
