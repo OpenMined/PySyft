@@ -107,9 +107,9 @@ helm install ... --set ingress.class="gce"
 
 ## Note:
 
-🚨 Our deployment tool `Hagrid` is `Deprecated` .For the updated deployment options kindly refer to
+🚨 Our deployment tool `Hagrid` has been `Deprecated`. For the updated deployment options kindly refer to
 
-- 📚 <a href="https://github.com/OpenMined/PySyft/tree/dev/notebooks/tutorials/deployments"> Deployments</a>
+- 📚 <a href="https://github.com/OpenMined/PySyft/tree/dev/notebooks/tutorials/deployments">Deployments</a>
 
 ## Docs and Support
 
