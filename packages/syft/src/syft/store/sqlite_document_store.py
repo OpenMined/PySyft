@@ -3,12 +3,12 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Generator
-import contextlib
 from contextlib import contextmanager
 from copy import deepcopy
 from pathlib import Path
 import sqlite3
 import tempfile
+import threading
 from typing import Any
 
 # third party
@@ -70,6 +70,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         path = Path(self.file_path)
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
+        self._local = threading.local()
         self.create_table()
 
     @property
@@ -84,34 +85,37 @@ class SQLiteBackingStore(KeyValueBackingStore):
         ) as _:
             pass
 
+    def _initialize_connection(self, con: sqlite3.Connection) -> None:
+        """Set PRAGMA settings for the connection."""
+        con.execute("PRAGMA journal_mode = WAL")
+        con.execute("PRAGMA busy_timeout = 5000")
+        con.execute("PRAGMA temp_store = 2")
+        con.execute("PRAGMA synchronous = 1")
+
+    def _get_connection(self) -> sqlite3.Connection:
+        if not hasattr(self._local, "connection"):
+            timeout = (
+                self.store_config.client_config.timeout
+                if self.store_config.client_config
+                else 5
+            )
+            self._local.connection = sqlite3.connect(
+                self.file_path, timeout=timeout, check_same_thread=False
+            )
+            self._initialize_connection(self._local.connection)
+        return self._local.connection
+
     @contextmanager
     def _cursor(
         self, sql: str, *args: list[Any] | None
     ) -> Generator[sqlite3.Cursor, None, None]:
-        timeout = (
-            self.store_config.client_config.timeout
-            if self.store_config.client_config
-            else 5
-        )
-        with contextlib.closing(
-            sqlite3.connect(
-                self.file_path,
-                timeout=timeout,
-                check_same_thread=False,  # do we need this if we use the lock?
-                # check_same_thread=self.store_config.client_config.check_same_thread,
-            )
-        ) as con:
-            # Set journal mode to WAL.
-            con.execute("PRAGMA journal_mode = WAL")
-            con.execute("PRAGMA busy_timeout = 5000")
-            con.execute("PRAGMA temp_store = 2")
-            con.execute("PRAGMA synchronous = 1")
-            cur = con.cursor()
-            yield cur.execute(sql, *args)
-            try:
-                con.commit()
-            finally:
-                cur.close()
+        con = con = self._get_connection()
+        cur = con.cursor()
+        yield cur.execute(sql, *args)
+        try:
+            con.commit()
+        finally:
+            cur.close()
 
     def _set(self, key: UID, value: Any) -> None:
         if self._exists(key):
@@ -235,6 +239,10 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def __iter__(self) -> Any:
         return iter(self.keys())
+
+    def __del__(self) -> None:
+        if hasattr(self._local, "connection"):
+            self._local.connection.close()
 
 
 @serializable()
