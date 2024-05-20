@@ -8,8 +8,6 @@ from io import BytesIO
 
 # third party
 from dateutil import parser
-from jax import numpy as jnp
-from jaxlib.xla_extension import ArrayImpl
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import networkx as nx
@@ -26,6 +24,8 @@ from pymongo.collection import Collection
 from result import Err
 from result import Ok
 from result import Result
+import torch
+from torch import Tensor
 import zmq.green as zmq
 
 # relative
@@ -109,6 +109,37 @@ recursive_serde_register(
 )
 
 
+def serialize_torch_tensor(tensor: Tensor) -> bytes:
+    buffer = BytesIO()
+    torch.save(tensor, buffer)
+    return buffer.getvalue()
+
+
+def deserialize_torch_tensor(buf: bytes) -> Tensor:
+    buffer = BytesIO(buf)
+    return torch.load(buffer)
+
+
+recursive_serde_register(
+    Tensor,
+    serialize=serialize_torch_tensor,
+    deserialize=deserialize_torch_tensor,
+)
+
+# import pickle
+# note: using pickle gives less bytes
+# def serialize_torch_tensor(tensor: Tensor) -> bytes:
+#     return pickle.dumps(tensor)
+
+# def deserialize_torch_tensor(buf: bytes) -> Tensor:
+#     return pickle.loads(buf)
+
+# recursive_serde_register(
+#     Tensor,
+#     serialize=serialize_torch_tensor,
+#     deserialize=deserialize_torch_tensor,
+# )
+
 recursive_serde_register(
     datetime,
     serialize=lambda x: serialize(x.isoformat(), to_bytes=True),
@@ -182,11 +213,11 @@ except Exception:  # nosec
     pass
 
 # jax
-recursive_serde_register(
-    ArrayImpl,
-    serialize=lambda x: serialize(np.array(x), to_bytes=True),
-    deserialize=lambda x: jnp.array(deserialize(x, from_bytes=True)),
-)
+# recursive_serde_register(
+#     ArrayImpl,
+#     serialize=lambda x: serialize(np.array(x), to_bytes=True),
+#     deserialize=lambda x: jnp.array(deserialize(x, from_bytes=True)),
+# )
 
 
 # unsure why we have to register the object not the type but this works
