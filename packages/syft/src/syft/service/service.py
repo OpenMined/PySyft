@@ -288,6 +288,7 @@ def reconstruct_args_kwargs(
             final_kwargs[param_key] = param.default
         else:
             raise Exception(f"Missing {param_key} not in kwargs.")
+    final_kwargs['context'] = kwargs['context'] if 'context' in kwargs else None
     return (args, final_kwargs)
 
 
@@ -340,7 +341,6 @@ def service_method(
         _path = class_name + "." + func_name
         signature = inspect.signature(func)
         signature = signature_remove_self(signature)
-        signature_with_context = deepcopy(signature)
         signature = signature_remove_context(signature)
 
         input_signature = deepcopy(signature)
@@ -354,7 +354,7 @@ def service_method(
                 )
             if autosplat is not None and len(autosplat) > 0:
                 args, kwargs = reconstruct_args_kwargs(
-                    signature=signature_with_context,
+                    signature=input_signature,
                     autosplat=autosplat,
                     args=args,
                     kwargs=kwargs,
