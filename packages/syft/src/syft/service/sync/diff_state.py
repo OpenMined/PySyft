@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Iterable
 import html
 import textwrap
 from typing import Any
@@ -806,7 +807,7 @@ class ObjectDiffBatch(SyftObject):
         except Exception as _:
             return SyftError(
                 message=html.escape(
-                    "Could not render batch, please use resolve_single(<batch>) instead."
+                    "Could not render batch, please use resolve(<batch>) instead."
                 )
             )._repr_html_()
 
@@ -892,7 +893,7 @@ class ObjectDiffBatch(SyftObject):
         except Exception as _:
             return SyftError(
                 message=html.escape(
-                    "Could not render batch, please use resolve_single(<batch>) instead."
+                    "Could not render batch, please use resolve(<batch>) instead."
                 )
             )._repr_html_()
 
@@ -1047,6 +1048,14 @@ class NodeDiff(SyftObject):
         return [
             batch for batch in self.all_batches if batch.decision == SyncDecision.IGNORE
         ]
+
+    @property
+    def active_batches(self) -> Iterable[ObjectDiffBatch]:
+        decisions_to_skip = {SyncDecision.IGNORE, SyncDecision.SKIP}
+        # self.batches might be modified during iteration
+        for batch in self.batches:
+            if batch.decision not in decisions_to_skip:
+                yield batch
 
     @property
     def ignored_changes(self) -> list[IgnoredBatchView]:
