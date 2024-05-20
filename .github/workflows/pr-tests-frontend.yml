@@ -61,7 +61,7 @@ jobs:
         if: steps.changes.outputs.frontend == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-frontend
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('packages/hagrid/setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-uv-py${{ matrix.python-version }}-
 

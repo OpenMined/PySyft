@@ -1,0 +1,31 @@
+manifestVersion: 0.1
+hagrid_version: 0.3.122
+syft_version: 0.8.7-beta.7
+dockerTag: 0.8.7-beta.7
+baseUrl: https://raw.githubusercontent.com/OpenMined/PySyft/
+hash: a4268fab7ad76cd2e854b259660879f15e213824
+target_dir: ~/.hagrid/PySyft/
+files:
+  grid:
+    path: packages/grid/
+    common:
+    - default.env
+    docker:
+    - default.env
+    - docker-compose.build.yml
+    - docker-compose.dev.yml
+    - docker-compose.pull.yml
+    - docker-compose.test.yml
+    - docker-compose.tls.yml
+    - docker-compose.yml
+    - traefik/docker/dynamic-tls.yml
+    - traefik/docker/dynamic.yml
+    - traefik/docker/traefik-tls.template.yml
+    - traefik/docker/traefik.yml
+    k8s:
+    - devspace.yaml
+    podman:
+    - podman/podman-kube/podman-syft-kube-config.yaml
+    - podman/podman-kube/podman-syft-kube.yaml
+    - podman/podman-kube/traefik/conf/dynamic.yml
+    - podman/podman-kube/traefik/traefik.yml

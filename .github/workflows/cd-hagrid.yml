@@ -1,0 +1,108 @@
+name: CD - HAGrid
+
+on:
+  schedule:
+    - cron: "00 10 * * */3" # At 10:00 UTC on every three days
+
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: "If true, skip tests"
+        required: false
+        default: "false"
+
+# Prevents concurrent runs of the same workflow
+# while the previous run is still in progress
+concurrency:
+  group: "CD - Hagrid"
+  cancel-in-progress: false
+
+jobs:
+  call-pr-tests-linting:
+    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/pr-tests-linting.yml@dev
+
+  call-pr-tests-syft:
+    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/pr-tests-syft.yml@dev
+
+  call-pr-tests-stack:
+    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/pr-tests-stack.yml@dev
+    secrets: inherit
+
+  call-hagrid-tests:
+    if: github.repository == 'OpenMined/PySyft' && (github.event.inputs.skip_tests == 'false' || github.event_name == 'schedule') # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/pr-tests-hagrid.yml@dev
+
+  deploy-hagrid:
+    needs:
+      [
+        call-pr-tests-linting,
+        call-pr-tests-syft,
+        call-pr-tests-stack,
+        call-hagrid-tests,
+      ]
+    if: always() && (needs.call-pr-tests-linting.result == 'success' && needs.call-pr-tests-syft.result == 'success' && needs.call-pr-tests-stack.result == 'success' && needs.call-hagrid-tests.result == 'success' || github.event.inputs.skip_tests == 'true')
+    runs-on: ubuntu-latest
+
+    outputs:
+      current_hash: ${{ steps.get_hash.outputs.current_hash }}
+      previous_hash: ${{ steps.get_hash.outputs.previous_hash }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
+      - name: Install checksumdir
+        run: |
+          pip install --upgrade checksumdir
+      - name: Get the hashes
+        id: get-hashes
+        shell: bash
+        run: |
+          current_hash=$(checksumdir ./packages/hagrid)
+          echo "current_hash=$current_hash" >> $GITHUB_OUTPUT
+          previous_hash=$(cat ./scripts/hagrid_hash)
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade tox setuptools wheel twine bump2version PyYAML
+
+      - name: Bump the Version
+        if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
+        run: |
+          python3 hagrid/version.py
+          python3 scripts/update_manifest.py
+          bump2version patch --allow-dirty --no-commit
+          tox -e lint || true
+          python3 hagrid/version.py
+        working-directory: ./packages/hagrid
+
+      - name: Write the new hash
+        if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
+        run: echo $(checksumdir packages/hagrid) > ./scripts/hagrid_hash
+
+      - name: Commit changes
+        if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: ${{ secrets.OM_BOT_NAME }}
+          author_email: ${{ secrets.OM_BOT_EMAIL }}
+          message: "[hagrid] bump version"
+          add: "['./packages/hagrid/.bumpversion.cfg','./packages/hagrid/setup.py','./packages/hagrid/hagrid/version.py', './scripts/hagrid_hash', './packages/hagrid/hagrid/manifest_template.yml']"
+
+      - name: Build and publish
+        if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.HAGRID_BUMP_TOKEN }}
+        run: |
+          tox -e hagrid.publish
+          twine upload packages/hagrid/dist/*
