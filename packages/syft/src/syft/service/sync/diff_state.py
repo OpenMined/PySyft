@@ -1288,14 +1288,14 @@ It will be available for review again."""
             if isinstance(diff_obj, Request | UserCode | TwinAPIEndpoint):
                 # TODO: Figure out nested user codes, do we even need that?
 
-                root_ids.append(diff.object_id)  # type: ignore
+                root_ids.append(diff.object_id)
             elif (
-                isinstance(diff_obj, Job)
+                issubclass(diff_obj, Job)
                 and diff_obj.parent_job_id is None
                 # ignore Job objects created by TwinAPIEndpoint
                 and diff_obj.job_type != JobType.TWINAPIJOB
             ):
-                root_ids.append(diff.object_id)  # type: ignore
+                root_ids.append(diff.object_id)
 
         for root_uid in root_ids:
             batch = ObjectDiffBatch.from_dependencies(
