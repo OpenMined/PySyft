@@ -1,5 +1,6 @@
 # stdlib
 from threading import Thread
+import time
 
 # third party
 import pytest
@@ -20,6 +21,31 @@ def test_sqlite_store_partition_sanity(
     assert hasattr(sqlite_store_partition, "data")
     assert hasattr(sqlite_store_partition, "unique_keys")
     assert hasattr(sqlite_store_partition, "searchable_keys")
+
+
+def test_sqlite_store_partition_benchmark(
+    root_verify_key,
+    sqlite_store_partition: SQLiteStorePartition,
+) -> None:
+    obj = MockSyftObject(data=1)
+
+    start_time = time.time()
+    n = 10000
+    for _ in range(n):
+        res = sqlite_store_partition.set(root_verify_key, obj, ignore_duplicates=True)
+        assert res.is_ok()
+        assert res.ok() == obj
+        assert (
+            len(
+                sqlite_store_partition.all(
+                    root_verify_key,
+                ).ok()
+            )
+            == 1
+        )
+    end_time = time.time()
+    avg_time = (end_time - start_time) / n
+    print(f"Avg time for {n} set operations: {avg_time}")
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=3)
