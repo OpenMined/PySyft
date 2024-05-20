@@ -87,7 +87,6 @@ from .quickstart_ui import fetch_notebooks_from_zipfile
 from .quickstart_ui import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
 from .stable_version import LATEST_STABLE_SYFT
-from .style import RichGroup
 from .util import fix_windows_virtualenv_api
 from .util import from_url
 from .util import shell
@@ -113,7 +112,7 @@ def get_azure_image(short_name: str) -> str:
     raise Exception(f"Image name doesn't exist: {short_name}. Try: default or 0.7.0")
 
 
-@click.group(cls=RichGroup)
+@click.command
 def cli() -> None:
     pass
 
@@ -3457,11 +3456,6 @@ def land(args: tuple[str], **kwargs: Any) -> None:
         print("Hagrid land aborted.")
 
 
-cli.add_command(launch)
-cli.add_command(land)
-cli.add_command(clean)
-
-
 @click.command(
     help="Show HAGrid debug information", context_settings={"show_default": True}
 )
@@ -3472,9 +3466,6 @@ def debug(args: tuple[str], **kwargs: Any) -> None:
     print("==================================================================\n")
     print(json.dumps(debug_info))
     print("\n=================================================================\n\n")
-
-
-cli.add_command(debug)
 
 
 DEFAULT_HEALTH_CHECKS = ["host", "UI (βeta)", "api", "ssh", "jupyter"]
@@ -3819,18 +3810,12 @@ def check_status(
         print("Video Explanation: https://youtu.be/BJhlCxerQP4 \n")
 
 
-cli.add_command(check)
-
-
 # add Hagrid info to the cli
 @click.command(help="Show HAGrid info", context_settings={"show_default": True})
 def version() -> None:
     print(f"HAGRID_VERSION: {get_version_string()}")
     if EDITABLE_MODE:
         print(f"HAGRID_REPO_SHA: {commit_hash()}")
-
-
-cli.add_command(version)
 
 
 def run_quickstart(
@@ -4074,9 +4059,6 @@ def quickstart_cli(
     )
 
 
-cli.add_command(quickstart_cli, "quickstart")
-
-
 def display_jupyter_url(url_parts: tuple[str, str, int]) -> None:
     url = url_parts[0]
     if is_gitpod():
@@ -4236,9 +4218,6 @@ def dagobah(zip_file: str) -> None:
     return run_quickstart(zip_file=zip_file)
 
 
-cli.add_command(dagobah)
-
-
 def ssh_into_remote_machine(
     host_ip: str,
     username: str,
@@ -4326,9 +4305,6 @@ def ssh(ip_address: str, cmd: str) -> None:
         )
 
 
-cli.add_command(ssh)
-
-
 # Add hagrid logs command to the CLI
 @click.command(
     help="Get the logs of the HAGrid node", context_settings={"show_default": True}
@@ -4401,4 +4377,13 @@ long_string = (
     + "               [bold green]HAPPY DEBUGGING! 🐛🐞🦗🦟🦠🦠🦠[/bold green]\n                      "
 )
 
-cli.add_command(logs)
+# cli.add_command(launch)
+# cli.add_command(land)
+# cli.add_command(clean)
+# cli.add_command(debug)
+# cli.add_command(check)
+# cli.add_command(version)
+# cli.add_command(quickstart_cli, "quickstart")
+# cli.add_command(dagobah)
+# cli.add_command(ssh)
+# cli.add_command(logs)
