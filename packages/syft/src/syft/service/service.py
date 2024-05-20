@@ -340,6 +340,7 @@ def service_method(
         _path = class_name + "." + func_name
         signature = inspect.signature(func)
         signature = signature_remove_self(signature)
+        signature_with_context = deepcopy(signature)
         signature = signature_remove_context(signature)
 
         input_signature = deepcopy(signature)
@@ -353,7 +354,7 @@ def service_method(
                 )
             if autosplat is not None and len(autosplat) > 0:
                 args, kwargs = reconstruct_args_kwargs(
-                    signature=input_signature,
+                    signature=signature_with_context,
                     autosplat=autosplat,
                     args=args,
                     kwargs=kwargs,
