@@ -165,7 +165,7 @@ class SettingsService(AbstractService):
 
         result = method(context=context, settings=settings)
 
-        if result.is_err():
+        if isinstance(result, SyftError):
             return SyftError(message=f"Failed to update settings: {result.err()}")
 
         message = "enabled" if enable else "disabled"
