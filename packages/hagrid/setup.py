@@ -34,7 +34,8 @@ if platform.system().lower() != "windows":
 
 setup(
     name="hagrid",
-    description="Happy Automation for Grid",
+    description="[DEPRECATED] Our old deployment tool hagrid has been deprecated,for the updated deployment \
+    options kindly refer to https://github.com/OpenMined/PySyft/tree/dev/notebooks/tutorials/deployments",
     long_description="HAGrid is the swiss army knife of OpenMined's PySyft and PyGrid.",
     long_description_content_type="text/plain",
     version=__version__,
