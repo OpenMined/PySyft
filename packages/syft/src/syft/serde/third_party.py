@@ -25,7 +25,7 @@ from result import Err
 from result import Ok
 from result import Result
 import torch
-from torch import Tensor
+from torch._C import _TensorMeta
 import zmq.green as zmq
 
 # relative
@@ -109,36 +109,22 @@ recursive_serde_register(
 )
 
 
-def serialize_torch_tensor(tensor: Tensor) -> bytes:
+def serialize_torch_tensor_meta(t: _TensorMeta) -> bytes:
     buffer = BytesIO()
-    torch.save(tensor, buffer)
+    torch.save(t, buffer)
     return buffer.getvalue()
 
 
-def deserialize_torch_tensor(buf: bytes) -> Tensor:
+def deserialize_torch_tensor_meta(buf: bytes) -> _TensorMeta:
     buffer = BytesIO(buf)
     return torch.load(buffer)
 
 
 recursive_serde_register(
-    Tensor,
-    serialize=serialize_torch_tensor,
-    deserialize=deserialize_torch_tensor,
+    _TensorMeta,
+    serialize=serialize_torch_tensor_meta,
+    deserialize=deserialize_torch_tensor_meta,
 )
-
-# import pickle
-# note: using pickle gives less bytes
-# def serialize_torch_tensor(tensor: Tensor) -> bytes:
-#     return pickle.dumps(tensor)
-
-# def deserialize_torch_tensor(buf: bytes) -> Tensor:
-#     return pickle.loads(buf)
-
-# recursive_serde_register(
-#     Tensor,
-#     serialize=serialize_torch_tensor,
-#     deserialize=deserialize_torch_tensor,
-# )
 
 recursive_serde_register(
     datetime,
