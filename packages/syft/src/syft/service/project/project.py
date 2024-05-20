@@ -38,6 +38,7 @@ from ...types.transforms import transform
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
+from ...util.decorators import deprecated
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.util import full_name_with_qualname
 from ..code.user_code import SubmitUserCode
@@ -1261,7 +1262,13 @@ class ProjectSubmit(SyftObject):
             reason=reason,
         )
 
+    @deprecated(
+        reason="Project.start has been renamed to Project.send", return_syfterror=True
+    )
     def start(self, return_all_projects: bool = False) -> Project | list[Project]:
+        return self.send(return_all_projects=return_all_projects)
+
+    def send(self, return_all_projects: bool = False) -> Project | list[Project]:
         # Currently we are assuming that the first member is the leader
         # This would be changed in our future leaderless approach
         leader = self.clients[0]
