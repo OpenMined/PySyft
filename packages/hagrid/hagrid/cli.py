@@ -87,7 +87,6 @@ from .quickstart_ui import fetch_notebooks_from_zipfile
 from .quickstart_ui import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
 from .stable_version import LATEST_STABLE_SYFT
-from .style import RichGroup
 from .util import fix_windows_virtualenv_api
 from .util import from_url
 from .util import shell
@@ -113,7 +112,12 @@ def get_azure_image(short_name: str) -> str:
     raise Exception(f"Image name doesn't exist: {short_name}. Try: default or 0.7.0")
 
 
-@click.group(cls=RichGroup)
+class NoHelpGroup(click.Group):
+    def get_help(self, ctx: Any) -> str:
+        return ""
+
+
+@click.group(cls=NoHelpGroup)
 def cli() -> None:
     pass
 
