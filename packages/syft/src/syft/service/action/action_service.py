@@ -51,6 +51,12 @@ from .pandas import PandasSeriesObject  # noqa: F401
 class ActionService(AbstractService):
     def __init__(self, store: ActionStore) -> None:
         self.store = store
+        method_params = {}
+        super().__init__(method_params=method_params)
+
+    @property
+    def object_type(self):
+        return "action"
 
     @service_method(path="action.np_array", name="np_array")
     def np_array(self, context: AuthedServiceContext, data: Any) -> Any:
@@ -767,7 +773,9 @@ class ActionService(AbstractService):
     def delete(
         self, context: AuthedServiceContext, uid: UID
     ) -> SyftSuccess | SyftError:
-        res = self.store.delete(context.credentials, uid)
+        print(f"{context=}")
+        print(f"{uid=}")
+        res = self.store.delete(uid, context.credentials)
         if res.is_err():
             return SyftError(message=res.err())
         return SyftSuccess(message="Great Success!")
