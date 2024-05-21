@@ -59,11 +59,6 @@ def external_registry_uid(domain_1_port: int) -> UID:
         return image_registry_list[0].id
 
 
-PREBUILT_IMAGE_TAG = f"docker.io/openmined/grid-backend:{sy.__version__}"
-
-PREBUILT_WORKER_CONFIG = PrebuiltWorkerConfig(tag=PREBUILT_IMAGE_TAG)
-
-
 def make_docker_config_test_case(pkg: str) -> tuple[str, str]:
     return (
         DockerWorkerConfig(
