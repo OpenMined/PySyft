@@ -45,8 +45,14 @@ class APIService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = TwinAPIEndpointStash(store=store)
-        method_params = {}
-        super.__init__(method_params=method_params)
+        method_params = {
+            "get": {},
+            "set": {},
+            "update": {},
+            "delete": {}
+        }
+        super().__init__(method_params=method_params)
+
         
     @service_method(
         path="api.add",

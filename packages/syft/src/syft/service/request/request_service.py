@@ -46,6 +46,14 @@ class RequestService(AbstractService):
         self.store = store
         self.stash = RequestStash(store=store)
         super().__init__()
+        method_params = {
+            "get": {},
+            "set": {},
+            "update": {},
+            "delete": {'skip_method': True}
+        }
+        super().__init__(method_params=method_params)
+
 
     @service_method(path="request.submit", name="submit", roles=GUEST_ROLE_LEVEL)
     def submit(

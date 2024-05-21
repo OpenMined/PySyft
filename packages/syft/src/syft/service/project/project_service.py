@@ -36,6 +36,13 @@ class ProjectService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = ProjectStash(store=store)
+        method_params = {
+            "get": {},
+            "set": {},
+            "update": {},
+            "delete": {'skip_method': True}
+        }
+        super().__init__(method_params=method_params)
 
     @service_method(
         path="project.can_create_project",

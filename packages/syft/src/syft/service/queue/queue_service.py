@@ -23,6 +23,14 @@ class QueueService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = QueueStash(store=store)
+        method_params = {
+            "get": {'skip_method': True},
+            "set": {'skip_method': True},
+            "update": {'skip_method': True},
+            "delete": {'skip_method': True}
+        }
+        super().__init__(method_params=method_params)
+
 
     @service_method(
         path="queue.get_subjobs",

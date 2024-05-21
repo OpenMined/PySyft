@@ -151,7 +151,7 @@ class AbstractService:
 
         for service_name in ["set", "get", "update", "delete", "restore"]:
             kwargs = method_params.get(service_name, {})
-            if kwargs.get("not_implemented", False):
+            if kwargs.get("skip_method", False):
                 continue
             wrap_service(service_name=service_name, kwargs=kwargs)
     

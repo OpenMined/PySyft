@@ -54,6 +54,13 @@ class SyftWorkerPoolService(AbstractService):
         self.store = store
         self.stash = SyftWorkerPoolStash(store=store)
         self.image_stash = SyftWorkerImageStash(store=store)
+        method_params = {
+            "get": {},
+            "set": {},
+            "update": {},
+            "delete": {'skip_method': True}
+        }
+        super().__init__(method_params=method_params)
 
     @service_method(
         path="worker_pool.launch",

@@ -58,7 +58,7 @@ class UserService(AbstractService):
             "get": {},
             "set": {},
             "update": {},
-            "delete": {}
+            "delete": {'skip_method': True}
         }
         super().__init__(method_params=method_params)
 

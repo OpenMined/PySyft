@@ -140,6 +140,14 @@ class NetworkService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = NetworkStash(store=store)
+        method_params = {
+            "get": {},
+            "set": {},
+            "update": {},
+            "delete": {'skip_method': True}
+        }
+        super().__init__(method_params=method_params)
+
 
     # TODO: Check with MADHAVA, can we even allow guest user to introduce routes to
     # domain nodes?

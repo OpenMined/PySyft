@@ -43,6 +43,13 @@ class BlobStorageService(AbstractService):
         self.store = store
         self.stash = BlobStorageStash(store=store)
         self.remote_profile_stash = RemoteProfileStash(store=store)
+        method_params = {
+            "get": {},
+            "set": {},
+            "update": {},
+            "delete": {'skip_method': True}
+        }
+        super().__init__(method_params=method_params)
 
     @service_method(path="blob_storage.get_all", name="get_all")
     def get_all_blob_storage_entries(
