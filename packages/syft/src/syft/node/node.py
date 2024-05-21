@@ -372,10 +372,12 @@ class Node(AbstractNode):
 
         use_sqlite = local_db or (processes > 0 and not is_subprocess)
         document_store_config = document_store_config or self.get_default_store(
-            use_sqlite=use_sqlite
+            use_sqlite=use_sqlite,
+            store_type="Document Store",
         )
         action_store_config = action_store_config or self.get_default_store(
-            use_sqlite=use_sqlite
+            use_sqlite=use_sqlite,
+            store_type="Action Store",
         )
         self.init_stores(
             action_store_config=action_store_config,
@@ -434,12 +436,12 @@ class Node(AbstractNode):
             and any("docker" in line for line in open(path))
         )
 
-    def get_default_store(self, use_sqlite: bool) -> StoreConfig:
+    def get_default_store(self, use_sqlite: bool, store_type: str) -> StoreConfig:
         if use_sqlite:
             path = self.get_temp_dir("db")
             file_name: str = f"{self.id}.sqlite"
             if self.dev_mode:
-                print(f"SQLite db path: {path/file_name}")
+                print(f"{store_type}'s SQLite DB path: {path/file_name}")
             return SQLiteStoreConfig(
                 client_config=SQLiteStoreClientConfig(
                     filename=file_name,
