@@ -115,7 +115,7 @@ def test_pool_launch(
 
     # Submit Worker Image
     worker_config, docker_tag = (
-        (PrebuiltWorkerConfig(tag=(_tag := "docker.io/library/python:3-alpine")), _tag)
+        (PrebuiltWorkerConfig(tag=(_tag := "docker.io/library/nginx:latest")), _tag)
         if prebuilt
         else make_docker_config_test_case("opendp")
     )
@@ -219,9 +219,7 @@ def test_pool_image_creation_job_requests(
     # the DS makes a request to create an image and a pool based on the image
     worker_config, docker_tag = (
         (
-            PrebuiltWorkerConfig(
-                tag=(_tag := f"docker.io/openmined/grid-backend:{sy.__version__}")
-            ),
+            PrebuiltWorkerConfig(tag=(_tag := f"{registry}/{repo}:{tag}")),
             _tag,
         )
         if prebuilt
