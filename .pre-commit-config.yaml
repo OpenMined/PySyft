@@ -78,17 +78,19 @@ repos:
 
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.8.3
+    # nbQA has no files attribute
+    # files: "^notebooks/(api|tutorials|admin)"
     hooks:
       - id: nbqa-isort
       - id: nbqa-black
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: "v0.3.0"
+    rev: "v0.4.3"
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --show-fixes]
-        files: "^notebooks/(api|tutorials|admin)"
+        exclude: packages/syft/tests/mongomock
         types_or: [python, pyi, jupyter]
       - id: ruff-format
         types_or: [python, pyi, jupyter]

@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import Callable
+from enum import Enum
 import secrets
 from typing import Any
 
@@ -34,6 +35,7 @@ from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
 from ..metadata.node_metadata import NodeMetadataV3
 from ..request.request import Request
+from ..request.request import RequestStatus
 from ..request.request import SubmitRequest
 from ..request.request_service import RequestService
 from ..response import SyftError
@@ -56,6 +58,13 @@ from .routes import PythonNodeRoute
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 NodeTypePartitionKey = PartitionKey(key="node_type", type_=NodeType)
 OrderByNamePartitionKey = PartitionKey(key="name", type_=str)
+
+
+@serializable()
+class NodePeerAssociationStatus(Enum):
+    PEER_ASSOCIATED = "PEER_ASSOCIATED"
+    PEER_ASSOCIATION_PENDING = "PEER_ASSOCIATION_PENDING"
+    PEER_NOT_FOUND = "PEER_NOT_FOUND"
 
 
 @instrument
@@ -155,8 +164,10 @@ class NetworkService(AbstractService):
         self_node_route: NodeRoute,
         remote_node_route: NodeRoute,
         remote_node_verify_key: SyftVerifyKey,
-    ) -> SyftSuccess | SyftError:
-        """Exchange Route With Another Node"""
+    ) -> Request | SyftSuccess | SyftError:
+        """
+        Exchange Route With Another Node. If there is a pending association request, return it
+        """
 
         # Step 1: Validate the Route
         self_node_peer = self_node_route.validate_with_context(context=context)
@@ -170,9 +181,74 @@ class NetworkService(AbstractService):
         remote_client: SyftClient = remote_node_route.client_with_context(
             context=context
         )
-        random_challenge = secrets.token_bytes(16)
+        remote_node_peer = NodePeer.from_client(remote_client)
 
-        # ask the remote client to add this node (represented by `self_node_peer`) as a peer
+        # check locally if the remote node already exists as a peer
+        existing_peer_result = self.stash.get_by_uid(
+            context.node.verify_key, remote_node_peer.id
+        )
+        if (
+            existing_peer_result.is_ok()
+            and (existing_peer := existing_peer_result.ok()) is not None
+        ):
+            msg = [
+                (
+                    f"{existing_peer.node_type} peer '{existing_peer.name}' already exist for "
+                    f"{self_node_peer.node_type} '{self_node_peer.name}'."
+                )
+            ]
+            if existing_peer != remote_node_peer:
+                result = self.stash.create_or_update_peer(
+                    context.node.verify_key,
+                    remote_node_peer,
+                )
+                msg.append(
+                    f"{existing_peer.node_type} peer '{existing_peer.name}' information change detected."
+                )
+                if result.is_err():
+                    msg.append(
+                        f"Attempt to update peer '{existing_peer.name}' information failed."
+                    )
+                    return SyftError(message="\n".join(msg))
+                msg.append(
+                    f"{existing_peer.node_type} peer '{existing_peer.name}' information successfully updated."
+                )
+
+            # Also check remotely if the self node already exists as a peer
+            remote_self_node_peer = remote_client.api.services.network.get_peer_by_name(
+                name=self_node_peer.name
+            )
+            if isinstance(remote_self_node_peer, NodePeer):
+                msg.append(
+                    f"{self_node_peer.node_type} '{self_node_peer.name}' already exist "
+                    f"as a peer for {remote_node_peer.node_type} '{remote_node_peer.name}'."
+                )
+                if remote_self_node_peer != self_node_peer:
+                    result = remote_client.api.services.network.update_peer(
+                        peer=self_node_peer,
+                    )
+                    msg.append(
+                        f"{self_node_peer.node_type} peer '{self_node_peer.name}' information change detected."
+                    )
+                    if isinstance(result, SyftError):
+                        msg.apnpend(
+                            f"Attempt to remotely update {self_node_peer.node_type} peer "
+                            f"'{self_node_peer.name}' information remotely failed."
+                        )
+                        return SyftError(message="\n".join(msg))
+                    msg.append(
+                        f"{self_node_peer.node_type} peer '{self_node_peer.name}' "
+                        f"information successfully updated."
+                    )
+                msg.append(
+                    f"Routes between {remote_node_peer.node_type} '{remote_node_peer.name}' and "
+                    f"{self_node_peer.node_type} '{self_node_peer.name}' already exchanged."
+                )
+                return SyftSuccess(message="\n".join(msg))
+
+        # If  peer does not exist, ask the remote client to add this node
+        # (represented by `self_node_peer`) as a peer
+        random_challenge = secrets.token_bytes(16)
         remote_res = remote_client.api.services.network.add_peer(
             peer=self_node_peer,
             challenge=random_challenge,
@@ -185,15 +261,13 @@ class NetworkService(AbstractService):
 
         association_request_approved = not isinstance(remote_res, Request)
 
-        remote_node_peer = NodePeer.from_client(remote_client)
-
         # save the remote peer for later
         result = self.stash.create_or_update_peer(
             context.node.verify_key,
             remote_node_peer,
         )
         if result.is_err():
-            return SyftError(message=str(result.err()))
+            return SyftError(message="Failed to update route information.")
 
         return (
             SyftSuccess(message="Routes Exchanged")
@@ -209,7 +283,7 @@ class NetworkService(AbstractService):
         challenge: bytes,
         self_node_route: NodeRoute,
         verify_key: SyftVerifyKey,
-    ) -> list | SyftError:
+    ) -> Request | SyftSuccess | SyftError:
         """Add a Network Node Peer. Called by a remote node to add
         itself as a peer for the current node.
         """
@@ -228,19 +302,55 @@ class NetworkService(AbstractService):
                 message="verify_key does not match the remote node's verify_key for add_peer"
             )
 
+        # check if the peer already is a node peer
+        existing_peer_res = self.stash.get_by_uid(context.node.verify_key, peer.id)
+        if existing_peer_res.is_err():
+            return SyftError(
+                message=f"Failed to query peer from stash: {existing_peer_res.err()}"
+            )
+
+        if isinstance(existing_peer := existing_peer_res.ok(), NodePeer):
+            msg = [
+                f"The peer '{peer.name}' is already associated with '{context.node.name}'"
+            ]
+
+            if existing_peer != peer:
+                result = self.stash.create_or_update_peer(
+                    context.node.verify_key,
+                    peer,
+                )
+                msg.append("Peer information change detected.")
+
+                if result.is_err():
+                    msg.append("Attempt to update peer information failed.")
+                    return SyftError(message="\n".join(msg))
+
+                msg.append("Peer information successfully updated.")
+                return SyftSuccess(message="\n".join(msg))
+
+            return SyftSuccess(message="\n".join(msg))
+
+        # check if the peer already submitted an association request
+        association_requests: list[Request] = self._get_association_requests_by_peer_id(
+            context=context, peer_id=peer.id
+        )
+        if (
+            association_requests
+            and (association_request := association_requests[-1]).status
+            == RequestStatus.PENDING
+        ):
+            return association_request
+        # only create and submit a new request if there is no requests yet
+        # or all previous requests have been rejected
         association_request_change = AssociationRequestChange(
             self_node_route=self_node_route, challenge=challenge, remote_peer=peer
         )
-
         submit_request = SubmitRequest(
             changes=[association_request_change],
             requesting_user_verify_key=context.credentials,
         )
-
         request_submit_method = context.node.get_service_method(RequestService.submit)
-
         request = request_submit_method(context, submit_request)
-
         if (
             isinstance(request, Request)
             and context.node.settings.association_request_auto_approval
@@ -268,6 +378,38 @@ class NetworkService(AbstractService):
         ).signature
 
         return challenge_signature
+
+    @service_method(
+        path="network.check_peer_association",
+        name="check_peer_association",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def check_peer_association(
+        self, context: AuthedServiceContext, peer_id: UID
+    ) -> NodePeerAssociationStatus | SyftError:
+        """Check if a peer exists in the network stash"""
+
+        # get the node peer for the given sender peer_id
+        peer = self.stash.get_by_uid(context.node.verify_key, peer_id)
+        if err := peer.is_err():
+            return SyftError(message=f"Failed to query peer from stash. Err: {err}")
+
+        if isinstance(peer.ok(), NodePeer):
+            return NodePeerAssociationStatus.PEER_ASSOCIATED
+
+        if peer.ok() is None:  # peer is either pending or not found
+            association_requests: list[Request] = (
+                self._get_association_requests_by_peer_id(
+                    context=context, peer_id=peer_id
+                )
+            )
+            if (
+                association_requests
+                and association_requests[-1].status == RequestStatus.PENDING
+            ):
+                return NodePeerAssociationStatus.PEER_ASSOCIATION_PENDING
+
+        return NodePeerAssociationStatus.PEER_NOT_FOUND
 
     @service_method(
         path="network.get_all_peers", name="get_all_peers", roles=GUEST_ROLE_LEVEL
@@ -323,6 +465,26 @@ class NetworkService(AbstractService):
         return result.ok() or []
 
     @service_method(
+        path="network.update_peer", name="update_peer", roles=GUEST_ROLE_LEVEL
+    )
+    def update_peer(
+        self,
+        context: AuthedServiceContext,
+        peer: NodePeer,
+    ) -> SyftSuccess | SyftError:
+        result = self.stash.update(
+            credentials=context.node.verify_key,
+            peer=peer,
+        )
+        if result.is_err():
+            return SyftError(
+                message=f"Failed to update peer '{peer.name}'. Error: {result.err()}"
+            )
+        return SyftSuccess(
+            message=f"Peer '{result.ok().name}' information successfully updated."
+        )
+
+    @service_method(
         path="network.delete_peer_by_id",
         name="delete_peer_by_id",
         roles=DATA_OWNER_ROLE_LEVEL,
@@ -332,11 +494,22 @@ class NetworkService(AbstractService):
     ) -> SyftSuccess | SyftError:
         """Delete Node Peer"""
         result = self.stash.delete_by_uid(context.credentials, uid)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
+        if err := result.is_err():
+            return SyftError(message=f"Failed to delete peer with UID {uid}: {err}.")
+        # Delete all the association requests from this peer
+        association_requests: list[Request] = self._get_association_requests_by_peer_id(
+            context=context, peer_id=uid
+        )
+        for request in association_requests:
+            request_delete_method = context.node.get_service_method(
+                RequestService.delete_by_uid
+            )
+            res = request_delete_method(context, request.id)
+            if isinstance(res, SyftError):
+                return res
         # TODO: Notify the peer (either by email or by other form of notifications)
         # that it has been deleted from the network
-        return SyftSuccess(message=f"Node Peer with id {uid} Deleted")
+        return SyftSuccess(message=f"Node Peer with id {uid} deleted.")
 
     @service_method(path="network.add_route_on_peer", name="add_route_on_peer")
     def add_route_on_peer(
@@ -410,6 +583,11 @@ class NetworkService(AbstractService):
             return remote_node_peer
         # add and update the priority for the peer
         existed_route: NodeRoute | None = remote_node_peer.update_route(route)
+        if existed_route:
+            return SyftSuccess(
+                message=f"The route already exists between '{context.node.name}' and "
+                f"peer '{remote_node_peer.name}' with id '{existed_route.id}'."
+            )
         # update the peer in the store with the updated routes
         result = self.stash.update(
             credentials=context.node.verify_key,
@@ -417,11 +595,6 @@ class NetworkService(AbstractService):
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
-        if existed_route:
-            return SyftSuccess(
-                message=f"The route already exists between '{context.node.name}' and "
-                f"peer '{remote_node_peer.name}' with id '{existed_route.id}', so its priority was updated"
-            )
         return SyftSuccess(
             message=f"New route ({str(route)}) with id '{route.id}' "
             f"to peer {remote_node_peer.node_type.value} '{remote_node_peer.name}' "
@@ -480,7 +653,9 @@ class NetworkService(AbstractService):
         )
         return result
 
-    @service_method(path="network.", name="delete_route", roles=GUEST_ROLE_LEVEL)
+    @service_method(
+        path="network.delete_route", name="delete_route", roles=GUEST_ROLE_LEVEL
+    )
     def delete_route(
         self,
         context: AuthedServiceContext,
@@ -701,6 +876,29 @@ class NetworkService(AbstractService):
                 message=f"Can't retrive {remote_node_peer.name} from the store of peers (None)."
             )
         return remote_node_peer
+
+    def _get_association_requests_by_peer_id(
+        self, context: AuthedServiceContext, peer_id: UID
+    ) -> list[Request]:
+        """
+        Get all the association requests from a peer. The association requests are sorted by request_time.
+        """
+        request_get_all_method: Callable = context.node.get_service_method(
+            RequestService.get_all
+        )
+        all_requests: list[Request] = request_get_all_method(context)
+        association_requests: list[Request] = []
+        for request in all_requests:
+            for change in request.changes:
+                if (
+                    isinstance(change, AssociationRequestChange)
+                    and change.remote_peer.id == peer_id
+                ):
+                    association_requests.append(request)
+
+        return sorted(
+            association_requests, key=lambda request: request.request_time.utc_timestamp
+        )
 
 
 TYPE_TO_SERVICE[NodePeer] = NetworkService

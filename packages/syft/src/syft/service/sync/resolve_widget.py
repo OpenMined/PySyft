@@ -15,15 +15,13 @@ from ipywidgets import Layout
 from ipywidgets import VBox
 
 # relative
-from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
-from ...node.credentials import SyftVerifyKey
 from ...types.uid import UID
 from ...util.notebook_ui.components.sync import Alert
-from ...util.notebook_ui.components.sync import Badge
 from ...util.notebook_ui.components.sync import CopyIDButton
 from ...util.notebook_ui.components.sync import MainDescription
 from ...util.notebook_ui.components.sync import SyncWidgetHeader
+from ...util.notebook_ui.components.sync import TypeLabel
 from ...util.notebook_ui.styles import CSS_CODE
 from ..action.action_object import ActionObject
 from ..api.api import TwinAPIEndpoint
@@ -32,8 +30,6 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from .diff_state import ObjectDiff
 from .diff_state import ObjectDiffBatch
-from .diff_state import ResolvedSyncState
-from .diff_state import SyncInstruction
 
 # Standard div Jupyter Lab uses for notebook outputs
 # This is needed to use alert styles from SyftSuccess and SyftError
@@ -247,7 +243,7 @@ class CollapsableObjectDiffWidget:
         object = self.diff.non_empty_object
         if object is None:
             return "n/a"
-        type_html = Badge(object=object).to_html()
+        type_html = TypeLabel(object=object).to_html()
         description_html = MainDescription(object=object).to_html()
         copy_id_button = CopyIDButton(copy_text=str(object.id.id), max_width=60)
 
@@ -450,40 +446,6 @@ class ResolveWidget:
 
     def get_mockify_state(self) -> dict[UID, bool]:
         return {uid: widget.mockify for uid, widget in self.id2widget.items()}
-
-    def click_ignore(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
-        # relative
-        from ...client.syncing import handle_ignore_batch
-
-        if self.is_synced:
-            return SyftError(
-                message="The changes in this widget have already been synced."
-            )
-
-        res = handle_ignore_batch(
-            obj_diff_batch=self.obj_diff_batch,
-            all_batches=self.obj_diff_batch.global_batches,
-        )
-
-        self.set_widget_result_state(res)
-        return res
-
-    def click_unignore(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
-        # relative
-        from ...client.syncing import handle_unignore_batch
-
-        if self.is_synced:
-            return SyftError(
-                message="The changes in this widget have already been synced."
-            )
-
-        res = handle_unignore_batch(
-            obj_diff_batch=self.obj_diff_batch,
-            all_batches=self.obj_diff_batch.global_batches,
-        )
-
-        self.set_widget_result_state(res)
-        return res
 
     def click_sync(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
         # relative

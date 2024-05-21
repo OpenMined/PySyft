@@ -22,223 +22,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  pr-tests-stack:
-    strategy:
-      max-parallel: 99
-      matrix:
-        # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        # os: [om-ci-16vcpu-ubuntu2204]
-        os: [ubuntu-latest]
-        python-version: ["3.12"]
-        pytest-modules: ["frontend network container_workload local_node"]
-      fail-fast: false
-
-    runs-on: ${{matrix.os}}
-
-    steps:
-      # - name: Permission to home directory
-      #   run: |
-      #     sudo chown -R $USER:$USER $HOME
-
-      # - name: "clean .git/config"
-      #   if: matrix.os == 'windows'
-      #   continue-on-error: true
-      #   shell: bash
-      #   run: |
-      #     echo "deleting ${GITHUB_WORKSPACE}/.git/config"
-      #     rm ${GITHUB_WORKSPACE}/.git/config
-
-      - uses: actions/checkout@v4
-
-      # free 10GB of space
-      - name: Remove unnecessary files
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          docker image prune --all --force
-          docker builder prune --all --force
-          docker system prune --all --force
-
-      - name: Check for file changes
-        uses: dorny/paths-filter@v3
-        id: changes
-        with:
-          base: ${{ github.ref }}
-          token: ${{ github.token }}
-          filters: .github/file-filters.yml
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        if: steps.changes.outputs.stack == 'true'
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Upgrade pip
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          pip install --upgrade pip uv==0.1.35
-          uv --version
-
-      - name: Get pip cache dir
-        if: steps.changes.outputs.stack == 'true'
-        id: pip-cache
-        shell: bash
-        run: |
-          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
-
-      - name: pip cache
-        uses: actions/cache@v4
-        if: steps.changes.outputs.stack == 'true'
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}
-          restore-keys: |
-            ${{ runner.os }}-uv-py${{ matrix.python-version }}
-
-      - name: Install tox
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          pip install --upgrade tox tox-uv==1.5.1
-
-      - name: Show choco installed packages
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v3
-        with:
-          args: list --localonly
-
-      - name: Install git
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v3
-        with:
-          args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
-
-      - name: Install cmake
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v3
-        with:
-          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
-
-      - name: Check cmake version
-        if: steps.changes.outputs.stack == 'true' &&  matrix.os == 'windows'
-        run: |
-          cmake --version
-        shell: cmd
-
-      - name: Install visualcpp-build-tools
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v3
-        with:
-          args: install visualstudio2019-workload-vctools -y
-
-      - name: Install Docker Compose
-        if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
-        shell: bash
-        run: |
-          mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.21.0
-          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-          chmod +x ~/.docker/cli-plugins/docker-compose
-
-      - name: Docker on MacOS
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.1.0
-
-      - name: Docker Compose on MacOS
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          brew install docker-compose
-          mkdir -p ~/.docker/cli-plugins
-          ln -sfn /usr/local/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose || true
-          docker compose version
-
-      - name: Remove existing containers
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        shell: bash
-        run: |
-          docker rm $(docker ps -aq) --force || true
-          docker volume prune -f || true
-          docker buildx use default || true
-
-      - name: Run integration tests
-        if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 60
-        env:
-          HAGRID_ART: false
-          PYTEST_MODULES: "${{ matrix.pytest-modules }}"
-          AZURE_BLOB_STORAGE_KEY: "${{ secrets.AZURE_BLOB_STORAGE_KEY }}"
-        run: |
-          tox -e stack.test.integration
-
-      #Run log collector python script
-      - name: Run log collector
-        timeout-minutes: 5
-        if: failure()
-        shell: bash
-        run: |
-          python ./scripts/container_log_collector.py
-
-      # Get Job name and url
-      - name: Get job name and url
-        id: job_name
-        if: failure()
-        shell: bash
-        run: |
-          echo "job_name=$(echo ${{ github.job }})" >> $GITHUB_OUTPUT
-          echo "url=$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_OUTPUT
-
-      - name: Get current date
-        id: date
-        if: failure()
-        shell: bash
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-
-      - name: Upload logs to GitHub
-        uses: actions/upload-artifact@master
-        if: failure()
-        with:
-          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-${{ matrix.pytest-modules }}-logs-${{ steps.date.outputs.date }}
-          path: ./logs/${{ steps.job_name.outputs.job_name}}/
-
-      - name: Mandatory Container cleanup
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        shell: bash
-        run: |
-          docker rm `docker ps -aq` --force || true
-          docker volume prune -f || true
-
-      # Get Job name and url
-      - name: Reboot node
-        if: matrix.os == 'windows' && failure()
-        run: |
-          shutdown /r /t 1
-
-      #Get Pull request url
-      - name: Get pull request url
-        id: pull_request
-        if: failure()
-        shell: bash
-        run: |
-          echo "url=$(echo ${{ github.event.pull_request.html_url }})" >> $GITHUB_OUTPUT
-
-      - name: Job Report Status
-        # cant access secrets on forks
-        if: github.repository == 'OpenMined/PySyft' && failure()
-        uses: ravsamhq/notify-slack-action@v2
-        with:
-          status: ${{ job.status }}
-          notify_when: "failure"
-          notification_title: " {workflow} has {status_message}"
-          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
-          footer: "Find the PR here ${{ steps.pull_request.outputs.url }}"
-          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
-          mention_users_when: "failure,warnings"
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
-
   pr-syft-image-test:
     strategy:
       max-parallel: 99
@@ -299,41 +82,19 @@ jobs:
         run: |
           tox -e backend.test.basecpu
 
-  pr-tests-notebook-stack:
+  pr-tests-syft-integration:
     strategy:
       max-parallel: 99
       matrix:
-        # os: [ubuntu-latest, macos-latest, windows-latest, windows]
         os: [ubuntu-latest]
         python-version: ["3.12"]
-        notebook-paths: ["api/0.8"]
+        pytest-modules: ["local_node"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
 
     steps:
-      - name: Permission to home directory
-        run: |
-          sudo chown -R $USER:$USER $HOME
-      - name: "clean .git/config"
-        if: matrix.os == 'windows'
-        continue-on-error: true
-        shell: bash
-        run: |
-          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
-          rm ${GITHUB_WORKSPACE}/.git/config
-
       - uses: actions/checkout@v4
-
-      # free 10GB of space
-      - name: Remove unnecessary files
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          docker image prune --all --force
-          docker builder prune --all --force
-          docker system prune --all --force
 
       - name: Check for file changes
         uses: dorny/paths-filter@v3
@@ -376,153 +137,23 @@ jobs:
         run: |
           pip install --upgrade tox tox-uv==1.5.1
 
-      - name: Show choco installed packages
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v3
-        with:
-          args: list --localonly
-
-      - name: Install git
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v3
-        with:
-          args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
-
-      - name: Install cmake
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v3
-        with:
-          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
-
-      - name: Check cmake version
-        if: steps.changes.outputs.stack == 'true' &&  matrix.os == 'windows'
-        run: |
-          cmake --version
-        shell: cmd
-
-      - name: Install visualcpp-build-tools
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
-        uses: crazy-max/ghaction-chocolatey@v3
-        with:
-          args: install visualstudio2019-workload-vctools -y
-
-      - name: Install Docker Compose
-        if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
-        shell: bash
-        run: |
-          mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.21.0
-          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-          chmod +x ~/.docker/cli-plugins/docker-compose
-
-      - name: Docker on MacOS
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.1.0
-
-      - name: Docker Compose on MacOS
-        if: steps.changes.outputs.stack == 'true' && matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          brew install docker-compose
-          mkdir -p ~/.docker/cli-plugins
-          ln -sfn /usr/local/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose || true
-          docker compose version
-
-      - name: Remove existing containers
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        shell: bash
-        run: |
-          docker rm $(docker ps -aq) --force || true
-          docker volume prune -f || true
-          docker buildx use default || true
-
-      - name: Run Notebook integration tests
+      - name: Run Syft Integration Tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 60
         env:
-          ORCHESTRA_DEPLOYMENT_TYPE: "container_stack"
-          TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
-        run: |
-          tox -e stack.test.notebook
-
-      #Run log collector python script
-      - name: Run log collector
-        timeout-minutes: 5
-        if: failure()
+          GITHUB_CI: true
         shell: bash
         run: |
-          python ./scripts/container_log_collector.py
+          tox -e syft.test.integration
 
-      # Get Job name and url
-      - name: Get job name and url
-        id: job_name
-        if: failure()
-        shell: bash
-        run: |
-          echo "job_name=$(echo ${{ github.job }})" >> $GITHUB_OUTPUT
-          echo "url=$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_OUTPUT
-
-      - name: Get current date
-        id: date
-        if: failure()
-        shell: bash
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-
-      - name: Upload logs to GitHub
-        uses: actions/upload-artifact@master
-        if: failure()
-        with:
-          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-${{ matrix.pytest-modules }}-logs-${{ steps.date.outputs.date }}
-          path: ./logs/${{ steps.job_name.outputs.job_name}}/
-
-      - name: Mandatory Container cleanup
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        shell: bash
-        run: |
-          docker rm `docker ps -aq` --force || true
-          docker volume prune -f || true
-
-      # Get Job name and url
-      - name: Reboot node
-        if: matrix.os == 'windows' && failure()
-        run: |
-          shutdown /r /t 1
-
-      #Get Pull request url
-      - name: Get pull request url
-        id: pull_request
-        if: failure()
-        shell: bash
-        run: |
-          echo "url=$(echo ${{ github.event.pull_request.html_url }})" >> $GITHUB_OUTPUT
-
-      - name: Job Report Status
-        # cant access secrets on forks
-        if: github.repository == 'OpenMined/PySyft' && failure()
-        uses: ravsamhq/notify-slack-action@v2
-        with:
-          status: ${{ job.status }}
-          notify_when: "failure"
-          notification_title: " {workflow} has {status_message}"
-          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
-          footer: "Find the PR here ${{ steps.pull_request.outputs.url }}"
-          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
-          mention_users_when: "failure,warnings"
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
-
-  pr-tests-stack-k8s:
+  pr-tests-integration-k8s:
     strategy:
       max-parallel: 99
       matrix:
-        # os: [ubuntu-latest, macos-latest, windows-latest, windows]
-        # os: [om-ci-16vcpu-ubuntu2204]
         os: [ubuntu-latest]
         python-version: ["3.12"]
-        pytest-modules: ["frontend network"]
+        pytest-modules: ["frontend network container_workload"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
@@ -603,15 +234,6 @@ jobs:
           chmod +x kubectl
           sudo install kubectl /usr/local/bin;
 
-      - name: Install k9s
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          # install k9s
-          wget https://github.com/derailed/k9s/releases/download/v0.32.4/k9s_Linux_amd64.tar.gz
-          tar -xvf k9s_Linux_amd64.tar.gz
-          chmod +x k9s
-          sudo install k9s /usr/local/bin;
-
       - name: Install helm
         if: steps.changes.outputs.stack == 'true'
         run: |
@@ -624,9 +246,9 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 60
         env:
-          HAGRID_ART: false
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
           GITHUB_CI: true
+          AZURE_BLOB_STORAGE_KEY: "${{ secrets.AZURE_BLOB_STORAGE_KEY }}"
         shell: bash
         run: |
           K3D_VERSION=v5.6.3
@@ -640,6 +262,7 @@ jobs:
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
+
           tox -e stack.test.integration.k8s
           tox -e syft.build.helm
           tox -e syft.package.helm
@@ -656,17 +279,17 @@ jobs:
         shell: bash
         run: |
           mkdir -p ./k8s-logs
-          kubectl describe all -A --context k3d-testgateway1 --namespace syft > ./k8s-logs/testgateway1-desc-${{ steps.date.outputs.date }}.txt
-          kubectl describe all -A --context k3d-testdomain1 --namespace syft > ./k8s-logs/testdomain1-desc-${{ steps.date.outputs.date }}.txt
-          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-testgateway1 --namespace syft > ./k8s-logs/testgateway1-logs-${{ steps.date.outputs.date }}.txt
-          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-testdomain1 --namespace syft > ./k8s-logs/testdomain1-logs-${{ steps.date.outputs.date }}.txt
+          kubectl describe all -A --context k3d-test-gateway-1 --namespace syft > ./k8s-logs/test-gateway-1-desc-${{ steps.date.outputs.date }}.txt
+          kubectl describe all -A --context k3d-test-domain-1 --namespace syft > ./k8s-logs/test-domain-1-desc-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-test-gateway-1 --namespace syft > ./k8s-logs/test-gateway-1-logs-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-test-domain-1 --namespace syft > ./k8s-logs/test-domain-1-logs-${{ steps.date.outputs.date }}.txt
           ls -la ./k8s-logs
 
       - name: Upload logs to GitHub
         uses: actions/upload-artifact@master
         if: steps.changes.outputs.stack == 'true' && failure()
         with:
-          name: k8s-logs-${{ matrix.os }}-${{ steps.date.outputs.date }}
+          name: k8s-logs-integration-${{ matrix.os }}-${{ steps.date.outputs.date }}
           path: ./k8s-logs/
 
       - name: Cleanup k3d
@@ -674,6 +297,153 @@ jobs:
         shell: bash
         run: |
           export PATH=`pwd`:$PATH
-          k3d cluster delete testgateway1 || true
-          k3d cluster delete testdomain1 || true
+          k3d cluster delete test-gateway-1 || true
+          k3d cluster delete test-domain-1 || true
+          k3d registry delete k3d-registry.localhost || true
+
+  pr-tests-notebook-k8s:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.12"]
+      fail-fast: false
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - name: Permission to home directory
+        run: |
+          sudo chown -R $USER:$USER $HOME
+      - uses: actions/checkout@v4
+      - name: Check for file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Add K3d Registry
+        run: |
+          sudo python ./scripts/patch_hosts.py --add-k3d-registry
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          large-packages: false
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install --upgrade pip uv==0.1.35
+          uv --version
+
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
+
+      - name: pip cache
+        uses: actions/cache@v4
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}
+
+      - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install --upgrade tox tox-uv==1.5.1
+
+      - name: Install kubectl
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # cleanup apt version
+          sudo apt remove kubectl || true
+          # install kubectl 1.27
+          curl -LO https://dl.k8s.io/release/v1.27.2/bin/linux/amd64/kubectl
+          chmod +x kubectl
+          sudo install kubectl /usr/local/bin;
+
+      - name: Install helm
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # install helm
+          curl  -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          ./get_helm.sh
+
+      - name: Run Notebooks Tests
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 60
+        env:
+          GITHUB_CI: true
+        shell: bash
+        run: |
+          K3D_VERSION=v5.6.3
+          DEVSPACE_VERSION=v6.3.12
+          # install k3d
+          wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
+          mv k3d-linux-amd64 k3d
+          chmod +x k3d
+          export PATH=`pwd`:$PATH
+          k3d version
+          curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
+          chmod +x devspace
+          devspace version
+          tox -e stack.test.notebook.k8s
+
+      - name: Get current timestamp
+        id: date
+        if: failure()
+        shell: bash
+        run: echo "date=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Collect logs from k3d
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          mkdir -p ./k8s-logs
+          kubectl describe all -A --context k3d-test-gateway-1 --namespace syft > ./k8s-logs/test-gateway-1-desc-${{ steps.date.outputs.date }}.txt
+          kubectl describe all -A --context k3d-test-domain-1 --namespace syft > ./k8s-logs/test-domain-1-desc-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-test-gateway-1 --namespace syft > ./k8s-logs/test-gateway-1-logs-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-test-domain-1 --namespace syft > ./k8s-logs/test-domain-1-logs-${{ steps.date.outputs.date }}.txt
+          ls -la ./k8s-logs
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: steps.changes.outputs.stack == 'true' && failure()
+        with:
+          name: k8s-logs-notebook-${{ matrix.os }}-${{ steps.date.outputs.date }}
+          path: ./k8s-logs/
+
+      - name: Cleanup k3d
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          export PATH=`pwd`:$PATH
+          k3d cluster delete test-gateway-1 || true
+          k3d cluster delete test-domain-1 || true
           k3d registry delete k3d-registry.localhost || true
