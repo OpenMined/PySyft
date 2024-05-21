@@ -467,7 +467,6 @@ class Request(SyncableSyftObject):
         ]
 
         return {
-            "Request time": str(self.request_time),
             "Description": self.html_description,
             "Requested By": "\n".join(user_data),
             "Creation Time": str(self.request_time),
