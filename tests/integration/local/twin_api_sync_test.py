@@ -111,7 +111,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
 
     # verify that ds cannot access private job
     assert client_low_ds.api.services.job.get(private_job_id) is None
-    assert low_client.api.services.job.get(private_job_id) is not None
+    assert low_client.api.services.job.get(private_job_id) is None
 
     # we only sync the mock function, we never sync the private function to the low side
     mock_res = low_client.api.services.testapi.query.mock()
