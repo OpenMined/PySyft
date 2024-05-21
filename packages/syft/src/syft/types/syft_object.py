@@ -397,13 +397,13 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
 
     # all objects have a UID
     id: UID
-    created_date: NewDateTime | None = None
-    updated_date: NewDateTime | None = None
-    deleted_date: NewDateTime | None = None
+    _created_date: NewDateTime | None = None
+    _updated_date: NewDateTime | None = None
+    _deleted_date: NewDateTime | None = None
 
     # @property
     def is_deleted(self) -> bool:
-        return self.deleted_date is not None
+        return self._deleted_date is not None
 
     # # move this to transforms
     @model_validator(mode="before")
