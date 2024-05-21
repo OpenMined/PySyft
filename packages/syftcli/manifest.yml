@@ -12,12 +12,6 @@ images:
 configFiles:
   docker:
     - packages/grid/default.env
-    - packages/grid/docker-compose.build.yml
-    - packages/grid/docker-compose.dev.yml
-    - packages/grid/docker-compose.pull.yml
-    - packages/grid/docker-compose.test.yml
-    - packages/grid/docker-compose.tls.yml
-    - packages/grid/docker-compose.yml
     - packages/grid/traefik/docker/dynamic-tls.yml
     - packages/grid/traefik/docker/dynamic.yml
     - packages/grid/traefik/docker/traefik-tls.template.yml
