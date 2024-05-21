@@ -140,21 +140,23 @@ class AbstractService:
         # Add basic CRUD
         print(f"Creating {self.object_type} service", file=sys.stderr)
 
-        def wrap_service(service_name: str):
+        def wrap_service(service_name: str, kwargs: Dict[str, Any]):
             wrapper = service_method(
                 path=f"{self.object_type}.{service_name}", 
                 private_path=f"{self.object_type}service.{service_name}", 
-                name=service_name, 
-                **method_params.get(service_name, {}))(self.set.__func__)
+                name=service_name, **kwargs)(getattr(self, service_name).__func__)
             
             from types import MethodType
             setattr(self, wrapper.__name__, MethodType(wrapper, self))
 
         for service_name in ["set", "get", "update", "delete", "restore"]:
-            wrap_service(service_name=service_name)
+            kwargs = method_params.get(service_name, {})
+            if kwargs.get("not_implemented", False):
+                continue
+            wrap_service(service_name=service_name, kwargs=kwargs)
     
     @property
-    def object_type(self):
+    def object_type(self) -> str:
         return self.stash.object_type.__canonical_name__.lower()
     
     def set(self, context: AuthedServiceContext, obj: Any) -> SyftError | SyftSuccess:
@@ -198,7 +200,7 @@ class AbstractService:
     def restore(self, context: AuthedServiceContext, uid: UID) -> SyftError | Any:
         obj = self.get(context, uid, is_deleted=True)
         if obj:
-            obj.deleted_date = None
+            obj._deleted_date = None
             res = self.stash.update(context.credentials, obj)
             if res.is_err():
                 return SyftError(message=res.err())
