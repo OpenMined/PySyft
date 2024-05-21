@@ -1,6 +1,7 @@
 # stdlib
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 
 # third party
 import pytest
@@ -33,7 +34,7 @@ def test_eta_string(current_iter, n_iters, status, creation_time_delta, expected
         node_uid=UID(),
         n_iters=n_iters,
         current_iter=current_iter,
-        creation_time=(datetime.now() - creation_time_delta).isoformat(),
+        creation_time=(datetime.now(tz=timezone.utc) - creation_time_delta).isoformat(),
         status=status,
     )
 
