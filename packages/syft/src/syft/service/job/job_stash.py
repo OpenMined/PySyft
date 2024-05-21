@@ -644,6 +644,10 @@ class Job(SyncableSyftObject):
     def wait(
         self, job_only: bool = False, timeout: int | None = None
     ) -> Any | SyftNotReady:
+        self.fetch()
+        if self.resolved:
+            return self.resolve
+
         api = APIRegistry.api_for(
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
@@ -652,8 +656,6 @@ class Job(SyncableSyftObject):
             raise ValueError(
                 f"Can't access Syft API. You must login to {self.syft_node_location}"
             )
-        if self.resolved:
-            return self.resolve
 
         workers = api.services.worker.get_all()
         if not workers:
