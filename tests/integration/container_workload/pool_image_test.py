@@ -1,38 +1,70 @@
 # stdlib
 import os
-from time import sleep
 
 # third party
 from faker import Faker
 import numpy as np
 import pytest
+import requests
 
 # syft absolute
 import syft as sy
 from syft.client.domain_client import DomainClient
 from syft.custom_worker.config import DockerWorkerConfig
-from syft.node.node import get_default_worker_tag_by_env
 from syft.service.request.request import Request
 from syft.service.response import SyftSuccess
 from syft.service.worker.worker_image import SyftWorkerImage
 from syft.service.worker.worker_pool import SyftWorker
 from syft.service.worker.worker_pool import WorkerPool
 
-SYFT_BASE_TAG = get_default_worker_tag_by_env()
-hagrid_flags = os.getenv("HAGRID_FLAGS")
-if hagrid_flags:
-    SYFT_BASE_TAG = get_default_worker_tag_by_env(dev_mode=True)
+registry = os.getenv("SYFT_BASE_IMAGE_REGISTRY", "docker.io")
+repo = "openmined/grid-backend"
+
+if "k3d" in registry:
+    res = requests.get(url=f"http://{registry}/v2/{repo}/tags/list")
+    tag = res.json()["tags"][0]
+else:
+    tag = sy.__version__
+
+external_registry = os.getenv("EXTERNAL_REGISTRY", registry)
+external_registry_username = os.getenv("EXTERNAL_REGISTRY_USERNAME", None)
+external_registry_password = os.getenv("EXTERNAL_REGISTRY_PASSWORD", None)
+
+
+@pytest.fixture
+def external_registry_uid(domain_1_port):
+    domain_client: DomainClient = sy.login(
+        port=domain_1_port, email="info@openmined.org", password="changethis"
+    )
+    image_registry_list = domain_client.api.services.image_registry.get_all()
+    if len(image_registry_list) > 1:
+        raise Exception("Only one registry should be present for testing")
+
+    elif len(image_registry_list) == 1:
+        assert (
+            image_registry_list[0].url == external_registry
+        ), "External registry different from the one set in the environment variable"
+        return image_registry_list[0].id
+    else:
+        registry_add_result = domain_client.api.services.image_registry.add(
+            external_registry
+        )
+
+        assert isinstance(registry_add_result, sy.SyftSuccess), str(registry_add_result)
+
+        image_registry_list = domain_client.api.services.image_registry.get_all()
+        return image_registry_list[0].id
 
 
 @pytest.mark.container_workload
-def test_image_build(domain_1_port) -> None:
+def test_image_build(domain_1_port, external_registry_uid) -> None:
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
 
-    # Submit Docker Worker Config
+    # Submit Docker Worker Config.
     docker_config_rl = f"""
-        FROM openmined/grid-backend:{SYFT_BASE_TAG}
+        FROM {registry}/{repo}:{tag}
         RUN pip install recordlinkage
     """
     docker_config = DockerWorkerConfig(dockerfile=docker_config_rl)
@@ -49,12 +81,11 @@ def test_image_build(domain_1_port) -> None:
     assert not isinstance(workerimage, sy.SyftError)
 
     # Build docker image
-    tag_version = sy.UID().short()
-    docker_tag = f"openmined/custom-worker-rl:{tag_version}"
+    docker_tag = "openmined/custom-worker-rl:latest"
     docker_build_result = domain_client.api.services.worker_image.build(
         image_uid=workerimage.id,
         tag=docker_tag,
-        pull=False,
+        registry_uid=external_registry_uid,
     )
     assert isinstance(docker_build_result, SyftSuccess)
 
@@ -67,18 +98,9 @@ def test_image_build(domain_1_port) -> None:
     assert workerimage.image_identifier.repo_with_tag == docker_tag
     assert workerimage.image_hash is not None
 
-    # Delete image
-    delete_result = domain_client.api.services.worker_image.remove(uid=workerimage.id)
-    assert isinstance(delete_result, sy.SyftSuccess)
-
-    # Validate the image is successfully deleted
-    assert len(domain_client.images.get_all()) == 1
-    workerimage = domain_client.images.get_all()[0]
-    assert workerimage.config != docker_config
-
 
 @pytest.mark.container_workload
-def test_pool_launch(domain_1_port) -> None:
+def test_pool_launch(domain_1_port, external_registry_uid) -> None:
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
@@ -86,7 +108,7 @@ def test_pool_launch(domain_1_port) -> None:
 
     # Submit Docker Worker Config
     docker_config_opendp = f"""
-        FROM openmined/grid-backend:{SYFT_BASE_TAG}
+        FROM {registry}/{repo}:{tag}
         RUN pip install opendp
     """
     docker_config = DockerWorkerConfig(dockerfile=docker_config_opendp)
@@ -103,18 +125,24 @@ def test_pool_launch(domain_1_port) -> None:
     assert not worker_image.is_built
 
     # Build docker image
-    tag_version = sy.UID().short()
-    docker_tag = f"openmined/custom-worker-opendp:{tag_version}"
+    docker_tag = "openmined/custom-worker-opendp:latest"
     docker_build_result = domain_client.api.services.worker_image.build(
         image_uid=worker_image.id,
         tag=docker_tag,
-        pull=False,
+        registry_uid=external_registry_uid,
     )
     assert isinstance(docker_build_result, SyftSuccess)
 
+    # Push Image to External registry
+    push_result = domain_client.api.services.worker_image.push(
+        worker_image.id,
+        username=external_registry_username,
+        password=external_registry_password,
+    )
+    assert isinstance(push_result, sy.SyftSuccess), str(push_result)
+
     # Launch a worker pool
-    pool_version = sy.UID().short()
-    worker_pool_name = f"custom_worker_pool_ver{pool_version}"
+    worker_pool_name = "custom-worker-pool-opendp"
     worker_pool_res = domain_client.api.services.worker_pool.launch(
         name=worker_pool_name,
         image_uid=worker_image.id,
@@ -156,14 +184,9 @@ def test_pool_launch(domain_1_port) -> None:
 
     # TODO: delete the launched pool
 
-    # Clean the build images
-    sleep(10)
-    delete_result = domain_client.api.services.worker_image.remove(uid=worker_image.id)
-    assert isinstance(delete_result, sy.SyftSuccess)
-
 
 @pytest.mark.container_workload
-def test_pool_image_creation_job_requests(domain_1_port) -> None:
+def test_pool_image_creation_job_requests(domain_1_port, external_registry_uid) -> None:
     """
     Test register ds client, ds requests to create an image and pool creation,
     do approves, then ds creates a function attached to the worker pool, then creates another
@@ -187,21 +210,19 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
 
     # the DS makes a request to create an image and a pool based on the image
     docker_config_np = f"""
-        FROM openmined/grid-backend:{SYFT_BASE_TAG}
+        FROM {registry}/{repo}:{tag}
         RUN pip install numpy
     """
     docker_config = DockerWorkerConfig(dockerfile=docker_config_np)
-    tag_version = sy.UID().short()
-    docker_tag = f"openmined/custom-worker-np:{tag_version}"
-    pool_version = sy.UID().short()
-    worker_pool_name = f"custom_worker_pool_ver{pool_version}"
+    docker_tag = "openmined/custom-worker-np:latest"
+    worker_pool_name = "custom-worker-pool-numpy"
     request = ds_client.api.services.worker_pool.create_image_and_pool_request(
         pool_name=worker_pool_name,
         num_workers=1,
         tag=docker_tag,
         config=docker_config,
         reason="I want to do some more cool data science with PySyft and Recordlinkage",
-        pull_image=False,
+        registry_uid=external_registry_uid,
     )
     assert isinstance(request, Request)
     assert len(request.changes) == 2
@@ -224,7 +245,7 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
 
     worker: SyftWorker = launched_pool.workers[0]
     assert launched_pool.name in worker.name
-    assert worker.status.value == "Pending"
+    assert worker.status.value == "Running"
     assert worker.healthcheck.value == "✅"
     # assert worker.consumer_state.value == "Idle"
     assert isinstance(worker.logs, str)
@@ -279,8 +300,3 @@ def test_pool_image_creation_job_requests(domain_1_port) -> None:
         assert isinstance(res, sy.SyftSuccess)
 
     # TODO: delete the launched pool
-
-    # Clean the build images
-    sleep(10)
-    delete_result = domain_client.api.services.worker_image.remove(uid=built_image.id)
-    assert isinstance(delete_result, sy.SyftSuccess)

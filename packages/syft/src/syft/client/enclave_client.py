@@ -5,9 +5,6 @@ from __future__ import annotations
 from typing import Any
 from typing import TYPE_CHECKING
 
-# third party
-from hagrid.orchestra import NodeHandle
-
 # relative
 from ..abstract_node import NodeSideType
 from ..client.api import APIRegistry
@@ -29,6 +26,7 @@ from .protocol import SyftProtocol
 
 if TYPE_CHECKING:
     # relative
+    from ..orchestra import NodeHandle
     from ..service.code.user_code import SubmitUserCode
 
 
