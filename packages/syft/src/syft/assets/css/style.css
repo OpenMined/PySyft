@@ -1,4 +1,5 @@
-body[data-jp-theme-light="false"], body.vscode-dark {
+body[data-jp-theme-light="false"],
+body.vscode-dark {
   --primary-color: #111111;
   --secondary-color: #212121;
   --tertiary-color: #cfcdd6;
@@ -21,7 +22,7 @@ body {
   line-height: 100%;
   leading-trim: both;
   text-edge: cap;
-  color: var(--colors-black)
+  color: var(--colors-black);
 }
 
 .header-2 {
