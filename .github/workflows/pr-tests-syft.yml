@@ -39,7 +39,7 @@ jobs:
       #   run: |
       #     sudo chown -R $USER:$USER $HOME
       - name: "clean .git/config"
-        if: matrix.os == 'windows'
+        if: matrix.os == 'windows-latest'
         continue-on-error: true
         shell: bash
         run: |
@@ -86,7 +86,7 @@ jobs:
 
       # - name: Docker on MacOS
       #   if: steps.changes.outputs.syft == 'true' && matrix.os == 'macos-latest'
-      #   uses: crazy-max/ghaction-setup-docker@v3.1.0
+      #   uses: crazy-max/ghaction-setup-docker@v3.2.0
       #   with:
       #     set-host: true
 
@@ -134,7 +134,7 @@ jobs:
       #   run: |
       #     sudo chown -R $USER:$USER $HOME
       - name: "clean .git/config"
-        if: matrix.os == 'windows'
+        if: matrix.os == 'windows-latest'
         continue-on-error: true
         shell: bash
         run: |
@@ -202,7 +202,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10", "3.11", "3.12"]
-        deployment-type: ["k8s"]
+        deployment-type: ["remote"]
         notebook-paths: ["api/0.8"]
       fail-fast: false
 
@@ -278,7 +278,7 @@ jobs:
 
       - name: Docker on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.1.0
+        uses: crazy-max/ghaction-setup-docker@v3.2.0
 
       - name: Docker Compose on MacOS
         if: (steps.changes.outputs.stack == 'true' || steps.changes.outputs.notebooks == 'true') && matrix.os == 'macos-latest'
