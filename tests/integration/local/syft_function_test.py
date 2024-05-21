@@ -23,7 +23,6 @@ def node():
         n_consumers=3,
         create_producer=True,
         queue_port=None,
-        in_memory_workers=True,
         local_db=False,
     )
     # startup code here
