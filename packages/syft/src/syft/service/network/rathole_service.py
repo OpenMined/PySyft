@@ -82,8 +82,8 @@ class RatholeService:
         config = RatholeConfig(
             uuid=peer_id,
             secret_token=rathole_token,
-            local_addr_host="localhost",
-            local_addr_port=random_port,
+            local_addr_host="proxy",
+            local_addr_port=8001,
             server_name=peer_name,
         )
 

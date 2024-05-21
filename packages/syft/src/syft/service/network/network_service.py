@@ -208,7 +208,7 @@ class NetworkService(AbstractService):
         remote_url = GridURL(
             host_or_ip=remote_node_route.host_or_ip, port=remote_node_route.port
         )
-        rathole_remote_addr = remote_url.with_path("/rathole").as_container_host()
+        rathole_remote_addr = remote_url.as_container_host()
 
         remote_addr = rathole_remote_addr.url_no_protocol
 

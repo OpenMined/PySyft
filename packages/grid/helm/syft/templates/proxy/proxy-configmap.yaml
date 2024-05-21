@@ -2,7 +2,6 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: proxy-config
-  resourceVersion: ""
   labels:
     {{- include "common.labels" . | nindent 4 }}
     app.kubernetes.io/component: proxy
@@ -22,7 +21,16 @@ data:
           loadBalancer:
             servers:
               - url: "http://seaweedfs:8333"
+        rathole:
+          loadBalancer:
+            servers:
+              - url: "http://rathole:2333"
       routers:
+        rathole:
+          rule: "PathPrefix(`/`) && Headers(`Upgrade`, `websocket`)"
+          entryPoints:
+            - "web"
+          service: "rathole"
         frontend:
           rule: "PathPrefix(`/`)"
           entryPoints:
@@ -84,3 +92,4 @@ metadata:
     app.kubernetes.io/component: proxy
 data:
   rathole-dynamic.yml: |
+

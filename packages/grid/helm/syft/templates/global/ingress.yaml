@@ -27,20 +27,13 @@ spec:
   - host: {{ .Values.ingress.hostname | quote }}
     http:
       paths:
-      - path: /
-        pathType: Prefix
-        backend:
+      - backend:
           service:
             name: proxy
             port:
               number: 80
-      - path: /rathole
+        path: /
         pathType: Prefix
-        backend:
-          service:
-            name: rathole
-            port:
-              number: 2333
   {{- if .Values.ingress.tls.enabled }}
   tls:
   - hosts:
