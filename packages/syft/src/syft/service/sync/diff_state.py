@@ -1290,7 +1290,7 @@ It will be available for review again."""
 
                 root_ids.append(diff.object_id)  # type: ignore
             elif (
-                isinstance(diff_obj, Job)
+                isinstance(diff_obj, Job)  # type: ignore
                 and diff_obj.parent_job_id is None
                 # ignore Job objects created by TwinAPIEndpoint
                 and diff_obj.job_type != JobType.TWINAPIJOB
