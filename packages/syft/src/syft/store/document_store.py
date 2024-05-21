@@ -644,8 +644,8 @@ class BaseStash:
         # we dont use and_then logic here as it is hard because of the order of the arguments
         if res.is_err():
             return res
-        if obj.created_date is None:
-            obj.created_date = NewDateTime.now()
+        if obj._created_date is None:
+            obj._created_date = NewDateTime.now()
         return self.partition.set(
             credentials=credentials,
             obj=obj,
@@ -750,7 +750,7 @@ class BaseStash:
         obj: BaseStash.object_type,
         has_permission: bool = False,
     ) -> Result[BaseStash.object_type, str]:
-        obj.updated_date = NewDateTime.now()
+        obj._updated_date = NewDateTime.now()
         qk = self.partition.store_query_key(obj)
         return self.partition.update(
             credentials=credentials, qk=qk, obj=obj, has_permission=has_permission
@@ -771,7 +771,7 @@ class BaseStash:
         if result is None:
             return Err(f"Object wiht ID: {uid} not found")
         obj = result.ok()
-        obj.deleted_date = NewDateTime.now()
+        obj._deleted_date = NewDateTime.now()
         return self.update(credentials=credentials, obj=obj)
     
     def get_by_uid(
