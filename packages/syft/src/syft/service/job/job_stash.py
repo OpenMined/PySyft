@@ -1,6 +1,7 @@
 # stdlib
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 from enum import Enum
 import random
 from string import Template
@@ -28,6 +29,7 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...types.datetime import DateTime
+from ...types.datetime import format_timedelta
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_6
 from ...types.syft_object import SyftObject
@@ -96,7 +98,9 @@ class Job(SyncableSyftObject):
     parent_job_id: UID | None = None
     n_iters: int | None = 0
     current_iter: int | None = None
-    creation_time: str | None = Field(default_factory=lambda: str(datetime.now()))
+    creation_time: str | None = Field(
+        default_factory=lambda: str(datetime.now(tz=timezone.utc))
+    )
     action: Action | None = None
     job_pid: int | None = None
     job_worker_id: UID | None = None
@@ -201,18 +205,7 @@ class Job(SyncableSyftObject):
         ):
             return None
 
-        def format_timedelta(local_timedelta: timedelta) -> str:
-            total_seconds = int(local_timedelta.total_seconds())
-            hours, leftover = divmod(total_seconds, 3600)
-            minutes, seconds = divmod(leftover, 60)
-
-            hours_string = f"{hours}:" if hours != 0 else ""
-            minutes_string = f"{minutes}:".zfill(3)
-            seconds_string = f"{seconds}".zfill(2)
-
-            return f"{hours_string}{minutes_string}{seconds_string}"
-
-        now = datetime.now()
+        now = datetime.now(tz=timezone.utc)
         time_passed = now - datetime.fromisoformat(self.creation_time)
         iter_duration_seconds: float = time_passed.total_seconds() / self.current_iter
         iters_remaining = self.n_iters - self.current_iter
