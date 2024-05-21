@@ -52,9 +52,9 @@
           "hash": "6a7cc7c2bb4dd234c1508b0af4d3b403cd3b7b427578a775bf80dc36891923ed",
           "action": "remove"
         },
-        "5": {
-          "version": 5,
-          "hash": "95a2367bce2e4deb5f8c807561779876c1ec010dbf4d4f68abb526e4eca4487e",
+        "6": {
+          "version": 6,
+          "hash": "865a2ed791b8abd20d76e9a6bfae7ae7dad51b5ebfd8ff728aab25af93fa5570",
           "action": "add"
         }
       },
