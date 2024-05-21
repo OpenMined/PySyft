@@ -122,7 +122,7 @@ class DomainClient(SyftClient):
             )
             prompt_warning_message(message=message, confirm=True)
 
-        for asset in tqdm(dataset.asset_list):
+        for asset in tqdm(dataset.asset_list, colour="green"):
             print(f"Uploading: {asset.name}")
             try:
                 twin = TwinObject(
