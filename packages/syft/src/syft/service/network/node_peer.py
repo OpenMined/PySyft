@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import Callable
+from enum import Enum
 
 # third party
 from result import Err
@@ -14,6 +15,7 @@ from ...node.credentials import SyftSigningKey
 from ...node.credentials import SyftVerifyKey
 from ...serde.serializable import serializable
 from ...service.response import SyftError
+from ...types.datetime import DateTime
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
@@ -30,6 +32,13 @@ from .routes import PythonNodeRoute
 from .routes import VeilidNodeRoute
 from .routes import connection_to_route
 from .routes import route_to_connection
+
+
+@serializable()
+class NodePeerConnectionStatus(Enum):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+    TIMEOUT = "TIMEOUT"
 
 
 @serializable()
@@ -58,7 +67,14 @@ class NodePeer(SyftObject):
 
     __attr_searchable__ = ["name", "node_type"]
     __attr_unique__ = ["verify_key"]
-    __repr_attrs__ = ["name", "node_type", "admin_email"]
+    __repr_attrs__ = [
+        "name",
+        "node_type",
+        "admin_email",
+        "ping_status.value",
+        "ping_status_message",
+        "pinged_timestamp",
+    ]
 
     id: UID | None = None  # type: ignore[assignment]
     name: str
@@ -66,6 +82,9 @@ class NodePeer(SyftObject):
     node_routes: list[NodeRouteType] = []
     node_type: NodeType
     admin_email: str
+    ping_status: NodePeerConnectionStatus | None = None
+    ping_status_message: str | None = None
+    pinged_timestamp: DateTime | None = None
 
     def existed_route(
         self, route: NodeRouteType | None = None, route_id: UID | None = None
@@ -112,24 +131,24 @@ class NodePeer(SyftObject):
         route.priority = current_max_priority + 1
         return route
 
-    def update_route(self, new_route: NodeRoute) -> NodeRoute | None:
+    def update_route(self, route: NodeRoute) -> NodeRoute | None:
         """
         Update the route for the node.
-        If the route already exists, updates the priority of the existing route.
-        If it doesn't, it append the new route to the peer's list of node routes.
+        If the route already exists, return it.
+        If the route is new, assign it to have the highest priority
+        before appending it to the peer's list of node routes.
 
         Args:
-            new_route (NodeRoute): The new route to be added to the node.
+            route (NodeRoute): The new route to be added to the peer.
 
         Returns:
             NodeRoute | None: if the route already exists, return it, else returns None
         """
-        new_route = self.assign_highest_priority(new_route)
-        existed, index = self.existed_route(new_route)
-        if existed and index is not None:
-            self.node_routes[index].priority = new_route.priority
-            return self.node_routes[index]
+        existed, _ = self.existed_route(route)
+        if existed:
+            return route
         else:
+            new_route = self.assign_highest_priority(route)
             self.node_routes.append(new_route)
             return None
 

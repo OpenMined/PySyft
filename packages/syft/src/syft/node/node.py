@@ -62,10 +62,12 @@ from ..service.enclave.enclave_service import EnclaveService
 from ..service.job.job_service import JobService
 from ..service.job.job_stash import Job
 from ..service.job.job_stash import JobStash
+from ..service.job.job_stash import JobType
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadataV3
 from ..service.network.network_service import NetworkService
+from ..service.network.utils import PeerHealthCheckTask
 from ..service.notification.notification_service import NotificationService
 from ..service.notifier.notifier_service import NotifierService
 from ..service.object_search.migration_state_service import MigrateStateService
@@ -321,6 +323,7 @@ class Node(AbstractNode):
         smtp_port: int | None = None,
         smtp_host: str | None = None,
         association_request_auto_approval: bool = False,
+        background_tasks: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -370,10 +373,12 @@ class Node(AbstractNode):
 
         use_sqlite = local_db or (processes > 0 and not is_subprocess)
         document_store_config = document_store_config or self.get_default_store(
-            use_sqlite=use_sqlite
+            use_sqlite=use_sqlite,
+            store_type="Document Store",
         )
         action_store_config = action_store_config or self.get_default_store(
-            use_sqlite=use_sqlite
+            use_sqlite=use_sqlite,
+            store_type="Action Store",
         )
         self.init_stores(
             action_store_config=action_store_config,
@@ -407,6 +412,16 @@ class Node(AbstractNode):
 
         self.init_blob_storage(config=blob_storage_config)
 
+        context = AuthedServiceContext(
+            node=self,
+            credentials=self.verify_key,
+            role=ServiceRole.ADMIN,
+        )
+
+        self.peer_health_manager: PeerHealthCheckTask | None = None
+        if background_tasks:
+            self.run_peer_health_checks(context=context)
+
         # Migrate data before any operation on db
         if migrate:
             self.find_and_migrate_data()
@@ -422,12 +437,15 @@ class Node(AbstractNode):
             and any("docker" in line for line in open(path))
         )
 
-    def get_default_store(self, use_sqlite: bool) -> StoreConfig:
+    def get_default_store(self, use_sqlite: bool, store_type: str) -> StoreConfig:
         if use_sqlite:
             path = self.get_temp_dir("db")
+            file_name: str = f"{self.id}.sqlite"
+            if self.dev_mode:
+                print(f"{store_type}'s SQLite DB path: {path/file_name}")
             return SQLiteStoreConfig(
                 client_config=SQLiteStoreClientConfig(
-                    filename=f"{self.id}.sqlite",
+                    filename=file_name,
                     path=path,
                 )
             )
@@ -457,7 +475,14 @@ class Node(AbstractNode):
                     remote_profile.profile_name
                 ] = remote_profile
 
+    def run_peer_health_checks(self, context: AuthedServiceContext) -> None:
+        self.peer_health_manager = PeerHealthCheckTask()
+        self.peer_health_manager.run(context=context)
+
     def stop(self) -> None:
+        if self.peer_health_manager is not None:
+            self.peer_health_manager.stop()
+
         for consumer_list in self.queue_manager.consumers.values():
             for c in consumer_list:
                 c.close()
@@ -602,6 +627,7 @@ class Node(AbstractNode):
         migrate: bool = False,
         in_memory_workers: bool = True,
         association_request_auto_approval: bool = False,
+        background_tasks: bool = False,
     ) -> Self:
         uid = UID.with_seed(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -630,6 +656,7 @@ class Node(AbstractNode):
             in_memory_workers=in_memory_workers,
             reset=reset,
             association_request_auto_approval=association_request_auto_approval,
+            background_tasks=background_tasks,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -973,9 +1000,13 @@ class Node(AbstractNode):
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
         settings = settings_stash.get_all(self.signing_key.verify_key)
+        if settings.is_err():
+            raise ValueError(
+                f"Cannot get node settings for '{self.name}'. Error: {settings.err()}"
+            )
         if settings.is_ok() and len(settings.ok()) > 0:
-            settings_data = settings.ok()[0]
-        return settings_data
+            settings = settings.ok()[0]
+        return settings
 
     @property
     def metadata(self) -> NodeMetadataV3:
@@ -1258,10 +1289,10 @@ class Node(AbstractNode):
 
         action = Action.from_api_endpoint_execution()
         return self.add_queueitem_to_queue(
-            queue_item,
-            credentials,
-            action,
-            None,
+            queue_item=queue_item,
+            credentials=credentials,
+            action=action,
+            job_type=JobType.TWINAPIJOB,
         )
 
     def get_worker_pool_ref_by_name(
@@ -1330,16 +1361,22 @@ class Node(AbstractNode):
         )
 
         return self.add_queueitem_to_queue(
-            queue_item, credentials, action, parent_job_id, user_id
+            queue_item=queue_item,
+            credentials=credentials,
+            action=action,
+            parent_job_id=parent_job_id,
+            user_id=user_id,
         )
 
     def add_queueitem_to_queue(
         self,
+        *,
         queue_item: QueueItem,
         credentials: SyftVerifyKey,
         action: Action | None = None,
         parent_job_id: UID | None = None,
         user_id: UID | None = None,
+        job_type: JobType = JobType.JOB,
     ) -> Job | SyftError:
         log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
@@ -1373,6 +1410,7 @@ class Node(AbstractNode):
             parent_job_id=parent_job_id,
             action=action,
             requested_by=user_id,
+            job_type=job_type,
         )
 
         # 🟡 TODO 36: Needs distributed lock
@@ -1475,8 +1513,8 @@ class Node(AbstractNode):
                 worker_pool=worker_pool_ref,
             )
             return self.add_queueitem_to_queue(
-                queue_item,
-                api_call.credentials,
+                queue_item=queue_item,
+                credentials=api_call.credentials,
                 action=None,
                 parent_job_id=parent_job_id,
             )

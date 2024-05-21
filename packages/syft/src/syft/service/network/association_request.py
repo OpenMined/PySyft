@@ -36,6 +36,7 @@ class AssociationRequestChange(Change):
         from .network_service import NetworkService
 
         if not apply:
+            # TODO: implement undo for AssociationRequestChange
             return Err(
                 SyftError(message="Undo not supported for AssociationRequestChange")
             )

@@ -10,7 +10,7 @@ import syft
 import syft as sy
 from syft.client.domain_client import DomainClient
 from syft.client.syncing import compare_clients
-from syft.client.syncing import resolve_single
+from syft.client.syncing import resolve
 from syft.service.job.job_stash import JobStatus
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
@@ -19,7 +19,7 @@ from syft.service.response import SyftSuccess
 def compare_and_resolve(*, from_client: DomainClient, to_client: DomainClient):
     diff_state_before = compare_clients(from_client, to_client)
     for obj_diff_batch in diff_state_before.batches:
-        widget = resolve_single(obj_diff_batch)
+        widget = resolve(obj_diff_batch)
         widget.click_share_all_private_data()
         res = widget.click_sync()
         assert isinstance(res, SyftSuccess)
@@ -111,7 +111,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
 
     # verify that ds cannot access private job
     assert client_low_ds.api.services.job.get(private_job_id) is None
-    assert low_client.api.services.job.get(private_job_id) is not None
+    assert low_client.api.services.job.get(private_job_id) is None
 
     # we only sync the mock function, we never sync the private function to the low side
     mock_res = low_client.api.services.testapi.query.mock()

@@ -52,9 +52,9 @@
           "hash": "6a7cc7c2bb4dd234c1508b0af4d3b403cd3b7b427578a775bf80dc36891923ed",
           "action": "remove"
         },
-        "5": {
-          "version": 5,
-          "hash": "82ee08442b09797ed7a3710c31de633bb308b1d2215f51b58a3e01a4c201055d",
+        "6": {
+          "version": 6,
+          "hash": "865a2ed791b8abd20d76e9a6bfae7ae7dad51b5ebfd8ff728aab25af93fa5570",
           "action": "add"
         }
       },
@@ -153,7 +153,7 @@
       "NodePeer": {
         "3": {
           "version": 3,
-          "hash": "dababb03d2463b6218ae22d55293a60580f5a14bebd0c664d71da104e2f0b835",
+          "hash": "ec0e39fc77ddb542558519d6a1f7c55f41cc037b6312792333792a04feea57e6",
           "action": "add"
         }
       },

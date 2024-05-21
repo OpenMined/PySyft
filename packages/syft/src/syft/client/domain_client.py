@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from typing import cast
 
 # third party
-from hagrid.orchestra import NodeHandle
 from loguru import logger
 from tqdm import tqdm
 
@@ -43,6 +42,7 @@ from .protocol import SyftProtocol
 
 if TYPE_CHECKING:
     # relative
+    from ..orchestra import NodeHandle
     from ..service.project.project import Project
 
 
@@ -309,10 +309,15 @@ class DomainClient(SyftClient):
         if isinstance(res, SyftSuccess):
             if self.metadata:
                 return SyftSuccess(
-                    message=f"Connected {self.metadata.node_type} '{self.metadata.name}' to gateway '{client.name}'"
+                    message=(
+                        f"Connected {self.metadata.node_type} "
+                        f"'{self.metadata.name}' to gateway '{client.name}'. "
+                        f"{res.message}"
+                    )
                 )
             else:
                 return SyftSuccess(message=f"Connected to '{client.name}' gateway")
+
         return res
 
     def _get_service_by_name_if_exists(self, name: str) -> APIModule | None:

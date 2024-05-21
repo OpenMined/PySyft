@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Iterable
 import html
 import textwrap
 from typing import Any
@@ -44,6 +45,7 @@ from ..api.api import TwinAPIEndpoint
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatusCollection
 from ..job.job_stash import Job
+from ..job.job_stash import JobType
 from ..log.log import SyftLog
 from ..output.output_service import ExecutionOutput
 from ..request.request import Request
@@ -806,7 +808,7 @@ class ObjectDiffBatch(SyftObject):
         except Exception as _:
             return SyftError(
                 message=html.escape(
-                    "Could not render batch, please use resolve_single(<batch>) instead."
+                    "Could not render batch, please use resolve(<batch>) instead."
                 )
             )._repr_html_()
 
@@ -892,7 +894,7 @@ class ObjectDiffBatch(SyftObject):
         except Exception as _:
             return SyftError(
                 message=html.escape(
-                    "Could not render batch, please use resolve_single(<batch>) instead."
+                    "Could not render batch, please use resolve(<batch>) instead."
                 )
             )._repr_html_()
 
@@ -1047,6 +1049,14 @@ class NodeDiff(SyftObject):
         return [
             batch for batch in self.all_batches if batch.decision == SyncDecision.IGNORE
         ]
+
+    @property
+    def active_batches(self) -> Iterable[ObjectDiffBatch]:
+        decisions_to_skip = {SyncDecision.IGNORE, SyncDecision.SKIP}
+        # self.batches might be modified during iteration
+        for batch in self.batches:
+            if batch.decision not in decisions_to_skip:
+                yield batch
 
     @property
     def ignored_changes(self) -> list[IgnoredBatchView]:
@@ -1279,7 +1289,12 @@ It will be available for review again."""
                 # TODO: Figure out nested user codes, do we even need that?
 
                 root_ids.append(diff.object_id)  # type: ignore
-            elif isinstance(diff_obj, Job) and diff_obj.parent_job_id is None:  # type: ignore
+            elif (
+                isinstance(diff_obj, Job)  # type: ignore
+                and diff_obj.parent_job_id is None
+                # ignore Job objects created by TwinAPIEndpoint
+                and diff_obj.job_type != JobType.TWINAPIJOB
+            ):
                 root_ids.append(diff.object_id)  # type: ignore
 
         for root_uid in root_ids:
