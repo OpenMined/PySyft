@@ -24,8 +24,3 @@ configFiles:
     - packages/grid/traefik/docker/traefik.yml
   k8s:
     - packages/grid/devspace.yaml
-  podman:
-    - packages/grid/podman/podman-kube/podman-syft-kube-config.yaml
-    - packages/grid/podman/podman-kube/podman-syft-kube.yaml
-    - packages/grid/podman/podman-kube/traefik/conf/dynamic.yml
-    - packages/grid/podman/podman-kube/traefik/traefik.yml

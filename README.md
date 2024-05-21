@@ -10,7 +10,7 @@ Perform data science on `data` that remains in `someone else's` server
 
 # Quickstart
 
-✅ `Linux` ✅ `macOS` ✅ `Windows` ✅ `Docker` ✅ `Podman` ✅ `Kubernetes`
+✅ `Linux` ✅ `macOS` ✅ `Windows` ✅ `Docker` ✅ `Kubernetes`
 
 ## Install Client
 
@@ -122,7 +122,7 @@ helm install ... --set ingress.class="gce"
 # Install Notes
 
 - PySyft 0.8.1 Requires: 🐍 `python 3.10 - 3.12` - Run: `pip install -U syft`
-- PyGrid Requires: 🐳 `docker`, 🦦 `podman` or ☸️ `kubernetes`
+- PyGrid Requires: 🐳 `docker` or ☸️ `kubernetes`
 
 # Versions
 
