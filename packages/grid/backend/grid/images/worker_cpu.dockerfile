@@ -18,13 +18,12 @@ ARG PIP_PACKAGES="pip --dry-run"
 ARG CUSTOM_CMD='echo "No custom commands passed"'
 
 # Worker specific environment variables go here
-ENV SYFT_WORKER="true"
-ENV SYFT_VERSION_TAG=${SYFT_VERSION_TAG}
+ENV SYFT_WORKER="true" \
+    SYFT_VERSION_TAG=${SYFT_VERSION_TAG} \
+    UV_HTTP_TIMEOUT=600
 
-# Commenting this until we support built using python docker sdk or find any other alternative.
-# RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
-#     --mount=type=cache,target=$HOME/.cache/pip,sharing=locked \
-RUN apk update && \
-    apk add ${SYSTEM_PACKAGES} && \
-    pip install --user ${PIP_PACKAGES} && \
+RUN apk update && apk upgrade && \
+    apk add --no-cache ${SYSTEM_PACKAGES} && \
+    # if uv is present then run uv pip install else simple pip install
+    if [ -x "$(command -v uv)" ]; then uv pip install --no-cache ${PIP_PACKAGES}; else pip install --user ${PIP_PACKAGES}; fi && \
     bash -c "$CUSTOM_CMD"
