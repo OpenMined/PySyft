@@ -37,6 +37,8 @@ class JobService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = JobStash(store=store)
+        method_params = {}
+        super().__init__()
 
     @service_method(
         path="job.get",

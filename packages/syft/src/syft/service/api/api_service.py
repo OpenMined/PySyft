@@ -45,7 +45,9 @@ class APIService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = TwinAPIEndpointStash(store=store)
-
+        method_params = {}
+        super.__init__(method_params=method_params)
+        
     @service_method(
         path="api.add",
         name="add",
@@ -180,31 +182,31 @@ class APIService(AbstractService):
 
         return SyftSuccess(message="Endpoint successfully updated.")
 
-    @service_method(
-        path="api.delete",
-        name="delete",
-        roles=ADMIN_ROLE_LEVEL,
-    )
-    def delete(
-        self, context: AuthedServiceContext, endpoint_path: str
-    ) -> SyftSuccess | SyftError:
-        """Deletes an specific API endpoint."""
+    # @service_method(
+    #     path="api.delete",
+    #     name="delete",
+    #     roles=ADMIN_ROLE_LEVEL,
+    # )
+    # def delete(
+    #     self, context: AuthedServiceContext, endpoint_path: str
+    # ) -> SyftSuccess | SyftError:
+    #     """Deletes an specific API endpoint."""
 
-        result = self.stash.get_by_path(context.credentials, endpoint_path)
+    #     result = self.stash.get_by_path(context.credentials, endpoint_path)
 
-        if result.is_err():
-            return SyftError(message=result.err())
+    #     if result.is_err():
+    #         return SyftError(message=result.err())
 
-        endpoint = result.ok()
-        if not endpoint:
-            return SyftError(message=f"Enpoint at path {endpoint_path} doesn't exist")
+    #     endpoint = result.ok()
+    #     if not endpoint:
+    #         return SyftError(message=f"Enpoint at path {endpoint_path} doesn't exist")
 
-        result = self.stash.delete_by_uid(context.credentials, endpoint.id)
+    #     result = self.stash.delete_by_uid(context.credentials, endpoint.id)
 
-        if result.is_err():
-            return SyftError(message=result.err())
+    #     if result.is_err():
+    #         return SyftError(message=result.err())
 
-        return SyftSuccess(message="Endpoint successfully deleted.")
+    #     return SyftSuccess(message="Endpoint successfully deleted.")
 
     @service_method(
         path="api.view",
