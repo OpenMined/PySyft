@@ -29,7 +29,7 @@ from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...types.datetime import DateTime
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_5
+from ...types.syft_object import SYFT_OBJECT_VERSION_6
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
@@ -74,9 +74,18 @@ def center_content(text: Any) -> str:
 
 
 @serializable()
+class JobType(str, Enum):
+    JOB = "job"
+    TWINAPIJOB = "twinapijob"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+@serializable()
 class Job(SyncableSyftObject):
     __canonical_name__ = "JobItem"
-    __version__ = SYFT_OBJECT_VERSION_5
+    __version__ = SYFT_OBJECT_VERSION_6
 
     id: UID
     node_uid: UID
@@ -94,6 +103,7 @@ class Job(SyncableSyftObject):
     updated_at: DateTime | None = None
     user_code_id: UID | None = None
     requested_by: UID | None = None
+    job_type: JobType = JobType.JOB
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
     __repr_attrs__ = [
