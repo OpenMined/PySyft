@@ -1,7 +1,6 @@
 # third party
 import numpy as np
 from numpy import frombuffer
-import torch
 
 # relative
 from .arrow import numpy_deserialize
@@ -150,23 +149,6 @@ recursive_serde_register(
 #     serialize=lambda x: x.tobytes(),
 #     deserialize=lambda buffer: frombuffer(buffer, dtype=numpy_scalar_type),
 # )
-
-
-# Add support for torch tensors
-def torch_serialize(tensor: torch.Tensor) -> bytes:
-    return numpy_serialize(tensor.numpy())
-
-
-def torch_deserialize(buffer: bytes) -> torch.tensor:
-    np_array = numpy_deserialize(buffer)
-    return torch.from_numpy(np_array)
-
-
-recursive_serde_register(
-    torch.Tensor,
-    serialize=torch_serialize,
-    deserialize=lambda data: torch_deserialize(data),
-)
 
 # how else do you import a relative file to execute it?
 NOTHING = None
