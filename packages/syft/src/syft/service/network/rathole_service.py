@@ -83,7 +83,7 @@ class RatholeService:
             uuid=peer_id,
             secret_token=rathole_token,
             local_addr_host="proxy",
-            local_addr_port=8001,
+            local_addr_port=80,
             server_name=peer_name,
         )
 
