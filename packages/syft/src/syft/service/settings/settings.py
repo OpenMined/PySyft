@@ -48,6 +48,7 @@ class NodeSettingsUpdate(PartialSyftObject):
     signup_enabled: bool
     admin_email: str
     association_request_auto_approval: bool
+    node_side_type: NodeSideType
 
 
 @serializable()
