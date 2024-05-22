@@ -50,6 +50,7 @@ from ..api.api import TwinAPIEndpoint
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatusCollection
 from ..job.job_stash import Job
+from ..job.job_stash import JobType
 from ..log.log import SyftLog
 from ..output.output_service import ExecutionOutput
 from ..request.request import Request
@@ -1379,7 +1380,12 @@ It will be available for review again."""
                 # TODO: Figure out nested user codes, do we even need that?
 
                 root_ids.append(diff.object_id)  # type: ignore
-            elif isinstance(diff_obj, Job) and diff_obj.parent_job_id is None:  # type: ignore
+            elif (
+                isinstance(diff_obj, Job)  # type: ignore
+                and diff_obj.parent_job_id is None
+                # ignore Job objects created by TwinAPIEndpoint
+                and diff_obj.job_type != JobType.TWINAPIJOB
+            ):
                 root_ids.append(diff.object_id)  # type: ignore
 
         for root_uid in root_ids:
