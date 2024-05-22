@@ -17,6 +17,8 @@ class SyftResponseMessage(SyftBaseModel):
     require_api_update: bool = False
 
     def __getattr__(self, name: str) -> Any:
+        if name == "_bool":
+            return super().__getattr__(name)
         raise Exception(
             f"You have tried accessing `{name}` on a {type(self).__name__} with message: {self.message}"
         )
