@@ -52,7 +52,6 @@ repos:
               packages/syft/src/syft/proto.*|
               packages/syft/tests/syft/lib/python.*|
               packages/grid.*|
-              packages/hagrid.*|
               packages/syft/src/syft/federated/model_serialization/protos.py
           )$
 
@@ -93,31 +92,6 @@ repos:
         types_or: [python, pyi, jupyter]
       - id: ruff-format
         types_or: [python, pyi, jupyter]
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
-    hooks:
-      - id: mypy
-        name: "mypy: hagrid"
-        always_run: true
-        files: ^packages/hagrid
-        args: [
-            "--ignore-missing-imports",
-            "--scripts-are-modules",
-            "--disallow-incomplete-defs",
-            "--no-implicit-optional",
-            "--warn-unused-ignores",
-            "--warn-redundant-casts",
-            "--strict-equality",
-            "--warn-unreachable",
-            # "--disallow-untyped-decorators",
-            "--disallow-untyped-defs",
-            "--disallow-untyped-calls",
-            "--namespace-packages",
-            "--install-types",
-            "--non-interactive",
-            "--config-file=tox.ini",
-          ]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
@@ -205,7 +179,7 @@ repos:
     rev: "v3.0.0-alpha.9-for-vscode"
     hooks:
       - id: prettier
-        exclude: ^(packages/grid/helm|packages/grid/frontend/pnpm-lock.yaml|packages/hagrid/hagrid/manifest_template.yml|packages/syft/tests/mongomock)
+        exclude: ^(packages/grid/helm|packages/grid/frontend/pnpm-lock.yaml|packages/syft/tests/mongomock)
 
   # - repo: meta
   #   hooks:
