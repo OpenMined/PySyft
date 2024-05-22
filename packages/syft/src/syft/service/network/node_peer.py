@@ -17,6 +17,7 @@ from ...serde.serializable import serializable
 from ...service.response import SyftError
 from ...types.datetime import DateTime
 from ...types.syft_migration import migrate
+from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
@@ -317,6 +318,18 @@ class NodePeer(SyftObject):
                 )
 
         return None
+
+
+class NodePeerUpdate(PartialSyftObject):
+    id: UID
+    name: str
+    verify_key: SyftVerifyKey
+    node_routes: list[NodeRouteType]
+    node_type: NodeType
+    admin_email: str
+    ping_status: NodePeerConnectionStatus
+    ping_status_message: str
+    pinged_timestamp: DateTime
 
 
 def drop_veilid_route() -> Callable:
