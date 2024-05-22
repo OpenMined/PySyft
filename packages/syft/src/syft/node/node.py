@@ -1019,8 +1019,8 @@ class Node(AbstractNode):
         organization = settings_data.organization
         description = settings_data.description
         show_warnings = settings_data.show_warnings
-        node_type = self.node_type.value if self.node_type else ""
-        node_side_type = self.node_side_type.value if self.node_side_type else ""
+        node_type = settings_data.node_type.value if settings_data.node_type else ""
+        node_side_type = settings_data.node_side_type.value if settings_data.node_side_type else ""
 
         return NodeMetadataV3(
             name=name,
