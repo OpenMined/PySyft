@@ -1,7 +1,7 @@
 TABULATOR_SRC =
   "https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min";
 TABULATOR_CSS =
-  "https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator_materialize.min.css";
+  "https://cdn.jsdelivr.net/gh/openmined/pysyft/packages/syft/src/syft/assets/css/tabulator_pysyft.min.css";
 
 document.querySelectorAll(".escape-unfocus").forEach((input) => {
   input.addEventListener("keydown", (event) => {

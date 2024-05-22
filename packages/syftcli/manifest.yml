@@ -12,20 +12,9 @@ images:
 configFiles:
   docker:
     - packages/grid/default.env
-    - packages/grid/docker-compose.build.yml
-    - packages/grid/docker-compose.dev.yml
-    - packages/grid/docker-compose.pull.yml
-    - packages/grid/docker-compose.test.yml
-    - packages/grid/docker-compose.tls.yml
-    - packages/grid/docker-compose.yml
     - packages/grid/traefik/docker/dynamic-tls.yml
     - packages/grid/traefik/docker/dynamic.yml
     - packages/grid/traefik/docker/traefik-tls.template.yml
     - packages/grid/traefik/docker/traefik.yml
   k8s:
     - packages/grid/devspace.yaml
-  podman:
-    - packages/grid/podman/podman-kube/podman-syft-kube-config.yaml
-    - packages/grid/podman/podman-kube/podman-syft-kube.yaml
-    - packages/grid/podman/podman-kube/traefik/conf/dynamic.yml
-    - packages/grid/podman/podman-kube/traefik/traefik.yml
