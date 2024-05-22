@@ -1,8 +1,8 @@
 # stdlib
 import os
+from uuid import uuid4
 
 # third party
-from faker import Faker
 import numpy as np
 import pytest
 import requests
@@ -204,8 +204,7 @@ def test_pool_image_creation_job_requests(
     domain_client: DomainClient = sy.login(
         port=domain_1_port, email="info@openmined.org", password="changethis"
     )
-    fake = Faker()
-    ds_username = fake.user_name()
+    ds_username = uuid4().hex[:8]
     ds_email = ds_username + "@example.com"
     res = domain_client.register(
         name=ds_username,
