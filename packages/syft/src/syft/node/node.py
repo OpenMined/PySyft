@@ -62,6 +62,7 @@ from ..service.enclave.enclave_service import EnclaveService
 from ..service.job.job_service import JobService
 from ..service.job.job_stash import Job
 from ..service.job.job_stash import JobStash
+from ..service.job.job_stash import JobType
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadataV3
@@ -372,10 +373,12 @@ class Node(AbstractNode):
 
         use_sqlite = local_db or (processes > 0 and not is_subprocess)
         document_store_config = document_store_config or self.get_default_store(
-            use_sqlite=use_sqlite
+            use_sqlite=use_sqlite,
+            store_type="Document Store",
         )
         action_store_config = action_store_config or self.get_default_store(
-            use_sqlite=use_sqlite
+            use_sqlite=use_sqlite,
+            store_type="Action Store",
         )
         self.init_stores(
             action_store_config=action_store_config,
@@ -434,12 +437,15 @@ class Node(AbstractNode):
             and any("docker" in line for line in open(path))
         )
 
-    def get_default_store(self, use_sqlite: bool) -> StoreConfig:
+    def get_default_store(self, use_sqlite: bool, store_type: str) -> StoreConfig:
         if use_sqlite:
             path = self.get_temp_dir("db")
+            file_name: str = f"{self.id}.sqlite"
+            if self.dev_mode:
+                print(f"{store_type}'s SQLite DB path: {path/file_name}")
             return SQLiteStoreConfig(
                 client_config=SQLiteStoreClientConfig(
-                    filename=f"{self.id}.sqlite",
+                    filename=file_name,
                     path=path,
                 )
             )
@@ -1283,10 +1289,10 @@ class Node(AbstractNode):
 
         action = Action.from_api_endpoint_execution()
         return self.add_queueitem_to_queue(
-            queue_item,
-            credentials,
-            action,
-            None,
+            queue_item=queue_item,
+            credentials=credentials,
+            action=action,
+            job_type=JobType.TWINAPIJOB,
         )
 
     def get_worker_pool_ref_by_name(
@@ -1355,16 +1361,22 @@ class Node(AbstractNode):
         )
 
         return self.add_queueitem_to_queue(
-            queue_item, credentials, action, parent_job_id, user_id
+            queue_item=queue_item,
+            credentials=credentials,
+            action=action,
+            parent_job_id=parent_job_id,
+            user_id=user_id,
         )
 
     def add_queueitem_to_queue(
         self,
+        *,
         queue_item: QueueItem,
         credentials: SyftVerifyKey,
         action: Action | None = None,
         parent_job_id: UID | None = None,
         user_id: UID | None = None,
+        job_type: JobType = JobType.JOB,
     ) -> Job | SyftError:
         log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
@@ -1398,6 +1410,7 @@ class Node(AbstractNode):
             parent_job_id=parent_job_id,
             action=action,
             requested_by=user_id,
+            job_type=job_type,
         )
 
         # 🟡 TODO 36: Needs distributed lock
@@ -1500,8 +1513,8 @@ class Node(AbstractNode):
                 worker_pool=worker_pool_ref,
             )
             return self.add_queueitem_to_queue(
-                queue_item,
-                api_call.credentials,
+                queue_item=queue_item,
+                credentials=api_call.credentials,
                 action=None,
                 parent_job_id=parent_job_id,
             )
