@@ -37,7 +37,7 @@ class RatholeService:
         config = RatholeConfig(
             uuid=peer.id.to_string(),
             secret_token=peer.rathole_token,
-            local_addr_host="localhost",
+            local_addr_host="0.0.0.0",
             local_addr_port=random_port,
             server_name=peer.name,
         )
@@ -77,8 +77,6 @@ class RatholeService:
     ) -> None:
         """Add a host to the rathole client toml file."""
 
-        random_port = self.get_random_port()
-
         config = RatholeConfig(
             uuid=peer_id,
             secret_token=rathole_token,
@@ -106,10 +104,6 @@ class RatholeService:
 
         # Update the rathole config map
         KubeUtils.update_configmap(config_map=rathole_config_map, patch={"data": data})
-
-        self.add_entrypoint(port=random_port, peer_name=peer_name)
-
-        self.forward_port_to_proxy(config=config, entrypoint=peer_name)
 
     def forward_port_to_proxy(
         self, config: RatholeConfig, entrypoint: str = "web"

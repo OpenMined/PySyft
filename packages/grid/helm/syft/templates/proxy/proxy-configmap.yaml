@@ -80,7 +80,9 @@ data:
 
     providers:
       file:
-        filename: /etc/traefik/dynamic.yml
+        directory: /etc/traefik/
+        watch: true
+
 ---
 
 apiVersion: v1
