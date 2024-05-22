@@ -9,7 +9,6 @@ from types import MethodType
 from typing import Any
 
 # relative
-from . import gevent_patch  # noqa: F401
 from .abstract_node import NodeSideType  # noqa: F401
 from .abstract_node import NodeType  # noqa: F401
 from .client.client import connect  # noqa: F401

@@ -26,7 +26,6 @@ from result import Ok
 from result import Result
 import torch
 from torch._C import _TensorMeta
-import zmq.green as zmq
 
 # relative
 from ..types.dicttuple import DictTuple
@@ -208,15 +207,6 @@ recursive_serde_register(
     deserialize=lambda x: pydantic.EmailStr(x.decode()),
 )
 
-recursive_serde_register(
-    zmq._Socket,
-    serialize_attrs=[
-        "_shadow",
-        "_monitor_socket",
-        "_type_name",
-    ],
-)
-recursive_serde_register(zmq._Context)
 
 # how else do you import a relative file to execute it?
 NOTHING = None
