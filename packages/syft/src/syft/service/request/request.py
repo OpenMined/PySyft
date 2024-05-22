@@ -6,6 +6,7 @@ import inspect
 from typing import Any
 
 # third party
+from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
@@ -15,6 +16,7 @@ from typing_extensions import Self
 from ...abstract_node import NodeSideType
 from ...client.api import APIRegistry
 from ...client.client import SyftClient
+from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...node.credentials import SyftVerifyKey
@@ -192,11 +194,17 @@ class CreateCustomImageChange(Change):
     __version__ = SYFT_OBJECT_VERSION_2
 
     config: WorkerConfig
-    tag: str
+    tag: str | None = None
     registry_uid: UID | None = None
     pull_image: bool = True
 
     __repr_attrs__ = ["config", "tag"]
+
+    @model_validator(mode="after")
+    def _tag_required_for_dockerworkerconfig(self) -> Self:
+        if isinstance(self.config, DockerWorkerConfig) and self.tag is None:
+            raise ValueError("`tag` is required for `DockerWorkerConfig`.")
+        return self
 
     def _run(
         self, context: ChangeContext, apply: bool
