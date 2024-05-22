@@ -1,13 +1,20 @@
 ARG RATHOLE_VERSION="0.5.0"
 ARG PYTHON_VERSION="3.12"
 
-FROM rapiz1/rathole:v${RATHOLE_VERSION} as build
+FROM rust as build
+ARG RATHOLE_VERSION
+ARG FEATURES
+RUN apt update && apt install -y git
+RUN git clone -b v${RATHOLE_VERSION} https://github.com/rapiz1/rathole
+
+WORKDIR /rathole
+RUN cargo build --locked --release --features ${FEATURES:-default}
 
 FROM python:${PYTHON_VERSION}-bookworm
 ARG RATHOLE_VERSION
 ENV MODE="client"
 RUN apt update && apt install -y netcat-openbsd vim
-COPY --from=build /app/rathole   /app/rathole
+COPY --from=build /rathole/target/release/rathole /app/rathole
 
 WORKDIR /app
 COPY ./start.sh /app/start.sh
