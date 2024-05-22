@@ -115,7 +115,7 @@ def test_pool_launch(
 
     # Submit Worker Image
     worker_config, docker_tag = (
-        (PrebuiltWorkerConfig(tag=(_tag := "docker.io/library/nginx:latest")), _tag)
+        (PrebuiltWorkerConfig(tag="docker.io/library/nginx:latest"), None)
         if prebuilt
         else make_docker_config_test_case("opendp")
     )
@@ -217,23 +217,23 @@ def test_pool_image_creation_job_requests(
 
     # the DS makes a request to create an image and a pool based on the image
     worker_config, docker_tag = (
-        (
-            PrebuiltWorkerConfig(tag=(_tag := f"{registry}/{repo}:{tag}")),
-            _tag,
-        )
+        (PrebuiltWorkerConfig(tag=f"{registry}/{repo}:{tag}"), None)
         if prebuilt
         else make_docker_config_test_case("numpy")
     )
 
     worker_pool_name = f"custom-worker-pool-numpy{'-prebuilt' if prebuilt else ''}"
-    request = ds_client.api.services.worker_pool.create_image_and_pool_request(
-        pool_name=worker_pool_name,
-        num_workers=1,
-        tag=docker_tag,
-        config=worker_config,
-        reason="I want to do some more cool data science with PySyft",
-        registry_uid=external_registry_uid,
-    )
+
+    kwargs = {
+        "pool_name": worker_pool_name,
+        "num_workers": 1,
+        "config": worker_config,
+        "reason": "I want to do some more cool data science with PySyft",
+    }
+    if not prebuilt:
+        kwargs.update({"tag": docker_tag, "registry_uid": external_registry_uid})
+
+    request = ds_client.api.services.worker_pool.create_image_and_pool_request(**kwargs)
     assert isinstance(request, Request)
     assert len(request.changes) == 2
     assert request.changes[0].config == worker_config

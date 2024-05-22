@@ -16,7 +16,7 @@ from syft.service.worker.worker_pool import WorkerPool
 # relative
 from ..request.request_code_accept_deny_test import get_ds_client
 
-PREBUILT_IMAGE_TAG = f"openmined/grid-backend:{sy.__version__}"
+PREBUILT_IMAGE_TAG = f"docker.io/openmined/grid-backend:{sy.__version__}"
 
 CUSTOM_DOCKERFILE = f"""
 FROM {PREBUILT_IMAGE_TAG}
@@ -24,7 +24,7 @@ FROM {PREBUILT_IMAGE_TAG}
 RUN pip install recordlinkage
 """
 
-CUSTOM_IMAGE_TAG = "openmined/custom-worker-recordlinkage:latest"
+CUSTOM_IMAGE_TAG = "docker.io/openmined/custom-worker-recordlinkage:latest"
 
 WORKER_CONFIG_TEST_CASES_WITH_N_IMAGES = [
     (
@@ -33,7 +33,7 @@ WORKER_CONFIG_TEST_CASES_WITH_N_IMAGES = [
         2,  # total number of images.
         # 2 since we pull a pre-built image (1) as the base image to build a custom image (2)
     ),
-    (PREBUILT_IMAGE_TAG, PrebuiltWorkerConfig(tag=PREBUILT_IMAGE_TAG), 1),
+    (None, PrebuiltWorkerConfig(tag=PREBUILT_IMAGE_TAG), 1),
 ]
 
 WORKER_CONFIG_TEST_CASES = [
@@ -74,11 +74,16 @@ def test_create_image_and_pool_request_accept(
     assert root_client.requests[-1].status.value == 2
 
     all_image_tags = [
-        im.image_identifier.repo_with_tag
+        im.image_identifier.full_name_with_tag
         for im in root_client.images.get_all()
         if im.image_identifier
     ]
-    assert docker_tag in all_image_tags
+    tag = (
+        worker_config.tag
+        if isinstance(worker_config, PrebuiltWorkerConfig)
+        else docker_tag
+    )
+    assert tag in all_image_tags
     launched_pool = root_client.worker_pools["recordlinkage-pool"]
     assert isinstance(launched_pool, WorkerPool)
     assert len(launched_pool.worker_list) == 2
@@ -125,7 +130,7 @@ def test_create_pool_request_accept(
             root_client.api.services.worker_image.get_by_config(worker_config)
         )
         assert isinstance(docker_build_result, SyftSuccess)
-        assert worker_image.image_identifier.repo_with_tag == docker_tag
+        assert worker_image.image_identifier.full_name_with_tag == docker_tag
 
     # The DS client submits a request to create a pool from an existing image
     request = ds_client.api.services.worker_pool.pool_creation_request(
