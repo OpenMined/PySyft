@@ -296,7 +296,7 @@ def test_pool_image_creation_job_requests(
     job.wait()
     assert job.status.value == "completed"
 
-    job = domain_client.jobs[-1]
+    job = domain_client.jobs.get_by_user_code_id(job.user_code_id)[-1]
     assert job.job_worker_id == worker.id
 
     # Validate the result received from the syft function
