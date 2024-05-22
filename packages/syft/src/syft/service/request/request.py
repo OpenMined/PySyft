@@ -189,9 +189,22 @@ class ActionStoreChange(Change):
 
 
 @serializable()
-class CreateCustomImageChange(Change):
+class CreateCustomImageChangeV2(Change):
     __canonical_name__ = "CreateCustomImageChange"
     __version__ = SYFT_OBJECT_VERSION_2
+
+    config: WorkerConfig
+    tag: str
+    registry_uid: UID | None = None
+    pull_image: bool = True
+
+    __repr_attrs__ = ["config", "tag"]
+
+
+@serializable()
+class CreateCustomImageChange(Change):
+    __canonical_name__ = "CreateCustomImageChange"
+    __version__ = SYFT_OBJECT_VERSION_3
 
     config: WorkerConfig
     tag: str | None = None
