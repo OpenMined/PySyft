@@ -18,6 +18,7 @@ from ...service.response import SyftError
 from ...types.datetime import DateTime
 from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
@@ -321,11 +322,11 @@ class NodePeer(SyftObject):
 
 
 class NodePeerUpdate(PartialSyftObject):
-    id: UID
+    __canonical_name__ = "NodePeerUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     name: str
-    verify_key: SyftVerifyKey
     node_routes: list[NodeRouteType]
-    node_type: NodeType
     admin_email: str
     ping_status: NodePeerConnectionStatus
     ping_status_message: str
