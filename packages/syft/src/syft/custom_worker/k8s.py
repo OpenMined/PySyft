@@ -12,6 +12,7 @@ from kr8s.objects import APIObject
 from kr8s.objects import ConfigMap
 from kr8s.objects import Pod
 from kr8s.objects import Secret
+from kr8s.objects import Service
 from pydantic import BaseModel
 from typing_extensions import Self
 
@@ -176,6 +177,11 @@ class KubeUtils:
     def get_configmap(client: kr8s.Api, name: str) -> ConfigMap | None:
         config_map = client.get("configmaps", name)
         return config_map[0] if config_map else None
+
+    @staticmethod
+    def get_service(client: kr8s.Api, name: str) -> Service | None:
+        service = client.get("services", name)
+        return service[0] if service else None
 
     @staticmethod
     def update_configmap(

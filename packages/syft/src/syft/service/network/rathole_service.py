@@ -1,12 +1,15 @@
 # stdlib
 import secrets
+from typing import cast
 
 # third party
+from kr8s.objects import Service
 import yaml
 
 # relative
 from ...custom_worker.k8s import KubeUtils
 from ...custom_worker.k8s import get_kr8s_client
+from ...types.uid import UID
 from .node_peer import NodePeer
 from .rathole import RatholeConfig
 from .rathole import get_rathole_port
@@ -34,8 +37,10 @@ class RatholeService:
 
         random_port = self.get_random_port()
 
+        peer_id = cast(UID, peer.id)
+
         config = RatholeConfig(
-            uuid=peer.id.to_string(),
+            uuid=peer_id.to_string(),
             secret_token=peer.rathole_token,
             local_addr_host="0.0.0.0",
             local_addr_port=random_port,
@@ -46,6 +51,9 @@ class RatholeService:
         rathole_config_map = KubeUtils.get_configmap(
             client=self.k8rs_client, name=RATHOLE_TOML_CONFIG_MAP
         )
+
+        if rathole_config_map is None:
+            raise Exception("Rathole config map not found.")
 
         client_filename = RatholeServerToml.filename
 
@@ -90,6 +98,9 @@ class RatholeService:
             client=self.k8rs_client, name=RATHOLE_TOML_CONFIG_MAP
         )
 
+        if rathole_config_map is None:
+            raise Exception("Rathole config map not found.")
+
         client_filename = RatholeClientToml.filename
 
         toml_str = rathole_config_map.data[client_filename]
@@ -113,6 +124,9 @@ class RatholeService:
         rathole_proxy_config_map = KubeUtils.get_configmap(
             self.k8rs_client, RATHOLE_PROXY_CONFIG_MAP
         )
+
+        if rathole_proxy_config_map is None:
+            raise Exception("Rathole proxy config map not found.")
 
         rathole_proxy = rathole_proxy_config_map.data["rathole-dynamic.yml"]
 
@@ -145,6 +159,9 @@ class RatholeService:
             self.k8rs_client, RATHOLE_PROXY_CONFIG_MAP
         )
 
+        if rathole_proxy_config_map is None:
+            raise Exception("Rathole proxy config map not found.")
+
         rathole_proxy = rathole_proxy_config_map.data["rathole-dynamic.yml"]
 
         if not rathole_proxy:
@@ -169,36 +186,42 @@ class RatholeService:
             patch={"data": {"rathole-dynamic.yml": yaml.safe_dump(rathole_proxy)}},
         )
 
-    def add_entrypoint(self, port: int, peer_name: str) -> None:
-        """Add an entrypoint to the traefik config map."""
+        self.expose_port_on_rathole_service(config.server_name, config.local_addr_port)
 
-        proxy_config_map = KubeUtils.get_configmap(self.k8rs_client, PROXY_CONFIG_MAP)
+    def expose_port_on_rathole_service(self, port_name: str, port: int) -> None:
+        """Expose a port on the rathole service."""
 
-        data = proxy_config_map.data
+        rathole_service = KubeUtils.get_service(self.k8rs_client, "rathole")
 
-        traefik_config_str = data["traefik.yml"]
+        rathole_service = cast(Service, rathole_service)
 
-        traefik_config = yaml.safe_load(traefik_config_str)
+        config = rathole_service.raw
 
-        traefik_config["entryPoints"][f"{peer_name}"] = {"address": f":{port}"}
+        config["spec"]["ports"].append(
+            {
+                "name": port_name,
+                "port": port,
+                "targetPort": port,
+                "protocol": "TCP",
+            }
+        )
 
-        data["traefik.yml"] = yaml.safe_dump(traefik_config)
+        rathole_service.patch(config)
 
-        KubeUtils.update_configmap(config_map=proxy_config_map, patch={"data": data})
+    def remove_port_on_rathole_service(self, port_name: str) -> None:
+        """Remove a port from the rathole service."""
 
-    def remove_endpoint(self, peer_name: str) -> None:
-        """Remove an entrypoint from the traefik config map."""
+        rathole_service = KubeUtils.get_service(self.k8rs_client, "rathole")
 
-        proxy_config_map = KubeUtils.get_configmap(self.k8rs_client, PROXY_CONFIG_MAP)
+        rathole_service = cast(Service, rathole_service)
 
-        data = proxy_config_map.data
+        config = rathole_service.raw
 
-        traefik_config_str = data["traefik.yml"]
+        ports = config["spec"]["ports"]
 
-        traefik_config = yaml.safe_load(traefik_config_str)
+        for port in ports:
+            if port["name"] == port_name:
+                ports.remove(port)
+                break
 
-        del traefik_config["entryPoints"][f"{peer_name}"]
-
-        data["traefik.yml"] = yaml.safe_dump(traefik_config)
-
-        KubeUtils.update_configmap(config_map=proxy_config_map, patch={"data": data})
+        rathole_service.patch(config)
