@@ -674,7 +674,9 @@ class KeyValueStorePartition(StorePartition):
                 try:
                     migrated_value = value.migrate_to(to_klass.__version__, context)
                 except Exception:
-                    return Err(f"Failed to migrate data to {to_klass} for qk: {key}")
+                    import traceback
+                    print(traceback.format_exc())
+                    return Err(f"Failed to migrate data to {to_klass} for qk {to_klass.__version__}: {key}")
                 qk = self.settings.store_key.with_obj(key)
                 result = self._update(
                     credentials,

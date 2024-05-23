@@ -147,6 +147,7 @@ def resolve_references(json_mappings: dict[str, dict]) -> dict[str, dict]:
 
 
 def generate_json_schemas(output_path: str | None = None) -> None:
+    # TODO: should we also replace this with the SyftObjectRegistry?
     json_mappings = process_type_bank(sy.serde.recursive.TYPE_BANK)
     json_mappings = resolve_references(json_mappings)
     if not output_path:

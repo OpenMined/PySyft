@@ -27,6 +27,13 @@
           "action": "add"
         }
       },
+      "BlobRetrievalByURL": {
+        "5": {
+          "version": 5,
+          "hash": "4934bf72bb10ac0a670c87ab735175088274e090819436563543473e64cf15e3",
+          "action": "add"
+        }
+      },
       "EnclaveMetadata": {
         "2": {
           "version": 2,
@@ -47,11 +54,6 @@
         }
       },
       "JobItem": {
-        "4": {
-          "version": 4,
-          "hash": "6a7cc7c2bb4dd234c1508b0af4d3b403cd3b7b427578a775bf80dc36891923ed",
-          "action": "remove"
-        },
         "5": {
           "version": 5,
           "hash": "82ee08442b09797ed7a3710c31de633bb308b1d2215f51b58a3e01a4c201055d",
@@ -127,11 +129,6 @@
         }
       },
       "SyftLog": {
-        "3": {
-          "version": 3,
-          "hash": "8964d48238672e0e5d5db6b932cda4ee8eb77581949ab3f7a38a05b1efec13b7",
-          "action": "remove"
-        },
         "4": {
           "version": 4,
           "hash": "ad6ef18ccd87fced669f3824d27ab423aaf52574b0cd4f720687aeaba77524e5",
@@ -183,13 +180,6 @@
           "version": 1,
           "hash": "c1796e7b01c9eae0dbf59cfd5c2c2f0e7eba593e0cea615717246572b27aae4b",
           "action": "remove"
-        }
-      },
-      "BlobRetrievalByURL": {
-        "5": {
-          "version": 5,
-          "hash": "4934bf72bb10ac0a670c87ab735175088274e090819436563543473e64cf15e3",
-          "action": "add"
         }
       }
     }

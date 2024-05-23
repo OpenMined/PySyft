@@ -314,7 +314,7 @@ class KeyValueActionStore(ActionStore):
                     migrated_value = value.migrate_to(to_klass.__version__)
                 except Exception as e:
                     return Err(
-                        f"Failed to migrate data to {to_klass} for qk: {key}. Exception: {e}"
+                        f"Failed to migrate data to {to_klass} {to_klass.__version__} for qk: {key}. Exception: {e}"
                     )
                 result = self.set(
                     uid=key,

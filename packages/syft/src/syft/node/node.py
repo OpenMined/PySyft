@@ -405,9 +405,15 @@ class Node(AbstractNode):
 
         self.create_initial_settings(admin_email=root_email)
 
-        self.init_queue_manager(queue_config=self.queue_config)
 
         self.init_blob_storage(config=blob_storage_config)
+
+        # Migrate data before any operation on db
+        if migrate:
+            self.find_and_migrate_data()
+
+        # first migrate, for backwards compatibility
+        self.init_queue_manager(queue_config=self.queue_config)
 
         context = AuthedServiceContext(
             node=self,
@@ -419,9 +425,7 @@ class Node(AbstractNode):
         if background_tasks:
             self.run_peer_health_checks(context=context)
 
-        # Migrate data before any operation on db
-        if migrate:
-            self.find_and_migrate_data()
+
 
         NodeRegistry.set_node_for(self.id, self)
 
@@ -1634,7 +1638,11 @@ def create_admin_new(
             else:
                 raise Exception(f"Could not create user: {result}")
     except Exception as e:
-        print("Unable to create new admin", e)
+        # import ipdb
+        # ipdb.set_trace()
+        import traceback
+        
+        print("Unable to create new admin", traceback.format_exc())
 
     return None
 

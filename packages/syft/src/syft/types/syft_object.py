@@ -50,6 +50,7 @@ from .uid import UID
 if TYPE_CHECKING:
     # relative
     from ..service.sync.diff_state import AttrDiff
+    from .syft_object_registry import SyftObjectRegistry
 
 IntStr = int | str
 AbstractSetIntStr = Set[IntStr]
@@ -136,90 +137,6 @@ class Context(SyftBaseObject):
     __version__ = SYFT_OBJECT_VERSION_2
 
     pass
-
-
-class SyftObjectRegistry:
-    __object_version_registry__: dict[
-        str, type["SyftObject"] | type["SyftObjectRegistry"]
-    ] = {}
-    __object_transform_registry__: dict[str, Callable] = {}
-
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-        if hasattr(cls, "__canonical_name__") and hasattr(cls, "__version__"):
-            mapping_string = f"{cls.__canonical_name__}_{cls.__version__}"
-
-            if (
-                mapping_string in cls.__object_version_registry__
-                and not autoreload_enabled()
-            ):
-                current_cls = cls.__object_version_registry__[mapping_string]
-                if cls == current_cls:
-                    # same class so noop
-                    return None
-
-                # user code is reinitialized which means it might have a new address
-                # in memory so for that we can just skip
-                if "syft.user" in cls.__module__:
-                    # this happens every time we reload the user code
-                    return None
-                else:
-                    # this shouldn't happen and is usually a mistake of reusing the
-                    # same __canonical_name__ and __version__ in two classes
-                    raise Exception(f"Duplicate mapping for {mapping_string} and {cls}")
-            else:
-                # only if the cls has not been registered do we want to register it
-                cls.__object_version_registry__[mapping_string] = cls
-
-    @classmethod
-    def versioned_class(
-        cls, name: str, version: int
-    ) -> type["SyftObject"] | type["SyftObjectRegistry"] | None:
-        mapping_string = f"{name}_{version}"
-        if mapping_string not in cls.__object_version_registry__:
-            return None
-        return cls.__object_version_registry__[mapping_string]
-
-    @classmethod
-    def add_transform(
-        cls,
-        klass_from: str,
-        version_from: int,
-        klass_to: str,
-        version_to: int,
-        method: Callable,
-    ) -> None:
-        mapping_string = f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
-        cls.__object_transform_registry__[mapping_string] = method
-
-    @classmethod
-    def get_transform(
-        cls, type_from: type["SyftObject"], type_to: type["SyftObject"]
-    ) -> Callable:
-        for type_from_mro in type_from.mro():
-            if issubclass(type_from_mro, SyftObject):
-                klass_from = type_from_mro.__canonical_name__
-                version_from = type_from_mro.__version__
-            else:
-                klass_from = type_from_mro.__name__
-                version_from = None
-            for type_to_mro in type_to.mro():
-                if issubclass(type_to_mro, SyftBaseObject):
-                    klass_to = type_to_mro.__canonical_name__
-                    version_to = type_to_mro.__version__
-                else:
-                    klass_to = type_to_mro.__name__
-                    version_to = None
-
-                mapping_string = (
-                    f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
-                )
-                if mapping_string in cls.__object_transform_registry__:
-                    return cls.__object_transform_registry__[mapping_string]
-        raise Exception(
-            f"No mapping found for: {type_from} to {type_to} in"
-            f"the registry: {cls.__object_transform_registry__.keys()}"
-        )
 
 
 class SyftMigrationRegistry:
@@ -378,7 +295,37 @@ base_attrs_sync_ignore = [
 ]
 
 
-class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
+class RegisteredSyftObject():
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        from .syft_object_registry import SyftObjectRegistry as reg
+
+        if hasattr(reg, "__canonical_name__") and hasattr(reg, "__version__"):
+            mapping_string = f"{reg.__canonical_name__}_{reg.__version__}"
+
+            if (
+                mapping_string in reg.__object_version_registry__
+                and not autoreload_enabled()
+            ):
+                current_cls = reg.__object_version_registry__[mapping_string]
+                if reg == current_cls:
+                    # same class so noop
+                    return None
+
+                # user code is reinitialized which means it might have a new address
+                # in memory so for that we can just skip
+                if "syft.user" in reg.__module__:
+                    # this happens every time we reload the user code
+                    return None
+                else:
+                    # this shouldn't happen and is usually a mistake of reusing the
+                    # same __canonical_name__ and __version__ in two classes
+                    raise Exception(f"Duplicate mapping for {mapping_string} and {reg}")
+            else:
+                # only if the cls has not been registered do we want to register it
+                reg.__object_version_registry__[mapping_string] = reg
+
+class SyftObject(SyftBaseObject, RegisteredSyftObject, SyftMigrationRegistry):
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -530,6 +477,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
         return self.__dict__.__getitem__(key)  # type: ignore
 
     def _upgrade_version(self, latest: bool = True) -> "SyftObject":
+        from .syft_object_registry import SyftObjectRegistry
         constructor = SyftObjectRegistry.versioned_class(
             name=self.__canonical_name__, version=self.__version__ + 1
         )
@@ -544,6 +492,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
 
     # transform from one supported type to another
     def to(self, projection: type, context: Context | None = None) -> Any:
+        from .syft_object_registry import SyftObjectRegistry
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
@@ -769,6 +718,7 @@ aggressive_set_attr(tuple, "_repr_html_", build_tabulator_table)
 class StorableObjectType:
     def to(self, projection: type, context: Context | None = None) -> Any:
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
+        from .syft_object_registry import SyftObjectRegistry
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
 

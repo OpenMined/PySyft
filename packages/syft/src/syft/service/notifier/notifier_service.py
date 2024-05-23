@@ -7,6 +7,7 @@ from pydantic import EmailStr
 from result import Err
 from result import Ok
 from result import Result
+import traceback
 
 # relative
 from ...abstract_node import AbstractNode
@@ -277,7 +278,7 @@ class NotifierService(AbstractService):
             return Ok("Notifier initialized successfully")
 
         except Exception as e:
-            raise Exception(f"Error initializing notifier. \n {e}")
+            raise Exception(f"Error initializing notifier. \n {traceback.format_exc()}")
 
     # This is not a public API.
     # This method is used by other services to dispatch notifications internally
