@@ -13,7 +13,7 @@ RUN cargo build --locked --release --features ${FEATURES:-default}
 FROM python:${PYTHON_VERSION}-bookworm
 ARG RATHOLE_VERSION
 ENV MODE="client"
-RUN apt update && apt install -y netcat-openbsd vim
+RUN apt update && apt install -y netcat-openbsd vim rsync
 COPY --from=build /rathole/target/release/rathole /app/rathole
 
 WORKDIR /app

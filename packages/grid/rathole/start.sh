@@ -4,10 +4,10 @@ MODE=${MODE:-server}
 cp -L -r -f /conf/* conf/
 
 if [[ $MODE == "server" ]]; then
-  /app/rathole conf/server.toml &
+  RUST_LOG=trace /app/rathole conf/server.toml &
 elif [[ $MODE = "client" ]]; then
   while true; do
-    /app/rathole conf/client.toml
+    RUST_LOG=trace /app/rathole conf/client.toml
     status=$?
     if [ $status -eq 0 ]; then
         break

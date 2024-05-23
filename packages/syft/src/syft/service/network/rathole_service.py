@@ -175,8 +175,13 @@ class RatholeService:
             }
         }
 
+        proxy_rule = (
+            f"Host(`{config.server_name}.syft.local`) || "
+            f"HostHeader(`{config.server_name}.syft.local`) && PathPrefix(`/`)"
+        )
+
         rathole_proxy["http"]["routers"][config.server_name] = {
-            "rule": f"Host(`{config.server_name}.syft.local`)",
+            "rule": proxy_rule,
             "service": config.server_name,
             "entryPoints": [entrypoint],
         }
