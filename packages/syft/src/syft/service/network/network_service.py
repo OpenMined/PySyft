@@ -123,31 +123,6 @@ class NetworkStash(BaseUIDStoreStash):
             result = self.set(credentials, peer)
             return result
 
-    def update_peer_ping_status(
-        self,
-        credentials: SyftVerifyKey,
-        peer: NodePeer,
-        has_permission: bool = False,
-    ) -> SyftSuccess | SyftError:
-        """
-        Get the existing peer from the store, then only update its ping status related fields
-        """
-        # get the node peer for the given sender peer_id
-        result = self.get_by_uid(credentials=credentials, uid=peer.id)
-        if result.is_err():
-            return Err(
-                f"Failed to query peer peer {peer.id} with name '{peer.name}' from stash. Err: {result.err()}"
-            )
-        existing = result.ok()
-        if existing is None:
-            return Err(
-                f"Failed to query peer {peer.id} with name '{peer.name}' from stash: peer is None"
-            )
-        existing.ping_status = peer.ping_status
-        existing.ping_status_message = peer.ping_status_message
-        existing.pinged_timestamp = peer.pinged_timestamp
-        return super().update(credentials, existing, has_permission=has_permission)
-
     def get_by_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> Result[NodePeer | None, SyftError]:
@@ -173,8 +148,6 @@ class NetworkService(AbstractService):
         self.store = store
         self.stash = NetworkStash(store=store)
 
-    # TODO: Check with MADHAVA, can we even allow guest user to introduce routes to
-    # domain nodes?
     @service_method(
         path="network.exchange_credentials_with",
         name="exchange_credentials_with",

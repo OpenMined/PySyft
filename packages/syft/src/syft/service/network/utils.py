@@ -15,6 +15,7 @@ from .network_service import NetworkService
 from .network_service import NodePeerAssociationStatus
 from .node_peer import NodePeer
 from .node_peer import NodePeerConnectionStatus
+from .node_peer import NodePeerUpdate
 
 
 @serializable(without=["thread"])
@@ -51,20 +52,22 @@ class PeerHealthCheckTask:
         all_peers: list[NodePeer] = result.ok()
 
         for peer in all_peers:
-            peer.pinged_timestamp = DateTime.now()
+            peer_update = NodePeerUpdate(id=peer.id)
+            peer_update.pinged_timestamp = DateTime.now()
             try:
                 peer_client = peer.client_with_context(context=context)
                 if peer_client.is_err():
                     logger.error(
                         f"Failed to create client for peer: {peer}: {peer_client.err()}"
                     )
-                    peer.ping_status = NodePeerConnectionStatus.TIMEOUT
+                    peer_update.ping_status = NodePeerConnectionStatus.TIMEOUT
                     peer_client = None
             except Exception as e:
                 logger.error(
                     f"Failed to create client for peer: {peer} with exception {e}"
                 )
-                peer.ping_status = NodePeerConnectionStatus.TIMEOUT
+
+                peer_update.ping_status = NodePeerConnectionStatus.TIMEOUT
                 peer_client = None
 
             if peer_client is not None:
@@ -72,21 +75,24 @@ class PeerHealthCheckTask:
                 peer_status = peer_client.api.services.network.check_peer_association(
                     peer_id=context.node.id
                 )
-                peer.ping_status = (
+                peer_update.ping_status = (
                     NodePeerConnectionStatus.ACTIVE
                     if peer_status == NodePeerAssociationStatus.PEER_ASSOCIATED
                     else NodePeerConnectionStatus.INACTIVE
                 )
                 if isinstance(peer_status, SyftError):
-                    peer.ping_status_message = (
+                    peer_update.ping_status_message = (
                         f"Error `{peer_status.message}` when pinging peer '{peer.name}'"
                     )
                 else:
-                    peer.ping_status_message = f"Peer '{peer.name}''s ping status: {peer.ping_status.value.lower()}"
+                    peer_update.ping_status_message = (
+                        f"Peer '{peer.name}''s ping status: "
+                        f"{peer_update.ping_status.value.lower()}"
+                    )
 
-            result = network_stash.update_peer_ping_status(
+            result = network_stash.update(
                 credentials=context.node.verify_key,
-                peer=peer,
+                peer=peer_update,
                 has_permission=True,
             )
 

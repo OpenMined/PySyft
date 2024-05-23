@@ -325,6 +325,7 @@ class NodePeerUpdate(PartialSyftObject):
     __canonical_name__ = "NodePeerUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    id: UID
     name: str
     node_routes: list[NodeRouteType]
     admin_email: str
