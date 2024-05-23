@@ -37,6 +37,7 @@ from .user import UserView
 from .user import UserViewPage
 from .user import check_pwd
 from .user import salt_and_hash_password
+from .user_roles import ADMIN_ROLE_LEVEL
 from .user_roles import DATA_OWNER_ROLE_LEVEL
 from .user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .user_roles import GUEST_ROLE_LEVEL
@@ -220,7 +221,23 @@ class UserService(AbstractService):
             credentials=context.credentials, verify_key=context.credentials
         )
         if result.is_ok():
-            # this seems weird that we get back None as Ok(None)
+            user = result.ok()
+            if user:
+                return user.to(UserView)
+            else:
+                SyftError(message="User not found!")
+        return SyftError(message=str(result.err()))
+
+    @service_method(
+        path="user.get_by_verify_key", name="get_by_verify_key", roles=ADMIN_ROLE_LEVEL
+    )
+    def get_by_verify_key_endpoint(
+        self, context: AuthedServiceContext, verify_key: SyftVerifyKey
+    ) -> UserView | SyftError:
+        result = self.stash.get_by_verify_key(
+            credentials=context.credentials, verify_key=verify_key
+        )
+        if result.is_ok():
             user = result.ok()
             if user:
                 return user.to(UserView)
