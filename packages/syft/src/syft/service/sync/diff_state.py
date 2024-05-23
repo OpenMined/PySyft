@@ -1074,7 +1074,7 @@ class NodeDiffFilter:
         value: Any - value to compare against
         op: callable[[Any, Any], bool] - comparison operator. Default is `operator.eq`
 
-    If the comparison fails, the batch is included in the result.
+    If the comparison fails, the batch is excluded.
     """
 
     filter_property: FilterProperty
