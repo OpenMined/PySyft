@@ -1,6 +1,11 @@
 # stdlib
 
+# stdlib
+from typing import Any
+
 # third party
+from result import Err
+from result import Ok
 from result import Result
 
 # relative
@@ -30,6 +35,22 @@ class SettingsStash(BaseUIDStoreStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
+    def check_type(self, obj: Any) -> Result[NodeSettings, str]:
+        if isinstance(obj, NodeSettings):
+            return Ok(obj)
+        else:
+            return Err(f"{type(obj)} does not match required type: {NodeSettings}")
+
+    def get(self, credentials: SyftVerifyKey) -> Result[NodeSettings | None, str]:
+        result = self.get_all(credentials=credentials)
+        match result:
+            case Ok(settings) if settings:
+                return Ok(None)
+            case Ok(settings):
+                return Ok(settings[0])  # type: ignore
+            case Err(err_message):
+                return Err(err_message)
+
     def set(
         self,
         credentials: SyftVerifyKey,
@@ -38,11 +59,13 @@ class SettingsStash(BaseUIDStoreStash):
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> Result[NodeSettings, str]:
-        res = self.check_type(settings, self.object_type)
+        result = self.check_type(settings)
         # we dont use and_then logic here as it is hard because of the order of the arguments
-        if res.is_err():
-            return res
-        return super().set(credentials=credentials, obj=res.ok())
+        match result:
+            case Ok(obj):
+                return super().set(credentials=credentials, obj=obj)  # type: ignore
+            case Err(error):
+                return Err(error)
 
     def update(
         self,
@@ -50,8 +73,11 @@ class SettingsStash(BaseUIDStoreStash):
         settings: NodeSettings,
         has_permission: bool = False,
     ) -> Result[NodeSettings, str]:
-        res = self.check_type(settings, self.object_type)
+        result = self.check_type(settings)
         # we dont use and_then logic here as it is hard because of the order of the arguments
-        if res.is_err():
-            return res
-        return super().update(credentials=credentials, obj=res.ok())
+
+        match result:
+            case Ok(obj):
+                return super().update(credentials=credentials, obj=obj)  # type: ignore
+            case Err(error):
+                return Err(error)

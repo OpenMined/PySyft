@@ -1,13 +1,8 @@
-# stdlib
-
-# stdlib
-
-# stdlib
+# type: ignore
 
 # third party
 from result import Err
 from result import Ok
-from result import Result
 
 # relative
 from ...serde.serializable import serializable
@@ -36,35 +31,44 @@ class SettingsService(AbstractService):
         self.stash = SettingsStash(store=store)
 
     @service_method(path="settings.get", name="get")
-    def get(self, context: UnauthedServiceContext) -> Result[Ok, Err]:
-        """Get Settings"""
+    def get(self, context: UnauthedServiceContext) -> NodeSettings | SyftError:
+        """
+        Get the Node Settings
+        Returns:
+            NodeSettings | SyftError : The Node Settings or an error if no settings are found.
+        """
 
-        result = self.stash.get_all(context.node.signing_key.verify_key)
-        if result.is_ok():
-            settings = result.ok()
-            # check if the settings list is empty
-            if len(settings) == 0:
+        result = self.stash.get(context.node.signing_key.verify_key)
+
+        match result:  # type: ignore
+            case Ok(None):
                 return SyftError(message="No settings found")
-            result = settings[0]
-            return Ok(result)
-        else:
-            return SyftError(message=result.err())
+            case Ok(NodeSettings() as settings):
+                return settings
+            case Err(err_message):
+                return SyftError(message=err_message)
 
     @service_method(path="settings.set", name="set")
     def set(
         self, context: AuthedServiceContext, settings: NodeSettings
-    ) -> Result[Ok, Err]:
-        """Set a new the Node Settings"""
+    ) -> NodeSettings | SyftError:
+        """
+        Set a new the Node Settings
+        Returns:
+            NodeSettings | SyftError : The new Node Settings or an error if the settings could not be set.
+        """
         result = self.stash.set(context.credentials, settings)
-        if result.is_ok():
-            return result
-        else:
-            return SyftError(message=result.err())
+
+        match result:
+            case Ok(settings):
+                return settings
+            case Err(err_message):
+                return SyftError(message=err_message)
 
     @service_method(path="settings.update", name="update", autosplat=["settings"])
     def update(
         self, context: AuthedServiceContext, settings: NodeSettingsUpdate
-    ) -> Result[SyftSuccess, SyftError]:
+    ) -> SyftSuccess | SyftError:
         """
         Update the Node Settings using the provided values.
 
@@ -84,34 +88,32 @@ class SettingsService(AbstractService):
             association_request_auto_approval: Optional[bool]
 
         Returns:
-            Result[SyftSuccess, SyftError]: A result indicating the success or failure of the update operation.
+            SyftSuccess | SyftError: A result indicating the success or failure of the update operation.
 
         Example:
         >>> node_client.update(name='foo', organization='bar', description='baz', signup_enabled=True)
         SyftSuccess: Settings updated successfully.
         """
 
-        result = self.stash.get_all(context.credentials)
-        if result.is_ok():
-            current_settings = result.ok()
-            if len(current_settings) > 0:
-                new_settings = current_settings[0].model_copy(
+        result = self.get(context)
+        match result:  # type: ignore
+            case NodeSettings():
+                new_settings = result.model_copy(
                     update=settings.to_dict(exclude_empty=True)
                 )
                 update_result = self.stash.update(context.credentials, new_settings)
-                if update_result.is_ok():
-                    return SyftSuccess(
-                        message=(
-                            "Settings updated successfully. "
-                            + "You must call <client>.refresh() to sync your client with the changes."
+                match update_result:
+                    case Ok():
+                        return SyftSuccess(
+                            message=(
+                                "Settings updated successfully. "
+                                + "You must call <client>.refresh() to sync your client with the changes."
+                            )
                         )
-                    )
-                else:
-                    return SyftError(message=update_result.err())
-            else:
-                return SyftError(message="No settings found")
-        else:
-            return SyftError(message=result.err())
+                    case Err(err_message):
+                        return SyftError(message=err_message)
+            case SyftError():
+                return result
 
     @service_method(
         path="settings.enable_notifications",
@@ -160,16 +162,15 @@ class SettingsService(AbstractService):
         """Enable/Disable Registration for Data Scientist or Guest Users."""
         flags.CAN_REGISTER = enable
 
-        method = context.node.get_service_method(SettingsService.update)
-        settings = NodeSettingsUpdate(signup_enabled=enable)
+        new_settings = NodeSettingsUpdate(signup_enabled=enable)
+        result = self.update(context, settings=new_settings)
 
-        result = method(context=context, settings=settings)
-
-        if isinstance(result, SyftError):
-            return SyftError(message=f"Failed to update settings: {result.err()}")
-
-        message = "enabled" if enable else "disabled"
-        return SyftSuccess(message=f"Registration feature successfully {message}")
+        match result:  # type: ignore
+            case SyftSuccess():
+                flag = "enabled" if enable else "disabled"
+                return SyftSuccess(message=f"Registration feature successfully {flag}")
+            case SyftError():
+                return SyftError(message=f"Failed to update settings: {result}")
 
     @service_method(
         path="settings.allow_association_request_auto_approval",
@@ -180,10 +181,12 @@ class SettingsService(AbstractService):
     ) -> SyftSuccess | SyftError:
         new_settings = NodeSettingsUpdate(association_request_auto_approval=enable)
         result = self.update(context, settings=new_settings)
-        if isinstance(result, SyftError):
-            return result
 
-        message = "enabled" if enable else "disabled"
-        return SyftSuccess(
-            message="Association request auto-approval successfully " + message
-        )
+        match result:  # type: ignore
+            case SyftSuccess():
+                flag = "enabled" if enable else "disabled"
+                return SyftSuccess(
+                    message=f"Association request auto-approval successfully {flag}"
+                )
+            case SyftError():
+                return SyftError(message=f"Failed to update settings: {result}")
