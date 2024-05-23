@@ -467,9 +467,9 @@ class Request(SyncableSyftObject):
         ]
 
         return {
-            "Request time": str(self.request_time),
             "Description": self.html_description,
             "Requested By": "\n".join(user_data),
+            "Creation Time": str(self.request_time),
             "Status": status_badge,
         }
 
@@ -570,11 +570,14 @@ class Request(SyncableSyftObject):
             )
         if message and metadata and metadata.show_warnings and not disable_warnings:
             prompt_warning_message(message=message, confirm=True)
+        msg = (
+            "Approving request ",
+            f"on change {self.code.service_func_name} " if is_code_request else "",
+            f"for domain {api.node_name}",
+        )
 
-        print(f"Approving request for domain {api.node_name}")
+        print("".join(msg))
         res = api.services.request.apply(self.id, **kwargs)
-        # if isinstance(res, SyftSuccess):
-
         return res
 
     def deny(self, reason: str) -> SyftSuccess | SyftError:
@@ -1220,18 +1223,19 @@ class UserCodeStatusChange(Change):
 
     def __repr_syft_nested__(self) -> str:
         msg = (
-            f"Request to change <b>{self.code.service_func_name}</b> "
-            f"(Pool Id: <b>{self.code.worker_pool_name}</b>) "
+            f"Request to change <strong>{self.code.service_func_name}</strong> "
+            f"(Pool Id: <strong>{self.code.worker_pool_name}</strong>) "
         )
-        msg += "to permission <strong>RequestStatus.APPROVED.</strong>"
-        if self.nested_solved:
-            if self.link.nested_codes == {}:  # type: ignore
-                msg += "No nested requests."
-            else:
+        msg += "to permission RequestStatus.APPROVED."
+        if self.code.nested_codes is None or self.code.nested_codes == {}:  # type: ignore
+            msg += " No nested requests"
+        else:
+            if self.nested_solved:
+                # else:
                 msg += "<br><br>This change requests the following nested functions calls:<br>"
                 msg += self.nested_repr()
-        else:
-            msg += "Nested Requests not resolved."
+            else:
+                msg += " Nested Requests not resolved"
         return msg
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
