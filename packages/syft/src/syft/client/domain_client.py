@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from typing import cast
 
 # third party
-from hagrid.orchestra import NodeHandle
 from loguru import logger
 from tqdm import tqdm
 
@@ -43,6 +42,7 @@ from .protocol import SyftProtocol
 
 if TYPE_CHECKING:
     # relative
+    from ..orchestra import NodeHandle
     from ..service.project.project import Project
 
 
@@ -122,7 +122,7 @@ class DomainClient(SyftClient):
             )
             prompt_warning_message(message=message, confirm=True)
 
-        for asset in tqdm(dataset.asset_list):
+        for asset in tqdm(dataset.asset_list, colour="green"):
             print(f"Uploading: {asset.name}")
             try:
                 twin = TwinObject(

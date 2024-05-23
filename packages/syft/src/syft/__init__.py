@@ -9,14 +9,12 @@ from types import MethodType
 from typing import Any
 
 # relative
-from . import gevent_patch  # noqa: F401
 from .abstract_node import NodeSideType  # noqa: F401
 from .abstract_node import NodeType  # noqa: F401
 from .client.client import connect  # noqa: F401
 from .client.client import login  # noqa: F401
 from .client.client import login_as_guest  # noqa: F401
 from .client.client import register  # noqa: F401
-from .client.deploy import Orchestra  # noqa: F401
 from .client.domain_client import DomainClient  # noqa: F401
 from .client.gateway_client import GatewayClient  # noqa: F401
 from .client.registry import DomainRegistry  # noqa: F401
@@ -34,6 +32,7 @@ from .node.gateway import Gateway  # noqa: F401
 from .node.server import serve_node  # noqa: F401
 from .node.server import serve_node as bind_worker  # noqa: F401
 from .node.worker import Worker  # noqa: F401
+from .orchestra import Orchestra as orchestra  # noqa: F401
 from .protocol.data_protocol import bump_protocol_version  # noqa: F401
 from .protocol.data_protocol import check_or_stage_protocol  # noqa: F401
 from .protocol.data_protocol import get_data_protocol  # noqa: F401
@@ -230,11 +229,6 @@ def _domains() -> DomainRegistry:
 @module_property
 def _settings() -> UserSettings:
     return settings
-
-
-@module_property
-def _orchestra() -> Orchestra:
-    return Orchestra
 
 
 @module_property

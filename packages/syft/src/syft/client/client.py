@@ -558,7 +558,7 @@ class SyftClient:
             user_email_address=user_email_address,
             members=[self],
         )
-        project = project_create.start()
+        project = project_create.send()
         return project
 
     # TODO: type of request should be REQUEST, but it will give circular import error

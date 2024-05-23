@@ -10,7 +10,7 @@ Perform data science on `data` that remains in `someone else's` server
 
 # Quickstart
 
-✅ `Linux` ✅ `macOS` ✅ `Windows` ✅ `Docker` ✅ `Podman` ✅ `Kubernetes`
+✅ `Linux` ✅ `macOS` ✅ `Windows` ✅ `Docker` ✅ `Kubernetes`
 
 ## Install Client
 
@@ -24,7 +24,14 @@ $ pip install -U syft[data_science]
 # from Jupyter / Python
 import syft as sy
 sy.requires(">=0.8.6,<0.8.7")
-node = sy.orchestra.launch(name="my-domain", port=8080, dev_mode=True, reset=True)
+node = sy.orchestra.launch(
+    name="my-domain",
+    port=8080,
+    create_producer=True,
+    n_consumers=1,
+    dev_mode=True,
+    reset=True, # resets database
+)
 ```
 
 ```bash
@@ -39,7 +46,11 @@ Starting syft-node server on 0.0.0.0:8080
 ```python
 import syft as sy
 sy.requires(">=0.8.6,<0.8.7")
-domain_client = sy.login(port=8080, email="info@openmined.org", password="changethis")
+domain_client = sy.login(
+    port=8080,
+    email="info@openmined.org",
+    password="changethis"
+)
 ```
 
 ## PySyft in 10 minutes
@@ -58,6 +69,7 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 - <a href="notebooks/api/0.8/09-blob-storage.ipynb">09-blob-storage.ipynb</a>
 - <a href="notebooks/api/0.8/10-container-images.ipynb">10-container-images.ipynb</a>
 - <a href="notebooks/api/0.8/11-container-images-k8s.ipynb">11-container-images-k8s.ipynb</a>
+- <a href="notebooks/api/0.8/12-custom-api-endpoint.ipynb">12-custom-api-endpoint.ipynb</a>
 
 ## Deploy Kubernetes Helm Chart
 
@@ -102,24 +114,17 @@ For AWS EKS
 helm install ... --set ingress.className="alb"
 ```
 
-For Google GKE we need the [`gce` annotation](https://cloud.google.com/kubernetes-engine/docs/how-to/load-balance-ingress#create-ingress) annotation.
+For Google GKE we need the [`gce` annotation](https://cloud.google.com/kubernetes-engine/docs/how-to/load-balance-ingress#create-ingress).
 
 ```sh
 helm install ... --set ingress.class="gce"
 ```
 
-## Deploy to a Container Engine or Cloud
+## Note:
 
-1. Install our handy 🛵 cli tool which makes deploying a Domain or Gateway server to Docker or VM a one-liner:  
-   `pip install -U hagrid`
+🚨 Our old deployment tool `HAGrid` has been `deprecated`. For the updated deployment options kindly refer to:
 
-2. Then run our interactive jupyter Install 🧙🏽‍♂️ Wizard<sup>BETA</sup>:  
-   `hagrid quickstart`
-
-3. In the tutorial you will learn how to install and deploy:  
-   `PySyft` = our `numpy`-like 🐍 Python library for computing on `private data` in someone else's `Domain`
-
-   `PyGrid` = our 🐳 `docker` / 🐧 `vm` `Domain` & `Gateway` Servers where `private data` lives
+- 📚 <a href="https://github.com/OpenMined/PySyft/tree/dev/notebooks/tutorials/deployments">Deployments</a>
 
 ## Docs and Support
 
@@ -128,10 +133,8 @@ helm install ... --set ingress.class="gce"
 
 # Install Notes
 
-- HAGrid 0.3 Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
-- Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`
-- PySyft 0.8.1 Requires: 🐍 `python 3.10 - 3.12` - Run: `pip install -U syft`
-- PyGrid Requires: 🐳 `docker`, 🦦 `podman` or ☸️ `kubernetes` - Run: `hagrid launch ...`
+- PySyft 0.8.6 Requires: 🐍 `python 3.10 - 3.12` - Run: `pip install -U syft`
+- PyGrid Requires: 🐳 `docker` or ☸️ `kubernetes`
 
 # Versions
 
@@ -154,13 +157,9 @@ Deprecated:
 
 PySyft and PyGrid use the same `version` and its best to match them up where possible. We release weekly betas which can be used in each context:
 
-PySyft (Stable): `pip install -U syft`  
-PyGrid (Stable) `hagrid launch ... tag=latest`
+PySyft (Stable): `pip install -U syft`
 
-PySyft (Beta): `pip install -U syft --pre`  
-PyGrid (Beta): `hagrid launch ... tag=beta`
-
-HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually the best.
+PySyft (Beta): `pip install -U syft --pre`
 
 # What is Syft?
 

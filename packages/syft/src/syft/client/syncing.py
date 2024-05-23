@@ -1,5 +1,4 @@
 # stdlib
-import warnings
 
 # relative
 from ..abstract_node import NodeSideType
@@ -12,13 +11,19 @@ from ..service.sync.diff_state import SyncInstruction
 from ..service.sync.resolve_widget import ResolveWidget
 from ..service.sync.sync_state import SyncState
 from ..types.uid import UID
+from ..util.decorators import deprecated
 from .client import SyftClient
 from .sync_decision import SyncDecision
 from .sync_decision import SyncDirection
 
 
 def compare_states(
-    from_state: SyncState, to_state: SyncState, include_ignored: bool = False
+    from_state: SyncState,
+    to_state: SyncState,
+    include_ignored: bool = False,
+    include_same: bool = False,
+    filter_by_email: str | None = None,
+    filter_by_type: str | type | None = None,
 ) -> NodeDiff:
     # NodeDiff
     if (
@@ -42,11 +47,28 @@ def compare_states(
         high_state=high_state,
         direction=direction,
         include_ignored=include_ignored,
+        include_same=include_same,
+        filter_by_email=filter_by_email,
+        filter_by_type=filter_by_type,
     )
 
 
-def compare_clients(low_client: SyftClient, high_client: SyftClient) -> NodeDiff:
-    return compare_states(low_client.get_sync_state(), high_client.get_sync_state())
+def compare_clients(
+    from_client: SyftClient,
+    to_client: SyftClient,
+    include_ignored: bool = False,
+    include_same: bool = False,
+    filter_by_email: str | None = None,
+    filter_by_type: type | None = None,
+) -> NodeDiff:
+    return compare_states(
+        from_client.get_sync_state(),
+        to_client.get_sync_state(),
+        include_ignored=include_ignored,
+        include_same=include_same,
+        filter_by_email=filter_by_email,
+        filter_by_type=filter_by_type,
+    )
 
 
 def get_user_input_for_resolve() -> SyncDecision:
@@ -69,12 +91,8 @@ def resolve(obj_diff_batch: ObjectDiffBatch) -> ResolveWidget:
     return widget
 
 
+@deprecated(reason="resolve_single has been renamed to resolve", return_syfterror=True)
 def resolve_single(obj_diff_batch: ObjectDiffBatch) -> ResolveWidget:
-    warnings.warn(
-        "resolve_single has been renamed to resolve",
-        DeprecationWarning,
-        stacklevel=1,
-    )
     return resolve(obj_diff_batch)
 
 

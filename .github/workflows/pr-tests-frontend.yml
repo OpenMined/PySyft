@@ -61,13 +61,13 @@ jobs:
         if: steps.changes.outputs.frontend == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('packages/hagrid/setup.cfg') }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-frontend
           restore-keys: |
             ${{ runner.os }}-uv-py${{ matrix.python-version }}-
 
       - name: Docker on MacOS
         if: steps.changes.outputs.frontend == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.1.0
+        uses: crazy-max/ghaction-setup-docker@v3.2.0
 
       - name: Install Tox
         if: steps.changes.outputs.frontend == 'true'

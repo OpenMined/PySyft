@@ -83,6 +83,7 @@ from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..response import SyftWarning
+from ..user.user import UserView
 from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
 from .unparse import unparse
@@ -348,6 +349,18 @@ class UserCode(SyncableSyftObject):
             "Status": status_badge,
             "Submit time": str(self.submit_time),
         }
+
+    @property
+    def user(self) -> UserView | SyftError:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
+        return api.services.user.get_by_verify_key(self.user_verify_key)
 
     @property
     def status(self) -> UserCodeStatusCollection | SyftError:
@@ -826,7 +839,7 @@ class SubmitUserCode(SyftObject):
         **kwargs: Any,
     ) -> Any:
         # relative
-        from ... import _orchestra
+        from ...orchestra import Orchestra
 
         # Right now we only create a number of workers
         # In the future we might need to have the same pools/images as well
@@ -840,7 +853,7 @@ class SubmitUserCode(SyftObject):
             time_alive = 300
 
         # This could be changed given the work on containers
-        ep_node = _orchestra().launch(
+        ep_node = Orchestra.launch(
             name=f"ephemeral_node_{self.func_name}_{random.randint(a=0, b=10000)}",  # nosec
             reset=True,
             create_producer=True,
