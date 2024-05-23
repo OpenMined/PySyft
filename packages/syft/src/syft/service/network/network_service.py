@@ -50,6 +50,7 @@ from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..warnings import CRUDWarning
 from .association_request import AssociationRequestChange
 from .node_peer import NodePeer
+from .node_peer import NodePeerUpdate
 from .routes import HTTPNodeRoute
 from .routes import NodeRoute
 from .routes import NodeRouteType
@@ -87,12 +88,17 @@ class NetworkStash(BaseUIDStoreStash):
     def update(
         self,
         credentials: SyftVerifyKey,
-        peer: NodePeer,
+        peer: NodePeer | NodePeerUpdate,
         has_permission: bool = False,
     ) -> Result[NodePeer, str]:
-        valid = self.check_type(peer, NodePeer)
-        if valid.is_err():
-            return Err(SyftError(message=valid.err()))
+        valid_node_peer = self.check_type(peer, NodePeer)
+        valid_node_peer_update = self.check_type(peer, NodePeerUpdate)
+        if valid_node_peer.is_err() and valid_node_peer_update.is_err():
+            return Err(
+                SyftError(
+                    message=f"{type(peer)} does not match required type: NodePeer or NodePeerUpdate"
+                )
+            )
         return super().update(credentials, peer, has_permission=has_permission)
 
     def create_or_update_peer(
