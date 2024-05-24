@@ -860,6 +860,26 @@ def load_policy_code(user_policy: UserPolicy) -> Any:
 def init_policy(user_policy: UserPolicy, init_args: dict[str, Any]) -> Any:
     policy_class = load_policy_code(user_policy)
     policy_object = policy_class()
+
+    # Unwrapp {NodeIdentity : {x: y}} -> {x: y}
+    # Tech debt : For input policies, we required to have NodeIdentity args beforehand,
+    # therefore at this stage we had to return back to the normal args.
+    # Maybe there's better way to do it.
+    if len(init_args) and isinstance(list(init_args.keys())[0], NodeIdentity):
+        unwrapped_init_kwargs = init_args
+        if len(init_args) > 1:
+            raise Exception("You shoudn't have more than one Node Identity.")
+        # Otherwise, unwrapp it
+        init_args = init_args[list(init_args.keys())[0]]
+
     init_args = {k: v for k, v in init_args.items() if k != "id"}
+
+    # For input policies, this initializer wouldn't work properly:
+    # 1 - Passing {NodeIdentity: {kwargs:UIDs}} as keyword args doesn't work since keys must be strings
+    # 2 - Passing {kwargs: UIDs} in this initializer would not trigger the partition nodes from the
+    # InputPolicy initializer.
+    # The cleanest way to solve it is by checking if it's an Input Policy, and then, setting it manually.
     policy_object.__user_init__(**init_args)
+    if isinstance(policy_object, InputPolicy):
+        policy_object.init_kwargs = unwrapped_init_kwargs
     return policy_object
