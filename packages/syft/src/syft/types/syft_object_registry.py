@@ -61,15 +61,15 @@ class SyftObjectRegistry:
                         print(f"could not find {canonical_name} {version_086} in ObjectRegistry")
                         raise
                     return res
+                else:
+                    # TODO, add refactoring for non syftobject versions
+                    canonical_name = fqn.split(".")[-1]
+                    version = 1
+                    return cls.__object_serialization_registry__[canonical_name, version]
             except Exception as e:
                 print(e)
-                import ipdb
-                ipdb.set_trace()
-            else:
-                # TODO, add refactoring for non syftobject versions
-                canonical_name = fqn.split(".")[-1]
-                version = 1
-                return cls.__object_serialization_registry__[canonical_name, version]
+                # import ipdb
+                # ipdb.set_trace()
 
 
     @classmethod

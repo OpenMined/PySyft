@@ -356,6 +356,7 @@ class ActionGraphStore:
 @serializable()
 class InMemoryActionGraphStore(ActionGraphStore):
     __canonical_name__ = "InMemoryActionGraphStore"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     def __init__(self, store_config: StoreConfig, reset: bool = False):
         self.store_config: StoreConfig = store_config
