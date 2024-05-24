@@ -67,8 +67,8 @@ class SyftWorkerPoolService(AbstractService):
         pool_name: str,
         image_uid: UID | None,
         num_workers: int,
-        reg_username: str | None = None,
-        reg_password: str | None = None,
+        registry_username: str | None = None,
+        registry_password: str | None = None,
     ) -> list[ContainerSpawnStatus] | SyftError:
         """Creates a pool of workers from the given SyftWorkerImage.
 
@@ -126,8 +126,8 @@ class SyftWorkerPoolService(AbstractService):
             worker_cnt=num_workers,
             worker_image=worker_image,
             worker_stash=worker_stash,
-            reg_username=reg_username,
-            reg_password=reg_password,
+            registry_username=registry_username,
+            registry_password=registry_password,
         )
 
         if isinstance(result, SyftError):
@@ -366,8 +366,8 @@ class SyftWorkerPoolService(AbstractService):
         number: int,
         pool_id: UID | None = None,
         pool_name: str | None = None,
-        reg_username: str | None = None,
-        reg_password: str | None = None,
+        registry_username: str | None = None,
+        registry_password: str | None = None,
     ) -> list[ContainerSpawnStatus] | SyftError:
         """Add workers to existing worker pool.
 
@@ -425,8 +425,8 @@ class SyftWorkerPoolService(AbstractService):
             worker_cnt=number,
             worker_image=worker_image,
             worker_stash=worker_stash,
-            reg_username=reg_username,
-            reg_password=reg_password,
+            registry_username=registry_username,
+            registry_password=registry_password,
         )
 
         if isinstance(result, SyftError):
@@ -487,8 +487,8 @@ class SyftWorkerPoolService(AbstractService):
                 pool_id=pool_id,
                 pool_name=pool_name,
                 # kube scaling doesn't require password as it replicates an existing deployment
-                reg_username=None,
-                reg_password=None,
+                registry_username=None,
+                registry_password=None,
             )
             if isinstance(result, SyftError):
                 return result
@@ -656,8 +656,8 @@ def _create_workers_in_pool(
     worker_cnt: int,
     worker_image: SyftWorkerImage,
     worker_stash: WorkerStash,
-    reg_username: str | None = None,
-    reg_password: str | None = None,
+    registry_username: str | None = None,
+    registry_password: str | None = None,
 ) -> tuple[list[LinkedObject], list[ContainerSpawnStatus]] | SyftError:
     queue_port = context.node.queue_config.client_config.queue_port
 
@@ -686,8 +686,8 @@ def _create_workers_in_pool(
             orchestration=get_orchestration_type(),
             queue_port=queue_port,
             dev_mode=context.node.dev_mode,
-            reg_username=reg_username,
-            reg_password=reg_password,
+            registry_username=registry_username,
+            registry_password=registry_password,
             reg_url=registry_host,
         )
         if isinstance(result, SyftError):
