@@ -150,6 +150,5 @@ recursive_serde_register(
 #     deserialize=lambda buffer: frombuffer(buffer, dtype=numpy_scalar_type),
 # )
 
-
 # how else do you import a relative file to execute it?
 NOTHING = None
