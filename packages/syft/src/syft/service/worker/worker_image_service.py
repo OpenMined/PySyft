@@ -47,14 +47,20 @@ class SyftWorkerImageService(AbstractService):
     def submit_container_image(
         self, context: AuthedServiceContext, worker_config: WorkerConfig
     ) -> SyftSuccess | SyftError:
+        image_identifier: SyftWorkerImageIdentifier | None = None
+        if isinstance(worker_config, PrebuiltWorkerConfig):
+            try:
+                image_identifier = SyftWorkerImageIdentifier.from_str(worker_config.tag)
+            except Exception:
+                return SyftError(
+                    f"Invalid Docker image name: {worker_config.tag}.\n"
+                    + "Please specify the image name in this format <registry>/<repo>:<tag>."
+                )
+
         worker_image = SyftWorkerImage(
             config=worker_config,
             created_by=context.credentials,
-            image_identifier=(
-                SyftWorkerImageIdentifier.from_str(worker_config.tag)
-                if isinstance(worker_config, PrebuiltWorkerConfig)
-                else None
-            ),
+            image_identifier=image_identifier,
         )
         res = self.stash.set(context.credentials, worker_image)
 
