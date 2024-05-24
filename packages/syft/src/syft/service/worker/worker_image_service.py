@@ -162,14 +162,14 @@ class SyftWorkerImageService(AbstractService):
     def push(
         self,
         context: AuthedServiceContext,
-        image: UID,
+        image_uid: UID,
         username: str | None = None,
         password: str | None = None,
     ) -> SyftSuccess | SyftError:
-        result = self.stash.get_by_uid(credentials=context.credentials, uid=image)
+        result = self.stash.get_by_uid(credentials=context.credentials, uid=image_uid)
         if result.is_err():
             return SyftError(
-                message=f"Failed to get Image ID: {image}. Error: {result.err()}"
+                message=f"Failed to get Image ID: {image_uid}. Error: {result.err()}"
             )
         worker_image: SyftWorkerImage = result.ok()
 

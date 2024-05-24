@@ -266,7 +266,7 @@ class CreateCustomImageChange(Change):
             if IN_KUBERNETES and not worker_image.is_prebuilt:
                 push_result = worker_image_service.push(
                     service_context,
-                    image=worker_image.id,
+                    image_uid=worker_image.id,
                     username=context.extra_kwargs.get("reg_username", None),
                     password=context.extra_kwargs.get("reg_password", None),
                 )
