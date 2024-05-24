@@ -1,12 +1,17 @@
 # stdlib
+from collections.abc import Callable
 from collections.abc import Iterable
+from dataclasses import dataclass
+import enum
 import html
+import operator
 import textwrap
 from typing import Any
 from typing import ClassVar
 from typing import Literal
 
 # third party
+from loguru import logger
 import pandas as pd
 from pydantic import model_validator
 from rich import box
@@ -51,6 +56,7 @@ from ..output.output_service import ExecutionOutput
 from ..request.request import Request
 from ..response import SyftError
 from ..response import SyftSuccess
+from ..user.user import UserView
 from .sync_state import SyncState
 
 sketchy_tab = "‎ " * 4
@@ -945,19 +951,32 @@ class ObjectDiffBatch(SyftObject):
     @property
     def user_code_high(self) -> UserCode | None:
         """return the user code of the high side of this batch, if it exists"""
-        user_codes_high: list[UserCode] = [
-            diff.high_obj
+        user_code_diff = self.user_code_diff
+        if user_code_diff is not None and isinstance(user_code_diff.high_obj, UserCode):
+            return user_code_diff.high_obj
+        return None
+
+    @property
+    def user_code_diff(self) -> ObjectDiff | None:
+        """return the main user code diff of the high side of this batch, if it exists"""
+        user_code_diffs: list[ObjectDiff] = [
+            diff
             for diff in self.get_dependencies(include_roots=True)
-            if isinstance(diff.high_obj, UserCode)
+            if issubclass(diff.obj_type, UserCode)
         ]
 
-        if len(user_codes_high) == 0:
-            user_code_high = None
+        if len(user_code_diffs) == 0:
+            return None
         else:
-            # NOTE we can always assume the first usercode is
-            # not a nested code, because diffs are sorted in depth-first order
-            user_code_high = user_codes_high[0]
-        return user_code_high
+            # main usercode is always the first, batches are sorted in depth-first order
+            return user_code_diffs[0]
+
+    @property
+    def user(self) -> UserView | SyftError:
+        user_code_diff = self.user_code_diff
+        if user_code_diff is not None and isinstance(user_code_diff.low_obj, UserCode):
+            return user_code_diff.low_obj.user
+        return SyftError(message="No user found")
 
     def get_visual_hierarchy(self) -> dict[ObjectDiff, dict]:
         visual_root = self.visual_root
@@ -1023,6 +1042,63 @@ class IgnoredBatchView(SyftObject):
                 other_batch.decision = None
 
 
+class FilterProperty(enum.Enum):
+    USER = enum.auto()
+    TYPE = enum.auto()
+    STATUS = enum.auto()
+    IGNORED = enum.auto()
+
+    def from_batch(self, batch: ObjectDiffBatch) -> Any:
+        if self == FilterProperty.USER:
+            user = batch.user
+            if isinstance(user, UserView):
+                return user.email
+            return None
+        elif self == FilterProperty.TYPE:
+            return batch.root_diff.obj_type.__name__.lower()
+        elif self == FilterProperty.STATUS:
+            return batch.status.lower()
+        elif self == FilterProperty.IGNORED:
+            return batch.is_ignored
+        else:
+            raise ValueError(f"Invalid property: {property}")
+
+
+@dataclass
+class NodeDiffFilter:
+    """
+    Filter to apply to a NodeDiff object to determine if it should be included in a batch.
+
+    Checks for `property op value` , where
+        property: FilterProperty - property to filter on
+        value: Any - value to compare against
+        op: callable[[Any, Any], bool] - comparison operator. Default is `operator.eq`
+
+    If the comparison fails, the batch is excluded.
+    """
+
+    filter_property: FilterProperty
+    filter_value: Any
+    op: Callable[[Any, Any], bool] = operator.eq
+
+    def __call__(self, batch: ObjectDiffBatch) -> bool:
+        filter_value = self.filter_value
+        if isinstance(filter_value, str):
+            filter_value = filter_value.lower()
+
+        try:
+            p = self.filter_property.from_batch(batch)
+            if self.op == operator.contains:
+                # Contains check has reversed arg order: check if p in self.filter_value
+                return p in filter_value
+            else:
+                return self.op(p, filter_value)
+        except Exception as e:
+            # By default, exclude the batch if there is an error
+            logger.debug(f"Error filtering batch {batch} with {self}: {e}")
+            return False
+
+
 class NodeDiff(SyftObject):
     __canonical_name__ = "NodeDiff"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -1038,6 +1114,7 @@ class NodeDiff(SyftObject):
     low_state: SyncState
     high_state: SyncState
     direction: SyncDirection | None
+    filters: list[NodeDiffFilter] = []
 
     include_ignored: bool = False
 
@@ -1075,6 +1152,9 @@ class NodeDiff(SyftObject):
         high_state: SyncState,
         direction: SyncDirection,
         include_ignored: bool = False,
+        include_same: bool = False,
+        filter_by_email: str | None = None,
+        filter_by_type: type | None = None,
         _include_node_status: bool = False,
     ) -> "NodeDiff":
         obj_uid_to_diff = {}
@@ -1127,24 +1207,30 @@ class NodeDiff(SyftObject):
         previously_ignored_batches = low_state.ignored_batches
         NodeDiff.apply_previous_ignore_state(all_batches, previously_ignored_batches)
 
-        if not include_ignored:
-            batches = [b for b in all_batches if not b.is_ignored]
-        else:
-            batches = all_batches
-
-        return cls(
+        res = cls(
             low_node_uid=low_state.node_uid,
             high_node_uid=high_state.node_uid,
             user_verify_key_low=low_state.syft_client_verify_key,
             user_verify_key_high=high_state.syft_client_verify_key,
             obj_uid_to_diff=obj_uid_to_diff,
             obj_dependencies=obj_dependencies,
-            batches=batches,
+            batches=all_batches,
             all_batches=all_batches,
             low_state=low_state,
             high_state=high_state,
             direction=direction,
+            filters=[],
         )
+
+        res._filter(
+            user_email=filter_by_email,
+            obj_type=filter_by_type,
+            include_ignored=include_ignored,
+            include_same=include_same,
+            inplace=True,
+        )
+
+        return res
 
     @staticmethod
     def apply_previous_ignore_state(
@@ -1322,6 +1408,66 @@ It will be available for review again."""
     @property
     def is_same(self) -> bool:
         return all(object_diff.status == "SAME" for object_diff in self.diffs)
+
+    def _apply_filters(
+        self, filters: list[NodeDiffFilter], inplace: bool = True
+    ) -> Self:
+        """
+        Apply filters to the NodeDiff object and return a new NodeDiff object
+        """
+        batches = self.all_batches
+        for filter in filters:
+            batches = [b for b in batches if filter(b)]
+
+        if inplace:
+            self.filters = filters
+            self.batches = batches
+            return self
+        else:
+            return NodeDiff(
+                low_node_uid=self.low_node_uid,
+                high_node_uid=self.high_node_uid,
+                user_verify_key_low=self.user_verify_key_low,
+                user_verify_key_high=self.user_verify_key_high,
+                obj_uid_to_diff=self.obj_uid_to_diff,
+                obj_dependencies=self.obj_dependencies,
+                batches=batches,
+                all_batches=self.all_batches,
+                low_state=self.low_state,
+                high_state=self.high_state,
+                direction=self.direction,
+                filters=filters,
+            )
+
+    def _filter(
+        self,
+        user_email: str | None = None,
+        obj_type: str | type | None = None,
+        include_ignored: bool = False,
+        include_same: bool = False,
+        inplace: bool = True,
+    ) -> Self:
+        new_filters = []
+        if user_email is not None:
+            new_filters.append(
+                NodeDiffFilter(FilterProperty.USER, user_email, operator.eq)
+            )
+        if obj_type is not None:
+            if isinstance(obj_type, type):
+                obj_type = obj_type.__name__
+            new_filters.append(
+                NodeDiffFilter(FilterProperty.TYPE, obj_type, operator.eq)
+            )
+        if not include_ignored:
+            new_filters.append(
+                NodeDiffFilter(FilterProperty.IGNORED, True, operator.ne)
+            )
+        if not include_same:
+            new_filters.append(
+                NodeDiffFilter(FilterProperty.STATUS, "SAME", operator.ne)
+            )
+
+        return self._apply_filters(new_filters, inplace=inplace)
 
 
 class SyncInstruction(SyftObject):
