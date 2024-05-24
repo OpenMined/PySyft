@@ -26,7 +26,7 @@ from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
-from .document_store import BaseStash
+from .document_store import BaseStash, PartitionKeys
 from .document_store import PartitionKey
 from .document_store import QueryKey
 from .document_store import QueryKeys
@@ -416,6 +416,7 @@ class KeyValueStorePartition(StorePartition):
         obj: SyftObject,
         has_permission: bool = False,
         overwrite: bool = False,
+        allow_missing_keys=False,
     ) -> Result[SyftObject, str]:
         try:
             if qk.value not in self.data:
@@ -428,9 +429,20 @@ class KeyValueStorePartition(StorePartition):
                 _original_unique_keys = self.settings.unique_keys.with_obj(
                     _original_obj
                 )
-                _original_searchable_keys = self.settings.searchable_keys.with_obj(
-                    _original_obj
-                )
+                if allow_missing_keys:
+                    searchable_keys = PartitionKeys(
+                        pks=[
+                            x
+                            for x in self.settings.searchable_keys.all
+                            if hasattr(_original_obj, x.key)
+                        ]
+                    )
+                    _original_searchable_keys = searchable_keys.with_obj(_original_obj)
+
+                else:
+                    _original_searchable_keys = self.settings.searchable_keys.with_obj(
+                        _original_obj
+                    )
 
                 store_query_key = self.settings.store_key.with_obj(_original_obj)
 
@@ -470,6 +482,11 @@ class KeyValueStorePartition(StorePartition):
                 return Err(f"Failed to update obj {obj}, you have no permission")
 
         except Exception as e:
+            import ipdb
+
+            ipdb.set_trace()
+            import traceback
+            print(traceback.format_exc())
             return Err(f"Failed to update obj {obj} with error: {e}")
 
     def _get_all_from_store(
@@ -641,9 +658,9 @@ class KeyValueStorePartition(StorePartition):
             ck_col[pk_value] = store_query_key.value
             self.unique_keys[pk_key] = ck_col
 
-        self.unique_keys[store_query_key.key][store_query_key.value] = (
+        self.unique_keys[store_query_key.key][
             store_query_key.value
-        )
+        ] = store_query_key.value
 
         sqks = searchable_query_keys.all
         for qk in sqks:
@@ -675,8 +692,11 @@ class KeyValueStorePartition(StorePartition):
                     migrated_value = value.migrate_to(to_klass.__version__, context)
                 except Exception:
                     import traceback
+
                     print(traceback.format_exc())
-                    return Err(f"Failed to migrate data to {to_klass} for qk {to_klass.__version__}: {key}")
+                    return Err(
+                        f"Failed to migrate data to {to_klass} for qk {to_klass.__version__}: {key}"
+                    )
                 qk = self.settings.store_key.with_obj(key)
                 result = self._update(
                     credentials,
@@ -684,6 +704,7 @@ class KeyValueStorePartition(StorePartition):
                     obj=migrated_value,
                     has_permission=has_permission,
                     overwrite=True,
+                    allow_missing_keys=True
                 )
 
                 if result.is_err():

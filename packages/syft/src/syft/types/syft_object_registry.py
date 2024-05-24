@@ -25,7 +25,11 @@ class SyftObjectRegistry:
     __object_serialization_registry__: dict[tuple[str, str]: tuple] = {}
 
     @classmethod
-    def get_canonical_name(cls, obj):
+    def get_canonical_name(cls, obj, is_type: bool):
+        if is_type:
+            # TODO: this is different for builtin types, make more generic
+            return "ModelMetaclass"
+
         res = getattr(obj, "__canonical_name__", None)
         if res is not None:
             return res
@@ -61,15 +65,15 @@ class SyftObjectRegistry:
                         print(f"could not find {canonical_name} {version_086} in ObjectRegistry")
                         raise
                     return res
+                else:
+                    # TODO, add refactoring for non syftobject versions
+                    canonical_name = fqn.split(".")[-1]
+                    version = 1
+                    return cls.__object_serialization_registry__[canonical_name, version]
             except Exception as e:
                 print(e)
                 import ipdb
                 ipdb.set_trace()
-            else:
-                # TODO, add refactoring for non syftobject versions
-                canonical_name = fqn.split(".")[-1]
-                version = 1
-                return cls.__object_serialization_registry__[canonical_name, version]
 
 
     @classmethod

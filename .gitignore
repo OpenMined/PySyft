@@ -71,6 +71,9 @@ js/node_modules/*
 #nohup
 nohup.out
 
+# jupyter lsp
+.virtual_documents
+
 # notebook data
 notebooks/helm/scenario_data.jsonl
 

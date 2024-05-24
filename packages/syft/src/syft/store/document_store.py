@@ -208,7 +208,7 @@ class QueryKeys(SyftBaseModel):
     def from_obj(partition_keys: PartitionKeys, obj: SyftObject) -> QueryKeys:
         qks = []
         for partition_key in partition_keys.all:
-            pk_key = partition_key.key
+            pk_key = partition_key.key # name of the attribute
             pk_type = partition_key.type_
             pk_value = getattr(obj, pk_key)
             # object has a method for getting these types

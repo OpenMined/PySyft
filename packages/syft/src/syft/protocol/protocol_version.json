@@ -61,11 +61,6 @@
         }
       },
       "ExecutionOutput": {
-        "1": {
-          "version": 1,
-          "hash": "c2337099eba14767ead75fcc1b1fa265c1898461ede0b5e7758a0e8d11d1757d",
-          "action": "remove"
-        },
         "2": {
           "version": 2,
           "hash": "854fe9df5bcbb5c7e5b7c467bac423cd98c32f93d6876fea7b8eb6c08f6596da",
