@@ -1761,7 +1761,7 @@ def create_default_worker_pool(node: Node) -> SyftError | None:
         create_pool_method = node.get_service_method(SyftWorkerPoolService.launch)
         result = create_pool_method(
             context,
-            name=default_pool_name,
+            pool_name=default_pool_name,
             image_uid=default_image.id,
             num_workers=worker_count,
         )

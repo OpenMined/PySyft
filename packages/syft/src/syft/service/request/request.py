@@ -332,7 +332,7 @@ class CreateCustomWorkerPoolChange(Change):
 
             result = worker_pool_service.launch(
                 context=service_context,
-                name=self.pool_name,
+                pool_name=self.pool_name,
                 image_uid=self.image_uid,
                 num_workers=self.num_workers,
                 reg_username=context.extra_kwargs.get("reg_username", None),

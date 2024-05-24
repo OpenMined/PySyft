@@ -150,7 +150,7 @@ def test_pool_launch(
     # Launch a worker pool
     worker_pool_name = f"custom-worker-pool-opendp{'-prebuilt' if prebuilt else ''}"
     worker_pool_res = domain_client.api.services.worker_pool.launch(
-        name=worker_pool_name,
+        pool_name=worker_pool_name,
         image_uid=worker_image.id,
         num_workers=3,
     )

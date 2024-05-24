@@ -64,7 +64,7 @@ class SyftWorkerPoolService(AbstractService):
     def launch(
         self,
         context: AuthedServiceContext,
-        name: str,
+        pool_name: str,
         image_uid: UID | None,
         num_workers: int,
         reg_username: str | None = None,
@@ -84,13 +84,15 @@ class SyftWorkerPoolService(AbstractService):
             num_workers (int): the number of SyftWorker that needs to be created in the pool
         """
 
-        result = self.stash.get_by_name(context.credentials, pool_name=name)
+        result = self.stash.get_by_name(context.credentials, pool_name=pool_name)
 
         if result.is_err():
             return SyftError(message=f"{result.err()}")
 
         if result.ok() is not None:
-            return SyftError(message=f"Worker Pool with name: {name} already exists !!")
+            return SyftError(
+                message=f"Worker Pool with name: {pool_name} already exists !!"
+            )
 
         # If image uid is not passed, then use the default worker image
         # to create the worker pool
@@ -119,7 +121,7 @@ class SyftWorkerPoolService(AbstractService):
         # and with the desired number of workers
         result = _create_workers_in_pool(
             context=context,
-            pool_name=name,
+            pool_name=pool_name,
             existing_worker_cnt=0,
             worker_cnt=num_workers,
             worker_image=worker_image,
@@ -135,7 +137,7 @@ class SyftWorkerPoolService(AbstractService):
 
         # Update the Database with the pool information
         worker_pool = WorkerPool(
-            name=name,
+            name=pool_name,
             max_count=num_workers,
             image_id=worker_image.id,
             worker_list=worker_list,
