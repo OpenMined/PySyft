@@ -11,10 +11,10 @@ from typing import Any
 # third party
 from loguru import logger
 from pydantic import field_validator
+import zmq
 from zmq import Frame
 from zmq import LINGER
 from zmq.error import ContextTerminated
-import zmq.green as zmq
 
 # relative
 from ...serde.deserialize import _deserialize

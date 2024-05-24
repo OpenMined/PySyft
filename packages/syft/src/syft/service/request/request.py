@@ -601,11 +601,14 @@ class Request(SyncableSyftObject):
             )
         if message and metadata and metadata.show_warnings and not disable_warnings:
             prompt_warning_message(message=message, confirm=True)
+        msg = (
+            "Approving request ",
+            f"on change {self.code.service_func_name} " if is_code_request else "",
+            f"for domain {api.node_name}",
+        )
 
-        print(f"Approving request for domain {api.node_name}")
+        print("".join(msg))
         res = api.services.request.apply(self.id, **kwargs)
-        # if isinstance(res, SyftSuccess):
-
         return res
 
     def deny(self, reason: str) -> SyftSuccess | SyftError:
