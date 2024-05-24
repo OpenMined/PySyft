@@ -8,8 +8,6 @@ from io import BytesIO
 
 # third party
 from dateutil import parser
-from jax import numpy as jnp
-from jaxlib.xla_extension import ArrayImpl
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import networkx as nx
@@ -32,6 +30,8 @@ from ..types.dicttuple import DictTuple
 from ..types.dicttuple import _Meta as _DictTupleMetaClass
 from ..types.syft_metaclass import EmptyType
 from ..types.syft_metaclass import PartialModelMetaclass
+from .array import numpy_deserialize
+from .array import numpy_serialize
 from .deserialize import _deserialize as deserialize
 from .recursive_primitives import _serialize_kv_pairs
 from .recursive_primitives import deserialize_kv
@@ -107,7 +107,6 @@ recursive_serde_register(
     deserialize=deserialize_series,
 )
 
-
 recursive_serde_register(
     datetime,
     serialize=lambda x: serialize(x.isoformat(), to_bytes=True),
@@ -180,13 +179,42 @@ try:
 except Exception:  # nosec
     pass
 
-# jax
-recursive_serde_register(
-    ArrayImpl,
-    serialize=lambda x: serialize(np.array(x), to_bytes=True),
-    deserialize=lambda x: jnp.array(deserialize(x, from_bytes=True)),
-)
 
+try:
+    # third party
+    import torch
+    from torch._C import _TensorMeta
+
+    def serialize_torch_tensor_meta(t: _TensorMeta) -> bytes:
+        buffer = BytesIO()
+        torch.save(t, buffer)
+        return buffer.getvalue()
+
+    def deserialize_torch_tensor_meta(buf: bytes) -> _TensorMeta:
+        buffer = BytesIO(buf)
+        return torch.load(buffer)
+
+    recursive_serde_register(
+        _TensorMeta,
+        serialize=serialize_torch_tensor_meta,
+        deserialize=deserialize_torch_tensor_meta,
+    )
+
+    def torch_serialize(tensor: torch.Tensor) -> bytes:
+        return numpy_serialize(tensor.numpy())
+
+    def torch_deserialize(buffer: bytes) -> torch.tensor:
+        np_array = numpy_deserialize(buffer)
+        return torch.from_numpy(np_array)
+
+    recursive_serde_register(
+        torch.Tensor,
+        serialize=torch_serialize,
+        deserialize=lambda data: torch_deserialize(data),
+    )
+
+except Exception:  # nosec
+    pass
 
 # unsure why we have to register the object not the type but this works
 recursive_serde_register(np.core._ufunc_config._unspecified())
