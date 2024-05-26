@@ -38,11 +38,13 @@
 <script type="application/javascript">
   {{ js | safe }}
 
-  buildTable(
+  table_{{ uid }} = buildTable(
     {{ columns | safe }},
     {{ row_header | safe }},
     {{ data | safe }},
-    "{{ uid }}"
+    "{{ uid }}",
+    pagination={{ pagination }},
+    maxHeight={{ max_height }},
   )
 </script>
 

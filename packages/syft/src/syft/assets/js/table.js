@@ -6,7 +6,6 @@ TABULATOR_CSS =
 document.querySelectorAll(".escape-unfocus").forEach((input) => {
   input.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
-      console.log("Escape key pressed");
       event.stopPropagation();
       input.blur();
     }
@@ -58,7 +57,14 @@ function load_tabulator(elementId) {
   });
 }
 
-function buildTable(columns, rowHeader, data, uid) {
+function buildTable(
+  columns,
+  rowHeader,
+  data,
+  uid,
+  pagination = true,
+  maxHeight = null,
+) {
   const tableId = `table-${uid}`;
   const searchBarId = `search-${uid}`;
   const numrowsId = `numrows-${uid}`;
@@ -73,11 +79,13 @@ function buildTable(columns, rowHeader, data, uid) {
     data: data,
     columns: columns,
     rowHeader: rowHeader,
+    index: "_table_repr_index",
     layout: "fitDataStretch",
     resizableColumnFit: true,
     resizableColumnGuide: true,
-    pagination: "local",
+    pagination: pagination,
     paginationSize: 5,
+    maxHeight: maxHeight,
   });
 
   // Events needed for cell overflow:
@@ -100,6 +108,7 @@ function buildTable(columns, rowHeader, data, uid) {
     numrowsElement.innerHTML = data.length;
   }
 
+  configureHighlightSingleRow(table, uid);
   configureSearch(table, searchBarId, columns);
 
   return table;
@@ -128,4 +137,65 @@ function configureSearch(table, searchBarId, columns) {
 
     table.setFilter([filterArray]);
   });
+}
+
+function configureHighlightSingleRow(table, uid) {
+  // Listener for rowHighlight events, with fields:
+  //    uid: string, table uid
+  //    index: number | string, row index to highlight
+  //    jumpToRow: bool, if true, jumps to page where the row is located
+  document.addEventListener("rowHighlight", function (e) {
+    if (e.detail.uid === uid) {
+      let row_idx = e.detail.index;
+      let rows = table.getRows();
+      for (let row of rows) {
+        if (row.getIndex() == row_idx) {
+          row.select();
+          if (e.detail.jumpToRow) {
+            table.setPageToRow(row_idx);
+            table.scrollToRow(row_idx, "top", false);
+          }
+        } else {
+          row.deselect();
+        }
+      }
+    }
+  });
+}
+
+function waitForTable(uid, timeout = 1000) {
+  return new Promise((resolve, reject) => {
+    // Check if the table is ready immediately
+    if (window["table_" + uid]) {
+      resolve();
+    } else {
+      // Otherwise, check every 100ms until the table is ready or the timeout is reached
+      var startTime = Date.now();
+      var checkTableInterval = setInterval(function () {
+        if (window["table_" + uid]) {
+          clearInterval(checkTableInterval);
+          resolve();
+        } else if (Date.now() - startTime > timeout) {
+          clearInterval(checkTableInterval);
+          reject(`Timeout: table_"${uid}" not found.`);
+        }
+      }, 100);
+    }
+  });
+}
+
+function highlightSingleRow(uid, index = null, jumpToRow = false) {
+  // Highlight a single row in the table with the given uid
+  // If index is not provided or doesn't exist, all rows are deselected
+  waitForTable(uid)
+    .then(() => {
+      document.dispatchEvent(
+        new CustomEvent("rowHighlight", {
+          detail: { uid, index, jumpToRow },
+        }),
+      );
+    })
+    .catch((error) => {
+      console.log(error);
+    });
 }
