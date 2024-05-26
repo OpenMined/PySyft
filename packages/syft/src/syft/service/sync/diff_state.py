@@ -11,6 +11,7 @@ from typing import ClassVar
 from typing import Literal
 
 # third party
+import ipywidgets
 from loguru import logger
 import pandas as pd
 from pydantic import model_validator
@@ -1117,6 +1118,12 @@ class NodeDiff(SyftObject):
     filters: list[NodeDiffFilter] = []
 
     include_ignored: bool = False
+
+    def resolve(self) -> ipywidgets.Widget:
+        # relative
+        from .resolve_widget import PaginatedResolveWidget
+
+        return PaginatedResolveWidget(batches=self.batches).build()
 
     def __getitem__(self, idx: Any) -> ObjectDiffBatch:
         return self.batches[idx]

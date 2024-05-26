@@ -92,7 +92,12 @@ def format_table_data(table_data: list[dict[str, Any]]) -> list[dict[str, str]]:
     return formatted
 
 
-def build_tabulator_table(obj: Any) -> str | None:
+def build_tabulator_table(
+    obj: Any,
+    uid: str | None = None,
+    max_height: int | None = None,
+    pagination: bool = True,
+) -> str | None:
     try:
         table_data, table_metadata = prepare_table_data(obj)
         if len(table_data) == 0:
@@ -113,10 +118,11 @@ def build_tabulator_table(obj: Any) -> str | None:
         if icon is None:
             icon = Icon.TABLE.svg
 
+        uid = uid if uid is not None else secrets.token_hex(4)
         column_data, row_header = create_tabulator_columns(table_metadata["columns"])
         table_data = format_table_data(table_data)
         table_html = table_template.render(
-            uid=secrets.token_hex(4),
+            uid=uid,
             columns=json.dumps(column_data),
             row_header=json.dumps(row_header),
             data=json.dumps(table_data),
@@ -127,6 +133,8 @@ def build_tabulator_table(obj: Any) -> str | None:
             name=table_metadata["name"],
             tabulator_js=tabulator_js,
             tabulator_css=tabulator_css,
+            max_height=json.dumps(max_height),
+            pagination=json.dumps(pagination),
         )
 
         return table_html
@@ -140,3 +148,12 @@ def show_table(obj: Any) -> None:
     table = build_tabulator_table(obj)
     if table is not None:
         display(HTML(table))
+
+
+def highlight_single_row(
+    table_uid: str,
+    index: int | str | None = None,
+    jump_to_row: bool = True,
+) -> None:
+    js_code = f"<script>highlightSingleRow('{table_uid}', {json.dumps(index)}, {json.dumps(jump_to_row)});</script>"
+    display(HTML(js_code))
