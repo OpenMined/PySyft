@@ -79,6 +79,7 @@ def run_uvicorn(
     create_producer: bool,
     association_request_auto_approval: bool,
     n_consumers: int,
+    background_tasks: bool,
 ) -> None:
     async def _run_uvicorn(
         name: str,
@@ -112,6 +113,7 @@ def run_uvicorn(
                 create_producer=create_producer,
                 n_consumers=n_consumers,
                 association_request_auto_approval=association_request_auto_approval,
+                background_tasks=background_tasks,
             )
         else:
             worker = worker_class(
@@ -127,6 +129,7 @@ def run_uvicorn(
                 create_producer=create_producer,
                 n_consumers=n_consumers,
                 association_request_auto_approval=association_request_auto_approval,
+                background_tasks=background_tasks,
             )
         router = make_routes(worker=worker)
         app = make_app(worker.name, router=router)
@@ -186,6 +189,7 @@ def serve_node(
     create_producer: bool = False,
     n_consumers: int = 0,
     association_request_auto_approval: bool = False,
+    background_tasks: bool = False,
 ) -> tuple[Callable, Callable]:
     server_process = multiprocessing.Process(
         target=run_uvicorn,
@@ -204,6 +208,7 @@ def serve_node(
             "create_producer": create_producer,
             "n_consumers": n_consumers,
             "association_request_auto_approval": association_request_auto_approval,
+            "background_tasks": background_tasks,
         },
     )
 

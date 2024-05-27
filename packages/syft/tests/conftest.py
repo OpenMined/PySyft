@@ -157,48 +157,6 @@ def low_worker() -> Worker:
     del worker
 
 
-@pytest.fixture(scope="function")
-def full_high_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
-    _node = sy.orchestra.launch(
-        node_side_type=NodeSideType.HIGH_SIDE,
-        name=token_hex(8),
-        # dev_mode=True,
-        reset=True,
-        n_consumers=n_consumers,
-        create_producer=create_producer,
-        queue_port=None,
-        in_memory_workers=True,
-        local_db=False,
-        thread_workers=False,
-    )
-    # startup code here
-    yield _node
-    # Cleanup code
-    _node.python_node.cleanup()
-    _node.land()
-
-
-@pytest.fixture(scope="function")
-def full_low_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
-    _node = sy.orchestra.launch(
-        node_side_type=NodeSideType.LOW_SIDE,
-        name=token_hex(8),
-        # dev_mode=True,
-        reset=True,
-        n_consumers=n_consumers,
-        create_producer=create_producer,
-        queue_port=None,
-        in_memory_workers=True,
-        local_db=False,
-        thread_workers=False,
-    )
-    # startup code here
-    yield _node
-    # # Cleanup code
-    _node.python_node.cleanup()
-    _node.land()
-
-
 @pytest.fixture
 def root_domain_client(worker) -> DomainClient:
     yield worker.root_client
@@ -310,6 +268,5 @@ pytest_plugins = [
     "tests.syft.request.fixtures",
     "tests.syft.dataset.fixtures",
     "tests.syft.notifications.fixtures",
-    "tests.syft.action_graph.fixtures",
     "tests.syft.serde.fixtures",
 ]

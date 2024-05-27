@@ -2,6 +2,10 @@
 from collections.abc import Callable
 import functools
 from typing import Any
+import warnings
+
+# relative
+from ..service.response import SyftError
 
 
 def singleton(cls: Any) -> Callable:
@@ -46,3 +50,25 @@ def singleton(cls: Any) -> Callable:
             return previous_instances[cls].get("instance")
 
     return wrapper
+
+
+def deprecated(
+    reason: str = "This function is deprecated and may be removed in the future.",
+    return_syfterror: bool = False,
+) -> Callable:
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args: list, **kwargs: dict) -> Any:
+            message = f"{func.__qualname__} is deprecated: {reason}"
+            if return_syfterror:
+                return SyftError(message=message)
+            warnings.warn(
+                message,
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator

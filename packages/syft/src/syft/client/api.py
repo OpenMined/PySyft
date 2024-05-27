@@ -49,6 +49,7 @@ from ..service.warnings import APIEndpointWarning
 from ..service.warnings import WarningContext
 from ..types.cache_object import CachedSyftObject
 from ..types.identity import Identity
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftMigrationRegistry
@@ -57,6 +58,7 @@ from ..types.uid import LineageID
 from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
+from ..util.table import list_dict_repr_html
 from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
 from .connection import NodeConnection
@@ -65,6 +67,21 @@ if TYPE_CHECKING:
     # relative
     from ..node import Node
     from ..service.job.job_stash import Job
+
+
+IPYNB_BACKGROUND_METHODS = {
+    "getdoc",
+    "_partialmethod",
+    "__name__",
+    "__code__",
+    "__wrapped__",
+    "__custom_documentations__",
+    "__signature__",
+    "__defaults__",
+    "__kwdefaults__",
+}
+
+IPYNB_BACKGROUND_PREFIXES = ["_ipy", "_repr", "__ipython", "__pydantic"]
 
 
 class APIRegistry:
@@ -595,6 +612,19 @@ def generate_remote_lib_function(
     return wrapper
 
 
+class APISubModulesView(SyftObject):
+    __canonical_name__ = "APISubModulesView"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    submodule: str = ""
+    endpoints: list[str] = []
+
+    __syft_include_id_coll_repr__ = False
+
+    def _coll_repr_(self) -> dict[str, Any]:
+        return {"submodule": self.submodule, "endpoints": "\n".join(self.endpoints)}
+
+
 @serializable()
 class APIModule:
     _modules: list[str]
@@ -605,6 +635,9 @@ class APIModule:
         self._modules = []
         self.path = path
         self.refresh_callback = refresh_callback
+
+    def __dir__(self) -> list[str]:
+        return self._modules + ["path"]
 
     def has_submodule(self, name: str) -> bool:
         """We use this as hasattr() triggers __getattribute__ which triggers recursion"""
@@ -620,18 +653,28 @@ class APIModule:
         setattr(self, attr_name, module_or_func)
         self._modules.append(attr_name)
 
-    def __getattribute__(self, name: str) -> Any:
+    def __getattr__(self, name: str) -> Any:
         try:
             return object.__getattribute__(self, name)
         except AttributeError:
             # if we fail, we refresh the api and try again
-            if self.refresh_callback is not None:
+            # however, we dont want this to happen all the time because of ipy magic happening
+            # in the background
+            if (
+                self.refresh_callback is not None
+                and name not in IPYNB_BACKGROUND_METHODS
+                and not any(
+                    name.startswith(prefix) for prefix in IPYNB_BACKGROUND_PREFIXES
+                )
+            ):
                 api = self.refresh_callback()
                 try:
+                    # get current path in the module tree
                     new_current_module = api.services
                     for submodule in self.path.split("."):
                         if submodule != "":
                             new_current_module = getattr(new_current_module, submodule)
+                    # retry getting the attribute, if this fails, we throw an error
                     return object.__getattribute__(new_current_module, name)
                 except AttributeError:
                     pass
@@ -647,8 +690,35 @@ class APIModule:
         raise NotImplementedError
 
     def _repr_html_(self) -> Any:
+        if self.path == "settings":
+            return self.get()._repr_html_()
+
         if not hasattr(self, "get_all"):
-            return NotImplementedError
+
+            def recursively_get_submodules(
+                module: APIModule | Callable,
+            ) -> list[APIModule | Callable]:
+                children = [module]
+                if isinstance(module, APIModule):
+                    for submodule_name in module._modules:
+                        submodule = getattr(module, submodule_name)
+                        children += recursively_get_submodules(submodule)
+                return children
+
+            views = []
+            for submodule_name in self._modules:
+                submodule = getattr(self, submodule_name)
+                children = recursively_get_submodules(submodule)
+                child_paths = [
+                    x.path for x in children if isinstance(x, RemoteFunction)
+                ]
+                views.append(
+                    APISubModulesView(submodule=submodule_name, endpoints=child_paths)
+                )
+
+            return list_dict_repr_html(views)
+            # return NotImplementedError
+
         results = self.get_all()
         return results._repr_html_()
 
@@ -775,8 +845,26 @@ class SyftAPI(SyftObject):
     communication_protocol: PROTOCOL_TYPE
     metadata: NodeMetadataJSON | None = None
 
-    # def __post_init__(self) -> None:
-    #     pass
+    # informs getattr does not have nasty side effects
+    __syft_allow_autocomplete__ = ["services"]
+
+    def __dir__(self) -> list[str]:
+        modules = getattr(self.api_module, "_modules", [])
+        return ["services"] + modules
+
+    def __syft_dir__(self) -> list[str]:
+        modules = getattr(self.api_module, "_modules", [])
+        return ["services"] + modules
+
+    def __getattr__(self, name: str) -> Any:
+        try:
+            return getattr(self.api_module, name)
+        except Exception:
+            raise SyftAttributeError(
+                f"'SyftAPI' object has no submodule or method '{name}', "
+                "you may not have permission to access the module you are trying to access."
+                "If you think this is an error, try calling `client.refresh()` to update the API."
+            )
 
     @staticmethod
     def for_user(

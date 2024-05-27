@@ -14,8 +14,7 @@ RUN apk update && apk upgrade && \
 COPY ./syft /tmp/syft
 
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    pip install --user jupyterlab==4.1.6 pip-autoremove==0.10.0 /tmp/syft && \
-    pip-autoremove ansible ansible-core -y
+    pip install --user jupyterlab==4.1.6 /tmp/syft
 
 # ==================== [Final] Setup Syft Client ==================== #
 

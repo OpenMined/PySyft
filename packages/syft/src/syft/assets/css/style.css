@@ -1,8 +1,10 @@
-body[data-jp-theme-light="false"] {
+body[data-jp-theme-light="false"],
+body.vscode-dark {
   --primary-color: #111111;
   --secondary-color: #212121;
   --tertiary-color: #cfcdd6;
   --button-color: #111111;
+  --colors-black: #ffffff;
 }
 
 body {
@@ -10,6 +12,7 @@ body {
   --secondary-color: #f5f5f5;
   --tertiary-color: #000000de;
   --button-color: #d1d5db;
+  --colors-black: #17161d;
 }
 
 .header-1 {
@@ -19,7 +22,7 @@ body {
   line-height: 100%;
   leading-trim: both;
   text-edge: cap;
-  color: #17161d;
+  color: var(--colors-black);
 }
 
 .header-2 {
@@ -29,7 +32,7 @@ body {
   line-height: 100%;
   leading-trim: both;
   text-edge: cap;
-  color: #17161d;
+  color: var(--colors-black);
 }
 
 .header-3 {
@@ -49,7 +52,7 @@ body {
   line-height: 100%;
   leading-trim: both;
   text-edge: cap;
-  color: #17161d;
+  color: var(--colors-black);
 }
 
 .paragraph {
@@ -344,6 +347,11 @@ body {
 .badge {
   /* code-text; */
   border-radius: 30px;
+  padding: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  line-height: 1.2;
+  font-family: monospace;
 }
 
 .label {
@@ -405,9 +413,6 @@ body {
 }
 
 .badge-green {
-  /* badge; */
-
-  /* Success/Container */
   background-color: #d5f1d5;
   color: #256b24;
 }

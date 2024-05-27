@@ -1,8 +1,7 @@
 #! /usr/bin/env bash
 set -e
 
-echo "Running start.sh with RELEASE=${RELEASE} and $(id)"
-export GEVENT_MONKEYPATCH="False"
+echo "Running Syft with RELEASE=${RELEASE} and $(id)"
 
 APP_MODULE=grid.main:app
 LOG_LEVEL=${LOG_LEVEL:-info}
@@ -10,14 +9,8 @@ HOST=${HOST:-0.0.0.0}
 PORT=${PORT:-80}
 NODE_TYPE=${NODE_TYPE:-domain}
 APPDIR=${APPDIR:-$HOME/app}
-
 RELOAD=""
 DEBUG_CMD=""
-
-# For debugging permissions
-ls -lisa $HOME/data
-ls -lisa $APPDIR/syft/
-ls -lisa $APPDIR/grid/
 
 if [[ ${DEV_MODE} == "True" ]];
 then
@@ -28,15 +21,14 @@ fi
 # only set by kubernetes to avoid conflict with docker tests
 if [[ ${DEBUGGER_ENABLED} == "True" ]];
 then
-    pip install --user debugpy
+    uv pip install debugpy
     DEBUG_CMD="python -m debugpy --listen 0.0.0.0:5678 -m"
 fi
 
-set +e
+export CREDENTIALS_PATH=${CREDENTIALS_PATH:-$HOME/data/creds/credentials.json}
 export NODE_PRIVATE_KEY=$(python $APPDIR/grid/bootstrap.py --private_key)
 export NODE_UID=$(python $APPDIR/grid/bootstrap.py --uid)
 export NODE_TYPE=$NODE_TYPE
-set -e
 
 echo "NODE_UID=$NODE_UID"
 echo "NODE_TYPE=$NODE_TYPE"
