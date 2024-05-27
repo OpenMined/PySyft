@@ -23,6 +23,7 @@ env = jinja2.Environment(loader=jinja2.PackageLoader("syft", "assets/jinja"))  #
 def create_tabulator_columns(
     column_names: list[str],
     column_widths: dict | None = None,
+    header_sort: bool = True,
 ) -> tuple[list[dict], dict | None]:
     """Returns tuple of (columns, row_header) for tabulator table"""
     if column_widths is None:
@@ -33,10 +34,10 @@ def create_tabulator_columns(
     if TABLE_INDEX_KEY in column_names:
         row_header = {
             "field": TABLE_INDEX_KEY,
-            "headerSort": True,
             "frozen": True,
             "widthGrow": 0.3,
             "minWidth": 60,
+            "headerSort": header_sort,
         }
 
     for colname in column_names:
@@ -48,6 +49,7 @@ def create_tabulator_columns(
                 "resizable": True,
                 "minWidth": 60,
                 "maxInitialWidth": 500,
+                "headerSort": header_sort,
             }
             if colname in column_widths:
                 column["widthGrow"] = column_widths[colname]
@@ -97,6 +99,7 @@ def build_tabulator_table(
     uid: str | None = None,
     max_height: int | None = None,
     pagination: bool = True,
+    header_sort: bool = True,
 ) -> str | None:
     try:
         table_data, table_metadata = prepare_table_data(obj)
@@ -119,7 +122,9 @@ def build_tabulator_table(
             icon = Icon.TABLE.svg
 
         uid = uid if uid is not None else secrets.token_hex(4)
-        column_data, row_header = create_tabulator_columns(table_metadata["columns"])
+        column_data, row_header = create_tabulator_columns(
+            table_metadata["columns"], header_sort=header_sort
+        )
         table_data = format_table_data(table_data)
         table_html = table_template.render(
             uid=uid,
@@ -135,6 +140,7 @@ def build_tabulator_table(
             tabulator_css=tabulator_css,
             max_height=json.dumps(max_height),
             pagination=json.dumps(pagination),
+            header_sort=json.dumps(header_sort),
         )
 
         return table_html
@@ -156,4 +162,13 @@ def highlight_single_row(
     jump_to_row: bool = True,
 ) -> None:
     js_code = f"<script>highlightSingleRow('{table_uid}', {json.dumps(index)}, {json.dumps(jump_to_row)});</script>"
+    display(HTML(js_code))
+
+
+def update_table_cell(uid: str, index: int, field: str, value: str) -> None:
+    js_code = f"""
+    <script>
+    updateTableCell('{uid}', {json.dumps(index)}, {json.dumps(field)}, {json.dumps(value)});
+    </script>
+    """
     display(HTML(js_code))

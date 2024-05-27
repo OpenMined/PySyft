@@ -64,6 +64,7 @@ function buildTable(
   uid,
   pagination = true,
   maxHeight = null,
+  headerSort = true,
 ) {
   const tableId = `table-${uid}`;
   const searchBarId = `search-${uid}`;
@@ -86,6 +87,7 @@ function buildTable(
     pagination: pagination,
     paginationSize: 5,
     maxHeight: maxHeight,
+    headerSort: headerSort,
   });
 
   // Events needed for cell overflow:
@@ -152,7 +154,8 @@ function configureHighlightSingleRow(table, uid) {
         if (row.getIndex() == row_idx) {
           row.select();
           if (e.detail.jumpToRow) {
-            table.setPageToRow(row_idx);
+            // catch promise in case the table does not have pagination
+            table.setPageToRow(row_idx).catch((_) => {});
             table.scrollToRow(row_idx, "top", false);
           }
         } else {
@@ -169,7 +172,7 @@ function waitForTable(uid, timeout = 1000) {
     if (window["table_" + uid]) {
       resolve();
     } else {
-      // Otherwise, check every 100ms until the table is ready or the timeout is reached
+      // Otherwise, poll until the table is ready or timeout
       var startTime = Date.now();
       var checkTableInterval = setInterval(function () {
         if (window["table_" + uid]) {
@@ -197,5 +200,27 @@ function highlightSingleRow(uid, index = null, jumpToRow = false) {
     })
     .catch((error) => {
       console.log(error);
+    });
+}
+
+function updateTableCell(uid, index, field, value) {
+  // Update the value of a cell in the table with the given uid
+  waitForTable(uid)
+    .then(() => {
+      const table = window["table_" + uid];
+      if (!table) {
+        throw new Error(`Table with uid ${uid} not found.`);
+      }
+
+      const row = table.getRow(index);
+      if (!row) {
+        throw new Error(`Row with index ${index} not found.`);
+      }
+
+      // Update the cell value
+      row.update({ [field]: value });
+    })
+    .catch((error) => {
+      console.error(error);
     });
 }
