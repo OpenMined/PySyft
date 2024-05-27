@@ -213,6 +213,11 @@ def test_pool_image_creation_job_requests(
         password_verify="secret_pw",
     )
     assert isinstance(res, SyftSuccess)
+
+    # Grant user permission to request code execution
+    ds = next(u for u in domain_client.users if u.email == ds_email)
+    ds.allow_mock_execution()
+
     ds_client = sy.login(email=ds_email, password="secret_pw", port=domain_1_port)
 
     # the DS makes a request to create an image and a pool based on the image
