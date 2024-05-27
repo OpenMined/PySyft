@@ -110,7 +110,7 @@ def test_create_pool_request_accept(
     assert root_client.credentials != ds_client.credentials
 
     # the DO submits the docker config to build an image
-    submit_result = root_client.api.services.worker_image.submit_container_image(
+    submit_result = root_client.api.services.worker_image.submit(
         worker_config=worker_config
     )
     assert isinstance(submit_result, SyftSuccess)
@@ -161,9 +161,7 @@ def test_get_by_worker_config(
 ) -> None:
     root_client = worker.root_client
     for config in WORKER_CONFIGS:
-        root_client.api.services.worker_image.submit_container_image(
-            worker_config=config
-        )
+        root_client.api.services.worker_image.submit(worker_config=config)
 
     worker_image = root_client.api.services.worker_image.get_by_config(worker_config)
     assert worker_image.config == worker_config

@@ -40,11 +40,11 @@ class SyftWorkerImageService(AbstractService):
         self.stash = SyftWorkerImageStash(store=store)
 
     @service_method(
-        path="worker_image.submit_container_image",
-        name="submit_container_image",
+        path="worker_image.submit",
+        name="submit",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def submit_container_image(
+    def submit(
         self, context: AuthedServiceContext, worker_config: WorkerConfig
     ) -> SyftSuccess | SyftError:
         image_identifier: SyftWorkerImageIdentifier | None = None

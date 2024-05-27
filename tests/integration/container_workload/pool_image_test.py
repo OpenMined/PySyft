@@ -76,7 +76,7 @@ def test_image_build(domain_1_port: int, external_registry_uid: UID) -> None:
 
     docker_config, docker_tag = make_docker_config_test_case("recordlinkage")
 
-    submit_result = domain_client.api.services.worker_image.submit_container_image(
+    submit_result = domain_client.api.services.worker_image.submit(
         worker_config=docker_config
     )
     assert isinstance(submit_result, SyftSuccess)
@@ -119,7 +119,7 @@ def test_pool_launch(
         if prebuilt
         else make_docker_config_test_case("opendp")
     )
-    submit_result = domain_client.api.services.worker_image.submit_container_image(
+    submit_result = domain_client.api.services.worker_image.submit(
         worker_config=worker_config
     )
     assert isinstance(submit_result, SyftSuccess)

@@ -23,7 +23,7 @@ def test_syft_worker(worker: Worker):
     """
     root_client = worker.root_client
     docker_config = get_docker_config()
-    submit_result = root_client.api.services.worker_image.submit_container_image(
+    submit_result = root_client.api.services.worker_image.submit(
         worker_config=docker_config
     )
     assert isinstance(submit_result, SyftSuccess)

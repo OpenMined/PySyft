@@ -226,7 +226,7 @@ class CreateCustomImageChange(Change):
             worker_image_service = context.node.get_service("SyftWorkerImageService")
 
             service_context = context.to_service_ctx()
-            result = worker_image_service.submit_container_image(
+            result = worker_image_service.submit(
                 service_context, worker_config=self.config
             )
 
