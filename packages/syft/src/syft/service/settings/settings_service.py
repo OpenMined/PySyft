@@ -177,7 +177,7 @@ class SettingsService(AbstractService):
         self, context: AuthedServiceContext, enable: bool
     ) -> SyftSuccess | SyftError:
         new_settings = NodeSettingsUpdate(association_request_auto_approval=enable)
-        result = self.update(context, settins=new_settings)
+        result = self.update(context, settings=new_settings)
         if isinstance(result, SyftError):
             return result
 
