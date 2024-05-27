@@ -86,9 +86,15 @@ def get_user_input_for_resolve() -> SyncDecision:
             print(f"Please choose between {options_str}")
 
 
-def resolve(obj_diff_batch: ObjectDiffBatch) -> ResolveWidget:
-    widget = ResolveWidget(obj_diff_batch)
-    return widget
+def resolve(obj: ObjectDiffBatch | NodeDiff) -> ResolveWidget:
+    if isinstance(obj, NodeDiff):
+        return obj.resolve()
+    elif isinstance(obj, ObjectDiffBatch):
+        return ResolveWidget(obj)
+    else:
+        raise ValueError(
+            f"Invalid type: could not resolve object with type {type(obj).__qualname__}"
+        )
 
 
 @deprecated(reason="resolve_single has been renamed to resolve", return_syfterror=True)

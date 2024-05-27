@@ -9,9 +9,9 @@ import textwrap
 from typing import Any
 from typing import ClassVar
 from typing import Literal
+from typing import TYPE_CHECKING
 
 # third party
-import ipywidgets
 from loguru import logger
 import pandas as pd
 from pydantic import model_validator
@@ -60,6 +60,10 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
 from .sync_state import SyncState
+
+if TYPE_CHECKING:
+    # relative
+    from .resolve_widget import PaginatedResolveWidget
 
 sketchy_tab = "‎ " * 4
 
@@ -1136,7 +1140,7 @@ class NodeDiff(SyftObject):
 
     include_ignored: bool = False
 
-    def resolve(self) -> ipywidgets.Widget:
+    def resolve(self) -> "PaginatedResolveWidget":
         # relative
         from .resolve_widget import PaginatedResolveWidget
 
