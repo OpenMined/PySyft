@@ -731,6 +731,11 @@ class PaginatedResolveWidget:
                 self.table_uid, self.paginated_widget.current_index, jump_to_row=True
             )
 
+        self.widget = self.build()
+
+    def __getitem__(self, index: int) -> ResolveWidget:
+        return self.resolve_widgets[index]
+
     def on_paginate(self, index: int) -> None:
         return highlight_single_row(self.table_uid, index, jump_to_row=True)
 
@@ -750,3 +755,6 @@ class PaginatedResolveWidget:
     def _sync_all(self) -> None:
         for widget in self.resolve_widgets:
             widget.click_sync()
+
+    def _repr_mimebundle_(self, **kwargs: dict) -> dict[str, str] | None:
+        return self.widget._repr_mimebundle_(**kwargs)

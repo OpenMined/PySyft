@@ -1123,7 +1123,7 @@ class NodeDiff(SyftObject):
         # relative
         from .resolve_widget import PaginatedResolveWidget
 
-        return PaginatedResolveWidget(batches=self.batches).build()
+        return PaginatedResolveWidget(batches=self.batches)
 
     def __getitem__(self, idx: Any) -> ObjectDiffBatch:
         return self.batches[idx]
