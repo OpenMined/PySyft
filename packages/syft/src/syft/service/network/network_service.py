@@ -5,6 +5,7 @@ import secrets
 from typing import Any
 
 # third party
+from loguru import logger
 from result import Result
 
 # relative
@@ -233,7 +234,7 @@ class NetworkService(AbstractService):
                     if isinstance(result, SyftError):
                         msg.append(
                             f"Attempt to remotely update {self_node_peer.node_type} peer "
-                            f"'{self_node_peer.name}' information remotely failed."
+                            f"'{self_node_peer.name}' information remotely failed. Error: {result.message}"
                         )
                         return SyftError(message="\n".join(msg))
                     msg.append(
@@ -477,8 +478,8 @@ class NetworkService(AbstractService):
         for field_name, value in peer.to_dict().items():
             try:
                 setattr(peer_update, field_name, value)
-            except AttributeError:
-                print(f"Failed to set {field_name} to {value}")
+            except Exception as e:
+                logger.debug(f"Failed to set {field_name} to {value}. Exception: {e}")
                 pass
         result = self.stash.update(
             credentials=context.node.verify_key,
