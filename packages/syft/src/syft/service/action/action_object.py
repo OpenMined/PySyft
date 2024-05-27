@@ -415,7 +415,6 @@ class PreHookContext(SyftBaseObject):
 def make_action_side_effect(
     context: PreHookContext, *args: Any, **kwargs: Any
 ) -> Result[Ok[tuple[PreHookContext, tuple[Any, ...], dict[str, Any]]], Err[str]]:
-    print("MAKING ACTioN")
     """Create a new action from context_op_name, and add it to the PreHookContext
 
     Parameters:
