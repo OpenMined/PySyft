@@ -24,7 +24,14 @@ $ pip install -U syft[data_science]
 # from Jupyter / Python
 import syft as sy
 sy.requires(">=0.8.6,<0.8.7")
-node = sy.orchestra.launch(name="my-domain", port=8080, dev_mode=True, reset=True)
+node = sy.orchestra.launch(
+    name="my-domain",
+    port=8080,
+    create_producer=True,
+    n_consumers=1,
+    dev_mode=True,
+    reset=True, # resets database
+)
 ```
 
 ```bash
@@ -39,7 +46,11 @@ Starting syft-node server on 0.0.0.0:8080
 ```python
 import syft as sy
 sy.requires(">=0.8.6,<0.8.7")
-domain_client = sy.login(port=8080, email="info@openmined.org", password="changethis")
+domain_client = sy.login(
+    port=8080,
+    email="info@openmined.org",
+    password="changethis"
+)
 ```
 
 ## PySyft in 10 minutes
@@ -50,7 +61,7 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 - <a href="notebooks/api/0.8/01-submit-code.ipynb">01-submit-code.ipynb</a>
 - <a href="notebooks/api/0.8/02-review-code-and-approve.ipynb">02-review-code-and-approve.ipynb</a>
 - <a href="notebooks/api/0.8/03-data-scientist-download-result.ipynb">03-data-scientist-download-result.ipynb</a>
-- <a href="notebooks/api/0.8/04-jax-example.ipynb">04-jax-example.ipynb</a>
+- <a href="notebooks/api/0.8/04-pytorch-example.ipynb">04-pytorch-example.ipynb</a>
 - <a href="notebooks/api/0.8/05-custom-policy.ipynb">05-custom-policy.ipynb</a>
 - <a href="notebooks/api/0.8/06-multiple-code-requests.ipynb">06-multiple-code-requests.ipynb</a>
 - <a href="notebooks/api/0.8/07-domain-register-control-flow.ipynb">07-domain-register-control-flow.ipynb</a>
@@ -58,6 +69,7 @@ domain_client = sy.login(port=8080, email="info@openmined.org", password="change
 - <a href="notebooks/api/0.8/09-blob-storage.ipynb">09-blob-storage.ipynb</a>
 - <a href="notebooks/api/0.8/10-container-images.ipynb">10-container-images.ipynb</a>
 - <a href="notebooks/api/0.8/11-container-images-k8s.ipynb">11-container-images-k8s.ipynb</a>
+- <a href="notebooks/api/0.8/12-custom-api-endpoint.ipynb">12-custom-api-endpoint.ipynb</a>
 
 ## Deploy Kubernetes Helm Chart
 
@@ -102,7 +114,7 @@ For AWS EKS
 helm install ... --set ingress.className="alb"
 ```
 
-For Google GKE we need the [`gce` annotation](https://cloud.google.com/kubernetes-engine/docs/how-to/load-balance-ingress#create-ingress) annotation.
+For Google GKE we need the [`gce` annotation](https://cloud.google.com/kubernetes-engine/docs/how-to/load-balance-ingress#create-ingress).
 
 ```sh
 helm install ... --set ingress.class="gce"
@@ -110,7 +122,7 @@ helm install ... --set ingress.class="gce"
 
 ## Note:
 
-🚨 Our old deployment tool `Hagrid` has been `Deprecated`. For the updated deployment options kindly refer to
+🚨 Our old deployment tool `HAGrid` has been `deprecated`. For the updated deployment options kindly refer to:
 
 - 📚 <a href="https://github.com/OpenMined/PySyft/tree/dev/notebooks/tutorials/deployments">Deployments</a>
 
@@ -121,7 +133,7 @@ helm install ... --set ingress.class="gce"
 
 # Install Notes
 
-- PySyft 0.8.1 Requires: 🐍 `python 3.10 - 3.12` - Run: `pip install -U syft`
+- PySyft 0.8.6 Requires: 🐍 `python 3.10 - 3.12` - Run: `pip install -U syft`
 - PyGrid Requires: 🐳 `docker` or ☸️ `kubernetes`
 
 # Versions

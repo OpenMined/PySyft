@@ -331,7 +331,6 @@ def create_kubernetes_pool(
     **kwargs: Any,
 ) -> list[Pod] | SyftError:
     pool = None
-    error = False
 
     try:
         print(
@@ -366,11 +365,14 @@ def create_kubernetes_pool(
             reg_url=reg_url,
         )
     except Exception as e:
-        error = True
-        return SyftError(message=f"Failed to start workers {e}")
-    finally:
-        if error and pool:
+        if pool:
             pool.delete()
+        # stdlib
+        import traceback
+
+        return SyftError(
+            message=f"Failed to start workers {e} {e.__class__} {e.args} {traceback.format_exc()}."
+        )
 
     return runner.get_pool_pods(pool_name=pool_name)
 
@@ -564,7 +566,7 @@ def create_default_image(
         image_identifier=SyftWorkerImageIdentifier.from_str(tag),
     )
 
-    result = image_stash.get_by_docker_config(
+    result = image_stash.get_by_worker_config(
         credentials=credentials,
         config=worker_config,
     )
