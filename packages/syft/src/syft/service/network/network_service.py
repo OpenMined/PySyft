@@ -287,7 +287,7 @@ class NetworkService(AbstractService):
 
         self.rathole_service.add_host_to_client(
             peer_name=self_node_peer.name,
-            peer_id=self_node_peer.id.to_string(),
+            peer_id=str(self_node_peer.id),
             rathole_token=self_node_peer.rathole_token,
             remote_addr=remote_addr,
         )
