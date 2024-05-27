@@ -92,7 +92,7 @@ class PeerHealthCheckTask:
 
             result = network_stash.update(
                 credentials=context.node.verify_key,
-                peer=peer_update,
+                peer_update=peer_update,
                 has_permission=True,
             )
 

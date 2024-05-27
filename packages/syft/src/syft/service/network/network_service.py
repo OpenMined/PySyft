@@ -5,7 +5,6 @@ import secrets
 from typing import Any
 
 # third party
-from result import Err
 from result import Result
 
 # relative
@@ -88,18 +87,13 @@ class NetworkStash(BaseUIDStoreStash):
     def update(
         self,
         credentials: SyftVerifyKey,
-        peer: NodePeer | NodePeerUpdate,
+        peer_update: NodePeerUpdate,
         has_permission: bool = False,
     ) -> Result[NodePeer, str]:
-        valid_node_peer = self.check_type(peer, NodePeer)
-        valid_node_peer_update = self.check_type(peer, NodePeerUpdate)
-        if valid_node_peer.is_err() and valid_node_peer_update.is_err():
-            return Err(
-                SyftError(
-                    message=f"{type(peer)} does not match required type: NodePeer or NodePeerUpdate"
-                )
-            )
-        return super().update(credentials, peer, has_permission=has_permission)
+        valid = self.check_type(peer_update, NodePeerUpdate)
+        if valid.is_err():
+            return SyftError(message=valid.err())
+        return super().update(credentials, peer_update, has_permission=has_permission)
 
     def create_or_update_peer(
         self, credentials: SyftVerifyKey, peer: NodePeer
@@ -119,11 +113,15 @@ class NetworkStash(BaseUIDStoreStash):
         valid = self.check_type(peer, NodePeer)
         if valid.is_err():
             return SyftError(message=valid.err())
+
         existing = self.get_by_uid(credentials=credentials, uid=peer.id)
-        if existing.is_ok() and existing.ok():
-            existing = existing.ok()
-            existing.update_routes(peer.node_routes)
-            result = self.update(credentials, existing)
+        if existing.is_ok() and existing.ok() is not None:
+            existing_peer: NodePeer = existing.ok()
+            existing_peer.update_routes(peer.node_routes)
+            peer_update = NodePeerUpdate(
+                id=peer.id, node_routes=existing_peer.node_routes
+            )
+            result = self.update(credentials, peer_update)
             return result
         else:
             result = self.set(credentials, peer)
@@ -233,7 +231,7 @@ class NetworkService(AbstractService):
                         f"{self_node_peer.node_type} peer '{self_node_peer.name}' information change detected."
                     )
                     if isinstance(result, SyftError):
-                        msg.apnpend(
+                        msg.append(
                             f"Attempt to remotely update {self_node_peer.node_type} peer "
                             f"'{self_node_peer.name}' information remotely failed."
                         )
@@ -474,9 +472,17 @@ class NetworkService(AbstractService):
         context: AuthedServiceContext,
         peer: NodePeer,
     ) -> SyftSuccess | SyftError:
+        # try setting all fields of NodePeerUpdate according to NodePeer
+        peer_update = NodePeerUpdate()
+        for field_name, value in peer.to_dict().items():
+            try:
+                setattr(peer_update, field_name, value)
+            except AttributeError:
+                print(f"Failed to set {field_name} to {value}")
+                pass
         result = self.stash.update(
             credentials=context.node.verify_key,
-            peer=peer,
+            peer_update=peer_update,
         )
         if result.is_err():
             return SyftError(
@@ -591,9 +597,12 @@ class NetworkService(AbstractService):
                 f"peer '{remote_node_peer.name}' with id '{existed_route.id}'."
             )
         # update the peer in the store with the updated routes
+        peer_update = NodePeerUpdate(
+            id=remote_node_peer.id, node_routes=remote_node_peer.node_routes
+        )
         result = self.stash.update(
             credentials=context.node.verify_key,
-            peer=remote_node_peer,
+            peer_update=peer_update,
         )
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -749,8 +758,11 @@ class NetworkService(AbstractService):
             )
         else:
             # update the peer with the route removed
+            peer_update = NodePeerUpdate(
+                id=remote_node_peer.id, node_routes=remote_node_peer.node_routes
+            )
             result = self.stash.update(
-                credentials=context.node.verify_key, peer=remote_node_peer
+                credentials=context.node.verify_key, peer_update=peer_update
             )
             if result.is_err():
                 return SyftError(message=str(result.err()))
@@ -848,7 +860,10 @@ class NetworkService(AbstractService):
             return updated_node_route
         new_priority: int = updated_node_route.priority
         # update the peer in the store
-        result = self.stash.update(context.node.verify_key, remote_node_peer)
+        peer_update = NodePeerUpdate(
+            id=remote_node_peer.id, node_routes=remote_node_peer.node_routes
+        )
+        result = self.stash.update(context.node.verify_key, peer_update)
         if result.is_err():
             return SyftError(message=str(result.err()))
 
