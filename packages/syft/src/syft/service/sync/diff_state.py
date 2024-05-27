@@ -64,6 +64,7 @@ from .sync_state import SyncState
 if TYPE_CHECKING:
     # relative
     from .resolve_widget import PaginatedResolveWidget
+    from .resolve_widget import ResolveWidget
 
 sketchy_tab = "‎ " * 4
 
@@ -559,6 +560,12 @@ class ObjectDiffBatch(SyftObject):
     decision: SyncDecision | None = None
     root_diff: ObjectDiff
     sync_direction: SyncDirection | None
+
+    def resolve(self) -> "ResolveWidget":
+        # relative
+        from .resolve_widget import ResolveWidget
+
+        return ResolveWidget(self)
 
     def walk_graph(
         self,
