@@ -39,6 +39,7 @@ from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
+from ...util.notebook_ui.components.sync import Label
 from ...util.notebook_ui.components.sync import SyncTableObject
 from ...util.notebook_ui.icons import Icon
 from ...util.notebook_ui.styles import FONT_CSS
@@ -705,6 +706,21 @@ class ObjectDiffBatch(SyftObject):
     def root_type(self) -> type:
         return self.root_diff.obj_type
 
+    def decision_badge(self) -> str:
+        if self.decision is None:
+            return ""
+        if self.decision == SyncDecision.IGNORE:
+            decision_str = "IGNORED"
+            badge_color = "label-red"
+        if self.decision == SyncDecision.SKIP:
+            decision_str = "SKIPPED"
+            badge_color = "label-gray"
+        else:
+            decision_str = "SYNCED"
+            badge_color = "label-green"
+
+        return Label(value=decision_str, label_class=badge_color).to_html()
+
     @property
     def is_ignored(self) -> bool:
         return self.decision == SyncDecision.IGNORE
@@ -847,9 +863,10 @@ class ObjectDiffBatch(SyftObject):
             high_html = SyncTableObject(object=self.root_diff.high_obj).to_html()
 
         return {
-            "Merge status": self.status_badge(),
+            "Diff status": self.status_badge(),
             "Public Sync State": low_html,
             "Private sync state": high_html,
+            "Decision": self.decision_badge(),
         }
 
     @property
