@@ -719,7 +719,7 @@ class PaginatedResolveWidget:
         self.batches = batches
         self.resolve_widgets: list[ResolveWidget] = [
             ResolveWidget(
-                obj_diff_batch=batch,
+                batch,
                 on_sync_callback=partial(self.on_click_sync, i),
             )
             for i, batch in enumerate(self.batches)
