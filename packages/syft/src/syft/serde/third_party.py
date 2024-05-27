@@ -10,8 +10,6 @@ from io import BytesIO
 from dateutil import parser
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-import networkx as nx
-from networkx import DiGraph
 import numpy as np
 from pandas import DataFrame
 from pandas import Series
@@ -228,24 +226,6 @@ recursive_serde_register(
 
 # how else do you import a relative file to execute it?
 NOTHING = None
-
-
-# TODO: debug serializing after updating a node
-def serialize_networkx_graph(graph: DiGraph) -> bytes:
-    graph_dict: dict = nx.node_link_data(graph)
-    return serialize(graph_dict, to_bytes=True)
-
-
-def deserialize_networkx_graph(buf: bytes) -> DiGraph:
-    graph_dict: dict = deserialize(buf, from_bytes=True)
-    return nx.node_link_graph(graph_dict)
-
-
-recursive_serde_register(
-    DiGraph,
-    serialize=serialize_networkx_graph,
-    deserialize=deserialize_networkx_graph,
-)
 
 try:
     # Just register these serializers if the google.cloud.bigquery & db_dtypes module are available

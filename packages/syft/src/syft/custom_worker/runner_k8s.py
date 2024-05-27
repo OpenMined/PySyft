@@ -13,7 +13,7 @@ from .k8s import PodStatus
 from .k8s import get_kr8s_client
 
 JSONPATH_AVAILABLE_REPLICAS = "{.status.availableReplicas}"
-CREATE_POOL_TIMEOUT_SEC = 60
+CREATE_POOL_TIMEOUT_SEC = 180
 SCALE_POOL_TIMEOUT_SEC = 60
 
 
@@ -60,8 +60,6 @@ class KubernetesRunner:
                 f"jsonpath='{JSONPATH_AVAILABLE_REPLICAS}'={replicas}",
                 timeout=CREATE_POOL_TIMEOUT_SEC,
             )
-        except Exception:
-            raise
         finally:
             if pull_secret:
                 pull_secret.delete(propagation_policy="Foreground")
