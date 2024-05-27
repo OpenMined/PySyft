@@ -151,7 +151,7 @@ repos:
         name: "mypy: syft"
         always_run: true
         files: "^packages/syft/src/syft/"
-        exclude: "packages/syft/src/syft/types/dicttuple.py|^packages/syft/src/syft/service/action/action_graph.py"
+        exclude: "packages/syft/src/syft/types/dicttuple.py"
         args: [
             "--follow-imports=skip",
             "--ignore-missing-imports",
