@@ -892,17 +892,7 @@ class ObjectDiffBatch(SyftObject):
         return self.root_diff
 
     def __repr__(self) -> Any:
-        try:
-            return f"""{self.hierarchy_str('low')}
-
-    {self.hierarchy_str('high')}
-    """
-        except Exception as _:
-            return SyftError(
-                message=html.escape(
-                    "Could not render batch, please use resolve(<batch>) instead."
-                )
-            )._repr_html_()
+        return f"{self.__class__.__name__}({self.root_type})"
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return ""  # Turns off the _repr_markdown_ of SyftObject

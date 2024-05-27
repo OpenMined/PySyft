@@ -3,6 +3,7 @@
 # relative
 from ..abstract_node import NodeSideType
 from ..node.credentials import SyftVerifyKey
+from ..service.job.job_stash import Job
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.sync.diff_state import NodeDiff
@@ -162,7 +163,14 @@ def handle_sync_batch(
     for sync_instruction in sync_instructions:
         tgt_resolved_state.add_sync_instruction(sync_instruction)
     res_tgt = tgt_client.apply_state(tgt_resolved_state)
-
+    if obj_diff_batch.root_type == Job:
+        user_code_id = obj_diff_batch.root.get_obj().user_code_id
+        requests = [r for r in tgt_client.requests if r.code_id == user_code_id][0]
+        if requests:
+            requests[0].approve()
+        requests = [r for r in src_client.requests if r.code_id == user_code_id]
+        if requests:
+            requests[0].approve()
     return res_tgt
 
 
