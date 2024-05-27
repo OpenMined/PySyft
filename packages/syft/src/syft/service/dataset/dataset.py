@@ -44,6 +44,7 @@ from ..data_subject.data_subject_service import DataSubjectService
 from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftSuccess
+from ..response import SyftWarning
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 
@@ -283,6 +284,10 @@ class Asset(SyftObject):
         if self.has_permission(res):
             return res.syft_action_data
         else:
+            warning = SyftWarning(
+                message="You do not have permission to access private data."
+            )
+            display(warning)
             return None
 
 
