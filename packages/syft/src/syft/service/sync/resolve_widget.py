@@ -699,8 +699,13 @@ class PaginatedWidget:
         if self.on_paginate_callback:
             self.on_paginate_callback(index)
 
+    def spacer(self, height: int) -> widgets.HTML:
+        return widgets.HTML(f"<div style='height: {height}px'></div>")
+
     def build(self) -> widgets.VBox:
-        return widgets.VBox([self.pagination_control.build(), self.container])
+        return widgets.VBox(
+            [self.pagination_control.build(), self.spacer(8), self.container]
+        )
 
 
 class PaginatedResolveWidget:
