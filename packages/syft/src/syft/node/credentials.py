@@ -76,6 +76,11 @@ class SyftSigningKey(SyftBaseModel):
     def __repr__(self) -> str:
         return f"<{SIGNING_KEY_FOR}: {self.verify}>"
 
+    def _coll_repr_(self) -> dict[str, str]:
+        return {
+            SIGNING_KEY_FOR: self.verify,
+        }
+
     @property
     def verify(self) -> str:
         return str(self.verify_key)
