@@ -1482,13 +1482,13 @@ class ActionObject(SyncableSyftObject):
             self.syft_pre_hooks__[HOOK_ON_POINTERS] = []
 
         api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
-        allow_eager_execution = (
+        eager_execution_enabled = (
             api is not None
             and api.metadata is not None
             and api.metadata.eager_execution_enabled
         )
 
-        if allow_eager_execution:
+        if eager_execution_enabled:
             # this should be a list as orders matters
             for side_effect in [make_action_side_effect]:
                 if side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
