@@ -11,7 +11,12 @@ import boto3
 from botocore.client import BaseClient as S3BaseClient
 from botocore.client import ClientError as BotoClientError
 from botocore.client import Config
+from botocore.exceptions import ConnectionError
 import requests
+from tenacity import retry
+from tenacity import retry_if_exception_type
+from tenacity import stop_after_delay
+from tenacity import wait_fixed
 from tqdm import tqdm
 from typing_extensions import Self
 
@@ -75,6 +80,7 @@ class SeaweedFSBlobDeposit(BlobDeposit):
             with tqdm(
                 total=total_iterations,
                 desc=f"Uploading progress",  # noqa
+                colour="green",
             ) as pbar:
                 for part_no, url in enumerate(
                     self.urls,
@@ -215,11 +221,21 @@ class SeaweedFSConnection(BlobStorageConnection):
         self.default_bucket_name = default_bucket_name
         self.config = config
 
+        self._check_connection()
+
     def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *exc: Any) -> None:
         self.client.close()
+
+    @retry(
+        wait=wait_fixed(5),
+        stop=stop_after_delay(60),
+        retry=retry_if_exception_type(ConnectionError),
+    )
+    def _check_connection(self) -> dict:
+        return self.client.list_buckets()
 
     def read(
         self,

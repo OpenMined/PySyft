@@ -33,10 +33,3 @@ syft.abstract\_node module
    :undoc-members:
    :show-inheritance:
 
-syft.gevent\_patch module
--------------------------
-
-.. automodule:: syft.gevent_patch
-   :members:
-   :undoc-members:
-   :show-inheritance:
