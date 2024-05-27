@@ -61,10 +61,36 @@ class SettingsService(AbstractService):
         else:
             return SyftError(message=result.err())
 
-    @service_method(path="settings.update", name="update")
+    @service_method(path="settings.update", name="update", autosplat=["settings"])
     def update(
         self, context: AuthedServiceContext, settings: NodeSettingsUpdate
     ) -> Result[SyftSuccess, SyftError]:
+        """
+        Update the Node Settings using the provided values.
+
+        Args:
+            name: Optional[str]
+                Node name
+            organization: Optional[str]
+                Organization name
+            description: Optional[str]
+                Node description
+            on_board: Optional[bool]
+                Show onboarding panel when a user logs in for the first time
+            signup_enabled: Optional[bool]
+                Enable/Disable registration
+            admin_email: Optional[str]
+                Administrator email
+            association_request_auto_approval: Optional[bool]
+
+        Returns:
+            Result[SyftSuccess, SyftError]: A result indicating the success or failure of the update operation.
+
+        Example:
+        >>> node_client.update(name='foo', organization='bar', description='baz', signup_enabled=True)
+        SyftSuccess: Settings updated successfully.
+        """
+
         result = self.stash.get_all(context.credentials)
         if result.is_ok():
             current_settings = result.ok()
@@ -139,7 +165,7 @@ class SettingsService(AbstractService):
 
         result = method(context=context, settings=settings)
 
-        if result.is_err():
+        if isinstance(result, SyftError):
             return SyftError(message=f"Failed to update settings: {result.err()}")
 
         message = "enabled" if enable else "disabled"
