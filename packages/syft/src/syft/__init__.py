@@ -1,4 +1,4 @@
-__version__ = "0.8.7-beta.7"
+__version__ = "0.8.7-beta.8"
 
 # stdlib
 from collections.abc import Callable
@@ -75,7 +75,6 @@ from .types.syft_object import SyftObject
 from .types.twin_object import TwinObject  # noqa: F401
 from .types.uid import UID  # noqa: F401
 from .util import filterwarnings  # noqa: F401
-from .util import jax_settings  # noqa: F401
 from .util import logger  # noqa: F401
 from .util import options  # noqa: F401
 from .util.autoreload import disable_autoreload  # noqa: F401
