@@ -35,7 +35,7 @@ class RatholeService:
             None
         """
 
-        rathole_route = peer.pick_highest_priority_route()
+        rathole_route = peer.get_rathole_route()
 
         random_port = self.get_random_port()
 

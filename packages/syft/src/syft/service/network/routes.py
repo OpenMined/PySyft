@@ -19,6 +19,7 @@ from ...node.worker_settings import WorkerSettings
 from ...serde.serializable import serializable
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.uid import UID
@@ -87,7 +88,7 @@ class NodeRoute:
 @serializable()
 class HTTPNodeRoute(SyftObject, NodeRoute):
     __canonical_name__ = "HTTPNodeRoute"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     host_or_ip: str
     private: bool = False

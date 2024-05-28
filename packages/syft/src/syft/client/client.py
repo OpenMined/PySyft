@@ -53,7 +53,6 @@ from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.uid import UID
 from ..util.logger import debug
 from ..util.telemetry import instrument
-from ..util.util import generate_token
 from ..util.util import prompt_warning_message
 from ..util.util import thread_ident
 from ..util.util import verify_tls
@@ -194,7 +193,7 @@ class HTTPConnection(NodeConnection):
 
         if self.rathole_token:
             url = GridURL.from_url(INTERNAL_PROXY_URL)
-            headers = {"Host": self.host_or_ip}
+            headers = {"Host": self.url.host_or_ip}
 
         url = url.with_path(path)
         response = self.session.get(
@@ -229,7 +228,7 @@ class HTTPConnection(NodeConnection):
 
         if self.rathole_token:
             url = GridURL.from_url(INTERNAL_PROXY_URL)
-            headers = {"Host": self.host_or_ip}
+            headers = {"Host": self.url.host_or_ip}
 
         url = url.with_path(path)
         response = self.session.post(
@@ -336,9 +335,20 @@ class HTTPConnection(NodeConnection):
 
     def make_call(self, signed_call: SignedSyftAPICall) -> Any | SyftError:
         msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
+
+        headers = {}
+
+        if self.rathole_token:
+            api_url = GridURL.from_url(INTERNAL_PROXY_URL)
+            api_url = api_url.with_path(self.routes.ROUTE_API_CALL.value)
+            headers = {"Host": self.url.host_or_ip}
+        else:
+            api_url = self.api_url
+
         response = requests.post(  # nosec
-            url=str(self.api_url),
+            url=api_url,
             data=msg_bytes,
+            headers=headers,
         )
 
         if response.status_code != 200:
@@ -730,12 +740,11 @@ class SyftClient:
             if client.metadata is None:
                 return SyftError(f"client {client}'s metadata is None!")
 
-            self_node_route.rathole_token = generate_token() if reverse_tunnel else None
-
             return self.api.services.network.exchange_credentials_with(
                 self_node_route=self_node_route,
                 remote_node_route=remote_node_route,
                 remote_node_verify_key=client.metadata.to(NodeMetadataV3).verify_key,
+                reverse_tunnel=reverse_tunnel,
             )
         else:
             raise ValueError(

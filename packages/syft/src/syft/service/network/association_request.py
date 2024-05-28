@@ -44,9 +44,9 @@ class AssociationRequestChange(Change):
 
         service_ctx = context.to_service_ctx()
 
-        highest_route = self.remote_peer.pick_highest_priority_route()
+        rathole_route = self.remote_peer.get_rathole_route()
 
-        if highest_route.rathole_token is None:
+        if rathole_route.rathole_token is None:
             try:
                 remote_client: SyftClient = self.remote_peer.client_with_context(
                     context=service_ctx

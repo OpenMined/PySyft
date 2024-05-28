@@ -198,6 +198,30 @@
           "hash": "e5f099940a7623f145f51f3e15b97a910a1d7fda1f67739420fed3035d1f2995",
           "action": "add"
         }
+      },
+      "HTTPConnection": {
+        "2": {
+          "version": 2,
+          "hash": "68409295f8916ceb22a8cf4abf89f5e4bcff0d75dc37e16ede37250ada28df59",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "5e363abe2875beec89a3f4f4f5c53e15f9893fb98e5da71e2fa6c0f619883b1f",
+          "action": "add"
+        }
+      },
+      "HTTPNodeRoute": {
+        "2": {
+          "version": 2,
+          "hash": "2134ea812f7c6ea41522727ae087245c4b1195ffbad554db638070861cd9eb1c",
+          "action": "remove"
+        },
+        "3": {
+          "version": 3,
+          "hash": "89ace8067c392b802fe23a99446a8ae464a9dad0b49d8b2c3871b631451acec4",
+          "action": "add"
+        }
       }
     }
   }

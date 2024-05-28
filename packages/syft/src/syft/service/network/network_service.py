@@ -30,6 +30,7 @@ from ...types.transforms import transform
 from ...types.transforms import transform_method
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ...util.util import generate_token
 from ...util.util import prompt_warning_message
 from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
@@ -166,6 +167,7 @@ class NetworkService(AbstractService):
         self_node_route: NodeRoute,
         remote_node_route: NodeRoute,
         remote_node_verify_key: SyftVerifyKey,
+        reverse_tunnel: bool = False,
     ) -> Request | SyftSuccess | SyftError:
         """
         Exchange Route With Another Node. If there is a pending association request, return it
@@ -173,6 +175,11 @@ class NetworkService(AbstractService):
 
         # Step 1: Validate the Route
         self_node_peer = self_node_route.validate_with_context(context=context)
+
+        if reverse_tunnel:
+            _rathole_route = self_node_peer.node_routes[-1]
+            _rathole_route.rathole_token = generate_token()
+            _rathole_route.host_or_ip = f"{self_node_peer.name}.syft.local"
 
         if isinstance(self_node_peer, SyftError):
             return self_node_peer
@@ -274,7 +281,8 @@ class NetworkService(AbstractService):
         if result.is_err():
             return SyftError(message="Failed to update route information.")
 
-        if self_node_peer.rathole_token:
+        if reverse_tunnel:
+            rathole_route = self_node_peer.get_rathole_route()
             remote_url = GridURL(
                 host_or_ip=remote_node_route.host_or_ip, port=remote_node_route.port
             )
@@ -285,7 +293,7 @@ class NetworkService(AbstractService):
             self.rathole_service.add_host_to_client(
                 peer_name=self_node_peer.name,
                 peer_id=str(self_node_peer.id),
-                rathole_token=self_node_peer.rathole_token,
+                rathole_token=rathole_route.rathole_token,
                 remote_addr=remote_addr,
             )
 

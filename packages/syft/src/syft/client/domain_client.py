@@ -288,6 +288,7 @@ class DomainClient(SyftClient):
         email: str | None = None,
         password: str | None = None,
         protocol: str | SyftProtocol = SyftProtocol.HTTP,
+        reverse_tunnel: bool = False,
     ) -> SyftSuccess | SyftError | None:
         if isinstance(protocol, str):
             protocol = SyftProtocol(protocol)
@@ -305,7 +306,11 @@ class DomainClient(SyftClient):
             if isinstance(client, SyftError):
                 return client
 
-        res = self.exchange_route(client, protocol=protocol)
+        res = self.exchange_route(
+            client,
+            protocol=protocol,
+            reverse_tunnel=reverse_tunnel,
+        )
         if isinstance(res, SyftSuccess):
             if self.metadata:
                 return SyftSuccess(
