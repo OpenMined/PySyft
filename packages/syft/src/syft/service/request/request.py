@@ -782,11 +782,7 @@ class Request(SyncableSyftObject):
                 return result
 
         # Create Job with new result and logs
-        job = api.services.job.create_job_for_user_code_id(
-            code.id,
-            result=action_object,
-            logs_str=logs,
-        )
+        job = api.services.job.create_job_for_user_code_id(code.id)
         if isinstance(job, SyftError):
             return job
 
