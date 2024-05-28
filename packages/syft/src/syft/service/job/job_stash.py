@@ -712,6 +712,19 @@ class Job(SyncableSyftObject):
         if self.user_code_id is not None:
             dependencies.append(self.user_code_id)
 
+            request = [
+                r
+                for r in context.node.get_service("requestservice").get_all(context)
+                if r.code_id == self.user_code_id
+            ][0]
+            dependencies.append(request.id)
+
+            # user_code_status = context.node.get_service("usercodeservice").get_by_uid(
+            #     context, self.user_code_id
+            # )
+            # if user_code_status is not None:
+            #     dependencies.append(user_code_status.id)
+
         output = context.node.get_service("outputservice").get_by_job_id(  # type: ignore
             context, self.id
         )

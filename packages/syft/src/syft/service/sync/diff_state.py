@@ -8,7 +8,9 @@ import operator
 import textwrap
 from typing import Any
 from typing import ClassVar
+from typing import Generic
 from typing import Literal
+from typing import TypeVar
 
 # third party
 from loguru import logger
@@ -170,7 +172,10 @@ def recursive_attr_repr(value_attr: list | dict | bytes, num_tabs: int = 0) -> s
     return f"{sketchy_tab*num_tabs}{str(value_attr)}"
 
 
-class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
+T = TypeVar("T", bound=SyncableSyftObject)
+
+
+class ObjectDiff(SyftObject, Generic[T]):  # StateTuple (compare 2 objects)
     # version
     __canonical_name__ = "ObjectDiff"
     __version__ = SYFT_OBJECT_VERSION_2
@@ -187,7 +192,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     last_sync_date_low: DateTime | None = None
     last_sync_dat_high: DateTime | None = None
 
-    obj_type: type
+    obj_type: type[T]
     diff_list: list[AttrDiff] = []
 
     __repr_attrs__ = [
@@ -431,8 +436,8 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
         return attr_text
 
-    def get_obj(self) -> SyftObject | None:
-        if self.status == "NEW":
+    def get_obj(self) -> type[T]:
+        if self.status == "NEW" and (self.low_obj or self.high_obj):
             return self.low_obj if self.low_obj is not None else self.high_obj
         else:
             raise ValueError("Cannot get object from a diff that is not new")
@@ -527,7 +532,7 @@ def _wrap_text(text: str, width: int, indent: int = 4) -> str:
     )
 
 
-class ObjectDiffBatch(SyftObject):
+class ObjectDiffBatch(SyftObject, Generic[T]):
     __canonical_name__ = "DiffHierarchy"
     __version__ = SYFT_OBJECT_VERSION_2
     LINE_LENGTH: ClassVar[int] = 100
@@ -551,7 +556,7 @@ class ObjectDiffBatch(SyftObject):
     dependencies: dict[UID, list[UID]] = {}
     dependents: dict[UID, list[UID]] = {}
     decision: SyncDecision | None = None
-    root_diff: ObjectDiff
+    root_diff: ObjectDiff[T]
     sync_direction: SyncDirection | None
 
     def walk_graph(
@@ -572,8 +577,9 @@ class ObjectDiffBatch(SyftObject):
             for node in unvisited:
                 if node in global_roots:
                     roots.append(node)
-                else:
-                    new_nodes += deps.get(node, [])
+                # some nodes may be root and dependents at the same time
+                # e.g. Request
+                new_nodes += deps.get(node, [])
 
             new_nodes = [n for n in new_nodes if n not in result]
             unvisited = new_nodes

@@ -124,9 +124,16 @@ def handle_sync_batch(
         return SyftError(
             message="Attempted to sync an object that has already been synced"
         )
-
     src_client = obj_diff_batch.source_client
     tgt_client = obj_diff_batch.target_client
+    # make sure dependent request is approved before syncing the job
+    if obj_diff_batch.root_type == Job and sync_direction == SyncDirection.HIGH_TO_LOW:
+        job = obj_diff_batch.root.get_obj()
+        requests = [r for r in tgt_client.requests if r.code_id == job.user_code_id]
+        # NOTE: how to handle 0 or multiple requests?
+        if requests:
+            requests[0].approve()
+
     src_resolved_state, tgt_resolved_state = obj_diff_batch.create_new_resolved_states()
 
     obj_diff_batch.decision = decision
@@ -163,14 +170,6 @@ def handle_sync_batch(
     for sync_instruction in sync_instructions:
         tgt_resolved_state.add_sync_instruction(sync_instruction)
     res_tgt = tgt_client.apply_state(tgt_resolved_state)
-    if obj_diff_batch.root_type == Job:
-        user_code_id = obj_diff_batch.root.get_obj().user_code_id
-        requests = [r for r in tgt_client.requests if r.code_id == user_code_id][0]
-        if requests:
-            requests[0].approve()
-        requests = [r for r in src_client.requests if r.code_id == user_code_id]
-        if requests:
-            requests[0].approve()
     return res_tgt
 
 
