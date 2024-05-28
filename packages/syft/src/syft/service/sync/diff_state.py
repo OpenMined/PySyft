@@ -436,9 +436,10 @@ class ObjectDiff(SyftObject, Generic[T]):  # StateTuple (compare 2 objects)
 
         return attr_text
 
-    def get_obj(self) -> type[T]:
-        if self.status == "NEW" and (self.low_obj or self.high_obj):
-            return self.low_obj if self.low_obj is not None else self.high_obj
+    def get_obj(self) -> T:
+        obj = self.low_obj or self.high_obj
+        if self.status == "NEW" and (obj is not None):
+            return obj
         else:
             raise ValueError("Cannot get object from a diff that is not new")
 
