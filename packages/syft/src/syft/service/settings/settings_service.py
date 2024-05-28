@@ -1,8 +1,5 @@
 # stdlib
-
-# stdlib
-
-# stdlib
+from string import Template
 
 # third party
 from result import Err
@@ -10,9 +7,17 @@ from result import Ok
 from result import Result
 
 # relative
+from ...abstract_node import NodeSideType
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
+from ...util.assets import load_png_base64
 from ...util.experimental_flags import flags
+from ...util.misc_objs import HTMLObject
+from ...util.misc_objs import MarkdownDescription
+from ...util.notebook_ui.styles import FONT_CSS
+from ...util.schema import DO_COMMANDS
+from ...util.schema import DS_COMMANDS
+from ...util.schema import GUEST_COMMANDS
 from ..context import AuthedServiceContext
 from ..context import UnauthedServiceContext
 from ..response import SyftError
@@ -20,6 +25,7 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
+from ..user.user_roles import ServiceRole
 from ..warnings import HighSideCRUDWarning
 from .settings import NodeSettings
 from .settings import NodeSettingsUpdate
@@ -187,3 +193,113 @@ class SettingsService(AbstractService):
         return SyftSuccess(
             message="Association request auto-approval successfully " + message
         )
+
+    @service_method(
+        path="settings.welcome_preview",
+        name="welcome_preview",
+    )
+    def welcome_preview(
+        self,
+        context: AuthedServiceContext,
+        markdown: str = "",
+        html: str = "",
+    ) -> MarkdownDescription | HTMLObject | SyftError:
+        if not markdown and not html or markdown and html:
+            return SyftError(
+                message="Invalid markdown/html fields. You must set one of them."
+            )
+
+        welcome_msg = None
+        if markdown:
+            welcome_msg = MarkdownDescription(text=markdown)
+        else:
+            welcome_msg = HTMLObject(text=html)
+
+        return welcome_msg
+
+    @service_method(
+        path="settings.welcome_customize",
+        name="welcome_customize",
+    )
+    def welcome_customize(
+        self,
+        context: AuthedServiceContext,
+        markdown: str = "",
+        html: str = "",
+    ) -> SyftSuccess | SyftError:
+        if not markdown and not html or markdown and html:
+            return SyftError(
+                message="Invalid markdown/html fields. You must set one of them."
+            )
+
+        welcome_msg = None
+        if markdown:
+            welcome_msg = MarkdownDescription(text=markdown)
+        else:
+            welcome_msg = HTMLObject(text=html)
+
+        new_settings = NodeSettingsUpdate(welcome_markdown=welcome_msg)
+        result = self.update(context=context, settings=new_settings)
+        if isinstance(result, SyftError):
+            return result
+
+        return SyftSuccess(message="Welcome Markdown was successfully updated!")
+
+    @service_method(
+        path="settings.welcome_show",
+        name="welcome_show",
+    )
+    def welcome_show(
+        self,
+        context: AuthedServiceContext,
+    ) -> HTMLObject | MarkdownDescription | SyftError:
+        result = self.stash.get_all(context.node.signing_key.verify_key)
+        user_service = context.node.get_service("userservice")
+        role = user_service.get_role_for_credentials(context.credentials)
+        if result.is_ok():
+            settings = result.ok()
+            # check if the settings list is empty
+            if len(settings) == 0:
+                return SyftError(message="No settings found")
+            settings = settings[0]
+            if settings.welcome_markdown:
+                str_tmp = Template(settings.welcome_markdown.text)
+                welcome_msg_class = type(settings.welcome_markdown)
+                node_side_type = (
+                    "Low Side"
+                    if context.node.metadata.node_side_type
+                    == NodeSideType.LOW_SIDE.value
+                    else "High Side"
+                )
+                commands = ""
+                if (
+                    role.value == ServiceRole.NONE.value
+                    or role.value == ServiceRole.GUEST.value
+                ):
+                    commands = GUEST_COMMANDS
+                elif (
+                    role is not None and role.value == ServiceRole.DATA_SCIENTIST.value
+                ):
+                    commands = DS_COMMANDS
+                elif role is not None and role.value >= ServiceRole.DATA_OWNER.value:
+                    commands = DO_COMMANDS
+
+                command_list = f"""
+                <ul style='padding-left: 1em;'>
+                    {commands}
+                </ul>
+                """
+                result = str_tmp.safe_substitute(
+                    FONT_CSS=FONT_CSS,
+                    grid_symbol=load_png_base64("small-grid-symbol-logo.png"),
+                    domain_name=context.node.name,
+                    # node_url='http://testing:8080',
+                    node_type=context.node.metadata.node_type.capitalize(),
+                    node_side_type=node_side_type,
+                    node_version=context.node.metadata.syft_version,
+                    command_list=command_list,
+                )
+                return welcome_msg_class(text=result)
+            return SyftError(message="There's no welcome message")
+        else:
+            return SyftError(message=result.err())
