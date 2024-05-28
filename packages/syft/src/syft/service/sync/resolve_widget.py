@@ -1,11 +1,15 @@
 # stdlib
+from collections.abc import Callable
 from enum import Enum
 from enum import auto
+from functools import partial
 import html
+import secrets
 from typing import Any
 from uuid import uuid4
 
 # third party
+from IPython import display
 import ipywidgets as widgets
 from ipywidgets import Button
 from ipywidgets import Checkbox
@@ -22,6 +26,9 @@ from ...util.notebook_ui.components.sync import CopyIDButton
 from ...util.notebook_ui.components.sync import MainDescription
 from ...util.notebook_ui.components.sync import SyncWidgetHeader
 from ...util.notebook_ui.components.sync import TypeLabel
+from ...util.notebook_ui.components.tabulator_template import build_tabulator_table
+from ...util.notebook_ui.components.tabulator_template import highlight_single_row
+from ...util.notebook_ui.components.tabulator_template import update_table_cell
 from ...util.notebook_ui.styles import CSS_CODE
 from ..action.action_object import ActionObject
 from ..api.api import TwinAPIEndpoint
@@ -406,11 +413,14 @@ class CollapsableObjectDiffWidget:
 
 
 class ResolveWidget:
-    def __init__(self, obj_diff_batch: ObjectDiffBatch):
+    def __init__(
+        self, obj_diff_batch: ObjectDiffBatch, on_sync_callback: Callable | None = None
+    ):
         self.obj_diff_batch: ObjectDiffBatch = obj_diff_batch
         self.id2widget: dict[
             UID, CollapsableObjectDiffWidget | MainObjectDiffWidget
         ] = {}
+        self.on_sync_callback = on_sync_callback
         self.main_widget = self.build()
         self.result_widget = VBox()  # Placeholder for SyftSuccess / SyftError
         self.widget = VBox(
@@ -463,6 +473,8 @@ class ResolveWidget:
         )
 
         self.set_widget_result_state(res)
+        if self.on_sync_callback:
+            self.on_sync_callback()
         return res
 
     @property
@@ -590,3 +602,191 @@ class ResolveWidget:
     def build_header(self) -> HTML:
         header_html = SyncWidgetHeader(diff_batch=self.obj_diff_batch).to_html()
         return HTML(value=header_html)
+
+
+class PaginationControl:
+    def __init__(self, data: list, callback: Callable[[int], None]):
+        self.data = data
+        self.callback = callback
+        self.current_index = 0
+        self.index_label = widgets.Label(value=f"Index: {self.current_index}")
+
+        self.first_button = widgets.Button(description="First")
+        self.previous_button = widgets.Button(description="Previous")
+        self.next_button = widgets.Button(description="Next")
+        self.last_button = widgets.Button(description="Last")
+
+        self.first_button.on_click(self.go_to_first)
+        self.previous_button.on_click(self.go_to_previous)
+        self.next_button.on_click(self.go_to_next)
+        self.last_button.on_click(self.go_to_last)
+        self.output = widgets.Output()
+
+        self.buttons = widgets.HBox(
+            [
+                self.first_button,
+                self.previous_button,
+                self.next_button,
+                self.last_button,
+            ]
+        )
+        self.update_buttons()
+        self.update_index_callback()
+
+    def update_index_label(self) -> None:
+        self.index_label.value = f"Current: {self.current_index}"
+
+    def update_buttons(self) -> None:
+        self.first_button.disabled = self.current_index == 0
+        self.previous_button.disabled = self.current_index == 0
+        self.next_button.disabled = self.current_index == len(self.data) - 1
+        self.last_button.disabled = self.current_index == len(self.data) - 1
+
+    def go_to_first(self, b: Button | None) -> None:
+        self.current_index = 0
+        self.update_index_callback()
+
+    def go_to_previous(self, b: Button | None) -> None:
+        if self.current_index > 0:
+            self.current_index -= 1
+        self.update_index_callback()
+
+    def go_to_next(self, b: Button | None) -> None:
+        if self.current_index < len(self.data) - 1:
+            self.current_index += 1
+        self.update_index_callback()
+
+    def go_to_last(self, b: Button | None) -> None:
+        self.current_index = len(self.data) - 1
+        self.update_index_callback()
+
+    def update_index_callback(self) -> None:
+        self.update_index_label()
+        self.update_buttons()
+
+        # NOTE self.output is required to display IPython.display.HTML
+        # IPython.display.HTML is used to execute JS code
+        with self.output:
+            self.callback(self.current_index)
+
+    def build(self) -> widgets.VBox:
+        return widgets.VBox(
+            [widgets.HBox([self.buttons, self.index_label]), self.output]
+        )
+
+
+class PaginatedWidget:
+    def __init__(
+        self, children: list, on_paginate_callback: Callable[[int], None] | None = None
+    ):
+        # on_paginate_callback is an optional secondary callback,
+        # called after updating the page index and displaying the new widget
+        self.children = children
+        self.on_paginate_callback = on_paginate_callback
+        self.current_index = 0
+        self.container = widgets.VBox()
+
+        self.pagination_control = PaginationControl(children, self.on_paginate)
+
+        # Initial display
+        self.on_paginate(self.pagination_control.current_index)
+
+    def __getitem__(self, index: int) -> widgets.Widget:
+        return self.children[index]
+
+    def on_paginate(self, index: int) -> None:
+        self.container.children = [self.children[index]]
+        if self.on_paginate_callback:
+            self.on_paginate_callback(index)
+
+    def spacer(self, height: int) -> widgets.HTML:
+        return widgets.HTML(f"<div style='height: {height}px'></div>")
+
+    def build(self) -> widgets.VBox:
+        return widgets.VBox(
+            [self.pagination_control.build(), self.spacer(8), self.container]
+        )
+
+
+class PaginatedResolveWidget:
+    """
+    PaginatedResolveWidget is a widget that displays
+    a ResolveWidget for each ObjectDiffBatch,
+    paginated by a PaginationControl widget.
+    """
+
+    def __init__(self, batches: list[ObjectDiffBatch]):
+        self.batches = batches
+        self.resolve_widgets: list[ResolveWidget] = [
+            ResolveWidget(
+                batch,
+                on_sync_callback=partial(self.on_click_sync, i),
+            )
+            for i, batch in enumerate(self.batches)
+        ]
+
+        self.table_uid = secrets.token_hex(4)
+
+        # Disable the table pagination to avoid the double pagination buttons
+        self.batch_table = build_tabulator_table(
+            obj=batches,
+            uid=self.table_uid,
+            max_height=500,
+            pagination=False,
+            header_sort=False,
+        )
+
+        self.paginated_widget = PaginatedWidget(
+            children=[widget.widget for widget in self.resolve_widgets],
+            on_paginate_callback=self.on_paginate,
+        )
+
+        self.table_output = widgets.Output()
+        with self.table_output:
+            display.display(display.HTML(self.batch_table))
+            highlight_single_row(
+                self.table_uid, self.paginated_widget.current_index, jump_to_row=True
+            )
+
+        self.widget = self.build()
+
+    def on_click_sync(self, index: int) -> None:
+        self.update_table_sync_decision(index)
+        if self.batches[index].decision is not None:
+            self.paginated_widget.pagination_control.go_to_next(None)
+
+    def update_table_sync_decision(self, index: int) -> None:
+        new_decision = self.batches[index].decision_badge()
+        with self.table_output:
+            update_table_cell(
+                uid=self.table_uid,
+                index=index,
+                field="Decision",
+                value=new_decision,
+            )
+
+    def __getitem__(self, index: int) -> ResolveWidget:
+        return self.resolve_widgets[index]
+
+    def on_paginate(self, index: int) -> None:
+        return highlight_single_row(self.table_uid, index, jump_to_row=True)
+
+    def build(self) -> widgets.VBox:
+        return widgets.VBox([self.table_output, self.paginated_widget.build()])
+
+    def click_sync(self, index: int) -> SyftSuccess | SyftError:
+        return self.resolve_widgets[index].click_sync()
+
+    def click_share_all_private_data(self, index: int) -> None:
+        self.resolve_widgets[index].click_share_all_private_data()
+
+    def _share_all(self) -> None:
+        for widget in self.resolve_widgets:
+            widget.click_share_all_private_data()
+
+    def _sync_all(self) -> None:
+        for widget in self.resolve_widgets:
+            widget.click_sync()
+
+    def _repr_mimebundle_(self, **kwargs: dict) -> dict[str, str] | None:
+        return self.widget._repr_mimebundle_(**kwargs)
