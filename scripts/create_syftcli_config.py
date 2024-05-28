@@ -11,7 +11,6 @@ OUTPUT_PATH = Path("./build/syftcli-config/")
 PREFIX_PATHS = {
     "k8s": "packages/grid/",
     "docker": "packages/grid/",
-    "podman": "packages/grid/podman/podman-kube/",
 }
 
 
@@ -36,7 +35,7 @@ def create_tar(key):
 
 
 if __name__ == "__main__":
-    for config in ("docker", "podman"):
+    for config in ("docker",):
         print("Generating config for", config)
         create_tar(config)
         print()
