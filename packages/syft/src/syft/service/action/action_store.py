@@ -209,7 +209,7 @@ class KeyValueActionStore(ActionStore):
             return Ok(SyftSuccess(message=f"Ownership of ID: {uid} taken."))
         return Err(f"UID: {uid} already owned.")
 
-    def delete(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
+    def delete(self, uid: UID | LineageID, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
         if hasattr(uid, 'id'):
             uid = uid.id  # We only need the UID from LineageID or UID
 
