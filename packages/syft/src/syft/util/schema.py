@@ -15,25 +15,19 @@ GUEST_COMMANDS = """
 <li><span class='syft-code-block'>&lt;your_client&gt;.datasets</span> - list datasets</li>
 <li><span class='syft-code-block'>&lt;your_client&gt;.code</span> - list code</li>
 <li><span class='syft-code-block'>&lt;your_client&gt;.login</span> - list projects</li>
-<li>
-    <span class='syft-code-block'>&lt;your_client&gt;.code.submit?</span> - display function signature
-</li>"""
+"""
 
 DS_COMMANDS = """
 <li><span class='syft-code-block'>&lt;your_client&gt;.datasets</span> - list datasets</li>
 <li><span class='syft-code-block'>&lt;your_client&gt;.code</span> - list code</li>
 <li><span class='syft-code-block'>&lt;your_client&gt;.projects</span> - list projects</li>
-<li>
-    <span class='syft-code-block'>&lt;your_client&gt;.code.submit?</span> - display function signature
-</li>"""
+"""
 
 DO_COMMANDS = """
 <li><span class='syft-code-block'>&lt;your_client&gt;.projects</span> - list projects</li>
 <li><span class='syft-code-block'>&lt;your_client&gt;.requests</span> - list requests</li>
 <li><span class='syft-code-block'>&lt;your_client&gt;.users</span> - list users</li>
-<li>
-    <span class='syft-code-block'>&lt;your_client&gt;.requests.submit?</span> - display function signature
-</li>"""
+"""
 
 DEFAULT_WELCOME_MSG = """
         <style>
