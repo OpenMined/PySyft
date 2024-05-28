@@ -112,7 +112,7 @@ seaweedfs:
 # =================================================================================
 
 proxy:
-  enabled: false
+  enabled: true
   # Extra environment vars
   env: null
 
@@ -133,7 +133,7 @@ proxy:
 # =================================================================================
 
 registry:
-  enabled: false
+  enabled: true
   # Extra environment vars
   env: null
 
@@ -203,7 +203,7 @@ node:
 
 ingress:
   hostname: null # do not make this localhost
-  annotations: {}
+  annotations: null
 
   tls:
     enabled: false

@@ -60,4 +60,4 @@ spec:
       - configMap:
           name: proxy-config
         name: traefik-conf
-{{- end}}
+{{- end }}

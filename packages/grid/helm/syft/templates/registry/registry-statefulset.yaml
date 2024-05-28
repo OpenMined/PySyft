@@ -74,4 +74,4 @@ spec:
       resources:
         requests:
           storage: {{ .Values.registry.storageSize | quote }}
-{{- end}}
+{{- end }}

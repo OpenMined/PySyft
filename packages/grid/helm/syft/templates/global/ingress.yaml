@@ -75,7 +75,7 @@ spec:
               number: 8333
         path: /blob(/|$)(.*)
         pathType: ImplementationSpecific
-  {{- end}}
+  {{- end }}
   {{- if .Values.ingress.tls.enabled }}
   tls:
   - hosts:
