@@ -2,6 +2,7 @@
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
+import textwrap
 from typing import Any
 
 # third party
@@ -37,16 +38,13 @@ from ...util.markdown import as_markdown_python_code
 from ...util.notebook_ui.icons import Icon
 from ...util.notebook_ui.styles import FONT_CSS
 from ...util.notebook_ui.styles import ITABLES_CSS
-from ...util.util import get_mb_size
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
 from ..data_subject.data_subject_service import DataSubjectService
 from ..response import SyftError
 from ..response import SyftException
 from ..response import SyftSuccess
-
-DATA_SIZE_WARNING_LIMIT = 512
-
+from ..response import SyftWarning
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 
@@ -286,6 +284,10 @@ class Asset(SyftObject):
         if self.has_permission(res):
             return res.syft_action_data
         else:
+            warning = SyftWarning(
+                message="You do not have permission to access private data."
+            )
+            display(warning)
             return None
 
 
@@ -329,8 +331,10 @@ class CreateAsset(SyftObject):
     __repr_attrs__ = ["name"]
     model_config = ConfigDict(validate_assignment=True)
 
-    def __init__(self, description: str | None = "", **data: Any) -> None:
-        super().__init__(**data, description=MarkdownDescription(text=str(description)))
+    def __init__(self, description: str | None = None, **data: Any) -> None:
+        if isinstance(description, str):
+            description = MarkdownDescription(text=description)
+        super().__init__(**data, description=description)
 
     @model_validator(mode="after")
     def __mock_is_real_for_empty_mock_must_be_false(self) -> Self:
@@ -408,13 +412,6 @@ class CreateAsset(SyftObject):
         #         return SyftError(
         #             message=f"set_obj shape {data_shape} must match set_mock shape {mock_shape}"
         #         )
-        total_size_mb = get_mb_size(self.data) + get_mb_size(self.mock)
-        if total_size_mb > DATA_SIZE_WARNING_LIMIT:
-            print(
-                f"**WARNING**: The total size for asset: '{self.name}' exceeds '{DATA_SIZE_WARNING_LIMIT} MB'. "
-                "This might result in failure to upload dataset. "
-                "Please contact #support on OpenMined slack for further assistance.",
-            )
 
         return SyftSuccess(message="Dataset is Valid")
 
@@ -456,6 +453,7 @@ class Dataset(SyftObject):
     __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
     __attr_unique__ = ["name"]
     __repr_attrs__ = ["name", "url", "created_at"]
+    __table_sort_attr__ = "Created at"
 
     def __init__(
         self,
@@ -476,7 +474,7 @@ class Dataset(SyftObject):
             "Assets": len(self.asset_list),
             "Size": f"{self.mb_size} (MB)",
             "Url": self.url,
-            "created at": str(self.created_at),
+            "Created at": str(self.created_at),
         }
 
     def _repr_html_(self) -> Any:
@@ -521,32 +519,15 @@ class Dataset(SyftObject):
     def assets(self) -> DictTuple[str, Asset]:
         return DictTuple((asset.name, asset) for asset in self.asset_list)
 
-    def _old_repr_markdown_(self) -> str:
-        _repr_str = f"Syft Dataset: {self.name}\n"
-        _repr_str += "Assets:\n"
-        for asset in self.asset_list:
-            if asset.description is not None:
-                _repr_str += f"\t{asset.name}: {asset.description.text}\n\n"
-            else:
-                _repr_str += f"\t{asset.name}\n\n"
-        if self.citation:
-            _repr_str += f"Citation: {self.citation}\n"
-        if self.url:
-            _repr_str += f"URL: {self.url}\n"
-        if self.description:
-            _repr_str += f"Description: {self.description.text}\n"
-        return as_markdown_python_code(_repr_str)
-
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
-        # return self._old_repr_markdown_()
-        return self._markdown_()
-
-    def _markdown_(self) -> str:
         _repr_str = f"Syft Dataset: {self.name}\n\n"
         _repr_str += "Assets:\n\n"
         for asset in self.asset_list:
             if asset.description is not None:
-                _repr_str += f"\t{asset.name}: {asset.description.text}\n\n"
+                description_text = textwrap.shorten(
+                    asset.description.text, width=100, placeholder="..."
+                )
+                _repr_str += f"\t{asset.name}: {description_text}\n\n"
             else:
                 _repr_str += f"\t{asset.name}\n\n"
         if self.citation:

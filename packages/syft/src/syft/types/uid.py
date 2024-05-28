@@ -9,19 +9,13 @@ from typing import Any
 import uuid
 from uuid import UUID as uuid_type
 
+# third party
+from typing_extensions import Self
+
 # relative
 from ..serde.serializable import serializable
 from ..util.logger import critical
 from ..util.logger import traceback_and_raise
-
-try:
-    # Python >= 3.11
-    # stdlib
-    from typing import Self
-except ImportError:
-    # Python < 3.11
-    # third party
-    from typing_extensions import Self
 
 
 @serializable(attrs=["value"])
@@ -83,7 +77,7 @@ class UID:
         self.value = uuid.uuid4() if value is None else value
 
     @staticmethod
-    def from_string(value: str) -> "UID":
+    def from_string(value: str) -> UID:
         try:
             return UID(value=uuid.UUID(value))
         except ValueError as e:
@@ -92,7 +86,7 @@ class UID:
             raise
 
     @staticmethod
-    def with_seed(value: str) -> "UID":
+    def with_seed(value: str) -> UID:
         md5 = hashlib.md5(value.encode("utf-8"), usedforsecurity=False)
         return UID(md5.hexdigest())
 
@@ -199,7 +193,7 @@ class UID:
         return str(self.value)[:8]
 
     @property
-    def id(self) -> "UID":
+    def id(self) -> UID:
         return self
 
     @classmethod

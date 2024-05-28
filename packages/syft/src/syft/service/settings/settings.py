@@ -1,5 +1,6 @@
 # stdlib
-from typing import Callable
+from collections.abc import Callable
+from typing import Any
 
 # relative
 from ...abstract_node import NodeSideType
@@ -16,6 +17,8 @@ from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ...types.uid import UID
+from ...util import options
+from ...util.colors import SURFACE
 
 
 @serializable()
@@ -73,6 +76,23 @@ class NodeSettings(SyftObject):
     show_warnings: bool
     association_request_auto_approval: bool
     default_worker_pool: str = DEFAULT_WORKER_POOL_NAME
+
+    def _repr_html_(self) -> Any:
+        return f"""
+            <style>
+            .syft-settings {{color: {SURFACE[options.color_theme]};}}
+            </style>
+            <div class='syft-settings'>
+                <h3>Settings</h3>
+                <p><strong>Id: </strong>{self.id}</p>
+                <p><strong>Name: </strong>{self.name}</p>
+                <p><strong>Organization: </strong>{self.organization}</p>
+                <p><strong>Deployed on: </strong>{self.deployed_on}</p>
+                <p><strong>Signup enabled: </strong>{self.signup_enabled}</p>
+                <p><strong>Admin email: </strong>{self.admin_email}</p>
+            </div>
+
+            """
 
 
 @serializable()

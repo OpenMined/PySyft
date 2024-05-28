@@ -10,7 +10,6 @@ from unittest import mock
 
 # third party
 from faker import Faker
-import mongomock
 import pytest
 
 # syft absolute
@@ -24,6 +23,8 @@ from syft.protocol.data_protocol import stage_protocol_changes
 from syft.service.user import user
 
 # relative
+# our version of mongomock that has a fix for CodecOptions and custom TypeRegistry Support
+from .mongomock.mongo_client import MongoClient
 from .syft.stores.store_fixtures_test import dict_action_store  # noqa: F401
 from .syft.stores.store_fixtures_test import dict_document_store  # noqa: F401
 from .syft.stores.store_fixtures_test import dict_queue_stash  # noqa: F401
@@ -156,48 +157,6 @@ def low_worker() -> Worker:
     del worker
 
 
-@pytest.fixture(scope="function")
-def full_high_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
-    _node = sy.orchestra.launch(
-        node_side_type=NodeSideType.HIGH_SIDE,
-        name=token_hex(8),
-        # dev_mode=True,
-        reset=True,
-        n_consumers=n_consumers,
-        create_producer=create_producer,
-        queue_port=None,
-        in_memory_workers=True,
-        local_db=False,
-        thread_workers=False,
-    )
-    # startup code here
-    yield _node
-    # Cleanup code
-    _node.python_node.cleanup()
-    _node.land()
-
-
-@pytest.fixture(scope="function")
-def full_low_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
-    _node = sy.orchestra.launch(
-        node_side_type=NodeSideType.LOW_SIDE,
-        name=token_hex(8),
-        # dev_mode=True,
-        reset=True,
-        n_consumers=n_consumers,
-        create_producer=create_producer,
-        queue_port=None,
-        in_memory_workers=True,
-        local_db=False,
-        thread_workers=False,
-    )
-    # startup code here
-    yield _node
-    # # Cleanup code
-    _node.python_node.cleanup()
-    _node.land()
-
-
 @pytest.fixture
 def root_domain_client(worker) -> DomainClient:
     yield worker.root_client
@@ -246,7 +205,7 @@ def mongo_client(testrun_uid):
     conn_str = f"mongodb://localhost:27017/{db_name}"
 
     # create a client, and test the connection
-    client = mongomock.MongoClient(conn_str)
+    client = MongoClient(conn_str)
     assert client.server_info().get("ok") == 1.0
 
     yield client
@@ -256,7 +215,7 @@ def mongo_client(testrun_uid):
 
 @pytest.fixture(autouse=True)
 def patched_mongo_client(monkeypatch):
-    monkeypatch.setattr("pymongo.mongo_client.MongoClient", mongomock.MongoClient)
+    monkeypatch.setattr("pymongo.mongo_client.MongoClient", MongoClient)
 
 
 @pytest.fixture(autouse=True)
@@ -309,6 +268,5 @@ pytest_plugins = [
     "tests.syft.request.fixtures",
     "tests.syft.dataset.fixtures",
     "tests.syft.notifications.fixtures",
-    "tests.syft.action_graph.fixtures",
     "tests.syft.serde.fixtures",
 ]

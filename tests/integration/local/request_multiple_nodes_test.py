@@ -21,7 +21,6 @@ def node_1():
         local_db=True,
         create_producer=True,
         n_consumers=1,
-        in_memory_workers=True,
         queue_port=None,
     )
     yield node
@@ -39,7 +38,6 @@ def node_2():
         local_db=True,
         create_producer=True,
         n_consumers=1,
-        in_memory_workers=True,
         queue_port=None,
     )
     yield node

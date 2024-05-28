@@ -3,41 +3,41 @@ repos:
     rev: v4.5.0
     hooks:
       - id: check-ast
-        exclude: ^(packages/grid/ansible/|third_party)
+        exclude: ^(packages/syft/tests/mongomock)
         always_run: true
       - id: trailing-whitespace
         always_run: true
-        exclude: ^(docs/|.+\.md|.bumpversion.cfg|third_party)
+        exclude: ^(docs/|.+\.md|.bumpversion.cfg|packages/syft/tests/mongomock)
       - id: check-docstring-first
         always_run: true
-        exclude: ^(packages/grid/ansible/|third_party)
+        exclude: ^(packages/syft/tests/mongomock)
       - id: check-json
         always_run: true
-        exclude: ^(packages/grid/frontend/|third_party)
+        exclude: ^(packages/grid/frontend/|packages/syft/tests/mongomock)
       - id: check-added-large-files
         always_run: true
         exclude: ^(packages/grid/backend/wheels/.*|docs/img/header.png|docs/img/terminalizer.gif)
       - id: check-yaml
         always_run: true
-        exclude: ^(packages/grid/k8s/rendered/|packages/grid/helm/|third_party)
+        exclude: ^(packages/grid/k8s/rendered/|packages/grid/helm/|packages/syft/tests/mongomock)
       - id: check-merge-conflict
         always_run: true
         args: ["--assume-in-merge"]
       - id: check-executables-have-shebangs
         always_run: true
-        exclude: ^(packages/grid/ansible/|third_party)
+        exclude: ^(packages/syft/tests/mongomock)
       - id: debug-statements
         always_run: true
-        exclude: ^(packages/grid/ansible/|third_party)
+        exclude: ^(packages/syft/tests/mongomock)
       - id: name-tests-test
         always_run: true
-        exclude: ^(.*/tests/utils/)|^(.*fixtures.py|third_party)
+        exclude: ^(.*/tests/utils/)|^(.*fixtures.py|packages/syft/tests/mongomock)
       - id: requirements-txt-fixer
         always_run: true
-        exclude: "third_party"
+        exclude: "packages/syft/tests/mongomock"
       - id: mixed-line-ending
         args: ["--fix=lf"]
-        exclude: '\.bat|\.csv|\.ps1$|third_party'
+        exclude: '\.bat|\.csv|\.ps1$|packages/syft/tests/mongomock'
 
   - repo: https://github.com/MarcoGorelli/absolufy-imports
     rev: v0.3.1
@@ -52,7 +52,6 @@ repos:
               packages/syft/src/syft/proto.*|
               packages/syft/tests/syft/lib/python.*|
               packages/grid.*|
-              packages/hagrid.*|
               packages/syft/src/syft/federated/model_serialization/protos.py
           )$
 
@@ -78,45 +77,21 @@ repos:
 
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.8.3
+    # nbQA has no files attribute
+    # files: "^notebooks/(api|tutorials|admin)"
     hooks:
       - id: nbqa-isort
-      - id: nbqa-black
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: "v0.3.0"
+    rev: "v0.4.3"
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --show-fixes]
-        files: "^notebooks/(api|tutorials|admin)"
+        exclude: packages/syft/tests/mongomock
         types_or: [python, pyi, jupyter]
       - id: ruff-format
         types_or: [python, pyi, jupyter]
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
-    hooks:
-      - id: mypy
-        name: "mypy: hagrid"
-        always_run: true
-        files: ^packages/hagrid
-        args: [
-            "--ignore-missing-imports",
-            "--scripts-are-modules",
-            "--disallow-incomplete-defs",
-            "--no-implicit-optional",
-            "--warn-unused-ignores",
-            "--warn-redundant-casts",
-            "--strict-equality",
-            "--warn-unreachable",
-            # "--disallow-untyped-decorators",
-            "--disallow-untyped-defs",
-            "--disallow-untyped-calls",
-            "--namespace-packages",
-            "--install-types",
-            "--non-interactive",
-            "--config-file=tox.ini",
-          ]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
@@ -175,7 +150,7 @@ repos:
         name: "mypy: syft"
         always_run: true
         files: "^packages/syft/src/syft/"
-        exclude: "packages/syft/src/syft/types/dicttuple.py|^packages/syft/src/syft/service/action/action_graph.py"
+        exclude: "packages/syft/src/syft/types/dicttuple.py"
         args: [
             "--follow-imports=skip",
             "--ignore-missing-imports",
@@ -204,7 +179,7 @@ repos:
     rev: "v3.0.0-alpha.9-for-vscode"
     hooks:
       - id: prettier
-        exclude: ^(packages/grid/helm|packages/grid/frontend/pnpm-lock.yaml|packages/hagrid/hagrid/manifest_template.yml|third_party)
+        exclude: ^(packages/grid/helm|packages/grid/frontend/pnpm-lock.yaml|packages/syft/tests/mongomock)
 
   # - repo: meta
   #   hooks:

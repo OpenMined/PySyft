@@ -40,7 +40,7 @@ on:
         type: string
 
 jobs:
-  notebook-test-hagrid:
+  notebook-test-e2e:
     strategy:
       max-parallel: 99
       matrix:

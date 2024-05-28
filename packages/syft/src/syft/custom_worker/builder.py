@@ -22,8 +22,8 @@ class CustomWorkerBuilder:
     TYPE_CPU = "cpu"
     TYPE_GPU = "gpu"
 
-    TEMPLATE_DIR_PROD = os.path.expandvars("$APPDIR/grid/")
-    TEMPLATE_DIR_DEV = "../../../../../grid/backend/"
+    TEMPLATE_DIR_PROD = os.path.expandvars("$APPDIR/grid/images/")
+    TEMPLATE_DIR_DEV = "../../../../../grid/backend/grid/images/"
 
     CUSTOM_IMAGE_PREFIX = "custom-worker"
 
@@ -102,7 +102,7 @@ class CustomWorkerBuilder:
 
         type = self.TYPE_GPU if config.build.gpu else self.TYPE_CPU
 
-        dockerfile_path = self._find_template_path(type)
+        dockerfile_path = self.find_worker_image(type)
 
         imgtag = config.get_signature()[:8]
 
@@ -119,11 +119,11 @@ class CustomWorkerBuilder:
             buildargs=build_args,
         )
 
-    def _find_template_path(self, type: str) -> Path:
+    def find_worker_image(self, type: str) -> Path:
         """
         Find the Worker Dockerfile and it's context path
         - PROD will be in `$APPDIR/grid/`
-        - DEV will be in `packages/grid/backend`
+        - DEV will be in `packages/grid/backend/grid/images`
         - In both the cases context dir does not matter (unless we're calling COPY)
 
         Args:

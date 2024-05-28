@@ -151,19 +151,14 @@ def test_settingsservice_update_success(
     monkeypatch.setattr(settings_service.stash, "get_all", mock_stash_get_all)
 
     # update the settings in the settings stash using settings_service
-    response = settings_service.update(authed_context, update_settings)
-    print(response)
-    updated_settings = response.ok()[0]
-    not_updated_settings = response.ok()[1]
+    response = settings_service.update(context=authed_context, settings=update_settings)
 
-    assert response.is_ok() is True
-    assert len(response.ok()) == len(mock_stash_get_all_output)
-    assert (
-        updated_settings.to_dict() == new_settings.to_dict()
-    )  # the first settings is updated
-    assert (
-        not_updated_settings.to_dict() == settings.to_dict()
-    )  # the second settings is not updated
+    # not_updated_settings = response.ok()[1]
+
+    assert isinstance(response, SyftSuccess)
+    # assert (
+    #     not_updated_settings.to_dict() == settings.to_dict()
+    # )  # the second settings is not updated
 
 
 def test_settingsservice_update_stash_get_all_fail(
@@ -179,7 +174,7 @@ def test_settingsservice_update_stash_get_all_fail(
         return Err(mock_error_message)
 
     monkeypatch.setattr(settings_service.stash, "get_all", mock_stash_get_all_error)
-    response = settings_service.update(authed_context, update_settings)
+    response = settings_service.update(context=authed_context, settings=update_settings)
 
     assert isinstance(response, SyftError)
     assert response.message == mock_error_message
@@ -190,7 +185,7 @@ def test_settingsservice_update_stash_empty(
     update_settings: NodeSettingsUpdate,
     authed_context: AuthedServiceContext,
 ) -> None:
-    response = settings_service.update(authed_context, update_settings)
+    response = settings_service.update(context=authed_context, settings=update_settings)
 
     assert isinstance(response, SyftError)
     assert response.message == "No settings found"
@@ -219,7 +214,7 @@ def test_settingsservice_update_fail(
 
     monkeypatch.setattr(settings_service.stash, "update", mock_stash_update_error)
 
-    response = settings_service.update(authed_context, update_settings)
+    response = settings_service.update(context=authed_context, settings=update_settings)
 
     assert isinstance(response, SyftError)
     assert response.message == mock_update_error_message

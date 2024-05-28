@@ -19,6 +19,7 @@ import operator
 import os
 from pathlib import Path
 import platform
+import random
 import re
 from secrets import randbelow
 import socket
@@ -309,7 +310,11 @@ def print_dynamic_log(
     return (finish, success)
 
 
-def find_available_port(host: str, port: int, search: bool = False) -> int:
+def find_available_port(
+    host: str, port: int | None = None, search: bool = False
+) -> int:
+    if port is None:
+        port = random.randint(1500, 65000)  # nosec
     port_available = False
     while not port_available:
         try:
@@ -324,6 +329,7 @@ def find_available_port(host: str, port: int, search: bool = False) -> int:
                     port += 1
                 else:
                     break
+            sock.close()
 
         except Exception as e:
             print(f"Failed to check port {port}. {e}")
@@ -336,6 +342,18 @@ def find_available_port(host: str, port: int, search: bool = False) -> int:
         )
         raise Exception(error)
     return port
+
+
+def get_random_available_port() -> int:
+    """Retrieve a random available port number from the host OS.
+
+    Returns
+    -------
+    int: Available port number.
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:
+        soc.bind(("localhost", 0))
+        return soc.getsockname()[1]
 
 
 def get_loaded_syft() -> ModuleType:
@@ -886,19 +904,6 @@ def set_klass_module_to_syft(klass: type, module_name: str) -> None:
         new_module = sys.modules["syft"].__dict__[module_name]
     setattr(new_module, klass.__name__, klass)
     sys.modules["syft"].__dict__[module_name] = new_module
-
-
-def get_syft_src_path() -> Path:
-    return Path(__file__).parent.parent.parent.expanduser()
-
-
-def get_grid_src_path() -> Path:
-    syft_path = get_syft_src_path()
-    return syft_path.parent.parent / "grid"
-
-
-def get_syft_cpu_dockerfile() -> Path:
-    return get_grid_src_path() / "backend" / "worker_cpu.dockerfile"
 
 
 def get_queue_address(port: int) -> str:

@@ -5,15 +5,11 @@ from collections.abc import Generator
 from collections.abc import Iterable
 from collections.abc import KeysView
 from collections.abc import Mapping
-from collections.abc import MutableMapping
-from collections.abc import MutableSequence
 from collections.abc import Sequence
 from collections.abc import Set
 from hashlib import sha256
 import inspect
 from inspect import Signature
-import re
-import traceback
 import types
 from types import NoneType
 from types import UnionType
@@ -27,7 +23,6 @@ from typing import get_args
 from typing import get_origin
 
 # third party
-import pandas as pd
 import pydantic
 from pydantic import ConfigDict
 from pydantic import EmailStr
@@ -44,11 +39,10 @@ from ..serde.recursive_primitives import recursive_serde_register_type
 from ..serde.serialize import _serialize as serialize
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
-from ..util.notebook_ui.components.table import create_table_template
+from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
-from .dicttuple import DictTuple
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .uid import UID
@@ -67,6 +61,7 @@ SYFT_OBJECT_VERSION_2 = 2
 SYFT_OBJECT_VERSION_3 = 3
 SYFT_OBJECT_VERSION_4 = 4
 SYFT_OBJECT_VERSION_5 = 5
+SYFT_OBJECT_VERSION_6 = 6
 
 supported_object_versions = [
     SYFT_OBJECT_VERSION_1,
@@ -74,6 +69,7 @@ supported_object_versions = [
     SYFT_OBJECT_VERSION_3,
     SYFT_OBJECT_VERSION_4,
     SYFT_OBJECT_VERSION_5,
+    SYFT_OBJECT_VERSION_6,
 ]
 
 HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
@@ -422,6 +418,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
     )
     __validate_private_attrs__: ClassVar[bool] = True
     __table_coll_widths__: ClassVar[list[str] | None] = None
+    __table_sort_attr__: ClassVar[str | None] = None
 
     def __syft_get_funcs__(self) -> list[tuple[str, Signature]]:
         funcs = print_type_cache[type(self)]
@@ -764,196 +761,11 @@ def short_uid(uid: UID | None) -> str | None:
         return str(uid)[:6] + "..."
 
 
-def get_repr_values_table(
-    _self: Mapping | Iterable,
-    is_homogenous: bool,
-    extra_fields: list | None = None,
-) -> dict:
-    if extra_fields is None:
-        extra_fields = []
-
-    cols = defaultdict(list)
-    for item in iter(_self.items() if isinstance(_self, Mapping) else _self):
-        # unpack dict
-        if isinstance(_self, Mapping):
-            key, item = item
-            cols["key"].append(key)
-
-        # get id
-        id_ = getattr(item, "id", None)
-        include_id = getattr(item, "__syft_include_id_coll_repr__", True)
-        if id_ is not None and include_id:
-            cols["id"].append({"value": str(id_), "type": "clipboard"})
-
-        if type(item) == type:
-            t = full_name_with_qualname(item)
-        else:
-            try:
-                t = item.__class__.__name__
-            except Exception:
-                t = item.__repr__()
-
-        if not is_homogenous:
-            cols["type"].append(t)
-
-        # if has _coll_repr_
-
-        if hasattr(item, "_coll_repr_"):
-            ret_val = item._coll_repr_()
-            if "id" in ret_val:
-                del ret_val["id"]
-            for key in ret_val.keys():
-                cols[key].append(ret_val[key])
-        else:
-            for field in extra_fields:
-                value = item
-                try:
-                    attrs = field.split(".")
-                    for i, attr in enumerate(attrs):
-                        # find indexing like abc[1]
-                        res = re.search(r"\[[+-]?\d+\]", attr)
-                        has_index = False
-                        if res:
-                            has_index = True
-                            index_str = res.group()
-                            index = int(index_str.replace("[", "").replace("]", ""))
-                            attr = attr.replace(index_str, "")
-
-                        value = getattr(value, attr, None)
-                        if isinstance(value, list) and has_index:
-                            value = value[index]
-                        # If the object has a special representation when nested we will use that instead
-                        if (
-                            hasattr(value, "__repr_syft_nested__")
-                            and i == len(attrs) - 1
-                        ):
-                            value = value.__repr_syft_nested__()
-                        if (
-                            isinstance(value, list)
-                            and i == len(attrs) - 1
-                            and len(value) > 0
-                            and hasattr(value[0], "__repr_syft_nested__")
-                        ):
-                            value = [
-                                (
-                                    x.__repr_syft_nested__()
-                                    if hasattr(x, "__repr_syft_nested__")
-                                    else x
-                                )
-                                for x in value
-                            ]
-                    if value is None:
-                        value = "n/a"
-
-                except Exception as e:
-                    print(e)
-                    value = None
-                cols[field].append(str(value))
-
-    df = pd.DataFrame(cols)
-
-    if "created_at" in df.columns:
-        df.sort_values(by="created_at", ascending=False, inplace=True)
-
-    return df.to_dict("records")  # type: ignore
-
-
-def _get_grid_template_columns(first_value: Any) -> tuple[str | None, str | None]:
-    grid_template_cols = getattr(first_value, "__table_coll_widths__", None)
-    if isinstance(grid_template_cols, list):
-        grid_template_columns = " ".join(grid_template_cols)
-        grid_template_cell_columns = "unset"
-    else:
-        grid_template_columns = None
-        grid_template_cell_columns = None
-    return grid_template_columns, grid_template_cell_columns
-
-
-def list_dict_repr_html(self: Mapping | Set | Iterable) -> str:
-    try:
-        max_check = 1
-        items_checked = 0
-        has_syft = False
-        extra_fields: list = []
-        if isinstance(self, Mapping):
-            values: Any = list(self.values())
-        elif isinstance(self, Set):
-            values = list(self)
-        else:
-            values = self
-
-        if len(values) == 0:
-            return self.__repr__()
-
-        for item in iter(self.values() if isinstance(self, Mapping) else self):
-            items_checked += 1
-            if items_checked > max_check:
-                break
-
-            if hasattr(type(item), "mro") and type(item) != type:
-                mro: list | str = type(item).mro()
-            elif hasattr(item, "mro") and type(item) != type:
-                mro = item.mro()
-            else:
-                mro = str(self)
-
-            if "syft" in str(mro).lower():
-                has_syft = True
-                extra_fields = getattr(item, "__repr_attrs__", [])
-                break
-
-        if has_syft:
-            # if custom_repr:
-            table_icon = None
-            if hasattr(values[0], "icon"):
-                table_icon = values[0].icon
-            # this is a list of dicts
-            is_homogenous = len({type(x) for x in values}) == 1
-            # third party
-
-            try:
-                vals = get_repr_values_table(
-                    self, is_homogenous, extra_fields=extra_fields
-                )
-            except Exception:
-                return str(self)
-
-            first_value = values[0]
-            if is_homogenous:
-                cls_name = first_value.__class__.__name__
-                grid_template_columns, grid_template_cell_columns = (
-                    _get_grid_template_columns(first_value)
-                )
-            else:
-                cls_name = ""
-                grid_template_columns = None
-                grid_template_cell_columns = None
-
-            return create_table_template(
-                vals,
-                f"{cls_name} {self.__class__.__name__.capitalize()}",
-                table_icon=table_icon,
-                grid_template_columns=grid_template_columns,
-                grid_template_cell_columns=grid_template_cell_columns,
-            )
-
-    except Exception as e:
-        print(
-            f"error representing {type(self)} of objects. {e}, {traceback.format_exc()}"
-        )
-        pass
-
-    # stdlib
-    import html
-
-    return html.escape(self.__repr__())
-
-
 # give lists and dicts a _repr_html_ if they contain SyftObject's
-aggressive_set_attr(type([]), "_repr_html_", list_dict_repr_html)
-aggressive_set_attr(type({}), "_repr_html_", list_dict_repr_html)
-aggressive_set_attr(type(set()), "_repr_html_", list_dict_repr_html)
-aggressive_set_attr(tuple, "_repr_html_", list_dict_repr_html)
+aggressive_set_attr(type([]), "_repr_html_", build_tabulator_table)
+aggressive_set_attr(type({}), "_repr_html_", build_tabulator_table)
+aggressive_set_attr(type(set()), "_repr_html_", build_tabulator_table)
+aggressive_set_attr(tuple, "_repr_html_", build_tabulator_table)
 
 
 class StorableObjectType:
@@ -982,33 +794,18 @@ class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
 recursive_serde_register_type(PartialSyftObject)
 
 
-def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> Any:
-    constructor = None
-    extra_args = []
-
-    single_entity = False
-
+def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> None:
+    iterator: Iterable
     if isinstance(result, OkErr):
-        constructor = type(result)
-        result = result.value
-
-    if isinstance(result, MutableMapping):
-        iterable_keys: Iterable = result.keys()
-    elif isinstance(result, MutableSequence):
-        iterable_keys = range(len(result))
-    elif isinstance(result, tuple):
-        iterable_keys = range(len(result))
-        constructor = type(result)
-        if isinstance(result, DictTuple):
-            extra_args.append(result.keys())
-        result = list(result)
+        iterator = (result._value,)
+    elif isinstance(result, Mapping):
+        iterator = result.values()
+    elif isinstance(result, Sequence):
+        iterator = result
     else:
-        iterable_keys = range(1)
-        result = [result]
-        single_entity = True
+        iterator = (result,)
 
-    for key in iterable_keys:
-        _object = result[key]
+    for _object in iterator:
         # if object is SyftBaseObject,
         # then attach the value to the attribute
         # on the object
@@ -1016,13 +813,5 @@ def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> A
             for attr_name, attr_value in attr_dict.items():
                 setattr(_object, attr_name, attr_value)
 
-            for field_name, attr in _object.__dict__.items():
-                updated_attr = attach_attribute_to_syft_object(attr, attr_dict)
-                setattr(_object, field_name, updated_attr)
-        result[key] = _object
-
-    wrapped_result = result[0] if single_entity else result
-    if constructor is not None:
-        wrapped_result = constructor(wrapped_result, *extra_args)
-
-    return wrapped_result
+            for field in _object.model_fields.keys():
+                attach_attribute_to_syft_object(getattr(_object, field), attr_dict)

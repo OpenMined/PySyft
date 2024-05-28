@@ -28,7 +28,6 @@ import weakref
 
 # relative
 from .capnp import get_capnp_schema
-from .recursive import SPOOLED_FILE_MAX_SIZE_SERDE
 from .recursive import chunk_bytes
 from .recursive import combine_bytes
 from .recursive import recursive_serde_register

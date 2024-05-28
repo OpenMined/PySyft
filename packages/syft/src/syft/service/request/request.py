@@ -6,6 +6,7 @@ import inspect
 from typing import Any
 
 # third party
+from pydantic import model_validator
 from result import Err
 from result import Ok
 from result import Result
@@ -15,6 +16,7 @@ from typing_extensions import Self
 from ...abstract_node import NodeSideType
 from ...client.api import APIRegistry
 from ...client.client import SyftClient
+from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...node.credentials import SyftVerifyKey
@@ -187,7 +189,7 @@ class ActionStoreChange(Change):
 
 
 @serializable()
-class CreateCustomImageChange(Change):
+class CreateCustomImageChangeV2(Change):
     __canonical_name__ = "CreateCustomImageChange"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -198,6 +200,25 @@ class CreateCustomImageChange(Change):
 
     __repr_attrs__ = ["config", "tag"]
 
+
+@serializable()
+class CreateCustomImageChange(Change):
+    __canonical_name__ = "CreateCustomImageChange"
+    __version__ = SYFT_OBJECT_VERSION_3
+
+    config: WorkerConfig
+    tag: str | None = None
+    registry_uid: UID | None = None
+    pull_image: bool = True
+
+    __repr_attrs__ = ["config", "tag"]
+
+    @model_validator(mode="after")
+    def _tag_required_for_dockerworkerconfig(self) -> Self:
+        if isinstance(self.config, DockerWorkerConfig) and self.tag is None:
+            raise ValueError("`tag` is required for `DockerWorkerConfig`.")
+        return self
+
     def _run(
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
@@ -205,34 +226,44 @@ class CreateCustomImageChange(Change):
             worker_image_service = context.node.get_service("SyftWorkerImageService")
 
             service_context = context.to_service_ctx()
-            result = worker_image_service.submit_dockerfile(
-                service_context, docker_config=self.config
+            result = worker_image_service.submit(
+                service_context, worker_config=self.config
             )
 
             if isinstance(result, SyftError):
                 return Err(result)
 
-            result = worker_image_service.stash.get_by_docker_config(
+            result = worker_image_service.stash.get_by_worker_config(
                 service_context.credentials, config=self.config
             )
 
             if result.is_err():
                 return Err(SyftError(message=f"{result.err()}"))
 
-            worker_image = result.ok()
+            if (worker_image := result.ok()) is None:
+                return Err(SyftError(message="The worker image does not exist."))
 
-            build_result = worker_image_service.build(
-                service_context,
-                image_uid=worker_image.id,
-                tag=self.tag,
-                registry_uid=self.registry_uid,
-                pull=self.pull_image,
+            build_success_message = "Image was pre-built."
+
+            if not worker_image.is_prebuilt:
+                build_result = worker_image_service.build(
+                    service_context,
+                    image_uid=worker_image.id,
+                    tag=self.tag,
+                    registry_uid=self.registry_uid,
+                    pull=self.pull_image,
+                )
+
+                if isinstance(build_result, SyftError):
+                    return Err(build_result)
+
+                build_success_message = build_result.message
+
+            build_success = SyftSuccess(
+                message=f"Build result: {build_success_message}"
             )
 
-            if isinstance(build_result, SyftError):
-                return Err(build_result)
-
-            if IN_KUBERNETES:
+            if IN_KUBERNETES and not worker_image.is_prebuilt:
                 push_result = worker_image_service.push(
                     service_context,
                     image=worker_image.id,
@@ -245,11 +276,11 @@ class CreateCustomImageChange(Change):
 
                 return Ok(
                     SyftSuccess(
-                        message=f"Build Result: {build_result.message} \n Push Result: {push_result.message}"
+                        message=f"{build_success}\nPush result: {push_result.message}"
                     )
                 )
 
-            return Ok(build_result)
+            return Ok(build_success)
 
         except Exception as e:
             return Err(SyftError(message=f"Failed to create/build image: {e}"))
@@ -291,7 +322,7 @@ class CreateCustomWorkerPoolChange(Change):
             service_context: AuthedServiceContext = context.to_service_ctx()
 
             if self.config is not None:
-                result = worker_pool_service.image_stash.get_by_docker_config(
+                result = worker_pool_service.image_stash.get_by_worker_config(
                     service_context.credentials, self.config
                 )
                 if result.is_err():
@@ -353,6 +384,7 @@ class Request(SyncableSyftObject):
         "auto",
         "auto",
         "auto",
+        "auto",
     ]
 
     __attr_searchable__ = [
@@ -368,6 +400,7 @@ class Request(SyncableSyftObject):
         "requesting_user_verify_key",
     ]
     __exclude_sync_diff_attrs__ = ["node_uid"]
+    __table_sort_attr__ = "Request time"
 
     def _repr_html_(self) -> Any:
         # add changes
@@ -467,6 +500,7 @@ class Request(SyncableSyftObject):
         return {
             "Description": self.html_description,
             "Requested By": "\n".join(user_data),
+            "Creation Time": str(self.request_time),
             "Status": status_badge,
         }
 
@@ -567,11 +601,14 @@ class Request(SyncableSyftObject):
             )
         if message and metadata and metadata.show_warnings and not disable_warnings:
             prompt_warning_message(message=message, confirm=True)
+        msg = (
+            "Approving request ",
+            f"on change {self.code.service_func_name} " if is_code_request else "",
+            f"for domain {api.node_name}",
+        )
 
-        print(f"Approving request for domain {api.node_name}")
+        print("".join(msg))
         res = api.services.request.apply(self.id, **kwargs)
-        # if isinstance(res, SyftSuccess):
-
         return res
 
     def deny(self, reason: str) -> SyftSuccess | SyftError:
@@ -1217,18 +1254,19 @@ class UserCodeStatusChange(Change):
 
     def __repr_syft_nested__(self) -> str:
         msg = (
-            f"Request to change <b>{self.code.service_func_name}</b> "
-            f"(Pool Id: <b>{self.code.worker_pool_name}</b>) "
+            f"Request to change <strong>{self.code.service_func_name}</strong> "
+            f"(Pool Id: <strong>{self.code.worker_pool_name}</strong>) "
         )
-        msg += "to permission <strong>RequestStatus.APPROVED.</strong>"
-        if self.nested_solved:
-            if self.link.nested_codes == {}:  # type: ignore
-                msg += "No nested requests."
-            else:
+        msg += "to permission RequestStatus.APPROVED."
+        if self.code.nested_codes is None or self.code.nested_codes == {}:  # type: ignore
+            msg += " No nested requests"
+        else:
+            if self.nested_solved:
+                # else:
                 msg += "<br><br>This change requests the following nested functions calls:<br>"
                 msg += self.nested_repr()
-        else:
-            msg += "Nested Requests not resolved."
+            else:
+                msg += " Nested Requests not resolved"
         return msg
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:

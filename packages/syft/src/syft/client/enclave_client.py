@@ -5,9 +5,6 @@ from __future__ import annotations
 from typing import Any
 from typing import TYPE_CHECKING
 
-# third party
-from hagrid.orchestra import NodeHandle
-
 # relative
 from ..abstract_node import NodeSideType
 from ..client.api import APIRegistry
@@ -29,6 +26,7 @@ from .protocol import SyftProtocol
 
 if TYPE_CHECKING:
     # relative
+    from ..orchestra import NodeHandle
     from ..service.code.user_code import SubmitUserCode
 
 
@@ -95,9 +93,16 @@ class EnclaveClient(SyftClient):
         res = self.exchange_route(client, protocol=protocol)
 
         if isinstance(res, SyftSuccess):
-            return SyftSuccess(
-                message=f"Connected {self.metadata.node_type} {self.metadata.name} to {client.name} gateway"
-            )
+            if self.metadata:
+                return SyftSuccess(
+                    message=(
+                        f"Connected {self.metadata.node_type} "
+                        f"'{self.metadata.name}' to gateway '{client.name}'. "
+                        f"{res.message}"
+                    )
+                )
+            else:
+                return SyftSuccess(message=f"Connected to '{client.name}' gateway")
 
         return res
 

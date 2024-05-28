@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from typing import cast
 
 # third party
-from hagrid.orchestra import NodeHandle
 from loguru import logger
 from tqdm import tqdm
 
@@ -43,6 +42,7 @@ from .protocol import SyftProtocol
 
 if TYPE_CHECKING:
     # relative
+    from ..orchestra import NodeHandle
     from ..service.project.project import Project
 
 
@@ -122,7 +122,7 @@ class DomainClient(SyftClient):
             )
             prompt_warning_message(message=message, confirm=True)
 
-        for asset in tqdm(dataset.asset_list):
+        for asset in tqdm(dataset.asset_list, colour="green"):
             print(f"Uploading: {asset.name}")
             try:
                 twin = TwinObject(
@@ -169,6 +169,9 @@ class DomainClient(SyftClient):
     #         return {}
 
     def refresh(self) -> None:
+        if self.credentials:
+            self._fetch_node_metadata(self.credentials)
+
         if self._api and self._api.refresh_api_callback:
             self._api.refresh_api_callback()
 
@@ -306,55 +309,49 @@ class DomainClient(SyftClient):
         if isinstance(res, SyftSuccess):
             if self.metadata:
                 return SyftSuccess(
-                    message=f"Connected {self.metadata.node_type} '{self.metadata.name}' to gateway '{client.name}'"
+                    message=(
+                        f"Connected {self.metadata.node_type} "
+                        f"'{self.metadata.name}' to gateway '{client.name}'. "
+                        f"{res.message}"
+                    )
                 )
             else:
                 return SyftSuccess(message=f"Connected to '{client.name}' gateway")
+
         return res
+
+    def _get_service_by_name_if_exists(self, name: str) -> APIModule | None:
+        if self.api.has_service(name):
+            return getattr(self.api.services, name)
+        return None
 
     @property
     def data_subject_registry(self) -> APIModule | None:
-        if self.api.has_service("data_subject"):
-            return self.api.services.data_subject
-        return None
+        return self._get_service_by_name_if_exists("data_subject")
 
     @property
     def code(self) -> APIModule | None:
-        # if self.api.refresh_api_callback is not None:
-        #     self.api.refresh_api_callback()
-        if self.api.has_service("code"):
-            return self.api.services.code
-        return None
+        return self._get_service_by_name_if_exists("code")
 
     @property
     def worker(self) -> APIModule | None:
-        if self.api.has_service("worker"):
-            return self.api.services.worker
-        return None
+        return self._get_service_by_name_if_exists("worker")
 
     @property
     def requests(self) -> APIModule | None:
-        if self.api.has_service("request"):
-            return self.api.services.request
-        return None
+        return self._get_service_by_name_if_exists("request")
 
     @property
     def datasets(self) -> APIModule | None:
-        if self.api.has_service("dataset"):
-            return self.api.services.dataset
-        return None
+        return self._get_service_by_name_if_exists("dataset")
 
     @property
     def projects(self) -> APIModule | None:
-        if self.api.has_service("project"):
-            return self.api.services.project
-        return None
+        return self._get_service_by_name_if_exists("project")
 
     @property
     def code_history_service(self) -> APIModule | None:
-        if self.api is not None and self.api.has_service("code_history"):
-            return self.api.services.code_history
-        return None
+        return self._get_service_by_name_if_exists("code_history")
 
     @property
     def code_history(self) -> CodeHistoriesDict:
@@ -366,39 +363,27 @@ class DomainClient(SyftClient):
 
     @property
     def images(self) -> APIModule | None:
-        if self.api.has_service("worker_image"):
-            return self.api.services.worker_image
-        return None
+        return self._get_service_by_name_if_exists("worker_image")
 
     @property
     def worker_pools(self) -> APIModule | None:
-        if self.api.has_service("worker_pool"):
-            return self.api.services.worker_pool
-        return None
+        return self._get_service_by_name_if_exists("worker_pool")
 
     @property
     def worker_images(self) -> APIModule | None:
-        if self.api.has_service("worker_image"):
-            return self.api.services.worker_image
-        return None
+        return self._get_service_by_name_if_exists("worker_images")
 
     @property
     def sync(self) -> APIModule | None:
-        if self.api.has_service("sync"):
-            return self.api.services.sync
-        return None
+        return self._get_service_by_name_if_exists("sync")
 
     @property
     def code_status(self) -> APIModule | None:
-        if self.api.has_service("code_status"):
-            return self.api.services.code_status
-        return None
+        return self._get_service_by_name_if_exists("code_status")
 
     @property
     def output(self) -> APIModule | None:
-        if self.api.has_service("output"):
-            return self.api.services.output
-        return None
+        return self._get_service_by_name_if_exists("output")
 
     def get_project(
         self,
@@ -482,6 +467,7 @@ class DomainClient(SyftClient):
                 f"<strong>Syft Version:</strong> {self.metadata.syft_version}<br />"
             )
 
+        self._fetch_node_metadata(self.credentials)
         return f"""
         <style>
             {FONT_CSS}

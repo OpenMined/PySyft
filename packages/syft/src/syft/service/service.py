@@ -288,6 +288,10 @@ def reconstruct_args_kwargs(
             final_kwargs[param_key] = param.default
         else:
             raise Exception(f"Missing {param_key} not in kwargs.")
+
+    if "context":
+        final_kwargs["context"] = kwargs["context"]
+
     return (args, final_kwargs)
 
 
@@ -372,9 +376,8 @@ def service_method(
                 "syft_node_location": context.node.id,
                 "syft_client_verify_key": context.credentials,
             }
-            return attach_attribute_to_syft_object(
-                result=result, attr_dict=attrs_to_attach
-            )
+            attach_attribute_to_syft_object(result=result, attr_dict=attrs_to_attach)
+            return result
 
         if autosplat is not None and len(autosplat) > 0:
             signature = expand_signature(signature=input_signature, autosplat=autosplat)
@@ -409,7 +412,7 @@ class SyftServiceRegistry:
             cls.__object_version_registry__[mapping_string] = cls
 
     @classmethod
-    def versioned_class(cls, name: str, version: int) -> type["SyftObject"] | None:
+    def versioned_class(cls, name: str, version: int) -> type[SyftObject] | None:
         mapping_string = f"{name}_{version}"
         if mapping_string not in cls.__object_version_registry__:
             return None
@@ -429,7 +432,7 @@ class SyftServiceRegistry:
 
     @classmethod
     def get_transform(
-        cls, type_from: type["SyftObject"], type_to: type["SyftObject"]
+        cls, type_from: type[SyftObject], type_to: type[SyftObject]
     ) -> Callable:
         klass_from = type_from.__canonical_name__
         version_from = type_from.__version__
