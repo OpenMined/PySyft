@@ -523,7 +523,7 @@ class Request(SyncableSyftObject):
         )
 
     @property
-    def code(self) -> Any:
+    def code(self) -> UserCode | SyftError:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
                 return change.code
@@ -707,8 +707,6 @@ class Request(SyncableSyftObject):
             print("Creating job for existing user code")
             job = job_service.create_job_for_user_code_id(self.code.id)
         else:
-            print("returning existing job")
-            print("setting permission")
             job = existing_jobs[-1]
             res = job_service.add_read_permission_job_for_code_owner(job, self.code)
             print(res)
@@ -728,6 +726,92 @@ class Request(SyncableSyftObject):
         for job in existing_jobs:
             if job.result and job.result.id == action_object.id:
                 return job
+
+    def deposit_result(self, result: Any, logs: str | None = None) -> Job | SyftError:
+        """
+        Adds a result to this Request:
+        - Create an ActionObject from the result (if not already an ActionObject)
+        - Ensure ActionObject exists on this node
+        - Create Job with new result and logs
+        - Update the output history
+
+        Args:
+            result (Any): ActionObject or any object to be saved as an ActionObject.
+            logs (str | None, optional): Optional logs to be saved with the Job. Defaults to None.
+
+        Returns:
+            Job | SyftError: Job object if successful, else SyftError.
+        """
+        api = APIRegistry.api_for(self.node_uid, self.syft_client_verify_key)
+        code = self.code
+        if isinstance(code, SyftError):
+            return code
+
+        # Create ActionObject from result
+        if isinstance(result, ActionObject):
+            existing_job = self._get_job_from_action_object(result)
+            if existing_job is not None:
+                return SyftError(
+                    message=f"This ActionObject is already the result of Job {existing_job.id}"
+                )
+            action_object = result
+        else:
+            action_object = ActionObject.from_obj(
+                result,
+                syft_client_verify_key=api.signing_key.verify_key,
+                syft_node_location=api.node_uid,
+            )
+
+        # Ensure ActionObject exists on this node
+        action_object_is_from_this_node = isinstance(
+            api.services.action.exists(action_object.id.id), SyftSuccess
+        )
+        if (
+            action_object.syft_blob_storage_entry_id is None
+            or not action_object_is_from_this_node
+        ):
+            # TODO refactor ActionObject.send and use here
+            action_object.reload_cache()
+            action_object.syft_node_location = self.syft_node_location
+            action_object.syft_client_verify_key = self.syft_client_verify_key
+            blob_store_result = action_object._save_to_blob_storage()
+            if isinstance(blob_store_result, SyftError):
+                return blob_store_result
+            result = api.services.action.set(action_object)
+            if isinstance(result, SyftError):
+                return result
+
+        # Create Job with new result and logs
+        job = api.services.job.create_job_for_user_code_id(
+            code.id,
+            result=action_object,
+            logs_str=logs,
+        )
+        if isinstance(job, SyftError):
+            return job
+
+        job.result = action_object
+        if logs is not None:
+            api.services.log.append(job.log_id, new_str=logs)
+        res = api.services.job.update(job)
+        if isinstance(res, SyftError):
+            return res
+
+        # Update the output history
+        input_ids = {}
+        if code.input_policy is not None:
+            for inps in code.input_policy.inputs.values():
+                input_ids.update(inps)
+        res = api.services.code.store_as_history(
+            user_code_id=code.id,
+            outputs=result,
+            job_id=job.id,
+            input_ids=input_ids,
+        )
+        if isinstance(res, SyftError):
+            return res
+
+        return job
 
     def accept_by_depositing_result(
         self, result: Any, force: bool = False
