@@ -251,7 +251,7 @@ class CreateCustomImageChange(Change):
                     image_uid=worker_image.id,
                     tag=self.tag,
                     registry_uid=self.registry_uid,
-                    pull=self.pull_image,
+                    pull_image=self.pull_image,
                 )
 
                 if isinstance(build_result, SyftError):

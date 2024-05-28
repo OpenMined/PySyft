@@ -82,7 +82,7 @@ class SyftWorkerImageService(AbstractService):
         image_uid: UID,
         tag: str,
         registry_uid: UID | None = None,
-        pull: bool = True,
+        pull_image: bool = True,
     ) -> SyftSuccess | SyftError:
         registry: SyftImageRegistry | None = None
 
@@ -130,7 +130,7 @@ class SyftWorkerImageService(AbstractService):
         result = None
 
         if not context.node.in_memory_workers:
-            build_result = image_build(worker_image, pull=pull)
+            build_result = image_build(worker_image, pull=pull_image)
             if isinstance(build_result, SyftError):
                 return build_result
 
