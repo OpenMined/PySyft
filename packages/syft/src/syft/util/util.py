@@ -21,6 +21,7 @@ from pathlib import Path
 import platform
 import random
 import re
+import secrets
 from secrets import randbelow
 import socket
 import sys
@@ -919,3 +920,7 @@ def get_queue_address(port: int) -> str:
 
 def get_dev_mode() -> bool:
     return str_to_bool(os.getenv("DEV_MODE", "False"))
+
+
+def generate_token() -> str:
+    return hashlib.sha256(secrets.token_bytes(16)).hexdigest()

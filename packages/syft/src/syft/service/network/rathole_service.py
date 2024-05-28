@@ -35,13 +35,15 @@ class RatholeService:
             None
         """
 
+        rathole_route = peer.pick_highest_priority_route()
+
         random_port = self.get_random_port()
 
         peer_id = cast(UID, peer.id)
 
         config = RatholeConfig(
             uuid=peer_id.to_string(),
-            secret_token=peer.rathole_token,
+            secret_token=rathole_route.rathole_token,
             local_addr_host="0.0.0.0",
             local_addr_port=random_port,
             server_name=peer.name,

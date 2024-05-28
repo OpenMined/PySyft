@@ -95,6 +95,7 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
     port: int = 80
     proxy_target_uid: UID | None = None
     priority: int = 1
+    rathole_token: str | None = None
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, HTTPNodeRoute):
@@ -107,6 +108,7 @@ class HTTPNodeRoute(SyftObject, NodeRoute):
             + hash(self.port)
             + hash(self.protocol)
             + hash(self.proxy_target_uid)
+            + hash(self.rathole_token)
         )
 
     def __str__(self) -> str:

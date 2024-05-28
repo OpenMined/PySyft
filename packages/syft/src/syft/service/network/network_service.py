@@ -1,7 +1,6 @@
 # stdlib
 from collections.abc import Callable
 from enum import Enum
-from hashlib import sha256
 import secrets
 from typing import Any
 
@@ -186,9 +185,6 @@ class NetworkService(AbstractService):
         )
         remote_node_peer = NodePeer.from_client(remote_client)
 
-        rathole_token = self._generate_token()
-        self_node_peer.rathole_token = rathole_token
-
         # ask the remote client to add this node (represented by `self_node_peer`) as a peer
         # check locally if the remote node already exists as a peer
         existing_peer_result = self.stash.get_by_uid(
@@ -278,28 +274,26 @@ class NetworkService(AbstractService):
         if result.is_err():
             return SyftError(message="Failed to update route information.")
 
-        remote_url = GridURL(
-            host_or_ip=remote_node_route.host_or_ip, port=remote_node_route.port
-        )
-        rathole_remote_addr = remote_url.as_container_host()
+        if self_node_peer.rathole_token:
+            remote_url = GridURL(
+                host_or_ip=remote_node_route.host_or_ip, port=remote_node_route.port
+            )
+            rathole_remote_addr = remote_url.as_container_host()
 
-        remote_addr = rathole_remote_addr.url_no_protocol
+            remote_addr = rathole_remote_addr.url_no_protocol
 
-        self.rathole_service.add_host_to_client(
-            peer_name=self_node_peer.name,
-            peer_id=str(self_node_peer.id),
-            rathole_token=self_node_peer.rathole_token,
-            remote_addr=remote_addr,
-        )
+            self.rathole_service.add_host_to_client(
+                peer_name=self_node_peer.name,
+                peer_id=str(self_node_peer.id),
+                rathole_token=self_node_peer.rathole_token,
+                remote_addr=remote_addr,
+            )
 
         return (
             SyftSuccess(message="Routes Exchanged")
             if association_request_approved
             else remote_res
         )
-
-    def _generate_token(self) -> str:
-        return sha256(secrets.token_bytes(16)).hexdigest()
 
     @service_method(path="network.add_peer", name="add_peer", roles=GUEST_ROLE_LEVEL)
     def add_peer(
@@ -940,6 +934,7 @@ def from_grid_url(context: TransformContext) -> TransformContext:
         context.output["private"] = False
         context.output["proxy_target_uid"] = context.obj.proxy_target_uid
         context.output["priority"] = 1
+        context.output["rathole_token"] = context.obj.rathole_token
 
     return context
 
@@ -976,7 +971,11 @@ def node_route_to_http_connection(
     url = GridURL(
         protocol=obj.protocol, host_or_ip=obj.host_or_ip, port=obj.port
     ).as_container_host()
-    return HTTPConnection(url=url, proxy_target_uid=obj.proxy_target_uid)
+    return HTTPConnection(
+        url=url,
+        proxy_target_uid=obj.proxy_target_uid,
+        rathole_token=obj.rathole_token,
+    )
 
 
 @transform(NodeMetadataV3, NodePeer)

@@ -85,7 +85,6 @@ class NodePeer(SyftObject):
     ping_status: NodePeerConnectionStatus | None = None
     ping_status_message: str | None = None
     pinged_timestamp: DateTime | None = None
-    rathole_token: str | None = None
 
     def existed_route(
         self, route: NodeRouteType | None = None, route_id: UID | None = None

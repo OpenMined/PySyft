@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 import base64
 from collections.abc import Callable
+from collections.abc import Iterator
 from copy import deepcopy
 from enum import Enum
 from getpass import getpass
@@ -48,9 +49,11 @@ from ..service.user.user_roles import ServiceRole
 from ..service.user.user_service import UserService
 from ..types.grid_url import GridURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.syft_object import SYFT_OBJECT_VERSION_3
 from ..types.uid import UID
 from ..util.logger import debug
 from ..util.telemetry import instrument
+from ..util.util import generate_token
 from ..util.util import prompt_warning_message
 from ..util.util import thread_ident
 from ..util.util import verify_tls
@@ -66,11 +69,6 @@ from .protocol import SyftProtocol
 if TYPE_CHECKING:
     # relative
     from ..service.network.node_peer import NodePeer
-
-
-# use to enable mitm proxy
-# from syft.grid.connections.http_connection import HTTPConnection
-# HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}
 
 
 def upgrade_tls(url: GridURL, response: Response) -> GridURL:
@@ -117,6 +115,7 @@ def forward_message_to_proxy(
 API_PATH = "/api/v2"
 DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
+INTERNAL_PROXY_URL = "http://proxy:80"
 
 
 class Routes(Enum):
@@ -129,15 +128,16 @@ class Routes(Enum):
     STREAM = f"{API_PATH}/stream"
 
 
-@serializable(attrs=["proxy_target_uid", "url"])
+@serializable(attrs=["proxy_target_uid", "url", "rathole_token"])
 class HTTPConnection(NodeConnection):
     __canonical_name__ = "HTTPConnection"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_3
 
     url: GridURL
     proxy_target_uid: UID | None = None
     routes: type[Routes] = Routes
     session_cache: Session | None = None
+    rathole_token: str | None = None
 
     @field_validator("url", mode="before")
     @classmethod
@@ -149,7 +149,11 @@ class HTTPConnection(NodeConnection):
         )
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
-        return HTTPConnection(url=self.url, proxy_target_uid=proxy_target_uid)
+        return HTTPConnection(
+            url=self.url,
+            proxy_target_uid=proxy_target_uid,
+            rathole_token=self.rathole_token,
+        )
 
     def stream_via(self, proxy_uid: UID, url_path: str) -> GridURL:
         # Update the presigned url path to
@@ -182,10 +186,24 @@ class HTTPConnection(NodeConnection):
             self.session_cache = session
         return self.session_cache
 
-    def _make_get(self, path: str, params: dict | None = None) -> bytes:
-        url = self.url.with_path(path)
+    def _make_get(
+        self, path: str, params: dict | None = None, stream: bool = False
+    ) -> bytes | Iterator[Any]:
+        headers = {}
+        url = self.url
+
+        if self.rathole_token:
+            url = GridURL.from_url(INTERNAL_PROXY_URL)
+            headers = {"Host": self.host_or_ip}
+
+        url = url.with_path(path)
         response = self.session.get(
-            str(url), verify=verify_tls(), proxies={}, params=params
+            str(url),
+            verify=verify_tls(),
+            proxies={},
+            params=params,
+            headers=headers,
+            stream=stream,
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -195,6 +213,9 @@ class HTTPConnection(NodeConnection):
         # upgrade to tls if available
         self.url = upgrade_tls(self.url, response)
 
+        if stream:
+            return response.iter_content(chunk_size=None)
+
         return response.content
 
     def _make_post(
@@ -203,9 +224,21 @@ class HTTPConnection(NodeConnection):
         json: dict[str, Any] | None = None,
         data: bytes | None = None,
     ) -> bytes:
-        url = self.url.with_path(path)
+        headers = {}
+        url = self.url
+
+        if self.rathole_token:
+            url = GridURL.from_url(INTERNAL_PROXY_URL)
+            headers = {"Host": self.host_or_ip}
+
+        url = url.with_path(path)
         response = self.session.post(
-            str(url), verify=verify_tls(), json=json, proxies={}, data=data
+            str(url),
+            verify=verify_tls(),
+            json=json,
+            proxies={},
+            data=data,
+            headers=headers,
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -683,7 +716,10 @@ class SyftClient:
         )
 
     def exchange_route(
-        self, client: Self, protocol: SyftProtocol = SyftProtocol.HTTP
+        self,
+        client: Self,
+        protocol: SyftProtocol = SyftProtocol.HTTP,
+        reverse_tunnel: bool = False,
     ) -> SyftSuccess | SyftError:
         # relative
         from ..service.network.routes import connection_to_route
@@ -693,6 +729,8 @@ class SyftClient:
             remote_node_route = connection_to_route(client.connection)
             if client.metadata is None:
                 return SyftError(f"client {client}'s metadata is None!")
+
+            self_node_route.rathole_token = generate_token() if reverse_tunnel else None
 
             return self.api.services.network.exchange_credentials_with(
                 self_node_route=self_node_route,
