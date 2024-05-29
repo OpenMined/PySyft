@@ -427,7 +427,7 @@ class Request(SyncableSyftObject):
         if self.code and len(self.code.output_readers) > 0:
             # owner_names = ["canada", "US"]
             owners_string = " and ".join(
-                [f"<strong>{x}</strong>" for x in self.code.output_reader_names]
+                [f"<strong>{x}</strong>" for x in self.code.output_reader_names]  # type: ignore
             )
             shared_with_line += (
                 f"<p><strong>Custom Policy: </strong> "
@@ -523,7 +523,7 @@ class Request(SyncableSyftObject):
         )
 
     @property
-    def code(self) -> Any:
+    def code(self) -> UserCode | SyftError:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
                 return change.code
@@ -707,8 +707,6 @@ class Request(SyncableSyftObject):
             print("Creating job for existing user code")
             job = job_service.create_job_for_user_code_id(self.code.id)
         else:
-            print("returning existing job")
-            print("setting permission")
             job = existing_jobs[-1]
             res = job_service.add_read_permission_job_for_code_owner(job, self.code)
             print(res)
@@ -729,6 +727,126 @@ class Request(SyncableSyftObject):
             if job.result and job.result.id == action_object.id:
                 return job
 
+    def _create_action_object_for_deposited_result(
+        self,
+        result: Any,
+    ) -> ActionObject | SyftError:
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return api
+
+        # Ensure result is an ActionObject
+        if isinstance(result, ActionObject):
+            existing_job = self._get_job_from_action_object(result)
+            if existing_job is not None:
+                return SyftError(
+                    message=f"This ActionObject is already the result of Job {existing_job.id}"
+                )
+            action_object = result
+        else:
+            action_object = ActionObject.from_obj(
+                result,
+                syft_client_verify_key=api.signing_key.verify_key,
+                syft_node_location=api.node_uid,
+            )
+
+        # Ensure ActionObject exists on this node
+        action_object_is_from_this_node = isinstance(
+            api.services.action.exists(action_object.id.id), SyftSuccess
+        )
+        if (
+            action_object.syft_blob_storage_entry_id is None
+            or not action_object_is_from_this_node
+        ):
+            action_object.reload_cache()
+            result = action_object._send(self.node_uid, self.syft_client_verify_key)
+            if isinstance(result, SyftError):
+                return result
+
+        return action_object
+
+    def _create_output_history_for_deposited_result(
+        self, job: Job, result: Any
+    ) -> SyftSuccess | SyftError:
+        code = self.code
+        if isinstance(code, SyftError):
+            return code
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return api
+
+        input_ids = {}
+        input_policy = code.input_policy
+        if input_policy is not None:
+            for input_ in input_policy.inputs.values():
+                input_ids.update(input_)
+        res = api.services.code.store_execution_output(
+            user_code_id=code.id,
+            outputs=result,
+            job_id=job.id,
+            input_ids=input_ids,
+        )
+
+        return res
+
+    def deposit_result(
+        self,
+        result: Any,
+        logs: str = "",
+        add_code_owner_read_permissions: bool = True,
+    ) -> Job | SyftError:
+        """
+        Adds a result to this Request:
+        - Create an ActionObject from the result (if not already an ActionObject)
+        - Ensure ActionObject exists on this node
+        - Create Job with new result and logs
+        - Update the output history
+
+        Args:
+            result (Any): ActionObject or any object to be saved as an ActionObject.
+            logs (str | None, optional): Optional logs to be saved with the Job. Defaults to None.
+
+        Returns:
+            Job | SyftError: Job object if successful, else SyftError.
+        """
+
+        # TODO check if this is a low-side request. If not, SyftError
+
+        api = self._get_api()
+        if isinstance(api, SyftError):
+            return api
+        code = self.code
+        if isinstance(code, SyftError):
+            return code
+
+        # Create ActionObject
+        action_object = self._create_action_object_for_deposited_result(result)
+        if isinstance(action_object, SyftError):
+            return action_object
+
+        # Create Job
+        job = api.services.job.create_job_for_user_code_id(
+            code.id,
+            result=action_object,
+            log_stdout=logs,
+            status=JobStatus.COMPLETED,
+            add_code_owner_read_permissions=add_code_owner_read_permissions,
+        )
+        if isinstance(job, SyftError):
+            return job
+
+        # Add to output history
+        res = self._create_output_history_for_deposited_result(job, result)
+        if isinstance(res, SyftError):
+            return res
+
+        return job
+
+    # @deprecated(
+    #     return_syfterror=True,
+    #     reason="accept_by_depositing_result has been removed. Use approve instead to "
+    #     "approve this request, or deposit_result to deposit a new result.",
+    # )
     def accept_by_depositing_result(
         self, result: Any, force: bool = False
     ) -> SyftError | SyftSuccess:
@@ -904,7 +1022,7 @@ class Request(SyncableSyftObject):
                 for inps in code.input_policy.inputs.values():
                     input_ids.update(inps)
 
-            res = api.services.code.store_as_history(
+            res = api.services.code.store_execution_output(
                 user_code_id=code.id,
                 outputs=result,
                 job_id=job.id,

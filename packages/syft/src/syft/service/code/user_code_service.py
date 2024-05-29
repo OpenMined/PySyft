@@ -541,7 +541,7 @@ class UserCodeService(AbstractService):
             # this currently only works for nested syft_functions
             # and admins executing on high side (TODO, decide if we want to increment counter)
             if not skip_fill_cache and output_policy is not None:
-                res = code.store_as_history(
+                res = code.store_execution_output(
                     context=context,
                     outputs=result,
                     job_id=context.job_id,
@@ -596,9 +596,11 @@ class UserCodeService(AbstractService):
         return SyftSuccess(message="you have permission")
 
     @service_method(
-        path="code.store_as_history", name="store_as_history", roles=GUEST_ROLE_LEVEL
+        path="code.store_execution_output",
+        name="store_execution_output",
+        roles=GUEST_ROLE_LEVEL,
     )
-    def store_as_history(
+    def store_execution_output(
         self,
         context: AuthedServiceContext,
         user_code_id: UID,
@@ -610,11 +612,12 @@ class UserCodeService(AbstractService):
         if code_result.is_err():
             return SyftError(message=code_result.err())
 
+        is_admin = context.role == ServiceRole.ADMIN
         code: UserCode = code_result.ok()
-        if not code.get_status(context).approved:
-            return SyftError(message="Code is not approved")
+        if not code.get_status(context).approved and not is_admin:
+            return SyftError(message="This UserCode is not approved")
 
-        res = code.store_as_history(
+        res = code.store_execution_output(
             context=context,
             outputs=outputs,
             job_id=job_id,
