@@ -36,6 +36,8 @@ class RatholeService:
         """
 
         rathole_route = peer.get_rathole_route()
+        if not rathole_route:
+            raise Exception(f"Peer: {peer} has no rathole route: {rathole_route}")
 
         random_port = self.get_random_port()
 

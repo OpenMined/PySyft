@@ -31,7 +31,9 @@ from ...types.transforms import transform_method
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ...util.util import generate_token
+from ...util.util import get_env
 from ...util.util import prompt_warning_message
+from ...util.util import str_to_bool
 from ..context import AuthedServiceContext
 from ..data_subject.data_subject import NamePartitionKey
 from ..metadata.node_metadata import NodeMetadataV3
@@ -60,6 +62,12 @@ from .routes import PythonNodeRoute
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 NodeTypePartitionKey = PartitionKey(key="node_type", type_=NodeType)
 OrderByNamePartitionKey = PartitionKey(key="name", type_=str)
+
+REVERSE_TUNNEL_RATHOLE_ENABLED = "REVERSE_TUNNEL_RATHOLE_ENABLED"
+
+
+def get_rathole_enabled() -> bool:
+    return str_to_bool(get_env(REVERSE_TUNNEL_RATHOLE_ENABLED, "false"))
 
 
 @serializable()
@@ -151,7 +159,8 @@ class NetworkService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.stash = NetworkStash(store=store)
-        self.rathole_service = RatholeService()
+        if get_rathole_enabled():
+            self.rathole_service = RatholeService()
 
     # TODO: Check with MADHAVA, can we even allow guest user to introduce routes to
     # domain nodes?
@@ -281,8 +290,14 @@ class NetworkService(AbstractService):
         if result.is_err():
             return SyftError(message="Failed to update route information.")
 
-        if reverse_tunnel:
+        if reverse_tunnel and get_rathole_enabled():
             rathole_route = self_node_peer.get_rathole_route()
+            if not rathole_route:
+                raise Exception(
+                    "Failed to exchange credentials. "
+                    + f"Peer: {self_node_peer} has no rathole route: {rathole_route}"
+                )
+
             remote_url = GridURL(
                 host_or_ip=remote_node_route.host_or_ip, port=remote_node_route.port
             )

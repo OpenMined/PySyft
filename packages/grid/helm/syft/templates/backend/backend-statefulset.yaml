@@ -90,7 +90,7 @@ spec:
             {{- if .Values.rathole.enabled }}
             - name: RATHOLE_PORT
               value: {{ .Values.rathole.port | quote }}
-            - name: RATHOLE_ENABLED
+            - name: REVERSE_TUNNEL_RATHOLE_ENABLED
               value: "true"
             {{- end }}
             # MongoDB

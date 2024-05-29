@@ -155,6 +155,9 @@ class Settings(BaseSettings):
     ASSOCIATION_REQUEST_AUTO_APPROVAL: bool = str_to_bool(
         os.getenv("ASSOCIATION_REQUEST_AUTO_APPROVAL", "False")
     )
+    REVERSE_TUNNEL_RATHOLE_ENABLED: bool = str_to_bool(
+        os.getenv("REVERSE_TUNNEL_RATHOLE_ENABLED", "false")
+    )
     model_config = SettingsConfigDict(case_sensitive=True)
 
 

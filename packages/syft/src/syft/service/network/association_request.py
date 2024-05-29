@@ -46,7 +46,7 @@ class AssociationRequestChange(Change):
 
         rathole_route = self.remote_peer.get_rathole_route()
 
-        if rathole_route.rathole_token is None:
+        if rathole_route and rathole_route.rathole_token is None:
             try:
                 remote_client: SyftClient = self.remote_peer.client_with_context(
                     context=service_ctx

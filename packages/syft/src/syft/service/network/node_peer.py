@@ -269,7 +269,7 @@ class NodePeer(SyftObject):
                 highest_priority_route = route
         return highest_priority_route
 
-    def get_rathole_route(self) -> NodeRoute | None:
+    def get_rathole_route(self) -> HTTPNodeRoute | None:
         for route in self.node_routes:
             if hasattr(route, "rathole_token") and route.rathole_token:
                 return route

@@ -1,5 +1,5 @@
-# stdlib
-from typing import Self
+# third party
+from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable
