@@ -642,7 +642,7 @@ class Job(SyncableSyftObject):
 
     def wait(
         self, job_only: bool = False, timeout: int | None = None
-    ) -> Any | SyftNotReady:
+    ) -> Any | SyftNotReady | SyftError:
         # stdlib
         from time import sleep
 
@@ -652,6 +652,11 @@ class Job(SyncableSyftObject):
         )
         if self.resolved:
             return self.resolve
+
+        if not api.services.code.is_execution_on_owned_args_allowed():
+            return SyftError(
+                message="You do not have the permissions for mock execution, please contact the admin."
+            )
 
         if not job_only and self.result is not None:
             self.result.wait(timeout)

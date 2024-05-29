@@ -350,6 +350,11 @@ class UserCodeService(AbstractService):
         else:
             return True
 
+    @service_method(
+        path="code.is_execution_on_owned_args_allowed",
+        name="is_execution_on_owned_args_allowed",
+        roles=GUEST_ROLE_LEVEL,
+    )
     def is_execution_on_owned_args_allowed(
         self, context: AuthedServiceContext
     ) -> bool | SyftError:

@@ -1388,7 +1388,7 @@ class ActionObject(SyncableSyftObject):
     def as_empty_data(self) -> ActionDataEmpty:
         return ActionDataEmpty(syft_internal_type=self.syft_internal_type)
 
-    def wait(self, timeout: int | None = None) -> ActionObject:
+    def wait(self, timeout: int | None = None) -> ActionObject | SyftError:
         # relative
         from ...client.api import APIRegistry
 
