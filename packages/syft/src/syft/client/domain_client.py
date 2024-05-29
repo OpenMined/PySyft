@@ -147,27 +147,6 @@ class DomainClient(SyftClient):
             return valid
         return self.api.services.dataset.add(dataset=dataset)
 
-    # def get_permissions_for_other_node(
-    #     self,
-    #     items: list[Union[ActionObject, SyftObject]],
-    # ) -> dict:
-    #     if len(items) > 0:
-    #         if not len({i.syft_node_location for i in items}) == 1 or (
-    #             not len({i.syft_client_verify_key for i in items}) == 1
-    #         ):
-    #             raise ValueError("permissions from different nodes")
-    #         item = items[0]
-    #         api = APIRegistry.api_for(
-    #             item.syft_node_location, item.syft_client_verify_key
-    #         )
-    #         if api is None:
-    #             raise ValueError(
-    #                 f"Can't access the api. Please log in to {item.syft_node_location}"
-    #             )
-    #         return api.services.sync.get_permissions(items)
-    #     else:
-    #         return {}
-
     def refresh(self) -> None:
         if self.credentials:
             self._fetch_node_metadata(self.credentials)
@@ -196,7 +175,7 @@ class DomainClient(SyftClient):
 
         for action_object in action_objects:
             # NOTE permissions are added separately server side
-            action_object._send(self, add_storage_permission=False)
+            action_object._send(self.id, self.verify_key, add_storage_permission=False)
 
         ignored_batches = resolved_state.ignored_batches
 

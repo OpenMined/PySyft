@@ -33,9 +33,14 @@ class LogService(AbstractService):
 
     @service_method(path="log.add", name="add", roles=DATA_SCIENTIST_ROLE_LEVEL)
     def add(
-        self, context: AuthedServiceContext, uid: UID, job_id: UID
+        self,
+        context: AuthedServiceContext,
+        uid: UID,
+        job_id: UID,
+        stdout: str = "",
+        stderr: str = "",
     ) -> SyftSuccess | SyftError:
-        new_log = SyftLog(id=uid, job_id=job_id)
+        new_log = SyftLog(id=uid, job_id=job_id, stdout=stdout, stderr=stderr)
         result = self.stash.set(context.credentials, new_log)
         if result.is_err():
             return SyftError(message=str(result.err()))

@@ -11,6 +11,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..code.user_code import UserCode
@@ -304,13 +305,21 @@ class JobService(AbstractService):
         roles=DATA_OWNER_ROLE_LEVEL,
     )
     def create_job_for_user_code_id(
-        self, context: AuthedServiceContext, user_code_id: UID
+        self,
+        context: AuthedServiceContext,
+        user_code_id: UID,
+        result: ActionObject | None = None,
+        log_stdout: str | None = None,
+        log_stderr: str | None = None,
+        status: JobStatus = JobStatus.CREATED,
+        add_code_owner_read_permissions: bool = True,
     ) -> Job | SyftError:
         job = Job(
             id=UID(),
             node_uid=context.node.id,
             action=None,
-            result_id=None,
+            result=result,
+            status=status,
             parent_id=None,
             log_id=UID(),
             job_pid=None,
@@ -323,19 +332,21 @@ class JobService(AbstractService):
 
         # The owner of the code should be able to read the job
         self.stash.set(context.credentials, job)
-        self.add_read_permission_job_for_code_owner(context, job, user_code)
 
         log_service = context.node.get_service("logservice")
-        res = log_service.add(context, job.log_id, job.id)
+        res = log_service.add(
+            context,
+            job.log_id,
+            job.id,
+            stdout=log_stdout,
+            stderr=log_stderr,
+        )
         if isinstance(res, SyftError):
             return res
-        # The owner of the code should be able to read the job log
-        self.add_read_permission_log_for_code_owner(context, job.log_id, user_code)
-        # log_service.stash.add_permission(
-        #     ActionObjectPermission(
-        #         job.log_id, ActionPermission.READ, user_code.user_verify_key
-        #     )
-        # )
+
+        if add_code_owner_read_permissions:
+            self.add_read_permission_job_for_code_owner(context, job, user_code)
+            self.add_read_permission_log_for_code_owner(context, job.log_id, user_code)
 
         return job
 

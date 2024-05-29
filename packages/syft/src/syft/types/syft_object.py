@@ -49,6 +49,8 @@ from .uid import UID
 
 if TYPE_CHECKING:
     # relative
+    from ..client.api import SyftAPI
+    from ..service.response import SyftError
     from ..service.sync.diff_state import AttrDiff
 
 IntStr = int | str
@@ -699,6 +701,15 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                         )
                         diff_attrs.append(diff_attr)
         return diff_attrs
+
+    def _get_api(self) -> SyftAPI | SyftError:
+        # relative
+        from ..client.api import APIRegistry
+
+        api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
+        if api is None:
+            return SyftError(f"Can't access the api. You must login to {self.node_uid}")
+        return api
 
     ## OVERRIDING pydantic.BaseModel.__getattr__
     ## return super().__getattribute__(item) -> return self.__getattribute__(item)
