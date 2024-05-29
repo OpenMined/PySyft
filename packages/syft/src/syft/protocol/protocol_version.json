@@ -18,12 +18,22 @@
           "version": 3,
           "hash": "0f812fdd5aecc3e3aa1a7c953bbf7f8d8b03a77c5cdbb37e981fa91c8134c9f4",
           "action": "add"
+        },
+        "4": {
+          "version": 4,
+          "hash": "e9120fdf714498cbd2f3da727a4d6e18ea2040b2e8487ea38dff4900de2b14d0",
+          "action": "add"
         }
       },
       "NodeSettings": {
         "4": {
           "version": 4,
           "hash": "318e578f8a9af213a6af0cc2c567b62196b0ff81769d808afff4dd1eb7c372b8",
+          "action": "add"
+        },
+        "5": {
+          "version": 5,
+          "hash": "cde18eb23fdffcfba47bc0e85efdbba1d59f1f5d6baa9c9690e1af14b35eb74e",
           "action": "add"
         }
       },
@@ -189,6 +199,20 @@
         "5": {
           "version": 5,
           "hash": "4934bf72bb10ac0a670c87ab735175088274e090819436563543473e64cf15e3",
+          "action": "add"
+        }
+      },
+      "CreateCustomImageChange": {
+        "3": {
+          "version": 3,
+          "hash": "e5f099940a7623f145f51f3e15b97a910a1d7fda1f67739420fed3035d1f2995",
+          "action": "add"
+        }
+      },
+      "HTMLObject": {
+        "1": {
+          "version": 1,
+          "hash": "010d9aaca95f3fdfc8d1f97d01c1bd66483da774a59275b310c08d6912f7f863",
           "action": "add"
         }
       }
