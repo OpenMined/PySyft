@@ -650,6 +650,12 @@ class Job(SyncableSyftObject):
             node_uid=self.syft_node_location,
             user_verify_key=self.syft_client_verify_key,
         )
+
+        if api is None:
+            raise ValueError(
+                f"Can't access Syft API. You must login to node with id '{self.syft_node_location}'"
+            )
+
         if self.resolved:
             return self.resolve
 
@@ -661,10 +667,6 @@ class Job(SyncableSyftObject):
         if not job_only and self.result is not None:
             self.result.wait(timeout)
 
-        if api is None:
-            raise ValueError(
-                f"Can't access Syft API. You must login to {self.syft_node_location}"
-            )
         print_warning = True
         counter = 0
         while True:
