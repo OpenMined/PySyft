@@ -189,6 +189,7 @@ class NetworkService(AbstractService):
             _rathole_route = self_node_peer.node_routes[-1]
             _rathole_route.rathole_token = generate_token()
             _rathole_route.host_or_ip = f"{self_node_peer.name}.syft.local"
+            self_node_peer.node_routes[-1] = _rathole_route
 
         if isinstance(self_node_peer, SyftError):
             return self_node_peer
