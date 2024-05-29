@@ -32,7 +32,7 @@ class NewDateTime(pydantic.BaseModel):
     def __hash__(self) -> int:
         return hash(self.utc_timestamp)
 
-    def __sub__(self, other: "NewDateTime") -> "NewDateTime":
+    def __sub__(self, other: Self) -> Self:
         res = self.utc_timestamp - other.utc_timestamp
         return NewDateTime(utc_timestamp=res)
 
