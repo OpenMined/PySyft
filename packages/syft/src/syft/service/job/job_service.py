@@ -309,8 +309,8 @@ class JobService(AbstractService):
         context: AuthedServiceContext,
         user_code_id: UID,
         result: ActionObject | None = None,
-        log_stdout: str | None = None,
-        log_stderr: str | None = None,
+        log_stdout: str = "",
+        log_stderr: str = "",
         status: JobStatus = JobStatus.CREATED,
         add_code_owner_read_permissions: bool = True,
     ) -> Job | SyftError:

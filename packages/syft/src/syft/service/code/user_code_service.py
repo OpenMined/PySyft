@@ -612,9 +612,10 @@ class UserCodeService(AbstractService):
         if code_result.is_err():
             return SyftError(message=code_result.err())
 
+        is_admin = context.role == ServiceRole.ADMIN
         code: UserCode = code_result.ok()
-        if not code.get_status(context).approved:
-            return SyftError(message="Code is not approved")
+        if not code.get_status(context).approved and not is_admin:
+            return SyftError(message="This UserCode is not approved")
 
         res = code.store_execution_output(
             context=context,

@@ -84,6 +84,7 @@ from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..response import SyftWarning
 from ..user.user import UserView
+from ..user.user_roles import ServiceRole
 from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
 from .unparse import unparse
@@ -529,6 +530,18 @@ class UserCode(SyncableSyftObject):
             return None
 
     @property
+    def output_policy_id(self) -> UID | None:
+        if self.output_policy_init_kwargs is not None:
+            return self.output_policy_init_kwargs.get("id", None)
+        return None
+
+    @property
+    def input_policy_id(self) -> UID | None:
+        if self.input_policy_init_kwargs is not None:
+            return self.input_policy_init_kwargs.get("id", None)
+        return None
+
+    @property
     def output_policy(self) -> OutputPolicy | None:  # type: ignore
         if not self.status.approved:
             return None
@@ -570,12 +583,12 @@ class UserCode(SyncableSyftObject):
         job_id: UID | None = None,
         input_ids: dict[str, UID] | None = None,
     ) -> ExecutionOutput | SyftError:
+        is_admin = context.role == ServiceRole.ADMIN
         output_policy = self.get_output_policy(context)
-        if output_policy is None:
+        if output_policy is None and not is_admin:
             return SyftError(
                 message="You must wait for the output policy to be approved"
             )
-
         output_ids = filter_only_uids(outputs)
 
         output_service = context.node.get_service("outputservice")
@@ -586,7 +599,7 @@ class UserCode(SyncableSyftObject):
             output_ids=output_ids,
             executing_user_verify_key=self.user_verify_key,
             job_id=job_id,
-            output_policy_id=output_policy.id,
+            output_policy_id=self.output_policy_id,
             input_ids=input_ids,
         )
         if isinstance(execution_result, SyftError):

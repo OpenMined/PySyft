@@ -37,7 +37,6 @@ from ...types.uid import LineageID
 from ...types.uid import UID
 from ...util import options
 from ...util.colors import SURFACE
-from ...util.decorators import deprecated
 from ...util.markdown import markdown_as_class_with_fields
 from ...util.notebook_ui.icons import Icon
 from ...util.util import prompt_warning_message
@@ -793,7 +792,7 @@ class Request(SyncableSyftObject):
     def deposit_result(
         self,
         result: Any,
-        logs: str | None = None,
+        logs: str = "",
         add_code_owner_read_permissions: bool = True,
     ) -> Job | SyftError:
         """
@@ -843,11 +842,11 @@ class Request(SyncableSyftObject):
 
         return job
 
-    @deprecated(
-        return_syfterror=True,
-        reason="accept_by_depositing_result has been removed. Use approve instead to "
-        "approve this request, or deposit_result to deposit a new result.",
-    )
+    # @deprecated(
+    #     return_syfterror=True,
+    #     reason="accept_by_depositing_result has been removed. Use approve instead to "
+    #     "approve this request, or deposit_result to deposit a new result.",
+    # )
     def accept_by_depositing_result(
         self, result: Any, force: bool = False
     ) -> SyftError | SyftSuccess:

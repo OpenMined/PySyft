@@ -702,7 +702,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry, SyftMigrationRegistry):
                         diff_attrs.append(diff_attr)
         return diff_attrs
 
-    def _get_api(self) -> SyftAPI | SyftError:
+    def _get_api(self) -> "SyftAPI | SyftError":
         # relative
         from ..client.api import APIRegistry
 
