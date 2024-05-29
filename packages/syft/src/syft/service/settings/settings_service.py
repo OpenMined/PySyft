@@ -25,6 +25,7 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
+from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
 from ..warnings import HighSideCRUDWarning
 from .settings import NodeSettings
@@ -248,6 +249,7 @@ class SettingsService(AbstractService):
     @service_method(
         path="settings.welcome_show",
         name="welcome_show",
+        roles=GUEST_ROLE_LEVEL,
     )
     def welcome_show(
         self,
