@@ -47,11 +47,13 @@ class MockKeyValueBackingStore(dict, KeyValueBackingStore):
 @serializable()
 class MockObjectType(SyftObject):
     __canonical_name__ = "mock_type"
+    __version__ = 1
 
 
 @serializable()
 class MockStore(DocumentStore):
     __canonical_name__ = "MockStore"
+    __version__ = 1
     pass
 
 
@@ -64,6 +66,7 @@ class MockSyftObject(SyftObject):
 @serializable()
 class MockStoreConfig(StoreConfig):
     __canonical_name__ = "MockStoreConfig"
+    __version__ = 1
     store_type: type[DocumentStore] = MockStore
     db_name: str = "testing"
     backing_store: type[KeyValueBackingStore] = MockKeyValueBackingStore
