@@ -90,8 +90,10 @@ IPYNB_BACKGROUND_PREFIXES = ["_ipy", "_repr", "__ipython", "__pydantic"]
 
 def _has_config_dict(t: Any) -> bool:
     return (
-        isinstance(t, type)
-        and issubclass(t, BaseModel)
+        # Use this instead of `issubclass`` to be compatible with python 3.10
+        # `inspect.isclass(t) and issubclass(t, BaseModel)`` wouldn't work with
+        # generics, e.g. `set[sy.UID]`, in python 3.10
+        (hasattr(t, "__mro__") and BaseModel in t.__mro__)
         or hasattr(t, "__pydantic_config__")
     )
 
