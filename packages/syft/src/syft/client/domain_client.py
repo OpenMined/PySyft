@@ -11,6 +11,7 @@ from typing import cast
 # third party
 from loguru import logger
 import markdown
+from result import Result
 from tqdm import tqdm
 
 # relative
@@ -324,6 +325,11 @@ class DomainClient(SyftClient):
         if self.api.has_service(name):
             return getattr(self.api.services, name)
         return None
+
+    def set_node_side_type_dangerous(
+        self, node_side_type: str
+    ) -> Result[SyftSuccess, SyftError]:
+        return self.api.services.settings.set_node_side_type_dangerous(node_side_type)
 
     @property
     def data_subject_registry(self) -> APIModule | None:
