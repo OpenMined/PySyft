@@ -225,7 +225,7 @@ def get_venv_packages() -> str:
     if pip_path is None:
         raise Exception("pip not found")
     process = subprocess.Popen(
-        [pip_path, "list", "--format=freeze"], stdout=subprocess.PIPE
+        [pip_path, "list", "--format=freeze"], stdout=subprocess.PIPE, shell=False
     )
     output, _ = process.communicate()
     return output.decode()
