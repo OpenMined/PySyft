@@ -77,7 +77,9 @@ class NodeSettingsUpdate(PartialSyftObject):
     @classmethod
     def validate_node_side_type(cls, v: str) -> None:
         msg = f"You cannot update 'node_side_type' through NodeSettingsUpdate. \
-Please use client.set_node_side_type_dangerous(node_side_type={v})."
+Please use client.set_node_side_type_dangerous(node_side_type={v}). \
+Be aware if you have private data on the node and you want to change it to the Low Side, \
+as information might be leaked."
         try:
             display(SyftInfo(message=msg))
         except Exception:
