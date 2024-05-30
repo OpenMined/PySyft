@@ -223,12 +223,12 @@ def in_kubernetes() -> bool:
 
 def get_venv_packages() -> str:
     try:
+        # subprocess call is safe because it uses a fully qualified path and fixed arguments
         result = subprocess.run(
             [sys.executable, "-m", "pip", "list", "--format=freeze"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             check=True,
-            text=True,
+            text=True
         )
         return result.stdout
     except subprocess.CalledProcessError as e:
