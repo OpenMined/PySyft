@@ -19,7 +19,7 @@ AUTOMOUNT_CONFIG = Path("./automount.yaml")
 PRIVATE_CONF_DIR = Path("/etc/mounts/")
 PRIVATE_CONF_DIR.mkdir(mode=0o600, parents=True, exist_ok=True)
 
-logger = logging.getLogger("uvicorn.error")
+logger = logging.getLogger("hypercorn.error")
 
 app = FastAPI(title="SeaweedFS Remote Mount API")
 
