@@ -126,6 +126,41 @@ class SettingsService(AbstractService):
             return result
 
     @service_method(
+        path="settings.set_node_side_type_dangerous",
+        name="set_node_side_type_dangerous",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def set_node_side_type_dangerous(
+        self, context: AuthedServiceContext, node_side_type: str
+    ) -> Result[SyftSuccess, SyftError]:
+        side_type_options = [e.value for e in NodeSideType]
+        if node_side_type not in side_type_options:
+            return SyftError(
+                message=f"Not a valid node_side_type, please use one of the options from: {side_type_options}"
+            )
+
+        result = self.stash.get_all(context.credentials)
+        if result.is_ok():
+            current_settings = result.ok()
+            if len(current_settings) > 0:
+                new_settings = current_settings[0]
+                new_settings.node_side_type = node_side_type
+                update_result = self.stash.update(context.credentials, new_settings)
+                if update_result.is_ok():
+                    return SyftSuccess(
+                        message=(
+                            "Settings updated successfully. "
+                            + "You must call <client>.refresh() to sync your client with the changes."
+                        )
+                    )
+                else:
+                    return SyftError(message=update_result.err())
+            else:
+                return SyftError(message="No settings found")
+        else:
+            return SyftError(message=result.err())
+
+    @service_method(
         path="settings.enable_notifications",
         name="enable_notifications",
         roles=ADMIN_ROLE_LEVEL,

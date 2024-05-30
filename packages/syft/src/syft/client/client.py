@@ -738,7 +738,7 @@ class SyftClient:
 
     @property
     def settings(self) -> APIModule | None:
-        if self.api.has_service("user"):
+        if self.api.has_service("settings"):
             return self.api.services.settings
         return None
 
