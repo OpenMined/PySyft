@@ -66,6 +66,7 @@ from ..service.job.job_stash import JobType
 from ..service.log.log_service import LogService
 from ..service.metadata.metadata_service import MetadataService
 from ..service.metadata.node_metadata import NodeMetadataV3
+from ..service.migration.migration_service import MigrationService
 from ..service.network.network_service import NetworkService
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notification.notification_service import NotificationService
@@ -406,13 +407,16 @@ class Node(AbstractNode):
 
         self.post_init()
 
+        if migrate:
+            self.find_and_migrate_data()
+        else:
+            self.find_and_migrate_data([NodeSettings])
+
         self.create_initial_settings(admin_email=root_email)
 
         self.init_blob_storage(config=blob_storage_config)
 
         # Migrate data before any operation on db
-        if migrate:
-            self.find_and_migrate_data()
 
         # first migrate, for backwards compatibility
         self.init_queue_manager(queue_config=self.queue_config)
@@ -712,69 +716,79 @@ class Node(AbstractNode):
 
         return klasses_to_be_migrated
 
-    def find_and_migrate_data(self) -> None:
-        # Track all object type that need migration for document store
+    def find_and_migrate_data(
+        self, document_store_object_types: list[type[SyftObject]] | None = None
+    ) -> None:
         context = AuthedServiceContext(
             node=self,
             credentials=self.verify_key,
             role=ServiceRole.ADMIN,
         )
-        document_store_object_types = [
-            partition.settings.object_type
-            for partition in self.document_store.partitions.values()
-        ]
+        migration_service = self.get_service("migrationservice")
+        return migration_service.migrate_data(context, document_store_object_types)
 
-        object_pending_migration = self._find_klasses_pending_for_migration(
-            object_types=document_store_object_types
-        )
+        # # Track all object type that need migration for document store
+        # context = AuthedServiceContext(
+        #     node=self,
+        #     credentials=self.verify_key,
+        #     role=ServiceRole.ADMIN,
+        # )
+        # document_store_object_types = [
+        #     partition.settings.object_type
+        #     for partition in self.document_store.partitions.values()
+        # ]
 
-        if object_pending_migration:
-            print(
-                "Object in Document Store that needs migration: ",
-                object_pending_migration,
-            )
+        # object_pending_migration = self._find_klasses_pending_for_migration(
+        #     object_types=document_store_object_types
+        # )
 
-        # Migrate data for objects in document store
-        for object_type in object_pending_migration:
-            canonical_name = object_type.__canonical_name__
-            object_partition = self.document_store.partitions.get(canonical_name)
-            if object_partition is None:
-                continue
+        # if object_pending_migration:
+        #     print(
+        #         "Object in Document Store that needs migration: ",
+        #         object_pending_migration,
+        #     )
 
-            print(f"Migrating data for: {canonical_name} table.")
-            migration_status = object_partition.migrate_data(
-                to_klass=object_type, context=context
-            )
-            if migration_status.is_err():
-                raise Exception(
-                    f"Failed to migrate data for {canonical_name}. Error: {migration_status.err()}"
-                )
+        # # Migrate data for objects in document store
+        # for object_type in object_pending_migration:
+        #     canonical_name = object_type.__canonical_name__
+        #     object_partition = self.document_store.partitions.get(canonical_name)
+        #     if object_partition is None:
+        #         continue
 
-        # Track all object types from action store
-        action_object_types = [Action, ActionObject]
-        action_object_types.extend(ActionObject.__subclasses__())
-        action_object_pending_migration = self._find_klasses_pending_for_migration(
-            action_object_types
-        )
+        #     print(f"Migrating data for: {canonical_name} table.")
+        #     migration_status = object_partition.migrate_data(
+        #         to_klass=object_type, context=context
+        #     )
+        #     if migration_status.is_err():
+        #         raise Exception(
+        #             f"Failed to migrate data for {canonical_name}. Error: {migration_status.err()}"
+        #         )
 
-        if action_object_pending_migration:
-            print(
-                "Object in Action Store that needs migration: ",
-                action_object_pending_migration,
-            )
+        # # Track all object types from action store
+        # action_object_types = [Action, ActionObject]
+        # action_object_types.extend(ActionObject.__subclasses__())
+        # action_object_pending_migration = self._find_klasses_pending_for_migration(
+        #     action_object_types
+        # )
 
-        # Migrate data for objects in action store
-        for object_type in action_object_pending_migration:
-            canonical_name = object_type.__canonical_name__
+        # if action_object_pending_migration:
+        #     print(
+        #         "Object in Action Store that needs migration: ",
+        #         action_object_pending_migration,
+        #     )
 
-            migration_status = self.action_store.migrate_data(
-                to_klass=object_type, credentials=self.verify_key
-            )
-            if migration_status.is_err():
-                raise Exception(
-                    f"Failed to migrate data for {canonical_name}. Error: {migration_status.err()}"
-                )
-        print("Data Migrated to latest version !!!")
+        # # Migrate data for objects in action store
+        # for object_type in action_object_pending_migration:
+        #     canonical_name = object_type.__canonical_name__
+
+        #     migration_status = self.action_store.migrate_data(
+        #         to_klass=object_type, credentials=self.verify_key
+        #     )
+        #     if migration_status.is_err():
+        #         raise Exception(
+        #             f"Failed to migrate data for {canonical_name}. Error: {migration_status.err()}"
+        #         )
+        # print("Data Migrated to latest version !!!")
 
     @property
     def guest_client(self) -> SyftClient:
@@ -926,7 +940,7 @@ class Node(AbstractNode):
             {"svc": CodeHistoryService},
             {"svc": MetadataService},
             {"svc": BlobStorageService},
-            {"svc": MigrateStateService},
+            {"svc": MigrationService},
             {"svc": SyftWorkerImageService},
             {"svc": SyftWorkerPoolService},
             {"svc": SyftImageRegistryService},

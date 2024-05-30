@@ -301,6 +301,16 @@ class KeyValueActionStore(ActionStore):
             return Ok(self.storage_permissions[uid])
         return Err(f"No storage permissions found for uid: {uid}")
 
+    def _all(
+        self,
+        credentials: SyftVerifyKey,
+        has_permission: bool | None = False,
+    ) -> Result[list[SyftObject], str]:
+        # this checks permissions
+        res = [self.get(uid, credentials, has_permission) for uid in self.data.keys()]
+        result = [x.ok() for x in res if x.is_ok()]
+        return Ok(result)
+
     def migrate_data(
         self, to_klass: SyftObject, credentials: SyftVerifyKey
     ) -> Result[bool, str]:
