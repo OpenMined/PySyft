@@ -1481,6 +1481,12 @@ class ActionObject(SyncableSyftObject):
         if HOOK_ON_POINTERS not in self.syft_pre_hooks__:
             self.syft_pre_hooks__[HOOK_ON_POINTERS] = []
 
+        if HOOK_ALWAYS not in self.syft_post_hooks__:
+            self.syft_post_hooks__[HOOK_ALWAYS] = []
+
+        if HOOK_ON_POINTERS not in self.syft_post_hooks__:
+            self.syft_post_hooks__[HOOK_ON_POINTERS] = []
+
         api = APIRegistry.api_for(self.syft_node_location, self.syft_client_verify_key)
         eager_execution_enabled = (
             api is not None
@@ -1489,7 +1495,7 @@ class ActionObject(SyncableSyftObject):
         )
 
         if eager_execution_enabled:
-            # this should be a list as orders matters
+            # pre_hooks | this should be a list as orders matters
             for side_effect in [make_action_side_effect]:
                 if side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
                     self.syft_pre_hooks__[HOOK_ALWAYS].append(side_effect)
@@ -1501,12 +1507,7 @@ class ActionObject(SyncableSyftObject):
             if trace_action_side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
                 self.syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
 
-            if HOOK_ALWAYS not in self.syft_post_hooks__:
-                self.syft_post_hooks__[HOOK_ALWAYS] = []
-
-            if HOOK_ON_POINTERS not in self.syft_post_hooks__:
-                self.syft_post_hooks__[HOOK_ON_POINTERS] = []
-
+            # post_hooks | this should be a list as orders matters
             for side_effect in [propagate_node_uid]:
                 if side_effect not in self.syft_post_hooks__[HOOK_ALWAYS]:
                     self.syft_post_hooks__[HOOK_ALWAYS].append(side_effect)
