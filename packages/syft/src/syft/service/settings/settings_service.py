@@ -189,8 +189,7 @@ class SettingsService(AbstractService):
     def enable_eager_execution(
         self, context: AuthedServiceContext, enable: bool
     ) -> SyftSuccess | SyftError:
-        """Enable/Disable Registration for Data Scientist or Guest Users."""
-        flags.CAN_REGISTER = enable
+        """Enable/Disable eager execution."""
         settings = NodeSettingsUpdate(eager_execution_enabled=enable)
 
         result = self._update(context=context, settings=settings)
