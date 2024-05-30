@@ -323,7 +323,7 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
 
     # TODO: 🐉 sort this out, basically sometimes the syft.user classes are not in the
     # module name space in sub-processes or threads even though they are loaded on start
-    # its possible that the uvicorn awsgi server is preloading a bunch of threads
+    # its possible that the hypercorn awsgi server is preloading a bunch of threads
     # however simply getting the class from the TYPE_BANK doesn't always work and
     # causes some errors so it seems like we want to get the local one where possible
     (
