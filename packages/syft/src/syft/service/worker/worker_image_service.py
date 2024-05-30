@@ -6,7 +6,8 @@ import docker
 import pydantic
 
 # relative
-from ...custom_worker.config import DockerWorkerConfig
+from ...custom_worker.config import PrebuiltWorkerConfig
+from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -39,16 +40,27 @@ class SyftWorkerImageService(AbstractService):
         self.stash = SyftWorkerImageStash(store=store)
 
     @service_method(
-        path="worker_image.submit_dockerfile",
-        name="submit_dockerfile",
+        path="worker_image.submit",
+        name="submit",
         roles=DATA_OWNER_ROLE_LEVEL,
     )
-    def submit_dockerfile(
-        self, context: AuthedServiceContext, docker_config: DockerWorkerConfig
+    def submit(
+        self, context: AuthedServiceContext, worker_config: WorkerConfig
     ) -> SyftSuccess | SyftError:
+        image_identifier: SyftWorkerImageIdentifier | None = None
+        if isinstance(worker_config, PrebuiltWorkerConfig):
+            try:
+                image_identifier = SyftWorkerImageIdentifier.from_str(worker_config.tag)
+            except Exception:
+                return SyftError(
+                    f"Invalid Docker image name: {worker_config.tag}.\n"
+                    + "Please specify the image name in this format <registry>/<repo>:<tag>."
+                )
+
         worker_image = SyftWorkerImage(
-            config=docker_config,
+            config=worker_config,
             created_by=context.credentials,
+            image_identifier=image_identifier,
         )
         res = self.stash.set(context.credentials, worker_image)
 
@@ -278,14 +290,14 @@ class SyftWorkerImageService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def get_by_config(
-        self, context: AuthedServiceContext, docker_config: DockerWorkerConfig
+        self, context: AuthedServiceContext, worker_config: WorkerConfig
     ) -> SyftWorkerImage | SyftError:
-        res = self.stash.get_by_docker_config(
-            credentials=context.credentials, config=docker_config
+        res = self.stash.get_by_worker_config(
+            credentials=context.credentials, config=worker_config
         )
         if res.is_err():
             return SyftError(
-                message=f"Failed to get image with docker config {docker_config}. Error: {res.err()}"
+                message=f"Failed to get image with docker config {worker_config}. Error: {res.err()}"
             )
         image: SyftWorkerImage = res.ok()
         return image

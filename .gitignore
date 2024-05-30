@@ -28,9 +28,6 @@ build
 # docker compose volumes
 docker/data/*
 
-# hagrid temps
-packages/hagrid/syft
-packages/hagrid/grid
 
 # vagrant
 .vagrant
@@ -60,7 +57,6 @@ notebooks/**/*.pkl
 k3d-registry
 
 .envfile
-packages/hagrid/.envfile
 
 
 # rendered template dir

@@ -237,6 +237,8 @@ def rs_object2proto(self: Any, for_hashing: bool = False) -> _DynamicStructBuild
     
     if not SyftObjectRegistry.has_serde_class("", canonical_name, version):
         # third party
+        import ipdb
+        ipdb.set_trace()
         raise Exception(f"{canonical_name} version {version} not in SyftObjectRegistry")
 
     msg.canonicalName = canonical_name
@@ -313,6 +315,19 @@ def rs_bytes2object(blob: bytes) -> Any:
         return rs_proto2object(msg)
 
 
+def map_fqns_for_backward_compatibility(fqn):
+    """for backwards compatibility with 0.8.6. Sometimes classes where moved to another file. Which is
+    exactly why we are implementing it differently"""
+    mapping = {
+        'syft.service.dataset.dataset.MarkdownDescription': "syft.util.misc_objs.MarkdownDescription"
+    }
+    if fqn in mapping:
+        return mapping[fqn]
+    else:
+        return fqn
+
+
+
 def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     # relative
     from .deserialize import _deserialize
@@ -343,7 +358,10 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     canonical_name = proto.canonicalName
     version = getattr(proto, "version", -1)
     fqn = getattr(proto, "fullyQualifiedName", "")
+    fqn = map_fqns_for_backward_compatibility(fqn)
     if not SyftObjectRegistry.has_serde_class(fqn, canonical_name, version):
+        import ipdb
+        ipdb.set_trace()
         raise Exception(f"{canonical_name} version {version} not in SyftObjectRegistry")
 
     # TODO: 🐉 sort this out, basically sometimes the syft.user classes are not in the

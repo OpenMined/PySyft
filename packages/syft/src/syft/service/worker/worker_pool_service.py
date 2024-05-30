@@ -6,7 +6,8 @@ import pydantic
 from result import OkErr
 
 # relative
-from ...custom_worker.config import CustomWorkerConfig
+from ...custom_worker.config import DockerWorkerConfig
+from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...custom_worker.runner_k8s import KubernetesRunner
@@ -232,8 +233,8 @@ class SyftWorkerPoolService(AbstractService):
         context: AuthedServiceContext,
         pool_name: str,
         num_workers: int,
-        tag: str,
         config: WorkerConfig,
+        tag: str | None = None,
         registry_uid: UID | None = None,
         reason: str | None = "",
         pull_image: bool = True,
@@ -246,18 +247,34 @@ class SyftWorkerPoolService(AbstractService):
             pool_name (str): The name of the worker pool.
             num_workers (int): The number of workers in the pool.
             config: (WorkerConfig): Config of the image to be built.
-            tag (str): human-readable manifest identifier that is typically a specific version or variant of an image
-            reason (Optional[str], optional): The reason for creating the worker image and pool. Defaults to "".
+            tag (str | None, optional):
+                a human-readable manifest identifier that is typically a specific version or variant of an image,
+                only needed for `DockerWorkerConfig` to tag the image after it is built.
+            reason (str | None, optional): The reason for creating the worker image and pool. Defaults to "".
         """
 
-        if isinstance(config, CustomWorkerConfig):
-            return SyftError(message="We only support DockerWorkerConfig.")
+        if not isinstance(config, DockerWorkerConfig | PrebuiltWorkerConfig):
+            return SyftError(
+                message="We only support either `DockerWorkerConfig` or `PrebuiltWorkerConfig`."
+            )
 
-        if IN_KUBERNETES and registry_uid is None:
-            return SyftError(message="Registry UID is required in Kubernetes mode.")
+        if isinstance(config, DockerWorkerConfig):
+            if tag is None:
+                return SyftError(message="`tag` is required for `DockerWorkerConfig`.")
+
+            # Validate image tag
+            try:
+                SyftWorkerImageIdentifier.from_str(tag=tag)
+            except pydantic.ValidationError as e:
+                return SyftError(message=f"Invalid `tag`: {e}.")
+
+            if IN_KUBERNETES and registry_uid is None:
+                return SyftError(
+                    message="`registry_uid` is required in Kubernetes mode for `DockerWorkerConfig`."
+                )
 
         # Check if an image already exists for given docker config
-        search_result = self.image_stash.get_by_docker_config(
+        search_result = self.image_stash.get_by_worker_config(
             credentials=context.credentials, config=config
         )
 
@@ -271,12 +288,6 @@ class SyftWorkerPoolService(AbstractService):
                 message="Image already exists for given config. \
                     Please use `worker_pool.create_pool_request` to request pool creation."
             )
-
-        # Validate Image Tag
-        try:
-            SyftWorkerImageIdentifier.from_str(tag=tag)
-        except pydantic.ValidationError as e:
-            return SyftError(message=f"Failed to create tag: {e}")
 
         # create a list of Change objects and submit a
         # request for these changes for approval

@@ -2,6 +2,7 @@
 from collections.abc import Callable
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 from enum import Enum
 import random
 from string import Template
@@ -33,6 +34,8 @@ from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SYFT_OBJECT_VERSION_5
+from ...types.datetime import format_timedelta
+from ...types.syft_object import SYFT_OBJECT_VERSION_6
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import drop
@@ -105,9 +108,18 @@ class JobV4(SyncableSyftObject):
 
 
 @serializable()
+class JobType(str, Enum):
+    JOB = "job"
+    TWINAPIJOB = "twinapijob"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+@serializable()
 class Job(SyncableSyftObject):
     __canonical_name__ = "JobItem"
-    __version__ = SYFT_OBJECT_VERSION_5
+    __version__ = SYFT_OBJECT_VERSION_6
 
     id: UID
     node_uid: UID
@@ -118,13 +130,16 @@ class Job(SyncableSyftObject):
     parent_job_id: UID | None = None
     n_iters: int | None = 0
     current_iter: int | None = None
-    creation_time: str | None = Field(default_factory=lambda: str(datetime.now()))
+    creation_time: str | None = Field(
+        default_factory=lambda: str(datetime.now(tz=timezone.utc))
+    )
     action: Action | None = None
     job_pid: int | None = None
     job_worker_id: UID | None = None
     updated_at: DateTime | None = None
     user_code_id: UID | None = None
     requested_by: UID | None = None
+    job_type: JobType = JobType.JOB
 
     __attr_searchable__ = ["parent_job_id", "job_worker_id", "status", "user_code_id"]
     __repr_attrs__ = [
@@ -222,18 +237,7 @@ class Job(SyncableSyftObject):
         ):
             return None
 
-        def format_timedelta(local_timedelta: timedelta) -> str:
-            total_seconds = int(local_timedelta.total_seconds())
-            hours, leftover = divmod(total_seconds, 3600)
-            minutes, seconds = divmod(leftover, 60)
-
-            hours_string = f"{hours}:" if hours != 0 else ""
-            minutes_string = f"{minutes}:".zfill(3)
-            seconds_string = f"{seconds}".zfill(2)
-
-            return f"{hours_string}{minutes_string}{seconds_string}"
-
-        now = datetime.now()
+        now = datetime.now(tz=timezone.utc)
         time_passed = now - datetime.fromisoformat(self.creation_time)
         iter_duration_seconds: float = time_passed.total_seconds() / self.current_iter
         iters_remaining = self.n_iters - self.current_iter

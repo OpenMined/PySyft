@@ -76,12 +76,14 @@ from ..policy.policy import UserPolicy
 from ..policy.policy import filter_only_uids
 from ..policy.policy import init_policy
 from ..policy.policy import load_policy_code
+from ..policy.policy import partition_by_node
 from ..policy.policy_service import PolicyService
 from ..response import SyftError
 from ..response import SyftInfo
 from ..response import SyftNotReady
 from ..response import SyftSuccess
 from ..response import SyftWarning
+from ..user.user import UserView
 from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
 from .unparse import unparse
@@ -347,6 +349,18 @@ class UserCode(SyncableSyftObject):
             "Status": status_badge,
             "Submit time": str(self.submit_time),
         }
+
+    @property
+    def user(self) -> UserView | SyftError:
+        api = APIRegistry.api_for(
+            node_uid=self.syft_node_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+        if api is None:
+            return SyftError(
+                message=f"Can't access Syft API. You must login to {self.syft_node_location}"
+            )
+        return api.services.user.get_by_verify_key(self.user_verify_key)
 
     @property
     def status(self) -> UserCodeStatusCollection | SyftError:
@@ -960,10 +974,13 @@ def syft_function(
     if input_policy is None:
         input_policy = EmpyInputPolicy()
 
+    init_input_kwargs = None
     if isinstance(input_policy, CustomInputPolicy):
         input_policy_type = SubmitUserPolicy.from_obj(input_policy)
+        init_input_kwargs = partition_by_node(input_policy.init_kwargs)
     else:
         input_policy_type = type(input_policy)
+        init_input_kwargs = getattr(input_policy, "init_kwargs", {})
 
     if output_policy is None:
         output_policy = SingleExecutionExactOutput()
@@ -979,7 +996,7 @@ def syft_function(
             func_name=f.__name__,
             signature=inspect.signature(f),
             input_policy_type=input_policy_type,
-            input_policy_init_kwargs=getattr(input_policy, "init_kwargs", {}),
+            input_policy_init_kwargs=init_input_kwargs,
             output_policy_type=output_policy_type,
             output_policy_init_kwargs=getattr(output_policy, "init_kwargs", {}),
             local_function=f,

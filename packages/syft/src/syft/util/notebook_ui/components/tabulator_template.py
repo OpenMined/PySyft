@@ -23,6 +23,7 @@ env = jinja2.Environment(loader=jinja2.PackageLoader("syft", "assets/jinja"))  #
 def create_tabulator_columns(
     column_names: list[str],
     column_widths: dict | None = None,
+    header_sort: bool = True,
 ) -> tuple[list[dict], dict | None]:
     """Returns tuple of (columns, row_header) for tabulator table"""
     if column_widths is None:
@@ -33,10 +34,10 @@ def create_tabulator_columns(
     if TABLE_INDEX_KEY in column_names:
         row_header = {
             "field": TABLE_INDEX_KEY,
-            "headerSort": True,
             "frozen": True,
             "widthGrow": 0.3,
             "minWidth": 60,
+            "headerSort": header_sort,
         }
 
     for colname in column_names:
@@ -48,6 +49,7 @@ def create_tabulator_columns(
                 "resizable": True,
                 "minWidth": 60,
                 "maxInitialWidth": 500,
+                "headerSort": header_sort,
             }
             if colname in column_widths:
                 column["widthGrow"] = column_widths[colname]
@@ -92,7 +94,13 @@ def format_table_data(table_data: list[dict[str, Any]]) -> list[dict[str, str]]:
     return formatted
 
 
-def build_tabulator_table(obj: Any) -> str | None:
+def build_tabulator_table(
+    obj: Any,
+    uid: str | None = None,
+    max_height: int | None = None,
+    pagination: bool = True,
+    header_sort: bool = True,
+) -> str | None:
     try:
         table_data, table_metadata = prepare_table_data(obj)
         if len(table_data) == 0:
@@ -100,7 +108,7 @@ def build_tabulator_table(obj: Any) -> str | None:
 
         table_template = env.get_template("table.jinja2")
         tabulator_js = load_js("tabulator.min.js")
-        tabulator_css = load_css("tabulator_materialize.min.css")
+        tabulator_css = load_css("tabulator_pysyft.min.css")
         js = load_js("table.js")
         css = load_css("style.css")
 
@@ -113,10 +121,13 @@ def build_tabulator_table(obj: Any) -> str | None:
         if icon is None:
             icon = Icon.TABLE.svg
 
-        column_data, row_header = create_tabulator_columns(table_metadata["columns"])
+        uid = uid if uid is not None else secrets.token_hex(4)
+        column_data, row_header = create_tabulator_columns(
+            table_metadata["columns"], header_sort=header_sort
+        )
         table_data = format_table_data(table_data)
         table_html = table_template.render(
-            uid=secrets.token_hex(4),
+            uid=uid,
             columns=json.dumps(column_data),
             row_header=json.dumps(row_header),
             data=json.dumps(table_data),
@@ -127,6 +138,9 @@ def build_tabulator_table(obj: Any) -> str | None:
             name=table_metadata["name"],
             tabulator_js=tabulator_js,
             tabulator_css=tabulator_css,
+            max_height=json.dumps(max_height),
+            pagination=json.dumps(pagination),
+            header_sort=json.dumps(header_sort),
         )
 
         return table_html
@@ -140,3 +154,21 @@ def show_table(obj: Any) -> None:
     table = build_tabulator_table(obj)
     if table is not None:
         display(HTML(table))
+
+
+def highlight_single_row(
+    table_uid: str,
+    index: int | str | None = None,
+    jump_to_row: bool = True,
+) -> None:
+    js_code = f"<script>highlightSingleRow('{table_uid}', {json.dumps(index)}, {json.dumps(jump_to_row)});</script>"
+    display(HTML(js_code))
+
+
+def update_table_cell(uid: str, index: int, field: str, value: str) -> None:
+    js_code = f"""
+    <script>
+    updateTableCell('{uid}', {json.dumps(index)}, {json.dumps(field)}, {json.dumps(value)});
+    </script>
+    """
+    display(HTML(js_code))

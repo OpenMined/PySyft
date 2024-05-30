@@ -1,7 +1,7 @@
 global:
   # Affects only backend, frontend, and seaweedfs containers
   registry: docker.io
-  version: 0.8.7-beta.7
+  version: 0.8.7-beta.9
 
   # Force default secret values for development. DO NOT SET THIS TO FALSE IN PRODUCTION
   randomizedSecrets: true
@@ -112,6 +112,7 @@ seaweedfs:
 # =================================================================================
 
 proxy:
+  enabled: true
   # Extra environment vars
   env: null
 
@@ -132,6 +133,7 @@ proxy:
 # =================================================================================
 
 registry:
+  enabled: true
   # Extra environment vars
   env: null
 
@@ -201,6 +203,13 @@ node:
 
 ingress:
   hostname: null # do not make this localhost
+  annotations: null
+
+  # When using nginx ingress controller without internal proxy , re-enable this
+  # annotations:
+  #   nginx.ingress.kubernetes.io/use-regex: "true"
+  #   nginx.ingress.kubernetes.io/rewrite-target: /$2$3
+  #   nginx.ingress.kubernetes.io/upstream-vhost: "$service_name:$service_port"
 
   tls:
     enabled: false
