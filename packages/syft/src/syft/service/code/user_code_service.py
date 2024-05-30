@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import TypeVar
+from typing import cast
 
 # third party
 from result import Err
@@ -459,7 +460,11 @@ class UserCodeService(AbstractService):
             kwarg2id = map_kwargs_to_id(kwargs)
 
             input_policy = code.get_input_policy(context)
+            # relative
+            from ...node.node import get_node_side_type
 
+            is_high_side = get_node_side_type() == "high"
+            has_side = get_node_side_type() is not None
             # Check output policy
             if not override_execution_permission:
                 output_history = code.get_output_history(context=context)
@@ -473,45 +478,45 @@ class UserCodeService(AbstractService):
                     output_policy=output_policy,
                 )
                 if not can_execute:
-                    # if not code.is_output_policy_approved(context):
-                    #     return Err(
-                    #         "Execution denied: Your code is waiting for approval"
-                    #     )
-                    # if not (is_valid := output_policy._is_valid(context)):  # type: ignore
-                    if len(output_history) > 0 and not skip_read_cache:
-                        last_executed_output = output_history[-1]
-                        # Check if the inputs of the last executed output match
-                        # against the current input
-                        if (
-                            input_policy is not None
-                            and not last_executed_output.check_input_ids(
-                                kwargs=kwarg2id
-                            )
-                        ):
-                            inp_policy_validation = input_policy._is_valid(
-                                context,
-                                usr_input_kwargs=kwarg2id,
-                                code_item_id=code.id,
-                            )
-                            if inp_policy_validation.is_err():
-                                return inp_policy_validation
-
-                        result: Result[ActionObject, str] = resolve_outputs(
-                            context=context,
-                            output_ids=last_executed_output.output_ids,
+                    if not has_side and not code.is_output_policy_approved(context):
+                        return Err(
+                            "Execution denied: Your code is waiting for approval"
                         )
-                        if result.is_err():
-                            return result
+                    if has_side or not (is_valid := output_policy._is_valid(context)):
+                        if len(output_history) > 0 and not skip_read_cache:
+                            last_executed_output = output_history[-1]
+                            # Check if the inputs of the last executed output match
+                            # against the current input
+                            if (
+                                input_policy is not None
+                                and not last_executed_output.check_input_ids(
+                                    kwargs=kwarg2id
+                                )
+                            ):
+                                inp_policy_validation = input_policy._is_valid(
+                                    context,
+                                    usr_input_kwargs=kwarg2id,
+                                    code_item_id=code.id,
+                                )
+                                if inp_policy_validation.is_err():
+                                    return inp_policy_validation
 
-                        res = delist_if_single(result.ok())
-                        return Ok(
-                            CachedSyftObject(
-                                result=res,
-                                error_msg="",
+                            result: Result[ActionObject, str] = resolve_outputs(
+                                context=context,
+                                output_ids=last_executed_output.output_ids,
                             )
-                        )
-                        # else:
-                        #     return cast(Err, is_valid.to_result())
+                            if result.is_err():
+                                return result
+
+                            res = delist_if_single(result.ok())
+                            return Ok(
+                                CachedSyftObject(
+                                    result=res,
+                                    error_msg="",
+                                )
+                            )
+                        else:
+                            return cast(Err, is_valid.to_result())
                     return can_execute.to_result()  # type: ignore
 
             # Execute the code item
@@ -540,10 +545,7 @@ class UserCodeService(AbstractService):
 
             # this currently only works for nested syft_functions
             # and admins executing on high side (TODO, decide if we want to increment counter)
-            # relative
-            from ...node.node import get_node_side_type
 
-            is_high_side = get_node_side_type() == "high"
             if not skip_fill_cache and output_policy is not None or is_high_side:
                 res = code.store_execution_output(
                     context=context,
