@@ -793,7 +793,6 @@ class Request(SyncableSyftObject):
         self,
         result: Any,
         logs: str = "",
-        add_code_owner_read_permissions: bool = True,
     ) -> Job | SyftError:
         """
         Adds a result to this Request:
@@ -825,12 +824,13 @@ class Request(SyncableSyftObject):
             return action_object
 
         # Create Job
+        # NOTE code owner read permissions are added when syncing this Job
         job = api.services.job.create_job_for_user_code_id(
             code.id,
             result=action_object,
             log_stdout=logs,
             status=JobStatus.COMPLETED,
-            add_code_owner_read_permissions=add_code_owner_read_permissions,
+            add_code_owner_read_permissions=False,
         )
         if isinstance(job, SyftError):
             return job
