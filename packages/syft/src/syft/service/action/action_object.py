@@ -868,7 +868,7 @@ class ActionObject(SyncableSyftObject):
 
     @property
     def syft_lineage_id(self) -> LineageID:
-        """Compute the LineageID of the ActionObject, using the `id` and the `syft_history_hash` memebers"""
+        """Compute the LineageID of the ActionObject, using the `id` and the `syft_history_hash` members"""
         return LineageID(self.id, self.syft_history_hash)
 
     model_config = ConfigDict(validate_assignment=True)
@@ -1644,7 +1644,7 @@ class ActionObject(SyncableSyftObject):
         result.syft_node_location = context.syft_node_location
         result.syft_client_verify_key = context.syft_client_verify_key
 
-        # Propogate Syft blob storage entry id
+        # Propagate Syft blob storage entry id
         object_attrs = [
             "syft_blob_storage_entry_id",
             "syft_action_data_repr_",
