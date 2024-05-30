@@ -54,7 +54,7 @@ class EnclaveService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def add(
-        self, context: AuthedServiceContext, name: str, route: NodeRouteType
+        self, context: AuthedServiceContext, route: NodeRouteType
     ) -> SyftSuccess | SyftError:
         """Add an Enclave to the network."""
         enclave = EnclaveInstance.create(route=route)
