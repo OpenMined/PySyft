@@ -188,6 +188,13 @@
             "hash": "4934bf72bb10ac0a670c87ab735175088274e090819436563543473e64cf15e3",
             "action": "add"
         }
+    },
+    "CreateCustomImageChange": {
+        "3": {
+            "version": 3,
+            "hash": "e5f099940a7623f145f51f3e15b97a910a1d7fda1f67739420fed3035d1f2995",
+            "action": "add"
+        }
     }
 }
 

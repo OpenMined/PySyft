@@ -81,7 +81,6 @@ repos:
     # files: "^notebooks/(api|tutorials|admin)"
     hooks:
       - id: nbqa-isort
-      - id: nbqa-black
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.

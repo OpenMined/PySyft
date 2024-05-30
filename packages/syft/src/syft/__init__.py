@@ -1,4 +1,4 @@
-__version__ = "0.8.7-beta.8"
+__version__ = "0.8.7-beta.9"
 
 # stdlib
 from collections.abc import Callable
@@ -25,6 +25,7 @@ from .client.search import SearchResults  # noqa: F401
 from .client.user_settings import UserSettings  # noqa: F401
 from .client.user_settings import settings  # noqa: F401
 from .custom_worker.config import DockerWorkerConfig  # noqa: F401
+from .custom_worker.config import PrebuiltWorkerConfig  # noqa: F401
 from .node.credentials import SyftSigningKey  # noqa: F401
 from .node.domain import Domain  # noqa: F401
 from .node.enclave import Enclave  # noqa: F401

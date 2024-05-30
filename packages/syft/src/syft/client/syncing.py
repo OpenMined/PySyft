@@ -8,6 +8,7 @@ from ..service.response import SyftSuccess
 from ..service.sync.diff_state import NodeDiff
 from ..service.sync.diff_state import ObjectDiffBatch
 from ..service.sync.diff_state import SyncInstruction
+from ..service.sync.resolve_widget import PaginatedResolveWidget
 from ..service.sync.resolve_widget import ResolveWidget
 from ..service.sync.sync_state import SyncState
 from ..types.uid import UID
@@ -71,28 +72,18 @@ def compare_clients(
     )
 
 
-def get_user_input_for_resolve() -> SyncDecision:
-    options = [x.value for x in SyncDecision]
-    options_str = ", ".join(options[:-1]) + f" or {options[-1]}"
-    print(f"How do you want to sync these objects? choose between {options_str}")
-
-    while True:
-        decision = input()
-        decision = decision.lower()
-
-        try:
-            return SyncDecision(decision)
-        except ValueError:
-            print(f"Please choose between {options_str}")
-
-
-def resolve(obj_diff_batch: ObjectDiffBatch) -> ResolveWidget:
-    widget = ResolveWidget(obj_diff_batch)
-    return widget
+def resolve(obj: ObjectDiffBatch | NodeDiff) -> ResolveWidget | PaginatedResolveWidget:
+    if not isinstance(obj, ObjectDiffBatch | NodeDiff):
+        raise ValueError(
+            f"Invalid type: could not resolve object with type {type(obj).__qualname__}"
+        )
+    return obj.resolve()
 
 
 @deprecated(reason="resolve_single has been renamed to resolve", return_syfterror=True)
-def resolve_single(obj_diff_batch: ObjectDiffBatch) -> ResolveWidget:
+def resolve_single(
+    obj_diff_batch: ObjectDiffBatch,
+) -> ResolveWidget | PaginatedResolveWidget:
     return resolve(obj_diff_batch)
 
 
