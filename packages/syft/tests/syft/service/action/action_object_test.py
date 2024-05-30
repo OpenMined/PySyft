@@ -160,11 +160,26 @@ def test_actionobject_hooks_init(orig_obj: Any):
 
     assert HOOK_ALWAYS in obj.syft_pre_hooks__
     assert HOOK_ALWAYS in obj.syft_post_hooks__
+    assert HOOK_ON_POINTERS in obj.syft_pre_hooks__
+    assert HOOK_ON_POINTERS in obj.syft_post_hooks__
+
+    assert make_action_side_effect in obj.syft_pre_hooks__[HOOK_ALWAYS]
+
+def test_actionobject_add_pre_hooks():
+    # Eager execution is disabled by default
+    obj = ActionObject.from_obj(1)
+
+    assert make_action_side_effect in obj.syft_pre_hooks__[HOOK_ALWAYS]
+    assert send_action_side_effect not in obj.syft_pre_hooks__[HOOK_ON_POINTERS]
+    assert propagate_node_uid not in obj.syft_post_hooks__[HOOK_ALWAYS]
+
+    # eager exec tests:
+    obj._syft_add_pre_hooks__(eager_execution=True)
+    obj._syft_add_post_hooks__(eager_execution=True)
 
     assert make_action_side_effect in obj.syft_pre_hooks__[HOOK_ALWAYS]
     assert send_action_side_effect in obj.syft_pre_hooks__[HOOK_ON_POINTERS]
     assert propagate_node_uid in obj.syft_post_hooks__[HOOK_ALWAYS]
-
 
 @pytest.mark.parametrize(
     "orig_obj_op",

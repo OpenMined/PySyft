@@ -1492,12 +1492,29 @@ class ActionObject(SyncableSyftObject):
             and api.metadata.eager_execution_enabled
         )
 
-        # pre_hooks | this should be a list as orders matters
+        self._syft_add_pre_hooks__(eager_execution_enabled)
+        self._syft_add_post_hooks__(eager_execution_enabled)
+
+        if isinstance(self.syft_action_data_type, ActionObject):
+            raise Exception("Nested ActionObjects", self.syft_action_data_repr_)
+
+        self.syft_history_hash = hash(self.id)
+
+    def _syft_add_pre_hooks__(self, eager_execution: bool):
+        """
+        Add pre-hooks
+
+        Args:
+            eager_execution: bool: If eager execution is enabled, hooks for 
+                tracing and executing the action on remote are added.
+        """
+
+        # this should be a list as orders matters
         for side_effect in [make_action_side_effect]:
             if side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
                 self.syft_pre_hooks__[HOOK_ALWAYS].append(side_effect)
 
-        if eager_execution_enabled:
+        if eager_execution:
             for side_effect in [send_action_side_effect]:
                 if side_effect not in self.syft_pre_hooks__[HOOK_ON_POINTERS]:
                     self.syft_pre_hooks__[HOOK_ON_POINTERS].append(side_effect)
@@ -1505,15 +1522,19 @@ class ActionObject(SyncableSyftObject):
             if trace_action_side_effect not in self.syft_pre_hooks__[HOOK_ALWAYS]:
                 self.syft_pre_hooks__[HOOK_ALWAYS].append(trace_action_side_effect)
 
-            # post_hooks | this should be a list as orders matters
+    def _syft_add_post_hooks__(self, eager_execution: bool):
+        """
+        Add post-hooks
+
+        Args:
+            eager_execution: bool: If eager execution is enabled, hooks for 
+                tracing and executing the action on remote are added.
+        """
+        if eager_execution:
+            # this should be a list as orders matters
             for side_effect in [propagate_node_uid]:
                 if side_effect not in self.syft_post_hooks__[HOOK_ALWAYS]:
                     self.syft_post_hooks__[HOOK_ALWAYS].append(side_effect)
-
-        if isinstance(self.syft_action_data_type, ActionObject):
-            raise Exception("Nested ActionObjects", self.syft_action_data_repr_)
-
-        self.syft_history_hash = hash(self.id)
 
     def _syft_run_pre_hooks__(
         self, context: PreHookContext, name: str, args: Any, kwargs: Any
