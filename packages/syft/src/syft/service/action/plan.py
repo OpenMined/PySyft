@@ -66,6 +66,7 @@ def planify(func: Callable) -> ActionObject:
     ActionObject.add_trace_hook()
     worker = Worker.named(name="plan_building", reset=True, processes=0)
     client = worker.root_client
+    client.settings.enable_eager_execution(enable=True)
     if client is None:
         raise ValueError("Not able to get client for plan building")
     TraceResultRegistry.set_trace_result_for_current_thread(client=client)
