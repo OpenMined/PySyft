@@ -139,8 +139,6 @@ class ActionService(AbstractService):
         uid: UID,
     ) -> Result[Ok[bool], Err[str]]:
         """Get an object from the action store"""
-        # relative
-
         result = self._get(context, uid)
         if result.is_ok():
             obj = result.ok()
@@ -148,7 +146,7 @@ class ActionService(AbstractService):
                 result = self.resolve_links(
                     context, obj.syft_action_data.action_object_id.id
                 )
-
+                print(f"inside ActionService.is_resolved (2). {result = }")
                 # Checking in case any error occurred
                 if result.is_err():
                     return result
@@ -157,11 +155,20 @@ class ActionService(AbstractService):
 
             # If it's a leaf but not resolved yet, return false
             elif not obj.syft_resolved:
+                user_code_service = context.node.get_service("usercodeservice")
+                if not user_code_service.is_execution_on_owned_args_allowed(context):
+                    return Err(
+                        "You do not have the permissions for mock execution, please contact the admin"
+                    )
+                print(
+                    f"inside ActionService.is_resolved (3). {result = }. {obj.syft_resolved = }"
+                )
                 return Ok(False)
 
+            print(f"inside ActionService.is_resolved (4). {obj = }.")
             # If it's not an action data link or non resolved (empty). It's resolved
             return Ok(True)
-
+        print(f"inside ActionService.is_resolved (5). {result = }.")
         # If it's not in the store or permission error, return the error
         return result
 

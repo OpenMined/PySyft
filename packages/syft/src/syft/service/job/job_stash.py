@@ -315,7 +315,7 @@ class Job(SyncableSyftObject):
         )
         job: Job | None = api.make_call(call)
         if job is None:
-            return
+            return None
         self.resolved = job.resolved
         if job.resolved:
             self.result = job.result
@@ -658,11 +658,6 @@ class Job(SyncableSyftObject):
 
         if self.resolved:
             return self.resolve
-
-        if not api.services.code.is_execution_on_owned_args_allowed():
-            return SyftError(
-                message="You do not have the permissions for mock execution, please contact the admin."
-            )
 
         if not job_only and self.result is not None:
             self.result.wait(timeout)
