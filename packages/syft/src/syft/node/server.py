@@ -15,7 +15,7 @@ from fastapi import APIRouter
 from fastapi import FastAPI
 import requests
 from starlette.middleware.cors import CORSMiddleware
-import uvicorn
+import hypercorn
 
 # relative
 from ..abstract_node import NodeSideType
@@ -64,7 +64,7 @@ worker_classes = {
 }
 
 
-def run_uvicorn(
+def run_hypercorn(
     name: str,
     node_type: Enum,
     host: str,
@@ -81,7 +81,7 @@ def run_uvicorn(
     n_consumers: int,
     background_tasks: bool,
 ) -> None:
-    async def _run_uvicorn(
+    async def _run_hypercorn(
         name: str,
         node_type: NodeType,
         host: str,
@@ -147,12 +147,12 @@ def run_uvicorn(
         log_level = "critical"
         if dev_mode:
             log_level = "info"
-            logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
-            logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
-        config = uvicorn.Config(
+            logging.getLogger("hypercorn").setLevel(logging.CRITICAL)
+            logging.getLogger("hypercorn.access").setLevel(logging.CRITICAL)
+        config = hypercorn.Config(
             app, host=host, port=port, log_level=log_level, reload=dev_mode
         )
-        server = uvicorn.Server(config)
+        server = hypercorn.Server(config)
 
         await server.serve()
         asyncio.get_running_loop().stop()
@@ -160,7 +160,7 @@ def run_uvicorn(
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(
-        _run_uvicorn(
+        _run_hypercorn(
             name,
             node_type,
             host,
@@ -192,7 +192,7 @@ def serve_node(
     background_tasks: bool = False,
 ) -> tuple[Callable, Callable]:
     server_process = multiprocessing.Process(
-        target=run_uvicorn,
+        target=run_hypercorn,
         kwargs={
             "name": name,
             "node_type": node_type,
