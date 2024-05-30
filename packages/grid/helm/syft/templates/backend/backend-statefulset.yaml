@@ -163,8 +163,8 @@ spec:
           imagePullPolicy: Always
           resources: {{ include "common.resources.set" (dict "resources" .Values.attestation.resources "preset" .Values.attestation.resourcesPreset) | nindent 12 }}
           env:
-            - name: UVICORN_LOG_LEVEL
-              value: {{ .Values.attestation.uvicornLogLevel }}
+            - name: HYPERCORN_LOG_LEVEL
+              value: {{ .Values.attestation.hypercornLogLevel }}
             - name: APP_LOG_LEVEL
               value: {{ .Values.attestation.appLogLevel }}
             {{- if .Values.attestation.env }}
