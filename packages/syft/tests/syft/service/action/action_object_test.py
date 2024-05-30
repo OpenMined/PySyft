@@ -165,6 +165,7 @@ def test_actionobject_hooks_init(orig_obj: Any):
 
     assert make_action_side_effect in obj.syft_pre_hooks__[HOOK_ALWAYS]
 
+
 def test_actionobject_add_pre_hooks():
     # Eager execution is disabled by default
     obj = ActionObject.from_obj(1)
@@ -180,6 +181,7 @@ def test_actionobject_add_pre_hooks():
     assert make_action_side_effect in obj.syft_pre_hooks__[HOOK_ALWAYS]
     assert send_action_side_effect in obj.syft_pre_hooks__[HOOK_ON_POINTERS]
     assert propagate_node_uid in obj.syft_post_hooks__[HOOK_ALWAYS]
+
 
 @pytest.mark.parametrize(
     "orig_obj_op",

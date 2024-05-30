@@ -1505,7 +1505,7 @@ class ActionObject(SyncableSyftObject):
         Add pre-hooks
 
         Args:
-            eager_execution: bool: If eager execution is enabled, hooks for 
+            eager_execution: bool: If eager execution is enabled, hooks for
                 tracing and executing the action on remote are added.
         """
 
@@ -1527,7 +1527,7 @@ class ActionObject(SyncableSyftObject):
         Add post-hooks
 
         Args:
-            eager_execution: bool: If eager execution is enabled, hooks for 
+            eager_execution: bool: If eager execution is enabled, hooks for
                 tracing and executing the action on remote are added.
         """
         if eager_execution:
